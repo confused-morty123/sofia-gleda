@@ -1,0 +1,7 @@
+# Sofia Gleda — weekly data refresh dependencies.
+# Installed automatically by the GitHub Action; you do not need to install
+# anything on your own computer.
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.0
+certifi>=2024.2.2
