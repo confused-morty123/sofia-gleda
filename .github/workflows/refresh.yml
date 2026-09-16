@@ -40,11 +40,31 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Used by scripts/verify_build.py to actually click a film card in a real
+      # browser before we publish. Without it the build is still checked, just
+      # statically.
+      - name: Install a browser for the smoke test
+        run: python3 -m playwright install --with-deps chromium
+
       - name: Refresh programmes and posters
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
         run: python3 scripts/refresh_all.py
 
+      # If the rebuild failed verification, keep the evidence — the files are NOT
+      # committed, so this is the only way to see what the bad build looked like.
+      - name: Keep the rejected build for inspection
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rejected-build
+          path: |
+            index.html
+            build_report.json
+            changes.json
+          if-no-files-found: ignore
+
+      # Only reached when refresh_all.py exited 0, i.e. verify_build.py passed.
       - name: Commit the refreshed data
         run: |
           git config user.name  "Sofia Gleda bot"
