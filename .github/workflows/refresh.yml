@@ -1,0 +1,63 @@
+# Sofia Gleda — weekly data refresh.
+#
+# Runs every Sunday (and whenever you press the manual button), scrapes the
+# latest programmes and posters, rebuilds index.html, and commits the result
+# back. Because GitHub Pages redeploys automatically on every push to the main
+# branch, the live site updates itself with no further action from you.
+#
+# The only thing you must set up once: a repository secret named TMDB_TOKEN
+# (see SETUP.md, step 6). Everything else is automatic.
+
+name: Weekly refresh
+
+on:
+  schedule:
+    # 03:17 UTC every Sunday  ==  06:17 in Sofia (summer) / 05:17 (winter).
+    # GitHub may start scheduled runs a few minutes late under load — that's fine.
+    - cron: "17 3 * * 0"
+  workflow_dispatch: {}          # adds a "Run workflow" button on the Actions tab
+
+# Allow the workflow to commit the refreshed files back to the repository.
+permissions:
+  contents: write
+
+concurrency:
+  group: sofia-gleda-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh programmes and posters
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+        run: python3 scripts/refresh_all.py
+
+      - name: Commit the refreshed data
+        run: |
+          git config user.name  "Sofia Gleda bot"
+          git config user.email "actions@github.com"
+          # Stage each output only if it exists. A tolerated missing file (e.g.
+          # tmdb_films.json when no token is set, or a source that stayed down)
+          # must not abort the commit and discard the data that DID refresh.
+          for f in index.html tmdb_films.json theatre_posters.json changes.json build_report.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          if git diff --cached --quiet; then
+            echo "No changes this week — nothing to commit."
+          else
+            git commit -m "Weekly refresh: $(date -u +'%Y-%m-%d')"
+            git push
+          fi
