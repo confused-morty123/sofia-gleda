@@ -1,21 +1,22 @@
 {
-  "ran": "2026-09-16T12:29:41+00:00",
+  "ran": "2026-09-16T13:54:15+00:00",
   "ok": true,
+  "publishable": true,
   "steps": [
     {
       "step": "programmes",
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 418.0,
-      "tail": "theatre atelie313\ntheatre artvent\n\n0 added, 0 removed/cancelled, 0 changed, 13 sources unreachable\nunreachable, previous data kept: cc-sofia, cc-paradise, arena-mega, arena-mall, cg-ring, cg-park, cineland, odeon, euro-cinema, g8, dom-kino, vlaikova, theatre.art.bg\nwrote index.html and changes.json\n  ! https://programata.bg/kino/kino-saloni/sofia/odeon-cinema/?date=2026-09-15: HTTPSConnectionPool(host='programata.bg', port=443): Read timed out. (read timeout=25)\n  ! https://tickets.ndk.bg: HTTPSConnectionPool(host='tickets.ndk.bg', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'tickets.ndk.bg'. (_ssl.c:1010)\")))"
+      "seconds": 411.0,
+      "tail": "theatre new-ndk\ntheatre atelie313\ntheatre artvent\n\n0 added, 0 removed/cancelled, 0 changed, 13 sources unreachable\nunreachable, previous data kept: cc-sofia, cc-paradise, arena-mega, arena-mall, cg-ring, cg-park, cineland, odeon, euro-cinema, g8, dom-kino, vlaikova, theatre.art.bg\nwrote index.html and changes.json\n  ! https://tickets.ndk.bg: HTTPSConnectionPool(host='tickets.ndk.bg', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, \"[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'tickets.ndk.bg'. (_ssl.c:1010)\")))"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 19.7,
+      "seconds": 22.3,
       "tail": "[92/97] zalog                    -> The Pledge (2026) id=1639550\n[93/97] vsichko-za-mayka-mi      -> All About My Mother (1999) id=99\n[94/97] kosa                     -> Hair (1979) id=10654\n[95/97] diskretniyat-char        -> The Discreet Charm of the Bourgeoisie (1972) id=4593\n[96/97] iskam-te-za-seks         -> I Want Your Sex (2026) id=1288059\n[97/97] zhestokiyat-pat          NO MATCH (The Cruel Path 2025)\n\nDONE: 90/97 matched, 88 with posters -> tmdb_films.json"
     },
     {
@@ -23,8 +24,8 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 177.0,
-      "tail": "DONE: 0/118 theatre posters -> theatre_posters.json"
+      "seconds": 202.6,
+      "tail": "0 posters this run — keeping previous theatre_posters.json"
     },
     {
       "step": "inline posters",
@@ -33,6 +34,14 @@
       "code": 0,
       "seconds": 0.0,
       "tail": "injected TMDBART: 90 films (88 with posters), SHOWART: 0 shows"
+    },
+    {
+      "step": "verify",
+      "script": "verify_build.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 12.3,
+      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (334,433 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }
