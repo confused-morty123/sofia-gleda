@@ -48,9 +48,26 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
-new = re.sub(r"<script>/\* SOFIA-POSTERS-START \*/.*?/\* SOFIA-POSTERS-END \*/</script>",
-             lambda m: block, data, count=1, flags=re.S)
-assert new != data or not (art or showart), "marker block not found"
+
+MARKERS = r"<script>/\* SOFIA-POSTERS-START \*/.*?/\* SOFIA-POSTERS-END \*/</script>"
+found = re.search(MARKERS, data, flags=re.S)
+assert found, "marker block not found in " + str(HTML)
+
+# This block is REGENERATED WHOLESALE, so anything hand-written inside it is
+# destroyed on every run. That is exactly how `const PRICES` was lost in the
+# 2026-09-16 refresh and every film became unclickable. Refuse to run rather
+# than silently delete app code again.
+GENERATED = {"POSTERS", "TMDBART", "SHOWART"}
+declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
+stray = declared - GENERATED
+if stray:
+    raise SystemExit(
+        "refusing to overwrite the poster block: it also declares "
+        + ", ".join(sorted(stray))
+        + ".\nThose are not generated here and would be erased. Move them into "
+          "their own <script> outside the SOFIA-POSTERS markers, then re-run.")
+
+new = re.sub(MARKERS, lambda m: block, data, count=1, flags=re.S)
 HTML.write_text(new, encoding="utf-8")
 print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' in r)} with posters), "
       f"SHOWART: {len(showart)} shows")

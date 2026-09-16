@@ -5,3 +5,8 @@ requests>=2.31
 beautifulsoup4>=4.12
 lxml>=5.0
 certifi>=2024.2.2
+
+# Used only by scripts/verify_build.py, to click a film card in a real headless
+# browser before the refreshed page is allowed to go live. The browser binary
+# itself is installed by the workflow (python3 -m playwright install chromium).
+playwright>=1.44

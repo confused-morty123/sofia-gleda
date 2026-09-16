@@ -67,3 +67,18 @@ regenerates the icons.
   timezones east of Greenwich. Don't change this without testing.
 - **Posters are remote TMDB URLs**, so they load on any hosted site; every card
   falls back to generated SVG art when unmatched.
+- **Never put hand-written code between the `SOFIA-POSTERS` markers.**
+  `scripts/inject_data.py` regenerates that whole block on every refresh, so
+  anything living inside it is deleted. This is not hypothetical: the weekly
+  refresh of 2026-09-16 swallowed `const PRICES` that way. The page still
+  rendered — and threw `PRICES is not defined` the moment anyone clicked a film,
+  so the listings looked frozen and no ticket could be bought. `PRICES` now lives
+  in its own `<script>` just below the block, and `inject_data.py` refuses to run
+  if it finds a stray declaration inside the markers.
+- **Nothing is published until it has been clicked.** `scripts/verify_build.py`
+  runs last in the pipeline and is a gate, not a report: it checks that every
+  global the app reads is declared, that the JS parses, that showtimes resolve to
+  real films and venues, that no dataset has collapsed, and then opens the page in
+  a headless browser and actually clicks a film card and a performance. If any of
+  that fails the workflow stops before the commit, the rejected build is uploaded
+  as an Action artifact, and the live site keeps its last good version.

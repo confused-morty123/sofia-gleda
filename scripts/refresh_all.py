@@ -12,9 +12,13 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     2. fetch_tmdb.py             film posters + English titles -> tmdb_films.json
     3. fetch_theatre_posters.py  theatre posters              -> theatre_posters.json
     4. inject_data.py            inline both poster maps       -> index.html
+    5. verify_build.py           gate: is the result actually usable?
 
-Exit code is always 0 so the site still deploys with whatever data survived.
-The report records what worked and what didn't.
+Steps 1-4 are best-effort and never abort the run. Step 5 is not: if the rebuilt
+index.html is broken, this exits non-zero so the workflow stops before the commit
+and the previous, working site stays up. That gate exists because the 2026-09-16
+refresh published a page that rendered perfectly and threw the moment you clicked
+a film.
 """
 import json, os, subprocess, sys, time, pathlib, datetime as dt
 
@@ -28,6 +32,9 @@ STEPS = [
     ("theatre posters", "fetch_theatre_posters.py",  []),
     ("inline posters",  "inject_data.py",            []),
 ]
+
+# Run after the steps above, and treated as a gate rather than best-effort.
+VERIFY = ("verify",  "verify_build.py", [])
 
 
 def run(name, script, extra):
@@ -56,9 +63,15 @@ def main():
         print("note: TMDB_TOKEN not set — film posters will be skipped, "
               "previous posters kept.", file=sys.stderr)
     results = [run(*s) for s in STEPS]
+
+    # The gate. Everything above may fail softly; this may not.
+    verdict = run(*VERIFY)
+    results.append(verdict)
+
     report = {
         "ran": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "ok": all(r["ok"] for r in results),
+        "publishable": verdict["ok"],
         "steps": results,
     }
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -66,7 +79,14 @@ def main():
     print("\n=== summary ===")
     for r in results:
         print(f"  {'OK ' if r['ok'] else 'FAIL'} {r['step']:16s} {r['seconds']:>6}s")
-    # Always succeed: a partial refresh still deploys with the data that survived.
+
+    if not verdict["ok"]:
+        print("\nThe rebuilt index.html did not pass verification, so it will NOT be "
+              "published. The live site keeps the last good build. See the 'verify' "
+              "output above for what is wrong.", file=sys.stderr)
+        return 1
+    # A partial refresh still deploys with whatever data survived, as long as the
+    # page itself is sound.
     return 0
 
 
