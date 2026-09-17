@@ -24,6 +24,16 @@ HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "tmdb_films.json"
 TOKEN = os.environ.get("TMDB_TOKEN", "").strip()
 
+# Films TMDB matches WRONGLY (mostly Bulgarian/festival titles whose English
+# name collides with a famous foreign film — e.g. "adat-v-neya" matched "The
+# Good, the Bad and the Ugly"). TMDB has no correct entry, so any match here is
+# a false poster/title. Keep these on the generated SVG artwork instead. Verified
+# 2026-09-17; revisit if TMDB later adds a correct entry for one of them.
+BLOCKLIST = {
+    "adat-v-neya", "cherno-more", "divo-sarce", "fevruari", "kokoshka",
+    "pomilvane", "sentimentalno", "vreme-za-zhivot", "zalog",
+}
+
 
 def grab(data, name):
     i = data.find("const " + name + "=")
@@ -86,6 +96,10 @@ def main():
     out = {}
     for i, f in enumerate(films):
         en, year = f.get("en"), f.get("year")
+        if f["id"] in BLOCKLIST:
+            print(f"[{i+1}/{len(films)}] {f['id']:24s} BLOCKED (known false match — generated art kept)")
+            out[f["id"]] = {"matched": False, "en": en}
+            continue
         res = api("search/movie", {"query": en, "year": year, "include_adult": "false"})
         results = (res or {}).get("results", [])
         if not results:

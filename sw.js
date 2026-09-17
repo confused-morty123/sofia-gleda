@@ -15,7 +15,7 @@
  *
  * Bump CACHE_VERSION whenever this file changes so old caches are cleared.
  */
-const CACHE_VERSION = "sofia-gleda-v1";
+const CACHE_VERSION = "sofia-gleda-v3";
 const SHELL_CACHE = CACHE_VERSION + "-shell";
 const ASSET_CACHE = CACHE_VERSION + "-assets";
 
