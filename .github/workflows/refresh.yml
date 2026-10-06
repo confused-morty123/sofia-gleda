@@ -40,6 +40,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install the headless browser for the publish gate
+        # verify_build.py opens the rebuilt page in real Chromium and clicks a
+        # card before anything is allowed to go live. Without the browser binary
+        # that gate silently downgrades to a "note" and stops gating — so install
+        # it here. --with-deps pulls the system libraries Chromium needs on CI.
+        run: python3 -m playwright install --with-deps chromium
+
       - name: Refresh programmes and posters
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
@@ -52,7 +59,10 @@ jobs:
           # Stage each output only if it exists. A tolerated missing file (e.g.
           # tmdb_films.json when no token is set, or a source that stayed down)
           # must not abort the commit and discard the data that DID refresh.
-          for f in index.html tmdb_films.json theatre_posters.json changes.json build_report.json; do
+          # NOTE: changes.json is deliberately absent — it is in .gitignore, and
+          # "git add" of an ignored, untracked path exits non-zero, which under
+          # the shell's set -e aborted this whole step and discarded the refresh.
+          for f in index.html tmdb_films.json theatre_posters.json build_report.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage any new or updated poster images (re-hosted from venue websites).
