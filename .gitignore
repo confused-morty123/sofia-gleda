@@ -1,0 +1,17 @@
+# Python bytecode cache — generated when the scripts run, never part of the site.
+__pycache__/
+*.pyc
+
+# macOS Finder junk — never part of the site.
+.DS_Store
+
+# Local safety backups made before a rebuild — kept on the Mac, never published.
+index.html.bak-*
+*.bak
+
+# Scrape diff log — regenerated on every scrape, never read by the site at runtime.
+changes.json
+
+# Local secrets — the TMDB token must never be committed (public repo).
+.env
+.env.*
