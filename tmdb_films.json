@@ -3,34 +3,34 @@
   "matched": true,
   "tmdb_id": 1368337,
   "poster_path": "/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
-  "backdrop_path": "/iuylzRSllrGn7YB322kwKoOVMcq.jpg",
+  "backdrop_path": "/bulFtfy3oBQtCnAMSi7g6DSSds3.jpg",
   "en": "The Odyssey",
   "original_title": "The Odyssey",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.009
+  "tmdb_vote": 8.0
  },
  "spider-man": {
   "matched": true,
   "tmdb_id": 969681,
   "poster_path": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
-  "backdrop_path": "/qeQJx07rK2xm8SD2sJxFKhE7gs0.jpg",
+  "backdrop_path": "/eSvYccJm5ejJXFtJTqM2dIqrhK7.jpg",
   "en": "Spider-Man: Brand New Day",
   "original_title": "Spider-Man: Brand New Day",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.848
+  "tmdb_vote": 8.1
  },
  "koyota": {
   "matched": true,
   "tmdb_id": 1204680,
-  "poster_path": "/vhv7lBWYM0DUuNU2a0V7Rhq21dD.jpg",
-  "backdrop_path": "/7GOW6jod9lLurW5utokAatxg7ql.jpg",
+  "poster_path": "/kYDCl2y0VPvhT5eYWbMRInPoB03.jpg",
+  "backdrop_path": "/viZqGq9TNvQ5uXSD4ahg2RpRONT.jpg",
   "en": "Coyote vs. Acme",
   "original_title": "Coyote vs. Acme",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.588
+  "tmdb_vote": 7.5
  },
  "maykal": {
   "matched": true,
@@ -41,7 +41,7 @@
   "original_title": "Michael",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.637
+  "tmdb_vote": 8.6
  },
  "kurierat": {
   "matched": true,
@@ -52,7 +52,7 @@
   "original_title": "Runner",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.8
+  "tmdb_vote": 8.3
  },
  "blue-lock": {
   "matched": true,
@@ -63,51 +63,51 @@
   "original_title": "劇場版ブルーロック -EPISODE 凪-",
   "orig_lang": "ja",
   "tmdb_year": "2024",
-  "tmdb_vote": 7.596
+  "tmdb_vote": 7.6
  },
  "kucheshki": {
   "matched": true,
   "tmdb_id": 1384216,
-  "poster_path": "/A7i16oDi03qrKep5pBfuTWNUTb.jpg",
+  "poster_path": "/5O616X9vmRzQdB68PHzBewPittd.jpg",
   "backdrop_path": "/quAHqi4zBrB5fIfHvgrqiG4xzAC.jpg",
   "en": "The Dog Stars",
   "original_title": "The Dog Stars",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.636
+  "tmdb_vote": 6.6
  },
  "prilozhna-2": {
   "matched": true,
   "tmdb_id": 1302904,
   "poster_path": "/ogwQOLbCfncjvBhFb5l0OmQH8KC.jpg",
-  "backdrop_path": "/nUcauJ000dFBYkgGpxyxJ5aWEH2.jpg",
+  "backdrop_path": "/wE6syT1vv6W24iLGfhR4kQHnIDN.jpg",
   "en": "Practical Magic 2",
   "original_title": "Practical Magic 2",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.1
+  "tmdb_vote": 6.2
  },
  "insidious": {
   "matched": true,
   "tmdb_id": 1291595,
   "poster_path": "/4tTrW9dXCByS5wt2pXVWb58zNjz.jpg",
-  "backdrop_path": "/hD8y787ciNWQ2bn396YrSsOIzdN.jpg",
+  "backdrop_path": "/p40lmrdI4blcAPZQMTPaiy5v5Ym.jpg",
   "en": "Insidious: Out of the Further",
   "original_title": "Insidious: Out of the Further",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.5
+  "tmdb_vote": 6.53
  },
  "pes-patrul": {
   "matched": true,
   "tmdb_id": 1185806,
-  "poster_path": "/frAFeNZWw1Jb3ZSoFsOT4J0qqxB.jpg",
+  "poster_path": "/qnin56Syy5rbG7KCaxWY7SPuy6p.jpg",
   "backdrop_path": "/6TSxLmwT7j1ugtKi8NyMmdzWAGj.jpg",
   "en": "PAW Patrol: The Dino Movie",
   "original_title": "PAW Patrol: The Dino Movie",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.629
+  "tmdb_vote": 8.2
  },
  "buntovnikat": {
   "matched": true,
@@ -118,7 +118,7 @@
   "original_title": "Mutiny",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.4
+  "tmdb_vote": 7.4
  },
  "padane-2": {
   "matched": true,
@@ -129,7 +129,7 @@
   "original_title": "Fall 2: Deadpoint",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.8
+  "tmdb_vote": 6.133
  },
  "terminator-2": {
   "matched": true,
@@ -140,24 +140,17 @@
   "original_title": "Terminator 2: Judgment Day",
   "orig_lang": "en",
   "tmdb_year": "1991",
-  "tmdb_vote": 8.167
+  "tmdb_vote": 8.2
  },
  "kolite": {
-  "matched": true,
-  "tmdb_id": 920,
-  "poster_path": "/2Touk3m5gzsqr1VsvxypdyHY5ci.jpg",
-  "backdrop_path": "/sOLgkBKf1gjMRc4yXxM5aciXdfr.jpg",
-  "en": "Cars",
-  "original_title": "Cars",
-  "orig_lang": "en",
-  "tmdb_year": "2006",
-  "tmdb_vote": 7.052
+  "matched": false,
+  "en": "Cars (20th Anniversary)"
  },
  "prada-2": {
   "matched": true,
   "tmdb_id": 1314481,
   "poster_path": "/xTI42pmsP5EDnvsNJPEDubwWBQO.jpg",
-  "backdrop_path": "/Af907x5h9W1wVis8XrSd7ynTWuy.jpg",
+  "backdrop_path": "/dRoFlUbH1l51ACmx5oPCI3jfvZq.jpg",
   "en": "The Devil Wears Prada 2",
   "original_title": "The Devil Wears Prada 2",
   "orig_lang": "en",
@@ -173,7 +166,7 @@
   "original_title": "Minions & Monsters",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.549
+  "tmdb_vote": 7.6
  },
  "naslednikat": {
   "matched": true,
@@ -210,11 +203,11 @@
  },
  "divo-sarce": {
   "matched": false,
-  "en": "Katseye: Wild Hearts"
+  "en": "Wild Heart"
  },
  "adat-v-neya": {
   "matched": false,
-  "en": "The Good, the Bad and the Ugly"
+  "en": "Hell in Her"
  },
  "igrachki-5": {
   "matched": true,
@@ -225,7 +218,7 @@
   "original_title": "Toy Story 5",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.351
+  "tmdb_vote": 8.3
  },
  "vayana": {
   "matched": true,
@@ -236,7 +229,7 @@
   "original_title": "Moana",
   "orig_lang": "en",
   "tmdb_year": "2016",
-  "tmdb_vote": 7.566
+  "tmdb_vote": 7.6
  },
  "sablezab": {
   "matched": true,
@@ -252,13 +245,13 @@
  "spa-uikend": {
   "matched": true,
   "tmdb_id": 1341138,
-  "poster_path": "/i3I19SbOyz6AIl0cSYdyVJRucMr.jpg",
-  "backdrop_path": "/8EMwicuj1TrkclMOvslFCQyRg6I.jpg",
+  "poster_path": "/uhx4YjT9YbSxrKVE7GWJdjI412J.jpg",
+  "backdrop_path": "/8NGPUlR4xKQfgLaWCeXALGF3i27.jpg",
   "en": "Spa Weekend",
   "original_title": "Spa Weekend",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.8
+  "tmdb_vote": 6.4
  },
  "oak-street": {
   "matched": true,
@@ -269,7 +262,7 @@
   "original_title": "The End of Oak Street",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.738
+  "tmdb_vote": 7.07
  },
  "2001": {
   "matched": true,
@@ -280,7 +273,7 @@
   "original_title": "2001: A Space Odyssey",
   "orig_lang": "en",
   "tmdb_year": "1968",
-  "tmdb_vote": 8.045
+  "tmdb_vote": 8.0
  },
  "palestina-36": {
   "matched": true,
@@ -291,7 +284,7 @@
   "original_title": "Palestine 36",
   "orig_lang": "en",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.8
+  "tmdb_vote": 7.7
  },
  "gadni-kopileta": {
   "matched": false,
@@ -306,7 +299,7 @@
   "original_title": "Die Nachbarn von Oben",
   "orig_lang": "de",
   "tmdb_year": "2023",
-  "tmdb_vote": 6.031
+  "tmdb_vote": 6.1
  },
  "kristoferite": {
   "matched": true,
@@ -317,7 +310,7 @@
   "original_title": "The Christophers",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.855
+  "tmdb_vote": 6.829
  },
  "gorchiva-koleda": {
   "matched": true,
@@ -328,7 +321,7 @@
   "original_title": "Amarga Navidad",
   "orig_lang": "es",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.264
+  "tmdb_vote": 6.2
  },
  "sirat": {
   "matched": true,
@@ -339,7 +332,7 @@
   "original_title": "Sirāt",
   "orig_lang": "es",
   "tmdb_year": "2025",
-  "tmdb_vote": 6.848
+  "tmdb_vote": 6.8
  },
  "martva-hvatka": {
   "matched": true,
@@ -350,7 +343,7 @@
   "original_title": "Dead Man's Wire",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.511
+  "tmdb_vote": 6.5
  },
  "zavrashtaneto": {
   "matched": true,
@@ -361,7 +354,7 @@
   "original_title": "The Return",
   "orig_lang": "en",
   "tmdb_year": "2024",
-  "tmdb_vote": 6.588
+  "tmdb_vote": 6.6
  },
  "malkata-ameli": {
   "matched": true,
@@ -394,7 +387,7 @@
   "original_title": "Heart of the Beast",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 10.0
+  "tmdb_vote": 7.483
  },
  "chuzhdenecat": {
   "matched": true,
@@ -405,11 +398,11 @@
   "original_title": "L'Étranger",
   "orig_lang": "fr",
   "tmdb_year": "2025",
-  "tmdb_vote": 6.789
+  "tmdb_vote": 6.8
  },
  "zdenka": {
   "matched": false,
-  "en": "Zdenka & Friends"
+  "en": "Zdenka Doycheva, Born 100 Years Ago"
  },
  "kucheto-na-zlatyu": {
   "matched": false,
@@ -424,7 +417,7 @@
   "original_title": "نجوم الأمل و الألم",
   "orig_lang": "ar",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.5
+  "tmdb_vote": 7.4
  },
  "byagay": {
   "matched": true,
@@ -450,7 +443,7 @@
  },
  "fevruari": {
   "matched": false,
-  "en": "February Heat"
+  "en": "February"
  },
  "taralezhite": {
   "matched": true,
@@ -461,7 +454,7 @@
   "original_title": "Таралежите се раждат без бодли",
   "orig_lang": "bg",
   "tmdb_year": "1971",
-  "tmdb_vote": 7.667
+  "tmdb_vote": 7.7
  },
  "last": {
   "matched": true,
@@ -477,13 +470,13 @@
  "sentimentalna": {
   "matched": true,
   "tmdb_id": 1124566,
-  "poster_path": "/pz9NCWxxOk3o0W3v1Zkhawrwb4i.jpg",
+  "poster_path": "/AcbS8VMysrTpG9r4dgK1oyLsKYn.jpg",
   "backdrop_path": "/oLgtpxK4aGZ7S8aiE3rDwahqkL2.jpg",
   "en": "Sentimental Value",
   "original_title": "Affeksjonsverdi",
   "orig_lang": "no",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.47
+  "tmdb_vote": 7.5
  },
  "bashta-majka": {
   "matched": true,
@@ -516,7 +509,7 @@
   "original_title": "Le Mage du Kremlin",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.5
+  "tmdb_vote": 6.455
  },
  "lichen-zhivot": {
   "matched": true,
@@ -527,7 +520,7 @@
   "original_title": "Vie privée",
   "orig_lang": "fr",
   "tmdb_year": "2025",
-  "tmdb_vote": 5.471
+  "tmdb_vote": 5.495
  },
  "partenopa": {
   "matched": true,
@@ -549,7 +542,7 @@
   "original_title": "Smultronstället",
   "orig_lang": "sv",
   "tmdb_year": "1957",
-  "tmdb_vote": 8.074
+  "tmdb_vote": 8.1
  },
  "maystora": {
   "matched": true,
@@ -560,7 +553,7 @@
   "original_title": "Мастер и Маргарита",
   "orig_lang": "ru",
   "tmdb_year": "2024",
-  "tmdb_vote": 6.825
+  "tmdb_vote": 6.8
  },
  "shopen": {
   "matched": true,
@@ -571,15 +564,15 @@
   "original_title": "Chopin, Chopin!",
   "orig_lang": "pl",
   "tmdb_year": "2025",
-  "tmdb_vote": 6.804
+  "tmdb_vote": 6.8
  },
  "cherno-more": {
   "matched": false,
-  "en": "Children of the Black Sea"
+  "en": "Black Sea"
  },
  "kokoshka": {
   "matched": false,
-  "en": "Ryaba the Hen"
+  "en": "The Hen"
  },
  "krastnicata": {
   "matched": true,
@@ -612,11 +605,11 @@
   "original_title": "Den sidste viking",
   "orig_lang": "da",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.266
+  "tmdb_vote": 7.247
  },
  "vreme-za-zhivot": {
   "matched": false,
-  "en": "Monument to a Period of Time in Which I Lived"
+  "en": "A Time to Live"
  },
  "moyata-priyatelka-eva": {
   "matched": true,
@@ -630,19 +623,12 @@
   "tmdb_vote": 5.8
  },
  "sbogom-buenos-ayres": {
-  "matched": true,
-  "tmdb_id": 1084920,
-  "poster_path": "/jsR7vtjS7LCNSJxfkwEDTP1huWd.jpg",
-  "backdrop_path": "/6xwRjow3DgHW69CVnHKw1VKaSg2.jpg",
-  "en": "Adiós Buenos Aires",
-  "original_title": "Chau Buenos Aires",
-  "orig_lang": "es",
-  "tmdb_year": "2023",
-  "tmdb_vote": 6.7
+  "matched": false,
+  "en": "Goodbye, Buenos Aires"
  },
  "otrazheniya-3": {
   "matched": false,
-  "en": "True Reflection"
+  "en": "Reflection No. 3"
  },
  "knizharnica": {
   "matched": true,
@@ -653,7 +639,7 @@
   "original_title": "Il materiale emotivo",
   "orig_lang": "it",
   "tmdb_year": "2021",
-  "tmdb_vote": 5.507
+  "tmdb_vote": 5.5
  },
  "nay-hubavite-godini": {
   "matched": true,
@@ -686,7 +672,7 @@
   "original_title": "La bella estate",
   "orig_lang": "it",
   "tmdb_year": "2023",
-  "tmdb_vote": 5.542
+  "tmdb_vote": 5.528
  },
  "prikazka-za-astrid": {
   "matched": true,
@@ -697,7 +683,7 @@
   "original_title": "Unga Astrid",
   "orig_lang": "sv",
   "tmdb_year": "2018",
-  "tmdb_vote": 7.011
+  "tmdb_vote": 7.0
  },
  "stogodishniyat": {
   "matched": true,
@@ -708,7 +694,7 @@
   "original_title": "Hundraåringen som klev ut genom fönstret och försvann",
   "orig_lang": "sv",
   "tmdb_year": "2013",
-  "tmdb_vote": 6.809
+  "tmdb_vote": 6.8
  },
  "nay-bogatata-zhena": {
   "matched": true,
@@ -719,7 +705,7 @@
   "original_title": "La Femme la plus riche du monde",
   "orig_lang": "fr",
   "tmdb_year": "2025",
-  "tmdb_vote": 6.152
+  "tmdb_vote": 6.2
  },
  "oshte-po-edno": {
   "matched": true,
@@ -730,7 +716,7 @@
   "original_title": "Druk",
   "orig_lang": "da",
   "tmdb_year": "2020",
-  "tmdb_vote": 7.628
+  "tmdb_vote": 7.6
  },
  "cvetovete-na-vremeto": {
   "matched": true,
@@ -741,7 +727,7 @@
   "original_title": "La Venue de l'avenir",
   "orig_lang": "fr",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.4
+  "tmdb_vote": 7.348
  },
  "golyamoto-pliskane": {
   "matched": true,
@@ -774,11 +760,11 @@
   "original_title": "Historias para no contar",
   "orig_lang": "es",
   "tmdb_year": "2022",
-  "tmdb_vote": 5.802
+  "tmdb_vote": 5.8
  },
  "sentimentalno": {
   "matched": false,
-  "en": "Sentimental Value"
+  "en": "Sentimental"
  },
  "chovekat-kozhata": {
   "matched": true,
@@ -789,7 +775,7 @@
   "original_title": "الرجل الذي باع ظهره",
   "orig_lang": "ar",
   "tmdb_year": "2021",
-  "tmdb_vote": 6.548
+  "tmdb_vote": 6.6
  },
  "gospodin-aznavur": {
   "matched": true,
@@ -800,7 +786,7 @@
   "original_title": "Monsieur Aznavour",
   "orig_lang": "fr",
   "tmdb_year": "2024",
-  "tmdb_vote": 7.202
+  "tmdb_vote": 7.2
  },
  "obiknoven-incident": {
   "matched": true,
@@ -811,7 +797,7 @@
   "original_title": "Un simple accident",
   "orig_lang": "fr",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.178
+  "tmdb_vote": 7.2
  },
  "potop": {
   "matched": true,
@@ -822,7 +808,7 @@
   "original_title": "Potopa",
   "orig_lang": "sk",
   "tmdb_year": "2025",
-  "tmdb_vote": 8.2
+  "tmdb_vote": 8.154
  },
  "chist-kasmet": {
   "matched": true,
@@ -833,7 +819,7 @@
   "original_title": "Pure Luck",
   "orig_lang": "en",
   "tmdb_year": "1991",
-  "tmdb_vote": 5.583
+  "tmdb_vote": 5.6
  },
  "praznenstvoto": {
   "matched": true,
@@ -844,11 +830,11 @@
   "original_title": "Festen",
   "orig_lang": "da",
   "tmdb_year": "1998",
-  "tmdb_vote": 7.69
+  "tmdb_vote": 7.7
  },
  "pomilvane": {
   "matched": false,
-  "en": "Pardon Me: The Bevelyn B. Williams Story"
+  "en": "Pardon"
  },
  "rashomon": {
   "matched": true,
@@ -859,7 +845,7 @@
   "original_title": "羅生門",
   "orig_lang": "ja",
   "tmdb_year": "1950",
-  "tmdb_vote": 8.035
+  "tmdb_vote": 8.0
  },
  "lost-highway": {
   "matched": true,
@@ -870,24 +856,24 @@
   "original_title": "Lost Highway",
   "orig_lang": "en",
   "tmdb_year": "1997",
-  "tmdb_vote": 7.5
+  "tmdb_vote": 7.6
  },
  "in-the-mood": {
   "matched": true,
   "tmdb_id": 843,
-  "poster_path": "/iYypPT4bhqXfq1b6EnmxvRt6b2Y.jpg",
+  "poster_path": "/8BgGbbWiLNhPtkMkN0gGTnbtvBv.jpg",
   "backdrop_path": "/ffQFnAUm2Uu4RU0nijpjPRf9TBT.jpg",
   "en": "In the Mood for Love",
   "original_title": "花樣年華",
   "orig_lang": "cn",
   "tmdb_year": "2000",
-  "tmdb_vote": 8.09
+  "tmdb_vote": 8.1
  },
  "handmaiden": {
   "matched": true,
   "tmdb_id": 290098,
   "poster_path": "/dLlH4aNHdnmf62umnInL8xPlPzw.jpg",
-  "backdrop_path": "/9o9ci7ZH9chSy8B7YXCBYih8Kkd.jpg",
+  "backdrop_path": "/2b3RNXF7ca9bgX8FrjRBYfLnNQC.jpg",
   "en": "The Handmaiden",
   "original_title": "아가씨",
   "orig_lang": "ko",
@@ -903,7 +889,7 @@
   "original_title": "El Topo",
   "orig_lang": "es",
   "tmdb_year": "1970",
-  "tmdb_vote": 7.05
+  "tmdb_vote": 7.1
  },
  "holy-mountain": {
   "matched": true,
@@ -914,11 +900,11 @@
   "original_title": "La montaña sagrada",
   "orig_lang": "es",
   "tmdb_year": "1973",
-  "tmdb_vote": 7.514
+  "tmdb_vote": 7.5
  },
  "zalog": {
   "matched": false,
-  "en": "The Pledge"
+  "en": "Pledge"
  },
  "vsichko-za-mayka-mi": {
   "matched": true,
@@ -929,7 +915,7 @@
   "original_title": "Todo sobre mi madre",
   "orig_lang": "es",
   "tmdb_year": "1999",
-  "tmdb_vote": 7.61
+  "tmdb_vote": 7.6
  },
  "kosa": {
   "matched": true,
@@ -940,7 +926,7 @@
   "original_title": "Hair",
   "orig_lang": "en",
   "tmdb_year": "1979",
-  "tmdb_vote": 7.243
+  "tmdb_vote": 7.3
  },
  "diskretniyat-char": {
   "matched": true,
@@ -951,18 +937,18 @@
   "original_title": "Le Charme discret de la bourgeoisie",
   "orig_lang": "fr",
   "tmdb_year": "1972",
-  "tmdb_vote": 7.456
+  "tmdb_vote": 7.448
  },
  "iskam-te-za-seks": {
   "matched": true,
   "tmdb_id": 1288059,
   "poster_path": "/pR7SIX3AwqdoD96OI44oLG98e7g.jpg",
-  "backdrop_path": "/34z9eBtEBv6QoroLuUA55cU3e8Q.jpg",
+  "backdrop_path": "/gQsjbxdjJUam7buy4U2TpVTiGSO.jpg",
   "en": "I Want Your Sex",
   "original_title": "I Want Your Sex",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.149
+  "tmdb_vote": 6.1
  },
  "zhestokiyat-pat": {
   "matched": false,
