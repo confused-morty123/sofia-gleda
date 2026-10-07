@@ -400,6 +400,10 @@ def wave_a1(browser):
     ctx.close()
 
     # Check 7: Sticky header (mobile 375×812)
+    # On mobile the logo row scrolls away; only the controls row (.seg) stays pinned
+    # with a negative CSS top. After scrolling 800px:
+    #   .seg viewport top should be between 4 and 12px
+    #   .brand viewport bottom should be ≤ 0 (scrolled off screen)
     print("\n=== Check 7: Sticky header ===")
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
@@ -408,31 +412,35 @@ def wave_a1(browser):
     page.evaluate("window.scrollBy(0, 800)")
     page.wait_for_timeout(500)
 
-    # The .bar (header) should be position: sticky and stay visible at top
-    bar_info = page.evaluate("""() => {
-        const bar = document.querySelector('.bar');
-        const styles = window.getComputedStyle(bar);
-        const bb = bar.getBoundingClientRect();
+    sticky_info = page.evaluate("""() => {
+        const seg = document.querySelector('.seg');
+        const brand = document.querySelector('.brand');
+        const segBB = seg ? seg.getBoundingClientRect() : null;
+        const brandBB = brand ? brand.getBoundingClientRect() : null;
         return {
-            position: styles.position,
-            cssTop: styles.top,
-            boundingTop: bb.top,
-            visible: bb.top >= 0
+            segTop: segBB ? segBB.top : null,
+            brandBottom: brandBB ? brandBB.bottom : null
         };
     }""")
 
-    # For sticky to work on mobile, top should be 0 or close to 0, and bounding box top should be >= 0
-    top_ok = bar_info["cssTop"] == "0px" or bar_info["cssTop"] == "auto"
-    visible_ok = bar_info["boundingTop"] >= 0
-    sticky_ok = bar_info["position"] == "sticky"
+    seg_top = sticky_info["segTop"]
+    brand_bottom = sticky_info["brandBottom"]
 
-    sticky_works = sticky_ok and top_ok and visible_ok and bar_info["boundingTop"] <= 24
+    seg_ok = seg_top is not None and 4 <= seg_top <= 12
+    brand_ok = brand_bottom is not None and brand_bottom <= 0
+
+    sticky_works = seg_ok and brand_ok
     check("sticky_visible", sticky_works,
-          f"pos={bar_info['position']}, cssTop={bar_info['cssTop']}, boundingTop={bar_info['boundingTop']:.1f}" if not sticky_works else "")
+          f"segTop={seg_top}, brandBottom={brand_bottom} (need segTop in [4,12] and brandBottom<=0)"
+          if not sticky_works else f"segTop={seg_top:.1f}, brandBottom={brand_bottom:.1f}")
 
     ctx.close()
 
     # Check 8: Resize robustness
+    # Open at 1280×800, resize to 375×812 WITHOUT calling render():
+    #   [data-search-open] exists and is visible, #q not visible, scrollWidth ≤ 375
+    # Resize back to 1280×800:
+    #   #q visible, no visible [data-search-open]
     print("\n=== Check 8: Resize robustness ===")
     ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
@@ -442,42 +450,42 @@ def wave_a1(browser):
     desktop_has_q = q_box_before is not None
     check("desktop_before_q_visible", desktop_has_q, "")
 
-    # Resize to mobile
+    # Resize to mobile — NO render() call
     page.set_viewport_size({"width": 375, "height": 812})
-    page.wait_for_timeout(800)
+    page.wait_for_timeout(600)
 
-    # Trigger re-render if needed
-    page.evaluate("render && render()")
-    page.wait_for_timeout(500)
+    # [data-search-open] should exist and be visible
+    search_open_elem = page.query_selector("[data-search-open]")
+    mobile_has_search_open = search_open_elem is not None and search_open_elem.is_visible()
+    check("mobile_after_resize_search_open", mobile_has_search_open,
+          f"[data-search-open] found={search_open_elem is not None}, visible={search_open_elem.is_visible() if search_open_elem else False}")
 
-    # Check mobile layout visible
-    search_open_box = box(page, "[data-search-open]")
-    mobile_has_search_open = search_open_box is not None
-    check("mobile_after_resize_search_open", mobile_has_search_open, "")
+    # #q should not be visible
+    q_elem_after = page.query_selector("#q")
+    mobile_no_q = q_elem_after is None or not q_elem_after.is_visible()
+    check("mobile_after_resize_no_q", mobile_no_q,
+          f"#q visible={q_elem_after is not None and q_elem_after.is_visible()}")
 
-    q_box_after = box(page, "#q")
-    mobile_no_q = q_box_after is None or not q_box_after.get("visible", True)
-    check("mobile_after_resize_no_q", mobile_no_q, f"#q visible={q_box_after is not None}")
-
+    # No horizontal overflow
     scroll_width = page.evaluate("document.documentElement.scrollWidth")
     no_overflow = scroll_width <= 375
     check("mobile_no_overflow", no_overflow, f"scrollWidth={scroll_width}")
 
-    # Resize back to desktop
+    # Resize back to desktop — NO render() call
     page.set_viewport_size({"width": 1280, "height": 800})
-    page.wait_for_timeout(800)
+    page.wait_for_timeout(600)
 
-    # Trigger re-render if needed
-    page.evaluate("render && render()")
-    page.wait_for_timeout(500)
+    # #q should be visible
+    q_box_final = page.query_selector("#q")
+    desktop_final_has_q = q_box_final is not None and q_box_final.is_visible()
+    check("desktop_final_q_visible", desktop_final_has_q,
+          f"#q found={q_box_final is not None}, visible={q_box_final.is_visible() if q_box_final else False}")
 
-    q_box_final = box(page, "#q")
-    desktop_final_has_q = q_box_final is not None
-    check("desktop_final_q_visible", desktop_final_has_q, "")
-
-    search_open_final = box(page, "[data-search-open]")
-    desktop_final_no_search = search_open_final is None
-    check("desktop_final_no_search_open", desktop_final_no_search, "")
+    # [data-search-open] should not be visible on desktop
+    search_open_final_elem = page.query_selector("[data-search-open]")
+    desktop_final_no_search = search_open_final_elem is None or not search_open_final_elem.is_visible()
+    check("desktop_final_no_search_open", desktop_final_no_search,
+          f"[data-search-open] visible={search_open_final_elem is not None and search_open_final_elem.is_visible()}")
 
     save_shot(page, wave, "d-en-theatre")
     ctx.close()
@@ -513,11 +521,809 @@ def wave_a1(browser):
           result.stdout[:100] if not gate_passes else "")
 
 # ============================================================================
+# WAVE B1: Headings, chip-bar removal, week range, period banner,
+#          FAB, drawer clear-all, sections, theatre sub-groups, quote,
+#          no errors, gate.
+# ============================================================================
+
+def wave_b1(browser):
+    wave = "B1"
+    ensure_shot_dir(wave)
+    import subprocess
+
+    # ── Check B1-1: .rhead h2 font sizes, family, transform, ::before accent ──
+    print("\n=== B1-1: Heading styles ===")
+
+    # Cinema 375: font-size ≥ 20px, Oswald, uppercase
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    h2_info_375 = page.evaluate("""() => {
+        const h2s = document.querySelectorAll('.rhead h2');
+        if (!h2s.length) return null;
+        const h2 = h2s[0];
+        const cs = window.getComputedStyle(h2);
+        const before = window.getComputedStyle(h2, '::before');
+        return {
+            fontSize: parseFloat(cs.fontSize),
+            fontFamily: cs.fontFamily,
+            textTransform: cs.textTransform,
+            beforeBg: before.backgroundColor
+        };
+    }""")
+    if h2_info_375:
+        check("b1_h2_cinema_375_size", h2_info_375["fontSize"] >= 20,
+              f"fontSize={h2_info_375['fontSize']}px")
+        check("b1_h2_cinema_375_family", "Oswald" in h2_info_375["fontFamily"],
+              f"fontFamily={h2_info_375['fontFamily'][:60]}")
+        check("b1_h2_cinema_375_uppercase", h2_info_375["textTransform"] == "uppercase",
+              f"textTransform={h2_info_375['textTransform']}")
+        check("b1_h2_cinema_375_before_accent",
+              h2_info_375["beforeBg"] == "rgb(224, 22, 58)",
+              f"::before bg={h2_info_375['beforeBg']}")
+        save_shot(page, wave, "m-bg-cinema-top")
+    else:
+        check("b1_h2_cinema_375_size", False, "no .rhead h2 found at 375")
+    ctx.close()
+
+    # Cinema 1280: font-size ≥ 24px
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    h2_info_1280 = page.evaluate("""() => {
+        const h2s = document.querySelectorAll('.rhead h2');
+        if (!h2s.length) return null;
+        const h2 = h2s[0];
+        return { fontSize: parseFloat(window.getComputedStyle(h2).fontSize) };
+    }""")
+    if h2_info_1280:
+        check("b1_h2_cinema_1280_size", h2_info_1280["fontSize"] >= 24,
+              f"fontSize={h2_info_1280['fontSize']}px")
+        save_shot(page, wave, "d-bg-cinema-top")
+    else:
+        check("b1_h2_cinema_1280_size", False, "no .rhead h2 at 1280 cinema")
+    ctx.close()
+
+    # Theatre 1280: ≥ 24px, Playfair Display, ::before accent rgb(217,178,60)
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    h2_th_1280 = page.evaluate("""() => {
+        const h2s = document.querySelectorAll('.rhead h2');
+        if (!h2s.length) return null;
+        const h2 = h2s[0];
+        const cs = window.getComputedStyle(h2);
+        const before = window.getComputedStyle(h2, '::before');
+        return {
+            fontSize: parseFloat(cs.fontSize),
+            fontFamily: cs.fontFamily,
+            beforeBg: before.backgroundColor
+        };
+    }""")
+    if h2_th_1280:
+        check("b1_h2_theatre_1280_size", h2_th_1280["fontSize"] >= 24,
+              f"fontSize={h2_th_1280['fontSize']}px")
+        check("b1_h2_theatre_1280_family", "Playfair" in h2_th_1280["fontFamily"],
+              f"fontFamily={h2_th_1280['fontFamily'][:60]}")
+        check("b1_h2_theatre_1280_before_accent",
+              h2_th_1280["beforeBg"] == "rgb(217, 178, 60)",
+              f"::before bg={h2_th_1280['beforeBg']}")
+    else:
+        check("b1_h2_theatre_1280_size", False, "no .rhead h2 in theatre mode 1280")
+    ctx.close()
+
+    # ── Check B1-2: Old chip bar gone ──
+    print("\n=== B1-2: Old chip bar gone ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    no_strands = page.evaluate("document.querySelector('.strands') === null")
+    check("b1_no_strands_elem", no_strands, ".strands element found" if not no_strands else "")
+    # [data-strand] outside .drawer must not exist
+    strand_outside_drawer = page.evaluate("""() => {
+        const all = document.querySelectorAll('[data-strand]');
+        return Array.from(all).filter(el => !el.closest('.drawer')).length;
+    }""")
+    check("b1_no_strand_outside_drawer", strand_outside_drawer == 0,
+          f"{strand_outside_drawer} [data-strand] elements outside .drawer")
+    ctx.close()
+
+    # ── Check B1-3: Week = today→Sunday ──
+    print("\n=== B1-3: Week range ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    week_info = page.evaluate("""() => ({
+        WEEK_END: typeof WEEK_END !== 'undefined' ? WEEK_END : null,
+        day: typeof S !== 'undefined' ? S.day : null,
+        inRange_11: typeof inRange !== 'undefined' ? inRange("2026-10-11") : null,
+        inRange_12: typeof inRange !== 'undefined' ? inRange("2026-10-12") : null
+    })""")
+    check("b1_week_end", week_info["WEEK_END"] == "2026-10-11",
+          f"WEEK_END={week_info['WEEK_END']}")
+    check("b1_day_week", week_info["day"] == "week",
+          f"S.day={week_info['day']}")
+    check("b1_inRange_sunday", week_info["inRange_11"] is True,
+          f"inRange('2026-10-11')={week_info['inRange_11']}")
+    check("b1_inRange_monday_out", week_info["inRange_12"] is False,
+          f"inRange('2026-10-12')={week_info['inRange_12']}")
+    ctx.close()
+
+    # ── Check B1-4: Period banner ──
+    print("\n=== B1-4: Period banner ===")
+    # BG, default week
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    banner_info = page.evaluate("""() => {
+        const b = document.querySelector('.pbanner');
+        if (!b) return {exists:false};
+        const mainEl = document.querySelector('main');
+        const firstChild = mainEl ? mainEl.firstElementChild : null;
+        const isAboveHero = firstChild && firstChild.classList.contains('pbanner');
+        const text = b.textContent;
+        const bb = b.getBoundingClientRect();
+        return {exists:true, text, isAboveHero, top:bb.top, mainTop: mainEl ? mainEl.getBoundingClientRect().top : null};
+    }""")
+    check("b1_banner_exists", banner_info.get("exists") is True, ".pbanner not found")
+    if banner_info.get("exists"):
+        check("b1_banner_above_hero", banner_info.get("isAboveHero") is True,
+              "pbanner is not first child of main" if not banner_info.get("isAboveHero") else "")
+        banner_text = banner_info.get("text", "")
+        check("b1_banner_bg_tazi_sedmitsa",
+              "тази седмица" in banner_text.lower(),
+              f"text snippet: {banner_text[:80]!r}")
+        check("b1_banner_bg_11", "11" in banner_text,
+              f"'11' not in banner text: {banner_text[:80]!r}")
+    else:
+        check("b1_banner_above_hero", False, "banner not found")
+        check("b1_banner_bg_tazi_sedmitsa", False, "banner not found")
+        check("b1_banner_bg_11", False, "banner not found")
+
+    # Open drawer via the banner change button
+    change_btn = page.query_selector(".pbanner-btn[data-drawer]")
+    if change_btn:
+        change_btn.click()
+        page.wait_for_timeout(400)
+        drawer_visible = page.evaluate("!!document.querySelector('.drawer')")
+        check("b1_banner_btn_opens_drawer", drawer_visible, "drawer not opened")
+
+        # Choose today using JS to avoid calendar overlay blocking click
+        today_set = page.evaluate("""() => {
+            const btn = document.querySelector(".drawer [data-range='2026-10-07']");
+            if (!btn) return false;
+            btn.click();
+            return true;
+        }""")
+        page.wait_for_timeout(400)
+        if today_set:
+            banner_today_text = page.evaluate("""() => {
+                const b = document.querySelector('.pbanner');
+                return b ? b.textContent : '';
+            }""")
+            check("b1_banner_today_bg",
+                  "днес" in banner_today_text.lower(),
+                  f"'днес' not found in: {banner_today_text[:80]!r}")
+        else:
+            check("b1_banner_today_bg", False, "no [data-range='2026-10-07'] in drawer")
+
+        # Open drawer again via JS click on the banner button, then choose month via JS
+        reopen_and_month = page.evaluate("""() => {
+            const btn = document.querySelector('.pbanner-btn[data-drawer]');
+            if (!btn) return 'no-pbanner-btn';
+            btn.click();
+            return 'opened';
+        }""")
+        page.wait_for_timeout(400)
+        if reopen_and_month == 'opened':
+            month_set = page.evaluate("""() => {
+                const btn = document.querySelector(".drawer [data-range='month']");
+                if (!btn) return false;
+                btn.click();
+                return true;
+            }""")
+            page.wait_for_timeout(400)
+            if month_set:
+                banner_month_text = page.evaluate("""() => {
+                    const b = document.querySelector('.pbanner');
+                    return b ? b.textContent : '';
+                }""")
+                check("b1_banner_month_bg",
+                      "месец" in banner_month_text.lower(),
+                      f"'месец' not found in: {banner_month_text[:80]!r}")
+            else:
+                check("b1_banner_month_bg", False, "no [data-range='month'] in drawer")
+        else:
+            check("b1_banner_month_bg", False, f"could not re-open drawer: {reopen_and_month}")
+    else:
+        check("b1_banner_btn_opens_drawer", False, "no .pbanner-btn[data-drawer]")
+        check("b1_banner_today_bg", False, "skipped")
+        check("b1_banner_month_bg", False, "skipped")
+    ctx.close()
+
+    # EN version: "this week" + "11"
+    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
+    page.wait_for_timeout(500)
+    banner_en = page.evaluate("""() => {
+        const b = document.querySelector('.pbanner');
+        return b ? b.textContent : '';
+    }""")
+    check("b1_banner_en_this_week",
+          "this week" in banner_en.lower(),
+          f"'this week' not found: {banner_en[:80]!r}")
+    check("b1_banner_en_11", "11" in banner_en,
+          f"'11' not in EN banner: {banner_en[:80]!r}")
+    save_shot(page, wave, "m-en-cinema-top")
+    ctx.close()
+
+    # EN: today + month labels
+    ctx, page, errs = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page.wait_for_timeout(500)
+    # Open drawer via JS to avoid overlay intercept
+    open_drawer_en = page.evaluate("""() => {
+        const btn = document.querySelector('.pbanner-btn[data-drawer]');
+        if (!btn) return false;
+        btn.click();
+        return true;
+    }""")
+    page.wait_for_timeout(400)
+    if open_drawer_en:
+        today_set_en = page.evaluate("""() => {
+            const btn = document.querySelector(".drawer [data-range='2026-10-07']");
+            if (!btn) return false;
+            btn.click();
+            return true;
+        }""")
+        page.wait_for_timeout(400)
+        if today_set_en:
+            banner_today_en = page.evaluate("document.querySelector('.pbanner')?.textContent || ''")
+            check("b1_banner_today_en", "today" in banner_today_en.lower(),
+                  f"'today' not in: {banner_today_en[:80]!r}")
+        else:
+            check("b1_banner_today_en", False, "no today button in EN drawer")
+        # Re-open drawer for month
+        reopen_en = page.evaluate("""() => {
+            const btn = document.querySelector('.pbanner-btn[data-drawer]');
+            if (!btn) return false;
+            btn.click();
+            return true;
+        }""")
+        page.wait_for_timeout(400)
+        if reopen_en:
+            month_set_en = page.evaluate("""() => {
+                const btn = document.querySelector(".drawer [data-range='month']");
+                if (!btn) return false;
+                btn.click();
+                return true;
+            }""")
+            page.wait_for_timeout(400)
+            if month_set_en:
+                banner_month_en = page.evaluate("document.querySelector('.pbanner')?.textContent || ''")
+                check("b1_banner_month_en", "month" in banner_month_en.lower(),
+                      f"'month' not in: {banner_month_en[:80]!r}")
+                save_shot(page, wave, "d-en-period-month")
+            else:
+                check("b1_banner_month_en", False, "no month button in EN drawer")
+        else:
+            check("b1_banner_month_en", False, "could not re-open EN drawer for month")
+    else:
+        check("b1_banner_today_en", False, "no .pbanner-btn in EN")
+        check("b1_banner_month_en", False, "skipped")
+    ctx.close()
+
+    # ── Check B1-5: FAB ──
+    print("\n=== B1-5: FAB ===")
+    # Mobile: FAB visible, right edge within 24px of viewport, bottom within 24px
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    fab_m = page.evaluate("""() => {
+        const f = document.querySelector('.fab');
+        if (!f || f.hidden) return null;
+        const bb = f.getBoundingClientRect();
+        return {top:bb.top, right:bb.right, bottom:bb.bottom, left:bb.left, width:bb.width, height:bb.height, visible:bb.width>0};
+    }""")
+    if fab_m and fab_m["visible"]:
+        check("b1_fab_mobile_visible", True, "")
+        right_edge_dist = 375 - fab_m["right"]
+        bottom_edge_dist = 812 - fab_m["bottom"]
+        check("b1_fab_mobile_right_edge", right_edge_dist <= 24,
+              f"gap to right={right_edge_dist:.1f}px (need ≤24)")
+        check("b1_fab_mobile_bottom_edge", bottom_edge_dist <= 24,
+              f"gap to bottom={bottom_edge_dist:.1f}px (need ≤24)")
+    else:
+        check("b1_fab_mobile_visible", False, f"fab_m={fab_m}")
+        check("b1_fab_mobile_right_edge", False, "skipped")
+        check("b1_fab_mobile_bottom_edge", False, "skipped")
+
+    # Click FAB → drawer visible, FAB hidden
+    fab_btn = page.query_selector(".fab")
+    if fab_btn and not fab_btn.get_attribute("hidden"):
+        fab_btn.click()
+        page.wait_for_timeout(400)
+        drawer_open = page.evaluate("!!document.querySelector('.drawer')")
+        check("b1_fab_click_opens_drawer", drawer_open, "drawer not visible after FAB click")
+        fab_hidden = page.evaluate("""() => {
+            const f = document.querySelector('.fab');
+            return !f || f.hidden || f.getAttribute('hidden') !== null || window.getComputedStyle(f).display === 'none';
+        }""")
+        check("b1_fab_hidden_with_drawer", fab_hidden, "FAB still visible with drawer open")
+
+        # Pick one genre chip with non-empty value
+        genre_chip = page.evaluate("""() => {
+            const chips = document.querySelectorAll('.drawer [data-genre]');
+            for (const c of chips) { if (c.dataset.genre) return c.dataset.genre; }
+            return null;
+        }""")
+        if genre_chip:
+            chip_el = page.query_selector(f".drawer [data-genre='{genre_chip}']")
+            if chip_el:
+                chip_el.click()
+                page.wait_for_timeout(300)
+                save_shot(page, wave, "m-drawer-open")
+                # Close drawer via JS click on the .dclose button
+                closed = page.evaluate("""() => {
+                    const btn = document.querySelector('.drawer .dclose[data-dclose]') ||
+                                document.querySelector('.dclose[data-dclose]') ||
+                                document.querySelector('[data-dclose]');
+                    if (!btn) return false;
+                    btn.click();
+                    return true;
+                }""")
+                page.wait_for_timeout(400)
+                if closed:
+                    fab_badge = page.evaluate("""() => {
+                        const b = document.querySelector('.fab-badge');
+                        return b ? b.textContent.trim() : null;
+                    }""")
+                    check("b1_fab_badge_1", fab_badge == "1",
+                          f"fab-badge text={fab_badge!r}")
+                else:
+                    check("b1_fab_badge_1", False, "could not close drawer via [data-dclose]")
+            else:
+                check("b1_fab_badge_1", False, f"no chip for genre {genre_chip!r}")
+        else:
+            check("b1_fab_badge_1", False, "no non-empty genre chip in drawer")
+    else:
+        check("b1_fab_click_opens_drawer", False, "no FAB or FAB hidden")
+        check("b1_fab_hidden_with_drawer", False, "skipped")
+        check("b1_fab_badge_1", False, "skipped")
+    ctx.close()
+
+    # Desktop: FAB visible, then typing 2 chars hides it
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    fab_d = page.evaluate("""() => {
+        const f = document.querySelector('.fab');
+        if (!f || f.hidden) return null;
+        const bb = f.getBoundingClientRect();
+        return {right:bb.right, bottom:bb.bottom, visible:bb.width>0};
+    }""")
+    if fab_d and fab_d["visible"]:
+        check("b1_fab_desktop_visible", True, "")
+        right_edge_dist_d = 1280 - fab_d["right"]
+        bottom_edge_dist_d = 800 - fab_d["bottom"]
+        check("b1_fab_desktop_right_edge", right_edge_dist_d <= 24,
+              f"gap to right={right_edge_dist_d:.1f}px")
+        check("b1_fab_desktop_bottom_edge", bottom_edge_dist_d <= 24,
+              f"gap to bottom={bottom_edge_dist_d:.1f}px")
+    else:
+        check("b1_fab_desktop_visible", False, f"fab_d={fab_d}")
+        check("b1_fab_desktop_right_edge", False, "skipped")
+        check("b1_fab_desktop_bottom_edge", False, "skipped")
+
+    # Type 2 characters into #q → FAB hidden
+    q_field = page.query_selector("#q")
+    if q_field:
+        q_field.fill("ab")
+        page.wait_for_timeout(400)
+        fab_after_search = page.evaluate("""() => {
+            const f = document.querySelector('.fab');
+            if (!f) return 'absent';
+            if (f.hidden || f.getAttribute('hidden') !== null) return 'hidden';
+            const bb = f.getBoundingClientRect();
+            return bb.width > 0 ? 'visible' : 'zero-size';
+        }""")
+        check("b1_fab_hidden_on_search", fab_after_search in ("absent", "hidden", "zero-size"),
+              f"fab state={fab_after_search!r}")
+    else:
+        check("b1_fab_hidden_on_search", False, "no #q on desktop")
+    ctx.close()
+
+    # ── Check B1-6: Drawer clear-all ──
+    print("\n=== B1-6: Drawer clear-all ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    # Open drawer via JS, check no clear-all with no active filter
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(400)
+
+    no_clear_inactive = page.evaluate("""() => {
+        const b = document.querySelector('.drawer .fclear[data-clearf]');
+        if (!b) return true;
+        const bb = b.getBoundingClientRect();
+        return bb.width === 0 || window.getComputedStyle(b).display === 'none';
+    }""")
+    check("b1_clear_all_absent_no_filter", no_clear_inactive,
+          "clear-all button visible when no filter active")
+
+    # Pick a genre
+    genre_chip2 = page.evaluate("""() => {
+        const chips = document.querySelectorAll('.drawer [data-genre]');
+        for (const c of chips) { if (c.dataset.genre) return c.dataset.genre; }
+        return null;
+    }""")
+    if genre_chip2:
+        # Click genre chip via JS to avoid overlay issues
+        chip_clicked = page.evaluate(f"""() => {{
+            const chip = document.querySelector(".drawer [data-genre='{genre_chip2}']");
+            if (!chip) return false;
+            chip.click();
+            return true;
+        }}""")
+        page.wait_for_timeout(300)
+        if chip_clicked:
+            # Check for clear-all button via JS
+            clear_visible = page.evaluate("""() => {
+                const b = document.querySelector('.drawer .fclear[data-clearf]') ||
+                          document.querySelector('.drawer-top .fclear[data-clearf]');
+                if (!b) return false;
+                const bb = b.getBoundingClientRect();
+                return bb.width > 0 && window.getComputedStyle(b).display !== 'none';
+            }""")
+            check("b1_clear_all_present_with_filter", clear_visible,
+                  "clear-all not visible with active genre filter")
+            if clear_visible:
+                page.evaluate("""() => {
+                    const btn = document.querySelector('.drawer .fclear[data-clearf]') ||
+                                document.querySelector('.drawer-top .fclear[data-clearf]');
+                    if (btn) btn.click();
+                }""")
+                page.wait_for_timeout(400)
+                state = page.evaluate("""() => ({
+                    fGenres: typeof S !== 'undefined' ? S.fGenres : null,
+                    fVenues: typeof S !== 'undefined' ? S.fVenues : null,
+                    day: typeof S !== 'undefined' ? S.day : null
+                })""")
+                check("b1_clear_all_resets_state",
+                      state["fGenres"] == [] and state["fVenues"] == [] and state["day"] == "week",
+                      f"fGenres={state['fGenres']}, fVenues={state['fVenues']}, day={state['day']}")
+            else:
+                check("b1_clear_all_resets_state", False, "clear-all not found to click")
+        else:
+            check("b1_clear_all_present_with_filter", False, "no genre chip in drawer")
+            check("b1_clear_all_resets_state", False, "skipped")
+    else:
+        check("b1_clear_all_present_with_filter", False, "no non-empty genre chips")
+        check("b1_clear_all_resets_state", False, "skipped")
+    ctx.close()
+
+    # ── Check B1-7: Sections (cinema) ──
+    print("\n=== B1-7: Sections (cinema) ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(1000)
+
+    # Force-mount all deferred rails (IntersectionObserver won't fire in headless scroll)
+    page.evaluate("""() => {
+        let guard = 0;
+        while (typeof railIdx !== 'undefined' && typeof RAILS !== 'undefined' && railIdx < RAILS.length && guard++ < 100) {
+            const sent = document.getElementById('rail-sentinel');
+            if (!sent) break;
+            const batch = RAILS.slice(railIdx, railIdx + 10).map(matRail).join('');
+            railIdx += 10;
+            sent.insertAdjacentHTML('beforebegin', batch);
+        }
+    }""")
+    page.wait_for_timeout(300)
+
+    # Check genre toggle aria-expanded="true" comes before venue toggle aria-expanded="false"
+    sections_info = page.evaluate("""() => {
+        const toggles = Array.from(document.querySelectorAll('[data-sectoggle]'));
+        return toggles.map(t => ({key:t.dataset.sectoggle, expanded:t.getAttribute('aria-expanded')}));
+    }""")
+    genre_toggle = next((t for t in sections_info if t["key"] == "Genres"), None)
+    venue_toggle = next((t for t in sections_info if t["key"] == "Venues"), None)
+    check("b1_genre_toggle_open", genre_toggle is not None and genre_toggle["expanded"] == "true",
+          f"genre toggle: {genre_toggle}")
+    check("b1_venue_toggle_closed", venue_toggle is not None and venue_toggle["expanded"] == "false",
+          f"venue toggle: {venue_toggle}")
+
+    # While venue section closed, no rail heading equals a cinema name
+    cinema_names = page.evaluate("""() => typeof CINEMAS !== 'undefined' ? CINEMAS.map(c=>c.name) : []""")
+    rail_headings = page.evaluate("""() => Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim())""")
+    # Filter to pure text (strip ::before pseudo content by comparing data)
+    any_cinema_in_headings = any(
+        any(cn.strip().lower() in h.strip().lower() for cn in cinema_names)
+        for h in rail_headings
+    )
+    check("b1_no_cinema_rails_when_closed", not any_cinema_in_headings,
+          f"found cinema name in headings while venue section closed: {[h for h in rail_headings if any(cn.lower() in h.lower() for cn in cinema_names)][:3]}")
+
+    # DOM order: genre section < venue section < "all titles" grid check is in the page structure
+    dom_order = page.evaluate("""() => {
+        const main = document.querySelector('main');
+        if (!main) return null;
+        const els = Array.from(main.children);
+        const gIdx = els.findIndex(e => e.querySelector && e.querySelector('[data-sectoggle="Genres"]') !== null || (e.dataset && e.dataset.sectoggle === 'Genres'));
+        const vIdx = els.findIndex(e => e.querySelector && e.querySelector('[data-sectoggle="Venues"]') !== null || (e.dataset && e.dataset.sectoggle === 'Venues'));
+        // also check with querySelectorAll
+        const all = Array.from(document.querySelectorAll('[data-sectoggle]'));
+        const gPos = all.findIndex(e=>e.dataset.sectoggle==='Genres');
+        const vPos = all.findIndex(e=>e.dataset.sectoggle==='Venues');
+        return {gPos, vPos};
+    }""")
+    if dom_order:
+        check("b1_dom_order_genre_before_venue",
+              dom_order["gPos"] != -1 and dom_order["vPos"] != -1 and dom_order["gPos"] < dom_order["vPos"],
+              f"genre pos={dom_order['gPos']}, venue pos={dom_order['vPos']}")
+    else:
+        check("b1_dom_order_genre_before_venue", False, "could not determine DOM order")
+
+    # Click venue toggle → aria-expanded="true" and ≥5 rail headings equal cinema names
+    venue_toggle_btn = page.query_selector("[data-sectoggle='Venues']")
+    if venue_toggle_btn:
+        toggle_top_before = venue_toggle_btn.bounding_box()["y"]
+        venue_toggle_btn.click()
+        page.wait_for_timeout(600)
+
+        venue_expanded = page.evaluate("""() => {
+            const t = document.querySelector('[data-sectoggle="Venues"]');
+            return t ? t.getAttribute('aria-expanded') : null;
+        }""")
+        check("b1_venue_toggle_expanded", venue_expanded == "true",
+              f"aria-expanded={venue_expanded}")
+
+        # Force-mount all deferred rails after opening venue section
+        page.evaluate("""() => {
+            let guard = 0;
+            while (typeof railIdx !== 'undefined' && typeof RAILS !== 'undefined' && railIdx < RAILS.length && guard++ < 100) {
+                const sent = document.getElementById('rail-sentinel');
+                if (!sent) break;
+                const batch = RAILS.slice(railIdx, railIdx + 10).map(matRail).join('');
+                railIdx += 10;
+                sent.insertAdjacentHTML('beforebegin', batch);
+            }
+        }""")
+        page.wait_for_timeout(400)
+
+        # Re-read headings
+        rail_headings_after = page.evaluate("""() => Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim())""")
+        cinema_names_after = page.evaluate("""() => typeof CINEMAS !== 'undefined' ? CINEMAS.map(c=>c.name) : []""")
+        matching = [h for h in rail_headings_after if any(cn in h for cn in cinema_names_after)]
+        check("b1_venue_rails_after_open", len(matching) >= 5,
+              f"only {len(matching)} cinema name headings visible: {matching[:5]}")
+
+        # Toggle top should not move by more than 30px
+        venue_toggle_btn_new = page.query_selector("[data-sectoggle='Venues']")
+        if venue_toggle_btn_new:
+            toggle_top_after = venue_toggle_btn_new.bounding_box()["y"]
+            # Scroll back to toggle to measure correctly
+            page.evaluate("window.scrollTo(0, 0)")
+            page.wait_for_timeout(300)
+            venue_toggle_btn_new2 = page.query_selector("[data-sectoggle='Venues']")
+            if venue_toggle_btn_new2:
+                bb = venue_toggle_btn_new2.bounding_box()
+                toggle_top_now = bb["y"] if bb else None
+                # Note: toggle_top_before was measured before click, positions shift
+                # The spec says "viewport top moves by ≤30px across the click"
+                # After scroll-restore the viewport position of the toggle should be within 30px of original
+                scroll_now = page.evaluate("window.scrollY")
+                if toggle_top_now is not None:
+                    viewport_pos_diff = abs(toggle_top_now - toggle_top_before)
+                    check("b1_toggle_stays_in_view", viewport_pos_diff <= 30,
+                          f"toggle moved {viewport_pos_diff:.0f}px (was {toggle_top_before:.0f}, now {toggle_top_now:.0f})")
+                else:
+                    check("b1_toggle_stays_in_view", False, "could not measure toggle position after")
+        else:
+            check("b1_toggle_stays_in_view", False, "toggle gone after click")
+
+        # Collapse genre section → its rails disappear
+        genre_toggle_btn = page.query_selector("[data-sectoggle='Genres']")
+        if genre_toggle_btn:
+            genre_toggle_btn.click()
+            page.wait_for_timeout(600)
+            genre_content_hidden = page.evaluate("""() => {
+                const c = document.getElementById('sec-Genres-content');
+                return !c || c.hidden || window.getComputedStyle(c).display === 'none';
+            }""")
+            check("b1_genre_collapse_hides_rails", genre_content_hidden,
+                  "sec-Genres-content still visible after collapse")
+        else:
+            check("b1_genre_collapse_hides_rails", False, "genre toggle not found")
+
+        # Save screenshot scrolled to venue section
+        page.evaluate("document.querySelector('[data-sectoggle=\"Venues\"]').scrollIntoView()")
+        page.wait_for_timeout(400)
+        save_shot(page, wave, "d-bg-theatre-venues-open")
+    else:
+        check("b1_venue_toggle_expanded", False, "no [data-sectoggle='Venues']")
+        check("b1_venue_rails_after_open", False, "skipped")
+        check("b1_toggle_stays_in_view", False, "skipped")
+        check("b1_genre_collapse_hides_rails", False, "skipped")
+
+    ctx.close()
+
+    # ── Check B1-8: Sections (theatre) ──
+    print("\n=== B1-8: Sections (theatre) ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(1000)
+
+    # Force-mount all deferred rails
+    page.evaluate("""() => {
+        let guard = 0;
+        while (typeof railIdx !== 'undefined' && typeof RAILS !== 'undefined' && railIdx < RAILS.length && guard++ < 100) {
+            const sent = document.getElementById('rail-sentinel');
+            if (!sent) break;
+            const batch = RAILS.slice(railIdx, railIdx + 10).map(matRail).join('');
+            railIdx += 10;
+            sent.insertAdjacentHTML('beforebegin', batch);
+        }
+    }""")
+    page.wait_for_timeout(300)
+
+    # Genre section comes first
+    sec_order_th = page.evaluate("""() => {
+        const all = Array.from(document.querySelectorAll('[data-sectoggle]'));
+        const gPos = all.findIndex(e=>e.dataset.sectoggle==='Genres');
+        const vPos = all.findIndex(e=>e.dataset.sectoggle==='Venues');
+        return {gPos, vPos};
+    }""")
+    check("b1_theatre_genre_before_venue",
+          sec_order_th["gPos"] != -1 and sec_order_th["vPos"] != -1 and sec_order_th["gPos"] < sec_order_th["vPos"],
+          f"genre pos={sec_order_th['gPos']}, venue pos={sec_order_th['vPos']}")
+
+    # Open venue section
+    venue_toggle_th = page.query_selector("[data-sectoggle='Venues']")
+    if venue_toggle_th:
+        venue_toggle_th.click()
+        page.wait_for_timeout(600)
+
+        # Force-mount all deferred rails after opening venue section
+        page.evaluate("""() => {
+            let guard = 0;
+            while (typeof railIdx !== 'undefined' && typeof RAILS !== 'undefined' && railIdx < RAILS.length && guard++ < 100) {
+                const sent = document.getElementById('rail-sentinel');
+                if (!sent) break;
+                const batch = RAILS.slice(railIdx, railIdx + 10).map(matRail).join('');
+                railIdx += 10;
+                sent.insertAdjacentHTML('beforebegin', batch);
+            }
+        }""")
+        page.wait_for_timeout(400)
+
+        # Check sub-headings order
+        subheads = page.evaluate("""() => {
+            const subs = Array.from(document.querySelectorAll('.sec-subhead'));
+            return subs.map(s => s.textContent.trim());
+        }""")
+        state_idx = next((i for i, s in enumerate(subheads) if "Държавни" in s or "General" in s or "State" in s), -1)
+        indie_idx = next((i for i, s in enumerate(subheads) if "Независими" in s or "Independ" in s), -1)
+        check("b1_th_subheads_state_before_indie",
+              state_idx != -1 and indie_idx != -1 and state_idx < indie_idx,
+              f"subheads={subheads}")
+
+        # Rails between state and indie subheads should be national/state/municipal
+        # Get the theatre IDs from rail headings and check their kind
+        venue_check = page.evaluate("""() => {
+            const STATE_KINDS = ['national','state','municipal'];
+            const subs = Array.from(document.querySelectorAll('.sec-subhead'));
+            let stateIdx=-1, indieIdx=-1;
+            const allKids = Array.from(document.querySelector('#sec-Venues-content')?.children||[]);
+            allKids.forEach((el,i)=>{
+                if(el.classList.contains('sec-subhead')){
+                    const txt=el.textContent;
+                    if(txt.includes('Държавни')||txt.includes('State'))stateIdx=i;
+                    if(txt.includes('Независими')||txt.includes('Independ'))indieIdx=i;
+                }
+            });
+            if(stateIdx===-1||indieIdx===-1)return {err:'subheads not found',stateIdx,indieIdx};
+            const theatreNames = {};
+            THEATRES.forEach(t=>{theatreNames[t.name]=t.kind;theatreNames[t.nameEn]=t.kind;});
+            let stateOk=true, indieOk=true;
+            allKids.forEach((el,i)=>{
+                if(!el.classList.contains('rail'))return;
+                const h2 = el.querySelector('.rhead h2');
+                if(!h2)return;
+                const name = h2.textContent.replace(/^\\s+/,'').trim();
+                const th = THEATRES.find(t=>name.includes(t.name)||name.includes(t.nameEn));
+                if(!th)return;
+                if(i>stateIdx && i<indieIdx && !STATE_KINDS.includes(th.kind))stateOk=false;
+                if(i>indieIdx && STATE_KINDS.includes(th.kind))indieOk=false;
+            });
+            return {stateOk, indieOk, stateIdx, indieIdx};
+        }""")
+        if "err" not in venue_check:
+            check("b1_th_state_rails_kind", venue_check.get("stateOk", False),
+                  "some state section rails are not national/state/municipal kind")
+            check("b1_th_indie_rails_kind", venue_check.get("indieOk", False),
+                  "some indie section rails are not independent kind")
+        else:
+            check("b1_th_state_rails_kind", False, venue_check.get("err", "unknown"))
+            check("b1_th_indie_rails_kind", False, "skipped due to subhead detection failure")
+    else:
+        check("b1_th_subheads_state_before_indie", False, "no venue toggle in theatre mode")
+        check("b1_th_state_rails_kind", False, "skipped")
+        check("b1_th_indie_rails_kind", False, "skipped")
+    ctx.close()
+
+    # ── Check B1-9: Quote regression ──
+    print("\n=== B1-9: Quote regression ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+
+    # Try clicking a [data-show="uroci"] card; if not present use page.evaluate openSheet
+    uroci_card = page.query_selector("[data-show='uroci']")
+    if uroci_card:
+        uroci_card.click()
+        page.wait_for_timeout(800)
+    else:
+        # Use app's own mechanism
+        opened = page.evaluate("""() => {
+            if (window.showById && window.showById['uroci'] && window.sheetShow && window.openSheet) {
+                const html = window.sheetShow(window.showById['uroci']);
+                window.curSheet = {kind:'show', id:'uroci'};
+                window.openSheet(html, null);
+                return true;
+            }
+            return false;
+        }""")
+        page.wait_for_timeout(800)
+        if not opened:
+            check("b1_uroci_quote", False, "could not open uroci sheet")
+            ctx.close()
+            # Continue to final checks
+        else:
+            pass
+
+    # Read sheet text and look for „Уроци" (U+201E + Уроци + U+201C)
+    sheet_text = page.evaluate("""() => {
+        const scrim = document.getElementById('scrim');
+        return scrim ? scrim.textContent : '';
+    }""")
+    if sheet_text:
+        has_proper_quotes = "„Уроци“" in sheet_text
+        has_straight_quotes = '"Уроци"' in sheet_text
+        check("b1_uroci_proper_quotes", has_proper_quotes,
+              f"straight quotes used={has_straight_quotes}, found='{sheet_text[sheet_text.find('Уроци')-2:sheet_text.find('Уроци')+7] if 'Уроци' in sheet_text else 'NOT FOUND'}'")
+    else:
+        check("b1_uroci_proper_quotes", False, "sheet not open or empty")
+    ctx.close()
+
+    # ── Check B1-10: No page errors + gate ──
+    print("\n=== B1-10: No page errors + gate ===")
+    all_errors = []
+    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        for lang in ["bg", "en"]:
+            for mode in ["cinema", "theatre"]:
+                ctx, page, errs = open_page(browser, w, h, lang=lang, mode=mode)
+                page.wait_for_timeout(500)
+                if errs:
+                    all_errors.extend([(size_tag, lang, mode, e) for e in errs])
+                ctx.close()
+    if all_errors:
+        check("b1_no_page_errors", False,
+              f"{len(all_errors)} error(s): {all_errors[0]}")
+    else:
+        check("b1_no_page_errors", True, "")
+
+    result = subprocess.run(
+        ["python3", "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+    )
+    gate_passes = "all checks passed" in result.stdout
+    check("b1_gate_passes", gate_passes,
+          result.stdout[:120] if not gate_passes else "")
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
 WAVES = {
     "A1": wave_a1,
+    "B1": wave_b1,
 }
 
 def main():

@@ -45,7 +45,8 @@ a{color:inherit}
 /* ---------- header ---------- */
 /* Desktop: position:sticky, single row. Mobile: two rows (logo centred + controls).
    The logo row is allowed to scroll away; the controls row stays pinned via a
-   negative top offset equal to the logo row height (48px logo + 14px padding-block top + 10px gap ≈ 72px). */
+   negative top offset equal to the logo row height (28px logo + 14px padding-block + 10px gap = 52px).
+   --logo-row-h is the single source of truth so the pinned offset cannot drift. */
 .bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:60;
   background:color-mix(in srgb,var(--ink) 92%,transparent); backdrop-filter:blur(14px);
   border-bottom:1px solid var(--line); padding-block:14px}
@@ -68,11 +69,13 @@ a{color:inherit}
    Row 1: logo centred (scrolls away).
    Row 2: [seg toggle expands] [lang 42px] [search icon 42px] [burger 42px] — one line, never wraps.
    Row 3: full-width search field (only when S.searchOpen).
-   The header top offset scrolls to hide the logo row (height: 28px logo + 14px padding-block + 10px gap = 52px).  */
+   --logo-row-h = 28px logo + 14px padding-block-top + 10px gap between rows = 52px.
+   The negative top hides the logo row; the controls row is then 8px below safe-area-inset-top. */
 /* ── Mobile layout (≤760px) — JS also detects this and renders mobile HTML ── */
 @media(max-width:760px){
-  .bar{top:calc(env(safe-area-inset-top,0px) - 52px)}
-  .bar-row-logo{display:flex; justify-content:center; align-items:center}
+  :root{ --logo-row-h:52px }
+  .bar{top:calc(env(safe-area-inset-top,0px) - var(--logo-row-h) + 8px)}
+  .bar-row-logo{display:flex; justify-content:center; align-items:center; margin-bottom:10px}
   .bar-row-controls{display:flex; align-items:center; gap:8px; flex-wrap:nowrap; overflow:hidden}
   .bar-row-search{width:100%}
   .brand b{font-size:19px; letter-spacing:.08em}
@@ -211,10 +214,14 @@ a{color:inherit}
 .btn.sm{padding:7px 14px; font-size:12.5px}
 
 /* ---------- rails ---------- */
-.rail{margin-bottom:30px}
-.rhead{display:flex; align-items:baseline; gap:10px; margin-bottom:11px; flex-wrap:wrap}
-.rhead h2{font-family:Oswald,sans-serif; font-weight:600; font-size:15.5px; letter-spacing:.08em; text-transform:uppercase}
-[data-surface="theatre"] .rhead h2{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0; font-size:20px}
+.rail{margin-bottom:44px}
+.rhead{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap}
+.rhead h2{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
+  letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
+.rhead h2::before{content:""; display:inline-block; width:4px; height:.9em; border-radius:2px;
+  background:var(--accent); flex:0 0 4px}
+[data-surface="theatre"] .rhead h2{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+  letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
 .rhead .sub{font-size:11.5px; color:var(--fg-3)}
 .rscroll{position:relative}
 .rtrack{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity; padding-bottom:6px; scroll-behavior:smooth; scrollbar-width:thin}
@@ -393,14 +400,70 @@ button[disabled]{opacity:.4; cursor:not-allowed}
 .note{border:1px solid var(--line); border-left:2px solid var(--accent); border-radius:10px;
   background:var(--ink-2); padding:11px 15px; font-size:12px; color:var(--fg-2); margin-bottom:24px}
 .note b{color:var(--fg)}
-.sechead{display:flex; align-items:baseline; gap:10px; margin-bottom:13px; flex-wrap:wrap; padding-top:8px}
-.sechead h2{font-family:Oswald,sans-serif; font-weight:600; font-size:15.5px; letter-spacing:.08em; text-transform:uppercase}
-[data-surface="theatre"] .sechead h2{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0; font-size:20px}
+.sechead{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; padding-top:8px}
+.sechead h2{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
+  letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
+.sechead h2::before{content:""; display:inline-block; width:4px; height:.9em; border-radius:2px;
+  background:var(--accent); flex:0 0 4px}
+[data-surface="theatre"] .sechead h2{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+  letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
 .sechead .n{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3); border:1px solid var(--line);
   border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums}
+.sechead .sub{font-size:11.5px; color:var(--fg-3)}
 footer{border-top:1px solid var(--line); margin-top:44px; padding-block:24px 40px; font-size:11.5px; color:var(--fg-3)}
 footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .empty{padding:26px; border:1px dashed var(--line-2); border-radius:var(--r); color:var(--fg-3); font-size:13px; text-align:center}
+
+/* ---------- period banner ---------- */
+.pbanner{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  background:var(--ink-3); border:1px solid var(--line); border-radius:var(--r);
+  padding:14px 18px; margin-bottom:26px}
+.pbanner-main{display:flex; align-items:center; gap:12px; flex:1 1 0; min-width:0}
+.pbanner-icon{flex:0 0 auto; color:var(--accent); opacity:.9}
+.pbanner-text{min-width:0}
+.pbanner-title{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(17px,1.8vw,21px);
+  letter-spacing:.04em; text-transform:uppercase; color:var(--fg); line-height:1.15}
+[data-surface="theatre"] .pbanner-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-size:clamp(18px,1.9vw,22px)}
+.pbanner-dates{font-size:13px; color:var(--fg-2); margin-top:2px}
+.pbanner-btn{flex:0 0 auto; padding:7px 14px; border-radius:999px; border:1px solid var(--line-2);
+  background:transparent; color:var(--fg-2); font-size:12px; font-weight:600; letter-spacing:.04em;
+  white-space:nowrap; transition:border-color .15s,color .15s}
+.pbanner-btn:hover{border-color:var(--accent); color:var(--accent)}
+
+/* ---------- collapsible section headers ---------- */
+.sec-toggle{width:100%; display:flex; align-items:center; gap:10px;
+  padding:12px 0 12px; border-top:2px solid var(--line-2); background:none;
+  text-align:left; cursor:pointer; color:var(--fg); transition:color .15s}
+.sec-toggle:hover{color:var(--accent)}
+.sec-toggle-title{font-family:Oswald,sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,28px);
+  letter-spacing:.05em; text-transform:uppercase; flex:1}
+[data-surface="theatre"] .sec-toggle-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0}
+.sec-toggle-count{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3);
+  border:1px solid var(--line); border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums; flex:0 0 auto}
+.sec-toggle-chev{flex:0 0 20px; width:20px; height:20px; color:var(--fg-3); transition:transform .25s; display:flex; align-items:center; justify-content:center}
+.sec-toggle[aria-expanded="true"] .sec-toggle-chev{transform:rotate(180deg)}
+.sec-content{overflow:hidden}
+.sec-content[hidden]{display:none!important}
+.sec-subhead{font-family:Oswald,sans-serif; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--fg-3); padding:12px 0 8px; border-bottom:1px solid var(--line); margin-bottom:20px}
+[data-surface="theatre"] .sec-subhead{font-family:"Playfair Display",Georgia,serif; letter-spacing:0; font-size:12px}
+
+/* ---------- FAB (floating action button) ---------- */
+.fab{position:fixed; right:max(16px,env(safe-area-inset-right,0px));
+  bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  z-index:55; display:flex; align-items:center; gap:8px;
+  min-height:48px; padding:0 18px 0 14px; border-radius:999px;
+  background:var(--accent); color:var(--on-accent); border:none;
+  font:600 13px/1 "Onest","Segoe UI",system-ui,sans-serif; letter-spacing:.03em;
+  box-shadow:0 4px 20px rgba(0,0,0,.45); cursor:pointer;
+  transition:filter .15s, transform .15s}
+.fab:hover{filter:brightness(1.1); transform:translateY(-2px)}
+.fab svg{flex:0 0 18px; width:18px; height:18px}
+.fab-badge{background:var(--on-accent); color:var(--accent);
+  font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%;
+  display:grid; place-items:center; flex:0 0 18px}
+.fab[hidden]{display:none!important}
+main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 </style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
@@ -487,7 +550,12 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  gapB:"Веригите в София публикуват програмата си около три дни напред. Последният обявен ден е {d}. Провери пак утре — автоматичното обновяване в 06:00 ще я добави веднага щом излезе.",
  gapBtn:"Виж цялата седмица",noFilter:"Няма съвпадения с тези филтри.",
  pick5:"Избери 5 заглавия, които би гледал",pick5s:"Не са от текущата програма — това са жанрови еталони. Избери по вкус, не по това, което си „длъжен“ да харесваш.",
- films20:"Филми",shows20:"Театър",selected:"избрани"},
+ films20:"Филми",shows20:"Театър",selected:"избрани",
+ bannerWeek:"Програма за тази седмица",bannerToday:"Програма за днес",bannerMonth:"Програма за този месец",
+ bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
+ fabFilters:"Филтри",clearAll:"Изчисти всички",
+ secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
+ subStateTheatres:"Държавни и общински",subIndependent:"Независими"},
 en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -519,7 +587,12 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  gapB:"Sofia's chains publish about three days ahead. The last announced day is {d}. Check back tomorrow — the 06:00 revalidation picks it up as soon as it appears.",
  gapBtn:"See the whole week",noFilter:"Nothing matches these filters.",
  pick5:"Pick 5 titles you'd actually watch",pick5s:"These aren't what's on now — they're genre benchmarks. Go by taste, not by what you think you should like.",
- films20:"Films",shows20:"Theatre",selected:"selected"}};
+ films20:"Films",shows20:"Theatre",selected:"selected",
+ bannerWeek:"This week's programme",bannerToday:"Today's programme",bannerMonth:"This month's programme",
+ bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
+ fabFilters:"Filters",clearAll:"Clear all",
+ secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
+ subStateTheatres:"State & municipal",subIndependent:"Independent"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -570,7 +643,7 @@ const MONTHS=(()=>{
    false and `prefs` is seeded as if the taste quiz had been skipped (track:"both",
    when:"any"), so scoring degrades cleanly to IMDb / screening-count ranking. */
 let S={lang:"bg",mode:"cinema",day:"week",onb:false,step:0,q:"",drawer:false,searchOpen:false,fStrands:[],limit:30,
-  fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,
+  fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,secGenres:true,secVenues:false,
   prefs:{track:"both",genres:[],mood:[],with:"",when:"any",taste:[]}};
 try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
   if(p&&p.prefs){S.prefs=Object.assign(S.prefs,p.prefs);S.onb=false;S.lang=p.lang||"bg";
@@ -665,7 +738,10 @@ function withinHorizon(venueId,d){
   const c=cinById[venueId];
   if(c&&c.kind!=="independent")return d<=COMMERCIAL_UNTIL;
   return true;}
-const WEEK_END=addDays(TODAY,6);
+/* WEEK_END = the coming Sunday of the current calendar week (ISO Mon-Sun).
+   dUTC(TODAY).getUTCDay(): 0=Sun, 1=Mon, …, 6=Sat.
+   Days until Sunday: (7 - day) % 7, clamped to 0 on Sunday itself. */
+const WEEK_END=(()=>{const dow=dUTC(TODAY).getUTCDay();return addDays(TODAY,(7-dow)%7);})();
 function inRange(d){
   if(S.day==="all")return true;
   if(S.day==="range")return S.rFrom?(d>=S.rFrom&&d<=(S.rTo||S.rFrom)):true;
@@ -958,11 +1034,39 @@ function periodLabel(){
   if(S.day==="month")return L.thisMonth;
   if(/^\d{4}-\d{2}-\d{2}$/.test(S.day))return fmtDay(S.day,true);
   return L.everything;}
-/* date suffix for section heads — empty unless a single day or a range is set */
+/* date suffix for section heads — returns a date range for all meaningful cases */
 function periodDateOnly(){
   if(S.day==="range"&&S.rFrom)return S.rTo?`${fmtDay(S.rFrom,true)} – ${fmtDay(S.rTo,true)}`:fmtDay(S.rFrom,true);
   if(/^\d{4}-\d{2}-\d{2}$/.test(S.day))return fmtDay(S.day,true);
+  if(S.day==="week")return`${fmtDay(TODAY,false)} – ${fmtDay(WEEK_END,false)}`;
+  if(S.day==="month")return`${fmtDay(TODAY,true)} – ${fmtDay(lastOfMonth(TODAY),true)}`;
+  if(S.day==="all")return fmtDay(LASTDAY,true);
   return "";}
+/* Period banner text: headline + date subtitle */
+function periodBannerText(){
+  const L=t();
+  if(S.day==="week"){
+    const dFrom=fmtDay(TODAY,false),dTo=fmtDay(WEEK_END,false);
+    return{title:L.bannerWeek,dates:`${dFrom} – ${dTo}`};}
+  if(S.day===TODAY){
+    return{title:L.bannerToday,dates:fmtDay(TODAY,false)};}
+  if(S.day==="month"){
+    return{title:L.bannerMonth,dates:`${fmtDay(TODAY,true)} – ${fmtDay(lastOfMonth(TODAY),true)}`};}
+  if(S.day==="all"){
+    return{title:L.bannerAll,dates:fmtDay(LASTDAY,true)};}
+  if(S.day==="range"&&S.rFrom){
+    const d=S.rTo?`${fmtDay(S.rFrom,true)} – ${fmtDay(S.rTo,true)}`:fmtDay(S.rFrom,true);
+    return{title:L.bannerCustom,dates:d};}
+  if(/^\d{4}-\d{2}-\d{2}$/.test(S.day)){
+    return{title:`${L.bannerToday.replace(L.today||"днес","")||L.bannerToday}`,dates:fmtDay(S.day,false)};}
+  return{title:L.bannerWeek,dates:`${fmtDay(TODAY,false)} – ${fmtDay(WEEK_END,false)}`};}
+function periodBanner(){
+  const L=t(),{title,dates}=periodBannerText();
+  const calIcon=`<svg class="pbanner-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+  return`<div class="pbanner"><div class="pbanner-main">${calIcon}<div class="pbanner-text">
+    <div class="pbanner-title">${esc(title)}</div>
+    <div class="pbanner-dates">${esc(dates)}</div></div></div>
+    <button class="pbanner-btn" data-drawer aria-label="${esc(L.bannerChange)}">${esc(L.bannerChange)}</button></div>`;}
 /* dates that actually have something, for the calendar dots */
 function datesWith(){
   const set=new Set();
@@ -1072,6 +1176,12 @@ const RAIL_FIRST=4,RAIL_MORE=4,RAIL_LEAD=1200;
    A descriptor is either {html:thunk} (an arbitrary block, e.g. the full grid)
    or {t,s,items,fn} (a rail whose cards are built lazily from its items). */
 function matRail(d){ return d.html?d.html():rail(d.t,d.s,d.items.map(d.fn)); }
+const chevSVG=`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+function secToggleHTML(key,label,count,open){
+  return`<button class="sec-toggle" data-sectoggle="${key}" aria-expanded="${open}">
+    <span class="sec-toggle-title">${esc(label)}</span>
+    ${count!=null?`<span class="sec-toggle-count">${count}</span>`:""}
+    <span class="sec-toggle-chev">${chevSVG}</span></button>`;}
 function body(){
   const L=t(),day=dayOrAll(),out=[];
   /* Events are shown only if not yet ended (to >= today) and overlapping the
@@ -1104,20 +1214,34 @@ function body(){
     const top=vis.filter(f=>imdbOf(f)!=null).sort((a,b)=>imdbOf(b)-imdbOf(a)).slice(0,12);
     pushRail(L.railTop,"IMDb",top,f=>filmCard(f,day));
     pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);
-    /* task 11 — one rail per genre */
+    /* Section A: По жанр — collapsible, open by default */
     const visSet=new Set(vis.map(f=>f.id));
+    const genreRails=[];
     genresFor("cinema").forEach(g=>{
       const fs=vis.filter(f=>f.genres.some(x=>g.m.includes(x)));
-      pushRail(S.lang==="bg"?g.bg:g.en,S.lang==="bg"?"по жанр":"by genre",fs,f=>filmCard(f,day));});
-    /* task 6 — one rail per cinema, showing what that cinema is playing.
-       Under a strand filter, only that strand's cinemas get a rail. */
-    CINEMAS.forEach(c=>{
-      if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
-        if(arty&&!comm&&c.kind!=="independent")return;
-        if(comm&&!arty&&c.kind==="independent")return;}
-      const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-      pushRail(cinName(c),c.area,fs,f=>filmCard(f,day));});
-    out.push({html:()=>`<section class="rail"><div class="sechead"><h2>${esc(L.allTitles)} ${esc(periodDateOnly())}</h2>
+      if(fs.length)genreRails.push({t:S.lang==="bg"?g.bg:g.en,s:`${fs.length}`,items:fs,fn:f=>filmCard(f,day)});});
+    out.push({html:()=>{
+      const inner=genreRails.map(r=>rail(r.t,r.s,r.items.map(r.fn))).join("");
+      return secToggleHTML("Genres",L.secByGenre||"По жанр",genreRails.length,S.secGenres)
+        +`<div id="sec-Genres-content" class="sec-content"${S.secGenres?"":" hidden"}>${inner}</div>`;
+    }});
+    /* Section B: По кино — collapsible, closed by default; rails not built when closed */
+    out.push({html:()=>{
+      let inner="";
+      if(S.secVenues){
+        CINEMAS.forEach(c=>{
+          if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
+            if(arty&&!comm&&c.kind!=="independent")return;
+            if(comm&&!arty&&c.kind==="independent")return;}
+          const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
+          if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>filmCard(f,day)));
+        });
+      }
+      return secToggleHTML("Venues",L.secByCinema||"По кино",null,S.secVenues)
+        +`<div id="sec-Venues-content" class="sec-content"${S.secVenues?"":" hidden"}>${inner}</div>`;
+    }});
+    out.push({html:()=>`<section class="rail"><div class="sechead"><h2>${esc(L.allTitles)}</h2>
+      <span class="sub">${esc(periodDateOnly())}</span>
       <span class="n">${vis.length}</span></div>
       ${vis.length?`<div class="grid">${vis.slice(0,S.limit).map(f=>filmCard(f,day)).join("")}</div>
       ${vis.length>S.limit?`<div style="text-align:center;margin-top:18px">
@@ -1130,16 +1254,38 @@ function body(){
     const prem=vis.filter(s=>s.badge);
     pushRail(L.railPrem,"",prem,s=>showCard(s,day));
     pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);
-    /* theatre categories first — one rail per theatre, showing what it stages */
     const visSet=new Set(vis.map(s=>s.id));
-    THEATRES.forEach(th=>{
-      const ss=showsAtTheatre(th.id).filter(s=>visSet.has(s.id));
-      pushRail(thName(th),th.area,ss,s=>showCard(s,day));});
-    /* then one rail per genre of play */
+    /* Section A: По жанр — collapsible, open by default (genres before venues in theatre too) */
+    const genreRails=[];
     genresFor("theatre").forEach(g=>{
       const ss=vis.filter(s=>s.genres.some(x=>g.m.includes(x)));
-      pushRail(S.lang==="bg"?g.bg:g.en,S.lang==="bg"?"по жанр":"by genre",ss,s=>showCard(s,day));});
-    out.push({html:()=>`<section class="rail"><div class="sechead"><h2>${esc(L.allTitles)} ${esc(periodDateOnly())}</h2>
+      if(ss.length)genreRails.push({t:S.lang==="bg"?g.bg:g.en,s:`${ss.length}`,items:ss,fn:s=>showCard(s,day)});});
+    out.push({html:()=>{
+      const inner=genreRails.map(r=>rail(r.t,r.s,r.items.map(r.fn))).join("");
+      return secToggleHTML("Genres",L.secByGenre||"По жанр",genreRails.length,S.secGenres)
+        +`<div id="sec-Genres-content" class="sec-content"${S.secGenres?"":" hidden"}>${inner}</div>`;
+    }});
+    /* Section B: По театър — closed by default; rails not built when closed.
+       Theatre sub-grouping: state/national/municipal first, then independent. */
+    out.push({html:()=>{
+      let inner="";
+      if(S.secVenues){
+        const STATE_KINDS=["national","state","municipal"];
+        const stateTheatres=THEATRES.filter(th=>STATE_KINDS.includes(th.kind));
+        const indieTheatres=THEATRES.filter(th=>!STATE_KINDS.includes(th.kind));
+        const stateRails=[],indieRails=[];
+        stateTheatres.forEach(th=>{const ss=showsAtTheatre(th.id).filter(s=>visSet.has(s.id));if(ss.length)stateRails.push({th,ss});});
+        indieTheatres.forEach(th=>{const ss=showsAtTheatre(th.id).filter(s=>visSet.has(s.id));if(ss.length)indieRails.push({th,ss});});
+        if(stateRails.length)inner+=`<div class="sec-subhead">${esc(L.subStateTheatres||"Държавни и общински")}</div>`
+          +stateRails.map(({th,ss})=>rail(thName(th),th.area,ss.map(s=>showCard(s,day)))).join("");
+        if(indieRails.length)inner+=`<div class="sec-subhead">${esc(L.subIndependent||"Независими")}</div>`
+          +indieRails.map(({th,ss})=>rail(thName(th),th.area,ss.map(s=>showCard(s,day)))).join("");
+      }
+      return secToggleHTML("Venues",L.secByTheatre||"По театър",null,S.secVenues)
+        +`<div id="sec-Venues-content" class="sec-content"${S.secVenues?"":" hidden"}>${inner}</div>`;
+    }});
+    out.push({html:()=>`<section class="rail"><div class="sechead"><h2>${esc(L.allTitles)}</h2>
+      <span class="sub">${esc(periodDateOnly())}</span>
       <span class="n">${vis.length}</span></div>
       ${vis.length?`<div class="grid">${vis.slice(0,S.limit).map(s=>showCard(s,day)).join("")}</div>
       ${vis.length>S.limit?`<div style="text-align:center;margin-top:18px">
@@ -1404,9 +1550,14 @@ function drawerHTML(){
       ${venues.map(v=>{const on=hasListings(v.id);
         return`<button class="fchip${on?"":" off"}" data-venue="${esc(v.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(v.id)}">${esc(v.name)}</button>`;}).join("")}
     </div>`;
+  const hasActive=S.fGenres.length||S.fVenues.length||S.fStrands.length||S.day!=="week";
   return `<div class="drawer-scrim" data-dclose></div>
   <aside class="drawer" role="dialog" aria-label="${esc(L.filters)}">
-    <div class="drawer-top"><b>${esc(L.filters)}</b><button class="dclose" data-dclose aria-label="close">✕</button></div>
+    <div class="drawer-top"><b>${esc(L.filters)}</b>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${hasActive?`<button class="fclear" data-clearf style="font-size:11px">${esc(L.clearAll||L.clear)}</button>`:""}
+        <button class="dclose" data-dclose aria-label="close">✕</button>
+      </div></div>
     <h3>${esc(L.period)}</h3>
     <div class="mrow">
       <button class="fchip" data-range="${TODAY}" aria-pressed="${S.day===TODAY}">${esc(L.today)}</button>
@@ -1485,13 +1636,18 @@ function render(){
         <button class="iconb burger" data-drawer aria-label="${esc(L.filters)}"><i></i><i></i><i></i></button>
       </div>
     </div>`;
+  const activeFilterCount=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
+  const fabHTML=(!S.drawer&&!S.q)?`<button class="fab" data-drawer aria-label="${esc(L.fabFilters||L.filters)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+    <span>${esc(L.fabFilters||L.filters)}</span>
+    ${activeFilterCount?`<span class="fab-badge">${activeFilterCount}</span>`:""}</button>`:"";
   document.getElementById("app").innerHTML=`
   <header class="bar"><div class="wrap">
     ${headerHTML}
   </div></header>
   <main class="wrap">
     ${sr?searchView(sr):`
-    <div class="strands">${strandBar()}</div>
+    ${periodBanner()}
     ${hero()}
     ${body()}`}
   </main>
@@ -1501,7 +1657,8 @@ function render(){
     <span>cinemacity.bg</span><span>kinoarena.com</span><span>cinegrand.bg</span>
     <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>
   </div></footer>
-  ${S.drawer?drawerHTML():""}`;
+  ${S.drawer?drawerHTML():""}
+  ${fabHTML}`;
   /* mobile search open: focus the mobile input (id="q-m"); desktop: focus id="q" */
   const qiM=document.getElementById("q-m");
   const qiD=document.getElementById("q");
@@ -1726,8 +1883,21 @@ document.addEventListener("click",e=>{
   const d=q("[data-day]"); if(d){S.day=d.dataset.day;render();return;}
   const gf=q("[data-genre]"); if(gf){const v=gf.dataset.genre;S.fGenres=v?toggleArr(S.fGenres,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   const vf=q("[data-venue]"); if(vf){const v=vf.dataset.venue;S.fVenues=v?toggleArr(S.fVenues,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
-  if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];render();return;}
+  if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];S.day="week";S.rFrom=S.rTo=null;render();return;}
   if(q("[data-lang]")){S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();return;}
+  /* collapsible section toggle — keep the header button at the same viewport position */
+  const st2=q("[data-sectoggle]");
+  if(st2){
+    const key=st2.dataset.sectoggle;
+    const hdrTop=st2.getBoundingClientRect().top;
+    if(key==="Genres")S.secGenres=!S.secGenres;
+    else if(key==="Venues")S.secVenues=!S.secVenues;
+    /* materialise the toggled section before restoring scroll */
+    render();
+    /* after render, scroll so the toggled header stays at the same viewport y */
+    const newHdr=document.querySelector(`[data-sectoggle="${key}"]`);
+    if(newHdr){const delta=newHdr.getBoundingClientRect().top-hdrTop;window.scrollBy({top:delta,behavior:"instant"});}
+    return;}
 
   const sc=q("[data-scroll]");
   if(sc){const tr=sc.parentElement.querySelector(".rtrack");
@@ -1771,6 +1941,14 @@ function fatal(e){
   const rb=document.getElementById("hardreset");
   if(rb)rb.onclick=()=>{try{localStorage.removeItem(LS);}catch(e){}location.reload();};
 }
+/* Part 0b: re-render when the viewport crosses 760 px (mobile ↔ desktop header switch).
+   Keep any open drawer/sheet alive; just rebuild the header HTML. */
+try{
+  const mqMob=window.matchMedia("(max-width:760px)");
+  const onMqChange=()=>{ if(!sheetOpen) render(); };
+  if(mqMob.addEventListener) mqMob.addEventListener("change",onMqChange);
+  else if(mqMob.addListener) mqMob.addListener(onMqChange);
+}catch(e){}
 function boot(){ render(); }
 const origRender=render;
 render=function(){
