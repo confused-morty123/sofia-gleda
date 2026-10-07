@@ -173,18 +173,40 @@ def search_en(en, year):
 
 
 def details_en(tmdb_id):
-    """English overview + production country + imdb_id from the film's detail record.
+    """English overview + production country + imdb_id + credits from the film's
+    detail record. Uses append_to_response=credits to fetch crew/cast in one call.
     Owner's choice is 'TMDB English where it exists, else Bulgarian' — no machine
     translation, so this authoritative English fills the detail card when the dataset
-    has none. The imdb_id is used to look up the genuine IMDb rating via OMDb."""
-    d = api(f"movie/{tmdb_id}", {"language": "en-US"})
+    has none. The imdb_id is used to look up the genuine IMDb rating via OMDb.
+    Returns (ov, country, imdb_id, dir, cast) where dir and cast are comma-joined
+    strings (or None if absent)."""
+    d = api(f"movie/{tmdb_id}", {"language": "en-US",
+                                  "append_to_response": "credits"})
     if not d:
-        return None, None, None
+        return None, None, None, None, None
     ov = (d.get("overview") or "").strip() or None
     pcs = d.get("production_countries") or []
     country = (pcs[0].get("name") or "").strip() if pcs else None
     imdb_id = (d.get("imdb_id") or "").strip() or None
-    return ov, (country or None), imdb_id
+    # Extract director(s) and top-5 cast from credits
+    credits = d.get("credits") or {}
+    crew = credits.get("crew") or []
+    directors = [p["name"] for p in crew if p.get("job") == "Director" and p.get("name")]
+    dir_ = ", ".join(directors) or None
+    cast_list = credits.get("cast") or []
+    cast_list_sorted = sorted(cast_list, key=lambda p: p.get("order", 9999))
+    cast_names = [p["name"] for p in cast_list_sorted[:5] if p.get("name")]
+    cast_ = ", ".join(cast_names) or None
+    return ov, (country or None), imdb_id, dir_, cast_
+
+
+def details_bg(tmdb_id):
+    """Bulgarian overview from the film's detail record (language=bg-BG).
+    Returns the Bulgarian overview string, or None if absent/empty."""
+    d = api(f"movie/{tmdb_id}", {"language": "bg-BG"})
+    if not d:
+        return None
+    return (d.get("overview") or "").strip() or None
 
 
 def _votes_compact(n):
@@ -345,11 +367,28 @@ def main():
         }
         # Owner's choice: fill English synopsis/country from TMDB where it exists,
         # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
-        ov, country, imdb_id = details_en(best["id"])
+        # Also fetch director/cast from credits (append_to_response=credits).
+        ov, country, imdb_id, dir_, cast_ = details_en(best["id"])
         if ov:
             rec["ov"] = ov
         if country:
             rec["country"] = country
+        # Keep-previous: inherit previous dir/cast/ovBg if this call returns nothing.
+        pv = prev.get(fid, {})
+        if dir_:
+            rec["dir"] = dir_
+        elif pv.get("dir"):
+            rec["dir"] = pv["dir"]
+        if cast_:
+            rec["cast"] = cast_
+        elif pv.get("cast"):
+            rec["cast"] = pv["cast"]
+        # Bulgarian overview — separate call with language=bg-BG
+        ov_bg = details_bg(best["id"])
+        if ov_bg:
+            rec["ovBg"] = ov_bg
+        elif pv.get("ovBg"):
+            rec["ovBg"] = pv["ovBg"]
         # Genuine IMDb rating via OMDb (keyed by TMDB's imdb_id). The score tile is
         # labelled "IMDb", so only a real IMDb number may fill it — never TMDB's own
         # vote_average. Keep-previous: no token / failed call inherits last run's value.

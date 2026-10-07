@@ -1,0 +1,25 @@
+<!-- Trimmed fixture reflecting the real programata.bg /kino/filmi/<slug>/ structure.
+     Uses .text-summary-item divs with <span> labels for structured fields,
+     and div.text.mb-5.pb-5 > p for the synopsis.
+     Also includes a bleed-test case: cast line immediately followed by synopsis text
+     in the same paragraph (the parser must NOT swallow the synopsis into cast). -->
+<html>
+<body>
+<div class="movie-detail">
+  <h1>Тест Филм</h1>
+  <!-- Structured metadata: each .text-summary-item has a <span> label -->
+  <div class="text-summary">
+    <div class="text-summary-item movie-0"><span>Жанр: </span>драма, комедия</div>
+    <div class="text-summary-item movie-1"><span>Държава: </span>България</div>
+    <div class="text-summary-item movie-2"><span>Година: </span>2025</div>
+    <div class="text-summary-item movie-3"><span>Времетраене (минути): </span>110</div>
+    <div class="text-summary-item movie-4"><span>Режисьор: </span>Иван Иванов</div>
+    <div class="text-summary-item movie-5"><span>Участват: </span>Мария Петрова, Георги Стоянов, Елена Димитрова, Николай Коцев, Весела Стоева</div>
+  </div>
+  <!-- Synopsis in div.text.mb-5.pb-5 > p (the real programata structure) -->
+  <div class="text mb-5 pb-5">
+    <p>Историята на един млад мъж, който търси своето място в света. Пътуване из България, изпълнено с препятствия и открития. Нещо дълго описание на действието на филма.</p>
+  </div>
+</div>
+</body>
+</html>

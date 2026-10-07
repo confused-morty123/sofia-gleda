@@ -137,6 +137,99 @@ data = {n: const(n) for n in
         ["SNAPSHOT", "CINEMAS", "FILMS", "SHOWTIMES", "THEATRES", "SHOWS",
          "PERFORMANCES", "EVENTS", "BOOKING", "VENUE_UNTIL"]}
 
+# ----------------------------------------- 4b. VLINKS structural checks
+# VLINKS=[[filmId, venueId, url], …]; each URL must be on that venue's allowlist.
+# Programata links must never appear.
+VENUE_LINK_ALLOWLIST = {
+    "cc-sofia":     ["cinemacity.bg"],
+    "cc-paradise":  ["cinemacity.bg"],
+    "arena-mega":   ["kinoarena.com"],
+    "arena-mall":   ["kinoarena.com"],
+    "cg-ring":      ["cinegrand.bg"],
+    "cg-park":      ["cinegrand.bg"],
+    "cineland":     ["cineland.bg"],
+    "vlaikova":     ["vlaikovacinema.com", "embed.urboapp.com"],
+    "lumiere":      ["ndk.bg", "epaygo.bg"],
+    "dom-kino":     ["domnakinoto.com"],
+    "odeon":        ["bnf.bg"],
+    "g8":           ["g8cinema.com"],
+}
+
+def const_arr_raw(name):
+    """Return the parsed array for a const, or None."""
+    m_arr = re.search(r"^const %s\s*=\s*(\[.*?\]);\s*$" % name, js, flags=re.M | re.S)
+    if not m_arr:
+        return None
+    try:
+        return json.loads(m_arr.group(1))
+    except Exception:
+        return None
+
+vlinks_data = const_arr_raw("VLINKS")
+if vlinks_data is not None:
+    from urllib.parse import urlparse as _urlparse
+    if not isinstance(vlinks_data, list):
+        fail("VLINKS is not an array")
+    else:
+        bad_programata = []
+        bad_allowlist = []
+        for entry in vlinks_data:
+            if not (isinstance(entry, list) and len(entry) == 3):
+                fail(f"VLINKS entry is not [filmId, venueId, url]: {str(entry)[:80]}")
+                continue
+            fid, vid, url = entry
+            if not isinstance(url, str):
+                fail(f"VLINKS[{fid},{vid}] url is not a string")
+                continue
+            host = _urlparse(url).netloc.lstrip("www.")
+            if "programata.bg" in host:
+                bad_programata.append(f"{fid}/{vid}")
+            allowed = VENUE_LINK_ALLOWLIST.get(vid, [])
+            if allowed and not any(a in host for a in allowed):
+                bad_allowlist.append(f"{fid}/{vid} -> {url[:60]}")
+        if bad_programata:
+            fail(f"VLINKS contains {len(bad_programata)} programata.bg URL(s) — "
+                 "these must never appear in VLINKS: "
+                 + ", ".join(bad_programata[:5]))
+        if bad_allowlist:
+            fail(f"VLINKS contains {len(bad_allowlist)} URL(s) not on the venue's allowlist: "
+                 + "; ".join(bad_allowlist[:3]))
+        # Check FILMINFO is a JSON object (not array, not null)
+        filminfo_m = re.search(r"^const FILMINFO\s*=\s*(\{.*?\});\s*$", js, flags=re.M | re.S)
+        if filminfo_m:
+            try:
+                fi = json.loads(filminfo_m.group(1))
+                if not isinstance(fi, dict):
+                    fail("FILMINFO is not a JSON object")
+            except Exception as e:
+                fail(f"FILMINFO is not valid JSON: {e}")
+        # Check every upcoming (film, venue) in SHOWTIMES has either a VLINKS entry
+        # or a BOOKING entry with a url.  "Upcoming" means date >= window.from —
+        # past rows from the tail of the window are irrelevant.
+        if data.get("SHOWTIMES") and data.get("BOOKING"):
+            vlinks_pairs = {(e[0], e[1]) for e in vlinks_data if isinstance(e, list) and len(e) == 3}
+            booking = data["BOOKING"]
+            missing_ticket = []
+            snap = data.get("SNAPSHOT") or {}
+            w = snap.get("window") or {}
+            w_from = w.get("from", "0000-00-00")  # only upcoming rows
+            for row in data["SHOWTIMES"]:
+                if len(row) < 3:
+                    continue
+                fid, vid, date = row[0], row[1], row[2]
+                if date < w_from:   # skip past rows
+                    continue
+                has_vlink = (fid, vid) in vlinks_pairs
+                has_booking = (vid in booking and booking[vid].get("url"))
+                if not has_vlink and not has_booking:
+                    missing_ticket.append(f"{fid}/{vid}")
+            if missing_ticket:
+                # Every cinema we scrape MUST have a BOOKING entry — any miss
+                # indicates a real scraping/config bug, so always FAIL.
+                uniq = sorted(set(missing_ticket))
+                fail(f"{len(uniq)} upcoming (film, venue) pairs have neither a VLINKS entry nor "
+                     f"a BOOKING url (e.g. {', '.join(uniq[:4])}) — ticket links will be absent")
+
 for name, floor in FLOORS.items():
     v = data.get(name)
     if v is None:

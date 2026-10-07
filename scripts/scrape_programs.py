@@ -117,6 +117,30 @@ THEATRE_ART_VENUE = {"14": "sfumato", "173": "citymark"}
 TIME_RE = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 DATE_RE = re.compile(r"\b(\d{1,2})[.\-/](\d{1,2})(?:[.\-/](\d{2,4}))?\b")
 
+# Allowlist of URL hosts that may appear in VLINKS for each venue.
+# A link from programata.bg NEVER goes into VLINKS (it is a listing aggregator,
+# not the venue's own ticketing site). Only links whose host is on this list for
+# a given venue are stored as venue-specific ticket links.
+VENUE_LINK_ALLOWLIST = {
+    "cc-sofia":     ["cinemacity.bg"],
+    "cc-paradise":  ["cinemacity.bg"],
+    "arena-mega":   ["kinoarena.com"],
+    "arena-mall":   ["kinoarena.com"],
+    "cg-ring":      ["cinegrand.bg"],
+    "cg-park":      ["cinegrand.bg"],
+    "cineland":     ["cineland.bg"],
+    "vlaikova":     ["vlaikovacinema.com", "embed.urboapp.com"],
+    "lumiere":      ["ndk.bg", "epaygo.bg"],
+    "dom-kino":     ["domnakinoto.com"],
+    "odeon":        ["bnf.bg"],
+    "g8":           ["g8cinema.com"],
+}
+
+# Regex to extract ticket-specific deep links from venue pages.
+# vlaikova pages embed an urboapp widget; lumiere pages link to epaygo.
+_URBO_RE   = re.compile(r'https?://embed\.urboapp\.com/[^\s"\'<>]+')
+_EPAYGO_RE = re.compile(r'https://epaygo\.bg/\d+[^\s"\'<>]*')
+
 
 @dataclass
 class Diff:
@@ -978,6 +1002,22 @@ def main():
     except (KeyError, ValueError):
         pass
 
+    # Per-(film, venue) ticket links. Seeded from the previous VLINKS array
+    # so a venue we cannot reach this week keeps its deep-ticket links.
+    # Key: (film_id, venue_id), value: ticket URL.
+    vlinks = {}
+    try:
+        _, _, vl_lit = extract_array(src, "VLINKS")
+        for row in js_rows(vl_lit):
+            if isinstance(row, list) and len(row) == 3:
+                vlinks[(row[0], row[1])] = row[2]
+    except (KeyError, ValueError):
+        pass
+    # Track which (fid, venue) pairs were seen on programata pages so we can
+    # prefer a programata link for LINKS (richest film-info page) while still
+    # storing venue-specific ticket links in vlinks.
+    programata_links = {}   # fid -> programata film-page URL
+
     session = Fetcher(budget_seconds=args.budget)
     venue_stats = {}
 
@@ -1004,7 +1044,19 @@ def main():
                 new_showtimes.append([fid, v, date, times])
                 matched += 1
                 if link:
-                    links[fid] = link      # programata/venue film page — canonical
+                    from urllib.parse import urlparse as _up
+                    lhost = _up(link).netloc.lstrip("www.")
+                    if "programata.bg" in lhost:
+                        # programata film page: richest synopsis source for LINKS
+                        programata_links[fid] = link
+                        # NOT stored in vlinks — programata is never a venue ticket site
+                    else:
+                        # venue's own page: record as info-page candidate for LINKS
+                        links.setdefault(fid, link)
+                    # Populate vlinks only when the link host is on this venue's allowlist
+                    allowed = VENUE_LINK_ALLOWLIST.get(v, [])
+                    if allowed and any(a in lhost for a in allowed):
+                        vlinks[(fid, v)] = link
         # A venue is authoritative — its old rows may be dropped — once we have
         # actually read its programme this week: either a row matched a film in
         # the catalogue, or the page parsed into dated rows at all (st["rows"]).
@@ -1032,6 +1084,49 @@ def main():
     for row in old_showtimes:
         if row[1] not in seen_venues and row[2] >= floor:
             new_showtimes.append(row)
+
+    # Task 1c: LINKS prefers the programata film page when one was seen this run
+    # (it has the richest synopsis/credits), else falls back to the venue page
+    # already stored in links{} (setdefault above). This overwrites any venue page
+    # that snuck in via the setdefault, making programata always win.
+    for fid, purl in programata_links.items():
+        links[fid] = purl
+
+    # Task 1b: Ticket upgrade — for vlaikova and lumiere vlink pages, fetch the
+    # page once and extract a film-specific ticket deep-link when present:
+    #   vlaikova: an embed.urboapp.com link on the page
+    #   lumiere:  an https://epaygo.bg/<digits> link on the page
+    # Keep-previous: if the fetch fails or no deep-link is found, the page URL
+    # already stored in vlinks is preserved.
+    upgrade_venues = {"vlaikova", "lumiere"}
+    upgraded = 0
+    for (fid, vid), page_url in list(vlinks.items()):
+        if vid not in upgrade_venues:
+            continue
+        from urllib.parse import urlparse as _up2
+        lhost = _up2(page_url).netloc.lstrip("www.")
+        # Only upgrade pages that are themselves on the allowlist (skip if we
+        # already stored an embed.urboapp.com or epaygo.bg deep-link last run)
+        if vid == "vlaikova" and "embed.urboapp.com" in lhost:
+            continue  # already a deep-link ticket URL
+        if vid == "lumiere" and "epaygo.bg" in lhost:
+            continue  # already a deep-link ticket URL
+        soup = fetch(page_url, session)
+        if soup is None:
+            continue
+        page_text = str(soup)
+        if vid == "vlaikova":
+            m = _URBO_RE.search(page_text)
+            if m:
+                vlinks[(fid, vid)] = m.group(0)
+                upgraded += 1
+        elif vid == "lumiere":
+            m = _EPAYGO_RE.search(page_text)
+            if m:
+                vlinks[(fid, vid)] = m.group(0)
+                upgraded += 1
+    if upgraded:
+        print(f"upgraded {upgraded} vlinks to deep-ticket URLs (urbo/epaygo)")
 
     new_performances = []
     seen_perf, seen_shows = set(), set()
@@ -1164,6 +1259,23 @@ def main():
         out = out[:li_s] + emit_rows(link_rows) + out[li_e:]
     except (KeyError, ValueError):
         pass
+    # per-(film, venue) ticket links → VLINKS=[[fid,venue,url],…]
+    # Prune to only (film, venue) pairs that still have a showtime in new_showtimes.
+    active_pairs = {(r[0], r[1]) for r in new_showtimes}
+    vlinks_pruned = {k: v for k, v in vlinks.items() if k in active_pairs}
+    try:
+        vl_s, vl_e, _ = extract_array(out, "VLINKS")
+        vlink_rows = sorted([fid, vid, url] for (fid, vid), url in vlinks_pruned.items())
+        out = out[:vl_s] + emit_rows(vlink_rows) + out[vl_e:]
+        print(f"wrote VLINKS: {len(vlink_rows)} entries ({len(vlinks_pruned)} unique film+venue pairs)")
+        # Report per-venue counts
+        from collections import Counter as _Ctr
+        venue_counts = _Ctr(vid for _, vid, _ in vlink_rows)
+        for vid, cnt in sorted(venue_counts.items()):
+            print(f"  {vid}: {cnt} vlink(s)")
+    except (KeyError, ValueError):
+        print("VLINKS constant not found in index.html — skipping VLINKS update "
+              "(add 'const VLINKS=[];' to src/data.html between the SOFIA-DATA markers)")
     stamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     out = re.sub(r'"?lastValidated"?\s*:\s*"[^"]*"', f'"lastValidated":"{stamp}"', out)
     # Advance the snapshot window's opening to the dating floor so the stored

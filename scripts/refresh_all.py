@@ -30,6 +30,7 @@ REPORT = ROOT / "build_report.json"
 
 STEPS = [
     ("programmes",      "scrape_programs.py",        []),
+    ("film info",       "fetch_film_info.py",        []),    # best-effort: synopsis/dir/cast from own pages
     ("arthouse films",  "inject_films.py",           []),
     ("theatre shows",   "inject_shows.py",           []),
     ("film posters",    "fetch_tmdb.py",             []),

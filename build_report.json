@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-07T15:32:30+00:00",
+  "ran": "2026-10-07T17:12:17+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,8 +8,16 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 123.5,
-      "tail": "  tickets.ndk.bg                        1     0      0.1  \n  toplocentrala.bg                      1     0      0.1  \n  vlaikovacinema.com                    1     0      0.5  \n  www.atelie313.com                     1     0      1.5  \n  www.ndk.bg                            1     0      0.2  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.4  \nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (87 theatre shows)"
+      "seconds": 145.7,
+      "tail": "  www.atelie313.com                     1     0      1.3  \n  www.ndk.bg                            4     0      3.8  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.5  \nwrote VLINKS: 19 entries (19 unique film+venue pairs)\n  lumiere: 3 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (87 theatre shows)"
+    },
+    {
+      "step": "film info",
+      "script": "fetch_film_info.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 37.0,
+      "tail": "film_info coverage:\n  146 films needed details, fetched 35 pages\n  synopsis:  23 new\n  director:  23 new\n  cast:      8 new\n  genres:    16 new\n  93 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
@@ -40,8 +48,8 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 84.8,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        24     0     29.2  \n  theatre.art.bg                       45     0     52.3  \n\nnew this run: 0   rejected by policy: 2   total: 341/356 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 85.0,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        24     0     30.0  \n  theatre.art.bg                       45     0     52.1  \n\nnew this run: 0   rejected by policy: 2   total: 341/356 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "inline posters",
@@ -56,8 +64,8 @@
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 9.2,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (507,600 bytes)\n  all checks passed — safe to publish"
+      "seconds": 6.8,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp-pipeline/index.html (597,733 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }
