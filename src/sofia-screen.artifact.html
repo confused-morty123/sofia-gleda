@@ -72,20 +72,26 @@ a{color:inherit}
    --logo-row-h = 28px logo + 14px padding-block-top + 10px gap between rows = 52px.
    The negative top hides the logo row; the controls row is then 8px below safe-area-inset-top. */
 /* ── Mobile layout (≤760px) — JS also detects this and renders mobile HTML ── */
+/* Row 1: 3-column grid — left placeholder | logo centred | lang button right.
+   Row 2: seg toggle (fills width) + search icon.
+   Row 3 (optional): full-width open search field when S.searchOpen.
+   --logo-row-h = 42px row (the language button is the tallest item) + 14px padding-block-top + 10px gap = 66px. */
 @media(max-width:760px){
-  :root{ --logo-row-h:52px }
+  :root{ --logo-row-h:66px } /* 42px row (language button) + 14px top padding + 10px gap */
   .bar{top:calc(env(safe-area-inset-top,0px) - var(--logo-row-h) + 8px)}
-  .bar-row-logo{display:flex; justify-content:center; align-items:center; margin-bottom:10px}
+  .bar-row-logo{display:grid; grid-template-columns:42px 1fr 42px; align-items:center; margin-bottom:10px; gap:0}
+  .bar-row-logo .brand{justify-self:center; grid-column:2}
+  .bar-row-logo .lang-right{grid-column:3; justify-self:end}
   .bar-row-controls{display:flex; align-items:center; gap:8px; flex-wrap:nowrap; overflow:hidden}
   .bar-row-search{width:100%}
   .brand b{font-size:19px; letter-spacing:.08em}
   .brand-logo{height:28px}
-  /* mobile search icon button */
-  .search-icon-btn{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
-    background:var(--ink-3); color:var(--fg-2); display:grid; place-items:center}
-  .search-icon-btn:hover{border-color:var(--line-2); color:var(--fg)}
+  /* mobile search icon button — inherits .iconb; only expanded override needed here */
   /* mobile open search field */
   .bar-row-search .search{position:relative; width:100%; max-width:none}
+  /* mobile period header: date range on its own line, no wrap */
+  .phead-title{font-size:clamp(28px,7vw,36px)}
+  .phead-dates{display:block!important; white-space:nowrap; font-size:clamp(15px,4.5vw,20px)}
 }
 /* ── Segmented toggle — FIXED equal halves, language-independent ──
    Total fixed width: 220px desktop / auto-expands on mobile to fill remaining space.
@@ -101,20 +107,25 @@ a{color:inherit}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
 .iconb:hover{border-color:var(--line-2); color:var(--fg)}
+.search-icon-btn.expanded{border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--ink-3))}
 
 /* ---------- controls ---------- */
-.search{position:relative; justify-self:center; width:100%; max-width:clamp(420px,52vw,760px); min-width:0}
-.search input{width:100%; padding:13px 44px; border-radius:999px; border:1px solid var(--line);
-  background:var(--ink-3); color:var(--fg); font:inherit; font-size:clamp(15px,1.5vw,17px)}
+/* Desktop: search is the expand-on-demand panel, not always visible.
+   The iconb search-icon-btn lives in bar-controls (far right-ish).
+   When expanded, .desk-search-wrap grows into view from the right side. */
+.desk-search-wrap{display:flex; align-items:center; gap:0; overflow:hidden; max-width:0; transition:max-width .2s ease-out}
+.desk-search-wrap.open{max-width:420px}
+.desk-search-wrap .search{position:relative; width:420px; max-width:420px; min-width:0}
+.search input{width:100%; padding:11px 40px; border-radius:999px; border:1px solid var(--line);
+  background:var(--ink-3); color:var(--fg); font:inherit; font-size:15px}
 .search input::placeholder{color:var(--fg-3)}
 .search input:focus{outline:none; border-color:var(--accent)}
-.search .mag{position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--fg-3); font-size:15px; pointer-events:none}
+.search .mag{position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--fg-3); font-size:15px; pointer-events:none}
 .search .clr{position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--fg-3); font-size:16px;
   width:24px; height:24px; border-radius:50%; display:none; place-items:center}
 .search.has .clr{display:grid}
 .search.search-mob-open .clr{display:grid}
-.burger{display:flex; flex-direction:column; gap:3.5px; align-items:center; justify-content:center}
-.burger i{display:block; width:18px; height:2px; background:currentColor; border-radius:2px}
+/* .burger removed — drawer is opened by .fab and period-banner link only */
 .drawer-scrim{position:fixed; inset:0; z-index:100; background:rgba(5,3,7,.6); backdrop-filter:blur(3px)}
 .drawer{position:fixed; top:0; right:0; bottom:0; z-index:101; width:min(380px,88vw);
   background:var(--ink-2); border-left:1px solid var(--line); overflow-y:auto;
@@ -397,17 +408,27 @@ footer{border-top:1px solid var(--line); margin-top:44px; padding-block:24px 40p
 footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .empty{padding:26px; border:1px dashed var(--line-2); border-radius:var(--r); color:var(--fg-3); font-size:13px; text-align:center}
 
-/* ---------- period banner ---------- */
-.pbanner{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-  background:var(--ink-3); border:1px solid var(--line); border-radius:var(--r);
-  padding:14px 18px; margin-bottom:26px}
-.pbanner-main{display:flex; align-items:center; gap:12px; flex:1 1 0; min-width:0}
-.pbanner-icon{flex:0 0 auto; color:var(--accent); opacity:.9}
-.pbanner-text{min-width:0}
-.pbanner-title{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(17px,1.8vw,21px);
-  letter-spacing:.04em; text-transform:uppercase; color:var(--fg); line-height:1.15}
-[data-surface="theatre"] .pbanner-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-size:clamp(18px,1.9vw,22px)}
-.pbanner-dates{font-size:13px; color:var(--fg-2); margin-top:2px}
+/* ---------- typographic period header (replaces the old .pbanner box) ---------- */
+.phead{padding-block:20px 10px; margin-bottom:6px}
+.phead-eyebrow{font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--fg-3); margin-bottom:6px; font-weight:600}
+.phead-title{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
+  font-size:clamp(34px,4vw,44px); letter-spacing:.04em; line-height:1.04; color:var(--fg); margin-bottom:2px}
+[data-surface="theatre"] .phead-title{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+  letter-spacing:-.01em; font-size:clamp(36px,4.2vw,46px)}
+.phead-dates{font-size:clamp(18px,2.2vw,24px); color:var(--accent); font-family:inherit; font-weight:500; display:inline}
+.phead-other{display:inline-block; margin-top:8px; font-size:12px; color:var(--fg-3); text-decoration:none; cursor:pointer; border:0; background:none; padding:0; letter-spacing:.04em}
+.phead-other:hover{color:var(--fg)}
+/* Day strip */
+.daystrip{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-top:16px; margin-bottom:4px}
+.daystrip::-webkit-scrollbar{display:none}
+.dspill{flex:0 0 auto; padding:6px 14px; border-radius:999px; border:1px solid var(--line);
+  background:var(--ink-2); font-size:12.5px; font-weight:600; color:var(--fg-2); white-space:nowrap; position:relative;
+  transition:border-color .15s,background .15s,color .15s; line-height:1.3}
+.dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}
+.dspill[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.dspill[disabled]{opacity:.32; cursor:default}
+.dspill .ds-today{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; opacity:.8; line-height:1}
+/* keep old .pbanner-btn for any .data-drawer usages */
 .pbanner-btn{flex:0 0 auto; padding:7px 14px; border-radius:999px; border:1px solid var(--line-2);
   background:transparent; color:var(--fg-2); font-size:12px; font-weight:600; letter-spacing:.04em;
   white-space:nowrap; transition:border-color .15s,color .15s}
@@ -429,7 +450,9 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .sec-content[hidden]{display:none!important}
 .sec-subhead{font-family:Oswald,sans-serif; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
   color:var(--fg-3); padding:12px 0 8px; border-bottom:1px solid var(--line); margin-bottom:20px}
-[data-surface="theatre"] .sec-subhead{font-family:"Playfair Display",Georgia,serif; letter-spacing:0; font-size:12px}
+/* theatre sub-headings: larger, gold — item 7 */
+[data-surface="theatre"] .sec-subhead{font-family:"Playfair Display",Georgia,serif; letter-spacing:0;
+  font-size:clamp(20px,2vw,22px); font-weight:700; color:var(--gild); padding-top:20px}
 
 /* ---------- FAB (floating action button) ---------- */
 .fab{position:fixed; right:max(16px,env(safe-area-inset-right,0px));
@@ -539,6 +562,13 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  fabFilters:"Филтри",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
+ railPopular:"Популярни тази седмица",railPopularPeriod:"Популярни за периода",
+ railPopularSub:"най-много прожекции",railGems:"Скрити бижута",railGemsSub:"силни оценки, малко прожекции",
+ railTomorrow:"За теб утре",
+ pheadEyebrow:"Програмата",pheadOtherDates:"Друг период ›",
+ pheadThisWeek:"Тази седмица",pheadToday:"Днес",pheadThisMonth:"Този месец",
+ pheadAll:"Цялата програма",pheadCustom:"Избран период",pheadDayFull:"",
+ dsAllWeek:"Цялата седмица",dsToday:"днес",searchClose:"Затвори търсенето",
  subMultiplexes:"Мултиплекси",subIndepCinemas:"Независими кина",
  showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички",
  noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
@@ -581,6 +611,13 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  fabFilters:"Filters",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
+ railPopular:"Popular this week",railPopularPeriod:"Popular in this period",
+ railPopularSub:"most screenings",railGems:"Hidden gems",railGemsSub:"great ratings, few screenings",
+ railTomorrow:"For you tomorrow",
+ pheadEyebrow:"The programme",pheadOtherDates:"Other dates ›",
+ pheadThisWeek:"This week",pheadToday:"Today",pheadThisMonth:"This month",
+ pheadAll:"Full programme",pheadCustom:"Selected period",pheadDayFull:"",
+ dsAllWeek:"Whole week",dsToday:"today",searchClose:"Close search",
  subMultiplexes:"Multiplexes",subIndepCinemas:"Independent cinemas",
  showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all",
  noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
@@ -636,7 +673,7 @@ const MONTHS=(()=>{
    false and `prefs` is seeded as if the taste quiz had been skipped (track:"both",
    when:"any"), so scoring degrades cleanly to IMDb / screening-count ranking. */
 let S={lang:"bg",mode:"cinema",day:"week",onb:false,step:0,q:"",drawer:false,searchOpen:false,fStrands:[],limit:30,
-  fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,secGenres:true,secVenues:false,
+  fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,secGenres:false,secVenues:false,secAll:false,
   prefs:{track:"both",genres:[],mood:[],with:"",when:"any",taste:[]}};
 try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
   if(p&&p.prefs){S.prefs=Object.assign(S.prefs,p.prefs);S.onb=false;S.lang=p.lang||"bg";
@@ -1086,13 +1123,84 @@ function periodBannerText(){
   if(/^\d{4}-\d{2}-\d{2}$/.test(S.day)){
     const dD=dUTC(S.day);return{title:L.bannerToday,dates:`${L.dows[dD.getUTCDay()]} ${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`};}
   return{title:L.bannerWeek,dates:fmtRange(TODAY,WEEK_END)};}
+/* Build the day-strip for the typographic header.
+   Shows "Цялата седмица" + each day from TODAY to the coming Sunday.
+   Only shown for S.day==="week" and for a single specific day within the current week. */
+function buildDayStrip(){
+  const L=t();
+  /* Determine the week: Mon before TODAY to Sun after TODAY */
+  const dow=dUTC(TODAY).getUTCDay(); /* 0=Sun … 6=Sat */
+  const weekStart=addDays(TODAY,-(dow===0?6:dow-1)); /* Monday */
+  const weekEnd=addDays(weekStart,6);                 /* Sunday */
+  /* Only show the strip when in week or single-day-within-week mode */
+  const inWeekDay=S.day!=="week"&&/^\d{4}-\d{2}-\d{2}$/.test(S.day)&&S.day>=weekStart&&S.day<=weekEnd;
+  if(S.day!=="week"&&!inWeekDay)return"";
+  /* Gather which days have screenings/performances */
+  const hasData=datesWith();
+  const pills=[];
+  /* "Whole week" pill */
+  const allPill=`<button class="dspill" data-day="week" aria-pressed="${S.day==="week"}">${esc(L.dsAllWeek||"Цялата седмица")}</button>`;
+  pills.push(allPill);
+  /* Start from TODAY — no past-day pills */
+  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0; /* dUTC: ISO parse works in every engine (Safari rejects 'YYYY-MM-DD UTC') */
+  for(let i=0;i<daysLeft;i++){
+    const d=addDays(TODAY,i);
+    if(d>LASTDAY)break;
+    const active=S.day===d;
+    const hasSc=hasData.has(d);
+    const isToday=d===TODAY;
+    const label=fmtDay(d,false); /* e.g. "ср 7" */
+    const todayMark=isToday?`<span class="ds-today">${esc(L.dsToday||"днес")}</span>`:"";
+    pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}">${esc(label)}${todayMark}</button>`);
+  }
+  return`<div class="daystrip">${pills.join("")}</div>`;}
+
 function periodBanner(){
-  const L=t(),{title,dates}=periodBannerText();
-  const calIcon=`<svg class="pbanner-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
-  return`<div class="pbanner"><div class="pbanner-main">${calIcon}<div class="pbanner-text">
-    <div class="pbanner-title">${esc(title)}</div>
-    <div class="pbanner-dates">${esc(dates)}</div></div></div>
-    <button class="pbanner-btn" data-drawer aria-label="${esc(L.bannerChange)}">${esc(L.bannerChange)}</button></div>`;}
+  const L=t();
+  /* Build title and date range */
+  let mainTitle="",dateStr="",eyebrow=L.pheadEyebrow||"Програмата",showStrip=false;
+  if(S.day==="week"){
+    mainTitle=L.pheadThisWeek||(S.lang==="bg"?"Тази седмица":"This week");
+    dateStr=fmtRange(TODAY,WEEK_END);
+    showStrip=true;
+  } else if(S.day===TODAY||S.day===NOW_DATE){
+    const dT=dUTC(TODAY);
+    mainTitle=L.pheadToday||(S.lang==="bg"?"Днес":"Today");
+    dateStr=`${L.dows[dT.getUTCDay()]} ${dT.getUTCDate()} ${L.months[dT.getUTCMonth()]}`;
+    showStrip=true;
+  } else if(S.day==="month"){
+    mainTitle=L.pheadThisMonth||(S.lang==="bg"?"Този месец":"This month");
+    dateStr=fmtRange(TODAY,lastOfMonth(TODAY));
+  } else if(S.day==="all"){
+    mainTitle=L.pheadAll||(S.lang==="bg"?"Цялата програма":"Full programme");
+    dateStr=`${S.lang==="bg"?"до":"until"} ${fmtDay(LASTDAY,true)}`;
+  } else if(S.day==="range"&&S.rFrom){
+    mainTitle=L.pheadCustom||(S.lang==="bg"?"Избран период":"Selected period");
+    dateStr=S.rTo?fmtRange(S.rFrom,S.rTo):fmtDay(S.rFrom,true);
+  } else if(/^\d{4}-\d{2}-\d{2}$/.test(S.day)){
+    /* single specific day */
+    const dD=dUTC(S.day);
+    const dowFull=L.dowsLong[dD.getUTCDay()];
+    const cap=dowFull.charAt(0).toUpperCase()+dowFull.slice(1);
+    mainTitle=`${cap}`;
+    dateStr=`${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`;
+    /* show strip only if day is within current week */
+    const dow=dUTC(TODAY).getUTCDay();
+    const weekStart=addDays(TODAY,-(dow===0?6:dow-1));
+    const weekEnd=addDays(weekStart,6);
+    if(S.day>=weekStart&&S.day<=weekEnd)showStrip=true;
+  } else {
+    mainTitle=L.pheadThisWeek||(S.lang==="bg"?"Тази седмица":"This week");
+    dateStr=fmtRange(TODAY,WEEK_END);
+    showStrip=true;
+  }
+  const strip=showStrip?buildDayStrip():"";
+  return`<div class="phead">
+    <div class="phead-eyebrow">${esc(eyebrow)}</div>
+    <div class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></div>
+    ${strip}
+    <button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button>
+  </div>`;}
 /* dates that actually have something, for the calendar dots */
 function datesWith(){
   const set=new Set();
@@ -1230,12 +1338,17 @@ function body(){
   const pushRail=(title,sub,items,fn)=>{ if(items&&items.length) out.push({t:title,s:sub,items,fn}); };
   if(S.mode==="cinema"){
     const vis=visibleFilms();
+    /* filmRowsInPeriod: screenings for a film within the selected period, filtered by venue */
+    const filmRowsInPeriod=fid=>{
+      let rows=_frows(fid).filter(r=>inRange(r[2])&&withinHorizon(r[1],r[2]));
+      if(S.fVenues.length)rows=rows.filter(r=>venueOk(r[1]));
+      return upcomingRows(rows);};
     /* "За теб днес" = films with a screening still to come TODAY. Decoupled from
        the selected-day filter (scoreFilm returns -1 off the selected day, which
        would wrongly empty the rail on any day but today); the drawer filters
        (venue chain, genre, strand) still apply. Ranked by how many screenings
        remain today, then IMDb. Each card shows only today's remaining times. */
-    const today=FILMS.map(f=>{
+    const todayItems=FILMS.map(f=>{
         let rows=filmTimesToday(f.id);
         if(S.fVenues.length)rows=rows.filter(r=>venueOk(r[1]));
         return{f,rows};}).filter(o=>o.rows.length)
@@ -1245,16 +1358,52 @@ function body(){
         return true;})
       .sort((a,b)=>{const na=a.rows.reduce((n,r)=>n+r[3].length,0),nb=b.rows.reduce((n,r)=>n+r[3].length,0);
         return nb-na||((imdbOf(b.f)||0)-(imdbOf(a.f)||0));}).slice(0,14);
-    pushRail(L.railToday,fmtDay(NOW_DATE,true),today,x=>filmCard(x.f,false,x.rows));
+    if(todayItems.length){
+      pushRail(L.railToday,fmtDay(NOW_DATE,true),todayItems,x=>filmCard(x.f,false,x.rows));
+    } else {
+      /* "За теб утре" fallback: same logic, tomorrow's date, only if within data window */
+      const TOMORROW=addDays(NOW_DATE,1);
+      if(TOMORROW<=LASTDAY){
+        const filmTimesTomorrow=fid=>upcomingRows(_frows(fid).filter(r=>r[2]===TOMORROW&&withinHorizon(r[1],r[2])));
+        const tomorrowItems=FILMS.map(f=>{
+            let rows=filmTimesTomorrow(f.id);
+            if(S.fVenues.length)rows=rows.filter(r=>venueOk(r[1]));
+            return{f,rows};}).filter(o=>o.rows.length)
+          .filter(o=>{
+            if(S.fGenres.length&&!genreHit(o.f.genres))return false;
+            if(S.fStrands.length&&!S.fStrands.some(s=>filmInStrand(o.f,s)))return false;
+            return true;})
+          .sort((a,b)=>{const na=a.rows.reduce((n,r)=>n+r[3].length,0),nb=b.rows.reduce((n,r)=>n+r[3].length,0);
+            return nb-na||((imdbOf(b.f)||0)-(imdbOf(a.f)||0));}).slice(0,14);
+        pushRail(L.railTomorrow||"За теб утре",fmtDay(TOMORROW,true),tomorrowItems,x=>filmCard(x.f,false,x.rows));
+      }
+    }
     /* Event rails hidden when any venue or genre filter is active */
     if(!S.fVenues.length&&!S.fGenres.length){
       pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);}
     const top=vis.filter(f=>imdbOf(f)!=null).sort((a,b)=>imdbOf(b)-imdbOf(a)).slice(0,12);
     pushRail(L.railTop,"IMDb",top,f=>filmCard(f,day));
+    /* "Популярни тази седмица" — ranked by total screenings in period, then cinema count, then IMDb */
+    const popLabel=S.day==="week"?(L.railPopular||"Популярни тази седмица"):(L.railPopularPeriod||"Популярни за периода");
+    const popularItems=vis.map(f=>{
+        const rows=filmRowsInPeriod(f.id);
+        const sc=rows.reduce((n,r)=>n+r[3].length,0);
+        const cv=new Set(rows.map(r=>r[1])).size;
+        return{f,sc,cv};
+      }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||b.cv-a.cv||((imdbOf(b.f)||0)-(imdbOf(a.f)||0))).slice(0,14);
+    pushRail(popLabel,L.railPopularSub||"най-много прожекции",popularItems,x=>filmCard(x.f,day));
+    /* "Скрити бижута" — IMDb ≥ 7.3, plays at ≤ 2 (filtered) cinemas */
+    const gemsItems=vis.filter(f=>{
+        const imdb=imdbOf(f); if(imdb==null||imdb<7.3)return false;
+        const rows=filmRowsInPeriod(f.id);
+        const cv=new Set(rows.map(r=>r[1])).size;
+        return cv>=1&&cv<=2;
+      }).sort((a,b)=>(imdbOf(b)||0)-(imdbOf(a)||0)).slice(0,14);
+    if(gemsItems.length>=3){
+      pushRail(L.railGems||"Скрити бижута",L.railGemsSub||"силни оценки, малко прожекции",gemsItems,f=>filmCard(f,day));}
     if(!S.fVenues.length&&!S.fGenres.length){
       pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);}
-    /* Section A: По жанр — collapsible, open by default.
-       When genre filter active, show only selected genres' rails. */
+    /* Section A: По жанр — collapsible, CLOSED by default. */
     const visSet=new Set(vis.map(f=>f.id));
     const genreRails=[];
     genresFor("cinema").forEach(g=>{
@@ -1266,8 +1415,7 @@ function body(){
       return secToggleHTML("Genres",L.secByGenre||"По жанр",genreRails.length,S.secGenres)
         +`<div id="sec-Genres-content" class="sec-content"${S.secGenres?"":" hidden"}>${inner}</div>`;
     }});
-    /* Section B: По кино — collapsible, closed by default; rails not built when closed.
-       When venue filter active, show only selected cinemas' rails. */
+    /* Section B: По кино — collapsible, closed by default; rails not built when closed. */
     out.push({html:()=>{
       let inner="";
       if(S.secVenues){
@@ -1277,8 +1425,6 @@ function body(){
             if(arty&&!comm&&c.kind!=="independent")return;
             if(comm&&!arty&&c.kind==="independent")return;}
           const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-          /* pass rowsOverride scoped to this cinema so card counts are per-cinema;
-             mark _perVenue so filmCard suppresses the "N кина" count */
           if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
             const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
             if(!cRows.length)return filmCard(f,day,undefined);
@@ -1288,12 +1434,15 @@ function body(){
       return secToggleHTML("Venues",L.secByCinema||"По кино",null,S.secVenues)
         +`<div id="sec-Venues-content" class="sec-content"${S.secVenues?"":" hidden"}>${inner}</div>`;
     }});
-    out.push({html:()=>`<section class="rail"><div class="sechead"><h2>${esc(L.allTitles)}</h2>
-      <span class="sub">${esc(periodDateOnly())}</span>
-      <span class="n">${vis.length}</span></div>
-      ${vis.length?`<div class="grid">${vis.slice(0,S.limit).map(f=>filmCard(f,day)).join("")}</div>
-      ${vis.length>S.limit?`<div style="text-align:center;margin-top:18px">
-        <button class="btn sm" data-more>${esc(L.more)} (${vis.length-S.limit})</button></div>`:""}`:emptyState()}</section>`});
+    /* Section C: Всичко в програмата — collapsible, CLOSED by default (secAll) */
+    out.push({html:()=>{
+      const inner=S.secAll?(vis.length?`<div class="grid">${vis.slice(0,S.limit).map(f=>filmCard(f,day)).join("")}</div>
+        ${vis.length>S.limit?`<div style="text-align:center;margin-top:18px">
+          <button class="btn sm" data-more>${esc(L.more)} (${vis.length-S.limit})</button></div>`:""}`:emptyState()):"";
+      return`<section class="rail">`
+        +secToggleHTML("All",L.allTitles,vis.length,S.secAll)
+        +`<div id="sec-All-content" class="sec-content"${S.secAll?"":" hidden"}>${inner}</div></section>`;
+    }});
   }else{
     const vis=visibleShows();
     const rk=vis.map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v).slice(0,14);
@@ -1306,8 +1455,7 @@ function body(){
     if(!S.fVenues.length&&!S.fGenres.length){
       pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);}
     const visSet=new Set(vis.map(s=>s.id));
-    /* Section A: По жанр — collapsible, open by default.
-       When genre filter active, show only selected genres' rails. */
+    /* Section A: По жанр — collapsible, CLOSED by default. */
     const genreRails=[];
     genresFor("theatre").forEach(g=>{
       if(S.fGenres.length&&!S.fGenres.includes(g.id))return;
@@ -1318,9 +1466,7 @@ function body(){
       return secToggleHTML("Genres",L.secByGenre||"По жанр",genreRails.length,S.secGenres)
         +`<div id="sec-Genres-content" class="sec-content"${S.secGenres?"":" hidden"}>${inner}</div>`;
     }});
-    /* Section B: По театър — closed by default; rails not built when closed.
-       Theatre sub-grouping: state/national/municipal first, then independent.
-       When venue filter active, show only selected theatres. */
+    /* Section B: По театър — closed by default; theatre sub-grouping. */
     out.push({html:()=>{
       let inner="";
       if(S.secVenues){
@@ -1340,12 +1486,15 @@ function body(){
       return secToggleHTML("Venues",L.secByTheatre||"По театър",null,S.secVenues)
         +`<div id="sec-Venues-content" class="sec-content"${S.secVenues?"":" hidden"}>${inner}</div>`;
     }});
-    out.push({html:()=>`<section class="rail"><div class="sechead"><h2>${esc(L.allTitles)}</h2>
-      <span class="sub">${esc(periodDateOnly())}</span>
-      <span class="n">${vis.length}</span></div>
-      ${vis.length?`<div class="grid">${vis.slice(0,S.limit).map(s=>showCard(s,day)).join("")}</div>
-      ${vis.length>S.limit?`<div style="text-align:center;margin-top:18px">
-        <button class="btn sm" data-more>${esc(L.more)} (${vis.length-S.limit})</button></div>`:""}`:emptyState()}</section>`});
+    /* Section C: Всичко в програмата — collapsible, CLOSED by default (secAll) */
+    out.push({html:()=>{
+      const inner=S.secAll?(vis.length?`<div class="grid">${vis.slice(0,S.limit).map(s=>showCard(s,day)).join("")}</div>
+        ${vis.length>S.limit?`<div style="text-align:center;margin-top:18px">
+          <button class="btn sm" data-more>${esc(L.more)} (${vis.length-S.limit})</button></div>`:""}`:emptyState()):"";
+      return`<section class="rail">`
+        +secToggleHTML("All",L.allTitles,vis.length,S.secAll)
+        +`<div id="sec-All-content" class="sec-content"${S.secAll?"":" hidden"}>${inner}</div></section>`;
+    }});
   }
   RAILS=out; railIdx=Math.min(RAIL_FIRST,out.length);
   return out.slice(0,railIdx).map(matRail).join("")
@@ -1726,40 +1875,51 @@ function render(){
   document.documentElement.setAttribute("data-surface",S.mode);
   const sr=S.q.trim().length>=2?searchAll(S.q):null;
   const isMob=window.innerWidth<=760;
+  /* New SVG icons: Кино = classic movie camera; Театър = comedy/tragedy mask */
+  const iconCinema=`<svg viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3,16c-0.1,0-0.3,0-0.4-0.1c-0.2-0.1-0.4-0.3-0.5-0.6l-1.4-3.8C0.4,10.8,0.5,10,0.8,9.3C1.1,8.6,1.7,8,2.5,7.7l20.7-7.5l0,0c0.8-0.3,1.6-0.2,2.3,0.1C26.2,0.6,26.7,1.2,27,2l1.4,3.8c0.1,0.2,0.1,0.5,0,0.8C28.2,6.8,28,6.9,27.8,7L3.3,15.9C3.2,16,3.1,16,3,16z"/><path d="M30,20v-4c0-0.6-0.4-1-1-1H3c-0.6,0-1,0.4-1,1v4H30z"/><path d="M2,22v7c0,1.7,1.3,3,3,3h22c1.7,0,3-1.3,3-3v-7H2z"/></svg>`;
+  const iconTheatre=`<svg viewBox="0 0 473.194 473.194" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M464.653,167.757c-0.824-3.273-2.996-6.037-5.969-7.633c-2.965-1.586-6.47-1.855-9.65-0.738c-27.88,9.795-70.896,16.098-119.276,16.098c-11.762,0-23.098-0.449-34.089-1.156c-5.683,25.676-14.764,49.252-26.363,70.016c0.564-0.023,1.103-0.115,1.672-0.115c15.034,0,27.218-1.254,27.218,8.873c0,10.127-12.185,27.803-27.218,27.803c-8.757,0-16.467-2.834-21.442-7.162c-15.025,18.654-32.578,33.363-51.909,43.09c21.795,73.361,72.751,124.824,132.131,124.824c79.219,0,143.437-91.584,143.437-204.559C473.194,212.728,470.151,189.408,464.653,167.757z M386.92,381.927c-0.254,1.078-1.056,1.957-2.11,2.303c-1.056,0.353-2.218,0.131-3.066-0.586c-11.174-9.389-30.182-15.627-51.985-15.627c-21.805,0-40.813,6.238-51.986,15.627c-0.849,0.709-2.012,0.932-3.066,0.586c-1.055-0.354-1.856-1.225-2.11-2.303c-0.925-3.936-1.494-7.994-1.494-12.215c0-32.395,26.263-58.656,58.657-58.656c32.394,0,58.655,26.262,58.655,58.656C388.413,373.933,387.844,377.992,386.92,381.927z M388.537,280.904c-15.034,0-27.218-17.676-27.218-27.803c0-10.127,12.185-8.873,27.218-8.873c15.033,0,27.218,8.211,27.218,18.338C415.754,272.693,403.57,280.904,388.537,280.904z"/><path d="M286.874,109.925c0-24.367-3.043-47.688-8.541-69.338c-0.824-3.273-2.996-6.039-5.969-7.633c-1.756-0.939-3.705-1.416-5.669-1.416c-1.341,0-2.688,0.221-3.981,0.678c-27.88,9.795-70.895,16.096-119.276,16.096c-48.382,0-91.397-6.301-119.277-16.096c-1.286-0.457-2.626-0.678-3.966-0.678c-1.963,0-3.921,0.482-5.685,1.424c-2.965,1.594-5.144,4.359-5.969,7.625C3.043,62.238,0,85.558,0,109.925c0,112.977,64.217,204.559,143.438,204.559C222.657,314.484,286.874,222.902,286.874,109.925z M57.439,135.349c0-10.129,12.185-18.338,27.219-18.338c15.033,0,27.218,17.674,27.218,27.803c0,10.127-12.185,8.873-27.218,8.873C69.624,153.687,57.439,145.476,57.439,135.349z M143.438,275.812c-32.395,0-58.656-26.262-58.656-58.654c0-4.221,0.569-8.281,1.493-12.217c0.254-1.076,1.056-1.947,2.11-2.303c1.056-0.346,2.218-0.123,3.066,0.586c11.174,9.389,30.182,15.627,51.986,15.627c21.804,0,40.812-6.238,51.985-15.627c0.849-0.717,2.011-0.939,3.066-0.586c1.055,0.348,1.856,1.227,2.11,2.303c0.924,3.936,1.494,7.996,1.494,12.217C202.093,249.55,175.831,275.812,143.438,275.812z M174.998,144.814c0-10.129,12.185-27.803,27.219-27.803c15.033,0,27.218,8.209,27.218,18.338c0,10.127-12.185,18.338-27.218,18.338C187.183,153.687,174.998,154.941,174.998,144.814z"/></svg>`;
   const segHTML=`<div class="seg">
-        <button data-switch="cinema" aria-pressed="${S.mode==="cinema"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 6V4m10 2V4M2 10h20M2 14h20M7 18v2m10-2v2"/></svg>${esc(L.cinema)}</button>
-        <button data-switch="theatre" aria-pressed="${S.mode==="theatre"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c0 5 2.5 8 5.5 8s5.5-3 5.5-8M11 12c0 5 2.5 8 5.5 8s5.5-3 5.5-8"/><path d="M2 12c0-5 2.5-7 5.5-7s5.5 2 5.5 7M11 12c0-5 2.5-7 5.5-7s5.5 2 5.5 7"/></svg>${esc(L.theatre)}</button>
+        <button data-switch="cinema" aria-pressed="${S.mode==="cinema"}">${iconCinema}${esc(L.cinema)}</button>
+        <button data-switch="theatre" aria-pressed="${S.mode==="theatre"}">${iconTheatre}${esc(L.theatre)}</button>
       </div>`;
-  /* mobile: X always shown (closes the panel); desktop: X shown only when has query */
+  /* search icon button — TOGGLE on all sizes; aria-expanded reflects open state */
+  const searchAriaLabel=S.searchOpen?(L.searchClose||"Затвори търсенето"):(L.searchOpen||"Търсене");
+  const magSVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+  const searchIconBtn=`<button class="iconb search-icon-btn${S.searchOpen?" expanded":""}" data-search-open aria-expanded="${S.searchOpen}" aria-label="${esc(searchAriaLabel)}">${magSVG}</button>`;
+  /* lang button — always the rightmost element */
+  const langBtn=`<button class="iconb" data-lang>${esc(L.lang)}</button>`;
+  /* mobile search open row */
   const searchMobileOpenHTML=S.searchOpen?`<div class="bar-row-search"><div class="search search-mob-open${S.q?" has":""}">
       <span class="mag">⌕</span>
       <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
       <button class="clr" data-qclear-m aria-label="clear">✕</button>
     </div></div>`:"";
+  /* desktop: expandable search field sitting left of the lang button */
+  const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}">
+    <div class="search${S.q?" has":""}">
+      <span class="mag">⌕</span>
+      <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
+      <button class="clr" data-qclear aria-label="clear">✕</button>
+    </div></div>`;
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
       <button class="brand" data-home aria-label="Sofia Gleda — ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async"></button>
+      <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
       ${segHTML}
-      <button class="iconb" data-lang>${esc(L.lang)}</button>
-      <button class="search-icon-btn" data-search-open aria-label="${esc(L.searchOpen||"Търсене")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
-      <button class="iconb burger" data-drawer aria-label="${esc(L.filters)}"><i></i><i></i><i></i></button>
+      ${searchIconBtn}
     </div>
     ${searchMobileOpenHTML}`
-    :`<!-- Desktop: single-row 3-column grid -->
+    :`<!-- Desktop: single-row brand | (search expand) | (toggle + search icon + lang) -->
     <div class="bar-in">
       <button class="brand" data-home aria-label="Sofia Gleda — ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async"></button>
-      <div class="search${S.q?" has":""}">
-        <span class="mag">⌕</span>
-        <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
-        <button class="clr" data-qclear aria-label="clear">✕</button>
-      </div>
+      <span></span>
       <div class="bar-controls">
         ${segHTML}
-        <button class="iconb" data-lang>${esc(L.lang)}</button>
-        <button class="iconb burger" data-drawer aria-label="${esc(L.filters)}"><i></i><i></i><i></i></button>
+        ${deskSearchHTML}${searchIconBtn}
+        ${langBtn}
       </div>
     </div>`;
   const activeFilterCount=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
@@ -1785,11 +1945,11 @@ function render(){
   </div></footer>
   ${S.drawer?drawerHTML():""}
   ${fabHTML}`;
-  /* mobile search open: focus the mobile input (id="q-m"); desktop: focus id="q" */
+  /* focus search input after open */
   const qiM=document.getElementById("q-m");
   const qiD=document.getElementById("q");
-  const qi=qiM||qiD;
-  if(qi&&(S.qFocus||S.searchOpen)){qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}}
+  const qi=isMob?qiM:qiD;
+  if(qi&&S.searchOpen){qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}}
 }
 /* Re-render while keeping the filter drawer where the user left it. The drawer
    lives inside #app, so a plain render() rebuilds it at scrollTop 0 and the list
@@ -1954,7 +2114,10 @@ document.addEventListener("click",e=>{
     else{S.rTo=iso;}
     render();return;}
   const st=q("[data-strand]"); if(st){const v=st.dataset.strand;S.fStrands=v?toggleArr(S.fStrands,v):[];S.qFocus=false;S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
-  if(q("[data-search-open]")){S.searchOpen=true;S.qFocus=false;render();return;}
+  /* search icon button is a TOGGLE: open when closed, close+clear when open */
+  if(q("[data-search-open]")){
+    if(S.searchOpen){S.q="";S.searchOpen=false;}else{S.searchOpen=true;}
+    S.qFocus=false;render();return;}
   if(q("[data-qclear-m]")){S.q="";S.qFocus=false;S.searchOpen=false;render();return;}
   if(q("[data-qclear]")){S.q="";S.qFocus=false;render();return;}
   const d=q("[data-day]"); if(d){S.day=d.dataset.day;render();return;}
@@ -1969,6 +2132,7 @@ document.addEventListener("click",e=>{
     const hdrTop=st2.getBoundingClientRect().top;
     if(key==="Genres")S.secGenres=!S.secGenres;
     else if(key==="Venues")S.secVenues=!S.secVenues;
+    else if(key==="All")S.secAll=!S.secAll;
     /* materialise the toggled section before restoring scroll */
     render();
     /* after render, scroll so the toggled header stays at the same viewport y */
@@ -1995,7 +2159,7 @@ document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
   if(document.getElementById("scrim")&&!document.getElementById("scrim").hidden){closeSheet();return;}
   if(S.drawer){S.drawer=false;render();return;}
-  if(S.searchOpen){S.searchOpen=false;render();}
+  if(S.searchOpen){S.q="";S.searchOpen=false;render();}
 });
 /* live search */
 let qTimer=null;

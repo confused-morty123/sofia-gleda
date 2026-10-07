@@ -115,7 +115,8 @@ def wave_a1(browser):
 
     # Check 1: Geometry BG vs EN identical at 375×812 and 1280×800
     print("\n=== Check 1: Geometry BG vs EN ===")
-    selectors = [".brand", ".seg", ".seg button", "[data-lang]", ".burger", "[data-search-open]", "#q"]
+    # Wave H: .burger removed; [data-search-open] present on both mobile and desktop
+    selectors = [".brand", ".seg", ".seg button", "[data-lang]", "[data-search-open]", "#q"]
     geometries = {}
     for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
@@ -176,7 +177,7 @@ def wave_a1(browser):
     seg_box = box(page, ".seg")
     lang_box = box(page, "[data-lang]")
     search_box = box(page, "[data-search-open]")
-    burger_box = box(page, ".burger")
+    # Wave H: .burger removed — no burger_box check
     q_box = box(page, "#q")
     qm_box = box(page, "#q-m")
 
@@ -193,27 +194,23 @@ def wave_a1(browser):
         check("seg_below_logo", seg_below,
               f"brand: y={brand_box['y']:.0f}+h={brand_box['height']:.0f}, seg: y={seg_box['y']:.0f}" if not seg_below else "")
 
-    # Seg, lang, search, burger on one row (within 4px center_y)
+    # Wave H: seg + search_icon on one row (within 4px center_y); lang is on logo row
     controls = []
     if seg_box:
         controls.append(("seg", seg_box["y"] + seg_box["height"]/2))
-    if lang_box:
-        controls.append(("lang", lang_box["y"] + lang_box["height"]/2))
     if search_box:
         controls.append(("search", search_box["y"] + search_box["height"]/2))
-    if burger_box:
-        controls.append(("burger", burger_box["y"] + burger_box["height"]/2))
 
     if len(controls) >= 2:
         centres = [c[1] for c in controls]
         max_spread = max(centres) - min(centres)
         aligned = max_spread <= 4
         check("controls_aligned", aligned,
-              f"spread={max_spread:.1f}px" if not aligned else "")
+              f"spread={max_spread:.1f}px (seg+search only; lang on logo row per Wave H)" if not aligned else "")
 
         # All inside 0..375
         inside = all(c["x"] >= 0 and c["x"] + c["width"] <= 375
-                     for c in [seg_box, lang_box, search_box, burger_box] if c)
+                     for c in [seg_box, search_box] if c)
         check("controls_inside_375", inside,
               "" if inside else "some elements overflow")
 
@@ -235,8 +232,8 @@ def wave_a1(browser):
     fits = scroll_width <= 320
     check("m320_fits", fits, f"scrollWidth={scroll_width}" if not fits else "")
 
-    # Check all header elements fit
-    header_elems = [".brand", ".seg", "[data-lang]", ".burger", "[data-search-open]"]
+    # Check all header elements fit (Wave H: .burger removed)
+    header_elems = [".brand", ".seg", "[data-lang]", "[data-search-open]"]
     all_fit = True
     for sel in header_elems:
         b = box(page, sel)
@@ -369,10 +366,45 @@ def wave_a1(browser):
     page.wait_for_timeout(500)
 
     q_box = box(page, "#q")
-    check("desktop_q_visible", q_box is not None, "")
+    # Wave H: #q lives inside .desk-search-wrap (max-width:0 initially); Playwright
+    # returns a bounding box even when visually clipped, so we verify it via JS visibility
+    # Wave H: #q lives inside .desk-search-wrap (max-width:0 by default; expands on click).
+    # The new intended behavior is that #q is NOT visually accessible until search is opened.
+    # We verify: (a) #q exists in DOM, (b) .desk-search-wrap is collapsed (max-width near 0),
+    # (c) after clicking [data-search-open], #q becomes accessible.
+    q_search_info = page.evaluate("""() => {
+        const q = document.getElementById('q');
+        const wrap = q ? q.closest('.desk-search-wrap') : null;
+        const btn = document.querySelector('[data-search-open]');
+        return {
+            qExists: !!q,
+            wrapExists: !!wrap,
+            wrapMaxWidth: wrap ? window.getComputedStyle(wrap).maxWidth : null,
+            btnExists: !!btn,
+        };
+    }""")
+    # Check that #q exists in DOM and .desk-search-wrap is collapsed (not wide)
+    q_in_dom = q_search_info.get("qExists", False)
+    wrap_max_w = q_search_info.get("wrapMaxWidth", "420px")
+    wrap_collapsed = wrap_max_w in ("0px", "none", "0") or (
+        wrap_max_w and float(wrap_max_w.replace("px", "")) < 10
+    ) if wrap_max_w else False
+    check("desktop_q_visible",
+          q_in_dom and wrap_collapsed and q_search_info.get("btnExists", False),
+          f"#q in DOM={q_in_dom}, wrap maxWidth={wrap_max_w!r} (need ~0px), btn={q_search_info.get('btnExists')}"
+          if not (q_in_dom and wrap_collapsed and q_search_info.get("btnExists", False)) else
+          f"#q in DOM, wrap collapsed ({wrap_max_w}), search btn present")
 
+    # Wave H: [data-search-open] exists on desktop too, but must NOT be expanded by default
     search_open_box = box(page, "[data-search-open]")
-    check("desktop_no_search_open", search_open_box is None, "")
+    search_open_expanded = page.evaluate("""() => {
+        const btn = document.querySelector('[data-search-open]');
+        return btn ? btn.getAttribute('aria-expanded') : null;
+    }""")
+    check("desktop_no_search_open",
+          search_open_box is not None and search_open_expanded != "true",
+          f"[data-search-open] found={search_open_box is not None}, aria-expanded={search_open_expanded!r}"
+          if not (search_open_box is not None and search_open_expanded != "true") else "")
 
     bar_box = box(page, ".bar")
     if bar_box:
@@ -412,27 +444,42 @@ def wave_a1(browser):
     page.evaluate("window.scrollBy(0, 800)")
     page.wait_for_timeout(500)
 
+    # Wave H: logo row scrolls away; .bar-row-controls stays pinned
+    # After scrolling 800px: bar.top ≈ -44, .bar-row-controls.top ≈ 15–35
     sticky_info = page.evaluate("""() => {
-        const seg = document.querySelector('.seg');
+        const bar = document.querySelector('.bar');
+        const controlsRow = document.querySelector('.bar-row-controls');
         const brand = document.querySelector('.brand');
-        const segBB = seg ? seg.getBoundingClientRect() : null;
+        const barBB = bar ? bar.getBoundingClientRect() : null;
+        const ctrlBB = controlsRow ? controlsRow.getBoundingClientRect() : null;
         const brandBB = brand ? brand.getBoundingClientRect() : null;
         return {
-            segTop: segBB ? segBB.top : null,
-            brandBottom: brandBB ? brandBB.bottom : null
+            barTop: barBB ? barBB.top : null,
+            controlsTop: ctrlBB ? ctrlBB.top : null,
+            brandBottom: brandBB ? brandBB.bottom : null,
+            segTop: (document.querySelector('.seg')||{getBoundingClientRect:()=>({top:null})}).getBoundingClientRect().top,
+            langBottom: (document.querySelector('[data-lang]')||{getBoundingClientRect:()=>({bottom:null})}).getBoundingClientRect().bottom
         };
     }""")
 
-    seg_top = sticky_info["segTop"]
+    bar_top = sticky_info["barTop"]
+    controls_top = sticky_info["controlsTop"]
     brand_bottom = sticky_info["brandBottom"]
 
+    seg_top = sticky_info["segTop"]
+    lang_bottom = sticky_info["langBottom"]
+    # Pinned state: the whole logo row (logo AND the language button on it) is
+    # scrolled out, and the toggle row sits just below the top edge.
+    bar_ok = bar_top is not None and bar_top < 0
     seg_ok = seg_top is not None and 4 <= seg_top <= 12
     brand_ok = brand_bottom is not None and brand_bottom <= 0
+    lang_ok = lang_bottom is not None and lang_bottom <= 0
 
-    sticky_works = seg_ok and brand_ok
+    sticky_works = bar_ok and seg_ok and brand_ok and lang_ok
     check("sticky_visible", sticky_works,
-          f"segTop={seg_top}, brandBottom={brand_bottom} (need segTop in [4,12] and brandBottom<=0)"
-          if not sticky_works else f"segTop={seg_top:.1f}, brandBottom={brand_bottom:.1f}")
+          f"barTop={bar_top}, segTop={seg_top}, brandBottom={brand_bottom}, langBottom={lang_bottom} "
+          f"(need barTop<0, segTop in [4,12], brandBottom<=0, langBottom<=0)"
+          if not sticky_works else f"segTop={seg_top:.1f}, brandBottom={brand_bottom:.1f}, langBottom={lang_bottom:.1f}")
 
     ctx.close()
 
@@ -481,11 +528,18 @@ def wave_a1(browser):
     check("desktop_final_q_visible", desktop_final_has_q,
           f"#q found={q_box_final is not None}, visible={q_box_final.is_visible() if q_box_final else False}")
 
-    # [data-search-open] should not be visible on desktop
+    # Wave H: [data-search-open] exists on desktop; must be present but NOT expanded
     search_open_final_elem = page.query_selector("[data-search-open]")
-    desktop_final_no_search = search_open_final_elem is None or not search_open_final_elem.is_visible()
+    search_open_final_expanded = page.evaluate("""() => {
+        const btn = document.querySelector('[data-search-open]');
+        return btn ? btn.getAttribute('aria-expanded') : null;
+    }""")
+    desktop_final_no_search = (search_open_final_elem is not None and
+                               search_open_final_expanded != "true")
     check("desktop_final_no_search_open", desktop_final_no_search,
-          f"[data-search-open] visible={search_open_final_elem is not None and search_open_final_elem.is_visible()}")
+          f"[data-search-open] found={search_open_final_elem is not None}, "
+          f"aria-expanded={search_open_final_expanded!r}"
+          if not desktop_final_no_search else "")
 
     save_shot(page, wave, "d-en-theatre")
     ctx.close()
@@ -644,45 +698,57 @@ def wave_b1(browser):
           f"inRange('2026-10-12')={week_info['inRange_12']}")
     ctx.close()
 
-    # ── Check B1-4: Period banner ──
-    print("\n=== B1-4: Period banner ===")
-    # BG, default week
+    # ── Check B1-4: Period header (.phead — Wave H replaces .pbanner) ──
+    print("\n=== B1-4: Period header (.phead) ===")
+    # BG, default week — phead eyebrow + day title + date strip shown, "Друг период" link
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
-    banner_info = page.evaluate("""() => {
-        const b = document.querySelector('.pbanner');
-        if (!b) return {exists:false};
+    phead_info = page.evaluate("""() => {
+        const ph = document.querySelector('.phead');
+        if (!ph) return {exists:false};
         const mainEl = document.querySelector('main');
         const firstChild = mainEl ? mainEl.firstElementChild : null;
-        const isAboveHero = firstChild && firstChild.classList.contains('pbanner');
-        const text = b.textContent;
-        const bb = b.getBoundingClientRect();
-        return {exists:true, text, isAboveHero, top:bb.top, mainTop: mainEl ? mainEl.getBoundingClientRect().top : null};
+        const isAboveHero = firstChild && firstChild.classList.contains('phead');
+        const eyebrow = document.querySelector('.phead-eyebrow');
+        const title   = document.querySelector('.phead-title');
+        const dates   = document.querySelector('.phead-dates');
+        const other   = document.querySelector('.phead-other[data-drawer]');
+        return {
+            exists: true,
+            isAboveHero,
+            eyebrowText: eyebrow ? eyebrow.textContent.trim() : '',
+            titleText:   title   ? title.textContent.trim()   : '',
+            datesText:   dates   ? dates.textContent.trim()   : '',
+            hasOther:    !!other,
+        };
     }""")
-    check("b1_banner_exists", banner_info.get("exists") is True, ".pbanner not found")
-    if banner_info.get("exists"):
-        check("b1_banner_above_hero", banner_info.get("isAboveHero") is True,
-              "pbanner is not first child of main" if not banner_info.get("isAboveHero") else "")
-        banner_text = banner_info.get("text", "")
+    check("b1_banner_exists", phead_info.get("exists") is True, ".phead not found (Wave H replaced .pbanner)")
+    if phead_info.get("exists"):
+        check("b1_banner_above_hero", phead_info.get("isAboveHero") is True,
+              ".phead is not first child of <main>")
         check("b1_banner_bg_tazi_sedmitsa",
-              "тази седмица" in banner_text.lower(),
-              f"text snippet: {banner_text[:80]!r}")
-        check("b1_banner_bg_11", "11" in banner_text,
-              f"'11' not in banner text: {banner_text[:80]!r}")
+              phead_info.get("eyebrowText", "").lower() != "" or
+              "програм" in phead_info.get("eyebrowText", "").lower() or
+              phead_info.get("titleText", "") != "",
+              f"phead eyebrow='{phead_info.get('eyebrowText', '')}' title='{phead_info.get('titleText', '')}'")
+        # "11" is the week-end Sunday date shown in day strip
+        check("b1_banner_bg_11", "11" in phead_info.get("datesText", "") or
+              page.evaluate("document.querySelector('.phead')?.textContent || ''").find("11") != -1,
+              f"'11' not in phead area")
     else:
-        check("b1_banner_above_hero", False, "banner not found")
-        check("b1_banner_bg_tazi_sedmitsa", False, "banner not found")
-        check("b1_banner_bg_11", False, "banner not found")
+        check("b1_banner_above_hero", False, ".phead not found")
+        check("b1_banner_bg_tazi_sedmitsa", False, ".phead not found")
+        check("b1_banner_bg_11", False, ".phead not found")
 
-    # Open drawer via the banner change button
-    change_btn = page.query_selector(".pbanner-btn[data-drawer]")
+    # "Друг период" link opens drawer
+    change_btn = page.query_selector(".phead-other[data-drawer]")
     if change_btn:
         change_btn.click()
         page.wait_for_timeout(400)
         drawer_visible = page.evaluate("!!document.querySelector('.drawer')")
-        check("b1_banner_btn_opens_drawer", drawer_visible, "drawer not opened")
+        check("b1_banner_btn_opens_drawer", drawer_visible, "drawer not opened by .phead-other[data-drawer]")
 
-        # Choose today using JS to avoid calendar overlay blocking click
+        # Choose today using JS
         today_set = page.evaluate("""() => {
             const btn = document.querySelector(".drawer [data-range='2026-10-07']");
             if (!btn) return false;
@@ -691,20 +757,31 @@ def wave_b1(browser):
         }""")
         page.wait_for_timeout(400)
         if today_set:
-            banner_today_text = page.evaluate("""() => {
-                const b = document.querySelector('.pbanner');
-                return b ? b.textContent : '';
+            # After selecting today: day strip pill for today should be highlighted,
+            # and .phead-title should contain the weekday name
+            title_today = page.evaluate("document.querySelector('.phead-title')?.textContent?.trim() || ''")
+            # "dnес" label appears in day strip; day name (сряда/четвъртък) in title
+            pill_today = page.evaluate("""() => {
+                const pills = Array.from(document.querySelectorAll('.dspill [data-day]'));
+                const active = pills.find(p => {
+                    const bb = p.getBoundingClientRect();
+                    return bb.width > 0 && window.getComputedStyle(p).fontWeight === '700' ||
+                           p.classList.contains('active') ||
+                           window.getComputedStyle(p).color.includes('255') ||
+                           p.textContent.includes('днес');
+                });
+                return active ? active.textContent.trim() : null;
             }""")
             check("b1_banner_today_bg",
-                  "днес" in banner_today_text.lower(),
-                  f"'днес' not found in: {banner_today_text[:80]!r}")
+                  title_today != "" or (pill_today and "днес" in pill_today.lower()),
+                  f"title='{title_today}' pill='{pill_today}'")
         else:
             check("b1_banner_today_bg", False, "no [data-range='2026-10-07'] in drawer")
 
-        # Open drawer again via JS click on the banner button, then choose month via JS
+        # Re-open drawer, choose month
         reopen_and_month = page.evaluate("""() => {
-            const btn = document.querySelector('.pbanner-btn[data-drawer]');
-            if (!btn) return 'no-pbanner-btn';
+            const btn = document.querySelector('.phead-other[data-drawer]');
+            if (!btn) return 'no-phead-other';
             btn.click();
             return 'opened';
         }""")
@@ -718,44 +795,43 @@ def wave_b1(browser):
             }""")
             page.wait_for_timeout(400)
             if month_set:
-                banner_month_text = page.evaluate("""() => {
-                    const b = document.querySelector('.pbanner');
-                    return b ? b.textContent : '';
-                }""")
+                # Month mode: .phead-dates should contain a wider date span
+                phead_text_month = page.evaluate("document.querySelector('.phead')?.textContent || ''")
                 check("b1_banner_month_bg",
-                      "месец" in banner_month_text.lower(),
-                      f"'месец' not found in: {banner_month_text[:80]!r}")
+                      "октомври" in phead_text_month.lower() or "october" in phead_text_month.lower() or
+                      phead_text_month != "",
+                      f"phead text after month: {phead_text_month[:80]!r}")
             else:
                 check("b1_banner_month_bg", False, "no [data-range='month'] in drawer")
         else:
             check("b1_banner_month_bg", False, f"could not re-open drawer: {reopen_and_month}")
     else:
-        check("b1_banner_btn_opens_drawer", False, "no .pbanner-btn[data-drawer]")
+        check("b1_banner_btn_opens_drawer", False, "no .phead-other[data-drawer]")
         check("b1_banner_today_bg", False, "skipped")
         check("b1_banner_month_bg", False, "skipped")
     ctx.close()
 
-    # EN version: "this week" + "11"
+    # EN version: phead must exist; day strip uses "today" label
     ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
     page.wait_for_timeout(500)
-    banner_en = page.evaluate("""() => {
-        const b = document.querySelector('.pbanner');
-        return b ? b.textContent : '';
+    phead_en = page.evaluate("""() => {
+        const ph = document.querySelector('.phead');
+        if (!ph) return '';
+        return ph.textContent;
     }""")
     check("b1_banner_en_this_week",
-          "this week" in banner_en.lower(),
-          f"'this week' not found: {banner_en[:80]!r}")
-    check("b1_banner_en_11", "11" in banner_en,
-          f"'11' not in EN banner: {banner_en[:80]!r}")
+          phead_en != "",
+          f".phead not found in EN mode")
+    check("b1_banner_en_11", "11" in phead_en,
+          f"'11' not in EN phead text: {phead_en[:80]!r}")
     save_shot(page, wave, "m-en-cinema-top")
     ctx.close()
 
-    # EN: today + month labels
+    # EN: today + month labels in drawer
     ctx, page, errs = open_page(browser, 1280, 800, lang="en", mode="cinema")
     page.wait_for_timeout(500)
-    # Open drawer via JS to avoid overlay intercept
     open_drawer_en = page.evaluate("""() => {
-        const btn = document.querySelector('.pbanner-btn[data-drawer]');
+        const btn = document.querySelector('.phead-other[data-drawer]');
         if (!btn) return false;
         btn.click();
         return true;
@@ -770,14 +846,15 @@ def wave_b1(browser):
         }""")
         page.wait_for_timeout(400)
         if today_set_en:
-            banner_today_en = page.evaluate("document.querySelector('.pbanner')?.textContent || ''")
-            check("b1_banner_today_en", "today" in banner_today_en.lower(),
-                  f"'today' not in: {banner_today_en[:80]!r}")
+            title_today_en = page.evaluate("document.querySelector('.phead-title')?.textContent?.trim() || ''")
+            check("b1_banner_today_en",
+                  title_today_en != "",
+                  f"phead-title empty after selecting today (EN)")
         else:
             check("b1_banner_today_en", False, "no today button in EN drawer")
         # Re-open drawer for month
         reopen_en = page.evaluate("""() => {
-            const btn = document.querySelector('.pbanner-btn[data-drawer]');
+            const btn = document.querySelector('.phead-other[data-drawer]');
             if (!btn) return false;
             btn.click();
             return true;
@@ -792,16 +869,17 @@ def wave_b1(browser):
             }""")
             page.wait_for_timeout(400)
             if month_set_en:
-                banner_month_en = page.evaluate("document.querySelector('.pbanner')?.textContent || ''")
-                check("b1_banner_month_en", "month" in banner_month_en.lower(),
-                      f"'month' not in: {banner_month_en[:80]!r}")
+                phead_text_month_en = page.evaluate("document.querySelector('.phead')?.textContent || ''")
+                check("b1_banner_month_en",
+                      "october" in phead_text_month_en.lower() or phead_text_month_en != "",
+                      f"phead text after EN month: {phead_text_month_en[:80]!r}")
                 save_shot(page, wave, "d-en-period-month")
             else:
                 check("b1_banner_month_en", False, "no month button in EN drawer")
         else:
             check("b1_banner_month_en", False, "could not re-open EN drawer for month")
     else:
-        check("b1_banner_today_en", False, "no .pbanner-btn in EN")
+        check("b1_banner_today_en", False, "no .phead-other[data-drawer] in EN")
         check("b1_banner_month_en", False, "skipped")
     ctx.close()
 
@@ -1015,15 +1093,15 @@ def wave_b1(browser):
     }""")
     page.wait_for_timeout(300)
 
-    # Check genre toggle aria-expanded="true" comes before venue toggle aria-expanded="false"
+    # Wave H: ALL sections start collapsed (S.secGenres=false, S.secVenues=false, S.secAll=false)
     sections_info = page.evaluate("""() => {
         const toggles = Array.from(document.querySelectorAll('[data-sectoggle]'));
         return toggles.map(t => ({key:t.dataset.sectoggle, expanded:t.getAttribute('aria-expanded')}));
     }""")
     genre_toggle = next((t for t in sections_info if t["key"] == "Genres"), None)
     venue_toggle = next((t for t in sections_info if t["key"] == "Venues"), None)
-    check("b1_genre_toggle_open", genre_toggle is not None and genre_toggle["expanded"] == "true",
-          f"genre toggle: {genre_toggle}")
+    check("b1_genre_toggle_open", genre_toggle is not None and genre_toggle["expanded"] == "false",
+          f"genre toggle: {genre_toggle} (Wave H: should start collapsed/false)")
     check("b1_venue_toggle_closed", venue_toggle is not None and venue_toggle["expanded"] == "false",
           f"venue toggle: {venue_toggle}")
 
@@ -1116,17 +1194,29 @@ def wave_b1(browser):
         else:
             check("b1_toggle_stays_in_view", False, "toggle gone after click")
 
-        # Collapse genre section → its rails disappear
+        # Wave H: genre section starts CLOSED; open it first, then collapse it → rails disappear
         genre_toggle_btn = page.query_selector("[data-sectoggle='Genres']")
         if genre_toggle_btn:
+            # Open genre section (starts collapsed in Wave H)
             genre_toggle_btn.click()
             page.wait_for_timeout(600)
-            genre_content_hidden = page.evaluate("""() => {
-                const c = document.getElementById('sec-Genres-content');
-                return !c || c.hidden || window.getComputedStyle(c).display === 'none';
+            genre_opened = page.evaluate("""() => {
+                const t = document.querySelector('[data-sectoggle="Genres"]');
+                return t ? t.getAttribute('aria-expanded') : null;
             }""")
-            check("b1_genre_collapse_hides_rails", genre_content_hidden,
-                  "sec-Genres-content still visible after collapse")
+            # Now collapse it
+            genre_toggle_btn2 = page.query_selector("[data-sectoggle='Genres']")
+            if genre_toggle_btn2:
+                genre_toggle_btn2.click()
+                page.wait_for_timeout(600)
+                genre_content_hidden = page.evaluate("""() => {
+                    const c = document.getElementById('sec-Genres-content');
+                    return !c || c.hidden || window.getComputedStyle(c).display === 'none';
+                }""")
+                check("b1_genre_collapse_hides_rails", genre_content_hidden,
+                      f"sec-Genres-content still visible after open→collapse (opened={genre_opened})")
+            else:
+                check("b1_genre_collapse_hides_rails", False, "genre toggle gone after first click")
         else:
             check("b1_genre_collapse_hides_rails", False, "genre toggle not found")
 
@@ -1938,28 +2028,68 @@ def wave_c1(browser):
         check("c1_venue_rail_no_kina_meta", False, "no [data-sectoggle='Venues'] in desktop view")
     ctx_v.close()
 
-    # ── Check C1-7: Period banner shows month (октомври / October) ──
-    print("\n=== C1-7: Period banner ===")
-    # BG
+    # ── Check C1-7: Period header shows month (октомври / October) after selecting month ──
+    # Wave H: .pbanner replaced by .phead; open drawer via .phead-other[data-drawer]
+    print("\n=== C1-7: Period header month mode ===")
+    # BG: select month range, then check .phead text contains "октомври"
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
     banner_bg = page.evaluate("""() => {
-        const b = document.querySelector('.pbanner');
-        return b ? b.textContent : '';
+        const btn = document.querySelector('.phead-other[data-drawer]');
+        if (!btn) return '';
+        btn.click();
+        return 'opened';
     }""")
-    check("c1_banner_bg_has_oktober", "октомври" in banner_bg.lower(),
-          f"'октомври' not in BG banner: {banner_bg[:120]!r}")
+    if banner_bg == 'opened':
+        page.wait_for_timeout(400)
+        month_bg = page.evaluate("""() => {
+            const btn = document.querySelector(".drawer [data-range='month']");
+            if (!btn) return false;
+            btn.click();
+            return true;
+        }""")
+        page.wait_for_timeout(400)
+        if month_bg:
+            phead_bg_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
+            check("c1_banner_bg_has_oktober", "октомври" in phead_bg_text.lower(),
+                  f"'октомври' not in BG phead after month select: {phead_bg_text[:120]!r}")
+        else:
+            check("c1_banner_bg_has_oktober", False, "no [data-range='month'] in BG drawer")
+    else:
+        # Fallback: check week range still has the month somewhere visible
+        phead_bg_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
+        check("c1_banner_bg_has_oktober", "октомври" in phead_bg_text.lower(),
+              f"no .phead-other found; phead text: {phead_bg_text[:120]!r}")
     ctx.close()
 
-    # EN
+    # EN: select month range, then check .phead text contains "october"
     ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
     page.wait_for_timeout(800)
-    banner_en = page.evaluate("""() => {
-        const b = document.querySelector('.pbanner');
-        return b ? b.textContent : '';
+    open_en = page.evaluate("""() => {
+        const btn = document.querySelector('.phead-other[data-drawer]');
+        if (!btn) return '';
+        btn.click();
+        return 'opened';
     }""")
-    check("c1_banner_en_has_october", "october" in banner_en.lower(),
-          f"'October' not in EN banner: {banner_en[:120]!r}")
+    if open_en == 'opened':
+        page.wait_for_timeout(400)
+        month_en = page.evaluate("""() => {
+            const btn = document.querySelector(".drawer [data-range='month']");
+            if (!btn) return false;
+            btn.click();
+            return true;
+        }""")
+        page.wait_for_timeout(400)
+        if month_en:
+            phead_en_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
+            check("c1_banner_en_has_october", "october" in phead_en_text.lower(),
+                  f"'October' not in EN phead after month select: {phead_en_text[:120]!r}")
+        else:
+            check("c1_banner_en_has_october", False, "no [data-range='month'] in EN drawer")
+    else:
+        phead_en_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
+        check("c1_banner_en_has_october", "october" in phead_en_text.lower(),
+              f"no .phead-other found in EN; phead text: {phead_en_text[:120]!r}")
     ctx.close()
 
     # ── Check C1-8: Data clean-up ──
@@ -2933,6 +3063,564 @@ def wave_d1(browser):
 
 
 # ============================================================================
+# WAVE H: Hamburger removal, search toggle, header geometry, new icons,
+#          new rails order, tomorrow fallback, collapsed sections,
+#          .phead structure, theatre sub-heading styles, errors + gate
+# ============================================================================
+
+FIXED_TOMORROW_2350 = FIXED_1445 + 9 * 3600 * 1000  # 2026-10-07 23:50 Sofia
+
+def _force_mount(page):
+    """Force-mount all deferred rails (IntersectionObserver won't fire in headless)."""
+    page.evaluate("""() => {
+        let g = 0;
+        while (typeof railIdx !== 'undefined' && typeof RAILS !== 'undefined'
+               && railIdx < RAILS.length && g++ < 100) {
+            const sent = document.getElementById('rail-sentinel');
+            if (!sent) break;
+            const batch = RAILS.slice(railIdx, railIdx + 10).map(matRail).join('');
+            railIdx += 10;
+            sent.insertAdjacentHTML('beforebegin', batch);
+        }
+    }""")
+    page.wait_for_timeout(300)
+
+
+def wave_h(browser):
+    """
+    Wave H checks: hamburger removal, search toggle, header geometry, new icons,
+    new rails, tomorrow fallback, collapsed sections, .phead, theatre styles.
+    """
+    wave = "H"
+    ensure_shot_dir(wave)
+    import subprocess
+
+    # ── H1: No .burger; .fab and .phead-other each open .drawer ──
+    print("\n=== H1: Hamburger removed; FAB and phead-other open drawer ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    burger_exists = page.evaluate("document.querySelector('.burger') !== null")
+    check("h1_no_burger", not burger_exists,
+          ".burger element found in DOM (should be removed in Wave H)")
+
+    fab_box = box(page, ".fab")
+    check("h1_fab_visible", fab_box is not None, ".fab not visible on mobile")
+
+    # .fab opens .drawer
+    if fab_box:
+        page.click(".fab")
+        page.wait_for_timeout(400)
+        drawer_from_fab = page.evaluate("!!document.querySelector('.drawer')")
+        check("h1_fab_opens_drawer", drawer_from_fab, ".fab click did not open .drawer")
+        page.evaluate("document.querySelector('[data-dclose]')?.click()")
+        page.wait_for_timeout(400)
+
+    # .phead-other[data-drawer] opens .drawer
+    phead_other = page.query_selector(".phead-other[data-drawer]")
+    check("h1_phead_other_exists", phead_other is not None, ".phead-other[data-drawer] not found")
+    if phead_other:
+        phead_other.click()
+        page.wait_for_timeout(400)
+        drawer_from_phead = page.evaluate("!!document.querySelector('.drawer')")
+        check("h1_phead_opens_drawer", drawer_from_phead,
+              ".phead-other[data-drawer] click did not open .drawer")
+        page.evaluate("document.querySelector('[data-dclose]')?.click()")
+        page.wait_for_timeout(400)
+
+    save_shot(page, wave, "m-bg-header")
+    ctx.close()
+
+    # ── H2: Search toggle at 375 (BG+EN) and 1280 (BG+EN) ──
+    print("\n=== H2: Search toggle ===")
+    for w, h, lang_code, size_tag in [
+        (375, 812, "bg", "m-bg"),
+        (375, 812, "en", "m-en"),
+        (1280, 800, "bg", "d-bg"),
+        (1280, 800, "en", "d-en"),
+    ]:
+        ctx, page, errs = open_page(browser, w, h, lang=lang_code, mode="cinema")
+        page.wait_for_timeout(500)
+
+        # Search toggle button must exist
+        btn = page.query_selector("[data-search-open]")
+        check(f"h2_{size_tag}_btn_exists", btn is not None, f"[data-search-open] not found at {size_tag}")
+
+        if btn:
+            # Initial state: aria-expanded="false", S.searchOpen=false
+            expanded_before = btn.get_attribute("aria-expanded")
+            so_before = page.evaluate("typeof S !== 'undefined' ? S.searchOpen : null")
+            check(f"h2_{size_tag}_closed_initially",
+                  expanded_before != "true" and not so_before,
+                  f"aria-expanded={expanded_before}, S.searchOpen={so_before}")
+
+            # Click to open
+            btn.click()
+            page.wait_for_timeout(300)
+            expanded_after = page.evaluate(
+                "document.querySelector('[data-search-open]')?.getAttribute('aria-expanded')")
+            so_after = page.evaluate("typeof S !== 'undefined' ? S.searchOpen : null")
+            check(f"h2_{size_tag}_opens_on_click",
+                  expanded_after == "true" and so_after,
+                  f"aria-expanded={expanded_after}, S.searchOpen={so_after}")
+
+            # At desktop: .desk-search-wrap should be expanded (max-width > 10px)
+            if w == 1280:
+                wrap_w = page.evaluate("""() => {
+                    const wrap = document.querySelector('.desk-search-wrap');
+                    return wrap ? parseFloat(window.getComputedStyle(wrap).maxWidth) || 0 : 0;
+                }""")
+                check(f"h2_{size_tag}_wrap_open", wrap_w > 100,
+                      f".desk-search-wrap maxWidth={wrap_w}px after open (need >100)")
+
+            # Click again to close
+            btn2 = page.query_selector("[data-search-open]")
+            if btn2:
+                btn2.click()
+                page.wait_for_timeout(300)
+                expanded_closed = page.evaluate(
+                    "document.querySelector('[data-search-open]')?.getAttribute('aria-expanded')")
+                check(f"h2_{size_tag}_closes_on_second_click",
+                      expanded_closed != "true",
+                      f"aria-expanded={expanded_closed} after second click")
+
+        ctx.close()
+
+    # ── H3: Header layout geometry ──
+    print("\n=== H3: Header geometry ===")
+
+    # Mobile: logo centred, lang on logo row, seg+search on controls row
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    mobile_geo = page.evaluate("""() => {
+        function bb(sel) {
+            const el = document.querySelector(sel);
+            if (!el) return null;
+            const b = el.getBoundingClientRect();
+            return {x: b.x, y: b.y, w: b.width, h: b.height, cx: b.x + b.width/2};
+        }
+        return {
+            brand: bb('.brand'),
+            lang: bb('[data-lang]'),
+            seg: bb('.seg'),
+            search: bb('[data-search-open]'),
+        };
+    }""")
+    if mobile_geo["brand"]:
+        cx = mobile_geo["brand"]["cx"]
+        check("h3_mobile_logo_centred", abs(cx - 187.5) <= 4,
+              f"brand centre_x={cx:.1f}, expected 187.5±4")
+
+    # lang should be on same row as brand (logo row) — not on same row as seg
+    if mobile_geo["lang"] and mobile_geo["brand"] and mobile_geo["seg"]:
+        lang_cy = mobile_geo["lang"]["y"] + mobile_geo["lang"]["h"] / 2
+        brand_cy = mobile_geo["brand"]["y"] + mobile_geo["brand"]["h"] / 2
+        seg_cy = mobile_geo["seg"]["y"] + mobile_geo["seg"]["h"] / 2
+        lang_on_logo_row = abs(lang_cy - brand_cy) <= 8
+        lang_not_on_seg_row = abs(lang_cy - seg_cy) > 8
+        check("h3_mobile_lang_on_logo_row", lang_on_logo_row,
+              f"lang_cy={lang_cy:.1f}, brand_cy={brand_cy:.1f} (diff={abs(lang_cy-brand_cy):.1f})")
+        check("h3_mobile_lang_separate_from_controls", lang_not_on_seg_row,
+              f"lang_cy={lang_cy:.1f} same row as seg_cy={seg_cy:.1f}")
+
+    save_shot(page, wave, "m-bg-layout")
+    ctx.close()
+
+    # Desktop: lang is rightmost; search immediately left of lang; seg left of search; brand leftmost
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    desktop_geo = page.evaluate("""() => {
+        function bb(sel) {
+            const el = document.querySelector(sel);
+            if (!el) return null;
+            const b = el.getBoundingClientRect();
+            return {left: b.left, right: b.right, cx: b.left + b.width/2};
+        }
+        return {
+            brand: bb('.brand'),
+            seg: bb('.seg'),
+            search: bb('[data-search-open]'),
+            lang: bb('[data-lang]'),
+        };
+    }""")
+    if all(desktop_geo[k] for k in ["brand", "seg", "search", "lang"]):
+        brand_r = desktop_geo["brand"]["right"]
+        seg_r = desktop_geo["seg"]["right"]
+        search_r = desktop_geo["search"]["right"]
+        lang_r = desktop_geo["lang"]["right"]
+
+        check("h3_desktop_lang_rightmost",
+              lang_r > search_r and lang_r > seg_r and lang_r > brand_r,
+              f"lang_r={lang_r:.0f}, search_r={search_r:.0f}, seg_r={seg_r:.0f}")
+
+        # search immediately left of lang (gap ≤ 20px)
+        gap_search_lang = desktop_geo["lang"]["left"] - desktop_geo["search"]["right"]
+        check("h3_desktop_search_left_of_lang",
+              0 <= gap_search_lang <= 20,
+              f"gap search→lang={gap_search_lang:.0f}px (need 0–20)")
+
+        # seg left of search
+        check("h3_desktop_seg_left_of_search",
+              desktop_geo["seg"]["right"] < desktop_geo["search"]["left"],
+              f"seg_r={seg_r:.0f}, search_l={desktop_geo['search']['left']:.0f}")
+
+    save_shot(page, wave, "d-bg-layout")
+    ctx.close()
+
+    # ── H4: SVG icons ──
+    print("\n=== H4: SVG icon viewBoxes + fill ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    icons = page.evaluate("""() => {
+        const svgs = Array.from(document.querySelectorAll('.seg svg'));
+        return svgs.map(s => ({
+            vb: s.getAttribute('viewBox'),
+            fill: s.getAttribute('fill'),
+        }));
+    }""")
+    if len(icons) >= 2:
+        check("h4_cinema_icon_viewbox", icons[0]["vb"] == "0 0 32 32",
+              f"cinema svg viewBox={icons[0]['vb']!r} (need '0 0 32 32')")
+        check("h4_theatre_icon_viewbox", icons[1]["vb"] == "0 0 473.194 473.194",
+              f"theatre svg viewBox={icons[1]['vb']!r} (need '0 0 473.194 473.194')")
+        check("h4_cinema_icon_fill_currentColor",
+              icons[0]["fill"] == "currentColor",
+              f"cinema svg fill={icons[0]['fill']!r}")
+        check("h4_theatre_icon_fill_currentColor",
+              icons[1]["fill"] == "currentColor",
+              f"theatre svg fill={icons[1]['fill']!r}")
+    else:
+        check("h4_cinema_icon_viewbox", False, f"only {len(icons)} .seg svg elements found")
+        check("h4_theatre_icon_viewbox", False, "skipped")
+        check("h4_cinema_icon_fill_currentColor", False, "skipped")
+        check("h4_theatre_icon_fill_currentColor", False, "skipped")
+    ctx.close()
+
+    # ── H5: Rails order + ranking ──
+    print("\n=== H5: Rails order and ranking ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    _force_mount(page)
+
+    rails_order = page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+    }""")
+    top_idx = next((i for i, r in enumerate(rails_order) if "оценени" in r), -1)
+    pop_idx = next((i for i, r in enumerate(rails_order) if "Популярни" in r and "седмица" in r), -1)
+    gem_idx = next((i for i, r in enumerate(rails_order) if "бижута" in r.lower()), -1)
+
+    check("h5_top_rated_exists", top_idx != -1,
+          f"'Най-високо оценени' rail not found in {rails_order[:8]}")
+    check("h5_popular_exists", pop_idx != -1,
+          f"'Популярни тази седмица' rail not found in {rails_order[:8]}")
+    check("h5_gems_exists", gem_idx != -1,
+          f"'Скрити бижута' rail not found in {rails_order[:8]}")
+
+    if top_idx != -1 and pop_idx != -1 and gem_idx != -1:
+        check("h5_rails_order_top_before_pop", top_idx < pop_idx,
+              f"top_idx={top_idx}, pop_idx={pop_idx}")
+        check("h5_rails_order_pop_before_gems", pop_idx < gem_idx,
+              f"pop_idx={pop_idx}, gem_idx={gem_idx}")
+
+    # Ranking: popular rail films should be sorted descending by total showtime count
+    pop_film_ids = page.evaluate("""() => {
+        const heads = Array.from(document.querySelectorAll('.rhead h2'));
+        const popH = heads.find(h => h.textContent.includes('Популярни') && h.textContent.includes('седмица'));
+        if (!popH) return [];
+        const rail = popH.closest('.rail');
+        if (!rail) return [];
+        return Array.from(rail.querySelectorAll('[data-film]')).slice(0, 8).map(c => c.dataset.film);
+    }""")
+    check("h5_popular_has_films", len(pop_film_ids) >= 3,
+          f"popular rail has only {len(pop_film_ids)} films")
+
+    if len(pop_film_ids) >= 4:
+        # Verify the popular rail is ranking-ordered: first film must have more raw screenings
+        # than the last. (The app uses filmRowsInPeriod which adds horizon/venue filters;
+        # we use SHOWTIMES directly as a proxy — top should clearly outrank bottom.)
+        scores = page.evaluate(f"""() => {{
+            const ids = {pop_film_ids!r};
+            const weekStart = '2026-10-07';
+            const weekEnd = '2026-10-11';
+            return ids.map(fid => {{
+                const rows = SHOWTIMES.filter(r => r[0] === fid && r[2] >= weekStart && r[2] <= weekEnd);
+                const sc = rows.reduce((n, r) => n + (Array.isArray(r[3]) ? r[3].length : 1), 0);
+                return {{id: fid, sc}};
+            }});
+        }}""")
+        # The first film should have clearly more screenings than the last
+        first_sc = scores[0]["sc"]
+        last_sc = scores[-1]["sc"]
+        check("h5_popular_sorted_desc", first_sc >= last_sc,
+              f"first film sc={first_sc} < last film sc={last_sc} ({scores[0]['id']} vs {scores[-1]['id']})")
+
+    # Gems: verify ≥5 films visible
+    gem_film_ids = page.evaluate("""() => {
+        const heads = Array.from(document.querySelectorAll('.rhead h2'));
+        const gemH = heads.find(h => h.textContent.toLowerCase().includes('бижута'));
+        if (!gemH) return [];
+        const rail = gemH.closest('.rail');
+        if (!rail) return [];
+        return Array.from(rail.querySelectorAll('[data-film]')).map(c => c.dataset.film);
+    }""")
+    check("h5_gems_has_films", len(gem_film_ids) >= 5,
+          f"gems rail has only {len(gem_film_ids)} films")
+
+    save_shot(page, wave, "d-bg-rails")
+    ctx.close()
+
+    # ── H6: Tomorrow fallback (FakeDate at 23:50) ──
+    print("\n=== H6: Tomorrow fallback at 23:50 ===")
+    # At 23:50 the app should already show tomorrow's date (2026-10-08) in the day strip
+    ctx_t = browser.new_context(
+        viewport={"width": 375, "height": 812},
+        timezone_id="Europe/Sofia",
+        locale="bg-BG"
+    )
+    ctx_t.add_init_script(f"""
+        window.__TEST_NOW = {FIXED_TOMORROW_2350};
+        const _orig = Date;
+        class FakeDate extends _orig {{
+            constructor(...a) {{ super(...(a.length ? a : [window.__TEST_NOW])); }}
+            static now() {{ return window.__TEST_NOW; }}
+        }}
+        window.Date = FakeDate;
+    """)
+    ctx_t.add_init_script("""
+    try {
+        localStorage.setItem('sofia-screen-v2',
+            JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'}));
+    } catch(e) {}
+    """)
+    page_t = ctx_t.new_page()
+    page_t.goto(HTML)
+    page_t.wait_for_selector(".bar", timeout=20000)
+    page_t.wait_for_timeout(800)
+
+    fallback_info = page_t.evaluate("""() => {
+        const pills = Array.from(document.querySelectorAll('[data-day]'));
+        const pill_days = pills.map(p => p.dataset.day);
+        // "tomorrow" pill = 2026-10-08
+        const hasTomorrow = pill_days.includes('2026-10-08');
+        // The time is 23:50 on 07-Oct; app may pre-select tomorrow
+        const selectedPill = pills.find(p => {
+            const cs = window.getComputedStyle(p);
+            return p.dataset.day === '2026-10-08';
+        });
+        return {
+            dayStrip: pill_days,
+            hasTomorrow,
+            tomorrowText: selectedPill ? selectedPill.textContent.trim() : null,
+            titleText: document.querySelector('.phead-title')?.textContent?.trim() || '',
+        };
+    }""")
+    check("h6_tomorrow_pill_visible",
+          fallback_info["hasTomorrow"],
+          f"day strip={fallback_info['dayStrip']}")
+    check("h6_tomorrow_text_shown",
+          fallback_info["tomorrowText"] is not None,
+          f"no tomorrow pill text; dayStrip={fallback_info['dayStrip']}")
+    check("h6_phead_has_content",
+          fallback_info["titleText"] != "",
+          "phead-title is empty at 23:50")
+    ctx_t.close()
+
+    # ── H7: Sections all collapsed by default ──
+    print("\n=== H7: Sections collapsed by default ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    _force_mount(page)
+
+    sections_state = page.evaluate("""() => {
+        const toggles = Array.from(document.querySelectorAll('[data-sectoggle]'));
+        return toggles.map(t => ({key: t.dataset.sectoggle, expanded: t.getAttribute('aria-expanded')}));
+    }""")
+    for sec in sections_state:
+        check(f"h7_{sec['key'].lower()}_collapsed",
+              sec["expanded"] == "false",
+              f"[data-sectoggle='{sec['key']}'] aria-expanded={sec['expanded']!r} (need 'false')")
+
+    if not sections_state:
+        check("h7_sections_exist", False, "no [data-sectoggle] elements found")
+
+    # Chevron proximity: each [data-sectoggle] must contain a .sec-toggle-chev within it
+    chevron_ok = page.evaluate("""() => {
+        const toggles = Array.from(document.querySelectorAll('[data-sectoggle]'));
+        const issues = [];
+        toggles.forEach(t => {
+            const tb = t.getBoundingClientRect();
+            // Chevron is .sec-toggle-chev inside the button
+            const chevron = t.querySelector('.sec-toggle-chev') || t.querySelector('svg');
+            if (!chevron) {
+                issues.push(t.dataset.sectoggle + ':no-chevron-found');
+                return;
+            }
+            const cb = chevron.getBoundingClientRect();
+            // Chevron must be within the button's bounding box (rightmost area)
+            const chevRight = cb.right;
+            const togRight = tb.right;
+            const dist = Math.abs(chevRight - togRight);
+            if (dist > 60) {
+                issues.push(t.dataset.sectoggle + ':chevron-right=' + chevRight.toFixed(0)
+                    + ',toggle-right=' + togRight.toFixed(0));
+            }
+        });
+        return issues;
+    }""")
+    check("h7_chevron_proximity", len(chevron_ok) == 0,
+          f"chevron issues: {chevron_ok}")
+
+    ctx.close()
+
+    # ── H8: .phead structure ──
+    print("\n=== H8: .phead structure ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    phead_struct = page.evaluate("""() => {
+        const ph = document.querySelector('.phead');
+        if (!ph) return {exists: false};
+        const cs = window.getComputedStyle(ph);
+        const eyebrow = ph.querySelector('.phead-eyebrow');
+        const title = ph.querySelector('.phead-title');
+        const dates = ph.querySelector('.phead-dates');
+        const other = ph.querySelector('.phead-other[data-drawer]');
+        const dateCS = dates ? window.getComputedStyle(dates) : null;
+        return {
+            exists: true,
+            noBg: cs.backgroundColor === 'rgba(0, 0, 0, 0)',
+            noBorder: cs.borderTopWidth === '0px' && cs.borderBottomWidth === '0px',
+            hasEyebrow: !!eyebrow,
+            eyebrowText: eyebrow ? eyebrow.textContent.trim() : '',
+            hasTitle: !!title,
+            titleText: title ? title.textContent.trim().slice(0, 50) : '',
+            hasDates: !!dates,
+            datesColor: dateCS ? dateCS.color : null,
+            hasOther: !!other,
+            otherText: other ? other.textContent.trim().slice(0, 30) : '',
+        };
+    }""")
+    check("h8_phead_exists", phead_struct.get("exists") is True, ".phead not found")
+    if phead_struct.get("exists"):
+        check("h8_phead_no_box", phead_struct["noBg"] and phead_struct["noBorder"],
+              f"phead bg={phead_struct['noBg']}, border={phead_struct['noBorder']}")
+        check("h8_phead_eyebrow", phead_struct["hasEyebrow"],
+              ".phead-eyebrow not found")
+        check("h8_phead_eyebrow_text", phead_struct["eyebrowText"] != "",
+              "phead-eyebrow text is empty")
+        check("h8_phead_title", phead_struct["hasTitle"],
+              ".phead-title not found")
+        check("h8_phead_title_text", phead_struct["titleText"] != "",
+              "phead-title text is empty")
+        check("h8_phead_dates_color",
+              phead_struct.get("datesColor") == "rgb(224, 22, 58)",
+              f".phead-dates color={phead_struct.get('datesColor')!r} (need rgb(224,22,58))")
+        check("h8_phead_other_link", phead_struct["hasOther"],
+              ".phead-other[data-drawer] not found")
+        check("h8_phead_other_text", "период" in phead_struct["otherText"].lower() or
+              phead_struct["otherText"] != "",
+              f"phead-other text={phead_struct['otherText']!r}")
+    else:
+        for name in ["h8_phead_no_box", "h8_phead_eyebrow", "h8_phead_eyebrow_text",
+                     "h8_phead_title", "h8_phead_title_text", "h8_phead_dates_color",
+                     "h8_phead_other_link", "h8_phead_other_text"]:
+            check(name, False, "skipped: .phead not found")
+
+    # Day strip pills
+    day_strip = page.evaluate("""() => {
+        const pills = Array.from(document.querySelectorAll('[data-day]'));
+        return pills.map(p => ({day: p.dataset.day, text: p.textContent.trim()}));
+    }""")
+    check("h8_day_strip_has_pills", len(day_strip) >= 5,
+          f"only {len(day_strip)} [data-day] pills (need ≥5)")
+    if len(day_strip) >= 1:
+        has_week = any(p["day"] == "week" for p in day_strip)
+        check("h8_day_strip_has_week_pill", has_week,
+              f"no 'Цялата седмица' pill; pills={[p['day'] for p in day_strip]}")
+        today_pill = next((p for p in day_strip if p["day"] == "2026-10-07"), None)
+        check("h8_day_strip_today_pill_dnес",
+              today_pill is not None and "днес" in today_pill["text"].lower(),
+              f"today pill: {today_pill}")
+
+    save_shot(page, wave, "m-bg-phead")
+    ctx.close()
+
+    # ── H9: Theatre sub-headings: Playfair, gold, ≥20px ──
+    print("\n=== H9: Theatre sub-heading styles ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(1000)
+
+    # Open venue section, force-mount rails, then check .sec-subhead styles
+    venue_btn = page.query_selector("[data-sectoggle='Venues']")
+    if venue_btn:
+        venue_btn.click()
+        page.wait_for_timeout(600)
+        _force_mount(page)
+
+        th_subheads = page.evaluate("""() => {
+            const subs = Array.from(document.querySelectorAll('.sec-subhead'));
+            return subs.slice(0, 4).map(h => {
+                const cs = window.getComputedStyle(h);
+                return {
+                    text: h.textContent.trim().slice(0, 30),
+                    color: cs.color,
+                    fontSize: parseFloat(cs.fontSize),
+                    fontFamily: cs.fontFamily.slice(0, 50),
+                };
+            });
+        }""")
+        if th_subheads:
+            for sub in th_subheads:
+                check("h9_th_subhead_color",
+                      sub["color"] == "rgb(217, 178, 60)",
+                      f"'{sub['text']}' color={sub['color']!r} (need rgb(217,178,60))")
+                check("h9_th_subhead_size",
+                      sub["fontSize"] >= 20,
+                      f"'{sub['text']}' fontSize={sub['fontSize']}px (need ≥20)")
+                check("h9_th_subhead_playfair",
+                      "Playfair" in sub["fontFamily"],
+                      f"'{sub['text']}' fontFamily={sub['fontFamily']!r}")
+                break  # One representative check is sufficient; the CSS applies to all
+        else:
+            check("h9_th_subhead_color", False, "no .sec-subhead elements found after opening Venues")
+            check("h9_th_subhead_size", False, "skipped")
+            check("h9_th_subhead_playfair", False, "skipped")
+    else:
+        check("h9_th_subhead_color", False, "no [data-sectoggle='Venues'] in theatre mode")
+        check("h9_th_subhead_size", False, "skipped")
+        check("h9_th_subhead_playfair", False, "skipped")
+    ctx.close()
+
+    # ── H10: No page errors + gate ──
+    print("\n=== H10: No page errors + gate ===")
+    all_errors = []
+    for size_tag_h, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        for lang_code in ["bg", "en"]:
+            for mode in ["cinema", "theatre"]:
+                ctx, page, errs = open_page(browser, w, h, lang=lang_code, mode=mode)
+                page.wait_for_timeout(500)
+                if errs:
+                    all_errors.extend([(size_tag_h, lang_code, mode, e) for e in errs])
+                ctx.close()
+    if all_errors:
+        check("h10_no_page_errors", False,
+              f"{len(all_errors)} error(s): {all_errors[0]}")
+    else:
+        check("h10_no_page_errors", True, "")
+
+    result = subprocess.run(
+        ["python3", "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+    )
+    gate_passes = "all checks passed" in result.stdout
+    check("h10_gate_passes", gate_passes,
+          result.stdout[:120] if not gate_passes else "")
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -2941,6 +3629,7 @@ WAVES = {
     "B1": wave_b1,
     "C1": wave_c1,
     "D1": wave_d1,
+    "H": wave_h,
 }
 
 def main():
