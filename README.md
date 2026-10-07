@@ -52,7 +52,7 @@ TMDB_TOKEN=your_token python3 scripts/refresh_all.py
 ```
 
 `scripts/build_index.py` regenerates `index.html` from the unwrapped
-`sofia-screen.artifact.html` if you change the app's UI; `scripts/make_icons.py`
+`src/sofia-screen.artifact.html` if you change the app's UI; `scripts/make_icons.py`
 regenerates the icons.
 
 ---

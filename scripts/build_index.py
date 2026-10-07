@@ -15,7 +15,7 @@ The fragment starts at <title> and its body content starts at <div id="app">.
 import re, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
-SRC  = ROOT.parent / "sofia-screen.artifact.html"              # dev source (sibling)
+SRC  = ROOT / "src" / "sofia-screen.artifact.html"             # dev source (in repo)
 OUT  = ROOT / "index.html"
 
 HEAD = """<!doctype html>

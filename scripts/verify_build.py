@@ -222,7 +222,7 @@ try:
         note("SHOWALIAS is generated but realPoster() never reads it, so "
              + ", ".join(f"{k} still falls back to generated art instead of {v}'s poster"
                          for k, v in list(aliases.items())[:3])
-             + ". Add the alias lookup to realPoster() in sofia-screen.artifact.html "
+             + ". Add the alias lookup to realPoster() in src/sofia-screen.artifact.html "
                "and rebuild with scripts/build_index.py.")
 except Exception as e:
     note(f"SHOWALIAS wiring check skipped: {e}")
