@@ -1,0 +1,321 @@
+{
+ "digar": {
+  "id": "digar",
+  "bg": "Дигър",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "tigrite": {
+  "id": "tigrite",
+  "bg": "Тигрите",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "milen-filmat": {
+  "id": "milen-filmat",
+  "bg": "Милен - филмът",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "matriarhat": {
+  "id": "matriarhat",
+  "bg": "Матриархат",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
+ },
+ "moralat-e-dobroto": {
+  "id": "moralat-e-dobroto",
+  "bg": "Моралът е доброто",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "odeon"
+ },
+ "shibil": {
+  "id": "shibil",
+  "bg": "Шибил",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon"
+ },
+ "syankata-na-karavadzho": {
+  "id": "syankata-na-karavadzho",
+  "bg": "Сянката на Караваджо",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "g8"
+ },
+ "ulitsa-malaga": {
+  "id": "ulitsa-malaga",
+  "bg": "Улица Малага",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8"
+ },
+ "frants": {
+  "id": "frants",
+  "bg": "Франц",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "g8"
+ },
+ "magyosnika-ot-kremal": {
+  "id": "magyosnika-ot-kremal",
+  "bg": "Магьосника от Кремъл",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "g8"
+ },
+ "v-bryuzh": {
+  "id": "v-bryuzh",
+  "bg": "В Брюж",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino"
+ },
+ "doza-shtastie": {
+  "id": "doza-shtastie",
+  "bg": "Доза щастие",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino"
+ },
+ "lorans-arabski": {
+  "id": "lorans-arabski",
+  "bg": "Лорънс Арабски",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino"
+ },
+ "ostrovat-na-zabravata": {
+  "id": "ostrovat-na-zabravata",
+  "bg": "ОСТРОВЪТ НА ЗАБРАВАТА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "vlaikova"
+ },
+ "veriti": {
+  "id": "veriti",
+  "bg": "ВЕРИТИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "zooekspres": {
+  "id": "zooekspres",
+  "bg": "ЗООЕКСПРЕС",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
+ },
+ "sradlyo": {
+  "id": "sradlyo",
+  "bg": "СРЪДЛЬО",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "vlaikova"
+ },
+ "nina-roza": {
+  "id": "nina-roza",
+  "bg": "НИНА РОЗА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "vlaikova"
+ },
+ "evropeyski-kinoklasiki-alis-v-gradovete-1974": {
+  "id": "evropeyski-kinoklasiki-alis-v-gradovete-1974",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: Алис в градовете (1974)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "vlaikova"
+ },
+ "evropeyski-kinoklasiki-moyat-lyav-krak-1989": {
+  "id": "evropeyski-kinoklasiki-moyat-lyav-krak-1989",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: Моят ляв крак (1989)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "sinelibri-2026-embargo": {
+  "id": "sinelibri-2026-embargo",
+  "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
+ },
+ "sinelibri-2026-pepel": {
+  "id": "sinelibri-2026-pepel",
+  "bg": "СИНЕЛИБРИ 2026 – ПЕПЕЛ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "vlaikova"
+ },
+ "sinelibri-2026-nozh-razmisli-sled-opit-za-ubiystvo": {
+  "id": "sinelibri-2026-nozh-razmisli-sled-opit-za-ubiystvo",
+  "bg": "СИНЕЛИБРИ 2026 – НОЖ: РАЗМИСЛИ СЛЕД ОПИТ ЗА УБИЙСТВО",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
+ },
+ "kinoklasiki-kosa-1979": {
+  "id": "kinoklasiki-kosa-1979",
+  "bg": "КИНОКЛАСИКИ: КОСА | 1979 |",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "sinelibri-2026-shte-se-sluchi-tazi-vecher": {
+  "id": "sinelibri-2026-shte-se-sluchi-tazi-vecher",
+  "bg": "СИНЕЛИБРИ 2026 – ЩЕ СЕ СЛУЧИ ТАЗИ ВЕЧЕР",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "sinelibri-2026-metropolis": {
+  "id": "sinelibri-2026-metropolis",
+  "bg": "СИНЕЛИБРИ 2026 – МЕТРОПОЛИС",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "vlaikova"
+ },
+ "alehandro-hodorovski-kartitsata-1970": {
+  "id": "alehandro-hodorovski-kartitsata-1970",
+  "bg": "Алехандро Ходоровски: Къртицата (1970)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "alehandro-hodorovski-sveshtenata-planina-1973": {
+  "id": "alehandro-hodorovski-sveshtenata-planina-1973",
+  "bg": "Алехандро Ходоровски: Свещената планина (1973)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
+ },
+ "akira-kurosava-sanishta-1990": {
+  "id": "akira-kurosava-sanishta-1990",
+  "bg": "Акира Куросава: Сънища (1990)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere"
+ }
+}

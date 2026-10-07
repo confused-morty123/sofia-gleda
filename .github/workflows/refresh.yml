@@ -62,7 +62,7 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json theatre_posters.json build_report.json; do
+          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json build_report.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage any new or updated poster images (re-hosted from venue websites).

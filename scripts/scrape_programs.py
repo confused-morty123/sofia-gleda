@@ -30,6 +30,10 @@ from netfetch import Fetcher                    # shared hardened HTTP layer
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 CHANGES = ROOT / "changes.json"
+# Minimal arthouse-film records minted from independent-cinema programmes (titles
+# the static FILMS catalogue never carried). Persisted keep-previous and merged
+# into FILMS by inject_films.py before the build gate.
+CINEMA_FILMS = ROOT / "cinema_films.json"
 
 # Headers, timeouts, retries and per-host politeness live in netfetch.py, so every
 # scraper behaves the same way against the same fragile sources. The old
@@ -47,8 +51,17 @@ CINEMA_SOURCES = {
     "cineland":    "https://programata.bg/kino/kino-saloni/cineland-bulgaria-mall/",
     "odeon":       "https://programata.bg/kino/kino-saloni/sofia/odeon-cinema/",
     "g8":          "https://programata.bg/kino/kino-saloni/sofia/g8-cinema/",
-    "dom-kino":    "https://domnakinoto.com/programing/index",
+    # Дом на киното's own site stopped exposing a parseable dated grid; programata
+    # carries its full programme under the dom-na-kinoto slug (NOT kino-dom, which
+    # is an unrelated hall), so we read it from there like the other halls.
+    "dom-kino":    "https://programata.bg/kino/kino-saloni/sofia/dom-na-kinoto/",
+    # Влайкова publishes a clean structured weekly grid on its own site; programata
+    # has no data for it. Parsed by parse_vlaikova().
     "vlaikova":    "https://vlaikovacinema.com/",
+    # Кино Люмиер is NDK's arthouse hall; it has no aggregator feed, so we read
+    # NDK's own programme and keep only the "Люмиер" hall. Parsed by parse_lumiere().
+    # Coverage is partial (NDK highlights a subset of screenings) — a known limit.
+    "lumiere":     "https://www.ndk.bg/en/program",
 }
 # theatre.art.bg aggregates Sofia theatres; city 20 = Sofia. It silently falls
 # back to *today* for a date it has no data for, so we trust only rows whose
@@ -251,7 +264,12 @@ def scrape_cinema(venue_id, url, session, window, stats=None):
                 out.append((title, venue_id, dstr, sorted(tset), link))
         st["rows"], st["dates"] = len(out), len({r[2] for r in out})
         return out
-    # fallback (dom-kino, vlaikova): numeric inline-date headers, one fetch.
+    if "vlaikovacinema.com" in url:
+        return parse_vlaikova(soup, venue_id, window, st)
+    if "ndk.bg" in url:
+        return parse_lumiere(soup, venue_id, window, st)
+    # fallback (generic inline-date headers). No cinema currently uses this path,
+    # but it is kept so a future own-site source degrades gracefully.
     current_date = None
     for node in soup.find_all(["h2", "h3", "h4", "li", "tr", "div"]):
         text = node.get_text(" ", strip=True)
@@ -270,6 +288,80 @@ def scrape_cinema(venue_id, url, session, window, stats=None):
     st["rows"], st["dates"] = len(out), len({r[2] for r in out})
     return out
 
+
+def parse_vlaikova(soup, venue_id, window, st):
+    """Кино Влайкова publishes a structured weekly grid on its own site:
+    an `h3.cinema-day-title` ("07.10 (сряда)") opens each day, and every
+    `div.cinema-show` under it carries a `.cinema-time` plus an `a.cinema-title`
+    whose href is the film's own detail page (used as the per-title deep-link).
+    programata has no data for Влайкова, so this is the only live source."""
+    winset = set(window)
+    current = None
+    agg = {}                                   # (title, date) -> (set(times), link)
+    for node in soup.select(".cinema-day-title, .cinema-show"):
+        cls = node.get("class") or []
+        if "cinema-day-title" in cls:
+            current = find_date(node.get_text(" ", strip=True), window)
+            continue
+        if current not in winset:
+            continue
+        a = node.select_one("a.cinema-title")
+        tnode = node.select_one(".cinema-time")
+        if not a or not tnode:
+            continue
+        title = a.get_text(" ", strip=True)
+        times = [f"{int(h):02d}:{m}" for h, m in TIME_RE.findall(tnode.get_text(" ", strip=True))]
+        if not title or not times:
+            continue
+        href = a.get("href") or ""
+        link = href if href.startswith("http") else None
+        tset, lk = agg.setdefault((title, current), (set(), link))
+        tset.update(times)
+        if link and not lk:
+            agg[(title, current)] = (tset, link)
+    out = [(title, venue_id, d, sorted(tset), link) for (title, d), (tset, link) in agg.items()]
+    st["rows"], st["dates"] = len(out), len({r[2] for r in out})
+    return out
+
+
+def parse_lumiere(soup, venue_id, window, st):
+    """Кино Люмиер is NDK's arthouse hall. NDK's programme page lists events in
+    `.single_incoming_event` blocks; we keep only those whose hall (`.ie_place`)
+    names "Люмиер", reading the title from `.ie_heading` (its href is the event
+    page), the date from `.ie_date` (DD.MM.YYYY) and the time from `.ie_hour`
+    ("18:00ч."). Coverage is PARTIAL — NDK highlights a subset of screenings, not
+    the full daily grid — so this is never treated as exhaustive."""
+    winset = set(window)
+    agg = {}
+    for ev in soup.select(".single_incoming_event"):
+        place = ev.select_one(".ie_place")
+        if not place or "люмиер" not in place.get_text(" ", strip=True).lower():
+            continue
+        hd = ev.select_one(".ie_heading")
+        dnode = ev.select_one(".ie_date")
+        hnode = ev.select_one(".ie_hour")
+        if not hd or not dnode or not hnode:
+            continue
+        title = hd.get_text(" ", strip=True)
+        date = find_date(dnode.get_text(" ", strip=True), window)
+        if not title or date not in winset:
+            continue
+        # NDK renders the time as "18:00ч." — the trailing Cyrillic "ч" is a word
+        # character, so it blocks TIME_RE's trailing \b and no time matches. Strip
+        # everything but digits and colons before matching.
+        hour_txt = re.sub(r"[^\d:]", " ", hnode.get_text(" ", strip=True))
+        times = [f"{int(h):02d}:{m}" for h, m in TIME_RE.findall(hour_txt)]
+        if not times:
+            continue
+        href = hd.get("href") or ""
+        link = href if href.startswith("http") else None
+        tset, lk = agg.setdefault((title, date), (set(), link))
+        tset.update(times)
+        if link and not lk:
+            agg[(title, date)] = (tset, link)
+    out = [(title, venue_id, d, sorted(tset), link) for (title, d), (tset, link) in agg.items()]
+    st["rows"], st["dates"] = len(out), len({r[2] for r in out})
+    return out
 
 BG_MONTHS = ("януари февруари март април май юни юли август септември "
              "октомври ноември декември").split()
@@ -447,6 +539,47 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+# --- minimal arthouse-film synthesis ---------------------------------------
+# Independent cinemas (Одеон, Г8, Дом на киното, Влайкова, Люмиер) overwhelmingly
+# screen films the hand-curated FILMS catalogue never listed. The old scraper
+# dropped any unmatched title, which is why those halls showed almost nothing.
+# Instead we mint a MINIMAL, source-faithful film record (title + a placeholder
+# gradient; no invented year/runtime/synopsis) and persist it in cinema_films.json
+# (keep-previous), which inject_films.py merges into FILMS before the build gate.
+_TRANSLIT = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ж": "zh",
+    "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n",
+    "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f",
+    "х": "h", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "sht", "ъ": "a", "ь": "y",
+    "ю": "yu", "я": "ya",
+}
+
+
+def slugify(title):
+    """Stable, URL-safe id from a (usually Bulgarian) title. The id is cosmetic —
+    never shown to the user — so transliteration need only be deterministic."""
+    s = (title or "").lower().replace("ё", "е")
+    s = "".join(_TRANSLIT.get(ch, ch) for ch in s)
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    s = re.sub(r"-{2,}", "-", s)
+    return s[:60]
+
+
+# Dark two-colour gradients; genPoster() draws light shapes over g[0]->g[1]. Chosen
+# by hashing the id so each synthesised film gets a stable, distinct placeholder.
+_GRADS = [
+    ["#241B33", "#45275F"], ["#1B2733", "#27485F"], ["#331B24", "#5F2745"],
+    ["#1B331F", "#275F3A"], ["#332A1B", "#5F4527"], ["#2A331B", "#4A5F27"],
+    ["#1B3330", "#275F57"], ["#2B1B33", "#50275F"], ["#331B1B", "#5F2727"],
+]
+
+
+def grad_for(fid):
+    import hashlib
+    return _GRADS[int(hashlib.md5(fid.encode("utf-8")).hexdigest(), 16) % len(_GRADS)]
+
+
+
 def print_venue_table(stats):
     if not stats:
         return
@@ -532,6 +665,53 @@ def main():
     # parser matches by slug without title-normalisation guesswork.
     artvent_ids = set(re.findall(r'\{"id":"([^"]+)"[^}]*?"theatre":"artvent"', src))
 
+    # Which cinemas are arthouse/independent — only these synthesise films for
+    # uncatalogued titles (a multiplex title we don't recognise is a data error,
+    # not a new arthouse film). Read straight from the CINEMAS array.
+    independent_venues = set()
+    cinema_kind = {}
+    try:
+        _, _, cin_lit = extract_array(src, "CINEMAS")
+        for c in js_rows(cin_lit):
+            cinema_kind[c.get("id")] = c.get("kind")
+        independent_venues = {vid for vid, k in cinema_kind.items() if k == "independent"}
+    except (KeyError, ValueError):
+        pass
+
+    # Previously minted arthouse films (keep-previous). Seed the title->id map from
+    # them so a returning film keeps its id — its showtimes stay on one card across
+    # refreshes — and so inject_films.py never duplicates it in FILMS.
+    cinema_films = {}
+    if CINEMA_FILMS.exists():
+        try:
+            cinema_films = json.loads(CINEMA_FILMS.read_text(encoding="utf-8"))
+        except Exception:
+            cinema_films = {}
+    for fid, rec in cinema_films.items():
+        if rec.get("bg"):
+            title_to_id.setdefault(norm(rec["bg"]), fid)
+        if rec.get("en"):
+            title_to_id.setdefault(norm(rec["en"]), fid)
+
+    # Every id already spoken for (catalogue + minted), so a new id never collides.
+    existing_film_ids = set(title_to_id.values()) | set(cinema_films.keys())
+    try:
+        _, _, films_lit = extract_array(src, "FILMS")
+        existing_film_ids.update(re.findall(r'"id"\s*:\s*"([^"]+)"', films_lit))
+    except (KeyError, ValueError):
+        pass
+
+    def mint_film(title, venue):
+        import hashlib
+        base = slugify(title) or ("film-" + hashlib.md5(norm(title).encode()).hexdigest()[:8])
+        cand, i = base, 2
+        while cand in existing_film_ids:
+            cand, i = f"{base}-{i}", i + 1
+        existing_film_ids.add(cand)
+        cinema_films[cand] = {"id": cand, "bg": title, "en": "", "genres": [],
+                              "g": grad_for(cand), "source": venue}
+        return cand
+
     # Per-title deep-links (film/show id -> detail URL). Seeded from the previous
     # LINKS array so a source we can't reach this week keeps its links.
     links = {}
@@ -556,12 +736,20 @@ def main():
         rows = scrape_cinema(vid, url, session, window, venue_stats)
         matched = 0
         for title, v, date, times, link in rows:
-            fid = title_to_id.get(norm(title))
+            key = norm(title)
+            fid = title_to_id.get(key)
+            if not fid and v in independent_venues and link:
+                # An arthouse film the static catalogue doesn't carry. Mint a
+                # minimal, source-faithful record rather than drop the screening.
+                # Only titles that arrived WITH a real film-detail link are minted
+                # (never event/accent links), and no metadata is invented.
+                fid = mint_film(title, v)
+                title_to_id[key] = fid     # collapse repeats of this title this run
             if fid:
                 new_showtimes.append([fid, v, date, times])
                 matched += 1
                 if link:
-                    links[fid] = link      # programata film page — canonical
+                    links[fid] = link      # programata/venue film page — canonical
         # A venue is authoritative — its old rows may be dropped — once we have
         # actually read its programme this week: either a row matched a film in
         # the catalogue, or the page parsed into dated rows at all (st["rows"]).
@@ -709,7 +897,12 @@ def main():
         out = out[:cl[0]] + json.dumps(changelog, ensure_ascii=False, separators=(",", ":")) + out[cl[1]:]
 
     html_path.write_text(out, encoding="utf-8")
-    print(f"wrote {html_path.name} and {CHANGES.name}")
+    # Persist the arthouse-film catalogue (keep-previous union of old + newly minted);
+    # inject_films.py merges it into FILMS before the build gate.
+    CINEMA_FILMS.write_text(json.dumps(cinema_films, ensure_ascii=False, indent=1),
+                            encoding="utf-8")
+    print(f"wrote {html_path.name}, {CHANGES.name} and {CINEMA_FILMS.name} "
+          f"({len(cinema_films)} arthouse films)")
     return 0
 
 
