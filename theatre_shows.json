@@ -1564,5 +1564,23 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "kakvoto-napravi-dyado": {
+  "id": "kakvoto-napravi-dyado",
+  "title": "КАКВОТО НАПРАВИ ДЯДО...",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
  }
 }

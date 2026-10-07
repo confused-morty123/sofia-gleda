@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-07T17:12:17+00:00",
+  "ran": "2026-10-07T20:40:29+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,8 +8,8 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 145.7,
-      "tail": "  www.atelie313.com                     1     0      1.3  \n  www.ndk.bg                            4     0      3.8  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.5  \nwrote VLINKS: 19 entries (19 unique film+venue pairs)\n  lumiere: 3 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (87 theatre shows)"
+      "seconds": 146.3,
+      "tail": "  www.atelie313.com                     1     0      1.9  \n  www.ndk.bg                            4     0      3.7  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.9  \nwrote VLINKS: 19 entries (19 unique film+venue pairs)\n  lumiere: 3 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (88 theatre shows)"
     },
     {
       "step": "film info",
@@ -33,23 +33,23 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "SHOWS already carries all 87 theatre shows — no change"
+      "tail": "SHOWS already carries all 88 theatre shows — no change"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "TMDB_TOKEN not set — skipping film posters, keeping previous."
+      "seconds": 120.6,
+      "tail": "      og:image -> https://programata.bg/wp-content/uploads/2023/10/les-gardiennes-de-la-planete-2-0x450-1.jpg\n[144/146] kotki-v-muzeya-2-sakrovishtata-na-egipet NO MATCH (Котки в музея 2: Съкровищата на Египет None)\n      og:image -> https://programata.bg/wp-content/uploads/2026/06/maxresdefault.jpg\n[145/146] kina-i-yuk-lisitsite-ot-dalechniya-sever NO MATCH (Кина и Юк, лисиците от далечния север None)\n      og:image -> https://programata.bg/wp-content/uploads/2024/06/zx320y180_4675537.jpg\n[146/146] diamanti                 -> Diamonds Are Forever (1971) id=681\n\nDONE: 105/146 matched, 104 with posters, 19 og:image fallbacks, 90 with IMDb ratings (OMDb on) -> tmdb_films.json"
     },
     {
       "step": "theatre posters",
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 85.0,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        24     0     30.0  \n  theatre.art.bg                       45     0     52.1  \n\nnew this run: 0   rejected by policy: 2   total: 341/356 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 95.6,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        25     0     40.3  \n  theatre.art.bg                       45     0     52.1  \n\nnew this run: 0   rejected by policy: 2   total: 341/357 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "inline posters",
@@ -57,15 +57,15 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "injected TMDBART: 105 films (104 with posters), POSTERS: 17 og:image fallbacks, SHOWART: 341 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
+      "tail": "injected TMDBART: 105 films (104 with posters), POSTERS: 19 og:image fallbacks, SHOWART: 341 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 6.8,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp-pipeline/index.html (597,733 bytes)\n  all checks passed — safe to publish"
+      "seconds": 9.5,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (679,800 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }
