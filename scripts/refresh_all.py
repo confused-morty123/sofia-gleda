@@ -10,12 +10,13 @@ calls every Sunday.
 Steps (all best-effort; a step that fails leaves the previous data in place):
     1. scrape_programs.py        cinema + theatre programmes -> index.html
     2. inject_films.py           merge synthesised arthouse films -> index.html
-    3. fetch_tmdb.py             film posters + English titles -> tmdb_films.json
-    4. fetch_theatre_posters.py  theatre posters              -> theatre_posters.json
-    5. inject_data.py            inline both poster maps       -> index.html
-    6. verify_build.py           gate: is the result actually usable?
+    3. inject_shows.py           merge synthesised theatre shows -> index.html
+    4. fetch_tmdb.py             film posters + English titles -> tmdb_films.json
+    5. fetch_theatre_posters.py  theatre posters              -> theatre_posters.json
+    6. inject_data.py            inline both poster maps       -> index.html
+    7. verify_build.py           gate: is the result actually usable?
 
-Steps 1-5 are best-effort and never abort the run. Step 6 is not: if the rebuilt
+Steps 1-6 are best-effort and never abort the run. Step 7 is not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
 and the previous, working site stays up. That gate exists because the 2026-09-16
 refresh published a page that rendered perfectly and threw the moment you clicked
@@ -30,6 +31,7 @@ REPORT = ROOT / "build_report.json"
 STEPS = [
     ("programmes",      "scrape_programs.py",        []),
     ("arthouse films",  "inject_films.py",           []),
+    ("theatre shows",   "inject_shows.py",           []),
     ("film posters",    "fetch_tmdb.py",             []),
     ("theatre posters", "fetch_theatre_posters.py",  []),
     ("inline posters",  "inject_data.py",            []),

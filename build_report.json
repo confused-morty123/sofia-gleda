@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-06T15:25:08+00:00",
+  "ran": "2026-10-07T08:23:18+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,40 +8,56 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 153.0,
-      "tail": "  satirata.bg                           1     0      1.2  \n  theatre.art.bg                       70     0    103.0  \n  theatrevazrajdane.bg                  1     0      2.8  \n  tickets.ndk.bg                        1     0      0.9  \n  vlaikovacinema.com                    1     0      1.2  \n  www.atelie313.com                     1     0      2.5  \n  www.salzaismyah.bg                    1     0      0.9  \nwrote index.html and changes.json"
+      "seconds": 172.8,
+      "tail": "  tickets.ndk.bg                        1     0      0.2  \n  toplocentrala.bg                      1     0      0.3  \n  vlaikovacinema.com                    1     0      3.1  \n  www.atelie313.com                     1     0      1.6  \n  www.ndk.bg                            1     0      0.3  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.5  \nwrote index.html, changes.json, cinema_films.json (29 arthouse films) and theatre_shows.json (83 theatre shows)"
+    },
+    {
+      "step": "arthouse films",
+      "script": "inject_films.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 0.4,
+      "tail": "FILMS already carries all 29 arthouse films — no change"
+    },
+    {
+      "step": "theatre shows",
+      "script": "inject_shows.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 0.1,
+      "tail": "merged 83 theatre show(s) into SHOWS (352 total; 83 synthesised)"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 20.1,
-      "tail": "[92/97] zalog                    BLOCKED (known false match — generated art kept)\n[93/97] vsichko-za-mayka-mi      -> All About My Mother (1999) id=99\n[94/97] kosa                     -> Hair (1979) id=10654\n[95/97] diskretniyat-char        -> The Discreet Charm of the Bourgeoisie (1972) id=4593\n[96/97] iskam-te-za-seks         -> I Want Your Sex (2026) id=1288059\n[97/97] zhestokiyat-pat          NO MATCH (The Cruel Path 2025)\n\nDONE: 81/97 matched, 80 with posters -> tmdb_films.json"
+      "seconds": 0.2,
+      "tail": "TMDB_TOKEN not set — skipping film posters, keeping previous."
     },
     {
       "step": "theatre posters",
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 77.6,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        18     0     19.5  \n  theatre.art.bg                       45     0     56.3  \n\nnew this run: 0   rejected by policy: 2   total: 260/269 shows with art\nre-hosted 260/260 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 206.3,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        81     0    109.3  \n  theatre.art.bg                       45     0     52.9  \n\nnew this run: 34   rejected by policy: 2   total: 294/352 shows with art\nre-hosted 294/294 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "inline posters",
       "script": "inject_data.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.0,
-      "tail": "injected TMDBART: 81 films (80 with posters), SHOWART: 260 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
+      "seconds": 0.2,
+      "tail": "injected TMDBART: 81 films (80 with posters), SHOWART: 294 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 6.4,
-      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (401,174 bytes)\n  all checks passed — safe to publish"
+      "seconds": 8.5,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (461,556 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }

@@ -1,0 +1,1496 @@
+{
+ "virhova-prikazka": {
+  "id": "virhova-prikazka",
+  "title": "ВИРХОВА ПРИКАЗКА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "kankun": {
+  "id": "kankun",
+  "title": "\"КАНКУН\"",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "programa-izgonvaneto-na-besovete-litseto-na-blizhniya": {
+  "id": "programa-izgonvaneto-na-besovete-litseto-na-blizhniya",
+  "title": "ПРОГРАМА \"ИЗГОНВАНЕТО НА БЕСОВЕТЕ\" ЛИЦЕТО НА БЛИЖНИЯ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "drug-chovek": {
+  "id": "drug-chovek",
+  "title": "ДРУГ ЧОВЕК",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "seks-i-drama": {
+  "id": "seks-i-drama",
+  "title": "СЕКС И ДРАМА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "aktyori-sreshtu-poeti": {
+  "id": "aktyori-sreshtu-poeti",
+  "title": "АКТЬОРИ СРЕЩУ ПОЕТИ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "hitranka-lisanka-spektakal-po-narodni-prikazki": {
+  "id": "hitranka-lisanka-spektakal-po-narodni-prikazki",
+  "title": "\"ХИТРАНКА ЛИСАНКА\" СПЕКТАКЪЛ ПО НАРОДНИ ПРИКАЗКИ",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "programa-beket-o-shtastlivi-dni": {
+  "id": "programa-beket-o-shtastlivi-dni",
+  "title": "ПРОГРАМА \"БЕКЕТ\" О, ЩАСТЛИВИ ДНИ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "beli-noshti": {
+  "id": "beli-noshti",
+  "title": "БЕЛИ НОЩИ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "nikoy": {
+  "id": "nikoy",
+  "title": "\"НИКОЙ\"",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "misleshtite-trastiki": {
+  "id": "misleshtite-trastiki",
+  "title": "МИСЛЕЩИТЕ ТРЪСТИКИ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "antitaga": {
+  "id": "antitaga",
+  "title": "#АНТИТЪГА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "ivan-landzhev-za-neizbezhnata-sluchaynost-posledno-predstavl": {
+  "id": "ivan-landzhev-za-neizbezhnata-sluchaynost-posledno-predstavl",
+  "title": "ИВАН ЛАНДЖЕВ. ЗА НЕИЗБЕЖНАТА СЛУЧАЙНОСТ. ПОСЛЕДНО ПРЕДСТАВЛЕНИЕ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "platonoff": {
+  "id": "platonoff",
+  "title": "ПЛАТОНOFF",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "formata-na-neshtata": {
+  "id": "formata-na-neshtata",
+  "title": "\"ФОРМАТА НА НЕЩАТА\"",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "tryabva-i-nyakakvo-deystvie-hamlete": {
+  "id": "tryabva-i-nyakakvo-deystvie-hamlete",
+  "title": "ТРЯБВА И НЯКАКВО ДЕЙСТВИЕ, ХАМЛЕТЕ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "geometriya-na-dushata": {
+  "id": "geometriya-na-dushata",
+  "title": "ГЕОМЕТРИЯ НА ДУШАТА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "vsichko-na-masata": {
+  "id": "vsichko-na-masata",
+  "title": "ВСИЧКО НА МАСАТА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "programa-nezabrava-nostalgichno-divertimento": {
+  "id": "programa-nezabrava-nostalgichno-divertimento",
+  "title": "ПРОГРАМА \"НЕЗАБРАВА\" НОСТАЛГИЧНО ДИВЕРТИМЕНТО",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "mitove-za-kral-makbet": {
+  "id": "mitove-za-kral-makbet",
+  "title": "МИТОВЕ ЗА КРАЛ МАКБЕТ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "opit-za-letene-ili-legendata-za-privarzaniya-balon": {
+  "id": "opit-za-letene-ili-legendata-za-privarzaniya-balon",
+  "title": "ОПИТ ЗА ЛЕТЕНЕ (ИЛИ ‛ЛЕГЕНДАТА ЗА ПРИВЪРЗАНИЯ БАЛОН“)",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "programa-nezabrava-pohishtenieto-na-balgariya": {
+  "id": "programa-nezabrava-pohishtenieto-na-balgariya",
+  "title": "ПРОГРАМА \"НЕЗАБРАВА\" ПОХИЩЕНИЕТО НА БЪЛГАРИЯ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "programa-noev-kovcheg-luda-treva": {
+  "id": "programa-noev-kovcheg-luda-treva",
+  "title": "ПРОГРАМА \"НОЕВ КОВЧЕГ\" ЛУДА ТРЕВА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "edin-chovek": {
+  "id": "edin-chovek",
+  "title": "ЕДИН ЧОВЕК",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "zhivotat-makar-i-kratak": {
+  "id": "zhivotat-makar-i-kratak",
+  "title": "ЖИВОТЪТ, МАКАР И КРАТЪК",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "bokluk": {
+  "id": "bokluk",
+  "title": "БОКЛУК",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "blazheni-sa-blazhenite": {
+  "id": "blazheni-sa-blazhenite",
+  "title": "БЛАЖЕНИ СА БЛАЖЕНИТЕ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "chest": {
+  "id": "chest",
+  "title": "ЧЕСТ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "novata-tantsuvalna-zala": {
+  "id": "novata-tantsuvalna-zala",
+  "title": "НОВАТА ТАНЦУВАЛНА ЗАЛА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "prizemena": {
+  "id": "prizemena",
+  "title": "ПРИЗЕМЕНА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "malkata-kibritoprodavachka": {
+  "id": "malkata-kibritoprodavachka",
+  "title": "МАЛКАТА КИБРИТОПРОДАВАЧКА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "priyatno-mi-e-iva": {
+  "id": "priyatno-mi-e-iva",
+  "title": "ПРИЯТНО МИ Е, ИВА!",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "svetulki": {
+  "id": "svetulki",
+  "title": "СВЕТУЛКИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "kolektsionerkata": {
+  "id": "kolektsionerkata",
+  "title": "КОЛЕКЦИОНЕРКАТА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "vlyubena-sgodena-izcheznala": {
+  "id": "vlyubena-sgodena-izcheznala",
+  "title": "ВЛЮБЕНА, СГОДЕНА, ИЗЧЕЗНАЛА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "poslednata-nosht-na-sokrat": {
+  "id": "poslednata-nosht-na-sokrat",
+  "title": "ПОСЛЕДНАТА НОЩ НА СОКРАТ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "lifelines-blavatsky-freud-experience": {
+  "id": "lifelines-blavatsky-freud-experience",
+  "title": "LifeLines: Blavatsky Freud Experience",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "predstavlenie-i-nakazanie": {
+  "id": "predstavlenie-i-nakazanie",
+  "title": "ПРЕДСТАВЛЕНИЕ И НАКАЗАНИЕ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "priroda-fest": {
+  "id": "priroda-fest",
+  "title": "Природа Фест",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "forum-zheni-bez-pauza": {
+  "id": "forum-zheni-bez-pauza",
+  "title": "Форум \"Жени без пауза\"",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "oskurnite": {
+  "id": "oskurnite",
+  "title": "Оскурните",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "noshtni-peperudi": {
+  "id": "noshtni-peperudi",
+  "title": "НОЩНИ ПЕПЕРУДИ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kratki-formi-hahaha-impro-teatar": {
+  "id": "kratki-formi-hahaha-impro-teatar",
+  "title": "Кратки форми | ХаХаХа ИмПро театър",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "vikove-ot-podzemieto": {
+  "id": "vikove-ot-podzemieto",
+  "title": "Викове от подземието",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kaspar-pesni-na-takavostta": {
+  "id": "kaspar-pesni-na-takavostta",
+  "title": "Каспар: Песни на такъвостта",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "angry-sounds-2026": {
+  "id": "angry-sounds-2026",
+  "title": "Angry Sounds 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "geroyat-ot-gara-fridrihshtrase-berlin-hero-sinelibri-2026": {
+  "id": "geroyat-ot-gara-fridrihshtrase-berlin-hero-sinelibri-2026",
+  "title": "ГЕРОЯТ ОТ ГАРА „ФРИДРИХЩРАСЕ\" / Berlin hero|Синелибри 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-i-pianisimo": {
+  "id": "act-fest-2026-i-pianisimo",
+  "title": "ACT FEST 2026 I Пианисимо",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-i-insert-coin-player-one": {
+  "id": "act-fest-2026-i-insert-coin-player-one",
+  "title": "ACT FEST 2026 I INSERT COIN / PLAYER ONE",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-i-tela-na-vlastta-ikar-2026-za-savremenen-tant": {
+  "id": "act-fest-2026-i-tela-na-vlastta-ikar-2026-za-savremenen-tant",
+  "title": "ACT FEST 2026 I Тела на властта|ИКАР 2026 за СЪВРЕМЕНЕН ТАНЦ И ПЪРФОРМАНС",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kech-unlimited": {
+  "id": "kech-unlimited",
+  "title": "КЕЧ - Unlimited",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kislorod": {
+  "id": "kislorod",
+  "title": "Кислород",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-co-surface-sa-povarhnost": {
+  "id": "act-fest-2026-co-surface-sa-povarhnost",
+  "title": "ACT FEST 2026 CO–SURFACE / СЪ–ПОВЪРХНОСТ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-i-in-between-2": {
+  "id": "act-fest-2026-i-in-between-2",
+  "title": "ACT FEST 2026 I In Between #2",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "happy-together-unhappy-together-nominatsiya-za-ikar-2026": {
+  "id": "happy-together-unhappy-together-nominatsiya-za-ikar-2026",
+  "title": "Happy Together - Unhappy Together |Номинация за ИКАР 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "sreshta-s-nikola-byogle": {
+  "id": "sreshta-s-nikola-byogle",
+  "title": "Среща с Никола Бьогле",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-i-shampionat-i-komarat": {
+  "id": "act-fest-2026-i-shampionat-i-komarat",
+  "title": "ACT FEST 2026 I Шампионът и комарът",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "ast-fest-2026-i-istoriya-na-edna-strast": {
+  "id": "ast-fest-2026-i-istoriya-na-edna-strast",
+  "title": "АСТ ФЕСТ 2026 I ИСТОРИЯ НА ЕДНА СТРАСТ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "act-fest-2026-i-az-sam-balgarche": {
+  "id": "act-fest-2026-i-az-sam-balgarche",
+  "title": "ACT FEST 2026 I Аз съм българче?!",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "hana-na-7-i-polovina-hannah-at-the-age-of-7-1-2-sinelibri-20": {
+  "id": "hana-na-7-i-polovina-hannah-at-the-age-of-7-1-2-sinelibri-20",
+  "title": "ХАНА НА 7 И ПОЛОВИНА / Hannah at the age of 7 1/2|Синелибри 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "mish-mash-hahaha-impro-teatar": {
+  "id": "mish-mash-hahaha-impro-teatar",
+  "title": "Миш-Маш | ХаХаХа ИмПро театър",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "istoriya-na-edna-strast": {
+  "id": "istoriya-na-edna-strast",
+  "title": "ИСТОРИЯ НА ЕДНА СТРАСТ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "svatba-s-vkus-na-portokal-orange-flavoured-wedding-sinelibri": {
+  "id": "svatba-s-vkus-na-portokal-orange-flavoured-wedding-sinelibri",
+  "title": "СВАТБА С ВКУС НА ПОРТОКАЛ / ORANGE-FLAVOURED WEDDING |Синелибри 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "hahaha-impro-teatar-po-sledite-na-edin-ubiets": {
+  "id": "hahaha-impro-teatar-po-sledite-na-edin-ubiets",
+  "title": "ХаХаХа ИмПро театър | По следите на един убиец",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "da-zhivee-balgariya-5-to-izdanie": {
+  "id": "da-zhivee-balgariya-5-to-izdanie",
+  "title": "Да живее България | 5-то издание",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "danceperimental-your-story-moves-us": {
+  "id": "danceperimental-your-story-moves-us",
+  "title": "Danceperimental - Your Story Moves Us",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "prima-facie": {
+  "id": "prima-facie",
+  "title": "Prima Facie",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "honesty-and-other-fiends-chestnost-i-drugi-zlodei": {
+  "id": "honesty-and-other-fiends-chestnost-i-drugi-zlodei",
+  "title": "Honesty and Other Fiends (Честност и други злодеи)",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "poslednoto-svobodno-myasto-na-zemyata": {
+  "id": "poslednoto-svobodno-myasto-na-zemyata",
+  "title": "Последното свободно място на Земята",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "treynspoting": {
+  "id": "treynspoting",
+  "title": "ТРЕЙНСПОТИНГ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "praznikat": {
+  "id": "praznikat",
+  "title": "ПРАЗНИКЪТ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "skakaltsi": {
+  "id": "skakaltsi",
+  "title": "СКАКАЛЦИ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "ubiystvo-po-uchebnik": {
+  "id": "ubiystvo-po-uchebnik",
+  "title": "УБИЙСТВО ПО УЧЕБНИК",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "hayde-da-se-trepame": {
+  "id": "hayde-da-se-trepame",
+  "title": "Хайде да се трепаме",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "nedorazbranata-tsivilizatsiya-ili-zagadkata-na-piramidite": {
+  "id": "nedorazbranata-tsivilizatsiya-ili-zagadkata-na-piramidite",
+  "title": "Недоразбраната цивилизация /или загадката на пирамидите/",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "edna-ispanska-piesa": {
+  "id": "edna-ispanska-piesa",
+  "title": "ЕДНА ИСПАНСКА ПИЕСА",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "az-obicham-ti-obichash-tya-obicha": {
+  "id": "az-obicham-ti-obichash-tya-obicha",
+  "title": "Аз обичам, ти обичаш, тя обича",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "obshtestven-vrag": {
+  "id": "obshtestven-vrag",
+  "title": "Обществен враг",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "portokal-s-chasovnikov-mehanizam": {
+  "id": "portokal-s-chasovnikov-mehanizam",
+  "title": "Портокал с часовников механизъм",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "koy-se-boi-ot-virdzhiniya-ulf": {
+  "id": "koy-se-boi-ot-virdzhiniya-ulf",
+  "title": "Кой се бои от Вирджиния Улф",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "san-v-zimna-nosht": {
+  "id": "san-v-zimna-nosht",
+  "title": "СЪН В ЗИМНА НОЩ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "dzhampi": {
+  "id": "dzhampi",
+  "title": "ДЖЪМПИ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "nedelya-vecher": {
+  "id": "nedelya-vecher",
+  "title": "Неделя вечер",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ }
+}

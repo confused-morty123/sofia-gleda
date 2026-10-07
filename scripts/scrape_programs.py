@@ -34,6 +34,10 @@ CHANGES = ROOT / "changes.json"
 # the static FILMS catalogue never carried). Persisted keep-previous and merged
 # into FILMS by inject_films.py before the build gate.
 CINEMA_FILMS = ROOT / "cinema_films.json"
+# Minimal theatre-show records minted from venue programmes (productions the static
+# SHOWS catalogue never carried). Same keep-previous discipline as the film sidecar;
+# merged into SHOWS by inject_shows.py before the build gate.
+THEATRE_SHOWS = ROOT / "theatre_shows.json"
 
 # Headers, timeouts, retries and per-host politeness live in netfetch.py, so every
 # scraper behaves the same way against the same fragile sources. The old
@@ -87,6 +91,28 @@ THEATRE_VENUE_SOURCES = {
 }
 # Artvent is a producer/aggregator listing its own theatre programme.
 ARTVENT_URL = "https://artvent.bg/teatar/artvent/programa"
+
+# Venues whose OWN sites publish a machine-readable, dated programme that the
+# generic scanner can't parse — each gets a dedicated parser below. Uncatalogued
+# titles here are minted (a real, dated performance is never dropped), attributed
+# to the venue id these point at.
+THEATRE_OWN_SOURCES = {
+    "th199":      "https://theatre199.org/bg/schedule",
+    "toplo":      "https://toplocentrala.bg/program/performance",
+    "zad-kanala": "https://zadkanala.bg/programa",
+}
+# theatre.art.bg theatre ids for venues that sell ONLY through the aggregator and
+# whose own sites carry no scrapable dated programme (Сфумато routes everything
+# through art.bg; Сити Марк's "own" domain is an unrelated property company). A
+# day-aggregator row at one of these ids is match-or-minted — a real, dated,
+# ticketed performance is never dropped. Every OTHER art.bg theatre stays
+# match-only, so the SHOWS catalogue is never flooded with venues the app can't
+# list. Ids read from each venue's kupi-bilet links (theatre=N).
+THEATRE_ART_VENUE = {"14": "sfumato", "173": "citymark"}
+# Natfiz publishes its monthly programme only as a single JPG poster, Нов театър
+# НДК sells behind a login wall (tickets.ndk.bg), and Сцена Дерида serves a
+# JavaScript-only shell — none expose machine-readable dated shows, so they are
+# intentionally left to keep-previous rather than scraped (never fabricated).
 
 TIME_RE = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 DATE_RE = re.compile(r"\b(\d{1,2})[.\-/](\d{1,2})(?:[.\-/](\d{2,4}))?\b")
@@ -431,7 +457,19 @@ def page_echoes_date(soup, date):
     return any(f.lower() in low for f in forms)
 
 
+ART_BASE = "https://theatre.art.bg"
+_ART_TID = re.compile(r"theatre=(\d+)")
+_ART_SLUG_TID = re.compile(r"___(\d+)")
+
+
 def scrape_theatre_day(date, session):
+    """One day of the Sofia aggregator. Each `.afishbox` carries a clean title
+    (its own <h3><a>), the time (overlaid on the cover), the venue's theatre id
+    (from the kupi-bilet link, so a row can be attributed to a specific venue)
+    and that per-performance buy link. Returns (title, date, time, theatre_id,
+    buy_link); theatre_id/buy_link are None when a row lacks them. Falls back to
+    the old flat scan if the structured markup is ever absent, so a redesign
+    degrades to match-only rather than to nothing."""
     soup = fetch(THEATRE_DAY_URL.format(date=date), session)
     if soup is None:
         return []
@@ -441,6 +479,33 @@ def scrape_theatre_day(date, session):
         # date — keep-previous will preserve the real data.
         return []
     out = []
+    boxes = soup.select(".afishbox")
+    if boxes:
+        for box in boxes:
+            h = box.select_one("h3 a, h3")
+            title = (h.get("title") or h.get_text(" ", strip=True)).strip() if h else ""
+            tnode = box.select_one(".afish-img span")
+            ttext = tnode.get_text(" ", strip=True) if tnode else box.get_text(" ", strip=True)
+            tm = TIME_RE.search(ttext)
+            if not title or not tm or not (2 < len(title) < 160):
+                continue
+            time_ = f"{int(tm.group(1)):02d}:{tm.group(2)}"
+            buy = box.select_one("a.kupi_bilet[href], a[href*='kupi-bilet']")
+            tid, link = None, None
+            if buy and buy.get("href"):
+                link = buy["href"]
+                if link.startswith("/"):
+                    link = ART_BASE + link
+                m = _ART_TID.search(buy["href"])
+                tid = m.group(1) if m else None
+            if tid is None:
+                vlink = box.select_one("h5 a[href]")
+                if vlink:
+                    m = _ART_SLUG_TID.search(vlink.get("href") or "")
+                    tid = m.group(1) if m else None
+            out.append((title, date, time_, tid, link))
+        return out
+    # fallback: pre-redesign flat scan (match-only, no venue attribution)
     for row in soup.select("li, tr, article, .event, .performance"):
         text = row.get_text(" ", strip=True)
         if not text or len(text) > 300:
@@ -450,7 +515,7 @@ def scrape_theatre_day(date, session):
             continue
         title = TIME_RE.sub("", text).strip(" ·,-–—|")
         if 2 < len(title) < 160:
-            out.append((title, date, times[0]))
+            out.append((title, date, times[0], None, None))
     return out
 
 
@@ -479,6 +544,147 @@ def scrape_theatre_page(url, session, window):
         title = re.sub(r"\s{2,}", " ", title)
         if 2 < len(title) < 160:
             out.append((title, date, times[0]))
+    return out
+
+
+# --- dedicated venue parsers (own sites, venue known) ----------------------
+# Each returns (title, date, time, venue_id, buy_link). The venue is fixed, so an
+# uncatalogued title is minted and attributed correctly downstream. Only clean,
+# per-item markup is read (title, date and time each from their own element), so
+# nothing is ever reconstructed by splitting concatenated text.
+
+def _abs(base, href):
+    if not href:
+        return None
+    if href.startswith("http"):
+        return href
+    return base.rstrip("/") + "/" + href.lstrip("/")
+
+
+def scrape_th199(session, window):
+    """Театър 199 — theatre199.org/bg/schedule. Each `.js-card` holds a `.date`
+    (DD.MM), a `.list-time` (HH:MM), a title in `article h4 a`, and that anchor's
+    href as the per-play deep link. The year is inferred from the window."""
+    soup = fetch(THEATRE_OWN_SOURCES["th199"], session)
+    if soup is None:
+        return []
+    year0 = int(window[0][:4])
+    winset = set(window)
+    out = []
+    for card in soup.select(".js-card, .news-resum-card"):
+        dnode = card.select_one(".datе-label .date, .date")
+        tnode = card.select_one(".list-time")
+        tnode_a = card.select_one("article.resume-text h4 a, .resume-text h4 a, h4 a")
+        if not (dnode and tnode and tnode_a):
+            continue
+        dm = re.search(r"\b(\d{1,2})[.\-/](\d{1,2})\b", dnode.get_text(" ", strip=True))
+        tm = TIME_RE.search(tnode.get_text(" ", strip=True))
+        if not dm or not tm:
+            continue
+        d, mo = int(dm.group(1)), int(dm.group(2))
+        # the schedule is forward-looking; pick the year that lands it in window.
+        date = None
+        for y in (year0, year0 + 1):
+            try:
+                cand = dt.date(y, mo, d).isoformat()
+            except ValueError:
+                continue
+            if cand in winset:
+                date = cand
+                break
+        if not date:
+            continue
+        title = tnode_a.get_text(" ", strip=True)
+        if not (2 < len(title) < 160):
+            continue
+        out.append((title, date, f"{int(tm.group(1)):02d}:{tm.group(2)}",
+                    "th199", _abs("https://theatre199.org", tnode_a.get("href"))))
+    return out
+
+
+# Топлоцентрала writes times as "19.00часа" and the title with a trailing
+# "Режисьор: …" / "ПРЕМИЕРА" tail that must be dropped so the card shows the play,
+# not the credits.
+_TOPLO_TAIL = re.compile(r"\s*(Режисьор|Хореограф|Автор|ПРЕМИЕРА|I ПРЕМИЕРА)\b.*$", re.I)
+
+
+def scrape_toplo(session, window):
+    """Топлоцентрала — toplocentrala.bg. Each `.program-list-item` has a
+    `.program-date` (long-form Bulgarian), `.program-time` ("19.00часа") and a
+    `.program-title`; the item's own anchor is the deep link."""
+    soup = fetch(THEATRE_OWN_SOURCES["toplo"], session)
+    if soup is None:
+        return []
+    year0 = window[0][:4]
+    out = []
+    for it in soup.select(".program-list-item"):
+        dnode = it.select_one(".program-date")
+        tnode = it.select_one(".program-time")
+        titlenode = it.select_one(".program-title > div") or it.select_one(".program-title")
+        if not (dnode and tnode and titlenode):
+            continue
+        date = find_date(dnode.get_text(" ", strip=True), window, default_year=year0)
+        tm = re.search(r"\b([01]?\d|2[0-3])[.:]([0-5]\d)\b", tnode.get_text(" ", strip=True))
+        if not date or date not in window or not tm:
+            continue
+        title = _TOPLO_TAIL.sub("", titlenode.get_text(" ", strip=True)).strip(" ·,-–—|")
+        title = re.sub(r"\s{2,}", " ", title)
+        if not (2 < len(title) < 160):
+            continue
+        link = it.select_one("a[href]")
+        out.append((title, date, f"{int(tm.group(1)):02d}:{tm.group(2)}",
+                    "toplo", _abs("https://toplocentrala.bg", link.get("href") if link else None)))
+    return out
+
+
+# Зад канала (Drupal) renders dates as "7 Окт. 2026 - 19:00" with abbreviated,
+# dotted month names the full-name BG_MONTHS table does not cover.
+_ZK_MON = {"ян": 1, "фев": 2, "мар": 3, "апр": 4, "май": 5, "юни": 6, "юли": 7,
+           "авг": 8, "сеп": 9, "окт": 10, "ное": 11, "дек": 12}
+
+
+def scrape_zadkanala(session, window):
+    """Зад канала — zadkanala.bg/programa, a Drupal views table. Each `<tr>` has a
+    `.date-display-single` whose `content` attribute is an ISO datetime (date and
+    time together) and a `.views-field-title` anchor (title + an own-site detail
+    link). The "buy" link points at a WordPress login, so the detail page is used
+    as the deep link instead."""
+    soup = fetch(THEATRE_OWN_SOURCES["zad-kanala"], session)
+    if soup is None:
+        return []
+    winset = set(window)
+    out = []
+    for span in soup.select(".date-display-single"):
+        row = span.find_parent("tr") or span.parent
+        titlenode = (row.select_one(".views-field-title a")
+                     or row.select_one(".views-field-title")) if row else None
+        if not titlenode:
+            continue
+        iso = span.get("content") or ""
+        m = re.match(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})", iso)
+        if m:
+            date = f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+            time_ = f"{m.group(4)}:{m.group(5)}"
+        else:  # fall back to the rendered "D Мес. YYYY - HH:MM" text
+            dtext = span.get_text(" ", strip=True)
+            dm = re.search(r"\b(\d{1,2})\s+([А-Яа-я]{3})[.а-я]*\s+(\d{4})", dtext)
+            tm = TIME_RE.search(dtext)
+            mon = _ZK_MON.get(dm.group(2).lower()[:3]) if dm else None
+            if not dm or not tm or not mon:
+                continue
+            try:
+                date = dt.date(int(dm.group(3)), mon, int(dm.group(1))).isoformat()
+            except ValueError:
+                continue
+            time_ = f"{int(tm.group(1)):02d}:{tm.group(2)}"
+        if date not in winset:
+            continue
+        title = re.sub(r"\s{2,}", " ", titlenode.get_text(" ", strip=True)).strip(" ·,-–—|")
+        if not (2 < len(title) < 160):
+            continue
+        href = titlenode.get("href") if titlenode.name == "a" else None
+        out.append((title, date, time_, "zad-kanala",
+                    _abs("https://zadkanala.bg", href)))
     return out
 
 
@@ -653,17 +859,66 @@ def main():
     old_showtimes = js_rows(st_lit)
     old_performances = js_rows(pf_lit)
 
+    # Match scraped titles ONLY against the real catalogues (FILMS / SHOWS), never
+    # against the taste-quiz seed arrays (TASTE_FILMS / TASTE_SHOWS) elsewhere on
+    # the page. Those carry ids like s-hamlet that are not real catalogue entries;
+    # scanning the whole source picked them up, so a scraped "Хамлет"/"Чайка" was
+    # matched to a show that does not exist and minted an orphan performance.
+    def _array_src(name):
+        try:
+            _, _, lit = extract_array(src, name)
+            return lit
+        except (KeyError, ValueError):
+            return ""
+    films_src = _array_src("FILMS")
     title_to_id = {}
-    for m in re.finditer(r'\{\s*"?id"?\s*:\s*"([^"]+)"\s*,\s*"?bg"?\s*:\s*"([^"]+)"\s*,\s*"?en"?\s*:\s*"([^"]+)"', src):
+    for m in re.finditer(r'\{\s*"?id"?\s*:\s*"([^"]+)"\s*,\s*"?bg"?\s*:\s*"([^"]+)"\s*,\s*"?en"?\s*:\s*"([^"]+)"', films_src):
         fid, bg, en = m.groups()
         title_to_id[norm(bg)] = fid
         title_to_id[norm(en)] = fid
+    shows_src = _array_src("SHOWS")
     show_title_to_id = {}
-    for m in re.finditer(r'\{\s*"?id"?\s*:\s*"([^"]+)"\s*,\s*"?title"?\s*:\s*"([^"]+)"', src):
+    for m in re.finditer(r'\{\s*"?id"?\s*:\s*"([^"]+)"\s*,\s*"?title"?\s*:\s*"([^"]+)"', shows_src):
         show_title_to_id[norm(m.group(2))] = m.group(1)
     # Artvent shows are keyed by their /event slug (id == slug), so the Artvent
     # parser matches by slug without title-normalisation guesswork.
     artvent_ids = set(re.findall(r'\{"id":"([^"]+)"[^}]*?"theatre":"artvent"', src))
+
+    # Previously minted theatre shows (keep-previous), mirroring cinema_films.
+    # Seed the title->id map so a returning production keeps its id (its
+    # performances stay on one card) and inject_shows.py never duplicates it.
+    theatre_shows = {}
+    if THEATRE_SHOWS.exists():
+        try:
+            theatre_shows = json.loads(THEATRE_SHOWS.read_text(encoding="utf-8"))
+        except Exception:
+            theatre_shows = {}
+    for sid_, rec in theatre_shows.items():
+        if rec.get("title"):
+            show_title_to_id.setdefault(norm(rec["title"]), sid_)
+    existing_show_ids = set(show_title_to_id.values()) | set(theatre_shows.keys())
+    try:
+        _, _, shows_lit = extract_array(src, "SHOWS")
+        existing_show_ids.update(re.findall(r'"id"\s*:\s*"([^"]+)"', shows_lit))
+    except (KeyError, ValueError):
+        pass
+
+    def mint_show(title, venue):
+        import hashlib
+        base = slugify(title) or ("show-" + hashlib.md5(norm(title).encode()).hexdigest()[:8])
+        cand, i = base, 2
+        while cand in existing_show_ids:
+            cand, i = f"{base}-{i}", i + 1
+        existing_show_ids.add(cand)
+        # Minimal, source-faithful: title + venue + a stable placeholder gradient.
+        # No invented author, director, cast, synopsis or duration — the UI guards
+        # for each of these being absent.
+        theatre_shows[cand] = {"id": cand, "title": title, "titleEn": "",
+                               "theatre": venue, "author": "", "director": "",
+                               "cast": "", "genres": [], "g": grad_for(cand),
+                               "duration": None, "synBg": "", "synEn": "",
+                               "source": venue}
+        return cand
 
     # Which cinemas are arthouse/independent — only these synthesise films for
     # uncatalogued titles (a multiplex title we don't recognise is a data error,
@@ -791,14 +1046,38 @@ def main():
         price = next((p[4] for p in old_performances if p[0] == sid), None)
         new_performances.append([sid, d, time_, hall, price])
 
-    # 1) the Sofia aggregator (theatre.art.bg), per date
+    # 1) the Sofia aggregator (theatre.art.bg), per date. Rows carry the venue's
+    # theatre id, so a production at a venue that sells only through art.bg
+    # (Сфумато, Сити Марк) is minted and attributed rather than dropped; every
+    # other theatre stays match-only.
     for date in window:
-        for title, d, time_ in scrape_theatre_day(date, session):
-            sid = show_title_to_id.get(norm(title))
+        for title, d, time_, tid, link in scrape_theatre_day(date, session):
+            k = norm(title)
+            sid = show_title_to_id.get(k)
+            if not sid and tid in THEATRE_ART_VENUE:
+                sid = mint_show(title, THEATRE_ART_VENUE[tid])
+                show_title_to_id[k] = sid
             if sid:
                 add_perf(sid, d, time_)
+                if link:
+                    links[sid] = link
 
-    # 2) individual venue programme pages, each scanned once
+    # 1b) dedicated venue parsers (own sites). The venue is known, so an
+    # uncatalogued but real, dated production is minted and attributed correctly.
+    for vid, parser in (("th199", scrape_th199), ("toplo", scrape_toplo),
+                        ("zad-kanala", scrape_zadkanala)):
+        print(f"theatre {vid}")
+        for title, d, time_, venue, link in parser(session, window):
+            k = norm(title)
+            sid = show_title_to_id.get(k)
+            if not sid:
+                sid = mint_show(title, venue)
+                show_title_to_id[k] = sid
+            add_perf(sid, d, time_)
+            if link:
+                links[sid] = link
+
+    # 2) individual venue programme pages, each scanned once (match-only)
     for vid, url in THEATRE_VENUE_SOURCES.items():
         print(f"theatre {vid}")
         for title, d, time_ in scrape_theatre_page(url, session, window):
@@ -901,8 +1180,12 @@ def main():
     # inject_films.py merges it into FILMS before the build gate.
     CINEMA_FILMS.write_text(json.dumps(cinema_films, ensure_ascii=False, indent=1),
                             encoding="utf-8")
-    print(f"wrote {html_path.name}, {CHANGES.name} and {CINEMA_FILMS.name} "
-          f"({len(cinema_films)} arthouse films)")
+    # Same for synthesised theatre shows; inject_shows.py merges into SHOWS.
+    THEATRE_SHOWS.write_text(json.dumps(theatre_shows, ensure_ascii=False, indent=1),
+                             encoding="utf-8")
+    print(f"wrote {html_path.name}, {CHANGES.name}, {CINEMA_FILMS.name} "
+          f"({len(cinema_films)} arthouse films) and {THEATRE_SHOWS.name} "
+          f"({len(theatre_shows)} theatre shows)")
     return 0
 
 
