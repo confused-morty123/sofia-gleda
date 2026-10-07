@@ -19,3 +19,4 @@ changes.json
 # Local dev tooling — never part of the site.
 .claude/
 index.dev.html
+index.test.html

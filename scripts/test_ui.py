@@ -2,31 +2,98 @@
 """Sofia Gleda UI regression suite for Wave A1 and beyond.
 
 Usage:
-  python3 scripts/test_ui.py           # run all waves against index.dev.html
-  python3 scripts/test_ui.py A1        # run wave A1 only
-  SOFIA_HTML=index.html python3 scripts/test_ui.py  # use custom HTML file
+  python3 scripts/test_ui.py           # build fixture from FIXTURE_REF, run all waves
+  python3 scripts/test_ui.py A1        # run wave A1 only (still uses fixture)
+  SOFIA_HTML=index.html python3 scripts/test_ui.py  # test a real build; clock derived from its SNAPSHOT
+
+Default mode: builds index.test.html from FIXTURE_REF (commit whose listings start
+2026-10-07) and tests against it with the frozen 2026-10-07 14:45 Europe/Sofia clock.
+
+SOFIA_HTML mode: reads SNAPSHOT.window.from from the given file and pins the clock
+to that date at 14:45 Europe/Sofia (EEST UTC+3 until 2026-10-25, EET UTC+2 after).
+Date-dependent checks compute today/WEEK_END from the clock date instead of literals.
 
 Playwright sync API, headless Chromium, timezone Europe/Sofia, locale bg-BG.
-Fixed clock 2026-10-07 14:45 Europe/Sofia for reproducible testing.
 Screenshots go to /tmp/sg-shots/<wave>/<name>.png (viewport only).
 """
 import sys
 import os
+import re
+import datetime
+import subprocess
 import pathlib
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-# Constants matching qa_cinema.py
-FIXED_1445 = 1791373500000  # 2026-10-07 14:45 Europe/Sofia
+# ── Fixture ref ────────────────────────────────────────────────────────────────
+# Commit whose listings start on 2026-10-07 (the date all checks were written against).
+# Re-pin this when the suite needs to be updated for a new baseline date:
+#   git log --oneline | head to find the commit, then update the ref and rebuild the fixture.
+FIXTURE_REF = "3354241"
+
+webapp_root = pathlib.Path(__file__).parent.parent.resolve()
+
+# ── Clock derivation ───────────────────────────────────────────────────────────
+def _sofia_1445_epoch_ms(date_str: str) -> int:
+    """Return epoch ms for 14:45 Europe/Sofia on the given YYYY-MM-DD date.
+
+    Sofia is EEST (UTC+3) until the last Sunday of October (2026-10-25 at 03:00),
+    EET (UTC+2) afterwards.  This covers 2026 only; extend the DST table as needed.
+    """
+    year, month, day = int(date_str[:4]), int(date_str[5:7]), int(date_str[8:10])
+    # Last Sunday of October 2026 is Oct 25.
+    dst_end = datetime.date(2026, 10, 25)
+    d = datetime.date(year, month, day)
+    utc_offset = 3 if d <= dst_end else 2  # EEST / EET
+    utc_dt = datetime.datetime(year, month, day, 14 - utc_offset, 45, 0,
+                               tzinfo=datetime.timezone.utc)
+    return int(utc_dt.timestamp() * 1000)
+
+
+def _next_sunday(date_str: str) -> str:
+    """Return the ISO date of the Sunday that ends the week containing date_str."""
+    year, month, day = int(date_str[:4]), int(date_str[5:7]), int(date_str[8:10])
+    d = datetime.date(year, month, day)
+    days = (6 - d.weekday()) % 7  # 0 if already Sunday, else days until Sunday
+    if days == 0:
+        days = 7  # Sunday itself → next Sunday closes the current week from app's perspective
+        # but wait: for 2026-10-07 (Wed), days=(6-2)%7=4 → Oct 11 ✓
+        # we only hit days=0 if today IS Sunday; the app's week then ends TODAY
+        days = 0  # keep today as week end if already Sunday
+    return (d + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+
+
+# Determine HTML file
+_html_env_raw = os.environ.get("SOFIA_HTML", "")  # empty = default mode
+if _html_env_raw:
+    # SOFIA_HTML mode: parse SNAPSHOT.window.from from the file
+    html_env = _html_env_raw
+    _html_path = webapp_root / html_env
+    _snap_text = _html_path.read_text(encoding="utf-8", errors="replace")
+    _m = re.search(r'"window"\s*:\s*\{[^}]*"from"\s*:\s*"(\d{4}-\d{2}-\d{2})"', _snap_text)
+    if not _m:
+        sys.exit(f"Cannot parse SNAPSHOT.window.from in {html_env}")
+    CLOCK_TODAY_ISO = _m.group(1)
+    FIXED_1445 = _sofia_1445_epoch_ms(CLOCK_TODAY_ISO)
+else:
+    # Default mode: use fixture commit — will build index.test.html in main()
+    html_env = "index.test.html"
+    CLOCK_TODAY_ISO = "2026-10-07"
+    FIXED_1445 = 1791373500000  # 2026-10-07 14:45 Europe/Sofia
+
+# Derived date constants (computed once at import time from the clock date)
+CLOCK_WEEK_END = _next_sunday(CLOCK_TODAY_ISO)  # the Sunday that ends this week
+CLOCK_TOMORROW_ISO = (
+    datetime.date.fromisoformat(CLOCK_TODAY_ISO) + datetime.timedelta(days=1)
+).strftime("%Y-%m-%d")
+FIXED_TOMORROW_2350 = FIXED_1445 + 9 * 3600 * 1000  # same date at 23:50 Sofia
+
 CLOCK = """
 (() => { const _D = Date, F = %d;
   class FakeDate extends _D { constructor(...a){ a.length? super(...a): super(F); } static now(){ return F; } }
   window.Date = FakeDate; })();
 """ % FIXED_1445
 
-# Determine HTML file: env SOFIA_HTML or index.dev.html, resolved relative to webapp root
-html_env = os.environ.get("SOFIA_HTML", "index.dev.html")
-webapp_root = pathlib.Path(__file__).parent.parent.resolve()
 html_path = webapp_root / html_env
 HTML = html_path.as_uri()
 
@@ -34,10 +101,17 @@ HTML = html_path.as_uri()
 results = []
 
 def check(name, ok, detail=""):
-    """Record a check result."""
+    """Record a check result (PASS or FAIL)."""
     status = "PASS" if ok else "FAIL"
     results.append((status, name, detail))
     print(f"{status} {name} — {detail}")
+
+
+def skip(name, reason):
+    """Record a SKIP: the check was not run because required data is absent.
+    Skips are counted and printed separately; they never count as PASS or FAIL."""
+    results.append(("SKIP", name, reason))
+    print(f"SKIP {name} — {reason}")
 
 def ensure_shot_dir(wave):
     """Create screenshot directory for wave."""
@@ -568,7 +642,7 @@ def wave_a1(browser):
         cwd=webapp_root,
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+        env={**os.environ, "SOFIA_HTML": html_env}
     )
     gate_passes = "all checks passed" in result.stdout
     check("gate_passes", gate_passes,
@@ -682,20 +756,23 @@ def wave_b1(browser):
     print("\n=== B1-3: Week range ===")
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
-    week_info = page.evaluate("""() => ({
+    _week_end_next = (
+        datetime.date.fromisoformat(CLOCK_WEEK_END) + datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    week_info = page.evaluate(f"""() => ({{
         WEEK_END: typeof WEEK_END !== 'undefined' ? WEEK_END : null,
         day: typeof S !== 'undefined' ? S.day : null,
-        inRange_11: typeof inRange !== 'undefined' ? inRange("2026-10-11") : null,
-        inRange_12: typeof inRange !== 'undefined' ? inRange("2026-10-12") : null
-    })""")
-    check("b1_week_end", week_info["WEEK_END"] == "2026-10-11",
-          f"WEEK_END={week_info['WEEK_END']}")
+        inRange_we: typeof inRange !== 'undefined' ? inRange("{CLOCK_WEEK_END}") : null,
+        inRange_out: typeof inRange !== 'undefined' ? inRange("{_week_end_next}") : null
+    }})""")
+    check("b1_week_end", week_info["WEEK_END"] == CLOCK_WEEK_END,
+          f"WEEK_END={week_info['WEEK_END']!r} (expected {CLOCK_WEEK_END!r})")
     check("b1_day_week", week_info["day"] == "week",
           f"S.day={week_info['day']}")
-    check("b1_inRange_sunday", week_info["inRange_11"] is True,
-          f"inRange('2026-10-11')={week_info['inRange_11']}")
-    check("b1_inRange_monday_out", week_info["inRange_12"] is False,
-          f"inRange('2026-10-12')={week_info['inRange_12']}")
+    check("b1_inRange_sunday", week_info["inRange_we"] is True,
+          f"inRange('{CLOCK_WEEK_END}')={week_info['inRange_we']}")
+    check("b1_inRange_monday_out", week_info["inRange_out"] is False,
+          f"inRange('{_week_end_next}')={week_info['inRange_out']}")
     ctx.close()
 
     # ── Check B1-4: Period header (.phead — Wave H replaces .pbanner) ──
@@ -731,10 +808,11 @@ def wave_b1(browser):
               "програм" in phead_info.get("eyebrowText", "").lower() or
               phead_info.get("titleText", "") != "",
               f"phead eyebrow='{phead_info.get('eyebrowText', '')}' title='{phead_info.get('titleText', '')}'")
-        # "11" is the week-end Sunday date shown in day strip
-        check("b1_banner_bg_11", "11" in phead_info.get("datesText", "") or
-              page.evaluate("document.querySelector('.phead')?.textContent || ''").find("11") != -1,
-              f"'11' not in phead area")
+        # The week-end Sunday day number should appear in the date strip
+        _week_end_day = CLOCK_WEEK_END[8:].lstrip("0")  # e.g. "11"
+        check("b1_banner_bg_11", _week_end_day in phead_info.get("datesText", "") or
+              page.evaluate("document.querySelector('.phead')?.textContent || ''").find(_week_end_day) != -1,
+              f"'{_week_end_day}' (week-end day) not in phead area")
     else:
         check("b1_banner_above_hero", False, ".phead not found")
         check("b1_banner_bg_tazi_sedmitsa", False, ".phead not found")
@@ -748,13 +826,14 @@ def wave_b1(browser):
         drawer_visible = page.evaluate("!!document.querySelector('.drawer')")
         check("b1_banner_btn_opens_drawer", drawer_visible, "drawer not opened by .phead-other[data-drawer]")
 
-        # Choose today using JS
-        today_set = page.evaluate("""() => {
-            const btn = document.querySelector(".drawer [data-range='2026-10-07']");
+        # Choose today using JS (data-range holds the ISO date or 'today')
+        today_set = page.evaluate(f"""() => {{
+            const btn = document.querySelector(".drawer [data-range='{CLOCK_TODAY_ISO}']")
+                     || document.querySelector(".drawer [data-range='today']");
             if (!btn) return false;
             btn.click();
             return true;
-        }""")
+        }}""")
         page.wait_for_timeout(400)
         if today_set:
             # After selecting today: day strip pill for today should be highlighted,
@@ -776,7 +855,7 @@ def wave_b1(browser):
                   title_today != "" or (pill_today and "днес" in pill_today.lower()),
                   f"title='{title_today}' pill='{pill_today}'")
         else:
-            check("b1_banner_today_bg", False, "no [data-range='2026-10-07'] in drawer")
+            check("b1_banner_today_bg", False, f"no today button in drawer (tried data-range='{CLOCK_TODAY_ISO}' and 'today')")
 
         # Re-open drawer, choose month
         reopen_and_month = page.evaluate("""() => {
@@ -822,8 +901,9 @@ def wave_b1(browser):
     check("b1_banner_en_this_week",
           phead_en != "",
           f".phead not found in EN mode")
-    check("b1_banner_en_11", "11" in phead_en,
-          f"'11' not in EN phead text: {phead_en[:80]!r}")
+    _week_end_day_b1 = CLOCK_WEEK_END[8:].lstrip("0")
+    check("b1_banner_en_11", _week_end_day_b1 in phead_en,
+          f"'{_week_end_day_b1}' (week-end day) not in EN phead text: {phead_en[:80]!r}")
     save_shot(page, wave, "m-en-cinema-top")
     ctx.close()
 
@@ -838,12 +918,13 @@ def wave_b1(browser):
     }""")
     page.wait_for_timeout(400)
     if open_drawer_en:
-        today_set_en = page.evaluate("""() => {
-            const btn = document.querySelector(".drawer [data-range='2026-10-07']");
+        today_set_en = page.evaluate(f"""() => {{
+            const btn = document.querySelector(".drawer [data-range='{CLOCK_TODAY_ISO}']")
+                     || document.querySelector(".drawer [data-range='today']");
             if (!btn) return false;
             btn.click();
             return true;
-        }""")
+        }}""")
         page.wait_for_timeout(400)
         if today_set_en:
             title_today_en = page.evaluate("document.querySelector('.phead-title')?.textContent?.trim() || ''")
@@ -851,7 +932,7 @@ def wave_b1(browser):
                   title_today_en != "",
                   f"phead-title empty after selecting today (EN)")
         else:
-            check("b1_banner_today_en", False, "no today button in EN drawer")
+            check("b1_banner_today_en", False, f"no today button in EN drawer (tried data-range='{CLOCK_TODAY_ISO}' and 'today')")
         # Re-open drawer for month
         reopen_en = page.evaluate("""() => {
             const btn = document.querySelector('.phead-other[data-drawer]');
@@ -1400,7 +1481,7 @@ def wave_b1(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+        env={**os.environ, "SOFIA_HTML": html_env}
     )
     gate_passes = "all checks passed" in result.stdout
     check("b1_gate_passes", gate_passes,
@@ -1563,22 +1644,22 @@ def wave_c1(browser):
           f"event rails still present: {event_rail_headings}")
 
     # (d) Every visible film card has a showtime at cc-sofia in the period
-    films_without_cc = page.evaluate("""() => {
+    films_without_cc = page.evaluate(f"""() => {{
         if (typeof SHOWTIMES === 'undefined' || typeof FILMS === 'undefined') return ['SHOWTIMES/FILMS undefined'];
-        const PERIOD_START = '2026-10-07';
-        const PERIOD_END   = '2026-10-11';
+        const PERIOD_START = '{CLOCK_TODAY_ISO}';
+        const PERIOD_END   = '{CLOCK_WEEK_END}';
         const cards = Array.from(document.querySelectorAll('[data-film]'));
         const badFilms = [];
-        for (const card of cards) {
+        for (const card of cards) {{
             const fid = card.dataset.film;
             if (!fid) continue;
             const hasCCSofia = SHOWTIMES.some(([fId, cin, date]) =>
                 fId === fid && cin === 'cc-sofia' && date >= PERIOD_START && date <= PERIOD_END
             );
             if (!hasCCSofia) badFilms.push(fid);
-        }
+        }}
         return badFilms;
-    }""")
+    }}""")
     check("c1_all_visible_films_at_cc_sofia", len(films_without_cc) == 0,
           f"films shown without cc-sofia showtime: {films_without_cc[:5]}")
 
@@ -1734,17 +1815,17 @@ def wave_c1(browser):
             page.mouse.wheel(0, 2000)
             page.wait_for_timeout(300)
 
-        genre_check = page.evaluate("""() => {
+        genre_check = page.evaluate(f"""() => {{
             // Find genre section rails
             const genreContent = document.getElementById('sec-Genres-content');
-            if (!genreContent) return { err: 'no sec-Genres-content' };
+            if (!genreContent) return {{ err: 'no sec-Genres-content' }};
             const rails = Array.from(genreContent.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
             // Check Жестокият appearing as a visible film card in the genre section
             const jestokInGenreSection = Array.from(genreContent.querySelectorAll('[data-film]')).some(c =>
-                typeof FILMS !== 'undefined' && (() => {
+                typeof FILMS !== 'undefined' && (() => {{
                     const f = FILMS.find(x => x.id === c.dataset.film);
                     return f && (f.bg || '').includes('Жестокият');
-                })()
+                }})()
             );
             // Event rails visible anywhere on page
             const allH2 = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
@@ -1756,10 +1837,10 @@ def wave_c1(browser):
                 FILMS.filter(f => f.genres && f.genres.includes('Аниме')).map(f => f.id) : [];
             const animePeriodFilms = typeof SHOWTIMES !== 'undefined' ?
                 SHOWTIMES.filter(([fid, cin, date]) =>
-                    date >= '2026-10-07' && date <= '2026-10-11' && animeFilms.includes(fid)
+                    date >= '{CLOCK_TODAY_ISO}' && date <= '{CLOCK_WEEK_END}' && animeFilms.includes(fid)
                 ).map(([fid]) => fid) : [];
-            return { rails, jestokInGenreSection, eventRails, nonAnimeRails, animePeriodFilms };
-        }""")
+            return {{ rails, jestokInGenreSection, eventRails, nonAnimeRails, animePeriodFilms }};
+        }}""")
         genre_rails = genre_check.get("rails", [])
         anime_period = genre_check.get("animePeriodFilms", [])
         non_anime_rails = genre_check.get("nonAnimeRails", [])
@@ -1943,33 +2024,33 @@ def wave_c1(browser):
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
-    today_rail = page.evaluate("""() => {
+    today_rail = page.evaluate(f"""() => {{
         // Find 'За теб днес' rail
         const h2s = Array.from(document.querySelectorAll('.rhead h2'));
         const todayHead = h2s.find(h => h.textContent.includes('За теб днес') || h.textContent.includes('For you today'));
-        if (!todayHead) return { err: 'no today rail' };
+        if (!todayHead) return {{ err: 'no today rail' }};
         const rail = todayHead.closest('.rail');
-        if (!rail) return { err: 'no parent rail' };
+        if (!rail) return {{ err: 'no parent rail' }};
         const cards = Array.from(rail.querySelectorAll('[data-film]'));
         // Film cards use .cfoot > .cf2 for meta (runtime · screenings · N кина)
-        const multiCinema = cards.filter(c => {
+        const multiCinema = cards.filter(c => {{
             const cf2 = c.querySelector('.cf2');
             return cf2 && /кина/.test(cf2.textContent);
-        });
-        const cf2Texts = cards.slice(0, 5).map(c => {
+        }});
+        const cf2Texts = cards.slice(0, 5).map(c => {{
             const cf2 = c.querySelector('.cf2');
             return cf2 ? cf2.textContent.trim().slice(0, 80) : 'no cf2';
-        });
+        }});
         // Also check: for each card, how many cinemas does it play in today?
-        const today = '2026-10-07';
+        const today = '{CLOCK_TODAY_ISO}';
         const multiCinemaFilms = typeof SHOWTIMES !== 'undefined' ?
-            cards.map(c => {
+            cards.map(c => {{
                 const fid = c.dataset.film;
                 const cinemas = new Set(SHOWTIMES.filter(([f,cin,d]) => f===fid && d===today).map(([f,cin])=>cin));
-                return {fid, cinemaCount: cinemas.size};
-            }).filter(x => x.cinemaCount >= 2) : [];
-        return { total: cards.length, multiCinema: multiCinema.length, cf2Texts, multiCinemaFilms };
-    }""")
+                return {{fid, cinemaCount: cinemas.size}};
+            }}).filter(x => x.cinemaCount >= 2) : [];
+        return {{ total: cards.length, multiCinema: multiCinema.length, cf2Texts, multiCinemaFilms }};
+    }}""")
     if "err" in today_rail:
         check("c1_today_rail_has_multi_cinema", False, today_rail["err"])
     else:
@@ -2136,10 +2217,14 @@ else:
 """],
         cwd=str(webapp_root), capture_output=True, text=True)
     sarceto_out = sarceto_check.stdout.strip()
-    check("c1_sarceto_no_note", "has_note=False" in sarceto_out,
-          f"sarceto: {sarceto_out}")
-    check("c1_sarceto_empty_syn", "has_synbg=False" in sarceto_out and "has_synen=False" in sarceto_out,
-          f"sarceto: {sarceto_out}")
+    if sarceto_out == "NOT_FOUND":
+        skip("c1_sarceto_no_note", "sarceto-na-zveyara not in src/data.html — re-pin FIXTURE_REF or run on fixture")
+        skip("c1_sarceto_empty_syn", "sarceto-na-zveyara not in src/data.html — re-pin FIXTURE_REF or run on fixture")
+    else:
+        check("c1_sarceto_no_note", "has_note=False" in sarceto_out,
+              f"sarceto: {sarceto_out}")
+        check("c1_sarceto_empty_syn", "has_synbg=False" in sarceto_out and "has_synen=False" in sarceto_out,
+              f"sarceto: {sarceto_out}")
 
     # palestina-36 and kosa: no note
     for slug in ['palestina-36', 'kosa']:
@@ -2262,7 +2347,7 @@ else:
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+        env={**os.environ, "SOFIA_HTML": html_env}
     )
     gate_passes = "all checks passed" in result.stdout
     check("c1_gate_passes", gate_passes,
@@ -2288,10 +2373,10 @@ def wave_d1(browser):
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
-    resolver_result = page.evaluate("""() => {
-        const today = "2026-10-07";
+    resolver_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
         // Owner allowlist per venue id
-        const ALLOWED = {
+        const ALLOWED = {{
             "cc-sofia": ["www.cinemacity.bg"],
             "cc-paradise": ["www.cinemacity.bg"],
             "arena-mega": ["www.kinoarena.com"],
@@ -2305,15 +2390,15 @@ def wave_d1(browser):
             "odeon": ["bnf.bg"],
             "g8": ["g8cinema.com"],
             "casa-libri": null  // inPerson – no URL expected
-        };
+        }};
         const upcomingRows = SHOWTIMES.filter(r => r[2] >= today);
-        const counts = {};
+        const counts = {{}};
         const violations = [];
         let programataCount = 0;
         let totalChecked = 0;
         let ccDateOk = true, ccDateFail = [];
 
-        upcomingRows.forEach(r => {
+        upcomingRows.forEach(r => {{
             const [filmId, venueId, date, times] = r;
             const allowed = ALLOWED[venueId];
             if (allowed === undefined) return; // theatre or other non-cinema venue, skip
@@ -2328,30 +2413,30 @@ def wave_d1(browser):
             if (!url) return;
 
             // Check programata.bg
-            if (url.includes("programata.bg")) {
+            if (url.includes("programata.bg")) {{
                 programataCount++;
-                violations.push({venueId, filmId, date, url: url.slice(0,80), reason: "programata.bg"});
-            }
+                violations.push({{venueId, filmId, date, url: url.slice(0,80), reason: "programata.bg"}});
+            }}
 
             // Check host allowlist
-            try {
+            try {{
                 const host = new URL(url).hostname;
-                if (allowed && !allowed.some(h => host === h || host.endsWith("."+h))) {
-                    violations.push({venueId, filmId, date, url: url.slice(0,80), reason: "wrong_host:" + host});
-                }
-            } catch(e) {}
+                if (allowed && !allowed.some(h => host === h || host.endsWith("."+h))) {{
+                    violations.push({{venueId, filmId, date, url: url.slice(0,80), reason: "wrong_host:" + host}});
+                }}
+            }} catch(e) {{}}
 
             // cc-sofia / cc-paradise must contain at=<date>
-            if ((venueId === "cc-sofia" || venueId === "cc-paradise") && b && b.deep) {
+            if ((venueId === "cc-sofia" || venueId === "cc-paradise") && b && b.deep) {{
                 const atParam = "at=" + date;
-                if (!url.includes(atParam)) {
-                    ccDateFail.push({venueId, filmId, date, url: url.slice(0,80)});
+                if (!url.includes(atParam)) {{
+                    ccDateFail.push({{venueId, filmId, date, url: url.slice(0,80)}});
                     ccDateOk = false;
-                }
-            }
-        });
+                }}
+            }}
+        }});
 
-        return {
+        return {{
             totalChecked,
             counts,
             violations: violations.slice(0, 10),
@@ -2359,8 +2444,8 @@ def wave_d1(browser):
             programataCount,
             ccDateOk,
             ccDateFail: ccDateFail.slice(0, 5)
-        };
-    }""")
+        }};
+    }}""")
 
     check("d1_resolver_no_programata",
           resolver_result["programataCount"] == 0,
@@ -2380,26 +2465,26 @@ def wave_d1(browser):
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
-    sheet_href_result = page.evaluate("""() => {
-        const today = "2026-10-07";
+    sheet_href_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
         const programataHrefs = [];
         // Films with upcoming rows
         const upcomingFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today).map(r => r[0]))];
-        upcomingFilms.forEach(fid => {
+        upcomingFilms.forEach(fid => {{
             const f = filmById[fid];
             if (!f) return;
             const html = sheetFilm(f);
             // Parse hrefs via a temp div
             const div = document.createElement("div");
             div.innerHTML = html;
-            div.querySelectorAll("a[href]").forEach(a => {
-                if (a.href.includes("programata.bg")) {
-                    programataHrefs.push({fid, href: a.href.slice(0,80)});
-                }
-            });
-        });
-        return {count: programataHrefs.length, samples: programataHrefs.slice(0,5)};
-    }""")
+            div.querySelectorAll("a[href]").forEach(a => {{
+                if (a.href.includes("programata.bg")) {{
+                    programataHrefs.push({{fid, href: a.href.slice(0,80)}});
+                }}
+            }});
+        }});
+        return {{count: programataHrefs.length, samples: programataHrefs.slice(0,5)}};
+    }}""")
 
     check("d1_sheet_no_programata",
           sheet_href_result["count"] == 0,
@@ -2457,45 +2542,43 @@ def wave_d1(browser):
         };
     }""")
 
-    expected_venues_bg = {"arena-mall", "arena-mega", "cc-sofia", "cg-park", "cg-ring", "cineland", "vlaikova"}
-    # The sheet uses cinema names, not IDs; verify by checking cinema IDs via BOOKING/CINEMAS
-    sarceto_venues_found = len(sarceto_bg.get("venues", [])) >= 7 if sarceto_bg.get("found") else False
-    check("d1_sarceto_7_cinema_rows",
-          sarceto_bg.get("found") and len(sarceto_bg.get("venues", [])) == 7,
-          f"venue rows found: {sarceto_bg.get('venues', [])}")
-    # Vlaikova link
-    vlaikova_link_ok = any(
-        "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
-        for lnk in sarceto_bg.get("vlaikovaLinks", [])
-    )
-    check("d1_sarceto_vlaikova_link",
-          vlaikova_link_ok,
-          f"vlaikova links: {sarceto_bg.get('vlaikovaLinks', [])}")
-    # Buy box 7 entries distinct
-    buy_labels = sarceto_bg.get("buyLabels", [])
-    unique_labels = sarceto_bg.get("uniqueLabels", [])
-    check("d1_sarceto_buybox_7",
-          len(buy_labels) == 7,
-          f"buy box items: {len(buy_labels)} — {buy_labels[:4]}")
-    check("d1_sarceto_buybox_distinct",
-          len(unique_labels) == len(buy_labels),
-          f"duplicates in buy labels: {buy_labels}")
-    # Synopsis BG starts with "Сърцето на звяра проследява"
-    syn_text_bg = sarceto_bg.get("synText", "")
-    check("d1_sarceto_syn_bg",
-          syn_text_bg.startswith("Сърцето на звяра проследява"),
-          f"synText BG: {syn_text_bg[:60]!r}")
-    # Director and cast via credPairs list
-    # BG label "Режисьор" for director, "В ролите" for cast
-    cred_pairs_bg = sarceto_bg.get("credPairs", [])
-    dir_val = [v for k, v in cred_pairs_bg if "реж" in k.lower()]
-    cast_val = [v for k, v in cred_pairs_bg if "ролите" in k.lower() or "акт" in k.lower()]
-    check("d1_sarceto_dir_bg",
-          any("Дейвид Ейър" in v for v in dir_val),
-          f"director vals (credPairs={cred_pairs_bg[:3]}): {dir_val}")
-    check("d1_sarceto_cast_bg",
-          any(v.startswith("Брад Пит") for v in cast_val),
-          f"cast vals (credPairs={cred_pairs_bg[:3]}): {cast_val}")
+    _sarceto_d1_names = [
+        "d1_sarceto_7_cinema_rows","d1_sarceto_vlaikova_link","d1_sarceto_buybox_7",
+        "d1_sarceto_buybox_distinct","d1_sarceto_syn_bg","d1_sarceto_dir_bg","d1_sarceto_cast_bg"
+    ]
+    if not sarceto_bg.get("found"):
+        for name in _sarceto_d1_names:
+            skip(name, "sarceto-na-zveyara not in this build — re-pin FIXTURE_REF or run on fixture")
+    else:
+        check("d1_sarceto_7_cinema_rows",
+              len(sarceto_bg.get("venues", [])) == 7,
+              f"venue rows found: {sarceto_bg.get('venues', [])}")
+        vlaikova_link_ok = any(
+            "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
+            for lnk in sarceto_bg.get("vlaikovaLinks", [])
+        )
+        check("d1_sarceto_vlaikova_link",
+              vlaikova_link_ok,
+              f"vlaikova links: {sarceto_bg.get('vlaikovaLinks', [])}")
+        buy_labels = sarceto_bg.get("buyLabels", [])
+        unique_labels = sarceto_bg.get("uniqueLabels", [])
+        check("d1_sarceto_buybox_7", len(buy_labels) == 7,
+              f"buy box items: {len(buy_labels)} — {buy_labels[:4]}")
+        check("d1_sarceto_buybox_distinct", len(unique_labels) == len(buy_labels),
+              f"duplicates in buy labels: {buy_labels}")
+        syn_text_bg = sarceto_bg.get("synText", "")
+        check("d1_sarceto_syn_bg",
+              syn_text_bg.startswith("Сърцето на звяра проследява"),
+              f"synText BG: {syn_text_bg[:60]!r}")
+        cred_pairs_bg = sarceto_bg.get("credPairs", [])
+        dir_val = [v for k, v in cred_pairs_bg if "реж" in k.lower()]
+        cast_val = [v for k, v in cred_pairs_bg if "ролите" in k.lower() or "акт" in k.lower()]
+        check("d1_sarceto_dir_bg",
+              any("Дейвид Ейър" in v for v in dir_val),
+              f"director vals (credPairs={cred_pairs_bg[:3]}): {dir_val}")
+        check("d1_sarceto_cast_bg",
+              any(v.startswith("Брад Пит") for v in cast_val),
+              f"cast vals (credPairs={cred_pairs_bg[:3]}): {cast_val}")
 
     # Save screenshot
     # Open the sheet in a real page
@@ -2529,9 +2612,12 @@ def wave_d1(browser):
     }""")
 
     syn_en = sarceto_en.get("synText", "")
-    check("d1_sarceto_syn_en",
-          syn_en.startswith("After a harrowing plane crash"),
-          f"synText EN: {syn_en[:80]!r}")
+    if not sarceto_en.get("found"):
+        skip("d1_sarceto_syn_en", "sarceto-na-zveyara not in this build — re-pin FIXTURE_REF or run on fixture")
+    else:
+        check("d1_sarceto_syn_en",
+              syn_en.startswith("After a harrowing plane crash"),
+              f"synText EN: {syn_en[:80]!r}")
 
     page.evaluate("""() => {
         const f = filmById["sarceto-na-zveyara"];
@@ -2546,24 +2632,24 @@ def wave_d1(browser):
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
-    inperson_result = page.evaluate("""() => {
-        const today = "2026-10-07";
+    inperson_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
         // Find a film whose upcoming rows are ONLY at inPerson venues
         const inPersonVids = Object.keys(BOOKING).filter(v => BOOKING[v].inPerson);
-        const upcomingByFilm = {};
-        SHOWTIMES.filter(r => r[2] >= today).forEach(r => {
+        const upcomingByFilm = {{}};
+        SHOWTIMES.filter(r => r[2] >= today).forEach(r => {{
             if (!upcomingByFilm[r[0]]) upcomingByFilm[r[0]] = new Set();
             upcomingByFilm[r[0]].add(r[1]);
-        });
+        }});
         let inPersonFilmId = null;
-        for (const [fid, vids] of Object.entries(upcomingByFilm)) {
-            if ([...vids].every(v => inPersonVids.includes(v))) {
+        for (const [fid, vids] of Object.entries(upcomingByFilm)) {{
+            if ([...vids].every(v => inPersonVids.includes(v))) {{
                 inPersonFilmId = fid; break;
-            }
-        }
-        if (!inPersonFilmId) return {found: false, reason: "no in-person only film found"};
+            }}
+        }}
+        if (!inPersonFilmId) return {{found: false, reason: "no in-person only film found"}};
         const f = filmById[inPersonFilmId];
-        if (!f) return {found: false, reason: "filmById miss for " + inPersonFilmId};
+        if (!f) return {{found: false, reason: "filmById miss for " + inPersonFilmId}};
         const html = sheetFilm(f);
         const div = document.createElement("div");
         div.innerHTML = html;
@@ -2576,15 +2662,15 @@ def wave_d1(browser):
         const buyLinkWithHref = Array.from(div.querySelectorAll(".buylink[href]"));
         // inPerson buylinks should NOT be <a> with href
         const inPersonBuyAnchors = Array.from(div.querySelectorAll("a.buylink"));
-        return {
+        return {{
             found: true,
             filmId: inPersonFilmId,
             hasBoxOfficeLabel,
             timeLinksCount: timeLinks.length,
             inPersonBuyAnchorCount: inPersonBuyAnchors.length,
             buyLinkWithHrefCount: buyLinkWithHref.length
-        };
-    }""")
+        }};
+    }}""")
 
     if inperson_result.get("found"):
         check("d1_inperson_label",
@@ -2616,28 +2702,28 @@ def wave_d1(browser):
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
-    lumiere_result = page.evaluate("""() => {
-        const today = "2026-10-07";
+    lumiere_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
         const lumiereFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today && r[1] === "lumiere").map(r => r[0]))];
         const noVlink = lumiereFilms.filter(fid => !VLINK_MAP[fid + "|lumiere"]);
         const withVlink = lumiereFilms.filter(fid => !!VLINK_MAP[fid + "|lumiere"]);
-        const epayVlinkOk = withVlink.every(fid => {
+        const epayVlinkOk = withVlink.every(fid => {{
             const url = filmTixUrl(fid, "lumiere", today);
             return url && url.includes("epaygo.bg");
-        });
+        }});
         const sampleVlinkUrls = withVlink.map(fid => filmTixUrl(fid, "lumiere", today)).slice(0,3);
         // For no-vlink films, open the sheet and check for epaygo note
         let epayNoteShown = null;
-        if (noVlink.length > 0) {
+        if (noVlink.length > 0) {{
             const f = filmById[noVlink[0]];
-            if (f) {
+            if (f) {{
                 const html = sheetFilm(f);
                 const div = document.createElement("div");
                 div.innerHTML = html;
                 epayNoteShown = div.textContent.includes("epaygo.bg");
-            }
-        }
-        return {
+            }}
+        }}
+        return {{
             lumiereFilms,
             noVlinkCount: noVlink.length,
             noVlink,
@@ -2646,8 +2732,8 @@ def wave_d1(browser):
             epayVlinkOk,
             sampleVlinkUrls,
             epayNoteShown
-        };
-    }""")
+        }};
+    }}""")
 
     no_vlink_count = lumiere_result["noVlinkCount"]
     if no_vlink_count > 0:
@@ -2794,37 +2880,37 @@ def wave_d1(browser):
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
-    noinfo_result = page.evaluate("""() => {
-        const today = "2026-10-07";
+    noinfo_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
         // Find a film with ALL synopsis chains empty
         let noInfoFilmId = null;
-        for (const r of SHOWTIMES) {
+        for (const r of SHOWTIMES) {{
             if (r[2] < today) continue;
             const fid = r[0];
             const f = filmById[fid];
             if (!f) continue;
-            const fi = (typeof FILMINFO === "object" && FILMINFO && FILMINFO[fid]) || {};
-            const ar = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) || {};
+            const fi = (typeof FILMINFO === "object" && FILMINFO && FILMINFO[fid]) || {{}};
+            const ar = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) || {{}};
             const hasSynBg = (f.synBg && f.synBg.trim()) || (fi.synBg && fi.synBg.trim()) || (ar.ovBg && ar.ovBg.trim());
             const hasSynEn = (f.synEn && f.synEn.trim()) || (fi.synEn && fi.synEn.trim()) || (ar.ov && ar.ov.trim());
-            if (!hasSynBg && !hasSynEn) { noInfoFilmId = fid; break; }
-        }
-        return {noInfoFilmId};
-    }""")
+            if (!hasSynBg && !hasSynEn) {{ noInfoFilmId = fid; break; }}
+        }}
+        return {{noInfoFilmId}};
+    }}""")
 
     noinfo_film_id = noinfo_result.get("noInfoFilmId")
     if not noinfo_film_id:
         # Inject a no-info film by deleting FILMINFO + TMDBART for a specific film in-page
-        test_film = page.evaluate("""() => {
-            const today = "2026-10-07";
-            for (const r of SHOWTIMES) {
-                if (r[2] >= today) {
+        test_film = page.evaluate(f"""() => {{
+            const today = "{CLOCK_TODAY_ISO}";
+            for (const r of SHOWTIMES) {{
+                if (r[2] >= today) {{
                     const f = filmById[r[0]];
                     if (f && f.id) return f.id;
-                }
-            }
+                }}
+            }}
             return null;
-        }""")
+        }}""")
         if test_film:
             page.evaluate(f"""() => {{
                 const fid = "{test_film}";
@@ -3000,16 +3086,16 @@ def wave_d1(browser):
     page.wait_for_timeout(600)
 
     # Now open the sheet for a film that plays at cc-sofia
-    venue_filter_result = page.evaluate("""() => {
-        const today = "2026-10-07";
+    venue_filter_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
         // Pick first film that has cc-sofia rows
         let filmId = null;
-        for (const r of SHOWTIMES) {
-            if (r[2] >= today && r[1] === "cc-sofia") { filmId = r[0]; break; }
-        }
-        if (!filmId) return {found: false, reason: "no cc-sofia film"};
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today && r[1] === "cc-sofia") {{ filmId = r[0]; break; }}
+        }}
+        if (!filmId) return {{found: false, reason: "no cc-sofia film"}};
         const f = filmById[filmId];
-        if (!f) return {found: false, reason: "filmById miss"};
+        if (!f) return {{found: false, reason: "filmById miss"}};
         // Open sheet with venue filter active
         const html = sheetFilm(f);
         const div = document.createElement("div");
@@ -3020,8 +3106,8 @@ def wave_d1(browser):
         const showAllBtn = !!div.querySelector("[data-sheetshowallcin]");
         // Check all vrows are from cc-sofia
         const allSofia = vrows.every(v => v.toLowerCase().includes("cinema city sofia") || v.toLowerCase().includes("cinema city") || v.toLowerCase().includes("mall of sofia"));
-        return {found: true, filmId, vrows, showAllBtn, allSofia};
-    }""")
+        return {{found: true, filmId, vrows, showAllBtn, allSofia}};
+    }}""")
     if venue_filter_result.get("found"):
         check("d1_venue_filter_limits_rows",
               venue_filter_result["allSofia"],
@@ -3055,7 +3141,7 @@ def wave_d1(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+        env={**os.environ, "SOFIA_HTML": html_env}
     )
     gate_passes = "all checks passed" in result.stdout
     check("d1_gate_passes", gate_passes,
@@ -3067,8 +3153,6 @@ def wave_d1(browser):
 #          new rails order, tomorrow fallback, collapsed sections,
 #          .phead structure, theatre sub-heading styles, errors + gate
 # ============================================================================
-
-FIXED_TOMORROW_2350 = FIXED_1445 + 9 * 3600 * 1000  # 2026-10-07 23:50 Sofia
 
 def _force_mount(page):
     """Force-mount all deferred rails (IntersectionObserver won't fire in headless)."""
@@ -3340,8 +3424,8 @@ def wave_h(browser):
         # we use SHOWTIMES directly as a proxy — top should clearly outrank bottom.)
         scores = page.evaluate(f"""() => {{
             const ids = {pop_film_ids!r};
-            const weekStart = '2026-10-07';
-            const weekEnd = '2026-10-11';
+            const weekStart = '{CLOCK_TODAY_ISO}';
+            const weekEnd = '{CLOCK_WEEK_END}';
             return ids.map(fid => {{
                 const rows = SHOWTIMES.filter(r => r[0] === fid && r[2] >= weekStart && r[2] <= weekEnd);
                 const sc = rows.reduce((n, r) => n + (Array.isArray(r[3]) ? r[3].length : 1), 0);
@@ -3397,23 +3481,23 @@ def wave_h(browser):
     page_t.wait_for_selector(".bar", timeout=20000)
     page_t.wait_for_timeout(800)
 
-    fallback_info = page_t.evaluate("""() => {
+    fallback_info = page_t.evaluate(f"""() => {{
         const pills = Array.from(document.querySelectorAll('[data-day]'));
         const pill_days = pills.map(p => p.dataset.day);
-        // "tomorrow" pill = 2026-10-08
-        const hasTomorrow = pill_days.includes('2026-10-08');
-        // The time is 23:50 on 07-Oct; app may pre-select tomorrow
-        const selectedPill = pills.find(p => {
+        // "tomorrow" pill = {CLOCK_TOMORROW_ISO}
+        const hasTomorrow = pill_days.includes('{CLOCK_TOMORROW_ISO}');
+        // The time is 23:50 on today; app may pre-select tomorrow
+        const selectedPill = pills.find(p => {{
             const cs = window.getComputedStyle(p);
-            return p.dataset.day === '2026-10-08';
-        });
-        return {
+            return p.dataset.day === '{CLOCK_TOMORROW_ISO}';
+        }});
+        return {{
             dayStrip: pill_days,
             hasTomorrow,
             tomorrowText: selectedPill ? selectedPill.textContent.trim() : null,
             titleText: document.querySelector('.phead-title')?.textContent?.trim() || '',
-        };
-    }""")
+        }};
+    }}""")
     check("h6_tomorrow_pill_visible",
           fallback_info["hasTomorrow"],
           f"day strip={fallback_info['dayStrip']}")
@@ -3537,7 +3621,7 @@ def wave_h(browser):
         has_week = any(p["day"] == "week" for p in day_strip)
         check("h8_day_strip_has_week_pill", has_week,
               f"no 'Цялата седмица' pill; pills={[p['day'] for p in day_strip]}")
-        today_pill = next((p for p in day_strip if p["day"] == "2026-10-07"), None)
+        today_pill = next((p for p in day_strip if p["day"] == CLOCK_TODAY_ISO), None)
         check("h8_day_strip_today_pill_dnес",
               today_pill is not None and "днес" in today_pill["text"].lower(),
               f"today pill: {today_pill}")
@@ -3613,7 +3697,7 @@ def wave_h(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+        env={**os.environ, "SOFIA_HTML": html_env}
     )
     gate_passes = "all checks passed" in result.stdout
     check("h10_gate_passes", gate_passes,
@@ -3652,10 +3736,32 @@ def wave_i(browser):
         }}""")
         page.wait_for_timeout(900)
 
+    # ── Runtime film lookup for SOFIA_HTML mode ──
+    # 'digar' was used when the suite was written. If absent, find any film with upcoming rows.
+    _probe_ctx, _probe_page, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    _wave_i_info = _probe_page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        const digarPresent = !!filmById['digar'];
+        // Find any film with at least one upcoming showtime row
+        const upcomingFilm = SHOWTIMES.find(r => r[2] >= today);
+        const anyFilm = upcomingFilm ? upcomingFilm[0] : null;
+        // Find 'digar' at cc-sofia with a date >= today (for exact DST checks)
+        const digarCCRow = SHOWTIMES.find(r => r[0] === 'digar' && r[1] === 'cc-sofia' && r[2] >= today);
+        const digarDate = digarCCRow ? digarCCRow[2] : null;
+        return {{digarPresent, anyFilm, digarDate}};
+    }}""")
+    _probe_ctx.close()
+    _wave_i_film_id = "digar" if _wave_i_info["digarPresent"] else _wave_i_info["anyFilm"]
+    _wave_i_digar_ok = bool(_wave_i_info["digarPresent"] and _wave_i_info["digarDate"])
+    # I-3/I4/I5 exact-value DST checks need digar at cc-sofia on a specific date;
+    # those remain hardcoded to 2026-10-08 (a known summer-time anchor) and SKIP if digar is absent.
+    if not _wave_i_info["digarPresent"]:
+        print(f"  NOTE: 'digar' absent in this build — I-1 will use '{_wave_i_film_id}'; I-3/I4/I5 will SKIP")
+
     # ── I-1: Every .vrow in film and show sheets has exactly one [data-cal] ──
     print("\n=== I-1: [data-cal] presence and placement ===")
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
-    open_film_sheet(page, "digar")
+    open_film_sheet(page, _wave_i_film_id)
 
     film_vrow_info = page.evaluate("""() => {
         const sheet = document.querySelector('.sheet');
@@ -3923,182 +4029,164 @@ def wave_i(browser):
 
     # ── I-3: Builder exact values ──
     print("\n=== I-3: Builder exact values ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
-
-    builder_tests = page.evaluate(r"""() => {
-        /* Use digar at cc-sofia on 2026-10-08, 18:30 (summer time +03:00) */
-        const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
-        if (!ev) return {err:'calEvent returned null'};
-        const gUrl = calGoogleUrl(ev);
-        const oUrl = calOutlookUrl(ev);
-        const ics = calIcs(ev);
-
-        /* DST test: Nov 5 (winter, +02) */
-        const ev2 = calEvent('film','digar','cc-sofia','2026-11-05','19:00');
-        const oUrl2 = ev2 ? calOutlookUrl(ev2) : '';
-        const ics2 = ev2 ? calIcs(ev2) : '';
-
-        /* DST boundary: Oct 25 20:00 (after DST switch, +02) */
-        const ev3 = calEvent('film','digar','cc-sofia','2026-10-25','20:00');
-        const oUrl3 = ev3 ? calOutlookUrl(ev3) : '';
-        const ics3 = ev3 ? calIcs(ev3) : '';
-
-        function extractDtstart(icsStr) {
-            const lines = icsStr.split('\r\n');
-            const l = lines.find(x => x.startsWith('DTSTART:'));
-            return l ? l.slice(8) : '';
-        }
-        function extractParam(url, param) {
-            const m = url.match(new RegExp('[?&]' + param + '=([^&]+)'));
-            return m ? decodeURIComponent(m[1]) : '';
-        }
-
-        return {
-            gUrl,
-            oUrl,
-            ics: ics.substring(0, 400),
-            gHasCtz: gUrl.includes('ctz=Europe/Sofia'),
-            gDates: extractParam(gUrl, 'dates'),
-            oStartDecoded: extractParam(oUrl, 'startdt'),
-            icsDtstart: extractDtstart(ics),
-            off: ev.off,
-            o2StartDecoded: ev2 ? extractParam(oUrl2, 'startdt') : '',
-            ics2Dtstart: ev2 ? extractDtstart(ics2) : '',
-            o3StartDecoded: ev3 ? extractParam(oUrl3, 'startdt') : '',
-            ics3Dtstart: ev3 ? extractDtstart(ics3) : ''
-        };
-    }""")
-
-    if "err" in builder_tests:
-        for name in ["i3_google_ctz","i3_google_dates","i3_outlook_offset_summer",
-                     "i3_ics_dtstart_utc","i3_dst_nov_outlook","i3_dst_nov_ics",
-                     "i3_dst_oct25_outlook","i3_dst_oct25_ics"]:
-            check(name, False, builder_tests["err"])
+    _i3_names = ["i3_google_ctz","i3_google_dates_format","i3_outlook_offset_summer",
+                 "i3_ics_dtstart_utc_summer","i3_dst_nov_outlook","i3_dst_nov_ics",
+                 "i3_dst_oct25_outlook","i3_dst_oct25_ics"]
+    if not _wave_i_digar_ok:
+        for name in _i3_names:
+            skip(name, "digar not in this build — re-pin FIXTURE_REF or run on fixture")
     else:
-        check("i3_google_ctz", builder_tests["gHasCtz"],
-              f"ctz not in URL: {builder_tests['gUrl'][:120]}")
+        ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+        builder_tests = page.evaluate(r"""() => {
+            /* Use digar at cc-sofia on 2026-10-08, 18:30 (summer time +03:00) */
+            const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
+            if (!ev) return {err:'calEvent returned null'};
+            const gUrl = calGoogleUrl(ev);
+            const oUrl = calOutlookUrl(ev);
+            const ics = calIcs(ev);
 
-        # dates=<start>/<end>; digar 2026-10-08 18:30 +03 → UTC 15:30 → start=20261008T1830__, runtime needed
-        # Check format: dates=YYYYMMDDTHHMMSSstart/YYYYMMDDTHHMMSSend
-        dates_val = builder_tests["gDates"]
-        check("i3_google_dates_format",
-              "/" in dates_val and "T" in dates_val and dates_val.startswith("20261008T183000"),
-              f"dates={dates_val!r}")
+            /* DST test: Nov 5 (winter, +02) */
+            const ev2 = calEvent('film','digar','cc-sofia','2026-11-05','19:00');
+            const oUrl2 = ev2 ? calOutlookUrl(ev2) : '';
+            const ics2 = ev2 ? calIcs(ev2) : '';
 
-        # Outlook startdt has +03:00 for summer
-        o_start = builder_tests["oStartDecoded"]
-        check("i3_outlook_offset_summer", "+03:00" in o_start,
-              f"startdt={o_start!r}")
+            /* DST boundary: Oct 25 20:00 (after DST switch, +02) */
+            const ev3 = calEvent('film','digar','cc-sofia','2026-10-25','20:00');
+            const oUrl3 = ev3 ? calOutlookUrl(ev3) : '';
+            const ics3 = ev3 ? calIcs(ev3) : '';
 
-        # ICS DTSTART = UTC Z: 18:30 - 3h = 15:30 UTC on 2026-10-08
-        ics_dtstart = builder_tests["icsDtstart"]
-        check("i3_ics_dtstart_utc_summer", ics_dtstart == "20261008T153000Z",
-              f"DTSTART={ics_dtstart!r} (expected 20261008T153000Z)")
+            function extractDtstart(icsStr) {
+                const lines = icsStr.split('\r\n');
+                const l = lines.find(x => x.startsWith('DTSTART:'));
+                return l ? l.slice(8) : '';
+            }
+            function extractParam(url, param) {
+                const m = url.match(new RegExp('[?&]' + param + '=([^&]+)'));
+                return m ? decodeURIComponent(m[1]) : '';
+            }
 
-        # Nov 5 19:00 winter (+02) → Outlook +02:00, ICS 17:00Z
-        o2 = builder_tests["o2StartDecoded"]
-        check("i3_dst_nov_outlook", "+02:00" in o2,
-              f"Nov 5 Outlook startdt={o2!r}")
-        ics2_dt = builder_tests["ics2Dtstart"]
-        check("i3_dst_nov_ics", ics2_dt == "20261105T170000Z",
-              f"Nov 5 ICS DTSTART={ics2_dt!r} (expected 20261105T170000Z)")
-
-        # Oct 25 20:00 (after DST ends, +02) → +02:00, ICS 18:00Z
-        o3 = builder_tests["o3StartDecoded"]
-        check("i3_dst_oct25_outlook", "+02:00" in o3,
-              f"Oct 25 Outlook startdt={o3!r}")
-        ics3_dt = builder_tests["ics3Dtstart"]
-        check("i3_dst_oct25_ics", ics3_dt == "20261025T180000Z",
-              f"Oct 25 ICS DTSTART={ics3_dt!r} (expected 20261025T180000Z)")
-
-    ctx.close()
+            return {
+                gUrl,
+                oUrl,
+                ics: ics.substring(0, 400),
+                gHasCtz: gUrl.includes('ctz=Europe/Sofia'),
+                gDates: extractParam(gUrl, 'dates'),
+                oStartDecoded: extractParam(oUrl, 'startdt'),
+                icsDtstart: extractDtstart(ics),
+                off: ev.off,
+                o2StartDecoded: ev2 ? extractParam(oUrl2, 'startdt') : '',
+                ics2Dtstart: ev2 ? extractDtstart(ics2) : '',
+                o3StartDecoded: ev3 ? extractParam(oUrl3, 'startdt') : '',
+                ics3Dtstart: ev3 ? extractDtstart(ics3) : ''
+            };
+        }""")
+        if "err" in builder_tests:
+            for name in _i3_names:
+                check(name, False, builder_tests["err"])
+        else:
+            check("i3_google_ctz", builder_tests["gHasCtz"],
+                  f"ctz not in URL: {builder_tests['gUrl'][:120]}")
+            dates_val = builder_tests["gDates"]
+            check("i3_google_dates_format",
+                  "/" in dates_val and "T" in dates_val and dates_val.startswith("20261008T183000"),
+                  f"dates={dates_val!r}")
+            o_start = builder_tests["oStartDecoded"]
+            check("i3_outlook_offset_summer", "+03:00" in o_start,
+                  f"startdt={o_start!r}")
+            ics_dtstart = builder_tests["icsDtstart"]
+            check("i3_ics_dtstart_utc_summer", ics_dtstart == "20261008T153000Z",
+                  f"DTSTART={ics_dtstart!r} (expected 20261008T153000Z)")
+            o2 = builder_tests["o2StartDecoded"]
+            check("i3_dst_nov_outlook", "+02:00" in o2,
+                  f"Nov 5 Outlook startdt={o2!r}")
+            ics2_dt = builder_tests["ics2Dtstart"]
+            check("i3_dst_nov_ics", ics2_dt == "20261105T170000Z",
+                  f"Nov 5 ICS DTSTART={ics2_dt!r} (expected 20261105T170000Z)")
+            o3 = builder_tests["o3StartDecoded"]
+            check("i3_dst_oct25_outlook", "+02:00" in o3,
+                  f"Oct 25 Outlook startdt={o3!r}")
+            ics3_dt = builder_tests["ics3Dtstart"]
+            check("i3_dst_oct25_ics", ics3_dt == "20261025T180000Z",
+                  f"Oct 25 ICS DTSTART={ics3_dt!r} (expected 20261025T180000Z)")
+        ctx.close()
 
     # ── I-4: ICS validity ──
     print("\n=== I-4: ICS validity ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
-
-    ics_validity = page.evaluate(r"""() => {
-        /* Mutate a film title to include a comma for escaping test */
-        /* filmTitle(f) uses f.bg for Bulgarian */
-        const f = filmById['digar'];
-        const savedBg = f ? f.bg : undefined;
-        const savedEn = f ? f.en : undefined;
-        if (f) {
-            f.bg = 'Тест, Заглавие; Специални: символи\\backslash';
-            f.en = f.bg;
-        }
-        const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
-        const ics = ev ? calIcs(ev) : '';
-        if (f) { f.bg = savedBg; f.en = savedEn; }
-        if (!ics) return {err:'empty ics'};
-
-        /* Check CRLF line endings */
-        const hasCRLF = ics.includes('\r\n');
-        const hasBareLF = /[^\r]\n/.test(ics);
-
-        /* Check max 75 octets per physical line */
-        const physLines = ics.split('\r\n');
-        const encoder = new TextEncoder();
-        const longLines = physLines.filter(l => encoder.encode(l).length > 75);
-
-        /* Check continuation lines start with space */
-        const contLines = physLines.filter((l,i) => i > 0 && l.startsWith(' '));
-
-        function unfold(lines) {
-            let out = [];
-            for (const l of lines) {
-                if (l.startsWith(' ') && out.length > 0) { out[out.length-1] += l.slice(1); }
-                else { out.push(l); }
-            }
-            return out;
-        }
-        const unfolded = unfold(physLines);
-        const summaryLine = unfolded.find(l => l.startsWith('SUMMARY:'));
-        const summaryVal = summaryLine ? summaryLine.slice(8) : '';
-        /* Check escaping: comma in title should become \, */
-        const hasEscComma = summaryVal.includes('\\,');
-
-        /* Required properties */
-        const required = ['VERSION:','PRODID:','UID:','DTSTAMP:','DTSTART:','DTEND:','SUMMARY:'];
-        const missingProps = required.filter(p => !unfolded.some(l => l.startsWith(p)));
-
-        /* No undefined/NaN/null */
-        const hasUndefined = ics.includes('undefined') || ics.includes('NaN') || ics.includes('null');
-
-        return {
-            hasCRLF, hasBareLF, longLines, hasContinuation: contLines.length > 0,
-            hasEscComma, missingProps, hasUndefined,
-            summaryVal: summaryVal.substring(0,120),
-            lineCount: physLines.length
-        };
-    }""")
-
-    if "err" in ics_validity:
-        for n in ["i4_crlf","i4_max75","i4_fold_space","i4_escape_comma","i4_required_props","i4_no_nulls"]:
-            check(n, False, ics_validity["err"])
+    _i4_names = ["i4_crlf","i4_max75","i4_fold_space","i4_escape_comma","i4_required_props","i4_no_nulls"]
+    if not _wave_i_digar_ok:
+        for name in _i4_names:
+            skip(name, "digar not in this build — re-pin FIXTURE_REF or run on fixture")
     else:
-        check("i4_crlf", ics_validity["hasCRLF"] and not ics_validity["hasBareLF"],
-              f"hasCRLF={ics_validity['hasCRLF']}, hasBareLF={ics_validity['hasBareLF']}")
-        long_lines = ics_validity["longLines"]
-        check("i4_max75", len(long_lines) == 0,
-              f"{len(long_lines)} lines >75 bytes: {long_lines[:3]}")
-        check("i4_fold_space", ics_validity["hasContinuation"],
-              "no continuation lines found (folding may not be working)")
-        check("i4_escape_comma", ics_validity["hasEscComma"],
-              f"comma not escaped in SUMMARY: {ics_validity['summaryVal']!r}")
-        missing = ics_validity["missingProps"]
-        check("i4_required_props", len(missing) == 0,
-              f"missing: {missing}")
-        check("i4_no_nulls", not ics_validity["hasUndefined"],
-              "ics contains undefined/NaN/null")
-
-    ctx.close()
+        ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+        ics_validity = page.evaluate(r"""() => {
+            /* Mutate a film title to include a comma for escaping test */
+            const f = filmById['digar'];
+            const savedBg = f ? f.bg : undefined;
+            const savedEn = f ? f.en : undefined;
+            if (f) {
+                f.bg = 'Тест, Заглавие; Специални: символи\\backslash';
+                f.en = f.bg;
+            }
+            const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
+            const ics = ev ? calIcs(ev) : '';
+            if (f) { f.bg = savedBg; f.en = savedEn; }
+            if (!ics) return {err:'empty ics'};
+            const hasCRLF = ics.includes('\r\n');
+            const hasBareLF = /[^\r]\n/.test(ics);
+            const physLines = ics.split('\r\n');
+            const encoder = new TextEncoder();
+            const longLines = physLines.filter(l => encoder.encode(l).length > 75);
+            const contLines = physLines.filter((l,i) => i > 0 && l.startsWith(' '));
+            function unfold(lines) {
+                let out = [];
+                for (const l of lines) {
+                    if (l.startsWith(' ') && out.length > 0) { out[out.length-1] += l.slice(1); }
+                    else { out.push(l); }
+                }
+                return out;
+            }
+            const unfolded = unfold(physLines);
+            const summaryLine = unfolded.find(l => l.startsWith('SUMMARY:'));
+            const summaryVal = summaryLine ? summaryLine.slice(8) : '';
+            const hasEscComma = summaryVal.includes('\\,');
+            const required = ['VERSION:','PRODID:','UID:','DTSTAMP:','DTSTART:','DTEND:','SUMMARY:'];
+            const missingProps = required.filter(p => !unfolded.some(l => l.startsWith(p)));
+            const hasUndefined = ics.includes('undefined') || ics.includes('NaN') || ics.includes('null');
+            return {
+                hasCRLF, hasBareLF, longLines, hasContinuation: contLines.length > 0,
+                hasEscComma, missingProps, hasUndefined,
+                summaryVal: summaryVal.substring(0,120), lineCount: physLines.length
+            };
+        }""")
+        if "err" in ics_validity:
+            for n in _i4_names:
+                check(n, False, ics_validity["err"])
+        else:
+            check("i4_crlf", ics_validity["hasCRLF"] and not ics_validity["hasBareLF"],
+                  f"hasCRLF={ics_validity['hasCRLF']}, hasBareLF={ics_validity['hasBareLF']}")
+            long_lines = ics_validity["longLines"]
+            check("i4_max75", len(long_lines) == 0,
+                  f"{len(long_lines)} lines >75 bytes: {long_lines[:3]}")
+            check("i4_fold_space", ics_validity["hasContinuation"],
+                  "no continuation lines found (folding may not be working)")
+            check("i4_escape_comma", ics_validity["hasEscComma"],
+                  f"comma not escaped in SUMMARY: {ics_validity['summaryVal']!r}")
+            missing = ics_validity["missingProps"]
+            check("i4_required_props", len(missing) == 0, f"missing: {missing}")
+            check("i4_no_nulls", not ics_validity["hasUndefined"],
+                  "ics contains undefined/NaN/null")
+        ctx.close()
 
     # ── I-5: Content checks ──
     print("\n=== I-5: Content checks ===")
+    _i5_film_names = ["i5_summary_title","i5_summary_dash_venue","i5_location_area","i5_desc_tix_url"]
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
-
-    content_check = page.evaluate(r"""() => {
+    if not _wave_i_digar_ok:
+        for name in _i5_film_names:
+            skip(name, "digar not in this build — re-pin FIXTURE_REF or run on fixture")
+        content_check = {"err": "skipped"}
+    else:
+        content_check = page.evaluate(r"""() => {
         const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
         if (!ev) return {err:'null ev'};
         const ics = calIcs(ev);
@@ -4145,19 +4233,20 @@ def wave_i(browser):
         };
     }""")
 
-    if "err" in content_check:
-        for n in ["i5_summary_title","i5_summary_dash_venue","i5_location_area","i5_desc_tix_url"]:
-            check(n, False, content_check["err"])
-    else:
-        check("i5_summary_title", content_check["summaryHasTitle"],
-              f"SUMMARY={content_check['summary']!r}, fTitle={content_check['fTitle']!r}")
-        check("i5_summary_dash_venue",
-              content_check["summaryHasDash"] and content_check["summaryHasVenue"],
-              f"hasDash={content_check['summaryHasDash']}, hasVenue={content_check['summaryHasVenue']}, cName={content_check['cName']!r}")
-        check("i5_location_area", content_check["locHasArea"],
-              f"LOCATION={content_check['loc']!r}, cArea={content_check['cArea']!r}")
-        check("i5_desc_tix_url", content_check["descHasTixUrl"],
-              f"DESCRIPTION={content_check['desc']!r}, tixU={content_check['tixU']!r}")
+    if _wave_i_digar_ok:
+        if "err" in content_check:
+            for n in _i5_film_names:
+                check(n, False, content_check["err"])
+        else:
+            check("i5_summary_title", content_check["summaryHasTitle"],
+                  f"SUMMARY={content_check['summary']!r}, fTitle={content_check['fTitle']!r}")
+            check("i5_summary_dash_venue",
+                  content_check["summaryHasDash"] and content_check["summaryHasVenue"],
+                  f"hasDash={content_check['summaryHasDash']}, hasVenue={content_check['summaryHasVenue']}, cName={content_check['cName']!r}")
+            check("i5_location_area", content_check["locHasArea"],
+                  f"LOCATION={content_check['loc']!r}, cArea={content_check['cArea']!r}")
+            check("i5_desc_tix_url", content_check["descHasTixUrl"],
+                  f"DESCRIPTION={content_check['desc']!r}, tixU={content_check['tixU']!r}")
 
     # Theatre show: hall in area when performance has hall
     show_content = page.evaluate(r"""() => {
@@ -4206,7 +4295,7 @@ def wave_i(browser):
     # ── I-6: Download / new tab ──
     print("\n=== I-6: Download and new tab ===")
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
-    open_film_sheet(page, "digar")
+    open_film_sheet(page, _wave_i_film_id or "digar")
     cal_btn = page.query_selector(".sheet [data-cal]")
     if cal_btn:
         cal_btn.click()
@@ -4314,7 +4403,7 @@ def wave_i(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+        env={**os.environ, "SOFIA_HTML": html_env}
     )
     gate_passes = "all checks passed" in result.stdout
     check("i7_gate_passes", gate_passes,
@@ -4338,6 +4427,24 @@ def main():
     """Parse command line, run selected waves, print summary."""
     selected = sys.argv[1:] if len(sys.argv) > 1 else list(WAVES.keys())
 
+    # ── Fixture build (default mode only) ─────────────────────────────────────
+    if not os.environ.get("SOFIA_HTML", ""):
+        print(f"\nBuilding fixture index.test.html from ref {FIXTURE_REF} …")
+        build_result = subprocess.run(
+            [sys.executable, "scripts/dev_build.py",
+             "--from", FIXTURE_REF, "--out", "index.test.html"],
+            cwd=str(webapp_root),
+            capture_output=False,
+        )
+        if build_result.returncode != 0:
+            sys.exit(f"Fixture build failed (ref={FIXTURE_REF})")
+        print(f"\nTesting: {html_env}  (fixture ref={FIXTURE_REF},"
+              f" clock={CLOCK_TODAY_ISO} 14:45 Europe/Sofia)")
+    else:
+        print(f"\nTesting: {html_env}  (SOFIA_HTML mode,"
+              f" clock={CLOCK_TODAY_ISO} 14:45 Europe/Sofia,"
+              f" WEEK_END={CLOCK_WEEK_END})")
+
     # all_wave_results: list of (wave_name, [(status, name, detail), ...])
     all_wave_results = []
 
@@ -4358,11 +4465,14 @@ def main():
             wave_snapshot = list(results)
             all_wave_results.append((wave_name, wave_snapshot))
 
-            # Per-wave count
+            # Per-wave count (SKIPs are not PASS or FAIL)
             w_failed = sum(1 for s, _, _ in wave_snapshot if s == "FAIL")
-            w_total = len(wave_snapshot)
+            w_skip   = sum(1 for s, _, _ in wave_snapshot if s == "SKIP")
+            w_total  = len(wave_snapshot)
+            w_run    = w_total - w_skip
             status_str = "PASS" if w_failed == 0 else "FAIL"
-            print(f"\nWAVE {wave_name}: {status_str} — {w_total - w_failed}/{w_total} passed")
+            skip_note = f", {w_skip} skipped" if w_skip else ""
+            print(f"\nWAVE {wave_name}: {status_str} — {w_run - w_failed}/{w_run} passed{skip_note}")
 
         browser.close()
 
@@ -4372,20 +4482,34 @@ def main():
     print(f"{'='*70}")
 
     all_failures = []
+    all_skips = []
     grand_total = 0
     grand_passed = 0
+    grand_skipped = 0
     for wave_name, wave_results in all_wave_results:
-        w_failed = sum(1 for s, _, _ in wave_results if s == "FAIL")
-        w_total = len(wave_results)
-        grand_total += w_total
-        grand_passed += w_total - w_failed
+        w_failed  = sum(1 for s, _, _ in wave_results if s == "FAIL")
+        w_skip    = sum(1 for s, _, _ in wave_results if s == "SKIP")
+        w_total   = len(wave_results)
+        w_run     = w_total - w_skip
+        grand_total   += w_run
+        grand_passed  += w_run - w_failed
+        grand_skipped += w_skip
         status_str = "PASS" if w_failed == 0 else "FAIL"
-        print(f"  {wave_name}: {status_str} — {w_total - w_failed}/{w_total}")
+        skip_note = f", {w_skip} skipped" if w_skip else ""
+        print(f"  {wave_name}: {status_str} — {w_run - w_failed}/{w_run}{skip_note}")
         for s, name, detail in wave_results:
             if s == "FAIL":
                 all_failures.append((wave_name, name, detail))
+            elif s == "SKIP":
+                all_skips.append((wave_name, name, detail))
 
-    print(f"\nTotal: {grand_passed}/{grand_total} passed")
+    skip_total_note = f"  ({grand_skipped} skipped)" if grand_skipped else ""
+    print(f"\nTotal: {grand_passed}/{grand_total} passed{skip_total_note}")
+
+    if all_skips:
+        print(f"\nSKIPPED ({len(all_skips)}):")
+        for wave_name, name, detail in all_skips:
+            print(f"  SKIP [{wave_name}] {name} — {detail}")
 
     if all_failures:
         print(f"\nFAILURES ({len(all_failures)}):")
