@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-07T08:23:18+00:00",
+  "ran": "2026-10-07T08:53:01+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,15 +8,15 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 172.8,
-      "tail": "  tickets.ndk.bg                        1     0      0.2  \n  toplocentrala.bg                      1     0      0.3  \n  vlaikovacinema.com                    1     0      3.1  \n  www.atelie313.com                     1     0      1.6  \n  www.ndk.bg                            1     0      0.3  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.5  \nwrote index.html, changes.json, cinema_films.json (29 arthouse films) and theatre_shows.json (83 theatre shows)"
+      "seconds": 159.1,
+      "tail": "  tickets.ndk.bg                        1     0      0.7  \n  toplocentrala.bg                      1     0      1.0  \n  vlaikovacinema.com                    1     0      0.9  \n  www.atelie313.com                     1     0      1.5  \n  www.ndk.bg                            1     0      0.8  \n  www.salzaismyah.bg                    1     0      0.8  \n  zadkanala.bg                          1     0      2.4  \nwrote index.html, changes.json, cinema_films.json (29 arthouse films) and theatre_shows.json (83 theatre shows)"
     },
     {
       "step": "arthouse films",
       "script": "inject_films.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.4,
+      "seconds": 0.0,
       "tail": "FILMS already carries all 29 arthouse films — no change"
     },
     {
@@ -24,40 +24,40 @@
       "script": "inject_shows.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "merged 83 theatre show(s) into SHOWS (352 total; 83 synthesised)"
+      "seconds": 0.0,
+      "tail": "SHOWS already carries all 83 theatre shows — no change"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "TMDB_TOKEN not set — skipping film posters, keeping previous."
+      "seconds": 15.1,
+      "tail": "[121/126] kinoklasiki-kosa-1979    NO MATCH (КИНОКЛАСИКИ: КОСА | 1979 | None)\n[122/126] sinelibri-2026-shte-se-sluchi-tazi-vecher NO MATCH (СИНЕЛИБРИ 2026 – ЩЕ СЕ СЛУЧИ ТАЗИ ВЕЧЕР None)\n[123/126] sinelibri-2026-metropolis NO MATCH (СИНЕЛИБРИ 2026 – МЕТРОПОЛИС None)\n[124/126] alehandro-hodorovski-kartitsata-1970 NO MATCH (Алехандро Ходоровски: Къртицата (1970) None)\n[125/126] alehandro-hodorovski-sveshtenata-planina-1973 NO MATCH (Алехандро Ходоровски: Свещената планина (1973) None)\n[126/126] akira-kurosava-sanishta-1990 NO MATCH (Акира Куросава: Сънища (1990) None)\n\nDONE: 94/126 matched, 93 with posters -> tmdb_films.json"
     },
     {
       "step": "theatre posters",
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 206.3,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        81     0    109.3  \n  theatre.art.bg                       45     0     52.9  \n\nnew this run: 34   rejected by policy: 2   total: 294/352 shows with art\nre-hosted 294/294 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 156.9,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        67     0     76.4  \n  theatre.art.bg                       45     0     75.3  \n\nnew this run: 0   rejected by policy: 2   total: 294/352 shows with art\nre-hosted 294/294 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "inline posters",
       "script": "inject_data.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "injected TMDBART: 81 films (80 with posters), SHOWART: 294 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
+      "seconds": 0.0,
+      "tail": "injected TMDBART: 94 films (93 with posters), SHOWART: 294 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 8.5,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (461,556 bytes)\n  all checks passed — safe to publish"
+      "seconds": 7.0,
+      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (457,543 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }
