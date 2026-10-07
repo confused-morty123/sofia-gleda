@@ -2933,6 +2933,707 @@ def wave_d1(browser):
 
 
 # ============================================================================
+# WAVE I: Add-to-calendar export
+# ============================================================================
+
+def wave_i(browser):
+    """
+    Wave I checks: calendar export buttons in film and show sheets.
+    Fixed clock 2026-10-07 14:45. Film used: digar at cc-sofia, 2026-10-08.
+    """
+    wave = "I"
+    ensure_shot_dir(wave)
+    import subprocess
+
+    # Helper to open a film sheet
+    def open_film_sheet(page, film_id):
+        page.evaluate(f"""() => {{
+            const hash = 'film={film_id}';
+            if (window.openFromHash) {{
+                location.hash = hash;
+                window.openFromHash && window.openFromHash();
+            }} else {{
+                location.hash = hash;
+            }}
+        }}""")
+        page.wait_for_timeout(900)
+
+    def open_show_sheet(page, show_id):
+        page.evaluate(f"""() => {{
+            location.hash = 'show={show_id}';
+        }}""")
+        page.wait_for_timeout(900)
+
+    # ── I-1: Every .vrow in film and show sheets has exactly one [data-cal] ──
+    print("\n=== I-1: [data-cal] presence and placement ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    open_film_sheet(page, "digar")
+
+    film_vrow_info = page.evaluate("""() => {
+        const sheet = document.querySelector('.sheet');
+        if (!sheet) return {err:'no sheet'};
+        const vrows = Array.from(sheet.querySelectorAll('.vrow'));
+        const rowData = vrows.map(row => {
+            const calBtns = row.querySelectorAll('[data-cal]');
+            const insideA = row.querySelectorAll('a [data-cal]');
+            const timeLinks = row.querySelectorAll('a.time');
+            return {
+                calCount: calBtns.length,
+                insideAnchor: insideA.length,
+                timeLinks: timeLinks.length
+            };
+        });
+        const timeLinksSheet = sheet.querySelectorAll('a.time').length;
+        return {rowData, timeLinksSheet, vrowCount: vrows.length};
+    }""")
+
+    if "err" in film_vrow_info:
+        check("i1_film_vrow_cal_btn", False, film_vrow_info["err"])
+        check("i1_film_cal_not_in_anchor", False, "skipped")
+        check("i1_film_time_links_exist", False, "skipped")
+    else:
+        all_one = all(r["calCount"] == 1 for r in film_vrow_info["rowData"])
+        check("i1_film_vrow_cal_btn", all_one,
+              f"vrow count={film_vrow_info['vrowCount']}; calCounts={[r['calCount'] for r in film_vrow_info['rowData']]}")
+        none_in_a = all(r["insideAnchor"] == 0 for r in film_vrow_info["rowData"])
+        check("i1_film_cal_not_in_anchor", none_in_a,
+              f"some [data-cal] inside <a>: {[r['insideAnchor'] for r in film_vrow_info['rowData']]}")
+        check("i1_film_time_links_exist", film_vrow_info["timeLinksSheet"] > 0,
+              f"a.time count={film_vrow_info['timeLinksSheet']}")
+
+    ctx.close()
+
+    # show sheet check
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    # Find first show with any performance (globals are not on window, use typeof check)
+    show_id = page.evaluate("""() => {
+        if (typeof SHOWS === 'undefined' || typeof PERFORMANCES === 'undefined') return null;
+        for (const sh of SHOWS) {
+            const perfs = PERFORMANCES.filter(p => p[0] === sh.id);
+            if (perfs.length > 0) return sh.id;
+        }
+        return null;
+    }""")
+    if show_id:
+        open_show_sheet(page, show_id)
+        show_vrow_info = page.evaluate("""() => {
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {err:'no sheet'};
+            const vrows = Array.from(sheet.querySelectorAll('.vrow'));
+            const rowData = vrows.map(row => {
+                const calBtns = row.querySelectorAll('[data-cal]');
+                const insideA = row.querySelectorAll('a [data-cal]');
+                return {calCount: calBtns.length, insideAnchor: insideA.length};
+            });
+            return {rowData, vrowCount: vrows.length};
+        }""")
+        if "err" in show_vrow_info:
+            check("i1_show_vrow_cal_btn", False, show_vrow_info["err"])
+            check("i1_show_cal_not_in_anchor", False, "skipped")
+        else:
+            all_one_sh = all(r["calCount"] == 1 for r in show_vrow_info["rowData"])
+            check("i1_show_vrow_cal_btn", all_one_sh,
+                  f"vrow count={show_vrow_info['vrowCount']}; calCounts={[r['calCount'] for r in show_vrow_info['rowData']]}")
+            none_in_a_sh = all(r["insideAnchor"] == 0 for r in show_vrow_info["rowData"])
+            check("i1_show_cal_not_in_anchor", none_in_a_sh,
+                  f"some inside <a>: {[r['insideAnchor'] for r in show_vrow_info['rowData']]}")
+    else:
+        check("i1_show_vrow_cal_btn", False, "no show with performances found")
+        check("i1_show_cal_not_in_anchor", False, "skipped")
+
+    # Venue filter note / "Покажи всички" button still present with cinema selected (film sheet)
+    ctx2, page2, errs2 = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    # Select a cinema first (globals may not be on window - use typeof check)
+    page2.evaluate("""() => {
+        if (typeof S !== 'undefined' && typeof CINEMAS !== 'undefined') {
+            S.fVenues = [CINEMAS[0].id];
+            if (typeof render !== 'undefined') render();
+        }
+    }""")
+    page2.wait_for_timeout(400)
+    open_film_sheet(page2, "digar")
+    venue_filter_ok = page2.evaluate("""() => {
+        const sheet = document.querySelector('.sheet');
+        if (!sheet) return false;
+        // look for the show-all button
+        return !!sheet.querySelector('[data-sheetshowallcin]');
+    }""")
+    check("i1_venue_filter_note_works", venue_filter_ok,
+          "[data-sheetshowallcin] not found after setting fVenues" if not venue_filter_ok else "")
+    ctx2.close()
+    ctx.close()
+
+    # ── I-2: Panel UX at 375×812 and 1280×800 ──
+    print("\n=== I-2: Panel UX ===")
+    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        lang_tag = "bg"
+        ctx, page, errs = open_page(browser, w, h, lang=lang_tag, mode="cinema")
+        open_film_sheet(page, "digar")
+
+        # Click first [data-cal] button
+        cal_btn = page.query_selector(".sheet [data-cal]")
+        if not cal_btn:
+            check(f"i2_{size_tag}_panel_opens", False, "no [data-cal] in film sheet")
+            ctx.close()
+            continue
+
+        cal_btn.click()
+        page.wait_for_timeout(400)
+
+        panel_info = page.evaluate("""() => {
+            const panel = document.querySelector('.cal-panel');
+            if (!panel) return {exists: false};
+            const timeBtns = Array.from(panel.querySelectorAll('[data-caltm]'));
+            const firstSelBtn = panel.querySelector('[data-caltm].sel');
+            const h5Text = panel.querySelector('h5') ? panel.querySelector('h5').textContent : '';
+            const gBtn = panel.querySelector('[data-calg]');
+            const aBtn = panel.querySelector('[data-calics]');
+            const oBtn = panel.querySelector('[data-calo]');
+            const closeBtn = panel.querySelector('[data-calclose]');
+            // Measure heights of interactive elements
+            function h(el) { return el ? el.getBoundingClientRect().height : 0; }
+            const calBtnOuter = document.querySelector('.sheet .cal-btn');
+            return {
+                exists: true,
+                timeBtnCount: timeBtns.length,
+                firstSelTime: firstSelBtn ? firstSelBtn.dataset.caltm : null,
+                gBtnText: gBtn ? gBtn.textContent.trim() : null,
+                aBtnText: aBtn ? aBtn.textContent.trim() : null,
+                oBtnText: oBtn ? oBtn.textContent.trim() : null,
+                gBtnH: h(gBtn),
+                aBtnH: h(aBtn),
+                oBtnH: h(oBtn),
+                closeBtnH: h(closeBtn),
+                calBtnH: h(calBtnOuter),
+                panelCount: document.querySelectorAll('.cal-panel').length
+            };
+        }""")
+
+        if not panel_info["exists"]:
+            check(f"i2_{size_tag}_panel_opens", False, "panel did not appear")
+            ctx.close()
+            continue
+
+        check(f"i2_{size_tag}_panel_opens", True, "")
+        check(f"i2_{size_tag}_panel_only_one", panel_info["panelCount"] == 1,
+              f"panel count={panel_info['panelCount']}")
+
+        # Time chips for digar (3 times at cc-sofia 2026-10-08)
+        check(f"i2_{size_tag}_time_chips", panel_info["timeBtnCount"] >= 2,
+              f"timeBtnCount={panel_info['timeBtnCount']}")
+        check(f"i2_{size_tag}_first_upcoming_selected", panel_info["firstSelTime"] is not None,
+              f"no .sel time; firstSel={panel_info['firstSelTime']}")
+
+        # Button labels in BG
+        check(f"i2_{size_tag}_google_label_bg",
+              panel_info["gBtnText"] is not None and "Google" in panel_info["gBtnText"],
+              f"google btn text: {panel_info['gBtnText']!r}")
+        check(f"i2_{size_tag}_apple_label_bg",
+              panel_info["aBtnText"] is not None and "Apple" in panel_info["aBtnText"],
+              f"apple btn text: {panel_info['aBtnText']!r}")
+        check(f"i2_{size_tag}_outlook_label_bg",
+              panel_info["oBtnText"] is not None and "Outlook" in panel_info["oBtnText"],
+              f"outlook btn text: {panel_info['oBtnText']!r}")
+
+        # Tap target sizes ≥ 40px
+        check(f"i2_{size_tag}_google_h40", panel_info["gBtnH"] >= 40,
+              f"google btn height={panel_info['gBtnH']:.1f}px (need ≥40)")
+        check(f"i2_{size_tag}_apple_h40", panel_info["aBtnH"] >= 40,
+              f"apple btn height={panel_info['aBtnH']:.1f}px (need ≥40)")
+        check(f"i2_{size_tag}_outlook_h40", panel_info["oBtnH"] >= 40,
+              f"outlook btn height={panel_info['oBtnH']:.1f}px (need ≥40)")
+        check(f"i2_{size_tag}_cal_btn_h40", panel_info["calBtnH"] >= 40,
+              f"[data-cal] btn height={panel_info['calBtnH']:.1f}px (need ≥40; CSS says 34px)")
+
+        # Opening another [data-cal] closes the first
+        cal_btns = page.query_selector_all(".sheet [data-cal]")
+        if len(cal_btns) >= 2:
+            cal_btns[1].click()
+            page.wait_for_timeout(300)
+            panel_count2 = page.evaluate("document.querySelectorAll('.cal-panel').length")
+            check(f"i2_{size_tag}_second_click_closes_first", panel_count2 == 1,
+                  f"panel count after second click={panel_count2}")
+            # Close via ✕ button
+            page.evaluate("""() => {
+                const x = document.querySelector('[data-calclose]');
+                if (x) x.click();
+            }""")
+            page.wait_for_timeout(300)
+        else:
+            check(f"i2_{size_tag}_second_click_closes_first", True, "only one vrow, skip")
+
+        # Escape closes panel
+        cal_btn2 = page.query_selector(".sheet [data-cal]")
+        if cal_btn2:
+            cal_btn2.click()
+            page.wait_for_timeout(300)
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
+            panel_after_esc = page.evaluate("document.querySelectorAll('.cal-panel').length")
+            check(f"i2_{size_tag}_escape_closes_panel", panel_after_esc == 0,
+                  f"panel still present after Escape: count={panel_after_esc}")
+
+        # Escape with NO panel open still closes sheet (regression)
+        # Make sure no panel is open
+        page.evaluate("const p=document.querySelector('.cal-panel');if(p)p.remove();")
+        page.wait_for_timeout(200)
+        sheet_before = page.evaluate("!!document.querySelector('.sheet')")
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        sheet_after = page.evaluate("!!document.querySelector('.sheet')")
+        check(f"i2_{size_tag}_escape_no_panel_closes_sheet",
+              sheet_before and not sheet_after,
+              f"sheet_before={sheet_before}, sheet_after={sheet_after}")
+
+        # EN labels check (desktop only to save time)
+        if w == 1280:
+            ctx_en, page_en, _ = open_page(browser, w, h, lang="en", mode="cinema")
+            open_film_sheet(page_en, "digar")
+            cal_btn_en = page_en.query_selector(".sheet [data-cal]")
+            if cal_btn_en:
+                cal_btn_en.click()
+                page_en.wait_for_timeout(400)
+                en_labels = page_en.evaluate("""() => {
+                    const panel = document.querySelector('.cal-panel');
+                    if (!panel) return {};
+                    return {
+                        g: panel.querySelector('[data-calg]')?.textContent?.trim(),
+                        a: panel.querySelector('[data-calics]')?.textContent?.trim(),
+                        o: panel.querySelector('[data-calo]')?.textContent?.trim()
+                    };
+                }""")
+                check("i2_en_google_label", en_labels.get("g") and "Google Calendar" in en_labels["g"],
+                      f"EN google: {en_labels.get('g')!r}")
+                check("i2_en_apple_label", en_labels.get("a") and "Apple Calendar" in en_labels["a"],
+                      f"EN apple: {en_labels.get('a')!r}")
+                check("i2_en_outlook_label", en_labels.get("o") and "Outlook" in en_labels["o"],
+                      f"EN outlook: {en_labels.get('o')!r}")
+                save_shot(page_en, wave, "d-en-film-panel")
+            ctx_en.close()
+
+        # Screenshots - re-open film sheet (Escape may have closed it)
+        if size_tag == "375x812":
+            if not page.query_selector(".sheet"):
+                open_film_sheet(page, "digar")
+            cal_btn_shot = page.query_selector(".sheet [data-cal]")
+            if cal_btn_shot:
+                cal_btn_shot.click()
+                page.wait_for_timeout(400)
+                save_shot(page, wave, "m-bg-film-panel")
+        ctx.close()
+
+    # Show sheet panel screenshot (mobile BG)
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    if show_id:
+        open_show_sheet(page, show_id)
+        sh_cal_btn = page.query_selector(".sheet [data-cal]")
+        if sh_cal_btn:
+            sh_cal_btn.click()
+            page.wait_for_timeout(400)
+            save_shot(page, wave, "m-bg-show-panel")
+    ctx.close()
+
+    # ── I-3: Builder exact values ──
+    print("\n=== I-3: Builder exact values ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    builder_tests = page.evaluate(r"""() => {
+        /* Use digar at cc-sofia on 2026-10-08, 18:30 (summer time +03:00) */
+        const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
+        if (!ev) return {err:'calEvent returned null'};
+        const gUrl = calGoogleUrl(ev);
+        const oUrl = calOutlookUrl(ev);
+        const ics = calIcs(ev);
+
+        /* DST test: Nov 5 (winter, +02) */
+        const ev2 = calEvent('film','digar','cc-sofia','2026-11-05','19:00');
+        const oUrl2 = ev2 ? calOutlookUrl(ev2) : '';
+        const ics2 = ev2 ? calIcs(ev2) : '';
+
+        /* DST boundary: Oct 25 20:00 (after DST switch, +02) */
+        const ev3 = calEvent('film','digar','cc-sofia','2026-10-25','20:00');
+        const oUrl3 = ev3 ? calOutlookUrl(ev3) : '';
+        const ics3 = ev3 ? calIcs(ev3) : '';
+
+        function extractDtstart(icsStr) {
+            const lines = icsStr.split('\r\n');
+            const l = lines.find(x => x.startsWith('DTSTART:'));
+            return l ? l.slice(8) : '';
+        }
+        function extractParam(url, param) {
+            const m = url.match(new RegExp('[?&]' + param + '=([^&]+)'));
+            return m ? decodeURIComponent(m[1]) : '';
+        }
+
+        return {
+            gUrl,
+            oUrl,
+            ics: ics.substring(0, 400),
+            gHasCtz: gUrl.includes('ctz=Europe/Sofia'),
+            gDates: extractParam(gUrl, 'dates'),
+            oStartDecoded: extractParam(oUrl, 'startdt'),
+            icsDtstart: extractDtstart(ics),
+            off: ev.off,
+            o2StartDecoded: ev2 ? extractParam(oUrl2, 'startdt') : '',
+            ics2Dtstart: ev2 ? extractDtstart(ics2) : '',
+            o3StartDecoded: ev3 ? extractParam(oUrl3, 'startdt') : '',
+            ics3Dtstart: ev3 ? extractDtstart(ics3) : ''
+        };
+    }""")
+
+    if "err" in builder_tests:
+        for name in ["i3_google_ctz","i3_google_dates","i3_outlook_offset_summer",
+                     "i3_ics_dtstart_utc","i3_dst_nov_outlook","i3_dst_nov_ics",
+                     "i3_dst_oct25_outlook","i3_dst_oct25_ics"]:
+            check(name, False, builder_tests["err"])
+    else:
+        check("i3_google_ctz", builder_tests["gHasCtz"],
+              f"ctz not in URL: {builder_tests['gUrl'][:120]}")
+
+        # dates=<start>/<end>; digar 2026-10-08 18:30 +03 → UTC 15:30 → start=20261008T1830__, runtime needed
+        # Check format: dates=YYYYMMDDTHHMMSSstart/YYYYMMDDTHHMMSSend
+        dates_val = builder_tests["gDates"]
+        check("i3_google_dates_format",
+              "/" in dates_val and "T" in dates_val and dates_val.startswith("20261008T183000"),
+              f"dates={dates_val!r}")
+
+        # Outlook startdt has +03:00 for summer
+        o_start = builder_tests["oStartDecoded"]
+        check("i3_outlook_offset_summer", "+03:00" in o_start,
+              f"startdt={o_start!r}")
+
+        # ICS DTSTART = UTC Z: 18:30 - 3h = 15:30 UTC on 2026-10-08
+        ics_dtstart = builder_tests["icsDtstart"]
+        check("i3_ics_dtstart_utc_summer", ics_dtstart == "20261008T153000Z",
+              f"DTSTART={ics_dtstart!r} (expected 20261008T153000Z)")
+
+        # Nov 5 19:00 winter (+02) → Outlook +02:00, ICS 17:00Z
+        o2 = builder_tests["o2StartDecoded"]
+        check("i3_dst_nov_outlook", "+02:00" in o2,
+              f"Nov 5 Outlook startdt={o2!r}")
+        ics2_dt = builder_tests["ics2Dtstart"]
+        check("i3_dst_nov_ics", ics2_dt == "20261105T170000Z",
+              f"Nov 5 ICS DTSTART={ics2_dt!r} (expected 20261105T170000Z)")
+
+        # Oct 25 20:00 (after DST ends, +02) → +02:00, ICS 18:00Z
+        o3 = builder_tests["o3StartDecoded"]
+        check("i3_dst_oct25_outlook", "+02:00" in o3,
+              f"Oct 25 Outlook startdt={o3!r}")
+        ics3_dt = builder_tests["ics3Dtstart"]
+        check("i3_dst_oct25_ics", ics3_dt == "20261025T180000Z",
+              f"Oct 25 ICS DTSTART={ics3_dt!r} (expected 20261025T180000Z)")
+
+    ctx.close()
+
+    # ── I-4: ICS validity ──
+    print("\n=== I-4: ICS validity ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    ics_validity = page.evaluate(r"""() => {
+        /* Mutate a film title to include a comma for escaping test */
+        /* filmTitle(f) uses f.bg for Bulgarian */
+        const f = filmById['digar'];
+        const savedBg = f ? f.bg : undefined;
+        const savedEn = f ? f.en : undefined;
+        if (f) {
+            f.bg = 'Тест, Заглавие; Специални: символи\\backslash';
+            f.en = f.bg;
+        }
+        const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
+        const ics = ev ? calIcs(ev) : '';
+        if (f) { f.bg = savedBg; f.en = savedEn; }
+        if (!ics) return {err:'empty ics'};
+
+        /* Check CRLF line endings */
+        const hasCRLF = ics.includes('\r\n');
+        const hasBareLF = /[^\r]\n/.test(ics);
+
+        /* Check max 75 octets per physical line */
+        const physLines = ics.split('\r\n');
+        const encoder = new TextEncoder();
+        const longLines = physLines.filter(l => encoder.encode(l).length > 75);
+
+        /* Check continuation lines start with space */
+        const contLines = physLines.filter((l,i) => i > 0 && l.startsWith(' '));
+
+        function unfold(lines) {
+            let out = [];
+            for (const l of lines) {
+                if (l.startsWith(' ') && out.length > 0) { out[out.length-1] += l.slice(1); }
+                else { out.push(l); }
+            }
+            return out;
+        }
+        const unfolded = unfold(physLines);
+        const summaryLine = unfolded.find(l => l.startsWith('SUMMARY:'));
+        const summaryVal = summaryLine ? summaryLine.slice(8) : '';
+        /* Check escaping: comma in title should become \, */
+        const hasEscComma = summaryVal.includes('\\,');
+
+        /* Required properties */
+        const required = ['VERSION:','PRODID:','UID:','DTSTAMP:','DTSTART:','DTEND:','SUMMARY:'];
+        const missingProps = required.filter(p => !unfolded.some(l => l.startsWith(p)));
+
+        /* No undefined/NaN/null */
+        const hasUndefined = ics.includes('undefined') || ics.includes('NaN') || ics.includes('null');
+
+        return {
+            hasCRLF, hasBareLF, longLines, hasContinuation: contLines.length > 0,
+            hasEscComma, missingProps, hasUndefined,
+            summaryVal: summaryVal.substring(0,120),
+            lineCount: physLines.length
+        };
+    }""")
+
+    if "err" in ics_validity:
+        for n in ["i4_crlf","i4_max75","i4_fold_space","i4_escape_comma","i4_required_props","i4_no_nulls"]:
+            check(n, False, ics_validity["err"])
+    else:
+        check("i4_crlf", ics_validity["hasCRLF"] and not ics_validity["hasBareLF"],
+              f"hasCRLF={ics_validity['hasCRLF']}, hasBareLF={ics_validity['hasBareLF']}")
+        long_lines = ics_validity["longLines"]
+        check("i4_max75", len(long_lines) == 0,
+              f"{len(long_lines)} lines >75 bytes: {long_lines[:3]}")
+        check("i4_fold_space", ics_validity["hasContinuation"],
+              "no continuation lines found (folding may not be working)")
+        check("i4_escape_comma", ics_validity["hasEscComma"],
+              f"comma not escaped in SUMMARY: {ics_validity['summaryVal']!r}")
+        missing = ics_validity["missingProps"]
+        check("i4_required_props", len(missing) == 0,
+              f"missing: {missing}")
+        check("i4_no_nulls", not ics_validity["hasUndefined"],
+              "ics contains undefined/NaN/null")
+
+    ctx.close()
+
+    # ── I-5: Content checks ──
+    print("\n=== I-5: Content checks ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    content_check = page.evaluate(r"""() => {
+        const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
+        if (!ev) return {err:'null ev'};
+        const ics = calIcs(ev);
+        function unfold(text) {
+            return text.split('\r\n').reduce((lines, l) => {
+                if (l.startsWith(' ') && lines.length > 0) { lines[lines.length-1] += l.slice(1); }
+                else { lines.push(l); }
+                return lines;
+            }, []);
+        }
+        const lines = unfold(ics);
+        const get = (prop) => {
+            const l = lines.find(x => x.startsWith(prop+':'));
+            return l ? l.slice(prop.length+1) : null;
+        };
+        /* SUMMARY: title — venue */
+        const summary = get('SUMMARY');
+        const loc = get('LOCATION');
+        const desc = get('DESCRIPTION');
+        /* Get the cinema area */
+        const c = cinById['cc-sofia'];
+        const cArea = c ? c.area : '';
+        const cName = c ? c.name : '';
+        /* Get film title */
+        const f = filmById['digar'];
+        const fTitle = f ? filmTitle(f) : '';
+        /* Get ticket URL */
+        const tixU = filmTixUrl('digar','cc-sofia','2026-10-08');
+        return {
+            summary, loc, desc,
+            cArea, cName, fTitle, tixU,
+            summaryHasTitle: summary ? summary.includes(fTitle) : false,
+            summaryHasDash: summary ? summary.includes(' — ') : false,
+            summaryHasVenue: summary ? summary.includes(cName) : false,
+            locHasArea: loc ? (function() {
+                /* loc may have escaped commas; unescape for comparison */
+                const unesc = loc.replace(/\\,/g, ',').replace(/\\;/g, ';');
+                return unesc.includes(cArea) || loc.includes(cArea);
+            })() : false,
+            descHasTixUrl: desc && tixU ? (function() {
+                const unesc = desc.replace(/\\n/g, '\n');
+                return unesc.includes(tixU) || desc.includes(tixU);
+            })() : false
+        };
+    }""")
+
+    if "err" in content_check:
+        for n in ["i5_summary_title","i5_summary_dash_venue","i5_location_area","i5_desc_tix_url"]:
+            check(n, False, content_check["err"])
+    else:
+        check("i5_summary_title", content_check["summaryHasTitle"],
+              f"SUMMARY={content_check['summary']!r}, fTitle={content_check['fTitle']!r}")
+        check("i5_summary_dash_venue",
+              content_check["summaryHasDash"] and content_check["summaryHasVenue"],
+              f"hasDash={content_check['summaryHasDash']}, hasVenue={content_check['summaryHasVenue']}, cName={content_check['cName']!r}")
+        check("i5_location_area", content_check["locHasArea"],
+              f"LOCATION={content_check['loc']!r}, cArea={content_check['cArea']!r}")
+        check("i5_desc_tix_url", content_check["descHasTixUrl"],
+              f"DESCRIPTION={content_check['desc']!r}, tixU={content_check['tixU']!r}")
+
+    # Theatre show: hall in area when performance has hall
+    show_content = page.evaluate(r"""() => {
+        if (typeof PERFORMANCES === 'undefined' || typeof SHOWS === 'undefined') return {err:'no data'};
+        let shId=null, perfDate=null, perfTime=null, hallVal=null;
+        for (const p of PERFORMANCES) {
+            const sh = showById[p[0]];
+            if (!sh) continue;
+            const th = thById[sh.theatre];
+            if (!th) continue;
+            if (p[3] && p[3] !== th.name) {
+                shId=p[0]; perfDate=p[1]; perfTime=p[2]; hallVal=p[3]; break;
+            }
+        }
+        if (!shId) return {noHall:true};
+        const ev = calEvent('show',shId,showById[shId].theatre,perfDate,perfTime);
+        if (!ev) return {err:'null ev for show'};
+        const ics = calIcs(ev);
+        /* Extract LOCATION by splitting on CRLF */
+        const lines = ics.split('\r\n');
+        function unfold(ls) {
+            let out = [];
+            for (const l of ls) {
+                if (l.startsWith(' ') && out.length > 0) { out[out.length-1] += l.slice(1); }
+                else { out.push(l); }
+            }
+            return out;
+        }
+        const unfolded = unfold(lines);
+        const locLine = unfolded.find(l => l.startsWith('LOCATION:'));
+        const loc = locLine ? locLine.slice(9) : '';
+        const locUnesc = loc.replace(/\\,/g, ',').replace(/\\;/g, ';');
+        return {shId, hallVal, loc: locUnesc, hasHall: locUnesc.includes(hallVal) || ics.includes(hallVal)};
+    }""")
+
+    if "err" in show_content:
+        check("i5_theatre_hall_in_location", False, show_content["err"])
+    elif show_content.get("noHall"):
+        check("i5_theatre_hall_in_location", True, "no performance with hall found — skip")
+    else:
+        check("i5_theatre_hall_in_location", show_content["hasHall"],
+              f"hall={show_content['hallVal']!r}, LOCATION={show_content['loc']!r}")
+
+    ctx.close()
+
+    # ── I-6: Download / new tab ──
+    print("\n=== I-6: Download and new tab ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    open_film_sheet(page, "digar")
+    cal_btn = page.query_selector(".sheet [data-cal]")
+    if cal_btn:
+        cal_btn.click()
+        page.wait_for_timeout(400)
+
+        # Get expected ICS content from the page
+        ics_expected = page.evaluate("""() => {
+            const panel = document.querySelector('.cal-panel');
+            if (!panel) return '';
+            const ci = panel.querySelector('[data-calics]');
+            if (!ci) return '';
+            const d = JSON.parse(ci.dataset.calev || '{}');
+            const ev = calEvent(d.kind, d.id, d.venueId, d.dateStr, d.timeStr);
+            return ev ? calIcs(ev) : '';
+        }""")
+
+        # Test Apple download
+        ics_btn = page.query_selector("[data-calics]")
+        if ics_btn:
+            with page.expect_download(timeout=5000) as dl_info:
+                ics_btn.click()
+            dl = dl_info.value
+            dl_name = dl.suggested_filename
+            check("i6_ics_download_name",
+                  dl_name.startswith("sofia-gleda-") and dl_name.endswith(".ics"),
+                  f"download filename={dl_name!r}")
+            # Read content
+            dl_path = dl.path()
+            if dl_path:
+                with open(dl_path, "rb") as fp:
+                    dl_bytes = fp.read()
+                dl_text = dl_bytes.decode("utf-8", errors="replace")
+                check("i6_ics_content_matches", dl_text == ics_expected,
+                      f"content mismatch; got={dl_text[:80]!r} expect={ics_expected[:80]!r}")
+            else:
+                check("i6_ics_content_matches", False, "download path None")
+        else:
+            check("i6_ics_download_name", False, "no [data-calics] in panel")
+            check("i6_ics_content_matches", False, "skipped")
+
+        # Test Google tab
+        g_btn = page.query_selector("[data-calg]")
+        if g_btn:
+            gUrl = page.evaluate("document.querySelector('[data-calg]')?.dataset?.calurl || ''")
+            # Re-open panel if closed
+            panel_exists = page.evaluate("!!document.querySelector('.cal-panel')")
+            if not panel_exists:
+                cal_btn2 = page.query_selector(".sheet [data-cal]")
+                if cal_btn2:
+                    cal_btn2.click()
+                    page.wait_for_timeout(300)
+            with ctx.expect_page(timeout=5000) as new_page_info:
+                page.evaluate("document.querySelector('[data-calg]')?.click()")
+            new_pg = new_page_info.value
+            new_url = new_pg.url
+            check("i6_google_new_tab", "calendar.google.com" in new_url or gUrl in new_url,
+                  f"new tab URL={new_url[:100]!r}")
+        else:
+            check("i6_google_new_tab", False, "no [data-calg]")
+
+        # Test Outlook tab
+        panel_exists2 = page.evaluate("!!document.querySelector('.cal-panel')")
+        if not panel_exists2:
+            cal_btn3 = page.query_selector(".sheet [data-cal]")
+            if cal_btn3:
+                cal_btn3.click()
+                page.wait_for_timeout(300)
+        o_btn = page.query_selector("[data-calo]")
+        if o_btn:
+            oUrl = page.evaluate("document.querySelector('[data-calo]')?.dataset?.calurl || ''")
+            with ctx.expect_page(timeout=5000) as new_page_info2:
+                page.evaluate("document.querySelector('[data-calo]')?.click()")
+            new_pg2 = new_page_info2.value
+            new_url2 = new_pg2.url
+            check("i6_outlook_new_tab", "outlook.live.com" in new_url2 or oUrl in new_url2,
+                  f"new tab URL={new_url2[:100]!r}")
+        else:
+            check("i6_outlook_new_tab", False, "no [data-calo]")
+    else:
+        check("i6_ics_download_name", False, "no [data-cal] for download test")
+        check("i6_ics_content_matches", False, "skipped")
+        check("i6_google_new_tab", False, "skipped")
+        check("i6_outlook_new_tab", False, "skipped")
+
+    ctx.close()
+
+    # ── I-7: No page errors + gate ──
+    print("\n=== I-7: No page errors + gate ===")
+    all_errors = []
+    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        for lang in ["bg", "en"]:
+            for mode in ["cinema", "theatre"]:
+                ctx, page, errs = open_page(browser, w, h, lang=lang, mode=mode)
+                page.wait_for_timeout(600)
+                if errs:
+                    all_errors.extend([(size_tag, lang, mode, e) for e in errs])
+                ctx.close()
+    if all_errors:
+        check("i7_no_page_errors", False, f"{len(all_errors)} error(s): {all_errors[0]}")
+    else:
+        check("i7_no_page_errors", True, "")
+
+    result = subprocess.run(
+        ["python3", "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+    )
+    gate_passes = "all checks passed" in result.stdout
+    check("i7_gate_passes", gate_passes,
+          result.stdout[:120] if not gate_passes else "")
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -2941,6 +3642,7 @@ WAVES = {
     "B1": wave_b1,
     "C1": wave_c1,
     "D1": wave_d1,
+    "I": wave_i,
 }
 
 def main():
