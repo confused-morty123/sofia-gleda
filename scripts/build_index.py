@@ -23,8 +23,8 @@ HEAD = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0C0A0F" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F5F2F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0A0F">
+<meta name="color-scheme" content="dark">
 <meta name="description" content="Sofia Gleda — what's on in Sofia: cinema and theatre in one place.">
 <link rel="manifest" href="manifest.webmanifest">
 <!-- icon.svg uses embedded data: PNG tiles inside masks; browsers block nested

@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-07T13:28:59+00:00",
+  "ran": "2026-10-07T14:15:48+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,8 +8,8 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 143.0,
-      "tail": "  tickets.ndk.bg                        1     0      0.1  \n  toplocentrala.bg                      1     0      0.1  \n  vlaikovacinema.com                    1     0      0.6  \n  www.atelie313.com                     1     0      0.8  \n  www.ndk.bg                            1     0      0.2  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.6  \nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (87 theatre shows)"
+      "seconds": 140.1,
+      "tail": "  tickets.ndk.bg                        1     0      0.1  \n  toplocentrala.bg                      1     0      0.1  \n  vlaikovacinema.com                    1     0      2.0  \n  www.atelie313.com                     1     0      2.1  \n  www.ndk.bg                            1     0      0.2  \n  www.salzaismyah.bg                    1     0      0.0  \n  zadkanala.bg                          1     0      0.6  \nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (87 theatre shows)"
     },
     {
       "step": "arthouse films",
@@ -32,7 +32,7 @@
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 84.2,
+      "seconds": 70.2,
       "tail": "      og:image -> https://programata.bg/wp-content/uploads/2023/10/les-gardiennes-de-la-planete-2-0x450-1.jpg\n[144/146] kotki-v-muzeya-2-sakrovishtata-na-egipet NO MATCH (Котки в музея 2: Съкровищата на Египет None)\n      og:image -> https://programata.bg/wp-content/uploads/2026/06/maxresdefault.jpg\n[145/146] kina-i-yuk-lisitsite-ot-dalechniya-sever NO MATCH (Кина и Юк, лисиците от далечния север None)\n      og:image -> https://programata.bg/wp-content/uploads/2024/06/zx320y180_4675537.jpg\n[146/146] diamanti                 -> Diamonds Are Forever (1971) id=681\n\nDONE: 105/146 matched, 104 with posters, 17 og:image fallbacks, 90 with IMDb ratings (OMDb on) -> tmdb_films.json"
     },
     {
@@ -40,8 +40,8 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 82.7,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        24     0     27.5  \n  theatre.art.bg                       45     0     52.1  \n\nnew this run: 0   rejected by policy: 2   total: 341/356 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 85.7,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        24     0     30.4  \n  theatre.art.bg                       45     0     52.2  \n\nnew this run: 0   rejected by policy: 2   total: 341/356 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "inline posters",
@@ -56,8 +56,8 @@
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 10.0,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (518,351 bytes)\n  all checks passed — safe to publish"
+      "seconds": 9.5,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (517,774 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }
