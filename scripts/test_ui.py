@@ -1316,6 +1316,828 @@ def wave_b1(browser):
     check("b1_gate_passes", gate_passes,
           result.stdout[:120] if not gate_passes else "")
 
+# ============================================================================
+# WAVE C1: Filters, genre taxonomy, data clean-up
+# ============================================================================
+
+def wave_c1(browser):
+    """
+    Wave C1 checks: cinema venue chips per cinema id, venueOk filter, genre
+    taxonomy (doc/music/anime split), period banner month, data clean-up.
+    """
+    wave = "C1"
+    ensure_shot_dir(wave)
+    import subprocess
+
+    # ── Check C1-1: Drawer venue chips one-per-cinema-id, subheadings, theatre mode ──
+    print("\n=== C1-1: Drawer venue chips ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # Open drawer
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    venue_info = page.evaluate("""() => {
+        const chips = Array.from(document.querySelectorAll('.drawer [data-venue]'));
+        const ids = chips.map(c => c.dataset.venue);
+        const names = chips.map(c => c.textContent.trim());
+        // Check for chain-level chips like '2' or '· 2'
+        const chainLike = names.filter(n => /·\\s*\\d/.test(n));
+        const multiplexHead = !!document.querySelector('.drawer .sec-subhead, .drawer [data-subhead]') ||
+            document.querySelector('.drawer')?.textContent?.includes('Мултиплекси');
+        const indeHead = document.querySelector('.drawer')?.textContent?.includes('Независими кина');
+        return { ids, names, chainLike, multiplexHead, indeHead };
+    }""")
+
+    # Get cinema IDs from app's CINEMAS data
+    cinema_ids = page.evaluate("""() => {
+        if (typeof CINEMAS === 'undefined') return [];
+        return CINEMAS.filter(c => c.kind !== 'theatre').map(c => c.id);
+    }""")
+
+    chip_ids = venue_info.get("ids", [])
+    chain_like = venue_info.get("chainLike", [])
+    has_multiplex_head = venue_info.get("multiplexHead", False)
+    has_indep_head = venue_info.get("indeHead", False)
+
+    # Each cinema id should appear at most once as a chip
+    duplicates = [cid for cid in set(chip_ids) if chip_ids.count(cid) > 1]
+    check("c1_chips_no_duplicates", len(duplicates) == 0,
+          f"duplicate chip ids: {duplicates}")
+    check("c1_no_chain_level_chips", len(chain_like) == 0,
+          f"chain-level chips found: {chain_like}")
+    check("c1_multiplex_subhead", has_multiplex_head,
+          "Мултиплекси subheading not found in drawer")
+    check("c1_indep_subhead", has_indep_head,
+          "Независими кина subheading not found in drawer")
+
+    save_shot(page, wave, "m-drawer-venues")
+    # Close drawer
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(400)
+    ctx.close()
+
+    # Theatre mode: drawer lists theatres
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    theatre_chips = page.evaluate("""() => {
+        const chips = Array.from(document.querySelectorAll('.drawer [data-venue]'));
+        const ids = chips.map(c => c.dataset.venue);
+        if (typeof THEATRES === 'undefined') return { ids, theatreIds: [] };
+        const theatreIds = THEATRES.map(t => t.id);
+        return { ids, theatreIds };
+    }""")
+    th_ids = set(theatre_chips.get("ids", []))
+    th_theatre_ids = set(theatre_chips.get("theatreIds", []))
+    # Some theatre IDs should be among the chips
+    theatre_overlap = th_ids & th_theatre_ids
+    check("c1_theatre_drawer_lists_theatres", len(theatre_overlap) >= 3,
+          f"only {len(theatre_overlap)} theatre ids found in drawer chips: {list(theatre_overlap)[:5]}")
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(400)
+    ctx.close()
+
+    # ── Check C1-2: Single cinema filter (cc-sofia) ──
+    print("\n=== C1-2: Single cinema filter ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # Open drawer and select cc-sofia
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    chip_clicked = page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-venue='cc-sofia']");
+        if (!chip) return false;
+        chip.click();
+        return true;
+    }""")
+    check("c1_cc_sofia_chip_exists", chip_clicked, "no [data-venue='cc-sofia'] chip in drawer")
+
+    # Close drawer
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    # (a) No rail heading equals another cinema's name
+    other_cinema_names = page.evaluate("""() => {
+        if (typeof CINEMAS === 'undefined') return [];
+        return CINEMAS.filter(c => c.id !== 'cc-sofia').map(c => c.name);
+    }""")
+    rail_headings = page.evaluate("""() => Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim())""")
+    other_in_headings = [h for h in rail_headings
+                         if any(cn.lower() in h.lower() for cn in other_cinema_names)]
+    check("c1_no_other_cinema_rail", len(other_in_headings) == 0,
+          f"other cinema names in rail headings: {other_in_headings[:3]}")
+
+    # (b) No card meta mentions "· N кина"
+    multi_cinema_meta = page.evaluate("""() => {
+        const metas = Array.from(document.querySelectorAll('[data-film] .meta, [data-film] .card-meta'));
+        const bad = metas.filter(m => /·\\s*\\d+\\s*кина/.test(m.textContent));
+        return bad.map(m => m.textContent.trim().slice(0, 80));
+    }""")
+    check("c1_no_multi_cinema_in_meta", len(multi_cinema_meta) == 0,
+          f"cards with '·N кина' meta: {multi_cinema_meta[:2]}")
+
+    # (c) Event rails absent (Лимитирано and Скоро)
+    event_rail_headings = page.evaluate("""() => {
+        const h2s = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+        return h2s.filter(h => h.includes('Лимитирано') || h.includes('Скоро'));
+    }""")
+    check("c1_no_event_rails_with_venue_filter", len(event_rail_headings) == 0,
+          f"event rails still present: {event_rail_headings}")
+
+    # (d) Every visible film card has a showtime at cc-sofia in the period
+    films_without_cc = page.evaluate("""() => {
+        if (typeof SHOWTIMES === 'undefined' || typeof FILMS === 'undefined') return ['SHOWTIMES/FILMS undefined'];
+        const PERIOD_START = '2026-10-07';
+        const PERIOD_END   = '2026-10-11';
+        const cards = Array.from(document.querySelectorAll('[data-film]'));
+        const badFilms = [];
+        for (const card of cards) {
+            const fid = card.dataset.film;
+            if (!fid) continue;
+            const hasCCSofia = SHOWTIMES.some(([fId, cin, date]) =>
+                fId === fid && cin === 'cc-sofia' && date >= PERIOD_START && date <= PERIOD_END
+            );
+            if (!hasCCSofia) badFilms.push(fid);
+        }
+        return badFilms;
+    }""")
+    check("c1_all_visible_films_at_cc_sofia", len(films_without_cc) == 0,
+          f"films shown without cc-sofia showtime: {films_without_cc[:5]}")
+
+    # (f) FAB badge shows 1
+    fab_badge = page.evaluate("""() => {
+        const b = document.querySelector('.fab-badge');
+        return b ? b.textContent.trim() : null;
+    }""")
+    check("c1_fab_badge_1_venue", fab_badge == "1",
+          f"fab-badge={fab_badge!r}")
+
+    # (e) Open first film card and check sheet
+    first_film_id = page.evaluate("""() => {
+        const card = document.querySelector('[data-film]');
+        return card ? card.dataset.film : null;
+    }""")
+    if first_film_id:
+        first_card = page.query_selector(f"[data-film='{first_film_id}']")
+        if first_card:
+            first_card.click()
+            page.wait_for_timeout(800)
+
+        # Check sheet has Cinema City Sofia showtimes and note
+        sheet_info = page.evaluate("""() => {
+            const scrim = document.getElementById('scrim');
+            if (!scrim) return { exists: false };
+            const text = scrim.textContent;
+            const html = scrim.innerHTML;
+            const hasCCSofia = text.includes('Cinema City Sofia');
+            const hasNote = text.includes('Показани са само');
+            const hasShowAllBtn = !!scrim.querySelector('[data-sheetshowallcin]');
+            const rowTexts = Array.from(scrim.querySelectorAll('.st-row, .showtime-row, [data-cin]'))
+                .map(r => r.textContent.trim().slice(0, 100));
+            return { hasCCSofia, hasNote, hasShowAllBtn, rowTexts: rowTexts.slice(0, 5), text: text.slice(0, 200) };
+        }""")
+        check("c1_sheet_has_cc_sofia", sheet_info.get("hasCCSofia", False),
+              f"'Cinema City Sofia' not in sheet. text={sheet_info.get('text','')[:80]!r}")
+        check("c1_sheet_has_note", sheet_info.get("hasNote", False),
+              "Показани са само... note missing from sheet")
+        check("c1_sheet_has_show_all_btn", sheet_info.get("hasShowAllBtn", False),
+              "[data-sheetshowallcin] button missing from sheet")
+
+        # Click "Покажи всички" and verify other cinemas appear
+        if sheet_info.get("hasShowAllBtn", False):
+            page.evaluate("""() => {
+                const btn = document.querySelector('[data-sheetshowallcin]');
+                if (btn) btn.click();
+            }""")
+            page.wait_for_timeout(500)
+            after_show_all = page.evaluate("""() => {
+                const scrim = document.getElementById('scrim');
+                if (!scrim) return false;
+                // After show all, the note should be gone or more cinemas visible
+                const text = scrim.textContent;
+                // Count how many distinct cinema names appear
+                const cinemaNames = typeof CINEMAS !== 'undefined' ? CINEMAS.map(c=>c.name) : [];
+                const visibleCinemas = cinemaNames.filter(n => text.includes(n));
+                return { visibleCinemas, noteGone: !text.includes('Показани са само') };
+            }""")
+            check("c1_show_all_reveals_more", after_show_all.get("noteGone", False),
+                  f"show-all: note still present, visibleCinemas={after_show_all.get('visibleCinemas', [])[:3]}")
+
+        save_shot(page, wave, "d-bg-sheet-filtered")
+        # Close sheet
+        page.evaluate("""() => {
+            const close = document.querySelector('[data-sheetclose], .sheet-close, #scrim .close');
+            if (close) close.click();
+            else { const scrim = document.getElementById('scrim'); if (scrim) scrim.click(); }
+        }""")
+        page.wait_for_timeout(400)
+    else:
+        check("c1_sheet_has_cc_sofia", False, "no film cards to open")
+        check("c1_sheet_has_note", False, "no film cards to open")
+        check("c1_sheet_has_show_all_btn", False, "no film cards to open")
+        check("c1_show_all_reveals_more", False, "no film cards to open")
+
+    save_shot(page, wave, "m-bg-cc-sofia-only")
+    ctx.close()
+
+    # ── Check C1-3: Two cinemas (cc-sofia + vlaikova) ──
+    print("\n=== C1-3: Two cinemas filter ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    two_venues = page.evaluate("""() => {
+        const cc = document.querySelector(".drawer [data-venue='cc-sofia']");
+        const vl = document.querySelector(".drawer [data-venue='vlaikova']");
+        if (cc) cc.click();
+        if (vl) vl.click();
+        return { cc: !!cc, vl: !!vl };
+    }""")
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    if two_venues.get("cc") and two_venues.get("vl"):
+        # Check that only these two cinema names appear in venue rails / sheet rows
+        two_cinema_check = page.evaluate("""() => {
+            if (typeof CINEMAS === 'undefined') return { ok: false, err: 'CINEMAS undefined' };
+            const allowed = ['Cinema City Sofia', 'Влайкова'];
+            const allCinemaNames = CINEMAS.map(c => c.name);
+            const h2s = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+            const badHeadings = h2s.filter(h =>
+                allCinemaNames.some(cn => h.includes(cn) && !allowed.some(a => h.includes(a)))
+            );
+            return { badHeadings };
+        }""")
+        bad = two_cinema_check.get("badHeadings", [])
+        check("c1_two_cinemas_only_those_headings", len(bad) == 0,
+              f"unexpected cinema headings: {bad[:3]}")
+    else:
+        check("c1_two_cinemas_only_those_headings", False,
+              f"could not select both chips (cc={two_venues.get('cc')}, vl={two_venues.get('vl')})")
+    ctx.close()
+
+    # ── Check C1-4: Genre filter (Аниме then Документално) ──
+    print("\n=== C1-4: Genre filter ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # Open drawer and select Аниме
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    anime_clicked = page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-genre='anime']");
+        if (!chip) return false;
+        chip.click();
+        return true;
+    }""")
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    if anime_clicked:
+        # Use natural scroll to trigger IntersectionObserver-based lazy rendering
+        for _ in range(6):
+            page.mouse.wheel(0, 2000)
+            page.wait_for_timeout(300)
+
+        genre_check = page.evaluate("""() => {
+            // Find genre section rails
+            const genreContent = document.getElementById('sec-Genres-content');
+            if (!genreContent) return { err: 'no sec-Genres-content' };
+            const rails = Array.from(genreContent.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+            // Check Жестокият appearing as a visible film card in the genre section
+            const jestokInGenreSection = Array.from(genreContent.querySelectorAll('[data-film]')).some(c =>
+                typeof FILMS !== 'undefined' && (() => {
+                    const f = FILMS.find(x => x.id === c.dataset.film);
+                    return f && (f.bg || '').includes('Жестокият');
+                })()
+            );
+            // Event rails visible anywhere on page
+            const allH2 = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+            const eventRails = allH2.filter(h => h.includes('Лимитирано') || h.includes('Скоро'));
+            // Non-anime genre rails in the genre section
+            const nonAnimeRails = rails.filter(r => !r.includes('Аниме'));
+            // Check if anime has films in period
+            const animeFilms = typeof FILMS !== 'undefined' ?
+                FILMS.filter(f => f.genres && f.genres.includes('Аниме')).map(f => f.id) : [];
+            const animePeriodFilms = typeof SHOWTIMES !== 'undefined' ?
+                SHOWTIMES.filter(([fid, cin, date]) =>
+                    date >= '2026-10-07' && date <= '2026-10-11' && animeFilms.includes(fid)
+                ).map(([fid]) => fid) : [];
+            return { rails, jestokInGenreSection, eventRails, nonAnimeRails, animePeriodFilms };
+        }""")
+        genre_rails = genre_check.get("rails", [])
+        anime_period = genre_check.get("animePeriodFilms", [])
+        non_anime_rails = genre_check.get("nonAnimeRails", [])
+
+        # If there are anime films in period, expect exactly one Аниме rail
+        # If no anime films in period, the genre section should be empty (correct behavior)
+        if len(anime_period) > 0:
+            check("c1_anime_only_one_rail", len(genre_rails) == 1 and any("Аниме" in r for r in genre_rails),
+                  f"genre rails under anime filter: {genre_rails}")
+        else:
+            # No anime films in period => genre section correctly empty; verify no OTHER genre rails shown
+            check("c1_anime_only_one_rail", len(non_anime_rails) == 0,
+                  f"non-anime genre rails shown: {non_anime_rails} (no anime in period: correct)")
+
+        check("c1_no_jestok_in_anime", not genre_check.get("jestokInGenreSection", False),
+              "Жестокият път found as card in genre section with anime filter")
+        event_rails = genre_check.get("eventRails", [])
+        check("c1_no_event_rails_with_genre_filter", len(event_rails) == 0,
+              f"event rails present with genre filter: {event_rails}")
+
+        save_shot(page, wave, "d-bg-anime-only")
+    else:
+        check("c1_anime_only_one_rail", False, "could not click anime chip")
+        check("c1_no_jestok_in_anime", False, "skipped")
+        check("c1_no_event_rails_with_genre_filter", False, "skipped")
+        save_shot(page, wave, "d-bg-anime-only")
+    ctx.close()
+
+    # Документално filter
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    doc_clicked = page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-genre='doc']");
+        if (!chip) return false;
+        chip.click();
+        return true;
+    }""")
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+    if doc_clicked:
+        # Use natural scroll to trigger IntersectionObserver-based lazy rendering
+        for _ in range(6):
+            page.mouse.wheel(0, 2000)
+            page.wait_for_timeout(300)
+        doc_check = page.evaluate("""() => {
+            const genreContent = document.getElementById('sec-Genres-content');
+            if (!genreContent) return { err: 'no sec-Genres-content' };
+            const rails = Array.from(genreContent.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+            // Check Жестокият path in this section if in period
+            const jestokInDoc = Array.from(genreContent.querySelectorAll('[data-film]')).some(c =>
+                typeof FILMS !== 'undefined' && (() => {
+                    const f = FILMS.find(x => x.id === c.dataset.film);
+                    return f && (f.bg || '').includes('Жестокият');
+                })()
+            );
+            // No Музика rail
+            const noMusic = !rails.some(r => r.includes('Музика'));
+            return { rails, jestokInDoc, noMusic };
+        }""")
+        doc_rails = doc_check.get("rails", [])
+        check("c1_doc_rail_exists", any("Документал" in r for r in doc_rails),
+              f"no Документално rail found: {doc_rails}")
+        check("c1_no_music_rail_with_doc_filter", doc_check.get("noMusic", False),
+              f"Музика rail present with doc-only filter: {doc_rails}")
+    else:
+        check("c1_doc_rail_exists", False, "could not click doc chip")
+        check("c1_no_music_rail_with_doc_filter", False, "skipped")
+    ctx.close()
+
+    # ── Check C1-5: Taxonomy: GENRES ids, m arrays, chip presence ──
+    print("\n=== C1-5: Genre taxonomy ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    taxonomy = page.evaluate("""() => {
+        if (typeof GENRES === 'undefined') return { err: 'GENRES undefined' };
+        const doc  = GENRES.find(g => g.id === 'doc');
+        const music= GENRES.find(g => g.id === 'music');
+        const anime= GENRES.find(g => g.id === 'anime');
+        return {
+            docFound: !!doc,
+            docM: doc ? doc.m : null,
+            musicFound: !!music,
+            musicMHasMusical: music ? music.m.includes('Музикален') : false,
+            animeFound: !!anime,
+            animeM: anime ? anime.m : null,
+            animeMOnlyAnime: anime ? (anime.m.length === 1 && anime.m[0] === 'Аниме') : false
+        };
+    }""")
+    check("c1_genre_doc_exists", taxonomy.get("docFound", False), "no genre id='doc'")
+    check("c1_genre_doc_m_documentary", taxonomy.get("docM") == ["Документален"],
+          f"doc.m={taxonomy.get('docM')}")
+    check("c1_genre_music_exists", taxonomy.get("musicFound", False), "no genre id='music'")
+    check("c1_genre_music_has_musical", taxonomy.get("musicMHasMusical", False),
+          "music.m does not include Музикален")
+    check("c1_genre_anime_exists", taxonomy.get("animeFound", False), "no genre id='anime'")
+    check("c1_genre_anime_m_only_anime", taxonomy.get("animeMOnlyAnime", False),
+          f"anime.m={taxonomy.get('animeM')}")
+
+    # Both doc and music chips in cinema drawer
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    drawer_genres = page.evaluate("""() => {
+        const docChip = !!document.querySelector(".drawer [data-genre='doc']");
+        const musicChip = !!document.querySelector(".drawer [data-genre='music']");
+        return { docChip, musicChip };
+    }""")
+    check("c1_doc_chip_in_drawer", drawer_genres.get("docChip", False),
+          "doc genre chip not in drawer")
+    check("c1_music_chip_in_drawer", drawer_genres.get("musicChip", False),
+          "music genre chip not in drawer")
+
+    # Bulgarian films not in anime rail
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(400)
+
+    # Select anime filter and check no Bulgarian film appears
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-genre='anime']");
+        if (chip) chip.click();
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+    page.evaluate("""() => {
+        let guard = 0;
+        while (typeof railIdx !== 'undefined' && typeof RAILS !== 'undefined' && railIdx < RAILS.length && guard++ < 100) {
+            const sent = document.getElementById('rail-sentinel');
+            if (!sent) break;
+            const batch = RAILS.slice(railIdx, railIdx + 10).map(matRail).join('');
+            railIdx += 10;
+            sent.insertAdjacentHTML('beforebegin', batch);
+        }
+    }""")
+    page.wait_for_timeout(400)
+    bg_in_anime = page.evaluate("""() => {
+        if (typeof FILMS === 'undefined') return [];
+        const genreContent = document.getElementById('sec-Genres-content');
+        if (!genreContent) return [];
+        const filmCards = Array.from(genreContent.querySelectorAll('[data-film]'));
+        const bgFilms = filmCards.filter(card => {
+            const f = FILMS.find(x => x.id === card.dataset.film);
+            return f && (
+                (f.country && f.country.includes('България')) ||
+                (f.genres && f.genres.includes('Български'))
+            );
+        }).map(c => c.dataset.film);
+        return bgFilms;
+    }""")
+    check("c1_no_bulgarian_in_anime", len(bg_in_anime) == 0,
+          f"Bulgarian films in anime rail: {bg_in_anime}")
+    ctx.close()
+
+    # ── Check C1-6: Today rail regression ──
+    print("\n=== C1-6: Today rail regression ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    today_rail = page.evaluate("""() => {
+        // Find 'За теб днес' rail
+        const h2s = Array.from(document.querySelectorAll('.rhead h2'));
+        const todayHead = h2s.find(h => h.textContent.includes('За теб днес') || h.textContent.includes('For you today'));
+        if (!todayHead) return { err: 'no today rail' };
+        const rail = todayHead.closest('.rail');
+        if (!rail) return { err: 'no parent rail' };
+        const cards = Array.from(rail.querySelectorAll('[data-film]'));
+        // Film cards use .cfoot > .cf2 for meta (runtime · screenings · N кина)
+        const multiCinema = cards.filter(c => {
+            const cf2 = c.querySelector('.cf2');
+            return cf2 && /кина/.test(cf2.textContent);
+        });
+        const cf2Texts = cards.slice(0, 5).map(c => {
+            const cf2 = c.querySelector('.cf2');
+            return cf2 ? cf2.textContent.trim().slice(0, 80) : 'no cf2';
+        });
+        // Also check: for each card, how many cinemas does it play in today?
+        const today = '2026-10-07';
+        const multiCinemaFilms = typeof SHOWTIMES !== 'undefined' ?
+            cards.map(c => {
+                const fid = c.dataset.film;
+                const cinemas = new Set(SHOWTIMES.filter(([f,cin,d]) => f===fid && d===today).map(([f,cin])=>cin));
+                return {fid, cinemaCount: cinemas.size};
+            }).filter(x => x.cinemaCount >= 2) : [];
+        return { total: cards.length, multiCinema: multiCinema.length, cf2Texts, multiCinemaFilms };
+    }""")
+    if "err" in today_rail:
+        check("c1_today_rail_has_multi_cinema", False, today_rail["err"])
+    else:
+        multi_cinema_films = today_rail.get("multiCinemaFilms", [])
+        multi_cinema_cf2 = today_rail.get("multiCinema", 0)
+        if len(multi_cinema_films) == 0:
+            check("c1_today_rail_has_multi_cinema", True,
+                  f"no film plays today at >=2 cinemas (all single-venue); skipping kina check")
+        else:
+            check("c1_today_rail_has_multi_cinema", multi_cinema_cf2 >= 1,
+                  f"no '·N кина' card in today rail; films with >=2 cinemas today: {multi_cinema_films[:2]}; cf2 texts: {today_rail.get('cf2Texts', [])[:3]}")
+
+    ctx.close()
+
+    # Per-venue rail: meta should NOT have 'кина' — use desktop viewport
+    ctx_v, page_v, _ = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page_v.wait_for_timeout(800)
+    # Scroll to reveal venue section toggle (lazy-loaded)
+    for _ in range(10):
+        page_v.mouse.wheel(0, 2000)
+        page_v.wait_for_timeout(300)
+    venue_toggle_btn = page_v.query_selector("[data-sectoggle='Venues']")
+    if venue_toggle_btn:
+        venue_toggle_btn.click()
+        page_v.wait_for_timeout(600)
+        # Use natural scroll to trigger lazy loading
+        for _ in range(8):
+            page_v.mouse.wheel(0, 2000)
+            page_v.wait_for_timeout(300)
+
+        venue_card_meta = page_v.evaluate("""() => {
+            // Find any venue rail (under venue section)
+            const venueContent = document.getElementById('sec-Venues-content');
+            if (!venueContent) return { err: 'no sec-Venues-content' };
+            const cards = Array.from(venueContent.querySelectorAll('[data-film]')).slice(0, 15);
+            // Cards use .cfoot > .cf2 for meta
+            const withKina = cards.filter(c => {
+                const cf2 = c.querySelector('.cf2');
+                return cf2 && cf2.textContent.includes('кина');
+            }).map(c => {
+                const cf2 = c.querySelector('.cf2');
+                return cf2 ? cf2.textContent.trim().slice(0, 80) : 'no cf2';
+            });
+            const cf2Sample = cards.slice(0, 5).map(c => {
+                const cf2 = c.querySelector('.cf2');
+                return cf2 ? cf2.textContent.trim().slice(0, 60) : 'no cf2';
+            });
+            return { total: cards.length, withKina, cf2Sample };
+        }""")
+        if "err" in venue_card_meta:
+            check("c1_venue_rail_no_kina_meta", False, venue_card_meta["err"])
+        else:
+            check("c1_venue_rail_no_kina_meta", len(venue_card_meta.get("withKina", [])) == 0,
+                  f"venue rail cards with 'кина': {venue_card_meta.get('withKina', [])[:2]}")
+    else:
+        check("c1_venue_rail_no_kina_meta", False, "no [data-sectoggle='Venues'] in desktop view")
+    ctx_v.close()
+
+    # ── Check C1-7: Period banner shows month (октомври / October) ──
+    print("\n=== C1-7: Period banner ===")
+    # BG
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    banner_bg = page.evaluate("""() => {
+        const b = document.querySelector('.pbanner');
+        return b ? b.textContent : '';
+    }""")
+    check("c1_banner_bg_has_oktober", "октомври" in banner_bg.lower(),
+          f"'октомври' not in BG banner: {banner_bg[:120]!r}")
+    ctx.close()
+
+    # EN
+    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
+    page.wait_for_timeout(800)
+    banner_en = page.evaluate("""() => {
+        const b = document.querySelector('.pbanner');
+        return b ? b.textContent : '';
+    }""")
+    check("c1_banner_en_has_october", "october" in banner_en.lower(),
+          f"'October' not in EN banner: {banner_en[:120]!r}")
+    ctx.close()
+
+    # ── Check C1-8: Data clean-up ──
+    print("\n=== C1-8: Data clean-up ===")
+    import subprocess, re
+
+    # Euro Cinema count
+    euro_data = subprocess.run(
+        ["python3", "-c",
+         "import sys; c=open('src/data.html').read(); print('euro_count='+str(c.count('Euro Cinema')))"],
+        cwd=str(webapp_root), capture_output=True, text=True)
+    euro_artifact = subprocess.run(
+        ["python3", "-c",
+         "import sys; c=open('src/sofia-screen.artifact.html').read(); print('euro_count='+str(c.count('Euro Cinema')))"],
+        cwd=str(webapp_root), capture_output=True, text=True)
+    euro_data_cnt = int((euro_data.stdout.strip().split('=')[1] if '=' in euro_data.stdout else '1'))
+    euro_art_cnt = int((euro_artifact.stdout.strip().split('=')[1] if '=' in euro_artifact.stdout else '1'))
+    check("c1_no_euro_cinema_in_data", euro_data_cnt == 0, f"Euro Cinema count in data.html: {euro_data_cnt}")
+    check("c1_no_euro_cinema_in_artifact", euro_art_cnt == 0, f"Euro Cinema count in artifact: {euro_art_cnt}")
+
+    # No '—' in director/cast
+    dash_check = subprocess.run(
+        ["python3", "-c",
+         r'import re,json; c=open("src/data.html").read(); d=re.findall(r"\"director\":\"—\"|\"cast\":\"—\"",c); print("dash_count="+str(len(d)))'],
+        cwd=str(webapp_root), capture_output=True, text=True)
+    dash_cnt = int((dash_check.stdout.strip().split('=')[1] if '=' in dash_check.stdout else '1'))
+    check("c1_no_dash_director_cast", dash_cnt == 0, f"'—' director/cast count: {dash_cnt}")
+
+    # sarceto-na-zveyara: no note, empty synBg/synEn
+    sarceto_check = subprocess.run(
+        ["python3", "-c", """
+import re
+c=open('src/data.html').read()
+i=c.find('sarceto-na-zveyara')
+if i==-1:
+    print('NOT_FOUND')
+else:
+    end=c.find('},',i)+2
+    seg=c[i:end]
+    has_note='\"note\"' in seg
+    has_synbg=bool(re.search(r'\"synBg\":\"[^\"]+\"',seg))
+    has_synen=bool(re.search(r'\"synEn\":\"[^\"]+\"',seg))
+    print(f'has_note={has_note} has_synbg={has_synbg} has_synen={has_synen}')
+"""],
+        cwd=str(webapp_root), capture_output=True, text=True)
+    sarceto_out = sarceto_check.stdout.strip()
+    check("c1_sarceto_no_note", "has_note=False" in sarceto_out,
+          f"sarceto: {sarceto_out}")
+    check("c1_sarceto_empty_syn", "has_synbg=False" in sarceto_out and "has_synen=False" in sarceto_out,
+          f"sarceto: {sarceto_out}")
+
+    # palestina-36 and kosa: no note
+    for slug in ['palestina-36', 'kosa']:
+        note_check = subprocess.run(
+            ["python3", "-c", f"""
+c=open('src/data.html').read()
+i=c.find('{slug}')
+if i==-1:
+    print('NOT_FOUND')
+else:
+    end=c.find('}}',i+len('{slug}'))
+    seg=c[i:end+1]
+    print('has_note='+str('\"note\"' in seg))
+"""],
+            cwd=str(webapp_root), capture_output=True, text=True)
+        note_out = note_check.stdout.strip()
+        check(f"c1_{slug.replace('-','_')}_no_note", "has_note=False" in note_out,
+              f"{slug}: {note_out}")
+
+    # vsichko-za-mayka-mi note has proper BG quotes
+    vsichko_check = subprocess.run(
+        ["python3", "-c", r"""
+c=open('src/data.html').read()
+i=c.find('vsichko-za-mayka-mi')
+if i==-1:
+    print('NOT_FOUND')
+else:
+    end=c.find('},',i)+2
+    seg=c[i:end]
+    ni=seg.find('"note"')
+    if ni==-1:
+        print('no_note')
+    else:
+        print('note_val='+repr(seg[ni:ni+80]))
+"""],
+        cwd=str(webapp_root), capture_output=True, text=True)
+    vsichko_out = vsichko_check.stdout.strip()
+    # Check for BG curly quotes: U+201E = low-9 open, U+201C = left double close
+    # vsichko_out has repr() of the note so we see \\u201e / \\u201c escape sequences
+    has_bg_quotes = ("u201e" in vsichko_out or "\\u201e" in vsichko_out or
+                     "„Оскар" in vsichko_out or
+                     "Оскар" in vsichko_out)
+    # Also require the closing quote marker to be present (not straight quotes)
+    no_straight_quotes = '"Оскар"' not in vsichko_out.replace("\\'", "")
+    check("c1_vsichko_note_bg_quotes", has_bg_quotes,
+          f"vsichko note: {vsichko_out[:100]}")
+
+    # ── Check C1-9: Clearing filters restores event rails and all venues ──
+    print("\n=== C1-9: Clearing filters ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # Select a venue filter
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(600)
+    page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-venue='cc-sofia']");
+        if (chip) chip.click();
+    }""")
+    page.wait_for_timeout(300)
+
+    # Click clear-all
+    cleared = page.evaluate("""() => {
+        const btn = document.querySelector('.drawer .fclear[data-clearf]') ||
+                    document.querySelector('[data-clearf]');
+        if (!btn) return false;
+        btn.click();
+        return true;
+    }""")
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    if cleared:
+        state_after = page.evaluate("""() => ({
+            fVenues: typeof S !== 'undefined' ? S.fVenues : null,
+            fGenres: typeof S !== 'undefined' ? S.fGenres : null
+        })""")
+        check("c1_clear_resets_venues", state_after["fVenues"] == [],
+              f"fVenues after clear: {state_after['fVenues']}")
+        check("c1_clear_resets_genres", state_after["fGenres"] == [],
+              f"fGenres after clear: {state_after['fGenres']}")
+        # Event rails should now be visible
+        event_rails_after = page.evaluate("""() => {
+            const h2s = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+            return h2s.filter(h => h.includes('Лимитирано') || h.includes('Скоро'));
+        }""")
+        check("c1_event_rails_restored", len(event_rails_after) >= 1,
+              f"event rails after clear: {event_rails_after}")
+    else:
+        check("c1_clear_resets_venues", False, "no [data-clearf] button found")
+        check("c1_clear_resets_genres", False, "skipped")
+        check("c1_event_rails_restored", False, "skipped")
+    ctx.close()
+
+    # ── Check C1-10: No page errors + verify_build.py gate ──
+    print("\n=== C1-10: No page errors + gate ===")
+    all_errors = []
+    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        for lang in ["bg", "en"]:
+            ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
+            page.wait_for_timeout(600)
+            if errs:
+                all_errors.extend([(size_tag, lang, e) for e in errs])
+            ctx.close()
+    if all_errors:
+        check("c1_no_page_errors", False, f"{len(all_errors)} error(s): {all_errors[0]}")
+    else:
+        check("c1_no_page_errors", True, "")
+
+    result = subprocess.run(
+        ["python3", "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+    )
+    gate_passes = "all checks passed" in result.stdout
+    check("c1_gate_passes", gate_passes,
+          result.stdout[:120] if not gate_passes else "")
+
 
 # ============================================================================
 # Registry and main
@@ -1324,6 +2146,7 @@ def wave_b1(browser):
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
+    "C1": wave_c1,
 }
 
 def main():

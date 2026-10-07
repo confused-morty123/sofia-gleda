@@ -113,8 +113,6 @@ a{color:inherit}
   width:24px; height:24px; border-radius:50%; display:none; place-items:center}
 .search.has .clr{display:grid}
 .search.search-mob-open .clr{display:grid}
-.strands{display:flex; gap:6px; padding-block:12px 2px; overflow-x:auto; scrollbar-width:none}
-.strands::-webkit-scrollbar{display:none}
 .burger{display:flex; flex-direction:column; gap:3.5px; align-items:center; justify-content:center}
 .burger i{display:block; width:18px; height:2px; background:currentColor; border-radius:2px}
 .drawer-scrim{position:fixed; inset:0; z-index:100; background:rgba(5,3,7,.6); backdrop-filter:blur(3px)}
@@ -183,8 +181,6 @@ a{color:inherit}
 .fchip:hover{border-color:var(--line-2)}
 .fchip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
 .fchip.off,.fchip:disabled{opacity:.4; pointer-events:none; text-decoration:line-through; text-decoration-thickness:1px}
-.rangechip{border-style:dashed; color:var(--fg); margin-left:auto}
-.rangechip::before{content:"◔ "; color:var(--fg-3)}
 .fclear{font-size:11.5px; color:var(--fg-3); text-decoration:underline; text-underline-offset:3px; padding:5px 4px}
 
 /* ---------- hero ---------- */
@@ -555,7 +551,9 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
  fabFilters:"Филтри",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
- subStateTheatres:"Държавни и общински",subIndependent:"Независими"},
+ subStateTheatres:"Държавни и общински",subIndependent:"Независими",
+ subMultiplexes:"Мултиплекси",subIndepCinemas:"Независими кина",
+ showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички"},
 en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -592,7 +590,9 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
  fabFilters:"Filters",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
- subStateTheatres:"State & municipal",subIndependent:"Independent"}};
+ subStateTheatres:"State & municipal",subIndependent:"Independent",
+ subMultiplexes:"Multiplexes",subIndepCinemas:"Independent cinemas",
+ showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -790,7 +790,7 @@ function strandFilm(f){
   return arty?"arthouse":"commercial";}
 /* strand = which KIND of cinema a film actually plays at, inside the current
    date window. "arthouse" -> independent cinemas (Влайкова, Одеон, Дом на киното,
-   Euro Cinema, G8, Люмиер ...); "commercial" -> the multiplex chains. A film that
+   G8, Люмиер ...); "commercial" -> the multiplex chains. A film that
    plays at both kinds appears under both. */
 function filmInStrand(f,strand){
   const arthouse=strand==="arthouse";
@@ -910,7 +910,7 @@ const GENRES=[
  {id:"scifi",  t:"cinema", bg:"Фантастика и фентъзи",  en:"Sci-fi & fantasy",   m:["Фантастика","Фентъзи","Приключенски"]},
  {id:"horror", t:"cinema", bg:"Хорър",                 en:"Horror",             m:["Хорър","Мистерия"]},
  {id:"anim",   t:"cinema", bg:"Анимация",              en:"Animation",          m:["Анимация"]},
- {id:"anime",  t:"cinema", bg:"Аниме",                 en:"Anime",              m:["Аниме","Спорт"]},
+ {id:"anime",  t:"cinema", bg:"Аниме",                 en:"Anime",              m:["Аниме"]},
  {id:"puppet", t:"theatre",bg:"Куклен и детски",       en:"Puppetry & kids",    m:["Куклен","Детски","Приказка","Работилница","Улично"]},
  {id:"exper",  t:"theatre",bg:"Експериментално",       en:"Experimental",       m:["Експериментален","Пърформанс"]},
  {id:"dance",  t:"theatre",bg:"Танц и движение",       en:"Dance & movement",   m:["Съвременен танц","Танц","Улична култура"]},
@@ -919,7 +919,8 @@ const GENRES=[
  {id:"drama",  t:"both",   bg:"Драма",                 en:"Drama",              m:["Драма","Съвременна","Биографичен","Исторически"]},
  {id:"romance",t:"both",   bg:"Романтика",             en:"Romance",            m:["Романтика"]},
  {id:"classic",t:"both",   bg:"Класика",               en:"Classics",           m:["Класика","Цикъл"]},
- {id:"music",  t:"both",   bg:"Музика и документално", en:"Music & documentary",m:["Документален","Музикален","Концерт","Концертен"]},
+ {id:"doc",    t:"cinema", bg:"Документално",           en:"Documentary",        m:["Документален"]},
+ {id:"music",  t:"both",   bg:"Музика и мюзикъли",     en:"Music & musicals",   m:["Музикален","Мюзикъл","Концерт","Концертен"]},
  {id:"bgwork", t:"both",   bg:"Българско",             en:"Bulgarian work",     m:["Български","Българска драматургия"]},
  {id:"fest",   t:"both",   bg:"Фестивали и гостувания",en:"Festivals & guests", m:["Фестивал","Гостуване","Международен","Юбилейно"]}
 ];
@@ -985,18 +986,20 @@ function scoreShow(sh,day){
 /* ===================== filters ===================== */
 const chainOf=vid=>(cinById[vid]||{}).chain;
 const toggleArr=(arr,v)=>arr.includes(v)?arr.filter(x=>x!==v):arr.concat([v]);
+/* venueOk: no venue filter OR the cinema/theatre id is selected */
+const venueOk=vid=>!S.fVenues.length||S.fVenues.includes(vid);
 function genreHit(genres){/* OR across selected genres */ return S.fGenres.some(gid=>{const g=GENRES.find(x=>x.id===gid);return g&&g.m.some(m=>genres.includes(m));});}
 function visibleFilms(){const day=dayOrAll();
   return FILMS.filter(f=>{
     let rows=filmTimes(f.id,day); if(!rows.length)return false;
-    if(S.fVenues.length&&!rows.some(r=>S.fVenues.includes(chainOf(r[1]))))return false;
+    if(S.fVenues.length&&!rows.some(r=>venueOk(r[1])))return false;
     if(S.fGenres.length&&!genreHit(f.genres))return false;
     if(S.fStrands.length&&!S.fStrands.some(s=>filmInStrand(f,s)))return false;
     return true;});}
 function visibleShows(){const day=dayOrAll();
   return SHOWS.filter(s=>{
     if(!showPerfs(s.id,day).length)return false;
-    if(S.fVenues.length&&!S.fVenues.includes(s.theatre))return false;
+    if(S.fVenues.length&&!venueOk(s.theatre))return false;
     if(S.fGenres.length&&!genreHit(s.genres))return false;
     return true;});}
 /* task 6 — which films/shows a given venue is playing inside the current
@@ -1042,24 +1045,33 @@ function periodDateOnly(){
   if(S.day==="month")return`${fmtDay(TODAY,true)} – ${fmtDay(lastOfMonth(TODAY),true)}`;
   if(S.day==="all")return fmtDay(LASTDAY,true);
   return "";}
+/* Format a date range including month name; same-month → month at end only.
+   fmtDay(iso,false) gives e.g. "ср 7"; fmtDay(iso,true) gives "7 октомври".
+   Result: "ср 7 – нд 11 октомври" (same month) or "пн 26 октомври – нд 1 ноември" */
+function fmtRange(isoA,isoB){
+  const L=t(),dA=dUTC(isoA),dB=dUTC(isoB);
+  const mA=dA.getUTCMonth(),mB=dB.getUTCMonth();
+  const dowA=L.dows[dA.getUTCDay()],dowB=L.dows[dB.getUTCDay()];
+  const mnA=L.months[mA],mnB=L.months[mB];
+  if(mA===mB)return`${dowA} ${dA.getUTCDate()} – ${dowB} ${dB.getUTCDate()} ${mnB}`;
+  return`${dowA} ${dA.getUTCDate()} ${mnA} – ${dowB} ${dB.getUTCDate()} ${mnB}`;}
 /* Period banner text: headline + date subtitle */
 function periodBannerText(){
   const L=t();
   if(S.day==="week"){
-    const dFrom=fmtDay(TODAY,false),dTo=fmtDay(WEEK_END,false);
-    return{title:L.bannerWeek,dates:`${dFrom} – ${dTo}`};}
+    return{title:L.bannerWeek,dates:fmtRange(TODAY,WEEK_END)};}
   if(S.day===TODAY){
-    return{title:L.bannerToday,dates:fmtDay(TODAY,false)};}
+    const dT=dUTC(TODAY);return{title:L.bannerToday,dates:`${L.dows[dT.getUTCDay()]} ${dT.getUTCDate()} ${L.months[dT.getUTCMonth()]}`};}
   if(S.day==="month"){
-    return{title:L.bannerMonth,dates:`${fmtDay(TODAY,true)} – ${fmtDay(lastOfMonth(TODAY),true)}`};}
+    return{title:L.bannerMonth,dates:fmtRange(TODAY,lastOfMonth(TODAY))};}
   if(S.day==="all"){
     return{title:L.bannerAll,dates:fmtDay(LASTDAY,true)};}
   if(S.day==="range"&&S.rFrom){
-    const d=S.rTo?`${fmtDay(S.rFrom,true)} – ${fmtDay(S.rTo,true)}`:fmtDay(S.rFrom,true);
+    const d=S.rTo?fmtRange(S.rFrom,S.rTo):fmtDay(S.rFrom,true);
     return{title:L.bannerCustom,dates:d};}
   if(/^\d{4}-\d{2}-\d{2}$/.test(S.day)){
-    return{title:`${L.bannerToday.replace(L.today||"днес","")||L.bannerToday}`,dates:fmtDay(S.day,false)};}
-  return{title:L.bannerWeek,dates:`${fmtDay(TODAY,false)} – ${fmtDay(WEEK_END,false)}`};}
+    const dD=dUTC(S.day);return{title:L.bannerToday,dates:`${L.dows[dD.getUTCDay()]} ${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`};}
+  return{title:L.bannerWeek,dates:fmtRange(TODAY,WEEK_END)};}
 function periodBanner(){
   const L=t(),{title,dates}=periodBannerText();
   const calIcon=`<svg class="pbanner-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
@@ -1078,14 +1090,17 @@ function datesWith(){
 /* ===================== cards ===================== */
 const scoreCls=v=>v==null?"na":v>=7.5?"hi":"";
 function filmCard(f,all,rowsOverride){
-  const rows=rowsOverride||(all?filmTimesAll(f.id):filmTimes(f.id));
+  const rawRows=rowsOverride||(all?filmTimesAll(f.id):filmTimes(f.id));
+  const rows=rowsOverride?rawRows:(S.fVenues.length?rawRows.filter(r=>venueOk(r[1])):rawRows);
   const n=rows.reduce((a,r)=>a+r[3].length,0),v=new Set(rows.map(r=>r[1])).size;
   const lim=["oasis","2001","terminator-2","palestina-36"].includes(f.id);
   /* runtime is empty for synthesised arthouse entries (TMDB had none) — omit it
      rather than printing "undefined мин". */
+  /* In a per-venue context (rowsOverride set, or single venue selected) omit the cinema count */
+  const singleVenue=!!rowsOverride||(S.fVenues.length===1);
   const meta=[f.runtime?`${f.runtime} ${esc(t().min)}`:"",
               n?`${n} ${esc(t().screenings)}`:"",
-              n?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
+              (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g)}<div class="p-grain"></div>
       <div class="p-top"><span class="score ${scoreCls(imdbOf(f))}"><i>IMDb</i>${imdbOf(f)!=null?imdbOf(f).toFixed(1):"—"}</span>
@@ -1201,23 +1216,30 @@ function body(){
        would wrongly empty the rail on any day but today); the drawer filters
        (venue chain, genre, strand) still apply. Ranked by how many screenings
        remain today, then IMDb. Each card shows only today's remaining times. */
-    const today=FILMS.map(f=>({f,rows:filmTimesToday(f.id)})).filter(o=>o.rows.length)
+    const today=FILMS.map(f=>{
+        let rows=filmTimesToday(f.id);
+        if(S.fVenues.length)rows=rows.filter(r=>venueOk(r[1]));
+        return{f,rows};}).filter(o=>o.rows.length)
       .filter(o=>{
-        if(S.fVenues.length&&!o.rows.some(r=>S.fVenues.includes(chainOf(r[1]))))return false;
         if(S.fGenres.length&&!genreHit(o.f.genres))return false;
         if(S.fStrands.length&&!S.fStrands.some(s=>filmInStrand(o.f,s)))return false;
         return true;})
       .sort((a,b)=>{const na=a.rows.reduce((n,r)=>n+r[3].length,0),nb=b.rows.reduce((n,r)=>n+r[3].length,0);
         return nb-na||((imdbOf(b.f)||0)-(imdbOf(a.f)||0));}).slice(0,14);
     pushRail(L.railToday,fmtDay(NOW_DATE,true),today,x=>filmCard(x.f,false,x.rows));
-    pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);
+    /* Event rails hidden when any venue or genre filter is active */
+    if(!S.fVenues.length&&!S.fGenres.length){
+      pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);}
     const top=vis.filter(f=>imdbOf(f)!=null).sort((a,b)=>imdbOf(b)-imdbOf(a)).slice(0,12);
     pushRail(L.railTop,"IMDb",top,f=>filmCard(f,day));
-    pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);
-    /* Section A: По жанр — collapsible, open by default */
+    if(!S.fVenues.length&&!S.fGenres.length){
+      pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);}
+    /* Section A: По жанр — collapsible, open by default.
+       When genre filter active, show only selected genres' rails. */
     const visSet=new Set(vis.map(f=>f.id));
     const genreRails=[];
     genresFor("cinema").forEach(g=>{
+      if(S.fGenres.length&&!S.fGenres.includes(g.id))return;
       const fs=vis.filter(f=>f.genres.some(x=>g.m.includes(x)));
       if(fs.length)genreRails.push({t:S.lang==="bg"?g.bg:g.en,s:`${fs.length}`,items:fs,fn:f=>filmCard(f,day)});});
     out.push({html:()=>{
@@ -1225,16 +1247,21 @@ function body(){
       return secToggleHTML("Genres",L.secByGenre||"По жанр",genreRails.length,S.secGenres)
         +`<div id="sec-Genres-content" class="sec-content"${S.secGenres?"":" hidden"}>${inner}</div>`;
     }});
-    /* Section B: По кино — collapsible, closed by default; rails not built when closed */
+    /* Section B: По кино — collapsible, closed by default; rails not built when closed.
+       When venue filter active, show only selected cinemas' rails. */
     out.push({html:()=>{
       let inner="";
       if(S.secVenues){
-        CINEMAS.forEach(c=>{
+        const cinsToShow=S.fVenues.length?CINEMAS.filter(c=>S.fVenues.includes(c.id)):CINEMAS;
+        cinsToShow.forEach(c=>{
           if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
             if(arty&&!comm&&c.kind!=="independent")return;
             if(comm&&!arty&&c.kind==="independent")return;}
           const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-          if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>filmCard(f,day)));
+          /* pass rowsOverride scoped to this cinema so card counts are per-cinema */
+          if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
+            const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
+            return filmCard(f,day,cRows.length?cRows:undefined);}));
         });
       }
       return secToggleHTML("Venues",L.secByCinema||"По кино",null,S.secVenues)
@@ -1250,14 +1277,19 @@ function body(){
     const vis=visibleShows();
     const rk=vis.map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v).slice(0,14);
     pushRail(L.railToday,periodLabel(),rk,x=>showCard(x.s,day));
-    pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);
+    /* Event rails hidden when any venue or genre filter is active */
+    if(!S.fVenues.length&&!S.fGenres.length){
+      pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);}
     const prem=vis.filter(s=>s.badge);
     pushRail(L.railPrem,"",prem,s=>showCard(s,day));
-    pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);
+    if(!S.fVenues.length&&!S.fGenres.length){
+      pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);}
     const visSet=new Set(vis.map(s=>s.id));
-    /* Section A: По жанр — collapsible, open by default (genres before venues in theatre too) */
+    /* Section A: По жанр — collapsible, open by default.
+       When genre filter active, show only selected genres' rails. */
     const genreRails=[];
     genresFor("theatre").forEach(g=>{
+      if(S.fGenres.length&&!S.fGenres.includes(g.id))return;
       const ss=vis.filter(s=>s.genres.some(x=>g.m.includes(x)));
       if(ss.length)genreRails.push({t:S.lang==="bg"?g.bg:g.en,s:`${ss.length}`,items:ss,fn:s=>showCard(s,day)});});
     out.push({html:()=>{
@@ -1266,13 +1298,16 @@ function body(){
         +`<div id="sec-Genres-content" class="sec-content"${S.secGenres?"":" hidden"}>${inner}</div>`;
     }});
     /* Section B: По театър — closed by default; rails not built when closed.
-       Theatre sub-grouping: state/national/municipal first, then independent. */
+       Theatre sub-grouping: state/national/municipal first, then independent.
+       When venue filter active, show only selected theatres. */
     out.push({html:()=>{
       let inner="";
       if(S.secVenues){
         const STATE_KINDS=["national","state","municipal"];
-        const stateTheatres=THEATRES.filter(th=>STATE_KINDS.includes(th.kind));
-        const indieTheatres=THEATRES.filter(th=>!STATE_KINDS.includes(th.kind));
+        const allState=THEATRES.filter(th=>STATE_KINDS.includes(th.kind));
+        const allIndie=THEATRES.filter(th=>!STATE_KINDS.includes(th.kind));
+        const thFilter=th=>S.fVenues.length?venueOk(th.id):true;
+        const stateTheatres=allState.filter(thFilter),indieTheatres=allIndie.filter(thFilter);
         const stateRails=[],indieRails=[];
         stateTheatres.forEach(th=>{const ss=showsAtTheatre(th.id).filter(s=>visSet.has(s.id));if(ss.length)stateRails.push({th,ss});});
         indieTheatres.forEach(th=>{const ss=showsAtTheatre(th.id).filter(s=>visSet.has(s.id));if(ss.length)indieRails.push({th,ss});});
@@ -1369,19 +1404,29 @@ function buyBox(vid,date,isCinema,specificUrl){
     <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
 
 /* ===================== sheets ===================== */
+/* Per-sheet state: whether "show all cinemas" has been tapped (reset on every open) */
+let _sheetShowAllCinemas=false;
 function sheetFilm(f){
   const L=t(),x=FILM_EXTRA[f.id]||{};
-  const rows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id)),byDay={};
+  const allRows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));
+  /* Apply venue filter: show only selected cinemas' rows unless user tapped "show all" */
+  const filtered=S.fVenues.length&&!_sheetShowAllCinemas;
+  const rows=filtered?allRows.filter(r=>venueOk(r[1])):allRows;
+  const byDay={};
   rows.forEach(r=>{(byDay[r[2]]=byDay[r[2]]||[]).push(r);});
   const venues=[...new Set(rows.map(r=>r[1]))];
+  const mkVrow=(r,d)=>{const c=cinById[r[1]],u=tixUrl("film",f.id,r[1],d);
+    return`<div class="vrow"><div class="vname">
+      <span class="vloc">${esc(c.name)}<em>${esc(c.area)}</em></span>
+      <span class="vkind">${esc(c.kind==="independent"?(S.lang==="bg"?"независимо":"independent"):(S.lang==="bg"?"мултиплекс":"multiplex"))}</span>
+      ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}</div>
+      <div class="vtimes">${r[3].map(tm=>`<a class="time ${inWhen(tm)?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`).join("")}
+      <a class="time tix" href="${esc(u)}" target="_blank" rel="noopener">${esc(t().tix)} ↗</a></div></div>`;};
   const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
-    ${byDay[d].map(r=>{const c=cinById[r[1]],u=tixUrl("film",f.id,r[1],d);
-      return`<div class="vrow"><div class="vname">
-        <span class="vloc">${esc(c.name)}<em>${esc(c.area)}</em></span>
-        <span class="vkind">${esc(c.kind==="independent"?(S.lang==="bg"?"независимо":"independent"):(S.lang==="bg"?"мултиплекс":"multiplex"))}</span>
-        ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}</div>
-        <div class="vtimes">${r[3].map(tm=>`<a class="time ${inWhen(tm)?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`).join("")}
-        <a class="time tix" href="${esc(u)}" target="_blank" rel="noopener">${esc(t().tix)} ↗</a></div></div>`;}).join("")}</div>`).join("");
+    ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
+  /* "Showing selected cinemas only" note with "Show all" button */
+  const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8">${esc(L.showSelCinemasOnly)}
+    <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
   rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?imdbOf(f).toFixed(1)+"<small>/10</small>":"—"}</div></div>`);
   if(f.rt!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${f.rt}<small>%</small></div></div>`);
@@ -1410,6 +1455,7 @@ function sheetFilm(f){
       ${x.box?`<dt>${esc(L.box)}</dt><dd>${esc(x.box)}</dd>`:""}
       ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>`:""}
     <div class="sec"><h4>${esc(L.times)} · ${rows.reduce((n,r)=>n+r[3].length,0)}</h4>
+      ${selNote}
       ${times||`<div class="empty">${esc(L.noData)}</div>`}</div>
    </div></div>`;}
 
@@ -1473,18 +1519,6 @@ function sheetEvent(ev){
    </div></div>`;}
 
 /* ===================== shell ===================== */
-function strandBar(){
-  const L=t();
-  const mk=(v,lab)=>`<button class="fchip" data-strand="${v||""}" aria-pressed="${v?S.fStrands.includes(v):!S.fStrands.length}">${esc(lab)}</button>`;
-  const active=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
-  /* commercial / arthouse only make sense for cinemas — theatres are not cinemas */
-  const strandChips=S.mode==="cinema"
-    ? mk(null,L.allStrands)+mk("commercial",L.commercial)+mk("arthouse",L.arthouse) : "";
-  return strandChips
-   +`<button class="fchip" data-drawer aria-pressed="${active>0}">${esc(L.filters)}${active?" · "+active:""}</button>`
-   +`<button class="fchip rangechip" data-drawer aria-label="${esc(L.period)}">${esc(rangeLabel())}</button>`
-   +((S.fGenres.length||S.fVenues.length||S.fStrands.length)?`<button class="fclear" data-clearf>${esc(L.clear)}</button>`:"");
-}
 /* task 7 — single scrollable month with ‹ › arrows + from–to range highlight */
 function calView(){
   const L=t(),has=datesWith();
@@ -1526,10 +1560,6 @@ function calView(){
 function drawerHTML(){
   const L=t();
   const gset=genresFor(S.mode);
-  const venues=S.mode==="cinema"
-    ? [...new Set(CINEMAS.map(c=>c.chain))].map(ch=>{const n=CINEMAS.filter(c=>c.chain===ch).length;
-        return {id:ch,name:ch+(n>1?` · ${n}`:"")};})
-    : THEATRES.map(th=>({id:th.id,name:th.name}));
   /* "Programme verified until" — derived live from the furthest upcoming date
      we actually hold for each venue, so it can never show a stale past date the
      way a hand-kept VENUE_UNTIL map did (every cinema was pinned to 17 Sep). */
@@ -1540,16 +1570,33 @@ function drawerHTML(){
     return ds.length?ds.reduce((a,b)=>b>a?b:a):null;};
   const untilList=(S.mode==="cinema"?CINEMAS:THEATRES).map(v=>{
       const u=untilFor(v.id); return u?`${v.name} — ${fmtDay(u,true)}`:null;}).filter(Boolean);
-  /* grey out venues with no listings in this snapshot (owner: show but grey them out) */
-  const hasListings=S.mode==="cinema"
-    ? id=>CINEMAS.filter(c=>c.chain===id).some(c=>filmsAtCinema(c.id).length>0)
-    : id=>showsAtTheatre(id).length>0;
-  const venueSection=`<h3>${esc(S.mode==="cinema"?L.venuesH:L.theatresH)}</h3>
+  /* grey out venues with no listings in this snapshot */
+  const cinemaHasListings=c=>filmsAtCinema(c.id).length>0;
+  const theatreHasListings=id=>showsAtTheatre(id).length>0;
+  /* Cinema venue section: one chip per cinema id, grouped by kind */
+  let venueSection;
+  if(S.mode==="cinema"){
+    const mkChip=c=>{const on=cinemaHasListings(c);
+      return`<button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(c.name)}</button>`;};
+    const multiplexes=CINEMAS.filter(c=>c.kind==="multiplex");
+    const independents=CINEMAS.filter(c=>c.kind==="independent");
+    venueSection=`<h3>${esc(L.venuesH)}</h3>
     <div class="chipwrap">
-      <button class="fchip" data-venue="" aria-pressed="${!S.fVenues.length}">${esc(S.mode==="cinema"?L.allVenues:L.allTheatres)}</button>
-      ${venues.map(v=>{const on=hasListings(v.id);
+      <button class="fchip" data-venue="" aria-pressed="${!S.fVenues.length}">${esc(L.allVenues)}</button>
+    </div>
+    <div class="sec-subhead" style="margin-top:8px">${esc(L.subMultiplexes)}</div>
+    <div class="chipwrap">${multiplexes.map(mkChip).join("")}</div>
+    <div class="sec-subhead" style="margin-top:8px">${esc(L.subIndepCinemas)}</div>
+    <div class="chipwrap">${independents.map(mkChip).join("")}</div>`;
+  }else{
+    const theatres=THEATRES.map(th=>({id:th.id,name:th.name}));
+    venueSection=`<h3>${esc(L.theatresH)}</h3>
+    <div class="chipwrap">
+      <button class="fchip" data-venue="" aria-pressed="${!S.fVenues.length}">${esc(L.allTheatres)}</button>
+      ${theatres.map(v=>{const on=theatreHasListings(v.id);
         return`<button class="fchip${on?"":" off"}" data-venue="${esc(v.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(v.id)}">${esc(v.name)}</button>`;}).join("")}
     </div>`;
+  }
   const hasActive=S.fGenres.length||S.fVenues.length||S.fStrands.length||S.day!=="week";
   return `<div class="drawer-scrim" data-dclose></div>
   <aside class="drawer" role="dialog" aria-label="${esc(L.filters)}">
@@ -1841,7 +1888,7 @@ function animateOpen(scrim,fromEl){
 /* ===================== events ===================== */
 document.addEventListener("click",e=>{
   const q=sel=>e.target.closest(sel);
-  if(q("[data-close]")||e.target.id==="scrim"){closeSheet();return;}
+  if(q("[data-close]")||e.target.id==="scrim"){_sheetShowAllCinemas=false;closeSheet();return;}
   if(q(".time")||q(".buylink"))return;            /* let real links through */
 
   const rm=q("[data-readmore]");
@@ -1903,7 +1950,14 @@ document.addEventListener("click",e=>{
   if(sc){const tr=sc.parentElement.querySelector(".rtrack");
     tr.scrollBy({left:Number(sc.dataset.scroll)*tr.clientWidth*.82,behavior:"smooth"});return;}
 
-  const fc=q("[data-film]"); if(fc){curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
+  if(q("[data-sheetshowallcin]")){_sheetShowAllCinemas=true;
+    const shBody=document.querySelector(".sheet .sbody");
+    if(shBody&&curSheet&&curSheet.kind==="film"&&filmById[curSheet.id]){
+      const newSheet=document.createElement("div");newSheet.innerHTML=sheetFilm(filmById[curSheet.id]);
+      const newSec=newSheet.querySelector(".sec:last-child");
+      const oldSec=shBody.querySelector(".sec:last-child");
+      if(oldSec&&newSec)oldSec.replaceWith(newSec);}return;}
+  const fc=q("[data-film]"); if(fc){_sheetShowAllCinemas=false;curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
   const shc=q("[data-show]"); if(shc){curSheet={kind:"show",id:shc.dataset.show};openSheet(sheetShow(showById[shc.dataset.show]),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
 });
