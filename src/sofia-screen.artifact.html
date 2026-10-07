@@ -345,32 +345,19 @@ a{color:inherit}
 .buybox{border:1px solid var(--accent); border-radius:var(--r); padding:15px 17px; background:color-mix(in srgb,var(--accent) 9%,var(--ink-2));
   display:flex; flex-direction:column; gap:11px}
 .buybox .bl{font-size:10px; letter-spacing:.17em; text-transform:uppercase; color:var(--fg-3)}
-.buylinks{display:flex; gap:8px; flex-wrap:wrap}
-.buylink{padding:9px 16px; border-radius:9px; background:var(--accent); color:var(--on-accent);
-  font-weight:600; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:7px}
-.buylink:hover{filter:brightness(1.12)}
-.buylink.alt{background:transparent; border:1px solid var(--line-2); color:var(--fg-2); font-weight:500}
-.buylink.alt:hover{border-color:var(--accent); color:var(--accent); filter:none}
+.buylinks{display:flex; gap:7px; flex-wrap:wrap; align-items:center}
+.buylink{padding:7px 13px; min-height:40px; border-radius:20px; background:transparent; border:1px solid var(--accent);
+  color:var(--accent); font-weight:600; font-size:12.5px; text-decoration:none; display:inline-flex; align-items:center; gap:5px; line-height:1.2}
+.buylink:hover{background:color-mix(in srgb,var(--accent) 14%,transparent); filter:none}
+.buylink.alt{border-color:var(--line-2); color:var(--fg-2); font-weight:400; font-size:12px; background:transparent}
+.buylink.alt:hover{border-color:var(--fg-2); filter:none}
+.buylink.inperson{border:none; color:var(--fg-3); font-size:12px; font-weight:400; padding:4px 0; min-height:0; background:transparent}
+.buylink.inperson:hover{color:var(--fg-2); filter:none}
 .buynote{font-size:11.5px; color:var(--fg-3)}
+.no-info-note{font-size:13px; color:var(--fg-3); font-style:italic; margin:0}
 
 /* ---------- opening animation ---------- */
-.flyer{position:fixed; z-index:200; border-radius:var(--r); overflow:hidden; pointer-events:none; box-shadow:var(--shadow)}
-.reveal{position:fixed; inset:0; z-index:150; pointer-events:none; overflow:hidden}
-.curtain{position:absolute; top:0; bottom:0; width:52%;
-  background:linear-gradient(90deg,#4A0A16,#8A1024 40%,#6B0C1B 70%,#3A0710);
-  box-shadow:0 0 60px rgba(0,0,0,.6)}
-[data-surface="theatre"] .curtain{background:linear-gradient(90deg,#3A2A06,#7A5E0C 40%,#A8871F 70%,#2A1E04)}
-.curtain::after{content:""; position:absolute; inset:0;
-  background:repeating-linear-gradient(90deg,rgba(0,0,0,.34) 0 10px,rgba(255,255,255,.07) 10px 22px)}
-.curtain.l{left:0} .curtain.r{right:0}
-.cine-dim{position:absolute; inset:0; background:radial-gradient(120% 120% at var(--fx,50%) var(--fy,50%),rgba(10,4,12,.55),rgba(6,2,8,.92))}
-.flare{position:absolute; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.98),rgba(224,22,58,.7) 34%,rgba(224,22,58,.15) 60%,transparent 74%); mix-blend-mode:screen}
-/* cinema zoom-lens: a rack-focus ring that blooms out from the poster centre */
-.zlens{position:absolute; width:190px; height:190px; border-radius:50%; mix-blend-mode:screen;
-  border:3px solid rgba(255,255,255,.55);
-  box-shadow:inset 0 0 0 2px rgba(224,22,58,.55), inset 0 0 40px rgba(255,255,255,.28), 0 0 70px rgba(224,22,58,.4);
-  background:radial-gradient(circle,rgba(255,255,255,.16),rgba(255,255,255,.04) 55%,transparent 66%)}
-.zring{position:absolute; width:150px; height:150px; border-radius:50%; border:2px solid rgba(255,255,255,.4)}
+/* Themed open animations removed (Wave D1). Plain neutral expand only. */
 
 /* share button + read-more + toast */
 .sshare{position:absolute; top:12px; right:52px; z-index:6; width:32px; height:32px; border-radius:50%;
@@ -553,7 +540,10 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
  subMultiplexes:"Мултиплекси",subIndepCinemas:"Независими кина",
- showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички"},
+ showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички",
+ noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
+ noInfoShort:"няма информация",boxOffice:"Билети на касата",viaEpay:"билети чрез epaygo.bg",
+ boxOfficeLabel:"Билети на касата",boxOfficeLabelEn:"Tickets at the box office"},
 en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -592,7 +582,10 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
  subMultiplexes:"Multiplexes",subIndepCinemas:"Independent cinemas",
- showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all"}};
+ showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all",
+ noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
+ noInfoShort:"no information",boxOffice:"Tickets at the box office",viaEpay:"tickets via epaygo.bg",
+ boxOfficeLabel:"Tickets at the box office",boxOfficeLabelEn:"Tickets at the box office"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -651,14 +644,34 @@ try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
 function save(){try{localStorage.setItem(LS,JSON.stringify({prefs:S.prefs,lang:S.lang,mode:S.mode}));}catch(e){}}
 
 /* ===================== helpers ===================== */
-/* English synopsis preference (owner's choice: authoritative English where it
-   exists, Bulgarian fallback otherwise — never machine-translated). For films,
-   fall back to the TMDB English overview (ART[id].ov) when the dataset has no
-   synEn; shows aren't in TMDB, so they fall straight back to Bulgarian. */
+const notEmpty=v=>v&&v.trim()&&v!=="—"?v:null;
+/* FILMINFO and TMDBART references — safe even before they are defined */
+const FI=()=>(typeof FILMINFO==="object"&&FILMINFO)||{};
+const ART2=id=>(typeof TMDBART==="object"&&TMDBART&&TMDBART[id])||{};
+/* synOf: used by hero (returns empty string when nothing found, not a note) */
 const synOf=o=>{
-  if(S.lang==="bg")return o.synBg;
-  const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
-  return o.synEn||art.ov||o.synBg;
+  const fi=FI()[o.id]||{},ar=ART2(o.id);
+  if(S.lang==="bg")return notEmpty(o.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||"";
+  return notEmpty(o.synEn)||notEmpty(ar.ov)||notEmpty(fi.synEn)
+        ||notEmpty(o.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||"";
+};
+/* synFilm: for film sheets — returns text or null (caller shows note when null) */
+const synFilm=f=>{
+  const fi=FI()[f.id]||{},ar=ART2(f.id);
+  if(S.lang==="bg")return notEmpty(f.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||null;
+  return notEmpty(f.synEn)||notEmpty(ar.ov)||notEmpty(fi.synEn)
+        ||notEmpty(f.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||null;
+};
+/* director / cast with FILMINFO + TMDBART fallback */
+const dirOf=f=>{
+  const fi=FI()[f.id]||{},ar=ART2(f.id);
+  if(S.lang==="bg")return notEmpty(f.director)||notEmpty(fi.dir)||notEmpty(ar.dir)||null;
+  return notEmpty(ar.dir)||notEmpty(f.director)||notEmpty(fi.dir)||null;
+};
+const castOf=f=>{
+  const fi=FI()[f.id]||{},ar=ART2(f.id);
+  if(S.lang==="bg")return notEmpty(f.cast)||notEmpty(fi.cast)||notEmpty(ar.cast)||null;
+  return notEmpty(ar.cast)||notEmpty(f.cast)||notEmpty(fi.cast)||null;
 };
 /* Full Bulgarian synopses harvested from official theatre sites (programata /
    sofiatheatre.eu etc.). Keyed by show id; overrides the short blurb when present.
@@ -668,10 +681,11 @@ const SHOWSYN={
  "posledniyat-strasten":"Пиеса от един от най-успешните световни драматурзи днес - Нийл Саймън - комедия, вдъхновена от вечните въпроси около любовта и брака. Смешна, проникновена пиеса за това как двойките изпадат в криза, къде бягаме от собствените си комплекси, възможно ли е да обичаме само един партньор…„Последният страстен любовник“ от Нийл Саймън ни забавлява с куриозните преживявания на влюбени ексцентрици, попаднали в комични и абсурдни ситуации.\n\n*В ролята на Боби се редуват актрисите Дария Симеонова и Ангела Канева.\n\n**Закъснели зрители на Камерна сцена в Театър София не се допускат, предвид разположението на местата в залата."
 };
 /* Read-more synopsis block: paragraphs are clamped to a few lines and expanded
-   in place; the button is hidden after render if the text does not overflow. */
+   in place; the button is hidden after render if the text does not overflow.
+   When text is null/empty, renders the "no information available" note. */
 function synBlock(text){
   const raw=String(text||"").trim();
-  if(!raw)return `<p>${esc(t().noData||"—")}</p>`;
+  if(!raw)return `<p class="no-info-note">${esc(t().noInfoFilm)}</p>`;
   const paras=raw.split(/\n{2,}/).map(p=>`<p>${esc(p.trim())}</p>`).join("");
   const more=S.lang==="bg"?"Прочети повече":"Read more", less=S.lang==="bg"?"Скрий":"Read less";
   return `<div class="synwrap clamp"><div class="synbody">${paras}</div>`
@@ -1096,8 +1110,13 @@ function filmCard(f,all,rowsOverride){
   const lim=["oasis","2001","terminator-2","palestina-36"].includes(f.id);
   /* runtime is empty for synthesised arthouse entries (TMDB had none) — omit it
      rather than printing "undefined мин". */
-  /* In a per-venue context (rowsOverride set, or single venue selected) omit the cinema count */
-  const singleVenue=!!rowsOverride||(S.fVenues.length===1);
+  /* In a per-venue context (explicit per-cinema rowsOverride in the "По кино" section,
+     or a single venue selected in the filter) omit the cinema count.
+     The "За теб днес" today rail passes rowsOverride for per-film today rows but is
+     NOT a per-venue context — it should still show "· N кина" when N >= 2.
+     rowsOverride for the today rail always comes from the caller with perVenue:true
+     when it really is a single-venue context (per-cinema section). */
+  const singleVenue=(rowsOverride&&rowsOverride._perVenue===true)||(S.fVenues.length===1);
   const meta=[f.runtime?`${f.runtime} ${esc(t().min)}`:"",
               n?`${n} ${esc(t().screenings)}`:"",
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
@@ -1164,7 +1183,7 @@ function hero(){
       <h1>${esc(filmTitle(f))}</h1>
       <div class="hero-meta">${imdbOf(f)!=null?`<span class="score ${scoreCls(imdbOf(f))}"><i>IMDb</i>${imdbOf(f).toFixed(1)}</span>`:""}
         <span>${esc(f.genres.slice(0,3).join(" · "))}</span>${f.runtime?`<span>·</span><span>${f.runtime} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${f.year}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
-      <p class="hero-syn">${esc(synOf(f))}</p>
+      ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
       </div></div>`;}
@@ -1177,7 +1196,7 @@ function hero(){
     <h1>${esc(titleOf(sh))}</h1>
     <div class="hero-meta"><span>${esc(th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).join(" · "))}</span>
       ${sh.duration?`<span>·</span><span>${sh.duration} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
-    <p class="hero-syn">${esc(synOf(sh))}</p>
+    ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
     </div></div>`;}
@@ -1258,10 +1277,12 @@ function body(){
             if(arty&&!comm&&c.kind!=="independent")return;
             if(comm&&!arty&&c.kind==="independent")return;}
           const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-          /* pass rowsOverride scoped to this cinema so card counts are per-cinema */
+          /* pass rowsOverride scoped to this cinema so card counts are per-cinema;
+             mark _perVenue so filmCard suppresses the "N кина" count */
           if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
             const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
-            return filmCard(f,day,cRows.length?cRows:undefined);}));
+            if(!cRows.length)return filmCard(f,day,undefined);
+            const rv=cRows.slice(); rv._perVenue=true; return filmCard(f,day,rv);}));
         });
       }
       return secToggleHTML("Venues",L.secByCinema||"По кино",null,S.secVenues)
@@ -1372,7 +1393,27 @@ const TIX={
     "in-the-mood":"https://www.ndk.bg/en/event/uong-karvai-v-nastroenie-za-liubov-200-eng-sub"
   }
 };
+/* VLINK_MAP: keyed by "filmId|venueId" → the film-specific page at that venue */
+const VLINK_MAP=(()=>{
+  const m={};
+  if(typeof VLINKS!=="undefined"&&Array.isArray(VLINKS))
+    VLINKS.forEach(([fid,vid,u])=>{m[fid+"|"+vid]=u;});
+  return m;
+})();
+/* Film-specific resolver (never uses LINK_MAP — that mapped one global URL per film,
+   causing all venues to link to the wrong cinema page).
+   Priority: VLINKS entry → BOOKING deep link with date → BOOKING tix → BOOKING url */
+function filmTixUrl(filmId,venueId,date){
+  const vk=filmId+"|"+venueId;
+  if(VLINK_MAP[vk])return VLINK_MAP[vk];
+  const b=BOOKING[venueId]; if(!b)return null;
+  if(b.deep&&date)return b.deep.replace("{date}",date);
+  if(b.tix)return b.tix;
+  return b.url||null;
+}
 function tixUrl(kind,id,venueId,date){
+  /* Films: per-venue resolver — never LINK_MAP */
+  if(kind==="film")return filmTixUrl(id,venueId,date);
   const specific=LINK_MAP[id]||(TIX[kind]||{})[id];
   return specific||bookUrl(venueId,date);
 }
@@ -1391,17 +1432,48 @@ const EVENT_VENUE={
 function busiestVenue(rows){
   const tally={}; rows.forEach(r=>tally[r[1]]=(tally[r[1]]||0)+r[3].length);
   return Object.keys(tally).sort((a,b)=>tally[b]-tally[a])[0];}
+/* Theatre/show buy box (single venue) — unchanged */
 function buyBox(vid,date,isCinema,specificUrl){
   const L=t(),b=BOOKING[vid]; if(!b)return"";
-  /* Only the venue's own ticketing — never generic aggregators. A verified audit
-     of every Sofia venue found none that genuinely resell through theatre.art.bg,
-     ticket.bg or Eventim; each sells on its own site or at its own box office. */
+  /* Only the venue's own ticketing — never generic aggregators. */
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
       <a class="buylink" href="${esc(specificUrl||bookUrl(vid,date))}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc(b.label)} ↗</a>
     </div>
     <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
+/* Film buy box: compact pills per cinema, sorted by screening count desc then name */
+function filmBuyBox(f,rows){
+  const L=t();
+  /* Count screenings per venue */
+  const cnt={};
+  rows.forEach(r=>{cnt[r[1]]=(cnt[r[1]]||0)+(r[3]?r[3].length:1);});
+  const vids=[...new Set(rows.map(r=>r[1]))].sort((a,b)=>{
+    const dc=(cnt[b]||0)-(cnt[a]||0); if(dc)return dc;
+    const ca=cinById[a],cb=cinById[b];
+    const na=(S.lang==="bg"?ca&&ca.name:ca&&(ca.nameEn||ca.name))||a;
+    const nb=(S.lang==="bg"?cb&&cb.name:cb&&(cb.nameEn||cb.name))||b;
+    return na.localeCompare(nb);
+  });
+  if(!vids.length)return"";
+  let hasEpay=false;
+  const items=vids.map(vid=>{
+    const b=BOOKING[vid],c=cinById[vid]; if(!b)return"";
+    const cname=(S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label;
+    const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+vid];
+    if(viaEpay)hasEpay=true;
+    if(b.inPerson){
+      return`<span class="buylink inperson">${esc(cname)} — ${esc(S.lang==="bg"?"на касата":"box office")}</span>`;
+    }
+    const u=filmTixUrl(f.id,vid,null)||b.url;
+    if(!u)return"";
+    return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(cname)} ↗</a>`;
+  }).filter(Boolean);
+  if(!items.length)return"";
+  const epayNote=hasEpay?`<div class="buynote">${esc(S.lang==="bg"?"Кино Люмиер: билети чрез epaygo.bg":"Lumière: tickets via epaygo.bg")}</div>`:"";
+  return`<div class="buybox"><div class="bl">${esc(L.buyAt)}</div>
+    <div class="buylinks">${items.join("")}</div>
+    ${epayNote}</div>`;}
 
 /* ===================== sheets ===================== */
 /* Per-sheet state: whether "show all cinemas" has been tapped (reset on every open) */
@@ -1415,13 +1487,19 @@ function sheetFilm(f){
   const byDay={};
   rows.forEach(r=>{(byDay[r[2]]=byDay[r[2]]||[]).push(r);});
   const venues=[...new Set(rows.map(r=>r[1]))];
-  const mkVrow=(r,d)=>{const c=cinById[r[1]],u=tixUrl("film",f.id,r[1],d);
+  const mkVrow=(r,d)=>{
+    const c=cinById[r[1]],b=BOOKING[r[1]]||{};
+    const inPerson=!!b.inPerson;
+    const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+r[1]];
+    const u=inPerson?(b.url||null):filmTixUrl(f.id,r[1],d);
+    const tixLabel=inPerson?(S.lang==="bg"?L.boxOfficeLabel:L.boxOfficeLabelEn):(L.tix+" ↗");
     return`<div class="vrow"><div class="vname">
       <span class="vloc">${esc(c.name)}<em>${esc(c.area)}</em></span>
       <span class="vkind">${esc(c.kind==="independent"?(S.lang==="bg"?"независимо":"independent"):(S.lang==="bg"?"мултиплекс":"multiplex"))}</span>
-      ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}</div>
-      <div class="vtimes">${r[3].map(tm=>`<a class="time ${inWhen(tm)?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`).join("")}
-      <a class="time tix" href="${esc(u)}" target="_blank" rel="noopener">${esc(t().tix)} ↗</a></div></div>`;};
+      ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}
+      ${viaEpay?`<span class="vprice" style="opacity:.7">${esc(L.viaEpay)}</span>`:""}</div>
+      <div class="vtimes">${r[3].map(tm=>u?`<a class="time ${inWhen(tm)?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`:`<span class="time ${inWhen(tm)?"fits":""}">${esc(tm)}</span>`).join("")}
+      ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}</div></div>`;};
   const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
     ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
   /* "Showing selected cinemas only" note with "Show all" button */
@@ -1441,19 +1519,19 @@ function sheetFilm(f){
       <div class="eyebrow" style="color:#fff;opacity:.82">${[filmSubtitle(f),f.year,ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
       <h2>${esc(filmTitle(f))}</h2></div></div>
    <div class="sbody">
-    <div class="chips">${f.genres.map(g=>`<span class="chip">${esc(g)}</span>`).join("")}
+    <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(g)}</span>`).join("")}
       ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.age)}</span>`:""}</div>
     <div class="ratings">${rt.join("")}</div>
-    ${venues.length?buyBox(busiestVenue(rows),S.day==="all"?null:S.day,true,tixUrl("film",f.id,busiestVenue(rows),S.day==="all"?null:S.day)):""}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${synBlock(synOf(f))}
+    ${venues.length?filmBuyBox(f,rows):""}
+    <div class="sec"><h4>${esc(L.syn)}</h4>${synBlock(synFilm(f))}
       ${x.why?`<div class="why">${esc(x.why)}</div>`:f.note?`<div class="why">${esc(f.note)}</div>`:""}</div>
     ${x.facts?`<div class="sec"><h4>${esc(L.about)}</h4><ul class="facts">${x.facts.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""}
-    ${(f.director||f.cast||x.fmt||x.box||f.country||f.year)?`<div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
-      ${f.director?`<dt>${esc(L.dir)}</dt><dd>${esc(f.director)}</dd>`:""}
-      ${f.cast?`<dt>${esc(L.cast)}</dt><dd>${esc(f.cast)}</dd>`:""}
+    <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
+      <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
+      <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
       ${x.fmt?`<dt>${esc(L.fmt)}</dt><dd>${esc(x.fmt)}</dd>`:""}
       ${x.box?`<dt>${esc(L.box)}</dt><dd>${esc(x.box)}</dd>`:""}
-      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>`:""}
+      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
     <div class="sec"><h4>${esc(L.times)} · ${rows.reduce((n,r)=>n+r[3].length,0)}</h4>
       ${selNote}
       ${times||`<div class="empty">${esc(L.noData)}</div>`}</div>
@@ -1478,7 +1556,8 @@ function sheetShow(sh){
       ${sh.genres.map(g=>`<span class="chip">${esc(g)}</span>`).join("")}
       ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre))}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${synBlock((S.lang==="bg"&&SHOWSYN[sh.id])||synOf(sh))}
+    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=(S.lang==="bg"&&SHOWSYN[sh.id])||synOf(sh);
+      return st?synBlock(st):`<p class="no-info-note">${esc(L.noInfoShow)}</p>`})()}
       ${x.why?`<div class="why">${esc(x.why)}</div>`:""}</div>
     ${x.facts?`<div class="sec"><h4>${esc(L.aboutT)}</h4><ul class="facts">${x.facts.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""}
     ${sh.reviews&&sh.reviews.length?`<div class="sec"><h4>${esc(L.press)}</h4>
@@ -1820,69 +1899,20 @@ function swipeToClose(sheet){
     if(e.touches[0].clientY-y0>90){y0=null;closeSheet();}},{passive:true});
   sheet.addEventListener("touchend",()=>{y0=null;},{passive:true});
 }
+/* Plain neutral expand: scrim fades in, sheet grows in — no themed effects. */
 function animateOpen(scrim,fromEl){
-  const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const sheet=scrim.querySelector(".sheet"); if(!sheet)return;
-  if(reduce)return;
-  scrim.animate([{opacity:0},{opacity:1}],{duration:200,easing:"ease-out"});
-  const poster=fromEl&&fromEl.querySelector(".poster");
-  const shero=sheet.querySelector(".shero");
-  /* mode reveal: curtains for theatre, projector flare for cinema */
-  const rev=document.createElement("div");rev.className="reveal";
-  if(S.mode==="theatre"){
-    rev.innerHTML='<div class="curtain l"></div><div class="curtain r"></div>';
-    document.body.appendChild(rev);
-    const[l,r]=rev.querySelectorAll(".curtain");
-    const opt={duration:620,easing:"cubic-bezier(.66,0,.34,1)"};
-    l.animate([{transform:"translateX(-100%)"},{transform:"translateX(0)",offset:.34},{transform:"translateX(-100%)"}],opt);
-    r.animate([{transform:"translateX(100%)"},{transform:"translateX(0)",offset:.34},{transform:"translateX(100%)"}],opt)
-      .onfinish=()=>rev.remove();
+  scrim.animate([{opacity:0},{opacity:1}],{duration:150,easing:"ease-out"});
+  /* mobile bottom-sheet: slide up; desktop: opacity + subtle scale */
+  const isMobile=innerWidth<=620;
+  if(isMobile){
+    sheet.animate([{opacity:0,transform:"translateY(32px)"},{opacity:1,transform:"translateY(0)"}],
+      {duration:200,easing:"ease-out",fill:"backwards"});
   }else{
-    /* cinema: a zoom-lens — the frame focuses in on the poster, a lens ring
-       racks open from the poster centre and blooms outward, then clears */
-    const rect=(poster||sheet).getBoundingClientRect();
-    const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
-    const dim=document.createElement("div");dim.className="cine-dim";
-    dim.style.setProperty("--fx",`${(cx/innerWidth*100).toFixed(1)}%`);
-    dim.style.setProperty("--fy",`${(cy/innerHeight*100).toFixed(1)}%`);
-    const lens=document.createElement("div");lens.className="zlens";
-    lens.style.cssText=`left:${cx}px;top:${cy}px`;
-    const ring=document.createElement("div");ring.className="zring";
-    ring.style.cssText=`left:${cx}px;top:${cy}px`;
-    rev.appendChild(dim);rev.appendChild(lens);rev.appendChild(ring);document.body.appendChild(rev);
-    dim.animate([{opacity:0},{opacity:.92,offset:.28},{opacity:0}],
-      {duration:580,easing:"ease-out"});
-    lens.animate([
-      {transform:"translate(-50%,-50%) scale(.18)",opacity:0},
-      {transform:"translate(-50%,-50%) scale(1)",opacity:.95,offset:.38},
-      {transform:"translate(-50%,-50%) scale(7)",opacity:0}
-    ],{duration:640,easing:"cubic-bezier(.16,1,.3,1)"});
-    ring.animate([
-      {transform:"translate(-50%,-50%) scale(.4)",opacity:.9},
-      {transform:"translate(-50%,-50%) scale(9)",opacity:0}
-    ],{duration:640,easing:"cubic-bezier(.16,1,.3,1)"}).onfinish=()=>rev.remove();
+    sheet.animate([{opacity:0,transform:"translateY(14px) scale(.96)"},{opacity:1,transform:"none"}],
+      {duration:200,easing:"ease-out",fill:"backwards"});
   }
-  /* poster flies into the sheet header */
-  if(poster&&shero){
-    const from=poster.getBoundingClientRect(),to=shero.getBoundingClientRect();
-    /* only fly when both rects have laid out — otherwise a zero/NaN destination
-       makes the scale factor blow up and the clone shoots off-screen */
-    if(from.width&&from.height&&to.width&&to.height){
-      const fly=poster.cloneNode(true);fly.className="flyer";
-      /* top-left transform-origin so translate+scale map the poster's corner
-         exactly onto the header box — with the default centre origin a large
-         real-poster scale lands the clone far outside the sheet */
-      fly.style.cssText=`left:${from.left}px;top:${from.top}px;width:${from.width}px;height:${from.height}px;transform-origin:0 0`;
-      document.body.appendChild(fly);
-      const sx=(to.width/from.width).toFixed(4),sy=(to.height/from.height).toFixed(4);
-      fly.animate([
-        {transform:"translate(0,0) scale(1,1)",opacity:1},
-        {transform:`translate(${(to.left-from.left).toFixed(1)}px,${(to.top-from.top).toFixed(1)}px) scale(${sx},${sy})`,opacity:0}
-      ],{duration:480,easing:"cubic-bezier(.22,1,.36,1)"}).onfinish=()=>fly.remove();
-    }
-  }
-  sheet.animate([{opacity:0,transform:"translateY(22px) scale(.97)"},{opacity:1,transform:"none"}],
-    {duration:420,delay:120,easing:"cubic-bezier(.22,1,.36,1)",fill:"backwards"});
 }
 
 /* ===================== events ===================== */

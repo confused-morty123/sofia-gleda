@@ -2140,6 +2140,799 @@ else:
 
 
 # ============================================================================
+# WAVE D1: Ticket links, missing-information handling, open animation
+# ============================================================================
+
+def wave_d1(browser):
+    """
+    Wave D1 checks: ticket link resolver, sheet hrefs, sarceto details,
+    in-person label, Lumière epaygo, animation removed, no-info notes,
+    show no-info, regressions (N кина, venue filter), and gate.
+    """
+    wave = "D1"
+    ensure_shot_dir(wave)
+    import subprocess
+
+    # ── D1-1: Exhaustive resolver check ──
+    print("\n=== D1-1: Exhaustive URL resolver ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    resolver_result = page.evaluate("""() => {
+        const today = "2026-10-07";
+        // Owner allowlist per venue id
+        const ALLOWED = {
+            "cc-sofia": ["www.cinemacity.bg"],
+            "cc-paradise": ["www.cinemacity.bg"],
+            "arena-mega": ["www.kinoarena.com"],
+            "arena-mall": ["www.kinoarena.com"],
+            "cg-ring": ["cinegrand.bg"],
+            "cg-park": ["cinegrand.bg"],
+            "cineland": ["cineland.bg"],
+            "vlaikova": ["vlaikovacinema.com","embed.urboapp.com"],
+            "lumiere": ["www.ndk.bg","ndk.bg","epaygo.bg"],
+            "dom-kino": ["domnakinoto.com"],
+            "odeon": ["bnf.bg"],
+            "g8": ["g8cinema.com"],
+            "casa-libri": null  // inPerson – no URL expected
+        };
+        const upcomingRows = SHOWTIMES.filter(r => r[2] >= today);
+        const counts = {};
+        const violations = [];
+        let programataCount = 0;
+        let totalChecked = 0;
+        let ccDateOk = true, ccDateFail = [];
+
+        upcomingRows.forEach(r => {
+            const [filmId, venueId, date, times] = r;
+            const allowed = ALLOWED[venueId];
+            if (allowed === undefined) return; // theatre or other non-cinema venue, skip
+            counts[venueId] = (counts[venueId] || 0) + 1;
+            totalChecked++;
+
+            // inPerson venues have no URL to check
+            const b = BOOKING[venueId];
+            if (b && b.inPerson) return;
+
+            const url = filmTixUrl(filmId, venueId, date);
+            if (!url) return;
+
+            // Check programata.bg
+            if (url.includes("programata.bg")) {
+                programataCount++;
+                violations.push({venueId, filmId, date, url: url.slice(0,80), reason: "programata.bg"});
+            }
+
+            // Check host allowlist
+            try {
+                const host = new URL(url).hostname;
+                if (allowed && !allowed.some(h => host === h || host.endsWith("."+h))) {
+                    violations.push({venueId, filmId, date, url: url.slice(0,80), reason: "wrong_host:" + host});
+                }
+            } catch(e) {}
+
+            // cc-sofia / cc-paradise must contain at=<date>
+            if ((venueId === "cc-sofia" || venueId === "cc-paradise") && b && b.deep) {
+                const atParam = "at=" + date;
+                if (!url.includes(atParam)) {
+                    ccDateFail.push({venueId, filmId, date, url: url.slice(0,80)});
+                    ccDateOk = false;
+                }
+            }
+        });
+
+        return {
+            totalChecked,
+            counts,
+            violations: violations.slice(0, 10),
+            violationCount: violations.length,
+            programataCount,
+            ccDateOk,
+            ccDateFail: ccDateFail.slice(0, 5)
+        };
+    }""")
+
+    check("d1_resolver_no_programata",
+          resolver_result["programataCount"] == 0,
+          f"programata.bg count: {resolver_result['programataCount']}")
+    check("d1_resolver_no_violations",
+          resolver_result["violationCount"] == 0,
+          f"{resolver_result['violationCount']} violations: {resolver_result['violations'][:3]}")
+    check("d1_resolver_cc_date",
+          resolver_result["ccDateOk"],
+          f"cc missing at=<date>: {resolver_result['ccDateFail'][:3]}")
+    print(f"  Counts per venue: {resolver_result['counts']}")
+    print(f"  Total rows checked: {resolver_result['totalChecked']}")
+    ctx.close()
+
+    # ── D1-2: Exhaustive sheet href check ──
+    print("\n=== D1-2: Exhaustive sheet href check ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    sheet_href_result = page.evaluate("""() => {
+        const today = "2026-10-07";
+        const programataHrefs = [];
+        // Films with upcoming rows
+        const upcomingFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today).map(r => r[0]))];
+        upcomingFilms.forEach(fid => {
+            const f = filmById[fid];
+            if (!f) return;
+            const html = sheetFilm(f);
+            // Parse hrefs via a temp div
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            div.querySelectorAll("a[href]").forEach(a => {
+                if (a.href.includes("programata.bg")) {
+                    programataHrefs.push({fid, href: a.href.slice(0,80)});
+                }
+            });
+        });
+        return {count: programataHrefs.length, samples: programataHrefs.slice(0,5)};
+    }""")
+
+    check("d1_sheet_no_programata",
+          sheet_href_result["count"] == 0,
+          f"programata.bg in sheets: {sheet_href_result['count']} — {sheet_href_result['samples']}")
+    ctx.close()
+
+    # ── D1-3: Heart of the Beast (sarceto-na-zveyara) ──
+    print("\n=== D1-3: Sarceto-na-zveyara detail ===")
+    # BG sheet
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    sarceto_bg = page.evaluate("""() => {
+        const f = filmById["sarceto-na-zveyara"];
+        if (!f) return {found: false};
+        const html = sheetFilm(f);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        // Showtime rows per venue
+        const venues = [...new Set(Array.from(div.querySelectorAll(".vrow")).map(vr => {
+            const loc = vr.querySelector(".vloc"); return loc ? loc.textContent.trim() : "";
+        }))].filter(Boolean);
+        // Vlaikova link
+        const allLinks = Array.from(div.querySelectorAll("a[href]")).map(a => ({
+            text: a.textContent.trim().slice(0,40),
+            href: a.href.slice(0,80)
+        }));
+        const vlaikovaLinks = allLinks.filter(a => a.href.includes("embed.urboapp.com"));
+        // Buy box items
+        const buyLinks = Array.from(div.querySelectorAll(".buylinks .buylink")).map(el => ({
+            text: el.textContent.trim().slice(0,60),
+            href: (el.tagName === "A" ? el.href : "").slice(0,80)
+        }));
+        // Synopsis
+        const synEl = div.querySelector(".synwrap, .synbody");
+        const synText = synEl ? synEl.textContent.trim().slice(0, 80) : "";
+        // Credits — collect as list of [dt_text, dd_text] pairs
+        const credPairs = [];
+        div.querySelectorAll("dl.credits dt").forEach((dt) => {
+            const dd = dt.nextElementSibling;
+            credPairs.push([dt.textContent.trim(), dd ? dd.textContent.trim().slice(0, 80) : ""]);
+        });
+        // Unique buy labels
+        const buyLabels = buyLinks.map(b => b.text);
+        const uniqueLabels = [...new Set(buyLabels)];
+        return {
+            found: true,
+            venues,
+            vlaikovaLinks,
+            buyLinks,
+            buyLabels,
+            uniqueLabels,
+            synText,
+            credPairs
+        };
+    }""")
+
+    expected_venues_bg = {"arena-mall", "arena-mega", "cc-sofia", "cg-park", "cg-ring", "cineland", "vlaikova"}
+    # The sheet uses cinema names, not IDs; verify by checking cinema IDs via BOOKING/CINEMAS
+    sarceto_venues_found = len(sarceto_bg.get("venues", [])) >= 7 if sarceto_bg.get("found") else False
+    check("d1_sarceto_7_cinema_rows",
+          sarceto_bg.get("found") and len(sarceto_bg.get("venues", [])) == 7,
+          f"venue rows found: {sarceto_bg.get('venues', [])}")
+    # Vlaikova link
+    vlaikova_link_ok = any(
+        "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
+        for lnk in sarceto_bg.get("vlaikovaLinks", [])
+    )
+    check("d1_sarceto_vlaikova_link",
+          vlaikova_link_ok,
+          f"vlaikova links: {sarceto_bg.get('vlaikovaLinks', [])}")
+    # Buy box 7 entries distinct
+    buy_labels = sarceto_bg.get("buyLabels", [])
+    unique_labels = sarceto_bg.get("uniqueLabels", [])
+    check("d1_sarceto_buybox_7",
+          len(buy_labels) == 7,
+          f"buy box items: {len(buy_labels)} — {buy_labels[:4]}")
+    check("d1_sarceto_buybox_distinct",
+          len(unique_labels) == len(buy_labels),
+          f"duplicates in buy labels: {buy_labels}")
+    # Synopsis BG starts with "Сърцето на звяра проследява"
+    syn_text_bg = sarceto_bg.get("synText", "")
+    check("d1_sarceto_syn_bg",
+          syn_text_bg.startswith("Сърцето на звяра проследява"),
+          f"synText BG: {syn_text_bg[:60]!r}")
+    # Director and cast via credPairs list
+    # BG label "Режисьор" for director, "В ролите" for cast
+    cred_pairs_bg = sarceto_bg.get("credPairs", [])
+    dir_val = [v for k, v in cred_pairs_bg if "реж" in k.lower()]
+    cast_val = [v for k, v in cred_pairs_bg if "ролите" in k.lower() or "акт" in k.lower()]
+    check("d1_sarceto_dir_bg",
+          any("Дейвид Ейър" in v for v in dir_val),
+          f"director vals (credPairs={cred_pairs_bg[:3]}): {dir_val}")
+    check("d1_sarceto_cast_bg",
+          any(v.startswith("Брад Пит") for v in cast_val),
+          f"cast vals (credPairs={cred_pairs_bg[:3]}): {cast_val}")
+
+    # Save screenshot
+    # Open the sheet in a real page
+    page.evaluate("""() => {
+        const f = filmById["sarceto-na-zveyara"];
+        if (f) { _sheetShowAllCinemas = false; curSheet = {kind:"film", id:f.id}; openSheet(sheetFilm(f), null); }
+    }""")
+    page.wait_for_timeout(600)
+    # Scroll to buy box
+    page.evaluate("""() => {
+        const bb = document.querySelector(".buybox");
+        if (bb) bb.scrollIntoView({block:"center"});
+    }""")
+    page.wait_for_timeout(300)
+    save_shot(page, wave, "m-bg-beast-sheet")
+    ctx.close()
+
+    # EN sheet for sarceto
+    ctx, page, errs = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page.wait_for_timeout(800)
+
+    sarceto_en = page.evaluate("""() => {
+        const f = filmById["sarceto-na-zveyara"];
+        if (!f) return {found: false};
+        const html = sheetFilm(f);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const synEl = div.querySelector(".synwrap, .synbody");
+        const synText = synEl ? synEl.textContent.trim().slice(0, 100) : "";
+        return {found: true, synText};
+    }""")
+
+    syn_en = sarceto_en.get("synText", "")
+    check("d1_sarceto_syn_en",
+          syn_en.startswith("After a harrowing plane crash"),
+          f"synText EN: {syn_en[:80]!r}")
+
+    page.evaluate("""() => {
+        const f = filmById["sarceto-na-zveyara"];
+        if (f) { _sheetShowAllCinemas = false; curSheet = {kind:"film", id:f.id}; openSheet(sheetFilm(f), null); }
+    }""")
+    page.wait_for_timeout(600)
+    save_shot(page, wave, "d-en-beast-sheet")
+    ctx.close()
+
+    # ── D1-4: In-person venue (g8 or odeon) ──
+    print("\n=== D1-4: In-person venue label ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    inperson_result = page.evaluate("""() => {
+        const today = "2026-10-07";
+        // Find a film whose upcoming rows are ONLY at inPerson venues
+        const inPersonVids = Object.keys(BOOKING).filter(v => BOOKING[v].inPerson);
+        const upcomingByFilm = {};
+        SHOWTIMES.filter(r => r[2] >= today).forEach(r => {
+            if (!upcomingByFilm[r[0]]) upcomingByFilm[r[0]] = new Set();
+            upcomingByFilm[r[0]].add(r[1]);
+        });
+        let inPersonFilmId = null;
+        for (const [fid, vids] of Object.entries(upcomingByFilm)) {
+            if ([...vids].every(v => inPersonVids.includes(v))) {
+                inPersonFilmId = fid; break;
+            }
+        }
+        if (!inPersonFilmId) return {found: false, reason: "no in-person only film found"};
+        const f = filmById[inPersonFilmId];
+        if (!f) return {found: false, reason: "filmById miss for " + inPersonFilmId};
+        const html = sheetFilm(f);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        // Check for "на касата" label text in sheet
+        const sheetText = div.textContent;
+        const hasBoxOfficeLabel = sheetText.includes("на касата") || sheetText.includes("box office");
+        // Check that .sheet a.time links exist
+        const timeLinks = div.querySelectorAll("a.time");
+        // Check no .buylink element links anywhere for that venue
+        const buyLinkWithHref = Array.from(div.querySelectorAll(".buylink[href]"));
+        // inPerson buylinks should NOT be <a> with href
+        const inPersonBuyAnchors = Array.from(div.querySelectorAll("a.buylink"));
+        return {
+            found: true,
+            filmId: inPersonFilmId,
+            hasBoxOfficeLabel,
+            timeLinksCount: timeLinks.length,
+            inPersonBuyAnchorCount: inPersonBuyAnchors.length,
+            buyLinkWithHrefCount: buyLinkWithHref.length
+        };
+    }""")
+
+    if inperson_result.get("found"):
+        check("d1_inperson_label",
+              inperson_result["hasBoxOfficeLabel"],
+              f"filmId={inperson_result['filmId']}, hasBoxOfficeLabel={inperson_result['hasBoxOfficeLabel']}")
+        check("d1_inperson_time_links",
+              inperson_result["timeLinksCount"] > 0,
+              f"time links count: {inperson_result['timeLinksCount']}")
+        check("d1_inperson_no_buy_anchor",
+              inperson_result["inPersonBuyAnchorCount"] == 0,
+              f"in-person buy anchors: {inperson_result['inPersonBuyAnchorCount']}")
+        # Open the in-person sheet and take screenshot
+        fid = inperson_result["filmId"]
+        page.evaluate(f"""() => {{
+            const f = filmById["{fid}"];
+            if (f) {{ _sheetShowAllCinemas = false; curSheet = {{kind:"film", id:f.id}}; openSheet(sheetFilm(f), null); }}
+        }}""")
+        page.wait_for_timeout(600)
+        save_shot(page, wave, "m-bg-inperson-sheet")
+    else:
+        check("d1_inperson_label", False, inperson_result.get("reason", "no in-person film found"))
+        check("d1_inperson_time_links", False, "skipped")
+        check("d1_inperson_no_buy_anchor", False, "skipped")
+
+    ctx.close()
+
+    # ── D1-5: Lumière epaygo handling ──
+    print("\n=== D1-5: Lumière epaygo ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    lumiere_result = page.evaluate("""() => {
+        const today = "2026-10-07";
+        const lumiereFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today && r[1] === "lumiere").map(r => r[0]))];
+        const noVlink = lumiereFilms.filter(fid => !VLINK_MAP[fid + "|lumiere"]);
+        const withVlink = lumiereFilms.filter(fid => !!VLINK_MAP[fid + "|lumiere"]);
+        const epayVlinkOk = withVlink.every(fid => {
+            const url = filmTixUrl(fid, "lumiere", today);
+            return url && url.includes("epaygo.bg");
+        });
+        const sampleVlinkUrls = withVlink.map(fid => filmTixUrl(fid, "lumiere", today)).slice(0,3);
+        // For no-vlink films, open the sheet and check for epaygo note
+        let epayNoteShown = null;
+        if (noVlink.length > 0) {
+            const f = filmById[noVlink[0]];
+            if (f) {
+                const html = sheetFilm(f);
+                const div = document.createElement("div");
+                div.innerHTML = html;
+                epayNoteShown = div.textContent.includes("epaygo.bg");
+            }
+        }
+        return {
+            lumiereFilms,
+            noVlinkCount: noVlink.length,
+            noVlink,
+            withVlinkCount: withVlink.length,
+            withVlink,
+            epayVlinkOk,
+            sampleVlinkUrls,
+            epayNoteShown
+        };
+    }""")
+
+    no_vlink_count = lumiere_result["noVlinkCount"]
+    if no_vlink_count > 0:
+        check("d1_lumiere_epay_note",
+              lumiere_result["epayNoteShown"] is True,
+              f"no-vlink lumiere film without epaygo note; no-vlink: {lumiere_result['noVlink']}")
+    else:
+        # All lumiere films have VLINKS — assert epaygo.bg links used
+        check("d1_lumiere_epay_vlinks_used",
+              lumiere_result["epayVlinkOk"],
+              f"not all lumiere VLINKS use epaygo.bg: {lumiere_result['sampleVlinkUrls']}")
+    print(f"  Lumiere films total: {len(lumiere_result['lumiereFilms'])}, "
+          f"no-vlink: {no_vlink_count}, with-vlink: {lumiere_result['withVlinkCount']}")
+    print(f"  Sample vlink URLs: {lumiere_result['sampleVlinkUrls']}")
+    ctx.close()
+
+    # ── D1-6: Animation removed, close/escape/back work ──
+    print("\n=== D1-6: Animation removed ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # Click a film card to open the sheet
+    film_card = page.query_selector("[data-film]")
+    check("d1_anim_film_card_exists", film_card is not None, "no [data-film] card found")
+    if film_card:
+        film_card.click()
+        page.wait_for_timeout(100)  # 50 ms after click
+        # At 50 ms
+        anim_50 = page.evaluate("""() => {
+            const BAD = ['.reveal','.curtain','.zlens','.zring','.cine-dim','.flare'];
+            return BAD.map(sel => document.querySelector(sel) !== null);
+        }""")
+        check("d1_anim_no_bad_elements_50ms",
+              not any(anim_50),
+              f"bad animation elements at 50ms: {anim_50}")
+        page.wait_for_timeout(150)  # ~200 ms
+        anim_200 = page.evaluate("""() => {
+            const BAD = ['.reveal','.curtain','.zlens','.zring','.cine-dim','.flare'];
+            return BAD.map(sel => document.querySelector(sel) !== null);
+        }""")
+        check("d1_anim_no_bad_elements_200ms",
+              not any(anim_200),
+              f"bad animation elements at 200ms: {anim_200}")
+        page.wait_for_timeout(400)  # ~600 ms total
+        anim_600 = page.evaluate("""() => {
+            const BAD = ['.reveal','.curtain','.zlens','.zring','.cine-dim','.flare'];
+            return BAD.map(sel => document.querySelector(sel) !== null);
+        }""")
+        check("d1_anim_no_bad_elements_600ms",
+              not any(anim_600),
+              f"bad animation elements at 600ms: {anim_600}")
+
+        # .sheet visible within 400 ms total (already past 600ms, just check it's there)
+        sheet_visible = page.evaluate("!!document.querySelector('.sheet') && document.querySelector('.sheet').offsetParent !== null")
+        check("d1_anim_sheet_visible",
+              sheet_visible,
+              "sheet not visible after 600ms")
+
+        # Close via ✕ [data-close]
+        close_btn = page.query_selector("[data-close]")
+        if close_btn:
+            close_btn.click()
+            page.wait_for_timeout(300)
+            sheet_gone = page.evaluate("!document.querySelector('.scrim') || document.querySelector('#scrim').hidden")
+            check("d1_close_x", sheet_gone, "sheet still visible after ✕ click")
+        else:
+            check("d1_close_x", False, "[data-close] not found")
+
+        # Re-open, close via Escape
+        film_card2 = page.query_selector("[data-film]")
+        if film_card2:
+            film_card2.click()
+            page.wait_for_timeout(400)
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
+            sheet_gone_esc = page.evaluate("!document.querySelector('#scrim') || document.getElementById('scrim').hidden")
+            check("d1_close_esc", sheet_gone_esc, "sheet still visible after Escape")
+        else:
+            check("d1_close_esc", False, "could not find film card for re-open")
+
+        # Re-open, close via browser back
+        film_card3 = page.query_selector("[data-film]")
+        if film_card3:
+            film_card3.click()
+            page.wait_for_timeout(400)
+            page.go_back()
+            page.wait_for_timeout(300)
+            sheet_gone_back = page.evaluate("!document.querySelector('#scrim') || document.getElementById('scrim').hidden")
+            check("d1_close_back", sheet_gone_back, "sheet still visible after browser back")
+        else:
+            check("d1_close_back", False, "could not find film card for re-open")
+
+        # Re-open (reopen works)
+        film_card4 = page.query_selector("[data-film]")
+        if film_card4:
+            film_card4.click()
+            page.wait_for_timeout(400)
+            sheet_reopened = page.evaluate("!!document.querySelector('.sheet')")
+            check("d1_reopen_works", sheet_reopened, "sheet did not reopen")
+        else:
+            check("d1_reopen_works", False, "could not find film card for re-open")
+    ctx.close()
+
+    # Reduced motion: no animations on .sheet
+    ctx_rm = browser.new_context(
+        viewport={"width": 375, "height": 812},
+        timezone_id="Europe/Sofia",
+        locale="bg-BG",
+        reduced_motion="reduce"
+    )
+    ctx_rm.add_init_script(CLOCK)
+    init_storage_bg = """
+    try {
+      localStorage.setItem('sofia-screen-v2',
+        JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'}));
+    } catch(e) {}
+    """
+    ctx_rm.add_init_script(init_storage_bg)
+    page_rm = ctx_rm.new_page()
+    errors_rm = []
+    page_rm.on("pageerror", lambda e: errors_rm.append(str(e)))
+    page_rm.goto(HTML)
+    page_rm.wait_for_selector(".bar", timeout=20000)
+    page_rm.wait_for_timeout(800)
+
+    film_card_rm = page_rm.query_selector("[data-film]")
+    if film_card_rm:
+        film_card_rm.click()
+        page_rm.wait_for_timeout(400)
+        anim_count = page_rm.evaluate("""() => {
+            const s = document.querySelector('.sheet');
+            if (!s) return -1;
+            return s.getAnimations().length;
+        }""")
+        check("d1_anim_reduced_motion",
+              anim_count == 0,
+              f"getAnimations().length={anim_count} (expected 0 with prefers-reduced-motion)")
+    else:
+        check("d1_anim_reduced_motion", False, "no film card found in reduced-motion context")
+    ctx_rm.close()
+
+    # ── D1-7: No-info handling for films ──
+    print("\n=== D1-7: No-info film ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    noinfo_result = page.evaluate("""() => {
+        const today = "2026-10-07";
+        // Find a film with ALL synopsis chains empty
+        let noInfoFilmId = null;
+        for (const r of SHOWTIMES) {
+            if (r[2] < today) continue;
+            const fid = r[0];
+            const f = filmById[fid];
+            if (!f) continue;
+            const fi = (typeof FILMINFO === "object" && FILMINFO && FILMINFO[fid]) || {};
+            const ar = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) || {};
+            const hasSynBg = (f.synBg && f.synBg.trim()) || (fi.synBg && fi.synBg.trim()) || (ar.ovBg && ar.ovBg.trim());
+            const hasSynEn = (f.synEn && f.synEn.trim()) || (fi.synEn && fi.synEn.trim()) || (ar.ov && ar.ov.trim());
+            if (!hasSynBg && !hasSynEn) { noInfoFilmId = fid; break; }
+        }
+        return {noInfoFilmId};
+    }""")
+
+    noinfo_film_id = noinfo_result.get("noInfoFilmId")
+    if not noinfo_film_id:
+        # Inject a no-info film by deleting FILMINFO + TMDBART for a specific film in-page
+        test_film = page.evaluate("""() => {
+            const today = "2026-10-07";
+            for (const r of SHOWTIMES) {
+                if (r[2] >= today) {
+                    const f = filmById[r[0]];
+                    if (f && f.id) return f.id;
+                }
+            }
+            return null;
+        }""")
+        if test_film:
+            page.evaluate(f"""() => {{
+                const fid = "{test_film}";
+                if (typeof FILMINFO === "object" && FILMINFO) delete FILMINFO[fid];
+                if (typeof TMDBART === "object" && TMDBART) delete TMDBART[fid];
+                const f = filmById[fid];
+                if (f) {{ f.synBg = ""; f.synEn = ""; f.director = ""; f.cast = ""; }}
+            }}""")
+            noinfo_film_id = test_film
+            print(f"  Injected no-info state for filmId={test_film}")
+        else:
+            check("d1_noinfo_bg_note", False, "could not find any film to test no-info state")
+
+    if noinfo_film_id:
+        # BG: should show "Няма налична информация за този филм."
+        noinfo_bg = page.evaluate(f"""() => {{
+            const f = filmById["{noinfo_film_id}"];
+            if (!f) return {{found: false}};
+            const html = sheetFilm(f);
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            const noInfoNote = div.querySelector(".no-info-note");
+            const noteText = noInfoNote ? noInfoNote.textContent.trim() : "";
+            const heroEl = div.querySelector(".shero");
+            const heroHasNote = heroEl && heroEl.querySelector(".no-info-note") !== null;
+            const credDts = Array.from(div.querySelectorAll("dl.credits dd")).map(dd => dd.textContent.trim());
+            return {{found: true, noteText, heroHasNote, credDts}};
+        }}""")
+        check("d1_noinfo_bg_note",
+              "Няма налична информация за този филм." in noinfo_bg.get("noteText", ""),
+              f"note text BG: {noinfo_bg.get('noteText', 'NOT FOUND')!r}")
+        check("d1_noinfo_hero_no_note",
+              not noinfo_bg.get("heroHasNote", False),
+              "hero section should NOT show no-info note")
+        # Credits rows show "няма информация"
+        cred_dts = noinfo_bg.get("credDts", [])
+        no_info_short = any("няма информация" in v.lower() for v in cred_dts)
+        check("d1_noinfo_credits_bg",
+              no_info_short,
+              f"credits dd values: {cred_dts[:4]}")
+
+        # Open real sheet and take screenshot
+        page.evaluate(f"""() => {{
+            const f = filmById["{noinfo_film_id}"];
+            if (f) {{ _sheetShowAllCinemas = false; curSheet = {{kind:"film", id:f.id}}; openSheet(sheetFilm(f), null); }}
+        }}""")
+        page.wait_for_timeout(600)
+        save_shot(page, wave, "m-bg-noinfo-sheet")
+    ctx.close()
+
+    # EN no-info check
+    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
+    page.wait_for_timeout(800)
+    if noinfo_film_id:
+        page.evaluate(f"""() => {{
+            const fid = "{noinfo_film_id}";
+            if (typeof FILMINFO === "object" && FILMINFO) delete FILMINFO[fid];
+            if (typeof TMDBART === "object" && TMDBART) delete TMDBART[fid];
+            const f = filmById[fid];
+            if (f) {{ f.synBg = ""; f.synEn = ""; f.director = ""; f.cast = ""; }}
+        }}""")
+        noinfo_en = page.evaluate(f"""() => {{
+            const f = filmById["{noinfo_film_id}"];
+            if (!f) return {{found: false}};
+            const html = sheetFilm(f);
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            const noInfoNote = div.querySelector(".no-info-note");
+            const noteText = noInfoNote ? noInfoNote.textContent.trim() : "";
+            const credDts = Array.from(div.querySelectorAll("dl.credits dd")).map(dd => dd.textContent.trim());
+            return {{found: true, noteText, credDts}};
+        }}""")
+        check("d1_noinfo_en_note",
+              "No information available for this film." in noinfo_en.get("noteText", ""),
+              f"note text EN: {noinfo_en.get('noteText', 'NOT FOUND')!r}")
+        en_cred_dts = noinfo_en.get("credDts", [])
+        no_info_short_en = any("no information" in v.lower() for v in en_cred_dts)
+        check("d1_noinfo_credits_en",
+              no_info_short_en,
+              f"EN credits dd values: {en_cred_dts[:4]}")
+    ctx.close()
+
+    # ── D1-8: Theatre show no-info note ──
+    print("\n=== D1-8: Show no-synopsis note ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+
+    show_noinfo = page.evaluate("""() => {
+        // Find a show in SHOWS with no synopsis; or make one empty
+        let testShowId = null;
+        let showsArr = (typeof SHOWS !== "undefined" ? SHOWS : []).concat(
+            typeof PERFORMANCES !== "undefined" ? [] : []
+        );
+        // Actually iterate over showById
+        for (const [sid, sh] of Object.entries(showById)) {
+            const hasSyn = (sh.synBg && sh.synBg.trim()) || (sh.synEn && sh.synEn.trim());
+            if (!hasSyn) { testShowId = sid; break; }
+        }
+        if (!testShowId) {
+            // Force one empty
+            const first = Object.keys(showById)[0];
+            if (!first) return {found: false, reason: "no shows"};
+            const sh = showById[first];
+            const orig = {synBg: sh.synBg, synEn: sh.synEn};
+            sh.synBg = ""; sh.synEn = "";
+            // Also clear SHOWSYN for this id
+            const savedSyn = (typeof SHOWSYN !== "undefined" && SHOWSYN[first]) || null;
+            if (typeof SHOWSYN !== "undefined") delete SHOWSYN[first];
+            const html = sheetShow(sh);
+            // Restore
+            sh.synBg = orig.synBg; sh.synEn = orig.synEn;
+            if (savedSyn && typeof SHOWSYN !== "undefined") SHOWSYN[first] = savedSyn;
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            const note = div.querySelector(".no-info-note");
+            return {found: true, injected: true, showId: first, noteText: note ? note.textContent.trim() : "", htmlSnippet: html.slice(0,200)};
+        }
+        const sh = showById[testShowId];
+        const html = sheetShow(sh);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const note = div.querySelector(".no-info-note");
+        return {found: true, injected: false, showId: testShowId, noteText: note ? note.textContent.trim() : ""};
+    }""")
+
+    if show_noinfo.get("found"):
+        check("d1_show_noinfo_note",
+              "Няма налична информация" in show_noinfo.get("noteText", "") or
+              "No information" in show_noinfo.get("noteText", ""),
+              f"show no-info note: {show_noinfo.get('noteText','NOT FOUND')!r} (showId={show_noinfo.get('showId')})")
+    else:
+        check("d1_show_noinfo_note", False, show_noinfo.get("reason", "no shows found"))
+    ctx.close()
+
+    # ── D1-9: Regression checks ──
+    print("\n=== D1-9: Regressions (N кина, venue filter) ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # "За теб днес" has at least one card with "· N кина" (N≥2)
+    today_rail_result = page.evaluate("""() => {
+        // Find the "За теб днес" rail; look for cards with "кина"
+        const cards = Array.from(document.querySelectorAll(".card"));
+        const withCina = cards.filter(c => {
+            const cf2 = c.querySelector(".cf2");
+            return cf2 && /\\d+\\s+кина/.test(cf2.textContent);
+        });
+        const cinaTexts = withCina.map(c => c.querySelector(".cf2").textContent.trim().slice(0,60));
+        return {withCinaCount: withCina.length, samples: cinaTexts.slice(0,5)};
+    }""")
+    check("d1_za_teb_n_kina",
+          today_rail_result["withCinaCount"] >= 1,
+          f"cards with N кина: {today_rail_result['withCinaCount']} — {today_rail_result['samples']}")
+
+    # Venue filter: select cc-sofia only → sheet rows only Cinema City Sofia + "Покажи всички"
+    # First open filter drawer, select cc-sofia
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) { fab.click(); return; }
+        const burger = document.querySelector('.burger[data-drawer]');
+        if (burger) burger.click();
+    }""")
+    page.wait_for_timeout(500)
+    page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-venue='cc-sofia']");
+        if (chip) chip.click();
+    }""")
+    page.wait_for_timeout(300)
+    page.evaluate("""() => {
+        const btn = document.querySelector('[data-dclose]');
+        if (btn) btn.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    # Now open the sheet for a film that plays at cc-sofia
+    venue_filter_result = page.evaluate("""() => {
+        const today = "2026-10-07";
+        // Pick first film that has cc-sofia rows
+        let filmId = null;
+        for (const r of SHOWTIMES) {
+            if (r[2] >= today && r[1] === "cc-sofia") { filmId = r[0]; break; }
+        }
+        if (!filmId) return {found: false, reason: "no cc-sofia film"};
+        const f = filmById[filmId];
+        if (!f) return {found: false, reason: "filmById miss"};
+        // Open sheet with venue filter active
+        const html = sheetFilm(f);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        // Get venue names shown in rows
+        const vrows = Array.from(div.querySelectorAll(".vrow .vloc")).map(el => el.textContent.trim().slice(0,40));
+        // Check for "Покажи всички" or "Show all" button
+        const showAllBtn = !!div.querySelector("[data-sheetshowallcin]");
+        // Check all vrows are from cc-sofia
+        const allSofia = vrows.every(v => v.toLowerCase().includes("cinema city sofia") || v.toLowerCase().includes("cinema city") || v.toLowerCase().includes("mall of sofia"));
+        return {found: true, filmId, vrows, showAllBtn, allSofia};
+    }""")
+    if venue_filter_result.get("found"):
+        check("d1_venue_filter_limits_rows",
+              venue_filter_result["allSofia"],
+              f"vrows: {venue_filter_result['vrows'][:5]}")
+        check("d1_venue_filter_show_all_btn",
+              venue_filter_result["showAllBtn"],
+              "no [data-sheetshowallcin] button found")
+    else:
+        check("d1_venue_filter_limits_rows", False, venue_filter_result.get("reason"))
+        check("d1_venue_filter_show_all_btn", False, "skipped")
+
+    ctx.close()
+
+    # ── D1-10: No page errors + verify_build.py gate ──
+    print("\n=== D1-10: No page errors + gate ===")
+    all_errors = []
+    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        for lang in ["bg", "en"]:
+            ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
+            page.wait_for_timeout(600)
+            if errs:
+                all_errors.extend([(size_tag, lang, e) for e in errs])
+            ctx.close()
+    if all_errors:
+        check("d1_no_page_errors", False, f"{len(all_errors)} error(s): {all_errors[0]}")
+    else:
+        check("d1_no_page_errors", True, "")
+
+    result = subprocess.run(
+        ["python3", "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SOFIA_HTML": "index.dev.html"}
+    )
+    gate_passes = "all checks passed" in result.stdout
+    check("d1_gate_passes", gate_passes,
+          result.stdout[:120] if not gate_passes else "")
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -2147,11 +2940,15 @@ WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
     "C1": wave_c1,
+    "D1": wave_d1,
 }
 
 def main():
     """Parse command line, run selected waves, print summary."""
     selected = sys.argv[1:] if len(sys.argv) > 1 else list(WAVES.keys())
+
+    # all_wave_results: list of (wave_name, [(status, name, detail), ...])
+    all_wave_results = []
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
@@ -2166,23 +2963,46 @@ def main():
             print(f"{'='*70}")
             results.clear()
             WAVES[wave_name](browser)
+            # Snapshot this wave's results before the next wave clears them
+            wave_snapshot = list(results)
+            all_wave_results.append((wave_name, wave_snapshot))
+
+            # Per-wave count
+            w_failed = sum(1 for s, _, _ in wave_snapshot if s == "FAIL")
+            w_total = len(wave_snapshot)
+            status_str = "PASS" if w_failed == 0 else "FAIL"
+            print(f"\nWAVE {wave_name}: {status_str} — {w_total - w_failed}/{w_total} passed")
 
         browser.close()
 
-    # Print summary
+    # Print overall summary
     print(f"\n{'='*70}")
-    print("SUMMARY")
+    print("OVERALL SUMMARY")
     print(f"{'='*70}")
 
-    for status, name, detail in results:
-        detail_str = f" — {detail}" if detail else ""
-        print(f"{status} {name}{detail_str}")
+    all_failures = []
+    grand_total = 0
+    grand_passed = 0
+    for wave_name, wave_results in all_wave_results:
+        w_failed = sum(1 for s, _, _ in wave_results if s == "FAIL")
+        w_total = len(wave_results)
+        grand_total += w_total
+        grand_passed += w_total - w_failed
+        status_str = "PASS" if w_failed == 0 else "FAIL"
+        print(f"  {wave_name}: {status_str} — {w_total - w_failed}/{w_total}")
+        for s, name, detail in wave_results:
+            if s == "FAIL":
+                all_failures.append((wave_name, name, detail))
 
-    failed = sum(1 for s, _, _ in results if s == "FAIL")
-    total = len(results)
-    print(f"\n{total - failed}/{total} passed")
+    print(f"\nTotal: {grand_passed}/{grand_total} passed")
 
-    sys.exit(1 if failed > 0 else 0)
+    if all_failures:
+        print(f"\nFAILURES ({len(all_failures)}):")
+        for wave_name, name, detail in all_failures:
+            detail_str = f" — {detail}" if detail else ""
+            print(f"  FAIL [{wave_name}] {name}{detail_str}")
+
+    sys.exit(1 if all_failures else 0)
 
 if __name__ == "__main__":
     main()
