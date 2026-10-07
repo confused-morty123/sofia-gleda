@@ -471,6 +471,39 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .fab[hidden]{display:none!important}
 main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 </style>
+<style id="cal-css">
+/* ---- calendar export panel ---- */
+.cal-btn{display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;min-width:40px;border-radius:8px;border:1px solid var(--line-2);
+  background:rgba(255,255,255,.05);color:var(--fg-2);cursor:pointer;
+  flex-shrink:0;transition:background .15s,color .15s;vertical-align:middle;margin-left:6px}
+.cal-btn:hover,.cal-btn:focus-visible{background:rgba(255,255,255,.12);color:var(--fg)}
+.cal-btn svg{pointer-events:none}
+.cal-panel{background:var(--ink-3);border:1px solid var(--line-2);border-radius:12px;
+  padding:14px 16px 16px;margin:6px 0 2px;animation:calIn .15s ease-out both}
+@keyframes calIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.cal-panel h5{margin:0 0 10px;font:600 13px/1.4 "Onest","Segoe UI",system-ui;
+  color:var(--fg);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.cal-panel h5 button.cal-x{margin-left:auto;width:26px;height:26px;min-width:26px;border-radius:6px;
+  border:none;background:transparent;color:var(--fg-2);font-size:16px;cursor:pointer;
+  display:grid;place-items:center;padding:0;line-height:1;transition:background .12s,color .12s}
+.cal-panel h5 button.cal-x:hover{background:rgba(255,255,255,.1);color:var(--fg)}
+.cal-times{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.cal-times button{padding:4px 10px;border-radius:8px;border:1px solid var(--line-2);
+  background:transparent;color:var(--fg-2);font:500 13px/1.4 "Onest","Segoe UI",system-ui;
+  cursor:pointer;min-height:34px;transition:background .12s,color .12s,border-color .12s}
+.cal-times button.sel,.cal-times button:hover{background:rgba(255,255,255,.1);
+  color:var(--fg);border-color:var(--line-2)}
+.cal-times button.sel{border-color:var(--accent);color:var(--fg)}
+.cal-apps{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.cal-apps button{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+  border-radius:10px;border:1px solid var(--line-2);background:rgba(255,255,255,.06);
+  color:var(--fg);font:500 13px/1 "Onest","Segoe UI",system-ui;cursor:pointer;
+  min-height:40px;transition:background .15s,border-color .15s}
+.cal-apps button:hover,.cal-apps button:focus-visible{background:rgba(255,255,255,.12);
+  border-color:var(--line-2)}
+.cal-apps button svg{flex-shrink:0}
+</style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
   <div style="font:600 13px/1.4 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#E0163A">Sofia Gleda</div>
@@ -1648,7 +1681,8 @@ function sheetFilm(f){
       ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}
       ${viaEpay?`<span class="vprice" style="opacity:.7">${esc(L.viaEpay)}</span>`:""}</div>
       <div class="vtimes">${r[3].map(tm=>u?`<a class="time ${inWhen(tm)?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`:`<span class="time ${inWhen(tm)?"fits":""}">${esc(tm)}</span>`).join("")}
-      ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}</div></div>`;};
+      ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}
+      ${calBtnHtml("film",f.id,r[1],d)}</div></div>`;};
   const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
     ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
   /* "Showing selected cinemas only" note with "Show all" button */
@@ -1693,7 +1727,8 @@ function sheetShow(sh){
   const u=tixUrl("show",sh.id,sh.theatre);
   const list=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
     ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(p[3]||th.name)}</div>
-      <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(p[4])}</span>`:""}</div></div>`).join("")}</div>`).join("");
+      <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(p[4])}</span>`:""}
+      ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`).join("");
   return`<div class="sheet"><div class="shero" style="background:${grad(sh.g)}">
     ${posterArt("sh-"+sh.id,sh.genres,sh.g)}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
@@ -2074,6 +2109,326 @@ function animateOpen(scrim,fromEl){
       {duration:200,easing:"ease-out",fill:"backwards"});
   }
 }
+
+/* ===================== calendar export ===================== */
+const CAL_T={
+bg:{addCal:"Добави в календара",google:"Google Календар",apple:"Apple Календар (.ics)",outlook:"Outlook"},
+en:{addCal:"Add to calendar",google:"Google Calendar",apple:"Apple Calendar (.ics)",outlook:"Outlook"}
+};
+/* Track the currently open cal panel {row el, kind, id, venue, date, time} */
+let _calPanel=null;
+
+/* DST-correct UTC offset for Europe/Sofia on a given date+time string */
+function _sofiaOffset(dateStr,timeStr){
+  /* Use Intl to resolve the actual UTC offset for this local moment */
+  const dtStr=dateStr+"T"+timeStr+":00";
+  /* Intl.DateTimeFormat can tell us the UTC offset via the "timeZoneName: 'shortOffset'" trick */
+  try{
+    const fmt=new Intl.DateTimeFormat("en",{timeZone:"Europe/Sofia",timeZoneName:"shortOffset",hour:"numeric"});
+    /* Create a Date from the ISO string treating it as UTC, then check Sofia offset */
+    /* We iterate seconds to find the exact local→UTC mapping */
+    /* Simpler approach: parse the date and use formatToParts */
+    const [y,mo,d]=dateStr.split("-").map(Number);
+    const [hh,mm]=(timeStr||"00:00").split(":").map(Number);
+    /* Try UTC offset +2 and +3, pick the one where Sofia local time matches */
+    for(const off of [3,2]){
+      const utcMs=Date.UTC(y,mo-1,d,hh-off,mm,0);
+      const sofParts=new Intl.DateTimeFormat("en",{
+        timeZone:"Europe/Sofia",year:"numeric",month:"2-digit",day:"2-digit",
+        hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date(utcMs));
+      const pp=Object.fromEntries(sofParts.map(p=>[p.type,p.value]));
+      const mh=pp.hour==="24"?"00":pp.hour;
+      if(pp.year===String(y)&&Number(pp.month)===mo&&Number(pp.day)===d&&Number(mh)===hh){
+        return off;
+      }
+    }
+  }catch(e){}
+  return 3; /* fallback */
+}
+
+/* Build a calendar event object from row data */
+function calEvent(kind,id,venueId,dateStr,timeStr){
+  let title,venue,area,url,runtimeMin;
+  if(kind==="film"){
+    const f=filmById[id]; if(!f)return null;
+    const c=cinById[venueId]; if(!c)return null;
+    title=filmTitle(f);
+    venue=(S.lang==="bg"?c.name:(c.nameEn||c.name));
+    area=c.area||"";
+    url=filmTixUrl(id,venueId,dateStr)||"";
+    runtimeMin=f.runtime||120;
+  } else {
+    const sh=showById[id]; if(!sh)return null;
+    const th=thById[sh.theatre]||thById[venueId]; if(!th)return null;
+    /* find hall from matching performance row */
+    const perf=(PERFORMANCES||[]).find(p=>p[0]===id&&p[1]===dateStr&&p[2]===timeStr);
+    title=titleOf(sh);
+    const hallSuffix=perf&&perf[3]&&perf[3]!==th.name?" — "+perf[3]:"";
+    venue=(S.lang==="bg"?th.name:(th.nameEn||th.name));
+    area=(th.area||"")+hallSuffix;
+    url=tixUrl("show",id,sh.theatre)||"";
+    runtimeMin=sh.duration||120;
+  }
+  const fullTitle=title+" — "+venue;
+  const location=venue+(area?", "+area:"");
+  const description=(url?url+"\n":"")+"Sofia Gleda";
+  const off=_sofiaOffset(dateStr,timeStr);
+  /* Compute end time */
+  const [y,mo,d]=dateStr.split("-").map(Number);
+  const [hh,mm]=(timeStr||"00:00").split(":").map(Number);
+  const startMs=Date.UTC(y,mo-1,d,hh-off,mm,0);
+  const endMs=startMs+runtimeMin*60000;
+  function toLocal(ms){
+    const dt=new Date(ms);
+    /* Recompute offset for end time */
+    const eOff=_sofiaOffset(
+      [dt.getUTCFullYear(),String(dt.getUTCMonth()+1).padStart(2,"0"),String(dt.getUTCDate()).padStart(2,"0")].join("-"),
+      [String(dt.getUTCHours()+off).padStart(2,"0"),String(dt.getUTCMinutes()).padStart(2,"0")].join(":")
+    );
+    return{
+      gcal:()=>{
+        const ld=new Date(ms);
+        const lh=ld.getUTCHours()+off,lm=ld.getUTCMinutes(),ls=ld.getUTCSeconds();
+        return[
+          String(ld.getUTCFullYear()),
+          String(ld.getUTCMonth()+1).padStart(2,"0"),
+          String(ld.getUTCDate()).padStart(2,"0"),
+          "T",
+          String(lh).padStart(2,"0"),
+          String(lm).padStart(2,"0"),
+          String(ls).padStart(2,"0")
+        ].join("");},
+      outlook(){
+        const ld=new Date(ms);
+        const lh=ld.getUTCHours()+off,lm=ld.getUTCMinutes();
+        const eoffStr=(eOff>=0?"+":"-")+String(Math.abs(eOff)).padStart(2,"0")+":00";
+        return[
+          ld.getUTCFullYear(),"-",
+          String(ld.getUTCMonth()+1).padStart(2,"0"),"-",
+          String(ld.getUTCDate()).padStart(2,"0"),"T",
+          String(lh).padStart(2,"0"),":",
+          String(lm).padStart(2,"0"),":00",eoffStr
+        ].join("");},
+      utcZ(){
+        const ld=new Date(ms);
+        return[
+          String(ld.getUTCFullYear()),
+          String(ld.getUTCMonth()+1).padStart(2,"0"),
+          String(ld.getUTCDate()).padStart(2,"0"),
+          "T",
+          String(ld.getUTCHours()).padStart(2,"0"),
+          String(ld.getUTCMinutes()).padStart(2,"0"),
+          String(ld.getUTCSeconds()).padStart(2,"0"),
+          "Z"
+        ].join("");}
+    };
+  }
+  const startObj=toLocal(startMs);
+  const endObj=toLocal(endMs);
+  return{kind,id,venueId,dateStr,timeStr,fullTitle,location,description,url,
+    startGcal:startObj.gcal(),endGcal:endObj.gcal(),
+    startOutlook:startObj.outlook(),endOutlook:endObj.outlook(),
+    startUtcZ:startObj.utcZ(),endUtcZ:endObj.utcZ(),
+    off};
+}
+
+function calGoogleUrl(ev){
+  if(!ev)return"";
+  const e=encodeURIComponent;
+  return"https://calendar.google.com/calendar/render?action=TEMPLATE"
+    +"&text="+e(ev.fullTitle)
+    +"&dates="+ev.startGcal+"/"+ev.endGcal
+    +"&ctz=Europe/Sofia"
+    +"&location="+e(ev.location)
+    +"&details="+e(ev.description);
+}
+
+function calOutlookUrl(ev){
+  if(!ev)return"";
+  const e=encodeURIComponent;
+  return"https://outlook.live.com/calendar/0/action/compose"
+    +"?subject="+e(ev.fullTitle)
+    +"&startdt="+e(ev.startOutlook)
+    +"&enddt="+e(ev.endOutlook)
+    +"&location="+e(ev.location)
+    +"&body="+e(ev.description);
+}
+
+function calIcs(ev){
+  if(!ev)return"";
+  /* RFC 5545 escaping: \ ; , and newline */
+  function rfcEsc(s){return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n");}
+  /* RFC 5545 line folding: max 75 octets (UTF-8), fold with CRLF + SPACE */
+  function fold(line){
+    const out=[];
+    let buf="",bytes=0;
+    for(const ch of line){
+      const enc=new TextEncoder().encode(ch);
+      if(bytes+enc.length>75){out.push(buf);buf=" "+ch;bytes=1+enc.length;}
+      else{buf+=ch;bytes+=enc.length;}
+    }
+    if(buf)out.push(buf);
+    return out.join("\r\n");
+  }
+  const now=new Date();
+  const dtstamp=[
+    String(now.getUTCFullYear()),
+    String(now.getUTCMonth()+1).padStart(2,"0"),
+    String(now.getUTCDate()).padStart(2,"0"),
+    "T",
+    String(now.getUTCHours()).padStart(2,"0"),
+    String(now.getUTCMinutes()).padStart(2,"0"),
+    String(now.getUTCSeconds()).padStart(2,"0"),
+    "Z"
+  ].join("");
+  const uid=ev.kind+"-"+ev.id+"-"+ev.venueId+"-"+ev.dateStr+"-"+(ev.timeStr||"").replace(/:/g,"")+"-sg@sofia-gleda";
+  const lines=[
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-" + "//Sofia Gleda//BG",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    fold("UID:"+uid),
+    "DTSTAMP:"+dtstamp,
+    "DTSTART:"+ev.startUtcZ,
+    "DTEND:"+ev.endUtcZ,
+    fold("SUMMARY:"+rfcEsc(ev.fullTitle)),
+    fold("LOCATION:"+rfcEsc(ev.location)),
+    fold("DESCRIPTION:"+rfcEsc(ev.description)),
+    fold("URL:"+rfcEsc(ev.url)),
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ];
+  return lines.join("\r\n")+"\r\n";
+}
+
+function _calSvg(){
+  return`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    <line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></svg>`;
+}
+
+/* Render the calendar button HTML (not inside an <a>) */
+function calBtnHtml(kind,id,venueId,dateStr){
+  const L=CAL_T[S.lang];
+  return`<button type="button" class="cal-btn" data-cal="${esc(kind+":"+id+"|"+venueId+"|"+dateStr)}" aria-label="${esc(L.addCal)}" title="${esc(L.addCal)}">${_calSvg()}</button>`;
+}
+
+/* Render the open panel HTML inside a row */
+function calPanelHtml(kind,id,venueId,dateStr,times,selTime){
+  const L=CAL_T[S.lang];
+  const t=selTime||(times&&times[0])||"";
+  const timePicker=times&&times.length>1
+    ?`<div class="cal-times">${times.map(tm=>`<button type="button" data-caltm="${esc(tm)}" class="cal-times-btn${tm===t?" sel":""}">${esc(tm)}</button>`).join("")}</div>`
+    :"";
+  const ev=t?calEvent(kind,id,venueId,dateStr,t):null;
+  const gUrl=ev?calGoogleUrl(ev):"";
+  const oUrl=ev?calOutlookUrl(ev):"";
+  const icsOk=!!ev;
+  const icsData=ev?JSON.stringify({kind,id,venueId,dateStr,timeStr:t}):"{}";
+  return`<div class="cal-panel">
+    <h5>${esc(L.addCal)}<button type="button" class="cal-x" data-calclose aria-label="Затвори">✕</button></h5>
+    ${timePicker}
+    <div class="cal-apps">
+      <button type="button" data-calg href="${esc(gUrl)}" data-calurl="${esc(gUrl)}">${_calSvg()}${esc(L.google)}</button>
+      ${icsOk?`<button type="button" data-calics data-calev="${esc(icsData)}" data-calid="${esc(kind+"-"+id+"-"+venueId+"-"+dateStr+"-"+(t||"").replace(/:/g,""))}">${_calSvg()}${esc(L.apple)}</button>`:`<button type="button" disabled>${_calSvg()}${esc(L.apple)}</button>`}
+      <button type="button" data-calo data-calurl="${esc(oUrl)}">${_calSvg()}${esc(L.outlook)}</button>
+    </div>
+  </div>`;
+}
+
+/* Open or close the calendar panel for a row */
+function toggleCalPanel(btn,kind,id,venueId,dateStr,times){
+  /* Close any open panel */
+  const prev=document.querySelector(".cal-panel");
+  if(prev){
+    const wasBtn=_calPanel&&_calPanel.btn;
+    prev.remove();
+    _calPanel=null;
+    if(wasBtn===btn)return; /* toggle off */
+  }
+  /* Build panel and insert after the vrow */
+  const row=btn.closest(".vrow");
+  if(!row)return;
+  const t=times&&times[0]||"";
+  const html=calPanelHtml(kind,id,venueId,dateStr,times,t);
+  const wrap=document.createElement("div");
+  wrap.innerHTML=html;
+  row.after(wrap.firstElementChild);
+  _calPanel={btn,kind,id,venueId,dateStr,times,selTime:t};
+}
+
+/* Calendar export click handler — own listener, no edits to main handler */
+document.addEventListener("click",e=>{
+  const q=sel=>e.target.closest(sel);
+  /* Cal close button */
+  if(q("[data-calclose]")){const p=q(".cal-panel");if(p){p.remove();_calPanel=null;}return;}
+  /* Time selector inside panel */
+  const tm=q(".cal-times-btn");
+  if(tm&&_calPanel){
+    _calPanel.selTime=tm.dataset.caltm;
+    const panel=tm.closest(".cal-panel");
+    if(panel){
+      panel.outerHTML=calPanelHtml(_calPanel.kind,_calPanel.id,_calPanel.venueId,_calPanel.dateStr,_calPanel.times,_calPanel.selTime);
+      /* re-bind _calPanel to new panel */
+      const newP=document.querySelector(".cal-panel");
+      if(newP)newP._calState=_calPanel;
+    }
+    return;
+  }
+  /* Google Calendar button */
+  const cg=q("[data-calg]");
+  if(cg){const u=cg.dataset.calurl;if(u)window.open(u,"_blank","noopener");return;}
+  /* Outlook button */
+  const co=q("[data-calo]");
+  if(co){const u=co.dataset.calurl;if(u)window.open(u,"_blank","noopener");return;}
+  /* Apple ICS download */
+  const ci=q("[data-calics]");
+  if(ci){
+    try{
+      const d=JSON.parse(ci.dataset.calev||"{}");
+      const ev=calEvent(d.kind,d.id,d.venueId,d.dateStr,d.timeStr);
+      if(!ev)return;
+      const ics=calIcs(ev);
+      const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;
+      const fname="sofia-gleda-"+d.id+"-"+d.dateStr+"-"+(d.timeStr||"").replace(/:/g,"")+".ics";
+      a.download=fname;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),5000);
+    }catch(err){console.error("cal ics",err);}
+    return;
+  }
+  /* Calendar open/toggle button */
+  const cb=q("[data-cal]");
+  if(cb){
+    const v=cb.dataset.cal; /* "film:id|venue|date" or "show:id|venue|date" */
+    const[kindraw,...rest]=v.split(":");
+    const parts=rest.join(":").split("|");
+    const kind=kindraw,id=parts[0],venueId=parts[1],dateStr=parts[2];
+    /* Gather times for this row */
+    let times=[];
+    if(kind==="film"){
+      const rows=SHOWTIMES.filter(r=>r[0]===id&&r[1]===venueId&&r[2]===dateStr);
+      if(rows.length)times=rows[0][3]||[];
+    }else{
+      times=PERFORMANCES.filter(p=>p[0]===id&&p[1]===dateStr&&(p[0]===id)).map(p=>p[2]).filter((x,i,a)=>a.indexOf(x)===i);
+    }
+    toggleCalPanel(cb,kind,id,venueId,dateStr,times);
+    return;
+  }
+});
+/* Escape key closes open panel */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&_calPanel){
+    const p=document.querySelector(".cal-panel");
+    if(p){p.remove();_calPanel=null;e.stopPropagation();}
+  }
+},{capture:true});
 
 /* ===================== events ===================== */
 document.addEventListener("click",e=>{
