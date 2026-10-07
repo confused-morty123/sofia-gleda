@@ -1492,5 +1492,77 @@
   "synBg": "",
   "synEn": "",
   "source": "zad-kanala"
+ },
+ "gospodin-kolpert-premiera": {
+  "id": "gospodin-kolpert-premiera",
+  "title": "ГОСПОДИН КОЛПЕРТ ПРЕМИЕРА",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "martva-hvatka-i-kinoprozhektsiya": {
+  "id": "martva-hvatka-i-kinoprozhektsiya",
+  "title": "Мъртва хватка I кинопрожекция",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "lust-last-i-kinoprozhektsiya": {
+  "id": "lust-last-i-kinoprozhektsiya",
+  "title": "LUST (ЛЪСТ) I кинопрожекция",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "naza-i-kinoprozhektsiya": {
+  "id": "naza-i-kinoprozhektsiya",
+  "title": "NAZA I кинопрожекция",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }

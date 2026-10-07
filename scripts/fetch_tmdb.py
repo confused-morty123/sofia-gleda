@@ -22,7 +22,32 @@ except Exception:
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "tmdb_films.json"
+LINKS_OUT = ROOT / "film_links_posters.json"
 TOKEN = os.environ.get("TMDB_TOKEN", "").strip()
+
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+      "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
+
+# Re-release / restoration decoration that is NOT part of a film's canonical title
+# and makes TMDB return nothing (e.g. "Cars (20th Anniversary)", "The Shining
+# (Restored)"). Stripped only as a FALLBACK, after the decorated title misses, so a
+# film with an IMDb rating and a synopsis stops falling through to the grey gradient.
+_PAREN_RE = re.compile(r"\s*\([^()]*\)\s*$")
+_DECOR_RE = re.compile(
+    r"\s*[-–—]\s*(?:\d+\s*(?:th|st|nd|rd)?\s*)?"
+    r"(?:anniversary|restored|restoration|remastered|re-?release|director'?s cut|"
+    r"final cut|extended cut|uncut|special edition|redux|4k|imax|70\s*mm)\b.*$",
+    re.I)
+
+# og:image fallback: a film TMDB cannot match (Bulgarian/festival titles) still has
+# a real still/poster on its own programme page, whose URL is already in the app's
+# LINKS array. These are the film's OWN images — honest, never a fabricated match.
+_OG_RE  = re.compile(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', re.I)
+_OG_RE2 = re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', re.I)
+# Site-wide chrome that is NOT the film's image — never adopt these as a poster.
+_BAD_IMG = ("logo", "placeholder", "default-", "/default", "fallback",
+            "avatar", "sprite", "share-", "/share.", "og-image.png")
+
 
 # Films TMDB matches WRONGLY (mostly Bulgarian/festival titles whose English
 # name collides with a famous foreign film — e.g. "adat-v-neya" matched "The
@@ -121,40 +146,131 @@ def pick_bg(results, bg, year):
     return best if bestscore >= 60.0 else None
 
 
+def declutter(title):
+    """Strip re-release/restoration decoration so the canonical title can match."""
+    t = (title or "").strip()
+    prev = None
+    while t and t != prev:
+        prev = t
+        t = _PAREN_RE.sub("", t).strip()
+    t = _DECOR_RE.sub("", t).strip()
+    return t
+
+
+def search_en(en, year):
+    """Query TMDB by English title (with, then without, the year) and pick best."""
+    res = api("search/movie", {"query": en, "year": year, "include_adult": "false"})
+    results = (res or {}).get("results", [])
+    if not results:
+        res = api("search/movie", {"query": en, "include_adult": "false"})
+        results = (res or {}).get("results", [])
+    return pick(results, en, year)
+
+
+def details_en(tmdb_id):
+    """English overview + production country from the film's detail record. Owner's
+    choice is 'TMDB English where it exists, else Bulgarian' — no machine translation,
+    so this authoritative English fills the detail card when the dataset has none."""
+    d = api(f"movie/{tmdb_id}", {"language": "en-US"})
+    if not d:
+        return None, None
+    ov = (d.get("overview") or "").strip() or None
+    pcs = d.get("production_countries") or []
+    country = (pcs[0].get("name") or "").strip() if pcs else None
+    return ov, (country or None)
+
+
+def og_image(url):
+    """Best-effort og:image from a film's own programme page. Returns a usable image
+    URL or None — site chrome (logos, share images) is rejected, never fabricated."""
+    if not url:
+        return None
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
+        with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
+            html = r.read(300000).decode("utf-8", "replace")
+    except Exception as e:
+        print("    ! og fetch error", e, file=sys.stderr)
+        return None
+    for rx in (_OG_RE, _OG_RE2):
+        m = rx.search(html)
+        if m:
+            u = m.group(1).strip()
+            if u.startswith("//"):
+                u = "https:" + u
+            if not u.lower().startswith("http"):
+                continue
+            if any(b in u.lower() for b in _BAD_IMG):
+                return None
+            return u
+    return None
+
+
 def main():
     if not TOKEN:
         print("TMDB_TOKEN not set — skipping film posters, keeping previous.", file=sys.stderr)
         return 0
     data = HTML.read_text(encoding="utf-8").split("/* SOFIA-DATA-START */")[1].split("/* SOFIA-DATA-END */")[0]
     films = grab(data, "FILMS")
+    # id -> detail-page URL (for the og:image fallback). LINKS is a list of [id, url].
+    links = {}
+    try:
+        for row in (grab(data, "LINKS") or []):
+            if isinstance(row, (list, tuple)) and len(row) >= 2 and row[0]:
+                links.setdefault(row[0], row[1])
+    except Exception as e:
+        print("  (could not read LINKS for og:image fallback:", e, ")", file=sys.stderr)
+    # Carry forward previously-harvested og:image posters so a transient fetch
+    # failure never blanks a film that had a real image last run (keep-previous).
+    film_links = {}
+    if LINKS_OUT.exists():
+        try:
+            film_links = json.load(open(LINKS_OUT, encoding="utf-8")) or {}
+        except Exception:
+            film_links = {}
+
     out = {}
     for i, f in enumerate(films):
+        fid = f["id"]
         en, bg, year = f.get("en"), f.get("bg"), f.get("year")
-        if f["id"] in BLOCKLIST:
-            print(f"[{i+1}/{len(films)}] {f['id']:24s} BLOCKED (known false match — generated art kept)")
-            out[f["id"]] = {"matched": False, "en": en}
+        if fid in BLOCKLIST:
+            print(f"[{i+1}/{len(films)}] {fid:24s} BLOCKED (known false match — generated art kept)")
+            out[fid] = {"matched": False, "en": en}
+            # TMDB has no correct entry, but the film's own programme page does — a
+            # real image for this exact title beats the grey gradient.
+            img = og_image(links.get(fid))
+            if img:
+                film_links[fid] = img
+                print(f"      og:image -> {img}")
             continue
         # Synthesised arthouse films carry only a Bulgarian title; fall back to it
         # (confirmed via language=bg in pick_bg) so posters/ratings fill where TMDB
         # has them, without ever accepting a loose, fabricated match.
         via_bg = False
         if en:
-            res = api("search/movie", {"query": en, "year": year, "include_adult": "false"})
-            results = (res or {}).get("results", [])
-            if not results:
-                res = api("search/movie", {"query": en, "include_adult": "false"})
-                results = (res or {}).get("results", [])
-            best = pick(results, en, year)
+            best = search_en(en, year)
+            if not best:
+                # Re-release decoration (e.g. "Cars (20th Anniversary)") blocks the
+                # match; retry with the canonical title before giving up.
+                clean = declutter(en)
+                if clean and clean.lower() != en.lower():
+                    best = search_en(clean, year)
+                    if best:
+                        print(f"      (matched after declutter: {en!r} -> {clean!r})")
         elif bg:
             via_bg = True
             res = api("search/movie", {"query": bg, "language": "bg", "include_adult": "false"})
             results = (res or {}).get("results", [])
             best = pick_bg(results, bg, year)
         else:
-            results, best = [], None
+            best = None
         if not best:
-            print(f"[{i+1}/{len(films)}] {f['id']:24s} NO MATCH ({en or bg} {year})")
-            out[f["id"]] = {"matched": False, "en": en}
+            print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
+            out[fid] = {"matched": False, "en": en}
+            img = og_image(links.get(fid))
+            if img:
+                film_links[fid] = img
+                print(f"      og:image -> {img}")
             continue
         # When matched via the Bulgarian title the result's `title` is Bulgarian,
         # so only trust `original_title` as an English name when the film is
@@ -175,9 +291,26 @@ def main():
             "tmdb_year": (best.get("release_date") or "")[:4],
             "tmdb_vote": best.get("vote_average"),
         }
-        out[f["id"]] = rec
+        # Owner's choice: fill English synopsis/country from TMDB where it exists,
+        # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
+        ov, country = details_en(best["id"])
+        if ov:
+            rec["ov"] = ov
+        if country:
+            rec["country"] = country
+        out[fid] = rec
+        # A matched film with no TMDB poster still has its own programme-page image.
+        if not rec["poster_path"]:
+            img = og_image(links.get(fid))
+            if img:
+                film_links[fid] = img
+                print(f"      og:image -> {img}")
+        else:
+            # Now has a verified TMDB poster: drop any stale og fallback so the
+            # higher-priority POSTERS override can never shadow the better image.
+            film_links.pop(fid, None)
         flag = "" if rec["poster_path"] else "  (no poster!)"
-        print(f"[{i+1}/{len(films)}] {f['id']:24s} -> {rec['en']} ({rec['tmdb_year']}) id={rec['tmdb_id']}{flag}")
+        print(f"[{i+1}/{len(films)}] {fid:24s} -> {rec['en']} ({rec['tmdb_year']}) id={rec['tmdb_id']}{flag}")
         time.sleep(0.12)
 
     posters = sum(1 for v in out.values() if v.get("poster_path"))
@@ -186,8 +319,13 @@ def main():
         print("0 posters this run — keeping previous tmdb_films.json", file=sys.stderr)
         return 0
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    # Only films without a TMDB poster appear here, so this override map stays a
+    # pure fallback and never shadows a verified TMDB poster.
+    film_links = {k: v for k, v in film_links.items() if v}
+    json.dump(film_links, open(LINKS_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     matched = sum(1 for v in out.values() if v.get("matched"))
-    print(f"\nDONE: {matched}/{len(films)} matched, {posters} with posters -> {OUT.name}")
+    print(f"\nDONE: {matched}/{len(films)} matched, {posters} with posters, "
+          f"{len(film_links)} og:image fallbacks -> {OUT.name}")
     return 0
 
 

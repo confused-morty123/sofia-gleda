@@ -317,5 +317,82 @@
    "#5F4527"
   ],
   "source": "lumiere"
+ },
+ "doni-darko": {
+  "id": "doni-darko",
+  "bg": "Дони Дарко",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino"
+ },
+ "naza": {
+  "id": "naza",
+  "bg": "НАЗА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino"
+ },
+ "tayni-i-lazhi": {
+  "id": "tayni-i-lazhi",
+  "bg": "Тайни и лъжи",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino"
+ },
+ "goli": {
+  "id": "goli",
+  "bg": "Голи",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino"
+ },
+ "houp": {
+  "id": "houp",
+  "bg": "Хоуп",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino"
+ },
+ "kes": {
+  "id": "kes",
+  "bg": "Кес",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino"
+ },
+ "sinelibri-2026-embargo-predstavyane-na-tvorchestvoto-na-zhoz": {
+  "id": "sinelibri-2026-embargo-predstavyane-na-tvorchestvoto-na-zhoz",
+  "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО | представяне на творчеството на  Жозе Сарамаго",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
  }
 }

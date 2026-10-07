@@ -533,6 +533,11 @@ ID_RE = re.compile(r"kupi-bilet\.php\?[^\"'>]*\bid=(\d+)[^\"'>]*\btheatre=(\d+)"
                    r"(?:[^\"'>]*\bcity=(\d+))?", re.I)
 OG_RE = re.compile(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', re.I)
 OG_RE2 = re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', re.I)
+# Toplocentrala's performance page embeds the real, show-specific poster as an
+# attachments/Event/<id>/main/<file> image; its og:image is only the site default,
+# so that inline path is the one worth having. "_thumb-detail" is a smaller derived
+# size — stripping it yields the full image (verified present) for a crisp sheet.
+TOPLO_ATT_RE = re.compile(r'(attachments/Event/\d+/main/[^"\'\s)]+?\.(?:jpe?g|png|webp))', re.I)
 
 
 def harvest_ids(net, days, matcher, wanted, verbose=False):
@@ -582,11 +587,68 @@ def from_artbg(net, matcher, wanted, days, verbose=False):
     return found
 
 
+# ---------------------------------------------------- per-show detail links
+def from_links(net, html_src, matcher, wanted, verbose=False):
+    """Last-resort source using each show's own detail URL, already captured in the
+    app's LINKS array. Two venues neither aggregator reaches expose a real,
+    show-specific image here:
+      • toplocentrala.bg — the performance page embeds attachments/Event/<id>/main/…
+        (its og:image is only the site logo, so we read that inline poster instead).
+      • theatre.art.bg — the kupi-bilet link already carries the production/theatre
+        ids, so we resolve the peakview og:image directly, bypassing the day-page
+        title match that misses a minted title.
+    Every hit still passes through posterpolicy before it is accepted — never a
+    fabricated or site-chrome image."""
+    body = html_src.split("/* SOFIA-DATA-START */")[1].split("/* SOFIA-DATA-END */")[0]
+    links = {}
+    try:
+        for row in (grab(body, "LINKS") or []):
+            if isinstance(row, (list, tuple)) and len(row) >= 2 and row[0]:
+                links.setdefault(row[0], row[1])
+    except Exception as e:
+        print(f"  (could not read LINKS: {e})", file=sys.stderr)
+        return {}
+    found = {}
+    for sid in sorted(wanted):
+        if net.budget_spent():
+            print("  time budget reached — stopping from_links", file=sys.stderr)
+            break
+        url = links.get(sid)
+        if not url:
+            continue
+        img = None
+        if "toplocentrala.bg" in url:
+            page = net.text(url, attempts=2)
+            if page:
+                m = TOPLO_ATT_RE.search(page)
+                if m:
+                    path = m.group(1).replace("_thumb-detail", "")
+                    img = "https://toplocentrala.bg/" + path.lstrip("/")
+        elif "theatre.art.bg" in url:
+            got = ID_RE.search(url)
+            if got:
+                prod, theatre, city = got.group(1), got.group(2), got.group(3) or "20"
+                page = net.text(ART_PROD.format(prod=prod, theatre=theatre, city=city),
+                                attempts=2)
+                if page:
+                    m = OG_RE.search(page) or OG_RE2.search(page)
+                    if m:
+                        u = m.group(1).strip()
+                        if u.startswith("//"):
+                            u = "https:" + u
+                        if u.startswith("http") and re.search(r"\.(jpe?g|png|webp)$", u, re.I):
+                            img = u
+        if img:
+            found[sid] = img
+            print(f"  [links]      {sid:24s} {img.rsplit('/', 1)[-1][:50]}")
+    return found
+
+
 # -------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--source", choices=["all", "programata", "artbg"], default="all")
+    ap.add_argument("--source", choices=["all", "programata", "artbg", "links"], default="all")
     ap.add_argument("--only", help="comma-separated show ids, for debugging one match")
     ap.add_argument("--refresh", action="store_true",
                     help="re-resolve shows that already have a poster")
@@ -639,6 +701,11 @@ def main():
         start = dt.date.fromisoformat(win.group(1)) if win else dt.date.today()
         days = [start + dt.timedelta(days=i) for i in range(args.days)]
         found.update(from_artbg(net, matcher, remaining, days, args.verbose))
+
+    remaining = want - set(found)
+    if remaining and args.source in ("all", "links"):
+        print(f"\n--- per-show detail links ({len(remaining)} still missing) ---")
+        found.update(from_links(net, src, matcher, remaining, args.verbose))
 
     # previous file < this run's scrape < hand-verified SEED, and every tier
     # passes through posterpolicy before it is allowed in.

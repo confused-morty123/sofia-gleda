@@ -21,9 +21,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 TMDB_JSON = ROOT / "tmdb_films.json"
 SHOW_JSON = ROOT / "theatre_posters.json"
+LINKS_JSON = ROOT / "film_links_posters.json"
 
 tmdb = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {}
 shows = json.load(open(SHOW_JSON, encoding="utf-8")) if SHOW_JSON.exists() else {}
+film_links = json.load(open(LINKS_JSON, encoding="utf-8")) if LINKS_JSON.exists() else {}
 
 art = {}
 for fid, v in tmdb.items():
@@ -33,10 +35,18 @@ for fid, v in tmdb.items():
     if v.get("poster_path"):   rec["p"] = v["poster_path"]
     if v.get("backdrop_path"): rec["b"] = v["backdrop_path"]
     if v.get("en"):            rec["en"] = v["en"]
+    if v.get("ov"):            rec["ov"] = v["ov"]        # TMDB English synopsis
+    if v.get("country"):       rec["country"] = v["country"]  # TMDB English country
     if rec:
         art[fid] = rec
 
 showart = {k: v for k, v in shows.items() if v}
+
+# Films TMDB cannot match keep their own programme-page image (og:image), harvested
+# into film_links_posters.json. These are full URLs and go into POSTERS, which
+# realPoster() checks first — but fetch_tmdb only writes an entry here for a film
+# WITHOUT a TMDB poster, so this stays a pure fallback and never shadows TMDB art.
+posters_override = {k: v for k, v in film_links.items() if v}
 
 # A cinema-scope event that is simply a screening of a film we already list must
 # borrow that film's verified TMDB poster - harvesting a second image for the same
@@ -67,7 +77,7 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
     + header + "\n"
-    + "const POSTERS = {};\n"
+    + "const POSTERS = " + json.dumps(posters_override, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const TMDBART = " + json.dumps(art, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const SHOWART = " + json.dumps(showart, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const SHOWALIAS = " + json.dumps(alias, ensure_ascii=False, separators=(",", ":")) + ";\n"
@@ -96,5 +106,6 @@ if stray:
 new = re.sub(MARKERS, lambda m: block, data, count=1, flags=re.S)
 HTML.write_text(new, encoding="utf-8")
 print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' in r)} with posters), "
+      f"POSTERS: {len(posters_override)} og:image fallbacks, "
       f"SHOWART: {len(showart)} shows, SHOWALIAS: {len(alias)} mirrored events"
       + (" (" + ", ".join(f"{k}->{v}" for k, v in alias.items()) + ")" if alias else ""))

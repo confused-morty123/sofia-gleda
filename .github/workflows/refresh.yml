@@ -1,6 +1,6 @@
-# Sofia Gleda — weekly data refresh.
+# Sofia Gleda — data refresh every three days.
 #
-# Runs every Sunday (and whenever you press the manual button), scrapes the
+# Runs every third day (and whenever you press the manual button), scrapes the
 # latest programmes and posters, rebuilds index.html, and commits the result
 # back. Because GitHub Pages redeploys automatically on every push to the main
 # branch, the live site updates itself with no further action from you.
@@ -8,13 +8,15 @@
 # The only thing you must set up once: a repository secret named TMDB_TOKEN
 # (see SETUP.md, step 6). Everything else is automatic.
 
-name: Weekly refresh
+name: Three-day refresh
 
 on:
   schedule:
-    # 03:17 UTC every Sunday  ==  06:17 in Sofia (summer) / 05:17 (winter).
-    # GitHub may start scheduled runs a few minutes late under load — that's fine.
-    - cron: "17 3 * * 0"
+    # 03:17 UTC every third day  ==  06:17 in Sofia (summer) / 05:17 (winter).
+    # "*/3" steps the day-of-month: the 1st, 4th, 7th … 31st, then resets at the
+    # month boundary, so the 31st→1st gap can be a single day — that is fine.
+    # GitHub may start scheduled runs a few minutes late under load — also fine.
+    - cron: "17 3 */3 * *"
   workflow_dispatch: {}          # adds a "Run workflow" button on the Actions tab
 
 # Allow the workflow to commit the refreshed files back to the repository.
@@ -30,10 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -62,7 +64,7 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json build_report.json; do
+          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json build_report.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage any new or updated poster images (re-hosted from venue websites).
@@ -70,8 +72,8 @@ jobs:
           # never excludes it, so only genuinely new files are added here.
           [ -d posters ] && git add posters/
           if git diff --cached --quiet; then
-            echo "No changes this week — nothing to commit."
+            echo "No changes this run — nothing to commit."
           else
-            git commit -m "Weekly refresh: $(date -u +'%Y-%m-%d')"
+            git commit -m "Scheduled refresh: $(date -u +'%Y-%m-%d')"
             git push
           fi

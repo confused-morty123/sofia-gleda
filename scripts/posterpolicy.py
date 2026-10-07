@@ -127,7 +127,11 @@ class Catalogue:
         return None
 
     def knows(self, poster_id):
-        return poster_id in self.show_ids or poster_id in self.event_by_id
+        # A film id is a legitimate POSTERS key too: a film TMDB cannot match keeps
+        # its own programme-page og:image as a fallback override (films-only, written
+        # by fetch_tmdb.py). Orphan protection stays — a typo'd id is still refused.
+        return (poster_id in self.show_ids or poster_id in self.event_by_id
+                or poster_id in self.film_ids)
 
 
 def reject_reason(poster_id, url, catalogue=None):
@@ -153,7 +157,7 @@ def reject_reason(poster_id, url, catalogue=None):
             return (f"this is a screening of the catalogued film '{mirrored}' — use "
                     f"its verified TMDB poster, not a harvested one")
         if not catalogue.knows(poster_id):
-            return "no show or event in the catalogue has this id"
+            return "no film, show or event in the catalogue has this id"
     return None
 
 
