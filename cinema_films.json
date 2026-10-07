@@ -394,5 +394,148 @@
    "#275F3A"
   ],
   "source": "vlaikova"
+ },
+ "animatsionni-filmi-na-stoyan-dukov": {
+  "id": "animatsionni-filmi-na-stoyan-dukov",
+  "bg": "Анимационни филми на Стоян Дуков",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
+ },
+ "animatsionni-filmi-na-nastimir-tsachev-i-vyara-doneva": {
+  "id": "animatsionni-filmi-na-nastimir-tsachev-i-vyara-doneva",
+  "bg": "Анимационни филми на Настимир Цачев и Вяра Донева",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "s-vnimanie-kam-detayla": {
+  "id": "s-vnimanie-kam-detayla",
+  "bg": "С внимание към детайла",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "da-zhivee-balgariya": {
+  "id": "da-zhivee-balgariya",
+  "bg": "Да живее България",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
+ },
+ "dahomey": {
+  "id": "dahomey",
+  "bg": "Дахомей",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "tova-se-sluchi-na-ulitsata": {
+  "id": "tova-se-sluchi-na-ulitsata",
+  "bg": "Това се случи на улицата",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "sledovatelyat-i-gorata": {
+  "id": "sledovatelyat-i-gorata",
+  "bg": "Следователят и гората",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": {
+  "id": "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno",
+  "bg": "Хроники за неудобната истина – истината за Българският Чернобил",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
+ },
+ "bez-konkurentsiya": {
+  "id": "bez-konkurentsiya",
+  "bg": "Без конкуренция",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "g8"
+ },
+ "kitovete-paziteli-na-planetata": {
+  "id": "kitovete-paziteli-na-planetata",
+  "bg": "Китовете, пазители на планетата",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "g8"
+ },
+ "kotki-v-muzeya-2-sakrovishtata-na-egipet": {
+  "id": "kotki-v-muzeya-2-sakrovishtata-na-egipet",
+  "bg": "Котки в музея 2: Съкровищата на Египет",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8"
+ },
+ "kina-i-yuk-lisitsite-ot-dalechniya-sever": {
+  "id": "kina-i-yuk-lisitsite-ot-dalechniya-sever",
+  "bg": "Кина и Юк, лисиците от далечния север",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "g8"
+ },
+ "diamanti": {
+  "id": "diamanti",
+  "bg": "Диаманти",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "g8"
  }
 }

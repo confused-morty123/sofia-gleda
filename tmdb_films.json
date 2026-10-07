@@ -10,7 +10,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 8.014,
   "ov": "Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt33764258",
+  "imdb": 8.4,
+  "imdbVotes": "478.0K"
  },
  "spider-man": {
   "matched": true,
@@ -23,7 +26,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 8.219,
   "ov": "Fighting crime full-time as Spider-Man in a world that doesn't remember him—and the pressure of seeing his old friends move on without him—sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt22084616",
+  "imdb": 8.1,
+  "imdbVotes": "183.6K"
  },
  "koyota": {
   "matched": true,
@@ -36,7 +42,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.517,
   "ov": "After Acme products fail him one too many times in his dogged pursuit of the Roadrunner, Wile E. Coyote decides to hire a billboard lawyer to sue the Acme Corporation.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt1756855",
+  "imdb": 7.6,
+  "imdbVotes": "18.5K"
  },
  "maykal": {
   "matched": true,
@@ -49,7 +58,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 8.6,
   "ov": "The story of Michael Jackson, one of the most influential artists the world has ever known, and his life beyond the music. His journey from the discovery of his extraordinary talent as the lead of the Jackson Five, to the visionary artist whose creative ambition fueled a relentless pursuit to become the biggest entertainer in the world, highlighting both his life off-stage and some of the most iconic performances from his early solo career.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt11378946",
+  "imdb": 7.4,
+  "imdbVotes": "188.3K"
  },
  "kurierat": {
   "matched": true,
@@ -62,7 +74,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 8.333,
   "ov": "A former soldier is thrown into a brutal race against time when a critical medical delivery makes him and his unlikely partner the targets of a ruthless cartel. As the mission spirals into a deadly manhunt, every detour, delay, and bullet pushes them closer to failure. With betrayal closing in from every side, they must survive the chase and deliver their cargo to save the life of a little girl.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt31349844",
+  "imdb": 6.6,
+  "imdbVotes": "493"
  },
  "blue-lock": {
   "matched": true,
@@ -75,7 +90,10 @@
   "tmdb_year": "2024",
   "tmdb_vote": 7.6,
   "ov": "When apathetic gamer Nagi agrees to join his rich classmate Mikage in soccer, their partnership leads to the famous Blue Lock program — and to changes.",
-  "country": "Japan"
+  "country": "Japan",
+  "imdb_id": "tt28671146",
+  "imdb": 6.6,
+  "imdbVotes": "3.6K"
  },
  "kucheshki": {
   "matched": true,
@@ -88,7 +106,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.6,
   "ov": "After the world's population has been ravaged by a pandemic, a man lives a lonesome existence in a Colorado airplane hangar with his dog and a dour gunman he has befriended. When a mysterious transmission comes through on the radio while he’s flying his old Cessna, it sparks a hunt for the provenance of the sound.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt21285562",
+  "imdb": 6.5,
+  "imdbVotes": "13.5K"
  },
  "prilozhna-2": {
   "matched": true,
@@ -101,7 +122,8 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.2,
   "ov": "The Owens sisters must confront the dark curse that threatens to unravel their family once and for all.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt32588798"
  },
  "insidious": {
   "matched": true,
@@ -114,7 +136,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.34,
   "ov": "Gemma, a young mother raising her daughter in the house she grew up in, discovers she can travel into The Further, where she possesses an ability to bring what lives there back to the real world.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt32393988",
+  "imdb": 6.2,
+  "imdbVotes": "13.2K"
  },
  "pes-patrul": {
   "matched": true,
@@ -127,7 +152,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 8.225,
   "ov": "The Paw Patrol lands on a mysterious dinosaur island after a storm, where they meet Rex, a stranded pup. When Humdinger's reckless mining triggers a volcano, the team faces their biggest rescue mission yet to save the island.",
-  "country": "Canada"
+  "country": "Canada",
+  "imdb_id": "tt29356163",
+  "imdb": 6.1,
+  "imdbVotes": "2.5K"
  },
  "buntovnikat": {
   "matched": true,
@@ -140,7 +168,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.444,
   "ov": "After witnessing his billionaire boss' murder and being framed for the crime, Cole Reed boards a cargo ship on a one-man crusade to avenge his boss' death only to discover an international conspiracy.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt32338669",
+  "imdb": 5.7,
+  "imdbVotes": "17.2K"
  },
  "padane-2": {
   "matched": true,
@@ -153,7 +184,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.9,
   "ov": "On a perilous climb across Thailand's Mount Kwan, two climbers become trapped thousands of feet above the ground, where vertigo-inducing heights, sheer exposure, and impossible odds turn every moment into a fight for survival.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt31192372",
+  "imdb": 5.7,
+  "imdbVotes": "1.6K"
  },
  "terminator-2": {
   "matched": true,
@@ -166,7 +200,10 @@
   "tmdb_year": "1991",
   "tmdb_vote": 8.172,
   "ov": "Ten years after the events of the original, a reprogrammed T-800 is sent back in time to protect young John Connor from the shape-shifting T-1000. Together with his mother Sarah, he fights to stop Skynet from triggering a nuclear apocalypse.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt0103064",
+  "imdb": 8.6,
+  "imdbVotes": "1.3M"
  },
  "kolite": {
   "matched": true,
@@ -179,7 +216,10 @@
   "tmdb_year": "2006",
   "tmdb_vote": 7.058,
   "ov": "Lightning McQueen, a hotshot rookie race car driven to succeed, discovers that life is about the journey, not the finish line, when he finds himself unexpectedly detoured in the sleepy Route 66 town of Radiator Springs. On route across the country to the big Piston Cup Championship in California to compete against two seasoned pros, McQueen gets to know the town's offbeat characters.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt0317219",
+  "imdb": 7.3,
+  "imdbVotes": "529.0K"
  },
  "prada-2": {
   "matched": true,
@@ -192,7 +232,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.0,
   "ov": "Andy Sachs returns to Runway as Miranda Priestly navigates a new media landscape and Runway's position within. The duo reconnect with former assistant Emily Charlton, now the head of a luxury brand that possesses funding which could ensure Runway's survival.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt33612209",
+  "imdb": 6.4,
+  "imdbVotes": "87.5K"
  },
  "minoni": {
   "matched": true,
@@ -205,7 +248,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.6,
   "ov": "This is the rambunctious, ridiculous and totally true story of how the Minions conquered Hollywood, became movie stars, lost everything, unleashed monsters onto the world and then banded together to try and save the planet from the mayhem they had just created.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt32890033",
+  "imdb": 6.3,
+  "imdbVotes": "31.0K"
  },
  "naslednikat": {
   "matched": true,
@@ -242,7 +288,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.5,
   "ov": "Experience the meteoric rise of Oasis through rare footage and untold stories as the band reunites for Oasis Live '25, chronicling their journey from Manchester streets to global rock stardom.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt36150957",
+  "imdb": 8.6,
+  "imdbVotes": "801"
  },
  "divo-sarce": {
   "matched": false,
@@ -261,9 +310,12 @@
   "original_title": "Toy Story 5",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.304,
+  "tmdb_vote": 8.3,
   "ov": "When Bonnie receives a Lilypad tablet as a gift and becomes obsessed, Buzz, Woody, Jessie and the rest of the gang's jobs become exponentially harder when they have to go head to head with the all-new threat to playtime.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt29355505",
+  "imdb": 7.4,
+  "imdbVotes": "81.7K"
  },
  "vayana": {
   "matched": true,
@@ -276,7 +328,10 @@
   "tmdb_year": "2016",
   "tmdb_vote": 7.6,
   "ov": "In Ancient Polynesia, when a terrible curse incurred by Maui reaches an impetuous Chieftain's daughter's island, she answers the Ocean's call to seek out the demigod to set things right.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt3521164",
+  "imdb": 7.6,
+  "imdbVotes": "451.4K"
  },
  "sablezab": {
   "matched": true,
@@ -289,7 +344,8 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.3,
   "ov": "Set sail for an exciting pirate adventure when Captain Sabertooth and Raven fight against Sibylla and her terrifying dragon in a battle that can only be won by courage, friendship and rat soup!",
-  "country": "Norway"
+  "country": "Norway",
+  "imdb_id": "tt33540970"
  },
  "spa-uikend": {
   "matched": true,
@@ -302,7 +358,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.4,
   "ov": "Four lifelong friends realize that somewhere between careers, relationships, families, and everyday responsibilities, they’ve forgotten how to take care of themselves and each other. Burned out and overdue for a break, the women escape to a luxury spa retreat for an unforgettable weekend dedicated to fun, laughter, and a lot of really bad decisions.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt33305867",
+  "imdb": 5.4,
+  "imdbVotes": "1.5K"
  },
  "oak-street": {
   "matched": true,
@@ -315,7 +374,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.1,
   "ov": "After a mysterious cosmic event rips Oak Street from suburbia and transports their neighborhood to someplace unknown, the Platt family soon discovers that their very survival depends on them sticking together as they navigate their now unrecognizable surroundings.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt27165187",
+  "imdb": 6.5,
+  "imdbVotes": "39.1K"
  },
  "2001": {
   "matched": true,
@@ -328,7 +390,10 @@
   "tmdb_year": "1968",
   "tmdb_vote": 8.043,
   "ov": "Humanity finds a mysterious object buried beneath the lunar surface and sets off to find its origins with the help of HAL 9000, the world's most advanced super computer.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt0062622",
+  "imdb": 8.3,
+  "imdbVotes": "794.4K"
  },
  "palestina-36": {
   "matched": true,
@@ -341,7 +406,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 7.7,
   "ov": "Year 1936. As villages across Palestine rise against British colonial rule, Yusuf drifts between his rural home and the restless energy of Jerusalem, longing for a future beyond the growing unrest. But history is relentless. With rising numbers of Jewish immigrants escaping antisemitism in Europe and some arriving with nefarious Zionist-colonial ambitions, and the Palestinian population uniting in the largest and longest uprising against Britain’s 30-year dominion, all sides spiral towards inevitable collision in a decisive moment for the British Empire and the future of the entire region.",
-  "country": "Palestinian Territory"
+  "country": "Palestinian Territory",
+  "imdb_id": "tt29271622",
+  "imdb": 7.5,
+  "imdbVotes": "6.4K"
  },
  "gadni-kopileta": {
   "matched": false,
@@ -358,7 +426,10 @@
   "tmdb_year": "2023",
   "tmdb_vote": 6.1,
   "ov": "Anna and Thomas' evening takes a surprising turn when their upstairs neighbors make them a spicy offer.",
-  "country": "Switzerland"
+  "country": "Switzerland",
+  "imdb_id": "tt18501778",
+  "imdb": 6.0,
+  "imdbVotes": "383"
  },
  "kristoferite": {
   "matched": true,
@@ -371,7 +442,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.829,
   "ov": "The estranged children of a once-famous artist hire a forger to complete his unfinished works so they can be \"discovered\" and sold after his death.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt34966562",
+  "imdb": 6.8,
+  "imdbVotes": "321"
  },
  "gorchiva-koleda": {
   "matched": true,
@@ -384,7 +458,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.2,
   "ov": "Elsa is an advertising director whose mother dies during a long December holiday. She works non-stop and, without realizing, doesn’t give herself time to mourn her mother’s absence. After a crisis, Elsa decides to travel to the island of Lanzarote accompanied by her friend Patricia, who also needs to get away from the city. The story of these characters runs parallel to that of a screenwriter and film director, exploring how life and fiction are inseparably linked, sometimes painfully so.",
-  "country": "Spain"
+  "country": "Spain",
+  "imdb_id": "tt28088049",
+  "imdb": 6.3,
+  "imdbVotes": "4.9K"
  },
  "sirat": {
   "matched": true,
@@ -397,7 +474,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.8,
   "ov": "A man and his son arrive at a rave lost in the mountains of Morocco. They are looking for Marina, their daughter and sister, who disappeared months ago at another rave. Driven by fate, they decide to follow a group of ravers in search of one last party, in hopes Marina will be there.",
-  "country": "Spain"
+  "country": "Spain",
+  "imdb_id": "tt32298285",
+  "imdb": 7.0,
+  "imdbVotes": "33.5K"
  },
  "martva-hvatka": {
   "matched": true,
@@ -410,7 +490,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.496,
   "ov": "In 1977, former real estate developer Tony Kiritsis puts a dead man's switch on himself and the mortgage banker who did him wrong, demanding $5 million and a personal apology.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt15181326",
+  "imdb": 6.5,
+  "imdbVotes": "6.9K"
  },
  "zavrashtaneto": {
   "matched": true,
@@ -423,7 +506,10 @@
   "tmdb_year": "2024",
   "tmdb_vote": 6.58,
   "ov": "After twenty years away, Odysseus washes up on the shores of Ithaca, haggard and unrecognizable. The king has finally returned home, but much has changed in his kingdom since he left to fight in the Trojan war.",
-  "country": "Greece"
+  "country": "Greece",
+  "imdb_id": "tt19861162",
+  "imdb": 6.3,
+  "imdbVotes": "13.8K"
  },
  "malkata-ameli": {
   "matched": true,
@@ -436,7 +522,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 7.9,
   "ov": "The world is a perplexing, peaceful mystery to Amélie until a miraculous encounter with chocolate ignites her wild sense of curiosity. As she develops a deep attachment to her family's housekeeper, Nishio-san, Amélie discovers the wonders of nature as well as the emotional truths hidden beneath the surface of her family's idyllic life as foreigners in post-war Japan.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt29313285",
+  "imdb": 7.6,
+  "imdbVotes": "6.1K"
  },
  "finik-2": {
   "matched": true,
@@ -449,7 +538,8 @@
   "tmdb_year": "2025",
   "tmdb_vote": 5.9,
   "ov": "Finnick accidentally loses invisibility, and now the world of brownies is under threat. Together with his man Kristina, he goes in search of a magical magician who will help him regain invisibility.",
-  "country": "Russia"
+  "country": "Russia",
+  "imdb_id": "tt28779965"
  },
  "sarceto-na-zveyara": {
   "matched": true,
@@ -460,9 +550,12 @@
   "original_title": "Heart of the Beast",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.46,
+  "tmdb_vote": 7.5,
   "ov": "After a harrowing plane crash, Special Forces officer James Belmont and his combat dog, Odin, find themselves stranded deep in the Alaskan wilderness. Together, they are forced into a brutal fight for survival against the elements.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt7526136",
+  "imdb": 7.5,
+  "imdbVotes": "542"
  },
  "chuzhdenecat": {
   "matched": true,
@@ -475,7 +568,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.8,
   "ov": "Algiers, 1938. Meursault, a quiet and unassuming employee in his early thirties, attends his mother's funeral without shedding a tear. The next day, he begins a casual affair with Marie, a work colleague. He quickly slips back into his usual routine.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt36243564",
+  "imdb": 7.1,
+  "imdbVotes": "3.4K"
  },
  "zdenka": {
   "matched": false,
@@ -496,7 +592,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.143,
   "ov": "Across three decades of passion, loss, and hope, Nino and Yasmina are bound by a magnetic relationship. Torn between love and survival, they must decide whether to build a family in Lebanon or leave their home despite tragedies.",
-  "country": "Lebanon"
+  "country": "Lebanon",
+  "imdb_id": "tt32622406",
+  "imdb": 7.4,
+  "imdbVotes": "901"
  },
  "byagay": {
   "matched": true,
@@ -509,7 +608,10 @@
   "tmdb_year": "1979",
   "tmdb_vote": 8.5,
   "ov": "Koki and Angel are last year students in high school. They are boxers. They must face at the last stage of a tournament. The matter is complicated by the fact that Koki is not in top condition and Angel knows that. Who will win - the friendship or the sportsman's honor? Angel takes the title from his Friend. There are scarier victories than defeat.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt0338832",
+  "imdb": 8.2,
+  "imdbVotes": "38"
  },
  "zhivot-s-idiot": {
   "matched": true,
@@ -522,7 +624,9 @@
   "tmdb_year": "2025",
   "tmdb_vote": 0.0,
   "ov": "As a punishment for not working hard enough, “I” is forced by the authorities to live with an idiot. He chooses Vova from a lunatic asylum. Vova is only capable of speaking a single word: “Ech”.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt37274618",
+  "imdbVotes": "7"
  },
  "fevruari": {
   "matched": false,
@@ -539,7 +643,10 @@
   "tmdb_year": "1971",
   "tmdb_vote": 7.7,
   "ov": "Three novels deal with the mentality of the children, their agitations, and the merry and sad things in their everyday life. The movie is created with a lot of humor, cheerfulness, and great love for the kids.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt0222426",
+  "imdb": 8.6,
+  "imdbVotes": "462"
  },
  "last": {
   "matched": true,
@@ -552,7 +659,9 @@
   "tmdb_year": "2026",
   "tmdb_vote": 0.0,
   "ov": "With formal rigour and subtly playing with genre, body and soul, this story of knots and liberation follows Lilian, who is as inscrutable as her desires, constrained by a pact of celibacy. When her father dies, she returns to the place of her past.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt15311492",
+  "imdbVotes": "13"
  },
  "sentimentalna": {
   "matched": true,
@@ -565,7 +674,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 7.469,
   "ov": "Sisters Nora and Agnes reunite with their estranged father, the charismatic Gustav, a once-renowned director who offers stage actress Nora a role in what he hopes will be his comeback film. When Nora turns it down, she soon discovers he has given her part to an eager young Hollywood star.",
-  "country": "Turkey"
+  "country": "Turkey",
+  "imdb_id": "tt27714581",
+  "imdb": 7.7,
+  "imdbVotes": "75.5K"
  },
  "bashta-majka": {
   "matched": true,
@@ -578,7 +690,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.4,
   "ov": "Estranged siblings reunite after years apart, forced to confront unresolved tensions and reevaluate their strained relationships with their emotionally distant parents.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt31189315",
+  "imdb": 6.5,
+  "imdbVotes": "15.7K"
  },
  "dvama-prokurori": {
   "matched": true,
@@ -591,7 +706,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.9,
   "ov": "In 1937, amidst Stalin's Great Terror, a newly appointed prosecutor for the USSR is made aware of alleged corruption in the Secret Police, and takes it upon himself to investigate.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt35521200",
+  "imdb": 7.1,
+  "imdbVotes": "2.9K"
  },
  "magyosnika": {
   "matched": true,
@@ -604,7 +722,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.455,
   "ov": "In the chaos of post-Soviet Russia, rising KGB officer Vladimir Putin joins forces with master manipulator Vadim Baranov to reshape life behind the Iron Curtain, using violence and deception to change the world forever.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt32386654",
+  "imdb": 6.1,
+  "imdbVotes": "1.4K"
  },
  "lichen-zhivot": {
   "matched": true,
@@ -617,7 +738,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 5.495,
   "ov": "When renowned psychiatrist Lilian Steiner learns of the sudden death of a patient, she suspects murder.  She mounts a private investigation, enlisting an odd assortment of quirky characters.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt33852162",
+  "imdb": 6.3,
+  "imdbVotes": "2.3K"
  },
  "partenopa": {
   "matched": true,
@@ -630,7 +754,10 @@
   "tmdb_year": "2024",
   "tmdb_vote": 6.7,
   "ov": "Parthenope, born in the sea near Naples in 1950, is beautiful, enigmatic, and intelligent. She is shamelessly courted by many. However, beauty comes at a cost.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt23853982",
+  "imdb": 6.5,
+  "imdbVotes": "21.9K"
  },
  "divi-yagodi": {
   "matched": true,
@@ -643,7 +770,10 @@
   "tmdb_year": "1957",
   "tmdb_vote": 8.1,
   "ov": "Crotchety retired doctor Isak Borg travels from Stockholm to Lund, Sweden, with his pregnant and unhappy daughter-in-law, Marianne, in order to receive an honorary degree from his alma mater. Along the way, they encounter a series of hitchhikers, each of whom causes the elderly doctor to muse upon the pleasures and failures of his own life. These include the vivacious young Sara, a dead ringer for the doctor's own first love.",
-  "country": "Sweden"
+  "country": "Sweden",
+  "imdb_id": "tt0050986",
+  "imdb": 8.1,
+  "imdbVotes": "126.0K"
  },
  "maystora": {
   "matched": true,
@@ -656,7 +786,10 @@
   "tmdb_year": "2024",
   "tmdb_vote": 6.8,
   "ov": "A struggling writer in 1930s Soviet Moscow finds his life transformed when a mysterious professor arrives with his bizarre entourage, including a wisecracking trickster, a deadly assassin, a vampire maid, and a giant talking black cat, turning the city upside down while exposing the hypocrisy of those in power.",
-  "country": "Russia"
+  "country": "Russia",
+  "imdb_id": "tt14536120",
+  "imdb": 7.1,
+  "imdbVotes": "7.4K"
  },
  "shopen": {
   "matched": true,
@@ -669,7 +802,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.8,
   "ov": "He is the talk of the town, the most romantic figure of decadent Parisian nights. When his lungs start bleeding, Chopin knows his days are numbered. Composing becomes his only obsession. The ticking clock rushes him to revolutionize music.",
-  "country": "Poland"
+  "country": "Poland",
+  "imdb_id": "tt33305572",
+  "imdb": 6.3,
+  "imdbVotes": "928"
  },
  "cherno-more": {
   "matched": false,
@@ -702,7 +838,8 @@
   "orig_lang": "en",
   "tmdb_year": "2025",
   "tmdb_vote": 0.0,
-  "ov": "Unique dance-documentary hybrid explores the challenges of finding romantic connections among the gay community in the digital age."
+  "ov": "Unique dance-documentary hybrid explores the challenges of finding romantic connections among the gay community in the digital age.",
+  "imdb_id": "tt36350799"
  },
  "posledniyat-viking": {
   "matched": true,
@@ -713,9 +850,12 @@
   "original_title": "Den sidste viking",
   "orig_lang": "da",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.246,
+  "tmdb_vote": 7.2,
   "ov": "After serving fourteen years for robbery, Anker is released from prison and reunites with his mentally ill brother Manfred, who alone knows where the stolen money is hidden but has forgotten its location, sending them on a journey to recover the loot and confront who they are.",
-  "country": "Denmark"
+  "country": "Denmark",
+  "imdb_id": "tt27817389",
+  "imdb": 7.2,
+  "imdbVotes": "11.7K"
  },
  "vreme-za-zhivot": {
   "matched": false,
@@ -732,7 +872,9 @@
   "tmdb_year": "2025",
   "tmdb_vote": 5.8,
   "ov": "Eva has just turned 50. She’s been married for over 20 years and has two, teenage children. So far, nothing remarkable. But on a business trip to Rome something happens that turns her life upside down. She meets Alex, a scriptwriter who’s spending a few days in the Italian city. The instant attraction she feels for him, the butterflies in her tummy, the seductive hint of possibility… After all this time, she remembers what it feels like to fall in love and it shifts something inside of her. It reignites a fire that had long been extinguished.",
-  "country": "Spain"
+  "country": "Spain",
+  "imdb_id": "tt32372983",
+  "imdbVotes": "23"
  },
  "sbogom-buenos-ayres": {
   "matched": false,
@@ -753,7 +895,10 @@
   "tmdb_year": "2021",
   "tmdb_vote": 5.5,
   "ov": "Vincenzo dedicates his life to the bookshop he owns in Paris and to his daughter Albertine, forced to stay home because of an accident occurred to her a few years earlier. One day Yolande, an exuberant, eccentric, funny and beautiful girl, bursts into Vincenzo’s shop. Charmed by her vital energy, the man starts feeling again emotions he’s been chocking-off for too long, and which will make him question his melancholic and somehow suspended way of facing life.",
-  "country": "Italy"
+  "country": "Italy",
+  "imdb_id": "tt10072662",
+  "imdb": 5.6,
+  "imdbVotes": "826"
  },
  "nay-hubavite-godini": {
   "matched": true,
@@ -766,7 +911,9 @@
   "tmdb_year": "2022",
   "tmdb_vote": 5.5,
   "ov": "Summer 1994. Berlusconi has come into power and 16-year-old Elena, listening to Nirvana and starting to develop a political consciousness, can't wait to bring him down. Unfortunately her parents have other plans and, like every year, they head to the same boring summer camp. This year however they're all in for a surprise...",
-  "country": "Italy"
+  "country": "Italy",
+  "imdb_id": "tt13159840",
+  "imdbVotes": "96"
  },
  "dobar-den-taga": {
   "matched": true,
@@ -779,7 +926,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.1,
   "ov": "At the height of summer, 18-year-old Cécile is relaxing by the French seaside with her father and falling in love with her new boyfriend. The arrival of her late mother's enigmatic friend turns her world upside down.",
-  "country": "Canada"
+  "country": "Canada",
+  "imdb_id": "tt27774999",
+  "imdb": 5.7,
+  "imdbVotes": "1.7K"
  },
  "prekrasno-lyato": {
   "matched": true,
@@ -792,7 +942,10 @@
   "tmdb_year": "2023",
   "tmdb_vote": 5.528,
   "ov": "Seventeen-year-old Ginia leaves the countryside in search of a new life in Turin. Restless and seeking adventure, Ginia soon finds it in the beautiful, enigmatic Amelia, whose sensuality and confidence embolden her to begin modeling for the bohemian artists in their circle. A whirlwind affair ensues, and the young seamstress finds herself swept up in an unfamiliar and exciting world of discovery.",
-  "country": "Italy"
+  "country": "Italy",
+  "imdb_id": "tt9320170",
+  "imdb": 5.5,
+  "imdbVotes": "832"
  },
  "prikazka-za-astrid": {
   "matched": true,
@@ -805,7 +958,10 @@
   "tmdb_year": "2018",
   "tmdb_vote": 7.0,
   "ov": "When Astrid Lindgren was very young something happened that affected her profoundly, and this combination of both miracle and calamity came to shape her entire life. It was an event that transformed her into one of the most inspiring women of our age and the storyteller a whole world would come to love. This is the story of when a young Astrid, despite the expectations of her time and religious upbringing, decided to break free from society's norms and follow her heart.",
-  "country": "Denmark"
+  "country": "Denmark",
+  "imdb_id": "tt6433456",
+  "imdb": 7.1,
+  "imdbVotes": "7.5K"
  },
  "stogodishniyat": {
   "matched": true,
@@ -818,7 +974,10 @@
   "tmdb_year": "2013",
   "tmdb_vote": 6.8,
   "ov": "After living a long and colorful life, Allan Karlsson finds himself stuck in a nursing home. On his 100th birthday, he leaps out a window and begins an unexpected journey.",
-  "country": "Sweden"
+  "country": "Sweden",
+  "imdb_id": "tt2113681",
+  "imdb": 7.0,
+  "imdbVotes": "44.1K"
  },
  "nay-bogatata-zhena": {
   "matched": true,
@@ -831,7 +990,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 6.2,
   "ov": "An elderly billionaire woman gives hundreds of millions of euros to a younger gay artist she is close to. Her daughter files a complaint for abuse of a vulnerable person and a scandal erupts.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt32759477",
+  "imdb": 6.5,
+  "imdbVotes": "728"
  },
  "oshte-po-edno": {
   "matched": true,
@@ -844,7 +1006,10 @@
   "tmdb_year": "2020",
   "tmdb_vote": 7.6,
   "ov": "Four stagnant high school teachers decide to test out a theory that maintaining a constant level of intoxication will improve their overall lives.",
-  "country": "Denmark"
+  "country": "Denmark",
+  "imdb_id": "tt10288566",
+  "imdb": 7.7,
+  "imdbVotes": "223.8K"
  },
  "cvetovete-na-vremeto": {
   "matched": true,
@@ -857,7 +1022,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 7.3,
   "ov": "When four distant cousins inherit a 19th-century home in Normandy, they decide to visit and examine their family history. No one has lived there since the 1940s, and the cousins are intrigued by all of the items they find there, little things that help them to understand their ancestor, Adèle Vermillard. Jumping back and forth in time, they meet the mysterious Adèle, whose bohemian lifestyle, and her relationships with the leading artists of the time, changes their lives.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt31411349",
+  "imdb": 7.2,
+  "imdbVotes": "5.0K"
  },
  "golyamoto-pliskane": {
   "matched": true,
@@ -870,7 +1038,8 @@
   "tmdb_year": "1935",
   "tmdb_vote": 9.0,
   "ov": "A millionaire hires a man to play his double...",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt0167047"
  },
  "kak-se-nauchih-da-letya": {
   "matched": true,
@@ -883,7 +1052,10 @@
   "tmdb_year": "2022",
   "tmdb_vote": 8.2,
   "ov": "12-year-old Sofija is seemingly facing a boring summer vacation with two grandmothers. However, new friendships, a first kiss, and long kept family secrets will turn this summer on the idyllic Adriatic island of Hvar into a priceless experience and an unforgettable adventure.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt12885338",
+  "imdb": 8.0,
+  "imdbVotes": "1.6K"
  },
  "istorii-kojto-ne-sa": {
   "matched": true,
@@ -896,7 +1068,10 @@
   "tmdb_year": "2022",
   "tmdb_vote": 5.8,
   "ov": "Five tales of human vulnerability and the hilarious, painful, and awkward curveballs life throws us.",
-  "country": "Spain"
+  "country": "Spain",
+  "imdb_id": "tt14149544",
+  "imdb": 6.2,
+  "imdbVotes": "1.3K"
  },
  "sentimentalno": {
   "matched": false,
@@ -913,7 +1088,10 @@
   "tmdb_year": "2021",
   "tmdb_vote": 6.6,
   "ov": "To be able to travel to Europe and find the love of his life, Sam Ali, a Syrian refugee, accepts to have his back tattooed by one of the most sulfurous contemporary artist; becoming that way a precious work of art.",
-  "country": "Germany"
+  "country": "Germany",
+  "imdb_id": "tt10360862",
+  "imdb": 6.9,
+  "imdbVotes": "7.4K"
  },
  "gospodin-aznavur": {
   "matched": true,
@@ -926,7 +1104,10 @@
   "tmdb_year": "2024",
   "tmdb_vote": 7.2,
   "ov": "From his poor childhood to his rise to fame, from his triumphs to his failures, from Paris to New York, discover the exceptional journey of an artist. Intimate, intense, fragile and indestructible, devoted to his art until the very end, here is one of the most immortal singers of all time: MONSIEUR AZNAVOUR.",
-  "country": "Belgium"
+  "country": "Belgium",
+  "imdb_id": "tt26743414",
+  "imdb": 7.2,
+  "imdbVotes": "4.8K"
  },
  "obiknoven-incident": {
   "matched": true,
@@ -939,7 +1120,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 7.2,
   "ov": "An unassuming mechanic is reminded of his time in an Iranian prison when he encounters a man he suspects to be his sadistic jailhouse captor.",
-  "country": "Iran"
+  "country": "Iran",
+  "imdb_id": "tt36491653",
+  "imdb": 7.4,
+  "imdbVotes": "39.3K"
  },
  "potop": {
   "matched": true,
@@ -952,7 +1136,10 @@
   "tmdb_year": "2025",
   "tmdb_vote": 8.154,
   "ov": "In communist Czechoslovakia in 1980, 15-year-old Mara dreams of leaving her village to study in the city and become a pilot. But her father, a widowed Ruthenian farmer, insists she stay and work the land. When her village faces destruction due to a new dam, their generational conflict intensifies, revealing the struggle between tradition, identity, and the desire for freedom in a context of historical change.",
-  "country": "Belgium"
+  "country": "Belgium",
+  "imdb_id": "tt38629827",
+  "imdb": 8.0,
+  "imdbVotes": "47"
  },
  "chist-kasmet": {
   "matched": true,
@@ -965,7 +1152,10 @@
   "tmdb_year": "1991",
   "tmdb_vote": 5.6,
   "ov": "The daughter of a wealthy businessman has disappeared in Mexico, and all the efforts to find her have been unsuccessful. A psychologist, knowing that the girl has an ultra bad luck, persuades her father to send to Mexico one of his employees, an accountant with super bad luck, to find her. Perhaps he will be lucky, and his bad luck could help to find the unlucky girl.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt0102729",
+  "imdb": 5.8,
+  "imdbVotes": "8.2K"
  },
  "praznenstvoto": {
   "matched": true,
@@ -978,7 +1168,10 @@
   "tmdb_year": "1998",
   "tmdb_vote": 7.7,
   "ov": "The family of a wealthy businessman gather to celebrate his 60th birthday. During the course of the party, his eldest son presents a speech that reveals a devastating secret that turns the night into a battle of truth and denial.",
-  "country": "Denmark"
+  "country": "Denmark",
+  "imdb_id": "tt0154420",
+  "imdb": 8.0,
+  "imdbVotes": "101.0K"
  },
  "pomilvane": {
   "matched": false,
@@ -995,7 +1188,10 @@
   "tmdb_year": "1950",
   "tmdb_vote": 8.026,
   "ov": "Four people recount different versions of the story of a man's murder and the rape of his wife.",
-  "country": "Japan"
+  "country": "Japan",
+  "imdb_id": "tt0042876",
+  "imdb": 8.1,
+  "imdbVotes": "195.5K"
  },
  "lost-highway": {
   "matched": true,
@@ -1008,7 +1204,10 @@
   "tmdb_year": "1997",
   "tmdb_vote": 7.6,
   "ov": "A tormented jazz musician finds himself lost in an enigmatic story involving murder, surveillance, gangsters, doppelgängers, and an impossible transformation inside a prison cell.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt0116922",
+  "imdb": 7.6,
+  "imdbVotes": "173.8K"
  },
  "in-the-mood": {
   "matched": true,
@@ -1021,7 +1220,10 @@
   "tmdb_year": "2000",
   "tmdb_vote": 8.1,
   "ov": "In 1960s Hong Kong, two neighbors form an intimate bond after making a discovery about their spouses in this visually stunning tale of unrequited love.",
-  "country": "Hong Kong"
+  "country": "Hong Kong",
+  "imdb_id": "tt0118694",
+  "imdb": 8.0,
+  "imdbVotes": "192.0K"
  },
  "handmaiden": {
   "matched": true,
@@ -1034,7 +1236,10 @@
   "tmdb_year": "2016",
   "tmdb_vote": 8.2,
   "ov": "1930s Korea, in the period of Japanese occupation, a new girl, Sook-hee, is hired as a handmaiden to a Japanese heiress, Hideko, who lives a secluded life on a large countryside estate with her domineering Uncle Kouzuki. But the maid has a secret. She is a pickpocket recruited by a swindler posing as a Japanese Count to help him seduce the Lady to steal her fortune.",
-  "country": "South Korea"
+  "country": "South Korea",
+  "imdb_id": "tt4016934",
+  "imdb": 8.1,
+  "imdbVotes": "209.1K"
  },
  "el-topo": {
   "matched": true,
@@ -1047,7 +1252,10 @@
   "tmdb_year": "1970",
   "tmdb_vote": 7.1,
   "ov": "El Topo decides to confront warrior Masters on a trans-formative desert journey he begins with his 6 year old son, who must bury his childhood totems to become a man.",
-  "country": "Mexico"
+  "country": "Mexico",
+  "imdb_id": "tt0067866",
+  "imdb": 7.2,
+  "imdbVotes": "32.0K"
  },
  "holy-mountain": {
   "matched": true,
@@ -1060,7 +1268,10 @@
   "tmdb_year": "1973",
   "tmdb_vote": 7.5,
   "ov": "The Alchemist assembles together a group of people from all walks of life to represent the planets in the solar system. The occult adept's intention is to put his recruits through strange mystical rites and divest them of their worldly baggage before embarking on a trip to Lotus Island. There they ascend the Holy Mountain to displace the immortal gods who secretly rule the universe.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt0071615",
+  "imdb": 7.7,
+  "imdbVotes": "52.4K"
  },
  "zalog": {
   "matched": false,
@@ -1077,7 +1288,10 @@
   "tmdb_year": "1999",
   "tmdb_vote": 7.603,
   "ov": "Following the tragic death of her teenage son, Manuela travels from Madrid to Barcelona in an attempt to contact the long-estranged father the boy never knew. She reunites with an old friend, an outspoken transgender sex worker, and befriends a troubled actress and a pregnant, HIV-positive nun.",
-  "country": "Spain"
+  "country": "Spain",
+  "imdb_id": "tt0185125",
+  "imdb": 7.8,
+  "imdbVotes": "110.8K"
  },
  "kosa": {
   "matched": true,
@@ -1090,7 +1304,10 @@
   "tmdb_year": "1979",
   "tmdb_vote": 7.3,
   "ov": "Upon receiving his draft notice and leaving his family ranch in Oklahoma, Claude heads to New York and befriends a tribe of long-haired hippies on his way to boot camp.",
-  "country": "Germany"
+  "country": "Germany",
+  "imdb_id": "tt0079261",
+  "imdb": 7.5,
+  "imdbVotes": "44.8K"
  },
  "diskretniyat-char": {
   "matched": true,
@@ -1103,7 +1320,10 @@
   "tmdb_year": "1972",
   "tmdb_vote": 7.4,
   "ov": "In Luis Buñuel’s deliciously satiric masterpiece, an upper-class sextet sits down to dinner but never eats, their attempts continually thwarted by a vaudevillian mixture of events both actual and imagined.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt0068361",
+  "imdb": 7.7,
+  "imdbVotes": "51.0K"
  },
  "iskam-te-za-seks": {
   "matched": true,
@@ -1116,7 +1336,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.1,
   "ov": "When a naive young man becomes the sexual muse for a renowned and provocative artist, his dream job quickly turns dangerous as he is drawn into an obsessive world of power, betrayal, and murder.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt32332915",
+  "imdb": 6.0,
+  "imdbVotes": "4.9K"
  },
  "zhestokiyat-pat": {
   "matched": false,
@@ -1133,7 +1356,8 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.5,
   "ov": "The most powerful man in the world embarks on a frantic mission to prove he is humanity's savior before the disaster he's unleashed destroys everything.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt31450459"
  },
  "tigrite": {
   "matched": false,
@@ -1154,7 +1378,10 @@
   "tmdb_year": "1977",
   "tmdb_vote": 7.4,
   "ov": "The film belongs to the 'migration cycle' in the Bulgarian cinema. It is about the drama of a group of women who have been left alone in their 'female kingdom' - a village deserted by its entire men folk.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt0277827",
+  "imdb": 6.7,
+  "imdbVotes": "126"
  },
  "moralat-e-dobroto": {
   "matched": true,
@@ -1167,7 +1394,10 @@
   "tmdb_year": "2022",
   "tmdb_vote": 0.0,
   "ov": "The documentary chronicles the life of Christian Takov amid the historical events of the last decades in Bulgaria. The film features a number of meticulously sourced and never before published footage and documents, as well as a series of interviews with the family, colleagues, friends and associates of Takov.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt24659894",
+  "imdb": 9.1,
+  "imdbVotes": "172"
  },
  "shibil": {
   "matched": true,
@@ -1180,7 +1410,10 @@
   "tmdb_year": "1968",
   "tmdb_vote": 9.0,
   "ov": "A bandit chief falls in love with a wealthy man's daughter.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt0282968",
+  "imdb": 7.7,
+  "imdbVotes": "74"
  },
  "syankata-na-karavadzho": {
   "matched": false,
@@ -1201,7 +1434,10 @@
   "tmdb_year": "2016",
   "tmdb_vote": 7.3,
   "ov": "In the aftermath of WWI, a young German who grieves the death of her fiancé in France meets a mysterious French man who visits the fiance’s grave to lay flowers.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt5029608",
+  "imdb": 7.5,
+  "imdbVotes": "19.0K"
  },
  "magyosnika-ot-kremal": {
   "matched": true,
@@ -1214,7 +1450,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.455,
   "ov": "In the chaos of post-Soviet Russia, rising KGB officer Vladimir Putin joins forces with master manipulator Vadim Baranov to reshape life behind the Iron Curtain, using violence and deception to change the world forever.",
-  "country": "France"
+  "country": "France",
+  "imdb_id": "tt32386654",
+  "imdb": 6.1,
+  "imdbVotes": "1.4K"
  },
  "v-bryuzh": {
   "matched": true,
@@ -1227,7 +1466,10 @@
   "tmdb_year": "2008",
   "tmdb_vote": 7.5,
   "ov": "Ray and Ken, two hit men, are in Bruges, Belgium, waiting for their next mission. While they are there they have time to think and discuss their previous assignment. When the mission is revealed to Ken, it is not what he expected.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt0780536",
+  "imdb": 7.9,
+  "imdbVotes": "498.9K"
  },
  "doza-shtastie": {
   "matched": true,
@@ -1240,7 +1482,10 @@
   "tmdb_year": "2019",
   "tmdb_vote": 6.2,
   "ov": "The real story of the journalist Vesela Toteva (in the role is her daughter -Valentina Karoleva) searching for her own happiness during the dynamic and uncertain 90's in Bulgaria. A tale about drugs, fall, fear and redemption.",
-  "country": "Bulgaria"
+  "country": "Bulgaria",
+  "imdb_id": "tt10249780",
+  "imdb": 7.1,
+  "imdbVotes": "1.5K"
  },
  "lorans-arabski": {
   "matched": true,
@@ -1253,7 +1498,10 @@
   "tmdb_year": "1962",
   "tmdb_vote": 8.0,
   "ov": "During World War I, English officer Thomas Edward 'T.E.' Lawrence sets out to unite and lead the diverse, often warring, Arab tribes to fight the Turks.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt0056172",
+  "imdb": 8.3,
+  "imdbVotes": "346.9K"
  },
  "ostrovat-na-zabravata": {
   "matched": true,
@@ -1266,7 +1514,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 8.2,
   "ov": "While celebrating their last night together, high school graduates and best friends Jo and Raissa stumble upon a mysterious portal that transports them to the fantastical island of Nakali. When they discover that the memories of their entire friendship are the price for returning home, Jo and Raissa must race to find a way to leave the island before they forget each other forever.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt36583977",
+  "imdb": 7.7,
+  "imdbVotes": "1.3K"
  },
  "veriti": {
   "matched": true,
@@ -1279,7 +1530,8 @@
   "tmdb_year": "2026",
   "tmdb_vote": 6.476,
   "ov": "Lowen Ashleigh is hired by Jeremy Crawford to ghostwrite novels for his bestselling author wife Verity, who is unable to finish following an accident. Lowen gradually uncovers Verity's disturbing truths while residing at the Crawfords' home to work.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt32261958"
  },
  "zooekspres": {
   "matched": false,
@@ -1296,7 +1548,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 5.5,
   "ov": "Living on a rundown shipwreck, Mr. Fish one day discovers a hyperactive young sea dragon Pip – who had mistaken his home for a junkyard – pilfering his belongings. The heated argument that ensues leaves both their houses in ruin. But there is hope! Embarking on a seemingly impossible quest in search of the mythical 'Shimmer' to grant them a wish, there’s only one problem: someone else is on the hunt...",
-  "country": "Australia"
+  "country": "Australia",
+  "imdb_id": "tt12824390",
+  "imdb": 5.0,
+  "imdbVotes": "1.1K"
  },
  "nina-roza": {
   "matched": true,
@@ -1309,7 +1564,9 @@
   "tmdb_year": "2026",
   "tmdb_vote": 10.0,
   "ov": "A viral video of an 8-year-old Bulgarian artist catches the eye of a major art collector, and Mihail is sent there, 30 years after leaving his home country, to assess the value of the girl's work and confront ghosts from his past.",
-  "country": "Canada"
+  "country": "Canada",
+  "imdb_id": "tt29271639",
+  "imdbVotes": "43"
  },
  "evropeyski-kinoklasiki-alis-v-gradovete-1974": {
   "matched": false,
@@ -1366,7 +1623,10 @@
   "tmdb_year": "2001",
   "tmdb_vote": 7.8,
   "ov": "After narrowly escaping a bizarre accident, a troubled teenager is plagued by visions of a large bunny rabbit that manipulates him to commit a series of crimes.",
-  "country": "United States of America"
+  "country": "United States of America",
+  "imdb_id": "tt0246578",
+  "imdb": 8.0,
+  "imdbVotes": "906.2K"
  },
  "naza": {
   "matched": false,
@@ -1383,7 +1643,10 @@
   "tmdb_year": "1996",
   "tmdb_vote": 7.6,
   "ov": "After her adoptive mother dies, Hortense, a successful black optometrist, seeks out her birth mother. She's shocked when her research leads her to Cynthia, a working class white woman.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt0117589",
+  "imdb": 8.0,
+  "imdbVotes": "51.0K"
  },
  "goli": {
   "matched": true,
@@ -1396,7 +1659,10 @@
   "tmdb_year": "2002",
   "tmdb_vote": 5.4,
   "ov": "The story of three couples, one of which just broke up, one that seems to be about to, and one perfectly okay. They are all friends, and from time to time, they gather to talk about everything. One time, they gather for dinner at the second couple's \"mansion“— the husband became rich with his business. We see each couple as they prepare themselves for the party and learn a lot about their relationships. At the dinner, they get to talking about recognizing each other's peer with closed eyes and decide to try it, naked.",
-  "country": "Germany"
+  "country": "Germany",
+  "imdb_id": "tt0300237",
+  "imdb": 6.0,
+  "imdbVotes": "2.4K"
  },
  "houp": {
   "matched": true,
@@ -1409,7 +1675,10 @@
   "tmdb_year": "2026",
   "tmdb_vote": 7.2,
   "ov": "In the remote South Korean village of Hope Harbor, police chief Bum-seok and officer Sung-ae are called to investigate a mysterious creature wreaking havoc on the community. But all is not as it seems, and perceptions can be misleading. What begins as ignorance plants the seed of disaster, escalating through human conflict into a tragedy of cosmic proportions.",
-  "country": "South Korea"
+  "country": "South Korea",
+  "imdb_id": "tt27369017",
+  "imdb": 6.9,
+  "imdbVotes": "4.4K"
  },
  "kes": {
   "matched": true,
@@ -1422,10 +1691,124 @@
   "tmdb_year": "1970",
   "tmdb_vote": 7.4,
   "ov": "Bullied at school and ignored and abused at home by his indifferent mother and older brother, Billy Casper, a 15-year-old working-class Yorkshire boy, tames and trains his pet kestrel falcon whom he names Kes. Helped and encouraged by his English teacher and his fellow students, Billy finally finds a positive purpose to his unhappy existence.",
-  "country": "United Kingdom"
+  "country": "United Kingdom",
+  "imdb_id": "tt0064541",
+  "imdb": 7.9,
+  "imdbVotes": "26.7K"
  },
  "sinelibri-2026-embargo-predstavyane-na-tvorchestvoto-na-zhoz": {
   "matched": false,
   "en": ""
+ },
+ "animatsionni-filmi-na-stoyan-dukov": {
+  "matched": false,
+  "en": ""
+ },
+ "animatsionni-filmi-na-nastimir-tsachev-i-vyara-doneva": {
+  "matched": false,
+  "en": ""
+ },
+ "s-vnimanie-kam-detayla": {
+  "matched": false,
+  "en": ""
+ },
+ "da-zhivee-balgariya": {
+  "matched": true,
+  "tmdb_id": 741387,
+  "poster_path": "/xgkVi2ePKLToDb5VttfP3c9ss3r.jpg",
+  "backdrop_path": null,
+  "en": "",
+  "original_title": "Да живее България",
+  "orig_lang": "bg",
+  "tmdb_year": "2017",
+  "tmdb_vote": 0.0,
+  "ov": "In the course of three years we traced several young people with a strongly developed patriotic feeling, who define themselves as nationalists. They cross the thin line between patriotism and a pronounced nationalism.",
+  "imdb_id": "tt10134750",
+  "imdb": 4.0,
+  "imdbVotes": "14"
+ },
+ "dahomey": {
+  "matched": false,
+  "en": ""
+ },
+ "tova-se-sluchi-na-ulitsata": {
+  "matched": true,
+  "tmdb_id": 337754,
+  "poster_path": "/9PjeA78nx33iWfWymYlTdCiAreJ.jpg",
+  "backdrop_path": null,
+  "en": "",
+  "original_title": "Това се случи на улицата",
+  "orig_lang": "bg",
+  "tmdb_year": "1956",
+  "tmdb_vote": 7.0,
+  "ov": "A truck driver falls in love with the woman he nearly hit.",
+  "country": "Bulgaria",
+  "imdb_id": "tt0290093",
+  "imdb": 8.2,
+  "imdbVotes": "57"
+ },
+ "sledovatelyat-i-gorata": {
+  "matched": true,
+  "tmdb_id": 264092,
+  "poster_path": "/588hhGlaI0OVmD2TzzFd2pbhzsZ.jpg",
+  "backdrop_path": null,
+  "en": "",
+  "original_title": "Следователят и гората",
+  "orig_lang": "bg",
+  "tmdb_year": "1975",
+  "tmdb_vote": 9.0,
+  "ov": "Before going on leave an experienced magistrate assigns to his assistant a case that has been all but concluded. Everything has been proved. The facts are clear: a brutal murder has been committed. The suspect is a young, beautiful girl, who does not deny or remorse the murder. The only thing that remains to be done is to refer the case to the public prosecutor's office. The case is rather strange though. The murdered man had been a criminal blackmailer; the murderess is a timid girl of 17. The young magistrate tries to discover certain vital truth concealed beneath the obvious facts. The girl has pleaded guilty and the bulk of evidence is against her. The only question that has not been answered concerns the motive of the crime. The detective carefully questions the girl to find her real motives. From her story he learns that the girl is real victim. She arrived from the country and due to her naivety ended up in the apartment of a sexual maniac.",
+  "country": "Bulgaria",
+  "imdb_id": "tt0075231",
+  "imdb": 7.4,
+  "imdbVotes": "54"
+ },
+ "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": {
+  "matched": false,
+  "en": ""
+ },
+ "bez-konkurentsiya": {
+  "matched": true,
+  "tmdb_id": 639988,
+  "poster_path": "/bK3nohmWnXxe6vvEPQLgPuInYFA.jpg",
+  "backdrop_path": "/1eM6Ey1FzpgJigrxRiSYtntSWq7.jpg",
+  "en": "",
+  "original_title": "어쩔수가없다",
+  "orig_lang": "ko",
+  "tmdb_year": "2025",
+  "tmdb_vote": 7.5,
+  "ov": "After being laid off and humiliated by a ruthless job market, a veteran paper mill manager descends into violence in a desperate bid to reclaim his dignity.",
+  "country": "South Korea",
+  "imdb_id": "tt1527793",
+  "imdb": 7.5,
+  "imdbVotes": "57.5K"
+ },
+ "kitovete-paziteli-na-planetata": {
+  "matched": false,
+  "en": ""
+ },
+ "kotki-v-muzeya-2-sakrovishtata-na-egipet": {
+  "matched": false,
+  "en": ""
+ },
+ "kina-i-yuk-lisitsite-ot-dalechniya-sever": {
+  "matched": false,
+  "en": ""
+ },
+ "diamanti": {
+  "matched": true,
+  "tmdb_id": 681,
+  "poster_path": "/ooDT0eKrWCxJCsn9JehPkD0QYNj.jpg",
+  "backdrop_path": "/pyTDtQCn5sG8gi2zkM5ZylSNmtJ.jpg",
+  "en": "Diamonds Are Forever",
+  "original_title": "Diamonds Are Forever",
+  "orig_lang": "en",
+  "tmdb_year": "1971",
+  "tmdb_vote": 6.4,
+  "ov": "Diamonds are stolen only to be sold again in the international market. James Bond infiltrates a smuggling mission to find out who's guilty. The mission takes him to Las Vegas where Bond meets his archenemy Blofeld.",
+  "country": "United Kingdom",
+  "imdb_id": "tt0066995",
+  "imdb": 6.5,
+  "imdbVotes": "124.8K"
  }
 }

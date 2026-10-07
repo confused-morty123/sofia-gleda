@@ -37,6 +37,8 @@ for fid, v in tmdb.items():
     if v.get("en"):            rec["en"] = v["en"]
     if v.get("ov"):            rec["ov"] = v["ov"]        # TMDB English synopsis
     if v.get("country"):       rec["country"] = v["country"]  # TMDB English country
+    if v.get("imdb") is not None: rec["imdb"] = v["imdb"]  # genuine IMDb rating (OMDb)
+    if v.get("imdbVotes"):     rec["imdbVotes"] = v["imdbVotes"]  # IMDb vote count (OMDb)
     if rec:
         art[fid] = rec
 

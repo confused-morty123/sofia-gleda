@@ -6,7 +6,9 @@
 # branch, the live site updates itself with no further action from you.
 #
 # The only thing you must set up once: a repository secret named TMDB_TOKEN
-# (see SETUP.md, step 6). Everything else is automatic.
+# (see SETUP.md, step 6). An optional OMDB_TOKEN secret adds genuine IMDb
+# ratings; without it, ratings are inherited from the previous run. Everything
+# else is automatic.
 
 name: Three-day refresh
 
@@ -52,6 +54,9 @@ jobs:
       - name: Refresh programmes and posters
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          # Optional: genuine IMDb ratings via OMDb. Absent => ratings inherited
+          # from the previous run (never fabricated). See SETUP.md.
+          OMDB_TOKEN: ${{ secrets.OMDB_TOKEN }}
         run: python3 scripts/refresh_all.py
 
       - name: Commit the refreshed data

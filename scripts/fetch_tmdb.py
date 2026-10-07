@@ -24,6 +24,11 @@ HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "tmdb_films.json"
 LINKS_OUT = ROOT / "film_links_posters.json"
 TOKEN = os.environ.get("TMDB_TOKEN", "").strip()
+# Genuine IMDb rating + vote count come from OMDb (TMDB only exposes its own
+# vote_average, a different metric we deliberately never show as "IMDb"). Keyed by
+# the imdb_id TMDB gives us. A GitHub Actions secret in the hosted setup — never
+# hard-coded. Absent token => ratings are inherited from the previous run.
+OMDB_TOKEN = os.environ.get("OMDB_TOKEN", "").strip()
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
       "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15")
@@ -168,16 +173,55 @@ def search_en(en, year):
 
 
 def details_en(tmdb_id):
-    """English overview + production country from the film's detail record. Owner's
-    choice is 'TMDB English where it exists, else Bulgarian' — no machine translation,
-    so this authoritative English fills the detail card when the dataset has none."""
+    """English overview + production country + imdb_id from the film's detail record.
+    Owner's choice is 'TMDB English where it exists, else Bulgarian' — no machine
+    translation, so this authoritative English fills the detail card when the dataset
+    has none. The imdb_id is used to look up the genuine IMDb rating via OMDb."""
     d = api(f"movie/{tmdb_id}", {"language": "en-US"})
     if not d:
-        return None, None
+        return None, None, None
     ov = (d.get("overview") or "").strip() or None
     pcs = d.get("production_countries") or []
     country = (pcs[0].get("name") or "").strip() if pcs else None
-    return ov, (country or None)
+    imdb_id = (d.get("imdb_id") or "").strip() or None
+    return ov, (country or None), imdb_id
+
+
+def _votes_compact(n):
+    """491700 -> '491.7K', 2_000_000 -> '2.0M' — matches the dataset's vote style."""
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K"
+    return str(n)
+
+
+def omdb_rating(imdb_id):
+    """Genuine IMDb rating + vote count via OMDb, keyed by the film's imdb_id. Returns
+    (rating_float, votes_compact) or (None, None). Never fabricates: a missing token,
+    an 'N/A' rating, or any error yields None so the score tile honestly stays '—'.
+    TMDB's own vote_average is NOT used here — it is a different metric, not IMDb."""
+    if not OMDB_TOKEN or not imdb_id:
+        return None, None
+    try:
+        q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
+        req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
+                                     headers={"User-Agent": UA, "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
+            d = json.load(r)
+    except Exception as e:
+        print("    ! omdb error", e, file=sys.stderr)
+        return None, None
+    if d.get("Response") == "False":
+        return None, None
+    rating = d.get("imdbRating")
+    try:
+        rating = float(rating) if rating and rating != "N/A" else None
+    except (ValueError, TypeError):
+        rating = None
+    votes_raw = (d.get("imdbVotes") or "").replace(",", "")
+    votes = _votes_compact(int(votes_raw)) if votes_raw.isdigit() else None
+    return rating, votes
 
 
 def og_image(url):
@@ -228,6 +272,14 @@ def main():
             film_links = json.load(open(LINKS_OUT, encoding="utf-8")) or {}
         except Exception:
             film_links = {}
+    # Previous run's records, so a missing OMDB_TOKEN or a transient OMDb failure
+    # inherits last run's IMDb rating/votes rather than blanking the score tile.
+    prev = {}
+    if OUT.exists():
+        try:
+            prev = json.load(open(OUT, encoding="utf-8")) or {}
+        except Exception:
+            prev = {}
 
     out = {}
     for i, f in enumerate(films):
@@ -293,11 +345,26 @@ def main():
         }
         # Owner's choice: fill English synopsis/country from TMDB where it exists,
         # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
-        ov, country = details_en(best["id"])
+        ov, country, imdb_id = details_en(best["id"])
         if ov:
             rec["ov"] = ov
         if country:
             rec["country"] = country
+        # Genuine IMDb rating via OMDb (keyed by TMDB's imdb_id). The score tile is
+        # labelled "IMDb", so only a real IMDb number may fill it — never TMDB's own
+        # vote_average. Keep-previous: no token / failed call inherits last run's value.
+        if imdb_id:
+            rec["imdb_id"] = imdb_id
+        rating, votes = omdb_rating(imdb_id)
+        pv = prev.get(fid, {})
+        if rating is None and pv.get("imdb") is not None:
+            rating = pv["imdb"]
+        if not votes and pv.get("imdbVotes"):
+            votes = pv["imdbVotes"]
+        if rating is not None:
+            rec["imdb"] = rating
+        if votes:
+            rec["imdbVotes"] = votes
         out[fid] = rec
         # A matched film with no TMDB poster still has its own programme-page image.
         if not rec["poster_path"]:
@@ -324,8 +391,10 @@ def main():
     film_links = {k: v for k, v in film_links.items() if v}
     json.dump(film_links, open(LINKS_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     matched = sum(1 for v in out.values() if v.get("matched"))
+    rated = sum(1 for v in out.values() if v.get("imdb") is not None)
     print(f"\nDONE: {matched}/{len(films)} matched, {posters} with posters, "
-          f"{len(film_links)} og:image fallbacks -> {OUT.name}")
+          f"{len(film_links)} og:image fallbacks, {rated} with IMDb ratings "
+          f"(OMDb {'on' if OMDB_TOKEN else 'OFF — ratings inherited'}) -> {OUT.name}")
     return 0
 
 
