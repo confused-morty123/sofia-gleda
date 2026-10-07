@@ -44,6 +44,17 @@ for fid, v in tmdb.items():
 
 showart = {k: v for k, v in shows.items() if v}
 
+# Film details harvested from each film's own programme page (synopsis, director,
+# cast) for films the seed data and TMDB leave empty. Written by fetch_film_info.py;
+# always emitted (possibly empty) because the app declares nothing else for it.
+FILM_INFO = ROOT / "film_info.json"
+filminfo = {}
+if FILM_INFO.exists():
+    try:
+        filminfo = {k: v for k, v in json.load(open(FILM_INFO, encoding="utf-8")).items() if v}
+    except Exception as e:
+        print(f"  (could not read {FILM_INFO.name}: {e})")
+
 # Films TMDB cannot match keep their own programme-page image (og:image), harvested
 # into film_links_posters.json. These are full URLs and go into POSTERS, which
 # realPoster() checks first — but fetch_tmdb only writes an entry here for a film
@@ -75,6 +86,8 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
     '            catalogued film. realPoster() should resolve through this FIRST, so\n'
     '            such an event shows the film\'s verified TMDB poster and can never\n'
     '            pick up a separately harvested, unverifiable image.\n'
+    '   FILMINFO: film id -> {syn, dir, cast, src} from the film\'s own programme page,\n'
+    '            for films the seed data and TMDB leave without details.\n'
     '   Missing ids keep the generated SVG artwork. */')
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
@@ -83,6 +96,7 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     + "const TMDBART = " + json.dumps(art, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const SHOWART = " + json.dumps(showart, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const SHOWALIAS = " + json.dumps(alias, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    + "const FILMINFO = " + json.dumps(filminfo, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -95,7 +109,7 @@ assert found, "marker block not found in " + str(HTML)
 # destroyed on every run. That is exactly how `const PRICES` was lost in the
 # 2026-09-16 refresh and every film became unclickable. Refuse to run rather
 # than silently delete app code again.
-GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS"}
+GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO"}
 declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
 stray = declared - GENERATED
 if stray:

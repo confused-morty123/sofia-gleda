@@ -9,6 +9,7 @@ is the canonical served file and the weekly pipeline edits its data in place —
 you only re-run this if you change the app's UI/logic in the artifact.
 
     python3 scripts/build_index.py            # artifact -> index.html
+    python3 scripts/build_index.py --out X    # build somewhere else (dev preview)
 
 The fragment starts at <title> and its body content starts at <div id="app">.
 """
@@ -54,10 +55,31 @@ if ("serviceWorker" in navigator) {
 """
 
 
+INCLUDE = re.compile(r"^<!-- @include ([\w.-]+) -->\n", re.M)
+
+
+def assemble(path):
+    """Read the UI source and inline its `<!-- @include NAME -->` lines (files
+    beside it in src/). The data constants live in src/data.html so the UI source
+    stays small enough to read and edit; the assembled fragment is byte-identical
+    to the old single-file artifact."""
+    text = path.read_text(encoding="utf-8")
+    def inc(m):
+        part = path.parent / m.group(1)
+        if not part.exists():
+            sys.exit(f"include not found: {part}")
+        body = part.read_text(encoding="utf-8")
+        return body if body.endswith("\n") else body + "\n"
+    return INCLUDE.sub(inc, text)
+
+
 def main():
+    out = OUT
+    if "--out" in sys.argv:
+        out = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]).resolve()
     if not SRC.exists():
         sys.exit(f"source not found: {SRC}")
-    frag = SRC.read_text(encoding="utf-8")
+    frag = assemble(SRC)
 
     # body content begins at the #app container; everything before it is head.
     marker = '<div id="app">'
@@ -69,8 +91,8 @@ def main():
     body_part = frag[i:].rstrip()
 
     html = HEAD + head_part + "\n</head>\n<body>\n" + body_part + "\n" + SW_REG
-    OUT.write_text(html, encoding="utf-8")
-    print(f"wrote {OUT} ({len(html):,} bytes)")
+    out.write_text(html, encoding="utf-8")
+    print(f"wrote {out} ({len(html):,} bytes)")
 
 
 if __name__ == "__main__":
