@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-08T07:15:27+00:00",
+  "ran": "2026-10-08T13:32:17+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,16 +8,16 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 144.5,
-      "tail": "  www.atelie313.com                     1     0      1.7  \n  www.ndk.bg                            4     0      2.9  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.5  \nwrote VLINKS: 19 entries (19 unique film+venue pairs)\n  lumiere: 3 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (50 arthouse films) and theatre_shows.json (89 theatre shows)"
+      "seconds": 258.1,
+      "tail": "  lumiere: 7 vlink(s)\n  odeon: 19 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (75 arthouse films) and theatre_shows.json (228 theatre shows)\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 15 official, 0 kept-previous, 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n0 film(s) and 0 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 1 show(s) retired; 0 + 2 suspected duplicate(s)\nPRELIM_FROM {\"arena-mall\": \"2026-10-16\", \"arena-mega\": \"2026-10-16\", \"artvent\": \"2026-12-15\", \"atelie313\": \"2026-10-08\", \"cc-paradise\": \"2026-10-16\", \"cc-sofia\": \"2026-10-16\", \"cg-park\": \"2026-10-15\", \"cg-ring\": \"2026-10-15\", \"cineland\": \"2026-10-08\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-08\", \"dom-kino\": \"2026-10-16\", \"g8\": \"2026-10-09\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-05\", \"mladezhki\": \"2026-11-30\", \"natfiz\": \"2026-10-08\", \"national\": \"2026-12-15\", \"new-ndk\": \"2026-10-08\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-15\", \"th199\": \"2026-10-20\", \"toplo\": \"2026-10-30\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-21\", \"zad-kanala\": \"2026-12-15\"}"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 9.0,
-      "tail": "film_info coverage:\n  97 films needed details, fetched 8 pages\n  synopsis:  8 new\n  director:  5 new\n  cast:      0 new\n  genres:    8 new\n  img:       0 new poster images harvested\n  96 total entries in film_info.json"
+      "seconds": 9.6,
+      "tail": "film_info coverage:\n  97 films needed details, fetched 11 pages\n  synopsis:  8 new\n  director:  6 new\n  cast:      0 new\n  genres:    8 new\n  img:       0 new poster images harvested\n  103 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
@@ -25,7 +25,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 50 arthouse film(s) (147 total; 50 synthesised)"
+      "tail": "merged 75 arthouse film(s) (172 total; 75 synthesised)"
     },
     {
       "step": "theatre shows",
@@ -33,7 +33,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 89 theatre show(s) into SHOWS (358 total; 89 synthesised)"
+      "tail": "merged 228 theatre show(s) into SHOWS (496 total; 228 synthesised)"
     },
     {
       "step": "film posters",
@@ -48,24 +48,546 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 83.5,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        25     0     27.4  \n  theatre.art.bg                       45     0     52.7  \n\nnew this run: 0   rejected by policy: 2   total: 342/358 shows with art\nre-hosted 342/342 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 329.5,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                       119     0    140.8  \n  theatre.art.bg                       49     0     56.2  \n\nnew this run: 110   rejected by policy: 4   total: 450/496 shows with art\nre-hosted 450/450 posters under posters/\nwrote theatre_posters.json"
+    },
+    {
+      "step": "translations",
+      "script": "translate.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 0.1,
+      "tail": "DEEPL_AUTH_KEY not set — skipping translations, keeping previous."
     },
     {
       "step": "inline posters",
       "script": "inject_data.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "film_info img: added 3 fallback poster(s) to POSTERS\ninjected TMDBART: 105 films (104 with posters), POSTERS: 22 entries (19 og:image + 3 film_info-img fallbacks), SHOWART: 342 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
+      "seconds": 0.1,
+      "tail": "  film_info img: added 4 fallback poster(s) to POSTERS\n  TMDBART: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 104 films (103 with posters), POSTERS: 23 entries (19 og:image + 4 film_info-img fallbacks), SHOWART: 450 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 0 ids, TITLE_EN: 0 ids (auto-translated)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 8.4,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (731,600 bytes)\n  all checks passed — safe to publish"
+      "seconds": 9.8,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (923,181 bytes)\n  all checks passed — safe to publish"
     }
-  ]
+  ],
+  "official": {
+    "cc-sofia": {
+      "kind": null,
+      "status": "official",
+      "source": "cinemacity.bg quickbook API",
+      "covered": [
+        "2026-10-08",
+        "2026-10-15"
+      ],
+      "days": 8,
+      "screenings": 423,
+      "written_screenings": 427,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 4,
+      "discarded_aggregator": 17,
+      "minted": [],
+      "error": null
+    },
+    "cc-paradise": {
+      "kind": null,
+      "status": "official",
+      "source": "cinemacity.bg quickbook API",
+      "covered": [
+        "2026-10-08",
+        "2026-10-15"
+      ],
+      "days": 8,
+      "screenings": 476,
+      "written_screenings": 480,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 4,
+      "discarded_aggregator": 21,
+      "minted": [],
+      "error": null
+    },
+    "arena-mega": {
+      "kind": null,
+      "status": "official",
+      "source": "kinoarena.com programme pages",
+      "covered": [
+        "2026-10-08",
+        "2026-10-15"
+      ],
+      "days": 8,
+      "screenings": 387,
+      "written_screenings": 387,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 4,
+      "minted": [],
+      "error": null
+    },
+    "arena-mall": {
+      "kind": null,
+      "status": "official",
+      "source": "kinoarena.com programme pages",
+      "covered": [
+        "2026-10-08",
+        "2026-10-15"
+      ],
+      "days": 8,
+      "screenings": 387,
+      "written_screenings": 387,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 4,
+      "minted": [],
+      "error": null
+    },
+    "cg-ring": {
+      "kind": null,
+      "status": "official",
+      "source": "cinegrand.bg schedule pages",
+      "covered": [
+        "2026-10-08",
+        "2026-10-14"
+      ],
+      "days": 7,
+      "screenings": 345,
+      "written_screenings": 345,
+      "prelim_from": "2026-10-15",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 20,
+      "minted": [],
+      "error": null
+    },
+    "cg-park": {
+      "kind": null,
+      "status": "official",
+      "source": "cinegrand.bg schedule pages",
+      "covered": [
+        "2026-10-08",
+        "2026-10-14"
+      ],
+      "days": 7,
+      "screenings": 200,
+      "written_screenings": 200,
+      "prelim_from": "2026-10-15",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 11,
+      "minted": [],
+      "error": null
+    },
+    "cineland": {
+      "kind": null,
+      "status": "none",
+      "source": "programata.bg (no public official programme)",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 35,
+      "prelim_from": "2026-10-08",
+      "prelim_screenings": 35,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "vlaikova": {
+      "kind": null,
+      "status": "official",
+      "source": "vlaikovacinema.com weekly grid",
+      "covered": [
+        "2026-10-08",
+        "2026-10-20"
+      ],
+      "days": 13,
+      "screenings": 36,
+      "written_screenings": 36,
+      "prelim_from": "2026-10-21",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "odeon": {
+      "kind": null,
+      "status": "official",
+      "source": "bnf.bg Одеон programme (915, 916)",
+      "covered": [
+        "2026-10-08",
+        "2026-10-15"
+      ],
+      "days": 8,
+      "screenings": 35,
+      "written_screenings": 35,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "dom-kino": {
+      "kind": null,
+      "status": "official",
+      "source": "domnakinoto.com day programme",
+      "covered": [
+        "2026-10-08",
+        "2026-10-15"
+      ],
+      "days": 8,
+      "screenings": 31,
+      "written_screenings": 56,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 25,
+      "discarded_aggregator": 1,
+      "minted": [],
+      "error": null
+    },
+    "g8": {
+      "kind": null,
+      "status": "official",
+      "source": "g8cinema.com weekly programme",
+      "covered": [
+        "2026-10-08",
+        "2026-10-08"
+      ],
+      "days": 1,
+      "screenings": 15,
+      "written_screenings": 127,
+      "prelim_from": "2026-10-09",
+      "prelim_screenings": 112,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "lumiere": {
+      "kind": null,
+      "status": "official",
+      "source": "ndk.bg programme + KinoCult (Sanity) API",
+      "covered": [
+        "2026-10-08",
+        "2026-12-04"
+      ],
+      "days": 58,
+      "screenings": 7,
+      "written_screenings": 7,
+      "prelim_from": "2026-12-05",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "national": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "nationaltheatre.bg/bg/programa (month pages)",
+      "covered": [
+        "2026-10-08",
+        "2026-12-14"
+      ],
+      "days": 68,
+      "screenings": 146,
+      "written_screenings": 146,
+      "prelim_from": "2026-12-15",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "sofia-th": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "sofiatheatre.eu/program (month pages)",
+      "covered": [
+        "2026-10-08",
+        "2026-11-29"
+      ],
+      "days": 53,
+      "screenings": 23,
+      "written_screenings": 24,
+      "prelim_from": "2026-11-30",
+      "prelim_screenings": 1,
+      "discarded_aggregator": 6,
+      "minted": [],
+      "error": null
+    },
+    "th199": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "theatre199.org/bg/schedule (GET window)",
+      "covered": [
+        "2026-10-09",
+        "2026-10-19"
+      ],
+      "days": 11,
+      "screenings": 14,
+      "written_screenings": 32,
+      "prelim_from": "2026-10-20",
+      "prelim_screenings": 17,
+      "discarded_aggregator": 2,
+      "minted": [],
+      "error": null
+    },
+    "sfumato": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "sfumato.info (own programme, HTTP only)",
+      "covered": [
+        "2026-10-08",
+        "2026-11-30"
+      ],
+      "days": 54,
+      "screenings": 41,
+      "written_screenings": 42,
+      "prelim_from": "2026-12-01",
+      "prelim_screenings": 1,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "tba": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "tba.art.bg/programabg.php + tickets.tba.bg public list",
+      "covered": [
+        "2026-10-08",
+        "2026-12-14"
+      ],
+      "days": 68,
+      "screenings": 119,
+      "written_screenings": 119,
+      "prelim_from": "2026-12-15",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 2,
+      "minted": [],
+      "error": null
+    },
+    "zad-kanala": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "zadkanala.bg/programa/YYYY-MM",
+      "covered": [
+        "2026-10-08",
+        "2026-12-14"
+      ],
+      "days": 68,
+      "screenings": 65,
+      "written_screenings": 65,
+      "prelim_from": "2026-12-15",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 2,
+      "minted": [],
+      "error": null
+    },
+    "vazrazhdane": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "theatrevazrajdane.bg/programa/",
+      "covered": [
+        "2026-10-08",
+        "2026-11-29"
+      ],
+      "days": 53,
+      "screenings": 65,
+      "written_screenings": 71,
+      "prelim_from": "2026-11-30",
+      "prelim_screenings": 6,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "mladezhki": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "mlt.bg/programa.php (month pages)",
+      "covered": [
+        "2026-10-08",
+        "2026-11-29"
+      ],
+      "days": 53,
+      "screenings": 111,
+      "written_screenings": 112,
+      "prelim_from": "2026-11-30",
+      "prelim_screenings": 1,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "kuklen": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "sofiapuppet.com/programa.php (month pages)",
+      "covered": [
+        "2026-10-08",
+        "2026-11-29"
+      ],
+      "days": 53,
+      "screenings": 58,
+      "written_screenings": 59,
+      "prelim_from": "2026-11-30",
+      "prelim_screenings": 1,
+      "discarded_aggregator": 3,
+      "minted": [],
+      "error": null
+    },
+    "toplo": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "toplocentrala.bg/program/performance (schema.org)",
+      "covered": [
+        "2026-10-08",
+        "2026-10-29"
+      ],
+      "days": 22,
+      "screenings": 36,
+      "written_screenings": 36,
+      "prelim_from": "2026-10-30",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "citymark": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "theatre.art.bg (official channel)",
+      "covered": [
+        "2026-10-08",
+        "2026-10-31"
+      ],
+      "days": 24,
+      "screenings": 7,
+      "written_screenings": 7,
+      "prelim_from": "2026-11-01",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "satira": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "satirata.bg/program (__NEXT_DATA__)",
+      "covered": [
+        "2026-10-08",
+        "2026-11-29"
+      ],
+      "days": 53,
+      "screenings": 106,
+      "written_screenings": 106,
+      "prelim_from": "2026-11-30",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "natfiz": {
+      "kind": "theatre",
+      "status": "none",
+      "source": "theatre.art.bg (no official programme)",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 0,
+      "prelim_from": "2026-10-08",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": "the monthly programme is a single JPG poster (natfiz.bg/udt-mesechna-programa/)"
+    },
+    "new-ndk": {
+      "kind": "theatre",
+      "status": "none",
+      "source": "theatre.art.bg (no official programme)",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 0,
+      "prelim_from": "2026-10-08",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": "no programme of its own: tickets.ndk.bg lists every NDK hall without identifying Нов театър"
+    },
+    "derida": {
+      "kind": "theatre",
+      "status": "none",
+      "source": "theatre.art.bg (no official programme)",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 1,
+      "prelim_from": "2026-10-08",
+      "prelim_screenings": 1,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": "derida-dance.com carries no current programme (archive only)"
+    },
+    "iam": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "iamstudio.bg/programa/",
+      "covered": [
+        "2026-10-08",
+        "2026-10-27"
+      ],
+      "days": 20,
+      "screenings": 8,
+      "written_screenings": 8,
+      "prelim_from": "2026-10-28",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "atelie313": {
+      "kind": "theatre",
+      "status": "none",
+      "source": "theatre.art.bg (no official programme)",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 21,
+      "prelim_from": "2026-10-08",
+      "prelim_screenings": 21,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": "atelie313.com is a JavaScript-only super.website app (no programme in the HTML); theatre.art.bg lists it (theatre id 22) but that is an aggregator — its rows stay preliminary"
+    },
+    "artvent": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "artvent.bg per-show pages (София, Театър ARTVENT only)",
+      "covered": [
+        "2026-10-08",
+        "2026-12-14"
+      ],
+      "days": 68,
+      "screenings": 40,
+      "written_screenings": 40,
+      "prelim_from": "2026-12-15",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    },
+    "salzaismyah": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "salzaismyah.bg/site/calendar (month grid)",
+      "covered": [
+        "2026-10-08",
+        "2026-10-31"
+      ],
+      "days": 24,
+      "screenings": 36,
+      "written_screenings": 58,
+      "prelim_from": "2026-11-01",
+      "prelim_screenings": 22,
+      "discarded_aggregator": 0,
+      "minted": [],
+      "error": null
+    }
+  }
 }
