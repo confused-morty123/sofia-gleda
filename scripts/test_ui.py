@@ -86,6 +86,10 @@ CLOCK_WEEK_END = _next_sunday(CLOCK_TODAY_ISO)  # the Sunday that ends this week
 CLOCK_TOMORROW_ISO = (
     datetime.date.fromisoformat(CLOCK_TODAY_ISO) + datetime.timedelta(days=1)
 ).strftime("%Y-%m-%d")
+_clock_d = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+CLOCK_WEEK_FRI = (
+    _clock_d + datetime.timedelta(days=(4 - _clock_d.weekday()) % 7)
+).strftime("%Y-%m-%d")  # Friday of this week (same day if today is Friday)
 FIXED_TOMORROW_2350 = FIXED_1445 + 9 * 3600 * 1000  # same date at 23:50 Sofia
 
 CLOCK = """
@@ -4943,7 +4947,7 @@ def wave_j(browser, webkit_browser=None):
           tomorrow_rail is None,
           f"'Утре вечер' found at 14:45 when today's perfs are upcoming; rails={rail_titles[:10]}")
 
-    # Verify "Тази вечер" shows only 2026-10-07 performances at ≥14:45
+    # Verify "Тази вечер" shows only today's performances at ≥14:45
     if tonight_rail is not None:
         tonightT_shows = page.evaluate("""() => {
             const h2s = Array.from(document.querySelectorAll('.rhead h2'));
@@ -4955,22 +4959,22 @@ def wave_j(browser, webkit_browser=None):
             return cards.map(c => c.dataset.show);
         }""")
         if tonightT_shows:
-            # Each show should have a PERFORMANCE on 2026-10-07 at ≥14:45
+            # Each show should have a PERFORMANCE on CLOCK_TODAY_ISO at ≥14:45
             tonight_ok = page.evaluate(f"""() => {{
                 const showIds = {tonightT_shows!r};
-                const today = '2026-10-07';
+                const today = '{CLOCK_TODAY_ISO}';
                 const perfs = PERFORMANCES.filter(p => showIds.includes(p[0]) && p[1] === today && p[2] >= '14:45');
                 const covered = new Set(perfs.map(p => p[0]));
                 const uncovered = showIds.filter(id => !covered.has(id));
                 return {{covered: covered.size, total: showIds.length, uncovered: uncovered.slice(0,3)}};
             }}""")
-            check("j5_tonightT_shows_on_oct7",
+            check("j5_tonightT_shows_today",
                   tonight_ok["uncovered"] == [],
-                  f"{tonight_ok['uncovered']} shows lack oct-07 perf ≥14:45; covered={tonight_ok['covered']}/{tonight_ok['total']}")
+                  f"{tonight_ok['uncovered']} shows lack today perf ≥14:45; covered={tonight_ok['covered']}/{tonight_ok['total']}")
         else:
-            check("j5_tonightT_shows_on_oct7", False, "'Тази вечер' rail has no show cards")
+            check("j5_tonightT_shows_today", False, "'Тази вечер' rail has no show cards")
     else:
-        skip("j5_tonightT_shows_on_oct7", "'Тази вечер' rail not present")
+        skip("j5_tonightT_shows_today", "'Тази вечер' rail not present")
 
     ctx.close()
 
@@ -5036,7 +5040,7 @@ def wave_j(browser, webkit_browser=None):
         if wknd_shows:
             wknd_ok = page.evaluate(f"""() => {{
                 const showIds = {wknd_shows!r};
-                const fri = '2026-10-09', sun = '2026-10-11';
+                const fri = '{CLOCK_WEEK_FRI}', sun = '{CLOCK_WEEK_END}';
                 const perfs = PERFORMANCES.filter(p => showIds.includes(p[0]) && p[1] >= fri && p[1] <= sun);
                 const covered = new Set(perfs.map(p => p[0]));
                 const uncovered = showIds.filter(id => !covered.has(id));
@@ -5050,15 +5054,20 @@ def wave_j(browser, webkit_browser=None):
     else:
         skip("j5_weekend_shows_on_fri_sun", "'Този уикенд' rail not present")
 
-    # J5e: Selecting a single weekday in the day strip — report behaviour
-    day_strip_result = page.evaluate(f"""() => {{
-        // Click 2026-10-08 (Thursday, a weekday)
-        const pill = document.querySelector("[data-day='2026-10-08']");
-        if (!pill) return {{found: false}};
-        pill.click();
-        return {{found: true}};
+    # J5e: Select a Mon–Thu pill from the strip (including today) → "Този уикенд" should hide.
+    # JS getDay(): Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
+    # Non-weekend = Mon–Thu = getDay() 1..4
+    _non_wknd_day = page.evaluate(f"""() => {{
+        const pills = Array.from(document.querySelectorAll('[data-day]'));
+        for (const p of pills) {{
+            const d = new Date(p.dataset.day + 'T12:00:00');
+            const dow = d.getDay();
+            if (dow >= 1 && dow <= 4) return p.dataset.day;  // Mon-Thu
+        }}
+        return null;
     }}""")
-    if day_strip_result.get("found"):
+    if _non_wknd_day:
+        page.evaluate(f"document.querySelector(\"[data-day='{_non_wknd_day}']\")?.click()")
         page.wait_for_timeout(600)
         rails_after_weekday = page.evaluate("""() => {
             return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
@@ -5066,9 +5075,9 @@ def wave_j(browser, webkit_browser=None):
         weekend_after = next((t for t in rails_after_weekday if "Този уикенд" in t or "This weekend" in t), None)
         check("j5_weekend_hidden_on_weekday",
               weekend_after is None,
-              f"'Този уикенд' still visible after selecting weekday 2026-10-08 (actual: {weekend_after!r})")
+              f"'Този уикенд' still visible after selecting weekday {_non_wknd_day} (actual: {weekend_after!r})")
     else:
-        skip("j5_weekend_hidden_on_weekday", "day pill 2026-10-08 not found")
+        skip("j5_weekend_hidden_on_weekday", "no Mon–Thu day pill in strip (week starts Fri or later)")
 
     ctx.close()
 
@@ -5178,20 +5187,31 @@ def wave_j(browser, webkit_browser=None):
           venue_mode_info["venueBlocks"] == 1,
           f"expected 1 venue block, got {venue_mode_info['venueBlocks']}")
 
-    # Verify all films in the cc-sofia block have showtimes at cc-sofia in the period
+    # Verify all films in the cc-sofia block have UPCOMING showtimes at cc-sofia in the period.
+    # "Upcoming" = date > today, OR date == today with at least one time >= NOW_TIME (14:45).
+    # The app filters out past screenings, so the expected set must match this logic.
     venue_films_ok = page.evaluate(f"""() => {{
         const block = document.querySelector('.venue-block');
         if (!block) return {{ok: false, reason: 'no venue-block'}};
         const filmCards = Array.from(block.querySelectorAll('[data-film]'));
         const filmIds = filmCards.map(c => c.dataset.film);
-        // Check that each film has at least one SHOWTIME row at cc-sofia in the period
-        const weekStart = '{CLOCK_TODAY_ISO}', weekEnd = '{CLOCK_WEEK_END}';
+        const today = '{CLOCK_TODAY_ISO}', weekEnd = '{CLOCK_WEEK_END}', nowTime = '14:45';
+        // Helper: does a SHOWTIMES row have an upcoming screening?
+        function isUpcoming(r) {{
+            if (r[2] > today && r[2] <= weekEnd) return true;
+            if (r[2] === today) {{
+                const times = Array.isArray(r[3]) ? r[3] : [r[3]];
+                return times.some(t => t >= nowTime);
+            }}
+            return false;
+        }}
+        // Check that each film in the block has at least one upcoming cc-sofia screening
         const missing = filmIds.filter(fid =>
-            !SHOWTIMES.some(r => r[0] === fid && r[1] === 'cc-sofia' && r[2] >= weekStart && r[2] <= weekEnd)
+            !SHOWTIMES.some(r => r[0] === fid && r[1] === 'cc-sofia' && isUpcoming(r))
         );
-        // Also check all cc-sofia films in the period appear
+        // Expected = all cc-sofia films with at least one upcoming screening in the period
         const expectedIds = Array.from(new Set(
-            SHOWTIMES.filter(r => r[1] === 'cc-sofia' && r[2] >= weekStart && r[2] <= weekEnd).map(r => r[0])
+            SHOWTIMES.filter(r => r[1] === 'cc-sofia' && isUpcoming(r)).map(r => r[0])
         ));
         const missingExpected = expectedIds.filter(fid => !filmIds.includes(fid));
         return {{ok: missing.length === 0 && missingExpected.length === 0,
@@ -5255,12 +5275,13 @@ def wave_j(browser, webkit_browser=None):
         if (fab && !fab.hidden) fab.click();
     }""")
     page.wait_for_timeout(400)
-    # Select cc-sofia and the first available genre
+    # Select cc-sofia and the first available genre (skip the empty "Всички жанрове" chip)
     genre_venue_ok = page.evaluate("""() => {
         const venueChip = document.querySelector(".drawer [data-venue='cc-sofia']");
         if (venueChip) venueChip.click();
-        // Pick first genre chip in drawer
-        const genreChip = document.querySelector(".drawer [data-genre]");
+        // Pick first genre chip with a non-empty data-genre value
+        const chips = Array.from(document.querySelectorAll(".drawer [data-genre]"));
+        const genreChip = chips.find(c => c.dataset.genre && c.dataset.genre.length > 0);
         if (genreChip) { genreChip.click(); return {genreId: genreChip.dataset.genre}; }
         return {genreId: null};
     }""")
@@ -5289,7 +5310,7 @@ def wave_j(browser, webkit_browser=None):
               intersection_result.get("ok") is True,
               f"genre filter not applied in venue mode: {intersection_result}")
     else:
-        skip("j7_genre_venue_intersection", "no genre chips found in drawer")
+        check("j7_genre_venue_intersection", False, "no genre chips with non-empty id found in drawer")
     ctx.close()
 
     # --- J7d: Theatre venue mode ---
@@ -5333,93 +5354,108 @@ def wave_j(browser, webkit_browser=None):
         check("j7_theatre_venue_mode_hero_gone", False, "skipped")
     ctx.close()
 
-    # ── J8: Wide posters ───────────────────────────────────────────────────────
-    print("\n=== J8: Wide poster detection ===")
+    # ── J8: Landscape poster fills card with object-fit:cover (wide/blur feature removed) ──
+    # Spec (Wave J, updated): landscape poster URLs must fill the card like all others —
+    # object-fit:cover, img covers poster box, no .wide class, no .p-blur-bg anywhere.
+    print("\n=== J8: Landscape poster cover check ===")
     WIDE_POSTER_URL = "https://ndk.bg/storage/thumbnails/2026/08/31/38393/group-55-kinocult-festival-20260831-064826_resize1000x1000.jpg?v=1788158928"
 
     ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
     _force_mount(page)
 
-    # Find a film currently visible in a rail
+    # Find a film card (.card[data-film]) visible in the viewport so lazy img loads
     film_id = page.evaluate("""() => {
-        const card = document.querySelector('[data-film]');
-        return card ? card.dataset.film : null;
+        const cards = Array.from(document.querySelectorAll('.card[data-film]'));
+        const vp = {w: window.innerWidth, h: window.innerHeight};
+        for (const c of cards) {
+            const r = c.getBoundingClientRect();
+            if (r.top >= 0 && r.top < vp.h) return c.dataset.film;
+        }
+        return cards[0]?.dataset.film ?? null;
     }""")
 
     if film_id:
-        # Set its poster to a wide (landscape) URL and re-render
+        # Inject the landscape URL and re-render; card is in viewport → img loads immediately
         page.evaluate(f"""() => {{
             if (typeof POSTERS !== 'undefined') {{
                 POSTERS['{film_id}'] = '{WIDE_POSTER_URL}';
             }}
             if (typeof render !== 'undefined') render();
         }}""")
-        page.wait_for_timeout(1000)  # wait for render + image load
+        page.wait_for_timeout(500)
 
-        # Wait for the image to load and the .wide class to be set
-        # (the .wide class is set onload when naturalWidth > naturalHeight * 1.05)
-        for _ in range(10):
-            wide_result = page.evaluate(f"""() => {{
-                const card = document.querySelector('[data-film="{film_id}"]');
-                if (!card) return {{cardFound: false}};
-                const poster = card.querySelector('.poster');
-                const img = card.querySelector('.poster img, .poster .p-real');
-                const blurBg = card.querySelector('.p-blur-bg');
-                const isWide = poster && poster.classList.contains('wide');
-                const hasBlurBg = !!blurBg;
-                const objFit = img ? window.getComputedStyle(img).objectFit : null;
-                return {{cardFound: true, isWide, hasBlurBg, objFit,
-                         imgSrc: img ? img.src.slice(0,60) : null,
-                         naturalW: img && img.complete ? img.naturalWidth : null,
-                         naturalH: img && img.complete ? img.naturalHeight : null}};
+        # Wait up to 6 s for the image to load (network is available in headless)
+        img_loaded = False
+        for _ in range(30):
+            loaded = page.evaluate(f"""() => {{
+                const card = document.querySelector('.card[data-film="{film_id}"]');
+                if (!card) return false;
+                const img = card.querySelector('.poster img');
+                return img && img.complete && img.naturalWidth > 0;
             }}""")
-            if wide_result.get("isWide"):
+            if loaded:
+                img_loaded = True
                 break
             page.wait_for_timeout(200)
 
-        # Check if network was available (if naturalWidth==0, image didn't load)
-        if wide_result.get("naturalW") == 0 or wide_result.get("naturalW") is None:
-            skip("j8_wide_poster_class", "image did not load (no network access)")
-            skip("j8_wide_blur_bg", "image did not load (no network access)")
-            skip("j8_wide_object_fit_contain", "image did not load (no network access)")
+        if not img_loaded:
+            # FAIL (never skip) — network is expected to work in headless
+            check("j8_landscape_object_fit_cover", False,
+                  f"NDK landscape image failed to load after 6 s for film={film_id!r}; url={WIDE_POSTER_URL[:60]}")
+            check("j8_landscape_img_covers_poster", False, "image did not load")
+            check("j8_no_wide_class", False, "image did not load")
+            check("j8_no_p_blur_bg", False, "image did not load")
         else:
-            check("j8_wide_poster_class",
-                  wide_result.get("isWide") is True,
-                  f"poster has no .wide class; naturalW={wide_result.get('naturalW')}, naturalH={wide_result.get('naturalH')}")
-            check("j8_wide_blur_bg",
-                  wide_result.get("hasBlurBg") is True,
-                  f"no .p-blur-bg element; isWide={wide_result.get('isWide')}")
-            check("j8_wide_object_fit_contain",
-                  wide_result.get("objFit") == "contain",
-                  f"object-fit={wide_result.get('objFit')!r} (need 'contain')")
-
-            # A portrait poster (different film) should not have .wide
-            portrait_result = page.evaluate(f"""() => {{
-                const cards = Array.from(document.querySelectorAll('[data-film]'));
-                const portrait = cards.find(c => {{
-                    const poster = c.querySelector('.poster');
-                    return poster && !poster.classList.contains('wide');
-                }});
-                if (!portrait) return {{found: false}};
-                const img = portrait.querySelector('.poster img, .poster .p-real');
+            poster_result = page.evaluate(f"""() => {{
+                const card = document.querySelector('.card[data-film="{film_id}"]');
+                if (!card) return {{cardFound: false}};
+                const posterEl = card.querySelector('.poster');
+                const img = card.querySelector('.poster img');
+                if (!img || !posterEl) return {{cardFound: true, imgFound: false}};
+                const imgRect = img.getBoundingClientRect();
+                const posterRect = posterEl.getBoundingClientRect();
+                const objFit = window.getComputedStyle(img).objectFit;
+                const isWide = posterEl.classList.contains('wide');
+                const blurBg = !!card.querySelector('.p-blur-bg');
+                // img must cover the poster box: its edges must be ≤2px inside the poster box
+                const coversLeft   = posterRect.left - imgRect.left <= 2;
+                const coversRight  = imgRect.right - posterRect.right <= 2;
+                const coversTop    = posterRect.top - imgRect.top <= 2;
+                const coversBottom = imgRect.bottom - posterRect.bottom <= 2;
                 return {{
-                    found: true,
-                    filmId: portrait.dataset.film,
-                    objFit: img ? window.getComputedStyle(img).objectFit : null,
+                    cardFound: true, imgFound: true,
+                    objFit, isWide, blurBg,
+                    coversLeft, coversRight, coversTop, coversBottom,
+                    imgRect: [Math.round(imgRect.left), Math.round(imgRect.top),
+                               Math.round(imgRect.width), Math.round(imgRect.height)],
+                    posterRect: [Math.round(posterRect.left), Math.round(posterRect.top),
+                                  Math.round(posterRect.width), Math.round(posterRect.height)],
+                    naturalW: img.naturalWidth, naturalH: img.naturalHeight,
                 }};
             }}""")
-            if portrait_result.get("found"):
-                check("j8_portrait_no_wide_no_contain",
-                      portrait_result.get("objFit") == "cover",
-                      f"portrait poster objFit={portrait_result.get('objFit')!r} (need 'cover')")
-            else:
-                skip("j8_portrait_no_wide_no_contain", "no non-wide poster card found after setting one film to wide")
+            check("j8_landscape_object_fit_cover",
+                  poster_result.get("objFit") == "cover",
+                  f"object-fit={poster_result.get('objFit')!r} (need 'cover'); "
+                  f"naturalW={poster_result.get('naturalW')}, naturalH={poster_result.get('naturalH')}")
+            covers = all(poster_result.get(k) for k in ("coversLeft", "coversRight", "coversTop", "coversBottom"))
+            check("j8_landscape_img_covers_poster",
+                  covers,
+                  f"img does not cover poster box; imgRect={poster_result.get('imgRect')}, "
+                  f"posterRect={poster_result.get('posterRect')}")
+            check("j8_no_wide_class",
+                  not poster_result.get("isWide"),
+                  "poster element has .wide class (feature removed)")
+            # Check entire page for any .p-blur-bg
+            any_blur_bg = page.evaluate("!!document.querySelector('.p-blur-bg')")
+            check("j8_no_p_blur_bg",
+                  not any_blur_bg,
+                  ".p-blur-bg element found on page (feature removed)")
     else:
-        skip("j8_wide_poster_class", "no [data-film] card visible for wide poster test")
-        skip("j8_wide_blur_bg", "skipped")
-        skip("j8_wide_object_fit_contain", "skipped")
-        skip("j8_portrait_no_wide_no_contain", "skipped")
+        check("j8_landscape_object_fit_cover", False, "no [data-film] card visible for landscape poster test")
+        check("j8_landscape_img_covers_poster", False, "skipped: no film card")
+        check("j8_no_wide_class", False, "skipped: no film card")
+        check("j8_no_p_blur_bg", False, "skipped: no film card")
     ctx.close()
 
     # ── J9: No page errors + verify_build + full suite ─────────────────────────

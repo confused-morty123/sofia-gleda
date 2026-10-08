@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-07T22:31:50+00:00",
+  "ran": "2026-10-08T07:15:27+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,16 +8,16 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 152.0,
-      "tail": "  www.atelie313.com                     1     0      1.7  \n  www.ndk.bg                            4     0      2.7  \n  www.salzaismyah.bg                    1     0      0.2  \n  zadkanala.bg                          1     0      0.7  \nwrote VLINKS: 18 entries (18 unique film+venue pairs)\n  lumiere: 3 vlink(s)\n  vlaikova: 15 vlink(s)\nwrote index.html, changes.json, cinema_films.json (49 arthouse films) and theatre_shows.json (88 theatre shows)"
+      "seconds": 144.5,
+      "tail": "  www.atelie313.com                     1     0      1.7  \n  www.ndk.bg                            4     0      2.9  \n  www.salzaismyah.bg                    1     0      0.1  \n  zadkanala.bg                          1     0      0.5  \nwrote VLINKS: 19 entries (19 unique film+venue pairs)\n  lumiere: 3 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (50 arthouse films) and theatre_shows.json (89 theatre shows)"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 9.2,
-      "tail": "film_info coverage:\n  97 films needed details, fetched 8 pages\n  synopsis:  8 new\n  director:  5 new\n  cast:      0 new\n  genres:    8 new\n  93 total entries in film_info.json"
+      "seconds": 9.0,
+      "tail": "film_info coverage:\n  97 films needed details, fetched 8 pages\n  synopsis:  8 new\n  director:  5 new\n  cast:      0 new\n  genres:    8 new\n  img:       0 new poster images harvested\n  96 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
@@ -25,7 +25,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 49 arthouse film(s) (146 total; 49 synthesised)"
+      "tail": "merged 50 arthouse film(s) (147 total; 50 synthesised)"
     },
     {
       "step": "theatre shows",
@@ -33,7 +33,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 88 theatre show(s) into SHOWS (357 total; 88 synthesised)"
+      "tail": "merged 89 theatre show(s) into SHOWS (358 total; 89 synthesised)"
     },
     {
       "step": "film posters",
@@ -48,24 +48,24 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 83.8,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        25     0     28.6  \n  theatre.art.bg                       45     0     52.4  \n\nnew this run: 0   rejected by policy: 2   total: 341/357 shows with art\nre-hosted 341/341 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 83.5,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        25     0     27.4  \n  theatre.art.bg                       45     0     52.7  \n\nnew this run: 0   rejected by policy: 2   total: 342/358 shows with art\nre-hosted 342/342 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "inline posters",
       "script": "inject_data.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "injected TMDBART: 105 films (104 with posters), POSTERS: 19 og:image fallbacks, SHOWART: 341 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
+      "seconds": 0.2,
+      "tail": "film_info img: added 3 fallback poster(s) to POSTERS\ninjected TMDBART: 105 films (104 with posters), POSTERS: 22 entries (19 og:image + 3 film_info-img fallbacks), SHOWART: 342 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 8.5,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (709,906 bytes)\n  all checks passed — safe to publish"
+      "seconds": 8.4,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (731,600 bytes)\n  all checks passed — safe to publish"
     }
   ]
 }

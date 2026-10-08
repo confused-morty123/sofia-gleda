@@ -269,17 +269,6 @@ a{color:inherit}
 .poster:has(.p-real) .p-title,.poster:has(.p-real) .p-sub{display:none}
 .poster:has(.p-real) .p-grain{background:linear-gradient(to top,rgba(0,0,0,.55),transparent 42%)}
 .shero:has(.p-real) .p-real{filter:blur(2px) brightness(.62)}
-/* Wide poster: landscape image in a 2:3 portrait frame.
-   .p-blur-bg fills the frame as a blurred/darkened background layer.
-   .p-real switches to contain so the title lettering stays visible.
-   The .wide class is added by JS on img load when naturalWidth > naturalHeight*1.05. */
-.p-blur-bg{position:absolute; inset:-8%; width:116%; height:116%; z-index:1;
-  background-size:cover; background-position:center;
-  filter:blur(14px) brightness(.55); transform:scale(1.15); pointer-events:none}
-.poster.wide .p-real,.shero.wide .p-real{object-fit:contain; background:transparent; z-index:2}
-/* Keep title/sub hidden and grain scrim for wide posters too */
-.poster.wide .p-title,.poster.wide .p-sub{display:none}
-.poster.wide .p-grain,.shero.wide .p-grain{background:linear-gradient(to top,rgba(0,0,0,.45),transparent 38%)}
 /* wide event cards (.ebox) are landscape; a real poster fills the box (cover)
    on its own layer above the generated SVG but below the grain + text, with a
    stronger scrim so the badge, title, and date stay legible over the art. */
@@ -998,33 +987,8 @@ function posterArt(id,genres,g){
      exists it is overlaid on top; onerror removes the <img> and the SVG
      beneath becomes visible again (and .p-title reappears via :has). */
   const svg=genPoster(id,genres,g);
-  if(real) return svg+`<img class="p-art p-real" src="${esc(real)}" alt="" loading="lazy" decoding="async" onerror="this.remove()" onload="widePosterCheck(this)">`;
+  if(real) return svg+`<img class="p-art p-real" src="${esc(real)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`;
   return svg;
-}
-/* widePosterCheck: called on img load (and for cached images after render).
-   If the image is landscape (width > height * 1.05), mark the nearest .poster
-   or .shero ancestor as .wide and inject a .p-blur-bg sibling for the backdrop. */
-function widePosterCheck(img){
-  if(!img||!img.naturalWidth)return;
-  if(img.naturalWidth<=img.naturalHeight*1.05)return; /* portrait — nothing to do */
-  const frame=img.closest(".poster,.shero");
-  if(!frame||frame.classList.contains("wide"))return; /* already handled or no frame */
-  frame.classList.add("wide");
-  /* Inject blur-bg sibling before the img (below it in z-order) if not already there */
-  if(!frame.querySelector(".p-blur-bg")){
-    const bg=document.createElement("div");
-    bg.className="p-blur-bg";
-    bg.style.backgroundImage=`url('${CSS.escape?CSS.escape(img.src):img.src.replace(/'/g,"\\'")}')`;
-    /* insert before the p-real img so it renders below it */
-    frame.insertBefore(bg,img);
-  }
-}
-/* After each render(), re-check any .p-real imgs that are already complete
-   (cached images fire onload before the handler is attached) */
-function recheckWidePosterImgs(){
-  document.querySelectorAll(".p-art.p-real").forEach(img=>{
-    if(img.complete&&img.naturalWidth)widePosterCheck(img);
-  });
 }
 function genPoster(id,genres,g){
   const r=rng(id),fam=family(genres),W=300,H=450;
@@ -2920,7 +2884,7 @@ try{
 function boot(){ render(); }
 const origRender=render;
 render=function(){
-  try{ origRender();mountProgressive();recheckWidePosterImgs(); }
+  try{ origRender();mountProgressive(); }
   catch(e){ fatal(e); }
 };
 try{ boot(); openFromHash(); }catch(e){ fatal(e); }

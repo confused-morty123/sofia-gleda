@@ -1582,5 +1582,23 @@
   "synBg": "",
   "synEn": "",
   "source": "th199"
+ },
+ "printsesata-i-svinaryat": {
+  "id": "printsesata-i-svinaryat",
+  "title": "\"ПРИНЦЕСАТА И СВИНАРЯТ\"",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
  }
 }
