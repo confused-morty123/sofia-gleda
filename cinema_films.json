@@ -537,5 +537,16 @@
    "#275F57"
   ],
   "source": "g8"
+ },
+ "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever": {
+  "id": "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever",
+  "bg": "СИНЕЛИБРИ 2026 – ТЕСНИЯТ ПЪТ КЪМ ДАЛЕЧНИЯ СЕВЕР",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "vlaikova"
  }
 }

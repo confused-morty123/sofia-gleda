@@ -44,6 +44,19 @@ _DECOR_RE = re.compile(
     r"final cut|extended cut|uncut|special edition|redux|4k|imax|70\s*mm)\b.*$",
     re.I)
 
+# Trailing "| 1979 |" year decoration — also captures the year (group 1).
+_TRAILING_YEAR_BARS_RE = re.compile(r"\s*\|\s*(\d{4})\s*\|\s*$")
+# Festival / series prefixes, e.g. "СИНЕЛИБРИ 2026 – ", "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: "
+# A prefix is ALL-CAPS (possibly with digits/spaces) followed by a dash or colon.
+_FESTIVAL_PREFIX_RE = re.compile(
+    r"^(?:[А-ЯA-Z][А-ЯA-Z0-9\s]{2,30})\s*(?:[-–—]|[:：])\s*", re.U)
+# Person-name prefix: 2–4 words, letters only (Latin or Cyrillic), no digits.
+# Matches "Акира Куросава", "Alejandro Jodorowsky", etc.
+# Does NOT match "2001", "Spider-Man", "Venom", "Mission", "Oasis" (single word
+# would need the title to also end with a year — see _is_director_prefix()).
+_PERSON_NAME_PREFIX_RE = re.compile(
+    r"^(?:[А-Яа-яA-Za-zЀ-ӿ]+(?:\s+[А-Яа-яA-Za-zЀ-ӿ]+){1,3})$", re.U)
+
 # og:image fallback: a film TMDB cannot match (Bulgarian/festival titles) still has
 # a real still/poster on its own programme page, whose URL is already in the app's
 # LINKS array. These are the film's OWN images — honest, never a fabricated match.
@@ -152,14 +165,66 @@ def pick_bg(results, bg, year):
 
 
 def declutter(title):
-    """Strip re-release/restoration decoration so the canonical title can match."""
+    """Strip clutter from a title and return (clean_title, year_or_None).
+
+    Handles:
+    - "Режисьор: Заглавие (Година)" — director prefix stripped ONLY when the
+      prefix looks like a person's name (2–4 letter-only words) AND the full
+      title ends with a 4-digit year in parens or bars.  This avoids stripping
+      legitimate subtitle colons ("Venom: The Last Dance", "2001: A Space
+      Odyssey", "Mission: Impossible").
+    - Festival / ALL-CAPS series prefixes like "СИНЕЛИБРИ 2026 – ",
+      "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: " — stripped unconditionally (they match the
+      ALL-CAPS guard in _FESTIVAL_PREFIX_RE).
+    - Trailing "| 1979 |"-style bars — also extract the year.
+    - Re-release / restoration decoration (e.g. "Cars (20th Anniversary)").
+
+    Returns (clean_title_str, extracted_year_int_or_None).
+    Callers must search with the FULL title first and use the decluttered form
+    only as a fallback (see main()).
+    """
     t = (title or "").strip()
+    extracted_year = None
+
+    # 1. Festival / ALL-CAPS series prefix — strip unconditionally.
+    #    e.g. "СИНЕЛИБРИ 2026 – Заглавие", "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: Филм"
+    m = _FESTIVAL_PREFIX_RE.match(t)
+    if m:
+        t = t[m.end():].strip()
+
+    # 2. Trailing "| 1979 |" bars — strip and capture year.
+    m = _TRAILING_YEAR_BARS_RE.search(t)
+    if m:
+        extracted_year = int(m.group(1))
+        t = t[:m.start()].strip()
+
+    # 3. Trailing year in parens, e.g. "Сънища (1990)"
+    if extracted_year is None:
+        m = re.search(r"\((\d{4})\)\s*$", t)
+        if m:
+            extracted_year = int(m.group(1))
+            t = t[:m.start()].strip()
+
+    # 4. "Director: Title" shape — only when:
+    #    a) a year was extracted in steps 2–3 (the year is what marks this as an
+    #       arthouse retrospective title, not a franchise subtitle), AND
+    #    b) the prefix before ":" looks like a person's name (2–4 letter-only words).
+    #    This leaves "Venom: The Last Dance", "2001: A Space Odyssey", etc. intact.
+    if extracted_year is not None:
+        colon_m = re.match(r"^([^:：]+)[:：]\s*(.+)$", t)
+        if colon_m:
+            prefix = colon_m.group(1).strip()
+            if _PERSON_NAME_PREFIX_RE.match(prefix):
+                t = colon_m.group(2).strip()
+
+    # 5. Strip remaining re-release decoration from the tail (parens, then dash-keywords)
     prev = None
     while t and t != prev:
         prev = t
         t = _PAREN_RE.sub("", t).strip()
     t = _DECOR_RE.sub("", t).strip()
-    return t
+
+    return t, extracted_year
 
 
 def search_en(en, year):
@@ -324,18 +389,51 @@ def main():
         if en:
             best = search_en(en, year)
             if not best:
-                # Re-release decoration (e.g. "Cars (20th Anniversary)") blocks the
-                # match; retry with the canonical title before giving up.
-                clean = declutter(en)
+                # Re-release decoration / Director-prefix clutter blocks the match;
+                # retry with the canonical title (and any year extracted from it).
+                clean, extracted_yr = declutter(en)
+                use_year = extracted_yr if extracted_yr is not None else year
                 if clean and clean.lower() != en.lower():
-                    best = search_en(clean, year)
+                    best = search_en(clean, use_year)
                     if best:
                         print(f"      (matched after declutter: {en!r} -> {clean!r})")
+            # When a year was embedded in the title, REQUIRE the match's release
+            # year to be within ±1 so a retrospective can't pick up a remake.
+            if best:
+                _, embedded_yr = declutter(en)
+                if embedded_yr is not None:
+                    tmdb_yr_str = (best.get("release_date") or "")[:4]
+                    if tmdb_yr_str and abs(int(tmdb_yr_str) - embedded_yr) > 1:
+                        print(f"      (year mismatch: title year {embedded_yr} "
+                              f"vs TMDB {tmdb_yr_str} — rejected)")
+                        best = None
         elif bg:
             via_bg = True
-            res = api("search/movie", {"query": bg, "language": "bg", "include_adult": "false"})
+            # Always search with the FULL Bulgarian title first.
+            res = api("search/movie", {"query": bg, "language": "bg",
+                                       "include_adult": "false"})
             results = (res or {}).get("results", [])
             best = pick_bg(results, bg, year)
+            # Fallback: if full title found nothing, try decluttered form
+            # (strips "Director: Title (Year)" and festival prefixes).
+            clean_bg, extracted_yr_bg = declutter(bg)
+            if not best and clean_bg and clean_bg.lower() != bg.lower():
+                use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else year
+                res2 = api("search/movie", {"query": clean_bg, "language": "bg",
+                                            "include_adult": "false"})
+                results2 = (res2 or {}).get("results", [])
+                best = pick_bg(results2, clean_bg, use_year_bg)
+                if best:
+                    print(f"      (bg matched after declutter: {bg!r} -> {clean_bg!r})")
+            else:
+                extracted_yr_bg = None  # full-title matched; no embedded year to enforce
+            # Year mismatch guard — only when the decluttered year was used
+            if best and extracted_yr_bg is not None:
+                tmdb_yr_str = (best.get("release_date") or "")[:4]
+                if tmdb_yr_str and abs(int(tmdb_yr_str) - extracted_yr_bg) > 1:
+                    print(f"      (bg year mismatch: title year {extracted_yr_bg} "
+                          f"vs TMDB {tmdb_yr_str} — rejected)")
+                    best = None
         else:
             best = None
         if not best:
