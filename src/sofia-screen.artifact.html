@@ -454,7 +454,7 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .sec-toggle:hover{color:var(--accent)}
 .sec-toggle-title{font-family:Oswald,sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,28px);
   letter-spacing:.05em; text-transform:uppercase; flex:1}
-[data-surface="theatre"] .sec-toggle-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0}
+[data-surface="theatre"] .sec-toggle-title{font-family:"Playfair Display",Georgia,serif; text-transform:uppercase; letter-spacing:.04em}
 .sec-toggle-count{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3);
   border:1px solid var(--line); border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums; flex:0 0 auto}
 .sec-toggle-chev{flex:0 0 20px; width:20px; height:20px; color:var(--fg-3); display:flex; align-items:center; justify-content:center;
@@ -490,6 +490,14 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
   background:var(--accent); flex:0 0 4px}
 [data-surface="theatre"] .venue-block-head h2{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
 .venue-block-head .sub{font-size:11.5px; color:var(--fg-3); margin-top:2px}
+
+/* ---------- preliminary programme markers ---------- */
+.prelim-tag{font-size:9px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
+  padding:2px 6px;border-radius:4px;background:rgba(217,178,60,.15);color:var(--gild);
+  border:1px solid rgba(217,178,60,.35);white-space:nowrap;margin-left:8px;vertical-align:middle}
+a.prelim-time,span.prelim-time{border:1px dashed var(--line-2)!important;background:transparent!important}
+.prelim-legend{font-size:11.5px;color:var(--fg-3);margin-top:10px;padding:9px 12px;
+  border:1px solid rgba(217,178,60,.25);border-radius:8px;line-height:1.5}
 
 /* ---------- FAB (floating action button) ---------- */
 .fab{position:fixed; right:max(16px,env(safe-area-inset-right,0px));
@@ -562,7 +570,7 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
-  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES"].forEach(function(n){
+  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM"].forEach(function(n){
     try{ if(typeof window[n]==="undefined" && !(n in globalThis)) window[n]={}; }catch(e){ window[n]={}; }
   });
   function panel(msg){
@@ -695,6 +703,7 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  subMultiplexes:"Multiplexes",subIndepCinemas:"Independent cinemas",
  showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all",
  noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
+ noEnFilm:"No English description available yet.",noEnShow:"No English description available yet.",
  noInfoShort:"no information",boxOffice:"Tickets at the box office",viaEpay:"tickets via epaygo.bg",
  boxOfficeLabel:"Tickets at the box office",boxOfficeLabelEn:"Tickets at the box office"}};
 const t=()=>T[S.lang];
@@ -763,26 +772,42 @@ const ART2=id=>(typeof TMDBART==="object"&&TMDBART&&TMDBART[id])||{};
 const synOf=o=>{
   const fi=FI()[o.id]||{},ar=ART2(o.id);
   if(S.lang==="bg")return notEmpty(o.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||"";
+  /* EN mode: chain through EN sources only — never fall back to Bulgarian body text */
   return notEmpty(o.synEn)||notEmpty(ar.ov)||notEmpty(fi.synEn)
-        ||notEmpty(o.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||"";
+        ||notEmpty((typeof SYN_EN==="object"&&SYN_EN&&SYN_EN[o.id]))||"";
 };
 /* synFilm: for film sheets — returns text or null (caller shows note when null) */
 const synFilm=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
   if(S.lang==="bg")return notEmpty(f.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||null;
+  /* EN chain: synEn → TMDB ov → FILMINFO.synEn → SYN_EN[id] — never Bulgarian */
   return notEmpty(f.synEn)||notEmpty(ar.ov)||notEmpty(fi.synEn)
-        ||notEmpty(f.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg)||null;
+        ||notEmpty((typeof SYN_EN==="object"&&SYN_EN&&SYN_EN[f.id]))||null;
 };
+/* hasBGSynFilm: true when a BG synopsis exists for this film (used for EN fallback note) */
+const hasBGSynFilm=f=>{const fi=FI()[f.id]||{},ar=ART2(f.id);return !!(notEmpty(f.synBg)||notEmpty(fi.synBg)||notEmpty(ar.ovBg));};
+/* synShow: for show sheets — returns text or null */
+const synShow=sh=>{
+  if(S.lang==="bg")return notEmpty(SHOWSYN[sh.id])||notEmpty(sh.synBg)||null;
+  /* EN chain: show.synEn → SHOWSYN_EN[id] → SYN_EN[id] — never Bulgarian */
+  return notEmpty(sh.synEn)||notEmpty(SHOWSYN_EN[sh.id])
+        ||notEmpty((typeof SYN_EN==="object"&&SYN_EN&&SYN_EN[sh.id]))||null;
+};
+/* hasBGSynShow: true when a BG synopsis exists for this show */
+const hasBGSynShow=sh=>!!(notEmpty(SHOWSYN[sh.id])||notEmpty(sh.synBg));
 /* director / cast with FILMINFO + TMDBART fallback */
+const _hasCyr=s=>s&&/[Ѐ-ӿ]/.test(s);
 const dirOf=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
   if(S.lang==="bg")return notEmpty(f.director)||notEmpty(fi.dir)||notEmpty(ar.dir)||null;
-  return notEmpty(ar.dir)||notEmpty(f.director)||notEmpty(fi.dir)||null;
+  const raw=notEmpty(ar.dir)||notEmpty(f.director)||notEmpty(fi.dir)||null;
+  return raw&&_hasCyr(raw)?nameDisplay(raw):raw;
 };
 const castOf=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
   if(S.lang==="bg")return notEmpty(f.cast)||notEmpty(fi.cast)||notEmpty(ar.cast)||null;
-  return notEmpty(ar.cast)||notEmpty(f.cast)||notEmpty(fi.cast)||null;
+  const raw=notEmpty(ar.cast)||notEmpty(f.cast)||notEmpty(fi.cast)||null;
+  return raw&&_hasCyr(raw)?nameDisplay(raw):raw;
 };
 /* Full Bulgarian synopses harvested from official theatre sites (programata /
    sofiatheatre.eu etc.). Keyed by show id; overrides the short blurb when present.
@@ -790,6 +815,99 @@ const castOf=f=>{
 const SHOWSYN={
  "uroci":"„Уроци“ е спектакъл за среща, която започва като урок по актьорско майсторство, но постепенно се превръща в нещо много по-опасно - опит двама души да стигнат до истината един за друг, а може би и за самите себе си.\n\nВ едно театрално студио се срещат Елиът - учител, който знае много за театъра, но твърде малко за това как да продължи да живее, и Сара - филмова звезда, която идва при него не просто, за да стане „по-добра актриса“, а защото усеща, че животът ѝ вече не може да бъде изигран с познатите средства.\n\nИзследваме театъра като място, в което човек не се крие зад маски, а се разпада, за да може да бъде видян. В „Уроци“ актьорството се разглежда като философски въпрос: възможно ли е да бъдем истински, когато цял живот сме се учили да играем версии на себе си?\n\nТова е спектакъл за самотата, за суетата на успеха, за провала като последна форма на достойнство. За учителя, който се крие зад думите си, и за актрисата, която идва с цялата си публичност, но всъщност носи най-интимния си страх.\n\n„Уроци“ разказва за нуждата човек да бъде срещнат без роля. И за онзи страшен, почти невъзможен момент, в който някой наистина те вижда.",
  "posledniyat-strasten":"Пиеса от един от най-успешните световни драматурзи днес - Нийл Саймън - комедия, вдъхновена от вечните въпроси около любовта и брака. Смешна, проникновена пиеса за това как двойките изпадат в криза, къде бягаме от собствените си комплекси, възможно ли е да обичаме само един партньор…„Последният страстен любовник“ от Нийл Саймън ни забавлява с куриозните преживявания на влюбени ексцентрици, попаднали в комични и абсурдни ситуации.\n\n*В ролята на Боби се редуват актрисите Дария Симеонова и Ангела Канева.\n\n**Закъснели зрители на Камерна сцена в Театър София не се допускат, предвид разположението на местата в залата."
+};
+/* English equivalents for the two hand-harvested SHOWSYN entries.
+   The pipeline (SYN_EN map) covers the rest; these are fixed seeds. */
+const SHOWSYN_EN={
+ "uroci":"Lessons is a play about an encounter that begins as an acting masterclass and gradually turns into something far more dangerous — an attempt by two people to reach the truth about each other, and perhaps about themselves.\n\nIn a theatre studio, Elliott — a teacher who knows a great deal about acting but too little about how to go on living — meets Sara, a film star who comes to him not simply to become a better actress but because she senses that her life can no longer be played with the tools she knows.\n\nThe production explores the theatre as a space where a person does not hide behind masks but unravels, in order to be seen. In Lessons, acting is treated as a philosophical question: is it possible to be genuine when a whole life has been spent learning to play versions of oneself?\n\nThis is a show about loneliness, about the vanity of success, about failure as a last form of dignity. About the teacher who hides behind his words, and the actress who arrives with all her public persona but carries her most intimate fear.\n\nLessons tells of the need to be met without a role. And of that terrifying, almost impossible moment when someone truly sees you.",
+ "posledniyat-strasten":"A play by one of the most successful playwrights in the world today — Neil Simon — a comedy inspired by the eternal questions surrounding love and marriage. Funny and perceptive, it explores how couples fall into crisis, where we run from our own complexes, and whether it is possible to love just one partner.\n\nThe Last of the Red Hot Lovers entertains us with the curious predicaments of amorous eccentrics caught in comic and absurd situations.\n\n*The role of Bobby alternates between actresses Dariya Simeonova and Angela Kaneva.\n\n**Latecomers to the Chamber Stage at Theatre Sofia are not admitted, owing to the seating arrangement in the hall."
+};
+/* GENRE_EN: display names for every genre string in the dataset.
+   Used only for display; filter/matching logic keeps the Bulgarian values. */
+const GENRE_EN={
+ "Анимация":"Animation","Аниме":"Anime","Артхаус":"Arthouse","Биографичен":"Biographical",
+ "Български":"Bulgarian","Документален":"Documentary","Драма":"Drama","Екшън":"Action",
+ "Исторически":"Historical","Класика":"Classic","Комедия":"Comedy","Концертен":"Concert film",
+ "Криминален":"Crime","Мистерия":"Mystery","Музикален":"Musical","Приключенски":"Adventure",
+ "Романтика":"Romance","Семеен":"Family","Спорт":"Sport","Трилър":"Thriller",
+ "Уестърн":"Western","Фантастика":"Sci-fi","Фентъзи":"Fantasy","Хорър":"Horror",
+ /* Theatre genres */
+ "Биографичен":"Biographical","Българска драматургия":"Bulgarian drama","Гостуване":"Guest production",
+ "Детски":"Children's","Експериментален":"Experimental","Камерна":"Chamber",
+ "Концерт":"Concert","Куклен":"Puppet","Международен":"International","Моноспектакъл":"One-person show",
+ "Премиера":"Premiere","Приказка":"Fairy tale","Пърформанс":"Performance","Работилница":"Workshop",
+ "Съвременен танц":"Contemporary dance","Съвременна":"Contemporary","Състезание":"Competition",
+ "Танц":"Dance","Трагедия":"Tragedy","Улична култура":"Street culture","Улично":"Street",
+ "Фестивал":"Festival","Цикъл":"Series/cycle","Юбилейно":"Anniversary"
+};
+/* HALL_EN: display names for known hall names in PERFORMANCES p[3].
+   Unknown halls fall back to translitBG(). */
+const HALL_EN={
+ "Голяма сцена":"Main Stage","Голяма сцена — НОВА":"Main Stage — NEW","Зала Underground":"Underground Hall",
+ "Из театъра и около него":"In and around the theatre","Камерна зала":"Chamber Hall",
+ "Камерна сцена":"Chamber Stage","Музите":"The Muses","Основна сцена":"Main Stage",
+ "Салон Гурко 14":"Gurko 14 Salon","Сцена „Апостол Карамитев“":"Apostol Karamitev Stage",
+ "Голяма зала":"Grand Hall","Основна зала":"Main Hall","Зала 1":"Hall 1","Зала 2":"Hall 2",
+ "Зала 4":"Hall 4","Бар сцена":"Bar Stage","Открит театър":"Open Theatre",
+ "Сцена 47":"Stage 47","Сцена Дерида":"Derida Stage","Зала \"Надежда\"":"Nadezhda Hall",
+ "Камерна „Чудо“":"Chamber Chudo","Сцена-клуб „Максим“":"Maxim Stage-Club",
+ "Открита сцена":"Open Stage"
+};
+/* translitBG: official Bulgarian Streamlined System transliteration.
+   Handles capitalisation; "ия" at word end → "ia". */
+function translitBG(s){
+ if(!s)return s;
+ const MAP={
+  "а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ж":"zh","з":"z","и":"i","й":"y",
+  "к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u",
+  "ф":"f","х":"h","ц":"ts","ч":"ch","ш":"sh","щ":"sht","ъ":"a","ь":"y","ю":"yu","я":"ya"
+ };
+ /* Handle "ия" at word-end → "ia" */
+ s=s.replace(/ия(?=\b|[^а-яА-ЯъьюяЮЯ]|$)/gi,(m,o,str)=>{
+  const isUpper=str[o]==="И";return isUpper?"IA":"ia";});
+ let out="";
+ for(let i=0;i<s.length;i++){
+  const c=s[i],lo=c.toLowerCase();
+  if(MAP[lo]){
+   const tr=MAP[lo];
+   /* Preserve capitalisation: uppercase if source char is uppercase */
+   out+=c===lo?tr:tr[0].toUpperCase()+tr.slice(1);
+  }else{out+=c;}
+ }
+ return out;
+}
+/* genreDisplay: returns English genre name if EN mode, else Bulgarian */
+const genreDisplay=g=>S.lang==="bg"?g:(GENRE_EN[g]||g);
+/* hallDisplay: returns English hall name if EN mode */
+const hallDisplay=h=>S.lang==="bg"?h:(HALL_EN[h]||translitBG(h));
+/* nameDisplay: transliterate a Cyrillic person name in EN mode */
+const nameDisplay=n=>S.lang==="bg"||!n?n:translitBG(n);
+/* priceDisplay: translate BG price strings (from PERFORMANCES p[4]) to EN */
+const PRICE_EN={"вход свободен":"free entry","от":"from"};
+const priceDisplay=p=>{if(S.lang==="bg"||!p)return p;let s=p;Object.keys(PRICE_EN).forEach(k=>{s=s.replace(k,PRICE_EN[k]);});return s;};
+/* badgeDisplay: translate show/event badge labels to English.
+   Composite badges like "ПОРЕДИЦА · 6 ВЕЧЕРИ" are split on " · " and each
+   token is translated individually; numbers are kept as-is. */
+const BADGE_EN={"БЕЗПЛАТНО":"FREE","ПРЕМИЕРА":"PREMIERE","ДЕЦА":"KIDS",
+ "ГОСТУВАНЕ":"GUEST","ЕДНОКРАТНО":"ONE NIGHT","ЦИКЪЛ":"SERIES","ФЕСТИВАЛ":"FESTIVAL","ЮБИЛЕЙ":"JUBILEE",
+ "ПОРЕДИЦА":"SERIES","ВЕЧЕРИ":"EVENINGS","ВЕЧЕР":"EVENING","ДЕН":"DAY","ДНИ":"DAYS",
+ "РЕТРОСПЕКТИВА":"RETROSPECTIVE","СВОБОДЕН ДОСТЪП":"FREE ENTRY","ОГРАНИЧЕНИ ПРОЖЕКЦИИ":"LIMITED RUN",
+ "ЕДИН ДЕН":"ONE DAY","ЕДИН ДЕН В ГОДИНАТА":"ONCE A YEAR","СЛЕД":"IN",
+ "ПРЕМИЕРА ПРЕЗ ОКТОМВРИ":"OCTOBER PREMIERE"};
+const _badgeTok=tok=>{
+  const t=tok.trim();
+  if(BADGE_EN[t])return BADGE_EN[t];
+  if(/^\d+$/.test(t))return t;
+  /* e.g. "СЛЕД 30 ДНИ" — try splitting and translating each word */
+  const words=t.split(/\s+/);
+  const xlated=words.map(w=>BADGE_EN[w]||w);
+  return xlated.join(" ");
+};
+const badgeDisplay=b=>{
+  if(S.lang==="bg"||!b)return b;
+  if(BADGE_EN[b])return BADGE_EN[b];
+  /* Split composite badges on " · " */
+  return b.split(" · ").map(_badgeTok).join(" · ");
 };
 /* Read-more synopsis block: paragraphs are clamped to a few lines and expanded
    in place; the button is hidden after render if the text does not overflow.
@@ -802,14 +920,17 @@ function synBlock(text){
   return `<div class="synwrap clamp"><div class="synbody">${paras}</div>`
     +`<button class="readmore" data-readmore data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
 }
-const titleOf=o=>S.lang==="bg"?o.title:(o.titleEn||o.title);
+const titleOf=o=>S.lang==="bg"?o.title:(o.titleEn||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[o.id])||o.title);
 /* Country in the active language (owner's choice: authoritative English where it
    exists, Bulgarian fallback otherwise). The dataset country is Bulgarian; TMDB
    supplies an English country name (ART[id].country) for matched films. */
+const COUNTRY_EN={"България":"Bulgaria","САЩ":"United States of America","Великобритания":"United Kingdom","Франция":"France","Германия":"Germany","Италия":"Italy","Испания":"Spain","Дания":"Denmark","Швеция":"Sweden","Норвегия":"Norway","Япония":"Japan","Русия":"Russia","Канада":"Canada","Ирландия":"Ireland","Латвия":"Latvia","Австрия":"Austria","Белгия":"Belgium","Холандия":"Netherlands","Полша":"Poland","Хърватия":"Croatia","Сърбия":"Serbia","Хонконг":"Hong Kong","Южна Корея":"South Korea","Мексико":"Mexico","Аржентина":"Argentina","Иран":"Iran","Турция":"Turkey","Ливан":"Lebanon","Палестина":"Palestine","Тунис":"Tunisia","Ирак":"Iraq"};
+const ctryTranslate=c=>c.split("/").map(p=>COUNTRY_EN[p.trim()]||p.trim()).join(" / ");
 const ctryOf=o=>{
   if(S.lang==="bg")return o.country||"";
   const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
-  return art.country||o.country||"";
+  const raw=art.country||o.country||"";
+  return raw?ctryTranslate(raw):"";
 };
 /* Genuine IMDb rating + vote count. The dataset carries f.imdb for a minority of
    films; for the rest, OMDb (keyed by TMDB's imdb_id) supplies the real IMDb number,
@@ -835,7 +956,9 @@ const SHOWIMG=(typeof SHOWART==="object"&&SHOWART)||{};
 const LINK_MAP=Object.fromEntries((typeof LINKS!=="undefined"&&Array.isArray(LINKS))?LINKS:[]);
 /* movie names default to English (owner's preference), Bulgarian kept as the
    secondary line so nothing is lost */
-const filmTitle=f=>f.en||f.bg||((ART[f.id]||{}).en)||"";
+const filmTitle=f=>S.lang==="en"
+  ? (f.en||((ART[f.id]||{}).en)||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[f.id])||f.bg||"")
+  : (f.en||f.bg||((ART[f.id]||{}).en)||""); /* EN mode: English title, then TMDB, then the translation, Bulgarian last */
 const filmSubtitle=f=>{const en=filmTitle(f);return f.bg&&f.bg!==en?f.bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const filmById=Object.fromEntries(FILMS.map(f=>[f.id,f]));
@@ -1136,7 +1259,7 @@ function filmsAtCinema(cid){
 function showsAtTheatre(tid){
   const ids=new Set(upcomingPerfs((_PERFS_BY_THEATRE.get(tid)||[]).filter(p=>inRange(p[1]))).map(p=>p[0]));
   return SHOWS.filter(s=>ids.has(s.id));}
-const cinName=c=>c.name;
+const cinName=c=>S.lang==="bg"?c.name:(c.nameEn||c.name);
 const thName=x=>S.lang==="bg"?x.name:(x.nameEn||x.name);
 /* ---- search across the whole three-month window ---- */
 function searchAll(q){
@@ -1306,23 +1429,23 @@ function filmCard(f,all,rowsOverride){
     <div class="poster">${posterArt(f.id,f.genres,f.g)}<div class="p-grain"></div>
       <div class="p-top"><span class="score ${scoreCls(imdbOf(f))}"><i>IMDb</i>${imdbOf(f)!=null?imdbOf(f).toFixed(1):"—"}</span>
         ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}</div>
-      <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).join(" · "))}</div></div>
+      <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
 function showCard(sh,all){
   const p=all?showPerfsAll(sh.id):showPerfs(sh.id),th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
   return`<button class="card" data-show="${esc(sh.id)}">
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
-      <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(sh.badge)}</span>`:""}</div>
-      <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).join(" · "))}</div></div>
+      <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+      <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-      <span class="cf2">${th?esc(th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${sh.duration} ${esc(t().min)}`:""}</span></div></button>`;}
+      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${sh.duration} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
   return`<button class="ecard" data-event="${esc(ev.id)}"><div class="ebox">
     ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g)}<div class="p-grain"></div>
-    <span class="badge ${ev.status==="active"?"lim":""}">${esc(ev.tag)}</span>
+    <span class="badge ${ev.status==="active"?"lim":""}">${esc(badgeDisplay(ev.tag))}</span>
     <div><h3>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h3>
       <div class="edate">${esc(range)} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
 function rail(title,sub,cards){
@@ -1364,7 +1487,7 @@ function hero(){
       <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
       <h1>${esc(filmTitle(f))}</h1>
       <div class="hero-meta">${imdbOf(f)!=null?`<span class="score ${scoreCls(imdbOf(f))}"><i>IMDb</i>${imdbOf(f).toFixed(1)}</span>`:""}
-        <span>${esc(f.genres.slice(0,3).join(" · "))}</span>${f.runtime?`<span>·</span><span>${f.runtime} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${f.year}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
+        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${f.runtime} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${f.year}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
       ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
@@ -1376,7 +1499,7 @@ function hero(){
     <div class="hero-scrim"></div><div class="hero-body">
     <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
     <h1>${esc(titleOf(sh))}</h1>
-    <div class="hero-meta"><span>${esc(th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).join(" · "))}</span>
+    <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
       ${sh.duration?`<span>·</span><span>${sh.duration} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
     ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
@@ -1592,10 +1715,10 @@ function body(){
           const times=p.slice(0,3).map(r=>r[2]).join(" · ");
           return`<button class="card" data-show="${esc(sh.id)}">
             <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
-              <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(sh.badge)}</span>`:""}</div>
-              <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).join(" · "))}</div></div>
+              <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+              <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-              <span class="cf2">${th?esc(th.name):""}${times?" · "+times:""}</span></div></button>`;});
+              <span class="cf2">${th?esc(thName(th)):""}${times?" · "+times:""}</span></div></button>`;});
       } else {
         /* "Утре вечер" fallback */
         const TOMORROW=addDays(NOW_DATE,1);
@@ -1613,10 +1736,10 @@ function body(){
               const times=p.slice(0,3).map(r=>r[2]).join(" · ");
               return`<button class="card" data-show="${esc(sh.id)}">
                 <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
-                  <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(sh.badge)}</span>`:""}</div>
-                  <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).join(" · "))}</div></div>
+                  <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+                  <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-                  <span class="cf2">${th?esc(th.name):""}${times?" · "+times:""}</span></div></button>`;});}
+                  <span class="cf2">${th?esc(thName(th)):""}${times?" · "+times:""}</span></div></button>`;});}
         }
       }
     })();
@@ -1948,7 +2071,7 @@ function buyBox(vid,date,isCinema,specificUrl){
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
-      <a class="buylink" href="${esc(specificUrl||bookUrl(vid,date))}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc(b.label)} ↗</a>
+      <a class="buylink" href="${esc(specificUrl||bookUrl(vid,date))}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label)} ↗</a>
     </div>
     <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
 /* Film buy box: compact pills per cinema, sorted by screening count desc then name */
@@ -1996,22 +2119,32 @@ function sheetFilm(f){
   const byDay={};
   rows.forEach(r=>{(byDay[r[2]]=byDay[r[2]]||[]).push(r);});
   const venues=[...new Set(rows.map(r=>r[1]))];
+  /* isPrelim: true when (venueId, date) is on or after PRELIM_FROM[venueId] */
+  const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
+  const isPrelim=(vid,d)=>{const pDate=_pf[vid];return pDate?d>=pDate:false;};
+  let hasPrelim=false;
   const mkVrow=(r,d)=>{
     const c=cinById[r[1]],b=BOOKING[r[1]]||{};
     const inPerson=!!b.inPerson;
     const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+r[1]];
     const u=inPerson?(b.url||null):filmTixUrl(f.id,r[1],d);
     const tixLabel=inPerson?(S.lang==="bg"?L.boxOfficeLabel:L.boxOfficeLabelEn):(L.tix+" ↗");
+    const prelim=isPrelim(r[1],d);
+    if(prelim)hasPrelim=true;
+    const cName=S.lang==="bg"?c.name:(c.nameEn||c.name);
+    const cArea=S.lang==="bg"?c.area:(c.areaEn||c.area);
     return`<div class="vrow"><div class="vname">
-      <span class="vloc">${esc(c.name)}<em>${esc(c.area)}</em></span>
+      <span class="vloc">${esc(cName)}<em>${esc(cArea)}</em></span>
       <span class="vkind">${esc(c.kind==="independent"?(S.lang==="bg"?"независимо":"independent"):(S.lang==="bg"?"мултиплекс":"multiplex"))}</span>
+      ${prelim?`<span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}
       ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}
       ${viaEpay?`<span class="vprice" style="opacity:.7">${esc(L.viaEpay)}</span>`:""}</div>
-      <div class="vtimes">${r[3].map(tm=>u?`<a class="time ${inWhen(tm)?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`:`<span class="time ${inWhen(tm)?"fits":""}">${esc(tm)}</span>`).join("")}
+      <div class="vtimes">${r[3].map(tm=>u?`<a class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`:`<span class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}">${esc(tm)}</span>`).join("")}
       ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}
       ${calBtnHtml("film",f.id,r[1],d)}</div></div>`;};
   const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
     ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
+  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: обявена в агрегатор (programata.bg / theatre.art.bg), но още не и на сайта на мястото — възможни са промени.":"Preliminary: listed by an aggregator but not yet on the venue's own website — subject to change."}</div>`:"";
   /* "Showing selected cinemas only" note with "Show all" button */
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
@@ -2026,25 +2159,25 @@ function sheetFilm(f){
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="film:${esc(f.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.82">${[filmSubtitle(f),f.year,ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
+      <div class="eyebrow" style="color:#fff;opacity:.82">${[S.lang==="en"?"":filmSubtitle(f),f.year,ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
       <h2>${esc(filmTitle(f))}</h2></div></div>
    <div class="sbody">
-    <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(g)}</span>`).join("")}
-      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.age)}</span>`:""}</div>
+    <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
+      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${synBlock(synFilm(f))}
-      ${x.why?`<div class="why">${esc(x.why)}</div>`:f.note?`<div class="why">${esc(f.note)}</div>`:""}</div>
-    ${x.facts?`<div class="sec"><h4>${esc(L.about)}</h4><ul class="facts">${x.facts.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""}
+    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
+      ${(()=>{const w=S.lang==="en"?x.whyEn:x.why,n=S.lang==="en"?f.noteEn:f.note;return w?`<div class="why">${esc(w)}</div>`:n?`<div class="why">${esc(n)}</div>`:""})()}</div>
+    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.about)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:"";})()}
     <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
       <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
-      ${x.fmt?`<dt>${esc(L.fmt)}</dt><dd>${esc(x.fmt)}</dd>`:""}
-      ${x.box?`<dt>${esc(L.box)}</dt><dd>${esc(x.box)}</dd>`:""}
+      ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
+      ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
       ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
     <div class="sec"><h4>${esc(L.times)} · ${rows.reduce((n,r)=>n+r[3].length,0)}</h4>
       ${selNote}
-      ${times||`<div class="empty">${esc(L.noData)}</div>`}</div>
+      ${times||`<div class="empty">${esc(L.noData)}</div>`}${prelimLegend}</div>
    </div></div>`;}
 
 function sheetShow(sh){
@@ -2052,35 +2185,46 @@ function sheetShow(sh){
   const perfs=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id)).sort((a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]));
   const byDay={};perfs.forEach(p=>{(byDay[p[1]]=byDay[p[1]]||[]).push(p);});
   const u=tixUrl("show",sh.id,sh.theatre);
-  const list=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
-    ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(p[3]||th.name)}</div>
-      <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(p[4])}</span>`:""}
-      ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`).join("");
+  /* isPrelim: true when a (venueId, date) pair falls on or after PRELIM_FROM[venueId] */
+  const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
+  const isPrelim=(vid,d)=>{const pDate=_pf[vid];return pDate?d>=pDate:false;};
+  const thId=sh.theatre;
+  let hasPrelim=false;
+  const list=Object.keys(byDay).sort().map(d=>{
+    const prelim=isPrelim(thId,d);
+    if(prelim)hasPrelim=true;
+    return`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}${prelim?` <span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}</div>
+    ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(hallDisplay(p[3])||thName(th))}</div>
+      <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
+      ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`;}).join("");
+  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: обявена в агрегатор (programata.bg / theatre.art.bg), но още не и на сайта на мястото — възможни са промени.":"Preliminary: listed by an aggregator but not yet on the venue's own website — subject to change."}</div>`:"";
+  /* venue display: use nameEn in EN mode */
+  const thName_=S.lang==="bg"?th.name:(th.nameEn||th.name);
+  const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
   return`<div class="sheet"><div class="shero" style="background:${grad(sh.g)}">
     ${posterArt("sh-"+sh.id,sh.genres,sh.g)}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.82">${esc(th.name)}</div><h2>${esc(titleOf(sh))}</h2></div></div>
+      <div class="eyebrow" style="color:#fff;opacity:.82">${esc(thName_)}</div><h2>${esc(titleOf(sh))}</h2></div></div>
    <div class="sbody">
-    <div class="chips">${sh.badge?`<span class="chip solid">${esc(sh.badge)}</span>`:""}
-      ${sh.genres.map(g=>`<span class="chip">${esc(g)}</span>`).join("")}
+    <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
+      ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
       ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre))}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=(S.lang==="bg"&&SHOWSYN[sh.id])||synOf(sh);
-      return st?synBlock(st):`<p class="no-info-note">${esc(L.noInfoShow)}</p>`})()}
-      ${x.why?`<div class="why">${esc(x.why)}</div>`:""}</div>
-    ${x.facts?`<div class="sec"><h4>${esc(L.aboutT)}</h4><ul class="facts">${x.facts.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""}
-    ${sh.reviews&&sh.reviews.length?`<div class="sec"><h4>${esc(L.press)}</h4>
+    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
+      ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
+    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.aboutT)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
+    ${sh.reviews&&sh.reviews.length&&S.lang==="bg"?`<div class="sec"><h4>${esc(L.press)}</h4>
       ${sh.reviews.map(r=>`<div class="quote">${esc(r.text)}<cite>${esc(r.src)}</cite></div>`).join("")}</div>`:""}
     <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
-      ${sh.author&&sh.author!=="—"?`<dt>${esc(L.author)}</dt><dd>${esc(sh.author)}</dd>`:""}
-      ${sh.director&&sh.director!=="—"?`<dt>${esc(L.dir)}</dt><dd>${esc(sh.director)}</dd>`:""}
-      ${sh.cast&&sh.cast!=="—"?`<dt>${esc(L.cast)}</dt><dd>${esc(sh.cast)}</dd>`:""}
-      ${x.premiere?`<dt>${esc(L.premiere)}</dt><dd>${esc(x.premiere)}</dd>`:""}
-      ${x.season?`<dt>${esc(L.season)}</dt><dd>${esc(x.season)}</dd>`:""}
-      <dt>${esc(L.venue)}</dt><dd>${esc(th.name)} — ${esc(th.area)}</dd></dl></div>
-    <div class="sec"><h4>${esc(L.perfs)} · ${perfs.length}</h4>${list||`<div class="empty">${esc(L.noData)}</div>`}</div>
+      ${sh.author&&sh.author!=="—"?`<dt>${esc(L.author)}</dt><dd>${esc(nameDisplay(sh.author))}</dd>`:""}
+      ${sh.director&&sh.director!=="—"?`<dt>${esc(L.dir)}</dt><dd>${esc(nameDisplay(sh.director))}</dd>`:""}
+      ${sh.cast&&sh.cast!=="—"?`<dt>${esc(L.cast)}</dt><dd>${esc(nameDisplay(sh.cast))}</dd>`:""}
+      ${(()=>{const pr=S.lang==="en"?x.premiereEn:x.premiere;return pr?`<dt>${esc(L.premiere)}</dt><dd>${esc(pr)}</dd>`:""})()}
+      ${(()=>{const se=S.lang==="en"?x.seasonEn:x.season;return se?`<dt>${esc(L.season)}</dt><dd>${esc(se)}</dd>`:""})()}
+      <dt>${esc(L.venue)}</dt><dd>${esc(thName_)} — ${esc(thArea_)}</dd></dl></div>
+    <div class="sec"><h4>${esc(L.perfs)} · ${perfs.length}</h4>${list||`<div class="empty">${esc(L.noData)}</div>`}${prelimLegend}</div>
    </div></div>`;}
 
 function sheetEvent(ev){
@@ -2096,7 +2240,7 @@ function sheetEvent(ev){
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(ev.tag)} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div>
+      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(badgeDisplay(ev.tag))} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div>
       <h2>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
    <div class="sbody">
     <div class="chips"><span class="chip solid">${esc(range)}</span>
@@ -2167,7 +2311,7 @@ function drawerHTML(){
   let venueSection;
   if(S.mode==="cinema"){
     const mkChip=c=>{const on=cinemaHasListings(c);
-      return`<button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(c.name)}</button>`;};
+      return`<button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(cinName(c))}</button>`;};
     const multiplexes=CINEMAS.filter(c=>c.kind==="multiplex");
     const independents=CINEMAS.filter(c=>c.kind==="independent");
     venueSection=`<h3>${esc(L.venuesH)}</h3>
@@ -2179,7 +2323,7 @@ function drawerHTML(){
     <div class="sec-subhead" style="margin-top:8px">${esc(L.subIndepCinemas)}</div>
     <div class="chipwrap">${independents.map(mkChip).join("")}</div>`;
   }else{
-    const theatres=THEATRES.map(th=>({id:th.id,name:th.name}));
+    const theatres=THEATRES.map(th=>({id:th.id,name:thName(th)}));
     venueSection=`<h3>${esc(L.theatresH)}</h3>
     <div class="chipwrap">
       <button class="fchip" data-venue="" aria-pressed="${!S.fVenues.length}">${esc(L.allTheatres)}</button>
@@ -2487,7 +2631,7 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     const c=cinById[venueId]; if(!c)return null;
     title=filmTitle(f);
     venue=(S.lang==="bg"?c.name:(c.nameEn||c.name));
-    area=c.area||"";
+    area=(S.lang==="en"?c.areaEn||c.area:c.area)||"";
     url=filmTixUrl(id,venueId,dateStr)||"";
     runtimeMin=f.runtime||120;
   } else {
@@ -2496,15 +2640,20 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     /* find hall from matching performance row */
     const perf=(PERFORMANCES||[]).find(p=>p[0]===id&&p[1]===dateStr&&p[2]===timeStr);
     title=titleOf(sh);
-    const hallSuffix=perf&&perf[3]&&perf[3]!==th.name?" — "+perf[3]:"";
+    const hallRaw=perf&&perf[3]?perf[3]:"";
+    const hallSuffix=hallRaw&&hallRaw!==th.name?" — "+(S.lang==="en"?hallDisplay(hallRaw):hallRaw):"";
     venue=(S.lang==="bg"?th.name:(th.nameEn||th.name));
-    area=(th.area||"")+hallSuffix;
+    area=((S.lang==="en"?th.areaEn||th.area:th.area)||"")+hallSuffix;
     url=tixUrl("show",id,sh.theatre)||"";
     runtimeMin=sh.duration||120;
   }
   const fullTitle=title+" — "+venue;
   const location=venue+(area?", "+area:"");
-  const description=(url?url+"\n":"")+"Sofia Gleda";
+  const prelimNote=typeof PRELIM_FROM==="object"&&PRELIM_FROM&&PRELIM_FROM[venueId]&&dateStr>=PRELIM_FROM[venueId]
+    ?(S.lang==="en"?"\nPreliminary: listed by an aggregator but not yet on the venue's own website — subject to change."
+                   :"\nПредварителна програма: обявена в агрегатор, но още не на сайта — възможни са промени.")
+    :"";
+  const description=(url?url+"\n":"")+"Sofia Gleda"+prelimNote;
   const off=_sofiaOffset(dateStr,timeStr);
   /* Compute end time */
   const [y,mo,d]=dateStr.split("-").map(Number);

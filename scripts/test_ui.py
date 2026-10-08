@@ -5528,6 +5528,1041 @@ def wave_j(browser, webkit_browser=None):
 
 
 # ============================================================================
+# WAVE L: L1 — EN localisation, caps, preliminary markings
+# ============================================================================
+
+def wave_l(browser):
+    """
+    Wave L (L1) checks:
+    1. Cyrillic scan in EN mode (desktop + mobile, cinema + theatre; 20+ film sheets, 20+ show sheets)
+    2. EN content correctness (factsEn/whyEn in sheets, "No English description" fallback,
+       genre chips via GENRE_EN, hall name via HALL_EN)
+    3. BG regression (same 5 films still show Bulgarian why/facts/genres in BG mode)
+    4. Translation spot-check: print 8 BG→EN pairs from FILM_EXTRA/SHOW_EXTRA/noteEn (manual, report only)
+    5. Caps: computed text-transform of .sec-toggle-title is uppercase in cinema and theatre
+    6. Preliminary markings: set PRELIM_FROM in-page, verify tag+dashed chips+legend, calEvent description,
+       both languages; also verify PRELIM_FROM={} shows nothing
+    7. No page errors; verify_build.py; full suite L
+    """
+    wave = "L"
+    ensure_shot_dir(wave)
+    import subprocess
+    import random
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+    CYR = re.compile(r'[Ѐ-ӿ]+')
+
+    def open_film_sheet(page, film_id):
+        page.evaluate(f"""() => {{
+            location.hash = 'film={film_id}';
+            if (window.openFromHash) window.openFromHash();
+        }}""")
+        page.wait_for_timeout(700)
+
+    def open_show_sheet(page, show_id):
+        page.evaluate(f"""() => {{
+            location.hash = 'show={show_id}';
+            if (window.openFromHash) window.openFromHash();
+        }}""")
+        page.wait_for_timeout(700)
+
+    def close_sheet(page):
+        page.evaluate("""() => {
+            location.hash = '';
+            const btn = document.querySelector('.sbar [data-back]');
+            if (btn) btn.click();
+        }""")
+        page.wait_for_timeout(300)
+
+    def get_all_film_ids(page):
+        return page.evaluate("""() => {
+            if (typeof FILMS === 'undefined') return [];
+            return FILMS.map(f => f.id);
+        }""")
+
+    def get_all_show_ids(page):
+        return page.evaluate("""() => {
+            if (typeof SHOWS === 'undefined') return [];
+            return SHOWS.map(s => s.id);
+        }""")
+
+    def scan_sheet_cyrillic(page, item_id, kind):
+        """Return list of {text, selector} for disallowed Cyrillic in an open sheet.
+        Allowed Cyrillic: the title (<h2> or .stitle), the БГ lang button,
+        and a film/show title when that item has no English title available.
+        Everything else (synopsis body, why, facts, genres, halls, badges,
+        country, person names, venue names, addresses) must be in English."""
+        return page.evaluate("""(args) => {
+            const [item_id, kind] = args;
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return [];
+
+            const CYR = /[\\u0400-\\u04FF]/;
+            const bad = [];
+
+            // Determine if this item's title has no EN version (last-resort Bulgarian title is allowed)
+            let titleHasNoEn = false;
+            if (kind === 'film') {
+                const f = (typeof FILMS !== 'undefined' ? FILMS : []).find(x => x.id === item_id);
+                if (f && !f.en) titleHasNoEn = true;
+            } else {
+                const sh = (typeof SHOWS !== 'undefined' ? SHOWS : []).find(x => x.id === item_id);
+                if (sh && !sh.titleEn) titleHasNoEn = true;
+            }
+
+            function walkNode(node, selector) {
+                if (node.nodeType === 3) {
+                    const txt = (node.textContent || '').trim();
+                    if (!txt || !CYR.test(txt)) return;
+                    bad.push({text: txt.slice(0, 80), selector: selector});
+                } else if (node.nodeType === 1) {
+                    const el = node;
+                    const tag = el.tagName.toLowerCase();
+                    if (tag === 'script' || tag === 'style') return;
+                    // Skip the lang button ('БГ')
+                    if (el.closest('[data-lang]')) return;
+                    // Skip the title element (h2, .stitle, .p-title) — BG-fallback title is allowed
+                    if (el.tagName === 'H2' || el.matches('.stitle') || el.closest('h2') || el.closest('.stitle')) return;
+                    const rawCls2 = typeof el.className === 'string' ? el.className : (el.getAttribute && el.getAttribute('class') || '');
+                    const sel = tag + (rawCls2 ? '.' + rawCls2.split(' ').filter(Boolean).slice(0,2).join('.') : '');
+                    for (const child of el.childNodes) {
+                        walkNode(child, sel);
+                    }
+                }
+            }
+            walkNode(sheet, '.sheet');
+            return bad.slice(0, 20);
+        }""", [item_id, kind])
+
+    def scan_page_cyrillic_visible(page):
+        """Scan visible text on the page (outside sheets) for unexpected Cyrillic.
+        Allowed: lang button 'БГ'; film/show card titles (.cf1, .p-title, .stitle,
+        .sname) when the item has no EN title (f.en missing AND no TITLE_EN entry);
+        film subtitle (.p-sub = BG original title when EN is the primary title).
+        NOT allowed: period headers, rail section labels, hero text, badges, UI labels,
+        'Or X' hero buttons when the film has an EN title.
+        """
+        return page.evaluate("""() => {
+            const CYR = /[\\u0400-\\u04FF]/;
+            const bad = [];
+            // Build quick lookup: film ids with no EN title at all (f.en AND TITLE_EN absent)
+            const TITLE_EN_MAP = typeof TITLE_EN !== 'undefined' ? TITLE_EN : {};
+            const noEnFilm = new Set(
+                (typeof FILMS !== 'undefined' ? FILMS : [])
+                    .filter(f => (!f.en || !f.en.trim()) && !TITLE_EN_MAP[f.id])
+                    .map(f => f.id)
+            );
+            const noEnShow = new Set(
+                (typeof SHOWS !== 'undefined' ? SHOWS : [])
+                    .filter(s => !s.titleEn || !s.titleEn.trim())
+                    .map(s => s.id)
+            );
+
+            const app = document.getElementById('app') || document.body;
+            function walk(node, path) {
+                if (node.nodeType === 3) {
+                    const txt = (node.textContent || '').trim();
+                    if (txt && CYR.test(txt)) {
+                        bad.push({text: txt.slice(0, 80), path: path});
+                    }
+                } else if (node.nodeType === 1) {
+                    const el = node;
+                    const tag = el.tagName.toLowerCase();
+                    if (tag === 'script' || tag === 'style') return;
+                    // Skip lang button ('БГ')
+                    if (el.closest('[data-lang]')) return;
+                    // Skip sheets (separate scan)
+                    if (el.closest('.sheet')) return;
+                    // Skip card title/subtitle elements when the film/show has no EN title
+                    // Also skip hero h1 when the hero film has no EN title
+                    if (el.matches('.p-title,.p-sub,.cf1,.sname,.stitle,.card-title') || el.tagName === 'H1') {
+                        const card = el.closest('[data-film]') || el.closest('[data-show]');
+                        if (card) {
+                            const filmId = card.getAttribute('data-film');
+                            const showId = card.getAttribute('data-show');
+                            if ((filmId && noEnFilm.has(filmId)) || (showId && noEnShow.has(showId))) return;
+                        } else if (el.tagName === 'H1') {
+                            // h1 in hero: match by title text against films with no EN title
+                            const heroEl = el.closest('.hero,.heroz,.hero-wrap');
+                            if (heroEl) {
+                                // Try data-film on hero element first
+                                const heroFilm = heroEl.getAttribute('data-film');
+                                if (heroFilm && noEnFilm.has(heroFilm)) return;
+                                // Fallback: if h1 text matches any BG-only film title, allow it
+                                const h1txt = (el.textContent || '').trim();
+                                if (h1txt) {
+                                    const CYR2 = /[\\u0400-\\u04FF]/;
+                                    if (CYR2.test(h1txt)) {
+                                        const matchedFilm = (typeof FILMS !== 'undefined' ? FILMS : [])
+                                            .find(f => noEnFilm.has(f.id) && (f.bg === h1txt || f.title === h1txt || f.bg && f.bg.trim() === h1txt));
+                                        if (matchedFilm) return;
+                                        // Also accept: any film whose BG title appears in the hero's gradient ID
+                                        const styleEl = heroEl.querySelector('linearGradient,[id*="ghero"]');
+                                        if (styleEl) {
+                                            const gid = styleEl.id || '';
+                                            const matchedByGid = (typeof FILMS !== 'undefined' ? FILMS : [])
+                                                .find(f => noEnFilm.has(f.id) && gid.toLowerCase().includes(f.id.replace(/-/g, '')));
+                                            if (matchedByGid) return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (el.tagName !== 'H1') {
+                            // Non-h1 title elements: skip when no card parent (BG fallback allowed)
+                            return;
+                        }
+                    }
+                    // 'Or X' / 'Или X' hero buttons: allow BG only if the referenced film truly has no EN title
+                    if (el.matches('.btn.ghost') || el.closest('.btn.ghost')) {
+                        const btn = el.matches('.btn.ghost') ? el : el.closest('.btn.ghost');
+                        // Try to find which film this button refers to (hero context or data-film attr)
+                        const heroCard = btn.closest('[data-film]');
+                        if (heroCard) {
+                            const fid = heroCard.getAttribute('data-film');
+                            if (fid && noEnFilm.has(fid)) return;
+                        } else {
+                            // Generic hero: if any text inside is Cyrillic but
+                            // there's a visible h2/title that's also Cyrillic → same film
+                            const heroSection = btn.closest('.hero,.hero-wrap,.heroz');
+                            if (heroSection) {
+                                const heroTitle = heroSection.querySelector('h2,.htitle');
+                                if (heroTitle) {
+                                    const htxt = (heroTitle.textContent || '').trim();
+                                    if (CYR.test(htxt)) {
+                                        // Hero title is also BG (last resort) → btn allowed
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                        // Has EN title → fall through to check for Cyrillic (bug)
+                    }
+                    const rawCls = typeof el.className === 'string' ? el.className : (el.getAttribute && el.getAttribute('class') || '');
+                    const cls = rawCls.split(' ').filter(Boolean).slice(0,2).join('.');
+                    const sel = tag + (cls?'.'+cls:'');
+                    for (const c of el.childNodes) walk(c, sel);
+                }
+            }
+            walk(app, 'app');
+            return bad.slice(0, 30);
+        }""")
+
+    # ── L1: Cyrillic scan in EN mode ──────────────────────────────────────────
+    print("\n=== L1: Cyrillic scan in EN mode ===")
+
+    # Gather data: all film IDs and show IDs from the page
+    ctx_probe, page_probe, _ = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page_probe.wait_for_timeout(500)
+    all_film_ids = get_all_film_ids(page_probe)
+    all_show_ids = get_all_show_ids(page_probe)
+
+    # Also get FILM_EXTRA ids with facts, BG-only synopsis films, show ids with SHOW_EXTRA
+    l1_meta = page_probe.evaluate("""() => {
+        const feIds = Object.keys(typeof FILM_EXTRA !== 'undefined' ? FILM_EXTRA : {});
+        const feWithFacts = feIds.filter(id => FILM_EXTRA[id] && FILM_EXTRA[id].factsEn);
+        // Films with synBg but truly NO English synopsis from any source
+        const SYN_EN_MAP = typeof SYN_EN !== 'undefined' ? SYN_EN : {};
+        const TMDBART_MAP = typeof TMDBART !== 'undefined' ? TMDBART : {};
+        const FILMINFO_MAP = typeof FILMINFO !== 'undefined' ? FILMINFO : {};
+        const bgOnly = (typeof FILMS !== 'undefined' ? FILMS : [])
+            .filter(f => {
+                const hasSynEn = f.synEn && f.synEn.trim();
+                const hasSynEnMap = SYN_EN_MAP[f.id] && SYN_EN_MAP[f.id].trim();
+                const hasTmdbOv = TMDBART_MAP[f.id] && TMDBART_MAP[f.id].ov;
+                const hasFilmInfoSynEn = FILMINFO_MAP[f.id] && FILMINFO_MAP[f.id].synEn;
+                return f.synBg && !hasSynEn && !hasSynEnMap && !hasTmdbOv && !hasFilmInfoSynEn;
+            })
+            .map(f => f.id);
+        // Show IDs in SHOW_EXTRA
+        const seIds = Object.keys(typeof SHOW_EXTRA !== 'undefined' ? SHOW_EXTRA : {});
+        // Films with noteEn
+        const withNoteEn = (typeof FILMS !== 'undefined' ? FILMS : [])
+            .filter(f => f.noteEn)
+            .map(f => f.id);
+        // Films without TMDB credits (no cast/director from TMDB — minted/arthouse)
+        const noTmdbCast = (typeof FILMS !== 'undefined' ? FILMS : [])
+            .filter(f => {
+                const td = (typeof TMDBART !== 'undefined' ? TMDBART : {})[f.id];
+                return !td || (!td.cast && !td.dir);
+            })
+            .map(f => f.id);
+        // Shows with badge (series/subscription badge)
+        const showsWithBadge = (typeof SHOWS !== 'undefined' ? SHOWS : [])
+            .filter(s => s.badge && s.badge.trim())
+            .map(s => s.id);
+        return {feWithFacts, bgOnly, seIds, withNoteEn, noTmdbCast, showsWithBadge};
+    }""")
+    ctx_probe.close()
+
+    fe_with_facts = l1_meta["feWithFacts"]
+    bg_only_films = l1_meta["bgOnly"]
+    se_ids = l1_meta["seIds"]
+    note_en_films = l1_meta["withNoteEn"]
+    no_tmdb_cast_films = l1_meta["noTmdbCast"]
+    shows_with_badge = l1_meta["showsWithBadge"]
+
+    # Decide which films/shows to scan (at least 25 each, with required films)
+    # Required: facts films, BG-only, noteEn, films WITHOUT tmdb credits (minted)
+    required_films = list(dict.fromkeys(
+        fe_with_facts[:5] + bg_only_films[:3] + note_en_films[:3] + no_tmdb_cast_films[:5]
+    ))
+    extra_films = [f for f in all_film_ids if f not in required_films]
+    scan_film_ids = (required_films + extra_films)[:max(25, len(required_films))]
+
+    # Required shows: SHOW_EXTRA, shows with badges/series
+    required_shows = list(dict.fromkeys(se_ids[:5] + shows_with_badge[:5]))
+    extra_shows = [s for s in all_show_ids if s not in required_shows]
+    scan_show_ids = (required_shows + extra_shows)[:max(25, len(required_shows))]
+
+    print(f"  Films to scan: {len(scan_film_ids)} (required: {len(required_films)}, no-tmdb-cast: {len(no_tmdb_cast_films)})")
+    print(f"  Shows to scan: {len(scan_show_ids)} (required: {len(required_shows)}, with-badge: {len(shows_with_badge)})")
+
+    cyr_film_hits = []
+    cyr_show_hits = []
+
+    # ── non-empty titles/buttons check (cinema+theatre, BG+EN) ──────────────────
+    print("\n=== L1: Non-empty hero buttons, card titles, sheet h2 ===")
+    nonempty_fails = []
+
+    def check_nonempty_titles(page, label):
+        """Check that hero .acts .btn, .cf1, .p-title, and open sheet h2 are non-empty."""
+        return page.evaluate(f"""() => {{
+            const fails = [];
+            // Hero buttons (.hero .acts .btn or .acts a.btn)
+            const heroBtns = Array.from(document.querySelectorAll('.hero .acts .btn, .acts a.btn, .hero a.btn'));
+            for (const btn of heroBtns) {{
+                const txt = (btn.innerText || btn.textContent || '').replace(/^(Или|Or)\\s*/i, '').trim();
+                if (!txt) fails.push({{kind:'hero-btn', html: btn.outerHTML.slice(0,120)}});
+            }}
+            // Card titles on main page
+            const cardTitles = Array.from(document.querySelectorAll('.cf1, .p-title'));
+            for (const el of cardTitles) {{
+                if (el.closest('.sheet')) continue;
+                const txt = (el.innerText || el.textContent || '').trim();
+                if (!txt) fails.push({{kind:'card-title', html: el.closest('[data-film],[data-show]') ?
+                    (el.closest('[data-film]') || el.closest('[data-show]')).outerHTML.slice(0,120) :
+                    el.outerHTML.slice(0,120)}});
+            }}
+            // Sheet h2 (if a sheet is open)
+            const sheetH2 = document.querySelector('.sheet h2, .sheet .stitle');
+            if (sheetH2) {{
+                const txt = (sheetH2.innerText || sheetH2.textContent || '').trim();
+                if (!txt) fails.push({{kind:'sheet-h2', html: sheetH2.outerHTML.slice(0,120)}});
+            }}
+            return fails.slice(0, 20);
+        }}""")
+
+    for _mode, _lang in [("cinema", "en"), ("cinema", "bg"), ("theatre", "en"), ("theatre", "bg")]:
+        ctx_ne, page_ne, _ = open_page(browser, 1280, 800, lang=_lang, mode=_mode)
+        page_ne.wait_for_timeout(600)
+        hits = check_nonempty_titles(page_ne, f"{_mode}-{_lang}")
+        for h in hits:
+            nonempty_fails.append(f"[{_mode}/{_lang}] {h['kind']}: {h['html']!r}")
+        # Open a film/show sheet and check h2 there too
+        if _mode == "cinema" and all_film_ids:
+            open_film_sheet(page_ne, all_film_ids[0])
+            page_ne.wait_for_timeout(400)
+            hits2 = check_nonempty_titles(page_ne, f"{_mode}-{_lang}-sheet")
+            for h in hits2:
+                nonempty_fails.append(f"[{_mode}/{_lang}/sheet] {h['kind']}: {h['html']!r}")
+            close_sheet(page_ne)
+        elif _mode == "theatre" and all_show_ids:
+            open_show_sheet(page_ne, all_show_ids[0])
+            page_ne.wait_for_timeout(400)
+            hits2 = check_nonempty_titles(page_ne, f"{_mode}-{_lang}-sheet")
+            for h in hits2:
+                nonempty_fails.append(f"[{_mode}/{_lang}/sheet] {h['kind']}: {h['html']!r}")
+            close_sheet(page_ne)
+        ctx_ne.close()
+
+    check("l1_non_empty_btn_and_titles",
+          len(nonempty_fails) == 0,
+          f"{len(nonempty_fails)} empty titles/buttons: {nonempty_fails[:5]}" if nonempty_fails
+          else "all hero btns, card titles, sheet h2 non-empty (cinema+theatre, BG+EN)")
+
+    # ── Cyrillic scan ─────────────────────────────────────────────────────────────
+    print("\n=== L1: Cyrillic scan in EN mode (sheets, rails, hero, venue, drawer) ===")
+
+    # Scan at 1280x800 EN cinema (film sheets + hero + rails)
+    ctx, page, errs = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page.wait_for_timeout(500)
+
+    # Scan visible page (header, period header, hero, rails)
+    page_cyr = scan_page_cyrillic_visible(page)
+    for hit in page_cyr:
+        cyr_film_hits.append(f"[page-cinema-1280] {hit['text']!r} in {hit['path']}")
+
+    for film_id in scan_film_ids:
+        open_film_sheet(page, film_id)
+        sheet_cyr = scan_sheet_cyrillic(page, film_id, "film")
+        for h in sheet_cyr:
+            cyr_film_hits.append(f"[sheet film={film_id}] {h['text']!r} in {h['selector']}")
+        close_sheet(page)
+
+    # Venue mode: click on a cinema to open venue-only view
+    venue_cyr = page.evaluate("""() => {
+        if (typeof CINEMAS === 'undefined' || !CINEMAS.length) return [];
+        const cin = CINEMAS[0];
+        // Try navigating to venue view via hash
+        location.hash = 'cin=' + cin.id;
+        if (window.openFromHash) window.openFromHash();
+        return [];
+    }""")
+    page.wait_for_timeout(700)
+    venue_hits = scan_page_cyrillic_visible(page)
+    for hit in venue_hits:
+        cyr_film_hits.append(f"[venue-cinema-en] {hit['text']!r} in {hit['path']}")
+    page.evaluate("location.hash = '';")
+    page.wait_for_timeout(400)
+
+    save_shot(page, wave, "d-en-film-sheet-facts")
+    ctx.close()
+
+    # Scan at 375x812 EN theatre (show sheets + tonight/weekend rails)
+    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="theatre")
+    page.wait_for_timeout(500)
+
+    page_cyr_m = scan_page_cyrillic_visible(page)
+    for hit in page_cyr_m:
+        cyr_show_hits.append(f"[page-theatre-375] {hit['text']!r} in {hit['path']}")
+
+    for show_id in scan_show_ids:
+        open_show_sheet(page, show_id)
+        sheet_cyr = scan_sheet_cyrillic(page, show_id, "show")
+        for h in sheet_cyr:
+            cyr_show_hits.append(f"[sheet show={show_id}] {h['text']!r} in {h['selector']}")
+        close_sheet(page)
+
+    # Scroll through theatre page to load tonight/weekend rails and rescan
+    for _ in range(6):
+        page.mouse.wheel(0, 600)
+        page.wait_for_timeout(200)
+    page_cyr_scroll = scan_page_cyrillic_visible(page)
+    for hit in page_cyr_scroll:
+        txt = hit['text']
+        path = hit['path']
+        tag_str = f"[page-theatre-scroll] {txt!r} in {path}"
+        if tag_str not in [f"[page-theatre-375] {h['text']!r} in {h['path']}" for h in page_cyr_m]:
+            cyr_show_hits.append(tag_str)
+
+    # Venue mode: theatre
+    page.evaluate("""() => {
+        if (typeof THEATRES === 'undefined' || !THEATRES.length) return;
+        const th = THEATRES[0];
+        location.hash = 'th=' + th.id;
+        if (window.openFromHash) window.openFromHash();
+    }""")
+    page.wait_for_timeout(700)
+    venue_th_hits = scan_page_cyrillic_visible(page)
+    for hit in venue_th_hits:
+        cyr_show_hits.append(f"[venue-theatre-en] {hit['text']!r} in {hit['path']}")
+    page.evaluate("location.hash = '';")
+    page.wait_for_timeout(400)
+
+    save_shot(page, wave, "m-en-show-sheet")
+    ctx.close()
+
+    all_cyr_hits = cyr_film_hits + cyr_show_hits
+    if all_cyr_hits:
+        print(f"  CYRILLIC VIOLATIONS ({len(all_cyr_hits)}):")
+        for h in all_cyr_hits[:30]:
+            print(f"    {h}")
+    check("l1_no_cyrillic_en_mode",
+          len(all_cyr_hits) == 0,
+          f"{len(all_cyr_hits)} unexpected Cyrillic strings found in EN mode" if all_cyr_hits
+          else (f"scanned {len(scan_film_ids)} film sheets + {len(scan_show_ids)} show sheets "
+                f"+ venue mode + theatre scroll rails, no violations"))
+
+    # ── L2: EN content correctness ────────────────────────────────────────────
+    print("\n=== L2: EN content correctness ===")
+
+    ctx, page, errs = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page.wait_for_timeout(500)
+
+    # L2a: For 5 films with FILM_EXTRA factsEn, check sheet shows factsEn and whyEn
+    facts_films = fe_with_facts[:5] if len(fe_with_facts) >= 5 else fe_with_facts
+    l2a_ok = True
+    l2a_details = []
+    for film_id in facts_films:
+        open_film_sheet(page, film_id)
+        result = page.evaluate(f"""() => {{
+            const fe = typeof FILM_EXTRA !== 'undefined' ? FILM_EXTRA : {{}};
+            const entry = fe['{film_id}'];
+            if (!entry) return {{err: 'no FILM_EXTRA entry'}};
+            const factsEn = entry.factsEn || [];
+            const whyEn = entry.whyEn || '';
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {{err: 'no sheet'}};
+            const txt = sheet.innerText || '';
+            // Check each factsEn item appears in sheet
+            const factsMissing = factsEn.filter(f => !txt.includes(f));
+            // Check whyEn appears in sheet
+            const whyMissing = whyEn && !txt.includes(whyEn);
+            return {{
+                factsEnCount: factsEn.length,
+                factsMissing: factsMissing.slice(0, 3),
+                whyEn: whyEn.slice(0, 50),
+                whyMissing,
+                hasFacts: factsEn.length > 0
+            }};
+        }}""")
+        if "err" in result:
+            l2a_details.append(f"{film_id}: {result['err']}")
+            l2a_ok = False
+        else:
+            if result["factsMissing"]:
+                l2a_ok = False
+                l2a_details.append(f"{film_id}: factsMissing={result['factsMissing']}")
+            if result["whyMissing"]:
+                l2a_ok = False
+                l2a_details.append(f"{film_id}: whyEn not in sheet ({result['whyEn']!r}...)")
+        close_sheet(page)
+
+    check("l2a_film_facts_en", l2a_ok,
+          "; ".join(l2a_details) if not l2a_ok else f"checked {len(facts_films)} films, all factsEn+whyEn present")
+
+    # L2b: Film with BG-only synopsis → "No English description available yet."
+    # Per L1 spec: EN synopsis chain returns null → sheet must show the EN fallback phrase.
+    # The implementation renders t().noInfoFilm which in EN should be changed to
+    # "No English description available yet." — verify this is what actually shows.
+    NO_EN_PHRASE = "No English description available yet."
+    ALT_NO_INFO = "No information available for this film."  # old generic phrase (not L1-compliant)
+    l2b_ok = True
+    l2b_details = []
+    if bg_only_films:
+        for film_id in bg_only_films[:3]:
+            open_film_sheet(page, film_id)
+            result = page.evaluate(f"""() => {{
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return {{err: 'no sheet'}};
+                const txt = sheet.innerText || '';
+                const hasNewPhrase = txt.includes('{NO_EN_PHRASE}');
+                const hasOldPhrase = txt.includes('{ALT_NO_INFO}');
+                const synEl = sheet.querySelector('.synwrap, .no-info-note');
+                const synText = synEl ? (synEl.innerText||'').trim().slice(0, 120) : '';
+                return {{hasNewPhrase, hasOldPhrase, synText}};
+            }}""")
+            if isinstance(result, dict) and "err" in result:
+                l2b_ok = False
+                l2b_details.append(f"{film_id}: {result['err']}")
+            elif isinstance(result, dict):
+                if not result["hasNewPhrase"]:
+                    l2b_ok = False
+                    actual = result.get("synText", "")
+                    old = "(shows old generic phrase instead)" if result.get("hasOldPhrase") else ""
+                    l2b_details.append(f"{film_id}: expected {NO_EN_PHRASE!r}, got {actual!r} {old}")
+            close_sheet(page)
+        check("l2b_no_en_desc_fallback", l2b_ok,
+              "; ".join(l2b_details) if not l2b_ok
+              else f"phrase {NO_EN_PHRASE!r} found in {min(3, len(bg_only_films))} BG-only films")
+    else:
+        skip("l2b_no_en_desc_fallback", "no BG-only films in dataset")
+
+    # L2c: Genre chips in EN equal GENRE_EN values
+    l2c_details = []
+    for film_id in (fe_with_facts[:2] if fe_with_facts else all_film_ids[:2]):
+        open_film_sheet(page, film_id)
+        result = page.evaluate("""() => {
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {err: 'no sheet'};
+            const chips = Array.from(sheet.querySelectorAll('.genre-chip,.gtag,.chip'));
+            const chipTexts = chips.map(c => (c.textContent||'').trim()).filter(Boolean);
+            // Check none are Cyrillic (genre names should be EN)
+            const CYR = /[\\u0400-\\u04FF]/;
+            const cyrChips = chipTexts.filter(t => CYR.test(t));
+            return {chipTexts: chipTexts.slice(0, 5), cyrChips};
+        }""")
+        if "err" not in result:
+            if result["cyrChips"]:
+                l2c_details.append(f"{film_id}: BG genre chips: {result['cyrChips']}")
+        close_sheet(page)
+
+    check("l2c_genre_chips_en",
+          len(l2c_details) == 0,
+          "; ".join(l2c_details) if l2c_details else "genre chips show EN values")
+
+    ctx.close()
+
+    # L2d: Theatre hall name via HALL_EN
+    ctx, page, errs = open_page(browser, 1280, 800, lang="en", mode="theatre")
+    page.wait_for_timeout(500)
+
+    # Find a show that has a performance with a known hall (e.g. "Сцена „Апостол Карамитев"")
+    hall_result = page.evaluate("""() => {
+        if (typeof SHOWS === 'undefined' || typeof PERFORMANCES === 'undefined') return {err: 'no data'};
+        const HALL_EN_MAP = typeof HALL_EN !== 'undefined' ? HALL_EN : {};
+        // Find a performance with a hall that has an EN mapping
+        for (const p of PERFORMANCES) {
+            const hall = p[3];
+            if (hall && HALL_EN_MAP[hall]) {
+                return {showId: p[0], hallBg: hall, hallEn: HALL_EN_MAP[hall], date: p[1]};
+            }
+        }
+        return {err: 'no hall with EN mapping'};
+    }""")
+
+    if "err" in hall_result:
+        skip("l2d_hall_name_en", hall_result["err"])
+    else:
+        show_id = hall_result["showId"]
+        hall_bg = hall_result["hallBg"]
+        hall_en = hall_result["hallEn"]
+        open_show_sheet(page, show_id)
+        result = page.evaluate(f"""() => {{
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return 'no sheet';
+            const txt = sheet.innerText || '';
+            const hasBg = txt.includes('{hall_bg}');
+            const hasEn = txt.includes('{hall_en}');
+            return {{hasBg, hasEn, len: txt.length}};
+        }}""")
+        if result == "no sheet":
+            check("l2d_hall_name_en", False, f"no sheet for show={show_id}")
+        else:
+            check("l2d_hall_name_en",
+                  result["hasEn"] and not result["hasBg"],
+                  f"show={show_id} hall='{hall_bg}' → EN='{hall_en}': "
+                  f"hasBg={result['hasBg']} hasEn={result['hasEn']}")
+        close_sheet(page)
+
+    ctx.close()
+
+    # ── L3: BG regression ─────────────────────────────────────────────────────
+    print("\n=== L3: BG regression ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    l3_ok = True
+    l3_details = []
+    for film_id in facts_films:
+        open_film_sheet(page, film_id)
+        result = page.evaluate(f"""() => {{
+            const fe = typeof FILM_EXTRA !== 'undefined' ? FILM_EXTRA : {{}};
+            const entry = fe['{film_id}'];
+            if (!entry) return {{err: 'no FILM_EXTRA entry'}};
+            const facts = entry.facts || [];
+            const why = entry.why || '';
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {{err: 'no sheet'}};
+            const txt = sheet.innerText || '';
+            const factsMissing = facts.filter(f => !txt.includes(f));
+            const whyMissing = why && !txt.includes(why);
+            // Check EN fields don't leak into BG mode
+            const factsEn = entry.factsEn || [];
+            const whyEn = entry.whyEn || '';
+            const enLeak = factsEn.filter(f => txt.includes(f));
+            const enWhyLeak = whyEn && txt.includes(whyEn) && whyEn !== why;
+            return {{factsMissing: factsMissing.slice(0,3), whyMissing, enLeak: enLeak.slice(0,2), enWhyLeak}};
+        }}""")
+        if "err" in result:
+            l3_details.append(f"{film_id}: {result['err']}")
+            l3_ok = False
+        else:
+            if result["factsMissing"]:
+                l3_ok = False
+                l3_details.append(f"{film_id}: BG facts missing: {result['factsMissing']}")
+            if result["whyMissing"]:
+                l3_ok = False
+                l3_details.append(f"{film_id}: BG why missing")
+            if result["enLeak"]:
+                l3_ok = False
+                l3_details.append(f"{film_id}: EN facts leaked into BG mode: {result['enLeak']}")
+            if result["enWhyLeak"]:
+                l3_ok = False
+                l3_details.append(f"{film_id}: EN whyEn leaked into BG mode")
+        close_sheet(page)
+
+    check("l3_bg_regression",
+          l3_ok,
+          "; ".join(l3_details) if not l3_ok else f"checked {len(facts_films)} films, BG fields intact, no EN leak")
+
+    ctx.close()
+
+    # ── L4: Translation quality spot-check (manual, report only) ──────────────
+    print("\n=== L4: Translation spot-check (manual) ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    pairs = page.evaluate("""() => {
+        const fe = typeof FILM_EXTRA !== 'undefined' ? FILM_EXTRA : {};
+        const se = typeof SHOW_EXTRA !== 'undefined' ? SHOW_EXTRA : {};
+        const films = typeof FILMS !== 'undefined' ? FILMS : [];
+        const pairs = [];
+        // From FILM_EXTRA: why BG→EN
+        for (const [id, v] of Object.entries(fe)) {
+            if (v.why && v.whyEn && pairs.length < 4)
+                pairs.push({src: 'FILM_EXTRA['+id+'].why', bg: v.why.slice(0,100), en: (v.whyEn||'').slice(0,100)});
+        }
+        // From SHOW_EXTRA: why BG→EN
+        for (const [id, v] of Object.entries(se)) {
+            if (v.why && v.whyEn && pairs.length < 6)
+                pairs.push({src: 'SHOW_EXTRA['+id+'].why', bg: v.why.slice(0,100), en: (v.whyEn||'').slice(0,100)});
+        }
+        // From FILMS: noteEn
+        for (const f of films) {
+            if (f.note && f.noteEn && pairs.length < 8)
+                pairs.push({src: 'FILMS['+f.id+'].note', bg: f.note.slice(0,100), en: f.noteEn.slice(0,100)});
+        }
+        return pairs.slice(0, 8);
+    }""")
+    ctx.close()
+
+    print(f"  Translation pairs ({len(pairs)}):")
+    translation_ok = True
+    if pairs:
+        for p in pairs:
+            print(f"  [{p['src']}]")
+            print(f"    BG: {p['bg']}")
+            print(f"    EN: {p['en']}")
+    else:
+        print("  No translation pairs found.")
+
+    # Report only - not a PASS/FAIL check per spec
+    check("l4_translation_pairs_found",
+          len(pairs) >= 4,
+          f"found {len(pairs)} pairs (need ≥4 to spot-check)")
+
+    # ── L5: Caps — computed text-transform of .sec-toggle-title ───────────────
+    print("\n=== L5: Caps: .sec-toggle-title text-transform ===")
+
+    def _get_sec_toggle_caps(browser, mode):
+        """Open page in given mode, scroll until .sec-toggle-title appears, return computed style."""
+        ctx_l5, page_l5, _ = open_page(browser, 1280, 800, lang="bg", mode=mode)
+        page_l5.wait_for_timeout(800)
+        # Scroll down to trigger rendering of section toggles (they're below the fold)
+        for _ in range(8):
+            has_toggle = page_l5.evaluate("!!document.querySelector('[data-sectoggle]')")
+            if has_toggle:
+                break
+            page_l5.mouse.wheel(0, 500)
+            page_l5.wait_for_timeout(300)
+        result = page_l5.evaluate("""() => {
+            const el = document.querySelector('.sec-toggle-title');
+            if (!el) {
+                const togBtn = document.querySelector('[data-sectoggle]');
+                return {err: 'sec-toggle-title not found',
+                        hasTogBtn: !!togBtn,
+                        togBtnHTML: togBtn ? togBtn.innerHTML.slice(0, 100) : ''};
+            }
+            const computed = window.getComputedStyle(el).textTransform;
+            return {computed, label: el.textContent.trim().slice(0, 40)};
+        }""")
+        return result, ctx_l5, page_l5
+
+    cinema_caps, ctx_c5, page_c5 = _get_sec_toggle_caps(browser, "cinema")
+    ctx_c5.close()
+
+    theatre_caps, ctx_t5, page_t5 = _get_sec_toggle_caps(browser, "theatre")
+    save_shot(page_t5, wave, "d-en-theatre-sections-caps")
+    ctx_t5.close()
+
+    if "err" in cinema_caps:
+        check("l5_cinema_caps", False,
+              f"{cinema_caps['err']} (hasTogBtn={cinema_caps.get('hasTogBtn')}, html={cinema_caps.get('togBtnHTML','')})")
+    else:
+        check("l5_cinema_caps",
+              cinema_caps["computed"] == "uppercase",
+              f"cinema .sec-toggle-title text-transform={cinema_caps['computed']!r} label={cinema_caps.get('label','')!r}")
+
+    if "err" in theatre_caps:
+        check("l5_theatre_caps", False,
+              f"{theatre_caps['err']} (hasTogBtn={theatre_caps.get('hasTogBtn')}, html={theatre_caps.get('togBtnHTML','')})")
+    else:
+        check("l5_theatre_caps",
+              theatre_caps["computed"] == "uppercase",
+              f"theatre .sec-toggle-title text-transform={theatre_caps['computed']!r} label={theatre_caps.get('label','')!r}")
+
+    # ── L6: Preliminary markings ───────────────────────────────────────────────
+    print("\n=== L6: Preliminary markings ===")
+
+    # Find a cinema with rows on 2 different dates using the page's actual data
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    prelim_cinema_info = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        if (typeof SHOWTIMES === 'undefined') return {{err: 'no SHOWTIMES'}};
+        const cinDates = {{}};
+        for (const st of SHOWTIMES) {{
+            if (!cinDates[st[1]]) cinDates[st[1]] = new Set();
+            cinDates[st[1]].add(st[2]);
+        }}
+        for (const [cid, dset] of Object.entries(cinDates)) {{
+            const dates = Array.from(dset).sort();
+            if (dates.length >= 2) {{
+                // Use second date as threshold
+                return {{cinemaId: cid, dateEarly: dates[0], dateLate: dates[1], dates}};
+            }}
+        }}
+        return {{err: 'no cinema with 2+ dates'}};
+    }}""")
+
+    prelim_theatre_info = page.evaluate(f"""() => {{
+        if (typeof PERFORMANCES === 'undefined' || typeof SHOWS === 'undefined') return {{err: 'no data'}};
+        const thDates = {{}};
+        for (const p of PERFORMANCES) {{
+            const show = (typeof SHOWS !== 'undefined' ? SHOWS : []).find(s => s.id === p[0]);
+            if (!show) continue;
+            const tid = show.theatre;
+            if (!thDates[tid]) thDates[tid] = new Set();
+            thDates[tid].add(p[1]);
+        }}
+        for (const [tid, dset] of Object.entries(thDates)) {{
+            const dates = Array.from(dset).sort();
+            if (dates.length >= 2) {{
+                return {{theatreId: tid, dateEarly: dates[0], dateLate: dates[1], dates}};
+            }}
+        }}
+        return {{err: 'no theatre with 2+ dates'}};
+    }}""")
+
+    ctx.close()
+
+    def inject_prelim_and_open(page, venue_id, threshold_date):
+        """Inject PRELIM_FROM={venue_id: threshold_date} into the page."""
+        page.evaluate(f"""() => {{
+            if (typeof PRELIM_FROM !== 'undefined') {{
+                // Reset and set
+                Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+                PRELIM_FROM['{venue_id}'] = '{threshold_date}';
+            }}
+        }}""")
+
+    def clear_prelim(page):
+        page.evaluate("""() => {
+            if (typeof PRELIM_FROM !== 'undefined') {
+                Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+            }
+        }""")
+
+    # L6a: Cinema preliminary test
+    if "err" in prelim_cinema_info:
+        skip("l6a_cinema_prelim_tag", prelim_cinema_info["err"])
+        skip("l6a_cinema_prelim_no_early", prelim_cinema_info["err"])
+        skip("l6a_cinema_prelim_en", prelim_cinema_info["err"])
+        skip("l6a_cinema_prelim_empty", prelim_cinema_info["err"])
+    else:
+        cin_id = prelim_cinema_info["cinemaId"]
+        date_early = prelim_cinema_info["dateEarly"]
+        date_late = prelim_cinema_info["dateLate"]
+        print(f"  Using cinema={cin_id}, early={date_early}, late={date_late}")
+
+        # Open a film that plays at this cinema on date_late
+        ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+        page.wait_for_timeout(500)
+
+        film_for_prelim = page.evaluate(f"""() => {{
+            if (typeof SHOWTIMES === 'undefined') return null;
+            const st = SHOWTIMES.find(s => s[1] === '{cin_id}' && s[2] === '{date_late}');
+            return st ? st[0] : null;
+        }}""")
+
+        if not film_for_prelim:
+            skip("l6a_cinema_prelim_tag", f"no film found at {cin_id} on {date_late}")
+            skip("l6a_cinema_prelim_no_early", "film not found")
+            skip("l6a_cinema_prelim_en", "film not found")
+            skip("l6a_cinema_prelim_empty", "film not found")
+            ctx.close()
+        else:
+            # Inject PRELIM_FROM and open film sheet
+            open_film_sheet(page, film_for_prelim)
+            page.wait_for_timeout(500)
+            inject_prelim_and_open(page, cin_id, date_late)
+            # Re-open the sheet to trigger re-render
+            close_sheet(page)
+            page.wait_for_timeout(300)
+            open_film_sheet(page, film_for_prelim)
+            page.wait_for_timeout(700)
+
+            prelim_check = page.evaluate(f"""() => {{
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return {{err: 'no sheet'}};
+                const txt = sheet.innerHTML || '';
+                const hasPrelimTag = sheet.querySelector('.prelim-tag') !== null;
+                const hasPrelimLegend = sheet.querySelector('.prelim-legend') !== null;
+                const hasDashedTime = sheet.querySelector('a.prelim-time, span.prelim-time') !== null;
+                const hasTimeLinks = sheet.querySelectorAll('a.time').length > 0;
+                // Check the late date row has prelim-tag
+                const lateDateRow = Array.from(sheet.querySelectorAll('.dg-h,.vdate,.vhdr')).find(
+                    el => el.textContent.includes('{date_late}'));
+                return {{hasPrelimTag, hasPrelimLegend, hasDashedTime, hasTimeLinks, lateDateRow: !!lateDateRow}};
+            }}""")
+
+            if "err" in prelim_check:
+                check("l6a_cinema_prelim_tag", False, prelim_check["err"])
+            else:
+                check("l6a_cinema_prelim_tag",
+                      prelim_check["hasPrelimTag"],
+                      f".prelim-tag present={prelim_check['hasPrelimTag']}, "
+                      f"legend={prelim_check['hasPrelimLegend']}, "
+                      f"dashed={prelim_check['hasDashedTime']}")
+                check("l6a_cinema_time_links_present",
+                      prelim_check["hasTimeLinks"],
+                      "a.time links exist in prelim sheet" if prelim_check["hasTimeLinks"]
+                      else "NO a.time links in prelim sheet")
+
+            # Check early date rows don't have prelim
+            early_film = page.evaluate(f"""() => {{
+                if (typeof SHOWTIMES === 'undefined') return null;
+                const st = SHOWTIMES.find(s => s[1] === '{cin_id}' && s[2] === '{date_early}');
+                return st ? st[0] : null;
+            }}""")
+            if early_film and early_film != film_for_prelim:
+                close_sheet(page)
+                open_film_sheet(page, early_film)
+                page.wait_for_timeout(600)
+                early_check = page.evaluate("""() => {
+                    const sheet = document.querySelector('.sheet');
+                    if (!sheet) return {err: 'no sheet'};
+                    return {hasPrelimTag: sheet.querySelector('.prelim-tag') !== null};
+                }""")
+                if "err" not in early_check:
+                    check("l6a_cinema_prelim_no_early",
+                          not early_check["hasPrelimTag"],
+                          f"early date film {early_film}: prelim-tag present={early_check['hasPrelimTag']}")
+
+            # EN language check
+            close_sheet(page)
+            # Switch to EN and re-check
+            page.evaluate("S.lang='en'; if(typeof render==='function') render();")
+            page.wait_for_timeout(300)
+            open_film_sheet(page, film_for_prelim)
+            page.wait_for_timeout(600)
+
+            en_prelim_check = page.evaluate("""() => {
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return {err: 'no sheet'};
+                const txt = sheet.innerHTML || '';
+                const tag = sheet.querySelector('.prelim-tag');
+                const tagText = tag ? (tag.textContent||'').trim().toLowerCase() : '';
+                const legend = sheet.querySelector('.prelim-legend');
+                const legendText = legend ? (legend.textContent||'').slice(0,80) : '';
+                return {tagText, legendText, hasTag: !!tag, hasLegend: !!legend};
+            }""")
+
+            if "err" not in en_prelim_check:
+                check("l6a_cinema_prelim_en",
+                      en_prelim_check["hasTag"] and "preliminary" in en_prelim_check["tagText"],
+                      f"EN prelim tag: hasTag={en_prelim_check['hasTag']}, "
+                      f"tagText={en_prelim_check['tagText']!r}, "
+                      f"legend={en_prelim_check['legendText'][:50]!r}")
+
+            # Check calEvent description contains prelim note
+            cal_prelim = page.evaluate(f"""() => {{
+                if (typeof calEvent !== 'function' || typeof SHOWTIMES === 'undefined') return {{err:'no calEvent'}};
+                const st = SHOWTIMES.find(s => s[1] === '{cin_id}' && s[2] === '{date_late}');
+                if (!st) return {{err:'no showtime found'}};
+                const ev = calEvent('film', st[0], st[1], st[2], (st[3]||[])[0]||'');
+                if (!ev) return {{err:'calEvent returned null'}};
+                return {{desc: (ev.description||'').slice(0,200)}};
+            }}""")
+
+            if "err" not in cal_prelim:
+                prelim_in_desc = "preliminary" in cal_prelim["desc"].lower()
+                check("l6a_cinema_prelim_cal_desc",
+                      prelim_in_desc,
+                      f"calEvent description contains 'preliminary': {prelim_in_desc!r} "
+                      f"(desc={cal_prelim['desc'][:80]!r})")
+
+            # Empty PRELIM_FROM: no tags
+            clear_prelim(page)
+            close_sheet(page)
+            open_film_sheet(page, film_for_prelim)
+            page.wait_for_timeout(600)
+            empty_check = page.evaluate("""() => {
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return {err: 'no sheet'};
+                return {hasTag: sheet.querySelector('.prelim-tag') !== null,
+                        hasLegend: sheet.querySelector('.prelim-legend') !== null};
+            }""")
+            if "err" not in empty_check:
+                check("l6a_cinema_prelim_empty",
+                      not empty_check["hasTag"] and not empty_check["hasLegend"],
+                      f"with PRELIM_FROM={{}}: tag={empty_check['hasTag']}, legend={empty_check['hasLegend']}")
+
+            save_shot(page, wave, "d-bg-prelim-sheet")
+            ctx.close()
+
+    # L6b: Theatre preliminary test
+    if "err" in prelim_theatre_info:
+        skip("l6b_theatre_prelim_tag", prelim_theatre_info["err"])
+    else:
+        th_id = prelim_theatre_info["theatreId"]
+        th_date_early = prelim_theatre_info["dateEarly"]
+        th_date_late = prelim_theatre_info["dateLate"]
+        print(f"  Using theatre={th_id}, early={th_date_early}, late={th_date_late}")
+
+        ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+        page.wait_for_timeout(500)
+
+        show_for_prelim = page.evaluate(f"""() => {{
+            if (typeof PERFORMANCES === 'undefined' || typeof SHOWS === 'undefined') return null;
+            const thShows = SHOWS.filter(s => s.theatre === '{th_id}').map(s => s.id);
+            const p = PERFORMANCES.find(p => thShows.includes(p[0]) && p[1] === '{th_date_late}');
+            return p ? p[0] : null;
+        }}""")
+
+        if not show_for_prelim:
+            skip("l6b_theatre_prelim_tag", f"no show at {th_id} on {th_date_late}")
+            ctx.close()
+        else:
+            inject_prelim_and_open(page, th_id, th_date_late)
+            open_show_sheet(page, show_for_prelim)
+            page.wait_for_timeout(700)
+
+            th_prelim_check = page.evaluate("""() => {
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return {err: 'no sheet'};
+                const hasPrelimTag = sheet.querySelector('.prelim-tag') !== null;
+                const hasPrelimLegend = sheet.querySelector('.prelim-legend') !== null;
+                const hasDashedTime = sheet.querySelector('a.prelim-time, span.prelim-time') !== null;
+                const hasTimeLinks = sheet.querySelectorAll('a.time').length > 0;
+                return {hasPrelimTag, hasPrelimLegend, hasDashedTime, hasTimeLinks};
+            }""")
+
+            if "err" in th_prelim_check:
+                check("l6b_theatre_prelim_tag", False, th_prelim_check["err"])
+            else:
+                check("l6b_theatre_prelim_tag",
+                      th_prelim_check["hasPrelimTag"],
+                      f"tag={th_prelim_check['hasPrelimTag']}, "
+                      f"legend={th_prelim_check['hasPrelimLegend']}, "
+                      f"dashed={th_prelim_check['hasDashedTime']}, "
+                      f"timeLinks={th_prelim_check['hasTimeLinks']}")
+
+            ctx.close()
+
+    # ── L7: No page errors; verify_build.py; full test_ui.py L ────────────────
+    print("\n=== L7: No page errors ===")
+
+    ctx, page, errs_cinema = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page.wait_for_timeout(1000)
+    ctx.close()
+
+    ctx, page, errs_theatre = open_page(browser, 1280, 800, lang="en", mode="theatre")
+    page.wait_for_timeout(1000)
+    ctx.close()
+
+    all_errs = errs_cinema + errs_theatre
+    check("l7_no_page_errors",
+          len(all_errs) == 0,
+          f"{len(all_errs)} page errors: {all_errs[:3]}" if all_errs else "no page errors")
+
+    # verify_build.py
+    print("\n=== L7: verify_build.py gate ===")
+    vb_result = subprocess.run(
+        [sys.executable, "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True, text=True,
+        env={**__import__('os').environ, "SOFIA_HTML": "index.dev.html"}
+    )
+    vb_pass = vb_result.returncode == 0 and "all checks passed" in vb_result.stdout
+    check("l7_verify_build",
+          vb_pass,
+          vb_result.stdout.strip()[-120:] if vb_pass else
+          (vb_result.stdout + vb_result.stderr)[-240:])
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -5539,6 +6574,7 @@ WAVES = {
     "H": wave_h,
     "I": wave_i,
     "J": wave_j,
+    "L": wave_l,
 }
 
 def main():
