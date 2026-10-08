@@ -1,0 +1,55 @@
+{
+ "_about": "Curated theatre-show identity, read by scripts/show_identity.py. Matching is ALWAYS inside one theatre. 'groups': titles verified to be ONE production at that theatre (direction-agnostic; 'show' pins the SHOWS id). 'merge': a duplicate catalogue record ('drop') that is the same production as 'keep' — every reference to 'drop' resolves to 'keep', the pipeline moves its performances and removes the record. Add an entry only after checking the theatre's own programme page; never group look-alikes that are different productions ('Отчаяни съпрузи' vs 'Отчаяни съпрузи 2: Бракувани', the same play at two theatres).",
+ "groups": [
+  {
+   "theatre": "vazrazhdane",
+   "show": "te-byaha-10",
+   "titles": [
+    "Те бяха 10",
+    "Те бяха десет"
+   ],
+   "reason": "theatre.art.bg (theatre id 11, Театър Възраждане) lists 'ТЕ БЯХА ДЕСЕТ' on 10 Oct and 6 Nov 2026 at 19:00 — exactly the theatre's own 'Те бяха 10' performances. Verified 2026-10-08."
+  },
+  {
+   "theatre": "vazrazhdane",
+   "show": "kotarakat-s-chizmi",
+   "titles": [
+    "Котаракът с чизми",
+    "Котаракът в чизми"
+   ],
+   "reason": "theatre.art.bg (theatre id 11) lists 'КОТАРАКЪТ В ЧИЗМИ' on 15 Nov 2026 at 11:00 and 12:30 — exactly the theatre's own 'Котаракът с чизми' matinées. Verified 2026-10-08."
+  },
+  {
+   "theatre": "vazrazhdane",
+   "show": "o-b-tvarzan",
+   "titles": [
+    "О(б)твързан",
+    "Об/твързан"
+   ],
+   "reason": "theatre.art.bg (theatre id 11) lists 'ОБ/ТВЪРЗАН' on 28 Nov 2026 at 19:00 — the theatre's own 'О(б)твързан' (Ханох Левин, 105 min). NOT the catalogue's 'Об/Вързан' (90 min): that pair is unproven and left apart. Verified 2026-10-08."
+  },
+  {
+   "theatre": "citymark",
+   "show": "hitranka",
+   "titles": [
+    "Хитранка Лисанка",
+    "\"Хитранка Лисанка\" Спектакъл по народни приказки"
+   ],
+   "reason": "Сити Марк's programme (its official channel, theatre.art.bg production 6176) titles it 'Хитранка Лисанка' + the descriptor 'Спектакъл по народни приказки'; the catalogue record is that production (author 'по народни приказки', synopsis opening with the same words). Verified 2026-10-08."
+  }
+ ],
+ "merge": [
+  {
+   "theatre": "tba",
+   "keep": "baldahinat",
+   "drop": "baldahinat-2",
+   "reason": "tba.art.bg types the title with a Latin 'a' ('Бaлдахинът'); the old global title lookup could not match it and minted a second, empty record. One production: tba.art.bg's 'Бaлдахинът' and tickets.tba.bg's 'БАЛДАХИНЪТ' are the same seven performances (19:30, Камерна сцена 'МИРАКЪЛ', 22 Oct – 15 Dec 2026). The kept record carries the synopsis, genres and duration. Verified 2026-10-08."
+  },
+  {
+   "theatre": "citymark",
+   "keep": "hitranka",
+   "drop": "hitranka-lisanka-spektakal-po-narodni-prikazki",
+   "reason": "A record minted earlier from theatre.art.bg's ALL-CAPS '\"ХИТРАНКА ЛИСАНКА\" СПЕКТАКЪЛ ПО НАРОДНИ ПРИКАЗКИ' — the same Сити Марк production as the catalogue's 'Хитранка Лисанка' (see the alias group). The kept record carries the synopsis and credits. Verified 2026-10-08."
+  }
+ ]
+}

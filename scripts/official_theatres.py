@@ -259,8 +259,8 @@ def normalise_show_title(title):
     SAME theatre. Drops what venues add around a title — "| ПРЕМИЕРА",
     "предпремиера", "гостуване", "- Гостува ДТ-Русе", "последно представление",
     "- представление 200", "(ОТМЕНЕНО)", an age rating "16+" and Сфумато's
-    'Програма "Бекет"' cycle prefix — then quotes, case, punctuation and Latin
-    look-alike letters. It never touches the words of the title itself, so
+    'Програма "Бекет"' cycle prefix — then quotes, case (ё/ѝ too), punctuation and
+    Latin look-alike letters. It never touches the words of the title itself, so
     "Отчаяни съпрузи" and "Отчаяни съпрузи 2: Бракувани" stay different, and a
     festival edition ("АСТ ФЕСТ 2026 I История на една страст") stays apart
     from the repertoire title (the catalogue holds both)."""
@@ -272,7 +272,7 @@ def _normalise(title, strip_cycle):
     if strip_cycle:
         s = _CYCLE_PREFIX.sub("", s)
     s = _DECOR.sub(" ", s)
-    s = s.lower().replace("ё", "е")
+    s = s.lower().replace("ё", "е").replace("ѝ", "и")      # "така ѝ харесва" = "ТАКА И ХАРЕСВА"
     s = re.sub(r"[„“”\"'’‘‛`«»]", "", s)
     s = re.sub(r"[^\w\s]|_", " ", s)
     return " ".join(_homoglyphs(t) for t in s.split())

@@ -51,6 +51,17 @@
    ],
    "film": "magyosnika",
    "reason": "programata/G8 spell it without the 'т'; programata's page for that spelling is The Wizard of the Kremlin (2025, dir. Оливие Асаяс) — the catalogue film. Verified 2026-10-08."
+  },
+  {
+   "titles": [
+    "СИНЕЛИБРИ 2026 – ЕМБАРГО",
+    "СИНЕЛИБРИ 2026 – ЕМБАРГО | представяне на творчеството на  Жозе Сарамаго"
+   ],
+   "film": "sinelibri-2026-embargo-predstavyane-na-tvorchestvoto-na-zhoz",
+   "venues": [
+    "vlaikova"
+   ],
+   "reason": "One screening event: Влайкова's post vlaikovacinema.com/screening/синелибри-2026-ембарго/ (its slug is the short title, its heading now the long one) lists a single screening, 16.10 (петък) 19:30, and the weekly grid links the long title to that same post; the short title has no screening of its own. Scoped to Влайкова. Verified 2026-10-08."
   }
  ]
 }

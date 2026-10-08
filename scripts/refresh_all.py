@@ -30,7 +30,7 @@ REPORT = ROOT / "build_report.json"
 CHANGES = ROOT / "changes.json"
 # Per-venue official-programme facts kept in build_report.json. The next scrape
 # reads them back to notice a source that suddenly yields a fraction of its rows.
-OFFICIAL_KEYS = ("status", "source", "covered", "days", "screenings", "written_screenings",
+OFFICIAL_KEYS = ("kind", "status", "source", "covered", "days", "screenings", "written_screenings",
                  "prelim_from", "prelim_screenings", "discarded_aggregator", "minted", "error")
 
 
@@ -117,7 +117,7 @@ def main():
     for r in results:
         print(f"  {'OK ' if r['ok'] else 'FAIL'} {r['step']:16s} {r['seconds']:>6}s")
     if official:
-        print("\n=== cinema listings: each venue's own programme ===")
+        print("\n=== cinema and theatre listings: each venue's own programme ===")
         for vid, o in official.items():
             cov = "..".join(o.get("covered") or []) or "—"
             print(f"  {vid:12s} {o.get('status') or '?':11s} {cov:23s} "

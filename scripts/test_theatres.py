@@ -122,6 +122,7 @@ for a, b in [
     ("НАШАТА ГОЛЯМА ФРЕНСКА СВАТБА - ПРЕДСТАВЛЕНИЕ 200", "Нашата голяма френска сватба"),
     ("СПАНАК С КАРТОФИ (ОТМЕНЕНО)", "Спанак с картофи"),
     ("Бaлдахинът", "Балдахинът"),                                         # Latin 'a' inside
+    ("Защото на мама така ѝ харесва", "ЗАЩОТО НА МАМА ТАКА И ХАРЕСВА"),   # ѝ (Възраждане) vs И (art.bg)
     ("E.E.", "Е.Е."),                                                     # Latin / Cyrillic
     ("Иван Ланджев. За неизбежната случайност. последно представление",
      "ИВАН ЛАНДЖЕВ. ЗА НЕИЗБЕЖНАТА СЛУЧАЙНОСТ."),
@@ -465,6 +466,258 @@ check("every theatre id is accounted for", sorted(list(O.FETCHERS) + list(O.NO_O
       sorted(["national", "sofia-th", "th199", "tba", "zad-kanala", "vazrazhdane", "mladezhki", "kuklen",
               "satira", "salzaismyah", "toplo", "iam", "artvent", "sfumato", "citymark",
               "atelie313", "natfiz", "new-ndk", "derida"]))
+
+# ================================================================ wave M3: merge
+# scrape_programs.py wires the programmes above into the app: each theatre's own
+# programme is authoritative for its covered dates, theatre.art.bg only fills
+# the days after it (preliminary), shows are matched inside one theatre only.
+import scrape_programs as S                                    # noqa: E402
+import show_identity as SI                                     # noqa: E402
+import film_identity as FID                                    # noqa: E402
+
+print("theatre.art.bg day page — every time of a listing (trimmed, windows-1251)")
+
+
+class _Soup:
+    def __init__(self, body):
+        self.body = body
+
+    def soup(self, url, attempts=None):
+        return BeautifulSoup(O.decode(self.body), "lxml")
+
+
+day = S.scrape_theatre_day("2026-10-11", _Soup(raw("theatre_artbg_day.html")))
+check("a matinée pair is two performances, each with its stage",
+      [(r[0], r[2], r[3], r[5]) for r in day if r[0] == "ФЕЯТА ВАНИЛИЯ"],
+      [("ФЕЯТА ВАНИЛИЯ", "11:00", "4", "Камерна сцена"), ("ФЕЯТА ВАНИЛИЯ", "12:30", "4", "Камерна сцена")])
+check("a single listing and its hall", [(r[2], r[3], r[5]) for r in day if r[0] == "ДЯДОВАТА РЪКАВИЧКА"],
+      [("11:00", "10", "Салон Гурко 14")])
+check("a bare 'сцена' is no hall", [(r[3], r[5]) for r in day if "ПРАСЕНЦА" in r[0]], [("173", None)])
+check("a venue the app does not list keeps its own id", [r[3] for r in day if r[0] == "ЗА МИШКИТЕ И ХОРАТА"], ["178"])
+check("theatre ids map only to verified theatres",
+      (S.THEATRE_ART_IDS.get("4"), S.THEATRE_ART_IDS.get("6"), S.THEATRE_ART_IDS.get("178")),
+      ("mladezhki", "tba", None))
+check("each listing's own theatre.art.bg event page and printed price",
+      [(r[6], r[7]) for r in day if r[0] == "ДЯДОВАТА РЪКАВИЧКА"],
+      [("https://theatre.art.bg/дядовата-ръкавичка_7900_10_20", "от 6.00 до 7.00 €")])
+check("no price printed → none", sorted({r[7] for r in day if r[0] == "ФЕЯТА ВАНИЛИЯ"}, key=str), [None])
+check("a page that does not echo the requested date contributes nothing",
+      S.scrape_theatre_day("2026-10-12", _Soup(raw("theatre_artbg_day.html"))), None)
+
+print("performance price, the app's euro style")
+check("Сатирата's лв./€ pairs → euro range", S.theatre_price("35.20 лв./18.00 €, 43.03 лв./22.00 €"), "18,00–22,00 €")
+check("one euro amount", S.theatre_price("31.29 лв./16.00 €"), "16,00 €")
+check("no price", S.theatre_price(None), None)
+check("theatre.art.bg 'от … до … €'", S.theatre_price("от 6.00 до 7.00 €"), "6,00–7,00 €")
+check("a lone 'от' stays a minimum", S.theatre_price("от 8.00 €"), "от 8,00 €")
+check("leva only: never converted", S.theatre_price("30 лв."), None)
+
+print("minted show titles: as published, minus decorations")
+for a, b in [("Инсомния премиера", "Инсомния"), ("Прелюбодейци | ПРЕМИЕРА", "Прелюбодейци"),
+             ("“Как господин Мокинпот се спаси от нещастието”", "Как господин Мокинпот се спаси от нещастието"),
+             (',,ГОЛЕМИЯТ СИН"', "ГОЛЕМИЯТ СИН"),
+             ("НАШАТА ГОЛЯМА ФРЕНСКА СВАТБА - ПРЕДСТАВЛЕНИЕ 200", "НАШАТА ГОЛЯМА ФРЕНСКА СВАТБА"),
+             ("Тяло в лед - Гостува ДТ-Русе", "Тяло в лед"), ("Светици и перверзници 16+", "Светици и перверзници"),
+             ("Xензел и Гретел", "Хензел и Гретел"), ("Бaлдахинът", "Балдахинът"),
+             ("Neoдачници", "Neoдачници"), ("Бурята | The Tempest", "Бурята | The Tempest")]:
+    check(f"display {a[:34]!r}", SI.display_title(a), b)
+check("normal case beats ALL CAPS", SI.choose_display(["ИНСОМНИЯ", "Инсомния премиера", "ИНСОМНИЯ"]), "Инсомния")
+
+print("show identity — inside one theatre only")
+CAT = [{"id": "baldahinat", "title": "Балдахинът", "titleEn": "The Baldachin", "theatre": "tba",
+        "synBg": "Пиеса.", "genres": ["Драма"], "duration": 95},
+       {"id": "baldahinat-2", "title": "Бaлдахинът", "theatre": "tba", "genres": []},
+       {"id": "prasenca-vaz", "title": "Трите прасенца", "theatre": "vazrazhdane"},
+       {"id": "hamlet-nat", "title": "Хамлет", "theatre": "national"},
+       {"id": "suprugi", "title": "Отчаяни съпрузи", "theatre": "satira"},
+       {"id": "suprugi-2", "title": "Отчаяни съпрузи 2: Бракувани", "theatre": "satira"},
+       {"id": "urok", "title": "Урок по български", "theatre": "tba"}]
+MERGE = {"merge": [{"theatre": "tba", "keep": "baldahinat", "drop": "baldahinat-2", "reason": "test"}]}
+ix = SI.ShowIndex(CAT, aliases=MERGE)
+check("the Latin-'a' duplicate resolves to the record with data", ix.resolve("Бaлдахинът", "tba"), ("baldahinat", "exact"))
+check("…so does the ticket centre's ALL CAPS", ix.resolve("БАЛДАХИНЪТ", "tba")[0], "baldahinat")
+check("a merged-away id maps to the kept record", (ix.canonical("baldahinat-2"), ix.theatre_of("baldahinat-2")),
+      ("baldahinat", "tba"))
+check("the same title at ANOTHER theatre is not that show", ix.resolve("Трите прасенца", "mladezhki"), (None, "unmatched"))
+check("…but it is at its own theatre", ix.resolve("ТРИТЕ ПРАСЕНЦА", "vazrazhdane")[0], "prasenca-vaz")
+check("a sequel number keeps productions apart", ix.resolve("Отчаяни съпрузи", "satira")[0], "suprugi")
+ix2 = SI.ShowIndex(CAT, aliases={})
+check("no curated merge: the duplicate still goes to the record with data", ix2.resolve("Бaлдахинът", "tba"),
+      ("baldahinat", "duplicate"))
+check("…and the pair is listed as a suspected duplicate",
+      [(d["show"], d["other"]) for d in ix2.suspected_duplicates(["baldahinat"])], [("baldahinat", "baldahinat-2")])
+ix3 = SI.ShowIndex(CAT, aliases={"groups": [{"theatre": "national", "show": "hamlet-nat",
+                                             "titles": ["Хамлет", "Хамлет, принц датски"], "reason": "test"}]})
+check("a curated alias applies at its own theatre only",
+      (ix3.resolve("Хамлет, принц датски", "national")[0], ix3.resolve("Хамлет, принц датски", "tba")[0]),
+      ("hamlet-nat", None))
+
+print("minting: one show per new production, at its own theatre")
+mint_log = []
+
+
+def _mint(title, theatre, url):
+    sid = f"m-{len(mint_log) + 1}"
+    ix.add({"id": sid, "title": title, "theatre": theatre}, minted=True)
+    mint_log.append((sid, title, theatre, url))
+    return sid
+
+
+results = {"tba": {"rows": [("Бaлдахинът", "2026-10-22", "19:30", {"hall": "Камерна сцена", "url": "u"}),
+                            ("ДАМА ПИКА", "2026-10-30", "19:00", {"url": None}),
+                            ("Дама пика премиера", "2026-10-09", "19:00", {"url": "https://www.tba.art.bg/дама-пика"})],
+                   "extra_rows": [("Урок по български по Ив. Вазов", "2026-12-20", "11:00", {"url": "x"})]},
+           "mladezhki": {"rows": [("Трите прасенца", "2026-10-11", "11:00", {"url": "https://mlt.bg/x"})],
+                         "extra_rows": []}}
+res_m, ids = S.resolve_theatre_rows(ix, results, _mint)
+check("new productions minted once each, title as published minus decorations, with the official page",
+      mint_log, [("m-1", "Дама пика", "tba", "https://www.tba.art.bg/дама-пика"),
+                 ("m-2", "Урок по български по Ив. Вазов", "tba", "x"),
+                 ("m-3", "Трите прасенца", "mladezhki", "https://mlt.bg/x")])
+check("every row placed (the homoglyph duplicate on the kept record)",
+      [(r[0], r[1]) for r in res_m["tba"]["rows"]],
+      [("baldahinat", "2026-10-22"), ("m-1", "2026-10-30"), ("m-1", "2026-10-09")])
+check("a near miss is minted, not merged — and listed for a human",
+      [(d["show"], d["other"]) for d in ix.suspected_duplicates(["m-2"])], [("m-2", "urok")])
+
+print("minted titles follow the theatre's own spelling (minted records only)")
+rt = S.retitle_minted({"kolpert": {"title": "ГОСПОДИН КОЛПЕРТ ПРЕМИЕРА"}, "kankun": {"title": '"КАНКУН"'},
+                       "mars": {"title": "ПЪТУВАНЕ ДО МАРС"}, "zh": {"title": "Жената пита"}},
+                      {"kolpert": ["Господин Колперт премиера"], "kankun": ["Канкун"],
+                       "mars": ["ПЪТУВАНЕ ДО МАРС"], "zh": ["Жената пита ChatGPT"]})
+check("decorations and ALL CAPS give way to the official spelling; a different title is never adopted",
+      rt, {"kolpert": ("ГОСПОДИН КОЛПЕРТ ПРЕМИЕРА", "Господин Колперт"), "kankun": ('"КАНКУН"', "Канкун")})
+
+print("theatre merge rules (pure)")
+F, E = "2026-10-08", "2026-12-14"
+off = [("a", "2026-10-08", "19:00", "Голяма сцена", "18,00 €"),
+       ("b", "2026-10-09", "11:00", None, None), ("b", "2026-10-09", "12:30", None, None)]
+extra = [("c", "2026-11-03", "19:00", "Камерна сцена", None), ("c", "2026-12-20", "19:00", None, None)]
+agg = [("a", "A", "2026-10-08", "19:00", None),              # agrees with the theatre
+       ("a", "A", "2026-10-10", "19:30", None),              # not on its programme → discarded
+       (None, "Unknown", "2026-10-09", "19:00", None),       # unknown, inside coverage → discarded
+       ("d", "D", "2026-11-02", "19:00", "Камерна сцена"),   # after coverage → preliminary
+       ("c", "C", "2026-11-03", "20:00", None),              # the theatre's own extra row wins that show/day
+       ("e", "E", "2026-11-04", "19:00", None),              # listed by the theatre as touring → never shown
+       (None, "New", "2026-11-05", "19:00", None),           # after coverage, unknown → not minted
+       ("a", "A", "2026-10-01", "19:00", None)]              # past
+agg_dates = {r[2] for r in agg} | {"2026-10-12"}
+prev = [["a", "2026-10-01", "19:00", None, None], ["z", "2026-10-12", "19:00", None, None],
+        ["y", "2026-11-20", "19:00", "Сцена", None]]
+rows, pf, info = S.merge_theatre_venue("t", "official", off, ("2026-10-08", "2026-10-31"), extra, agg, agg_dates,
+                                       prev, None, F, E, {("e", "2026-11-04", "19:00")})
+check("inside coverage exactly the official rows (with hall and price); after it the theatre's own extra "
+      "rows, aggregator rows and — where the aggregator was not read — last run's rows", rows,
+      [["a", "2026-10-08", "19:00", "Голяма сцена", "18,00 €"], ["b", "2026-10-09", "11:00", None, None],
+       ["b", "2026-10-09", "12:30", None, None], ["d", "2026-11-02", "19:00", "Камерна сцена", None],
+       ["c", "2026-11-03", "19:00", "Камерна сцена", None], ["y", "2026-11-20", "19:00", "Сцена", None]])
+check("contradicting aggregator rows are discarded and logged", info["discarded"],
+      [["2026-10-10", "19:30", "A", "a"], ["2026-10-09", "19:00", "Unknown", None]])
+check("PRELIM_FROM = the day after the official coverage", pf, "2026-11-01")
+check("an excluded (touring) performance is never shown", info["excluded_blocked"], 1)
+check("an unknown aggregator title is reported, not minted", info["unplaced"], [["2026-11-05", "19:00", "New"]])
+check("preliminary rows counted", info["prelim_rows"], 3)
+check("coverage past the window: PRELIM_FROM the day after the window",
+      S.merge_theatre_venue("t", "official", off, ("2026-10-08", "2026-12-31"), [], [], set(), [], None, F, E)[1],
+      "2026-12-15")
+rows, pf, _ = S.merge_theatre_venue("t", "unreachable", [], None, [], agg, agg_dates, prev, "2026-10-20", F, E)
+check("official source unreachable: previous rows (never past ones) and previous PRELIM_FROM kept", (rows, pf),
+      ([["z", "2026-10-12", "19:00", None, None], ["y", "2026-11-20", "19:00", "Сцена", None]], "2026-10-20"))
+check("unreachable with no previous PRELIM_FROM: preliminary from today",
+      S.merge_theatre_venue("t", "unreachable", [], None, [], [], set(), prev, None, F, E)[1], F)
+agg_a = [("h", "ХЕНЗЕЛ И ГРЕТЕЛ", "2026-10-11", "11:00", None), (None, "НЕЩО НОВО", "2026-10-12", "11:00", None)]
+prev_a = [["h", "2026-10-11", "16:00", None, None], ["h", "2026-10-25", "11:00", None, None]]
+rows, pf, info = S.merge_theatre_venue("atelie313", "none", [], None, [], agg_a, {"2026-10-11", "2026-10-12"},
+                                       prev_a, None, F, E)
+check("no official source (Ателие 313): aggregator rows on dates read, last run's elsewhere, "
+      "all preliminary from today", (rows, pf),
+      ([["h", "2026-10-11", "11:00", None, None], ["h", "2026-10-25", "11:00", None, None]], F))
+check("…an unknown aggregator title is not minted", info["unplaced"], [["2026-10-12", "11:00", "НЕЩО НОВО"]])
+check("no official source and nothing listed (Натфиз): no rows",
+      S.merge_theatre_venue("natfiz", "none", [], None, [], [], {"2026-10-11"}, [], None, F, E)[:2], ([], F))
+rows, pf, _ = S.merge_theatre_venue("th199", "official", [("k", "2026-10-09", "19:30", None, None)],
+                                    ("2026-10-09", "2026-10-18"),
+                                    [("t", "2026-10-08", "19:30", None, None), ("k", "2026-10-19", "19:30", None, None)],
+                                    [("q", "Q", "2026-10-08", "19:00", None)], {"2026-10-08"},
+                                    [["p", "2026-10-08", "17:00", None, None]], "2026-10-09", F, E)
+check("coverage starting after today: the theatre's own card for today, last run's confirmed rows, "
+      "never the aggregator", rows,
+      [["p", "2026-10-08", "17:00", None, None], ["t", "2026-10-08", "19:30", None, None],
+       ["k", "2026-10-09", "19:30", None, None], ["k", "2026-10-19", "19:30", None, None]])
+check("…PRELIM_FROM after the listed window", pf, "2026-10-19")
+check("a theatre programme that collapses stops the scrape",
+      bool(S.implausible_drop({"status": "official", "screenings": 60, "days": 30},
+                              {"status": "official", "screenings": 5, "days": 30}, min_rate=1)), True)
+check("…the cinema threshold alone would not have caught it",
+      S.implausible_drop({"status": "official", "screenings": 60, "days": 30},
+                         {"status": "official", "screenings": 5, "days": 30}), None)
+
+print("theatre.art.bg titles in the preliminary range are minted (owner's rule: shown, marked preliminary)")
+aix = SI.ShowIndex([{"id": "kakto", "title": "Както в най-добрите дни", "theatre": "th199"},
+                    {"id": "feya-s", "title": "Феята от захарницата", "theatre": "salzaismyah"}])
+alog = []
+
+
+def _amint(title, theatre, url):
+    sid = f"a-{len(alog) + 1}"
+    aix.add({"id": sid, "title": title, "theatre": theatre}, minted=True)
+    alog.append((sid, title, theatre, url))
+    return sid
+
+
+P = "https://theatre.art.bg/"
+arows = [("ШВЕЙЦАРИЯ", "2026-10-23", "19:30", None, "buy1", P + "швейцария_1_8_20", None),
+         ("ШВЕЙЦАРИЯ", "2026-10-21", "19:30", None, "buy2", P + "швейцария_2_8_20", None),   # earliest → its page
+         ("КАКТО В НАЙ-ДОБРИТЕ ДНИ", "2026-10-22", "19:30", None, "b", P + "x", None),       # known show → placed
+         ("ЗАСЕКРЕТЕНО ИЗСЛЕДВАНЕ", "2026-10-11", "19:30", None, "b", P + "y", None),        # inside coverage → never
+         ("ФЕЯТА ОТ ЗАХАРНИЦАТА ГОСТУВА В ТЕАТЪР СЪЛЗА И СМЯХ", "2026-12-05", "11:00", None, "b", P + "z", None),
+         ("ВАКХАНКИ", "2026-11-02", "19:00", None, "b", P + "v", None),                      # the theatre excludes it
+         ("ДАЛЕЧНО", "2026-12-20", "19:00", None, "b", P + "w", None)]                       # after the window
+got = S.mint_aggregator_titles(aix, "th199", arows, "2026-10-20", "2026-12-14",
+                               {O.normalise_show_title("Вакханки")}, _amint)
+check("minted once per new title, theatre from the listing's theatre id, earliest event page as its link",
+      (got, alog), (["a-1"], [("a-1", "ШВЕЙЦАРИЯ", "th199", P + "швейцария_2_8_20")]))
+check("…a known show, a date inside coverage or past the window, a title the theatre excludes and a "
+      "production staged at another venue are never minted", len(alog), 1)
+check("no official source: the whole window is preliminary",
+      S.mint_aggregator_titles(aix, "atelie313", [("ХРАБРИЯТ ШИВАЧ", "2026-10-18", "11:00", None, "b", P + "s", None)],
+                               "2026-10-08", "2026-12-14", set(), _amint), ["a-2"])
+rows, pf, info = S.merge_theatre_venue("atelie313", "none", [], None, [],
+                                       [("a-2", "ХРАБРИЯТ ШИВАЧ", "2026-10-18", "11:00", None, "6,00 €")],
+                                       {"2026-10-18"}, [], None, "2026-10-08", "2026-12-14")
+check("a minted aggregator title is a preliminary performance, with the price the listing prints",
+      (rows, pf), ([["a-2", "2026-10-18", "11:00", None, "6,00 €"]], "2026-10-08"))
+
+print("cinema follow-ups: orphan minted films, Cinema City ticket links, ЕМБАРГО")
+cat_f = [{"id": "kosa", "bg": "Коса", "en": "Hair", "year": 1979},
+         {"id": "magyosnika", "bg": "Магьосникът от Кремъл"}]
+minted_f = {"kinoklasiki-kosa-1979": {"id": "kinoklasiki-kosa-1979", "bg": "КИНОКЛАСИКИ: КОСА | 1979 |",
+                                      "source": "vlaikova"},
+            "magyosnika-ot-kremal": {"id": "magyosnika-ot-kremal", "bg": "Магьосника от Кремъл", "source": "g8"},
+            "matriarhat": {"id": "matriarhat", "bg": "Матриархат", "source": "odeon"},
+            "v-bryuzh": {"id": "v-bryuzh", "bg": "В Брюж", "source": "dom-kino"}}
+fix = FID.FilmIndex(cat_f + list(minted_f.values()), minted_ids=set(minted_f),
+                    aliases={"groups": [{"titles": ["Магьосника от Кремъл", "Магьосникът от Кремъл"],
+                                         "film": "magyosnika", "reason": "test"}]})
+sup = S.superseded_films(minted_f, fix, [["v-bryuzh", "dom-kino", "2026-10-10", ["19:00"]]])
+check("an orphan superseded by a catalogue film or an alias is retired; one merely off-screen stays",
+      sorted(sup), ["kinoklasiki-kosa-1979", "magyosnika-ot-kremal"])
+check("…each with its successor", (sup["kinoklasiki-kosa-1979"][0], tuple(sup["magyosnika-ot-kremal"])),
+      ("kosa", ("magyosnika", "alias")))
+emb = [{"id": "sinelibri-2026-embargo", "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО", "source": "vlaikova"},
+       {"id": "sinelibri-2026-embargo-predstavyane-na-tvorchestvoto-na-zhoz",
+        "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО | представяне на творчеството на  Жозе Сарамаго", "source": "vlaikova"}]
+eix = FID.FilmIndex(emb, minted_ids={e["id"] for e in emb})
+check("ЕМБАРГО: the short title is the same Влайкова screening (curated alias)",
+      eix.resolve("СИНЕЛИБРИ 2026 – ЕМБАРГО", "vlaikova")[0], emb[1]["id"])
+check("…scoped to Влайкова", eix.resolve("СИНЕЛИБРИ 2026 – ЕМБАРГО", "odeon")[0], emb[0]["id"])
+kept, deep = S.drop_deep_vlinks({("f", "cc-sofia"): "https://www.cinemacity.bg/films/x",
+                                 ("f", "arena-mega"): "https://www.kinoarena.com/x"},
+                                {"cc-sofia": {"url": "u", "deep": "https://x/{date}"}, "arena-mega": {"url": "u"}})
+check("no VLINKS for a venue whose BOOKING has a dated deep page", (sorted(kept), deep),
+      ([("f", "arena-mega")], {"cc-sofia"}))
+check("BOOKING read from the data block", S.read_const_obj('x\nconst BOOKING = {"a":{"deep":"d"}};\n', "BOOKING"),
+      {"a": {"deep": "d"}})
 
 print()
 if fails:

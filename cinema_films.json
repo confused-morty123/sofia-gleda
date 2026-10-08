@@ -98,17 +98,6 @@
   ],
   "source": "g8"
  },
- "magyosnika-ot-kremal": {
-  "id": "magyosnika-ot-kremal",
-  "bg": "Магьосника от Кремъл",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#331B24",
-   "#5F2745"
-  ],
-  "source": "g8"
- },
  "v-bryuzh": {
   "id": "v-bryuzh",
   "bg": "В Брюж",
@@ -219,17 +208,6 @@
   ],
   "source": "vlaikova"
  },
- "sinelibri-2026-embargo": {
-  "id": "sinelibri-2026-embargo",
-  "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B331F",
-   "#275F3A"
-  ],
-  "source": "vlaikova"
- },
  "sinelibri-2026-pepel": {
   "id": "sinelibri-2026-pepel",
   "bg": "СИНЕЛИБРИ 2026 – ПЕПЕЛ",
@@ -249,17 +227,6 @@
   "g": [
    "#331B24",
    "#5F2745"
-  ],
-  "source": "vlaikova"
- },
- "kinoklasiki-kosa-1979": {
-  "id": "kinoklasiki-kosa-1979",
-  "bg": "КИНОКЛАСИКИ: КОСА | 1979 |",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#331B1B",
-   "#5F2727"
   ],
   "source": "vlaikova"
  },
@@ -284,28 +251,6 @@
    "#275F57"
   ],
   "source": "vlaikova"
- },
- "alehandro-hodorovski-kartitsata-1970": {
-  "id": "alehandro-hodorovski-kartitsata-1970",
-  "bg": "Алехандро Ходоровски: Къртицата (1970)",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B3330",
-   "#275F57"
-  ],
-  "source": "lumiere"
- },
- "alehandro-hodorovski-sveshtenata-planina-1973": {
-  "id": "alehandro-hodorovski-sveshtenata-planina-1973",
-  "bg": "Алехандро Ходоровски: Свещената планина (1973)",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B331F",
-   "#275F3A"
-  ],
-  "source": "lumiere"
  },
  "akira-kurosava-sanishta-1990": {
   "id": "akira-kurosava-sanishta-1990",
@@ -627,21 +572,6 @@
   ],
   "source": "cc-sofia",
   "runtime": 86,
-  "year": 2026
- },
- "hroniki-za-neudobnata-istina": {
-  "id": "hroniki-za-neudobnata-istina",
-  "bg": "Хроники за неудобната истина",
-  "en": "",
-  "genres": [
-   "Документален"
-  ],
-  "g": [
-   "#1B331F",
-   "#275F3A"
-  ],
-  "source": "cc-sofia",
-  "runtime": 91,
   "year": 2026
  },
  "always-lalisa": {
