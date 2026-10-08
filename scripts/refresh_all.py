@@ -35,6 +35,7 @@ STEPS = [
     ("theatre shows",   "inject_shows.py",           []),
     ("film posters",    "fetch_tmdb.py",             []),
     ("theatre posters", "fetch_theatre_posters.py",  []),
+    ("translations",    "translate.py",              []),    # auto-translate BG-only syn/titles -> EN cache
     ("inline posters",  "inject_data.py",            []),
 ]
 

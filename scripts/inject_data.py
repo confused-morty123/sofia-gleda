@@ -4,6 +4,8 @@
   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"}  (from tmdb_films.json)
   SHOWART: theatre show id -> full poster URL                          (from theatre_posters.json)
   POSTERS: id -> full image URL (film_links_posters.json + film_info img fallback)
+  SYN_EN:  id -> English synopsis (from translations.json cache, for BG-only items)
+  TITLE_EN: id -> English title   (from translations.json cache, for BG-only items)
 
 Priority (highest first):
   1. TMDB poster (TMDBART[id].p)
@@ -31,6 +33,9 @@ TMDB_JSON = ROOT / "tmdb_films.json"
 SHOW_JSON = ROOT / "theatre_posters.json"
 LINKS_JSON = ROOT / "film_links_posters.json"
 FILM_INFO_JSON = ROOT / "film_info.json"
+CACHE_FILE = ROOT / "translations.json"
+SYN_EN_JSON = ROOT / "translations_syn_en.json"
+TITLE_EN_JSON = ROOT / "translations_title_en.json"
 
 tmdb = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {}
 shows = json.load(open(SHOW_JSON, encoding="utf-8")) if SHOW_JSON.exists() else {}
@@ -65,6 +70,74 @@ if FILM_INFO_JSON.exists():
         filminfo = {k: v for k, v in json.load(open(FILM_INFO_JSON, encoding="utf-8")).items() if v}
     except Exception as e:
         print(f"  (could not read {FILM_INFO_JSON.name}: {e})")
+
+# Auto-translated English synopses and titles produced by translate.py (Wave L2).
+# Always emitted (possibly empty) so the UI const is always defined.
+# translate.py writes sidecar files derived from translations.json; if they are
+# absent (no translation step ran this cycle), fall back to building the maps
+# directly from the cache so the output stays stable across partial runs.
+_syn_en: dict = {}
+_title_en: dict = {}
+
+if SYN_EN_JSON.exists() and TITLE_EN_JSON.exists():
+    try:
+        _syn_en   = json.load(open(SYN_EN_JSON, encoding="utf-8"))
+        _title_en = json.load(open(TITLE_EN_JSON, encoding="utf-8"))
+    except Exception as e:
+        print(f"  (could not read translation sidecar files: {e})")
+elif CACHE_FILE.exists():
+    # Reconstruct from cache — used when inject_data runs without translate.py
+    # having run first in this cycle (e.g. a partial refresh or DEEPL_AUTH_KEY absent).
+    import hashlib, unicodedata as _uc
+
+    def _ck(text):
+        t = " ".join(_uc.normalize("NFC", text).split())
+        return hashlib.sha1(t.encode("utf-8")).hexdigest()
+
+    try:
+        _cache = json.load(open(CACHE_FILE, encoding="utf-8"))
+
+        # Re-read FILMS and SHOWS from index.html for the id->text mapping
+        _src = HTML.read_text(encoding="utf-8")
+        import re as _re
+        _films_m = _re.search(r"const FILMS=(\[.*?\]);", _src, flags=_re.S)
+        _shows_m = _re.search(r"const SHOWS=(\[.*?\]);", _src, flags=_re.S)
+        _films = json.loads(_films_m.group(1)) if _films_m else []
+        _shows = json.loads(_shows_m.group(1)) if _shows_m else []
+        _tmdb_raw = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {}
+        _fi_raw   = filminfo   # already loaded above
+
+        for _f in _films:
+            _fid = _f["id"]
+            _has_syn_en = (bool(_f.get("synEn"))
+                           or bool((_tmdb_raw.get(_fid) or {}).get("ov"))
+                           or bool((_fi_raw.get(_fid) or {}).get("synEn")))
+            if not _has_syn_en:
+                _src_text = _f.get("synBg") or (_fi_raw.get(_fid) or {}).get("synBg") or ""
+                if _src_text:
+                    _entry = _cache.get(_ck(_src_text))
+                    if _entry:
+                        _syn_en[_fid] = _entry["en"]
+            _has_en = bool(_f.get("en")) or bool((_tmdb_raw.get(_fid) or {}).get("en"))
+            if not _has_en:
+                _bg = _f.get("bg") or ""
+                if _bg:
+                    _entry = _cache.get(_ck(_bg))
+                    if _entry:
+                        _title_en[_fid] = _entry["en"]
+
+        for _s in _shows:
+            _sid = _s["id"]
+            if not _s.get("synEn") and _s.get("synBg"):
+                _entry = _cache.get(_ck(_s["synBg"]))
+                if _entry:
+                    _syn_en[_sid] = _entry["en"]
+            if not _s.get("titleEn") and _s.get("title"):
+                _entry = _cache.get(_ck(_s["title"]))
+                if _entry:
+                    _title_en[_sid] = _entry["en"]
+    except Exception as e:
+        print(f"  (could not build translation maps from cache: {e})")
 
 # Films TMDB cannot match keep their own programme-page image (og:image), harvested
 # into film_links_posters.json. These are full URLs and go into POSTERS, which
@@ -137,6 +210,11 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
     '            pick up a separately harvested, unverifiable image.\n'
     '   FILMINFO: film id -> {syn, dir, cast, src} from the film\'s own programme page,\n'
     '            for films the seed data and TMDB leave without details.\n'
+    '   SYN_EN:  id -> English synopsis auto-translated from Bulgarian by translate.py\n'
+    '            (Wave L2). Only present for ids with no English synopsis from any\n'
+    '            other source. Always emitted (possibly empty).\n'
+    '   TITLE_EN: id -> English title auto-translated from Bulgarian. Only present for\n'
+    '            ids with no English title from any other source. Always emitted.\n'
     '   Missing ids keep the generated SVG artwork. */')
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
@@ -146,6 +224,8 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     + "const SHOWART = " + json.dumps(showart, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const SHOWALIAS = " + json.dumps(alias, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const FILMINFO = " + json.dumps(filminfo, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    + "const SYN_EN = " + json.dumps(_syn_en, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    + "const TITLE_EN = " + json.dumps(_title_en, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -158,7 +238,7 @@ assert found, "marker block not found in " + str(HTML)
 # destroyed on every run. That is exactly how `const PRICES` was lost in the
 # 2026-09-16 refresh and every film became unclickable. Refuse to run rather
 # than silently delete app code again.
-GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO"}
+GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO", "SYN_EN", "TITLE_EN"}
 declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
 stray = declared - GENERATED
 if stray:
@@ -176,3 +256,4 @@ print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' 
       f"({len(posters_override) - _n_fi_img_in_posters} og:image + {_n_fi_img_in_posters} film_info-img fallbacks), "
       f"SHOWART: {len(showart)} shows, SHOWALIAS: {len(alias)} mirrored events"
       + (" (" + ", ".join(f"{k}->{v}" for k, v in alias.items()) + ")" if alias else ""))
+print(f"  SYN_EN: {len(_syn_en)} ids, TITLE_EN: {len(_title_en)} ids (auto-translated)")

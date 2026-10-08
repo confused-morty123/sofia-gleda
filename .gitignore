@@ -20,3 +20,6 @@ changes.json
 .claude/
 index.dev.html
 index.test.html
+translations_syn_en.json
+translations_title_en.json
+index.*.html

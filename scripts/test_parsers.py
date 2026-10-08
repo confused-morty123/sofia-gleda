@@ -619,6 +619,203 @@ try:
 finally:
     TMDB.api = _orig_api4
 
+# ================================================= translate.py (mocked HTTP)
+print("translate.py — offline tests with mocked HTTP")
+import json as _j, os as _os, tempfile as _tf, importlib.util as _ilu, types as _ty, hashlib as _hs, unicodedata as _ucd
+
+# Import translate.py without executing __main__
+_tr_path = pathlib.Path(__file__).resolve().parent / "translate.py"
+_tr_spec = _ilu.spec_from_file_location("translate", _tr_path)
+_tr = _ilu.module_from_spec(_tr_spec)
+# Temporarily suppress main() execution by patching __name__
+_tr_spec.loader.exec_module(_tr)   # runs the module but not __main__ guard
+
+# ---- helper: normalised cache key (mirrors translate.py) ----
+def _ck(text):
+    t = " ".join(_ucd.normalize("NFC", text).split())
+    return _hs.sha1(t.encode("utf-8")).hexdigest()
+
+# ---- 1. batching: ≤50 texts per request ----
+print("  batching")
+_batches_sent = []
+
+def _mock_translate_batch(texts, kind):
+    _batches_sent.append(len(texts))
+    return [f"EN:{t}" for t in texts], True
+
+_orig_tb = _tr.translate_batch
+_tr.translate_batch = _mock_translate_batch
+
+with _tf.TemporaryDirectory() as _td:
+    _td = pathlib.Path(_td)
+    _cache_path = _td / "translations.json"
+    _orig_cache = _tr.CACHE_FILE
+    _tr.CACHE_FILE = _cache_path
+    # 55 unique texts — should produce 2 batches (50 + 5)
+    _work = [(f"id{i}", f"Текст номер {i}") for i in range(55)]
+    ok = _tr.translate_missing(_work, "syn", {})
+    check("batching: ≤50 per request (batch 1 size)",
+          _batches_sent[0] <= 50, True)
+    check("batching: second batch covers remainder",
+          len(_batches_sent) == 2 and _batches_sent[1] == 5, True)
+    _tr.CACHE_FILE = _orig_cache
+
+_tr.translate_batch = _orig_tb
+
+# ---- 2. cache hit: no request made for already-cached text ----
+print("  cache hit")
+_requests_made = []
+
+def _mock_tb_count(texts, kind):
+    _requests_made.append(texts)
+    return [f"EN:{t}" for t in texts], True
+
+_tr.translate_batch = _mock_tb_count
+
+_pre_cache = {_ck("Текст вече в кеша"): {"src": "Текст вече", "en": "Text already cached",
+                                           "kind": "syn", "at": "2026-01-01"}}
+with _tf.TemporaryDirectory() as _td2:
+    _td2 = pathlib.Path(_td2)
+    _cache_path2 = _td2 / "translations.json"
+    _orig_cache2 = _tr.CACHE_FILE
+    _tr.CACHE_FILE = _cache_path2
+    # One text already in cache, one new
+    _work2 = [("id-cached", "Текст вече в кеша"), ("id-new", "Нов текст")]
+    _tr.translate_missing(_work2, "syn", _pre_cache)
+    # Only the new text should have been sent
+    _sent_texts = [t for batch in _requests_made for t in batch]
+    check("cache hit: cached text not re-sent",
+          "Текст вече в кеша" not in _sent_texts, True)
+    check("cache hit: new text was sent",
+          "Нов текст" in _sent_texts, True)
+    _tr.CACHE_FILE = _orig_cache2
+
+_tr.translate_batch = _orig_tb
+
+# ---- 3. only-missing-English selection rules ----
+print("  selection rules")
+# Film WITH synEn → not selected
+_films_sel = [
+    {"id": "f-has-en",   "synEn": "Already in English", "synBg": "Има английски", "bg": "Заглавие", "en": "Title"},
+    {"id": "f-needs-en", "synBg": "Трябва превод", "bg": "Заглавие Ново"},   # no en title → needs translation
+    {"id": "f-tmdb-ov",  "synBg": "TMDB има преглед", "bg": "Заглавие Tmdb"},
+]
+_tmdb_sel = {"f-tmdb-ov": {"ov": "English from TMDB", "en": "Title from TMDB"}}
+_fi_sel = {}
+
+_syn_list, _title_list = _tr.films_needing_translation(_films_sel, _tmdb_sel, _fi_sel)
+_syn_ids = [fid for fid, _ in _syn_list]
+_title_ids = [fid for fid, _ in _title_list]
+check("selection: film with synEn not selected for syn",
+      "f-has-en" not in _syn_ids, True)
+check("selection: film without synEn selected for syn",
+      "f-needs-en" in _syn_ids, True)
+check("selection: film with TMDB ov not selected for syn",
+      "f-tmdb-ov" not in _syn_ids, True)
+check("selection: film with en title not selected for title",
+      "f-has-en" not in _title_ids, True)
+check("selection: film with TMDB en title not selected for title",
+      "f-tmdb-ov" not in _title_ids, True)
+check("selection: film without en title IS selected",
+      "f-needs-en" in _title_ids, True)
+
+# Show selection
+_shows_sel = [
+    {"id": "s-has-en",   "synEn": "Already EN", "synBg": "Има", "title": "Заглавие", "titleEn": "Title EN"},
+    {"id": "s-needs-en", "synBg": "Трябва превод", "title": "Заглавие 2"},
+]
+_show_syn, _show_title = _tr.shows_needing_translation(_shows_sel)
+_show_syn_ids = [sid for sid, _ in _show_syn]
+_show_title_ids = [sid for sid, _ in _show_title]
+check("selection: show with synEn not selected",
+      "s-has-en" not in _show_syn_ids, True)
+check("selection: show without synEn selected",
+      "s-needs-en" in _show_syn_ids, True)
+check("selection: show with titleEn not selected",
+      "s-has-en" not in _show_title_ids, True)
+check("selection: show without titleEn selected",
+      "s-needs-en" in _show_title_ids, True)
+
+# ---- 4. key absent → skip cleanly (exit 0) ----
+print("  key absent → skip")
+_orig_key = _tr.DEEPL_KEY
+_tr.DEEPL_KEY = ""
+import io as _io
+_buf = _io.StringIO()
+import sys as _sys
+_old_stdout = _sys.stdout
+_sys.stdout = _buf
+_rc = _tr.main()
+_sys.stdout = _old_stdout
+_out = _buf.getvalue()
+check("key absent: main() returns 0",
+      _rc, 0)
+check("key absent: prints skip message",
+      "DEEPL_AUTH_KEY not set" in _out, True)
+_tr.DEEPL_KEY = _orig_key
+
+# ---- 5. HTTP 456 quota → stop gracefully keeping partial results ----
+print("  456 quota → partial stop")
+_quota_calls = [0]
+
+def _mock_tb_quota(texts, kind):
+    _quota_calls[0] += 1
+    if _quota_calls[0] == 1:
+        # First batch succeeds — returns one EN result per input text
+        return [f"EN:{t}" for t in texts], True
+    # Second batch: quota hit
+    return [], False
+
+_tr.translate_batch = _mock_tb_quota
+
+with _tf.TemporaryDirectory() as _td3:
+    _td3 = pathlib.Path(_td3)
+    _cache_quota = _td3 / "translations.json"
+    _orig_c3 = _tr.CACHE_FILE
+    _tr.CACHE_FILE = _cache_quota
+    _partial_cache = {}
+    # 51 unique texts — forces two batches (50 + 1); second call triggers quota
+    _work3 = [(f"id-q{i}", f"Текст {i} за тест") for i in range(51)]
+    _ok3 = _tr.translate_missing(_work3, "syn", _partial_cache)
+    check("quota stop: translate_missing returns False on quota",
+          not _ok3, True)
+    check("quota stop: first batch results kept in cache",
+          len(_partial_cache) == 50, True)
+    _tr.CACHE_FILE = _orig_c3
+
+_tr.translate_batch = _orig_tb
+
+# ---- 6. inject_data mapping: cached translation reaches SYN_EN / TITLE_EN ----
+print("  inject_data mapping")
+_films_map = [
+    {"id": "f-translated", "synBg": "Преведен текст", "bg": "Преведено заглавие"},
+    {"id": "f-with-en",    "synEn": "Has English", "synBg": "Има БГ", "bg": "Заглавие", "en": "Title"},
+]
+_shows_map = [
+    {"id": "s-translated", "synBg": "Преведено шоу", "title": "Шоу заглавие"},
+    {"id": "s-has-en",     "synEn": "Has EN", "synBg": "Шоу БГ", "title": "Шоу", "titleEn": "Show EN"},
+]
+_cache_map = {
+    _ck("Преведен текст"):     {"en": "Translated text",  "kind": "syn"},
+    _ck("Преведено заглавие"): {"en": "Translated title", "kind": "title"},
+    _ck("Преведено шоу"):      {"en": "Translated show",  "kind": "syn"},
+    _ck("Шоу заглавие"):       {"en": "Show title EN",    "kind": "title"},
+}
+_syn_en_out, _title_en_out = _tr.build_mappings(
+    _films_map, _shows_map, {}, {}, _cache_map)
+check("mapping: translated film syn appears in SYN_EN",
+      _syn_en_out.get("f-translated") == "Translated text", True)
+check("mapping: translated film title appears in TITLE_EN",
+      _title_en_out.get("f-translated") == "Translated title", True)
+check("mapping: film WITH English syn not in SYN_EN",
+      "f-with-en" not in _syn_en_out, True)
+check("mapping: translated show syn in SYN_EN",
+      _syn_en_out.get("s-translated") == "Translated show", True)
+check("mapping: translated show title in TITLE_EN",
+      _title_en_out.get("s-translated") == "Show title EN", True)
+check("mapping: show with titleEn not in TITLE_EN",
+      "s-has-en" not in _title_en_out, True)
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

@@ -271,6 +271,47 @@ if isinstance(snap, dict):
             note(f"{len(out)} showtime dates fall outside the snapshot window "
                  f"({out[0]}..{out[-1]}) and will not be shown")
 
+# ------------------------------------------- 5a2. SYN_EN / TITLE_EN translation maps
+def _const_obj_tr(name):
+    m = re.search(r"^const %s\s*=\s*(\{.*?\});\s*$" % name, js, flags=re.M)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(1))
+    except Exception:
+        return None
+
+def _all_ids():
+    """Union of all known film and show ids."""
+    ids = set()
+    if data.get("FILMS"):
+        ids |= {f["id"] for f in data["FILMS"]}
+    if data.get("SHOWS"):
+        ids |= {s["id"] for s in data["SHOWS"]}
+    return ids
+
+_known_ids = _all_ids()
+
+for _map_name in ("SYN_EN", "TITLE_EN"):
+    _m = _const_obj_tr(_map_name)
+    if _m is None:
+        fail(f"{_map_name} is missing from the SOFIA-POSTERS block — inject_data.py may be outdated")
+        continue
+    if not isinstance(_m, dict):
+        fail(f"{_map_name} is not a JSON object")
+        continue
+    _bad_ids = sorted(k for k in _m if k not in _known_ids)
+    if _bad_ids:
+        fail(f"{_map_name} contains unknown ids: {', '.join(_bad_ids[:6])}")
+    _empty_vals = [k for k, v in _m.items() if not v]
+    if _empty_vals:
+        fail(f"{_map_name} has empty values: {', '.join(_empty_vals[:6])}")
+    _cyrillic_vals = [k for k, v in _m.items()
+                      if isinstance(v, str) and re.search(r"[Ѐ-ӿ]", v)]
+    if _cyrillic_vals:
+        fail(f"{_map_name} contains Cyrillic (untranslated) values: "
+             + ", ".join(_cyrillic_vals[:6]))
+
 # ------------------------------------------- 5b. posters point at real artwork
 try:
     sys.path.insert(0, str(ROOT / "scripts"))

@@ -57,6 +57,10 @@ jobs:
           # Optional: genuine IMDb ratings via OMDb. Absent => ratings inherited
           # from the previous run (never fabricated). See SETUP.md.
           OMDB_TOKEN: ${{ secrets.OMDB_TOKEN }}
+          # Optional: DeepL translation key for auto-translating Bulgarian-only
+          # synopses and titles. Absent => translations step skips cleanly,
+          # previous translations.json cache is kept. See SETUP.md.
+          DEEPL_AUTH_KEY: ${{ secrets.DEEPL_AUTH_KEY }}
         run: python3 scripts/refresh_all.py
 
       - name: Commit the refreshed data
@@ -69,7 +73,7 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json build_report.json; do
+          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json build_report.json translations.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage any new or updated poster images (re-hosted from venue websites).
