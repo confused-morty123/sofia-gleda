@@ -1,0 +1,56 @@
+{
+ "_about": "Curated title variants that are verified to be ONE film. Read by scripts/film_identity.py. Each group lists every spelling seen on an official or aggregator programme; matching is direction-agnostic (any title in a group resolves to the group's film). 'film' pins the catalogue id; 'venues' (optional) limits the group to those venues. Add a group only after checking the venue's own film page (runtime, year, poster). Never add look-alikes that are different films ('Аватар' vs 'Аватар: Огън и пепел', 'Падане' vs 'Падане 2').",
+ "groups": [
+  {
+   "titles": [
+    "Падане 2",
+    "Падане 2: Мъртва точка"
+   ],
+   "film": "padane-2",
+   "reason": "Кино Арена prints the short title; Cinema City and Cine Grand print 'Падане 2: Мъртва точка' (Fall 2: Deadpoint, 2026, 97–98 min). Verified 2026-10-08."
+  },
+  {
+   "titles": [
+    "Колите",
+    "Колите: 20 години от премиерата"
+   ],
+   "film": "kolite",
+   "reason": "Cine Grand lists the 20th-anniversary re-release of Cars (2006) as 'КОЛИТЕ' (116 min, imdb tt0317219); the catalogue carries the anniversary title. Verified 2026-10-08."
+  },
+  {
+   "titles": [
+    "Капитан Съблезъб и графинята на Грел",
+    "Капитан Саблезъб и графинята на Грел"
+   ],
+   "film": "sablezab",
+   "reason": "Same film (Captain Sabertooth and the Countess of Gral); the distributor spells the name both ways. Verified 2026-10-08."
+  },
+  {
+   "titles": [
+    "Акира Куросава: Сънища (1990)",
+    "Сънища"
+   ],
+   "film": "akira-kurosava-sanishta-1990",
+   "venues": [
+    "lumiere"
+   ],
+   "reason": "НДК lists the KinoCult screening as 'Акира Куросава: Сънища (1990)', KinoCult's own programme as 'Сънища' (Dreams, 1990) — same hall, date and time. Scoped to Люмиер: a different film called 'Сънища' elsewhere must not inherit this."
+  },
+  {
+   "titles": [
+    "Хроники за неудобната истина",
+    "Хроники за неудобната истина – истината за „Българският Чернобил“"
+   ],
+   "film": "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno",
+   "reason": "Same documentary: Одеон's film page (bnf.bg/bg/odeon/movies/6062: 2026, 90 min, dir. Калоян Николов, Chernobyl 1986) and Дом на киното's page (2026, 90', dir. Калоян Николов, premiere 16.10.2026); Cinema City lists the short title for the same premiere. Verified 2026-10-08."
+  },
+  {
+   "titles": [
+    "Магьосника от Кремъл",
+    "Магьосникът от Кремъл"
+   ],
+   "film": "magyosnika",
+   "reason": "programata/G8 spell it without the 'т'; programata's page for that spelling is The Wizard of the Kremlin (2025, dir. Оливие Асаяс) — the catalogue film. Verified 2026-10-08."
+  }
+ ]
+}

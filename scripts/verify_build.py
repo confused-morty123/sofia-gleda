@@ -270,6 +270,48 @@ if isinstance(snap, dict):
         if out:
             note(f"{len(out)} showtime dates fall outside the snapshot window "
                  f"({out[0]}..{out[-1]}) and will not be shown")
+    # The scraper advances window.from to today and drops every past row; a row
+    # dated before it is a stale listing that survived a merge.
+    if w.get("from"):
+        past_st = [r for r in (data["SHOWTIMES"] or []) if len(r) > 2 and r[2] < w["from"]]
+        past_pf = [p for p in (data["PERFORMANCES"] or []) if len(p) > 1 and p[1] < w["from"]]
+        if past_st or past_pf:
+            ex = [f"{r[0]}@{r[1]} {r[2]}" for r in past_st[:3]] + [f"{p[0]} {p[1]}" for p in past_pf[:3]]
+            fail(f"{len(past_st)} showtime(s) and {len(past_pf)} performance(s) are dated before "
+                 f"the window opens ({w['from']}), e.g. {', '.join(ex)}")
+
+# ---------------------------------------- 4c. PRELIM_FROM — which listings are preliminary
+# {venueId: "YYYY-MM-DD"}: every listing of that venue dated on/after the date is
+# shown as preliminary (the venue's own programme does not cover it yet).
+_pm = re.search(r"^const PRELIM_FROM\s*=\s*(.*?);\s*$", js, flags=re.M)
+if _pm is None:
+    note("PRELIM_FROM is not declared — no listing will be marked preliminary")
+else:
+    try:
+        _prelim = json.loads(_pm.group(1))
+    except Exception:
+        _prelim = None
+    if not isinstance(_prelim, dict):
+        fail("PRELIM_FROM is not a JSON object of venue id -> \"YYYY-MM-DD\"")
+    else:
+        _venues = ({c.get("id") for c in (data["CINEMAS"] or [])}
+                   | {t.get("id") for t in (data["THEATRES"] or [])})
+        _unknown = sorted(k for k in _prelim if k not in _venues)
+        if _unknown:
+            fail(f"PRELIM_FROM names unknown venues: {', '.join(_unknown[:6])}")
+
+        def _iso_ok(v):
+            if not (isinstance(v, str) and re.fullmatch(r"\d{4}-\d\d-\d\d", v)):
+                return False
+            try:
+                import datetime as _dt
+                _dt.date.fromisoformat(v)
+                return True
+            except ValueError:
+                return False
+        _bad = sorted(k for k, v in _prelim.items() if not _iso_ok(v))
+        if _bad:
+            fail(f"PRELIM_FROM has non-ISO dates for: {', '.join(_bad[:6])}")
 
 # ------------------------------------------- 5a2. SYN_EN / TITLE_EN translation maps
 def _const_obj_tr(name):
