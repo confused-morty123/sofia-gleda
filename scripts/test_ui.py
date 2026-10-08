@@ -19,6 +19,7 @@ Screenshots go to /tmp/sg-shots/<wave>/<name>.png (viewport only).
 import sys
 import os
 import re
+import json
 import datetime
 import subprocess
 import pathlib
@@ -26,10 +27,13 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 # ── Fixture ref ────────────────────────────────────────────────────────────────
-# Commit whose listings start on 2026-10-07 (the date all checks were written against).
-# Re-pin this when the suite needs to be updated for a new baseline date:
-#   git log --oneline | head to find the commit, then update the ref and rebuild the fixture.
-FIXTURE_REF = "3354241"
+# Commit used to build index.test.html for the fixture run.
+# The frozen clock date is derived from the built fixture's SNAPSHOT.window.from at 14:45
+# Europe/Sofia — the same DST-aware code path used in SOFIA_HTML mode.
+# Re-pin this when the suite needs to be updated for a new production baseline:
+#   git log --oneline | head  → find the new commit hash, update FIXTURE_REF below,
+#   then re-run the suite once so it rebuilds index.test.html from the new ref.
+FIXTURE_REF = "d3e9ff1"
 
 webapp_root = pathlib.Path(__file__).parent.parent.resolve()
 
@@ -76,27 +80,61 @@ if _html_env_raw:
     CLOCK_TODAY_ISO = _m.group(1)
     FIXED_1445 = _sofia_1445_epoch_ms(CLOCK_TODAY_ISO)
 else:
-    # Default mode: use fixture commit — will build index.test.html in main()
+    # Default (fixture) mode — index.test.html will be built in main().
+    # Clock is derived from that file's SNAPSHOT.window.from; use None as sentinel.
     html_env = "index.test.html"
-    CLOCK_TODAY_ISO = "2026-10-07"
-    FIXED_1445 = 1791373500000  # 2026-10-07 14:45 Europe/Sofia
+    CLOCK_TODAY_ISO = None   # resolved after fixture build in main()
+    FIXED_1445 = None        # resolved after fixture build in main()
 
-# Derived date constants (computed once at import time from the clock date)
-CLOCK_WEEK_END = _next_sunday(CLOCK_TODAY_ISO)  # the Sunday that ends this week
-CLOCK_TOMORROW_ISO = (
-    datetime.date.fromisoformat(CLOCK_TODAY_ISO) + datetime.timedelta(days=1)
-).strftime("%Y-%m-%d")
-_clock_d = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
-CLOCK_WEEK_FRI = (
-    _clock_d + datetime.timedelta(days=(4 - _clock_d.weekday()) % 7)
-).strftime("%Y-%m-%d")  # Friday of this week (same day if today is Friday)
-FIXED_TOMORROW_2350 = FIXED_1445 + 9 * 3600 * 1000  # same date at 23:50 Sofia
 
-CLOCK = """
+def _derive_clock_globals(date_str: str):
+    """Compute and return the full set of clock-derived globals from a YYYY-MM-DD date."""
+    fixed = _sofia_1445_epoch_ms(date_str)
+    week_end = _next_sunday(date_str)
+    tomorrow = (
+        datetime.date.fromisoformat(date_str) + datetime.timedelta(days=1)
+    ).strftime("%Y-%m-%d")
+    d = datetime.date.fromisoformat(date_str)
+    week_fri = (
+        d + datetime.timedelta(days=(4 - d.weekday()) % 7)
+    ).strftime("%Y-%m-%d")
+    tomorrow_2350 = fixed + 9 * 3600 * 1000
+    clock_js = """
 (() => { const _D = Date, F = %d;
   class FakeDate extends _D { constructor(...a){ a.length? super(...a): super(F); } static now(){ return F; } }
   window.Date = FakeDate; })();
-""" % FIXED_1445
+""" % fixed
+    return fixed, week_end, tomorrow, week_fri, tomorrow_2350, clock_js
+
+
+if CLOCK_TODAY_ISO is not None:
+    # SOFIA_HTML mode: derive at import time
+    (FIXED_1445, CLOCK_WEEK_END, CLOCK_TOMORROW_ISO,
+     CLOCK_WEEK_FRI, FIXED_TOMORROW_2350, CLOCK) = _derive_clock_globals(CLOCK_TODAY_ISO)
+else:
+    # Fixture mode: placeholders — main() will call _init_fixture_clock() before wave dispatch
+    CLOCK_WEEK_END = None
+    CLOCK_TOMORROW_ISO = None
+    CLOCK_WEEK_FRI = None
+    FIXED_TOMORROW_2350 = None
+    CLOCK = None
+
+
+def _init_fixture_clock():
+    """Parse SNAPSHOT.window.from from the built fixture and update module globals.
+
+    Called by main() immediately after building index.test.html, before any wave runs.
+    """
+    global CLOCK_TODAY_ISO, FIXED_1445, CLOCK_WEEK_END, CLOCK_TOMORROW_ISO
+    global CLOCK_WEEK_FRI, FIXED_TOMORROW_2350, CLOCK
+    fixture_path = webapp_root / html_env
+    snap_text = fixture_path.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r'"window"\s*:\s*\{[^}]*"from"\s*:\s*"(\d{4}-\d{2}-\d{2})"', snap_text)
+    if not m:
+        sys.exit(f"Cannot parse SNAPSHOT.window.from in {html_env}")
+    CLOCK_TODAY_ISO = m.group(1)
+    (FIXED_1445, CLOCK_WEEK_END, CLOCK_TOMORROW_ISO,
+     CLOCK_WEEK_FRI, FIXED_TOMORROW_2350, CLOCK) = _derive_clock_globals(CLOCK_TODAY_ISO)
 
 html_path = webapp_root / html_env
 HTML = html_path.as_uri()
@@ -2554,9 +2592,22 @@ def wave_d1(browser):
         for name in _sarceto_d1_names:
             skip(name, "sarceto-na-zveyara not in this build — re-pin FIXTURE_REF or run on fixture")
     else:
+        # Compute expected cinema count from SHOWTIMES: distinct venues that have at
+        # least one upcoming row for sarceto-na-zveyara within the listing window.
+        expected_sarceto_venues = page.evaluate(f"""() => {{
+            const today = "{CLOCK_TODAY_ISO}";
+            if (typeof SHOWTIMES === 'undefined') return 0;
+            const venues = new Set(
+                SHOWTIMES
+                    .filter(r => r[0] === 'sarceto-na-zveyara' && r[2] >= today)
+                    .map(r => r[1])
+            );
+            return venues.size;
+        }}""")
+        actual_venues = sarceto_bg.get("venues", [])
         check("d1_sarceto_7_cinema_rows",
-              len(sarceto_bg.get("venues", [])) == 7,
-              f"venue rows found: {sarceto_bg.get('venues', [])}")
+              len(actual_venues) == expected_sarceto_venues,
+              f"venue rows found: {len(actual_venues)}, expected from SHOWTIMES: {expected_sarceto_venues}")
         vlaikova_link_ok = any(
             "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
             for lnk in sarceto_bg.get("vlaikovaLinks", [])
@@ -2566,8 +2617,8 @@ def wave_d1(browser):
               f"vlaikova links: {sarceto_bg.get('vlaikovaLinks', [])}")
         buy_labels = sarceto_bg.get("buyLabels", [])
         unique_labels = sarceto_bg.get("uniqueLabels", [])
-        check("d1_sarceto_buybox_7", len(buy_labels) == 7,
-              f"buy box items: {len(buy_labels)} — {buy_labels[:4]}")
+        check("d1_sarceto_buybox_7", len(buy_labels) == expected_sarceto_venues,
+              f"buy box items: {len(buy_labels)}, expected from SHOWTIMES: {expected_sarceto_venues} — {buy_labels[:4]}")
         check("d1_sarceto_buybox_distinct", len(unique_labels) == len(buy_labels),
               f"duplicates in buy labels: {buy_labels}")
         syn_text_bg = sarceto_bg.get("synText", "")
@@ -2920,6 +2971,7 @@ def wave_d1(browser):
                 const fid = "{test_film}";
                 if (typeof FILMINFO === "object" && FILMINFO) delete FILMINFO[fid];
                 if (typeof TMDBART === "object" && TMDBART) delete TMDBART[fid];
+                if (typeof SYN_EN === "object" && SYN_EN) delete SYN_EN[fid];
                 const f = filmById[fid];
                 if (f) {{ f.synBg = ""; f.synEn = ""; f.director = ""; f.cast = ""; }}
             }}""")
@@ -2973,6 +3025,7 @@ def wave_d1(browser):
             const fid = "{noinfo_film_id}";
             if (typeof FILMINFO === "object" && FILMINFO) delete FILMINFO[fid];
             if (typeof TMDBART === "object" && TMDBART) delete TMDBART[fid];
+            if (typeof SYN_EN === "object" && SYN_EN) delete SYN_EN[fid];
             const f = filmById[fid];
             if (f) {{ f.synBg = ""; f.synEn = ""; f.director = ""; f.cast = ""; }}
         }}""")
@@ -6327,6 +6380,32 @@ def wave_l(browser):
             }}
         }}""")
 
+    def film_row_prelim(page, venue_id, iso):
+        """In the open film sheet, find the row for (venue_id, iso): the day group
+        whose heading is fmtDayDow(iso) and the .vrow whose venue name is that
+        cinema's (BG or EN). Returns {'prelim': bool} or {'err': why}, so a missing
+        row fails the caller instead of passing it."""
+        return page.evaluate(f"""() => {{
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {{err: 'no sheet'}};
+            if (typeof fmtDayDow !== 'function') return {{err: 'fmtDayDow not reachable'}};
+            const want = fmtDayDow('{iso}');
+            const group = Array.from(sheet.querySelectorAll('.dgroup')).find(g => {{
+                const h = g.querySelector('.dg-h');
+                return h && h.firstChild && h.firstChild.textContent.trim() === want;
+            }});
+            if (!group) return {{err: 'no day group headed ' + want}};
+            const c = CINEMAS.find(c => c.id === '{venue_id}');
+            if (!c) return {{err: 'unknown cinema {venue_id}'}};
+            const names = [c.name, c.nameEn].filter(Boolean);
+            const rows = Array.from(group.querySelectorAll('.vrow')).filter(r => {{
+                const l = r.querySelector('.vloc');
+                return l && l.firstChild && names.includes(l.firstChild.textContent.trim());
+            }});
+            if (!rows.length) return {{err: 'no row for {venue_id} on ' + want}};
+            return {{prelim: rows.some(r => r.querySelector('.prelim-tag') !== null)}};
+        }}""")
+
     def clear_prelim(page):
         page.evaluate("""() => {
             if (typeof PRELIM_FROM !== 'undefined') {
@@ -6363,7 +6442,17 @@ def wave_l(browser):
             skip("l6a_cinema_prelim_empty", "film not found")
             ctx.close()
         else:
-            # Inject PRELIM_FROM and open film sheet
+            # Save the page's real PRELIM_FROM before any test injection.
+            # The real map may contain 10-30 entries; clearing it before each injected
+            # check prevents stale real-data entries from polluting synthetic tests,
+            # and we restore it afterwards for the positive real-PRELIM_FROM checks.
+            real_prelim_from = page.evaluate("""() => {
+                if (typeof PRELIM_FROM === 'undefined') return {};
+                return Object.assign({}, PRELIM_FROM);
+            }""")
+
+            # Inject PRELIM_FROM={cin_id: date_late} and open film sheet
+            # (inject_prelim_and_open clears PRELIM_FROM first, then sets one entry)
             open_film_sheet(page, film_for_prelim)
             page.wait_for_timeout(500)
             inject_prelim_and_open(page, cin_id, date_late)
@@ -6400,28 +6489,47 @@ def wave_l(browser):
                       "a.time links exist in prelim sheet" if prelim_check["hasTimeLinks"]
                       else "NO a.time links in prelim sheet")
 
-            # Check early date rows don't have prelim
+            # Check early date rows don't have prelim.
+            # PRELIM_FROM is currently {cin_id: date_late}: rows at date_early are
+            # BEFORE the threshold, so no .prelim-tag must appear.
+            # Explicitly clear real-data entries to avoid pollution from other venues.
             early_film = page.evaluate(f"""() => {{
                 if (typeof SHOWTIMES === 'undefined') return null;
-                const st = SHOWTIMES.find(s => s[1] === '{cin_id}' && s[2] === '{date_early}');
+                // upcomingRows: a row whose times have all passed is not in the sheet
+                const st = upcomingRows(SHOWTIMES.filter(
+                    s => s[1] === '{cin_id}' && s[2] === '{date_early}'))[0];
                 return st ? st[0] : null;
             }}""")
-            if early_film and early_film != film_for_prelim:
+            if not early_film:
+                skip("l6a_cinema_prelim_no_early",
+                     f"no upcoming row at {cin_id} on {date_early}")
+            else:
                 close_sheet(page)
+                # Ensure ONLY the test threshold remains (no real-data entries).
+                page.evaluate(f"""() => {{
+                    if (typeof PRELIM_FROM !== 'undefined') {{
+                        Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+                        PRELIM_FROM['{cin_id}'] = '{date_late}';
+                    }}
+                }}""")
                 open_film_sheet(page, early_film)
                 page.wait_for_timeout(600)
-                early_check = page.evaluate("""() => {
-                    const sheet = document.querySelector('.sheet');
-                    if (!sheet) return {err: 'no sheet'};
-                    return {hasPrelimTag: sheet.querySelector('.prelim-tag') !== null};
-                }""")
-                if "err" not in early_check:
-                    check("l6a_cinema_prelim_no_early",
-                          not early_check["hasPrelimTag"],
-                          f"early date film {early_film}: prelim-tag present={early_check['hasPrelimTag']}")
+                # Scoped to the (cin_id, date_early) row: the film may also play on
+                # date_late, where a tag is expected.
+                early_check = film_row_prelim(page, cin_id, date_early)
+                check("l6a_cinema_prelim_no_early",
+                      "err" not in early_check and not early_check["prelim"],
+                      f"early film {early_film} at {cin_id} on {date_early}: {early_check}")
 
             # EN language check
             close_sheet(page)
+            # Restore {cin_id: date_late} for EN check
+            page.evaluate(f"""() => {{
+                if (typeof PRELIM_FROM !== 'undefined') {{
+                    Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+                    PRELIM_FROM['{cin_id}'] = '{date_late}';
+                }}
+            }}""")
             # Switch to EN and re-check
             page.evaluate("S.lang='en'; if(typeof render==='function') render();")
             page.wait_for_timeout(300)
@@ -6478,6 +6586,103 @@ def wave_l(browser):
                 check("l6a_cinema_prelim_empty",
                       not empty_check["hasTag"] and not empty_check["hasLegend"],
                       f"with PRELIM_FROM={{}}: tag={empty_check['hasTag']}, legend={empty_check['hasLegend']}")
+
+            # ── Real PRELIM_FROM positive checks ─────────────────────────────────
+            # Restore the real PRELIM_FROM and verify correct behaviour against
+            # the production data: for up to 3 venues with a threshold, a row
+            # ON/AFTER the threshold has a .prelim-tag and a row BEFORE it does not.
+            close_sheet(page)
+            # Switch back to BG
+            page.evaluate("S.lang='bg'; if(typeof render==='function') render();")
+            page.wait_for_timeout(200)
+            real_prelim_json = json.dumps(real_prelim_from)
+            page.evaluate(f"""() => {{
+                if (typeof PRELIM_FROM === 'undefined') return;
+                Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+                const restored = {real_prelim_json};
+                Object.assign(PRELIM_FROM, restored);
+            }}""")
+            print(f"  Restored PRELIM_FROM with {len(real_prelim_from)} entries")
+
+            # Find up to 3 venues from real_prelim_from that have showtimes both
+            # before and on/after their threshold in this build's window.
+            real_prelim_venues_to_test = page.evaluate(f"""() => {{
+                if (typeof PRELIM_FROM === 'undefined' || typeof SHOWTIMES === 'undefined') return [];
+                const today = "{CLOCK_TODAY_ISO}";
+                const results = [];
+                const shown = upcomingRows(SHOWTIMES);
+                for (const [vid, thresh] of Object.entries(PRELIM_FROM)) {{
+                    if (!CINEMAS.some(c => c.id === vid)) continue;  // theatres: L6b
+                    const before = shown.find(
+                        s => s[1] === vid && s[2] >= today && s[2] < thresh);
+                    const onOrAfter = shown.find(
+                        s => s[1] === vid && s[2] >= thresh);
+                    if (before && onOrAfter) {{
+                        results.push({{
+                            venueId: vid,
+                            threshold: thresh,
+                            filmBefore: before[0],
+                            dateBefore: before[2],
+                            filmOnAfter: onOrAfter[0],
+                            dateOnAfter: onOrAfter[2],
+                        }});
+                    }}
+                    if (results.length >= 3) break;
+                }}
+                return results;
+            }}""")
+
+            print(f"  Real PRELIM_FROM venues to test: {len(real_prelim_venues_to_test)}")
+            if not real_prelim_venues_to_test:
+                skip("l6a_real_prelim_before_no_tag",
+                     "no venue in real PRELIM_FROM has rows both before and on/after threshold")
+                skip("l6a_real_prelim_on_after_tag",
+                     "no venue in real PRELIM_FROM has rows both before and on/after threshold")
+            else:
+                real_before_ok = True
+                real_on_after_ok = True
+                real_details_before = []
+                real_details_on_after = []
+                for entry in real_prelim_venues_to_test:
+                    vid = entry["venueId"]
+                    thresh = entry["threshold"]
+                    film_b = entry["filmBefore"]
+                    date_b = entry["dateBefore"]
+                    film_a = entry["filmOnAfter"]
+                    date_a = entry["dateOnAfter"]
+
+                    # Row BEFORE the threshold → no tag on that (venue, date) row
+                    close_sheet(page)
+                    open_film_sheet(page, film_b)
+                    page.wait_for_timeout(500)
+                    before_res = film_row_prelim(page, vid, date_b)
+                    if "err" in before_res or before_res["prelim"]:
+                        real_before_ok = False
+                        real_details_before.append(
+                            f"{vid} threshold={thresh} film={film_b} date={date_b}: {before_res}")
+
+                    # Row ON/AFTER the threshold → tag on that (venue, date) row
+                    close_sheet(page)
+                    open_film_sheet(page, film_a)
+                    page.wait_for_timeout(500)
+                    after_res = film_row_prelim(page, vid, date_a)
+                    if "err" in after_res or not after_res["prelim"]:
+                        real_on_after_ok = False
+                        real_details_on_after.append(
+                            f"{vid} threshold={thresh} film={film_a} date={date_a}: {after_res}")
+
+                close_sheet(page)
+                venues_tested = [e['venueId'] for e in real_prelim_venues_to_test]
+                check("l6a_real_prelim_before_no_tag",
+                      real_before_ok,
+                      "; ".join(real_details_before) if not real_before_ok
+                      else (f"rows before threshold have no prelim-tag "
+                            f"(tested {len(real_prelim_venues_to_test)} venues: {venues_tested})"))
+                check("l6a_real_prelim_on_after_tag",
+                      real_on_after_ok,
+                      "; ".join(real_details_on_after) if not real_on_after_ok
+                      else (f"rows on/after threshold have prelim-tag "
+                            f"(tested {len(real_prelim_venues_to_test)} venues: {venues_tested})"))
 
             save_shot(page, wave, "d-bg-prelim-sheet")
             ctx.close()
@@ -6553,7 +6758,7 @@ def wave_l(browser):
         [sys.executable, "scripts/verify_build.py"],
         cwd=str(webapp_root),
         capture_output=True, text=True,
-        env={**__import__('os').environ, "SOFIA_HTML": "index.dev.html"}
+        env={**__import__('os').environ, "SOFIA_HTML": html_env}
     )
     vb_pass = vb_result.returncode == 0 and "all checks passed" in vb_result.stdout
     check("l7_verify_build",
@@ -6592,6 +6797,8 @@ def main():
         )
         if build_result.returncode != 0:
             sys.exit(f"Fixture build failed (ref={FIXTURE_REF})")
+        # Derive the frozen clock from the built fixture's SNAPSHOT.window.from
+        _init_fixture_clock()
         print(f"\nTesting: {html_env}  (fixture ref={FIXTURE_REF},"
               f" clock={CLOCK_TODAY_ISO} 14:45 Europe/Sofia)")
     else:
