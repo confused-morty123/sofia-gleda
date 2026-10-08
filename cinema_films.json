@@ -98,17 +98,6 @@
   ],
   "source": "g8"
  },
- "magyosnika-ot-kremal": {
-  "id": "magyosnika-ot-kremal",
-  "bg": "Магьосника от Кремъл",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#331B24",
-   "#5F2745"
-  ],
-  "source": "g8"
- },
  "v-bryuzh": {
   "id": "v-bryuzh",
   "bg": "В Брюж",
@@ -219,17 +208,6 @@
   ],
   "source": "vlaikova"
  },
- "sinelibri-2026-embargo": {
-  "id": "sinelibri-2026-embargo",
-  "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B331F",
-   "#275F3A"
-  ],
-  "source": "vlaikova"
- },
  "sinelibri-2026-pepel": {
   "id": "sinelibri-2026-pepel",
   "bg": "СИНЕЛИБРИ 2026 – ПЕПЕЛ",
@@ -249,17 +227,6 @@
   "g": [
    "#331B24",
    "#5F2745"
-  ],
-  "source": "vlaikova"
- },
- "kinoklasiki-kosa-1979": {
-  "id": "kinoklasiki-kosa-1979",
-  "bg": "КИНОКЛАСИКИ: КОСА | 1979 |",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#331B1B",
-   "#5F2727"
   ],
   "source": "vlaikova"
  },
@@ -284,28 +251,6 @@
    "#275F57"
   ],
   "source": "vlaikova"
- },
- "alehandro-hodorovski-kartitsata-1970": {
-  "id": "alehandro-hodorovski-kartitsata-1970",
-  "bg": "Алехандро Ходоровски: Къртицата (1970)",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B3330",
-   "#275F57"
-  ],
-  "source": "lumiere"
- },
- "alehandro-hodorovski-sveshtenata-planina-1973": {
-  "id": "alehandro-hodorovski-sveshtenata-planina-1973",
-  "bg": "Алехандро Ходоровски: Свещената планина (1973)",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B331F",
-   "#275F3A"
-  ],
-  "source": "lumiere"
  },
  "akira-kurosava-sanishta-1990": {
   "id": "akira-kurosava-sanishta-1990",
@@ -548,5 +493,435 @@
    "#45275F"
   ],
   "source": "vlaikova"
+ },
+ "drugata-mama": {
+  "id": "drugata-mama",
+  "bg": "Другата мама",
+  "en": "",
+  "genres": [
+   "Хорър",
+   "Трилър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2026
+ },
+ "ne-kazvay-na-mama": {
+  "id": "ne-kazvay-na-mama",
+  "bg": "Не казвай на мама",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 95,
+  "year": 2026
+ },
+ "zarazno-zlo": {
+  "id": "zarazno-zlo",
+  "bg": "Заразно зло",
+  "en": "",
+  "genres": [
+   "Хорър",
+   "Екшън",
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2026
+ },
+ "otmastitelite-krayat-spetsialno-izdanie": {
+  "id": "otmastitelite-krayat-spetsialno-izdanie",
+  "bg": "Отмъстителите: Краят – Специално издание",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 183,
+  "year": 2019
+ },
+ "payatsi": {
+  "id": "payatsi",
+  "bg": "Паяци",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 86,
+  "year": 2026
+ },
+ "always-lalisa": {
+  "id": "always-lalisa",
+  "bg": "ALWAYS LALISA",
+  "en": "",
+  "genres": [
+   "Биографичен",
+   "Документален",
+   "Музикален"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 100,
+  "year": 2026
+ },
+ "portokal-s-chasovnikov-mehanizam": {
+  "id": "portokal-s-chasovnikov-mehanizam",
+  "bg": "Портокал с часовников механизъм",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 136
+ },
+ "queen-budapest": {
+  "id": "queen-budapest",
+  "bg": "Queen Budapest",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 92,
+  "year": 1986
+ },
+ "shrek": {
+  "id": "shrek",
+  "bg": "Шрек",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 90
+ },
+ "chunkin-ekspres": {
+  "id": "chunkin-ekspres",
+  "bg": "Чункин експрес",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 97,
+  "year": 1994,
+  "originalTitle": "Chungking Express"
+ },
+ "sinelibri-2026-frost-i-mechetata": {
+  "id": "sinelibri-2026-frost-i-mechetata",
+  "bg": "Синелибри 2026: ФРОСТ И МЕЧЕТАТА",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 94
+ },
+ "sinelibri-2026-tants-okolo-sebe-si-siri-hustvet": {
+  "id": "sinelibri-2026-tants-okolo-sebe-si-siri-hustvet",
+  "bg": "Синелибри 2026: ТАНЦ ОКОЛО СЕБЕ СИ - СИРИ ХУСТВЕТ",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 110
+ },
+ "sinelibri-2026-svetovno-neizvestna": {
+  "id": "sinelibri-2026-svetovno-neizvestna",
+  "bg": "Синелибри 2026: СВЕТОВНО НЕИЗВЕСТНА",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
+ },
+ "samo-lyubovnitsite-ostavat-zhivi": {
+  "id": "samo-lyubovnitsite-ostavat-zhivi",
+  "bg": "Само любовниците остават живи",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere",
+  "runtime": 123,
+  "year": 2013,
+  "originalTitle": "Only Lovers Left Alive"
+ },
+ "rezidentsiyata-minalo-nastoyashte-badeshte": {
+  "id": "rezidentsiyata-minalo-nastoyashte-badeshte",
+  "bg": "Резиденцията: Минало, Настояще, Бъдеще",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 30
+ },
+ "sinelibri-2026-patyat-na-keruak-pulsat-na-edno-pokolenie": {
+  "id": "sinelibri-2026-patyat-na-keruak-pulsat-na-edno-pokolenie",
+  "bg": "Синелибри 2026: ПЪТЯТ НА КЕРУАК: ПУЛСЪТ НА ЕДНО ПОКОЛЕНИЕ",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 90
+ },
+ "sinelibri-2026-posledno-preduprezhdenie": {
+  "id": "sinelibri-2026-posledno-preduprezhdenie",
+  "bg": "Синелибри 2026: ПОСЛЕДНО ПРЕДУПРЕЖДЕНИЕ",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 91
+ },
+ "sinelibri-2026-perfektni-nepoznati": {
+  "id": "sinelibri-2026-perfektni-nepoznati",
+  "bg": "Синелибри 2026: ПЕРФЕКТНИ НЕПОЗНАТИ",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 91
+ },
+ "sinelibri-2026-paralelni-istorii": {
+  "id": "sinelibri-2026-paralelni-istorii",
+  "bg": "Синелибри 2026: ПАРАЛЕЛНИ ИСТОРИИ",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 139
+ },
+ "oldboy": {
+  "id": "oldboy",
+  "bg": "Олдбой",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 120,
+  "year": 2003,
+  "originalTitle": "Oldboy"
+ },
+ "sinelibri-2026-nashite-momicheta": {
+  "id": "sinelibri-2026-nashite-momicheta",
+  "bg": "Синелибри 2026: НАШИТЕ МОМИЧЕТА",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 103
+ },
+ "muha": {
+  "id": "muha",
+  "bg": "МУХА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 26
+ },
+ "sinelibri-2026-molier-sirano-i-mladiyat-kral": {
+  "id": "sinelibri-2026-molier-sirano-i-mladiyat-kral",
+  "bg": "Синелибри 2026: МОЛИЕР, СИРАНО И МЛАДИЯТ КРАЛ",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
+ },
+ "sinelibri-2026-ludorii": {
+  "id": "sinelibri-2026-ludorii",
+  "bg": "Синелибри 2026: ЛУДОРИИ",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 106
+ },
+ "sinelibri-2026-kukla": {
+  "id": "sinelibri-2026-kukla",
+  "bg": "Синелибри 2026: КУКЛА",
+  "en": "",
+  "genres": [
+   "Романтика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 162
+ },
+ "karay-kolata-mi": {
+  "id": "karay-kolata-mi",
+  "bg": "Карай колата ми",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 179
+ },
+ "sinelibri-2026-kamak-hartiya-granata": {
+  "id": "sinelibri-2026-kamak-hartiya-granata",
+  "bg": "Синелибри 2026: КАМЪК. ХАРТИЯ. ГРАНАТА",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 92
+ },
+ "sinelibri-2026-i-togava-izvednazh": {
+  "id": "sinelibri-2026-i-togava-izvednazh",
+  "bg": "Синелибри 2026: И ТОГАВА ИЗВЕДНЪЖ",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 196
+ },
+ "sinelibri-2026-geroyat-ot-gara-fridrihshtrase": {
+  "id": "sinelibri-2026-geroyat-ot-gara-fridrihshtrase",
+  "bg": "Синелибри 2026: ГЕРОЯТ ОТ ГАРА „ФРИДРИХЩРАСЕ\"",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 112
+ },
+ "sinelibri-2026-allegro-pastell": {
+  "id": "sinelibri-2026-allegro-pastell",
+  "bg": "Синелибри 2026: ALLEGRO PASTELL",
+  "en": "",
+  "genres": [
+   "Романтика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
  }
 }

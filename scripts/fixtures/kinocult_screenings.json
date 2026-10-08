@@ -1,0 +1,66 @@
+{
+ "query": "(trimmed) *[_type==\"screening\" && date >= \"2026-10-08\"]|order(date asc){date,time,venueBg,venue,ticketUrl,soldOut,\"titleBg\":movie->titleBg,\"title\":movie->title,\"year\":movie->year,\"duration\":movie->duration}",
+ "result": [
+  {
+   "date": "2026-10-10",
+   "duration": 124,
+   "soldOut": null,
+   "ticketUrl": "https://epaygo.bg/2109682241",
+   "time": "18:00",
+   "title": "El Topo",
+   "titleBg": "Къртицата",
+   "venue": "Lumière Cinema",
+   "venueBg": "Кино Люмиер",
+   "year": 1970
+  },
+  {
+   "date": "2026-10-14",
+   "duration": 120,
+   "soldOut": null,
+   "ticketUrl": "https://epaygo.bg/8421698039",
+   "time": "19:00",
+   "title": "Dreams",
+   "titleBg": "Сънища",
+   "venue": "Lumière Cinema",
+   "venueBg": "Кино Люмиер",
+   "year": 1990
+  },
+  {
+   "date": "2026-11-09",
+   "duration": null,
+   "soldOut": false,
+   "ticketUrl": "https://epaygo.bg/6079320146",
+   "time": "19:00",
+   "title": "The Sacrifice",
+   "titleBg": "Жертвоприношение",
+   "venue": "Festival & Congress Centre",
+   "venueBg": "з. Европа, ФКЦ - Варна",
+   "year": 1986
+  },
+  {
+   "date": "2026-11-30",
+   "duration": 120,
+   "soldOut": false,
+   "ticketUrl": "https://epaygo.bg/1781700131",
+   "time": "19:00",
+   "title": "Oldboy",
+   "titleBg": "Олдбой",
+   "venue": "Lumière Cinema",
+   "venueBg": "кино Люмиер",
+   "year": 2003
+  },
+  {
+   "date": "2026-12-15",
+   "duration": 96,
+   "soldOut": false,
+   "ticketUrl": "https://epaygo.bg/3271478202",
+   "time": "19:00",
+   "title": "Fallen Angels",
+   "titleBg": "Паднали ангели",
+   "venue": "Lumière Cinema",
+   "venueBg": "Кино Люмиер",
+   "year": 1995
+  }
+ ],
+ "_note": "Trimmed from the KinoCult Sanity API on 2026-10-08: two Люмиер screenings matching NDK, one in Varna, one Люмиер in November (lower-case 'кино Люмиер') and one after the snapshot window."
+}

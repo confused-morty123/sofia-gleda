@@ -122,17 +122,20 @@ class Fetcher:
                 time.sleep(wait)
         self._last_hit[host] = time.monotonic()
 
-    def get(self, url, referer=None, accept=None, attempts=None):
-        """Return a Response (2xx) or None. Never raises."""
+    def get(self, url, referer=None, accept=None, attempts=None, headers=None):
+        """Return a Response (2xx) or None. Never raises. `headers` adds or
+        overrides request headers (e.g. X-Requested-With for an AJAX fragment)."""
         host = urllib.parse.urlsplit(url).hostname or ""
         verify = host not in TLS_EXEMPT
-        headers = {}
+        extra, headers = headers, {}
         if referer:
             headers["Referer"] = referer
         elif host:
             headers["Referer"] = f"https://{host}/"
         if accept:
             headers["Accept"] = accept
+        if extra:
+            headers.update(extra)
 
         tries = attempts or self.attempts
         last_err = None
@@ -162,6 +165,27 @@ class Fetcher:
         if self.verbose:
             print(f"  ! {url}: {last_err}", file=sys.stderr, flush=True)
         return None
+
+    def post(self, url, data, referer=None, headers=None):
+        """One polite form POST (no retries: a POST is not assumed idempotent).
+        Used only for Cine Grand's cinema selection, which merely sets a session
+        cookie. Returns a Response (status < 400) or None. Never raises."""
+        host = urllib.parse.urlsplit(url).hostname or ""
+        hdrs = {"Referer": referer or f"https://{host}/"}
+        if headers:
+            hdrs.update(headers)
+        started = time.monotonic()
+        self._polite(host)
+        try:
+            r = self.session.post(url, data=data, headers=hdrs, timeout=self.timeout,
+                                  verify=host not in TLS_EXEMPT, allow_redirects=True)
+        except requests.exceptions.RequestException as e:
+            self._record(url, host, "fail", None, time.monotonic() - started, 1, self._short(e))
+            return None
+        ok = r.status_code < 400
+        self._record(url, host, "ok" if ok else "fail", r.status_code,
+                     time.monotonic() - started, 1, None if ok else f"HTTP {r.status_code}")
+        return r if ok else None
 
     @staticmethod
     def _short(e):

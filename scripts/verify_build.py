@@ -270,6 +270,105 @@ if isinstance(snap, dict):
         if out:
             note(f"{len(out)} showtime dates fall outside the snapshot window "
                  f"({out[0]}..{out[-1]}) and will not be shown")
+    # The scraper advances window.from to today and drops every past row; a row
+    # dated before it is a stale listing that survived a merge.
+    if w.get("from"):
+        past_st = [r for r in (data["SHOWTIMES"] or []) if len(r) > 2 and r[2] < w["from"]]
+        past_pf = [p for p in (data["PERFORMANCES"] or []) if len(p) > 1 and p[1] < w["from"]]
+        if past_st or past_pf:
+            ex = [f"{r[0]}@{r[1]} {r[2]}" for r in past_st[:3]] + [f"{p[0]} {p[1]}" for p in past_pf[:3]]
+            fail(f"{len(past_st)} showtime(s) and {len(past_pf)} performance(s) are dated before "
+                 f"the window opens ({w['from']}), e.g. {', '.join(ex)}")
+
+# ---------------------------------------- 4c. PRELIM_FROM — which listings are preliminary
+# {venueId: "YYYY-MM-DD"}: every listing of that venue dated on/after the date is
+# shown as preliminary (the venue's own programme does not cover it yet).
+_pm = re.search(r"^const PRELIM_FROM\s*=\s*(.*?);\s*$", js, flags=re.M)
+if _pm is None:
+    note("PRELIM_FROM is not declared — no listing will be marked preliminary")
+else:
+    try:
+        _prelim = json.loads(_pm.group(1))
+    except Exception:
+        _prelim = None
+    if not isinstance(_prelim, dict):
+        fail("PRELIM_FROM is not a JSON object of venue id -> \"YYYY-MM-DD\"")
+    else:
+        _venues = ({c.get("id") for c in (data["CINEMAS"] or [])}
+                   | {t.get("id") for t in (data["THEATRES"] or [])})
+        _unknown = sorted(k for k in _prelim if k not in _venues)
+        if _unknown:
+            fail(f"PRELIM_FROM names unknown venues: {', '.join(_unknown[:6])}")
+
+        def _iso_ok(v):
+            if not (isinstance(v, str) and re.fullmatch(r"\d{4}-\d\d-\d\d", v)):
+                return False
+            try:
+                import datetime as _dt
+                _dt.date.fromisoformat(v)
+                return True
+            except ValueError:
+                return False
+        _bad = sorted(k for k, v in _prelim.items() if not _iso_ok(v))
+        if _bad:
+            fail(f"PRELIM_FROM has non-ISO dates for: {', '.join(_bad[:6])}")
+
+        # Theatres (wave M3): once the theatre merge has run (PRELIM_FROM names a
+        # theatre), every theatre with upcoming performances must be in the map —
+        # a missing one would show aggregator rows as confirmed — and a theatre
+        # with no official programme of its own is preliminary from the first day.
+        _th_ids = {t.get("id") for t in (data["THEATRES"] or [])}
+        _show_th = {s.get("id"): s.get("theatre") for s in (data["SHOWS"] or [])}
+        _w_from = ((data["SNAPSHOT"] or {}).get("window") or {}).get("from") or "0000-00-00"
+        _playing = {_show_th.get(p[0]) for p in (data["PERFORMANCES"] or [])
+                    if len(p) > 1 and p[1] >= _w_from} - {None}
+        if not (_th_ids & set(_prelim)):
+            if _playing:
+                note("PRELIM_FROM names no theatre — theatre listings are not marked preliminary "
+                     "(the theatre merge has not run on this build)")
+        else:
+            _missing = sorted(_playing - set(_prelim))
+            if _missing:
+                fail(f"theatres with performances but no PRELIM_FROM entry: {', '.join(_missing[:6])}")
+            try:
+                sys.path.insert(0, str(ROOT / "scripts"))
+                import official_theatres as _OT                           # noqa: E402
+                _no_official = set(_OT.NO_OFFICIAL_SOURCE)
+            except BaseException:                                         # bs4 missing: same list
+                _no_official = {"atelie313", "natfiz", "new-ndk", "derida"}
+            _late = sorted(t for t in _playing & _no_official
+                           if t in _prelim and isinstance(_prelim[t], str) and _prelim[t] > _w_from)
+            if _late:
+                fail(f"theatres with no official programme are not preliminary from the first day: "
+                     f"{', '.join(_late)}")
+
+# ------------------------------------------------- 4d. theatre rows are well-formed
+if data["SHOWS"] and data["THEATRES"]:
+    _th_ids = {t.get("id") for t in data["THEATRES"]}
+    _bad_th = sorted({str(s.get("theatre")) for s in data["SHOWS"]} - _th_ids)
+    if _bad_th:
+        fail(f"shows filed under unknown theatres: {', '.join(_bad_th[:6])}")
+if data["PERFORMANCES"]:
+    _bad_rows = [p for p in data["PERFORMANCES"]
+                 if not (isinstance(p, list) and len(p) == 5 and isinstance(p[0], str)
+                         and re.fullmatch(r"\d{4}-\d\d-\d\d", str(p[1]))
+                         and re.fullmatch(r"\d\d:\d\d", str(p[2])))]
+    if _bad_rows:
+        fail(f"{len(_bad_rows)} PERFORMANCES row(s) are not [showId, date, time, hall, price], "
+             f"e.g. {str(_bad_rows[0])[:80]}")
+    _dup = len(data["PERFORMANCES"]) - len({tuple(p[:3]) for p in data["PERFORMANCES"] if isinstance(p, list)})
+    if _dup:
+        fail(f"{_dup} duplicate performance(s) (same show, date and time)")
+
+# ------------------------------------- 4e. no VLINKS where BOOKING has a dated page
+# Cinema City's film pages are chain-wide; for a venue whose BOOKING carries `deep`
+# the ticket link must open that cinema's page for the chosen date.
+if vlinks_data and isinstance(data.get("BOOKING"), dict):
+    _deep = {v for v, b in data["BOOKING"].items() if isinstance(b, dict) and b.get("deep")}
+    _deep_rows = sorted({e[1] for e in vlinks_data if isinstance(e, list) and len(e) == 3 and e[1] in _deep})
+    if _deep_rows:
+        fail(f"VLINKS has entries for {', '.join(_deep_rows)}, whose BOOKING.deep per-date page "
+             "must be used instead")
 
 # ------------------------------------------- 5a2. SYN_EN / TITLE_EN translation maps
 def _const_obj_tr(name):

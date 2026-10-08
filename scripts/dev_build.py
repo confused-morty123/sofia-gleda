@@ -7,7 +7,8 @@ This builds index.dev.html instead, with no network and no tokens:
 
   1. build_index.py --out <PATH>               (UI from src/, seed data)
   2. transplant the constants scrape_programs.py writes (SNAPSHOT, SHOWTIMES,
-     PERFORMANCES, LINKS, VLINKS) from the committed index.html (git HEAD or REF)
+     PERFORMANCES, LINKS, VLINKS, PRELIM_FROM) from the committed index.html
+     (git HEAD or REF); a constant the UI source does not declare is skipped
   3. inject_films.py / inject_shows.py / inject_data.py against it, reading the
      sidecar JSON files exactly as the real pipeline does
 
@@ -22,7 +23,7 @@ listings. index.dev.html is gitignored; never deploy it.
 import os, re, subprocess, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
-SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS"]
+SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM"]
 
 
 def run(*cmd, env=None):

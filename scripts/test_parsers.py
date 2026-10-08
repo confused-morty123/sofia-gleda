@@ -816,6 +816,312 @@ check("mapping: translated show title in TITLE_EN",
 check("mapping: show with titleEn not in TITLE_EN",
       "s-has-en" not in _title_en_out, True)
 
+# =========================================== official cinema programmes (Wave M1)
+# Each venue's own programme is authoritative for the dates it publishes. These
+# pin the parsers on trimmed real pages (scripts/fixtures, 2026-10-08), where a
+# programme ends, which titles are one film, and the merge rules.
+import json as _jm
+import official_sources as OS                                   # noqa: E402
+import film_identity as FID                                     # noqa: E402
+
+
+class _Resp:
+    def __init__(self, body):
+        self.content = body if isinstance(body, bytes) else body.encode("utf-8")
+        self.text = body if isinstance(body, str) else body.decode("utf-8", "replace")
+        self.status_code = 200
+
+
+class _Pages:
+    """A stand-in Fetcher: serves fixture bodies by URL substring (first match)."""
+    def __init__(self, pages):
+        self.pages, self.asked = pages, []
+
+    def get(self, url, **kw):
+        self.asked.append(url)
+        for k, body in self.pages.items():
+            if k in url:
+                return _Resp(body)
+        return None
+
+    def soup(self, url, **kw):
+        r = self.get(url)
+        return BeautifulSoup(r.text, "lxml") if r else None
+
+    def json(self, url, **kw):
+        r = self.get(url)
+        return _jm.loads(r.text) if r else None
+
+    def post(self, *a, **kw):
+        return None
+
+
+def _raises(fn, *a):
+    try:
+        fn(*a)
+    except OS.SourceBroken:
+        return True
+    return False
+
+
+print("official: Cinema City API (cc-sofia, 2026-10-09, trimmed)")
+_cc = _jm.loads((FIXTURES / "cinemacity_day.json").read_text(encoding="utf-8"))
+_r = OS.parse_cinemacity_day(_cc, "2026-10-09", "1261")
+check("one row per event", len(_r), 6)
+check("title, date and time as published", ("Верити", "2026-10-09", "14:50") in {x[:3] for x in _r}, True)
+check("hall, runtime and film page kept as meta",
+      [(x[3]["hall"], x[3]["runtime"], x[3]["url"]) for x in _r if x[0] == "Верити"][0],
+      ("Зала 8", 114, "https://www.cinemacity.bg/films/verity/8244s2r"))
+check("genres mapped into the app's vocabulary",
+      sorted([x for x in _r if x[0] == "Верити"][0][3]["genres"]), ["Драма", "Криминален", "Трилър"])
+check("a TBC pre-sale event is flagged", sum(1 for x in _r if x[3].get("tbc")), 2)
+check("an answer for another day yields no rows", OS.parse_cinemacity_day(_cc, "2026-10-10", "1261"), [])
+check("another cinema's events are ignored", OS.parse_cinemacity_day(_cc, "2026-10-09", "1266"), [])
+check("a body without films/events is broken, not 'no screenings'",
+      _raises(OS.parse_cinemacity_day, {"body": {}}, "2026-10-09"), True)
+
+print("official: where a published programme ends")
+_cnt = [("2026-10-08", 54), ("2026-10-09", 55), ("2026-10-10", 67), ("2026-10-11", 67),
+        ("2026-10-12", 48), ("2026-10-13", 47), ("2026-10-14", 48), ("2026-10-15", 55),
+        ("2026-10-16", 1), ("2026-10-17", 2), ("2026-10-18", 1), ("2026-10-19", 0)]
+check("thin pre-sale days after the week are not published (Cinema City)",
+      OS.published_through(_cnt), "2026-10-15")
+check("today thinned by past screenings still counts",
+      OS.published_through([("2026-10-08", 2)] + _cnt[1:]), "2026-10-15")
+check("a failed day ends coverage before it",
+      OS.published_through(_cnt[:3] + [("2026-10-11", None)] + _cnt[4:]), "2026-10-10")
+check("nothing published -> None", OS.published_through([("2026-10-08", 0), ("2026-10-09", 0)]), None)
+_dkc = [("2026-10-08", 4), ("2026-10-09", 3), ("2026-10-10", 5), ("2026-10-11", 4), ("2026-10-12", 4),
+        ("2026-10-13", 4), ("2026-10-14", 3), ("2026-10-15", 4), ("2026-10-16", 2), ("2026-10-17", 4),
+        ("2026-10-18", 4), ("2026-10-19", 2), ("2026-10-20", 1), ("2026-10-21", 1)]
+check("Дом на киното: festival-only days end the normal run", OS.published_through(_dkc, 0.5), "2026-10-19")
+check("... and coverage ends at that programme week's Thursday",
+      OS.week_end_at_or_before("2026-10-19", "2026-10-08"), "2026-10-15")
+check("the week trim never goes before today", OS.week_end_at_or_before("2026-10-12", "2026-10-09"), "2026-10-12")
+
+print("official: Кино Арена (arena-mega-mol, trimmed)")
+_ka = (FIXTURES / "kinoarena_day.html").read_text(encoding="utf-8")
+_sel, _tabs, _r = OS.parse_kinoarena_page(_ka, "arena-mega-mol")
+check("the selected day tab is read", _sel, "2026-10-08")
+check("published days come from the tabs", _tabs[:8], [f"2026-10-{d:02d}" for d in range(8, 16)])
+check("every time of a film", sorted(t for ti, _, t, _m in _r if ti == "Верити"),
+      ["13:00", "14:40", "17:00", "19:20", "21:30"])
+check("the film page is the link", _r[0][3]["url"], "https://www.kinoarena.com/bg/movie/kulata-2-murtva-tochka")
+check("another cinema's page is refused", _raises(OS.parse_kinoarena_page, _ka, "kino-arena-the-mall"), True)
+_res = OS.fetch_kinoarena(_Pages({"arena-mega-mol/": _ka}), "arena-mega", "2026-10-08", "2026-12-14")
+check("a date served with TODAY's programme ends coverage (never mislabelled)",
+      (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
+check("rows of the fallback page are not re-dated", {x[1] for x in _res.rows}, {"2026-10-08"})
+
+print("official: Cine Grand (София Ринг Мол, trimmed)")
+_cg = (FIXTURES / "cinegrand_day.html").read_text(encoding="utf-8")
+_sel, _tabs, _r, _ok = OS.parse_cinegrand_page(_cg, "софия-ринг-мол", "BGSOFCG2", "2026-10-08")
+check("day tabs carry real dates", [d for d, _ in _tabs], [f"2026-10-{d:02d}" for d in range(8, 15)])
+check("each show is dated by its own label", {x[1] for x in _r}, {"2026-10-08"})
+check("runtime and hall kept", [(x[3]["runtime"], x[3]["hall"]) for x in _r if x[0] == "КОЛИТЕ"][0], (116, "TSAR Зала 6"))
+check("the page carries this cinema", _ok, True)
+check("Park Center never accepts Ring Mall's page",
+      OS.parse_cinegrand_page(_cg, "парк-център-софия", "BGSOFCG1", "2026-10-08")[3], False)
+check("Park Center served Ring Mall's programme is broken, not data",
+      _raises(OS.fetch_cinegrand, _Pages({"schedule": _cg}), "cg-park", "2026-10-08", "2026-12-14"), True)
+_res = OS.fetch_cinegrand(_Pages({"schedule": _cg}), "cg-ring", "2026-10-08", "2026-12-14")
+check("a day page showing another day ends coverage",
+      (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
+
+print("official: G8 weekly programme (trimmed)")
+_g8 = (FIXTURES / "g8_week.html").read_text(encoding="utf-8")
+_wf, _wt, _r = OS.parse_g8(_g8)
+check("the week G8 itself published", (_wf, _wt), ("2026-10-02", "2026-10-08"))
+check("start of 'HH:MM - HH:MM'", ('Улица "Малага"', "2026-10-08", "14:00") in {x[:3] for x in _r}, True)
+check("the legend row is not a screening", len(_r), 6)
+check("runtime and genre from the item", (_r[0][3]["runtime"], _r[0][3]["genres_text"]), (100, ["Драма"]))
+_res = OS.fetch_g8(_Pages({"movies.php": _g8}), "g8", "2026-10-08", "2026-12-14")
+check("coverage = today..week end, never G8's unpublished next week",
+      (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
+check("a week already over is broken (keep previous), not 'no screenings'",
+      _raises(OS.fetch_g8, _Pages({"movies.php": _g8}), "g8", "2026-10-09", "2026-12-14"), True)
+
+print("official: Одеон (windows-1251, trimmed)")
+_od = (FIXTURES / "odeon_program.html").read_bytes()
+_p = OS.parse_odeon_page(_od)
+check("windows-1251 decoded", [x[0] for x in _p["rows"] if x[1] == "2026-10-08"], ["Дигър", "Шибил", "Тигрите", "NAZA"])
+check("programme number and next link", (_p["number"], _p["next"]), (915, "http://bnf.bg/bg/odeon/program/916/"))
+check("day sections", _p["dates"], ["2026-10-07", "2026-10-08"])
+_empty = (FIXTURES / "odeon_program_empty.html").read_bytes()
+check("the next programme's empty shell has no rows", OS.parse_odeon_page(_empty)["rows"], [])
+_res = OS.fetch_odeon(_Pages({"/program/916/": _empty, "/odeon/program/": _od}), "odeon", "2026-10-08", "2026-12-14")
+check("an empty next programme is not coverage", (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
+
+print("official: Дом на киното (one day, trimmed)")
+_r = OS.parse_domkino_day((FIXTURES / "domkino_day.html").read_text(encoding="utf-8"), "2026-10-13")
+check("one row per hour box", [(x[0], x[2]) for x in _r],
+      [("Кес", "20:00"), ("МУХА", "18:00"), ("Sofia Documental: NAZA", "18:30")])
+check("runtime from 'Времетраене'", _r[0][3]["runtime"], 111)
+check("film page as the link", _r[1][3]["url"], "https://domnakinoto.com/muha-movie7230.html?a=")
+
+print("official: Влайкова grid (trimmed)")
+_res = OS.fetch_vlaikova(_Pages({"vlaikovacinema.com": (FIXTURES / "vlaikova_grid.html").read_text(encoding="utf-8")}),
+                         "vlaikova", "2026-10-08", "2026-12-14")
+check("coverage = the dates in the grid", (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-09"))
+check("rows dated by their day", sorted({x[1] for x in _res.rows}), ["2026-10-08", "2026-10-09"])
+
+print("official: Люмиер = NDK ∪ KinoCult")
+_lum = _Pages({"ndk.bg": (FIXTURES / "ndk_program.html").read_text(encoding="utf-8"),
+               "sanity.io": (FIXTURES / "kinocult_screenings.json").read_text(encoding="utf-8")})
+_res = OS.fetch_lumiere(_lum, "lumiere", "2026-10-08", "2026-12-14")
+_slots = {(x[1], x[2]): x for x in _res.rows}
+check("the same slot in both sources is one row with KinoCult's title",
+      (_slots[("2026-10-10", "18:00")][0], _slots[("2026-10-10", "18:00")][3].get("alt_title")),
+      ("Къртицата", "Алехандро Ходоровски: Къртицата (1970)"))
+check("NDK-only and KinoCult-only screenings both kept",
+      sorted(_slots), [("2026-10-10", "18:00"), ("2026-10-11", "17:00"), ("2026-10-14", "19:00"), ("2026-11-30", "19:00")])
+check("other venues and dates past the window are not Люмиер rows",
+      any(x[0] in ("Жертвоприношение", "Паднали ангели") for x in _res.rows), False)
+check("coverage ends at the last date either source lists", _res.covered_to, "2026-11-30")
+check("one half unreachable -> keep previous",
+      _raises(OS.fetch_lumiere, _Pages({"ndk.bg": "<html></html>"}), "lumiere", "2026-10-08", "2026-12-14"), True)
+check("cineland has no official source", OS.fetch_official("cineland", None, "2026-10-08", "2026-12-14", {}), None)
+
+print("film identity: normalisation")
+for a, b in [("ПАДАНЕ 2: МЪРТВА ТОЧКА", "Падане 2: Мъртва точка"),
+             ("Одисея (IMAX 3D)", "Одисея"), ("Пес Патрул (2D, бг аудио)", "Пес Патрул"),
+             ("Премиера: Одисея", "Одисея"), ("Миньони & чудовища", "Миньони и чудовища"),
+             ("Улица „Малага“", 'Улица "Малага"'), ("Шопен-соната в Париж", "Шопен — соната в Париж"),
+             ("СИНЕЛИБРИ 2026 – ЕМБАРГО", "Синелибри 2026: Ембарго"),
+             ("ЕВРОПЕЙСКИ КИНОКЛАСИКИ: Алис в градовете (1974)", "Алис в градовете"),
+             ("КИНОКЛАСИКИ: КОСА | 1979 |", "Коса"), ("Акира Куросава: Сънища (1990)", "Сънища"),
+             ("Sofia Documental: NAZA", "NAZA")]:
+    check(f"key({a[:30]!r}) == key({b[:24]!r})", FID.key(a), FID.key(b))
+check("a title's own word 'премиерата' survives", FID.key("Колите: 20 години от премиерата"),
+      "колите 20 години от премиерата")
+check("no director prefix stripped without a year", FID.key("Мисията: Невъзможна"), "мисията невъзможна")
+check("an ALL-CAPS title before a colon is not a festival prefix", FID.key("ПАДАНЕ 2: МЪРТВА ТОЧКА"),
+      "падане 2 мъртва точка")
+check("a bare trailing number is part of the title", FID.key("Блейд Рънър 2049"), "блейд рънър 2049")
+
+print("film identity: known variants (both directions) and traps")
+_cat = [
+    {"id": "padane-2", "bg": "Падане 2: Мъртва точка", "en": "Fall 2: Deadpoint", "year": 2026, "runtime": 98},
+    {"id": "kolite", "bg": "Колите: 20 години от премиерата", "en": "Cars (20th Anniversary)", "year": 2006, "runtime": 117},
+    {"id": "sablezab", "bg": "Капитан Съблезъб и графинята на Грел", "en": "Captain Sabertooth", "year": 2026, "runtime": 85},
+    {"id": "akira-kurosava-sanishta-1990", "bg": "Акира Куросава: Сънища (1990)", "en": "", "source": "lumiere"},
+    {"id": "avatar-3", "bg": "Аватар: Огън и пепел", "en": "Avatar: Fire and Ash", "year": 2025},
+    {"id": "naza", "bg": "НАЗА", "en": "", "source": "dom-kino"},
+    {"id": "el-topo", "bg": "Къртицата", "en": "El Topo", "year": 1970},
+    {"id": "alehandro-hodorovski-kartitsata-1970", "bg": "Алехандро Ходоровски: Къртицата (1970)", "en": "", "source": "lumiere"},
+    {"id": "minoni", "bg": "Миньони и чудовища", "en": "Minions & Monsters", "year": 2026},
+    {"id": "vayana", "bg": "Смелата Ваяна", "en": "Moana", "year": 2016},
+    {"id": "otrazheniya-3", "bg": "Отражения №3", "en": "Reflection No. 3", "year": 2025},
+    {"id": "in-the-mood", "bg": "Любовно настроение", "en": "In the Mood for Love", "year": 2000},
+    {"id": "milen-filmat", "bg": "Милен - филмът", "en": "", "source": "odeon"},
+    {"id": "muzh", "bg": "Мъж", "en": "", "source": "odeon"},
+]
+_minted = {f["id"] for f in _cat if f.get("source")}
+_idx = FID.FilmIndex(_cat, _minted)                      # + the real scripts/film_aliases.json
+
+
+def _R(title, venue=None, corroborate=None, index=None, **meta):
+    return (index or _idx).resolve(title, venue, meta, corroborate)[0]
+
+
+check("'Падане 2' -> 'Падане 2: Мъртва точка'", _R("Падане 2", "arena-mega"), "padane-2")
+check("'Колите' -> 'Колите: 20 години от премиерата'", _R("КОЛИТЕ", "cg-ring"), "kolite")
+check("'Капитан Саблезъб…' -> 'Капитан Съблезъб…'", _R("КАПИТАН САБЛЕЗЪБ И ГРАФИНЯТА НА ГРЕЛ", "cg-ring"), "sablezab")
+check("'Сънища' -> 'Акира Куросава: Сънища (1990)'", _R("Сънища", "lumiere"), "akira-kurosava-sanishta-1990")
+_rev = FID.FilmIndex([{"id": "p2", "bg": "Падане 2"}, {"id": "k", "bg": "Колите"},
+                      {"id": "s", "bg": "Капитан Саблезъб и графинята на Грел"},
+                      {"id": "dreams", "bg": "Сънища", "source": "lumiere"}], {"dreams"})
+check("reverse: 'Падане 2: Мъртва точка' -> 'Падане 2'", _R("Падане 2: Мъртва точка", "cc-sofia", index=_rev), "p2")
+check("reverse: 'Колите: 20 години…' -> 'Колите'", _R("Колите: 20 години от премиерата", "x", index=_rev), "k")
+check("reverse: 'Капитан Съблезъб…' -> 'Капитан Саблезъб…'", _R("Капитан Съблезъб и графинята на Грел", "x", index=_rev), "s")
+check("reverse: 'Акира Куросава: Сънища (1990)' -> 'Сънища'", _R("Акира Куросава: Сънища (1990)", "lumiere", index=_rev), "dreams")
+check("1-edit spelling merges without an alias",
+      _R("Капитан Саблезъб и графинята на Грел", "x", index=FID.FilmIndex(_cat[2:3], aliases={})), "sablezab")
+check("trap: 'Аватар' is not 'Аватар: Огън и пепел'", _R("Аватар", "cc-sofia"), None)
+check("trap: reverse, 'Аватар: Огън и пепел' is not 'Аватар'",
+      _R("Аватар: Огън и пепел", "x", index=FID.FilmIndex([{"id": "a1", "bg": "Аватар", "year": 2009}], aliases={})), None)
+_fall = FID.FilmIndex([{"id": "fall", "bg": "Падане", "year": 2022}], aliases={})
+check("trap: 'Падане 2' is not 'Падане'", _R("Падане 2", "x", index=_fall), None)
+check("trap: 'Падане' is not 'Падане 2: Мъртва точка'", _R("Падане", "x"), None)
+check("trap: 'Отражения №4' is not 'Отражения №3'", _R("Отражения №4", "x"), None)
+check("Latin == Cyrillic: 'NAZA' -> 'НАЗА'", _R("NAZA", "odeon"), "naza")
+check("Latin == Cyrillic, reverse", _R("НАЗА", "x", index=FID.FilmIndex([{"id": "nz", "bg": "NAZA"}], aliases={})), "nz")
+check("trap: two Cyrillic spellings are not 'transliterated' together", _R("Маж", "x"), None)
+check("'&' is 'и'", _R("Миньони & чудовища", "cc-sofia"), "minoni")
+check("the catalogue film wins over a minted duplicate key", _R("Алехандро Ходоровски: Къртицата (1970)", "lumiere"), "el-topo")
+check("the source's original title places a renamed film", _R("В настроение за любов", "lumiere", original_title="In the Mood for Love"), "in-the-mood")
+check("a year conflict vetoes a title match (2026 remake vs 2016 film)", _R("Смелата Ваяна", "cc-sofia", year=2026), None)
+check("same title, no year conflict -> the catalogue film", _R("Смелата Ваяна", "cc-sofia"), "vayana")
+check("subtitle variant with same venue/date/time corroboration",
+      _R("Милен", "odeon", corroborate=lambda f: f == "milen-filmat"), "milen-filmat")
+# a fuzzy decision is remembered for the run (one title, one film), so every
+# negative case below gets an index of its own
+check("subtitle variant without corroboration is not merged",
+      _R("Милен", "odeon", corroborate=lambda f: False, index=FID.FilmIndex(_cat, _minted)), None)
+check("subtitle variant corroborated by the venue's runtime",
+      _R("КОЛИТЕ", "cg-ring", index=FID.FilmIndex(_cat, _minted, aliases={}), runtime=116), "kolite")
+check("subtitle variant with a different runtime is not merged",
+      _R("КОЛИТЕ", "cg-ring", index=FID.FilmIndex(_cat, _minted, aliases={}), runtime=90), None)
+check("an alias scoped to Люмиер does not apply elsewhere",
+      _R("Сънища", "cc-sofia", index=FID.FilmIndex([{"id": "other", "bg": "Нещо"}])), None)
+_dup = FID.FilmIndex(_cat + [{"id": "av", "bg": "Аватар", "source": "cc-sofia"}], _minted | {"av"}, aliases={})
+check("the unmerged look-alike is listed as a suspected duplicate",
+      [(d["title"], d["film"]) for d in _dup.suspected_duplicates(["av"])], [("Аватар", "avatar-3")])
+
+print("merge: the venue's own programme is authoritative")
+_F, _E = "2026-10-08", "2026-12-14"
+_off = [("a", "2026-10-08", "13:00"), ("a", "2026-10-08", "15:00"), ("b", "2026-10-09", "20:00"),
+        ("c", "2026-10-20", "19:00")]
+_agg = [("a", "A", "2026-10-08", ["13:00", "17:00"], None), ("x", "X", "2026-10-09", ["18:00"], None),
+        (None, "New", "2026-10-17", ["21:00"], "https://programata.bg/kino/filmi/new/"),
+        ("c", "C", "2026-10-20", ["18:00"], None), ("d", "D", "2026-10-18", ["12:00"], None)]
+_prev = [["old", "v", "2026-10-07", ["10:00"]], ["gone", "v", "2026-10-11", ["20:30"]]]
+_rows, _pf, _info = S.merge_cinema_venue("v", "official", _off, ("2026-10-08", "2026-10-15"), _agg, True,
+                                         _prev, None, _F, _E, resolve_kept=lambda t, d, ts, l: "new")
+check("inside coverage: exactly the official rows; after it: aggregator rows + official extras", _rows,
+      [["a", "v", "2026-10-08", ["13:00", "15:00"]], ["b", "v", "2026-10-09", ["20:00"]],
+       ["new", "v", "2026-10-17", ["21:00"]], ["d", "v", "2026-10-18", ["12:00"]],
+       ["c", "v", "2026-10-20", ["19:00"]]])
+check("contradicting aggregator rows are discarded and logged", _info["discarded"],
+      [["2026-10-08", "17:00", "A", "a"], ["2026-10-09", "18:00", "X", "x"]])
+check("PRELIM_FROM = the day after the official coverage", _pf, "2026-10-16")
+_rows, _pf, _ = S.merge_cinema_venue("v", "unreachable", [], None, _agg, True, _prev, "2026-10-12", _F, _E)
+check("unreachable official source: previous rows kept, past ones dropped", _rows, [["gone", "v", "2026-10-11", ["20:30"]]])
+check("unreachable official source: previous PRELIM_FROM kept", _pf, "2026-10-12")
+check("unreachable with no previous PRELIM_FROM: preliminary from today",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev, None, _F, _E)[1], _F)
+_rows, _pf, _ = S.merge_cinema_venue("cineland", "none", [], None, [("a", "A", "2026-10-08", ["13:00"], None)],
+                                     True, [], None, _F, _E)
+check("no official source (Cineland): aggregator rows, preliminary from today", (_rows, _pf),
+      ([["a", "cineland", "2026-10-08", ["13:00"]]], _F))
+_rows, _ = S.merge_cinema_venue("cineland", "none", [], None, [], False,
+                                [["a", "cineland", "2026-10-09", ["11:00"]], ["z", "cineland", "2026-10-01", ["11:00"]]],
+                                None, _F, _E)[:2]
+check("no official source and aggregator down: previous rows, never past ones", _rows,
+      [["a", "cineland", "2026-10-09", ["11:00"]]])
+_rows, _pf, _ = S.merge_cinema_venue("g8", "official", [("a", "2026-10-09", "12:00")], ("2026-10-09", "2026-10-15"),
+                                     [("q", "Q", "2026-10-08", ["10:00"], None)], True,
+                                     [["p", "g8", "2026-10-08", ["11:00"]]], "2026-10-09", _F, _E)
+check("before a coverage that starts after today: only rows confirmed last run", _rows,
+      [["p", "g8", "2026-10-08", ["11:00"]], ["a", "g8", "2026-10-09", ["12:00"]]])
+_page = 'const VLINKS=[["a","v","u"]];\n/* SOFIA-DATA-END */'
+_page = S.write_prelim_from(_page, {"g8": "2026-10-09"})
+check("PRELIM_FROM inserted right after VLINKS",
+      _page, 'const VLINKS=[["a","v","u"]];\nconst PRELIM_FROM={"g8":"2026-10-09"};\n/* SOFIA-DATA-END */')
+_page = S.write_prelim_from('const PRELIM_FROM={};\nconst VLINKS=[];', {"cineland": "2026-10-08"})
+check("an existing PRELIM_FROM is replaced in place",
+      (_page.count("PRELIM_FROM"), S.read_prelim_from(_page)), (1, {"cineland": "2026-10-08"}))
+check("a source that worked last run and now yields a fraction stops the scrape",
+      bool(S.implausible_drop({"status": "official", "screenings": 400, "days": 8},
+                              {"status": "official", "screenings": 40, "days": 8})), True)
+check("a normal week-to-week change does not",
+      S.implausible_drop({"status": "official", "screenings": 400, "days": 8},
+                         {"status": "official", "screenings": 300, "days": 8}), None)
+check("a tiny programme (Люмиер) is never 'implausible'",
+      S.implausible_drop({"status": "official", "screenings": 7, "days": 58},
+                         {"status": "official", "screenings": 1, "days": 58}), None)
+
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

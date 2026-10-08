@@ -27,6 +27,28 @@ import json, os, subprocess, sys, time, pathlib, datetime as dt
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 REPORT = ROOT / "build_report.json"
+CHANGES = ROOT / "changes.json"
+# Per-venue official-programme facts kept in build_report.json. The next scrape
+# reads them back to notice a source that suddenly yields a fraction of its rows.
+OFFICIAL_KEYS = ("kind", "status", "source", "covered", "days", "screenings", "written_screenings",
+                 "prelim_from", "prelim_screenings", "discarded_aggregator", "minted", "error")
+
+
+def official_summary(started, previous):
+    """The scrape's per-venue official-source summary (changes.json), or the
+    previous run's when this run's scrape aborted or did not run — a failed run
+    must not become the baseline the next run is compared against."""
+    try:
+        ch = json.loads(CHANGES.read_text(encoding="utf-8"))
+        fresh = dt.datetime.fromisoformat(ch.get("ran", "")).timestamp() >= started - 5
+    except (OSError, ValueError, TypeError):
+        return previous, None
+    if not fresh or not ch.get("official"):
+        return previous, None
+    if ch.get("aborted"):
+        return previous, ch["aborted"]
+    return ({vid: {k: r.get(k) for k in OFFICIAL_KEYS} for vid, r in ch["official"].items()},
+            None)
 
 STEPS = [
     ("programmes",      "scrape_programs.py",        []),
@@ -68,7 +90,13 @@ def main():
     if not os.environ.get("TMDB_TOKEN"):
         print("note: TMDB_TOKEN not set — film posters will be skipped, "
               "previous posters kept.", file=sys.stderr)
+    started = time.time()
+    try:
+        previous = json.loads(REPORT.read_text(encoding="utf-8")).get("official") or {}
+    except (OSError, ValueError):
+        previous = {}
     results = [run(*s) for s in STEPS]
+    official, aborted = official_summary(started, previous)
 
     # The gate. Everything above may fail softly; this may not.
     verdict = run(*VERIFY)
@@ -79,12 +107,27 @@ def main():
         "ok": all(r["ok"] for r in results),
         "publishable": verdict["ok"],
         "steps": results,
+        "official": official,
     }
+    if aborted:
+        report["official_aborted"] = aborted
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("\n=== summary ===")
     for r in results:
         print(f"  {'OK ' if r['ok'] else 'FAIL'} {r['step']:16s} {r['seconds']:>6}s")
+    if official:
+        print("\n=== cinema and theatre listings: each venue's own programme ===")
+        for vid, o in official.items():
+            cov = "..".join(o.get("covered") or []) or "—"
+            print(f"  {vid:12s} {o.get('status') or '?':11s} {cov:23s} "
+                  f"{o.get('screenings') or 0:>4} official, {o.get('prelim_screenings') or 0:>4} preliminary "
+                  f"from {o.get('prelim_from') or '—'}"
+                  + (f"  ! {o['error']}" if o.get("error") and o.get("status") == "unreachable" else ""))
+    if aborted:
+        print("\nThe programme scrape stopped itself (official-source self-check):", file=sys.stderr)
+        for a in aborted:
+            print("  ✗ " + a, file=sys.stderr)
 
     if not verdict["ok"]:
         print("\nThe rebuilt index.html did not pass verification, so it will NOT be "

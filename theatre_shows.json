@@ -1,7 +1,7 @@
 {
  "virhova-prikazka": {
   "id": "virhova-prikazka",
-  "title": "ВИРХОВА ПРИКАЗКА",
+  "title": "Вирхова приказка",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -19,7 +19,7 @@
  },
  "kankun": {
   "id": "kankun",
-  "title": "\"КАНКУН\"",
+  "title": "Канкун",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -37,7 +37,7 @@
  },
  "programa-izgonvaneto-na-besovete-litseto-na-blizhniya": {
   "id": "programa-izgonvaneto-na-besovete-litseto-na-blizhniya",
-  "title": "ПРОГРАМА \"ИЗГОНВАНЕТО НА БЕСОВЕТЕ\" ЛИЦЕТО НА БЛИЖНИЯ",
+  "title": "Програма \"Изгонването на бесовете\" Лицето на ближния",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -55,7 +55,7 @@
  },
  "drug-chovek": {
   "id": "drug-chovek",
-  "title": "ДРУГ ЧОВЕК",
+  "title": "Друг човек",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -73,7 +73,7 @@
  },
  "seks-i-drama": {
   "id": "seks-i-drama",
-  "title": "СЕКС И ДРАМА",
+  "title": "Секс и драма",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -91,7 +91,7 @@
  },
  "aktyori-sreshtu-poeti": {
   "id": "aktyori-sreshtu-poeti",
-  "title": "АКТЬОРИ СРЕЩУ ПОЕТИ",
+  "title": "Актьори срещу поети",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -107,27 +107,9 @@
   "synEn": "",
   "source": "sfumato"
  },
- "hitranka-lisanka-spektakal-po-narodni-prikazki": {
-  "id": "hitranka-lisanka-spektakal-po-narodni-prikazki",
-  "title": "\"ХИТРАНКА ЛИСАНКА\" СПЕКТАКЪЛ ПО НАРОДНИ ПРИКАЗКИ",
-  "titleEn": "",
-  "theatre": "citymark",
-  "author": "",
-  "director": "",
-  "cast": "",
-  "genres": [],
-  "g": [
-   "#2B1B33",
-   "#50275F"
-  ],
-  "duration": null,
-  "synBg": "",
-  "synEn": "",
-  "source": "citymark"
- },
  "programa-beket-o-shtastlivi-dni": {
   "id": "programa-beket-o-shtastlivi-dni",
-  "title": "ПРОГРАМА \"БЕКЕТ\" О, ЩАСТЛИВИ ДНИ",
+  "title": "Програма \"Бекет\" О, щастливи дни",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -145,7 +127,7 @@
  },
  "beli-noshti": {
   "id": "beli-noshti",
-  "title": "БЕЛИ НОЩИ",
+  "title": "Бели нощи",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -163,7 +145,7 @@
  },
  "nikoy": {
   "id": "nikoy",
-  "title": "\"НИКОЙ\"",
+  "title": "Никой",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -181,7 +163,7 @@
  },
  "misleshtite-trastiki": {
   "id": "misleshtite-trastiki",
-  "title": "МИСЛЕЩИТЕ ТРЪСТИКИ",
+  "title": "Мислещите тръстики",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -199,7 +181,7 @@
  },
  "antitaga": {
   "id": "antitaga",
-  "title": "#АНТИТЪГА",
+  "title": "#антитъга",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -217,7 +199,7 @@
  },
  "ivan-landzhev-za-neizbezhnata-sluchaynost-posledno-predstavl": {
   "id": "ivan-landzhev-za-neizbezhnata-sluchaynost-posledno-predstavl",
-  "title": "ИВАН ЛАНДЖЕВ. ЗА НЕИЗБЕЖНАТА СЛУЧАЙНОСТ. ПОСЛЕДНО ПРЕДСТАВЛЕНИЕ",
+  "title": "Иван Ланджев. За неизбежната случайност.",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -235,7 +217,7 @@
  },
  "platonoff": {
   "id": "platonoff",
-  "title": "ПЛАТОНOFF",
+  "title": "ПЛАТОНoff",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -253,7 +235,7 @@
  },
  "formata-na-neshtata": {
   "id": "formata-na-neshtata",
-  "title": "\"ФОРМАТА НА НЕЩАТА\"",
+  "title": "Формата на нещата",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -271,7 +253,7 @@
  },
  "tryabva-i-nyakakvo-deystvie-hamlete": {
   "id": "tryabva-i-nyakakvo-deystvie-hamlete",
-  "title": "ТРЯБВА И НЯКАКВО ДЕЙСТВИЕ, ХАМЛЕТЕ",
+  "title": "Трябва и някакво действие, Хамлете",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -289,7 +271,7 @@
  },
  "geometriya-na-dushata": {
   "id": "geometriya-na-dushata",
-  "title": "ГЕОМЕТРИЯ НА ДУШАТА",
+  "title": "Геометрия на Душата",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -307,7 +289,7 @@
  },
  "vsichko-na-masata": {
   "id": "vsichko-na-masata",
-  "title": "ВСИЧКО НА МАСАТА",
+  "title": "Всичко на масата",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -325,7 +307,7 @@
  },
  "programa-nezabrava-nostalgichno-divertimento": {
   "id": "programa-nezabrava-nostalgichno-divertimento",
-  "title": "ПРОГРАМА \"НЕЗАБРАВА\" НОСТАЛГИЧНО ДИВЕРТИМЕНТО",
+  "title": "програма \"Незабрава\" Носталгично дивертименто",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -343,7 +325,7 @@
  },
  "mitove-za-kral-makbet": {
   "id": "mitove-za-kral-makbet",
-  "title": "МИТОВЕ ЗА КРАЛ МАКБЕТ",
+  "title": "Митове за крал Макбет",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -361,7 +343,7 @@
  },
  "opit-za-letene-ili-legendata-za-privarzaniya-balon": {
   "id": "opit-za-letene-ili-legendata-za-privarzaniya-balon",
-  "title": "ОПИТ ЗА ЛЕТЕНЕ (ИЛИ ‛ЛЕГЕНДАТА ЗА ПРИВЪРЗАНИЯ БАЛОН“)",
+  "title": "Опит за летене (или “Легендата за привързания балон”)",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -379,7 +361,7 @@
  },
  "programa-nezabrava-pohishtenieto-na-balgariya": {
   "id": "programa-nezabrava-pohishtenieto-na-balgariya",
-  "title": "ПРОГРАМА \"НЕЗАБРАВА\" ПОХИЩЕНИЕТО НА БЪЛГАРИЯ",
+  "title": "програма \"Незабрава\" Похищението на България",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -397,7 +379,7 @@
  },
  "programa-noev-kovcheg-luda-treva": {
   "id": "programa-noev-kovcheg-luda-treva",
-  "title": "ПРОГРАМА \"НОЕВ КОВЧЕГ\" ЛУДА ТРЕВА",
+  "title": "програма \"Ноев ковчег\" Луда трева",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -415,7 +397,7 @@
  },
  "edin-chovek": {
   "id": "edin-chovek",
-  "title": "ЕДИН ЧОВЕК",
+  "title": "Един човек",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -433,7 +415,7 @@
  },
  "zhivotat-makar-i-kratak": {
   "id": "zhivotat-makar-i-kratak",
-  "title": "ЖИВОТЪТ, МАКАР И КРАТЪК",
+  "title": "Животът, макар и кратък",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -1333,7 +1315,7 @@
  },
  "nedorazbranata-tsivilizatsiya-ili-zagadkata-na-piramidite": {
   "id": "nedorazbranata-tsivilizatsiya-ili-zagadkata-na-piramidite",
-  "title": "Недоразбраната цивилизация /или загадката на пирамидите/",
+  "title": "Недоразбраната цивилизация /или загадката на пирамидите",
   "titleEn": "",
   "theatre": "zad-kanala",
   "author": "",
@@ -1495,7 +1477,7 @@
  },
  "gospodin-kolpert-premiera": {
   "id": "gospodin-kolpert-premiera",
-  "title": "ГОСПОДИН КОЛПЕРТ ПРЕМИЕРА",
+  "title": "Господин Колперт",
   "titleEn": "",
   "theatre": "sfumato",
   "author": "",
@@ -1585,7 +1567,7 @@
  },
  "printsesata-i-svinaryat": {
   "id": "printsesata-i-svinaryat",
-  "title": "\"ПРИНЦЕСАТА И СВИНАРЯТ\"",
+  "title": "Принцесата и свинарят",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -1600,5 +1582,2525 @@
   "synBg": "",
   "synEn": "",
   "source": "citymark"
+ },
+ "neodachnitsi": {
+  "id": "neodachnitsi",
+  "title": "Neoдачници",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "buryata-the-tempest": {
+  "id": "buryata-the-tempest",
+  "title": "Бурята | The Tempest",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "edin-bezumen-den": {
+  "id": "edin-bezumen-den",
+  "title": "Един безумен ден",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "kakvoto-takova": {
+  "id": "kakvoto-takova",
+  "title": "Каквото, такова",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "kambanata": {
+  "id": "kambanata",
+  "title": "Камбаната",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "nablyudatelite-hipoteza-za-otvadnoto": {
+  "id": "nablyudatelite-hipoteza-za-otvadnoto",
+  "title": "Наблюдателите (Хипотеза за отвъдното)",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "svidetel-na-obvinenieto": {
+  "id": "svidetel-na-obvinenieto",
+  "title": "СВИДЕТЕЛ НА ОБВИНЕНИЕТО",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "insomniya": {
+  "id": "insomniya",
+  "title": "Инсомния",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "poema-za-hlebarkite": {
+  "id": "poema-za-hlebarkite",
+  "title": "Поема за хлебарките",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "dama-pika": {
+  "id": "dama-pika",
+  "title": "ДАМА ПИКА",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "karnaval": {
+  "id": "karnaval",
+  "title": "КАРНАВАЛ",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "lazaritsa": {
+  "id": "lazaritsa",
+  "title": "ЛАЗАРИЦА",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "igra-na-kotki": {
+  "id": "igra-na-kotki",
+  "title": "ИГРА НА КОТКИ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "kapachki": {
+  "id": "kapachki",
+  "title": "КАПАЧКИ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "kapan-za-samoten-mazh": {
+  "id": "kapan-za-samoten-mazh",
+  "title": "Капан за самотен мъж",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "piyanite": {
+  "id": "piyanite",
+  "title": "Пияните",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "pop-folk-hroniki-beli-ptitsi-i-kurshumi": {
+  "id": "pop-folk-hroniki-beli-ptitsi-i-kurshumi",
+  "title": "Поп - фолк хроники: Бели птици и куршуми",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "fitsroy": {
+  "id": "fitsroy",
+  "title": "ФИЦРОЙ",
+  "titleEn": "",
+  "theatre": "zad-kanala",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "zad-kanala"
+ },
+ "rogonostsi": {
+  "id": "rogonostsi",
+  "title": "Рогоносци",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
+ },
+ "bai-ganyo": {
+  "id": "bai-ganyo",
+  "title": "Bai Ganyo",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "nordost": {
+  "id": "nordost",
+  "title": "Nordost",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "henzel-i-gretel-2": {
+  "id": "henzel-i-gretel-2",
+  "title": "Хензел и Гретел",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "az-foyerbah": {
+  "id": "az-foyerbah",
+  "title": "Аз, Фойербах",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "art": {
+  "id": "art",
+  "title": "Арт",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "bremenskite-muzikanti": {
+  "id": "bremenskite-muzikanti",
+  "title": "Бременските музиканти",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "velikiyat-getsbi": {
+  "id": "velikiyat-getsbi",
+  "title": "Великият Гетсби",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "vino-ot-gluharcheta": {
+  "id": "vino-ot-gluharcheta",
+  "title": "Вино от глухарчета",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "gorchivo": {
+  "id": "gorchivo",
+  "title": "Горчиво!",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "graf-monte-kristo": {
+  "id": "graf-monte-kristo",
+  "title": "Граф Монте Кристо",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "debelo-prase": {
+  "id": "debelo-prase",
+  "title": "Дебело прасе",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "don-kihot": {
+  "id": "don-kihot",
+  "title": "Дон Кихот",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "emil-ot-lyoneberya": {
+  "id": "emil-ot-lyoneberya",
+  "title": "Емил от Льонеберя",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "karlson-koyto-zhivee-na-pokriva": {
+  "id": "karlson-koyto-zhivee-na-pokriva",
+  "title": "Карлсон, който живее на покрива",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "konrad-ili-deteto-ot-konservenata-kutiya": {
+  "id": "konrad-ili-deteto-ot-konservenata-kutiya",
+  "title": "Конрад или детето от консервената кутия",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "lisabon": {
+  "id": "lisabon",
+  "title": "Лисабон",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "malkata-baba-yaga": {
+  "id": "malkata-baba-yaga",
+  "title": "Малката Баба Яга",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "malkata-elfa": {
+  "id": "malkata-elfa",
+  "title": "Малката Елфа",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "malkata-rusalka": {
+  "id": "malkata-rusalka",
+  "title": "Малката русалка",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "malkiyat-prints": {
+  "id": "malkiyat-prints",
+  "title": "Малкият принц",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "manshon-poluobuvka-i-mahesta-brada": {
+  "id": "manshon-poluobuvka-i-mahesta-brada",
+  "title": "Маншон, Полуобувка и Мъхеста брада",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "momicheta-i-momcheta": {
+  "id": "momicheta-i-momcheta",
+  "title": "Момичета и момчета",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "neobvarzani": {
+  "id": "neobvarzani",
+  "title": "Необвързани",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "pepelyashka": {
+  "id": "pepelyashka",
+  "title": "Пепеляшка",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "pinokio": {
+  "id": "pinokio",
+  "title": "Пинокио",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "pipi-dalgoto-chorapche": {
+  "id": "pipi-dalgoto-chorapche",
+  "title": "Пипи Дългото чорапче",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "prikazki-ot-minalo-svarshenite-vremena": {
+  "id": "prikazki-ot-minalo-svarshenite-vremena",
+  "title": "Приказки от минало-свършените времена",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "razdelyam-dvoyki-po-domovete": {
+  "id": "razdelyam-dvoyki-po-domovete",
+  "title": "Разделям двойки по домовете",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "rozhdeniyat-den-na-rupart": {
+  "id": "rozhdeniyat-den-na-rupart",
+  "title": "Рожденият ден на Рупърт",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "romeo-i-zhulieta": {
+  "id": "romeo-i-zhulieta",
+  "title": "Ромео и Жулиета",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "spetsialni-povodi": {
+  "id": "spetsialni-povodi",
+  "title": "Специални поводи",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "sablechi-se-za-vecherya": {
+  "id": "sablechi-se-za-vecherya",
+  "title": "Съблечи се за вечеря",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "san-v-lyatna-nosht": {
+  "id": "san-v-lyatna-nosht",
+  "title": "Сън в лятна нощ",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "tramvay-zhelanie": {
+  "id": "tramvay-zhelanie",
+  "title": "Трамвай „Желание“",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "trite-prasentsa": {
+  "id": "trite-prasentsa",
+  "title": "Трите прасенца",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "hrabriyat-oloven-voynik": {
+  "id": "hrabriyat-oloven-voynik",
+  "title": "Храбрият оловен войник",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "chayka": {
+  "id": "chayka",
+  "title": "Чайка",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "chervenata-shapchitsa": {
+  "id": "chervenata-shapchitsa",
+  "title": "Червената шапчица",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "aneto": {
+  "id": "aneto",
+  "title": "АНЕТО",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "avenyu-q": {
+  "id": "avenyu-q",
+  "title": "Авеню Q",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "aladin-i-valshebnata-lampa": {
+  "id": "aladin-i-valshebnata-lampa",
+  "title": "Аладин и вълшебната лампа",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "alisa-v-stranata-na-chudesata-2": {
+  "id": "alisa-v-stranata-na-chudesata-2",
+  "title": "Алиса в страната на чудесата",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "bebeshka-piesa": {
+  "id": "bebeshka-piesa",
+  "title": "Бебешка пиеса",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "borizmeyko": {
+  "id": "borizmeyko",
+  "title": "Боризмейко",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "dzhak-i-bobenoto-stablo": {
+  "id": "dzhak-i-bobenoto-stablo",
+  "title": "Джак и бобеното стъбло",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "dyadovata-rakavichka": {
+  "id": "dyadovata-rakavichka",
+  "title": "Дядовата ръкавичка",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "za-grahovoto-zarno-i-edna-printsesa": {
+  "id": "za-grahovoto-zarno-i-edna-printsesa",
+  "title": "За граховото зърно и една принцеса",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "zlatka-zlatnoto-momiche": {
+  "id": "zlatka-zlatnoto-momiche",
+  "title": "Златка, златното момиче",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "i-nie-igraem-romeo-i-zhulieta": {
+  "id": "i-nie-igraem-romeo-i-zhulieta",
+  "title": "И НИЕ ИГРАЕМ РОМЕО И ЖУЛИЕТА",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "kofichka-s-lopatka": {
+  "id": "kofichka-s-lopatka",
+  "title": "КОФИЧКА С ЛОПАТКА",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "kose-bose": {
+  "id": "kose-bose",
+  "title": "Косе Босе",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "myuzikalat-spondzh-bob": {
+  "id": "myuzikalat-spondzh-bob",
+  "title": "МЮЗИКЪЛЪТ СПОНДЖ БОБ",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "ognivoto": {
+  "id": "ognivoto",
+  "title": "Огнивото",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "pepelyashka-2": {
+  "id": "pepelyashka-2",
+  "title": "Пепеляшка",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "printsesite-i-zmeyat": {
+  "id": "printsesite-i-zmeyat",
+  "title": "Принцесите и Змеят",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "usmihni-se": {
+  "id": "usmihni-se",
+  "title": "Усмихни се",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "trite-prasentsa-2": {
+  "id": "trite-prasentsa-2",
+  "title": "Трите прасенца",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "henzel-i-gretel-3": {
+  "id": "henzel-i-gretel-3",
+  "title": "Хензел и Гретел",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "dobroto-tyalo": {
+  "id": "dobroto-tyalo",
+  "title": "Доброто тяло",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "idiotat-zvani-vinagi-tri-pati": {
+  "id": "idiotat-zvani-vinagi-tri-pati",
+  "title": "Идиотът звъни винаги три пъти",
+  "titleEn": "",
+  "theatre": "artvent",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "artvent"
+ },
+ "golemiyat-sin": {
+  "id": "golemiyat-sin",
+  "title": "ГОЛЕМИЯТ СИН",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "bella-donna": {
+  "id": "bella-donna",
+  "title": "BELLA DONNA",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "az-dosadnikat": {
+  "id": "az-dosadnikat",
+  "title": "АЗ ДОСАДНИКЪТ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "brachen-dogovor": {
+  "id": "brachen-dogovor",
+  "title": "Брачен Договор",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "vsichko-me-drazni": {
+  "id": "vsichko-me-drazni",
+  "title": "ВСИЧКО МЕ ДРАЗНИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "dami-kanyat": {
+  "id": "dami-kanyat",
+  "title": "ДАМИ КАНЯТ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "dvama-chisto-goli-mazhe": {
+  "id": "dvama-chisto-goli-mazhe",
+  "title": "ДВАМА ЧИСТО ГОЛИ МЪЖЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "diagnoza-krokodil": {
+  "id": "diagnoza-krokodil",
+  "title": "ДИАГНОЗА КРОКОДИЛ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "zheni-govoryat-za": {
+  "id": "zheni-govoryat-za",
+  "title": "ЖЕНИ ГОВОРЯТ ЗА...",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "zhenska-logika": {
+  "id": "zhenska-logika",
+  "title": "ЖЕНСКА ЛОГИКА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "zhivotat-makar-i-kratak-2": {
+  "id": "zhivotat-makar-i-kratak-2",
+  "title": "ЖИВОТЪТ, МАКАР И КРАТЪК",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "zapoznay-me-s-vashite": {
+  "id": "zapoznay-me-s-vashite",
+  "title": "ЗАПОЗНАЙ МЕ С ВАШИТЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "ilyuziyata-v-braka": {
+  "id": "ilyuziyata-v-braka",
+  "title": "ИЛЮЗИЯТА В БРАКА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "komediya-za-tenori": {
+  "id": "komediya-za-tenori",
+  "title": "КОМЕДИЯ ЗА ТЕНОРИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "koshmarna-komediya": {
+  "id": "koshmarna-komediya",
+  "title": "КОШМАРНА КОМЕДИЯ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "lyubov-po-stsenariy-v-hollywood": {
+  "id": "lyubov-po-stsenariy-v-hollywood",
+  "title": "Любов по сценарий в Hollywood",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "molba-za-napuskane": {
+  "id": "molba-za-napuskane",
+  "title": "МОЛБА ЗА НАПУСКАНЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "mazhat-na-zhena-mi": {
+  "id": "mazhat-na-zhena-mi",
+  "title": "МЪЖЪТ НА ЖЕНА МИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "nashata-golyama-frenska-svatba": {
+  "id": "nashata-golyama-frenska-svatba",
+  "title": "НАШАТА ГОЛЯМА ФРЕНСКА СВАТБА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "ne-te-poznavam-veche": {
+  "id": "ne-te-poznavam-veche",
+  "title": "НЕ ТЕ ПОЗНАВАМ ВЕЧЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "nedyalko-yordanov-tsyal-zhivot": {
+  "id": "nedyalko-yordanov-tsyal-zhivot",
+  "title": "НЕДЯЛКО ЙОРДАНОВ - ЦЯЛ ЖИВОТ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "otvorena-brachna-dvoyka": {
+  "id": "otvorena-brachna-dvoyka",
+  "title": "ОТВОРЕНА БРАЧНА ДВОЙКА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "piesata-koyato-se-obarka": {
+  "id": "piesata-koyato-se-obarka",
+  "title": "ПИЕСАТА, КОЯТО СЕ ОБЪРКА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "pretsakani": {
+  "id": "pretsakani",
+  "title": "ПРЕЦАКАНИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "patuvane-do-mars": {
+  "id": "patuvane-do-mars",
+  "title": "ПЪТУВАНЕ ДО МАРС",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "parad-na-ostroumieto-igrata-shake-speare": {
+  "id": "parad-na-ostroumieto-igrata-shake-speare",
+  "title": "Парад на остроумието. Играта Shake-speare",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "revnost": {
+  "id": "revnost",
+  "title": "РЕВНОСТ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "semeystvoto": {
+  "id": "semeystvoto",
+  "title": "СЕМЕЙСТВОТО",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "spanak-s-kartofi": {
+  "id": "spanak-s-kartofi",
+  "title": "СПАНАК С КАРТОФИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "testosteron": {
+  "id": "testosteron",
+  "title": "ТЕСТОСТЕРОН",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "umopomrachenie": {
+  "id": "umopomrachenie",
+  "title": "УМОПОМРАЧЕНИЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "feyata-ot-zaharnitsata": {
+  "id": "feyata-ot-zaharnitsata",
+  "title": "ФЕЯТА ОТ ЗАХАРНИЦАТА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "chudomirshtini": {
+  "id": "chudomirshtini",
+  "title": "ЧУДОМИРЩИНИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "chudnite-priklyucheniya-na-pinokio-2": {
+  "id": "chudnite-priklyucheniya-na-pinokio-2",
+  "title": "Чудните приключения на Пинокио",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "kak-gospodin-mokinpot-se-spasi-ot-neshtastieto": {
+  "id": "kak-gospodin-mokinpot-se-spasi-ot-neshtastieto",
+  "title": "Как господин Мокинпот се спаси от нещастието",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "spisak-na-vsichki-strahotni-neshta": {
+  "id": "spisak-na-vsichki-strahotni-neshta",
+  "title": "СПИСЪК НА ВСИЧКИ СТРАХОТНИ НЕЩА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "shveytsariya": {
+  "id": "shveytsariya",
+  "title": "ШВЕЙЦАРИЯ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "baron-myunhauzen": {
+  "id": "baron-myunhauzen",
+  "title": "БАРОН МЮНХАУЗЕН",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "chervenata-shapchitsa-2": {
+  "id": "chervenata-shapchitsa-2",
+  "title": "ЧЕРВЕНАТА ШАПЧИЦА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "semeen-savet": {
+  "id": "semeen-savet",
+  "title": "СЕМЕЕН СЪВЕТ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "godinata-na-magicheskoto-mislene": {
+  "id": "godinata-na-magicheskoto-mislene",
+  "title": "ГОДИНАТА НА МАГИЧЕСКОТО МИСЛЕНЕ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "zhivotat-pred-teb": {
+  "id": "zhivotat-pred-teb",
+  "title": "ЖИВОТЪТ ПРЕД ТЕБ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "moreto-sled-teb": {
+  "id": "moreto-sled-teb",
+  "title": "МОРЕТО СЛЕД ТЕБ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "dokato-smartta-me-razdeli": {
+  "id": "dokato-smartta-me-razdeli",
+  "title": "ДОКАТО СМЪРТТА МЕ РАЗДЕЛИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "razgovori-s-mama": {
+  "id": "razgovori-s-mama",
+  "title": "РАЗГОВОРИ С МАМА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "hrabriyat-shivach": {
+  "id": "hrabriyat-shivach",
+  "title": "ХРАБРИЯТ ШИВАЧ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "leydi-makbet-ili-7-nachina-da-ubiesh-nyakogo": {
+  "id": "leydi-makbet-ili-7-nachina-da-ubiesh-nyakogo",
+  "title": "ЛЕЙДИ МАКБЕТ ИЛИ 7 НАЧИНА ДА УБИЕШ НЯКОГО",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "limoni-x5": {
+  "id": "limoni-x5",
+  "title": "ЛИМОНИ X5",
+  "titleEn": "",
+  "theatre": "derida",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "derida"
+ },
+ "kak-hubavo-losho-zhivyahme": {
+  "id": "kak-hubavo-losho-zhivyahme",
+  "title": "КАК ХУБАВО ЛОШО ЖИВЯХМЕ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "baron-myunhauzen-2": {
+  "id": "baron-myunhauzen-2",
+  "title": "БАРОН МЮНХАУЗЕН",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "hrabriyat-shivach-2": {
+  "id": "hrabriyat-shivach-2",
+  "title": "ХРАБРИЯТ ШИВАЧ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "l-po-lolita": {
+  "id": "l-po-lolita",
+  "title": "\"L\" ПО ЛОЛИТА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "chervenata-shapchitsa-3": {
+  "id": "chervenata-shapchitsa-3",
+  "title": "ЧЕРВЕНАТА ШАПЧИЦА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "leche-buboleche": {
+  "id": "leche-buboleche",
+  "title": "ЛЕЧЕ - БУБОЛЕЧЕ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "malkata-nula": {
+  "id": "malkata-nula",
+  "title": "МАЛКАТА НУЛА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "moskva-petushki": {
+  "id": "moskva-petushki",
+  "title": "МОСКВА-ПЕТУШКИ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "momche-i-vyatar": {
+  "id": "momche-i-vyatar",
+  "title": "МОМЧЕ И ВЯТЪР",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "klounat-i-negovite-detsa": {
+  "id": "klounat-i-negovite-detsa",
+  "title": "КЛОУНЪТ И НЕГОВИТЕ ДЕЦА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "ribaryat-i-zlatnata-ribka": {
+  "id": "ribaryat-i-zlatnata-ribka",
+  "title": "РИБАРЯТ И ЗЛАТНАТА РИБКА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "piano-na-lunata": {
+  "id": "piano-na-lunata",
+  "title": "ПИАНО НА ЛУНАТА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "nerodena-moma": {
+  "id": "nerodena-moma",
+  "title": "НЕРОДЕНА МОМА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
  }
 }

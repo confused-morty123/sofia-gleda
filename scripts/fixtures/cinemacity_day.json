@@ -1,0 +1,369 @@
+{
+ "body": {
+  "films": [
+   {
+    "id": "8244s2r",
+    "name": "Верити",
+    "length": 114,
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8244S2R.jpg",
+    "videoLink": "https://www.youtube.com/watch?v=FVg_2RmIDQA",
+    "link": "https://www.cinemacity.bg/films/verity/8244s2r",
+    "weight": 0,
+    "releaseYear": "2026",
+    "releaseDate": "2026-10-02T00:00:00",
+    "attributeIds": [
+     "2d",
+     "cat-d",
+     "crime",
+     "drama",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed",
+     "thriller"
+    ]
+   },
+   {
+    "id": "8423s2r",
+    "name": "Падане 2: Мъртва точка",
+    "length": 98,
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8423S2R.jpg",
+    "videoLink": "https://www.youtube.com/watch?v=Y5ESXVfI53g",
+    "link": "https://www.cinemacity.bg/films/fall-2-deadpoint/8423s2r",
+    "weight": 0,
+    "releaseYear": "2026",
+    "releaseDate": "2026-09-04T00:00:00",
+    "attributeIds": [
+     "2d",
+     "adventure",
+     "cat-d",
+     "drama",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed"
+    ]
+   },
+   {
+    "id": "8326s2r",
+    "name": "Не казвай на мама",
+    "length": 95,
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8326S2R.jpg",
+    "videoLink": null,
+    "link": "https://www.cinemacity.bg/films/rolling-loud/8326s2r",
+    "weight": 0,
+    "releaseYear": "2026",
+    "releaseDate": "2026-10-09T00:00:00",
+    "attributeIds": [
+     "2d",
+     "comedy",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed",
+     "tbc"
+    ]
+   },
+   {
+    "id": "8383s3r",
+    "name": "Отмъстителите: Краят – Специално издание",
+    "length": 183,
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8383S3R.jpg",
+    "videoLink": null,
+    "link": "https://www.cinemacity.bg/films/avengers-endgame-special-edition/8383s3r",
+    "weight": 0,
+    "releaseYear": "2019",
+    "releaseDate": "2026-09-25T00:00:00",
+    "attributeIds": [
+     "2d",
+     "3d",
+     "action",
+     "adventure",
+     "cat-c",
+     "first-subbed-lang-bg",
+     "imax",
+     "original-lang-en",
+     "sci-fi",
+     "subbed"
+    ]
+   }
+  ],
+  "events": [
+   {
+    "id": "177521",
+    "filmId": "8326s2r",
+    "cinemaId": "1261",
+    "businessDay": "2026-10-09",
+    "eventDateTime": "2026-10-09T13:20:00",
+    "attributeIds": [
+     "2d",
+     "comedy",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed",
+     "tbc"
+    ],
+    "languages": {
+     "original": [
+      "en"
+     ],
+     "dubbed": [],
+     "voiceover": [],
+     "subtitles": [
+      "bg"
+     ]
+    },
+    "bookingLink": "https://tickets.cinemacity.bg/api/order/177521?lang=bg",
+    "compositeBookingLink": {
+     "type": "PG",
+     "bookingUrl": {
+      "url": "https://tickets.cinemacity.bg/api/order/177521",
+      "params": {
+       "lang": "bg-BG"
+      }
+     },
+     "obsoleteBookingUrl": "https://tickets.cinemacity.bg/api/order/177521?lang=bg",
+     "blockOnlineSales": false,
+     "blockOnlineSalesUntil": null,
+     "serviceUrl": "https://www.cinemacity.bg/booking"
+    },
+    "bookingRouterLaunchLink": "https://www.cinemacity.bg/bg/booking-router/launch/1261/177521?lang=bg",
+    "presentationCode": "177521",
+    "soldOut": false,
+    "availabilityRatio": 1.0,
+    "auditorium": "Зала 6",
+    "auditoriumTinyName": "Зала6"
+   },
+   {
+    "id": "177553",
+    "filmId": "8383s3r",
+    "cinemaId": "1261",
+    "businessDay": "2026-10-09",
+    "eventDateTime": "2026-10-09T14:20:00",
+    "attributeIds": [
+     "2d",
+     "action",
+     "adventure",
+     "cat-c",
+     "first-subbed-lang-bg",
+     "imax",
+     "original-lang-en",
+     "sci-fi",
+     "subbed"
+    ],
+    "languages": {
+     "original": [
+      "en"
+     ],
+     "dubbed": [],
+     "voiceover": [],
+     "subtitles": [
+      "bg"
+     ]
+    },
+    "bookingLink": "https://tickets.cinemacity.bg/api/order/177553?lang=bg",
+    "compositeBookingLink": {
+     "type": "PG",
+     "bookingUrl": {
+      "url": "https://tickets.cinemacity.bg/api/order/177553",
+      "params": {
+       "lang": "bg-BG"
+      }
+     },
+     "obsoleteBookingUrl": "https://tickets.cinemacity.bg/api/order/177553?lang=bg",
+     "blockOnlineSales": false,
+     "blockOnlineSalesUntil": null,
+     "serviceUrl": "https://www.cinemacity.bg/booking"
+    },
+    "bookingRouterLaunchLink": "https://www.cinemacity.bg/bg/booking-router/launch/1261/177553?lang=bg",
+    "presentationCode": "177553",
+    "soldOut": false,
+    "availabilityRatio": 1.0,
+    "auditorium": "IMAX",
+    "auditoriumTinyName": "IMAX"
+   },
+   {
+    "id": "177531",
+    "filmId": "8244s2r",
+    "cinemaId": "1261",
+    "businessDay": "2026-10-09",
+    "eventDateTime": "2026-10-09T14:50:00",
+    "attributeIds": [
+     "2d",
+     "cat-d",
+     "crime",
+     "drama",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed",
+     "thriller"
+    ],
+    "languages": {
+     "original": [
+      "en"
+     ],
+     "dubbed": [],
+     "voiceover": [],
+     "subtitles": [
+      "bg"
+     ]
+    },
+    "bookingLink": "https://tickets.cinemacity.bg/api/order/177531?lang=bg",
+    "compositeBookingLink": {
+     "type": "PG",
+     "bookingUrl": {
+      "url": "https://tickets.cinemacity.bg/api/order/177531",
+      "params": {
+       "lang": "bg-BG"
+      }
+     },
+     "obsoleteBookingUrl": "https://tickets.cinemacity.bg/api/order/177531?lang=bg",
+     "blockOnlineSales": false,
+     "blockOnlineSalesUntil": null,
+     "serviceUrl": "https://www.cinemacity.bg/booking"
+    },
+    "bookingRouterLaunchLink": "https://www.cinemacity.bg/bg/booking-router/launch/1261/177531?lang=bg",
+    "presentationCode": "177531",
+    "soldOut": false,
+    "availabilityRatio": 1.0,
+    "auditorium": "Зала 8",
+    "auditoriumTinyName": "Зала8"
+   },
+   {
+    "id": "177532",
+    "filmId": "8244s2r",
+    "cinemaId": "1261",
+    "businessDay": "2026-10-09",
+    "eventDateTime": "2026-10-09T17:10:00",
+    "attributeIds": [
+     "2d",
+     "cat-d",
+     "crime",
+     "drama",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed",
+     "thriller"
+    ],
+    "languages": {
+     "original": [
+      "en"
+     ],
+     "dubbed": [],
+     "voiceover": [],
+     "subtitles": [
+      "bg"
+     ]
+    },
+    "bookingLink": "https://tickets.cinemacity.bg/api/order/177532?lang=bg",
+    "compositeBookingLink": {
+     "type": "PG",
+     "bookingUrl": {
+      "url": "https://tickets.cinemacity.bg/api/order/177532",
+      "params": {
+       "lang": "bg-BG"
+      }
+     },
+     "obsoleteBookingUrl": "https://tickets.cinemacity.bg/api/order/177532?lang=bg",
+     "blockOnlineSales": false,
+     "blockOnlineSalesUntil": null,
+     "serviceUrl": "https://www.cinemacity.bg/booking"
+    },
+    "bookingRouterLaunchLink": "https://www.cinemacity.bg/bg/booking-router/launch/1261/177532?lang=bg",
+    "presentationCode": "177532",
+    "soldOut": false,
+    "availabilityRatio": 1.0,
+    "auditorium": "Зала 8",
+    "auditoriumTinyName": "Зала8"
+   },
+   {
+    "id": "177522",
+    "filmId": "8326s2r",
+    "cinemaId": "1261",
+    "businessDay": "2026-10-09",
+    "eventDateTime": "2026-10-09T17:40:00",
+    "attributeIds": [
+     "2d",
+     "comedy",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed",
+     "tbc"
+    ],
+    "languages": {
+     "original": [
+      "en"
+     ],
+     "dubbed": [],
+     "voiceover": [],
+     "subtitles": [
+      "bg"
+     ]
+    },
+    "bookingLink": "https://tickets.cinemacity.bg/api/order/177522?lang=bg",
+    "compositeBookingLink": {
+     "type": "PG",
+     "bookingUrl": {
+      "url": "https://tickets.cinemacity.bg/api/order/177522",
+      "params": {
+       "lang": "bg-BG"
+      }
+     },
+     "obsoleteBookingUrl": "https://tickets.cinemacity.bg/api/order/177522?lang=bg",
+     "blockOnlineSales": false,
+     "blockOnlineSalesUntil": null,
+     "serviceUrl": "https://www.cinemacity.bg/booking"
+    },
+    "bookingRouterLaunchLink": "https://www.cinemacity.bg/bg/booking-router/launch/1261/177522?lang=bg",
+    "presentationCode": "177522",
+    "soldOut": false,
+    "availabilityRatio": 1.0,
+    "auditorium": "Зала 6",
+    "auditoriumTinyName": "Зала6"
+   },
+   {
+    "id": "177543",
+    "filmId": "8423s2r",
+    "cinemaId": "1261",
+    "businessDay": "2026-10-09",
+    "eventDateTime": "2026-10-09T21:15:00",
+    "attributeIds": [
+     "2d",
+     "adventure",
+     "cat-d",
+     "drama",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed"
+    ],
+    "languages": {
+     "original": [
+      "en"
+     ],
+     "dubbed": [],
+     "voiceover": [],
+     "subtitles": [
+      "bg"
+     ]
+    },
+    "bookingLink": "https://tickets.cinemacity.bg/api/order/177543?lang=bg",
+    "compositeBookingLink": {
+     "type": "PG",
+     "bookingUrl": {
+      "url": "https://tickets.cinemacity.bg/api/order/177543",
+      "params": {
+       "lang": "bg-BG"
+      }
+     },
+     "obsoleteBookingUrl": "https://tickets.cinemacity.bg/api/order/177543?lang=bg",
+     "blockOnlineSales": false,
+     "blockOnlineSalesUntil": null,
+     "serviceUrl": "https://www.cinemacity.bg/booking"
+    },
+    "bookingRouterLaunchLink": "https://www.cinemacity.bg/bg/booking-router/launch/1261/177543?lang=bg",
+    "presentationCode": "177543",
+    "soldOut": false,
+    "availabilityRatio": 1.0,
+    "auditorium": "Зала 10",
+    "auditoriumTinyName": "Зала10"
+   }
+  ]
+ }
+}

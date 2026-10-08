@@ -198,6 +198,17 @@ if _fi_img_log:
 if _fi_img_added:
     print(f"  film_info img: added {_fi_img_added} fallback poster(s) to POSTERS")
 
+# A poster keyed by an id the catalogue no longer has — a duplicate show merged
+# into another record, a superseded minted film (scrape_programs.py retires
+# both) — points at nothing, and the build gate refuses it. The sidecar files
+# keep their entries; only the inlined maps drop them, loudly.
+if _cat is not None:
+    for _name, _map in (("SHOWART", showart), ("POSTERS", posters_override),
+                        ("TMDBART", art), ("FILMINFO", filminfo)):
+        for _pid in sorted(k for k in _map if not _cat.knows(k)):
+            print(f"  {_name}: dropped {_pid!r} — no film, show or event has this id")
+            del _map[_pid]
+
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
     '   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"} from TMDB;\n'
