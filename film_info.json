@@ -606,7 +606,8 @@
   "dir": "Akira Kurosawa Screenplay: Akira Kurosawa Starring: Akira Terao, Mitsuko Baisho",
   "cast": "Akira Terao, Mitsuko Baisho, Mie Harada, Chishu Ryu, Martin Scorsese",
   "src": "https://www.ndk.bg/en/event/akira-kurosava-sienishha-1990",
-  "pv": 4
+  "pv": 4,
+  "img": "https://ndk.bg/storage/thumbnails/2026/08/31/38393/group-55-kinocult-festival-20260831-064826_resize1000x1000.jpg?v=1788158928"
  },
  "doni-darko": {
   "synBg": "Една вечер, по време на президентските избори през 1988, тийнейджър на име Дони Дарко, излиза от къщата си, докато спи, и вижда огромен, демоничен заек на име Франк. Заекът му казва, че светът ще свърши след 28 дни, 6 часа, 42 минути и 12 секунди. Дони се връща у дома на следващата сутрин и намира разбит джет в стаята му. Докато се опитва да разбере как е оцелял, да оправи проблемите си с училищния побойник и със здравния му учител, заекът Франк продължава да контролира Дони, като го кара да върши вандалски постъпки и по-лошо.",
@@ -764,6 +765,22 @@
   "dir": "Ферзан Йозпетек",
   "cast": "Луиза Раниери, Жасмин Тринка, Сара Бози, Лоредана Каната, Джепи Кучари",
   "src": "https://programata.bg/kino/filmi/diamanti/",
+  "pv": 4
+ },
+ "alehandro-hodorovski-kartitsata-1970": {
+  "src": "https://www.ndk.bg/en/event/alexandro-xodorovski-kierticata-1970",
+  "pv": 4,
+  "img": "https://ndk.bg/storage/thumbnails/2026/08/28/38390/frame-9-kinocult-festival-2-20260828-073318_resize1000x1000.jpeg?v=1787902468"
+ },
+ "alehandro-hodorovski-sveshtenata-planina-1973": {
+  "src": "https://www.ndk.bg/en/event/alexandro-xodorovski-sveshhenata-planina-1973",
+  "pv": 4,
+  "img": "https://ndk.bg/storage/thumbnails/2026/08/28/38389/group-52-kinocult-festival-20260828-073306_resize1000x1000.jpeg?v=1787902527"
+ },
+ "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever": {
+  "dir": "Джъстин Кързел Сценарист",
+  "cast": "Джейкъб Елорди, Киърън Хайндс, Одеса Йънг, Оливия ДеДжондж, Хедър Мичъл",
+  "src": "https://vlaikovacinema.com/screening/%d1%81%d0%b8%d0%bd%d0%b5%d0%bb%d0%b8%d0%b1%d1%80%d0%b8-2026-%d1%82%d0%b5%d1%81%d0%bd%d0%b8%d1%8f%d1%82-%d0%bf%d1%8a%d1%82-%d0%ba%d1%8a%d0%bc-%d0%b4%d0%b0%d0%bb%d0%b5%d1%87%d0%bd%d0%b8%d1%8f-%d1%81/",
   "pv": 4
  }
 }

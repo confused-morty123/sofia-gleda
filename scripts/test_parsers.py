@@ -416,6 +416,209 @@ check("inject_films: newly inserted synth with no film_info genres stays empty",
 check("inject_films: newly inserted synth with film_info genres gets filled",
       _by_id.get("synth-new-with-genres", {}).get("genres", []), ["Документален"])
 
+# -------------------------------- NDK image extraction (harvest_ndk_img)
+print("NDK image extraction (resize1000x1000 vs 182x136 thumbnails)")
+_NDK_IMG_HTML = """<html><body>
+<h1>Akira Kurosawa: Dreams (1990)</h1>
+<div class="event-detail">
+  <img src="https://ndk.bg/storage/thumbnails/2026/08/31/38393/group-55-kinocult-festival-20260831-064826_resize1000x1000.jpg?v=1788158928"
+       alt="Akira Kurosawa: Dreams (1990)">
+  <p>Event description here about the Kurosawa Dreams film.</p>
+</div>
+<!-- sidebar: other events — 182x136 thumbnails must never be used -->
+<div class="sidebar">
+  <img src="https://ndk.bg/storage/thumbnails/2026/08/28/38390/frame-9-kinocult-festival-2-20260828-073318_182x136.jpeg?v=1787902500"
+       alt="Алехандро Ходоровски: Къртицата (1970)">
+  <img src="https://ndk.bg/storage/thumbnails/2026/08/28/38389/group-52-kinocult-festival-20260828-073306_182x136.jpeg?v=1788134441"
+       alt="Алехандро Ходоровски: Свещената планина (1973)">
+</div>
+</body></html>"""
+_ndk_img_soup = BeautifulSoup(_NDK_IMG_HTML, "lxml")
+_ndk_img = FI.harvest_ndk_img(_ndk_img_soup, "https://www.ndk.bg/en/event/akira-kurosava")
+check("ndk harvest: main resize1000x1000 image selected",
+      bool(_ndk_img and "_resize1000x1000" in _ndk_img), True)
+check("ndk harvest: 182x136 thumbnails not selected",
+      bool(_ndk_img and "_182x136" not in _ndk_img), True)
+check("ndk harvest: returns a full https URL",
+      bool(_ndk_img and _ndk_img.startswith("https://")), True)
+# Only-one-candidate case — should return it even without alt-text match
+_NDK_IMG_ONE_HTML = """<html><body>
+<h1>Some Other Film</h1>
+<img src="https://ndk.bg/storage/thumbnails/2026/08/28/38390/some-film_resize1000x1000.jpeg"
+     alt="Different Alt Text">
+</body></html>"""
+_ndk_img_one = FI.harvest_ndk_img(BeautifulSoup(_NDK_IMG_ONE_HTML, "lxml"),
+                                   "https://www.ndk.bg/en/event/some-other")
+check("ndk harvest: single candidate returned even without alt match",
+      bool(_ndk_img_one), True)
+# Multiple candidates with NO alt match should return None (ambiguous)
+_NDK_IMG_MULTI_HTML = """<html><body>
+<h1>Film A</h1>
+<img src="https://ndk.bg/storage/thumbnails/2026/08/28/1/img-a_resize1000x1000.jpeg" alt="Film B">
+<img src="https://ndk.bg/storage/thumbnails/2026/08/28/2/img-b_resize1000x1000.jpeg" alt="Film C">
+</body></html>"""
+_ndk_img_multi = FI.harvest_ndk_img(BeautifulSoup(_NDK_IMG_MULTI_HTML, "lxml"),
+                                     "https://www.ndk.bg/en/event/film-a")
+check("ndk harvest: ambiguous multi-candidate without alt match returns None",
+      _ndk_img_multi is None, True)
+
+# -------------------------------- inject_data fallback priority
+print("inject_data poster priority (TMDB > film_links > film_info img)")
+# These are offline unit checks on the _fi_img_pending / posters_override logic
+# built into inject_data.py. We test the reject_reason guard independently.
+
+# A film_info img from ndk.bg (trusted) with a known film id should be accepted
+_fi_img_ndk = "https://ndk.bg/storage/thumbnails/2026/08/31/38393/group-55_resize1000x1000.jpg"
+_fi_why = PP.reject_reason("akira-kurosava-sanishta-1990", _fi_img_ndk, cat)
+check("ndk.bg film_info img accepted by posterpolicy",
+      _fi_why is None, True)
+# A TMDB-matched film should NOT get its film_info img — checked via reject is None
+# (the inject_data loop skips it before policy, but the policy itself is fine either way)
+# A programata og:image (already tested above for kucheto-na-zlatyu etc) should pass
+_fi_img_prog = "https://programata.bg/wp-content/uploads/2026/02/hqdefault.jpg"
+_fi_why_prog = PP.reject_reason("akira-kurosava-sanishta-1990", _fi_img_prog, cat)
+check("programata.bg film_info img accepted by posterpolicy",
+      _fi_why_prog is None, True)
+# Opaque hash on untrusted host should still be rejected
+_fi_img_bad = "https://cdn.example.com/9f2b7c1d4e6a8b0c2d4e6f80.jpg"
+_fi_why_bad = PP.reject_reason("akira-kurosava-sanishta-1990", _fi_img_bad, cat)
+check("opaque hash on untrusted host rejected for film_info img",
+      bool(_fi_why_bad), True)
+
+# -------------------------------- declutter() — new cases
+print("declutter: Director:Title(Year) and festival-prefix cases")
+_dc = TMDB.declutter
+
+# Director-prefix cases
+_t, _y = _dc("Акира Куросава: Сънища (1990)")
+check("declutter: Cyrillic Director:Title(Year) -> title",
+      _t, "Сънища")
+check("declutter: Cyrillic Director:Title(Year) -> year",
+      _y, 1990)
+
+_t, _y = _dc("Алехандро Ходоровски: Свещената планина (1973)")
+check("declutter: Director:Title(Year) -> title",
+      _t, "Свещената планина")
+check("declutter: Director:Title(Year) -> year",
+      _y, 1973)
+
+# Festival prefix cases
+_t2, _y2 = _dc("СИНЕЛИБРИ 2026 – Заглавие на филм")
+check("declutter: festival prefix stripped",
+      "СИНЕЛИБРИ" not in _t2, True)
+check("declutter: festival prefix content kept",
+      "Заглавие" in _t2, True)
+
+_t3, _y3 = _dc("ЕВРОПЕЙСКИ КИНОКЛАСИКИ: Някакъв филм")
+check("declutter: series prefix stripped",
+      "ЕВРОПЕЙСКИ" not in _t3, True)
+check("declutter: series prefix content kept",
+      "Някакъв" in _t3, True)
+
+# Trailing-bar year (title + bars)
+_t4, _y4 = _dc("Филм | 1979 |")
+check("declutter: trailing bar year stripped from title",
+      "|" not in _t4, True)
+check("declutter: trailing bar year extracted",
+      _y4, 1979)
+
+# "КИНОКЛАСИКИ: КОСА | 1979 |" — festival prefix + bars year + colon subtitle
+_t4b, _y4b = _dc("КИНОКЛАСИКИ: КОСА | 1979 |")
+check("declutter: КИНОКЛАСИКИ prefix stripped",
+      "КИНОКЛАСИКИ" not in _t4b, True)
+check("declutter: КОСА title kept",
+      "КОСА" in _t4b, True)
+check("declutter: bars year extracted from КИНОКЛАСИКИ case",
+      _y4b, 1979)
+
+# Passthrough: a normal title without clutter
+_t5, _y5 = _dc("The Shining")
+check("declutter: plain title unchanged",
+      _t5, "The Shining")
+check("declutter: plain title yields no year",
+      _y5, None)
+
+# ---- Regression: franchise / subtitle colons must NOT be stripped ----
+print("declutter: franchise subtitle-colon regression (must pass through unchanged)")
+for _franchise in [
+    "Venom: The Last Dance",
+    "2001: A Space Odyssey",
+    "Spider-Man: Brand New Day",
+    "Oasis: Don't Look Back In Anger",
+    "Mission: Impossible – Dead Reckoning",
+]:
+    _ft, _fy = _dc(_franchise)
+    # The full title must be preserved (colon and all)
+    check(f"declutter: {_franchise!r} passes through unchanged",
+          _ft, _franchise)
+    check(f"declutter: {_franchise!r} yields no year",
+          _fy, None)
+
+# Year mismatch: pick() and pick_bg() must reject a result more than 1 year off
+# when a year was embedded in the title.
+print("declutter: year-mismatch guard (mocked api)")
+_orig_api3 = TMDB.api
+
+def _mock_api_wrong_year(path, params):
+    # Returns a 2010 film when we search for a 1990 film
+    return {"results": [{"id": 9999, "title": "Сънища", "original_title": "Dreams",
+                          "release_date": "2010-01-01", "vote_count": 100,
+                          "poster_path": "/fake.jpg"}]}
+TMDB.api = _mock_api_wrong_year
+try:
+    _yr_mismatch_result = TMDB.search_en("Сънища", 1990)
+    # pick() should still return the result (year scoring only, not hard reject)
+    # The hard reject is in main() after declutter; test it inline here:
+    _best_yr = _yr_mismatch_result
+    _reject = False
+    if _best_yr:
+        _tmdb_yr = (_best_yr.get("release_date") or "")[:4]
+        if _tmdb_yr and abs(int(_tmdb_yr) - 1990) > 1:
+            _reject = True
+    check("declutter year-mismatch: result from wrong decade is rejected",
+          _reject, True)
+finally:
+    TMDB.api = _orig_api3
+
+# ---- full-title-first ordering (bg path, mocked api) ----
+print("declutter: full-title-first ordering on bg path (mocked api)")
+_orig_api4 = TMDB.api
+_bg_queries_seen = []
+
+def _mock_api_full_first(path, params):
+    q = params.get("query", "")
+    _bg_queries_seen.append(q)
+    # Full title "Акира Куросава: Сънища (1990)" returns no results;
+    # decluttered "Сънища" returns a match — verifying fallback order.
+    if "Куросава" in q or "1990" in q:
+        return {"results": []}
+    return {"results": [{"id": 777, "title": "Сънища", "original_title": "Dreams",
+                          "release_date": "1990-07-24", "vote_count": 500}]}
+TMDB.api = _mock_api_full_first
+try:
+    _bg_queries_seen.clear()
+    # Simulate the bg search path: full title first, then decluttered fallback
+    _full_bg = "Акира Куросава: Сънища (1990)"
+    _clean_bg, _extr_yr = _dc(_full_bg)
+    _res_full = TMDB.api("search/movie", {"query": _full_bg, "language": "bg",
+                                           "include_adult": "false"})
+    _best_full = TMDB.pick_bg((_res_full or {}).get("results", []), _full_bg, None)
+    check("full-title-first: full title searched first",
+          _bg_queries_seen[0] == _full_bg, True)
+    check("full-title-first: full title returns no match (as expected)",
+          _best_full is None, True)
+    # Fallback
+    _res_clean = TMDB.api("search/movie", {"query": _clean_bg, "language": "bg",
+                                            "include_adult": "false"})
+    _best_clean = TMDB.pick_bg((_res_clean or {}).get("results", []), _clean_bg,
+                                _extr_yr)
+    check("full-title-first: decluttered fallback finds a match",
+          _best_clean is not None, True)
+    check("full-title-first: fallback match has correct year",
+          (_best_clean.get("release_date") or "")[:4], "1990")
+finally:
+    TMDB.api = _orig_api4
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

@@ -5,17 +5,29 @@ For every film in FILMS that is missing details (empty/short/placeholder
 synopsis, or empty director/cast), this script fetches the film's LINKS
 info page and parses Bulgarian synopsis, director, cast and genres.
 
+Also harvests a poster image `img` (absolute URL) for films that have no TMDB
+poster and no film_links_posters entry:
+  - NDK pages: the content <img> whose _resize1000x1000 variant is in the main
+    content — never the 182x136 sidebar thumbnails.  The alt must match the
+    page's event title (normalised), or the single _resize1000x1000 image is
+    taken if only one exists.
+  - programata / vlaikova pages: og:image, or the main hero/poster image.
+
+Keep-previous: a failed fetch never removes an existing `img`.
+The "skip complete entries" shortcut must not prevent harvesting `img`.
+
 Parsers:
   programata.bg /kino/filmi/<slug>/  — the richest source for BG cinema
   vlaikovacinema.com /screening/.../  — BG description + cast/dir
-  ndk.bg/en/...                       — English description (synEn)
+  ndk.bg/en/...                       — English description (synEn) + poster
   Other hosts                         — skipped
 
 Genre vocabulary: mapped to the app's fixed list only. Unknown words dropped.
 "Български" added when the page's country is България.
 
 Keep-previous: never blanks an entry a failed fetch could not refresh; skips
-films whose existing entry already has synopsis + dir + cast.
+films whose existing entry already has synopsis + dir + cast (but still
+harvests img for poster-less entries).
 
     python3 scripts/fetch_film_info.py          # -> film_info.json
 """
@@ -34,6 +46,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "film_info.json"
 CINEMA_FILMS = ROOT / "cinema_films.json"
+TMDB_JSON    = ROOT / "tmdb_films.json"
+LINKS_JSON   = ROOT / "film_links_posters.json"
 
 # App's canonical genre vocabulary. Only words from this list may appear in
 # the genres field; unknown words from the page are silently dropped.
@@ -386,6 +400,150 @@ def parse_ndk_page(soup, url):
 
 
 # --------------------------------------------------------------------------
+# Poster image harvesting
+# --------------------------------------------------------------------------
+
+# Patterns for NDK thumbnail sizes that must never be used as the main poster.
+_NDK_THUMB_RE = re.compile(r'_182x136\b|_182x\d+\b|_\d+x136\b', re.I)
+
+# Bad image markers: site chrome / shared artwork
+_BAD_IMG_HINTS = ("logo", "placeholder", "default-", "/default", "fallback",
+                  "avatar", "sprite", "share-", "/share.", "og-image.png")
+
+
+def _is_bad_img(url):
+    return any(b in url.lower() for b in _BAD_IMG_HINTS)
+
+
+def _norm_title(s):
+    """Normalise a title for alt-text matching: lower-case, strip punctuation."""
+    s = (s or "").lower()
+    s = re.sub(r'[„“”"\'\'\'«»`.,!?:;—–\-_\(\)\[\]/\\]', " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def harvest_ndk_img(soup, url):
+    """Extract the main event poster from an ndk.bg/en/ page.
+
+    Selects the _resize1000x1000 <img> in the main page content.
+    Never selects a 182×136 thumbnail (sidebar / "other events" section).
+    Preference order:
+      1. The _resize1000x1000 image whose alt text matches the page <h1> title
+         (normalised).
+      2. The single _resize1000x1000 image found anywhere in the page.
+    Returns an absolute https URL, or None.
+    """
+    # Collect all ndk.bg/storage images that are the large resize variant
+    candidates = []
+    for img in soup.find_all("img"):
+        src = img.get("src") or ""
+        if not src.startswith("https://"):
+            if src.startswith("//"):
+                src = "https:" + src
+            elif src.startswith("/"):
+                src = "https://ndk.bg" + src
+        if "ndk.bg/storage" not in src:
+            continue
+        if _NDK_THUMB_RE.search(src):
+            continue   # sidebar thumbnail — skip
+        if "_resize1000x1000" not in src:
+            continue   # only the large variant is useful
+        if _is_bad_img(src):
+            continue
+        alt = img.get("alt") or ""
+        candidates.append((src, alt))
+
+    if not candidates:
+        return None
+
+    # Try to match by alt text against the page's <h1> / <title>
+    page_title = ""
+    h1 = soup.find("h1")
+    if h1:
+        page_title = h1.get_text(" ", strip=True)
+    if not page_title:
+        t = soup.find("title")
+        if t:
+            page_title = t.get_text(" ", strip=True)
+    norm_page = _norm_title(page_title)
+
+    for src, alt in candidates:
+        if norm_page and _norm_title(alt) and norm_page == _norm_title(alt):
+            return src
+
+    # Fallback: if there is exactly one large-resize image, use it
+    if len(candidates) == 1:
+        return candidates[0][0]
+
+    return None
+
+
+def harvest_programata_img(soup, url):
+    """Extract the poster/hero image from a programata.bg film page.
+
+    Tries og:image first; then the main film-poster/hero image.
+    Returns an absolute https URL, or None.
+    """
+    og = soup.find("meta", attrs={"property": "og:image"})
+    if og:
+        u = (og.get("content") or "").strip()
+        if u.startswith("//"):
+            u = "https:" + u
+        if u.startswith("https://") and not _is_bad_img(u):
+            return u
+    # Fallback: film hero image inside the page
+    for sel in (".film-poster img", ".film-image img", ".poster img",
+                "[class*='poster'] img", ".film-cover img", ".hero img"):
+        img = soup.select_one(sel)
+        if img:
+            src = img.get("src") or ""
+            if src.startswith("//"):
+                src = "https:" + src
+            if src.startswith("https://") and not _is_bad_img(src):
+                return src
+    return None
+
+
+def harvest_vlaikova_img(soup, url):
+    """Extract the poster/hero image from a vlaikovacinema.com page.
+
+    Tries og:image first; then the main content image.
+    Returns an absolute https URL, or None.
+    """
+    og = soup.find("meta", attrs={"property": "og:image"})
+    if og:
+        u = (og.get("content") or "").strip()
+        if u.startswith("//"):
+            u = "https:" + u
+        if u.startswith("https://") and not _is_bad_img(u):
+            return u
+    # Fallback: first image inside the main content
+    for sel in (".entry-content img", ".screening-description img",
+                ".film-description img", ".content img"):
+        img = soup.select_one(sel)
+        if img:
+            src = img.get("src") or ""
+            if src.startswith("//"):
+                src = "https:" + src
+            if src.startswith("https://") and not _is_bad_img(src):
+                return src
+    return None
+
+
+def harvest_img(soup, url):
+    """Dispatch image harvesting to the right function based on URL host."""
+    from urllib.parse import urlparse
+    host = urlparse(url).netloc.lstrip("www.")
+    if "ndk.bg" in host:
+        return harvest_ndk_img(soup, url)
+    elif "programata.bg" in host:
+        return harvest_programata_img(soup, url)
+    elif "vlaikovacinema.com" in host:
+        return harvest_vlaikova_img(soup, url)
+    return None
+
+
+# --------------------------------------------------------------------------
 # Dispatch
 # --------------------------------------------------------------------------
 
@@ -445,10 +603,30 @@ def main():
         except Exception:
             prev = {}
 
+    # Build sets of films that already have a verified poster from TMDB or
+    # film_links_posters.json — we only need to harvest img for films with
+    # neither (lowest-priority fallback).
+    tmdb_with_poster: set = set()
+    if TMDB_JSON.exists():
+        try:
+            tmdb_data = json.loads(TMDB_JSON.read_text(encoding="utf-8"))
+            tmdb_with_poster = {fid for fid, v in tmdb_data.items()
+                                if v.get("poster_path")}
+        except Exception:
+            pass
+
+    film_links_covered: set = set()
+    if LINKS_JSON.exists():
+        try:
+            fl = json.loads(LINKS_JSON.read_text(encoding="utf-8"))
+            film_links_covered = {fid for fid, v in fl.items() if v}
+        except Exception:
+            pass
+
     session = Fetcher(budget_seconds=300)
 
     # Track stats
-    n_fetched = n_synopsis = n_dir = n_cast = n_genres = 0
+    n_fetched = n_synopsis = n_dir = n_cast = n_genres = n_img = 0
 
     out: dict = dict(prev)   # start from previous; only update what we can
 
@@ -457,18 +635,25 @@ def main():
         if not fid:
             continue
 
-        # Skip films whose existing film_info entry is up-to-date and complete.
-        # An entry is skipped only if it has all three details AND is not stale
-        # (old parser version, or suspiciously long cast/dir field).
         existing = out.get(fid, {})
+        # Does this film still need a poster image (img)?
+        needs_img = (fid not in tmdb_with_poster
+                     and fid not in film_links_covered
+                     and not existing.get("img"))
+
+        # Skip films whose existing film_info entry is up-to-date and complete,
+        # UNLESS they still need an img — in that case we must fetch the page.
         has_syn = bool(existing.get("synBg") or existing.get("synEn"))
         has_dir = bool(existing.get("dir") and existing.get("dir") != "—")
         has_cast = bool(existing.get("cast") and existing.get("cast") != "—")
-        if has_syn and has_dir and has_cast and not _film_info_stale(existing):
+        details_complete = (has_syn and has_dir and has_cast
+                            and not _film_info_stale(existing))
+        if details_complete and not needs_img:
             continue
 
         # Determine if this film (in FILMS) needs details
-        if not needs_details(f):
+        details_needed = needs_details(f)
+        if not details_needed and not needs_img:
             continue
 
         # Get the link for this film
@@ -488,36 +673,46 @@ def main():
             continue
         n_fetched += 1
 
-        rec = parse_film_page(soup, url)
-        if not rec:
-            continue
-
         # Merge: never blank a field that had a value
         entry = dict(out.get(fid, {}))
-        changed = False
-        for field in ("synBg", "synEn", "dir", "cast", "genres"):
-            val = rec.get(field)
-            if val:
-                if field == "genres" and not isinstance(val, list):
-                    continue
-                if field == "genres" and not val:
-                    continue
-                entry[field] = val
-                changed = True
 
-        entry["src"] = url
-        entry["pv"] = _PARSER_VERSION   # parser version stamp
-        out[fid] = entry
+        # ----- Parse details (synopsis, dir, cast, genres) -----
+        if details_needed and not details_complete:
+            rec = parse_film_page(soup, url)
+            for field in ("synBg", "synEn", "dir", "cast", "genres"):
+                val = rec.get(field)
+                if val:
+                    if field == "genres" and not isinstance(val, list):
+                        continue
+                    if field == "genres" and not val:
+                        continue
+                    entry[field] = val
 
-        # Count coverage
-        if rec.get("synBg") or rec.get("synEn"):
-            n_synopsis += 1
-        if rec.get("dir"):
-            n_dir += 1
-        if rec.get("cast"):
-            n_cast += 1
-        if rec.get("genres"):
-            n_genres += 1
+            entry["src"] = url
+            entry["pv"] = _PARSER_VERSION   # parser version stamp
+
+            # Count coverage
+            if rec.get("synBg") or rec.get("synEn"):
+                n_synopsis += 1
+            if rec.get("dir"):
+                n_dir += 1
+            if rec.get("cast"):
+                n_cast += 1
+            if rec.get("genres"):
+                n_genres += 1
+
+        # ----- Harvest poster image (img) -----
+        if needs_img:
+            img_url = harvest_img(soup, url)
+            if img_url:
+                entry["img"] = img_url
+                n_img += 1
+                print(f"  img {fid}: {img_url[:80]}")
+            # Keep-previous: if fetch succeeded but no img found and there was
+            # a previous img, that was already in `entry` (copied from prev above).
+
+        if entry:
+            out[fid] = entry
 
     # Write output
     out_clean = {k: v for k, v in out.items() if v}
@@ -530,6 +725,7 @@ def main():
     print(f"  director:  {n_dir} new")
     print(f"  cast:      {n_cast} new")
     print(f"  genres:    {n_genres} new")
+    print(f"  img:       {n_img} new poster images harvested")
     print(f"  {len(out_clean)} total entries in {OUT.name}")
     return 0
 

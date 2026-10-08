@@ -3,6 +3,13 @@
 
   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"}  (from tmdb_films.json)
   SHOWART: theatre show id -> full poster URL                          (from theatre_posters.json)
+  POSTERS: id -> full image URL (film_links_posters.json + film_info img fallback)
+
+Priority (highest first):
+  1. TMDB poster (TMDBART[id].p)
+  2. film_links_posters.json entry (og:image harvested by fetch_tmdb.py)
+  3. film_info.json `img` — lowest priority; only for films with no TMDB poster
+     and no film_links_posters entry; must pass posterpolicy.
 
 Idempotent: regenerates the whole block each run. Missing ids keep the app's
 generated SVG artwork.
@@ -13,15 +20,17 @@ import json, os, re, sys, pathlib
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 try:
-    from posterpolicy import Catalogue
+    from posterpolicy import Catalogue, reject_reason
 except ImportError:
     Catalogue = None
+    def reject_reason(pid, url, catalogue=None): return None  # type: ignore
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 TMDB_JSON = ROOT / "tmdb_films.json"
 SHOW_JSON = ROOT / "theatre_posters.json"
 LINKS_JSON = ROOT / "film_links_posters.json"
+FILM_INFO_JSON = ROOT / "film_info.json"
 
 tmdb = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {}
 shows = json.load(open(SHOW_JSON, encoding="utf-8")) if SHOW_JSON.exists() else {}
@@ -50,13 +59,12 @@ showart = {k: v for k, v in shows.items() if v}
 # Film details harvested from each film's own programme page (synopsis, director,
 # cast) for films the seed data and TMDB leave empty. Written by fetch_film_info.py;
 # always emitted (possibly empty) because the app declares nothing else for it.
-FILM_INFO = ROOT / "film_info.json"
 filminfo = {}
-if FILM_INFO.exists():
+if FILM_INFO_JSON.exists():
     try:
-        filminfo = {k: v for k, v in json.load(open(FILM_INFO, encoding="utf-8")).items() if v}
+        filminfo = {k: v for k, v in json.load(open(FILM_INFO_JSON, encoding="utf-8")).items() if v}
     except Exception as e:
-        print(f"  (could not read {FILM_INFO.name}: {e})")
+        print(f"  (could not read {FILM_INFO_JSON.name}: {e})")
 
 # Films TMDB cannot match keep their own programme-page image (og:image), harvested
 # into film_links_posters.json. These are full URLs and go into POSTERS, which
@@ -64,11 +72,34 @@ if FILM_INFO.exists():
 # WITHOUT a TMDB poster, so this stays a pure fallback and never shadows TMDB art.
 posters_override = {k: v for k, v in film_links.items() if v}
 
+# Lowest-priority fallback: film_info.json `img` field (harvested by fetch_film_info.py
+# from the NDK/programata/vlaikova event page). Only used when:
+#   - the film has no TMDB poster (TMDBART[id].p absent)
+#   - the film has no film_links_posters entry
+# posterpolicy is applied to each candidate to refuse opaque/untrusted images.
+_tmdb_with_poster = {fid for fid, v in tmdb.items() if v.get("poster_path")}
+_fi_img_added = 0
+_fi_img_log = []
+# Defer catalogue construction (it reads index.html which hasn't been written yet
+# for this very run — but we only need to CHECK `knows`, which is stable).
+# We build the catalogue once below, after alias computation.
+_fi_img_pending = {}  # fid -> img_url, to be policy-checked after catalogue is ready
+for _fid, _fi in filminfo.items():
+    _img = _fi.get("img")
+    if not _img:
+        continue
+    if _fid in _tmdb_with_poster:
+        continue   # TMDB poster exists — no need for fallback
+    if _fid in posters_override:
+        continue   # film_links_posters already covers this film
+    _fi_img_pending[_fid] = _img
+
 # A cinema-scope event that is simply a screening of a film we already list must
 # borrow that film's verified TMDB poster - harvesting a second image for the same
 # title is what put the wrong artwork on the Oasis screening. Computed here rather
 # than hand-maintained, so a new limited screening is covered the day it appears.
 alias = {}
+_cat = None
 if Catalogue is not None:
     try:
         _cat = Catalogue.from_html(HTML)
@@ -78,6 +109,21 @@ if Catalogue is not None:
                 alias[_eid] = _film
     except Exception as e:
         print(f"  (could not compute SHOWALIAS: {e})")
+
+# Apply film_info img fallback: check posterpolicy and merge into POSTERS.
+# Now that _cat is available we can do the full policy check (including knows()).
+for _fid, _img in _fi_img_pending.items():
+    _why = reject_reason(_fid, _img, _cat)
+    if _why:
+        _fi_img_log.append(f"  fi-img dropped {_fid!r}: {_why}")
+    else:
+        posters_override[_fid] = _img
+        _fi_img_added += 1
+if _fi_img_log:
+    for _l in _fi_img_log:
+        print(_l)
+if _fi_img_added:
+    print(f"  film_info img: added {_fi_img_added} fallback poster(s) to POSTERS")
 
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
@@ -124,7 +170,9 @@ if stray:
 
 new = re.sub(MARKERS, lambda m: block, data, count=1, flags=re.S)
 HTML.write_text(new, encoding="utf-8")
+_n_fi_img_in_posters = sum(1 for fid in _fi_img_pending if fid in posters_override)
 print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' in r)} with posters), "
-      f"POSTERS: {len(posters_override)} og:image fallbacks, "
+      f"POSTERS: {len(posters_override)} entries "
+      f"({len(posters_override) - _n_fi_img_in_posters} og:image + {_n_fi_img_in_posters} film_info-img fallbacks), "
       f"SHOWART: {len(showart)} shows, SHOWALIAS: {len(alias)} mirrored events"
       + (" (" + ", ".join(f"{k}->{v}" for k, v in alias.items()) + ")" if alias else ""))
