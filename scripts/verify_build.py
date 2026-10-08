@@ -203,6 +203,33 @@ if vlinks_data is not None:
                     fail("FILMINFO is not a JSON object")
             except Exception as e:
                 fail(f"FILMINFO is not valid JSON: {e}")
+            else:
+                # Detect label-bleed in dir/cast: a credit label keyword inside
+                # the value means the parser ate multiple fields, or the source
+                # had garbage data that was not sanitised.
+                _CREDIT_LABEL_PAT = re.compile(
+                    r'\b(?:Screenplay|Starring|Cinematography|Editing|Music|'
+                    r'Producer|Language|Subtitles|Duration|Director|Cast|'
+                    r'Сценарий|Участват|В\s+ролите|Режисьор|Оператор|Музика|'
+                    r'Продуцент|Монтаж|Език)\s*[:：]',
+                    re.I,
+                )
+                # Detect a dangling single-letter token after a colon,
+                # e.g. "В ролите: О" — a sign of garbage source data.
+                _DANGLING_TOKEN_PAT = re.compile(r':\s*\b[A-Za-zА-Яа-яЁёА-ЩЫЬЭЮЯа-щыьэюя]\b\s*$')
+                bad_fi: list[str] = []
+                for fid, entry in fi.items():
+                    for field in ("dir", "cast"):
+                        val = entry.get(field) or ""
+                        if not val:
+                            continue
+                        if _CREDIT_LABEL_PAT.search(val):
+                            bad_fi.append(f"{fid}.{field}={val[:60]!r}")
+                        elif _DANGLING_TOKEN_PAT.search(val):
+                            bad_fi.append(f"{fid}.{field}={val[:60]!r} (dangling token)")
+                if bad_fi:
+                    fail("FILMINFO dir/cast contains credit label bleed:\n  "
+                         + "\n  ".join(bad_fi[:10]))
         # Check every upcoming (film, venue) in SHOWTIMES has either a VLINKS entry
         # or a BOOKING entry with a url.  "Upcoming" means date >= window.from —
         # past rows from the tail of the window are irrelevant.

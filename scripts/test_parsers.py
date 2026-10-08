@@ -208,6 +208,84 @@ check("ndk cast extracted",
 check("ndk no synBg (English page)",
       "synBg" not in ndk_rec, True)
 
+# ---- NDK inline-credits label-bleed guard (issue: Director eats Screenplay/Starring) ----
+print("ndk inline-credits label-bleed guard")
+# Reproduces the real ndk.bg layout: all credits in a single paragraph,
+# separated only by "Label: value" pairs (no newlines between them).
+_NDK_BLEED_HTML = """<html><body>
+<div class="event-description">
+  <p>shed by Criterion Collection. Director: Akira Kurosawa Screenplay: Akira Kurosawa
+Starring: Akira Terao, Mitsuko Baisho, Mie Harada, Chishu Ryu, Martin Scorsese
+Cinematography: Takao Saito, Shoji Ueda Editing: Tome Minami Music: Shinichiro Ikebe
+Language: Japanese | Subtitles: Bulgarian Duration: 120 min.
+A little boy witnesses a wedding procession of foxes in a forest. The story continues
+with eight dreamlike vignettes inspired by personal recollections of the director.</p>
+</div>
+<a class="ticket-link" href="https://epaygo.bg/12345">Buy tickets</a>
+</body></html>"""
+_ndk_bleed_soup = BeautifulSoup(_NDK_BLEED_HTML, "lxml")
+_ndk_bleed_rec = FI.parse_ndk_page(_ndk_bleed_soup, "https://www.ndk.bg/en/event/akira-bleed/")
+check("ndk-bleed: director is exactly 'Akira Kurosawa'",
+      _ndk_bleed_rec.get("dir") == "Akira Kurosawa", True)
+check("ndk-bleed: director does not contain 'Screenplay'",
+      "Screenplay" not in (_ndk_bleed_rec.get("dir") or ""), True)
+check("ndk-bleed: cast does not contain 'Cinematography'",
+      "Cinematography" not in (_ndk_bleed_rec.get("cast") or ""), True)
+check("ndk-bleed: cast does not contain 'Music'",
+      "Music" not in (_ndk_bleed_rec.get("cast") or ""), True)
+check("ndk-bleed: cast contains 'Akira Terao'",
+      "Akira Terao" in (_ndk_bleed_rec.get("cast") or ""), True)
+check("ndk-bleed: cast limited to 5 names",
+      len((_ndk_bleed_rec.get("cast") or "").split(",")) <= 5, True)
+
+# ---- Programata label-bleed guard (issue: dir = 'В ролите: О' from bad source data) ----
+print("programata label-bleed guard (bad source data)")
+# Reproduces the real programata.bg bug where the Режисьор field contains
+# a partial cast label instead of the director name.
+_PROG_BLEED_HTML = """<html><body>
+<div class="text-summary">
+  <div class="text-summary-item movie-0"><span>Жанр: </span>комедия, драма</div>
+  <div class="text-summary-item movie-1"><span>Държава: </span>САЩ</div>
+  <div class="text-summary-item movie-2"><span>Режисьор: </span>В ролите: О</div>
+  <div class="text-summary-item movie-3"><span>Участват: </span>Оливия Уайлд, Пенелопе Крус, Сет Роугън</div>
+</div>
+<div class="text mb-5 pb-5">
+  <p>Историята на комедия с хора, която се развива в съвременна Америка и показва трудностите на съжителство между съседите.</p>
+</div>
+</body></html>"""
+_prog_bleed_soup = BeautifulSoup(_PROG_BLEED_HTML, "lxml")
+_prog_bleed_rec = FI.parse_programata(_prog_bleed_soup,
+                                      "https://programata.bg/kino/filmi/sasedite-otgore/")
+check("prog-bleed: garbage dir 'В ролите: О' is discarded (dir absent or clean)",
+      not _prog_bleed_rec.get("dir") or
+      FI._CREDIT_LABEL_RE.search(_prog_bleed_rec.get("dir") or "") is None, True)
+check("prog-bleed: cast is still extracted correctly",
+      "Оливия Уайлд" in (_prog_bleed_rec.get("cast") or ""), True)
+check("prog-bleed: synopsis extracted",
+      len(_prog_bleed_rec.get("synBg") or "") >= 80, True)
+
+# ---- _clean_credit_value unit tests ----
+print("_clean_credit_value helper")
+check("clean: strips 'Screenplay:' tail",
+      FI._clean_credit_value("Akira Kurosawa Screenplay: Akira Kurosawa"), "Akira Kurosawa")
+check("clean: strips 'Starring:' tail",
+      FI._clean_credit_value("Someone Starring: Actor A, Actor B"), "Someone")
+check("clean: strips Bulgarian 'В ролите:' tail",
+      FI._clean_credit_value("В ролите: О"), "")
+check("clean: clean value unchanged",
+      FI._clean_credit_value("Akira Kurosawa"), "Akira Kurosawa")
+check("clean: strips trailing punctuation",
+      FI._clean_credit_value("Steven Spielberg,"), "Steven Spielberg")
+
+# ---- _film_info_stale detects label bleed ----
+print("_film_info_stale label-bleed detection")
+check("stale: dir with label bleed is stale",
+      FI._film_info_stale({"pv": FI._PARSER_VERSION, "dir": "Akira Kurosawa Screenplay: Akira Kurosawa"}), True)
+check("stale: dir 'В ролите: О' is stale",
+      FI._film_info_stale({"pv": FI._PARSER_VERSION, "dir": "В ролите: О"}), True)
+check("stale: clean dir at current pv is not stale",
+      FI._film_info_stale({"pv": FI._PARSER_VERSION, "dir": "Akira Kurosawa", "cast": "Akira Terao"}), False)
+
 # --------------------------------------------------------- urbo/epaygo extraction
 print("urbo/epaygo ticket-link extraction")
 VLAIKOVA_HTML = str(vl_soup)  # vlaikova fixture has an embed.urboapp.com link

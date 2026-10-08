@@ -95,7 +95,29 @@ _PLACEHOLDER_RE = re.compile(r'прожекция в|прожекция във|s
 
 # Parser version — bump this to force re-fetch of all entries that were
 # written by an older parser (old entries have no "pv" key or a smaller int).
-_PARSER_VERSION = 4
+_PARSER_VERSION = 5
+
+# Credit-label words that must never appear inside a dir/cast value.
+# Used both for sanitisation and for stale-detection.
+_CREDIT_LABEL_RE = re.compile(
+    r'\b(?:Screenplay|Starring|Cinematography|Editing|Music|Producer|Language|'
+    r'Subtitles|Duration|Director|Cast|Сценарий|Участват|В\s+ролите|Режисьор|'
+    r'Оператор|Музика|Продуцент|Монтаж|Език)\s*[:：]',
+    re.I,
+)
+
+
+def _clean_credit_value(text: str) -> str:
+    """Strip any trailing label-bleed from a director or cast value.
+
+    If the value contains a credit-label pattern (e.g. "Screenplay:",
+    "В ролите:"), truncate at the first such occurrence and strip trailing
+    punctuation.  Returns the cleaned string (possibly empty).
+    """
+    m = _CREDIT_LABEL_RE.search(text)
+    if m:
+        text = text[:m.start()]
+    return text.strip().rstrip(",.;: ")
 
 
 def extract_array(src, name):
@@ -137,7 +159,8 @@ def _film_info_stale(existing: dict) -> bool:
     An entry is stale if:
     - It was written by an older parser version (pv < _PARSER_VERSION), OR
     - Its cast field is suspiciously long (>160 chars) — sign of synopsis bleed, OR
-    - Its dir field is suspiciously long (>80 chars) — sign of bleed.
+    - Its dir field is suspiciously long (>80 chars) — sign of bleed, OR
+    - Its dir or cast value contains a credit-label keyword (label bleed).
     """
     if existing.get("pv", 0) < _PARSER_VERSION:
         return True
@@ -146,6 +169,9 @@ def _film_info_stale(existing: dict) -> bool:
         return True
     dir_ = existing.get("dir") or ""
     if len(dir_) > 80:
+        return True
+    # Detect label-bleed: a credit label inside dir or cast means bad data.
+    if _CREDIT_LABEL_RE.search(dir_) or _CREDIT_LABEL_RE.search(cast):
         return True
     return False
 
@@ -209,7 +235,7 @@ def parse_programata(soup, url):
     # Director
     for key in ("режисьор", "реж", "director"):
         if key in summary_map:
-            d = summary_map[key].strip().rstrip(",. ")
+            d = _clean_credit_value(summary_map[key])
             if d and d != "—" and len(d) <= 80:
                 rec["dir"] = d
             break
@@ -217,7 +243,7 @@ def parse_programata(soup, url):
     # Cast (Участват or В ролите)
     for key in ("участват", "в ролите", "cast", "starring"):
         if key in summary_map:
-            c = summary_map[key].strip().rstrip(",. ")
+            c = _clean_credit_value(summary_map[key])
             names = [n.strip() for n in c.split(",") if n.strip()]
             c = ", ".join(names[:5])
             if c and c != "—":
@@ -297,13 +323,12 @@ def parse_vlaikova_page(soup, url):
     # Director / cast — look for labelled spans/divs.
     # Stop at the next label (word followed by colon) to avoid swallowing
     # crew credits (Музика:, Оператор:, Монтаж:, Език:, Субтитри:, etc.).
-    _STOP_LABEL = r'(?=\s*\w[\w\s]{1,20}\s*[:：])'   # lookahead for next "Word: "
     for span in soup.find_all(["span", "div", "p", "li"]):
         t = span.get_text(" ", strip=True)
         if not rec.get("dir"):
             m = re.search(r'(?:Режисьор\s*[:：]\s*)([^\n;:]{3,80})', t, re.I)
             if m:
-                d = m.group(1).strip().rstrip(",.")
+                d = _clean_credit_value(m.group(1))
                 if d and d != "—":
                     rec["dir"] = d
         if not rec.get("cast"):
@@ -313,7 +338,7 @@ def parse_vlaikova_page(soup, url):
                 r'((?:(?!\s+\w[\w\s]{0,20}\s*[:：]).){3,200})',
                 t, re.I | re.S)
             if m:
-                c = m.group(1).strip().rstrip(",.")
+                c = _clean_credit_value(m.group(1))
                 # Only take comma-separated names (stop at dash-separated role lists too)
                 # Split on comma; limit to 5 names
                 parts = [n.strip() for n in re.split(r',|–| – ', c) if n.strip()]
@@ -363,13 +388,17 @@ def parse_ndk_page(soup, url):
         if "synEn" in rec:
             break
 
-    # Director / cast from page text
+    # Director / cast from page text.
+    # The inline-credits pattern used by ndk.bg places all credits in a single
+    # paragraph: "Director: X Screenplay: X Starring: A, B Cinematography: Y".
+    # We must stop each field at the next credit label.
     for span in soup.find_all(["span", "div", "p", "li"]):
         t = span.get_text(" ", strip=True)
         if not rec.get("dir"):
-            m = re.search(r'(?:Director\s*[:：]\s*)([^\n;]{3,80})', t, re.I)
+            # Match Director: value, stopping at the next label keyword.
+            m = re.search(r'(?:Director\s*[:：]\s*)([^\n;]{3,160})', t, re.I)
             if m:
-                d = m.group(1).strip().rstrip(",.")
+                d = _clean_credit_value(m.group(1))
                 if d and d != "—":
                     rec["dir"] = d
         if not rec.get("cast"):
@@ -379,7 +408,7 @@ def parse_ndk_page(soup, url):
                 r'((?:(?!\s+\w[\w\s]{0,20}\s*[:：]).){3,200})',
                 t, re.I | re.S)
             if m:
-                c = m.group(1).strip().rstrip(",.")
+                c = _clean_credit_value(m.group(1))
                 # Discard parts that look like crew labels (contain ":")
                 parts = [p.strip() for p in c.split(",") if p.strip()]
                 parts = [p for p in parts if ':' not in p]
@@ -675,6 +704,13 @@ def main():
 
         # Merge: never blank a field that had a value
         entry = dict(out.get(fid, {}))
+
+        # If the existing dir or cast contains label bleed, pre-clear them so
+        # the keep-previous logic does not preserve contaminated values.
+        for _cf in ("dir", "cast"):
+            _cv = entry.get(_cf) or ""
+            if _CREDIT_LABEL_RE.search(_cv):
+                del entry[_cf]
 
         # ----- Parse details (synopsis, dir, cast, genres) -----
         if details_needed and not details_complete:
