@@ -3629,17 +3629,28 @@ def wave_h(browser):
     save_shot(page, wave, "m-bg-phead")
     ctx.close()
 
-    # ── H9: Theatre sub-headings: Playfair, gold, ≥20px ──
-    print("\n=== H9: Theatre sub-heading styles ===")
+    # ── H9: Theatre sub-headings: Playfair, lavender (#C3B1F5 = rgb(195,177,245)), ≥20px ──
+    # Wave J: colour changed from gold to lavender (--theatre-group).
+    # The section toggle now uses secToggleInPlace; scroll naturally to reach it.
+    print("\n=== H9: Theatre sub-heading styles (lavender, Wave J) ===")
     ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
     page.wait_for_timeout(1000)
 
-    # Open venue section, force-mount rails, then check .sec-subhead styles
-    venue_btn = page.query_selector("[data-sectoggle='Venues']")
+    # Scroll naturally until the [data-sectoggle='Venues'] button appears in the DOM
+    venue_btn = None
+    for _scroll_attempt in range(15):
+        venue_btn = page.query_selector("[data-sectoggle='Venues']")
+        if venue_btn:
+            break
+        page.mouse.wheel(0, 600)
+        page.wait_for_timeout(300)
+
     if venue_btn:
+        # Scroll the button into view, then click it (secToggleInPlace — no full re-render)
+        page.evaluate("document.querySelector(\"[data-sectoggle='Venues']\").scrollIntoView({block:'center'})")
+        page.wait_for_timeout(200)
         venue_btn.click()
-        page.wait_for_timeout(600)
-        _force_mount(page)
+        page.wait_for_timeout(800)  # allow animation (~260 ms) to complete
 
         th_subheads = page.evaluate("""() => {
             const subs = Array.from(document.querySelectorAll('.sec-subhead'));
@@ -3655,9 +3666,10 @@ def wave_h(browser):
         }""")
         if th_subheads:
             for sub in th_subheads:
+                # Wave J: lavender rgb(195, 177, 245) — was gold rgb(217, 178, 60)
                 check("h9_th_subhead_color",
-                      sub["color"] == "rgb(217, 178, 60)",
-                      f"'{sub['text']}' color={sub['color']!r} (need rgb(217,178,60))")
+                      sub["color"] == "rgb(195, 177, 245)",
+                      f"'{sub['text']}' color={sub['color']!r} (need rgb(195,177,245))")
                 check("h9_th_subhead_size",
                       sub["fontSize"] >= 20,
                       f"'{sub['text']}' fontSize={sub['fontSize']}px (need ≥20)")
@@ -3670,7 +3682,7 @@ def wave_h(browser):
             check("h9_th_subhead_size", False, "skipped")
             check("h9_th_subhead_playfair", False, "skipped")
     else:
-        check("h9_th_subhead_color", False, "no [data-sectoggle='Venues'] in theatre mode")
+        check("h9_th_subhead_color", False, "no [data-sectoggle='Venues'] in theatre mode after scrolling")
         check("h9_th_subhead_size", False, "skipped")
         check("h9_th_subhead_playfair", False, "skipped")
     ctx.close()
@@ -4411,6 +4423,1075 @@ def wave_i(browser):
 
 
 # ============================================================================
+# WAVE J: In-place animations, search animation, theatre group colours,
+#          tonight/weekend rails, venue mode, wide posters.
+# ============================================================================
+
+def wave_j(browser, webkit_browser=None):
+    """
+    Wave J checks:
+    1. Animations without jumps (Chromium + WebKit, 375x812 + 1280x800, cinema + theatre)
+    2. In-place toggle (no full re-render)
+    3. "Всичко в програмата" collapsible; "Покажи още" appends without collapsing
+    4. Search animation (width desktop / row-height mobile, monotonic, focus, close-clears)
+    5. Theatre rails: no "За теб днес", "Препоръчани" present; "Тази вечер"/"Утре вечер"; weekend
+    6. Sub-heading colour lavender rgb(195,177,245), ≥20px, Playfair
+    7. Venue mode (cinema + theatre)
+    8. Wide poster gets .wide + .p-blur-bg + object-fit:contain
+    9. No page errors; verify_build.py gate
+
+    webkit_browser: optional pre-launched WebKit Browser instance (from the outer sync_playwright context).
+    """
+    wave = "J"
+    ensure_shot_dir(wave)
+    import subprocess
+
+    # ── J1: Animations without jumps ──────────────────────────────────────────
+    print("\n=== J1: Animations without jumps ===")
+
+    def _measure_toggle_anim(pw_engine, w, h, mode, key, label):
+        """
+        Open the page, scroll naturally to [data-sectoggle=key], record the header's
+        viewport top every ~25ms across 450ms from click.
+        Returns (header_positions_open, scrollY_values_open,
+                 header_positions_close, body_heights, max_dev_open, max_dev_close,
+                 scroll_unchanged, intermediate_heights_count).
+        """
+        try:
+            ctx = pw_engine.new_context(
+                viewport={"width": w, "height": h},
+                timezone_id="Europe/Sofia",
+                locale="bg-BG",
+            )
+            ctx.add_init_script(CLOCK)
+            ctx.add_init_script(f"""
+            try {{
+                localStorage.setItem('sofia-screen-v2',
+                    JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'bg', mode:'{mode}'}}));
+            }} catch(e) {{}}
+            """)
+            page = ctx.new_page()
+            errors = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(HTML)
+            page.wait_for_selector(".bar", timeout=20000)
+            page.wait_for_timeout(800)
+
+            # Scroll naturally to find the toggle button
+            btn = None
+            for _ in range(20):
+                btn = page.query_selector(f"[data-sectoggle='{key}']")
+                if btn:
+                    break
+                page.mouse.wheel(0, 400)
+                page.wait_for_timeout(200)
+
+            if not btn:
+                ctx.close()
+                return None
+
+            # Scroll the button into view
+            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").scrollIntoView({{block:'center'}})")
+            page.wait_for_timeout(300)
+
+            # Mark an element outside the section for J2 (in-place check)
+            page.evaluate("document.querySelector('.phead') && (document.querySelector('.phead').dataset.probe = '1')")
+
+            # --- Opening animation ---
+            btn_top_before = page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").getBoundingClientRect().top")
+            scroll_y_before = page.evaluate("window.scrollY")
+
+            # Click to open and poll heights + btn top every ~25ms
+            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").click()")
+
+            heights_open = []
+            btn_tops_open = []
+            scroll_ys_open = []
+            for _ in range(18):  # 18 * 25ms = 450ms
+                sample = page.evaluate(f"""() => {{
+                    const btn = document.querySelector("[data-sectoggle='{key}']");
+                    const body = document.getElementById('sec-{key}-content');
+                    return {{
+                        btnTop: btn ? btn.getBoundingClientRect().top : null,
+                        bodyH: body ? body.getBoundingClientRect().height : null,
+                        scrollY: window.scrollY
+                    }};
+                }}""")
+                btn_tops_open.append(sample["btnTop"])
+                heights_open.append(sample["bodyH"])
+                scroll_ys_open.append(sample["scrollY"])
+                page.wait_for_timeout(25)
+
+            # --- Closing animation ---
+            page.wait_for_timeout(100)  # let open animation finish
+            btn_top_before_close = page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").getBoundingClientRect().top")
+            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").click()")
+
+            heights_close = []
+            btn_tops_close = []
+            for _ in range(18):
+                sample = page.evaluate(f"""() => {{
+                    const btn = document.querySelector("[data-sectoggle='{key}']");
+                    const body = document.getElementById('sec-{key}-content');
+                    return {{
+                        btnTop: btn ? btn.getBoundingClientRect().top : null,
+                        bodyH: body ? body.getBoundingClientRect().height : null,
+                    }};
+                }}""")
+                btn_tops_close.append(sample["btnTop"])
+                heights_close.append(sample["bodyH"])
+                page.wait_for_timeout(25)
+
+            # J2: check phead probe is still present (no full re-render)
+            probe_still_present = page.evaluate("document.querySelector('.phead')?.dataset.probe === '1'")
+
+            # Compute stats
+            btn_tops_open_valid = [t for t in btn_tops_open if t is not None]
+            btn_tops_close_valid = [t for t in btn_tops_close if t is not None]
+
+            max_dev_open = (max(btn_tops_open_valid) - min(btn_tops_open_valid)) if btn_tops_open_valid else 999
+            max_dev_close = (max(btn_tops_close_valid) - min(btn_tops_close_valid)) if btn_tops_close_valid else 999
+
+            # scrollY: should be stable within 2px (the app uses scrollBy to correct)
+            scroll_unchanged = all(abs(sy - scroll_y_before) <= 3 for sy in scroll_ys_open if sy is not None)
+
+            # Intermediate heights: at least 3 distinct non-None values while opening
+            heights_valid = [h for h in heights_open if h is not None]
+            distinct_heights = len(set(round(h, 0) for h in heights_valid))
+
+            ctx.close()
+            return {
+                "max_dev_open": max_dev_open,
+                "max_dev_close": max_dev_close,
+                "scroll_unchanged": scroll_unchanged,
+                "distinct_heights": distinct_heights,
+                "probe_still_present": probe_still_present,
+                "heights_open_sample": heights_valid[:5],
+                "btn_tops_open_sample": btn_tops_open_valid[:5],
+                "errors": errors,
+            }
+        except Exception as ex:
+            return {"error": str(ex)}
+
+    def _measure_toggle_reduced(pw_engine, w, h, mode, key):
+        """Same but with prefers-reduced-motion:reduce; expect ≤1 distinct height value."""
+        try:
+            ctx = pw_engine.new_context(
+                viewport={"width": w, "height": h},
+                timezone_id="Europe/Sofia",
+                locale="bg-BG",
+                reduced_motion="reduce",
+            )
+            ctx.add_init_script(CLOCK)
+            ctx.add_init_script(f"""
+            try {{
+                localStorage.setItem('sofia-screen-v2',
+                    JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'bg', mode:'{mode}'}}));
+            }} catch(e) {{}}
+            """)
+            page = ctx.new_page()
+            page.goto(HTML)
+            page.wait_for_selector(".bar", timeout=20000)
+            page.wait_for_timeout(800)
+            btn = None
+            for _ in range(20):
+                btn = page.query_selector(f"[data-sectoggle='{key}']")
+                if btn:
+                    break
+                page.mouse.wheel(0, 400)
+                page.wait_for_timeout(200)
+            if not btn:
+                ctx.close()
+                return None
+            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").scrollIntoView({{block:'center'}})")
+            page.wait_for_timeout(200)
+            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").click()")
+            heights = []
+            for _ in range(10):
+                h_val = page.evaluate(f"""() => {{
+                    const body = document.getElementById('sec-{key}-content');
+                    return body ? body.getBoundingClientRect().height : null;
+                }}""")
+                heights.append(h_val)
+                page.wait_for_timeout(25)
+            ctx.close()
+            heights_valid = [x for x in heights if x is not None]
+            distinct = len(set(round(x, 0) for x in heights_valid))
+            return {"distinct_heights": distinct, "heights": heights_valid[:5]}
+        except Exception as ex:
+            return {"error": str(ex)}
+
+    # Test configs: (engine_name, viewport_w, viewport_h, mode, section_key)
+    test_configs = [
+        ("chromium", 375, 812, "cinema", "Genres"),
+        ("chromium", 375, 812, "theatre", "Venues"),
+        ("chromium", 1280, 800, "cinema", "Venues"),
+        ("chromium", 1280, 800, "theatre", "Genres"),
+        ("webkit", 375, 812, "cinema", "Genres"),
+        ("webkit", 1280, 800, "theatre", "Venues"),
+    ]
+
+    # Use the browsers passed in (no nested sync_playwright — that errors in event loop)
+    engines = {"chromium": browser, "webkit": webkit_browser}
+
+    for eng_name, vw, vh, mode, key in test_configs:
+        eng = engines.get(eng_name)
+        if eng is None:
+            skip(f"j1_anim_{eng_name}_{vw}_{mode}_{key}", f"{eng_name} not available")
+            continue
+        tag = f"{eng_name}_{vw}_{mode}_{key}"
+        result_anim = _measure_toggle_anim(eng, vw, vh, mode, key, tag)
+        if result_anim is None:
+            check(f"j1_anim_{tag}", False, f"[data-sectoggle='{key}'] not found in {mode} after scrolling")
+            continue
+        if "error" in result_anim:
+            check(f"j1_anim_{tag}", False, f"exception: {result_anim['error'][:80]}")
+            continue
+
+        max_d_o = result_anim["max_dev_open"]
+        max_d_c = result_anim["max_dev_close"]
+        scroll_ok = result_anim["scroll_unchanged"]
+        distinct_h = result_anim["distinct_heights"]
+        probe_ok = result_anim["probe_still_present"]
+
+        check(f"j1_no_jump_open_{tag}",
+              max_d_o <= 2,
+              f"header deviation during open={max_d_o:.1f}px (need ≤2); tops={result_anim['btn_tops_open_sample']}")
+        check(f"j1_no_jump_close_{tag}",
+              max_d_c <= 2,
+              f"header deviation during close={max_d_c:.1f}px (need ≤2)")
+        check(f"j1_scrollY_stable_{tag}",
+              scroll_ok,
+              f"scrollY drifted during open; heights_sample={result_anim['heights_open_sample']}")
+        check(f"j1_anim_intermediates_{tag}",
+              distinct_h >= 3,
+              f"only {distinct_h} distinct body heights during opening (need ≥3 for smooth anim); sample={result_anim['heights_open_sample']}")
+        # J2: in-place (no full re-render)
+        check(f"j2_inplace_{tag}",
+              probe_ok,
+              "phead probe lost — suggests full re-render happened")
+
+        if result_anim.get("errors"):
+            check(f"j1_no_errors_{tag}", False, f"page errors: {result_anim['errors'][0][:80]}")
+
+    # Reduced-motion: should open without intermediate heights
+    print("\n=== J1 reduced-motion: no intermediate heights ===")
+    for eng_name, vw, vh, mode, key in [
+        ("chromium", 375, 812, "cinema", "Genres"),
+        ("chromium", 1280, 800, "theatre", "Venues"),
+    ]:
+        eng = engines.get(eng_name)
+        if eng is None:
+            skip(f"j1_reduced_{eng_name}_{mode}_{key}", f"{eng_name} not available")
+            continue
+        tag = f"{eng_name}_{vw}_{mode}_{key}"
+        rm_result = _measure_toggle_reduced(eng, vw, vh, mode, key)
+        if rm_result is None:
+            check(f"j1_reduced_{tag}", False, f"[data-sectoggle='{key}'] not found with reduced-motion")
+            continue
+        if "error" in rm_result:
+            check(f"j1_reduced_{tag}", False, f"exception: {rm_result['error'][:80]}")
+            continue
+        # With reduced-motion, should jump directly (≤2 distinct values — start and final)
+        check(f"j1_reduced_{tag}",
+              rm_result["distinct_heights"] <= 2,
+              f"{rm_result['distinct_heights']} distinct heights (need ≤2 with reduced-motion); heights={rm_result['heights']}")
+
+    # ── J3: "Всичко в програмата" (All) collapsible in BOTH modes ──────────────
+    print("\n=== J3: 'Всичко в програмата' (All) toggle ===")
+    for mode in ["cinema", "theatre"]:
+        ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode=mode)
+        page.wait_for_timeout(800)
+        _force_mount(page)
+
+        all_btn = page.query_selector("[data-sectoggle='All']")
+        if all_btn:
+            # Must be collapsed initially
+            expanded_before = all_btn.get_attribute("aria-expanded")
+            check(f"j3_all_collapsed_initially_{mode}",
+                  expanded_before == "false",
+                  f"aria-expanded={expanded_before!r}")
+
+            # Click to expand (secToggleInPlace)
+            all_btn.click()
+            page.wait_for_timeout(500)  # allow ~260ms animation
+
+            expanded_after = page.evaluate("document.querySelector(\"[data-sectoggle='All']\")" +
+                                           "?.getAttribute('aria-expanded')")
+            check(f"j3_all_expands_{mode}",
+                  expanded_after == "true",
+                  f"aria-expanded={expanded_after!r} after click")
+
+            # Record All button's absolute page position (scrollY + rect.top)
+            btn_abs_after_open = page.evaluate(
+                "document.querySelector(\"[data-sectoggle='All']\").getBoundingClientRect().top + window.scrollY")
+
+            # Check for "Покажи още" button
+            more_btn = page.query_selector("[data-more]")
+            if more_btn and more_btn.is_visible():
+                more_btn.click()
+                page.wait_for_timeout(400)
+                # The All section should still be expanded
+                still_expanded = page.evaluate(
+                    "document.querySelector(\"[data-sectoggle='All']\")?.getAttribute('aria-expanded')")
+                check(f"j3_more_doesnt_collapse_all_{mode}",
+                      still_expanded == "true",
+                      f"aria-expanded={still_expanded!r} after 'Покажи още'")
+
+                # The All button absolute page position must not change (content added BELOW it)
+                btn_abs_after_more = page.evaluate(
+                    "document.querySelector(\"[data-sectoggle='All']\").getBoundingClientRect().top + window.scrollY")
+                dev = abs(btn_abs_after_more - btn_abs_after_open) if btn_abs_after_open is not None else 0
+                check(f"j3_more_no_jump_{mode}",
+                      dev <= 5,
+                      f"All header absolute pos moved {dev:.1f}px after 'Покажи още' (need ≤5px)")
+            else:
+                skip(f"j3_more_doesnt_collapse_all_{mode}", "no [data-more] button visible after expanding All")
+                skip(f"j3_more_no_jump_{mode}", "no [data-more] button")
+
+            # Click again to collapse
+            all_btn2 = page.query_selector("[data-sectoggle='All']")
+            if all_btn2:
+                all_btn2.click()
+                page.wait_for_timeout(400)
+                collapsed_again = page.evaluate(
+                    "document.querySelector(\"[data-sectoggle='All']\")?.getAttribute('aria-expanded')")
+                check(f"j3_all_collapses_{mode}",
+                      collapsed_again == "false",
+                      f"aria-expanded={collapsed_again!r} after second click")
+        else:
+            check(f"j3_all_collapsed_initially_{mode}", False, f"[data-sectoggle='All'] not found in {mode}")
+            check(f"j3_all_expands_{mode}", False, "skipped")
+            check(f"j3_all_collapses_{mode}", False, "skipped")
+            skip(f"j3_more_doesnt_collapse_all_{mode}", "All button not found")
+            skip(f"j3_more_no_jump_{mode}", "All button not found")
+        ctx.close()
+
+    # ── J4: Search animation ───────────────────────────────────────────────────
+    print("\n=== J4: Search animation ===")
+
+    def _measure_search_anim(pw_engine, w, h, label):
+        try:
+            ctx = pw_engine.new_context(
+                viewport={"width": w, "height": h},
+                timezone_id="Europe/Sofia",
+                locale="bg-BG",
+            )
+            ctx.add_init_script(CLOCK)
+            ctx.add_init_script("""
+            try {
+                localStorage.setItem('sofia-screen-v2',
+                    JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'}));
+            } catch(e) {}
+            """)
+            page = ctx.new_page()
+            errors = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(HTML)
+            page.wait_for_selector(".bar", timeout=20000)
+            page.wait_for_timeout(500)
+
+            is_desktop = (w >= 760)
+
+            # JS getter to sample the relevant dimension
+            if is_desktop:
+                measure_js = """() => {
+                    const wrap = document.querySelector('.desk-search-wrap');
+                    if (!wrap) return null;
+                    return parseFloat(window.getComputedStyle(wrap).maxWidth) || 0;
+                }"""
+            else:
+                measure_js = """() => {
+                    const row = document.querySelector('.bar-row-search');
+                    if (!row) return null;
+                    return row.getBoundingClientRect().height;
+                }"""
+
+            # Click to open and sample dimension over ~450ms
+            page.evaluate("document.querySelector('[data-search-open]').click()")
+            open_samples = []
+            for _ in range(18):
+                val = page.evaluate(measure_js)
+                open_samples.append(val)
+                page.wait_for_timeout(25)
+
+            # Check focus
+            page.wait_for_timeout(100)
+            active_id = page.evaluate("document.activeElement.id")
+            focused_ok = active_id in ("q", "q-m")
+
+            # Type a query
+            page.keyboard.type("од")
+            page.wait_for_timeout(300)
+            still_open = page.evaluate("S.searchOpen")
+            q_val = page.evaluate("S.q")
+
+            # Click magnifier to close
+            page.evaluate("document.querySelector('[data-search-open]').click()")
+            close_samples = []
+            for _ in range(12):
+                val = page.evaluate(measure_js)
+                close_samples.append(val)
+                page.wait_for_timeout(25)
+
+            page.wait_for_timeout(350)  # wait for animation + query clear
+            q_cleared = page.evaluate("S.q")
+            search_open_state = page.evaluate("S.searchOpen")
+
+            ctx.close()
+            return {
+                "open_samples": [x for x in open_samples if x is not None],
+                "close_samples": [x for x in close_samples if x is not None],
+                "focused_ok": focused_ok,
+                "active_id": active_id,
+                "still_open": still_open,
+                "q_val": q_val,
+                "q_cleared": q_cleared,
+                "search_open_closed": not search_open_state,
+                "errors": errors,
+            }
+        except Exception as ex:
+            return {"error": str(ex)}
+
+    # Use passed-in browsers (no nested sync_playwright)
+    for eng, eng_name in [(browser, "chromium"), (webkit_browser, "webkit")]:
+        if eng is None:
+            for sz in ["375", "1280"]:
+                skip(f"j4_search_{eng_name}_{sz}", f"{eng_name} not available")
+            continue
+
+        for vw, vh in [(375, 812), (1280, 800)]:
+            tag = f"{eng_name}_{vw}"
+            res = _measure_search_anim(eng, vw, vh, tag)
+            if "error" in res:
+                check(f"j4_search_{tag}", False, res["error"][:80])
+                continue
+
+            os_s = res["open_samples"]
+            cs_s = res["close_samples"]
+
+            # Monotonic increase during open
+            open_monotonic = len(os_s) >= 3 and (
+                all(os_s[i] <= os_s[i+1] + 1 for i in range(len(os_s)-1))
+            )
+            # Monotonic decrease during close
+            close_monotonic = len(cs_s) >= 3 and (
+                all(cs_s[i] >= cs_s[i+1] - 1 for i in range(len(cs_s)-1))
+            )
+            open_distinct = len(set(round(x, 0) for x in os_s)) >= 3
+            close_distinct = len(set(round(x, 0) for x in cs_s)) >= 3
+
+            check(f"j4_search_open_monotonic_{tag}",
+                  open_monotonic and open_distinct,
+                  f"open samples={os_s[:6]} (need monotonic ≥3 distinct)")
+            check(f"j4_search_close_monotonic_{tag}",
+                  close_monotonic and close_distinct,
+                  f"close samples={cs_s[:6]} (need monotonic ≥3 distinct)")
+            check(f"j4_search_focused_{tag}",
+                  res["focused_ok"],
+                  f"active element id={res['active_id']!r} (need 'q' or 'q-m')")
+            check(f"j4_search_stays_open_while_typing_{tag}",
+                  res["still_open"],
+                  f"S.searchOpen={res['still_open']} after typing")
+            check(f"j4_search_close_clears_q_{tag}",
+                  res["q_cleared"] == "",
+                  f"S.q={res['q_cleared']!r} after close (should be empty)")
+            check(f"j4_search_close_state_{tag}",
+                  res["search_open_closed"],
+                  "S.searchOpen still true after close+wait")
+
+            # Save screenshot for desktop+EN search open (use chromium)
+            if vw == 1280 and eng_name == "chromium":
+                ctx_shot, page_shot, _ = open_page(browser, 1280, 800, lang="en")
+                page_shot.wait_for_timeout(500)
+                page_shot.evaluate("document.querySelector('[data-search-open]').click()")
+                page_shot.wait_for_timeout(350)
+                save_shot(page_shot, wave, "d-en-search-open")
+                ctx_shot.close()
+
+    # ── J5: Theatre rails ─────────────────────────────────────────────────────
+    print("\n=== J5: Theatre rails (tonight/weekend/no-Za-teb-dnes) ===")
+
+    # J5a: No "За теб днес" rail in theatre mode; "Препоръчани" present
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    _force_mount(page)
+
+    rail_titles = page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+    }""")
+    has_za_teb = any("За теб днес" in t or "For you today" in t for t in rail_titles)
+    has_recommended = any("Препоръчани" in t or "Recommended" in t for t in rail_titles)
+
+    check("j5_no_za_teb_dnес_in_theatre",
+          not has_za_teb,
+          f"found 'За теб днес' in theatre rails: {rail_titles[:8]}")
+    check("j5_recommended_present",
+          has_recommended,
+          f"'Препоръчани' not found; rails: {rail_titles[:8]}")
+
+    # J5b: "Тази вечер"/"Утре вечер" — fixture has PERFORMANCES on 2026-10-07 at 19:00
+    # At 14:45, those performances are upcoming → "Тази вечер" SHOULD be shown (not "Утре вечер")
+    tonight_rail = next((t for t in rail_titles if "Тази вечер" in t or "Tonight" in t), None)
+    tomorrow_rail = next((t for t in rail_titles if "Утре вечер" in t or "Tomorrow night" in t), None)
+
+    # Fixture has Oct-07 performances at 19:00, after NOW=14:45 → "Тази вечер" must be shown
+    check("j5_tonightT_present_at_1445",
+          tonight_rail is not None,
+          f"'Тази вечер' not found at 14:45 (fixture has perfs at 19:00 today); rails={rail_titles[:10]}")
+    check("j5_tonightB_absent_at_1445",
+          tomorrow_rail is None,
+          f"'Утре вечер' found at 14:45 when today's perfs are upcoming; rails={rail_titles[:10]}")
+
+    # Verify "Тази вечер" shows only 2026-10-07 performances at ≥14:45
+    if tonight_rail is not None:
+        tonightT_shows = page.evaluate("""() => {
+            const h2s = Array.from(document.querySelectorAll('.rhead h2'));
+            const head = h2s.find(h => h.textContent.includes('Тази вечер') || h.textContent.includes('Tonight'));
+            if (!head) return [];
+            const rail = head.closest('.rail');
+            if (!rail) return [];
+            const cards = Array.from(rail.querySelectorAll('[data-show]'));
+            return cards.map(c => c.dataset.show);
+        }""")
+        if tonightT_shows:
+            # Each show should have a PERFORMANCE on 2026-10-07 at ≥14:45
+            tonight_ok = page.evaluate(f"""() => {{
+                const showIds = {tonightT_shows!r};
+                const today = '2026-10-07';
+                const perfs = PERFORMANCES.filter(p => showIds.includes(p[0]) && p[1] === today && p[2] >= '14:45');
+                const covered = new Set(perfs.map(p => p[0]));
+                const uncovered = showIds.filter(id => !covered.has(id));
+                return {{covered: covered.size, total: showIds.length, uncovered: uncovered.slice(0,3)}};
+            }}""")
+            check("j5_tonightT_shows_on_oct7",
+                  tonight_ok["uncovered"] == [],
+                  f"{tonight_ok['uncovered']} shows lack oct-07 perf ≥14:45; covered={tonight_ok['covered']}/{tonight_ok['total']}")
+        else:
+            check("j5_tonightT_shows_on_oct7", False, "'Тази вечер' rail has no show cards")
+    else:
+        skip("j5_tonightT_shows_on_oct7", "'Тази вечер' rail not present")
+
+    ctx.close()
+
+    # J5c: At 23:50 clock (FIXED_TOMORROW_2350), "Утре вечер" should show 2026-10-08
+    ctx_t = browser.new_context(
+        viewport={"width": 1280, "height": 800},
+        timezone_id="Europe/Sofia",
+        locale="bg-BG",
+    )
+    ctx_t.add_init_script(f"""
+        window.__TEST_NOW = {FIXED_TOMORROW_2350};
+        const _orig = Date;
+        class FakeDate extends _orig {{
+            constructor(...a) {{ super(...(a.length ? a : [window.__TEST_NOW])); }}
+            static now() {{ return window.__TEST_NOW; }}
+        }}
+        window.Date = FakeDate;
+    """)
+    ctx_t.add_init_script("""
+        try {
+            localStorage.setItem('sofia-screen-v2',
+                JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'theatre'}));
+        } catch(e) {}
+    """)
+    page_t = ctx_t.new_page()
+    page_t.goto(HTML)
+    page_t.wait_for_selector(".bar", timeout=20000)
+    page_t.wait_for_timeout(800)
+    _force_mount(page_t)
+
+    rail_titles_2350 = page_t.evaluate("""() => {
+        return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+    }""")
+    # At 23:50 on 2026-10-07, NOW_DATE is still 2026-10-07 but time >= 23:50
+    # So tonight's perfs at 19:00 have passed → fallback to "Утре вечер" for 2026-10-08
+    tomorrow_rail_2350 = next((t for t in rail_titles_2350 if "Утре вечер" in t or "Tomorrow night" in t), None)
+    check("j5_2350_tomorrow_night_present",
+          tomorrow_rail_2350 is not None,
+          f"'Утре вечер' not found at 23:50; rails={rail_titles_2350[:10]}")
+    ctx_t.close()
+
+    # J5d: "Този уикенд" — should list shows with perfs on 2026-10-09..11 (Fri-Sun)
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    _force_mount(page)
+    rail_titles_wknd = page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+    }""")
+    weekend_rail = next((t for t in rail_titles_wknd if "Този уикенд" in t or "This weekend" in t), None)
+    check("j5_weekend_rail_present",
+          weekend_rail is not None,
+          f"'Този уикенд' not found; rails={rail_titles_wknd[:12]}")
+
+    if weekend_rail:
+        wknd_shows = page.evaluate("""() => {
+            const h2s = Array.from(document.querySelectorAll('.rhead h2'));
+            const head = h2s.find(h => h.textContent.includes('Този уикенд') || h.textContent.includes('This weekend'));
+            if (!head) return [];
+            const rail = head.closest('.rail');
+            if (!rail) return [];
+            return Array.from(rail.querySelectorAll('[data-show]')).map(c => c.dataset.show);
+        }""")
+        if wknd_shows:
+            wknd_ok = page.evaluate(f"""() => {{
+                const showIds = {wknd_shows!r};
+                const fri = '2026-10-09', sun = '2026-10-11';
+                const perfs = PERFORMANCES.filter(p => showIds.includes(p[0]) && p[1] >= fri && p[1] <= sun);
+                const covered = new Set(perfs.map(p => p[0]));
+                const uncovered = showIds.filter(id => !covered.has(id));
+                return {{covered: covered.size, total: showIds.length, uncovered: uncovered.slice(0,3)}};
+            }}""")
+            check("j5_weekend_shows_on_fri_sun",
+                  wknd_ok["uncovered"] == [],
+                  f"{wknd_ok['uncovered']} shows lack Fri-Sun perfs; covered={wknd_ok['covered']}/{wknd_ok['total']}")
+        else:
+            check("j5_weekend_shows_on_fri_sun", False, "Weekend rail has no show cards")
+    else:
+        skip("j5_weekend_shows_on_fri_sun", "'Този уикенд' rail not present")
+
+    # J5e: Selecting a single weekday in the day strip — report behaviour
+    day_strip_result = page.evaluate(f"""() => {{
+        // Click 2026-10-08 (Thursday, a weekday)
+        const pill = document.querySelector("[data-day='2026-10-08']");
+        if (!pill) return {{found: false}};
+        pill.click();
+        return {{found: true}};
+    }}""")
+    if day_strip_result.get("found"):
+        page.wait_for_timeout(600)
+        rails_after_weekday = page.evaluate("""() => {
+            return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+        }""")
+        weekend_after = next((t for t in rails_after_weekday if "Този уикенд" in t or "This weekend" in t), None)
+        check("j5_weekend_hidden_on_weekday",
+              weekend_after is None,
+              f"'Този уикенд' still visible after selecting weekday 2026-10-08 (actual: {weekend_after!r})")
+    else:
+        skip("j5_weekend_hidden_on_weekday", "day pill 2026-10-08 not found")
+
+    ctx.close()
+
+    # ── J6: Sub-heading colour rgb(195, 177, 245), ≥20px, Playfair ─────────────
+    print("\n=== J6: Sub-heading colour (lavender) ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+
+    # Scroll to find the Venues toggle, open it
+    venue_btn = None
+    for _ in range(15):
+        venue_btn = page.query_selector("[data-sectoggle='Venues']")
+        if venue_btn:
+            break
+        page.mouse.wheel(0, 400)
+        page.wait_for_timeout(200)
+
+    if venue_btn:
+        page.evaluate("document.querySelector(\"[data-sectoggle='Venues']\").scrollIntoView({block:'center'})")
+        page.wait_for_timeout(200)
+        venue_btn.click()
+        page.wait_for_timeout(800)
+
+        subheads = page.evaluate("""() => {
+            const subs = Array.from(document.querySelectorAll('.sec-subhead'));
+            return subs.map(h => {
+                const cs = window.getComputedStyle(h);
+                return {
+                    text: h.textContent.trim().slice(0, 40),
+                    color: cs.color,
+                    fontSize: parseFloat(cs.fontSize),
+                    fontFamily: cs.fontFamily.slice(0, 60),
+                };
+            });
+        }""")
+        if subheads:
+            for sub in subheads[:2]:
+                check("j6_subhead_lavender",
+                      sub["color"] == "rgb(195, 177, 245)",
+                      f"'{sub['text']}' color={sub['color']!r} (need rgb(195,177,245))")
+                check("j6_subhead_size",
+                      sub["fontSize"] >= 20,
+                      f"'{sub['text']}' fontSize={sub['fontSize']}px (need ≥20)")
+                check("j6_subhead_playfair",
+                      "Playfair" in sub["fontFamily"],
+                      f"'{sub['text']}' fontFamily={sub['fontFamily']!r}")
+                break
+        else:
+            check("j6_subhead_lavender", False, "no .sec-subhead found after opening Venues")
+            check("j6_subhead_size", False, "skipped")
+            check("j6_subhead_playfair", False, "skipped")
+    else:
+        check("j6_subhead_lavender", False, "no [data-sectoggle='Venues'] found in theatre")
+        check("j6_subhead_size", False, "skipped")
+        check("j6_subhead_playfair", False, "skipped")
+
+    ctx.close()
+
+    # ── J7: Venue mode ─────────────────────────────────────────────────────────
+    print("\n=== J7: Venue mode (cinema + theatre) ===")
+
+    # --- J7a: Cinema - cc-sofia ---
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    # Select cc-sofia in the filter drawer
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) fab.click();
+    }""")
+    page.wait_for_timeout(400)
+    page.evaluate("""() => {
+        const chip = document.querySelector(".drawer [data-venue='cc-sofia']");
+        if (chip) chip.click();
+    }""")
+    page.wait_for_timeout(300)
+    page.evaluate("document.querySelector('[data-dclose]')?.click()")
+    page.wait_for_timeout(600)
+
+    venue_mode_info = page.evaluate("""() => {
+        const heroGone = !document.querySelector('.hero');
+        const hasVenueHead = !!document.querySelector('.venue-mode-head');
+        const hasVenueChip = !!document.querySelector('.venue-chip-rm[data-venue="cc-sofia"]');
+        const sectoggleGone = document.querySelector('[data-sectoggle]') === null;
+        const venueBlocks = document.querySelectorAll('.venue-block').length;
+        const railHeads = Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+        const curated = ['За теб днес','Лимитирано','Най-високо оценени','Популярни','Скрити бижута','Скоро'];
+        const curatedFound = curated.filter(t => railHeads.some(r => r.includes(t)));
+        return {heroGone, hasVenueHead, hasVenueChip, sectoggleGone, venueBlocks, railHeads: railHeads.slice(0,6), curatedFound};
+    }""")
+    check("j7_cinema_hero_gone",
+          venue_mode_info["heroGone"],
+          ".hero still present in venue mode")
+    check("j7_cinema_no_curated_rails",
+          venue_mode_info["curatedFound"] == [],
+          f"curated rails still present: {venue_mode_info['curatedFound']}")
+    check("j7_cinema_no_sectoggle",
+          venue_mode_info["sectoggleGone"],
+          "[data-sectoggle] still present in venue mode")
+    check("j7_cinema_venue_head_present",
+          venue_mode_info["hasVenueHead"],
+          ".venue-mode-head not found")
+    check("j7_cinema_cc_sofia_chip",
+          venue_mode_info["hasVenueChip"],
+          "cc-sofia chip not found in .venue-mode-head")
+    check("j7_cinema_one_venue_block",
+          venue_mode_info["venueBlocks"] == 1,
+          f"expected 1 venue block, got {venue_mode_info['venueBlocks']}")
+
+    # Verify all films in the cc-sofia block have showtimes at cc-sofia in the period
+    venue_films_ok = page.evaluate(f"""() => {{
+        const block = document.querySelector('.venue-block');
+        if (!block) return {{ok: false, reason: 'no venue-block'}};
+        const filmCards = Array.from(block.querySelectorAll('[data-film]'));
+        const filmIds = filmCards.map(c => c.dataset.film);
+        // Check that each film has at least one SHOWTIME row at cc-sofia in the period
+        const weekStart = '{CLOCK_TODAY_ISO}', weekEnd = '{CLOCK_WEEK_END}';
+        const missing = filmIds.filter(fid =>
+            !SHOWTIMES.some(r => r[0] === fid && r[1] === 'cc-sofia' && r[2] >= weekStart && r[2] <= weekEnd)
+        );
+        // Also check all cc-sofia films in the period appear
+        const expectedIds = Array.from(new Set(
+            SHOWTIMES.filter(r => r[1] === 'cc-sofia' && r[2] >= weekStart && r[2] <= weekEnd).map(r => r[0])
+        ));
+        const missingExpected = expectedIds.filter(fid => !filmIds.includes(fid));
+        return {{ok: missing.length === 0 && missingExpected.length === 0,
+                 missing: missing.slice(0,3), missingExpected: missingExpected.slice(0,3),
+                 filmCount: filmIds.length, expectedCount: expectedIds.length}};
+    }}""")
+    check("j7_cinema_block_films_have_cc_sofia_times",
+          venue_films_ok.get("ok") is True,
+          f"missing={venue_films_ok.get('missing')}, missingExpected={venue_films_ok.get('missingExpected')}"
+          + f" (block has {venue_films_ok.get('filmCount')}, expected {venue_films_ok.get('expectedCount')})")
+
+    # Screenshot for venue mode cinema
+    save_shot(page, wave, "d-bg-venue-mode-cc-sofia")
+
+    # --- Remove cc-sofia chip → normal page back ---
+    page.evaluate("""() => {
+        const chip = document.querySelector('.venue-chip-rm[data-venue="cc-sofia"]');
+        if (chip) chip.click();
+    }""")
+    page.wait_for_timeout(600)
+
+    normal_page_back = page.evaluate("""() => {
+        const heroBack = !!document.querySelector('.hero');
+        const sectoggleBack = !!document.querySelector('[data-sectoggle]');
+        return {heroBack, sectoggleBack};
+    }""")
+    check("j7_cinema_chip_remove_restores_page",
+          normal_page_back["heroBack"] or normal_page_back["sectoggleBack"],
+          f"hero={normal_page_back['heroBack']}, sectoggle={normal_page_back['sectoggleBack']} after removing chip")
+    ctx.close()
+
+    # --- J7b: Two venues: cc-sofia + vlaikova ---
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) fab.click();
+    }""")
+    page.wait_for_timeout(400)
+    page.evaluate("""() => {
+        ['cc-sofia','vlaikova'].forEach(vid => {
+            const chip = document.querySelector(".drawer [data-venue='" + vid + "']");
+            if (chip) chip.click();
+        });
+    }""")
+    page.wait_for_timeout(300)
+    page.evaluate("document.querySelector('[data-dclose]')?.click()")
+    page.wait_for_timeout(600)
+
+    two_venue_blocks = page.evaluate("document.querySelectorAll('.venue-block').length")
+    check("j7_two_venues_two_blocks",
+          two_venue_blocks == 2,
+          f"expected 2 venue blocks, got {two_venue_blocks}")
+    ctx.close()
+
+    # --- J7c: Genre + venue intersection ---
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) fab.click();
+    }""")
+    page.wait_for_timeout(400)
+    # Select cc-sofia and the first available genre
+    genre_venue_ok = page.evaluate("""() => {
+        const venueChip = document.querySelector(".drawer [data-venue='cc-sofia']");
+        if (venueChip) venueChip.click();
+        // Pick first genre chip in drawer
+        const genreChip = document.querySelector(".drawer [data-genre]");
+        if (genreChip) { genreChip.click(); return {genreId: genreChip.dataset.genre}; }
+        return {genreId: null};
+    }""")
+    page.wait_for_timeout(300)
+    page.evaluate("document.querySelector('[data-dclose]')?.click()")
+    page.wait_for_timeout(600)
+
+    genre_id = genre_venue_ok.get("genreId")
+    if genre_id:
+        intersection_result = page.evaluate(f"""() => {{
+            const block = document.querySelector('.venue-block');
+            if (!block) return {{ok: false, reason: 'no block'}};
+            const filmCards = Array.from(block.querySelectorAll('[data-film]'));
+            if (!filmCards.length) return {{ok: true, count: 0, note: 'empty (correct if genre+venue intersection is empty)'}};
+            // Each film should match the genre (genreHit will use S.fGenres)
+            const fids = filmCards.map(c => c.dataset.film);
+            const fGenres = S.fGenres;
+            const nonMatching = fids.filter(fid => {{
+                const f = filmById[fid];
+                if (!f) return true;
+                return fGenres.length && !genreHit(f.genres);
+            }});
+            return {{ok: nonMatching.length === 0, nonMatching: nonMatching.slice(0,3), total: fids.length}};
+        }}""")
+        check("j7_genre_venue_intersection",
+              intersection_result.get("ok") is True,
+              f"genre filter not applied in venue mode: {intersection_result}")
+    else:
+        skip("j7_genre_venue_intersection", "no genre chips found in drawer")
+    ctx.close()
+
+    # --- J7d: Theatre venue mode ---
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    # Open drawer and select first available theatre
+    page.evaluate("""() => {
+        const fab = document.querySelector('.fab');
+        if (fab && !fab.hidden) fab.click();
+    }""")
+    page.wait_for_timeout(400)
+
+    theatre_venue_result = page.evaluate("""() => {
+        // Skip the empty 'Всички театри' chip (data-venue=""), pick first real venue
+        const chips = Array.from(document.querySelectorAll(".drawer [data-venue]"));
+        const theatreChip = chips.find(c => c.dataset.venue && c.dataset.venue.length > 0);
+        if (!theatreChip) return {found: false};
+        theatreChip.click();
+        return {found: true, venueId: theatreChip.dataset.venue};
+    }""")
+    page.wait_for_timeout(300)
+    page.evaluate("document.querySelector('[data-dclose]')?.click()")
+    page.wait_for_timeout(600)
+
+    if theatre_venue_result.get("found"):
+        th_venue_mode = page.evaluate("""() => {
+            const heroGone = !document.querySelector('.hero');
+            const blocks = document.querySelectorAll('.venue-block').length;
+            const hasChips = !!document.querySelector('.venue-chip-rm');
+            return {heroGone, blocks, hasChips};
+        }""")
+        check("j7_theatre_venue_mode_one_block",
+              th_venue_mode["blocks"] == 1,
+              f"expected 1 venue block for theatre, got {th_venue_mode['blocks']}")
+        check("j7_theatre_venue_mode_hero_gone",
+              th_venue_mode["heroGone"],
+              ".hero still present in theatre venue mode")
+        save_shot(page, wave, "m-bg-venue-mode-theatre")
+    else:
+        check("j7_theatre_venue_mode_one_block", False, "no venue chip found in theatre drawer")
+        check("j7_theatre_venue_mode_hero_gone", False, "skipped")
+    ctx.close()
+
+    # ── J8: Wide posters ───────────────────────────────────────────────────────
+    print("\n=== J8: Wide poster detection ===")
+    WIDE_POSTER_URL = "https://ndk.bg/storage/thumbnails/2026/08/31/38393/group-55-kinocult-festival-20260831-064826_resize1000x1000.jpg?v=1788158928"
+
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    _force_mount(page)
+
+    # Find a film currently visible in a rail
+    film_id = page.evaluate("""() => {
+        const card = document.querySelector('[data-film]');
+        return card ? card.dataset.film : null;
+    }""")
+
+    if film_id:
+        # Set its poster to a wide (landscape) URL and re-render
+        page.evaluate(f"""() => {{
+            if (typeof POSTERS !== 'undefined') {{
+                POSTERS['{film_id}'] = '{WIDE_POSTER_URL}';
+            }}
+            if (typeof render !== 'undefined') render();
+        }}""")
+        page.wait_for_timeout(1000)  # wait for render + image load
+
+        # Wait for the image to load and the .wide class to be set
+        # (the .wide class is set onload when naturalWidth > naturalHeight * 1.05)
+        for _ in range(10):
+            wide_result = page.evaluate(f"""() => {{
+                const card = document.querySelector('[data-film="{film_id}"]');
+                if (!card) return {{cardFound: false}};
+                const poster = card.querySelector('.poster');
+                const img = card.querySelector('.poster img, .poster .p-real');
+                const blurBg = card.querySelector('.p-blur-bg');
+                const isWide = poster && poster.classList.contains('wide');
+                const hasBlurBg = !!blurBg;
+                const objFit = img ? window.getComputedStyle(img).objectFit : null;
+                return {{cardFound: true, isWide, hasBlurBg, objFit,
+                         imgSrc: img ? img.src.slice(0,60) : null,
+                         naturalW: img && img.complete ? img.naturalWidth : null,
+                         naturalH: img && img.complete ? img.naturalHeight : null}};
+            }}""")
+            if wide_result.get("isWide"):
+                break
+            page.wait_for_timeout(200)
+
+        # Check if network was available (if naturalWidth==0, image didn't load)
+        if wide_result.get("naturalW") == 0 or wide_result.get("naturalW") is None:
+            skip("j8_wide_poster_class", "image did not load (no network access)")
+            skip("j8_wide_blur_bg", "image did not load (no network access)")
+            skip("j8_wide_object_fit_contain", "image did not load (no network access)")
+        else:
+            check("j8_wide_poster_class",
+                  wide_result.get("isWide") is True,
+                  f"poster has no .wide class; naturalW={wide_result.get('naturalW')}, naturalH={wide_result.get('naturalH')}")
+            check("j8_wide_blur_bg",
+                  wide_result.get("hasBlurBg") is True,
+                  f"no .p-blur-bg element; isWide={wide_result.get('isWide')}")
+            check("j8_wide_object_fit_contain",
+                  wide_result.get("objFit") == "contain",
+                  f"object-fit={wide_result.get('objFit')!r} (need 'contain')")
+
+            # A portrait poster (different film) should not have .wide
+            portrait_result = page.evaluate(f"""() => {{
+                const cards = Array.from(document.querySelectorAll('[data-film]'));
+                const portrait = cards.find(c => {{
+                    const poster = c.querySelector('.poster');
+                    return poster && !poster.classList.contains('wide');
+                }});
+                if (!portrait) return {{found: false}};
+                const img = portrait.querySelector('.poster img, .poster .p-real');
+                return {{
+                    found: true,
+                    filmId: portrait.dataset.film,
+                    objFit: img ? window.getComputedStyle(img).objectFit : null,
+                }};
+            }}""")
+            if portrait_result.get("found"):
+                check("j8_portrait_no_wide_no_contain",
+                      portrait_result.get("objFit") == "cover",
+                      f"portrait poster objFit={portrait_result.get('objFit')!r} (need 'cover')")
+            else:
+                skip("j8_portrait_no_wide_no_contain", "no non-wide poster card found after setting one film to wide")
+    else:
+        skip("j8_wide_poster_class", "no [data-film] card visible for wide poster test")
+        skip("j8_wide_blur_bg", "skipped")
+        skip("j8_wide_object_fit_contain", "skipped")
+        skip("j8_portrait_no_wide_no_contain", "skipped")
+    ctx.close()
+
+    # ── J9: No page errors + verify_build + full suite ─────────────────────────
+    print("\n=== J9: No page errors ===")
+    all_errors = []
+    for size_tag_j, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+        for lang_code in ["bg", "en"]:
+            for mode in ["cinema", "theatre"]:
+                ctx, page, errs = open_page(browser, w, h, lang=lang_code, mode=mode)
+                page.wait_for_timeout(600)
+                if errs:
+                    all_errors.extend([(size_tag_j, lang_code, mode, e) for e in errs])
+                ctx.close()
+    if all_errors:
+        check("j9_no_page_errors", False,
+              f"{len(all_errors)} error(s): {all_errors[0]}")
+    else:
+        check("j9_no_page_errors", True, "")
+
+    print("\n=== J9: verify_build.py gate ===")
+    result_vb = subprocess.run(
+        ["python3", "scripts/verify_build.py"],
+        cwd=str(webapp_root),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SOFIA_HTML": html_env}
+    )
+    gate_passes = "all checks passed" in result_vb.stdout
+    check("j9_gate_passes", gate_passes,
+          result_vb.stdout[:120] if not gate_passes else "")
+
+    # ── Screenshots: sections open, theatre tonight/weekend, bg-cinema sections ─
+    print("\n=== J Screenshots ===")
+    ensure_shot_dir(wave)
+
+    # m-bg-cinema-sections-open: open Genres section on mobile
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    for _ in range(15):
+        btn = page.query_selector("[data-sectoggle='Genres']")
+        if btn:
+            break
+        page.mouse.wheel(0, 400)
+        page.wait_for_timeout(200)
+    if btn:
+        page.evaluate("document.querySelector(\"[data-sectoggle='Genres']\").scrollIntoView({block:'center'})")
+        page.wait_for_timeout(200)
+        btn.click()
+        page.wait_for_timeout(400)
+
+        # Capture mid-animation frame ~130ms into opening (re-open for fresh sample)
+        page.evaluate("document.querySelector(\"[data-sectoggle='Genres']\").click()")
+        page.wait_for_timeout(300)
+        page.evaluate("document.querySelector(\"[data-sectoggle='Genres']\").click()")
+        page.wait_for_timeout(130)  # mid-way through 260ms open
+        save_shot(page, wave, "mid-anim-section-opening")
+        page.wait_for_timeout(200)
+    save_shot(page, wave, "m-bg-cinema-sections-open")
+    ctx.close()
+
+    # d-bg-theatre-tonight-weekend: scroll to tonight/weekend rails
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    _force_mount(page)
+    for _ in range(8):
+        page.mouse.wheel(0, 600)
+        page.wait_for_timeout(200)
+    save_shot(page, wave, "d-bg-theatre-tonight-weekend")
+    ctx.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -4421,6 +5502,7 @@ WAVES = {
     "D1": wave_d1,
     "H": wave_h,
     "I": wave_i,
+    "J": wave_j,
 }
 
 def main():
@@ -4451,6 +5533,13 @@ def main():
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
 
+        # Launch WebKit once for use by Wave J (J1 needs both engines)
+        _webkit_browser = None
+        try:
+            _webkit_browser = pw.webkit.launch(headless=True)
+        except Exception as _wk_err:
+            print(f"  NOTE: WebKit launch failed ({_wk_err}); Wave J WebKit checks will be skipped")
+
         for wave_name in selected:
             if wave_name not in WAVES:
                 print(f"Unknown wave: {wave_name}")
@@ -4460,7 +5549,10 @@ def main():
             print(f"WAVE {wave_name}")
             print(f"{'='*70}")
             results.clear()
-            WAVES[wave_name](browser)
+            if wave_name == "J":
+                WAVES[wave_name](browser, _webkit_browser)
+            else:
+                WAVES[wave_name](browser)
             # Snapshot this wave's results before the next wave clears them
             wave_snapshot = list(results)
             all_wave_results.append((wave_name, wave_snapshot))
@@ -4475,6 +5567,11 @@ def main():
             print(f"\nWAVE {wave_name}: {status_str} — {w_run - w_failed}/{w_run} passed{skip_note}")
 
         browser.close()
+        if _webkit_browser:
+            try:
+                _webkit_browser.close()
+            except Exception:
+                pass
 
     # Print overall summary
     print(f"\n{'='*70}")
