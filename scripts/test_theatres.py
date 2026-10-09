@@ -187,6 +187,47 @@ check("finish: past dropped, thin month → extra_rows",
       ("2026-10-08", "2026-10-31", 24, 4))
 raises("finish: nothing left → Unavailable", O.Unavailable, O.finish, "x", "s", [mk("2026-10-01")], TODAY)
 
+print("coverage — a stage that is regular in the next four weeks must not vanish from a later month")
+# Сълза и смях as published on 2026-10-09: the main stage every evening, the
+# chamber stage (Славянска беседа) on 9 October dates — then 21 November
+# evenings on the main stage, every week to the 30th, and ONE chamber date.
+OPEN, CHAMBER = "Открита сцена СЪЛЗА И СМЯХ", "Камерна сцена СЛАВЯНСКА БЕСЕДА"
+s_oct = ([O.mkrow("A", f"2026-10-{d:02d}", "19:00", stage=OPEN) for d in range(8, 32)]
+         + [O.mkrow("B", f"2026-10-{d:02d}", "19:30", stage=CHAMBER) for d in (9, 14, 15, 20, 22, 23, 27, 30)]
+         + [O.mkrow("B", "2026-10-27", "20:00", stage=CHAMBER)])
+s_nov = ([O.mkrow("A", f"2026-11-{d:02d}", "19:00", stage=OPEN)
+          for d in (1, 3, 6, 7, 8, 9, 11, 12, 13, 15, 16, 18, 20, 21, 24, 25, 26, 27, 28, 29, 30)]
+         + [O.mkrow("B", "2026-11-05", "19:30", stage=CHAMBER)])
+bare = [O.mkrow(r[0], r[1], r[2]) for r in s_oct + s_nov]
+check("the count rules alone accept that November (22 evenings, every week to the 30th)",
+      O.complete_until(bare, TODAY), "2026-11-30")
+why = []
+check("…but its chamber stage nearly vanished (1 date against 9): November is half-entered",
+      O.complete_until(s_oct + s_nov, TODAY, why), "2026-10-31")
+check("…and the reason is given", why,
+      ["2026-11: not completely published — камерна сцена славянска беседа: 1 performance(s) against 9 "
+       "in the next four weeks"])
+res = O.finish("salzaismyah", "s", s_oct + s_nov, TODAY)
+check("finish: November becomes extra (preliminary) rows, the reason a note",
+      (res["covered_to"], len(res["extra_rows"]), res["notes"][0][:8]), ("2026-10-31", 22, "2026-11:"))
+check("regular = playing in ≥ 3 of the next four weeks; its rate per day",
+      sorted((s, round(r * O.REF_DAYS)) for s, r in O.regular_stages(s_oct + s_nov, TODAY).items()),
+      [("камерна сцена славянска беседа", 9), ("открита сцена сълза и смях", 26)])
+check("the published hall is the stage when no other is given",
+      O.stage_of(O.mkrow("X", "2026-11-01", "19:00", hall=" Зала  1 ")), "зала 1")
+# Топлоцентрала as published on 2026-10-09: November is quieter in every hall,
+# but each of its regular halls still plays — a published month.
+hall_days = {"Зала 1": ((9, 10, 11, 14, 16, 17, 18, 21, 23, 24, 25, 28, 30), (1, 4, 6, 8, 11, 13, 15, 18, 20, 22, 25, 27)),
+             "Зала 2": ((8, 9, 10, 12, 13, 15, 16, 17, 19, 20, 22, 23, 24, 26, 27, 29), (2, 5, 7, 9, 12, 14, 17, 19, 21, 24, 28)),
+             "Сцена бар": ((10, 17, 24, 31), (14, 28))}
+toplo = [O.mkrow(h, f"2026-{m}-{d:02d}", "19:00", hall=h)
+         for h, (o, n) in hall_days.items() for m, ds in (("10", o), ("11", n)) for d in ds]
+check("every regular hall still playing → the quieter month is complete (Топлоцентрала)",
+      O.complete_until(toplo, TODAY), "2026-11-28")
+fest = [O.mkrow("F", f"2026-10-{d:02d}", "20:00", hall="Фоайе") for d in (10, 11, 12, 13, 14)]
+check("a stage busy in one week only is not regular: its quiet November proves nothing",
+      O.complete_until(toplo + fest, TODAY), "2026-11-28")
+
 # ===================================================================== national
 print("national — nationaltheatre.bg/bg/programa")
 nat = fx("theatre_national.html")
@@ -342,6 +383,50 @@ check("cancelled (text-danger / ОТМЕНЕНО) excluded", [(e[0], e[1]) for e
 rows, exc = O.parse_salza(fx("theatre_salzaismyah_11.html"), 2026, 11)
 check("empty days are bare cells", brief(rows), [("ЖЕНА МИ СЕ КАЗВА БОРИС", "2026-11-01", "19:00")])
 raises("grid must be the month asked for", O.MarkupError, O.parse_salza, fx("theatre_salzaismyah.html"), 2026, 11)
+
+print("salzaismyah — per-stage pages /site/events/N (the grid does not name the stage)")
+stg = [O.parse_salza_stage(fx(f"theatre_salzaismyah_stage{n}.html")) for n in (1, 2, 3)]
+check("each page names its stage", [s for s, _ in stg],
+      ["Открита сцена СЪЛЗА И СМЯХ", "Камерна сцена СЛАВЯНСКА БЕСЕДА", "ЪНДЪРГРАУНД - Сцена"])
+check("performances: wall time and the grid's selector id",
+      stg[1][1], [("2026-10-09", "19:30", "3151", "ЖЕНСКА ЛОГИКА"), ("2026-10-30", "19:30", "3123", "ЖЕНИ ГОВОРЯТ ЗА..."),
+                  ("2026-11-05", "19:30", "3182", "“Как господин Мокинпот се спаси от нещастието”")])
+check("box-office-only and cancelled cards still carry their selector id (schema.org offers)",
+      [(e[0], e[2]) for e in stg[0][1]], [("2026-10-10", "3148"), ("2026-10-10", "3147"), ("2026-11-01", "3159")])
+check("an empty stage", stg[2][1], [])
+raises("a page without its stage heading is not a stage page", O.MarkupError, O.parse_salza_stage,
+       fx("theatre_salzaismyah.html"))
+grid, gexc = [], []
+for f, m in (("theatre_salzaismyah.html", 10), ("theatre_salzaismyah_11.html", 11)):
+    r_, e_ = O.parse_salza(fx(f), 2026, m)
+    grid += r_
+    gexc += e_
+unplaced, unlisted = O.salza_stage_rows(grid, stg, TODAY, gexc)
+on = {(r[1], r[2]): r[3].get("stage") for r in grid}
+check("grid rows put on their stage by selector id (a box-office-only one too)",
+      (on[("2026-10-09", "19:30")], on[("2026-10-10", "19:05")], on[("2026-11-01", "19:00")]),
+      (CHAMBER, OPEN, OPEN))
+slot_row = O.mkrow("ЖЕНИ ГОВОРЯТ ЗА...", "2026-10-30", "19:30")       # a grid entry without its link
+O.salza_stage_rows([slot_row], stg, TODAY)
+check("…or, without a link, by the only stage playing at that date and time", slot_row[3].get("stage"), CHAMBER)
+check("later grid rows on no stage page are reported (these pages are trimmed)",
+      brief(unplaced), [("НЕ ТЕ ПОЗНАВАМ ВЕЧЕ", "2026-10-09", "19:00"),
+                        ("БАЩА МИ СЕ КАЗВА МАРИЯ - НА СЕЛО", "2026-10-11", "19:00")])
+check("stage performances missing from the grid are reported; a cancelled one is not",
+      [u[:2] for u in unlisted], [("2026-10-30", "19:30"), ("2026-11-05", "19:30")])
+salza_pages = {O.SALZA_URL.format(y=2026, m=10): raw("theatre_salzaismyah.html"),
+               O.SALZA_URL.format(y=2026, m=11): raw("theatre_salzaismyah_11.html")}
+salza_pages.update({O.SALZA_STAGE_URL.format(n=n): raw(f"theatre_salzaismyah_stage{n}.html") for n in (1, 2, 3)})
+res = O.fetch_salzaismyah(FakeNet(salza_pages), TODAY)
+check("fetch: a later grid row on no stage page → coverage ends with this month, noted",
+      (res["covered_to"], any("on no stage page" in n and "coverage ends with this month" in n
+                              for n in res["notes"])), ("2026-10-11", True))
+check("fetch: the stage is kept with each row",
+      [r[3].get("stage") for r in res["rows"] if r[1:3] == ("2026-10-09", "19:30")], [CHAMBER])
+res = O.fetch_salzaismyah(FakeNet({k: v for k, v in salza_pages.items() if "/site/events/" not in k}), TODAY)
+check("fetch: stage pages down → the grid is still read, coverage ends with this month",
+      (len(res["rows"]), res["covered_to"], any(n.startswith("stage pages not read") for n in res["notes"])),
+      (6, "2026-10-11", True))
 
 # ======================================================================== toplo
 print("toplo — toplocentrala.bg/program/performance")
