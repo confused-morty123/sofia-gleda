@@ -44,11 +44,16 @@ Contract:
 
 A month is "covered" only while it looks completely published: later months
 must carry at least COMPLETE_RATIO of the performance density of the next four
-weeks, or SPREAD_RATIO of it with performances right through the month.
-Възраждане's December (eight evenings to the 19th, no matinées) is the
-half-entered state; treating it as complete would delete real listings the
-theatre simply has not typed in yet. Сълза и смях's November (one evening show
-a day, every week to the 30th) is a quieter month, but a published one.
+weeks, or SPREAD_RATIO of it with performances right through the month — AND
+every stage that plays regularly in those four weeks must still be there (at
+least STAGE_RATIO of its own rate). Възраждане's December (eight evenings to
+the 19th, no matinées) is the half-entered state; treating it as complete would
+delete real listings the theatre simply has not typed in yet. Сълза и смях's
+November 2026 passed the count rules (22 evenings, every week to the 30th) but
+is half-entered too: its chamber stage (Славянска беседа) has 1 date against 9
+in the rest of October, and none of the children's matinées Театър София lists
+for its stage that month are on its grid. Топлоцентрала's November (25
+performances, its three regular halls all playing) is published.
 
     python3 scripts/official_theatres.py                 # every theatre, summary table
     python3 scripts/official_theatres.py --venue tba -v  # one theatre, rows printed
@@ -64,7 +69,7 @@ import pathlib
 import re
 import sys
 import urllib.parse
-from collections import OrderedDict, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 
 try:
     from zoneinfo import ZoneInfo
@@ -80,7 +85,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 TZ_NAME = "Europe/Sofia"
 COMPLETE_RATIO = 0.6      # later month ≥ 60% of the next-four-weeks density, or
-SPREAD_RATIO = 0.4        # ≥ 40% when its performances run through the whole month
+SPREAD_RATIO = 0.4        # ≥ 40% when its performances run through the whole month,
+STAGE_WEEKS = 3           # and a stage playing in ≥ 3 of the next four weeks (regular)
+STAGE_RATIO = 0.25        # keeps ≥ 25% of its own rate there (else it "nearly vanished")
 REF_DAYS = 28
 MONTHS_AHEAD = 6          # month-paged sources: current month + up to 5 more
 
@@ -319,24 +326,56 @@ def spread_through(days, year, month):
             and max(have) >= last - 6)
 
 
-def complete_until(rows, today):
+def stage_of(row):
+    """The stage a row is played on, as a comparison key: meta["stage"] (set by
+    a fetcher that learns it outside its grid — Сълза и смях's per-stage pages)
+    or the published hall. None when the source names neither."""
+    meta = row[3] if len(row) > 3 and isinstance(row[3], dict) else {}
+    return clean(meta.get("stage") or meta.get("hall")).lower() or None
+
+
+def regular_stages(rows, today):
+    """{stage: performances per day over the next REF_DAYS days} for every stage
+    that plays in at least STAGE_WEEKS of those four weeks."""
+    weeks, count = defaultdict(set), Counter()
+    for r in rows:
+        k = (dt.date.fromisoformat(r[1]) - today).days
+        s = stage_of(r)
+        if s and 0 <= k < REF_DAYS:
+            weeks[s].add(k // 7)
+            count[s] += 1
+    return {s: count[s] / REF_DAYS for s, w in weeks.items() if len(w) >= STAGE_WEEKS}
+
+
+def complete_until(rows, today, why=None):
     """Last date of the programme that looks completely published: the current
-    month, then each following month while it is clearly published — its
-    density (rows per day) at least COMPLETE_RATIO of the density of the next
-    REF_DAYS days, or at least SPREAD_RATIO of it with performances right
-    through the month (spread_through: Сълза и смях's and Топлоцентрала's
-    November 2026, 22 and 25 performances in every week to the month's end).
+    month, then each following month while it is clearly published —
+      * its density (rows per day) at least COMPLETE_RATIO of the density of
+        the next REF_DAYS days, or at least SPREAD_RATIO of it with
+        performances right through the month (spread_through: a quieter month
+        such as Топлоцентрала's November 2026, 25 performances to the 30th);
+      * and every stage that is regular in those REF_DAYS days (regular_stages)
+        keeps at least STAGE_RATIO of its own rate in the month. A theatre that
+        has typed in only part of a month leaves a whole stage out: Сълза и
+        смях's chamber stage had 1 November date against 9 in the rest of
+        October, though the month's 22 evenings ran every week to the 30th.
     Stops at the first month that is empty or thinner — the theatre has not
-    finished entering it, so it cannot speak for the days it leaves blank."""
+    finished entering it, so it cannot speak for the days it leaves blank. The
+    reason for stopping at a listed month is appended to `why` (a list)."""
     dates = sorted(r[1] for r in rows)
     if not dates:
         return None
     t0 = today.isoformat()
     t1 = (today + dt.timedelta(days=REF_DAYS - 1)).isoformat()
     ref = sum(1 for d in dates if t0 <= d <= t1) / REF_DAYS
-    by_month = defaultdict(list)
-    for d in dates:
-        by_month[(int(d[:4]), int(d[5:7]))].append(d)
+    regular = regular_stages(rows, today)
+    by_month, staged = defaultdict(list), defaultdict(Counter)
+    for r in rows:
+        ym = (int(r[1][:4]), int(r[1][5:7]))
+        by_month[ym].append(r[1])
+        s = stage_of(r)
+        if s:
+            staged[ym][s] += 1
     y, m = today.year, today.month
     last = max(by_month[(y, m)]) if (y, m) in by_month else None
     while True:
@@ -344,9 +383,20 @@ def complete_until(rows, today):
         days = by_month.get((y, m))
         if not days:
             break
-        density = len(days) / calendar.monthrange(y, m)[1]
+        n_days = calendar.monthrange(y, m)[1]
+        density = len(days) / n_days
         if ref <= 0 or (density < COMPLETE_RATIO * ref
                         and not (density >= SPREAD_RATIO * ref and spread_through(days, y, m))):
+            if why is not None:
+                why.append(f"{y}-{m:02d}: {len(days)} performances — thinner than the next "
+                           f"four weeks ({ref * n_days:.0f} at their rate); not completely published")
+            break
+        gone = sorted(s for s, rate in regular.items() if staged[(y, m)][s] < STAGE_RATIO * rate * n_days)
+        if gone:
+            if why is not None:
+                why.append(f"{y}-{m:02d}: not completely published — " + "; ".join(
+                    f"{s}: {staged[(y, m)][s]} performance(s) against {regular[s] * REF_DAYS:.0f} "
+                    f"in the next four weeks" for s in gone))
             break
         last = max(days)
     return last
@@ -367,10 +417,14 @@ def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=No
         raise Unavailable("no performances parsed (implausibly empty)")
     cf = max(covered_from or t0, t0)
     ct = covered_to or rows[-1][1]
+    notes = list(notes)
     if month_check:
-        cu = complete_until(rows, today)
+        why = []
+        cu = complete_until(rows, today, why)
         if cu is None:
             raise Unavailable("no completely published period")
+        if cu < ct:
+            notes += why
         ct = min(ct, cu)
     inside = [r for r in rows if cf <= r[1] <= ct]
     extra = [r for r in rows if not (cf <= r[1] <= ct)]
@@ -380,7 +434,7 @@ def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=No
                  key=lambda e: (e[1], e[2] or "", e[0]))
     return {"venue": venue, "rows": inside, "covered_from": cf, "covered_to": ct,
             "source": source, "extra_rows": extra, "excluded": exc,
-            "notes": list(notes)}
+            "notes": notes}
 
 
 def _get(net, url, **kw):
@@ -968,8 +1022,12 @@ def fetch_satira(net, today):
 
 # ================================================================ salzaismyah
 SALZA_URL = "https://www.salzaismyah.bg/site/calendar/{y}/{m:02d}"
-SALZA_SOURCE = "salzaismyah.bg/site/calendar (month grid)"
+SALZA_STAGE_URL = "https://www.salzaismyah.bg/site/events/{n}"
+SALZA_STAGE_PAGES = (1, 2, 3)     # Открита сцена, Камерна сцена (Славянска беседа), Ъндърграунд
+SALZA_SOURCE = "salzaismyah.bg/site/calendar (month grid) + /site/events/N (stages)"
 _SALZA_ENTRY = re.compile(r"^(\d{1,2}[:.]\d{2})\s*[-–—]\s*(.+)$")
+_SALZA_SELECTOR = re.compile(r"/site/selector/(\d+)")
+_SALZA_STAGE_DAY = re.compile(r"^\d{2}\.\d{2}\s+\S+\s+\d{1,2}:\d{2}$")
 
 
 def parse_salza(html, year, month):
@@ -1027,7 +1085,92 @@ def fetch_salzaismyah(net, today):
             break
         rows += page
         excluded += exc
-    return finish("salzaismyah", SALZA_SOURCE, rows, today, excluded=excluded, notes=notes)
+    # The grid does not say on which stage a performance is; the stage pages do,
+    # and the completeness rule needs it (complete_until: a regular stage that
+    # nearly vanishes from a month means the month is half-entered). Without a
+    # full stage account no later month can be checked, so coverage then ends
+    # with the current month.
+    covered_to = None
+    try:
+        stages = [parse_salza_stage(_get(net, SALZA_STAGE_URL.format(n=n))) for n in SALZA_STAGE_PAGES]
+    except Unavailable as e:                           # MarkupError included
+        why = f"stage pages not read ({e})"
+    else:
+        unplaced, unlisted = salza_stage_rows(rows, stages, today, excluded)
+        why = (f"{len(unplaced)} later performance(s) on no stage page, first "
+               f"{unplaced[0][1]} {unplaced[0][2]} {unplaced[0][0]}") if unplaced else None
+        if unlisted:
+            notes.append(f"{len(unlisted)} stage-page performance(s) not on the month grid, first "
+                         + " ".join(unlisted[0][:3]))
+    if why:
+        covered_to = today.replace(day=calendar.monthrange(today.year, today.month)[1]).isoformat()
+        notes.append(why + " — later months cannot be checked stage by stage; coverage ends with this month")
+    return finish("salzaismyah", SALZA_SOURCE, rows, today, excluded=excluded, notes=notes,
+                  covered_to=covered_to)
+
+
+def parse_salza_stage(html):
+    """salzaismyah.bg/site/events/N — one stage's own programme, every upcoming
+    performance on one page ("Няма намерени представления." when none): the
+    stage in h2.page-heading-accent ("Камерна сцена СЛАВЯНСКА БЕСЕДА") and per
+    performance a card headed "09.10 петък 19:30" followed by a schema.org Event
+    (startDate in Sofia wall time; offers.url = the /site/selector/NNNN link the
+    month grid uses, present even when tickets are sold only at the box office).
+    Returns (stage, [(date, time, selector id or None, title)])."""
+    soup = soup_of(html)
+    h = soup.select_one("h2.page-heading-accent")
+    stage = clean(h.get_text(" ", strip=True)) if h else ""
+    if not stage:
+        raise MarkupError("salzaismyah: stage page without its stage heading")
+    events = []
+    for sc in soup.select('script[type="application/ld+json"]'):
+        try:
+            data = json.loads(sc.string or sc.get_text() or "")
+        except ValueError:
+            raise MarkupError(f"salzaismyah: unreadable schema.org block on {stage}")
+        for ev in data if isinstance(data, list) else [data]:
+            if not isinstance(ev, dict) or ev.get("@type") != "Event":
+                continue
+            m = re.match(r"(\d{4}-\d\d-\d\d)T(\d\d:\d\d)", ev.get("startDate") or "")
+            if not m:
+                raise MarkupError(f"salzaismyah: event without startDate on {stage}")
+            sel = _SALZA_SELECTOR.search(str((ev.get("offers") or {}).get("url") or ""))
+            events.append((m.group(1), m.group(2), sel.group(1) if sel else None, clean(ev.get("name"))))
+    cards = [d for d in soup.select("div.w-100.text-center") if _SALZA_STAGE_DAY.match(clean(d.get_text(" ")))]
+    if len(cards) != len(events):
+        raise MarkupError(f"salzaismyah: {stage} shows {len(cards)} performances, "
+                          f"its schema.org data {len(events)}")
+    return stage, events
+
+
+def salza_stage_rows(rows, stages, today, excluded=()):
+    """Put each month-grid row on its stage (meta["stage"]): by its
+    /site/selector/ id, else by date and time when only one stage plays then.
+    stages: [(stage, events)] from parse_salza_stage; excluded: the grid's
+    cancelled entries (the stage pages still list them). Returns (grid rows
+    dated after today that no stage page lists, stage-page performances after
+    today that the grid does not list)."""
+    by_id, by_slot = {}, defaultdict(set)
+    for stage, events in stages:
+        for d, t, sel, _title in events:
+            if sel:
+                by_id[sel] = stage
+            by_slot[(d, t)].add(stage)
+    t0 = today.isoformat()
+    unplaced, slots = [], {(e[1], e[2]) for e in excluded}
+    for r in rows:
+        slots.add((r[1], r[2]))
+        sel = _SALZA_SELECTOR.search(r[3].get("url") or "")
+        stage = by_id.get(sel.group(1)) if sel else None
+        if stage is None and len(by_slot.get((r[1], r[2]), ())) == 1:
+            stage = next(iter(by_slot[(r[1], r[2])]))
+        if stage:
+            r[3]["stage"] = stage
+        elif r[1] > t0:
+            unplaced.append(r)
+    unlisted = [(d, t, title, stage) for stage, events in stages for d, t, _s, title in events
+                if d > t0 and (d, t) not in slots]
+    return unplaced, unlisted
 
 
 # ======================================================================= toplo

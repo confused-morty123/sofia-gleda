@@ -1005,24 +1005,28 @@ class _DayFeed:
 import re                                                       # noqa: E402
 _days = lambda start, n: [(dt.date.fromisoformat(start) + dt.timedelta(days=i)).isoformat() for i in range(n)]
 _ccc = {d: 50 for d in _days("2026-10-08", 8)}
-_ccc.update({"2026-10-16": 1, "2026-10-21": 2, "2026-10-24": 1})
+_ccc.update({"2026-10-16": 1, "2026-10-21": 2, "2026-10-24": 1,
+             "2026-12-13": 1})                                    # the CS2 final, after 49 empty days
 _feed = _DayFeed(_ccc)
 _res = OS.fetch_cinemacity(_feed, "cc-sofia", "2026-10-08", "2026-12-14")
 check("Cinema City: coverage is the normal week only", (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-15"))
 check("…advance sales after it are fetched past empty days and kept (the merge marks them preliminary)",
-      sorted({r[1] for r in _res.rows if r[1] > "2026-10-15"}), ["2026-10-16", "2026-10-21", "2026-10-24"])
-check("…and the fetch stops after 14 empty days in a row", _feed.asked[-1], "2026-11-07")
+      sorted({r[1] for r in _res.rows if r[1] > "2026-10-15"}), ["2026-10-16", "2026-10-21", "2026-10-24", "2026-12-13"])
+check("…every day to the window end is read, however many empty days come first",
+      (_feed.asked[-1], len(_feed.asked)), ("2026-12-14", 68))
 _dk_days = dict(_dkc)
 _dk_days.update({d: 1 for d in _days("2026-10-22", 19)})          # festival: one a day to 11-09
 _dk_days["2026-11-11"] = 1
+_dk_days.update({"2026-11-30": 1, "2026-12-04": 1, "2026-12-05": 2, "2026-12-14": 1})   # after 18 empty days
 _dkf = _DayFeed(_dk_days)
 _res = OS.fetch_domkino(_dkf, "dom-kino", "2026-10-08", "2026-12-14")
 check("Дом на киното: coverage = the run of normal days, the next week's first days included",
       _res.covered_to, "2026-10-19")
 _later = sorted({r[1] for r in _res.rows if r[1] > "2026-10-19"})
-check("…the festival screenings after it are official rows (preliminary)",
-      (len(_later), _later[0], _later[-1]), (22, "2026-10-20", "2026-11-11"))
-check("…fetched until 14 empty days in a row", _dkf.asked[-1], "2026-11-25")
+check("…the festival screenings after it are official rows (preliminary), the December ones too",
+      (len(_later), _later[0], _later[-1], sum(1 for r in _res.rows if r[1] >= "2026-11-30")),
+      (26, "2026-10-20", "2026-12-14", 5))
+check("…every day to the window end is read", (_dkf.asked[-1], len(_dkf.asked)), ("2026-12-14", 68))
 
 print("official: Кино Арена (arena-mega-mol, trimmed)")
 _ka = (FIXTURES / "kinoarena_day.html").read_text(encoding="utf-8")
@@ -1078,9 +1082,39 @@ check("Park Center never accepts Ring Mall's page",
       OS.parse_cinegrand_page(_cg, "парк-център-софия", "BGSOFCG1", "2026-10-08")[3], False)
 check("Park Center served Ring Mall's programme is broken, not data",
       _raises(OS.fetch_cinegrand, _Pages({"schedule": _cg}), "cg-park", "2026-10-08", "2026-12-14"), True)
-_res = OS.fetch_cinegrand(_Pages({"schedule": _cg}), "cg-ring", "2026-10-08", "2026-12-14")
+_cgp = _Pages({"schedule": _cg})
+_res = OS.fetch_cinegrand(_cgp, "cg-ring", "2026-10-08", "2026-12-14")
 check("a day page showing another day ends coverage",
       (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
+check("…and then no advance sale is read", [u for u in _cgp.asked if "calendar" in u], [])
+
+print("official: Cine Grand advance sales — the per-cinema calendar (София Ринг Мол, 2026-10-09, trimmed)")
+_cal = (FIXTURES / "cinegrand_calendar.html").read_text(encoding="utf-8")
+_adv = (FIXTURES / "cinegrand_advance.html").read_text(encoding="utf-8")
+_cd = OS.parse_cinegrand_calendar(_cal, "софия-ринг-мол")
+check("the calendar lists the strip's days and the dates weeks ahead", [d for d, _ in _cd],
+      [f"2026-10-{d:02d}" for d in range(9, 16)] + ["2026-11-03", "2026-11-04", "2026-11-07",
+                                                     "2026-12-15", "2026-12-16", "2026-12-17"])
+check("…each with its own dated page", _cd[7][1].endswith("/schedule?date=2026-11-03"), True)
+check("another cinema's calendar is refused", _raises(OS.parse_cinegrand_calendar, _cal, "парк-център-софия"), True)
+check("a page reached from the calendar states its date", OS.cinegrand_heading_date(_adv, "2026-10-09"), "2026-11-03")
+check("…a strip day page has no such heading", OS.cinegrand_heading_date(_cg, "2026-10-08"), None)
+_advp = _Pages({"/calendar": _cal, "date=2026-11-03": _adv,
+                "date=2026-11-04": _cg})                   # answered with 8 Oct's programme
+_rows, _days_cg, _notes = OS.fetch_cinegrand_advance(_advp, "cg-ring", "2026-10-15", "2026-10-09", "2026-12-14")
+check("advance sale kept when the page shows that date", [(r[0], r[1], r[2], r[3]["hall"]) for r in _rows],
+      [("GODZILLA MINUS ZERO", "2026-11-03", "19:00", "Зала 9")])
+check("…a page answering with another day's programme is not counted",
+      (sorted(_days_cg), any(n.startswith("2026-11-04: advance-sale page showed 2026-10-08") for n in _notes)),
+      (["2026-11-03"], True))
+check("…a page that does not load is noted", any(n.startswith("2026-11-07: advance-sale page did not load")
+                                                 for n in _notes), True)
+check("…only dates after the strip's run and within the window are requested",
+      sorted(re.search(r"date=([\d-]+)", u).group(1) for u in _advp.asked if "date=" in u),
+      ["2026-11-03", "2026-11-04", "2026-11-07"])
+check("calendar unreachable → no advance rows, noted",
+      OS.fetch_cinegrand_advance(_Pages({}), "cg-ring", "2026-10-15", "2026-10-09", "2026-12-14")[::2],
+      ([], ["calendar unreachable — advance sales not read"]))
 
 print("official: G8 weekly programme (trimmed)")
 _g8 = (FIXTURES / "g8_week.html").read_text(encoding="utf-8")

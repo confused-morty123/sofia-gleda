@@ -20,8 +20,13 @@ Traps found while building this (2026-10-08), each guarded below:
     published; the selected day tab is checked against the requested date.
   * Cine Grand moved to /<cinema>/schedule-<weekday>-<n> pages; every show's
     own "чт, 8 окт, 11:50" label and the cinema code on each page are checked.
+    Its day strip shows seven days; advance sales are only on the per-cinema
+    calendar (/<cinema>/calendar), whose dates are read one by one.
   * Cinema City and Дом на киното publish thin pre-sale/festival days far
-    ahead; those are not a published programme (see published_through()).
+    ahead; those are not a published programme (see published_through()). They
+    sit after weeks of empty days, so these per-day sources are read every day
+    to the window end (2026-10-09 audit: a 12-13 pre-sale and twelve
+    screenings 11-30..12-14 were lost after "14 empty days in a row").
   * Одеон's next programme number exists as an empty shell before it is filled.
 
     from official_sources import fetch_official
@@ -190,19 +195,17 @@ def parse_cinemacity_day(payload, date, cinema=None):
     return rows
 
 
-# Days without a screening after which a per-day source is taken to have
-# nothing more published (pre-sales and festival screenings sit weeks ahead
-# with gaps between them, so a couple of empty days prove nothing).
-EMPTY_STOP = 14
-
-
-def fetch_cinemacity(session, venue, today, last_day, empty_stop=EMPTY_STOP):
-    """Every day from today to the window end (or until `empty_stop` days in a
-    row are empty): the main published week AND the advance sales beyond it.
-    Coverage (published_through) is the normal programme only; the advance-sale
-    rows after it are official too, and the merge shows them as preliminary."""
+def fetch_cinemacity(session, venue, today, last_day):
+    """EVERY day from today to the window end: the main published week AND the
+    advance sales beyond it. Pre-sales sit weeks ahead with long empty gaps
+    between them (2026-10-09: the CS2 final on 12-13, weeks after the previous
+    pre-sale), so no run of empty days ends the read. Coverage (published_through) is the
+    normal programme only; the advance-sale rows after it are official too, and
+    the merge shows them as preliminary. An after-midnight slot the API files
+    under the previous business day (Godzilla 00:01 on 11-03, marked "tbc")
+    belongs to neither day's answer and stays out, as before."""
     cinema = CC_CINEMAS[venue]
-    counts, rows, zeros, i = [], [], 0, 0
+    counts, rows, i = [], [], 0
     while True:
         d = _next(today, i)
         if d > last_day:
@@ -216,9 +219,6 @@ def fetch_cinemacity(session, venue, today, last_day, empty_stop=EMPTY_STOP):
         day = parse_cinemacity_day(payload, d, cinema)
         counts.append((d, len(day)))
         rows += day
-        zeros = zeros + 1 if not day else 0
-        if zeros >= empty_stop and i >= 7:
-            break
         i += 1
     end = published_through(counts, 0.2)
     if end is None:
@@ -396,6 +396,83 @@ def parse_cinegrand_page(html, slug, code, today):
     return selected, tabs, rows, cinema_ok
 
 
+_CG_HEADING = re.compile(r"^\s*График\s+за\b", re.I)
+
+
+def cinegrand_heading_date(html, today):
+    """The date a schedule page reached from the calendar says it shows: its
+    heading "График за петък, 23 октомври" (the day strip then has no selected
+    day). None when the page has no such heading (the strip's own day pages)."""
+    for h in _soup(html).select("h2"):
+        text = h.get_text(" ", strip=True)
+        if _CG_HEADING.match(text):
+            return _bg_day_month(text, today)
+    return None
+
+
+def parse_cinegrand_calendar(html, slug):
+    """The per-cinema calendar (/<cinema>/calendar, the "..." after the day
+    strip): every date the cinema has programmed, as ul.link-list links to
+    /<cinema>/schedule?date=YYYY-MM-DD — the strip's seven days AND the advance
+    sales weeks ahead (2026-10-09, Парк Център: 10-23..10-29, 11-03, 11-04,
+    11-07, 12-15..12-17). Returns sorted [(date, url)]. A link to another
+    cinema's schedule means this is not the cinema's own calendar."""
+    out = {}
+    for a in _soup(html).select("ul.link-list a[href]"):
+        href = a.get("href") or ""
+        parts = urllib.parse.urlsplit(urllib.parse.unquote(href))
+        m = re.fullmatch(r"date=(\d{4}-\d\d-\d\d)", parts.query)
+        if not m or not parts.path.endswith("/schedule"):
+            continue
+        if parts.path.strip("/").split("/")[0] != slug:
+            raise SourceBroken(f"Cine Grand calendar links to another cinema: {parts.path}")
+        out[m.group(1)] = urllib.parse.urljoin(CG_BASE, href)
+    return sorted(out.items())
+
+
+def fetch_cinegrand_advance(session, venue, after, today, last_day):
+    """Advance sales: the dates on the cinema's own calendar after `after` (the
+    last day of the strip's run) up to `last_day`, each read from its
+    /<cinema>/schedule?date=… page. A date's rows are kept only when the page
+    really shows that date — its heading (or selected strip day) is that date
+    and nothing else, it carries this cinema, and each show's own label is that
+    date; a page answering with another day's programme is not counted. These
+    days lie after the normal run, so they never extend coverage; the merge
+    shows them as preliminary. Returns (rows, {date: shows}, notes); when the
+    calendar cannot be read there are no rows and a note."""
+    slug, code = CG_CINEMAS[venue]
+    rows, days = [], {}
+    r = session.get(f"{CG_BASE}/{slug}/calendar")
+    if r is None:
+        return rows, days, ["calendar unreachable — advance sales not read"]
+    try:
+        cal = parse_cinegrand_calendar(r.text, slug)
+    except SourceBroken as e:
+        return rows, days, [f"{e} — advance sales not read"]
+    notes = []
+    for d, url in cal:
+        if d <= after or d < today or d > last_day:
+            continue
+        got = session.get(url)
+        if got is None:
+            notes.append(f"{d}: advance-sale page did not load")
+            continue
+        sel, _, day_rows, ok = parse_cinegrand_page(got.text, slug, code, today)
+        shown = {x for x in (cinegrand_heading_date(got.text, today), sel) if x}
+        if not ok or shown != {d}:
+            notes.append(f"{d}: advance-sale page showed {', '.join(sorted(shown)) or 'no date'}"
+                         f" / cinema check {'ok' if ok else 'FAILED'} — not counted")
+            continue
+        good = [x for x in day_rows if x[1] == d]
+        if len(good) != len(day_rows):
+            notes.append(f"{d}: {len(day_rows) - len(good)} show(s) labelled with another date dropped")
+        days[d] = len(good)
+        rows += good
+    if days:
+        notes.append("advance sales: " + ", ".join(f"{d} ({n})" for d, n in days.items()))
+    return rows, days, notes
+
+
 def fetch_cinegrand(session, venue, today, last_day):
     slug, code = CG_CINEMAS[venue]
     sched = f"{CG_BASE}/{slug}/schedule"
@@ -450,8 +527,16 @@ def fetch_cinegrand(session, venue, today, last_day):
     end = published_through(counts, 0.2)
     if end is None:
         raise SourceBroken("Cine Grand: no normal programme day")
+    advance = {}
+    if counts and counts[-1][1] is not None:
+        # the strip's run ended cleanly: the calendar's later dates are advance
+        # sales (2026-10-09: Park 11 screenings, Ring 3, outside the strip)
+        more, advance, more_notes = fetch_cinegrand_advance(session, venue, counts[-1][0],
+                                                            today, last_day)
+        rows += more
+        notes += more_notes
     return OfficialResult(venue, "cinegrand.bg schedule pages", rows, today, end,
-                          notes=notes, days=dict(counts))
+                          notes=notes, days={**dict(counts), **advance})
 
 
 # ------------------------------------------------------------- G8 (HTML)
@@ -625,15 +710,16 @@ def parse_domkino_day(html, date):
     return rows
 
 
-def fetch_domkino(session, venue, today, last_day, empty_stop=EMPTY_STOP):
-    """Every day from today until `empty_stop` empty days in a row (or the
-    window end). A small hall: ~4 screenings a day. Festival and special
-    screenings are booked weeks ahead, so a thin day is common: coverage is the
-    run of normal days (each at least half the usual count) — every one of them
-    a day the hall has clearly published (2026-10-08: through 10-19, the next
-    programme week's first days included). The thin festival days after it are
-    official rows too; the merge shows them as preliminary."""
-    counts, rows, empty, i = [], [], 0, 0
+def fetch_domkino(session, venue, today, last_day):
+    """EVERY day from today to the window end. A small hall: ~4 screenings a
+    day. Festival and special screenings are booked weeks ahead with long empty
+    gaps between them (2026-10-09: nothing 11-15..11-29, then twelve screenings
+    11-30..12-14), so no run of empty days ends the read. A thin day is common:
+    coverage is the run of normal days (each at least half the usual count) —
+    every one of them a day the hall has clearly published (2026-10-08: through
+    10-19, the next programme week's first days included). The thin festival
+    days after it are official rows too; the merge shows them as preliminary."""
+    counts, rows, i = [], [], 0
     while True:
         d = _next(today, i)
         if d > last_day:
@@ -647,9 +733,6 @@ def fetch_domkino(session, venue, today, last_day, empty_stop=EMPTY_STOP):
         day = parse_domkino_day(r.text, d)
         counts.append((d, len(day)))
         rows += day
-        empty = empty + 1 if not day else 0
-        if empty >= empty_stop:
-            break
         i += 1
     end = published_through(counts, 0.5)
     if end is None:
