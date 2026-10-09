@@ -423,10 +423,41 @@ check("fetch: a later grid row on no stage page → coverage ends with this mont
                               for n in res["notes"])), ("2026-10-11", True))
 check("fetch: the stage is kept with each row",
       [r[3].get("stage") for r in res["rows"] if r[1:3] == ("2026-10-09", "19:30")], [CHAMBER])
-res = O.fetch_salzaismyah(FakeNet({k: v for k, v in salza_pages.items() if "/site/events/" not in k}), TODAY)
+check("fetch: hall = the stage's display name for rows whose stage is known",
+      [r[3].get("hall") for r in res["rows"] if r[1:3] == ("2026-10-09", "19:30")],
+      ["Камерна сцена „Славянска беседа“"])
+check("hall names: the capitalised stage headings map to the app's names; unknown kept",
+      [O.salza_hall_name(OPEN), O.salza_hall_name(CHAMBER), O.salza_hall_name("ЪНДЪРГРАУНД  -  Сцена"),
+       O.salza_hall_name("Нова сцена")],
+      ["Открита сцена", "Камерна сцена „Славянска беседа“", "Сцена „Ъндърграунд“", "Нова сцена"])
+check("fetch: a row whose stage cannot be determined has no hall",
+      [r[3].get("hall") for r in res["rows"] if r[1:3] == ("2026-10-09", "19:00")], [None])
+res_nostg = O.fetch_salzaismyah(FakeNet({k: v for k, v in salza_pages.items() if "/site/events/" not in k}), TODAY)
 check("fetch: stage pages down → the grid is still read, coverage ends with this month",
-      (len(res["rows"]), res["covered_to"], any(n.startswith("stage pages not read") for n in res["notes"])),
+      (len(res_nostg["rows"]), res_nostg["covered_to"], any(n.startswith("stage pages not read") for n in res_nostg["notes"])),
       (6, "2026-10-11", True))
+check("fetch: stage pages down → hall is None for all rows",
+      all(r[3].get("hall") is None for r in res_nostg["rows"]), True)
+
+print("salzaismyah — re-homed Театър София co-productions get no guessed hall")
+import scrape_programs as _S  # noqa: E402 (already imported below, but needed here)
+_why_coproduction = "staged at Театър СЪЛЗА И СМЯХ (co-production listed by Театър София)"
+# another show plays on the open stage at the same time: two shows at one time are on
+# different stages, so the co-production must not take that hall
+_salza_open_row = O.mkrow("ДРУГО ПРЕДСТАВЛЕНИЕ", "2026-10-10", "19:05", hall="Открита сцена")
+_rehome_res = {
+    "sofia-th": {"rows": [], "extra_rows": [], "covered_from": "2026-10-08", "covered_to": "2026-11-29",
+                 "excluded": [("ДА ОБИЧАШ НЕЩО ЖИВО", "2026-10-10", "19:05", _why_coproduction)]},
+    "salzaismyah": {"rows": [_salza_open_row], "extra_rows": [],
+                    "covered_from": "2026-10-08", "covered_to": "2026-11-30", "excluded": []},
+}
+_S.rehome_excluded(_rehome_res)
+check("re-homed co-production: added once, with no hall guessed from the slot",
+      [(r[1], r[2], r[3].get("hall")) for r in _rehome_res["salzaismyah"]["rows"]
+       if r[0] == "ДА ОБИЧАШ НЕЩО ЖИВО"], [("2026-10-10", "19:05", None)])
+check("re-homed co-production: the host's own show keeps its hall",
+      [r[3].get("hall") for r in _rehome_res["salzaismyah"]["rows"] if r[0] == "ДРУГО ПРЕДСТАВЛЕНИЕ"],
+      ["Открита сцена"])
 
 # ======================================================================== toplo
 print("toplo — toplocentrala.bg/program/performance")
