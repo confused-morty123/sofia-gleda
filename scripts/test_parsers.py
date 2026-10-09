@@ -973,9 +973,56 @@ _dkc = [("2026-10-08", 4), ("2026-10-09", 3), ("2026-10-10", 5), ("2026-10-11", 
         ("2026-10-13", 4), ("2026-10-14", 3), ("2026-10-15", 4), ("2026-10-16", 2), ("2026-10-17", 4),
         ("2026-10-18", 4), ("2026-10-19", 2), ("2026-10-20", 1), ("2026-10-21", 1)]
 check("Дом на киното: festival-only days end the normal run", OS.published_through(_dkc, 0.5), "2026-10-19")
-check("... and coverage ends at that programme week's Thursday",
-      OS.week_end_at_or_before("2026-10-19", "2026-10-08"), "2026-10-15")
-check("the week trim never goes before today", OS.week_end_at_or_before("2026-10-12", "2026-10-09"), "2026-10-12")
+
+
+class _DayFeed:
+    """A per-day source: counts {date: n} → that many screenings at distinct times."""
+    def __init__(self, counts):
+        self.counts, self.asked = counts, []
+
+    def _date(self, url):
+        m = re.search(r"(\d{4})-(\d\d)-(\d\d)", url)
+        if m:
+            return m.group(0)
+        m = re.search(r"(\d\d)\.(\d\d)\.(\d{4})", url)
+        return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+
+    def json(self, url, **kw):                 # Cinema City quickbook API
+        d = self._date(url)
+        self.asked.append(d)
+        n = self.counts.get(d, 0)
+        ev = [{"filmId": "f", "cinemaId": "1261", "eventDateTime": f"{d}T{10 + i // 6:02d}:{(i % 6) * 10:02d}:00",
+               "attributeIds": []} for i in range(n)]
+        return {"body": {"films": [{"id": "f", "name": "Филм"}], "events": ev}}
+
+    def get(self, url, **kw):                  # Дом на киното day fragment
+        d = self._date(url)
+        self.asked.append(d)
+        hours = "".join(f'<a class="hour-box" href="#">{10 + i}:00</a>' for i in range(self.counts.get(d, 0)))
+        return _Resp(f'<div class="film-box"><h3 class="film-title">Филм</h3>{hours}</div>' if hours else "<div></div>")
+
+
+import re                                                       # noqa: E402
+_days = lambda start, n: [(dt.date.fromisoformat(start) + dt.timedelta(days=i)).isoformat() for i in range(n)]
+_ccc = {d: 50 for d in _days("2026-10-08", 8)}
+_ccc.update({"2026-10-16": 1, "2026-10-21": 2, "2026-10-24": 1})
+_feed = _DayFeed(_ccc)
+_res = OS.fetch_cinemacity(_feed, "cc-sofia", "2026-10-08", "2026-12-14")
+check("Cinema City: coverage is the normal week only", (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-15"))
+check("…advance sales after it are fetched past empty days and kept (the merge marks them preliminary)",
+      sorted({r[1] for r in _res.rows if r[1] > "2026-10-15"}), ["2026-10-16", "2026-10-21", "2026-10-24"])
+check("…and the fetch stops after 14 empty days in a row", _feed.asked[-1], "2026-11-07")
+_dk_days = dict(_dkc)
+_dk_days.update({d: 1 for d in _days("2026-10-22", 19)})          # festival: one a day to 11-09
+_dk_days["2026-11-11"] = 1
+_dkf = _DayFeed(_dk_days)
+_res = OS.fetch_domkino(_dkf, "dom-kino", "2026-10-08", "2026-12-14")
+check("Дом на киното: coverage = the run of normal days, the next week's first days included",
+      _res.covered_to, "2026-10-19")
+_later = sorted({r[1] for r in _res.rows if r[1] > "2026-10-19"})
+check("…the festival screenings after it are official rows (preliminary)",
+      (len(_later), _later[0], _later[-1]), (22, "2026-10-20", "2026-11-11"))
+check("…fetched until 14 empty days in a row", _dkf.asked[-1], "2026-11-25")
 
 print("official: Кино Арена (arena-mega-mol, trimmed)")
 _ka = (FIXTURES / "kinoarena_day.html").read_text(encoding="utf-8")
@@ -990,6 +1037,35 @@ _res = OS.fetch_kinoarena(_Pages({"arena-mega-mol/": _ka}), "arena-mega", "2026-
 check("a date served with TODAY's programme ends coverage (never mislabelled)",
       (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
 check("rows of the fallback page are not re-dated", {x[1] for x in _res.rows}, {"2026-10-08"})
+
+
+class _KA:
+    """Кино Арена: a published date's page selects its own tab; any other date
+    is answered with TODAY's page (tab 08-10 selected)."""
+    def __init__(self, html, published):
+        self.html, self.published, self.asked = html, published, []
+
+    def get(self, url, **kw):
+        m = re.search(r"/(\d\d)-(\d\d)-(\d{4})$", url)
+        iso, dmy = f"{m.group(3)}-{m.group(2)}-{m.group(1)}", m.group(0)[1:]
+        self.asked.append(iso)
+        body = self.html
+        if iso in self.published:
+            body = body.replace('class="tabItem selected"', 'class="tabItem"').replace(
+                f'class="tabItem" href="/bg/program/view/arena-mega-mol/{dmy}"',
+                f'class="tabItem selected" href="/bg/program/view/arena-mega-mol/{dmy}"')
+        return _Resp(body)
+
+
+_week = set(_days("2026-10-08", 8))
+_kaf = _KA(_ka, _week | {"2026-10-18", "2026-10-21", "2026-11-28"})
+_res = OS.fetch_kinoarena(_kaf, "arena-mega", "2026-10-08", "2026-12-14")
+check("Кино Арена: coverage is the contiguous published run", _res.covered_to, "2026-10-15")
+check("…the advance-sale tabs are read one by one and kept when the page selects that date",
+      sorted({r[1] for r in _res.rows if r[1] > "2026-10-15"}), ["2026-10-18", "2026-10-21", "2026-11-28"])
+check("…a tab answered with TODAY's programme is never re-dated",
+      any("2026-11-22: advance-sale tab served 2026-10-08" in n for n in _res.notes), True)
+check("…tabs past the window end are not requested", max(_kaf.asked), "2026-11-28")
 
 print("official: Cine Grand (София Ринг Мол, trimmed)")
 _cg = (FIXTURES / "cinegrand_day.html").read_text(encoding="utf-8")

@@ -492,6 +492,8 @@ def page_echoes_date(soup, date):
 
 
 ART_BASE = "https://theatre.art.bg"
+# Each genuine listing is preceded by its schema.org Event ("startDate": "YYYY-MM-DD").
+_ART_EVENT_DATE = re.compile(r'"@type"\s*:\s*"Event".*?"startDate"\s*:\s*"(\d{4}-\d\d-\d\d)', re.S)
 _ART_TID = re.compile(r"theatre=(\d+)")
 _ART_SLUG_TID = re.compile(r"___(\d+)")
 # "11.00 часа, Камерна сцена" — one <strong> per performance in a listing's <h4>
@@ -522,6 +524,25 @@ def art_slots(box):
     return slots
 
 
+def art_day_verdict(soup, date):
+    """Does a theatre.art.bg day page really list `date`? For a date it has no
+    programme for, the site answers with TODAY's listings in another template
+    (`.postanovka` blocks, no schema.org Events) while its breadcrumb still
+    echoes the requested date — which is how today's five shows were filed under
+    14 Dec 2026. Every genuine listing carries its own schema.org Event whose
+    startDate is the day. Returns "ok" (one Event per listing, every startDate is
+    `date`), "other" (the page lists another day: Events dated otherwise, or the
+    fallback template without Events) or "unknown" (cannot tell)."""
+    boxes = soup.select(".afishbox")
+    dates = [m.group(1) for sc in soup.select('script[type="application/ld+json"]')
+             for m in [_ART_EVENT_DATE.search(sc.string or sc.get_text() or "")] if m]
+    if boxes and dates and len(dates) == len(boxes) and set(dates) == {date}:
+        return "ok"
+    if (dates and date not in dates) or (not dates and soup.select(".postanovka")):
+        return "other"
+    return "unknown"
+
+
 def scrape_theatre_day(date, session):
     """One day of the Sofia aggregator. Each `.afishbox` carries a clean title
     (its own <h3><a>), every performance time with its stage (see art_slots),
@@ -530,17 +551,19 @@ def scrape_theatre_day(date, session):
     theatre_id, buy_link, hall, event_page, price) — one row per performance;
     event_page is the production's own theatre.art.bg page, price the text the
     listing prints ("от 6.00 до 7.00 €"); any of the last five is None when a
-    listing lacks it. Falls back to the old flat scan if
-    the structured markup is ever absent, so a redesign degrades to unattributed
-    rows (which the merge ignores) rather than to nothing."""
+    listing lacks it. None when the page did not arrive or its day cannot be
+    verified (art_day_verdict); [] when the site shows another day's listings
+    for this date, i.e. it publishes nothing for it."""
     soup = fetch(THEATRE_DAY_URL.format(date=date), session)
     if soup is None:
         return None
-    if not page_echoes_date(soup, date):
-        # the page fell back to another day (or carries no verifiable date):
-        # contribute nothing rather than mislabel another day's shows with this
-        # date — keep-previous will preserve the real data.
-        return None
+    verdict = art_day_verdict(soup, date)
+    if verdict == "other":
+        # the site has no programme for this date and showed another day's:
+        # it lists nothing for `date` (never file those rows under it)
+        return []
+    if verdict != "ok" or not page_echoes_date(soup, date):
+        return None                     # cannot verify the day: keep-previous decides
     out = []
     boxes = soup.select(".afishbox")
     if boxes:
@@ -569,18 +592,6 @@ def scrape_theatre_day(date, session):
             price = re.sub(r"\s+", " ", pnode.get_text(" ", strip=True)).strip() if pnode else None
             for time_, hall in art_slots(box):
                 out.append((title, date, time_, tid, link, hall, page, price or None))
-        return out
-    # fallback: pre-redesign flat scan (no venue attribution)
-    for row in soup.select("li, tr, article, .event, .performance"):
-        text = row.get_text(" ", strip=True)
-        if not text or len(text) > 300:
-            continue
-        times = [f"{int(h):02d}:{m}" for h, m in TIME_RE.findall(text)]
-        if len(times) != 1:
-            continue
-        title = TIME_RE.sub("", text).strip(" ·,-–—|")
-        if 2 < len(title) < 160:
-            out.append((title, date, times[0], None, None, None, None, None))
     return out
 
 
@@ -1168,6 +1179,92 @@ def resolve_theatre_rows(index, results, mint):
                          for title, d, t, meta in res.get(part) or []]
                   for part in ("rows", "extra_rows")}
     return out, minted
+
+
+# Where an official programme says a listing it excludes is staged — the host
+# part of the reason, in the wording official_theatres.py uses.
+_HOST_PATTERNS = (re.compile(r"^staged at (.+?)\s*\(co-production", re.I),     # Театър София
+                  re.compile(r"^at (.+?),\s*(?:софия|sofia)\s*$", re.I),        # Възраждане
+                  re.compile(r"^Sofia, other venue:\s*(.+)$", re.I))            # Artvent
+# A distinctive part of each theatre's name (folded) → its id.
+HOST_NAMES = {"сълза и смях": "salzaismyah", "народен театър": "national", "театър софия": "sofia-th",
+              "театър 199": "th199", "сфумато": "sfumato", "българска армия": "tba",
+              "зад канала": "zad-kanala", "възраждане": "vazrazhdane", "младежки театър": "mladezhki",
+              "куклен театър": "kuklen", "топлоцентрала": "toplo", "сити марк": "citymark",
+              "сатиричен театър": "satira", "натфиз": "natfiz", "нов театър": "new-ndk",
+              "дерида": "derida", "i am studio": "iam", "ателие 313": "atelie313", "artvent": "artvent"}
+
+
+def _fold_name(text):
+    return re.sub(r"\s+", " ", re.sub(r"[„“”\"'«»().,:;!?\-–—/]", " ", (text or "").lower())).strip()
+
+
+def excluded_host(reason, source):
+    """The theatre id an excluded listing is staged at, when its reason names
+    exactly one theatre the app lists (other than the source), else None."""
+    for pat in _HOST_PATTERNS:
+        m = pat.match(reason or "")
+        if m:
+            folded = _fold_name(m.group(1))
+            hits = {tid for name, tid in HOST_NAMES.items() if name in folded} - {source}
+            return hits.pop() if len(hits) == 1 else None
+    return None
+
+
+def rehome_excluded(results):
+    """A performance one theatre lists but stages at ANOTHER theatre the app
+    lists (Театър София's co-productions at Сълза и смях) is the host's
+    performance: it is added to the host's official rows — inside the host's
+    covered range as part of its programme (two official lists, one venue),
+    after it as an extra (preliminary) row — unless the host lists that title on
+    that date itself (its own entry wins). It stays excluded at the source.
+    results: {theatre: official_theatres result} (host rows are appended in
+    place). Returns [(source, host, title, date, time, outcome)]."""
+    moved = []
+    for src, res in list(results.items()):
+        for title, d, tm, why in res.get("excluded") or []:
+            host = excluded_host(why, src)
+            if not host or not tm:
+                continue
+            hres = results.get(host)
+            if hres is None:
+                moved.append((src, host, title, d, tm, "host programme not read — not added"))
+                continue
+            key = OT.normalise_show_title(title)
+            if any(r[1] == d and OT.normalise_show_title(r[0]) == key
+                   for r in hres["rows"] + hres["extra_rows"]):
+                moved.append((src, host, title, d, tm, "the host lists it itself"))
+                continue
+            part = "rows" if hres["covered_from"] <= d <= hres["covered_to"] else "extra_rows"
+            hres[part] = hres[part] + [OT.mkrow(title, d, tm, listed_by=src)]
+            moved.append((src, host, title, d, tm, "added inside the host's covered range"
+                          if part == "rows" else "added as a preliminary row"))
+    return moved
+
+
+def confirm_cut_days(res, agg_rows, agg_dates, same_show):
+    """A day a theatre's own list may show only in part (Театър 199's page
+    boundary, res["confirm_by_aggregator"]) is covered when theatre.art.bg's
+    verified page for that day lists this theatre and everything it lists is
+    already among the theatre's own rows for the day (same show, same time).
+    agg_rows: [(title, date, time, ...)] of this theatre. Mutates res; returns
+    the confirmed days."""
+    done = []
+    for day in res.get("confirm_by_aggregator") or []:
+        if day != _day_after(res["covered_to"]) or day not in agg_dates:
+            continue
+        agg = [(r[0], r[2]) for r in agg_rows if r[1] == day]
+        own = [r for r in res["extra_rows"] if r[1] == day]
+        if agg and own and all(any(tm == r[2] and same_show(t, r[0]) for r in own) for t, tm in agg):
+            res["rows"] = res["rows"] + own
+            res["extra_rows"] = [r for r in res["extra_rows"] if r[1] != day]
+            res["covered_to"] = day
+            res["notes"] = res.get("notes", []) + [f"{day}: confirmed — theatre.art.bg lists nothing "
+                                                    f"more for the day than the theatre's own list"]
+            done.append(day)
+        else:
+            res["notes"] = res.get("notes", []) + [f"{day}: not confirmed by theatre.art.bg — preliminary"]
+    return done
 
 
 # "ФЕЯТА ОТ ЗАХАРНИЦАТА ГОСТУВА В ТЕАТЪР СЪЛЗА И СМЯХ": this theatre's production
@@ -1876,6 +1973,22 @@ def main():
             print(f"  ! {v}: {OT.LAST_STATUS.get(v)} — previous rows kept")
         else:
             th_official[v] = res
+    # A listing one theatre stages at another theatre the app lists is the
+    # host's performance; a day a theatre's own list may cut short is covered
+    # when theatre.art.bg's verified page for it lists nothing more.
+    rehomed = rehome_excluded(th_official)
+    for frm, host, title, d, tm, outcome in rehomed:
+        print(f"  re-homed {frm} → {host}: {d} {tm} {title} — {outcome}")
+    confirmed_days = {}
+    for v, res in th_official.items():
+        def same_show(a, b, v=v):
+            if OT.normalise_show_title(a) == OT.normalise_show_title(b):
+                return True
+            sa = show_index.resolve(a, v)[0]
+            return bool(sa) and sa == show_index.resolve(b, v)[0]
+        got = confirm_cut_days(res, art_rows.get(v, []), art_dates, same_show)
+        if got:
+            confirmed_days[v] = got
     th_resolved, minted_shows = resolve_theatre_rows(show_index, th_official, mint_show)
     spellings = defaultdict(list)
     for parts in th_resolved.values():
@@ -2038,6 +2151,9 @@ def main():
                                    "merged": dict(show_index.merged),
                                    "retitled": {k: list(v) for k, v in retitled.items()},
                                    "minted_from_aggregator": {k: v for k, v in minted_from_agg.items() if v},
+                                   "rehomed": [list(x) for x in rehomed],
+                                   "confirmed_days": confirmed_days,
+                                   "aggregator_dates_read": len(art_dates),
                                    "aggregator_other_venues": dict(art_other),
                                    "previous_rows_unknown_show": prev_unknown}}
     if problems:
