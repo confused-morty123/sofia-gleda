@@ -3672,8 +3672,12 @@ def wave_h(browser):
         const pills = Array.from(document.querySelectorAll('[data-day]'));
         return pills.map(p => ({day: p.dataset.day, text: p.textContent.trim()}));
     }""")
-    check("h8_day_strip_has_pills", len(day_strip) >= 5,
-          f"only {len(day_strip)} [data-day] pills (need ≥5)")
+    # "Whole week" + one pill per day from today to Sunday: 8 on a Monday, 2 on a Sunday
+    expected_pills = 1 + (datetime.date.fromisoformat(CLOCK_WEEK_END)
+                          - datetime.date.fromisoformat(CLOCK_TODAY_ISO)).days + 1
+    check("h8_day_strip_has_pills", len(day_strip) == expected_pills,
+          f"{len(day_strip)} [data-day] pills, expected {expected_pills} "
+          f"(today {CLOCK_TODAY_ISO} → Sunday {CLOCK_WEEK_END}, plus 'week')")
     if len(day_strip) >= 1:
         has_week = any(p["day"] == "week" for p in day_strip)
         check("h8_day_strip_has_week_pill", has_week,
@@ -4625,6 +4629,8 @@ def wave_j(browser, webkit_browser=None):
                 "probe_still_present": probe_still_present,
                 "heights_open_sample": heights_valid[:5],
                 "btn_tops_open_sample": btn_tops_open_valid[:5],
+                "scroll_y_before": scroll_y_before,
+                "scroll_ys_open_sample": scroll_ys_open[:10],
                 "errors": errors,
             }
         except Exception as ex:
@@ -4719,7 +4725,9 @@ def wave_j(browser, webkit_browser=None):
               f"header deviation during close={max_d_c:.1f}px (need ≤2)")
         check(f"j1_scrollY_stable_{tag}",
               scroll_ok,
-              f"scrollY drifted during open; heights_sample={result_anim['heights_open_sample']}")
+              f"scrollY drifted during open: before={result_anim['scroll_y_before']} "
+              f"during={result_anim['scroll_ys_open_sample']} (header tops "
+              f"{result_anim['btn_tops_open_sample']})")
         check(f"j1_anim_intermediates_{tag}",
               distinct_h >= 3,
               f"only {distinct_h} distinct body heights during opening (need ≥3 for smooth anim); sample={result_anim['heights_open_sample']}")

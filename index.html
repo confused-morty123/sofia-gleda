@@ -122,6 +122,18 @@ a{color:inherit}
 @media(max-width:760px){ .seg{flex:1 1 0!important; min-width:0; width:auto!important} }
 /* at very narrow viewports, drop the SVG icons from toggle to save space */
 @media(max-width:350px){ .seg button svg{display:none} }
+/* windowed desktop (761–1439px) with the search open (.seg-q): the toggle shrinks
+   to its two icons, in step with the search field, so the logo and the field keep
+   their room (below ~1000px the logo was squeezed, at 780px the bar overflowed).
+   Full-screen widths keep the labels; mobile opens the search on its own row. */
+@media(min-width:761px) and (max-width:1439px){
+  .seg{transition:width .22s ease-out}
+  .seg button{transition:background .18s,color .18s,gap .22s ease-out}
+  .seg .seg-l{display:inline-block; max-width:7em; overflow:hidden; transition:max-width .22s ease-out, opacity .22s ease-out}
+  .seg.seg-q{width:98px}
+  .seg.seg-q button{gap:0}
+  .seg.seg-q .seg-l{max-width:0; opacity:0}
+}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
 .iconb:hover{border-color:var(--line-2); color:var(--fg)}
@@ -1924,6 +1936,20 @@ function secToggleInPlace(key){
   if(!btn)return false; /* fall back to render() if not in DOM */
   /* capture header position BEFORE any DOM change */
   const btnTop=btn.getBoundingClientRect().top;
+  /* keep the header at that viewport y, frame by frame, while the body opens or
+     closes below it: with the page scrolled to its very end Chrome still shifts
+     the page a few frames in, as the body starts to grow (17px at 1280px, cinema
+     "По кино"), so one correction after the first frame is not enough */
+  const pinHeader=ms=>{
+    const until=performance.now()+ms;
+    const pin=()=>{
+      if(!btn.isConnected)return; /* re-rendered meanwhile: nothing to hold */
+      const delta=btn.getBoundingClientRect().top-btnTop;
+      if(Math.abs(delta)>0.5)window.scrollBy({top:delta,behavior:"instant"});
+      if(performance.now()<until)requestAnimationFrame(pin);
+    };
+    requestAnimationFrame(pin);
+  };
   const isOpen=btn.getAttribute("aria-expanded")==="true";
   const willOpen=!isOpen;
   /* toggle state */
@@ -1949,6 +1975,7 @@ function secToggleInPlace(key){
       const desc=RAILS.find(d=>d.html&&d===RAILS.find(r=>r===d));
       render(); /* fallback full render */
     }
+    pinHeader(120);
     return true;
   }
   if(willOpen){
@@ -2029,12 +2056,8 @@ function secToggleInPlace(key){
     body.addEventListener("transitionend",function h(){body.removeEventListener("transitionend",h);onEnd2();},{once:true});
     setTimeout(onEnd2,280); /* fallback */
   }
-  /* restore header position — content opened/closes BELOW, but scrollY might drift */
-  requestAnimationFrame(()=>{
-    const newTop=btn.getBoundingClientRect().top;
-    const delta=newTop-btnTop;
-    if(Math.abs(delta)>0.5)window.scrollBy({top:delta,behavior:"instant"});
-  });
+  /* hold the header through the transition (.26s open / .22s close) and its fallback timers */
+  pinHeader(willOpen?360:320);
   return true;
 }
 /* ---- Search animation (Item 2) ----
@@ -2047,6 +2070,7 @@ function searchToggleInPlace(){
   const btns=document.querySelectorAll("[data-search-open]");
   btns.forEach(b=>{b.setAttribute("aria-expanded",String(willOpen));
     b.classList.toggle("expanded",willOpen);});
+  document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",willOpen));
   const reducedMotion=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   /* Desktop */
   const dw=document.querySelector(".desk-search-wrap");
@@ -2457,9 +2481,11 @@ function render(){
   /* New SVG icons: Кино = classic movie camera; Театър = comedy/tragedy mask */
   const iconCinema=`<svg viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3,16c-0.1,0-0.3,0-0.4-0.1c-0.2-0.1-0.4-0.3-0.5-0.6l-1.4-3.8C0.4,10.8,0.5,10,0.8,9.3C1.1,8.6,1.7,8,2.5,7.7l20.7-7.5l0,0c0.8-0.3,1.6-0.2,2.3,0.1C26.2,0.6,26.7,1.2,27,2l1.4,3.8c0.1,0.2,0.1,0.5,0,0.8C28.2,6.8,28,6.9,27.8,7L3.3,15.9C3.2,16,3.1,16,3,16z"/><path d="M30,20v-4c0-0.6-0.4-1-1-1H3c-0.6,0-1,0.4-1,1v4H30z"/><path d="M2,22v7c0,1.7,1.3,3,3,3h22c1.7,0,3-1.3,3-3v-7H2z"/></svg>`;
   const iconTheatre=`<svg viewBox="0 0 473.194 473.194" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M464.653,167.757c-0.824-3.273-2.996-6.037-5.969-7.633c-2.965-1.586-6.47-1.855-9.65-0.738c-27.88,9.795-70.896,16.098-119.276,16.098c-11.762,0-23.098-0.449-34.089-1.156c-5.683,25.676-14.764,49.252-26.363,70.016c0.564-0.023,1.103-0.115,1.672-0.115c15.034,0,27.218-1.254,27.218,8.873c0,10.127-12.185,27.803-27.218,27.803c-8.757,0-16.467-2.834-21.442-7.162c-15.025,18.654-32.578,33.363-51.909,43.09c21.795,73.361,72.751,124.824,132.131,124.824c79.219,0,143.437-91.584,143.437-204.559C473.194,212.728,470.151,189.408,464.653,167.757z M386.92,381.927c-0.254,1.078-1.056,1.957-2.11,2.303c-1.056,0.353-2.218,0.131-3.066-0.586c-11.174-9.389-30.182-15.627-51.985-15.627c-21.805,0-40.813,6.238-51.986,15.627c-0.849,0.709-2.012,0.932-3.066,0.586c-1.055-0.354-1.856-1.225-2.11-2.303c-0.925-3.936-1.494-7.994-1.494-12.215c0-32.395,26.263-58.656,58.657-58.656c32.394,0,58.655,26.262,58.655,58.656C388.413,373.933,387.844,377.992,386.92,381.927z M388.537,280.904c-15.034,0-27.218-17.676-27.218-27.803c0-10.127,12.185-8.873,27.218-8.873c15.033,0,27.218,8.211,27.218,18.338C415.754,272.693,403.57,280.904,388.537,280.904z"/><path d="M286.874,109.925c0-24.367-3.043-47.688-8.541-69.338c-0.824-3.273-2.996-6.039-5.969-7.633c-1.756-0.939-3.705-1.416-5.669-1.416c-1.341,0-2.688,0.221-3.981,0.678c-27.88,9.795-70.895,16.096-119.276,16.096c-48.382,0-91.397-6.301-119.277-16.096c-1.286-0.457-2.626-0.678-3.966-0.678c-1.963,0-3.921,0.482-5.685,1.424c-2.965,1.594-5.144,4.359-5.969,7.625C3.043,62.238,0,85.558,0,109.925c0,112.977,64.217,204.559,143.438,204.559C222.657,314.484,286.874,222.902,286.874,109.925z M57.439,135.349c0-10.129,12.185-18.338,27.219-18.338c15.033,0,27.218,17.674,27.218,27.803c0,10.127-12.185,8.873-27.218,8.873C69.624,153.687,57.439,145.476,57.439,135.349z M143.438,275.812c-32.395,0-58.656-26.262-58.656-58.654c0-4.221,0.569-8.281,1.493-12.217c0.254-1.076,1.056-1.947,2.11-2.303c1.056-0.346,2.218-0.123,3.066,0.586c11.174,9.389,30.182,15.627,51.986,15.627c21.804,0,40.812-6.238,51.985-15.627c0.849-0.717,2.011-0.939,3.066-0.586c1.055,0.348,1.856,1.227,2.11,2.303c0.924,3.936,1.494,7.996,1.494,12.217C202.093,249.55,175.831,275.812,143.438,275.812z M174.998,144.814c0-10.129,12.185-27.803,27.219-27.803c15.033,0,27.218,8.209,27.218,18.338c0,10.127-12.185,18.338-27.218,18.338C187.183,153.687,174.998,154.941,174.998,144.814z"/></svg>`;
-  const segHTML=`<div class="seg">
-        <button data-switch="cinema" aria-pressed="${S.mode==="cinema"}">${iconCinema}${esc(L.cinema)}</button>
-        <button data-switch="theatre" aria-pressed="${S.mode==="theatre"}">${iconTheatre}${esc(L.theatre)}</button>
+  /* .seg-q while the search is open: a windowed desktop shows only the two icons
+     (CSS below); the buttons keep their names for screen readers and a tooltip */
+  const segHTML=`<div class="seg${S.searchOpen?" seg-q":""}">
+        <button data-switch="cinema" aria-pressed="${S.mode==="cinema"}" aria-label="${esc(L.cinema)}" title="${esc(L.cinema)}">${iconCinema}<span class="seg-l">${esc(L.cinema)}</span></button>
+        <button data-switch="theatre" aria-pressed="${S.mode==="theatre"}" aria-label="${esc(L.theatre)}" title="${esc(L.theatre)}">${iconTheatre}<span class="seg-l">${esc(L.theatre)}</span></button>
       </div>`;
   /* search icon button — TOGGLE on all sizes; aria-expanded reflects open state */
   const searchAriaLabel=S.searchOpen?(L.searchClose||"Затвори търсенето"):(L.searchOpen||"Търсене");
