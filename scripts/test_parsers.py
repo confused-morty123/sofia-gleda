@@ -804,6 +804,22 @@ check("selection: film with TMDB en title not selected for title",
 check("selection: film without en title IS selected",
       "f-needs-en" in _title_ids, True)
 
+# ---- 4. leftovers of Cyrillic in DeepL's English are romanised ----
+check("latinise: names and quoted titles romanised, quotes kept",
+      _tr.latinise("Ivan Вазов's play „Под игото“"), "Ivan Vazov's play „Pod igoto“")
+check("latinise: case per word, '-ия' at a word end is '-ia'",
+      [_tr.latinise(x) for x in ("СОФИЯ", "София, България", "Щука ЩЕ", "Я")],
+      ["SOFIA", "Sofia, Balgaria", "Shtuka SHTE", "Ya"])
+check("latinise: English untouched, no Cyrillic ever left",
+      [_tr.latinise("already English"), bool(_tr._CYRILLIC.search(_tr.latinise("Ӂ ӂ Ӂук")))],
+      ["already English", False])
+_lat_cache = {_tr.cache_key("Под игото"): {"src": "Под игото", "en": "Под игото", "kind": "title", "at": "2026-10-09"},
+              _tr.cache_key("Синопсис."): {"src": "Синопсис.", "en": "", "kind": "syn", "at": "2026-10-09"}}
+_lat_syn, _lat_title = _tr.build_mappings(
+    [], [{"id": "pod-igoto", "title": "Под игото", "synBg": "Синопсис."}], {}, {}, _lat_cache)
+check("build_mappings: a title DeepL left in Cyrillic is served romanised; an empty one is skipped",
+      [_lat_title, _lat_syn], [{"pod-igoto": "Pod igoto"}, {}])
+
 # Show selection
 _shows_sel = [
     {"id": "s-has-en",   "synEn": "Already EN", "synBg": "Има", "title": "Заглавие", "titleEn": "Title EN"},

@@ -63,6 +63,23 @@ jobs:
           DEEPL_AUTH_KEY: ${{ secrets.DEEPL_AUTH_KEY }}
         run: python3 scripts/refresh_all.py
 
+      - name: Keep the translation cache when the refresh is not published
+        # A run that fails the publish gate commits nothing, but the DeepL
+        # translations it already paid for are only a cache (translations.json),
+        # not site content: keep them, so the next run doesn't spend the monthly
+        # quota on the same texts again. index.html stays the last good build.
+        if: failure()
+        run: |
+          git config user.name  "Sofia Gleda bot"
+          git config user.email "actions@github.com"
+          [ -f translations.json ] && git add translations.json
+          if git diff --cached --quiet; then
+            echo "No new translations to keep."
+          else
+            git commit -m "Keep the translation cache from a refresh that was not published: $(date -u +'%Y-%m-%d')"
+            git push
+          fi
+
       - name: Commit the refreshed data
         run: |
           git config user.name  "Sofia Gleda bot"

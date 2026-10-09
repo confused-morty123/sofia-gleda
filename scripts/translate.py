@@ -30,6 +30,47 @@ BATCH_SIZE = 50  # DeepL max texts per request
 # Helpers
 # ---------------------------------------------------------------------------
 
+# Bulgaria's official romanisation (Streamlined System, 2009), plus the other
+# Cyrillic letters that turn up in names. DeepL sometimes leaves a name or a
+# quoted Bulgarian title in Cyrillic inside its English, and verify_build
+# rejects any Cyrillic in SYN_EN/TITLE_EN, so leftovers are romanised.
+_ROMAN = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ж": "zh", "з": "z",
+    "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p",
+    "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "ts", "ч": "ch",
+    "ш": "sh", "щ": "sht", "ъ": "a", "ь": "y", "ю": "yu", "я": "ya", "ѝ": "i", "ѐ": "e",
+    "ё": "yo", "ы": "y", "э": "e", "і": "i", "ї": "yi", "є": "ye", "ґ": "g", "ў": "u",
+    "ђ": "dj", "ћ": "c", "џ": "dz", "љ": "lj", "њ": "nj", "ј": "j", "ѓ": "gj", "ќ": "kj",
+    "ѕ": "dz",
+}
+_CYRILLIC = re.compile(r"[\u0400-\u04ff]")
+
+
+def latinise(text: str) -> str:
+    """Romanise any Cyrillic left in an English text, keeping each word's case
+    ("София" -> "Sofia", "ЩЕ" -> "SHTE"); "-ия" at a word end is "-ia", as the
+    official system has it. Letters outside the table are dropped, so the result
+    never contains Cyrillic."""
+    if not _CYRILLIC.search(text or ""):
+        return text
+    out = []
+    for i, ch in enumerate(text):
+        low = ch.lower()
+        if low not in _ROMAN:
+            out.append("" if _CYRILLIC.match(ch) else ch)
+            continue
+        prv = text[i - 1] if i else ""
+        nxt = text[i + 1] if i + 1 < len(text) else ""
+        rom = _ROMAN[low]
+        if low == "я" and prv.lower() == "и" and not _CYRILLIC.match(nxt or " "):
+            rom = "a"
+        if ch != low:                                    # an upper-case letter
+            whole_upper = (nxt.isalpha() and nxt.isupper()) or (prv.isalpha() and prv.isupper())
+            rom = rom.upper() if whole_upper else rom.capitalize()
+        out.append(rom)
+    return "".join(out)
+
+
 def _norm(text: str) -> str:
     """Normalise text for cache key: NFC, collapse whitespace."""
     text = unicodedata.normalize("NFC", text)
@@ -230,7 +271,7 @@ def build_mappings(films: list, shows: list, tmdb: dict, film_info: dict,
 
     def lookup(src_text: str) -> str | None:
         entry = cache.get(cache_key(src_text))
-        return entry["en"] if entry else None
+        return latinise(entry["en"]) if entry and entry.get("en") else None
 
     # Films
     for f in films:
@@ -272,10 +313,6 @@ def build_mappings(films: list, shows: list, tmdb: dict, film_info: dict,
 # ---------------------------------------------------------------------------
 
 def main() -> int:
-    if not DEEPL_KEY:
-        print("DEEPL_AUTH_KEY not set — skipping translations, keeping previous.")
-        return 0
-
     cache = load_cache()
     films, shows = load_html_consts()
 
@@ -305,11 +342,14 @@ def main() -> int:
                    + sum(len(t) for _, t in show_title))
     print(f"  total characters to translate: {total_chars}")
 
-    ok = True
+    ok = bool(DEEPL_KEY)
+    if not DEEPL_KEY:
+        print("  DEEPL_AUTH_KEY not set — no new translations; serving the cached ones.")
     for work, kind in [(film_syn, "syn"), (film_title, "title"),
                        (show_syn, "syn"), (show_title, "title")]:
         if not ok:
-            print("  stopping further batches (quota/error).", file=sys.stderr)
+            if DEEPL_KEY:
+                print("  stopping further batches (quota/error).", file=sys.stderr)
             break
         ok = translate_missing(work, kind, cache)
 
