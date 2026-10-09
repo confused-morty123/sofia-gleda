@@ -2144,7 +2144,7 @@ function sheetFilm(f){
       ${calBtnHtml("film",f.id,r[1],d)}</div></div>`;};
   const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
     ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
-  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: обявена в агрегатор (programata.bg / theatre.art.bg), но още не и на сайта на мястото — възможни са промени.":"Preliminary: listed by an aggregator but not yet on the venue's own website — subject to change."}</div>`:"";
+  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
   /* "Showing selected cinemas only" note with "Show all" button */
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
@@ -2197,7 +2197,7 @@ function sheetShow(sh){
     ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(hallDisplay(p[3])||thName(th))}</div>
       <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
       ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`;}).join("");
-  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: обявена в агрегатор (programata.bg / theatre.art.bg), но още не и на сайта на мястото — възможни са промени.":"Preliminary: listed by an aggregator but not yet on the venue's own website — subject to change."}</div>`:"";
+  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
   /* venue display: use nameEn in EN mode */
   const thName_=S.lang==="bg"?th.name:(th.nameEn||th.name);
   const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
@@ -2650,8 +2650,8 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
   const fullTitle=title+" — "+venue;
   const location=venue+(area?", "+area:"");
   const prelimNote=typeof PRELIM_FROM==="object"&&PRELIM_FROM&&PRELIM_FROM[venueId]&&dateStr>=PRELIM_FROM[venueId]
-    ?(S.lang==="en"?"\nPreliminary: listed by an aggregator but not yet on the venue's own website — subject to change."
-                   :"\nПредварителна програма: обявена в агрегатор, но още не на сайта — възможни са промени.")
+    ?(S.lang==="en"?"\nPreliminary: not yet checked against the venue's full programme — subject to change."
+                   :"\nПредварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.")
     :"";
   const description=(url?url+"\n":"")+"Sofia Gleda"+prelimNote;
   const off=_sofiaOffset(dateStr,timeStr);
