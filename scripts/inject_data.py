@@ -34,8 +34,6 @@ SHOW_JSON = ROOT / "theatre_posters.json"
 LINKS_JSON = ROOT / "film_links_posters.json"
 FILM_INFO_JSON = ROOT / "film_info.json"
 CACHE_FILE = ROOT / "translations.json"
-SYN_EN_JSON = ROOT / "translations_syn_en.json"
-TITLE_EN_JSON = ROOT / "translations_title_en.json"
 
 tmdb = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {}
 shows = json.load(open(SHOW_JSON, encoding="utf-8")) if SHOW_JSON.exists() else {}
@@ -71,73 +69,25 @@ if FILM_INFO_JSON.exists():
     except Exception as e:
         print(f"  (could not read {FILM_INFO_JSON.name}: {e})")
 
-# Auto-translated English synopses and titles produced by translate.py (Wave L2).
-# Always emitted (possibly empty) so the UI const is always defined.
-# translate.py writes sidecar files derived from translations.json; if they are
-# absent (no translation step ran this cycle), fall back to building the maps
-# directly from the cache so the output stays stable across partial runs.
+# Auto-translated English synopses and titles (translate.py, DeepL). Built here
+# from the translation cache (translations.json) with translate.build_mappings,
+# the same function translate.py uses, so no intermediate file can go stale and
+# empty them (a keyless local run once left empty sidecars that overrode the
+# cache). Always emitted (possibly empty): the UI declares nothing else for them.
 _syn_en: dict = {}
 _title_en: dict = {}
-
-if SYN_EN_JSON.exists() and TITLE_EN_JSON.exists():
+if CACHE_FILE.exists():
     try:
-        _syn_en   = json.load(open(SYN_EN_JSON, encoding="utf-8"))
-        _title_en = json.load(open(TITLE_EN_JSON, encoding="utf-8"))
-    except Exception as e:
-        print(f"  (could not read translation sidecar files: {e})")
-elif CACHE_FILE.exists():
-    # Reconstruct from cache — used when inject_data runs without translate.py
-    # having run first in this cycle (e.g. a partial refresh or DEEPL_AUTH_KEY absent).
-    import hashlib, unicodedata as _uc
-
-    def _ck(text):
-        t = " ".join(_uc.normalize("NFC", text).split())
-        return hashlib.sha1(t.encode("utf-8")).hexdigest()
-
-    try:
+        from translate import build_mappings as _build_mappings
         _cache = json.load(open(CACHE_FILE, encoding="utf-8"))
-
-        # Re-read FILMS and SHOWS from index.html for the id->text mapping
         _src = HTML.read_text(encoding="utf-8")
-        import re as _re
-        _films_m = _re.search(r"const FILMS=(\[.*?\]);", _src, flags=_re.S)
-        _shows_m = _re.search(r"const SHOWS=(\[.*?\]);", _src, flags=_re.S)
+        _films_m = re.search(r"const FILMS=(\[.*?\]);", _src, flags=re.S)
+        _shows_m = re.search(r"const SHOWS=(\[.*?\]);", _src, flags=re.S)
         _films = json.loads(_films_m.group(1)) if _films_m else []
         _shows = json.loads(_shows_m.group(1)) if _shows_m else []
-        _tmdb_raw = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {}
-        _fi_raw   = filminfo   # already loaded above
-
-        for _f in _films:
-            _fid = _f["id"]
-            _has_syn_en = (bool(_f.get("synEn"))
-                           or bool((_tmdb_raw.get(_fid) or {}).get("ov"))
-                           or bool((_fi_raw.get(_fid) or {}).get("synEn")))
-            if not _has_syn_en:
-                _src_text = _f.get("synBg") or (_fi_raw.get(_fid) or {}).get("synBg") or ""
-                if _src_text:
-                    _entry = _cache.get(_ck(_src_text))
-                    if _entry:
-                        _syn_en[_fid] = _entry["en"]
-            _has_en = bool(_f.get("en")) or bool((_tmdb_raw.get(_fid) or {}).get("en"))
-            if not _has_en:
-                _bg = _f.get("bg") or ""
-                if _bg:
-                    _entry = _cache.get(_ck(_bg))
-                    if _entry:
-                        _title_en[_fid] = _entry["en"]
-
-        for _s in _shows:
-            _sid = _s["id"]
-            if not _s.get("synEn") and _s.get("synBg"):
-                _entry = _cache.get(_ck(_s["synBg"]))
-                if _entry:
-                    _syn_en[_sid] = _entry["en"]
-            if not _s.get("titleEn") and _s.get("title"):
-                _entry = _cache.get(_ck(_s["title"]))
-                if _entry:
-                    _title_en[_sid] = _entry["en"]
+        _syn_en, _title_en = _build_mappings(_films, _shows, tmdb, filminfo, _cache)
     except Exception as e:
-        print(f"  (could not build translation maps from cache: {e})")
+        print(f"  (could not build translation maps from {CACHE_FILE.name}: {e})")
 
 # DeepL can leave a name or a quoted Bulgarian title in Cyrillic inside its
 # English; the publish gate rejects any Cyrillic in SYN_EN/TITLE_EN, so every

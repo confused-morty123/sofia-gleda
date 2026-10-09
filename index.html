@@ -228,7 +228,14 @@ a{color:inherit}
      `overflow:hidden` overrode `overflow-y:auto` and the bottom sheet could not
      scroll on mobile, clipping everything past 94vh. */
   .scrim .sheet{width:100%; border-radius:18px 18px 0 0; margin-bottom:0; max-height:94vh;
-    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain} }
+    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
+  /* On a phone, vh is the screen height with the browser's toolbars HIDDEN: while
+     they show, a 94vh sheet is taller than the visible area and its last rows (the
+     times and ticket links) sit behind the toolbar, out of reach of the sheet's own
+     scroll. dvh follows the toolbars (vh stays the fallback for older browsers), and
+     the body clears the iPhone home indicator. */
+  @supports (height:1dvh){ .scrim .sheet{max-height:94dvh} }
+  .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} }
 .fchip{padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--ink-2);
   font-size:12px; color:var(--fg-2); transition:border-color .15s,background .15s; white-space:nowrap}
 .fchip:hover{border-color:var(--line-2)}

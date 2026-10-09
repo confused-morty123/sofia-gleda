@@ -356,14 +356,8 @@ def main() -> int:
     syn_en, title_en = build_mappings(films, shows, tmdb, film_info, cache)
     print(f"  cache now covers SYN_EN: {len(syn_en)} ids, TITLE_EN: {len(title_en)} ids")
 
-    # Write the mappings as JSON sidecar files so inject_data.py can read them
-    # without re-parsing the cache. These are ephemeral (regenerated each run).
-    (ROOT / "translations_syn_en.json").write_text(
-        json.dumps(syn_en, ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8")
-    (ROOT / "translations_title_en.json").write_text(
-        json.dumps(title_en, ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8")
+    # inject_data.py builds the same maps from translations.json with
+    # build_mappings, so nothing else is written here.
     return 0
 
 
