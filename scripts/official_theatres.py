@@ -1066,6 +1066,21 @@ def parse_salza(html, year, month):
     return rows, excluded
 
 
+# Сълза и смях heads its stage pages in capitals ("Камерна сцена СЛАВЯНСКА
+# БЕСЕДА"); the app names its halls the way the theatres' listings and its
+# THEATRES entry do (stages: "Открита сцена"), with HALL_EN translations.
+SALZA_HALLS = {"открита сцена сълза и смях": "Открита сцена",
+               "камерна сцена славянска беседа": "Камерна сцена „Славянска беседа“",
+               "ъндърграунд - сцена": "Сцена „Ъндърграунд“"}
+
+
+def salza_hall_name(heading):
+    """The display hall for one of Сълза и смях's stage headings; an unknown
+    heading is shown as published."""
+    h = clean(heading)
+    return SALZA_HALLS.get(re.sub(r"\s+", " ", h.lower()), h)
+
+
 def fetch_salzaismyah(net, today):
     rows, excluded, notes = [], [], []
     for i, (y, m) in enumerate(months_from(today)):
@@ -1097,6 +1112,12 @@ def fetch_salzaismyah(net, today):
         why = f"stage pages not read ({e})"
     else:
         unplaced, unlisted = salza_stage_rows(rows, stages, today, excluded)
+        # The stage a performance is on is its hall. A row salza_stage_rows could
+        # not place (unknown stage) keeps hall=None — never guessed.
+        for r in rows:
+            s = r[3].get("stage")
+            if s:
+                r[3]["hall"] = salza_hall_name(s)
         why = (f"{len(unplaced)} later performance(s) on no stage page, first "
                f"{unplaced[0][1]} {unplaced[0][2]} {unplaced[0][0]}") if unplaced else None
         if unlisted:
