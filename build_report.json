@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-09T06:58:04+00:00",
+  "ran": "2026-10-09T08:58:55+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,7 +8,7 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 761.8,
+      "seconds": 837.2,
       "tail": "  ! https://programata.bg/kino/kino-saloni/arena-mega-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/arena-mega-mall/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/kino-saloni/sofia/arena-the-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/arena-the-mall/ (Caused by NameResolutionError(\"HTTP…\n  ! https://programata.bg/kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/ (Caused by NameResolut…\n  ! https://programata.bg/kino/kino-saloni/sofia/cine-grand-park-center/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/cine-grand-park-center/ (Caused by NameResolutionErr…\n  ! https://programata.bg/kino/kino-saloni/cineland-bulgaria-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/cineland-bulgaria-mall/ (Caused by NameResolutionError(\"HT…\n  ! https://programata.bg/kino/kino-saloni/sofia/odeon-cinema/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/odeon-cinema/ (Caused by NameResolutionError(\"HTTPSC…\n  ! https://programata.bg/kino/kino-saloni/sofia/g8-cinema/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/g8-cinema/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/kino-saloni/sofia/dom-na-kinoto/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/dom-na-kinoto/ (Caused by NameResolutionError(\"HTTPS…"
     },
     {
@@ -16,7 +16,7 @@
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 839.5,
+      "seconds": 838.6,
       "tail": "  ! https://programata.bg/kino/filmi/animaczionni-filmi-na-stoyan-dukov/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/animaczionni-filmi-na-stoyan-dukov/ (Caused by NameResolutionErr…\n  ! https://programata.bg/kino/filmi/animaczionni-filmi-na-nastimir-czachev-i-vyara-doneva/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/animaczionni-filmi-na-nastimir-czachev-i-vyara-doneva/ (Caused b…\n  ! https://programata.bg/kino/filmi/s-vnimanie-km-detajla/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/s-vnimanie-km-detajla/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/filmi/sledovatelyat-i-gorata/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/sledovatelyat-i-gorata/ (Caused by NameResolutionError(\"HTTPSCon…\n  ! https://programata.bg/kino/filmi/hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-chernobil/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-chernobil/…\n  ! https://programata.bg/kino/filmi/kitovete-paziteli-na-planetata/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kitovete-paziteli-na-planetata/ (Caused by NameResolutionError(\"…\n  ! https://programata.bg/kino/filmi/kotki-v-muzeya-2-sakrovisthata-na-egipet/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kotki-v-muzeya-2-sakrovisthata-na-egipet/ (Caused by NameResolut…\n  ! https://programata.bg/kino/filmi/kina-i-yuk-lisitsite-ot-dalechnia-sever/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kina-i-yuk-lisitsite-ot-dalechnia-sever/ (Caused by NameResoluti…"
     },
     {
@@ -24,8 +24,8 @@
       "script": "inject_films.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "merged 38 arthouse film(s) (210 total; 113 synthesised)"
+      "seconds": 0.1,
+      "tail": "merged 10 arthouse film(s) (220 total; 123 synthesised)"
     },
     {
       "step": "theatre shows",
@@ -33,14 +33,14 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 19 theatre show(s) into SHOWS (515 total; 247 synthesised)"
+      "tail": "SHOWS already carries all 247 theatre shows — no change"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
+      "seconds": 0.1,
       "tail": "TMDB_TOKEN not set — skipping film posters, keeping previous."
     },
     {
@@ -48,15 +48,15 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 571.0,
-      "tail": "  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9A%D0%BE%D1%81%D0%BC%D0%BE%D1%81%D1%8A%D1%82%20%D0%BD%D0%B0%20%D1%87%D1%83%D0%B4%D0%B5%D1%81%D0%B0%D1%82%D0%B0&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9A%D0%BE%D1%81%D0%BC%D0%BE%D1%81%D1%8A%D1%82…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9A%D1%8A%D1%81%D0%BE%D0%BC%D0%B5%D1%82%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%20%D0%BA%D0%BE%D0%BD%D0%BA%D1%83%D1%80%D1%81%7C%D0%A1%D0%B8%D0%BD%D0%B5%D0%BB%D0%B8%D0%B1%D1%80%D0%B8%202026&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9A%D1%8A%D1%81%D0%BE%D0%BC%D0%B5%D1%82%D1%80…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9F%D1%80%D0%B0%D0%B7%D0%BD%D0%B0%20%D0%B5%20%D1%81%D1%82%D0%B0%D1%8F%D1%82%D0%B0%20%D0%BD%D0%B0%20%D1%83%D0%B4%D0%BE%D0%B2%D0%BE%D0%BB%D1%81%D1%82%D0%B2%D0%B8%D0%B5%D1%82%D0%BE&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9F%D1%80%D0%B0%D0%B7%D0%BD%D0%B0%20%D0%B5%20…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9F%D1%82%D0%B8%D1%87%D0%B0%20%D0%B7%D0%B5%D0%BC%D1%8F&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9F%D1%82%D0%B8%D1%87%D0%B0%20%D0%B7%D0%B5%D0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A1%D1%8A%D0%B7%D0%B2%D0%B5%D0%B7%D0%B4%D0%B8%D1%8F&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A1%D1%8A%D0%B7%D0%B2%D0%B5%D0%B7%D0%B4%D0%B8…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A8%D0%92%D0%95%D0%94%D0%A1%D0%9A%D0%9E%D0%A2%D0%9E%20%D0%A2%D0%9E%D0%A0%D0%9F%D0%95%D0%94%D0%9E%20/%20THE%20SWEDISH%20TORPEDO%7C%D0%A1%D0%B8%D0%BD%D0%B5%D0%BB%D0%B8%D0%B1%D1%80%D0%B8%202026&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A8%D0%92%D0%95%D0%94%D0%A1%D0%9A%D0%9E%D0%A2…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%AE%D0%9B%D0%98%20/%20JULI%20%7C%D0%A1%D0%B8%D0%BD%D0%B5%D0%BB%D0%B8%D0%B1%D1%80%D0%B8%202026&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%AE%D0%9B%D0%98%20/%20JULI%20%7C%D0%A1%D0%B8%…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE…"
+      "seconds": 429.3,
+      "tail": "  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%91%D0%90%D0%A0%D0%9E%D0%9D%20%D0%9C%D0%AE%D0%9D%D0%A5%D0%90%D0%A3%D0%97%D0%95%D0%9D&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%91%D0%90%D0%A0%D0%9E%D0%9D%20%D0%9C%D0%AE%D0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A7%D0%95%D0%A0%D0%92%D0%95%D0%9D%D0%90%D0%A2%D0%90%20%D0%A8%D0%90%D0%9F%D0%A7%D0%98%D0%A6%D0%90&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A7%D0%95%D0%A0%D0%92%D0%95%D0%9D%D0%90%D0%A2…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%94%D0%9E%D0%9A%D0%90%D0%A2%D0%9E%20%D0%A1%D0%9C%D0%AA%D0%A0%D0%A2%D0%A2%D0%90%20%D0%9C%D0%95%20%D0%A0%D0%90%D0%97%D0%94%D0%95%D0%9B%D0%98&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%94%D0%9E%D0%9A%D0%90%D0%A2%D0%9E%20%D0%A1%D0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A0%D0%90%D0%97%D0%93%D0%9E%D0%92%D0%9E%D0%A0%D0%98%20%D0%A1%20%D0%9C%D0%90%D0%9C%D0%90&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A0%D0%90%D0%97%D0%93%D0%9E%D0%92%D0%9E%D0%A0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A5%D0%A0%D0%90%D0%91%D0%A0%D0%98%D0%AF%D0%A2%20%D0%A8%D0%98%D0%92%D0%90%D0%A7&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A5%D0%A0%D0%90%D0%91%D0%A0%D0%98%D0%AF%D0%A2…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9B%D0%98%D0%9C%D0%9E%D0%9D%D0%98%20X5&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9B%D0%98%D0%9C%D0%9E%D0%9D%D0%98%20X5&per_pa…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=ERASERHEAD%20XIU%20XIU%20Liminal/Tetza&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=ERASERHEAD%20XIU%20XIU%20Liminal/Tetza&per_page=…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE…"
     },
     {
       "step": "translations",
       "script": "translate.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
+      "seconds": 0.2,
       "tail": "DEEPL_AUTH_KEY not set — skipping translations, keeping previous."
     },
     {
@@ -72,8 +72,8 @@
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 12.1,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (953,225 bytes)\n  all checks passed — safe to publish"
+      "seconds": 11.0,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp-accuracy/index.html (953,254 bytes)\n  all checks passed — safe to publish"
     }
   ],
   "official": {
@@ -87,26 +87,12 @@
       ],
       "days": 7,
       "screenings": 387,
-      "written_screenings": 422,
+      "written_screenings": 423,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 35,
+      "prelim_screenings": 36,
       "discarded_aggregator": 0,
       "minted": [
-        "bts-world-tour-arirang-in-buenos-aires-live-viewing",
-        "bts-world-tour-arirang-in-sao-paulo-live-viewing",
-        "godzilla-minus-zero",
-        "hybe-cine-fest-2026-enhypen-world-tour-blood-saga",
-        "hybe-cine-fest-2026-hybe-cheering-party",
-        "hybe-cine-fest-2026-seventeen-world-tour-new",
-        "hybe-cine-fest-2026-tomorrow-x-together-world-tour-act-tomor",
-        "league-of-legends-worlds-26-finals-in-cinema",
-        "ozzy-black-sabbath-back-to-the-beginning",
-        "rammstein-live-in-mexico-city",
-        "sinelibri-chernoto-topche",
-        "sinelibri-istoriite-na-noshtta",
-        "sinelibri-kletnitsite",
-        "sinelibri-svatba-s-vkus-na-portokal",
-        "sinelibri-voda-za-tsvetyata"
+        "cs2-pgl-major-singapore-final-na-zhivo"
       ],
       "error": null
     },
@@ -124,9 +110,7 @@
       "prelim_from": "2026-10-16",
       "prelim_screenings": 31,
       "discarded_aggregator": 0,
-      "minted": [
-        "godzila-maraton"
-      ],
+      "minted": [],
       "error": null
     },
     "arena-mega": {
@@ -143,9 +127,7 @@
       "prelim_from": "2026-10-16",
       "prelim_screenings": 4,
       "discarded_aggregator": 0,
-      "minted": [
-        "royal-ballet-manon"
-      ],
+      "minted": [],
       "error": null
     },
     "arena-mall": {
@@ -175,9 +157,9 @@
       ],
       "days": 7,
       "screenings": 369,
-      "written_screenings": 369,
+      "written_screenings": 372,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 0,
+      "prelim_screenings": 3,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -191,10 +173,10 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 213,
-      "written_screenings": 213,
+      "screenings": 212,
+      "written_screenings": 223,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 0,
+      "prelim_screenings": 11,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -244,9 +226,7 @@
       "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [
-        "milen"
-      ],
+      "minted": [],
       "error": null
     },
     "dom-kino": {
@@ -259,29 +239,20 @@
       ],
       "days": 11,
       "screenings": 39,
-      "written_screenings": 76,
+      "written_screenings": 88,
       "prelim_from": "2026-10-20",
-      "prelim_screenings": 37,
+      "prelim_screenings": 49,
       "discarded_aggregator": 0,
       "minted": [
-        "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete",
-        "it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona",
-        "it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata",
-        "it-s-alive-horar-film-fest-chast-iv-koloniya",
-        "it-s-alive-horar-film-fest-chast-iv-neshtoto",
-        "it-s-alive-horar-film-fest-chast-iv-obicham-parizh",
-        "it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov",
-        "it-s-alive-horar-film-fest-chast-iv-petak-69-i",
-        "it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek",
-        "it-s-alive-horar-film-fest-chast-iv-siyanieto",
-        "it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp",
-        "obshtestvo-na-martvite-poeti",
-        "sinelibri-2026-ehoto-mezhdu-nas",
-        "sinelibri-2026-epohata-l-europeo",
-        "sinelibri-2026-kalevala-istoriyata-na-kulervo",
-        "sinelibri-2026-kokuho-zhivo-sakrovishte",
-        "sinelibri-2026-nay-dalechnata-granitsa",
-        "sinelibri-2026-vsichki-vlyubeni-v-noshtta"
+        "kratak-film-za-lyubovta",
+        "kratak-film-za-ubiystvoto",
+        "legendi-za-strastta",
+        "nebesa",
+        "nyama-myasto-za-starite-kucheta",
+        "tri-tsvyata-byalo",
+        "tri-tsvyata-cherveno",
+        "tri-tsvyata-sinyo",
+        "vlastelinat-na-prastenite-zadrugata-na-prastena"
       ],
       "error": null
     },
@@ -299,10 +270,7 @@
       "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [
-        "charli-superkucheto",
-        "cheburashka"
-      ],
+      "minted": [],
       "error": null
     },
     "lumiere": {
@@ -489,26 +457,7 @@
       "prelim_from": "2026-11-30",
       "prelim_screenings": 8,
       "discarded_aggregator": 0,
-      "minted": [
-        "5sola",
-        "a-never-ending-story",
-        "anna-nepopravimata",
-        "az-se-kazvah",
-        "de-profundis-po-oskar-uayld",
-        "eraserhead-xiu-xiu-liminal-tetza",
-        "izprobvano-varhu-hora",
-        "kasometrazhen-konkurs-sinelibri-2026",
-        "kosmosat-na-chudesata",
-        "prazna-e-stayata-na-udovolstvieto",
-        "pticha-zemya",
-        "raw-confessional-poetry",
-        "sazvezdiya-2",
-        "shvedskoto-torpedo-the-swedish-torpedo-sinelibri-2026",
-        "takuya-kuroda-a-to-jazz-concerts",
-        "the-zipper-of-this-fckng-world-a-very-bad-cabaret",
-        "vzeto-ot-internet-ili-kratko-rakovodstvo-za-upotrebata-na-ta",
-        "yuli-juli-sinelibri-2026"
-      ],
+      "minted": [],
       "error": null
     },
     "citymark": {
@@ -601,9 +550,7 @@
       "prelim_from": "2026-10-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [
-        "az-mayakovski"
-      ],
+      "minted": [],
       "error": null
     },
     "atelie313": {
@@ -640,16 +587,16 @@
     "salzaismyah": {
       "kind": "theatre",
       "status": "official",
-      "source": "salzaismyah.bg/site/calendar (month grid)",
+      "source": "salzaismyah.bg/site/calendar (month grid) + /site/events/N (stages)",
       "covered": [
         "2026-10-09",
-        "2026-11-30"
+        "2026-10-31"
       ],
-      "days": 53,
-      "screenings": 59,
+      "days": 23,
+      "screenings": 34,
       "written_screenings": 59,
-      "prelim_from": "2026-12-01",
-      "prelim_screenings": 0,
+      "prelim_from": "2026-11-01",
+      "prelim_screenings": 25,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
