@@ -1870,8 +1870,10 @@ function secToggleInPlace(key){
   const pinHeader=ms=>{
     const until=performance.now()+ms;
     const pin=()=>{
-      if(!btn.isConnected)return; /* re-rendered meanwhile: nothing to hold */
-      const delta=btn.getBoundingClientRect().top-btnTop;
+      /* looked up each frame: after a full render() the header is a new element */
+      const cur=document.querySelector(`[data-sectoggle="${key}"]`);
+      if(!cur)return; /* section gone (mode switched meanwhile): nothing to hold */
+      const delta=cur.getBoundingClientRect().top-btnTop;
       if(Math.abs(delta)>0.5)window.scrollBy({top:delta,behavior:"instant"});
       if(performance.now()<until)requestAnimationFrame(pin);
     };
@@ -1888,7 +1890,9 @@ function secToggleInPlace(key){
   /* find the sec-body sibling — try both id-based and next-sibling */
   let body=document.getElementById(`sec-${key}-content`);
   if(!body){body=btn.nextElementSibling;if(!body||!body.classList.contains("sec-body"))body=null;}
-  if(!body){/* section not yet materialised — need a full render */render();return true;}
+  if(!body){/* section not yet materialised — need a full render, which also
+    restarts the progressive rails above: hold the header while they settle */
+    render();pinHeader(400);return true;}
   const reducedMotion=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   if(reducedMotion){
     if(willOpen){

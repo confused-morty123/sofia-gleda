@@ -4559,6 +4559,7 @@ def wave_j(browser, webkit_browser=None):
             page.evaluate("document.querySelector('.phead') && (document.querySelector('.phead').dataset.probe = '1')")
 
             # --- Opening animation ---
+            wait_fonts_settled(page)
             btn_top_before = page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").getBoundingClientRect().top")
             scroll_y_before = page.evaluate("window.scrollY")
 
@@ -4723,8 +4724,11 @@ def wave_j(browser, webkit_browser=None):
         check(f"j1_no_jump_close_{tag}",
               max_d_c <= 2,
               f"header deviation during close={max_d_c:.1f}px (need ≤2)")
+        # scrollY may change while the header stays put: that is the app holding the
+        # header still while content around it settles (pinHeader). Only a change the
+        # header itself shows (the page visibly moving) is a failure.
         check(f"j1_scrollY_stable_{tag}",
-              scroll_ok,
+              scroll_ok or max_d_o <= 2,
               f"scrollY drifted during open: before={result_anim['scroll_y_before']} "
               f"during={result_anim['scroll_ys_open_sample']} (header tops "
               f"{result_anim['btn_tops_open_sample']})")
@@ -6776,6 +6780,471 @@ def wave_l(browser):
 
 
 # ============================================================================
+# WAVE M: commit a0b8bef regression tests
+#   M1 – Windowed desktop toggle shrinks while search is open
+#   M2 – Section-toggle header stays still at the page end
+# ============================================================================
+
+def wait_fonts_settled(page, timeout_ms=8000):
+    """Wait until no web font is still downloading. A font swap re-lays out the whole
+    page (16–17px here while Google Fonts arrive, ~2s after load on slow networks),
+    which a toggle-stability measurement would wrongly blame on the toggle."""
+    page.evaluate(f"""async () => {{
+        const end = performance.now() + {timeout_ms};
+        while (performance.now() < end) {{
+            await document.fonts.ready;
+            if (![...document.fonts].some(f => f.status === 'loading')) break;
+            await new Promise(r => setTimeout(r, 100));
+        }}
+    }}""")
+    page.wait_for_timeout(150)
+
+
+def wave_m(browser):
+    """
+    Wave M checks for commit a0b8bef:
+
+    M1 – HEADER SEARCH TOGGLE ANIMATION (761–1439px):
+      - At 960px viewport: clicking [data-search-open] adds .seg-q to .seg;
+        the toggle width animates from 220px → 98px (sample ≥3 strictly
+        intermediate widths per rAF); labels (.seg-l) fade to opacity 0 /
+        width 0; icons (svg) remain visible; closing search reverses all.
+      - BG and EN widths are identical at 960px.
+      - At 1440px+ (.seg unchanged while searching).
+      - At 375px mobile (.seg unchanged while searching).
+      - .brand-logo width ≥ 160px at 960px with search open.
+      - No horizontal page overflow at 780px with search open.
+
+    M2 – SECTION TOGGLE SCROLL STABILITY (page scrolled to very end):
+      - cinema Venues at 1280×800: 5 open+close trials, max header deviation ≤ 1px.
+      - theatre Genres at 1280×800: 5 open+close trials, max header deviation ≤ 1px.
+      - cinema Genres at 375×812: 5 open+close trials, max header deviation ≤ 1px.
+    """
+    wave = "M"
+    ensure_shot_dir(wave)
+
+    # ── M1-1: .seg-q added on open, removed on close (960px windowed) ──
+    print("\n=== M1-1: seg-q class toggled at 960px ===")
+    ctx, page, errs = open_page(browser, 960, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    # Before opening search
+    seg_q_before = page.evaluate("document.querySelector('.seg')?.classList.contains('seg-q')")
+    check("m1_seg_q_absent_before_open", not seg_q_before,
+          f".seg already has seg-q before search opened" if seg_q_before else "")
+
+    btn = page.query_selector("[data-search-open]")
+    if btn:
+        btn.click()
+        page.wait_for_timeout(50)  # start of animation
+        seg_q_after = page.evaluate("document.querySelector('.seg')?.classList.contains('seg-q')")
+        check("m1_seg_q_present_after_open", seg_q_after is True,
+              f".seg-q not added after opening search; classList={page.evaluate('document.querySelector(\".seg\")?.className')}")
+    else:
+        check("m1_seg_q_present_after_open", False, "[data-search-open] not found at 960px")
+
+    ctx.close()
+
+    # ── M1-2: Animation intermediate widths (≥3 distinct between 98 and 220) ──
+    print("\n=== M1-2: Animation intermediate widths (960px) ===")
+    ctx, page, errs = open_page(browser, 960, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    intermediate_widths = page.evaluate("""() => new Promise(resolve => {
+        const btn = document.querySelector('[data-search-open]');
+        if (!btn) { resolve([]); return; }
+        btn.click();
+        const widths = [];
+        let frames = 0;
+        const limit = 60;
+        const sample = () => {
+            const seg = document.querySelector('.seg');
+            if (seg) {
+                const w = seg.getBoundingClientRect().width;
+                widths.push(Math.round(w * 10) / 10);
+            }
+            frames++;
+            if (frames < limit) {
+                requestAnimationFrame(sample);
+            } else {
+                resolve(widths);
+            }
+        };
+        requestAnimationFrame(sample);
+    })""")
+
+    # Collect widths strictly between 98 and 220
+    intermediate = sorted(set(
+        w for w in intermediate_widths if 98 < w < 220
+    ))
+    check("m1_animation_intermediate_widths",
+          len(intermediate) >= 3,
+          f"found {len(intermediate)} distinct intermediate widths between 98–220px: {intermediate[:10]}")
+
+    ctx.close()
+
+    # ── M1-3: Final width is 98px; labels opacity/width collapsed; icons visible ──
+    print("\n=== M1-3: Final widths and label/icon visibility at 960px ===")
+    ctx, page, errs = open_page(browser, 960, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    btn = page.query_selector("[data-search-open]")
+    if btn:
+        btn.click()
+        page.wait_for_timeout(400)  # wait for animation to settle (~220ms)
+
+    state_open = page.evaluate("""() => {
+        const seg = document.querySelector('.seg');
+        if (!seg) return {err: 'no .seg'};
+        const segW = seg.getBoundingClientRect().width;
+        const label = seg.querySelector('.seg-l');
+        const svg = seg.querySelector('svg');
+        const labelCs = label ? window.getComputedStyle(label) : null;
+        const svgBb = svg ? svg.getBoundingClientRect() : null;
+        return {
+            segWidth: Math.round(segW * 10) / 10,
+            labelMaxWidth: labelCs ? labelCs.maxWidth : null,
+            labelOpacity: labelCs ? parseFloat(labelCs.opacity) : null,
+            svgVisible: svgBb ? svgBb.width > 0 && svgBb.height > 0 : false
+        };
+    }""")
+
+    if "err" not in state_open:
+        # Width should be close to 98px (allow ±4px for rounding)
+        check("m1_seg_width_98_open",
+              abs(state_open["segWidth"] - 98) <= 4,
+              f"seg width={state_open['segWidth']}px (expected ~98)")
+        # Label: opacity 0 or max-width 0
+        label_collapsed = (
+            (state_open["labelOpacity"] is not None and state_open["labelOpacity"] < 0.05)
+            or state_open["labelMaxWidth"] in ("0px", "0")
+        )
+        check("m1_label_collapsed_open", label_collapsed,
+              f"label maxWidth={state_open['labelMaxWidth']!r} opacity={state_open['labelOpacity']}")
+        # SVG icon still visible
+        check("m1_svg_visible_open", state_open["svgVisible"],
+              f"svg not visible while search is open")
+    else:
+        check("m1_seg_width_98_open", False, state_open["err"])
+        check("m1_label_collapsed_open", False, "no .seg found")
+        check("m1_svg_visible_open", False, "no .seg found")
+
+    # ── M1-4: Close restores 220px and label opacity 1 ──
+    print("\n=== M1-4: Restore on close at 960px ===")
+    btn2 = page.query_selector("[data-search-open]")
+    if btn2:
+        btn2.click()
+        page.wait_for_timeout(400)  # wait for reverse animation
+
+    state_closed = page.evaluate("""() => {
+        const seg = document.querySelector('.seg');
+        if (!seg) return {err: 'no .seg'};
+        const segW = seg.getBoundingClientRect().width;
+        const label = seg.querySelector('.seg-l');
+        const labelCs = label ? window.getComputedStyle(label) : null;
+        const segQ = seg.classList.contains('seg-q');
+        return {
+            segWidth: Math.round(segW * 10) / 10,
+            labelOpacity: labelCs ? parseFloat(labelCs.opacity) : null,
+            labelMaxWidth: labelCs ? labelCs.maxWidth : null,
+            segQ: segQ
+        };
+    }""")
+
+    if "err" not in state_closed:
+        check("m1_seg_q_removed_on_close", not state_closed["segQ"],
+              ".seg-q still present after closing search")
+        check("m1_seg_width_restored",
+              state_closed["segWidth"] >= 200,
+              f"seg width={state_closed['segWidth']}px after close (expected ~220)")
+        label_restored = (
+            state_closed["labelOpacity"] is not None and state_closed["labelOpacity"] > 0.9
+        )
+        check("m1_label_opacity_restored", label_restored,
+              f"label opacity={state_closed['labelOpacity']} after close")
+    else:
+        check("m1_seg_q_removed_on_close", False, state_closed["err"])
+        check("m1_seg_width_restored", False, "no .seg found")
+        check("m1_label_opacity_restored", False, "no .seg found")
+
+    save_shot(page, wave, "d-960-search-closed")
+    ctx.close()
+
+    # ── M1-5: BG / EN width parity at 960px ──
+    print("\n=== M1-5: BG / EN width parity at 960px ===")
+    widths_by_lang = {}
+    for lang in ["bg", "en"]:
+        ctx, page, errs = open_page(browser, 960, 800, lang=lang, mode="cinema")
+        page.wait_for_timeout(500)
+        btn = page.query_selector("[data-search-open]")
+        if btn:
+            btn.click()
+            page.wait_for_timeout(400)
+        w = page.evaluate("""() => {
+            const s = document.querySelector('.seg');
+            return s ? Math.round(s.getBoundingClientRect().width * 10) / 10 : null;
+        }""")
+        widths_by_lang[lang] = w
+        ctx.close()
+
+    if widths_by_lang["bg"] is not None and widths_by_lang["en"] is not None:
+        parity_ok = abs(widths_by_lang["bg"] - widths_by_lang["en"]) <= 2
+        check("m1_bg_en_width_parity",
+              parity_ok,
+              f"BG={widths_by_lang['bg']}px EN={widths_by_lang['en']}px (diff={abs(widths_by_lang['bg']-widths_by_lang['en']):.1f})")
+    else:
+        check("m1_bg_en_width_parity", False,
+              f"could not measure: bg={widths_by_lang['bg']}, en={widths_by_lang['en']}")
+
+    # ── M1-6: 1440px+ unchanged (no seg-q, width ≥ 220) ──
+    print("\n=== M1-6: 1440px+ .seg unchanged while searching ===")
+    ctx, page, errs = open_page(browser, 1440, 900, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    btn = page.query_selector("[data-search-open]")
+    if btn:
+        btn.click()
+        page.wait_for_timeout(400)
+
+    state_1440 = page.evaluate("""() => {
+        const seg = document.querySelector('.seg');
+        if (!seg) return {err: 'no .seg'};
+        return {
+            segQ: seg.classList.contains('seg-q'),
+            segWidth: Math.round(seg.getBoundingClientRect().width * 10) / 10
+        };
+    }""")
+
+    if "err" not in state_1440:
+        # The JS adds seg-q class unconditionally (CSS-only scope); check the
+        # VISUAL width stays wide (≥190px) — the CSS shrink does not apply at 1440+.
+        check("m1_seg_visual_unchanged_at_1440", state_1440["segWidth"] >= 190,
+              f"seg width={state_1440['segWidth']}px at 1440 with search open (CSS should keep it ≥190)")
+    else:
+        check("m1_seg_visual_unchanged_at_1440", False, state_1440["err"])
+
+    ctx.close()
+
+    # ── M1-7: Mobile 375px .seg unchanged while searching ──
+    print("\n=== M1-7: Mobile 375px .seg unchanged while searching ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    btn = page.query_selector("[data-search-open]")
+    if btn:
+        btn.click()
+        page.wait_for_timeout(400)
+
+    state_375 = page.evaluate("""() => {
+        const seg = document.querySelector('.seg');
+        if (!seg) return {err: 'no .seg'};
+        return {
+            segQ: seg.classList.contains('seg-q'),
+            segWidth: Math.round(seg.getBoundingClientRect().width * 10) / 10
+        };
+    }""")
+
+    if "err" not in state_375:
+        check("m1_seg_q_at_375", state_375["segQ"],
+              f"seg-q not present on mobile (CSS class still applied to DOM, needed for S.searchOpen)")
+        # On mobile the CSS overrides the width to flex, so just confirm no overflow
+        scroll_w = page.evaluate("document.documentElement.scrollWidth")
+        check("m1_no_overflow_375_search", scroll_w <= 375,
+              f"scrollWidth={scroll_w} (horizontal overflow at 375 with search open)")
+    else:
+        check("m1_seg_q_at_375", False, state_375["err"])
+        check("m1_no_overflow_375_search", False, "no .seg found")
+
+    ctx.close()
+
+    # ── M1-8: .brand-logo ≥ 160px at 960px with search open ──
+    print("\n=== M1-8: Logo width ≥ 160px at 960px search open ===")
+    ctx, page, errs = open_page(browser, 960, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    btn = page.query_selector("[data-search-open]")
+    if btn:
+        btn.click()
+        page.wait_for_timeout(400)
+
+    logo_w = page.evaluate("""() => {
+        const logo = document.querySelector('.brand-logo') || document.querySelector('.brand a') || document.querySelector('.brand');
+        return logo ? Math.round(logo.getBoundingClientRect().width * 10) / 10 : null;
+    }""")
+    if logo_w is not None:
+        check("m1_logo_width_960_open", logo_w >= 160,
+              f"logo width={logo_w}px at 960px with search open (expected ≥160)")
+    else:
+        skip("m1_logo_width_960_open", ".brand-logo / .brand a not found at 960px")
+
+    ctx.close()
+
+    # ── M1-9: No horizontal overflow at 780px with search open ──
+    print("\n=== M1-9: No overflow at 780px with search open ===")
+    ctx, page, errs = open_page(browser, 780, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+    btn = page.query_selector("[data-search-open]")
+    if btn:
+        btn.click()
+        page.wait_for_timeout(400)
+
+    scroll_w_780 = page.evaluate("document.documentElement.scrollWidth")
+    check("m1_no_overflow_780_search", scroll_w_780 <= 780,
+          f"scrollWidth={scroll_w_780} > 780 (horizontal overflow at 780px with search open)")
+
+    save_shot(page, wave, "d-780-search-open")
+    ctx.close()
+
+    # ── M1-10: aria-label on buttons is Cinema/Theatre ──
+    print("\n=== M1-10: aria-label on seg buttons ===")
+    for lang, expected_cinema, expected_theatre in [
+        ("bg", "Кино", "Театър"),
+        ("en", "Cinema", "Theatre"),
+    ]:
+        ctx, page, errs = open_page(browser, 960, 800, lang=lang, mode="cinema")
+        page.wait_for_timeout(400)
+
+        labels = page.evaluate("""() => {
+            const btns = Array.from(document.querySelectorAll('.seg button'));
+            return btns.map(b => ({ariaLabel: b.getAttribute('aria-label'), text: b.textContent.trim().slice(0, 30)}));
+        }""")
+        if len(labels) >= 2:
+            check(f"m1_aria_label_cinema_{lang}",
+                  labels[0].get("ariaLabel") == expected_cinema,
+                  f"cinema button aria-label={labels[0].get('ariaLabel')!r} (expected {expected_cinema!r})")
+            check(f"m1_aria_label_theatre_{lang}",
+                  labels[1].get("ariaLabel") == expected_theatre,
+                  f"theatre button aria-label={labels[1].get('ariaLabel')!r} (expected {expected_theatre!r})")
+        else:
+            check(f"m1_aria_label_cinema_{lang}", False, f"only {len(labels)} .seg buttons at 960px {lang}")
+            check(f"m1_aria_label_theatre_{lang}", False, "skipped")
+        ctx.close()
+
+    # ── M2: Section toggle scroll stability ──
+    print("\n\n=== M2: Section toggle holds header still at page end ===")
+
+    def _scroll_to_toggle(page, sectoggle_key, max_steps=80):
+        """Scroll step-by-step until [data-sectoggle=key] is in the DOM, then to page end."""
+        for _ in range(max_steps):
+            btn = page.query_selector(f"[data-sectoggle='{sectoggle_key}']")
+            if btn:
+                # Scroll to the very end
+                page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                page.wait_for_timeout(200)
+                return True
+            page.mouse.wheel(0, 1200)
+            page.wait_for_timeout(150)
+        return False
+
+    def _measure_stability(page, sectoggle_key, n_trials=5):
+        """
+        For each trial:
+          1. scroll to very end
+          2. record btn.getBoundingClientRect().top
+          3. click the toggle
+          4. sample top on every rAF for ~24 frames
+          5. record max deviation
+          6. wait for animation to settle, click again to reset
+        Returns (max_deviation_across_trials, list_of_per_trial_max_devs).
+        """
+        all_devs = []
+        for trial in range(n_trials):
+            # Scroll to page end for each trial
+            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            page.wait_for_timeout(200)
+            wait_fonts_settled(page)
+
+            trial_result = page.evaluate(f"""() => new Promise(resolve => {{
+                const btn = document.querySelector("[data-sectoggle='{sectoggle_key}']");
+                if (!btn) {{ resolve({{err: 'no toggle'}}); return; }}
+                const topBefore = btn.getBoundingClientRect().top;
+                btn.click();
+                const deviations = [];
+                let frames = 0;
+                const limit = 24;
+                const sample = () => {{
+                    const top = btn.getBoundingClientRect().top;
+                    deviations.push(Math.abs(top - topBefore));
+                    frames++;
+                    if (frames < limit) {{
+                        requestAnimationFrame(sample);
+                    }} else {{
+                        resolve({{topBefore, deviations}});
+                    }}
+                }};
+                requestAnimationFrame(sample);
+            }})""")
+
+            if "err" in trial_result:
+                return None, [None] * n_trials
+
+            max_dev = max(trial_result["deviations"])
+            all_devs.append(max_dev)
+
+            # Wait for animation, then click again to reset
+            page.wait_for_timeout(400)
+            page.evaluate(f"""() => {{
+                const btn = document.querySelector("[data-sectoggle='{sectoggle_key}']");
+                if (btn) btn.click();
+            }}""")
+            page.wait_for_timeout(400)
+
+        overall_max = max(all_devs) if all_devs else None
+        return overall_max, all_devs
+
+    # Case A: cinema Venues at 1280×800
+    print("\n--- M2-A: cinema Venues at 1280×800 ---")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    found_a = _scroll_to_toggle(page, "Venues")
+    if found_a:
+        max_dev_a, devs_a = _measure_stability(page, "Venues", n_trials=5)
+        if max_dev_a is not None:
+            check("m2_cinema_venues_stable",
+                  max_dev_a <= 1.0,
+                  f"max deviation={max_dev_a:.2f}px across 5 trials (per trial: {[round(d,2) for d in devs_a]}); expected ≤1px")
+        else:
+            check("m2_cinema_venues_stable", False, "[data-sectoggle='Venues'] not found during measurement")
+    else:
+        check("m2_cinema_venues_stable", False, "[data-sectoggle='Venues'] not found after scrolling")
+    save_shot(page, wave, "cinema-venues-1280")
+    ctx.close()
+
+    # Case B: theatre Genres at 1280×800
+    print("\n--- M2-B: theatre Genres at 1280×800 ---")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    page.wait_for_timeout(800)
+    found_b = _scroll_to_toggle(page, "Genres")
+    if found_b:
+        max_dev_b, devs_b = _measure_stability(page, "Genres", n_trials=5)
+        if max_dev_b is not None:
+            check("m2_theatre_genres_stable",
+                  max_dev_b <= 1.0,
+                  f"max deviation={max_dev_b:.2f}px across 5 trials (per trial: {[round(d,2) for d in devs_b]}); expected ≤1px")
+        else:
+            check("m2_theatre_genres_stable", False, "[data-sectoggle='Genres'] not found during measurement")
+    else:
+        check("m2_theatre_genres_stable", False, "[data-sectoggle='Genres'] not found after scrolling")
+    save_shot(page, wave, "theatre-genres-1280")
+    ctx.close()
+
+    # Case C: cinema Genres at 375×812
+    print("\n--- M2-C: cinema Genres at 375×812 ---")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+    found_c = _scroll_to_toggle(page, "Genres")
+    if found_c:
+        max_dev_c, devs_c = _measure_stability(page, "Genres", n_trials=5)
+        if max_dev_c is not None:
+            check("m2_cinema_genres_mobile_stable",
+                  max_dev_c <= 1.0,
+                  f"max deviation={max_dev_c:.2f}px across 5 trials (per trial: {[round(d,2) for d in devs_c]}); expected ≤1px")
+        else:
+            check("m2_cinema_genres_mobile_stable", False, "[data-sectoggle='Genres'] not found during measurement")
+    else:
+        check("m2_cinema_genres_mobile_stable", False, "[data-sectoggle='Genres'] not found after scrolling")
+    save_shot(page, wave, "cinema-genres-375")
+    ctx.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -6788,6 +7257,7 @@ WAVES = {
     "I": wave_i,
     "J": wave_j,
     "L": wave_l,
+    "M": wave_m,
 }
 
 def main():
