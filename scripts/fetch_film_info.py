@@ -559,6 +559,22 @@ def harvest_vlaikova_img(soup, url):
     return None
 
 
+def harvest_kinoarena_img(soup, url):
+    """Extract the poster from a kinoarena.com /bg/movie/<slug> film page.
+
+    Tries og:image (the standard poster image on every KA movie page).
+    Returns an absolute https URL, or None.
+    """
+    og = soup.find("meta", attrs={"property": "og:image"})
+    if og:
+        u = (og.get("content") or "").strip()
+        if u.startswith("//"):
+            u = "https:" + u
+        if u.startswith("https://") and not _is_bad_img(u):
+            return u
+    return None
+
+
 def harvest_img(soup, url):
     """Dispatch image harvesting to the right function based on URL host."""
     from urllib.parse import urlparse
@@ -569,6 +585,8 @@ def harvest_img(soup, url):
         return harvest_programata_img(soup, url)
     elif "vlaikovacinema.com" in host:
         return harvest_vlaikova_img(soup, url)
+    elif "kinoarena.com" in host:
+        return harvest_kinoarena_img(soup, url)
     return None
 
 
@@ -693,7 +711,8 @@ def main():
         from urllib.parse import urlparse
         host = urlparse(url).netloc.lstrip("www.")
         # Only supported parsers
-        if not any(h in host for h in ("programata.bg", "vlaikovacinema.com", "ndk.bg")):
+        if not any(h in host for h in ("programata.bg", "vlaikovacinema.com", "ndk.bg",
+                                       "kinoarena.com")):
             continue
 
         soup = session.soup(url)

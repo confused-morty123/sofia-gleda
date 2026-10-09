@@ -8,13 +8,16 @@ calls every Sunday.
     TMDB_TOKEN=... python3 scripts/refresh_all.py
 
 Steps (all best-effort; a step that fails leaves the previous data in place):
-    1. scrape_programs.py        cinema + theatre programmes -> index.html
-    2. inject_films.py           merge synthesised arthouse films -> index.html
-    3. inject_shows.py           merge synthesised theatre shows -> index.html
-    4. fetch_tmdb.py             film posters + English titles -> tmdb_films.json
-    5. fetch_theatre_posters.py  theatre posters              -> theatre_posters.json
-    6. inject_data.py            inline both poster maps       -> index.html
-    7. verify_build.py           gate: is the result actually usable?
+    1. scrape_programs.py           cinema + theatre programmes -> index.html
+    2. fetch_film_info.py           synopsis/director/cast from the films' own pages -> film_info.json
+    3. inject_films.py              merge synthesised arthouse films -> index.html
+    4. inject_shows.py              merge synthesised theatre shows -> index.html
+    5. fetch_tmdb.py                film posters + English titles -> tmdb_films.json
+    6. harvest_cinema_posters.py    Cinema City / Кино Арена posters for titles TMDB lacks -> film_info.json
+    7. fetch_theatre_posters.py     theatre posters              -> theatre_posters.json
+    8. translate.py                 DeepL English for BG-only synopses/titles -> translations.json
+    9. inject_data.py               inline the poster maps and film details -> index.html
+   10. verify_build.py              gate: is the result actually usable?
 
 Steps 1-6 are best-effort and never abort the run. Step 7 is not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
@@ -56,6 +59,7 @@ STEPS = [
     ("arthouse films",  "inject_films.py",           []),
     ("theatre shows",   "inject_shows.py",           []),
     ("film posters",    "fetch_tmdb.py",             []),
+    ("cinema posters",  "harvest_cinema_posters.py", []),    # the cinemas' own posters for titles TMDB lacks
     ("theatre posters", "fetch_theatre_posters.py",  []),
     ("translations",    "translate.py",              []),    # auto-translate BG-only syn/titles -> EN cache
     ("inline posters",  "inject_data.py",            []),

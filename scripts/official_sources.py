@@ -188,7 +188,8 @@ def parse_cinemacity_day(payload, date, cinema=None):
                 "year": f.get("releaseYear"),
                 "genres": [CC_GENRES[a] for a in (f.get("attributeIds") or []) if a in CC_GENRES],
                 "hall": e.get("auditorium"), "booking": e.get("bookingLink"),
-                "format": [a for a in attrs if a in CC_FORMATS]}
+                "format": [a for a in attrs if a in CC_FORMATS],
+                "posterLink": f.get("posterLink")}
         if "tbc" in attrs:
             meta["tbc"] = True
         rows.append((name, date, f"{m.group(2)}:{m.group(3)}", meta))

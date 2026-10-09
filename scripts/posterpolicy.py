@@ -40,6 +40,7 @@ TRUSTED_HOSTS = {
     "programata.bg", "tba.art.bg", "natfiz.bg", "satirata.bg", "iamstudio.bg",
     "comedyclub.bg", "melpomenatheatre.com", "atelie313.com", "artvent.bg",
     "ndk.bg", "image.tmdb.org", "sofiaopera.bg", "operasofia.bg", "salzaismyah.bg",
+    "kinoarena.com", "cinemacity.bg",
 }
 
 # Backends that serve whatever a cinema's ticketing system happened to upload.

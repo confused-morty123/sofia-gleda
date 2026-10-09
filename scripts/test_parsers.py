@@ -562,6 +562,13 @@ _fi_img_bad = "https://cdn.example.com/9f2b7c1d4e6a8b0c2d4e6f80.jpg"
 _fi_why_bad = PP.reject_reason("akira-kurosava-sanishta-1990", _fi_img_bad, cat)
 check("opaque hash on untrusted host rejected for film_info img",
       bool(_fi_why_bad), True)
+# kinoarena.com and cinemacity.bg are trusted hosts for poster harvesting
+_fi_img_ka = "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/63d3f030447db34cbac4ddadad0ebc69deb03917.jpeg"
+check("kinoarena.com opaque hash accepted (trusted host)",
+      PP.reject_reason("veriti", _fi_img_ka, cat), None)
+_fi_img_cc = "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8326S2R.jpg"
+check("cinemacity.bg poster accepted",
+      PP.reject_reason("ne-kazvay-na-mama", _fi_img_cc, cat), None)
 
 # -------------------------------- declutter() — new cases
 print("declutter: Director:Title(Year) and festival-prefix cases")
@@ -957,6 +964,9 @@ check("an answer for another day yields no rows", OS.parse_cinemacity_day(_cc, "
 check("another cinema's events are ignored", OS.parse_cinemacity_day(_cc, "2026-10-09", "1266"), [])
 check("a body without films/events is broken, not 'no screenings'",
       _raises(OS.parse_cinemacity_day, {"body": {}}, "2026-10-09"), True)
+check("posterLink included in meta",
+      [x for x in _r if x[0] == "Верити"][0][3].get("posterLink"),
+      "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8244S2R.jpg")
 
 print("official: where a published programme ends")
 _cnt = [("2026-10-08", 54), ("2026-10-09", 55), ("2026-10-10", 67), ("2026-10-11", 67),
@@ -1041,6 +1051,16 @@ _res = OS.fetch_kinoarena(_Pages({"arena-mega-mol/": _ka}), "arena-mega", "2026-
 check("a date served with TODAY's programme ends coverage (never mislabelled)",
       (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
 check("rows of the fallback page are not re-dated", {x[1] for x in _res.rows}, {"2026-10-08"})
+
+print("official: Кино Арена film page poster (og:image)")
+_ka_movie_html = (FIXTURES / "kinoarena_movie.html").read_text(encoding="utf-8")
+_ka_movie_soup = BeautifulSoup(_ka_movie_html, "lxml")
+_ka_img = FI.harvest_kinoarena_img(_ka_movie_soup, "https://www.kinoarena.com/bg/movie/veriti")
+check("kinoarena og:image extracted",
+      _ka_img,
+      "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/63d3f030447db34cbac4ddadad0ebc69deb03917.jpeg")
+check("kinoarena img starts with https",
+      bool(_ka_img and _ka_img.startswith("https://")), True)
 
 
 class _KA:
