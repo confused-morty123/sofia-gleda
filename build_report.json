@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-09T11:33:34+00:00",
+  "ran": "2026-10-09T13:11:20+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,64 +8,64 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 850.6,
-      "tail": "  ! https://programata.bg/kino/kino-saloni/arena-mega-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/arena-mega-mall/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/kino-saloni/sofia/arena-the-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/arena-the-mall/ (Caused by NameResolutionError(\"HTTP…\n  ! https://programata.bg/kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/ (Caused by NameResolut…\n  ! https://programata.bg/kino/kino-saloni/sofia/cine-grand-park-center/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/cine-grand-park-center/ (Caused by NameResolutionErr…\n  ! https://programata.bg/kino/kino-saloni/cineland-bulgaria-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/cineland-bulgaria-mall/ (Caused by NameResolutionError(\"HT…\n  ! https://programata.bg/kino/kino-saloni/sofia/odeon-cinema/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/odeon-cinema/ (Caused by NameResolutionError(\"HTTPSC…\n  ! https://programata.bg/kino/kino-saloni/sofia/g8-cinema/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/g8-cinema/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/kino-saloni/sofia/dom-na-kinoto/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/dom-na-kinoto/ (Caused by NameResolutionError(\"HTTPS…"
+      "seconds": 611.2,
+      "tail": "  vlaikova: 17 vlink(s)\nwrote index.html, changes.json, cinema_films.json (126 arthouse films) and theatre_shows.json (263 theatre shows)\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 14 official, 1 kept-previous (mladezhki), 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n0 film(s) and 16 show(s) minted (16 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 1 + 3 suspected duplicate(s)\nPRELIM_FROM {\"arena-mall\": \"2026-10-16\", \"arena-mega\": \"2026-10-16\", \"artvent\": \"2026-12-15\", \"atelie313\": \"2026-10-09\", \"cc-paradise\": \"2026-10-16\", \"cc-sofia\": \"2026-10-16\", \"cg-park\": \"2026-10-16\", \"cg-ring\": \"2026-10-16\", \"cineland\": \"2026-10-09\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-09\", \"dom-kino\": \"2026-10-22\", \"g8\": \"2026-10-16\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-05\", \"mladezhki\": \"2026-11-30\", \"natfiz\": \"2026-10-09\", \"national\": \"2026-12-15\", \"new-ndk\": \"2026-10-09\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-15\", \"th199\": \"2026-10-22\", \"toplo\": \"2026-11-30\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-22\", \"zad-kanala\": \"2026-12-15\"}\n  ! https://mlt.bg/programa.php?year=2026&month=10: HTTP 403\n  ! official mladezhki: unreachable: https://mlt.bg/programa.php?year=2026&month=10"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 839.9,
-      "tail": "  ! https://programata.bg/kino/filmi/animaczionni-filmi-na-stoyan-dukov/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/animaczionni-filmi-na-stoyan-dukov/ (Caused by NameResolutionErr…\n  ! https://programata.bg/kino/filmi/animaczionni-filmi-na-nastimir-czachev-i-vyara-doneva/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/animaczionni-filmi-na-nastimir-czachev-i-vyara-doneva/ (Caused b…\n  ! https://programata.bg/kino/filmi/s-vnimanie-km-detajla/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/s-vnimanie-km-detajla/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/filmi/sledovatelyat-i-gorata/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/sledovatelyat-i-gorata/ (Caused by NameResolutionError(\"HTTPSCon…\n  ! https://programata.bg/kino/filmi/hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-chernobil/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-chernobil/…\n  ! https://programata.bg/kino/filmi/kitovete-paziteli-na-planetata/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kitovete-paziteli-na-planetata/ (Caused by NameResolutionError(\"…\n  ! https://programata.bg/kino/filmi/kotki-v-muzeya-2-sakrovisthata-na-egipet/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kotki-v-muzeya-2-sakrovisthata-na-egipet/ (Caused by NameResolut…\n  ! https://programata.bg/kino/filmi/kina-i-yuk-lisitsite-ot-dalechnia-sever/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kina-i-yuk-lisitsite-ot-dalechnia-sever/ (Caused by NameResoluti…"
+      "seconds": 40.1,
+      "tail": "film_info coverage:\n  223 films needed details, fetched 38 pages\n  synopsis:  27 new\n  director:  26 new\n  cast:      10 new\n  genres:    17 new\n  img:       0 new poster images harvested\n  129 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
       "script": "inject_films.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "merged 3 arthouse film(s) (223 total; 126 synthesised)"
+      "seconds": 0.0,
+      "tail": "FILMS already carries all 126 arthouse films — no change"
     },
     {
       "step": "theatre shows",
       "script": "inject_shows.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "SHOWS already carries all 247 theatre shows — no change"
+      "seconds": 0.0,
+      "tail": "merged 16 theatre show(s) into SHOWS (531 total; 263 synthesised)"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "TMDB_TOKEN not set — skipping film posters, keeping previous."
+      "seconds": 136.7,
+      "tail": "    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)"
     },
     {
       "step": "cinema posters",
       "script": "harvest_cinema_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 364.0,
-      "tail": "  it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona | It’s Alive! Хорър Филм Фест Част IV: Историята на Бетона\n  it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata | It’s Alive! Хорър Филм Фест Част IV: Къде ми е главата?\n  it-s-alive-horar-film-fest-chast-iv-koloniya | It’s Alive! Хорър Филм Фест Част IV: Колония\n  it-s-alive-horar-film-fest-chast-iv-neshtoto | It’s Alive! Хорър Филм Фест Част IV: Нещото\n  it-s-alive-horar-film-fest-chast-iv-obicham-parizh | It’s Alive! Хорър Филм Фест Част IV: Обичам Париж\n  it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov | It’s Alive! Хорър Филм Фест Част IV: Опасният остров\n  it-s-alive-horar-film-fest-chast-iv-petak-69-i | It’s Alive! Хорър Филм Фест Част IV: Петък 69-и\n  it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek | It’s Alive! Хорър Филм Фест Част IV: Плетеният човек"
+      "seconds": 361.9,
+      "tail": "  it-s-alive-horar-film-fest-chast-iv-obicham-parizh | It’s Alive! Хорър Филм Фест Част IV: Обичам Париж\n  it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov | It’s Alive! Хорър Филм Фест Част IV: Опасният остров\n  it-s-alive-horar-film-fest-chast-iv-petak-69-i | It’s Alive! Хорър Филм Фест Част IV: Петък 69-и\n  it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek | It’s Alive! Хорър Филм Фест Част IV: Плетеният човек\n  it-s-alive-horar-film-fest-chast-iv-siyanieto | It’s Alive! Хорър Филм Фест Част IV: Сиянието\n  it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp | It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Кам\n  karay-kolata-mi | Карай колата ми\n  kratak-film-za-ubiystvoto | Кратък филм за убийството"
     },
     {
       "step": "theatre posters",
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 429.3,
-      "tail": "  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%91%D0%90%D0%A0%D0%9E%D0%9D%20%D0%9C%D0%AE%D0%9D%D0%A5%D0%90%D0%A3%D0%97%D0%95%D0%9D&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%91%D0%90%D0%A0%D0%9E%D0%9D%20%D0%9C%D0%AE%D0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A7%D0%95%D0%A0%D0%92%D0%95%D0%9D%D0%90%D0%A2%D0%90%20%D0%A8%D0%90%D0%9F%D0%A7%D0%98%D0%A6%D0%90&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A7%D0%95%D0%A0%D0%92%D0%95%D0%9D%D0%90%D0%A2…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%94%D0%9E%D0%9A%D0%90%D0%A2%D0%9E%20%D0%A1%D0%9C%D0%AA%D0%A0%D0%A2%D0%A2%D0%90%20%D0%9C%D0%95%20%D0%A0%D0%90%D0%97%D0%94%D0%95%D0%9B%D0%98&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%94%D0%9E%D0%9A%D0%90%D0%A2%D0%9E%20%D0%A1%D0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A0%D0%90%D0%97%D0%93%D0%9E%D0%92%D0%9E%D0%A0%D0%98%20%D0%A1%20%D0%9C%D0%90%D0%9C%D0%90&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A0%D0%90%D0%97%D0%93%D0%9E%D0%92%D0%9E%D0%A0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A5%D0%A0%D0%90%D0%91%D0%A0%D0%98%D0%AF%D0%A2%20%D0%A8%D0%98%D0%92%D0%90%D0%A7&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A5%D0%A0%D0%90%D0%91%D0%A0%D0%98%D0%AF%D0%A2…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9B%D0%98%D0%9C%D0%9E%D0%9D%D0%98%20X5&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9B%D0%98%D0%9C%D0%9E%D0%9D%D0%98%20X5&per_pa…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=ERASERHEAD%20XIU%20XIU%20Liminal/Tetza&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=ERASERHEAD%20XIU%20XIU%20Liminal/Tetza&per_page=…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE…"
+      "seconds": 188.0,
+      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                        72     0     87.8  \n  theatre.art.bg                       45     0     78.8  \n\nnew this run: 14   rejected by policy: 2   total: 481/531 shows with art\nre-hosted 481/481 posters under posters/\nwrote theatre_posters.json"
     },
     {
       "step": "translations",
       "script": "translate.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "DEEPL_AUTH_KEY not set — skipping translations, keeping previous."
+      "seconds": 15.1,
+      "tail": "texts needing translation: film syn 21, film title 100, show syn 60, show title 476\n  total characters to translate: 21120\n  cache now covers SYN_EN: 81 ids, TITLE_EN: 576 ids"
     },
     {
       "step": "inline posters",
@@ -73,15 +73,15 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "  film_info img: added 30 fallback poster(s) to POSTERS\n  TMDBART: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 104 films (103 with posters), POSTERS: 49 entries (19 og:image + 30 film_info-img fallbacks), SHOWART: 467 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 0 ids, TITLE_EN: 0 ids (auto-translated)"
+      "tail": "  fi-img dropped 'alehandro-hodorovski-sveshtenata-planina-1973': no film, show or event in the catalogue has this id\n  film_info img: added 3 fallback poster(s) to POSTERS\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 138 films (136 with posters), POSTERS: 38 entries (35 og:image + 3 film_info-img fallbacks), SHOWART: 481 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 81 ids, TITLE_EN: 576 ids (auto-translated)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 11.5,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (964,856 bytes)\n  all checks passed — safe to publish"
+      "seconds": 6.8,
+      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (1,056,091 bytes)\n  all checks passed — safe to publish"
     }
   ],
   "official": {
@@ -94,14 +94,12 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 381,
-      "written_screenings": 420,
+      "screenings": 370,
+      "written_screenings": 409,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 39,
       "discarded_aggregator": 0,
-      "minted": [
-        "tayniyat-svyat-na-arieti"
-      ],
+      "minted": [],
       "error": null
     },
     "cc-paradise": {
@@ -113,8 +111,8 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 435,
-      "written_screenings": 466,
+      "screenings": 422,
+      "written_screenings": 453,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 31,
       "discarded_aggregator": 0,
@@ -130,11 +128,11 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 345,
-      "written_screenings": 349,
+      "screenings": 343,
+      "written_screenings": 362,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 4,
-      "discarded_aggregator": 0,
+      "prelim_screenings": 19,
+      "discarded_aggregator": 4,
       "minted": [],
       "error": null
     },
@@ -147,11 +145,11 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 345,
-      "written_screenings": 372,
+      "screenings": 343,
+      "written_screenings": 370,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 27,
-      "discarded_aggregator": 0,
+      "discarded_aggregator": 4,
       "minted": [],
       "error": null
     },
@@ -164,11 +162,11 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 359,
-      "written_screenings": 362,
+      "screenings": 351,
+      "written_screenings": 354,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 3,
-      "discarded_aggregator": 0,
+      "discarded_aggregator": 12,
       "minted": [],
       "error": null
     },
@@ -181,11 +179,11 @@
         "2026-10-15"
       ],
       "days": 7,
-      "screenings": 206,
-      "written_screenings": 217,
+      "screenings": 202,
+      "written_screenings": 213,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 11,
-      "discarded_aggregator": 0,
+      "discarded_aggregator": 9,
       "minted": [],
       "error": null
     },
@@ -233,7 +231,7 @@
       "written_screenings": 31,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
-      "discarded_aggregator": 0,
+      "discarded_aggregator": 1,
       "minted": [],
       "error": null
     },
@@ -243,18 +241,15 @@
       "source": "domnakinoto.com day programme",
       "covered": [
         "2026-10-09",
-        "2026-10-19"
+        "2026-10-21"
       ],
-      "days": 11,
-      "screenings": 39,
-      "written_screenings": 90,
-      "prelim_from": "2026-10-20",
-      "prelim_screenings": 51,
-      "discarded_aggregator": 0,
-      "minted": [
-        "krastnitsite-ot-tokio",
-        "parvi-kontakt"
-      ],
+      "days": 13,
+      "screenings": 44,
+      "written_screenings": 92,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 48,
+      "discarded_aggregator": 1,
+      "minted": [],
       "error": null
     },
     "g8": {
@@ -270,7 +265,7 @@
       "written_screenings": 116,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
-      "discarded_aggregator": 0,
+      "discarded_aggregator": 8,
       "minted": [],
       "error": null
     },
@@ -335,11 +330,28 @@
       ],
       "days": 12,
       "screenings": 15,
-      "written_screenings": 30,
+      "written_screenings": 74,
       "prelim_from": "2026-10-22",
-      "prelim_screenings": 14,
+      "prelim_screenings": 58,
       "discarded_aggregator": 2,
-      "minted": [],
+      "minted": [
+        "bremenskite-muzikanti-2",
+        "buratino",
+        "cherveno",
+        "dnevnikat-na-edin-lud-10-godini-ot-premierata",
+        "edna-istoriya-s-dve-mishki",
+        "gospodin-nosht",
+        "iva-e-onlayn",
+        "izdishvane",
+        "kotarakat-v-chizmi",
+        "nos",
+        "poslednata-nosht-na-sokrat-60-godini-teatar-199",
+        "shinel",
+        "teatar-lyubov-moya-10-godini-na-stsena",
+        "tigar-i-drakon",
+        "vecheren-akt",
+        "veresii"
+      ],
       "error": null
     },
     "sfumato": {
@@ -412,20 +424,17 @@
     },
     "mladezhki": {
       "kind": "theatre",
-      "status": "official",
-      "source": "mlt.bg/programa.php (month pages)",
-      "covered": [
-        "2026-10-09",
-        "2026-11-29"
-      ],
-      "days": 52,
-      "screenings": 110,
+      "status": "unreachable",
+      "source": "previous run kept — official source failed",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
       "written_screenings": 110,
       "prelim_from": "2026-11-30",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
-      "error": null
+      "error": "unreachable: https://mlt.bg/programa.php?year=2026&month=10"
     },
     "kuklen": {
       "kind": "theatre",

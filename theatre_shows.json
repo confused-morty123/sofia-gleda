@@ -4444,5 +4444,293 @@
   "synBg": "",
   "synEn": "",
   "source": "iam"
+ },
+ "vecheren-akt": {
+  "id": "vecheren-akt",
+  "title": "ВЕЧЕРЕН АКТ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "poslednata-nosht-na-sokrat-60-godini-teatar-199": {
+  "id": "poslednata-nosht-na-sokrat-60-godini-teatar-199",
+  "title": "ПОСЛЕДНАТА НОЩ НА СОКРАТ | 60 ГОДИНИ ТЕАТЪР 199",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "gospodin-nosht": {
+  "id": "gospodin-nosht",
+  "title": "ГОСПОДИН НОЩ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "veresii": {
+  "id": "veresii",
+  "title": "ВЕРЕСИИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "dnevnikat-na-edin-lud-10-godini-ot-premierata": {
+  "id": "dnevnikat-na-edin-lud-10-godini-ot-premierata",
+  "title": "ДНЕВНИКЪТ НА ЕДИН ЛУД | 10 ГОДИНИ ОТ ПРЕМИЕРАТА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "shinel": {
+  "id": "shinel",
+  "title": "ШИНЕЛ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "izdishvane": {
+  "id": "izdishvane",
+  "title": "ИЗДИШВАНЕ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "teatar-lyubov-moya-10-godini-na-stsena": {
+  "id": "teatar-lyubov-moya-10-godini-na-stsena",
+  "title": "ТЕАТЪР, ЛЮБОВ МОЯ! | 10 ГОДИНИ НА СЦЕНА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "bremenskite-muzikanti-2": {
+  "id": "bremenskite-muzikanti-2",
+  "title": "БРЕМЕНСКИТЕ МУЗИКАНТИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "tigar-i-drakon": {
+  "id": "tigar-i-drakon",
+  "title": "ТИГЪР И ДРАКОН",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "buratino": {
+  "id": "buratino",
+  "title": "БУРАТИНО",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "kotarakat-v-chizmi": {
+  "id": "kotarakat-v-chizmi",
+  "title": "КОТАРАКЪТ В ЧИЗМИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "iva-e-onlayn": {
+  "id": "iva-e-onlayn",
+  "title": "ИВА Е ОНЛАЙН",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "edna-istoriya-s-dve-mishki": {
+  "id": "edna-istoriya-s-dve-mishki",
+  "title": "ЕДНА ИСТОРИЯ С ДВЕ МИШКИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "nos": {
+  "id": "nos",
+  "title": "НОС",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "cherveno": {
+  "id": "cherveno",
+  "title": "ЧЕРВЕНО",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
  }
 }
