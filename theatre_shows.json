@@ -3565,7 +3565,7 @@
  },
  "feyata-ot-zaharnitsata": {
   "id": "feyata-ot-zaharnitsata",
-  "title": "ФЕЯТА ОТ ЗАХАРНИЦАТА",
+  "title": "Феята от захарницата",
   "titleEn": "",
   "theatre": "salzaismyah",
   "author": "",
@@ -4102,5 +4102,347 @@
   "synBg": "",
   "synEn": "",
   "source": "atelie313"
+ },
+ "5sola": {
+  "id": "5sola",
+  "title": "5Сола",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "a-never-ending-story": {
+  "id": "a-never-ending-story",
+  "title": "A NEVER ENDING STORY",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "de-profundis-po-oskar-uayld": {
+  "id": "de-profundis-po-oskar-uayld",
+  "title": "DE PROFUNDIS по Оскар Уайлд",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "eraserhead-xiu-xiu-liminal-tetza": {
+  "id": "eraserhead-xiu-xiu-liminal-tetza",
+  "title": "ERASERHEAD XIU XIU Liminal/Tetza",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "takuya-kuroda-a-to-jazz-concerts": {
+  "id": "takuya-kuroda-a-to-jazz-concerts",
+  "title": "Takuya Kuroda | A to jazz concerts",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "the-zipper-of-this-fckng-world-a-very-bad-cabaret": {
+  "id": "the-zipper-of-this-fckng-world-a-very-bad-cabaret",
+  "title": "The Zipper of This FCKNG World: a very bad cabaret",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "raw-confessional-poetry": {
+  "id": "raw-confessional-poetry",
+  "title": "raw confessional poetry",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "anna-nepopravimata": {
+  "id": "anna-nepopravimata",
+  "title": "АННА - НЕПОПРАВИМАТА",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "az-se-kazvah": {
+  "id": "az-se-kazvah",
+  "title": "Аз се казвах",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "vzeto-ot-internet-ili-kratko-rakovodstvo-za-upotrebata-na-ta": {
+  "id": "vzeto-ot-internet-ili-kratko-rakovodstvo-za-upotrebata-na-ta",
+  "title": "Взето от интернет или кратко ръководство за употребата на танца",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "izprobvano-varhu-hora": {
+  "id": "izprobvano-varhu-hora",
+  "title": "Изпробвано върху хора",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kosmosat-na-chudesata": {
+  "id": "kosmosat-na-chudesata",
+  "title": "Космосът на чудесата",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kasometrazhen-konkurs-sinelibri-2026": {
+  "id": "kasometrazhen-konkurs-sinelibri-2026",
+  "title": "Късометражен конкурс|Синелибри 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "prazna-e-stayata-na-udovolstvieto": {
+  "id": "prazna-e-stayata-na-udovolstvieto",
+  "title": "Празна е стаята на удоволствието",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "pticha-zemya": {
+  "id": "pticha-zemya",
+  "title": "Птича земя",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "sazvezdiya-2": {
+  "id": "sazvezdiya-2",
+  "title": "Съзвездия",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "shvedskoto-torpedo-the-swedish-torpedo-sinelibri-2026": {
+  "id": "shvedskoto-torpedo-the-swedish-torpedo-sinelibri-2026",
+  "title": "ШВЕДСКОТО ТОРПЕДО / THE SWEDISH TORPEDO|Синелибри 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "yuli-juli-sinelibri-2026": {
+  "id": "yuli-juli-sinelibri-2026",
+  "title": "ЮЛИ / JULI |Синелибри 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "az-mayakovski": {
+  "id": "az-mayakovski",
+  "title": "Аз, Маяковски",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
  }
 }

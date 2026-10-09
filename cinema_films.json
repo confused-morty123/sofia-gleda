@@ -923,5 +923,551 @@
   ],
   "source": "dom-kino",
   "runtime": 100
+ },
+ "godzilla-minus-zero": {
+  "id": "godzilla-minus-zero",
+  "bg": "Godzilla Minus Zero",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Фантастика"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 136,
+  "year": 2026
+ },
+ "rammstein-live-in-mexico-city": {
+  "id": "rammstein-live-in-mexico-city",
+  "bg": "Rammstein - Live in Mexico City",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 110,
+  "year": 2026
+ },
+ "ozzy-black-sabbath-back-to-the-beginning": {
+  "id": "ozzy-black-sabbath-back-to-the-beginning",
+  "bg": "Ozzy & Black Sabbath: Back To The Beginning",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 147,
+  "year": 2026
+ },
+ "royal-ballet-manon": {
+  "id": "royal-ballet-manon",
+  "bg": "Royal Ballet: Манон",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "arena-mega"
+ },
+ "bts-world-tour-arirang-in-buenos-aires-live-viewing": {
+  "id": "bts-world-tour-arirang-in-buenos-aires-live-viewing",
+  "bg": "BTS WORLD TOUR 'ARIRANG' IN BUENOS AIRES: LIVE VIEWING",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 195,
+  "year": 2026
+ },
+ "sinelibri-chernoto-topche": {
+  "id": "sinelibri-chernoto-topche",
+  "bg": "Синелибри: Черното топче",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Романтика",
+   "Приключенски"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 154,
+  "year": 2026
+ },
+ "sinelibri-svatba-s-vkus-na-portokal": {
+  "id": "sinelibri-svatba-s-vkus-na-portokal",
+  "bg": "Синелибри: Сватба с вкус на портокал",
+  "en": "",
+  "genres": [
+   "Комедия",
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 115,
+  "year": 2026
+ },
+ "sinelibri-kletnitsite": {
+  "id": "sinelibri-kletnitsite",
+  "bg": "Синелибри: Клетниците",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Исторически"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 182,
+  "year": 2026
+ },
+ "sinelibri-voda-za-tsvetyata": {
+  "id": "sinelibri-voda-za-tsvetyata",
+  "bg": "Синелибри: Вода за цветята",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 138,
+  "year": 2026
+ },
+ "bts-world-tour-arirang-in-sao-paulo-live-viewing": {
+  "id": "bts-world-tour-arirang-in-sao-paulo-live-viewing",
+  "bg": "BTS WORLD TOUR 'ARIRANG' IN SAO PAULO: LIVE VIEWING",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 195,
+  "year": 2026
+ },
+ "sinelibri-istoriite-na-noshtta": {
+  "id": "sinelibri-istoriite-na-noshtta",
+  "bg": "Синелибри: Историите на нощта",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Трилър"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 114,
+  "year": 2026
+ },
+ "league-of-legends-worlds-26-finals-in-cinema": {
+  "id": "league-of-legends-worlds-26-finals-in-cinema",
+  "bg": "League of Legends Worlds 26 | Finals in Cinema",
+  "en": "",
+  "genres": [
+   "Спорт"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "year": 2026
+ },
+ "hybe-cine-fest-2026-tomorrow-x-together-world-tour-act-tomor": {
+  "id": "hybe-cine-fest-2026-tomorrow-x-together-world-tour-act-tomor",
+  "bg": "HYBE CINE FEST 2026: TOMORROW X TOGETHER WORLD TOUR 'ACT : TOMORROW'",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 100,
+  "year": 2026
+ },
+ "hybe-cine-fest-2026-seventeen-world-tour-new": {
+  "id": "hybe-cine-fest-2026-seventeen-world-tour-new",
+  "bg": "HYBE CINE FEST 2026: SEVENTEEN WORLD TOUR 'NEW_'",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 100,
+  "year": 2026
+ },
+ "hybe-cine-fest-2026-hybe-cheering-party": {
+  "id": "hybe-cine-fest-2026-hybe-cheering-party",
+  "bg": "HYBE CINE FEST 2026: HYBE CHEERING PARTY",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 60,
+  "year": 2026
+ },
+ "hybe-cine-fest-2026-enhypen-world-tour-blood-saga": {
+  "id": "hybe-cine-fest-2026-enhypen-world-tour-blood-saga",
+  "bg": "HYBE CINE FEST 2026: ENHYPEN WORLD TOUR 'BLOOD SAGA'",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 100,
+  "year": 2026
+ },
+ "cheburashka": {
+  "id": "cheburashka",
+  "bg": "Чебурашка",
+  "en": "",
+  "genres": [
+   "Анимация",
+   "Комедия"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8",
+  "runtime": 90
+ },
+ "charli-superkucheto": {
+  "id": "charli-superkucheto",
+  "bg": "Чарли Суперкучето",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "g8",
+  "runtime": 80
+ },
+ "obshtestvo-na-martvite-poeti": {
+  "id": "obshtestvo-na-martvite-poeti",
+  "bg": "Общество на мъртвите поети",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 124
+ },
+ "sinelibri-2026-nay-dalechnata-granitsa": {
+  "id": "sinelibri-2026-nay-dalechnata-granitsa",
+  "bg": "Синелибри 2026: НАЙ-ДАЛЕЧНАТА ГРАНИЦА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 127
+ },
+ "milen": {
+  "id": "milen",
+  "bg": "Милен",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "odeon"
+ },
+ "sinelibri-2026-kokuho-zhivo-sakrovishte": {
+  "id": "sinelibri-2026-kokuho-zhivo-sakrovishte",
+  "bg": "Синелибри 2026: КОКУХО: ЖИВО СЪКРОВИЩЕ",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 175
+ },
+ "sinelibri-2026-kalevala-istoriyata-na-kulervo": {
+  "id": "sinelibri-2026-kalevala-istoriyata-na-kulervo",
+  "bg": "Синелибри 2026: КАЛЕВАЛА: ИСТОРИЯТА НА КУЛЕРВО",
+  "en": "",
+  "genres": [
+   "Приключенски"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 144
+ },
+ "sinelibri-2026-ehoto-mezhdu-nas": {
+  "id": "sinelibri-2026-ehoto-mezhdu-nas",
+  "bg": "Синелибри 2026: ЕХОТО МЕЖДУ НАС",
+  "en": "",
+  "genres": [
+   "Романтика"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 123
+ },
+ "sinelibri-2026-epohata-l-europeo": {
+  "id": "sinelibri-2026-epohata-l-europeo",
+  "bg": "Синелибри 2026: Епохата L'EUROPEO",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 47
+ },
+ "godzila-maraton": {
+  "id": "godzila-maraton",
+  "bg": "Годзила・マイナス Маратон",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Фантастика"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-paradise",
+  "runtime": 276
+ },
+ "sinelibri-2026-vsichki-vlyubeni-v-noshtta": {
+  "id": "sinelibri-2026-vsichki-vlyubeni-v-noshtta",
+  "bg": "Синелибри 2026: ВСИЧКИ ВЛЮБЕНИ В НОЩТА",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 139
+ },
+ "it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Камп Миазма",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 112
+ },
+ "it-s-alive-horar-film-fest-chast-iv-siyanieto": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-siyanieto",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Сиянието",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 144
+ },
+ "it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Плетеният човек",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 88
+ },
+ "it-s-alive-horar-film-fest-chast-iv-petak-69-i": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-petak-69-i",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Петък 69-и",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 93
+ },
+ "it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Опасният остров",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 83
+ },
+ "it-s-alive-horar-film-fest-chast-iv-obicham-parizh": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-obicham-parizh",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Обичам Париж",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 108
+ },
+ "it-s-alive-horar-film-fest-chast-iv-neshtoto": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-neshtoto",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Нещото",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 109
+ },
+ "it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Къде ми е главата?",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 96
+ },
+ "it-s-alive-horar-film-fest-chast-iv-koloniya": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-koloniya",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Колония",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 122
+ },
+ "it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Историята на Бетона",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 101
+ },
+ "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Гневът на боговете",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 94
  }
 }

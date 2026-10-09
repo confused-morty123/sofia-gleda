@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-08T13:32:17+00:00",
+  "ran": "2026-10-09T06:58:04+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,24 +8,24 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 258.1,
-      "tail": "  lumiere: 7 vlink(s)\n  odeon: 19 vlink(s)\n  vlaikova: 16 vlink(s)\nwrote index.html, changes.json, cinema_films.json (75 arthouse films) and theatre_shows.json (228 theatre shows)\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 15 official, 0 kept-previous, 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n0 film(s) and 0 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 1 show(s) retired; 0 + 2 suspected duplicate(s)\nPRELIM_FROM {\"arena-mall\": \"2026-10-16\", \"arena-mega\": \"2026-10-16\", \"artvent\": \"2026-12-15\", \"atelie313\": \"2026-10-08\", \"cc-paradise\": \"2026-10-16\", \"cc-sofia\": \"2026-10-16\", \"cg-park\": \"2026-10-15\", \"cg-ring\": \"2026-10-15\", \"cineland\": \"2026-10-08\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-08\", \"dom-kino\": \"2026-10-16\", \"g8\": \"2026-10-09\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-05\", \"mladezhki\": \"2026-11-30\", \"natfiz\": \"2026-10-08\", \"national\": \"2026-12-15\", \"new-ndk\": \"2026-10-08\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-15\", \"th199\": \"2026-10-20\", \"toplo\": \"2026-10-30\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-21\", \"zad-kanala\": \"2026-12-15\"}"
+      "seconds": 761.8,
+      "tail": "  ! https://programata.bg/kino/kino-saloni/arena-mega-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/arena-mega-mall/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/kino-saloni/sofia/arena-the-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/arena-the-mall/ (Caused by NameResolutionError(\"HTTP…\n  ! https://programata.bg/kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/ (Caused by NameResolut…\n  ! https://programata.bg/kino/kino-saloni/sofia/cine-grand-park-center/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/cine-grand-park-center/ (Caused by NameResolutionErr…\n  ! https://programata.bg/kino/kino-saloni/cineland-bulgaria-mall/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/cineland-bulgaria-mall/ (Caused by NameResolutionError(\"HT…\n  ! https://programata.bg/kino/kino-saloni/sofia/odeon-cinema/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/odeon-cinema/ (Caused by NameResolutionError(\"HTTPSC…\n  ! https://programata.bg/kino/kino-saloni/sofia/g8-cinema/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/g8-cinema/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/kino-saloni/sofia/dom-na-kinoto/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/kino-saloni/sofia/dom-na-kinoto/ (Caused by NameResolutionError(\"HTTPS…"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 9.6,
-      "tail": "film_info coverage:\n  97 films needed details, fetched 11 pages\n  synopsis:  8 new\n  director:  6 new\n  cast:      0 new\n  genres:    8 new\n  img:       0 new poster images harvested\n  103 total entries in film_info.json"
+      "seconds": 839.5,
+      "tail": "  ! https://programata.bg/kino/filmi/animaczionni-filmi-na-stoyan-dukov/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/animaczionni-filmi-na-stoyan-dukov/ (Caused by NameResolutionErr…\n  ! https://programata.bg/kino/filmi/animaczionni-filmi-na-nastimir-czachev-i-vyara-doneva/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/animaczionni-filmi-na-nastimir-czachev-i-vyara-doneva/ (Caused b…\n  ! https://programata.bg/kino/filmi/s-vnimanie-km-detajla/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/s-vnimanie-km-detajla/ (Caused by NameResolutionError(\"HTTPSConn…\n  ! https://programata.bg/kino/filmi/sledovatelyat-i-gorata/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/sledovatelyat-i-gorata/ (Caused by NameResolutionError(\"HTTPSCon…\n  ! https://programata.bg/kino/filmi/hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-chernobil/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-chernobil/…\n  ! https://programata.bg/kino/filmi/kitovete-paziteli-na-planetata/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kitovete-paziteli-na-planetata/ (Caused by NameResolutionError(\"…\n  ! https://programata.bg/kino/filmi/kotki-v-muzeya-2-sakrovisthata-na-egipet/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kotki-v-muzeya-2-sakrovisthata-na-egipet/ (Caused by NameResolut…\n  ! https://programata.bg/kino/filmi/kina-i-yuk-lisitsite-ot-dalechnia-sever/: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /kino/filmi/kina-i-yuk-lisitsite-ot-dalechnia-sever/ (Caused by NameResoluti…"
     },
     {
       "step": "arthouse films",
       "script": "inject_films.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "merged 75 arthouse film(s) (172 total; 75 synthesised)"
+      "seconds": 0.2,
+      "tail": "merged 38 arthouse film(s) (210 total; 113 synthesised)"
     },
     {
       "step": "theatre shows",
@@ -33,14 +33,14 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 228 theatre show(s) into SHOWS (496 total; 228 synthesised)"
+      "tail": "merged 19 theatre show(s) into SHOWS (515 total; 247 synthesised)"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
+      "seconds": 0.2,
       "tail": "TMDB_TOKEN not set — skipping film posters, keeping previous."
     },
     {
@@ -48,8 +48,8 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 329.5,
-      "tail": "=== network report ===\n  host                                 ok  fail  total s  notes\n  programata.bg                       119     0    140.8  \n  theatre.art.bg                       49     0     56.2  \n\nnew this run: 110   rejected by policy: 4   total: 450/496 shows with art\nre-hosted 450/450 posters under posters/\nwrote theatre_posters.json"
+      "seconds": 571.0,
+      "tail": "  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9A%D0%BE%D1%81%D0%BC%D0%BE%D1%81%D1%8A%D1%82%20%D0%BD%D0%B0%20%D1%87%D1%83%D0%B4%D0%B5%D1%81%D0%B0%D1%82%D0%B0&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9A%D0%BE%D1%81%D0%BC%D0%BE%D1%81%D1%8A%D1%82…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9A%D1%8A%D1%81%D0%BE%D0%BC%D0%B5%D1%82%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%20%D0%BA%D0%BE%D0%BD%D0%BA%D1%83%D1%80%D1%81%7C%D0%A1%D0%B8%D0%BD%D0%B5%D0%BB%D0%B8%D0%B1%D1%80%D0%B8%202026&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9A%D1%8A%D1%81%D0%BE%D0%BC%D0%B5%D1%82%D1%80…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9F%D1%80%D0%B0%D0%B7%D0%BD%D0%B0%20%D0%B5%20%D1%81%D1%82%D0%B0%D1%8F%D1%82%D0%B0%20%D0%BD%D0%B0%20%D1%83%D0%B4%D0%BE%D0%B2%D0%BE%D0%BB%D1%81%D1%82%D0%B2%D0%B8%D0%B5%D1%82%D0%BE&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9F%D1%80%D0%B0%D0%B7%D0%BD%D0%B0%20%D0%B5%20…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%9F%D1%82%D0%B8%D1%87%D0%B0%20%D0%B7%D0%B5%D0%BC%D1%8F&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%9F%D1%82%D0%B8%D1%87%D0%B0%20%D0%B7%D0%B5%D0…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A1%D1%8A%D0%B7%D0%B2%D0%B5%D0%B7%D0%B4%D0%B8%D1%8F&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A1%D1%8A%D0%B7%D0%B2%D0%B5%D0%B7%D0%B4%D0%B8…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%A8%D0%92%D0%95%D0%94%D0%A1%D0%9A%D0%9E%D0%A2%D0%9E%20%D0%A2%D0%9E%D0%A0%D0%9F%D0%95%D0%94%D0%9E%20/%20THE%20SWEDISH%20TORPEDO%7C%D0%A1%D0%B8%D0%BD%D0%B5%D0%BB%D0%B8%D0%B1%D1%80%D0%B8%202026&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%A8%D0%92%D0%95%D0%94%D0%A1%D0%9A%D0%9E%D0%A2…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%AE%D0%9B%D0%98%20/%20JULI%20%7C%D0%A1%D0%B8%D0%BD%D0%B5%D0%BB%D0%B8%D0%B1%D1%80%D0%B8%202026&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%AE%D0%9B%D0%98%20/%20JULI%20%7C%D0%A1%D0%B8%…\n  ! https://programata.bg/wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE%D0%B2%D1%81%D0%BA%D0%B8&per_page=5&_fields=id,link,title,featured_media: HTTPSConnectionPool(host='programata.bg', port=443): Max retries exceeded with url: /wp-json/wp/v2/posts?search=%D0%90%D0%B7%2C%20%D0%9C%D0%B0%D1%8F%D0%BA%D0%BE…"
     },
     {
       "step": "translations",
@@ -65,15 +65,15 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "  film_info img: added 4 fallback poster(s) to POSTERS\n  TMDBART: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 104 films (103 with posters), POSTERS: 23 entries (19 og:image + 4 film_info-img fallbacks), SHOWART: 450 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 0 ids, TITLE_EN: 0 ids (auto-translated)"
+      "tail": "  film_info img: added 4 fallback poster(s) to POSTERS\n  TMDBART: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 104 films (103 with posters), POSTERS: 23 entries (19 og:image + 4 film_info-img fallbacks), SHOWART: 467 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 0 ids, TITLE_EN: 0 ids (auto-translated)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 9.8,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (923,181 bytes)\n  all checks passed — safe to publish"
+      "seconds": 12.1,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp/index.html (953,225 bytes)\n  all checks passed — safe to publish"
     }
   ],
   "official": {
@@ -82,16 +82,32 @@
       "status": "official",
       "source": "cinemacity.bg quickbook API",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-15"
       ],
-      "days": 8,
-      "screenings": 423,
-      "written_screenings": 427,
+      "days": 7,
+      "screenings": 387,
+      "written_screenings": 422,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 4,
-      "discarded_aggregator": 17,
-      "minted": [],
+      "prelim_screenings": 35,
+      "discarded_aggregator": 0,
+      "minted": [
+        "bts-world-tour-arirang-in-buenos-aires-live-viewing",
+        "bts-world-tour-arirang-in-sao-paulo-live-viewing",
+        "godzilla-minus-zero",
+        "hybe-cine-fest-2026-enhypen-world-tour-blood-saga",
+        "hybe-cine-fest-2026-hybe-cheering-party",
+        "hybe-cine-fest-2026-seventeen-world-tour-new",
+        "hybe-cine-fest-2026-tomorrow-x-together-world-tour-act-tomor",
+        "league-of-legends-worlds-26-finals-in-cinema",
+        "ozzy-black-sabbath-back-to-the-beginning",
+        "rammstein-live-in-mexico-city",
+        "sinelibri-chernoto-topche",
+        "sinelibri-istoriite-na-noshtta",
+        "sinelibri-kletnitsite",
+        "sinelibri-svatba-s-vkus-na-portokal",
+        "sinelibri-voda-za-tsvetyata"
+      ],
       "error": null
     },
     "cc-paradise": {
@@ -99,16 +115,18 @@
       "status": "official",
       "source": "cinemacity.bg quickbook API",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-15"
       ],
-      "days": 8,
-      "screenings": 476,
-      "written_screenings": 480,
+      "days": 7,
+      "screenings": 439,
+      "written_screenings": 470,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 4,
-      "discarded_aggregator": 21,
-      "minted": [],
+      "prelim_screenings": 31,
+      "discarded_aggregator": 0,
+      "minted": [
+        "godzila-maraton"
+      ],
       "error": null
     },
     "arena-mega": {
@@ -116,16 +134,18 @@
       "status": "official",
       "source": "kinoarena.com programme pages",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-15"
       ],
-      "days": 8,
-      "screenings": 387,
-      "written_screenings": 387,
+      "days": 7,
+      "screenings": 347,
+      "written_screenings": 351,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 0,
-      "discarded_aggregator": 4,
-      "minted": [],
+      "prelim_screenings": 4,
+      "discarded_aggregator": 0,
+      "minted": [
+        "royal-ballet-manon"
+      ],
       "error": null
     },
     "arena-mall": {
@@ -133,15 +153,15 @@
       "status": "official",
       "source": "kinoarena.com programme pages",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-15"
       ],
-      "days": 8,
-      "screenings": 387,
-      "written_screenings": 387,
+      "days": 7,
+      "screenings": 347,
+      "written_screenings": 359,
       "prelim_from": "2026-10-16",
-      "prelim_screenings": 0,
-      "discarded_aggregator": 4,
+      "prelim_screenings": 12,
+      "discarded_aggregator": 0,
       "minted": [],
       "error": null
     },
@@ -150,15 +170,15 @@
       "status": "official",
       "source": "cinegrand.bg schedule pages",
       "covered": [
-        "2026-10-08",
-        "2026-10-14"
+        "2026-10-09",
+        "2026-10-15"
       ],
       "days": 7,
-      "screenings": 345,
-      "written_screenings": 345,
-      "prelim_from": "2026-10-15",
+      "screenings": 369,
+      "written_screenings": 369,
+      "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
-      "discarded_aggregator": 20,
+      "discarded_aggregator": 0,
       "minted": [],
       "error": null
     },
@@ -167,15 +187,15 @@
       "status": "official",
       "source": "cinegrand.bg schedule pages",
       "covered": [
-        "2026-10-08",
-        "2026-10-14"
+        "2026-10-09",
+        "2026-10-15"
       ],
       "days": 7,
-      "screenings": 200,
-      "written_screenings": 200,
-      "prelim_from": "2026-10-15",
+      "screenings": 213,
+      "written_screenings": 213,
+      "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
-      "discarded_aggregator": 11,
+      "discarded_aggregator": 0,
       "minted": [],
       "error": null
     },
@@ -186,9 +206,9 @@
       "covered": null,
       "days": 0,
       "screenings": 0,
-      "written_screenings": 35,
-      "prelim_from": "2026-10-08",
-      "prelim_screenings": 35,
+      "written_screenings": 0,
+      "prelim_from": "2026-10-09",
+      "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -198,13 +218,13 @@
       "status": "official",
       "source": "vlaikovacinema.com weekly grid",
       "covered": [
-        "2026-10-08",
-        "2026-10-20"
+        "2026-10-09",
+        "2026-10-21"
       ],
       "days": 13,
-      "screenings": 36,
-      "written_screenings": 36,
-      "prelim_from": "2026-10-21",
+      "screenings": 33,
+      "written_screenings": 33,
+      "prelim_from": "2026-10-22",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -213,18 +233,20 @@
     "odeon": {
       "kind": null,
       "status": "official",
-      "source": "bnf.bg Одеон programme (915, 916)",
+      "source": "bnf.bg Одеон programme (916)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-15"
       ],
-      "days": 8,
-      "screenings": 35,
-      "written_screenings": 35,
+      "days": 7,
+      "screenings": 31,
+      "written_screenings": 31,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [],
+      "minted": [
+        "milen"
+      ],
       "error": null
     },
     "dom-kino": {
@@ -232,16 +254,35 @@
       "status": "official",
       "source": "domnakinoto.com day programme",
       "covered": [
-        "2026-10-08",
-        "2026-10-15"
+        "2026-10-09",
+        "2026-10-19"
       ],
-      "days": 8,
-      "screenings": 31,
-      "written_screenings": 56,
-      "prelim_from": "2026-10-16",
-      "prelim_screenings": 25,
-      "discarded_aggregator": 1,
-      "minted": [],
+      "days": 11,
+      "screenings": 39,
+      "written_screenings": 76,
+      "prelim_from": "2026-10-20",
+      "prelim_screenings": 37,
+      "discarded_aggregator": 0,
+      "minted": [
+        "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete",
+        "it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona",
+        "it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata",
+        "it-s-alive-horar-film-fest-chast-iv-koloniya",
+        "it-s-alive-horar-film-fest-chast-iv-neshtoto",
+        "it-s-alive-horar-film-fest-chast-iv-obicham-parizh",
+        "it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov",
+        "it-s-alive-horar-film-fest-chast-iv-petak-69-i",
+        "it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek",
+        "it-s-alive-horar-film-fest-chast-iv-siyanieto",
+        "it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp",
+        "obshtestvo-na-martvite-poeti",
+        "sinelibri-2026-ehoto-mezhdu-nas",
+        "sinelibri-2026-epohata-l-europeo",
+        "sinelibri-2026-kalevala-istoriyata-na-kulervo",
+        "sinelibri-2026-kokuho-zhivo-sakrovishte",
+        "sinelibri-2026-nay-dalechnata-granitsa",
+        "sinelibri-2026-vsichki-vlyubeni-v-noshtta"
+      ],
       "error": null
     },
     "g8": {
@@ -249,16 +290,19 @@
       "status": "official",
       "source": "g8cinema.com weekly programme",
       "covered": [
-        "2026-10-08",
-        "2026-10-08"
+        "2026-10-09",
+        "2026-10-15"
       ],
-      "days": 1,
-      "screenings": 15,
-      "written_screenings": 127,
-      "prelim_from": "2026-10-09",
-      "prelim_screenings": 112,
+      "days": 7,
+      "screenings": 116,
+      "written_screenings": 116,
+      "prelim_from": "2026-10-16",
+      "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [],
+      "minted": [
+        "charli-superkucheto",
+        "cheburashka"
+      ],
       "error": null
     },
     "lumiere": {
@@ -266,10 +310,10 @@
       "status": "official",
       "source": "ndk.bg programme + KinoCult (Sanity) API",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-12-04"
       ],
-      "days": 58,
+      "days": 57,
       "screenings": 7,
       "written_screenings": 7,
       "prelim_from": "2026-12-05",
@@ -283,12 +327,12 @@
       "status": "official",
       "source": "nationaltheatre.bg/bg/programa (month pages)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-12-14"
       ],
-      "days": 68,
-      "screenings": 146,
-      "written_screenings": 146,
+      "days": 67,
+      "screenings": 144,
+      "written_screenings": 144,
       "prelim_from": "2026-12-15",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -300,14 +344,14 @@
       "status": "official",
       "source": "sofiatheatre.eu/program (month pages)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-11-29"
       ],
-      "days": 53,
-      "screenings": 23,
-      "written_screenings": 24,
+      "days": 52,
+      "screenings": 22,
+      "written_screenings": 22,
       "prelim_from": "2026-11-30",
-      "prelim_screenings": 1,
+      "prelim_screenings": 0,
       "discarded_aggregator": 6,
       "minted": [],
       "error": null
@@ -317,14 +361,14 @@
       "status": "official",
       "source": "theatre199.org/bg/schedule (GET window)",
       "covered": [
-        "2026-10-09",
-        "2026-10-19"
+        "2026-10-10",
+        "2026-10-21"
       ],
-      "days": 11,
-      "screenings": 14,
-      "written_screenings": 32,
-      "prelim_from": "2026-10-20",
-      "prelim_screenings": 17,
+      "days": 12,
+      "screenings": 15,
+      "written_screenings": 30,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 14,
       "discarded_aggregator": 2,
       "minted": [],
       "error": null
@@ -334,14 +378,14 @@
       "status": "official",
       "source": "sfumato.info (own programme, HTTP only)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-11-30"
       ],
-      "days": 54,
-      "screenings": 41,
-      "written_screenings": 42,
+      "days": 53,
+      "screenings": 40,
+      "written_screenings": 40,
       "prelim_from": "2026-12-01",
-      "prelim_screenings": 1,
+      "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -351,15 +395,15 @@
       "status": "official",
       "source": "tba.art.bg/programabg.php + tickets.tba.bg public list",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-12-14"
       ],
-      "days": 68,
-      "screenings": 119,
-      "written_screenings": 119,
+      "days": 67,
+      "screenings": 117,
+      "written_screenings": 117,
       "prelim_from": "2026-12-15",
       "prelim_screenings": 0,
-      "discarded_aggregator": 2,
+      "discarded_aggregator": 0,
       "minted": [],
       "error": null
     },
@@ -368,15 +412,15 @@
       "status": "official",
       "source": "zadkanala.bg/programa/YYYY-MM",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-12-14"
       ],
-      "days": 68,
-      "screenings": 65,
-      "written_screenings": 65,
+      "days": 67,
+      "screenings": 64,
+      "written_screenings": 64,
       "prelim_from": "2026-12-15",
       "prelim_screenings": 0,
-      "discarded_aggregator": 2,
+      "discarded_aggregator": 1,
       "minted": [],
       "error": null
     },
@@ -385,12 +429,12 @@
       "status": "official",
       "source": "theatrevazrajdane.bg/programa/",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-11-29"
       ],
-      "days": 53,
-      "screenings": 65,
-      "written_screenings": 71,
+      "days": 52,
+      "screenings": 64,
+      "written_screenings": 70,
       "prelim_from": "2026-11-30",
       "prelim_screenings": 6,
       "discarded_aggregator": 0,
@@ -402,14 +446,14 @@
       "status": "official",
       "source": "mlt.bg/programa.php (month pages)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-11-29"
       ],
-      "days": 53,
-      "screenings": 111,
-      "written_screenings": 112,
+      "days": 52,
+      "screenings": 110,
+      "written_screenings": 110,
       "prelim_from": "2026-11-30",
-      "prelim_screenings": 1,
+      "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -419,14 +463,14 @@
       "status": "official",
       "source": "sofiapuppet.com/programa.php (month pages)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-11-29"
       ],
-      "days": 53,
-      "screenings": 58,
-      "written_screenings": 59,
+      "days": 52,
+      "screenings": 57,
+      "written_screenings": 57,
       "prelim_from": "2026-11-30",
-      "prelim_screenings": 1,
+      "prelim_screenings": 0,
       "discarded_aggregator": 3,
       "minted": [],
       "error": null
@@ -434,18 +478,37 @@
     "toplo": {
       "kind": "theatre",
       "status": "official",
-      "source": "toplocentrala.bg/program/performance (schema.org)",
+      "source": "toplocentrala.bg/program/performance (+ /YYYY/MM month pages, schema.org)",
       "covered": [
-        "2026-10-08",
-        "2026-10-29"
+        "2026-10-09",
+        "2026-11-29"
       ],
-      "days": 22,
-      "screenings": 36,
-      "written_screenings": 36,
-      "prelim_from": "2026-10-30",
-      "prelim_screenings": 0,
+      "days": 52,
+      "screenings": 60,
+      "written_screenings": 68,
+      "prelim_from": "2026-11-30",
+      "prelim_screenings": 8,
       "discarded_aggregator": 0,
-      "minted": [],
+      "minted": [
+        "5sola",
+        "a-never-ending-story",
+        "anna-nepopravimata",
+        "az-se-kazvah",
+        "de-profundis-po-oskar-uayld",
+        "eraserhead-xiu-xiu-liminal-tetza",
+        "izprobvano-varhu-hora",
+        "kasometrazhen-konkurs-sinelibri-2026",
+        "kosmosat-na-chudesata",
+        "prazna-e-stayata-na-udovolstvieto",
+        "pticha-zemya",
+        "raw-confessional-poetry",
+        "sazvezdiya-2",
+        "shvedskoto-torpedo-the-swedish-torpedo-sinelibri-2026",
+        "takuya-kuroda-a-to-jazz-concerts",
+        "the-zipper-of-this-fckng-world-a-very-bad-cabaret",
+        "vzeto-ot-internet-ili-kratko-rakovodstvo-za-upotrebata-na-ta",
+        "yuli-juli-sinelibri-2026"
+      ],
       "error": null
     },
     "citymark": {
@@ -453,10 +516,10 @@
       "status": "official",
       "source": "theatre.art.bg (official channel)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-31"
       ],
-      "days": 24,
+      "days": 23,
       "screenings": 7,
       "written_screenings": 7,
       "prelim_from": "2026-11-01",
@@ -470,12 +533,12 @@
       "status": "official",
       "source": "satirata.bg/program (__NEXT_DATA__)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-11-29"
       ],
-      "days": 53,
-      "screenings": 106,
-      "written_screenings": 106,
+      "days": 52,
+      "screenings": 104,
+      "written_screenings": 104,
       "prelim_from": "2026-11-30",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -490,7 +553,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 0,
-      "prelim_from": "2026-10-08",
+      "prelim_from": "2026-10-09",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -504,7 +567,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 0,
-      "prelim_from": "2026-10-08",
+      "prelim_from": "2026-10-09",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -518,7 +581,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 1,
-      "prelim_from": "2026-10-08",
+      "prelim_from": "2026-10-09",
       "prelim_screenings": 1,
       "discarded_aggregator": 0,
       "minted": [],
@@ -529,16 +592,18 @@
       "status": "official",
       "source": "iamstudio.bg/programa/",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-10-27"
       ],
-      "days": 20,
-      "screenings": 8,
-      "written_screenings": 8,
+      "days": 19,
+      "screenings": 9,
+      "written_screenings": 9,
       "prelim_from": "2026-10-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [],
+      "minted": [
+        "az-mayakovski"
+      ],
       "error": null
     },
     "atelie313": {
@@ -549,7 +614,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 21,
-      "prelim_from": "2026-10-08",
+      "prelim_from": "2026-10-09",
       "prelim_screenings": 21,
       "discarded_aggregator": 0,
       "minted": [],
@@ -560,10 +625,10 @@
       "status": "official",
       "source": "artvent.bg per-show pages (София, Театър ARTVENT only)",
       "covered": [
-        "2026-10-08",
+        "2026-10-09",
         "2026-12-14"
       ],
-      "days": 68,
+      "days": 67,
       "screenings": 40,
       "written_screenings": 40,
       "prelim_from": "2026-12-15",
@@ -577,14 +642,14 @@
       "status": "official",
       "source": "salzaismyah.bg/site/calendar (month grid)",
       "covered": [
-        "2026-10-08",
-        "2026-10-31"
+        "2026-10-09",
+        "2026-11-30"
       ],
-      "days": 24,
-      "screenings": 36,
-      "written_screenings": 58,
-      "prelim_from": "2026-11-01",
-      "prelim_screenings": 22,
+      "days": 53,
+      "screenings": 59,
+      "written_screenings": 59,
+      "prelim_from": "2026-12-01",
+      "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
