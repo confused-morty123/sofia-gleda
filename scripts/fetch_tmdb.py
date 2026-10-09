@@ -12,6 +12,11 @@ If a run matches nothing (e.g. TMDB unreachable) and a previous tmdb_films.json
 exists, the previous file is kept — a bad run never empties the posters.
 """
 import json, os, re, time, urllib.parse, urllib.request, ssl, sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+try:
+    from posterpolicy import DISTRUSTED_HOSTS      # hosts whose images can't be tied to a title
+except ImportError:                                # pragma: no cover
+    DISTRUSTED_HOSTS = set()
 
 try:
     import certifi
@@ -333,6 +338,9 @@ def og_image(url):
                 continue
             if any(b in u.lower() for b in _BAD_IMG):
                 return None
+            host = urllib.parse.urlparse(u).netloc.lower()
+            if any(host == h or host.endswith("." + h) for h in DISTRUSTED_HOSTS):
+                return None     # a ticketing backend's image can't be tied to the title
             return u
     return None
 

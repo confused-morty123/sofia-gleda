@@ -139,6 +139,16 @@ elif CACHE_FILE.exists():
     except Exception as e:
         print(f"  (could not build translation maps from cache: {e})")
 
+# DeepL can leave a name or a quoted Bulgarian title in Cyrillic inside its
+# English; the publish gate rejects any Cyrillic in SYN_EN/TITLE_EN, so every
+# value is served romanised (translate.latinise), whichever branch built the maps.
+try:
+    from translate import latinise as _latinise
+    _syn_en = {k: _latinise(v) for k, v in _syn_en.items() if v}
+    _title_en = {k: _latinise(v) for k, v in _title_en.items() if v}
+except ImportError:
+    pass
+
 # Films TMDB cannot match keep their own programme-page image (og:image), harvested
 # into film_links_posters.json. These are full URLs and go into POSTERS, which
 # realPoster() checks first — but fetch_tmdb only writes an entry here for a film
@@ -182,6 +192,20 @@ if Catalogue is not None:
                 alias[_eid] = _film
     except Exception as e:
         print(f"  (could not compute SHOWALIAS: {e})")
+
+# og:images harvested from the films' own pages (film_links_posters.json) pass the
+# same poster policy the publish gate applies. A ticketing backend's image
+# (softwareforcinema.com) or an opaque CDN file is dropped here and logged, and the
+# film may still take its film_info img below. Before, one such image failed the
+# gate and blocked the whole refresh (2026-10-09: 27 Синелибри og:images on GitHub).
+for _fid, _url in list(posters_override.items()):
+    _why = reject_reason(_fid, _url, _cat)
+    if _why:
+        del posters_override[_fid]
+        _fi_img_log.append(f"  og:image dropped {_fid!r}: {_why}")
+        _img = (filminfo.get(_fid) or {}).get("img")
+        if _img and _fid not in _tmdb_with_poster:
+            _fi_img_pending[_fid] = _img
 
 # Apply film_info img fallback: check posterpolicy and merge into POSTERS.
 # Now that _cat is available we can do the full policy check (including knows()).
