@@ -140,14 +140,6 @@ def published_through(counts, ratio=0.2, ref_days=7):
     return end
 
 
-def week_end_at_or_before(iso, today, weekday=3):
-    """The programme week runs Friday–Thursday (weekday 3 = Thursday). Trim a
-    coverage end back to the last week end, but never before today."""
-    d = _d(iso)
-    while d.weekday() != weekday:
-        d -= dt.timedelta(days=1)
-    return _iso(d) if _iso(d) >= today else iso
-
 
 def _soup(html):
     return BeautifulSoup(html, "lxml")
@@ -198,10 +190,20 @@ def parse_cinemacity_day(payload, date, cinema=None):
     return rows
 
 
-def fetch_cinemacity(session, venue, today, last_day, max_days=21):
+# Days without a screening after which a per-day source is taken to have
+# nothing more published (pre-sales and festival screenings sit weeks ahead
+# with gaps between them, so a couple of empty days prove nothing).
+EMPTY_STOP = 14
+
+
+def fetch_cinemacity(session, venue, today, last_day, empty_stop=EMPTY_STOP):
+    """Every day from today to the window end (or until `empty_stop` days in a
+    row are empty): the main published week AND the advance sales beyond it.
+    Coverage (published_through) is the normal programme only; the advance-sale
+    rows after it are official too, and the merge shows them as preliminary."""
     cinema = CC_CINEMAS[venue]
-    counts, rows, zeros = [], [], 0
-    for i in range(max_days):
+    counts, rows, zeros, i = [], [], 0, 0
+    while True:
         d = _next(today, i)
         if d > last_day:
             break
@@ -215,8 +217,9 @@ def fetch_cinemacity(session, venue, today, last_day, max_days=21):
         counts.append((d, len(day)))
         rows += day
         zeros = zeros + 1 if not day else 0
-        if zeros >= 2 and i >= 7:
+        if zeros >= empty_stop and i >= 7:
             break
+        i += 1
     end = published_through(counts, 0.2)
     if end is None:
         raise SourceBroken("Cinema City API returned no programme")
@@ -310,11 +313,31 @@ def fetch_kinoarena(session, venue, today, last_day):
             break
         counts.append((d, len(day)))
         rows += [(t, d, tm, m) for t, _, tm, m in day]
+    else_days = {}
+    if counts[-1][1] is not None:
+        # Advance sales: the day tabs also list single dates weeks ahead (a
+        # premiere's pre-sale). Each is read on its own and kept only when the
+        # page really selects that date — any other date is answered with
+        # TODAY's programme. They lie after the normal run, so they never
+        # extend coverage; the merge shows them as preliminary.
+        for d in [t for t in tabset if t > counts[-1][0] and t <= last_day]:
+            got = page(d)
+            if got is None:
+                notes.append(f"{d}: advance-sale page did not load")
+                continue
+            sel, _, day = got
+            if sel != d:
+                notes.append(f"{d}: advance-sale tab served {sel} — not counted")
+                continue
+            else_days[d] = len(day)
+            rows += [(t, d, tm, m) for t, _, tm, m in day]
     end = published_through(counts, 0.2)
     if end is None:
         raise SourceBroken("Кино Арена: no normal programme day")
+    if else_days:
+        notes.append("advance sales: " + ", ".join(f"{d} ({n})" for d, n in else_days.items()))
     return OfficialResult(venue, "kinoarena.com programme pages", rows, today, end,
-                          notes=notes, days=dict(counts))
+                          notes=notes, days={**dict(counts), **else_days})
 
 
 # ------------------------------------------------------- Cine Grand (HTML)
@@ -602,9 +625,16 @@ def parse_domkino_day(html, date):
     return rows
 
 
-def fetch_domkino(session, venue, today, last_day, horizon=21):
-    counts, rows = [], []
-    for i in range(horizon):
+def fetch_domkino(session, venue, today, last_day, empty_stop=EMPTY_STOP):
+    """Every day from today until `empty_stop` empty days in a row (or the
+    window end). A small hall: ~4 screenings a day. Festival and special
+    screenings are booked weeks ahead, so a thin day is common: coverage is the
+    run of normal days (each at least half the usual count) — every one of them
+    a day the hall has clearly published (2026-10-08: through 10-19, the next
+    programme week's first days included). The thin festival days after it are
+    official rows too; the merge shows them as preliminary."""
+    counts, rows, empty, i = [], [], 0, 0
+    while True:
         d = _next(today, i)
         if d > last_day:
             break
@@ -617,16 +647,18 @@ def fetch_domkino(session, venue, today, last_day, horizon=21):
         day = parse_domkino_day(r.text, d)
         counts.append((d, len(day)))
         rows += day
-    # A small hall: ~4 screenings a day. Festival and special screenings are
-    # booked weeks ahead, so a thin day is common; the regular programme is
-    # published a Friday–Thursday week at a time — coverage ends at the last
-    # week end inside the run of normal days.
-    run = published_through(counts, 0.5)
-    if run is None:
+        empty = empty + 1 if not day else 0
+        if empty >= empty_stop:
+            break
+        i += 1
+    end = published_through(counts, 0.5)
+    if end is None:
         raise SourceBroken("Дом на киното: no programme")
-    end = week_end_at_or_before(run, today)
+    later = [d for d, n in counts if n and d > end]
     return OfficialResult(venue, "domnakinoto.com day programme", rows, today, end,
-                          notes=[f"normal days run to {run}; programme week ends {end}"],
+                          notes=[f"normal days run to {end}"
+                                 + (f"; official screenings on {len(later)} later day(s) to {later[-1]}"
+                                    if later else "")],
                           days=dict(counts))
 
 

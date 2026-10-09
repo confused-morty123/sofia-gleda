@@ -171,6 +171,16 @@ nov_thin = [mk(f"2026-11-{d:02d}") for d in (3, 10, 17, 24)]
 check("complete month extends coverage", O.complete_until(octo + nov_full, TODAY), "2026-11-30")
 check("thin month stops coverage", O.complete_until(octo + nov_thin, TODAY), "2026-10-31")
 check("a month gap stops coverage", O.complete_until(octo + [mk("2026-12-05")], TODAY), "2026-10-31")
+nov_quiet = [mk(f"2026-11-{d:02d}") for d in range(1, 31, 2)]          # 15 evenings, every week to the 29th
+nov_front = [mk(f"2026-11-{d:02d}") for d in range(1, 16)]             # 15, all in the first half
+check("a quieter month published right through is complete (Сълза и смях, Топлоцентрала)",
+      O.complete_until(octo + nov_quiet, TODAY), "2026-11-29")
+check("…the same count entered only to mid-month is not",
+      O.complete_until(octo + nov_front, TODAY), "2026-10-31")
+check("…nor a thin one (Възраждане's December: eight evenings to the 19th)",
+      O.complete_until(octo + [mk(f"2026-11-{d:02d}") for d in (2, 9, 16, 23, 27)], TODAY), "2026-10-31")
+check("spread: every week and the last seven days", (O.spread_through([r[1] for r in nov_quiet], 2026, 11),
+      O.spread_through([r[1] for r in nov_front], 2026, 11)), (True, False))
 res = O.finish("x", "s", octo + nov_thin + [mk("2026-10-01")], TODAY)
 check("finish: past dropped, thin month → extra_rows",
       (res["covered_from"], res["covered_to"], len(res["rows"]), len(res["extra_rows"])),
@@ -501,8 +511,19 @@ check("each listing's own theatre.art.bg event page and printed price",
       [(r[6], r[7]) for r in day if r[0] == "ДЯДОВАТА РЪКАВИЧКА"],
       [("https://theatre.art.bg/дядовата-ръкавичка_7900_10_20", "от 6.00 до 7.00 €")])
 check("no price printed → none", sorted({r[7] for r in day if r[0] == "ФЕЯТА ВАНИЛИЯ"}, key=str), [None])
-check("a page that does not echo the requested date contributes nothing",
-      S.scrape_theatre_day("2026-10-12", _Soup(raw("theatre_artbg_day.html"))), None)
+check("every listing's own schema.org Event is dated the requested day → the page is genuine",
+      S.art_day_verdict(BeautifulSoup(O.decode(raw("theatre_artbg_day.html")), "lxml"), "2026-10-11"), "ok")
+check("asked for another day, the same page lists nothing for it (its Events say 11 Oct)",
+      S.scrape_theatre_day("2026-10-12", _Soup(raw("theatre_artbg_day.html"))), [])
+fb = BeautifulSoup(O.decode(raw("theatre_artbg_fallback.html")), "lxml")
+check("fallback: 14 Dec answered with TODAY's listings — the breadcrumb still echoes 14.12.2026",
+      (S.page_echoes_date(fb, "2026-12-14"), S.art_day_verdict(fb, "2026-12-14")), (True, "other"))
+check("…so the whole page is discarded: nothing is filed under 14 Dec",
+      S.scrape_theatre_day("2026-12-14", _Soup(raw("theatre_artbg_fallback.html"))), [])
+_bare = O.decode(raw("theatre_artbg_day.html"))
+_bare = __import__("re").sub(r'<script type="application/ld\+json">.*?</script>', "", _bare, flags=__import__("re").S)
+check("listings without their dated Events cannot be verified → None (last run's rows stand)",
+      S.scrape_theatre_day("2026-10-11", _Soup(_bare.encode("cp1251"))), None)
 
 print("performance price, the app's euro style")
 check("Сатирата's лв./€ pairs → euro range", S.theatre_price("35.20 лв./18.00 €, 43.03 лв./22.00 €"), "18,00–22,00 €")
@@ -687,6 +708,51 @@ rows, pf, info = S.merge_theatre_venue("atelie313", "none", [], None, [],
                                        {"2026-10-18"}, [], None, "2026-10-08", "2026-12-14")
 check("a minted aggregator title is a preliminary performance, with the price the listing prints",
       (rows, pf), ([["a-2", "2026-10-18", "11:00", None, "6,00 €"]], "2026-10-08"))
+
+print("a listing staged at another theatre the app lists becomes that theatre's row")
+check("host from the co-production reason", S.excluded_host(
+      "staged at Театър СЪЛЗА И СМЯХ (co-production listed by Театър София)", "sofia-th"), "salzaismyah")
+check("a venue the app does not list → no host",
+      (S.excluded_host("Sofia, other venue: Theatro отсам канала", "artvent"),
+       S.excluded_host("touring: Варна, ФКЦ, зала 1", "artvent"),
+       S.excluded_host("no stage on the programme — staged off-site (venue not given)", "national")),
+      (None, None, None))
+_why = "staged at Театър СЪЛЗА И СМЯХ (co-production listed by Театър София)"
+_res = {"sofia-th": {"rows": [], "extra_rows": [], "covered_from": "2026-10-08", "covered_to": "2026-11-29",
+                     "excluded": [("Феята от захарницата", "2026-10-31", "11:00", _why),
+                                  ("Феята от захарницата", "2026-11-14", "11:00", _why),
+                                  ("Чудните приключения на Пинокио", "2026-12-05", "11:00", _why)]},
+        "salzaismyah": {"rows": [O.mkrow("ФЕЯТА ОТ ЗАХАРНИЦАТА", "2026-10-31", "11:00")], "extra_rows": [],
+                        "covered_from": "2026-10-08", "covered_to": "2026-11-30", "excluded": []}}
+_moved = S.rehome_excluded(_res)
+check("re-homed: the host's own entry wins; a missing one joins its programme (inside coverage) or "
+      "its preliminary rows (after it)", [(m[2][:5], m[3], m[5]) for m in _moved],
+      [("Феята", "2026-10-31", "the host lists it itself"),
+       ("Феята", "2026-11-14", "added inside the host's covered range"),
+       ("Чудни", "2026-12-05", "added as a preliminary row")])
+check("…the host's rows, the source's exclusions unchanged",
+      ([r[1] for r in _res["salzaismyah"]["rows"]], [r[1] for r in _res["salzaismyah"]["extra_rows"]],
+       _res["salzaismyah"]["rows"][-1][3].get("listed_by"), len(_res["sofia-th"]["excluded"])),
+      (["2026-10-31", "2026-11-14"], ["2026-12-05"], "sofia-th", 3))
+
+print("a day a theatre's own list may cut short is confirmed only by the aggregator's verified page")
+def _th199(extra):
+    return {"rows": [O.mkrow("Боклук", "2026-10-19", "19:30")], "extra_rows": extra,
+            "covered_from": "2026-10-09", "covered_to": "2026-10-19", "confirm_by_aggregator": ["2026-10-20"],
+            "notes": []}
+_same = lambda a, b: O.normalise_show_title(a) == O.normalise_show_title(b)
+_r = _th199([O.mkrow("Тортила Флет", "2026-10-20", "19:30")])
+check("confirmed when theatre.art.bg lists nothing more for the day",
+      (S.confirm_cut_days(_r, [("ТОРТИЛА ФЛЕТ", "2026-10-20", "19:30")], {"2026-10-20"}, _same),
+       _r["covered_to"], [r[1] for r in _r["rows"]], _r["extra_rows"]),
+      (["2026-10-20"], "2026-10-20", ["2026-10-19", "2026-10-20"], []))
+_r = _th199([O.mkrow("Тортила Флет", "2026-10-20", "19:30")])
+check("…not when it lists another performance that day",
+      (S.confirm_cut_days(_r, [("ТОРТИЛА ФЛЕТ", "2026-10-20", "19:30"), ("ШВЕЙЦАРИЯ", "2026-10-20", "11:30")],
+                          {"2026-10-20"}, _same), _r["covered_to"]), ([], "2026-10-19"))
+_r = _th199([O.mkrow("Тортила Флет", "2026-10-20", "19:30")])
+check("…nor when its page for the day was not verified",
+      S.confirm_cut_days(_r, [("ТОРТИЛА ФЛЕТ", "2026-10-20", "19:30")], set(), _same), [])
 
 print("cinema follow-ups: orphan minted films, Cinema City ticket links, ЕМБАРГО")
 cat_f = [{"id": "kosa", "bg": "Коса", "en": "Hair", "year": 1979},

@@ -22,6 +22,9 @@ markup no longer has the shape the parser expects, or it is implausibly empty
      "source": label,
      # informational extras (always present, possibly empty):
      "extra_rows": [...],     # official rows OUTSIDE covered_from..covered_to
+     # optional: "confirm_by_aggregator": [date] — a listed day the source may
+     # show only in part (th199's page boundary); covered when the aggregator's
+     # verified listing for that day adds nothing to the source's own rows
      "excluded": [(title, date, time, reason)],   # listed, but not a Sofia
                                                   # performance at this venue
      "notes": [str]}
@@ -41,10 +44,11 @@ Contract:
 
 A month is "covered" only while it looks completely published: later months
 must carry at least COMPLETE_RATIO of the performance density of the next four
-weeks. Сълза и смях's November grid (one evening show a day, no chamber stage,
-none of its children's matinées) and Възраждане's December (eight evenings, no
-matinées) are exactly that half-entered state; treating them as complete would
-delete real listings the theatre simply has not typed in yet.
+weeks, or SPREAD_RATIO of it with performances right through the month.
+Възраждане's December (eight evenings to the 19th, no matinées) is the
+half-entered state; treating it as complete would delete real listings the
+theatre simply has not typed in yet. Сълза и смях's November (one evening show
+a day, every week to the 30th) is a quieter month, but a published one.
 
     python3 scripts/official_theatres.py                 # every theatre, summary table
     python3 scripts/official_theatres.py --venue tba -v  # one theatre, rows printed
@@ -75,7 +79,8 @@ except ImportError:                                    # pragma: no cover
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 TZ_NAME = "Europe/Sofia"
-COMPLETE_RATIO = 0.6      # later month ≥ 60% of the next-four-weeks density
+COMPLETE_RATIO = 0.6      # later month ≥ 60% of the next-four-weeks density, or
+SPREAD_RATIO = 0.4        # ≥ 40% when its performances run through the whole month
 REF_DAYS = 28
 MONTHS_AHEAD = 6          # month-paged sources: current month + up to 5 more
 
@@ -303,12 +308,26 @@ def match_show(venue, title, index):
 
 
 # ------------------------------------------------------------ result builder
+def spread_through(days, year, month):
+    """True when a month's performances run through all of it: some in each of
+    its first four weeks (days 1-7, 8-14, 15-21, 22-28) and one in its last
+    seven days. A half-entered month stops part-way (Възраждане's December
+    2026: eight evenings to the 19th); a quieter but complete one does not."""
+    have = {int(d[8:10]) for d in days}
+    last = calendar.monthrange(year, month)[1]
+    return (bool(have) and all(any(7 * w + 1 <= x <= 7 * w + 7 for x in have) for w in range(4))
+            and max(have) >= last - 6)
+
+
 def complete_until(rows, today):
     """Last date of the programme that looks completely published: the current
-    month, then each following month while its density (rows per day) is at
-    least COMPLETE_RATIO of the density of the next REF_DAYS days. Stops at the
-    first month that is empty or thinner — the theatre has not finished
-    entering it, so it cannot speak for the days it leaves blank."""
+    month, then each following month while it is clearly published — its
+    density (rows per day) at least COMPLETE_RATIO of the density of the next
+    REF_DAYS days, or at least SPREAD_RATIO of it with performances right
+    through the month (spread_through: Сълза и смях's and Топлоцентрала's
+    November 2026, 22 and 25 performances in every week to the month's end).
+    Stops at the first month that is empty or thinner — the theatre has not
+    finished entering it, so it cannot speak for the days it leaves blank."""
     dates = sorted(r[1] for r in rows)
     if not dates:
         return None
@@ -326,7 +345,8 @@ def complete_until(rows, today):
         if not days:
             break
         density = len(days) / calendar.monthrange(y, m)[1]
-        if ref <= 0 or density < COMPLETE_RATIO * ref:
+        if ref <= 0 or (density < COMPLETE_RATIO * ref
+                        and not (density >= SPREAD_RATIO * ref and spread_through(days, y, m))):
             break
         last = max(days)
     return last
@@ -633,8 +653,17 @@ def fetch_th199(net, today):
         notes.append(f"today's featured performance ({featured[1]}) is outside the list — "
                      "kept as an extra row, the day itself is not covered")
     rows = listing + ([featured] if featured else [])
-    return finish("th199", TH199_SOURCE, rows, today, covered_from=first, covered_to=last,
-                  month_check=False, notes=notes)
+    res = finish("th199", TH199_SOURCE, rows, today, covered_from=first, covered_to=last,
+                 month_check=False, notes=notes)
+    if more:
+        # the cut day is listed, maybe only in part: scrape_programs confirms it
+        # when the aggregator's genuine page for that day lists nothing more
+        res["confirm_by_aggregator"] = [_next_day(last)]
+    return res
+
+
+def _next_day(iso):
+    return (dt.date.fromisoformat(iso) + dt.timedelta(days=1)).isoformat()
 
 
 # ================================================================== zad-kanala
@@ -1003,7 +1032,8 @@ def fetch_salzaismyah(net, today):
 
 # ======================================================================= toplo
 TOPLO_URL = "https://toplocentrala.bg/program/performance"
-TOPLO_SOURCE = "toplocentrala.bg/program/performance (schema.org)"
+TOPLO_MONTH_URL = "https://toplocentrala.bg/program/performance/{y}/{m:02d}"
+TOPLO_SOURCE = "toplocentrala.bg/program/performance (+ /YYYY/MM month pages, schema.org)"
 
 
 def parse_toplo(html):
@@ -1039,7 +1069,29 @@ def parse_toplo(html):
 
 
 def fetch_toplo(net, today):
-    return finish("toplo", TOPLO_SOURCE, parse_toplo(_get(net, TOPLO_URL)), today)
+    """The programme page shows the current month; later months live at
+    /program/performance/YYYY/MM (the page's own "next month" link). Read until
+    a month is empty — the partial-month rule in finish() decides how far the
+    programme is complete (2026-10-08: November and December were published)."""
+    rows, notes = [], []
+    for i, (y, m) in enumerate(months_from(today)):
+        url = TOPLO_URL if i == 0 else TOPLO_MONTH_URL.format(y=y, m=m)
+        try:
+            page = parse_toplo(_get(net, url))
+        except MarkupError:
+            raise
+        except Unavailable:
+            if i == 0:
+                raise
+            notes.append(f"{y}-{m:02d}: page did not load — coverage ends before it")
+            break
+        if not page:
+            break
+        if i and any(r[1][:7] != f"{y}-{m:02d}" for r in page):
+            notes.append(f"{y}-{m:02d}: page shows another month — stopped")
+            break
+        rows += page
+    return finish("toplo", TOPLO_SOURCE, rows, today, notes=notes)
 
 
 # ========================================================================= iam
