@@ -1608,5 +1608,50 @@
    "#5F2727"
   ],
   "source": "cc-sofia"
+ },
+ "tayniyat-svyat-na-arieti": {
+  "id": "tayniyat-svyat-na-arieti",
+  "bg": "Тайният свят на Ариети",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2012
+ },
+ "parvi-kontakt": {
+  "id": "parvi-kontakt",
+  "bg": "Първи контакт",
+  "en": "",
+  "genres": [
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 116
+ },
+ "krastnitsite-ot-tokio": {
+  "id": "krastnitsite-ot-tokio",
+  "bg": "Кръстниците от Токио",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 92
  }
 }
