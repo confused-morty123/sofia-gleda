@@ -4732,5 +4732,23 @@
   "synBg": "",
   "synEn": "",
   "source": "th199"
+ },
+ "svirka-izpoved-na-edin-sadiya": {
+  "id": "svirka-izpoved-na-edin-sadiya",
+  "title": "СВИРКА - ИЗПОВЕД НА ЕДИН СЪДИЯ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }
