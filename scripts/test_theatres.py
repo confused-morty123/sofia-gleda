@@ -926,10 +926,34 @@ for day in (9, 25, 31):
           (O.complete_until(HALF, dt.date(2026, 10, day), why), why),
           ("2026-10-31", ["2026-11: not completely published — камерна сцена: 0 performance(s) against 22 "
                           "in the 28 days before it"]))
+
+
+def memory(rows, today, since):
+    """The stage memory daily runs since `since` would hold on `today`
+    (venue_state.seen_history's shape): every day before today observed, with
+    the rows the page listed on it."""
+    dates, d = set(), since
+    while d < today:
+        dates.add(d.isoformat())
+        d += dt.timedelta(days=1)
+    return {"rows": [(r[1], r[2], O.stage_of(r)) for r in rows if since.isoformat() <= r[1] < today.isoformat()],
+            "dates": dates}
+
+
 for day in (25, 30, 31):
-    check(f"the same pages as a list of upcoming dates only, run on {day} Oct: November still judged "
-          f"(a week before it, or its first days and its end) and covered",
-          O.complete_until([r for r in MLT if r[1] >= f"2026-10-{day}"], dt.date(2026, 10, day)), "2026-11-29")
+    today, up = dt.date(2026, 10, day), [r for r in MLT if r[1] >= f"2026-10-{day}"]
+    why = []
+    check(f"the same pages as a list of upcoming dates only, on {day} Oct with NO memory: November is not judged "
+          f"({32 - day} known day(s) before it cannot show a weekly stage)",
+          (O.complete_until(up, today, why), why[0][:46]),
+          ("2026-10-31", f"2026-11: 61 performances — only {32 - day} known day(s)"))
+    check(f"…with the memory of daily runs since 2 Oct: judged against the 28 days before it, covered",
+          O.complete_until(up, today, history=memory(MLT, today, dt.date(2026, 10, 2))), "2026-11-29")
+    why = []
+    check(f"…and November without its chamber stage is caught",
+          (O.complete_until([r for r in HALF if r[1] >= f"2026-10-{day}"], today, why,
+                            history=memory(MLT, today, dt.date(2026, 10, 2))), why[0][:52]),
+          ("2026-10-31", "2026-11: not completely published — камерна сцена: 0"))
 res = O.finish("mladezhki", "s", HALF, dt.date(2026, 10, 31))
 check("finish on 31 Oct: the half-entered November becomes preliminary extra rows",
       (res["covered_from"], res["covered_to"], len(res["rows"]), len(res["extra_rows"])),
@@ -998,13 +1022,19 @@ check("completeness across New Year (20 Dec): a month page's December is the ref
       O.complete_until(daily(2026, 12, 31) + daily(2027, 1, 31), dt.date(2026, 12, 20)), "2027-01-31")
 check("…a thin January is not covered",
       O.complete_until(daily(2026, 12, 31) + [mk("2027-01-05"), mk("2027-01-12")], dt.date(2026, 12, 20)), "2026-12-31")
-check("…an upcoming-only list on 20 Dec judges January against its 12 days before it",
-      O.complete_until([r for r in daily(2026, 12, 31) if r[1] >= "2026-12-20"] + daily(2027, 1, 31),
-                       dt.date(2026, 12, 20)), "2027-01-31")
-check("…and on 31 Dec against 31 Dec + January's first week, January running on to its end",
-      O.complete_until([mk("2026-12-31")] + daily(2027, 1, 31), dt.date(2026, 12, 31)), "2027-01-31")
-check("…but a January typed in only to the 19th is not covered then",
-      O.complete_until([mk("2026-12-31")] + daily(2027, 1, 19), dt.date(2026, 12, 31)), "2026-12-31")
+DEC = daily(2026, 12, 31)
+check("…an upcoming-only list on 20 Dec with no memory: 12 days before January are too few to judge it",
+      O.complete_until([r for r in DEC if r[1] >= "2026-12-20"] + daily(2027, 1, 31), dt.date(2026, 12, 20)),
+      "2026-12-31")
+check("…with the memory of December's earlier days: January judged across New Year and covered",
+      O.complete_until([r for r in DEC if r[1] >= "2026-12-20"] + daily(2027, 1, 31), dt.date(2026, 12, 20),
+                       history=memory(DEC, dt.date(2026, 12, 20), dt.date(2026, 12, 1))), "2027-01-31")
+check("…on 31 Dec with memory: January covered",
+      O.complete_until([mk("2026-12-31")] + daily(2027, 1, 31), dt.date(2026, 12, 31),
+                       history=memory(DEC, dt.date(2026, 12, 31), dt.date(2026, 12, 1))), "2027-01-31")
+check("…but a January typed in only to the 15th is not",
+      O.complete_until([mk("2026-12-31")] + daily(2027, 1, 15), dt.date(2026, 12, 31),
+                       history=memory(DEC, dt.date(2026, 12, 31), dt.date(2026, 12, 1))), "2026-12-31")
 check("on 2 Jan: February judged against January", O.complete_until(daily(2027, 1, 31) + daily(2027, 2, 28),
                                                                    dt.date(2027, 1, 2)), "2027-02-28")
 
@@ -1073,55 +1103,159 @@ check("a self-check sees a show of another theatre in a theatre's rows",
                                None, F, E, SI.ShowIndex([{"id": "x", "title": "X", "theatre": "kuklen"}])),
       ["performances of another theatre's shows: x"])
 
-print("month-end coverage on nine theatres' live programmes (D3: 25, 30, 31 Oct and 28, 30 Nov)")
+print("month-end coverage on nine theatres' live programmes, daily runs with the stage memory (D3, N1)")
 # Rows as each theatre's own pages served them on 2026-10-12 (parsed by the real
 # fetchers, stages included). On a simulated day a list of upcoming dates shows
 # the rows from that day on; a month page (Сълза и смях, Топлоцентрала) its
-# whole current month and the months after it.
+# whole current month and the months after it. run_days() replays one run a day
+# from 12 Oct, as the cron does: each run reads the page as shown that day with
+# the memory the earlier runs left (venue_state.seen_history), and records what
+# it read (venue_state.record_seen), exactly as scrape_programs.py does.
+import venue_state as VS                                       # noqa: E402
 LIVE = json.loads((FIX / "theatre_rows_2026-10-12.json").read_text(encoding="utf-8"))["venues"]
 
 
-def as_shown(venue, day):
+def as_shown(venue, day, drop=None):
+    """The page on `day`; drop: a stage left out of all of November (N1)."""
     x = LIVE[venue]
-    rows = [O.mkrow(f"r{i}", d, "19:00", stage=x["stages"][si] or None) for i, (d, si) in enumerate(x["rows"])]
+    rows = [O.mkrow(f"r{i}", d, f"{19 + i % 3}:00", stage=x["stages"][si] or None)
+            for i, (d, si) in enumerate(x["rows"])
+            if not (drop and x["stages"][si] == drop and d.startswith("2026-11"))]
     start = day.replace(day=1) if x["lists_past_days"] else day
     return [r for r in rows if r[1] >= start.isoformat()]
 
 
-SIM_DAYS = [dt.date(2026, 10, 25), dt.date(2026, 10, 30), dt.date(2026, 10, 31), dt.date(2026, 11, 28),
-            dt.date(2026, 11, 30)]
-WANT = {  # covered_to on 25, 30, 31 Oct, 28, 30 Nov (None: the recording lists nothing after 29 Nov)
-    "national":    ["2026-12-31"] * 5,                      # Nov 63, Dec 63 performances: published
-    "sofia-th":    ["2026-11-29"] * 4 + [None],            # opens November on the 10th: still published
-    "zad-kanala":  ["2026-12-30"] * 5,
-    "satira":      ["2026-11-29"] * 4 + [None],
-    "vazrazhdane": ["2026-11-29"] * 4 + ["2026-11-30"],    # December: eight evenings to the 19th — never
-    "artvent":     ["2026-12-30"] * 5,
-    "sfumato":     ["2026-11-30"] * 5,
-    "salzaismyah": ["2026-10-31"] * 3 + ["2026-11-30"] * 2,  # November's chamber stage 1 vs 8 — never
-    "toplo":       ["2026-11-29"] * 4 + ["2026-11-30"],    # December's 9 performances — never
-}
-for venue, wants in WANT.items():
-    got = []
-    for day in SIM_DAYS:
+def run_days(venue, days, drop=None, memory_on=True, first=dt.date(2026, 10, 12)):
+    """{day: (covered_to or None, the first month reason)} on each of `days`."""
+    state, out, d = {"venues": {}}, {}, first
+    while d <= max(days):
+        hist = VS.seen_history(state["venues"].get(venue), d.isoformat()) if memory_on else None
         try:
-            got.append(O.finish(venue, "s", as_shown(venue, day), day)["covered_to"])
+            res = O.finish(venue, "s", as_shown(venue, d, drop), d, history=hist)
+            cov, why = res["covered_to"], [n for n in res["notes"] if n[:5] == "2026-"]
+            VS.record_seen(state, venue, [(r[1], r[2], O.stage_of(r)) for r in res["rows"] + res["extra_rows"]],
+                           d.isoformat(), until=cov)
         except O.Unavailable as e:
-            got.append(None if str(e).startswith("no performances parsed") else f"Unavailable: {e}")
-    check(f"{venue}: coverage on 25/30/31 Oct and 28/30 Nov", got, wants)
-for day in SIM_DAYS[:3]:
-    why = []
-    O.complete_until(as_shown("salzaismyah", day), day, why)
-    check(f"Сълза и смях on {day}: November's chamber stage nearly vanished", why[0][:69],
+            cov, why = (None if str(e).startswith("no performances parsed") else f"Unavailable: {e}"), []
+        if d in days:
+            out[d] = (cov, why[0] if why else "")
+        d += dt.timedelta(days=1)
+    return out
+
+
+SIM_DAYS = [dt.date(2026, 10, 12), dt.date(2026, 10, 22), dt.date(2026, 10, 25), dt.date(2026, 10, 28),
+            dt.date(2026, 10, 30), dt.date(2026, 10, 31), dt.date(2026, 11, 28), dt.date(2026, 11, 30)]
+WANT = {  # covered_to on 12, 22, 25, 28, 30, 31 Oct, 28, 30 Nov (None: the recording lists nothing after 29 Nov)
+    "national":    ["2026-12-31"] * 8,                      # Nov 63, Dec 63 performances: published
+    "sofia-th":    ["2026-11-29"] * 7 + [None],            # opens November on the 10th: still published
+    "zad-kanala":  ["2026-12-30"] * 8,
+    "satira":      ["2026-11-29"] * 7 + [None],
+    "vazrazhdane": ["2026-11-29"] * 7 + ["2026-11-30"],    # December: eight evenings to the 19th — never
+    "artvent":     ["2026-12-30"] * 8,
+    "sfumato":     ["2026-11-30"] * 8,
+    "salzaismyah": ["2026-10-31"] * 6 + ["2026-11-30"] * 2,  # November's chamber stage 1 vs 8 — never
+    "toplo":       ["2026-11-29"] * 7 + ["2026-11-30"],    # December's 9 performances — never
+}
+RUNS = {v: run_days(v, SIM_DAYS) for v in WANT}
+for venue, wants in WANT.items():
+    check(f"{venue}: coverage on 12, 22, 25, 28, 30, 31 Oct and 28, 30 Nov (daily runs, stage memory)",
+          [RUNS[venue][d][0] for d in SIM_DAYS], wants)
+for day in SIM_DAYS[:6]:
+    check(f"Сълза и смях on {day}: November's chamber stage nearly vanished", RUNS["salzaismyah"][day][1][:69],
           "2026-11: not completely published — камерна сцена славянска беседа: 1")
-    why = []
-    O.complete_until(as_shown("toplo", day), day, why)
-    check(f"Топлоцентрала on {day}: December's 9 performances are thinner than November", why[0][:50],
+    check(f"Топлоцентрала on {day}: December's 9 performances are thinner than November", RUNS["toplo"][day][1][:50],
           "2026-12: 9 performances — thinner than the 28 days")
+check("Възраждане on 30 Nov: December (to the 19th) judged against the 28 remembered days before it",
+      RUNS["vazrazhdane"][dt.date(2026, 11, 30)][1][:50], "2026-12: 8 performances — thinner than the 28 days")
+
+print("N1: a stage left out of ALL of November is caught on a page of upcoming dates, to the month's last day")
+N1_DAYS = [dt.date(2026, 10, 12), dt.date(2026, 10, 22), dt.date(2026, 10, 25), dt.date(2026, 10, 28),
+           dt.date(2026, 10, 31)]
+for venue, stage in (("national", "сцена „апостол карамитев“"), ("national", "голяма сцена"),
+                     ("national", "камерна сцена"), ("satira", "голяма сцена"),
+                     ("satira", "камерна зала „методи андонов“"), ("satira", "сцена „comedy bar happy сатира“"),
+                     ("sfumato", "зала underground"), ("sfumato", "камерна зала")):
+    got = run_days(venue, N1_DAYS, drop=stage)
+    check(f"{venue} without {stage!r} in November: never covered on 12, 22, 25, 28, 31 Oct, and the reason names it",
+          [(got[d][0], stage in got[d][1]) for d in N1_DAYS], [("2026-10-31", True)] * 5)
+
+print("cold start (no memory): no next month is judged on fewer than 14 known days")
+COLD = {v: run_days(v, SIM_DAYS, memory_on=False) for v in ("national", "satira", "sfumato", "zad-kanala", "artvent")}
+for venue in COLD:
+    check(f"{venue}, no memory: 12 Oct as before (20 days before November), from 22 Oct the current month only",
+          [COLD[venue][d][0] for d in SIM_DAYS[:6]], [RUNS[venue][SIM_DAYS[0]][0]] + ["2026-10-31"] * 5)
+check("…and says why", COLD["national"][dt.date(2026, 10, 25)][1],
+      "2026-11: 63 performances — only 7 known day(s) before it to compare with (at least 14 are needed to "
+      "see a weekly stage); not judged completely published")
+cold = O.finish("national", "s", as_shown("national", dt.date(2026, 10, 25)), dt.date(2026, 10, 25))
+flag = S.run_flags({}, {"national": cold}, {})
+check("…which health.json shows", [(f["level"], f["venue"], f["message"][:74]) for f in flag],
+      [("warning", "national", "next month not judged, its rows stay preliminary: 2026-11: 63 performances")])
+check("12 Oct is unchanged: the memory is empty on the first run", RUNS["national"][SIM_DAYS[0]],
+      COLD["national"][SIM_DAYS[0]])
+gap = run_days("national", [dt.date(2026, 10, 25)], first=dt.date(2026, 10, 12))
+st = {"venues": {}}
+for d in (dt.date(2026, 10, 12), dt.date(2026, 10, 13)):              # two runs, then a 12-day failure streak
+    VS.record_seen(st, "national", [(r[1], r[2], O.stage_of(r)) for r in as_shown("national", d)], d.isoformat(),
+                   until="2026-12-31")
+hist = VS.seen_history(st["venues"]["national"], "2026-10-25")
 why = []
-O.complete_until(as_shown("vazrazhdane", dt.date(2026, 11, 30)), dt.date(2026, 11, 30), why)
-check("Възраждане on 30 Nov: one listed day before December, and December stops on the 19th", why[0][:57],
-      "2026-12: 8 performances, not listed on to the month's end")
+check("a failure streak breaks the memory (days no read vouched for): conservative again",
+      (O.complete_until(as_shown("national", dt.date(2026, 10, 25)), dt.date(2026, 10, 25), why, history=hist),
+       why[0][:46]), ("2026-10-31", "2026-11: 63 performances — only 7 known day(s)"))
+
+print("the stage memory: what is kept, replaced, pruned — and never published")
+st = {"venues": {}}
+VS.record_seen(st, "t", [("2026-10-12", "19:00", "голяма сцена"), ("2026-10-12", "19:00", "голяма сцена"),
+                         ("2026-10-13", "11:00", None), ("2026-10-25", "19:00", "голяма сцена")], "2026-10-12")
+seen = st["venues"]["t"]["seen"]
+check("de-duplicated on (date, time, stage); only today..today+7 recorded; compact, documented format", seen,
+      {"stages": ["", "голяма сцена"], "observed": "2026-10-12..2026-10-19",
+       "days": {"2026-10-12": "19:00/1", "2026-10-13": "11:00/0"}})
+VS.record_seen(st, "t", [("2026-10-13", "12:30", "камерна сцена")], "2026-10-13", until="2026-10-15")
+check("the next run: past days kept, days from today replaced by the page (and only as far as it vouches)",
+      st["venues"]["t"]["seen"],
+      {"stages": ["", "голяма сцена", "камерна сцена"], "observed": "2026-10-12..2026-10-15",
+       "days": {"2026-10-12": "19:00/1", "2026-10-13": "12:30/2"}})
+check("seen_history: rows and observed days before today only",
+      VS.seen_history(st["venues"]["t"], "2026-10-13"),
+      {"rows": [("2026-10-12", "19:00", "голяма сцена")], "dates": {"2026-10-12"}})
+VS.prune_seen(st, "2026-11-17")
+check("pruned to today-35: days before it go, the rest stays", VS.decode_seen(st["venues"]["t"]["seen"]),
+      ({("2026-10-13", "12:30", "камерна сцена")}, {"2026-10-13", "2026-10-14", "2026-10-15"}))
+VS.prune_seen(st, "2026-11-20")
+check("…and a memory with nothing left goes", "seen" in st["venues"]["t"], False)
+up = as_shown("national", dt.date(2026, 10, 25))
+ghost = {"rows": [(f"2026-10-{d:02d}", "15:00", "сцена-призрак") for d in range(5, 25)],
+         "dates": {f"2026-10-{d:02d}" for d in range(5, 25)}}
+res = O.finish("national", "s", up, dt.date(2026, 10, 25), history=ghost)
+check("remembered rows are a reference only: never in the published rows, inside or extra",
+      (sorted({r[0] for r in res["rows"] + res["extra_rows"]}) == sorted({r[0] for r in up}),
+       any(r[2] == "15:00" for r in res["rows"] + res["extra_rows"]), len(res["rows"]) + len(res["extra_rows"])),
+      (True, False, len(up)))
+check("…and a stage seen only in memory is judged like any other (here it vanished from November)",
+      res["covered_to"], "2026-10-31")
+for venue in ("salzaismyah", "toplo"):
+    day = dt.date(2026, 10, 25)
+    plain = O.finish(venue, "s", as_shown(venue, day), day)
+    with_ghost = O.finish(venue, "s", as_shown(venue, day), day, history=ghost)
+    check(f"a month page ({venue}) lists its past days itself: the memory changes nothing",
+          (with_ghost["covered_to"], with_ghost["notes"], len(with_ghost["rows"])),
+          (plain["covered_to"], plain["notes"], len(plain["rows"])))
+res = O.fetch_venue("national", FakeNet({}), dt.date(2026, 10, 25), history=ghost)
+check("fetch_venue hands the memory to finish() for that call only", (res, O._FETCH_HISTORY), (None, None))
+O.FETCHERS["zz-test"] = lambda net, today: O.finish("zz-test", "s", as_shown("national", today), today)
+try:
+    day = dt.date(2026, 10, 25)
+    cold = O.fetch_venue("zz-test", FakeNet({}), day)["covered_to"]
+    O.HISTORY = {"zz-test": memory(as_shown("national", dt.date(2026, 10, 12)), day, dt.date(2026, 10, 12))}
+    warm = O.fetch_venue("zz-test", FakeNet({}), day)["covered_to"]
+finally:
+    O.FETCHERS.pop("zz-test")
+    O.HISTORY = {}
+check("the run's memory map (OT.HISTORY, set by scrape_programs.py from official_state.json) reaches the venue's "
+      "finish(): cold 25 Oct stops at the month's end, with memory December is covered", (cold, warm),
+      ("2026-10-31", "2026-12-31"))
 res = O.finish("x", "s", [mk("2026-11-03"), mk("2026-11-20")], dt.date(2026, 10, 31))
 check("a programme read on a month's last day, nothing left in it, the next month not complete: covered "
       "today (never 'no completely published period'), the rest preliminary",
@@ -1130,6 +1264,40 @@ check("a programme read on a month's last day, nothing left in it, the next mont
 check("…and the self-check does not call a few days' coverage an implausible drop",
       S.implausible_drop({"status": "official", "screenings": 64, "days": 52},
                          {"status": "official", "screenings": 0, "days": 1}, min_rate=1, min_days=7), None)
+
+print("official_state.json damaged by hand or by a bad write: malformed parts are dropped, the refresh goes on (D-A)")
+import tempfile                                                       # noqa: E402
+good_seen = VS.encode_seen({("2026-10-11", "19:00", "голяма сцена")}, {"2026-10-11"})
+damaged = {"version": 1, "venues": {
+    "national": {"source": "official", "last_ok": "2026-10-11", "covered_to": "2026-11-30",
+                 "failing_since": None, "last_error": None, "seen": good_seen},
+    "satira": ["not", "an", "object"],
+    "sfumato": {"source": "official", "last_ok": "11.10.2026", "covered_to": 5, "seen": {"days": ["19:00/1"]}},
+    "toplo": {"source": "official", "last_ok": "2026-10-11", "seen": {"stages": [1], "days": {}}}}}
+clean, dropped = VS.sanitise_state(damaged)
+check("a well-formed venue entry passes unchanged", clean["venues"]["national"], damaged["venues"]["national"])
+check("an entry that is not an object is dropped (that venue starts afresh)", "satira" in clean["venues"], False)
+check("a date that is not YYYY-MM-DD reads as unknown; a broken stage memory is forgotten",
+      (clean["venues"]["sfumato"]["last_ok"], clean["venues"]["sfumato"]["covered_to"],
+       "seen" in clean["venues"]["sfumato"], "seen" in clean["venues"]["toplo"]),
+      (None, None, False, False))
+check("…and every drop is named", sorted(dropped),
+      ["satira: entry", "sfumato: covered_to", "sfumato: last_ok", "sfumato: seen", "toplo: seen"])
+with tempfile.TemporaryDirectory() as tmp:
+    p = pathlib.Path(tmp) / "official_state.json"
+    p.write_text(json.dumps(damaged), encoding="utf-8")
+    st = VS.load_state(p)
+    check("load_state sanitises: the state the scrape gets has dict entries only",
+          all(isinstance(e, dict) for e in st["venues"].values()), True)
+    check("…and the kept-row policy and the memory read it without an exception",
+          (VS.kept_policy(st["venues"].get("sfumato"), "2026-10-12")["since"],
+           {v: VS.seen_history(e, "2026-10-12") is not None for v, e in st["venues"].items() if e.get("seen")}),
+          ("2026-10-12", {"national": True}))
+    p.write_text("[1, 2, 3]", encoding="utf-8")
+    check("valid JSON of the wrong shape: an empty state", VS.load_state(p)["venues"], {})
+    p.write_text('{"venues": {"national": {"last_ok": "2026-10-1', encoding="utf-8")
+    check("a truncated file: an empty state", VS.load_state(p)["venues"], {})
+    check("no file: an empty state", VS.load_state(pathlib.Path(tmp) / "absent.json")["venues"], {})
 
 print("kuklen — its reseller's listing on theatre.art.bg when sofiapuppet.com refuses: PRELIMINARY, never official (D2)")
 net = FakeNet({O.KUKLEN_ART_URL: raw("theatre_kuklen_artbg.html")})          # sofiapuppet.com: no answer

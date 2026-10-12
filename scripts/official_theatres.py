@@ -90,7 +90,7 @@ SPREAD_RATIO = 0.4        # ≥ 40% when its performances run through the whole 
 STAGE_WEEKS = 3           # and a stage playing in ≥ 3 of the next four weeks (regular)
 STAGE_RATIO = 0.25        # keeps ≥ 25% of its own rate there (else it "nearly vanished")
 REF_DAYS = 28
-MIN_REF_DAYS = 7          # a shorter reference (a list of upcoming dates at a month's end) runs on into the month
+MIN_REF_DAYS = 14         # a reference shorter than this cannot see a weekly stage: the month is not covered
 MONTHS_AHEAD = 6          # month-paged sources: current month + up to 5 more
 
 
@@ -333,18 +333,6 @@ def spread_through(days, year, month):
             and max(have) >= last - 6)
 
 
-def runs_to_the_end(days, year, month):
-    """True when a month's performances run on to its end: some in at least
-    three of its first four weeks (days 1-7, 8-14, 15-21, 22-28) and some in
-    its last seven days. A month typed in only part-way stops early
-    (Възраждане's December 2026: to the 19th); a theatre that opens the month
-    late (Театър София's November 2026, from the 10th) does not."""
-    have = {int(d[8:10]) for d in days}
-    last = calendar.monthrange(year, month)[1]
-    weeks = sum(any(7 * w + 1 <= x <= 7 * w + 7 for x in have) for w in range(4))
-    return bool(have) and weeks >= 3 and max(have) >= last - 6
-
-
 def stage_of(row):
     """The stage a row is played on, as a comparison key: meta["stage"] (set by
     a fetcher that learns it outside its grid — Сълза и смях's per-stage pages)
@@ -368,7 +356,7 @@ def regular_stages(rows, start, days=REF_DAYS):
     return {s: count[s] / days for s, w in weeks.items() if len(w) >= need and count[s] >= 2}
 
 
-def complete_until(rows, today, why=None):
+def complete_until(rows, today, why=None, history=None):
     """Last date of the programme that looks completely published.
 
     The current month always counts, from today to its last listed day (today
@@ -386,27 +374,44 @@ def complete_until(rows, today, why=None):
         out: Сълза и смях's chamber stage had 1 November date against 9 in the
         rest of October, though the month's 22 evenings ran every week to the 30th.
 
-    The reference period is built from what the page shows BEFORE M — never M
+    The reference period is the REF_DAYS days before M's first day — never M
     itself (2026-10-09 audit, CODE-06: judged against "the next four weeks", a
     run on 25 or 31 Oct compared a half-entered November with itself and passed
-    it): the REF_DAYS days before M's first day, from the source's own first
-    listed day on. A month page lists its whole month, past days included (pass
-    those rows in); a list of upcoming dates starts today. When fewer than
-    MIN_REF_DAYS such days exist — the last days of a month on a list of
-    upcoming dates — the reference runs on into M's first days to make
-    MIN_REF_DAYS, and M must then ALSO run on to its end (runs_to_the_end) and,
-    when that week had performances, keep COMPLETE_RATIO of its density: a
-    month typed in only part-way stops early, and that is what such a short
-    look can still tell (a stage left out of all of M it cannot see).
+    it) — as far back as the days are known. A month page lists its whole month,
+    past days included (pass those rows in). A page that lists only upcoming
+    dates starts today; `history` (venue_state.seen_history: {"rows": [(date,
+    "HH:MM", stage)], "dates": {days observed}}) gives it the days before today
+    from our own earlier reads, as far back as they run without a gap — a
+    REFERENCE ONLY, never published, and ignored for a page that lists past
+    days itself (the page wins). With fewer than MIN_REF_DAYS known days before
+    M (a cold start, a lost state, a long failure streak, the last fortnight of
+    a month without memory) a weekly stage cannot be judged, so M is not
+    covered (2026-10-12 validation, N1: a stage left out of a whole November was
+    missed on 22-31 Oct).
 
     Stops at the first month that is empty or thinner — the theatre has not
     finished entering it, so it cannot speak for the days it leaves blank. The
     reason for stopping at a listed month is appended to `why` (a list)."""
     t0 = today.isoformat()
-    dates = sorted(r[1] for r in rows)
-    if not dates or dates[-1] < t0:
+    page_dates = sorted(r[1] for r in rows)
+    if not page_dates or page_dates[-1] < t0:
         return None
-    src_from = min(dt.date.fromisoformat(dates[0]), today)
+    src_from = min(dt.date.fromisoformat(page_dates[0]), today)
+    ref_rows = list(rows)
+    if history and src_from == today:
+        # our own earlier reads: the observed days that run back from yesterday
+        # without a gap (a day no read vouched for breaks the reference)
+        seen = set(history.get("dates") or ())
+        d = today - dt.timedelta(days=1)
+        while d.isoformat() in seen:
+            d -= dt.timedelta(days=1)
+        hist_from = d + dt.timedelta(days=1)
+        if hist_from < today:
+            lo = hist_from.isoformat()
+            ref_rows += [("", hd, htm, {"stage": hst})
+                         for hd, htm, hst in history.get("rows") or () if lo <= hd < t0]
+            src_from = hist_from
+    dates = sorted(r[1] for r in ref_rows)
     by_month, staged = defaultdict(list), defaultdict(Counter)
     for r in rows:
         if r[1] < t0:
@@ -426,43 +431,36 @@ def complete_until(rows, today, why=None):
         first = dt.date(y, m, 1)
         ref_from = max(first - dt.timedelta(days=REF_DAYS), src_from)
         n_ref = (first - ref_from).days
-        short = n_ref < MIN_REF_DAYS
-        n_ref = max(n_ref, MIN_REF_DAYS)
-        lo, hi = ref_from.isoformat(), (ref_from + dt.timedelta(days=n_ref - 1)).isoformat()
-        span = f"{n_ref} days from {lo}" if short else f"{n_ref} days before it"
+        if n_ref < MIN_REF_DAYS:
+            if why is not None:
+                why.append(f"{y}-{m:02d}: {len(days)} performances — only {n_ref} known day(s) before it "
+                           f"to compare with (at least {MIN_REF_DAYS} are needed to see a weekly stage); "
+                           "not judged completely published")
+            break
+        lo, hi = ref_from.isoformat(), (first - dt.timedelta(days=1)).isoformat()
         ref = sum(1 for d in dates if lo <= d <= hi) / n_ref
-        regular = regular_stages(rows, ref_from, n_ref)
+        regular = regular_stages(ref_rows, ref_from, n_ref)
         n_days = calendar.monthrange(y, m)[1]
         density = len(days) / n_days
-        if short and not runs_to_the_end(days, y, m):
+        if ref <= 0 or (density < COMPLETE_RATIO * ref
+                        and not (density >= SPREAD_RATIO * ref and spread_through(days, y, m))):
             if why is not None:
-                why.append(f"{y}-{m:02d}: {len(days)} performances, not listed on to the month's end "
-                           f"(only {(first - ref_from).days} listed day(s) before it to compare with); "
-                           "not completely published")
-            break
-        if short:
-            ok = ref == 0 or density >= COMPLETE_RATIO * ref
-        else:
-            ok = ref > 0 and (density >= COMPLETE_RATIO * ref
-                              or (density >= SPREAD_RATIO * ref and spread_through(days, y, m)))
-        if not ok:
-            if why is not None:
-                why.append(f"{y}-{m:02d}: {len(days)} performances — thinner than the {span} "
-                           f"({ref * n_days:.0f} at their rate); not completely published")
+                why.append(f"{y}-{m:02d}: {len(days)} performances — thinner than the {n_ref} days "
+                           f"before it ({ref * n_days:.0f} at their rate); not completely published")
             break
         gone = sorted(s for s, rate in regular.items() if staged[(y, m)][s] < STAGE_RATIO * rate * n_days)
         if gone:
             if why is not None:
                 why.append(f"{y}-{m:02d}: not completely published — " + "; ".join(
                     f"{s}: {staged[(y, m)][s]} performance(s) against {regular[s] * n_ref:.0f} "
-                    f"in the {span}" for s in gone))
+                    f"in the {n_ref} days before it" for s in gone))
             break
         last = max(days)
     return last
 
 
 def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=None,
-           covered_to=None, month_check=True):
+           covered_to=None, month_check=True, history=None):
     """Assemble the contract dict, or raise Unavailable when nothing usable is
     left. Rows are de-duplicated, past rows dropped, and split into `rows`
     (inside the covered range) and `extra_rows` (outside it)."""
@@ -479,7 +477,7 @@ def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=No
     notes = list(notes)
     if month_check:
         why = []
-        cu = complete_until(listed, today, why)
+        cu = complete_until(listed, today, why, _FETCH_HISTORY if history is None else history)
         if cu is None:
             raise Unavailable("no completely published period")
         if cu < ct:
@@ -1851,6 +1849,12 @@ FETCHERS = OrderedDict([
 
 # why the last fetch_* of each venue returned None (for the run report)
 LAST_STATUS: dict = {}
+# The stage memory, per venue (venue_state.seen_history), for this run: set by
+# the caller (scrape_programs.py, from official_state.json). fetch_venue hands
+# the venue's own to finish() — a reference for the completeness rule, never
+# published.
+HISTORY: dict = {}
+_FETCH_HISTORY = None
 # rows a venue's RESELLER lists, read when its own programme could not be (see
 # fetch_kuklen): never official — fetch_venue returns None — for the caller to
 # show as preliminary. {venue: {"source", "rows", "excluded", "notes"}}
@@ -1870,8 +1874,12 @@ def off_grid_ticket_times(res):
     return sorted(out)
 
 
-def fetch_venue(venue, net=None, today=None):
-    """The contract dict for `venue`, or None. Never raises."""
+def fetch_venue(venue, net=None, today=None, history=None):
+    """The contract dict for `venue`, or None. Never raises. history: the
+    venue's stage memory (venue_state.seen_history) — what its own programme
+    listed on earlier runs, the completeness rule's reference for a page that
+    lists only upcoming dates; HISTORY[venue] when not given."""
+    global _FETCH_HISTORY
     today = today or sofia_today()
     SECONDARY.pop(venue, None)
     if venue in NO_OFFICIAL_SOURCE:
@@ -1884,6 +1892,7 @@ def fetch_venue(venue, net=None, today=None):
     if net is None:
         from netfetch import Fetcher
         net = Fetcher()
+    _FETCH_HISTORY = history if history is not None else HISTORY.get(venue)
     try:
         res = fn(net, today)
         LAST_STATUS[venue] = "ok"
@@ -1892,6 +1901,8 @@ def fetch_venue(venue, net=None, today=None):
         LAST_STATUS[venue] = str(e)
     except Exception as e:                               # a parser bug must not stop the run
         LAST_STATUS[venue] = f"error: {type(e).__name__}: {e}"
+    finally:
+        _FETCH_HISTORY = None
     print(f"  ! official {venue}: {LAST_STATUS[venue]}", file=sys.stderr, flush=True)
     return None
 

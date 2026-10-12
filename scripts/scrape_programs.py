@@ -1738,8 +1738,9 @@ def upcoming_counts(showtimes, performances, theatre_of, floor):
 def run_flags(secondary, th_official, venue_report):
     """Health entries a person should look at beyond each venue's status: a
     reseller's listing shown in place of a theatre's own programme
-    (preliminary), ticket-list times off the 5-minute grid (published as
-    listed), and aggregator times that disagree with an unreachable venue's
+    (preliminary), a next month left unjudged for want of known days before it
+    (no stage memory yet), ticket-list times off the 5-minute grid (published
+    as listed), and aggregator times that disagree with an unreachable venue's
     kept rows (the kept rows are shown)."""
     out = []
     for v, sec in secondary.items():
@@ -1747,6 +1748,11 @@ def run_flags(secondary, th_official, venue_report):
                     "message": f"own programme not read: its listing on {sec['source']} (a reseller) fills in, "
                                f"all PRELIMINARY ({len(sec['rows'])} upcoming performance(s) on its own halls)"})
     for v, res in th_official.items():
+        short = [n for n in res.get("notes") or [] if "known day(s) before it" in n]
+        if short:
+            out.append({"level": "warning", "venue": v,
+                        "message": f"next month not judged, its rows stay preliminary: {short[0]} "
+                                   "(the stage memory in official_state.json is missing or broken)"})
         odd = OT.off_grid_ticket_times(res)
         if odd:
             out.append({"level": "warning", "venue": v,
@@ -1799,18 +1805,25 @@ def run_health(venue_report, venue_ids, counts_now, counts_prev, blocked, selfch
     return entries
 
 
-def save_run_state(state, venue_report, agg, art_read, today, stamp):
+def save_run_state(state, venue_report, agg, art_read, today, stamp, th_official=None):
     """official_state.json: the outcome of this run for every venue with a
-    source (venue_state.record_read). Written only with index.html."""
+    source (venue_state.record_read), and what each theatre read from its own
+    programme listed (venue_state.record_seen, the stage memory the
+    completeness rule judges a next month against). Written only with index.html."""
     for vid, r in venue_report.items():
         kind = r.get("kind", "cinema")
         if (vid in OS.OFFICIAL) if kind == "cinema" else (vid in OT.FETCHERS):
             VS.record_read(state, vid, r.get("status") == "official", today,
                            covered_to=(r.get("covered") or [None, None])[1], error=r.get("error"))
+            if kind == "theatre" and vid in (th_official or {}) and r.get("status") == "official":
+                res = th_official[vid]
+                VS.record_seen(state, vid, [(x[1], x[2], OT.stage_of(x)) for x in res["rows"] + res["extra_rows"]],
+                               today, until=(r.get("covered") or [None, None])[1])
         elif r.get("status") == "none":
             read = bool(art_read) if kind == "theatre" else bool((agg.get(vid) or {}).get("fetched"))
             VS.record_read(state, vid, read, today, error="aggregator not read",
                            source="theatre.art.bg" if kind == "theatre" else "programata.bg")
+    VS.prune_seen(state, today)
     VS.save_state(OFFICIAL_STATE, state, stamp)
 
 
@@ -2278,6 +2291,7 @@ def main():
     if not art_dates:
         diff.unreachable.append("theatre.art.bg")
     th_official, secondary, sec_dates = {}, {}, {}
+    OT.HISTORY = {v: VS.seen_history(e, today_iso) for v, e in state["venues"].items() if e.get("seen")}
     for v in theatre_ids:
         if v not in OT.FETCHERS:
             continue
@@ -2715,7 +2729,7 @@ def main():
         out = out[:cl[0]] + json.dumps(changelog, ensure_ascii=False, separators=(",", ":")) + out[cl[1]:]
 
     html_path.write_text(out, encoding="utf-8")
-    save_run_state(state, venue_report, agg, art_dates, today_iso, generated)
+    save_run_state(state, venue_report, agg, art_dates, today_iso, generated, th_official)
     # Persist the arthouse-film catalogue (keep-previous union of old + newly minted);
     # inject_films.py merges it into FILMS before the build gate.
     CINEMA_FILMS.write_text(json.dumps(cinema_films, ensure_ascii=False, indent=1),
