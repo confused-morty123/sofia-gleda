@@ -1688,7 +1688,21 @@ check("a tiny programme (Люмиер) is never 'implausible'",
 
 # ---------------------------------------------------------------- inject_data rating fields
 print("inject_data passes TMDB rating fields (tv / tc) through to TMDBART")
-import inject_data as ID  # noqa: E402
+# inject_data.py does its work at import time and rewrites the page it reads:
+# point it at a throwaway copy so a test run never changes the real index.html.
+import os as _os, shutil as _shutil, tempfile as _tempfile  # noqa: E402,E401
+_page = pathlib.Path(_os.environ.get("SOFIA_HTML") or pathlib.Path(__file__).resolve().parent.parent / "index.html")
+_scratch = pathlib.Path(_tempfile.mkdtemp(prefix="sg_inject_")) / "index.html"
+_shutil.copyfile(_page, _scratch)
+_prev_html = _os.environ.get("SOFIA_HTML")
+_os.environ["SOFIA_HTML"] = str(_scratch)
+try:
+    import inject_data as ID  # noqa: E402
+finally:
+    if _prev_html is None:
+        _os.environ.pop("SOFIA_HTML", None)
+    else:
+        _os.environ["SOFIA_HTML"] = _prev_html
 
 # Build a minimal tmdb record that has tmdb_vote and vote_count but no imdb
 _tmdb_record_tv = {
