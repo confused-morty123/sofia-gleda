@@ -1,0 +1,27 @@
+[
+ {
+  "level": "warning",
+  "venue": "cineland",
+  "message": "no official programme: all 141 screenings are preliminary, from programata.bg"
+ },
+ {
+  "level": "warning",
+  "venue": "natfiz",
+  "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
+ },
+ {
+  "level": "warning",
+  "venue": "new-ndk",
+  "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
+ },
+ {
+  "level": "warning",
+  "venue": "derida",
+  "message": "no official programme: its one performance is preliminary, from theatre.art.bg"
+ },
+ {
+  "level": "warning",
+  "venue": "atelie313",
+  "message": "no official programme: all 21 performances are preliminary, from theatre.art.bg"
+ }
+]

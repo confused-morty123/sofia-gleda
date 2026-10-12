@@ -1653,5 +1653,767 @@
   ],
   "source": "dom-kino",
   "runtime": 92
+ },
+ "otmastitelite-vazhodat-na-doktor-duum": {
+  "id": "otmastitelite-vazhodat-na-doktor-duum",
+  "bg": "Отмъстителите: Възходът на Доктор Дуум",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 165,
+  "year": 2026
+ },
+ "dyun-chast-treta": {
+  "id": "dyun-chast-treta",
+  "bg": "Дюн: Част трета",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Драма",
+   "Фантастика"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 145
+ },
+ "padnali-angeli": {
+  "id": "padnali-angeli",
+  "bg": "Паднали ангели",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 96,
+  "year": 1995,
+  "originalTitle": "Fallen Angels"
+ },
+ "it-s-alive-horar-film-fest-chast-iv-nirvanna-bandata-shouto-": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-nirvanna-bandata-shouto-",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: Нирванна - Бандата. Шоуто. Филмът.",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
+ },
+ "it-s-alive-horar-film-fest-chast-iv-live-ekshan-dublazh-zhen": {
+  "id": "it-s-alive-horar-film-fest-chast-iv-live-ekshan-dublazh-zhen",
+  "bg": "It’s Alive! Хорър Филм Фест Част IV: LIVE ЕКШЪН ДУБЛАЖ - Жени кечистки срещу ацтешката мумия - с Драго Симеонов и Самуил Петканов",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 55
+ },
+ "nepoznatata": {
+  "id": "nepoznatata",
+  "bg": "Непознатата",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8",
+  "runtime": 139,
+  "year": 2026,
+  "originalTitle": "The Unknown",
+  "country": "Франция/Италия"
+ },
+ "ostaynitsa": {
+  "id": "ostaynitsa",
+  "bg": "Остайница",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere",
+  "runtime": 116,
+  "year": 2026,
+  "originalTitle": "She Who Remains",
+  "country": "България/Италия/Албания/Румъния/Германия"
+ },
+ "petoknizhie-anzhelovo": {
+  "id": "petoknizhie-anzhelovo",
+  "bg": "Петокнижие Анжелово",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "lumiere",
+  "runtime": 106,
+  "year": 2026,
+  "originalTitle": "Angel’s Torah",
+  "country": "България"
+ },
+ "francheska-i-dzhovani-lyubov-i-mafiya": {
+  "id": "francheska-i-dzhovani-lyubov-i-mafiya",
+  "bg": "Франческа и Джовани – Любов и мафия",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "g8",
+  "runtime": 110,
+  "year": 2025,
+  "originalTitle": "Francesca and Giovanni: A Love and Mafia Story",
+  "country": "Италия/САЩ"
+ },
+ "pomoshtnikat": {
+  "id": "pomoshtnikat",
+  "bg": "Помощникът",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "g8",
+  "runtime": 124,
+  "year": 2025,
+  "originalTitle": "The Assistant",
+  "country": "Полша/Великобритания"
+ },
+ "roma-elastika": {
+  "id": "roma-elastika",
+  "bg": "Рома Еластика",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Фентъзи",
+   "Хорър"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "frenski-institut",
+  "runtime": 106,
+  "year": 2026,
+  "originalTitle": "Roma Elastica",
+  "country": "Франция/Италия"
+ },
+ "brunelo-dzhentalmenat-vizioner": {
+  "id": "brunelo-dzhentalmenat-vizioner",
+  "bg": "Брунело: Джентълменът визионер",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "lumiere",
+  "runtime": 120,
+  "year": 2025,
+  "originalTitle": "Brunello il visionario",
+  "country": "Италия"
+ },
+ "vsichki-go-narichat-redzho": {
+  "id": "vsichki-go-narichat-redzho",
+  "bg": "Всички го наричат Реджо",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "vlaikova",
+  "runtime": 125,
+  "year": 2025,
+  "originalTitle": "Everybody Calls Redjo",
+  "country": "Северна Македония"
+ },
+ "dnevnikat-na-edna-kamerierka": {
+  "id": "dnevnikat-na-edna-kamerierka",
+  "bg": "Дневникът на една камериерка",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "frenski-institut",
+  "runtime": 94,
+  "year": 2026,
+  "originalTitle": "The Diary of a Chambermaid",
+  "country": "Румъния/Франция"
+ },
+ "edna-istoriya": {
+  "id": "edna-istoriya",
+  "bg": "Една история",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "lumiere",
+  "runtime": 107,
+  "year": 2026,
+  "originalTitle": "Una Storia",
+  "country": "Италия"
+ },
+ "klara-i-slantseto": {
+  "id": "klara-i-slantseto",
+  "bg": "Клара и слънцето",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 116,
+  "year": 2026,
+  "originalTitle": "Klara and the Sun",
+  "country": "Обединено кралство/Индия/САЩ"
+ },
+ "lachi-i-senki": {
+  "id": "lachi-i-senki",
+  "bg": "Лъчи и сенки",
+  "en": "",
+  "genres": [
+   "Биографичен",
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon",
+  "runtime": 199,
+  "year": 2026,
+  "originalTitle": "Rays and Shadows",
+  "country": "Франция"
+ },
+ "momicheto-s-fotoaparata": {
+  "id": "momicheto-s-fotoaparata",
+  "bg": "Момичето с фотоапарата",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "frenski-institut",
+  "runtime": 118,
+  "year": 2026,
+  "originalTitle": "The Girl with the Leica",
+  "country": "Италия/Германия/Швеция"
+ },
+ "razum-i-chuvstva": {
+  "id": "razum-i-chuvstva",
+  "bg": "Разум и чувства",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon",
+  "runtime": 132,
+  "year": 2026,
+  "originalTitle": "Sense and Sensibility",
+  "country": "Великобритания/САЩ"
+ },
+ "sitsilianskata-roza": {
+  "id": "sitsilianskata-roza",
+  "bg": "Сицилианската роза",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "g8",
+  "runtime": 125,
+  "year": 2024,
+  "originalTitle": "The Sicilian Storyteller",
+  "country": "Италия"
+ },
+ "hana-na-7-i-polovina": {
+  "id": "hana-na-7-i-polovina",
+  "bg": "Хана на 7 и половина",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "toplo-film",
+  "runtime": 30,
+  "year": 2026,
+  "originalTitle": "Hannah at the Age of 7 1/2",
+  "country": "България"
+ },
+ "haos-v-komedi-fransez": {
+  "id": "haos-v-komedi-fransez",
+  "bg": "Хаос в Комеди Франсез",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "odeon",
+  "runtime": 75,
+  "year": 2026,
+  "originalTitle": "De la Comédie-Française",
+  "country": "Франция"
+ },
+ "tseluvka-za-leka-nosht": {
+  "id": "tseluvka-za-leka-nosht",
+  "bg": "Целувка за лека нощ",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "g8",
+  "runtime": 90,
+  "year": 2026,
+  "originalTitle": "A Goodnight Kiss",
+  "country": "Литва/Естония/България"
+ },
+ "chilietsat": {
+  "id": "chilietsat",
+  "bg": "Чилиецът",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "frenski-institut",
+  "runtime": 99,
+  "year": 2026,
+  "originalTitle": "The Chilean",
+  "country": "Италия/Чили/Швейцария"
+ },
+ "yuli": {
+  "id": "yuli",
+  "bg": "Юли",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8",
+  "runtime": 50,
+  "year": 2026,
+  "originalTitle": "Juli",
+  "country": "България"
+ },
+ "ida-peeshe-tolkova-zle-che-dori-martvite-priglasyaha": {
+  "id": "ida-peeshe-tolkova-zle-che-dori-martvite-priglasyaha",
+  "bg": "Ида пееше толкова зле, че дори мъртвите ѝ пригласяха",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon",
+  "runtime": 109,
+  "year": 2025,
+  "originalTitle": "Ida Who Sang So Badly Even the Dead Rose Up and Joined Her in Song",
+  "country": "Словения/Хърватия"
+ },
+ "malkiyat-nikola-kakvo-chakame-za-da-badem-shtastlivi": {
+  "id": "malkiyat-nikola-kakvo-chakame-za-da-badem-shtastlivi",
+  "bg": "Малкият Никола: Какво чакаме, за да бъдем щастливи?",
+  "en": "",
+  "genres": [
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "tsentralni-hali",
+  "runtime": 82,
+  "year": 2022,
+  "originalTitle": "Le petit Nicolas: Qu’est-ce qu’on attend pour être heureux?",
+  "country": "Франция/Люксембург"
+ },
+ "prah": {
+  "id": "prah",
+  "bg": "Прах",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Трилър"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon",
+  "runtime": 109,
+  "year": 2026,
+  "originalTitle": "Dust",
+  "country": "Белгия/Полша/Великобритания/Гърция"
+ },
+ "sentient": {
+  "id": "sentient",
+  "bg": "Сентиент",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8",
+  "runtime": 90,
+  "year": 2026,
+  "originalTitle": "Sentient",
+  "country": "Великобритания"
+ },
+ "shvedskoto-torpedo": {
+  "id": "shvedskoto-torpedo",
+  "bg": "Шведското торпедо",
+  "en": "",
+  "genres": [
+   "Биографичен",
+   "Спорт"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "casa-libri",
+  "runtime": 120,
+  "year": 2024,
+  "originalTitle": "Swedish Torpedo",
+  "country": "Швеция/Естония/Белгия/Финландия"
+ },
+ "v-imeto-na-ottsa": {
+  "id": "v-imeto-na-ottsa",
+  "bg": "В името на Отца",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "lumiere",
+  "runtime": 127,
+  "year": 1993,
+  "originalTitle": "In The Name of The Father",
+  "country": "Ирландия/Великобритания/САЩ"
+ },
+ "karvavata-grafinya": {
+  "id": "karvavata-grafinya",
+  "bg": "Кървавата графиня",
+  "en": "",
+  "genres": [
+   "Романтика",
+   "Трилър",
+   "Хорър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere",
+  "runtime": 118,
+  "year": 2026,
+  "originalTitle": "The Blood Countess",
+  "country": "Австрия/Люксембург/Германия"
+ },
+ "kasometrazhen-konkurs": {
+  "id": "kasometrazhen-konkurs",
+  "bg": "Късометражен конкурс",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "toplo-film"
+ },
+ "kasometrazhno-kino-izvan-konkurs": {
+  "id": "kasometrazhno-kino-izvan-konkurs",
+  "bg": "Късометражно кино извън конкурс",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "casa-libri"
+ },
+ "mastilo": {
+  "id": "mastilo",
+  "bg": "Мастило",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "ndk1",
+  "runtime": 116,
+  "year": 2026,
+  "originalTitle": "Ink",
+  "country": "Обединено кралство/Франция/САЩ"
+ },
+ "osta-na-zhivota": {
+  "id": "osta-na-zhivota",
+  "bg": "Оста на живота",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 115,
+  "year": 2025,
+  "originalTitle": "Axis of Life",
+  "country": "България/Унгария"
+ },
+ "otechestvo": {
+  "id": "otechestvo",
+  "bg": "Отечество",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Исторически"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "ndk1",
+  "runtime": 82,
+  "year": 2026,
+  "originalTitle": "Fatherland",
+  "country": "Полша/Германия/Италия/Франция"
+ },
+ "petiyat-pechat": {
+  "id": "petiyat-pechat",
+  "bg": "Петият печат",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon",
+  "runtime": 116,
+  "year": 1976,
+  "originalTitle": "The Fifth Seal",
+  "country": "Унгария"
+ },
+ "pateshestviyata-na-dostoevski": {
+  "id": "pateshestviyata-na-dostoevski",
+  "bg": "Пътешествията на Достоевски",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere",
+  "runtime": 52,
+  "year": 1991,
+  "originalTitle": "Dostoevsky’s Travels",
+  "country": "Великобритания"
+ },
+ "razvod-po-vreme-na-voyna": {
+  "id": "razvod-po-vreme-na-voyna",
+  "bg": "Развод по време на война",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon",
+  "runtime": 108,
+  "year": 2026,
+  "originalTitle": "How to Divorce During the War",
+  "country": "Литва/Чехия/Люксембург/Ирландия"
+ },
+ "studena-voyna": {
+  "id": "studena-voyna",
+  "bg": "Студена война",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Романтика"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 84,
+  "originalTitle": "Cold War",
+  "country": "Полша/Франция/Великобритания"
+ },
+ "taksi-za-raya": {
+  "id": "taksi-za-raya",
+  "bg": "Такси за рая",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "lumiere",
+  "runtime": 95,
+  "year": 2026,
+  "originalTitle": "A Taxi to Heaven",
+  "country": "България"
+ },
+ "div-kon-devet": {
+  "id": "div-kon-devet",
+  "bg": "Див кон девет",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "ndk1",
+  "runtime": 118,
+  "year": 2026,
+  "originalTitle": "Wild Horse Nine",
+  "country": "Великобритания/САЩ/Чили"
+ },
+ "minotavar": {
+  "id": "minotavar",
+  "bg": "Минотавър",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "ndk1",
+  "runtime": 135,
+  "year": 2026,
+  "originalTitle": "Minotaur / Минотавр",
+  "country": "Франция/Латвия/Германия"
+ },
+ "fantomat-na-operata": {
+  "id": "fantomat-na-operata",
+  "bg": "Фантомът на операта",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "ndk1",
+  "runtime": 134,
+  "year": 2026,
+  "originalTitle": "Le Fantôme de l'Opéra",
+  "country": "Франция"
+ },
+ "fiord": {
+  "id": "fiord",
+  "bg": "Фиорд",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "ndk1",
+  "runtime": 128,
+  "year": 2026,
+  "originalTitle": "Fjord",
+  "country": "Румъния/Норвегия"
  }
 }

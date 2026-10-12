@@ -4750,5 +4750,221 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "misleshtite-trastiki-50-to-predstavlenie": {
+  "id": "misleshtite-trastiki-50-to-predstavlenie",
+  "title": "Мислещите тръстики 50-то представление",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "buratino-2": {
+  "id": "buratino-2",
+  "title": "Буратино",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "ivanov-2": {
+  "id": "ivanov-2",
+  "title": "Иванов",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "prestapleniya-na-sartseto": {
+  "id": "prestapleniya-na-sartseto",
+  "title": "Престъпления на сърцето",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "live-4head-collective-in-toplocentrala": {
+  "id": "live-4head-collective-in-toplocentrala",
+  "title": "LIVE - 4head Collective in Toplocentrala",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "method-acting-sas-zornitsa-sofiya": {
+  "id": "method-acting-sas-zornitsa-sofiya",
+  "title": "Method Acting със Зорница София",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "hahaha-impro-teatar-edin-den-na": {
+  "id": "hahaha-impro-teatar-edin-den-na",
+  "title": "ХаХаХа ИмПро театър |Един ден на…",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "daskal": {
+  "id": "daskal",
+  "title": "Даскал",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "ostri-zavoi": {
+  "id": "ostri-zavoi",
+  "title": "Остри завои",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "rachkov-i-zhenite": {
+  "id": "rachkov-i-zhenite",
+  "title": "Рачков и жените",
+  "titleEn": "",
+  "theatre": "artvent",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "artvent"
+ },
+ "slanchev-lach": {
+  "id": "slanchev-lach",
+  "title": "СЛЪНЧЕВ ЛЪЧ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "novite-drehi-na-tsarya": {
+  "id": "novite-drehi-na-tsarya",
+  "title": "НОВИТЕ ДРЕХИ НА ЦАРЯ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
  }
 }
