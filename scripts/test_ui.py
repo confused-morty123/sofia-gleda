@@ -95,8 +95,10 @@ def _derive_clock_globals(date_str: str):
         datetime.date.fromisoformat(date_str) + datetime.timedelta(days=1)
     ).strftime("%Y-%m-%d")
     d = datetime.date.fromisoformat(date_str)
+    # the app's "Този уикенд": Mon–Thu -> the coming Fri; Fri/Sat/Sun -> this weekend's
+    # Friday, which on Sat/Sun is already past (it used to jump to NEXT Friday)
     week_fri = (
-        d + datetime.timedelta(days=(4 - d.weekday()) % 7)
+        d + datetime.timedelta(days=(4 - d.weekday()) if d.weekday() <= 4 else -(d.weekday() - 4))
     ).strftime("%Y-%m-%d")
     tomorrow_2350 = fixed + 9 * 3600 * 1000
     clock_js = """
@@ -5105,7 +5107,7 @@ def wave_j(browser, webkit_browser=None):
         if wknd_shows:
             wknd_ok = page.evaluate(f"""() => {{
                 const showIds = {wknd_shows!r};
-                const fri = '{CLOCK_WEEK_FRI}', sun = '{CLOCK_WEEK_END}';
+                const fri = '{CLOCK_WEEK_FRI}', sun = addDays('{CLOCK_WEEK_FRI}', 2);  // the app's weekend is Fri..Sun
                 const perfs = PERFORMANCES.filter(p => showIds.includes(p[0]) && p[1] >= fri && p[1] <= sun);
                 const covered = new Set(perfs.map(p => p[0]));
                 const uncovered = showIds.filter(id => !covered.has(id));
