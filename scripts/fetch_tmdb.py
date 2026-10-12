@@ -28,6 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "tmdb_films.json"
 LINKS_OUT = ROOT / "film_links_posters.json"
+HEALTH = ROOT / "health.json"           # the run's health report (scrape_programs writes it first)
 # Curated per-film facts: film_aliases.json groups that carry a 'year' (and maybe
 # an 'original' title) as the venue's own film page prints them — see tmdb_hints().
 ALIASES_PATH = pathlib.Path(__file__).resolve().parent / "film_aliases.json"
@@ -620,7 +621,7 @@ def main():
           f"(OMDb {'on' if OMDB_TOKEN else 'OFF — ratings inherited'}, "
           f"{omdb_ok} ok / {omdb_fail} missing) -> {OUT.name}")
     # Append a health entry to health.json (created by P1A; create if absent).
-    health_path = ROOT / "health.json"
+    health_path = HEALTH
     try:
         health = json.load(open(health_path, encoding="utf-8")) if health_path.exists() else []
         # Remove any previous omdb entries so we don't accumulate stale ones

@@ -2017,17 +2017,18 @@ def _tmdb_run(films, results):
             seen.append((params.get("query"), params.get("year"), params.get("language")))
             return {"results": results(params)}
         return {}
-    o = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT)
+    o = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH)
     with _tmp.TemporaryDirectory() as td:
         td = _pl.Path(td)
         (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
                                        + ";\nconst LINKS=[];\n/* SOFIA-DATA-END */", encoding="utf-8")
-        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = api, "t", td / "index.html", td / "t.json", td / "l.json"
+        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = (
+            api, "t", td / "index.html", td / "t.json", td / "l.json", td / "health.json")
         try:
             TMDB.main()
             out = _json.loads((td / "t.json").read_text(encoding="utf-8")) if (td / "t.json").exists() else {}
         finally:
-            TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = o
+            TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = o
     return seen, out
 
 
@@ -2193,17 +2194,19 @@ check("declutter strips it too", TMDB.declutter("It’s Alive! Хорър Фил
       ("Плетеният човек", None))
 _orig_api5, _q5 = TMDB.api, []
 TMDB.api = lambda path, params: (_q5.append(params.get("query")) or {"results": []})
-_orig_tok, _orig_html5, _orig_out5, _orig_lo5 = TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT
+_orig_tok, _orig_html5, _orig_out5, _orig_lo5, _orig_he5 = TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH
 with _tmp.TemporaryDirectory() as _td5:
     _td5 = _pl.Path(_td5)
     (_td5 / "index.html").write_text(
         '/* SOFIA-DATA-START */\nconst FILMS=[{"id":"ia","bg":"It’s Alive! Хорър Филм Фест Част IV: Сиянието","en":""}];\n'
         'const LINKS=[];\n/* SOFIA-DATA-END */', encoding="utf-8")
-    TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = "t", _td5 / "index.html", _td5 / "t.json", _td5 / "l.json"
+    TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = (
+        "t", _td5 / "index.html", _td5 / "t.json", _td5 / "l.json", _td5 / "health.json")
     try:
         TMDB.main()
     finally:
-        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = _orig_api5, _orig_tok, _orig_html5, _orig_out5, _orig_lo5
+        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = (
+            _orig_api5, _orig_tok, _orig_html5, _orig_out5, _orig_lo5, _orig_he5)
 check("fetch_tmdb searches 'Сиянието', never the prefixed title", _q5[:1], ["Сиянието"])
 
 print("festivals: CineLibri's crawl delay (netfetch)")
