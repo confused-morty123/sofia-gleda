@@ -981,6 +981,9 @@ const filmTitle=f=>S.lang==="en"
   : (f.en||f.bg||((ART[f.id]||{}).en)||""); /* EN mode: English title, then TMDB, then the translation, Bulgarian last */
 const filmSubtitle=f=>{const en=filmTitle(f);return f.bg&&f.bg!==en?f.bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* safeUrl: accept only http(s) URLs in href/window.open sinks (CODE-12).
+   Any other scheme (javascript:, data:, …) is dropped and returns null. */
+const safeUrl=u=>{if(!u)return null;try{const p=new URL(u);return(p.protocol==="https:"||p.protocol==="http:")?(u):null;}catch(e){return null;}};
 const filmById=Object.fromEntries(FILMS.map(f=>[f.id,f]));
 const showById=Object.fromEntries(SHOWS.map(s=>[s.id,s]));
 const cinById=Object.fromEntries(CINEMAS.map(c=>[c.id,c]));
@@ -2107,7 +2110,7 @@ function buyBox(vid,date,isCinema,specificUrl){
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
-      <a class="buylink" href="${esc(specificUrl||bookUrl(vid,date))}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label)} ↗</a>
+      ${(()=>{const _su=safeUrl(specificUrl||bookUrl(vid,date));return _su?`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label)} ↗</a>`:""})()}
     </div>
     <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
 /* Film buy box: compact pills per cinema, sorted by screening count desc then name */
@@ -2133,7 +2136,7 @@ function filmBuyBox(f,rows){
     if(b.inPerson){
       return`<span class="buylink inperson">${esc(cname)} — ${esc(S.lang==="bg"?"на касата":"box office")}</span>`;
     }
-    const u=filmTixUrl(f.id,vid,null)||b.url;
+    const u=safeUrl(filmTixUrl(f.id,vid,null)||b.url);
     if(!u)return"";
     return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(cname)} ↗</a>`;
   }).filter(Boolean);
@@ -2163,7 +2166,7 @@ function sheetFilm(f){
     const c=cinById[r[1]],b=BOOKING[r[1]]||{};
     const inPerson=!!b.inPerson;
     const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+r[1]];
-    const u=inPerson?(b.url||null):filmTixUrl(f.id,r[1],d);
+    const u=safeUrl(inPerson?(b.url||null):filmTixUrl(f.id,r[1],d));
     const tixLabel=inPerson?(S.lang==="bg"?L.boxOfficeLabel:L.boxOfficeLabelEn):(L.tix+" ↗");
     const prelim=isPrelim(r[1],d);
     if(prelim)hasPrelim=true;
@@ -2220,7 +2223,7 @@ function sheetShow(sh){
   const L=t(),th=thById[sh.theatre],x=SHOW_EXTRA[sh.id]||{};
   const perfs=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id)).sort((a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]));
   const byDay={};perfs.forEach(p=>{(byDay[p[1]]=byDay[p[1]]||[]).push(p);});
-  const u=tixUrl("show",sh.id,sh.theatre);
+  const u=safeUrl(tixUrl("show",sh.id,sh.theatre));
   /* isPrelim: true when a (venueId, date) pair falls on or after PRELIM_FROM[venueId] */
   const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
   const isPrelim=(vid,d)=>{const pDate=_pf[vid];return pDate?d>=pDate:false;};
@@ -2231,7 +2234,7 @@ function sheetShow(sh){
     if(prelim)hasPrelim=true;
     return`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}${prelim?` <span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}</div>
     ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(hallDisplay(p[3])||thName(th))}</div>
-      <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
+      <div class="vtimes">${u?`<a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>`:`<span class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}">${esc(p[2])}</span>`}${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
       ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`;}).join("");
   const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
   /* venue display: use nameEn in EN mode */
@@ -2270,7 +2273,7 @@ function sheetEvent(ev){
      to one catalogued venue; otherwise show only where the information came from.
      Never fall back to generic aggregators (the user's "Eventim on Физика на
      тъгата" complaint traced to exactly that blanket hub list). */
-  const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=b?bookUrl(vb,null):null;
+  const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
   return`<div class="sheet"><div class="shero" style="background:${grad(ev.g)}">
     ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g)}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
@@ -2698,37 +2701,50 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
   const [hh,mm]=(timeStr||"00:00").split(":").map(Number);
   const startMs=Date.UTC(y,mo-1,d,hh-off,mm,0);
   const endMs=startMs+runtimeMin*60000;
-  function toLocal(ms){
+  /* Use Intl to extract Sofia local date/time components correctly for any
+     instant, including those that cross midnight or fall on a DST boundary.
+     This replaces the old lh=UTCHours+off approach which produced hour 24+
+     and the wrong calendar date for screenings ending after midnight (CODE-10). */
+  function _sofiaLocalParts(ms){
     const dt=new Date(ms);
-    /* Recompute offset for end time */
-    const eOff=_sofiaOffset(
-      [dt.getUTCFullYear(),String(dt.getUTCMonth()+1).padStart(2,"0"),String(dt.getUTCDate()).padStart(2,"0")].join("-"),
-      [String(dt.getUTCHours()+off).padStart(2,"0"),String(dt.getUTCMinutes()).padStart(2,"0")].join(":")
-    );
+    const fmt=new Intl.DateTimeFormat("en-CA",{
+      timeZone:"Europe/Sofia",
+      year:"numeric",month:"2-digit",day:"2-digit",
+      hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+    });
+    const pp=Object.fromEntries(fmt.formatToParts(dt).map(p=>[p.type,p.value]));
+    /* hour12:false returns "24" for midnight in some engines; normalise to "00" */
+    const h=pp.hour==="24"?"00":pp.hour;
+    return{y:pp.year,mo:pp.month,d:pp.day,h,mi:pp.minute,s:pp.second};
+  }
+  /* Compute the UTC offset at a given UTC instant for Europe/Sofia */
+  function _sofiaOffsetAtMs(ms){
+    const dt=new Date(ms);
+    const fmtOff=new Intl.DateTimeFormat("en",{
+      timeZone:"Europe/Sofia",timeZoneName:"shortOffset",hour:"numeric"
+    });
+    const parts=fmtOff.formatToParts(dt);
+    const tzp=parts.find(p=>p.type==="timeZoneName");
+    if(tzp){
+      const m=tzp.value.match(/GMT([+-])(\d+)(?::(\d+))?/);
+      if(m){const sign=m[1]==="+"?1:-1;return sign*(Number(m[2])+(Number(m[3]||0)/60));}
+    }
+    /* fallback: try +3 / +2 */
+    for(const o of [3,2]){
+      const lp=_sofiaLocalParts(ms);
+      const check=Date.UTC(Number(lp.y),Number(lp.mo)-1,Number(lp.d),Number(lp.h)-o,Number(lp.mi),0);
+      if(Math.abs(check-ms)<60000)return o;
+    }
+    return 3;
+  }
+  function toLocal(ms){
+    const p=_sofiaLocalParts(ms);
+    const eOff=_sofiaOffsetAtMs(ms);
     return{
-      gcal:()=>{
-        const ld=new Date(ms);
-        const lh=ld.getUTCHours()+off,lm=ld.getUTCMinutes(),ls=ld.getUTCSeconds();
-        return[
-          String(ld.getUTCFullYear()),
-          String(ld.getUTCMonth()+1).padStart(2,"0"),
-          String(ld.getUTCDate()).padStart(2,"0"),
-          "T",
-          String(lh).padStart(2,"0"),
-          String(lm).padStart(2,"0"),
-          String(ls).padStart(2,"0")
-        ].join("");},
+      gcal:()=>[p.y,p.mo,p.d,"T",p.h,p.mi,p.s].join(""),
       outlook(){
-        const ld=new Date(ms);
-        const lh=ld.getUTCHours()+off,lm=ld.getUTCMinutes();
-        const eoffStr=(eOff>=0?"+":"-")+String(Math.abs(eOff)).padStart(2,"0")+":00";
-        return[
-          ld.getUTCFullYear(),"-",
-          String(ld.getUTCMonth()+1).padStart(2,"0"),"-",
-          String(ld.getUTCDate()).padStart(2,"0"),"T",
-          String(lh).padStart(2,"0"),":",
-          String(lm).padStart(2,"0"),":00",eoffStr
-        ].join("");},
+        const eoffStr=(eOff>=0?"+":"-")+String(Math.abs(Math.floor(eOff))).padStart(2,"0")+":00";
+        return[p.y,"-",p.mo,"-",p.d,"T",p.h,":",p.mi,":00",eoffStr].join("");},
       utcZ(){
         const ld=new Date(ms);
         return[
@@ -2900,10 +2916,10 @@ document.addEventListener("click",e=>{
   }
   /* Google Calendar button */
   const cg=q("[data-calg]");
-  if(cg){const u=cg.dataset.calurl;if(u)window.open(u,"_blank","noopener");return;}
+  if(cg){const u=safeUrl(cg.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
   /* Outlook button */
   const co=q("[data-calo]");
-  if(co){const u=co.dataset.calurl;if(u)window.open(u,"_blank","noopener");return;}
+  if(co){const u=safeUrl(co.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
   /* Apple ICS download */
   const ci=q("[data-calics]");
   if(ci){

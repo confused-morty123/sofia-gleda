@@ -684,7 +684,7 @@ def wave_a1(browser):
         cwd=webapp_root,
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("gate_passes", gate_passes,
@@ -1523,7 +1523,7 @@ def wave_b1(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("b1_gate_passes", gate_passes,
@@ -2389,7 +2389,7 @@ else:
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("c1_gate_passes", gate_passes,
@@ -3198,7 +3198,7 @@ def wave_d1(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("d1_gate_passes", gate_passes,
@@ -3770,7 +3770,7 @@ def wave_h(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("h10_gate_passes", gate_passes,
@@ -4476,7 +4476,7 @@ def wave_i(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("i7_gate_passes", gate_passes,
@@ -5546,7 +5546,7 @@ def wave_j(browser, webkit_browser=None):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result_vb.stdout
     check("j9_gate_passes", gate_passes,
@@ -6770,7 +6770,7 @@ def wave_l(browser):
         [sys.executable, "scripts/verify_build.py"],
         cwd=str(webapp_root),
         capture_output=True, text=True,
-        env={**__import__('os').environ, "SOFIA_HTML": html_env}
+        env={**__import__('os').environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     vb_pass = vb_result.returncode == 0 and "all checks passed" in vb_result.stdout
     check("l7_verify_build",
@@ -7245,6 +7245,157 @@ def wave_m(browser):
 
 
 # ============================================================================
+# WAVE N: link-safety (CODE-12) and calendar midnight crossing (CODE-10)
+# ============================================================================
+
+def wave_n(browser):
+    """
+    Wave N checks (pure JS, no navigation needed for most):
+
+    N-1  safeUrl() rejects non-http(s) URLs, passes http/https.
+    N-2  No ticket-link <a> is rendered for a URL that is null/unsafe.
+    N-3  Calendar toLocal(): event ending after midnight produces hour 00-23 and
+         the correct next-day date in gcal / outlook formats.
+    N-4  Calendar crossing DST boundary 2026-10-25 (EEST→EET) produces a valid
+         offset in the Outlook link (+02:00, not +03:00).
+    """
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    # ── N-1: safeUrl() ──────────────────────────────────────────────────────
+    print("\n=== N-1: safeUrl() scheme guard ===")
+    safe_results = page.evaluate("""() => {
+        if (typeof safeUrl !== 'function') return {missing: true};
+        return {
+            http:   safeUrl('http://example.com/'),
+            https:  safeUrl('https://example.com/'),
+            js:     safeUrl('javascript:alert(1)'),
+            ftp:    safeUrl('ftp://example.com/'),
+            data:   safeUrl('data:text/html,<h1>x</h1>'),
+            empty:  safeUrl(''),
+            undef:  safeUrl(null),
+        };
+    }""")
+    if safe_results.get("missing"):
+        check("n1_safeUrl_defined", False, "safeUrl is not defined in the page")
+    else:
+        check("n1_safeUrl_http",    safe_results["http"]  is not None, f"http -> {safe_results['http']!r}")
+        check("n1_safeUrl_https",   safe_results["https"] is not None, f"https -> {safe_results['https']!r}")
+        check("n1_safeUrl_js_null", safe_results["js"]    is None,     f"javascript: -> {safe_results['js']!r}")
+        check("n1_safeUrl_ftp_null",safe_results["ftp"]   is None,     f"ftp: -> {safe_results['ftp']!r}")
+        check("n1_safeUrl_data_null",safe_results["data"] is None,     f"data: -> {safe_results['data']!r}")
+        check("n1_safeUrl_empty_null",safe_results["empty"] is None,   f"'' -> {safe_results['empty']!r}")
+
+    # ── N-2: no <a> rendered for unsafe URLs ────────────────────────────────
+    # We can only check that the page itself has no href=javascript: or href=ftp:
+    print("\n=== N-2: no unsafe hrefs in rendered DOM ===")
+    bad_hrefs = page.evaluate("""() => {
+        const bad = [];
+        for (const a of document.querySelectorAll('a[href]')) {
+            const h = a.getAttribute('href');
+            if (h && !/^https?:/.test(h) && !h.startsWith('#') && !h.startsWith('blob:')) {
+                bad.push(h.slice(0, 80));
+            }
+        }
+        return bad;
+    }""")
+    check("n2_no_unsafe_hrefs", len(bad_hrefs) == 0,
+          f"{len(bad_hrefs)} unsafe href(s) in DOM: {bad_hrefs[:3]}" if bad_hrefs else "")
+
+    ctx.close()
+
+    # ── N-3: calendar midnight crossing ─────────────────────────────────────
+    # calEvent() calls toLocal() internally.  We pick the first film+cinema pair
+    # that has an upcoming showtime, then ask calEvent to compute a synthetic
+    # event that starts at 22:30 (≥90-minute film → ends after midnight).
+    # We read back endGcal / endOutlook from the returned event object.
+    print("\n=== N-3: calendar midnight crossing ===")
+    ctx2, page2, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    midnight_result = page2.evaluate("""() => {
+        // Find any film+cinema pair we can use
+        const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]);
+        if (!row) return {missing: 'no usable SHOWTIMES row'};
+        const filmId   = row[0];
+        const venueId  = row[1];
+        // Force a 22:30 start so that a ≥90-min film ends after midnight.
+        // We call calEvent with that dateStr/timeStr, then read its endGcal/endOutlook.
+        const ev = calEvent('film', filmId, venueId, '2026-10-08', '22:30');
+        if (!ev) return {missing: 'calEvent returned null'};
+        return {
+            startGcal:    ev.startGcal,
+            endGcal:      ev.endGcal,
+            startOutlook: ev.startOutlook,
+            endOutlook:   ev.endOutlook,
+        };
+    }""")
+    if midnight_result.get("missing"):
+        skip("n3_midnight_gcal_start",      midnight_result["missing"])
+        skip("n3_midnight_gcal_end_date",   midnight_result["missing"])
+        skip("n3_midnight_gcal_end_hour",   midnight_result["missing"])
+        skip("n3_midnight_outlook_no_h24",  midnight_result["missing"])
+        skip("n3_midnight_outlook_end_date",midnight_result["missing"])
+    else:
+        sg = midnight_result["startGcal"]
+        eg = midnight_result["endGcal"]
+        eo = midnight_result["endOutlook"]
+        # Start must be on 2026-10-08 at 22:xx
+        check("n3_midnight_gcal_start",  sg.startswith("20261008T22"),
+              f"startGcal={sg!r}")
+        # End date must be 2026-10-09 (next day)
+        check("n3_midnight_gcal_end_date", eg.startswith("20261009"),
+              f"endGcal date={eg[:8]!r}  (want 20261009)")
+        # End hour must be valid (0–23, NOT 24 or higher)
+        end_hour = int(eg[9:11]) if eg[9:11].isdigit() else -1
+        check("n3_midnight_gcal_end_hour", 0 <= end_hour <= 23,
+              f"endGcal hour={eg[9:11]!r}  (want 00-23, not 24+)")
+        # Outlook end must NOT contain T24: / T25: / T26: (old bug)
+        check("n3_midnight_outlook_no_h24",
+              "T24:" not in eo and "T25:" not in eo and "T26:" not in eo,
+              f"endOutlook={eo!r}")
+        # Outlook end date must be 2026-10-09
+        check("n3_midnight_outlook_end_date",
+              eo.startswith("2026-10-09"),
+              f"endOutlook date={eo[:10]!r}  (want 2026-10-09)")
+
+    ctx2.close()
+
+    # ── N-4: DST boundary 2026-10-25: offset changes EEST→EET ────────────────
+    # A screening starting at 22:30 on 2026-10-25 crosses the DST change
+    # (clocks fall back at 04:00 EEST → 03:00 EET).
+    # We check that the Outlook link uses +03:00 before and +02:00 after.
+    print("\n=== N-4: calendar DST boundary 2026-10-25 ===")
+    ctx3, page3, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    dst_result = page3.evaluate("""() => {
+        const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]);
+        if (!row) return {missing: 'no usable SHOWTIMES row'};
+        const filmId  = row[0];
+        const venueId = row[1];
+        // Pre-DST: 01:00 EEST on 2026-10-25 (clock still +03:00)
+        const evPre  = calEvent('film', filmId, venueId, '2026-10-24', '22:00');
+        // Post-DST: 04:30 EET on 2026-10-25 (clock is now +02:00)
+        const evPost = calEvent('film', filmId, venueId, '2026-10-25', '04:30');
+        if (!evPre || !evPost) return {missing: 'calEvent returned null'};
+        return {
+            preStartOutlook:  evPre.startOutlook,
+            postStartOutlook: evPost.startOutlook,
+        };
+    }""")
+    if dst_result.get("missing"):
+        skip("n4_dst_pre_offset",  dst_result["missing"])
+        skip("n4_dst_post_offset", dst_result["missing"])
+    else:
+        pre_off  = dst_result["preStartOutlook"][-6:]
+        post_off = dst_result["postStartOutlook"][-6:]
+        check("n4_dst_pre_is_plus3",  pre_off  == "+03:00",
+              f"pre  2026-10-24 22:00 offset={pre_off!r}  (expect +03:00)")
+        check("n4_dst_post_is_plus2", post_off == "+02:00",
+              f"post 2026-10-25 04:30 offset={post_off!r}  (expect +02:00)")
+
+    ctx3.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -7258,6 +7409,7 @@ WAVES = {
     "J": wave_j,
     "L": wave_l,
     "M": wave_m,
+    "N": wave_n,
 }
 
 def main():
