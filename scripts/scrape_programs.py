@@ -2835,9 +2835,13 @@ def main():
                 print(f"  ! {fest}: {fest_errors.get(fest)} — nothing to keep; earlier rows left as they are")
         fest_report[fest] = rep
     prev_fest_rows = {f: festival_rows_in(p.get("rows")) for f, p in prev_fest.items()}
+    # only the festival venues the page lists: a page built before a new venue
+    # reached src/data.html has no CINEMAS entry for it, and a PRELIM_FROM for an
+    # unknown venue fails the gate (its rows were left out above, and reported)
     new_showtimes, prelim, prelim_rows, fest_info = merge_festival_rows(
         new_showtimes, prelim, own, fest_rows, fest_cover, prev_fest_rows,
-        prev_prelim_rows, floor, end, kept_venues=kept_venues)
+        prev_prelim_rows, floor, end, kept_venues=kept_venues,
+        festival_venues=tuple(v for v in FESTIVAL_VENUES if v in cinema_ids))
     shown = {tuple(x[1:]) for k_ in ("confirmed", "prelim_row", "prelim_date") for x in fest_info[k_]}
     shown_screens = [(fid, v, d, tk, pg) for fid, v, d, t, tk, pg in fest_screens if (fid, v, d, t) in shown]
     for k, url in festival_ticket_links(shown_screens, fresh_vlinks, new_showtimes).items():

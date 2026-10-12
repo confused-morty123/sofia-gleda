@@ -265,6 +265,20 @@ def _blank_film(url):
             "genres_text": None, "kind": "film"}
 
 
+# A festival programme lists more than films: Kinomania's closing night on
+# 22 Nov 2026 is "Великата илюзия - Мултижанров спектакъл", a stage production
+# (its page: "Този спектакъл пренася образи от световното кино ... на сцената").
+# The app's cinema side lists films only, so a title whose subtitle declares a
+# stage show ("… - Мултижанров спектакъл", "… (спектакъл)") is left out and
+# named in the notes. Only such a trailing subtitle counts: a film titled
+# "Последният спектакъл" or "Спектакълът" stays, and concert FILMS stay too.
+_NOT_A_FILM = re.compile(r"[-–—(]\s*(?:[\w-]+\s+){0,3}спектакъл\s*\)?\s*$", re.I)
+
+
+def not_a_film(title):
+    return bool(_NOT_A_FILM.search(title or ""))
+
+
 def _https(url):
     url = (url or "").strip()
     if url.startswith("//"):
@@ -567,6 +581,9 @@ def read_cinelibri(session, today, last_day, notes):
         if not f["title_bg"]:
             f["title_bg"] = x["title"]
         title = f["title_bg"]
+        if not_a_film(title):
+            notes.append(f"not a film, left out: {title} ({x['date']} {x['time']}, {x['venue']})")
+            continue
         films.setdefault(s or title, f)
         kind, _vid = venue_id("cinelibri", x["venue"])
         if kind == "outside":
@@ -707,6 +724,9 @@ def read_kinomania(session, today, last_day, notes):
     outside, unknown, screenings, urls = Counter(), Counter(), [], {}
     for venue, d, tm, title, film_url, ticket in rows:
         if not (today <= d <= last_day):
+            continue
+        if not_a_film(title):
+            notes.append(f"not a film, left out: {title} ({d} {tm}, {venue})")
             continue
         kind, _vid = venue_id("kinomania", venue)
         if kind == "outside":

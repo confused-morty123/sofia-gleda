@@ -1860,9 +1860,18 @@ check("film page: the og:image (a gallery file) when no poster file",
       _kp["poster"], "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/"
                      "le_fantome_de_l_opera_snd_full_dawa_9_2d1067d340-0x450.jpg")
 _km = OFE.read_festival("kinomania", _FestNet(), "2026-10-09", "2026-12-14", {})
-check("Kinomania reader: covered days and screenings",
+check("Kinomania reader: covered days and screenings (the closing night's stage show is not a film)",
       (_km["covered_from"], _km["covered_to"], len(_km["screenings"]), _km["screenings"][1][:4]),
-      ("2026-11-12", "2026-11-22", 5, ("Фантомът на операта", "2026-11-16", "19:00", "НДК - Зала 1")))
+      ("2026-11-12", "2026-11-22", 4, ("Фантомът на операта", "2026-11-16", "19:00", "НДК - Зала 1")))
+check("…the stage show is left out of screenings and films, and named in the notes",
+      (any("спектакъл" in x[0] for x in _km["screenings"]), any("спектакъл" in (f.get("title_bg") or "")
+                                                                 for f in _km["films"]),
+       any(n.startswith("not a film, left out: Великата илюзия") for n in _km["notes"])),
+      (False, False, True))
+check("not_a_film: only a trailing stage-show subtitle counts",
+      [OFE.not_a_film(t) for t in ("Великата илюзия - Мултижанров спектакъл", "Хамлет (спектакъл)",
+                                   "Последният спектакъл", "Спектакълът", "Концерт за пиано", "Фиорд")],
+      [True, True, False, False, False, False])
 
 
 class _EmptyKM(_FestNet):
@@ -1900,6 +1909,13 @@ def _times(rows, fid, v, d):
     return next((r[3] for r in rows if r[:3] == [fid, v, d]), None)
 
 
+_r, _p, _pr, _i = S.merge_festival_rows(_rows0, _pf0, _own0, {"cinelibri": [("a", "ndk1", "2026-10-16", "19:00")]},
+                                        {"cinelibri": ("2026-10-15", "2026-11-08")}, {}, [], _FL, _EN,
+                                        festival_venues=("ndk1",))
+check("0. PRELIM_FROM is written only for the festival venues the page lists (a page built before a new "
+      "venue reached src/data.html must still pass the gate)",
+      (_p.get("ndk1"), "frenski-institut" in _p, "toplo-film" in _p, "tsentralni-hali" in _p),
+      ("2026-11-09", False, False, False))
 _r, _p, _pr, _i = _M({"cinelibri": [("a", "dom-kino", "2026-10-15", "18:00")]})
 check("1. the venue lists the film that day at that time: nothing added",
       (_times(_r, "a", "dom-kino", "2026-10-15"), _pr, len(_i["listed"])), (["18:00"], [], 1))
