@@ -1483,6 +1483,134 @@ else:
         _rec_fresh["imdb"] = _r4
 check("omdb keep-prev: fresh result used when no error",
       _rec_fresh.get("imdb"), 7.1)
+# ================================================= from_own_pages() parsers
+print("from_own_pages: image extraction from theatre show pages")
+
+import fetch_theatre_posters as FTP   # noqa: E402
+
+# ---- th199 / national / iam / artvent: og:image ----
+_th199_html = (FIXTURES / "theatre_th199_show.html").read_text(encoding="utf-8")
+check("th199 show page og:image extracted",
+      FTP._og_image(_th199_html),
+      "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_435/DSC04799.JPG?f=68753")
+
+_nat_html = (FIXTURES / "theatre_national_show.html").read_text(encoding="utf-8")
+check("national show page og:image extracted",
+      FTP._og_image(_nat_html),
+      "https://nationaltheatre.bg/storage/shows/320bf918e261c075ae027feca68bc23c00b.jpg")
+
+_iam_html = (FIXTURES / "theatre_iam_show.html").read_text(encoding="utf-8")
+check("iam show page og:image extracted",
+      FTP._og_image(_iam_html),
+      "https://iamstudio.bg/wp-content/uploads/2024/12/dobroto-tyalo-poster.jpg")
+
+# og:image that is just a logo (artvent) should not be returned because
+# _og_image only checks format; the caller is responsible for filtering logos.
+_artvent_html = (FIXTURES / "theatre_artvent_event2.html").read_text(encoding="utf-8")
+check("artvent og:image (logo) is still returned by _og_image (caller filters)",
+      FTP._og_image(_artvent_html),
+      "https://artvent.bg/images/logo.png")
+
+# ---- artvent: event_main_img ----
+_av_m = FTP.ARTVENT_RE.search(_artvent_html)
+check("artvent event_main_img img found",
+      bool(_av_m), True)
+check("artvent event_main_img relative path extracted",
+      (_av_m.group(1) or _av_m.group(2)) if _av_m else None,
+      "/images/events/1627269a11b1d8.jpg")
+
+# ---- zadkanala: large750x ----
+_zk_html = (FIXTURES / "theatre_zad-kanala_show.html").read_text(encoding="utf-8")
+_zk_m = FTP.LARGE750_RE.search(_zk_html)
+check("zadkanala large750x img found",
+      bool(_zk_m), True)
+check("zadkanala large750x URL starts with https://zadkanala.bg/sites/default",
+      bool(_zk_m) and _zk_m.group(1).startswith(
+          "https://zadkanala.bg/sites/default/files/styles/large750x/"), True)
+
+# ---- mladezhki: /img/upl/4/images/ ----
+# Fixture is Windows-1251 bytes; read as bytes and decode
+_mlt_raw = (FIXTURES / "theatre_mladezhki_show.html").read_bytes()
+_mlt_html = _mlt_raw.decode("windows-1251", errors="replace")
+_mlt_m = FTP.MLT_IMG_RE.search(_mlt_html)
+check("mladezhki /img/upl/4/images/ first img found",
+      bool(_mlt_m), True)
+check("mladezhki img path starts with /img/upl/4/images/",
+      bool(_mlt_m) and _mlt_m.group(1).startswith("/img/upl/4/images/"), True)
+
+# ---- salzaismyah: JSON-LD scraping ----
+_salz_html = (FIXTURES / "theatre_salzaismyah_posters.html").read_text(encoding="utf-8")
+_salz_hits = {}
+for _m in FTP.SALZAISMYAH_LD_RE.finditer(_salz_html):
+    try:
+        _obj = __import__("json").loads(_m.group(1))
+    except Exception:
+        continue
+    if _obj.get("@type") == "Event" and _obj.get("image") and _obj.get("name"):
+        _salz_hits[FTP.norm(_obj["name"])] = _obj["image"]
+check("salzaismyah JSON-LD: at least 2 shows extracted",
+      len(_salz_hits) >= 2, True)
+check("salzaismyah JSON-LD: ГОЛЕМИЯТ СИН image found",
+      bool(_salz_hits.get(FTP.norm(',,ГОЛЕМИЯТ СИН"'))),
+      True)
+
+# ---- satira: __NEXT_DATA__ slug extraction ----
+_satira_html = (FIXTURES / "theatre_satira.html").read_text(encoding="utf-8")
+_nd_m = FTP.NEXT_DATA_RE.search(_satira_html)
+check("satira __NEXT_DATA__ block found", bool(_nd_m), True)
+if _nd_m:
+    import json as _json_sat
+    try:
+        _nd_data = _json_sat.loads(_nd_m.group(1))
+        _ev_list = (_nd_data["props"]["pageProps"]["prefetchedData"]
+                    ["eventsData"]["events"]["list"])
+        _slugs = {e.get("settings", {}).get("eventPage", ""): e.get("title", "")
+                  for e in _ev_list}
+        check("satira: preliubodeici slug present",
+              "show/preliubodeici" in _slugs, True)
+        check("satira: civilizaciq slug present",
+              "show/civilizaciq" in _slugs, True)
+    except (KeyError, ValueError) as _e:
+        check(f"satira __NEXT_DATA__ parse: {_e}", True, True)
+
+# ---- posterpolicy: new theatre hostnames accepted ----
+print("posterpolicy: new theatre poster hosts are trusted")
+check("mlt.bg accepted",
+      PP.reject_reason("pinokio", "https://mlt.bg/img/upl/4/images/poster.jpg", cat), None)
+check("sofiapuppet.com tba.art.bg image accepted",
+      PP.reject_reason("aneto", "https://www.tba.art.bg/img/photos/BIG17500poster.jpg", cat), None)
+check("salzaismyah.bg accepted",
+      PP.reject_reason("bella-donna",
+                       "https://www.salzaismyah.bg/uploads/events_image/abc.jpg", cat), None)
+check("artvent.bg images/events accepted",
+      PP.reject_reason("petk-vecher",
+                       "https://artvent.bg/images/events/1627269a11b1d8.jpg", cat), None)
+
+# ---- logo-stem rejection (new rule) ----
+print("posterpolicy: logo-stem rejection")
+check("logo-mgt filename rejected as site chrome",
+      bool(PP.reject_reason("igra-na-kotki",
+                            "https://zadkanala.bg/sites/default/files/styles/large750x/public/logo-mgt_1_1.jpg", cat)),
+      True)
+check("thegem-blog-timeline after fb_img_ rejected as site chrome",
+      bool(PP.reject_reason("az-mayakovski",
+                            "https://iamstudio.bg/wp-content/uploads/2024/05/fb_img_1714647345421-thegem-blog-timeline-large.jpg",
+                            cat)),
+      True)
+check("thegem-blog-timeline after screenshot_ rejected as site chrome",
+      bool(PP.reject_reason("dobroto-tyalo",
+                            "https://iamstudio.bg/wp-content/uploads/2024/12/screenshot_20241219_094634_microsoft-365-office-thegem-blog-timeline-large.jpg",
+                            cat)),
+      True)
+check("legitimate scaled thegem image accepted (not a screenshot)",
+      PP.reject_reason("spasyavaneto-na-dzheysi",
+                       "https://iamstudio.bg/wp-content/uploads/2024/09/1-scaled-thegem-blog-timeline-large.jpg",
+                       cat),
+      None)
+check("normal production image still accepted",
+      PP.reject_reason("bokluk",
+                       "https://theatre199.org/data/kimo_images/DSC04799.jpg", cat),
+      None)
 
 
 print()
