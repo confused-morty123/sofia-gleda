@@ -7,7 +7,13 @@ changes.json (the diff for this run) and refreshes SNAPSHOT.lastValidated /
 changelog.
 
 Guiding rule (the app's hard-won lesson): a dead or stale source must NEVER
-empty a venue. Any venue we can't reach keeps its previous rows.
+empty a venue, and never stop the others. A venue whose own programme cannot be
+read this run — or that fails its self-check — keeps its previous rows, shown
+as PRELIMINARY from today, for at most venue_state.KEEP_DAYS days after its
+last successful read (official_state.json); every other venue is merged
+normally. The listing window rolls: today (Europe/Sofia) .. today + the
+horizon (listing_window.py), stored with SNAPSHOT.generated. health.json lists
+what a person should look at (a venue emptied, blocked, unreachable, kept).
 
 Festival programmes (official_festivals.py: CineLibri, Kinomania) are official
 for the venues with no programme of their own (FESTIVAL_VENUES) and add
@@ -38,6 +44,8 @@ import official_sources as OS                   # each cinema's own programme
 import official_theatres as OT                  # each theatre's own programme
 import official_festivals as OF                 # festival programmes (CineLibri, Kinomania)
 import show_identity as SI                      # which show does a theatre's title mean
+import listing_window as LW                     # today (Europe/Sofia) .. today + horizon
+import venue_state as VS                        # per-venue isolation, kept-row ageing, health
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
@@ -58,6 +66,14 @@ BUILD_REPORT = ROOT / "build_report.json"
 FILM_INFO = ROOT / "film_info.json"
 TMDB_FILMS = ROOT / "tmdb_films.json"
 FILM_LINK_POSTERS = ROOT / "film_links_posters.json"
+# The last successful read of every venue's source (committed by the workflow):
+# an unreachable venue's kept rows are preliminary, and gone after
+# venue_state.KEEP_DAYS days without a successful read.
+OFFICIAL_STATE = ROOT / "official_state.json"
+# This run's warnings and errors, [{level, venue, message}], for the workflow
+# to print: a venue emptied, a source blocked or unreachable, rows kept as
+# preliminary, a self-check fallback, a count far below the previous run's.
+HEALTH = ROOT / "health.json"
 
 # Headers, timeouts, retries and per-host politeness live in netfetch.py, so every
 # scraper behaves the same way against the same fragile sources. The old
@@ -916,6 +932,10 @@ def _day_after(iso):
     return (dt.date.fromisoformat(iso) + dt.timedelta(days=1)).isoformat()
 
 
+def _day_before(iso):
+    return (dt.date.fromisoformat(iso) - dt.timedelta(days=1)).isoformat()
+
+
 def identity_meta(meta):
     """The parts of a source's metadata that identify a film."""
     meta = meta or {}
@@ -998,15 +1018,27 @@ def resolve_official_rows(index, results, agg_strict, mint):
 
 
 def merge_cinema_venue(venue, status, official_rows, coverage, agg_rows, agg_fetched,
-                       prev_rows, prev_prelim, floor, end, resolve_kept=None):
+                       prev_rows, prev_prelim, floor, end, resolve_kept=None,
+                       confirmed_to=None, expired=False):
     """One venue's SHOWTIMES rows and PRELIM_FROM date. Pure — no network.
 
     status        "official"    coverage=(from, to); official_rows=[(fid, date, time)]
-                  "unreachable" the official source failed: keep the previous rows
-                                and the previous PRELIM_FROM (today if none)
+                  "unreachable" the official source failed (or failed its
+                                self-check) this run: every row is PRELIMINARY
+                                from today (owner, 2026-10-09). Every previous row
+                                is kept — the aggregator never deletes one — and
+                                the aggregator only ADDS rows on dates the kept
+                                rows do not cover: neither a date with a kept row
+                                nor one up to confirmed_to (the last date the
+                                venue's own programme vouched for when last read).
+                                The same film on a kept date at another time is
+                                logged (info["conflicts"]), the kept row stays.
+                                Once the source has failed for more than
+                                venue_state.KEEP_DAYS days (expired) nothing is
+                                kept: the aggregator's rows alone.
                   "none"        no official source exists: aggregator rows, all
                                 preliminary from today (keep-previous if the
-                                aggregator is down too)
+                                aggregator is down too, until expired)
     agg_rows      [(fid or None, title, date, [times], link)] — fid resolved
                   strictly; resolve_kept(title, date, times, link) may place
                   (or mint) an unresolved row that survives the merge.
@@ -1034,9 +1066,28 @@ def merge_cinema_venue(venue, status, official_rows, coverage, agg_rows, agg_fet
         return fid
 
     if status == "unreachable":
-        for r in prev_rows:
-            put(r[0], r[2], r[3])
-        return finish(prev_prelim or floor)
+        conf = None if expired else (confirmed_to or (_day_before(prev_prelim) if prev_prelim else None))
+        info["kept"], info["conflicts"] = 0, []
+        held = defaultdict(set)                       # date -> film ids kept on it
+        if not expired:
+            for r in prev_rows:
+                if floor <= r[2] <= end and r[3]:
+                    put(r[0], r[2], r[3])
+                    info["kept"] += len(r[3])
+                    held[r[2]].add(r[0])
+        if agg_fetched:
+            for fid, title, d, times, link in agg_rows:
+                if not (floor <= d <= end):
+                    continue
+                if not expired and (d in held or (conf and d <= conf)):
+                    other = sorted(set(times) - cells.get((fid, d), set())) if fid in held.get(d, ()) else []
+                    if other:                         # same film, same day, another time: kept row wins
+                        info["conflicts"].append([d, fid, sorted(cells[(fid, d)]), other])
+                    continue
+                fid = place(fid, title, d, times, link)
+                put(fid, d, times)
+        info["prelim_rows"] = sum(len(ts) for ts in cells.values())
+        return finish(floor)
 
     if status == "none":
         if agg_fetched:
@@ -1045,7 +1096,7 @@ def merge_cinema_venue(venue, status, official_rows, coverage, agg_rows, agg_fet
                     fid = place(fid, title, d, times, link)
                     put(fid, d, times)
                     info["prelim_rows"] += len(times) if fid else 0
-        else:
+        elif not expired:
             for r in prev_rows:
                 put(r[0], r[2], r[3])
         return finish(floor)
@@ -1183,7 +1234,8 @@ def resolve_festival_films(index, films, slots, own_slots, mint, festival):
 
 
 def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest_rows,
-                        prev_prelim_rows, floor, end, festival_venues=FESTIVAL_VENUES):
+                        prev_prelim_rows, floor, end, festival_venues=FESTIVAL_VENUES,
+                        kept_venues=()):
     """Festival screenings into the cinema rows. Pure — no network.
 
     rows             SHOWTIMES after the cinema merge: [[fid, venue, date, [times]]]
@@ -1203,6 +1255,12 @@ def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest
                      venue's own programme lists. A festival absent from fest_rows
                      (no data at all this run) keeps last run's rows untouched.
     prev_prelim_rows last run's PRELIM_ROWS: [(fid, venue, date)]
+    kept_venues      cinemas whose own programme could not be read this run
+                     (venue_state: every previous row kept, preliminary from
+                     today). Their kept rows are not their programme — no festival
+                     row is "listed" or "contradicted" by them (`own` has nothing
+                     for them) — and none of them is removed here; the festival's
+                     rows are added, preliminary by date.
     Returns (rows, prelim_from, prelim_rows, info).
 
     The rules (owner, 2026-10-09):
@@ -1244,6 +1302,8 @@ def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest
         if fest not in fest_rows:
             continue
         for fid, v, d, t in prev:
+            if v in kept_venues:
+                continue                          # a kept venue keeps every previous row
             if t not in own_times(fid, v, d) and (fid, v, d) in cells:
                 cells[(fid, v, d)].discard(t)
     spans = [tuple(c) for c in fest_cover.values() if c and c[0] and c[1]]
@@ -1288,6 +1348,44 @@ def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest
     out = [[fid, v, d, sorted(ts)] for (fid, v, d), ts in cells.items() if ts]
     out.sort(key=lambda r: (r[1], r[2], r[0]))
     return out, pf, sorted([list(x) for x in prelim_rows]), info
+
+
+def festival_venue_outcome(venue, rows, fest_fresh, fest_report, fest_rows, prev_fest_rows,
+                           policy, floor):
+    """One festival venue after the festival merge, under the owner's stale rule
+    (venue_state.py). Pure — no network, no state written.
+
+    A festival venue has no programme of its own: the festivals are its official
+    source. A row there that no festival vouched for THIS run — its festival could
+    not be read (kept from last run), was read only in part, or no festival lists
+    it any more — makes the venue PRELIMINARY at once; once the venue has had no
+    good festival read for more than KEEP_DAYS days those rows are removed.
+    rows        SHOWTIMES after merge_festival_rows
+    fest_fresh  {festival: {(fid, venue, date)}} read and vouched for this run
+    fest_rows / prev_fest_rows  each festival's rows this run / last run
+    policy      callable() -> venue_state.kept_policy(...) for this venue,
+                asked only when something is kept
+    Returns (rows, outcome): {"status": "festival" | "unreachable", "why",
+    "prelim_from" (floor, or None = the merge's), "kept": rows held unvouched,
+    "policy", "ok": True (read and vouched) | False | None (nothing to read),
+    "fresh": the vouched (fid, venue, date)}."""
+    fresh_v = {k for keys in fest_fresh.values() for k in keys if k[1] == venue}
+    kept_v = [r for r in rows if r[1] == venue and (r[0], venue, r[2]) not in fresh_v]
+    failing = sorted(f for f, r_ in fest_report.items() if r_.get("status") != "official"
+                     and any(x[1] == venue for x in list(prev_fest_rows.get(f) or [])
+                             + list(fest_rows.get(f) or [])))
+    if not kept_v and not failing:
+        return rows, {"status": "festival", "why": None, "prelim_from": None, "kept": [],
+                      "policy": None, "ok": True if fresh_v else None, "fresh": fresh_v}
+    pol = policy()
+    why = ("festival programme not read: " + ", ".join(
+               f"{f} ({fest_report[f].get('error') or fest_report[f].get('status')})" for f in failing)
+           if failing else "rows no festival vouched for this run")
+    if pol.get("expired"):
+        rows = [r for r in rows if r[1] != venue or (r[0], venue, r[2]) in fresh_v]
+        kept_v = []
+    return rows, {"status": "unreachable", "why": why, "prelim_from": floor, "kept": kept_v,
+                  "policy": pol, "ok": False, "fresh": fresh_v}
 
 
 def festival_ticket_links(screens, fresh, rows):
@@ -1614,13 +1712,23 @@ def retitle_minted(minted, spellings):
 
 
 def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_rows, agg_dates,
-                        prev_rows, prev_prelim, floor, end, excluded_keys=()):
+                        prev_rows, prev_prelim, floor, end, excluded_keys=(),
+                        confirmed_to=None, expired=False):
     """One theatre's PERFORMANCES rows and PRELIM_FROM date. Pure — no network.
 
     status        "official"    coverage=(from, to): official_rows inside it are
                                 the theatre's whole programme for those dates
-                  "unreachable" the official source failed this run: the previous
-                                rows and PRELIM_FROM are kept (today if none)
+                  "unreachable" the official source failed (or failed its
+                                self-check) this run: every row is PRELIMINARY
+                                from today. Every previous row is kept;
+                                theatre.art.bg only ADDS rows on dates read that
+                                the kept rows do not cover (no kept row, and after
+                                confirmed_to — the last date the theatre's own
+                                programme vouched for when last read). The same
+                                show on a kept date at another time is logged
+                                (info["conflicts"]); the kept row stays. Expired
+                                (no successful read for more than
+                                venue_state.KEEP_DAYS days): theatre.art.bg alone.
                   "none"        no official source: aggregator rows only, all
                                 preliminary from today
     official_rows, extra_rows   [(show, date, time, hall, price)]; extra rows are
@@ -1659,9 +1767,27 @@ def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_
         return put(r[0], r[1], r[2], r[3] if len(r) > 3 else None, r[4] if len(r) > 4 else None)
 
     if status == "unreachable":
-        for r in prev_rows:
-            keep_prev(r)
-        return finish(prev_prelim or floor)
+        conf = None if expired else (confirmed_to or (_day_before(prev_prelim) if prev_prelim else None))
+        info["kept"], info["conflicts"] = 0, []
+        held = {}                                     # date -> {show: [times]} kept on it
+        if not expired:
+            for r in prev_rows:
+                if keep_prev(r):
+                    info["kept"] += 1
+                    held.setdefault(r[1], {}).setdefault(r[0], []).append(r[2])
+        for sid, title, d, t, hall, *price in agg_rows:
+            if d not in agg_dates or not (floor <= d <= end):
+                continue
+            if not expired and (d in held or (conf and d <= conf)):
+                if sid in held.get(d, {}) and t not in held[d][sid]:
+                    info["conflicts"].append([d, sid, sorted(held[d][sid]), t])   # the kept row wins
+                continue
+            if not sid:
+                info["unplaced"].append([d, t, title])
+            else:
+                put(sid, d, t, hall, price[0] if price else None)
+        info["prelim_rows"] = len(cells)
+        return finish(floor)
 
     if status == "none":
         for sid, title, d, t, hall, *price in agg_rows:
@@ -1672,7 +1798,7 @@ def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_
             elif put(sid, d, t, hall, price[0] if price else None):
                 info["prelim_rows"] += 1
         for r in prev_rows:
-            if r[1] not in agg_dates and keep_prev(r):
+            if r[1] not in agg_dates and not expired and keep_prev(r):
                 info["prelim_rows"] += 1
         return finish(floor)
 
@@ -1844,17 +1970,19 @@ def previous_festivals():
         return {}
 
 
-def implausible_drop(prev, cur, min_rate=3):
+def implausible_drop(prev, cur, min_rate=3, min_days=1):
     """A source that worked last run and now yields a fraction of its usual
     screenings per covered day has broken half-way (markup drift) — stop the
     scrape rather than publish a thinned programme. Returns a reason or None.
     min_rate: the per-day level below which a programme is too small to judge
-    (3 for a cinema; a theatre plays one to five times a day, so 1)."""
+    (3 for a cinema; a theatre plays one to five times a day, so 1).
+    min_days: the coverage below which a rate means nothing (a theatre read on
+    a month's last day may cover that day alone, dark; 7 for a theatre)."""
     if not prev or prev.get("status") != "official" or not cur or cur.get("status") != "official":
         return None
     pr, pd_ = prev.get("screenings") or 0, prev.get("days") or 0
     cr, cd = cur.get("screenings") or 0, cur.get("days") or 0
-    if pr < 20 or not pd_ or not cd:
+    if pr < 20 or not pd_ or not cd or cd < min_days:
         return None
     before, now = pr / pd_, cr / cd
     if before >= min_rate and now < 0.25 * before:
@@ -1968,6 +2096,221 @@ def print_venue_table(stats):
               f"{st.get('matched', 0):>8d}  {note}")
 
 
+# --- per-venue self-checks, the rolling window, the run's health (P1A) ---------
+# Time each source may take (netfetch deadlines): one slow venue can no longer
+# eat the step's 30 minutes; a venue that runs out is unreachable this run.
+CINEMA_VENUE_SECONDS = 300      # one cinema's own programme, every day page of it
+THEATRE_VENUE_SECONDS = 180     # one theatre's own programme
+ART_AGGREGATOR_SECONDS = 420    # theatre.art.bg, every day of the window
+AGG_VENUE_SECONDS = 90          # one programata.bg cinema page
+UPGRADE_SECONDS = 180           # the VLINKS ticket-page upgrade
+# One festival programme (official_festivals.py), inside the run's budget. CineLibri
+# honours robots.txt's Crawl-delay: 10 — about 29 requests (the programme, one page
+# per remaining festival day, two REST calls for film pages and one for images),
+# ~330 s on 2026-10-12; the read ends early, coverage with it, when time runs out.
+FESTIVAL_SECONDS = 420
+
+
+def cinema_venue_problems(status, rows, want, covered, prev_stat, stub, floor, end, known):
+    """Why one cinema's merged rows may not be published ([] = they may).
+    want: {(fid, date, time)} of its own programme; covered: [from, to] it
+    vouches for; stub: {"status", "screenings", "days"} for implausible_drop."""
+    out = []
+    if status == "official" and covered:
+        cf, ct = covered
+        w = {x for x in want if cf <= x[1] <= ct}
+        got = {(r[0], r[2], t) for r in rows if cf <= r[2] <= ct for t in r[3]}
+        if w != got:
+            out.append(f"written rows differ from its own programme inside {cf}..{ct} "
+                       f"({len(got - w)} extra, {len(w - got)} missing)")
+        why = implausible_drop(prev_stat, stub)
+        if why:
+            out.append(f"implausibly few rows — {why}")
+    if any(not (floor <= r[2] <= end) for r in rows):
+        out.append("a row outside today..window end")
+    unknown = sorted({r[0] for r in rows} - set(known))
+    if unknown:
+        out.append(f"showtimes for unknown film ids: {', '.join(unknown[:5])}")
+    return out
+
+
+def theatre_venue_problems(venue, status, rows, want, covered, prev_stat, stub, floor, end, shows):
+    """The same for one theatre's PERFORMANCES rows; shows: the ShowIndex."""
+    out = []
+    if status == "official" and covered:
+        cf, ct = covered
+        w = {x for x in want if cf <= x[1] <= ct}
+        got = {(r[0], r[1], r[2]) for r in rows if cf <= r[1] <= ct}
+        if w != got:
+            out.append(f"written performances differ from its own programme inside {cf}..{ct} "
+                       f"({len(got - w)} extra, {len(w - got)} missing)")
+        why = implausible_drop(prev_stat, stub, min_rate=1, min_days=7)
+        if why:
+            out.append(f"implausibly few performances — {why}")
+    if any(not (floor <= r[1] <= end) for r in rows):
+        out.append("a performance outside today..window end")
+    ids = {r[0] for r in rows}
+    unknown = sorted(ids - set(shows.shows))
+    if unknown:
+        out.append(f"performances for unknown show ids: {', '.join(unknown[:5])}")
+    elsewhere = sorted(i for i in ids - set(unknown) if shows.theatre_of(i) != venue)
+    if elsewhere:
+        out.append(f"performances of another theatre's shows: {', '.join(elsewhere[:5])}")
+    unmerged = sorted(i for i in ids if shows.canonical(i) != i)
+    if unmerged:
+        out.append(f"performances still filed under a merged-away show: {', '.join(unmerged[:5])}")
+    if any(len(r) != 5 or not re.fullmatch(r"\d\d:\d\d", r[2] or "") for r in rows):
+        out.append("a performance row is not [show, date, HH:MM, hall, price]")
+    return out
+
+
+def upcoming_counts(showtimes, performances, theatre_of, floor):
+    """{venue: upcoming listings}: screenings (times) per cinema, performances per theatre."""
+    out = defaultdict(int)
+    for r in showtimes:
+        if len(r) > 3 and r[2] >= floor:
+            out[r[1]] += len(r[3])
+    for r in performances:
+        if len(r) > 1 and r[1] >= floor:
+            out[theatre_of(r[0])] += 1
+    return out
+
+
+def run_flags(secondary, th_official, venue_report):
+    """Health entries a person should look at beyond each venue's status: a
+    reseller's listing shown in place of a theatre's own programme
+    (preliminary), ticket-list times off the 5-minute grid (published as
+    listed), and aggregator times that disagree with an unreachable venue's
+    kept rows (the kept rows are shown)."""
+    out = []
+    for v, sec in secondary.items():
+        out.append({"level": "warning", "venue": v,
+                    "message": f"own programme not read: its listing on {sec['source']} (a reseller) fills in, "
+                               f"all PRELIMINARY ({len(sec['rows'])} upcoming performance(s) on its own halls)"})
+    for v, res in th_official.items():
+        odd = OT.off_grid_ticket_times(res)
+        if odd:
+            out.append({"level": "warning", "venue": v,
+                        "message": "ticket-list time(s) off the 5-minute grid, published as listed — check by "
+                                   "hand: " + "; ".join(f"{d} {tm} {t}" for d, tm, t in odd[:8])})
+    for vid, r in venue_report.items():
+        if r.get("kept_conflicts"):
+            out.append({"level": "warning", "venue": vid,
+                        "message": "the aggregator lists other times than the kept rows (the kept rows are "
+                                   "shown): " + "; ".join(f"{c[0]} {c[1]} kept {c[2]}, aggregator {c[3]}"
+                                                         for c in r["kept_conflicts"][:6])})
+    return out
+
+
+def festival_flags(fest_report):
+    """health.json entries for the festival programmes themselves: one not read
+    this run (its rows kept, preliminary at cinemas anyway), gone stale (rows
+    removed) or refused as blocked."""
+    out = []
+    for fest, r in (fest_report or {}).items():
+        st = r.get("status")
+        why = r.get("error") or "not read"
+        if st == "kept-previous":
+            out.append({"level": "warning", "venue": fest,
+                        "message": f"festival programme not read ({why}); last run's rows kept "
+                                   f"(festival venues preliminary; removed after {VS.KEEP_DAYS} days)"})
+        elif st == "expired":
+            out.append({"level": "warning", "venue": fest,
+                        "message": f"festival programme not read for over {VS.KEEP_DAYS} days ({why}); "
+                                   f"its rows removed"})
+        elif st == "unreachable":
+            out.append({"level": "warning", "venue": fest,
+                        "message": f"festival programme not read ({why}); nothing kept"})
+        for url, _host_, b in (r.get("blocked") or [])[:1]:
+            out.append({"level": "error", "venue": fest, "message": f"blocked from this network: {b} at {url}"})
+    return out
+
+
+def run_health(venue_report, venue_ids, counts_now, counts_prev, blocked, selfcheck, policy,
+               agg, art_read, problems=(), flags=()):
+    """health.json for this run (venue_state.health_entries), written at once.
+    venue_ids: [(venue, "cinema"|"theatre")] — every venue the app lists, so one
+    with no source that empties is reported too. Returns the entries."""
+    venues = []
+    for vid, kind in venue_ids:
+        r = venue_report.get(vid) or {"status": "no source", "source": "kept rows only"}
+        agg_name = "theatre.art.bg" if kind == "theatre" else "programata.bg"
+        agg_read = bool(art_read) if kind == "theatre" else bool((agg.get(vid) or {}).get("fetched"))
+        venues.append({"venue": vid, "kind": kind, "status": r.get("status"), "source": r.get("source"),
+                       "error": r.get("error"), "now": counts_now.get(vid, 0),
+                       "prev": counts_prev.get(vid, 0), "blocked": blocked.get(vid),
+                       "selfcheck": selfcheck.get(vid), "policy": policy.get(vid),
+                       "agg_read": agg_read, "agg_name": agg_name})
+    extra = [{"level": "error", "venue": "*", "message": f"scrape aborted, nothing published: {p}"}
+             for p in problems] + list(flags)
+    for name in ("programata.bg", "theatre.art.bg"):           # the aggregators
+        for url, _host_, why in (blocked.get(name) or [])[:1]:
+            extra.append({"level": "error", "venue": name,
+                          "message": f"blocked from this network: {why} at {url}"})
+    if not art_read:
+        extra.append({"level": "warning", "venue": "theatre.art.bg",
+                      "message": "aggregator not read this run — previous preliminary rows kept"})
+    down = sorted(v for v, a in agg.items() if not a.get("fetched"))
+    if down:
+        extra.append({"level": "warning", "venue": "programata.bg",
+                      "message": f"aggregator not read this run ({len(down)} cinema page(s))"})
+    entries = VS.health_entries(venues, extra)
+    VS.write_health(HEALTH, entries)
+    n_err = sum(1 for e in entries if e["level"] == "error")
+    print(f"health: {n_err} error(s), {len(entries) - n_err} warning(s) -> {HEALTH.name}")
+    for e in entries:
+        if e["level"] == "error":
+            print(f"  ✗ {e['venue']}: {e['message'][:160]}")
+    return entries
+
+
+def save_run_state(state, venue_report, agg, art_read, today, stamp):
+    """official_state.json: the outcome of this run for every venue with a
+    source (venue_state.record_read). Written only with index.html."""
+    for vid, r in venue_report.items():
+        kind = r.get("kind", "cinema")
+        if (vid in OS.OFFICIAL) if kind == "cinema" else (vid in OT.FETCHERS):
+            VS.record_read(state, vid, r.get("status") == "official", today,
+                           covered_to=(r.get("covered") or [None, None])[1], error=r.get("error"))
+        elif r.get("status") == "none":
+            read = bool(art_read) if kind == "theatre" else bool((agg.get(vid) or {}).get("fetched"))
+            VS.record_read(state, vid, read, today, error="aggregator not read",
+                           source="theatre.art.bg" if kind == "theatre" else "programata.bg")
+    VS.save_state(OFFICIAL_STATE, state, stamp)
+
+
+def write_snapshot(page, w_from, w_to, generated):
+    """SNAPSHOT.window = {from: w_from, to: w_to} and SNAPSHOT.generated (this
+    run, ISO date-time in Europe/Sofia; the publish gate checks its age).
+    The rolling window (CODE-01): `to` advances with `from` on every run."""
+    m = re.search(r"^const SNAPSHOT\s*=\s*(\{.*\});[ \t]*$", page, re.M)
+    snap = None
+    if m:
+        try:
+            snap = json.loads(m.group(1))
+        except ValueError:
+            snap = None
+    if isinstance(snap, dict) and isinstance(snap.get("window"), dict):
+        new = {}
+        for k, v in snap.items():
+            if k == "generated":
+                continue
+            new[k] = v
+            if k == "window":
+                new[k] = {**v, "from": w_from, "to": w_to}
+                new["generated"] = generated
+        lit = json.dumps(new, ensure_ascii=False, separators=(",", ":"))
+        return page[:m.start(1)] + lit + page[m.end(1):]
+    wm = re.search(r'("?window"?\s*:\s*\{\s*"?from"?\s*:\s*")\d{4}-\d\d-\d\d'
+                   r'("\s*,\s*"?to"?\s*:\s*")\d{4}-\d\d-\d\d("\s*\})', page)
+    if not wm:
+        raise KeyError("SNAPSHOT.window")
+    rest = page[wm.end():]
+    rest = re.sub(r'^\s*,\s*"?generated"?\s*:\s*"[^"]*"', "", rest, count=1)
+    return (page[:wm.start()] + wm.group(1) + w_from + wm.group(2) + w_to + wm.group(3)
+            + f',"generated":"{generated}"' + rest)
+
+
 def diagnose(session, window, index, stats, floor, end):
     """Probe every cinema source — each venue's own programme and the
     aggregator — and say exactly where each one breaks down. Writes nothing."""
@@ -2009,9 +2352,10 @@ def main():
     ap.add_argument("--budget", type=int, default=1500,
                     help="seconds of network time before the run gives up gracefully, "
                          "so one dead host cannot stall the weekly job (default 1500)")
-    ap.add_argument("--festival-budget", type=int, default=600,
-                    help="seconds of network time for the festival programmes "
-                         "(official_festivals.py; CineLibri asks for 10 s between requests)")
+    ap.add_argument("--festival-budget", type=int, default=FESTIVAL_SECONDS,
+                    help="seconds one festival programme may take (official_festivals.py; "
+                         f"CineLibri asks for 10 s between requests; default {FESTIVAL_SECONDS}), "
+                         "inside the run's --budget")
     ap.add_argument("--no-festivals", action="store_true",
                     help="skip the festival programmes: keep last run's festival rows")
     args = ap.parse_args()
@@ -2022,18 +2366,15 @@ def main():
     win_m = re.search(r'"?window"?\s*:\s*\{\s*"?from"?\s*:\s*"(\d{4}-\d\d-\d\d)"\s*,\s*"?to"?\s*:\s*"(\d{4}-\d\d-\d\d)"', src)
     if not win_m:
         sys.exit("could not find the snapshot window in " + str(html_path))
-    start, end = win_m.group(1), win_m.group(2)
-    # Clamp the dating floor to *today*: the static snapshot window still opens at
-    # `start` (e.g. 2026-09-15), but we must never scrape, date, or store a showing
-    # that has already passed. floor = max(start, today) guarantees past dates can
-    # neither leak in from a parsed page nor be resurrected from stale rows.
-    today_iso = dt.date.today().isoformat()
-    floor = max(start, today_iso)
-    d0, d1 = dt.date.fromisoformat(floor), dt.date.fromisoformat(end)
-    if d1 < d0:
-        sys.exit(f"snapshot window end {end} is before today {today_iso}; refresh the snapshot window")
-    window = [(d0 + dt.timedelta(days=i)).isoformat() for i in range((d1 - d0).days + 1)]
-    print(f"window {start} .. {end} -> dating floor {floor} ({len(window)} days)")
+    # The rolling window (CODE-01): today in Sofia .. today + the horizon, from
+    # the one shared rule (listing_window.py) — never the page's stored window,
+    # which only records the previous run's. floor = today guarantees past dates
+    # can neither leak in from a parsed page nor be resurrected from stale rows.
+    floor, end = LW.listing_window()
+    today_iso = floor
+    window = LW.window_days()
+    print(f"window {floor} .. {end} ({len(window)} days; the page had "
+          f"{win_m.group(1)} .. {win_m.group(2)})")
 
     st_s, st_e, st_lit = extract_array(src, "SHOWTIMES")
     pf_s, pf_e, pf_lit = extract_array(src, "PERFORMANCES")
@@ -2195,18 +2536,30 @@ def main():
     cinema_ids = list(cinema_kind) or list(CINEMA_ORDER)
     old_prelim = read_prelim_from(src)
     prev_stats = previous_official_stats()
+    # per venue: the last successful read (official_state.json), what its fetch
+    # was refused as (401/403/429/challenge), a self-check it failed this run
+    state = VS.load_state(OFFICIAL_STATE)
+    blocked, selfcheck, policy = {}, {}, {}
+
+    def kept(v):
+        if v not in policy:
+            policy[v] = VS.kept_policy(state["venues"].get(v), today_iso, old_prelim.get(v))
+        return policy[v]
 
     # 1) the aggregator. Read for every venue it carries: its rows feed the
     #    preliminary days after a venue's own programme ends, Cineland (no
     #    official source), and the disagreement log inside official coverage.
-    agg = {}
+    agg, n_agg0 = {}, len(session.log)
     for vid in AGGREGATOR_VENUES:
         url = CINEMA_SOURCES.get(vid)
         if not url:
             continue
         print(f"aggregator {vid}")
-        rows = scrape_cinema(vid, url, session, window, venue_stats)
+        with session.deadline(AGG_VENUE_SECONDS):
+            rows = scrape_cinema(vid, url, session, window, venue_stats)
         agg[vid] = {"fetched": bool(venue_stats.get(vid, {}).get("fetched")), "rows": rows}
+
+    blocked["programata.bg"] = session.blocked_since(n_agg0)
 
     def strict(title, v):
         return index.resolve(title, v, fuzzy=False)[0]
@@ -2226,14 +2579,29 @@ def main():
         if vid not in OS.OFFICIAL or vid not in cinema_ids:
             continue
         print(f"official {vid}")
-        res = OS.fetch_official(vid, session, floor, end, official_errors)
+        n0 = len(session.log)
+        with session.deadline(CINEMA_VENUE_SECONDS):
+            res = OS.fetch_official(vid, session, floor, end, official_errors)
+        blocked[vid] = session.blocked_since(n0)
         if res is None:
             print(f"  ! {vid}: {official_errors.get(vid)} — previous rows kept")
         else:
             # only rows the app can show: a weekly page also lists days already past
             res.rows = [r for r in res.rows if floor <= r[1] <= end]
             official[vid] = res
-    resolved, minted_official = resolve_official_rows(index, official, agg_strict, mint_film)
+    try:
+        resolved, minted_official = resolve_official_rows(index, official, agg_strict, mint_film)
+    except Exception as e:                         # isolate: resolve venue by venue
+        print(f"  ! resolving official titles crashed ({type(e).__name__}: {e}) — venue by venue")
+        resolved, minted_official = {}, []
+        for vid in list(official):
+            try:
+                got, minted_v = resolve_official_rows(index, {vid: official[vid]}, agg_strict, mint_film)
+                resolved.update(got)
+                minted_official += minted_v
+            except Exception as e2:
+                official_errors[vid] = f"title resolution crashed: {type(e2).__name__}: {e2}"
+                official.pop(vid)
 
     # official film pages: the info link (LINKS fallback) and the per-venue link
     fresh_vlinks = {}
@@ -2278,7 +2646,7 @@ def main():
             source = res.source
         elif vid in OS.OFFICIAL:
             status, cov, orows = "unreachable", None, []
-            source = "previous run kept — official source failed"
+            source = "previous run kept as preliminary — official source failed"
             diff.stale.append(vid)
         elif vid in agg:
             status, cov, orows = "none", None, []
@@ -2290,14 +2658,30 @@ def main():
             if old_prelim.get(vid):                # kept rows keep their marking; the
                 prelim[vid] = old_prelim[vid]      # festival merge below may reset it
             continue                               # no source at all (casa-libri, ndk1)
-        rows, pf, info = merge_cinema_venue(vid, status, orows, cov, agg_rows, a["fetched"],
-                                            prev_rows, old_prelim.get(vid), floor, end,
-                                            resolve_kept(vid))
+        # one venue, isolated (CODE-02): a merge that crashes or fails its
+        # self-check is merged again as unreachable — this venue only
+        pol, cf_ct = kept(vid), ([max(cov[0], floor), min(cov[1], end)] if cov else None)
+        stub = {"status": status, "screenings": sum(1 for _f, d, _t in orows if cf_ct and cf_ct[0] <= d <= cf_ct[1]),
+                "days": ((dt.date.fromisoformat(cf_ct[1]) - dt.date.fromisoformat(cf_ct[0])).days + 1) if cf_ct else 0}
+        mk = dict(prev_rows=prev_rows, prev_prelim=old_prelim.get(vid), floor=floor, end=end,
+                  resolve_kept=resolve_kept(vid), confirmed_to=pol["confirmed_to"], expired=pol["expired"])
+        rows, pf, info, failed = VS.run_isolated(
+            lambda: merge_cinema_venue(vid, status, orows, cov, agg_rows, a["fetched"], **mk),
+            lambda: merge_cinema_venue(vid, "unreachable", [], None, agg_rows, a["fetched"], **mk),
+            lambda out: cinema_venue_problems(status, out[0], set(orows), cf_ct, prev_stats.get(vid),
+                                              stub, floor, end, index.films))
+        if failed:
+            print(f"  ! {vid}: {failed[0]} — this venue alone keeps its previous rows, preliminary")
+            selfcheck[vid] = failed
+            official.pop(vid, None)
+            status, cov, orows, cf_ct = "unreachable", None, [], None
+            source = "previous run kept — self-check failed"
+            diff.stale.append(vid)
+            rows = [r for r in rows if r[0] in index.films and floor <= r[2] <= end]
         new_showtimes += rows
         prelim[vid] = pf
         if status != "unreachable":
             seen_venues.add(vid)
-        cf_ct = [max(cov[0], floor), min(cov[1], end)] if cov else None
         venue_report[vid] = {
             "status": status, "source": source, "covered": cf_ct,
             "days": ((dt.date.fromisoformat(cf_ct[1]) - dt.date.fromisoformat(cf_ct[0])).days + 1) if cf_ct else 0,
@@ -2309,7 +2693,11 @@ def main():
             "official_not_in_aggregator": info["added"],
             "unplaced_aggregator": info["unplaced"][:12],
             "minted": sorted({m[0] for m in minted_log if m[1] == vid}),
-            "error": official_errors.get(vid), "notes": (res.notes if res else [])}
+            "error": (failed[0] if failed else official_errors.get(vid)),
+            "notes": (res.notes if res else []),
+            "kept_rows": info.get("kept"), "kept_policy": pol if status == "unreachable" else None,
+            "kept_conflicts": (info.get("conflicts") or [])[:24],
+            "blocked": [list(b) for b in blocked.get(vid) or []]}
 
     # 3b) festival programmes (official_festivals.py). Official at the venues with
     #     no programme of their own (FESTIVAL_VENUES); at every other cinema a
@@ -2319,38 +2707,45 @@ def main():
     #     so a festival whose site is down keeps its rows.
     prev_prelim_rows = read_prelim_rows(src)
     prev_fest = {} if args.no_festivals else previous_festivals()
+    # What each cinema's OWN programme lists this run. A cinema whose source
+    # failed (venue_state: all its previous rows kept, preliminary from today) has
+    # nothing here: its kept rows neither list nor contradict a festival screening,
+    # and the festival merge removes none of them (kept_venues).
     own = {}                                       # venue -> {(fid, date): {times}}
     for vid in cinema_ids:
-        st_ = (venue_report.get(vid) or {}).get("status")
-        o = defaultdict(set)
-        if st_ == "official":
+        if (venue_report.get(vid) or {}).get("status") == "official":
+            o = defaultdict(set)
             for fid, d, t, _m, _t in resolved.get(vid, []):
                 o[(fid, d)].add(t)
-        elif st_ == "unreachable" and old_prelim.get(vid):
-            skip_ = set(prev_prelim_rows)
-            for r in old_showtimes:
-                if r[1] == vid and r[2] < old_prelim[vid] and (r[0], vid, r[2]) not in skip_:
-                    o[(r[0], r[2])].update(r[3])
-        if o:
-            own[vid] = o
+            if o:
+                own[vid] = o
+    kept_venues = {v for v in cinema_ids if (venue_report.get(v) or {}).get("status") == "unreachable"}
     own_slots = defaultdict(set)
     for vid, o in own.items():
         for (fid, d), ts in o.items():
             for t in ts:
                 own_slots[(vid, d, t)].add(fid)
-    fest_session = Fetcher(budget_seconds=args.festival_budget)
-    fest_errors, fest_report, fest_rows, fest_cover = {}, {}, {}, {}
+    fest_errors, fest_report, fest_rows, fest_cover, fest_fresh = {}, {}, {}, {}, {}
     fest_screens, fest_films_used, fest_decisions = [], {}, []
     for fest in ([] if args.no_festivals else OF.FESTIVALS):
         print(f"festival {fest}")
         prev = prev_fest.get(fest) or {}
         prev_in = [x for x in festival_rows_in(prev.get("rows"))
                    if floor <= x[2] <= end and x[0] in index.films]
-        res = OF.read_festival(fest, fest_session, floor, end, fest_errors)
+        # the run's own session and budget, one deadline per festival (CODE-03)
+        n0, t0 = len(session.log), time.monotonic()
+        with session.deadline(args.festival_budget):
+            res = OF.read_festival(fest, session, floor, end, fest_errors)
+        took = round(time.monotonic() - t0, 1)
+        n_req = sum(1 for e in session.log[n0:] if e["outcome"] != "skipped")
+        print(f"  {fest}: {n_req} request(s) in {took} s")
         rep = {"status": None, "source": (res or {}).get("source"), "error": fest_errors.get(fest),
                "notes": (res or {}).get("notes", []), "films": 0, "sofia_screenings": 0,
                "unknown_venues": (res or {}).get("unknown_venues", {}),
-               "outside_sofia": (res or {}).get("outside_sofia", {})}
+               "outside_sofia": (res or {}).get("outside_sofia", {}),
+               "requests": n_req, "seconds": took,
+               "blocked": [list(b) for b in session.blocked_since(n0)][:3],
+               "last_ok": prev.get("last_ok"), "failing_since": prev.get("failing_since")}
         rows_f = None
         if res is not None:
             films = {f["title_bg"]: f for f in res["films"] if f.get("title_bg")}
@@ -2388,28 +2783,48 @@ def main():
                     fest_films_used.setdefault(fid, (films.get(title) or {}, fest))
                 for m in minted_log[n_mint:]:
                     m.append(fest)                 # [fid, venue, title, url, festival]
-                rep.update(status="official", covered=[res["covered_from"], res["covered_to"]]
-                           if res["covered_from"] else None,
+                # a read that ended early (budget, a day page down) keeps last run's
+                # rows for the festival days it did not reach — not vouched for this
+                # run, so a festival venue holding them turns preliminary (below)
+                ct_now = res["covered_to"]
+                tail = [x for x in prev_in if ct_now and x[2] > ct_now] if prev.get("covered") else []
+                cov = [res["covered_from"], res["covered_to"]] if res["covered_from"] else None
+                if tail and cov and (prev.get("covered") or [None, None])[1]:
+                    cov[1] = max(cov[1], prev["covered"][1])
+                rep.update(status="official", covered=cov,
                            films=len(res["films"]), sofia_screenings=len(res["screenings"]),
                            films_at_app_venues=len(slots),
                            matched=sum(1 for x in decisions if x["rule"] != "minted"),
-                           minted=sorted({x["film"] for x in decisions if x["rule"] == "minted"}))
-                fest_rows[fest] = rows_f
-                fest_cover[fest] = tuple(rep["covered"]) if rep["covered"] else None
+                           minted=sorted({x["film"] for x in decisions if x["rule"] == "minted"}),
+                           kept_tail=len(tail), last_ok=today_iso, failing_since=None)
+                fest_rows[fest] = rows_f + tail
+                fest_fresh[fest] = {(r[0], r[1], r[2]) for r in rows_f}
+                fest_cover[fest] = tuple(cov) if cov else None
         if rows_f is None:
-            if prev.get("rows") is not None:
+            # the owner's stale rule, festival-wide: last run's rows are kept until
+            # the festival has gone unread for more than venue_state.KEEP_DAYS days
+            since = prev.get("last_ok") or prev.get("failing_since") or today_iso
+            age = (dt.date.fromisoformat(today_iso) - dt.date.fromisoformat(since)).days
+            rep["failing_since"] = prev.get("failing_since") or today_iso
+            if prev.get("rows") is not None and age <= VS.KEEP_DAYS:
                 rep.update(status="kept-previous", covered=prev.get("covered"))
                 fest_rows[fest] = prev_in
                 fest_cover[fest] = tuple(prev["covered"]) if prev.get("covered") else None
-                print(f"  ! {fest}: {fest_errors.get(fest) or rep['error']} — last run's rows kept")
+                print(f"  ! {fest}: {fest_errors.get(fest) or rep['error']} — last run's rows kept "
+                      f"(not read for {age} day(s))")
+            elif prev.get("rows") is not None:
+                rep.update(status="expired", covered=None)
+                fest_rows[fest] = []                # its previous rows leave (merge step 1)
+                print(f"  ! {fest}: {fest_errors.get(fest) or rep['error']} — not read for {age} days: "
+                      f"its rows are removed")
             else:
                 rep["status"] = "unreachable"
                 print(f"  ! {fest}: {fest_errors.get(fest)} — nothing to keep; earlier rows left as they are")
         fest_report[fest] = rep
+    prev_fest_rows = {f: festival_rows_in(p.get("rows")) for f, p in prev_fest.items()}
     new_showtimes, prelim, prelim_rows, fest_info = merge_festival_rows(
-        new_showtimes, prelim, own, fest_rows, fest_cover,
-        {f: festival_rows_in(p.get("rows")) for f, p in prev_fest.items()},
-        prev_prelim_rows, floor, end)
+        new_showtimes, prelim, own, fest_rows, fest_cover, prev_fest_rows,
+        prev_prelim_rows, floor, end, kept_venues=kept_venues)
     shown = {tuple(x[1:]) for k_ in ("confirmed", "prelim_row", "prelim_date") for x in fest_info[k_]}
     shown_screens = [(fid, v, d, tk, pg) for fid, v, d, t, tk, pg in fest_screens if (fid, v, d, t) in shown]
     for k, url in festival_ticket_links(shown_screens, fresh_vlinks, new_showtimes).items():
@@ -2428,23 +2843,45 @@ def main():
         rep["by_venue"] = {v: dict(c_) for v, c_ in sorted(by_venue.items())}
         rep["rows"] = festival_rows_out(fest_rows.get(fest) or [])
         rep["unsure"] = [x for x in fest_decisions if x["festival"] == fest and x["unsure"]]
-    fresh_fest = any(r["status"] == "official" for r in fest_report.values())
+    # Festival venues have no programme of their own: the festivals are their
+    # official source, and the owner's stale rule applies to them like to any
+    # venue (venue_state.py). A row there that no festival vouched for THIS run —
+    # its festival could not be read, or was read only in part — makes the venue
+    # preliminary at once (PRELIM_FROM = today); such rows go once the venue has
+    # had no successful festival read for more than KEEP_DAYS days. Its
+    # official_state.json entry (source "festival") records the reads and
+    # health.json warns. A cinema's own state is never touched here.
     spans = [c for c in fest_cover.values() if c]
     for v in FESTIVAL_VENUES:
         if v not in cinema_ids:
             continue
-        vrows = [r for r in new_showtimes if r[1] == v]
-        if fresh_fest:
+        new_showtimes, oc = festival_venue_outcome(
+            v, new_showtimes, fest_fresh, fest_report, fest_rows, prev_fest_rows,
+            lambda v=v: kept(v), floor)            # the policy reads the state before this run
+        pol, why, status_v, kept_v = oc["policy"], oc["why"], oc["status"], oc["kept"]
+        if status_v == "unreachable":
+            prelim[v] = oc["prelim_from"]
+            VS.record_read(state, v, False, today_iso, error=why, source="festival")
+        elif oc["ok"]:
+            vouched = [fest_cover[f] for f, keys in fest_fresh.items()
+                       if fest_cover.get(f) and any(k[1] == v for k in keys)]
+            VS.record_read(state, v, True, today_iso, source="festival",
+                           covered_to=max(c[1] for c in vouched) if vouched else None)
             seen_venues.add(v)
+        vrows = [r for r in new_showtimes if r[1] == v]
         venue_report[v] = {
-            "status": "festival", "source": "festival programmes ("
-            + ", ".join(f for f, r in fest_report.items() if r["status"] != "unreachable") + ")",
+            "status": status_v, "source": "festival programmes ("
+            + ", ".join(f for f, r in fest_report.items() if r["status"] not in ("unreachable", "expired")) + ")",
             "covered": [min(a for a, b in spans), max(b for a, b in spans)] if spans else None,
             "days": 0, "screenings": sum(1 for x in fest_info["confirmed"] if x[2] == v),
             "rows": len(vrows), "written_screenings": sum(len(r[3]) for r in vrows),
-            "prelim_from": prelim.get(v), "prelim_screenings": 0, "discarded_aggregator": 0,
-            "discarded_examples": [], "official_not_in_aggregator": 0, "unplaced_aggregator": [],
-            "minted": sorted({m[0] for m in minted_log if m[1] == v}), "error": None, "notes": []}
+            "prelim_from": prelim.get(v),
+            "prelim_screenings": sum(len(r[3]) for r in vrows) if status_v == "unreachable" else 0,
+            "discarded_aggregator": 0, "discarded_examples": [], "official_not_in_aggregator": 0,
+            "unplaced_aggregator": [], "minted": sorted({m[0] for m in minted_log if m[1] == v}),
+            "error": why, "notes": [],
+            "kept_rows": (sum(len(r[3]) for r in kept_v) if pol and not pol["expired"] else 0),
+            "kept_policy": pol}
 
     # Minted films that no longer stand for anything: no showtimes this run AND
     # superseded by an alias or a catalogue film (an earlier spelling of a film
@@ -2466,8 +2903,10 @@ def main():
     theatre_ids = theatre_ids or list(THEATRE_ORDER)
     print("theatre aggregator theatre.art.bg")
     art_rows, art_dates, art_other = defaultdict(list), set(), defaultdict(int)
+    art_end, n_art0 = time.monotonic() + ART_AGGREGATOR_SECONDS, len(session.log)   # every day page
     for date in window:
-        day = scrape_theatre_day(date, session)
+        with session.deadline(max(0.0, art_end - time.monotonic())):
+            day = scrape_theatre_day(date, session)
         if day is None:
             continue
         art_dates.add(date)
@@ -2477,16 +2916,28 @@ def main():
                 art_other[tid or "?"] += 1          # a venue the app does not list
             else:
                 art_rows[v].append((title, d, time_, hall, link, page, theatre_price(price)))
+    blocked["theatre.art.bg"] = session.blocked_since(n_art0)
     if not art_dates:
         diff.unreachable.append("theatre.art.bg")
-    th_official = {}
+    th_official, secondary, sec_dates = {}, {}, {}
     for v in theatre_ids:
         if v not in OT.FETCHERS:
             continue
         print(f"official theatre {v}")
-        res = OT.fetch_venue(v, session, dt.date.fromisoformat(today_iso))
+        n0 = len(session.log)
+        with session.deadline(THEATRE_VENUE_SECONDS):
+            res = OT.fetch_venue(v, session, dt.date.fromisoformat(today_iso))
+        blocked[v] = session.blocked_since(n0)
         if res is None:
             print(f"  ! {v}: {OT.LAST_STATUS.get(v)} — previous rows kept")
+            if OT.SECONDARY.get(v):
+                # a reseller's listing (Куклен's on theatre.art.bg): never the
+                # theatre's own programme, so it only fills in, PRELIMINARY — in
+                # place of the day pages' rows for it (the theatre's own halls only)
+                secondary[v] = OT.SECONDARY[v]
+                art_rows[v] = [(t, d, tm, (m or {}).get("hall"), (m or {}).get("url"), (m or {}).get("url"),
+                                theatre_price((m or {}).get("price"))) for t, d, tm, m in secondary[v]["rows"]]
+                sec_dates[v] = {r[1] for r in secondary[v]["rows"]}
         else:
             th_official[v] = res
     # A listing one theatre stages at another theatre the app lists is the
@@ -2505,7 +2956,19 @@ def main():
         got = confirm_cut_days(res, art_rows.get(v, []), art_dates, same_show)
         if got:
             confirmed_days[v] = got
-    th_resolved, minted_shows = resolve_theatre_rows(show_index, th_official, mint_show)
+    try:
+        th_resolved, minted_shows = resolve_theatre_rows(show_index, th_official, mint_show)
+    except Exception as e:                         # isolate: resolve theatre by theatre
+        print(f"  ! resolving theatre titles crashed ({type(e).__name__}: {e}) — theatre by theatre")
+        th_resolved, minted_shows = {}, []
+        for v in list(th_official):
+            try:
+                got, minted_v = resolve_theatre_rows(show_index, {v: th_official[v]}, mint_show)
+                th_resolved.update(got)
+                minted_shows += minted_v
+            except Exception as e2:
+                OT.LAST_STATUS[v] = f"title resolution crashed: {type(e2).__name__}: {e2}"
+                th_official.pop(v)
     spellings = defaultdict(list)
     for parts in th_resolved.values():
         for part in ("rows", "extra_rows"):
@@ -2531,10 +2994,19 @@ def main():
             first_day = max(_day_after(min(res["covered_to"], end)), floor)
             excluded_titles = {OT.normalise_show_title(e[0]) for e in res.get("excluded") or []}
         elif v in OT.FETCHERS:
-            continue
+            # its source is down: theatre.art.bg fills in the dates its kept rows
+            # do not cover — after the range its own programme last confirmed,
+            # never on a kept date (all of the window once the kept rows expired)
+            pol = kept(v)
+            first_day = (floor if pol["expired"] or not pol["confirmed_to"]
+                         else max(_day_after(pol["confirmed_to"]), floor))
+            excluded_titles = set()
         else:
             first_day, excluded_titles = floor, set()
-        rows_v = [r for r in art_rows.get(v, []) if r[1] in art_dates]
+        held_days = set() if res is not None or v not in OT.FETCHERS or kept(v)["expired"] else \
+            {r[1] for r in old_performances if show_index.theatre_of(r[0]) == v}
+        rows_v = [r for r in art_rows.get(v, [])
+                  if (r[1] in art_dates or r[1] in sec_dates.get(v, ())) and r[1] not in held_days]
         minted_from_agg[v] = mint_aggregator_titles(show_index, v, rows_v, first_day, end,
                                                     excluded_titles, mint_show)
     _mint_url = {m[0]: m[3] for m in minted_show_log}
@@ -2565,13 +3037,33 @@ def main():
                     excl_keys.add((sid, d, tm))
         elif v in OT.FETCHERS:
             status, cov, orows, xrows = "unreachable", None, [], []
-            source = "previous run kept — official source failed"
+            source = "previous run kept as preliminary — official source failed"
             diff.stale.append(v)
         else:
             status, cov, orows, xrows = "none", None, [], []
             source = "theatre.art.bg (no official programme)"
-        rows, pf, info = merge_theatre_venue(v, status, orows, cov, xrows, agg_rows, art_dates,
-                                             prev, old_prelim.get(v), floor, end, excl_keys)
+        # one theatre, isolated (CODE-02), as for the cinemas above
+        pol, cf_ct = kept(v), ([max(cov[0], floor), min(cov[1], end)] if cov else None)
+        stub = {"status": status, "screenings": sum(1 for r in orows if cf_ct and cf_ct[0] <= r[1] <= cf_ct[1]),
+                "days": ((dt.date.fromisoformat(cf_ct[1]) - dt.date.fromisoformat(cf_ct[0])).days + 1) if cf_ct else 0}
+        mk = dict(prev_rows=prev, prev_prelim=old_prelim.get(v), floor=floor, end=end,
+                  confirmed_to=pol["confirmed_to"], expired=pol["expired"])
+        dates_v = art_dates | sec_dates.get(v, set())       # (a reseller's dates, when one was read)
+        rows, pf, info, failed = VS.run_isolated(
+            lambda: merge_theatre_venue(v, status, orows, cov, xrows, agg_rows, dates_v,
+                                        excluded_keys=excl_keys, **mk),
+            lambda: merge_theatre_venue(v, "unreachable", [], None, [], agg_rows, dates_v, **mk),
+            lambda out: theatre_venue_problems(v, status, out[0], {r[:3] for r in orows}, cf_ct,
+                                               prev_stats.get(v), stub, floor, end, show_index))
+        if failed:
+            print(f"  ! {v}: {failed[0]} — this theatre alone keeps its previous rows, preliminary")
+            selfcheck[v] = failed
+            th_official.pop(v, None)
+            res, status, cov, orows, xrows, cf_ct = None, "unreachable", None, [], [], None
+            source = "previous run kept as preliminary — self-check failed"
+            diff.stale.append(v)
+            rows = [r for r in rows if not theatre_venue_problems(v, "unreachable", [r], set(), None,
+                                                                  None, None, floor, end, show_index)]
         new_performances += rows
         prelim[v] = pf
         if status != "unreachable":
@@ -2604,9 +3096,13 @@ def main():
             "excluded_blocked": info["excluded_blocked"],
             "minted": sorted({m[0] for m in minted_show_log if m[1] == v}),
             "minted_from_aggregator": minted_from_agg.get(v, []),
-            "error": (OT.LAST_STATUS.get(v) if res is None and v in OT.FETCHERS
+            "error": (failed[0] if failed else OT.LAST_STATUS.get(v) if res is None and v in OT.FETCHERS
                       else OT.NO_OFFICIAL_SOURCE.get(v)),
-            "notes": (res or {}).get("notes", [])}
+            "notes": (res or {}).get("notes", []),
+            "kept_rows": info.get("kept"), "kept_policy": pol if status == "unreachable" else None,
+            "kept_conflicts": (info.get("conflicts") or [])[:24],
+            "secondary": (secondary.get(v) or {}).get("source"),
+            "blocked": [list(b) for b in blocked.get(v) or []]}
     links.update(th_links)
 
     # 5) self-check: inside every covered range the written rows must be exactly
@@ -2649,7 +3145,7 @@ def main():
         if want != got:
             problems.append(f"{v}: written performances differ from its own programme inside {cf}..{ct} "
                             f"({len(got - want)} extra, {len(want - got)} missing)")
-        why = implausible_drop(prev_stats.get(v), venue_report[v], min_rate=1)
+        why = implausible_drop(prev_stats.get(v), venue_report[v], min_rate=1, min_days=7)
         if why:
             problems.append(f"{v}: implausibly few performances from {res['source']} — {why}")
     if any(r[1] < floor or r[1] > end for r in new_performances):
@@ -2683,6 +3179,11 @@ def main():
                                    "aggregator_dates_read": len(art_dates),
                                    "aggregator_other_venues": dict(art_other),
                                    "previous_rows_unknown_show": prev_unknown}}
+    run_health(venue_report, [(c, "cinema") for c in cinema_ids] + [(t, "theatre") for t in theatre_ids],
+               upcoming_counts(new_showtimes, new_performances, show_index.theatre_of, floor),
+               upcoming_counts(old_showtimes, old_performances, show_index.theatre_of, floor),
+               blocked, selfcheck, policy, agg, art_dates, problems,
+               run_flags(secondary, th_official, venue_report) + festival_flags(fest_report))
     if problems:
         print("\nOFFICIAL-SOURCE SELF-CHECK FAILED — index.html left untouched:")
         for p_ in problems:
@@ -2709,6 +3210,7 @@ def main():
     # already stored in vlinks is preserved.
     upgrade_venues = {"vlaikova", "lumiere"}
     upgraded = 0
+    up_end = time.monotonic() + UPGRADE_SECONDS
     for (fid, vid), page_url in list(vlinks.items()):
         if vid not in upgrade_venues:
             continue
@@ -2722,7 +3224,8 @@ def main():
             continue  # already a deep-link ticket URL
         if vid == "lumiere" and "epaygo.bg" in lhost:
             continue  # already a deep-link ticket URL
-        soup = fetch(page_url, session)
+        with session.deadline(max(0.0, up_end - time.monotonic())):
+            soup = fetch(page_url, session)
         if soup is None:
             continue
         page_text = str(soup)
@@ -2778,8 +3281,6 @@ def main():
               ", ".join(diff.emptied))
     print_venue_table(venue_stats)
     session.print_report()
-    print("\nfestival programmes (official_festivals.py):", end="")
-    fest_session.print_report()
 
     report = {"ran": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
               "summary": diff.summary(), "added": diff.added, "removed": diff.removed,
@@ -2787,7 +3288,7 @@ def main():
               "stale": diff.stale, "emptied": diff.emptied, "venues": venue_stats,
               "official": venue_report, "prelim_from": prelim, "prelim_rows": prelim_rows,
               "festivals": fest_report, "identity": identity_report,
-              "network": session.summary(), "network_festivals": fest_session.summary()}
+              "network": session.summary()}
     CHANGES.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if args.dry_run:
@@ -2863,16 +3364,17 @@ def main():
     out = write_prelim_rows(out, prelim_rows)
     stamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     out = re.sub(r'"?lastValidated"?\s*:\s*"[^"]*"', f'"lastValidated":"{stamp}"', out)
-    # Advance the snapshot window's opening to the dating floor so the stored
-    # window matches reality (no past days) — keeps the app's range filters honest.
-    out = re.sub(r'("?window"?\s*:\s*\{\s*"?from"?\s*:\s*")\d{4}-\d\d-\d\d(")',
-                 lambda m: m.group(1) + floor + m.group(2), out, count=1)
+    # The rolling window (CODE-01): the stored window is this run's, today ..
+    # today + the horizon, and SNAPSHOT.generated says when (Europe/Sofia).
+    generated = LW.generated_stamp()
+    out = write_snapshot(out, floor, end, generated)
     cl = find_prop_array(out, "changelog")
     if cl:
         changelog = diff.added[:40] + diff.removed[:40] + diff.changed[:40]
         out = out[:cl[0]] + json.dumps(changelog, ensure_ascii=False, separators=(",", ":")) + out[cl[1]:]
 
     html_path.write_text(out, encoding="utf-8")
+    save_run_state(state, venue_report, agg, art_dates, today_iso, generated)
     # Persist the arthouse-film catalogue (keep-previous union of old + newly minted);
     # inject_films.py merges it into FILMS before the build gate.
     CINEMA_FILMS.write_text(json.dumps(cinema_films, ensure_ascii=False, indent=1),

@@ -21,7 +21,16 @@ Rules, in order (first hit wins):
                 meta. Never on its own ("Аватар" is not "Аватар: Огън и пепел").
   6. spelling   one edit apart, keys of at least 8 letters, equal token counts,
                 identical numbers ("Падане" is never "Падане 2").
-A year conflict (both known, more than a year apart) vetoes any candidate.
+A year conflict (both known, more than a year apart) vetoes any candidate, of
+every rule, curated aliases included ("Сънища" at Люмиер is Kurosawa's 1990
+film, not a 2024 "Сънища" the same hall might show).
+
+Every resolution stands on its own evidence. There is no run-wide memory of a
+fuzzy decision (2026-10-09 audit, CODE-07: Cinema City's "Аватар", corroborated
+as "Аватар: Огън и пепел", was reused for Одеон's retro "Аватар (2009)" with no
+year check — wrong poster, synopsis and runtime). A title placed by the
+subtitle or spelling rule at one venue is placed again, at another venue or
+for another title, only by that rule's own evidence there.
 
 The normalised key: case, ё, quotes, dashes and punctuation folded; format and
 language tags dropped (2D/3D/IMAX/4DX/D-BOX/ScreenX, "бг аудио", "дублиран",
@@ -213,7 +222,6 @@ class FilmIndex:
         self.groups = []                     # alias groups
         self.log = []                        # every non-trivial decision, with its reason
         self.suspects = {}                   # (title, fid) -> reason
-        self._fuzzy = {}                     # key -> fid decided this run by a fuzzy rule
         for rec in films:
             self.add(rec, minted=rec.get("id") in self.minted)
         self.load_aliases(aliases)
@@ -316,18 +324,23 @@ class FilmIndex:
         year = _int(meta.get("year")) or title_year(title)
         runtime = _int(meta.get("runtime"))
 
-        # 1. curated aliases
+        # 1. curated aliases — a human's decision about TITLES; the year veto
+        #    still applies (a remake or a retro screening shares the title)
         for g in self.groups:
             if k in g["keys"] and (not g["venues"] or venue in g["venues"]):
                 if g["film"] and g["film"] in self.films:
-                    fid = g["film"]
+                    cands = [g["film"]] if not self._veto(g["film"], year) else []
                 else:
                     cands = set()
                     for gk in g["keys"]:
                         cands |= self.by_key.get(gk, set())
-                    if not cands:
-                        continue
-                    fid, _ = self._choose(cands, title, year)
+                    cands = self._filter(cands, title, year, rule="alias")
+                if not cands:
+                    if g["film"] and g["film"] in self.films:
+                        self.suspects[(title, g["film"])] = (
+                            f"alias candidate vetoed ({self._veto(g['film'], year)})")
+                    continue
+                fid, _ = self._choose(cands, title, year)
                 if self.by_key.get(k) and fid in self.by_key[k]:
                     return fid, "exact"
                 self._record(title, venue, fid, "alias", g["reason"])
@@ -366,8 +379,6 @@ class FilmIndex:
 
         if not fuzzy:
             return None, "unmatched"
-        if k in self._fuzzy and self._fuzzy[k] in self.films:
-            return self._fuzzy[k], "fuzzy-cached"
 
         # 5. subtitle extension, corroborated only
         sub = set(self.by_base.get(k, set()))               # we are "X", film is "X: Y"
@@ -389,7 +400,6 @@ class FilmIndex:
                 elif runtime and fr and abs(runtime - fr) <= 3 and not (year and fy and year != fy):
                     evidence = f"same runtime {runtime}≈{fr} min"
             if evidence:
-                self._fuzzy[k] = c
                 self._record(title, venue, c, "subtitle",
                              f"{title!r} ~ {self.films[c].get('bg')!r}: {evidence}")
                 return c, "subtitle"
@@ -406,7 +416,6 @@ class FilmIndex:
                 cands = self._filter(ids, title, year, runtime, runtime_tol=20, rule="spelling")
                 if cands:
                     fid, why = self._choose(cands, title, year)
-                    self._fuzzy[k] = fid
                     self._record(title, venue, fid, "spelling",
                                  f"{title!r} is one letter from {self.films[fid].get('bg')!r}" + (f"; {why}" if why else ""))
                     return fid, "spelling"

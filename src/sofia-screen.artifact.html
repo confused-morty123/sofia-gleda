@@ -210,7 +210,14 @@ a{color:inherit}
      `overflow:hidden` overrode `overflow-y:auto` and the bottom sheet could not
      scroll on mobile, clipping everything past 94vh. */
   .scrim .sheet{width:100%; border-radius:18px 18px 0 0; margin-bottom:0; max-height:94vh;
-    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain} }
+    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
+  /* On a phone, vh is the screen height with the browser's toolbars HIDDEN: while
+     they show, a 94vh sheet is taller than the visible area and its last rows (the
+     times and ticket links) sit behind the toolbar, out of reach of the sheet's own
+     scroll. dvh follows the toolbars (vh stays the fallback for older browsers), and
+     the body clears the iPhone home indicator. */
+  @supports (height:1dvh){ .scrim .sheet{max-height:94dvh} }
+  .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} }
 .fchip{padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--ink-2);
   font-size:12px; color:var(--fg-2); transition:border-color .15s,background .15s; white-space:nowrap}
 .fchip:hover{border-color:var(--line-2)}
@@ -686,7 +693,7 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  country:"Country",venue:"Venue",fmt:"Format",age:"Age",box:"Box office & reception",season:"Season",premiere:"Premiere",
  votes:"votes",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
  coverage:"No programme published for this window.",
- notePre:"Programme covers",noteMid:" — theatres and independent cinemas three months out, multiplexes two weeks (as far as they announce). Rechecked every Monday.",
+ notePre:"Programme covers",noteMid:" — theatres and independent cinemas three months out, multiplexes as far ahead as they announce. Rechecked every Monday.",
  upcoming:"upcoming",active:"on now",sources:"Sources",
  allGenres:"All genres",allVenues:"All chains & cinemas",allTheatres:"All theatres",clear:"Clear",home:"home",share:"Share",tix:"Tickets",fromPrice:"from",
  filters:"Filters",menu:"Menu",period:"Period",genresH:"Genre",venuesH:"Venue",theatresH:"Theatres",strandH:"Strand",
@@ -960,6 +967,24 @@ const votesOf=o=>{
   const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
   return art.imdbVotes||"";
 };
+/* TMDB community rating (vote_average). Only used for display when IMDb is absent,
+   and as a ranking fallback (≥50 votes required so 1-vote 10.0 films don't top the list).
+   Never relabelled "IMDb". Returns null when unavailable. */
+const TMDB_VOTE_MIN=50; /* minimum vote count to trust TMDB rating for ranking */
+const tmdbOf=o=>{
+  const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
+  return art.tv!=null?art.tv:null;
+};
+const tmdbVotesOf=o=>{
+  const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
+  return art.tc!=null?art.tc:0;
+};
+/* For ranking: IMDb rating if available, else TMDB if it has ≥TMDB_VOTE_MIN votes. */
+const ratingOf=o=>{
+  const im=imdbOf(o); if(im!=null)return im;
+  const tv=tmdbOf(o); if(tv!=null&&tmdbVotesOf(o)>=TMDB_VOTE_MIN)return tv;
+  return null;
+};
 /* real artwork + canonical English titles fetched from TMDB, inlined below.
    TMDBART[id] = {p:"/poster.jpg", b:"/backdrop.jpg", en:"English title"} */
 const ART=(typeof TMDBART==="object"&&TMDBART)||{};
@@ -974,6 +999,9 @@ const filmTitle=f=>S.lang==="en"
   : (f.en||f.bg||((ART[f.id]||{}).en)||""); /* EN mode: English title, then TMDB, then the translation, Bulgarian last */
 const filmSubtitle=f=>{const en=filmTitle(f);return f.bg&&f.bg!==en?f.bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* safeUrl: accept only http(s) URLs in href/window.open sinks (CODE-12).
+   Any other scheme (javascript:, data:, …) is dropped and returns null. */
+const safeUrl=u=>{if(!u)return null;try{const p=new URL(u);return(p.protocol==="https:"||p.protocol==="http:")?(u):null;}catch(e){return null;}};
 const filmById=Object.fromEntries(FILMS.map(f=>[f.id,f]));
 const showById=Object.fromEntries(SHOWS.map(s=>[s.id,s]));
 const cinById=Object.fromEntries(CINEMAS.map(c=>[c.id,c]));
@@ -992,9 +1020,11 @@ function inWhen(hm){const m=mins(hm),w=S.prefs.when;
   if(w==="afternoon")return m>=720&&m<1020;
   if(w==="early")return m>=1020&&m<1260;
   return m>=1260||m<300;}
+/* COMMERCIAL_DAYS: kept for reference (pipeline uses it for preliminary marking).
+   withinHorizon() is no longer used to hide advance multiplex screenings — official
+   advance-sale rows from Cinema City / Кино Арена / Cine Grand are real data. */
 const COMMERCIAL_DAYS=14;
 const COMMERCIAL_UNTIL=addDays(TODAY,COMMERCIAL_DAYS);
-/* a commercial multiplex listing beyond its two-week horizon is not real data */
 function withinHorizon(venueId,d){
   const c=cinById[venueId];
   if(c&&c.kind!=="independent")return d<=COMMERCIAL_UNTIL;
@@ -1030,13 +1060,13 @@ const _PERFS_BY_SHOW=(()=>{const m=new Map();for(const p of PERFORMANCES){let a=
 const _PERFS_BY_THEATRE=(()=>{const m=new Map();for(const p of PERFORMANCES){const sh=showById[p[0]];if(!sh)continue;let a=m.get(sh.theatre);if(!a)m.set(sh.theatre,a=[]);a.push(p);}return m;})();
 const _frows=fid=>_ROWS_BY_FILM.get(fid)||[];
 const _prows=sid=>_PERFS_BY_SHOW.get(sid)||[];
-const filmTimes=(fid)=>upcomingRows(_frows(fid).filter(r=>inRange(r[2])&&withinHorizon(r[1],r[2])));
-const filmTimesAll=(fid)=>upcomingRows(_frows(fid).filter(r=>withinHorizon(r[1],r[2])));
+const filmTimes=(fid)=>upcomingRows(_frows(fid).filter(r=>inRange(r[2])));
+const filmTimesAll=(fid)=>upcomingRows(_frows(fid));
 /* "За теб днес" is strictly today-and-still-to-come: only rows dated NOW_DATE,
    with upcomingRows already dropping start times behind the Sofia clock. Ignores
    the selected day entirely so the rail means the same thing whatever filter the
    user has set elsewhere. */
-const filmTimesToday=(fid)=>upcomingRows(_frows(fid).filter(r=>r[2]===NOW_DATE&&withinHorizon(r[1],r[2])));
+const filmTimesToday=(fid)=>upcomingRows(_frows(fid).filter(r=>r[2]===NOW_DATE));
 const filmCount=(fid)=>filmTimes(fid).reduce((n,r)=>n+r[3].length,0);
 const showPerfs=(sid)=>upcomingPerfs(_prows(sid).filter(p=>inRange(p[1])));
 const showPerfsAll=(sid)=>upcomingPerfs(_prows(sid));
@@ -1231,7 +1261,7 @@ function scoreFilm(f,day){
   const rows=filmTimes(f.id,day); if(!rows.length)return -1;
   let s=genreHits(f.genres)*4.5+moodHits(f.genres)*3+tasteHits(f.genres)*2.2+withBonus(f.genres);
   if(rows.some(r=>r[3].some(inWhen)))s+=3;
-  {const _im=imdbOf(f);if(_im!=null)s+=(_im-6)*1.5;}
+  {const _im=ratingOf(f);if(_im!=null)s+=(_im-6)*1.5;}
   s+=Math.min(rows.reduce((n,r)=>n+r[3].length,0),12)*0.1;
   if(S.prefs.taste.includes(f.id))s+=6;
   return s;}
@@ -1267,7 +1297,7 @@ function visibleShows(){const day=dayOrAll();
    date filter (before the strand/genre/venue drawer filters, which are applied
    by intersecting with visibleFilms/visibleShows at the call site) */
 function filmsAtCinema(cid){
-  const ids=new Set(upcomingRows((_ROWS_BY_CINEMA.get(cid)||[]).filter(r=>inRange(r[2])&&withinHorizon(r[1],r[2]))).map(r=>r[0]));
+  const ids=new Set(upcomingRows((_ROWS_BY_CINEMA.get(cid)||[]).filter(r=>inRange(r[2]))).map(r=>r[0]));
   return FILMS.filter(f=>ids.has(f.id));}
 function showsAtTheatre(tid){
   const ids=new Set(upcomingPerfs((_PERFS_BY_THEATRE.get(tid)||[]).filter(p=>inRange(p[1]))).map(p=>p[0]));
@@ -1597,7 +1627,7 @@ function body(){
     const vis=visibleFilms();
     /* filmRowsInPeriod: screenings for a film within the selected period, filtered by venue */
     const filmRowsInPeriod=fid=>{
-      let rows=_frows(fid).filter(r=>inRange(r[2])&&withinHorizon(r[1],r[2]));
+      let rows=_frows(fid).filter(r=>inRange(r[2]));
       return upcomingRows(rows);};
     /* "За теб днес" = films with a screening still to come TODAY. Decoupled from
        the selected-day filter (scoreFilm returns -1 off the selected day, which
@@ -1612,14 +1642,14 @@ function body(){
         if(S.fStrands.length&&!S.fStrands.some(s=>filmInStrand(o.f,s)))return false;
         return true;})
       .sort((a,b)=>{const na=a.rows.reduce((n,r)=>n+r[3].length,0),nb=b.rows.reduce((n,r)=>n+r[3].length,0);
-        return nb-na||((imdbOf(b.f)||0)-(imdbOf(a.f)||0));}).slice(0,14);
+        return nb-na||((ratingOf(b.f)||0)-(ratingOf(a.f)||0));}).slice(0,14);
     if(todayItems.length){
       pushRail(L.railToday,fmtDay(NOW_DATE,true),todayItems,x=>filmCard(x.f,false,x.rows));
     } else {
       /* "За теб утре" fallback: same logic, tomorrow's date, only if within data window */
       const TOMORROW=addDays(NOW_DATE,1);
       if(TOMORROW<=LASTDAY){
-        const filmTimesTomorrow=fid=>upcomingRows(_frows(fid).filter(r=>r[2]===TOMORROW&&withinHorizon(r[1],r[2])));
+        const filmTimesTomorrow=fid=>upcomingRows(_frows(fid).filter(r=>r[2]===TOMORROW));
         const tomorrowItems=FILMS.map(f=>{
             let rows=filmTimesTomorrow(f.id);
             return{f,rows};}).filter(o=>o.rows.length)
@@ -1628,15 +1658,15 @@ function body(){
             if(S.fStrands.length&&!S.fStrands.some(s=>filmInStrand(o.f,s)))return false;
             return true;})
           .sort((a,b)=>{const na=a.rows.reduce((n,r)=>n+r[3].length,0),nb=b.rows.reduce((n,r)=>n+r[3].length,0);
-            return nb-na||((imdbOf(b.f)||0)-(imdbOf(a.f)||0));}).slice(0,14);
+            return nb-na||((ratingOf(b.f)||0)-(ratingOf(a.f)||0));}).slice(0,14);
         pushRail(L.railTomorrow||"За теб утре",fmtDay(TOMORROW,true),tomorrowItems,x=>filmCard(x.f,false,x.rows));
       }
     }
     /* Event rails hidden when any genre filter is active */
     if(!S.fGenres.length){
       pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);}
-    const top=vis.filter(f=>imdbOf(f)!=null).sort((a,b)=>imdbOf(b)-imdbOf(a)).slice(0,12);
-    pushRail(L.railTop,"IMDb",top,f=>filmCard(f,day));
+    const top=vis.filter(f=>ratingOf(f)!=null).sort((a,b)=>ratingOf(b)-ratingOf(a)).slice(0,12);
+    pushRail(L.railTop,"IMDb / TMDB",top,f=>filmCard(f,day));
     /* "Популярни тази седмица" — ranked by total screenings in period, then cinema count, then IMDb */
     const popLabel=S.day==="week"?(L.railPopular||"Популярни тази седмица"):(L.railPopularPeriod||"Популярни за периода");
     const popularItems=vis.map(f=>{
@@ -1644,15 +1674,15 @@ function body(){
         const sc=rows.reduce((n,r)=>n+r[3].length,0);
         const cv=new Set(rows.map(r=>r[1])).size;
         return{f,sc,cv};
-      }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||b.cv-a.cv||((imdbOf(b.f)||0)-(imdbOf(a.f)||0))).slice(0,14);
+      }).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc||b.cv-a.cv||((ratingOf(b.f)||0)-(ratingOf(a.f)||0))).slice(0,14);
     pushRail(popLabel,L.railPopularSub||"най-много прожекции",popularItems,x=>filmCard(x.f,day));
-    /* "Скрити бижута" — IMDb ≥ 7.3, plays at ≤ 2 (filtered) cinemas */
+    /* "Скрити бижута" — IMDb/TMDB ≥ 7.3, plays at ≤ 2 (filtered) cinemas */
     const gemsItems=vis.filter(f=>{
-        const imdb=imdbOf(f); if(imdb==null||imdb<7.3)return false;
+        const rt=ratingOf(f); if(rt==null||rt<7.3)return false;
         const rows=filmRowsInPeriod(f.id);
         const cv=new Set(rows.map(r=>r[1])).size;
         return cv>=1&&cv<=2;
-      }).sort((a,b)=>(imdbOf(b)||0)-(imdbOf(a)||0)).slice(0,14);
+      }).sort((a,b)=>(ratingOf(b)||0)-(ratingOf(a)||0)).slice(0,14);
     if(gemsItems.length>=3){
       pushRail(L.railGems||"Скрити бижута",L.railGemsSub||"силни оценки, малко прожекции",gemsItems,f=>filmCard(f,day));}
     if(!S.fGenres.length){
@@ -2100,7 +2130,7 @@ function buyBox(vid,date,isCinema,specificUrl){
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
-      <a class="buylink" href="${esc(specificUrl||bookUrl(vid,date))}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label)} ↗</a>
+      ${(()=>{const _su=safeUrl(specificUrl||bookUrl(vid,date));return _su?`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label)} ↗</a>`:""})()}
     </div>
     <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
 /* Film buy box: compact pills per cinema, sorted by screening count desc then name */
@@ -2126,7 +2156,7 @@ function filmBuyBox(f,rows){
     if(b.inPerson){
       return`<span class="buylink inperson">${esc(cname)} — ${esc(S.lang==="bg"?"на касата":"box office")}</span>`;
     }
-    const u=filmTixUrl(f.id,vid,null)||b.url;
+    const u=safeUrl(filmTixUrl(f.id,vid,null)||b.url);
     if(!u)return"";
     return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(cname)} ↗</a>`;
   }).filter(Boolean);
@@ -2137,6 +2167,16 @@ function filmBuyBox(f,rows){
     ${epayNote}</div>`;}
 
 /* ===================== sheets ===================== */
+/* isPrelimListing: is this listing preliminary? True on or after PRELIM_FROM[venueId]
+   (the venue's own programme does not cover that date yet) or, for a film, when
+   PRELIM_ROWS lists this film at this venue on this date (a festival screening the
+   venue's own programme does not list). One rule for the film sheet and the calendar. */
+function isPrelimListing(kind,id,venueId,dateStr){
+  const pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
+  if(pf[venueId]&&dateStr>=pf[venueId])return true;
+  return kind==="film"&&typeof PRELIM_ROWS!=="undefined"&&Array.isArray(PRELIM_ROWS)
+    &&PRELIM_ROWS.some(x=>x[0]===id&&x[1]===venueId&&x[2]===dateStr);
+}
 /* Per-sheet state: whether "show all cinemas" has been tapped (reset on every open) */
 let _sheetShowAllCinemas=false;
 function sheetFilm(f){
@@ -2148,16 +2188,14 @@ function sheetFilm(f){
   const byDay={};
   rows.forEach(r=>{(byDay[r[2]]=byDay[r[2]]||[]).push(r);});
   const venues=[...new Set(rows.map(r=>r[1]))];
-  /* isPrelim: true when (venueId, date) is on or after PRELIM_FROM[venueId] */
-  const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
-  /* ...or when PRELIM_ROWS lists this film at this venue on this date (a festival screening the venue's own programme does not list) */
-  const isPrelim=(vid,d)=>{const pDate=_pf[vid];return (pDate?d>=pDate:false)||(typeof PRELIM_ROWS!=="undefined"&&Array.isArray(PRELIM_ROWS)&&PRELIM_ROWS.some(x=>x[0]===f.id&&x[1]===vid&&x[2]===d));};
+  /* isPrelim: this film's listing at venue vid on date d is preliminary (isPrelimListing) */
+  const isPrelim=(vid,d)=>isPrelimListing("film",f.id,vid,d);
   let hasPrelim=false;
   const mkVrow=(r,d)=>{
     const c=cinById[r[1]],b=BOOKING[r[1]]||{};
     const inPerson=!!b.inPerson;
     const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+r[1]];
-    const u=inPerson?(b.url||null):filmTixUrl(f.id,r[1],d);
+    const u=safeUrl(inPerson?(b.url||null):filmTixUrl(f.id,r[1],d));
     const tixLabel=inPerson?(S.lang==="bg"?L.boxOfficeLabel:L.boxOfficeLabelEn):(L.tix+" ↗");
     const prelim=isPrelim(r[1],d);
     if(prelim)hasPrelim=true;
@@ -2180,6 +2218,7 @@ function sheetFilm(f){
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
   rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?imdbOf(f).toFixed(1)+"<small>/10</small>":"—"}</div></div>`);
+  {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${tv.toFixed(1)}<small>/10</small></div></div>`);}
   if(f.rt!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${f.rt}<small>%</small></div></div>`);
   if(f.rtAud!=null)rt.push(`<div class="rtile"><div class="rl">${S.lang==="bg"?"Публика":"Audience"}</div><div class="rv">${f.rtAud}<small>%</small></div></div>`);
   if(f.mc!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${f.mc}<small>/100</small></div></div>`);
@@ -2214,7 +2253,7 @@ function sheetShow(sh){
   const L=t(),th=thById[sh.theatre],x=SHOW_EXTRA[sh.id]||{};
   const perfs=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id)).sort((a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]));
   const byDay={};perfs.forEach(p=>{(byDay[p[1]]=byDay[p[1]]||[]).push(p);});
-  const u=tixUrl("show",sh.id,sh.theatre);
+  const u=safeUrl(tixUrl("show",sh.id,sh.theatre));
   /* isPrelim: true when a (venueId, date) pair falls on or after PRELIM_FROM[venueId] */
   const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
   const isPrelim=(vid,d)=>{const pDate=_pf[vid];return pDate?d>=pDate:false;};
@@ -2225,7 +2264,7 @@ function sheetShow(sh){
     if(prelim)hasPrelim=true;
     return`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}${prelim?` <span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}</div>
     ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(hallDisplay(p[3])||thName(th))}</div>
-      <div class="vtimes"><a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
+      <div class="vtimes">${u?`<a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>`:`<span class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}">${esc(p[2])}</span>`}${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
       ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`;}).join("");
   const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
   /* venue display: use nameEn in EN mode */
@@ -2264,7 +2303,7 @@ function sheetEvent(ev){
      to one catalogued venue; otherwise show only where the information came from.
      Never fall back to generic aggregators (the user's "Eventim on Физика на
      тъгата" complaint traced to exactly that blanket hub list). */
-  const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=b?bookUrl(vb,null):null;
+  const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
   return`<div class="sheet"><div class="shero" style="background:${grad(ev.g)}">
     ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g)}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
@@ -2681,7 +2720,7 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
   }
   const fullTitle=title+" — "+venue;
   const location=venue+(area?", "+area:"");
-  const prelimNote=typeof PRELIM_FROM==="object"&&PRELIM_FROM&&PRELIM_FROM[venueId]&&dateStr>=PRELIM_FROM[venueId]
+  const prelimNote=isPrelimListing(kind,id,venueId,dateStr)
     ?(S.lang==="en"?"\nPreliminary: not yet checked against the venue's full programme — subject to change."
                    :"\nПредварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.")
     :"";
@@ -2692,37 +2731,50 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
   const [hh,mm]=(timeStr||"00:00").split(":").map(Number);
   const startMs=Date.UTC(y,mo-1,d,hh-off,mm,0);
   const endMs=startMs+runtimeMin*60000;
-  function toLocal(ms){
+  /* Use Intl to extract Sofia local date/time components correctly for any
+     instant, including those that cross midnight or fall on a DST boundary.
+     This replaces the old lh=UTCHours+off approach which produced hour 24+
+     and the wrong calendar date for screenings ending after midnight (CODE-10). */
+  function _sofiaLocalParts(ms){
     const dt=new Date(ms);
-    /* Recompute offset for end time */
-    const eOff=_sofiaOffset(
-      [dt.getUTCFullYear(),String(dt.getUTCMonth()+1).padStart(2,"0"),String(dt.getUTCDate()).padStart(2,"0")].join("-"),
-      [String(dt.getUTCHours()+off).padStart(2,"0"),String(dt.getUTCMinutes()).padStart(2,"0")].join(":")
-    );
+    const fmt=new Intl.DateTimeFormat("en-CA",{
+      timeZone:"Europe/Sofia",
+      year:"numeric",month:"2-digit",day:"2-digit",
+      hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+    });
+    const pp=Object.fromEntries(fmt.formatToParts(dt).map(p=>[p.type,p.value]));
+    /* hour12:false returns "24" for midnight in some engines; normalise to "00" */
+    const h=pp.hour==="24"?"00":pp.hour;
+    return{y:pp.year,mo:pp.month,d:pp.day,h,mi:pp.minute,s:pp.second};
+  }
+  /* Compute the UTC offset at a given UTC instant for Europe/Sofia */
+  function _sofiaOffsetAtMs(ms){
+    const dt=new Date(ms);
+    const fmtOff=new Intl.DateTimeFormat("en",{
+      timeZone:"Europe/Sofia",timeZoneName:"shortOffset",hour:"numeric"
+    });
+    const parts=fmtOff.formatToParts(dt);
+    const tzp=parts.find(p=>p.type==="timeZoneName");
+    if(tzp){
+      const m=tzp.value.match(/GMT([+-])(\d+)(?::(\d+))?/);
+      if(m){const sign=m[1]==="+"?1:-1;return sign*(Number(m[2])+(Number(m[3]||0)/60));}
+    }
+    /* fallback: try +3 / +2 */
+    for(const o of [3,2]){
+      const lp=_sofiaLocalParts(ms);
+      const check=Date.UTC(Number(lp.y),Number(lp.mo)-1,Number(lp.d),Number(lp.h)-o,Number(lp.mi),0);
+      if(Math.abs(check-ms)<60000)return o;
+    }
+    return 3;
+  }
+  function toLocal(ms){
+    const p=_sofiaLocalParts(ms);
+    const eOff=_sofiaOffsetAtMs(ms);
     return{
-      gcal:()=>{
-        const ld=new Date(ms);
-        const lh=ld.getUTCHours()+off,lm=ld.getUTCMinutes(),ls=ld.getUTCSeconds();
-        return[
-          String(ld.getUTCFullYear()),
-          String(ld.getUTCMonth()+1).padStart(2,"0"),
-          String(ld.getUTCDate()).padStart(2,"0"),
-          "T",
-          String(lh).padStart(2,"0"),
-          String(lm).padStart(2,"0"),
-          String(ls).padStart(2,"0")
-        ].join("");},
+      gcal:()=>[p.y,p.mo,p.d,"T",p.h,p.mi,p.s].join(""),
       outlook(){
-        const ld=new Date(ms);
-        const lh=ld.getUTCHours()+off,lm=ld.getUTCMinutes();
-        const eoffStr=(eOff>=0?"+":"-")+String(Math.abs(eOff)).padStart(2,"0")+":00";
-        return[
-          ld.getUTCFullYear(),"-",
-          String(ld.getUTCMonth()+1).padStart(2,"0"),"-",
-          String(ld.getUTCDate()).padStart(2,"0"),"T",
-          String(lh).padStart(2,"0"),":",
-          String(lm).padStart(2,"0"),":00",eoffStr
-        ].join("");},
+        const eoffStr=(eOff>=0?"+":"-")+String(Math.abs(Math.floor(eOff))).padStart(2,"0")+":00";
+        return[p.y,"-",p.mo,"-",p.d,"T",p.h,":",p.mi,":00",eoffStr].join("");},
       utcZ(){
         const ld=new Date(ms);
         return[
@@ -2894,10 +2946,10 @@ document.addEventListener("click",e=>{
   }
   /* Google Calendar button */
   const cg=q("[data-calg]");
-  if(cg){const u=cg.dataset.calurl;if(u)window.open(u,"_blank","noopener");return;}
+  if(cg){const u=safeUrl(cg.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
   /* Outlook button */
   const co=q("[data-calo]");
-  if(co){const u=co.dataset.calurl;if(u)window.open(u,"_blank","noopener");return;}
+  if(co){const u=safeUrl(co.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
   /* Apple ICS download */
   const ci=q("[data-calics]");
   if(ci){

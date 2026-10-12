@@ -20,6 +20,7 @@ what the 2026-10-08 audit found wrong:
 """
 import datetime as dt
 import json
+import re
 import pathlib
 import sys
 
@@ -206,7 +207,7 @@ check("…but its chamber stage nearly vanished (1 date against 9): November is 
       O.complete_until(s_oct + s_nov, TODAY, why), "2026-10-31")
 check("…and the reason is given", why,
       ["2026-11: not completely published — камерна сцена славянска беседа: 1 performance(s) against 9 "
-       "in the next four weeks"])
+       "in the 24 days before it"])
 res = O.finish("salzaismyah", "s", s_oct + s_nov, TODAY)
 check("finish: November becomes extra (preliminary) rows, the reason a note",
       (res["covered_to"], len(res["extra_rows"]), res["notes"][0][:8]), ("2026-10-31", 22, "2026-11:"))
@@ -758,10 +759,15 @@ check("coverage past the window: PRELIM_FROM the day after the window",
       S.merge_theatre_venue("t", "official", off, ("2026-10-08", "2026-12-31"), [], [], set(), [], None, F, E)[1],
       "2026-12-15")
 rows, pf, _ = S.merge_theatre_venue("t", "unreachable", [], None, [], agg, agg_dates, prev, "2026-10-20", F, E)
-check("official source unreachable: previous rows (never past ones) and previous PRELIM_FROM kept", (rows, pf),
-      ([["z", "2026-10-12", "19:00", None, None], ["y", "2026-11-20", "19:00", "Сцена", None]], "2026-10-20"))
-check("unreachable with no previous PRELIM_FROM: preliminary from today",
-      S.merge_theatre_venue("t", "unreachable", [], None, [], [], set(), prev, None, F, E)[1], F)
+check("official source unreachable: the rows it had confirmed (to 10-19) kept, never past ones; after them "
+      "theatre.art.bg on the dates it was read, last run's rows on the others; ALL preliminary from today",
+      (rows, pf),
+      ([["z", "2026-10-12", "19:00", None, None], ["d", "2026-11-02", "19:00", "Камерна сцена", None],
+        ["c", "2026-11-03", "20:00", None, None], ["e", "2026-11-04", "19:00", None, None],
+        ["y", "2026-11-20", "19:00", "Сцена", None]], F))
+check("unreachable with no previous PRELIM_FROM: every kept row stays, preliminary from today",
+      S.merge_theatre_venue("t", "unreachable", [], None, [], [], set(), prev, None, F, E)[:2],
+      ([["z", "2026-10-12", "19:00", None, None], ["y", "2026-11-20", "19:00", "Сцена", None]], F))
 agg_a = [("h", "ХЕНЗЕЛ И ГРЕТЕЛ", "2026-10-11", "11:00", None), (None, "НЕЩО НОВО", "2026-10-12", "11:00", None)]
 prev_a = [["h", "2026-10-11", "16:00", None, None], ["h", "2026-10-25", "11:00", None, None]]
 rows, pf, info = S.merge_theatre_venue("atelie313", "none", [], None, [], agg_a, {"2026-10-11", "2026-10-12"},
@@ -900,6 +906,264 @@ check("no VLINKS for a venue whose BOOKING has a dated deep page", (sorted(kept)
       ([("f", "arena-mega")], {"cc-sofia"}))
 check("BOOKING read from the data block", S.read_const_obj('x\nconst BOOKING = {"a":{"deep":"d"}};\n', "BOOKING"),
       {"a": {"deep": "d"}})
+
+# ===================================================== P1A (2026-10-09 audit)
+print("month-end completeness on the live programme (CODE-06): mlt.bg, October + November 2026")
+MLT10 = O.parse_mlt(fx("theatre_mladezhki_2026-10_full.html"), 2026, 10)
+MLT11 = O.parse_mlt(fx("theatre_mladezhki_2026-11_full.html"), 2026, 11)
+MLT = MLT10 + MLT11
+check("the live pages: 62 October and 61 November performances, three stages each",
+      (len(MLT10), len(MLT11), sorted({r[3]["hall"] for r in MLT11})),
+      (62, 61, ["В Лунната стая", "Голяма сцена", "Камерна сцена"]))
+for day in (9, 25, 31):
+    check(f"a published November, run on {day} Oct: covered to its last performance",
+          O.complete_until(MLT, dt.date(2026, 10, day)), "2026-11-29")
+HALF = MLT10 + [r for r in MLT11 if r[3]["hall"] != "Камерна сцена"]
+for day in (9, 25, 31):
+    why = []
+    check(f"November typed in for two stages of three, run on {day} Oct: NOT covered (judged against "
+          f"the 28 days before it, never itself)",
+          (O.complete_until(HALF, dt.date(2026, 10, day), why), why),
+          ("2026-10-31", ["2026-11: not completely published — камерна сцена: 0 performance(s) against 22 "
+                          "in the 28 days before it"]))
+for day in (25, 30, 31):
+    check(f"the same pages as a list of upcoming dates only, run on {day} Oct: November still judged "
+          f"(a week before it, or its first days and its end) and covered",
+          O.complete_until([r for r in MLT if r[1] >= f"2026-10-{day}"], dt.date(2026, 10, day)), "2026-11-29")
+res = O.finish("mladezhki", "s", HALF, dt.date(2026, 10, 31))
+check("finish on 31 Oct: the half-entered November becomes preliminary extra rows",
+      (res["covered_from"], res["covered_to"], len(res["rows"]), len(res["extra_rows"])),
+      ("2026-10-31", "2026-10-31", 5, 37))
+res = O.finish("mladezhki", "s", MLT, dt.date(2026, 10, 31))
+check("…a published one is covered (October's past days are the reference)",
+      (res["covered_to"], len(res["rows"]), len(res["extra_rows"])), ("2026-11-29", 66, 0))
+MLT_PAGES = {O.MLT_URL.format(y=2026, m=10): raw("theatre_mladezhki_2026-10_full.html"),
+             O.MLT_URL.format(y=2026, m=11): raw("theatre_mladezhki_2026-11_full.html")}
+res = O.fetch_venue("mladezhki", FakeNet(MLT_PAGES), dt.date(2026, 10, 25))
+check("the fetcher on 25 Oct, month pages as served: covered 25 Oct .. 29 Nov",
+      (res["covered_from"], res["covered_to"], res["source"]), ("2026-10-25", "2026-11-29", O.MLT_SOURCE))
+
+print("mladezhki — its own ticket centre when mlt.bg refuses this network (403 on GitHub's runners)")
+TIX = O.parse_tba_tickets(fx("theatre_mladezhki_tickets.html"), "mladezhki tickets")
+check("tickets.mlt.bg: the same public list as tickets.tba.bg", brief(TIX[:3]),
+      [("E.E.", "2026-10-09", "19:00"), ("Бременските музиканти", "2026-10-10", "11:00"),
+       ("Феята Ванилия", "2026-10-10", "11:00")])
+net = FakeNet({O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")})       # mlt.bg: no answer
+res = O.fetch_venue("mladezhki", net, dt.date(2026, 10, 9))
+check("mlt.bg unreachable: the ticket centre's list is read instead (no halls), and says so",
+      (res["source"], len(res["rows"]) + len(res["extra_rows"]), res["rows"][0][3]["hall"],
+       res["notes"][-1][:40]),
+      (O.MLT_TICKETS_SOURCE, 17, None, "mlt.bg programme not read (unreachable: "))
+check("…the programme is always tried first", net.asked,
+      ["https://mlt.bg/programa.php?year=2026&month=10", O.MLT_TICKETS_URL])
+net = FakeNet({**MLT_PAGES, O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")})
+res = O.fetch_venue("mladezhki", net, dt.date(2026, 10, 9))
+check("both read: the programme wins (halls, its 12:30), the ticket centre's 12:13 typo is a note",
+      (res["source"], len(res["rows"]), [n for n in res["notes"] if "time differs" in n]),
+      (O.MLT_SOURCE, 110, ["tickets.mlt.bg: time differs on 2026-11-21, Малката Баба Яга: "
+                           "programme 12:30 / tickets 12:13 — programme kept"]))
+check("neither read: unreachable (keep-previous decides)",
+      (O.fetch_venue("mladezhki", FakeNet({}), dt.date(2026, 10, 9)), O.LAST_STATUS["mladezhki"][:12]),
+      (None, "unreachable:"))
+
+print("the December -> January rollover (CODE-01): month paging, dates without a year, completeness")
+check("month pages from 20 Dec: December, then January and February of the next year",
+      list(O.months_from(dt.date(2026, 12, 20), 3)), [(2026, 12), (2027, 1), (2027, 2)])
+for today, dm, want in [(dt.date(2026, 12, 20), (5, 1), dt.date(2027, 1, 5)),
+                        (dt.date(2026, 12, 20), (28, 12), dt.date(2026, 12, 28)),
+                        (dt.date(2027, 1, 2), (28, 12), dt.date(2026, 12, 28)),
+                        (dt.date(2027, 1, 2), (5, 1), dt.date(2027, 1, 5))]:
+    check(f"nearest_date{dm} on {today}", O.nearest_date(dm[0], dm[1], today), want)
+
+
+def shifted(name, frm, to, label):
+    """A real month page re-dated to another month (the rows and stages as published)."""
+    text = fx(name).replace(frm[0], label)
+    text = re.sub(r"<span>(\d{2})/" + frm[1] + "</span>", lambda m: f"<span>{m.group(1)}/{to}</span>", text)
+    return text.encode("utf-8")
+
+
+DEC = shifted("theatre_mladezhki_2026-10_full.html", ("Октомври 2026", "10"), "12", "Декември 2026")
+JAN = shifted("theatre_mladezhki_2026-11_full.html", ("Ноември 2026", "11"), "01", "Януари 2027")
+net = FakeNet({O.MLT_URL.format(y=2026, m=12): DEC, O.MLT_URL.format(y=2027, m=1): JAN})
+res = O.fetch_venue("mladezhki", net, dt.date(2026, 12, 20))
+check("fetching on 20 Dec asks for January 2027 after December 2026",
+      net.asked[:3], ["https://mlt.bg/programa.php?year=2026&month=12", "https://mlt.bg/programa.php?year=2027&month=01",
+                      "https://mlt.bg/programa.php?year=2027&month=02"])
+check("…and its coverage runs across New Year, January judged against December",
+      (res["covered_from"], res["covered_to"], res["rows"][0][1], [r[1] for r in res["rows"]] == sorted(r[1] for r in res["rows"])),
+      ("2026-12-20", "2027-01-29", "2026-12-20", True))
+daily = lambda y, m, n: [mk(f"{y}-{m:02d}-{d:02d}") for d in range(1, n + 1)]
+check("completeness across New Year (20 Dec): a month page's December is the reference for January",
+      O.complete_until(daily(2026, 12, 31) + daily(2027, 1, 31), dt.date(2026, 12, 20)), "2027-01-31")
+check("…a thin January is not covered",
+      O.complete_until(daily(2026, 12, 31) + [mk("2027-01-05"), mk("2027-01-12")], dt.date(2026, 12, 20)), "2026-12-31")
+check("…an upcoming-only list on 20 Dec judges January against its 12 days before it",
+      O.complete_until([r for r in daily(2026, 12, 31) if r[1] >= "2026-12-20"] + daily(2027, 1, 31),
+                       dt.date(2026, 12, 20)), "2027-01-31")
+check("…and on 31 Dec against 31 Dec + January's first week, January running on to its end",
+      O.complete_until([mk("2026-12-31")] + daily(2027, 1, 31), dt.date(2026, 12, 31)), "2027-01-31")
+check("…but a January typed in only to the 19th is not covered then",
+      O.complete_until([mk("2026-12-31")] + daily(2027, 1, 19), dt.date(2026, 12, 31)), "2026-12-31")
+check("on 2 Jan: February judged against January", O.complete_until(daily(2027, 1, 31) + daily(2027, 2, 28),
+                                                                   dt.date(2027, 1, 2)), "2027-02-28")
+
+print("an unreachable theatre: preliminary at once, gone after 14 days, theatre.art.bg fills in (CODE-05)")
+prev_m = [["ee", "2026-10-10", "19:00", "Голяма сцена", None], ["ee", "2026-11-20", "19:00", "Голяма сцена", None]]
+agg_m = [("ee", "E.E.", "2026-10-10", "19:00", None), ("ee", "E.E.", "2026-11-20", "19:30", None),
+         ("pin", "Пинокио", "2026-12-05", "11:00", None), (None, "Ново", "2026-12-06", "11:00", None)]
+dates_m = {"2026-10-10", "2026-11-20", "2026-12-05", "2026-12-06"}
+rows, pf, info = S.merge_theatre_venue("mladezhki", "unreachable", [], None, [], agg_m, dates_m, prev_m, None,
+                                       F, E, confirmed_to="2026-11-29")
+check("within 14 days: its own rows to 29 Nov kept (with halls), theatre.art.bg after it; all preliminary",
+      (rows, pf, info["kept"], info["unplaced"]),
+      ([["ee", "2026-10-10", "19:00", "Голяма сцена", None], ["ee", "2026-11-20", "19:00", "Голяма сцена", None],
+        ["pin", "2026-12-05", "11:00", None, None]], F, 2, [["2026-12-06", "11:00", "Ново"]]))
+check("…theatre.art.bg's other time for a kept show and day is logged; the kept row is shown (D1)",
+      info["conflicts"], [["2026-11-20", "ee", ["19:00"], "19:30"]])
+print("an unreachable theatre's kept rows are never deleted by theatre.art.bg (D1: Топлоцентрала 62 -> 54)")
+prev_t = [["s1", "2026-11-03", "19:00", "Зала 1", None], ["s2", "2026-11-05", "19:00", "Зала 2", None],
+          ["s3", "2026-12-02", "19:00", "Зала 1", None], ["s4", "2026-12-04", "19:00", "Зала 2", None]]
+agg_t = [("s9", "S9", "2026-11-03", "19:30", None),       # inside the range it last confirmed: not added
+         ("s3", "S3", "2026-12-02", "20:00", None),       # a kept show, another time: logged, kept row stays
+         ("s8", "S8", "2026-12-02", "18:00", None),       # a kept date: not added
+         ("s7", "S7", "2026-12-09", "19:00", None)]       # a date no kept row covers: added
+rows, pf, info = S.merge_theatre_venue("toplo", "unreachable", [], None, [], agg_t,
+                                       {"2026-11-03", "2026-12-02", "2026-12-04", "2026-12-09"}, prev_t, None,
+                                       F, E, confirmed_to="2026-11-29")
+check("every kept row stays — also after the confirmed range, on dates theatre.art.bg was read",
+      ([r[:3] for r in rows], pf, info["kept"]),
+      ([["s1", "2026-11-03", "19:00"], ["s2", "2026-11-05", "19:00"], ["s3", "2026-12-02", "19:00"],
+        ["s4", "2026-12-04", "19:00"], ["s7", "2026-12-09", "19:00"]], F, 4))
+check("…the disagreeing time is logged", info["conflicts"], [["2026-12-02", "s3", ["19:00"], "20:00"]])
+
+print("ticket-list times off the 5-minute grid are flagged, never altered (D4)")
+res = O.fetch_venue("mladezhki", FakeNet({O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")}),
+                    dt.date(2026, 10, 9))
+check("tickets.mlt.bg alone: its 12:13 is published as listed, and flagged for a human",
+      ([r[2] for r in res["rows"] + res["extra_rows"] if r[1] == "2026-11-21" and r[0] == "Малката Баба Яга"],
+       O.off_grid_ticket_times(res)),
+      (["12:13"], [("2026-11-21", "12:13", "Малката Баба Яга")]))
+res2 = O.fetch_venue("mladezhki", FakeNet({**MLT_PAGES, O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")}),
+                     dt.date(2026, 10, 9))
+check("…with the programme readable its 12:30 is published, nothing to flag (the disagreement is a note)",
+      ([r[2] for r in res2["rows"] if r[1] == "2026-11-21" and r[0] == "Малката Баба Яга"],
+       O.off_grid_ticket_times(res2)), (["12:30"], []))
+flags = S.run_flags({"kuklen": {"source": O.KUKLEN_ART_SOURCE, "rows": [1, 2, 3]}}, {"mladezhki": res},
+                    {"toplo": {"kept_conflicts": [["2026-12-02", "s3", ["19:00"], "20:00"]]}})
+check("health.json entries: a reseller filling in, an odd ticket time, a kept-row conflict",
+      [(f["level"], f["venue"], f["message"][:44]) for f in flags],
+      [("warning", "kuklen", "own programme not read: its listing on theat"),
+       ("warning", "mladezhki", "ticket-list time(s) off the 5-minute grid, p"),
+       ("warning", "toplo", "the aggregator lists other times than the ke")])
+check("…the odd time itself is in the message", flags[1]["message"].endswith("2026-11-21 12:13 Малката Баба Яга"), True)
+rows, pf, info = S.merge_theatre_venue("mladezhki", "unreachable", [], None, [], agg_m, dates_m, prev_m, None,
+                                       F, E, confirmed_to="2026-11-29", expired=True)
+check("after 14 days without a read: kept rows removed, theatre.art.bg's alone (preliminary)",
+      (rows, pf, info["kept"]),
+      ([["ee", "2026-10-10", "19:00", None, None], ["ee", "2026-11-20", "19:30", None, None],
+        ["pin", "2026-12-05", "11:00", None, None]], F, 0))
+check("…and with theatre.art.bg down too: nothing (never a stale listing)",
+      S.merge_theatre_venue("mladezhki", "unreachable", [], None, [], [], set(), prev_m, None, F, E,
+                            expired=True)[:2], ([], F))
+check("a theatre with no programme of its own whose aggregator was unread for 15 days keeps nothing",
+      S.merge_theatre_venue("atelie313", "none", [], None, [], [], set(), prev_m, None, F, E, expired=True)[0], [])
+check("a self-check sees a show of another theatre in a theatre's rows",
+      S.theatre_venue_problems("mladezhki", "none", [["x", "2026-10-10", "19:00", None, None]], set(), None, None,
+                               None, F, E, SI.ShowIndex([{"id": "x", "title": "X", "theatre": "kuklen"}])),
+      ["performances of another theatre's shows: x"])
+
+print("month-end coverage on nine theatres' live programmes (D3: 25, 30, 31 Oct and 28, 30 Nov)")
+# Rows as each theatre's own pages served them on 2026-10-12 (parsed by the real
+# fetchers, stages included). On a simulated day a list of upcoming dates shows
+# the rows from that day on; a month page (Сълза и смях, Топлоцентрала) its
+# whole current month and the months after it.
+LIVE = json.loads((FIX / "theatre_rows_2026-10-12.json").read_text(encoding="utf-8"))["venues"]
+
+
+def as_shown(venue, day):
+    x = LIVE[venue]
+    rows = [O.mkrow(f"r{i}", d, "19:00", stage=x["stages"][si] or None) for i, (d, si) in enumerate(x["rows"])]
+    start = day.replace(day=1) if x["lists_past_days"] else day
+    return [r for r in rows if r[1] >= start.isoformat()]
+
+
+SIM_DAYS = [dt.date(2026, 10, 25), dt.date(2026, 10, 30), dt.date(2026, 10, 31), dt.date(2026, 11, 28),
+            dt.date(2026, 11, 30)]
+WANT = {  # covered_to on 25, 30, 31 Oct, 28, 30 Nov (None: the recording lists nothing after 29 Nov)
+    "national":    ["2026-12-31"] * 5,                      # Nov 63, Dec 63 performances: published
+    "sofia-th":    ["2026-11-29"] * 4 + [None],            # opens November on the 10th: still published
+    "zad-kanala":  ["2026-12-30"] * 5,
+    "satira":      ["2026-11-29"] * 4 + [None],
+    "vazrazhdane": ["2026-11-29"] * 4 + ["2026-11-30"],    # December: eight evenings to the 19th — never
+    "artvent":     ["2026-12-30"] * 5,
+    "sfumato":     ["2026-11-30"] * 5,
+    "salzaismyah": ["2026-10-31"] * 3 + ["2026-11-30"] * 2,  # November's chamber stage 1 vs 8 — never
+    "toplo":       ["2026-11-29"] * 4 + ["2026-11-30"],    # December's 9 performances — never
+}
+for venue, wants in WANT.items():
+    got = []
+    for day in SIM_DAYS:
+        try:
+            got.append(O.finish(venue, "s", as_shown(venue, day), day)["covered_to"])
+        except O.Unavailable as e:
+            got.append(None if str(e).startswith("no performances parsed") else f"Unavailable: {e}")
+    check(f"{venue}: coverage on 25/30/31 Oct and 28/30 Nov", got, wants)
+for day in SIM_DAYS[:3]:
+    why = []
+    O.complete_until(as_shown("salzaismyah", day), day, why)
+    check(f"Сълза и смях on {day}: November's chamber stage nearly vanished", why[0][:69],
+          "2026-11: not completely published — камерна сцена славянска беседа: 1")
+    why = []
+    O.complete_until(as_shown("toplo", day), day, why)
+    check(f"Топлоцентрала on {day}: December's 9 performances are thinner than November", why[0][:50],
+          "2026-12: 9 performances — thinner than the 28 days")
+why = []
+O.complete_until(as_shown("vazrazhdane", dt.date(2026, 11, 30)), dt.date(2026, 11, 30), why)
+check("Възраждане on 30 Nov: one listed day before December, and December stops on the 19th", why[0][:57],
+      "2026-12: 8 performances, not listed on to the month's end")
+res = O.finish("x", "s", [mk("2026-11-03"), mk("2026-11-20")], dt.date(2026, 10, 31))
+check("a programme read on a month's last day, nothing left in it, the next month not complete: covered "
+      "today (never 'no completely published period'), the rest preliminary",
+      (res["covered_from"], res["covered_to"], len(res["rows"]), len(res["extra_rows"])),
+      ("2026-10-31", "2026-10-31", 0, 2))
+check("…and the self-check does not call a few days' coverage an implausible drop",
+      S.implausible_drop({"status": "official", "screenings": 64, "days": 52},
+                         {"status": "official", "screenings": 0, "days": 1}, min_rate=1, min_days=7), None)
+
+print("kuklen — its reseller's listing on theatre.art.bg when sofiapuppet.com refuses: PRELIMINARY, never official (D2)")
+net = FakeNet({O.KUKLEN_ART_URL: raw("theatre_kuklen_artbg.html")})          # sofiapuppet.com: no answer
+check("the theatre's own programme not read: the source counts as failed (no official coverage)",
+      (O.fetch_venue("kuklen", net, TODAY),
+       O.LAST_STATUS["kuklen"].endswith("its ticket channel on theatre.art.bg read instead, shown as preliminary"),
+       net.asked[0]),
+      (None, True, O.KUKLEN_URL.format(y=2026, m=10)))
+SEC = O.SECONDARY["kuklen"]
+check("…the reseller's listing is kept aside for the merge, labelled", SEC["source"], O.KUKLEN_ART_SOURCE)
+check("…only its own two halls", sorted({r[3]["hall"] for r in SEC["rows"]}),
+      ["Салон Гурко 14", "Салон Я. Сакъзов 19"])
+check("…its performances elsewhere (schools, Театър Азарян) are excluded, never filed here",
+      [(e[0], e[1], e[2]) for e in SEC["excluded"]],
+      [("Пази детето!", "2026-10-09", "10:00"), ("Пази детето!", "2026-10-09", "11:00"),
+       ("Златка, златното момиче", "2026-10-18", "11:00"),
+       ("ТВОРЧЕСКА РАБОТИЛНИЦА ЗЛАТКА-ЗЛАТНОТО МОМИЧЕ", "2026-10-18", "13:00"),
+       ("И НИЕ ИГРАЕМ РОМЕО И ЖУЛИЕТА", "2026-10-18", "18:30")])
+check("…the same performances the theatre's own page lists for those days",
+      brief([r for r in SEC["rows"] if r[1] == "2026-10-18"]),
+      [("Аладин и вълшебната лампа", "2026-10-18", "11:00"), ("Принцесите и Змеят", "2026-10-18", "11:00")])
+k_prev = [["al", "2026-10-18", "11:00", "Салон “Я. Сакъзов 19”", None]]
+k_agg = [("al", "Аладин и вълшебната лампа", "2026-10-18", "11:00", "Салон Я. Сакъзов 19"),
+         ("pr", "Принцесите и Змеят", "2026-10-18", "11:00", "Салон Гурко 14"),
+         ("ko", "КОСЕ БОСЕ", "2026-11-01", "11:00", "Салон Я. Сакъзов 19")]
+rows, pf, info = S.merge_theatre_venue("kuklen", "unreachable", [], None, [], k_agg,
+                                       {"2026-10-18", "2026-11-01"}, k_prev, None, F, E)
+check("merged as unreachable: its kept row stays, the reseller adds only on a date it does not cover, "
+      "PRELIM_FROM = today", (rows, pf),
+      ([["al", "2026-10-18", "11:00", "Салон “Я. Сакъзов 19”", None],
+        ["ko", "2026-11-01", "11:00", "Салон Я. Сакъзов 19", None]], F))
+check("a fetch of any venue starts with no reseller listing left over",
+      (O.fetch_venue("kuklen", FakeNet({}), TODAY), "kuklen" in O.SECONDARY), (None, False))
+check("both channels down: unreachable", O.fetch_venue("kuklen", FakeNet({}), TODAY), None)
 
 print()
 if fails:

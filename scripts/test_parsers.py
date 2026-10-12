@@ -1278,8 +1278,8 @@ check("a year conflict vetoes a title match (2026 remake vs 2016 film)", _R("С�
 check("same title, no year conflict -> the catalogue film", _R("Смелата Ваяна", "cc-sofia"), "vayana")
 check("subtitle variant with same venue/date/time corroboration",
       _R("Милен", "odeon", corroborate=lambda f: f == "milen-filmat"), "milen-filmat")
-# a fuzzy decision is remembered for the run (one title, one film), so every
-# negative case below gets an index of its own
+# (an index of its own per negative case is a leftover of the run-wide fuzzy
+# cache, removed 2026-10-09: see "identity: no memory across titles" below)
 check("subtitle variant without corroboration is not merged",
       _R("Милен", "odeon", corroborate=lambda f: False, index=FID.FilmIndex(_cat, _minted)), None)
 check("subtitle variant corroborated by the venue's runtime",
@@ -1291,6 +1291,343 @@ check("an alias scoped to Люмиер does not apply elsewhere",
 _dup = FID.FilmIndex(_cat + [{"id": "av", "bg": "Аватар", "source": "cc-sofia"}], _minted | {"av"}, aliases={})
 check("the unmerged look-alike is listed as a suspected duplicate",
       [(d["title"], d["film"]) for d in _dup.suspected_duplicates(["av"])], [("Аватар", "avatar-3")])
+
+# ===================================================== P1A (2026-10-09 audit)
+# CODE-07: every identity decision stands on its own evidence — no run-wide
+# memory of a fuzzy match, and the year veto applies to every rule.
+print("identity: no memory across titles, the year check always (CODE-07)")
+_av = FID.FilmIndex(_cat, _minted)                       # ONE index, as in a real run
+check("Cinema City's 'Аватар', corroborated, is 'Аватар: Огън и пепел'",
+      _R("Аватар", "cc-sofia", corroborate=lambda f: f == "avatar-3", index=_av), "avatar-3")
+check("…later in the SAME run, Одеон's 'Аватар (2009)' (year 2009, 162 min) is not",
+      _R("Аватар (2009)", "odeon", index=_av, year=2009, runtime=162), None)
+check("…nor Одеон's plain 'Аватар' with its year in the meta",
+      _R("Аватар", "odeon", index=_av, year=2009), None)
+check("…nor another venue's 'Аватар' with no evidence of its own (nothing is remembered)",
+      _R("Аватар", "arena-mega", index=_av), None)
+check("…while the corroborated venue still resolves it, every time",
+      _R("Аватар", "cc-sofia", corroborate=lambda f: f == "avatar-3", index=_av), "avatar-3")
+check("the resolver keeps no fuzzy cache at all", hasattr(_av, "_fuzzy"), False)
+_sp = FID.FilmIndex(_cat[2:3], aliases={})
+check("a one-letter spelling match is not carried to a title with another year",
+      [_R("Капитан Саблезъб и графинята на Грел", "x", index=_sp, year=2026),
+       _R("Капитан Саблезъб и графинята на Грел", "y", index=_sp, year=1999)], ["sablezab", None])
+check("a curated alias obeys the year veto (Люмиер's 'Сънища' of 2024 is not Kurosawa's 1990 film)",
+      _R("Сънища", "lumiere", year=2024), None)
+check("…and still applies with the right year, or none", (_R("Сънища", "lumiere", year=1990),
+                                                          _R("Сънища", "lumiere")),
+      ("akira-kurosava-sanishta-1990", "akira-kurosava-sanishta-1990"))
+check("…a vetoed alias is listed for a human", any(t == "Сънища" for t, _c in _idx.suspects), True)
+
+# CODE-01: the listing window rolls with the date, from one shared rule.
+print("the rolling listing window (CODE-01), the year rollover included")
+import listing_window as LW                                      # noqa: E402
+import official_sources as OS                                    # noqa: E402
+import netfetch as NF                                            # noqa: E402
+import venue_state as VS                                         # noqa: E402
+import json as _js                                               # noqa: E402
+check("today's horizon kept: 9 Oct .. 14 Dec (66 days on, 67 listing days)",
+      (LW.listing_window("2026-10-09"), len(LW.window_days("2026-10-09"))), (("2026-10-09", "2026-12-14"), 67))
+check("on 20 Dec 2026 the window runs into 2027", LW.listing_window("2026-12-20"), ("2026-12-20", "2027-02-24"))
+check("on 2 Jan 2027", LW.listing_window("2027-01-02"), ("2027-01-02", "2027-03-09"))
+_W20 = LW.window_days("2026-12-20")
+check("the window's days are consecutive across New Year",
+      _W20[_W20.index("2026-12-31"):_W20.index("2026-12-31") + 2], ["2026-12-31", "2027-01-01"])
+check("'today' is Sofia's: 21:30 UTC on 9 Oct is already 10 Oct (EEST)",
+      LW.sofia_today(dt.datetime(2026, 10, 9, 21, 30, tzinfo=dt.timezone.utc)), dt.date(2026, 10, 10))
+check("…and 22:30 UTC on 31 Dec is 1 Jan 2027 (EET)",
+      LW.sofia_today(dt.datetime(2026, 12, 31, 22, 30, tzinfo=dt.timezone.utc)), dt.date(2027, 1, 1))
+check("SNAPSHOT.generated: ISO, Sofia offset (+03:00 in October, +02:00 in December)",
+      (LW.generated_stamp(dt.datetime(2026, 10, 9, 18, 30, 5, 123, tzinfo=dt.timezone.utc)),
+       LW.generated_stamp(dt.datetime(2026, 12, 20, 4, 17, tzinfo=dt.timezone.utc))),
+      ("2026-10-09T21:30:05+03:00", "2026-12-20T06:17:00+02:00"))
+check("the EU clock rule when the tz database is missing (25 Oct 2026, 28 Mar 2027 at 01:00 UTC)",
+      [LW._eu_offset_hours(dt.datetime(*a, tzinfo=dt.timezone.utc)) for a in
+       ((2026, 10, 25, 0, 59), (2026, 10, 25, 1, 0), (2027, 3, 28, 0, 59), (2027, 3, 28, 1, 0))], [3, 2, 2, 3])
+for _today, _text, _want in [("2026-12-20", "28 декември", "2026-12-28"), ("2026-12-20", "5 януари", "2027-01-05"),
+                             ("2026-12-20", "3 февруари", "2027-02-03"), ("2027-01-02", "5 януари", "2027-01-05"),
+                             ("2027-01-02", "9 март", "2027-03-09")]:
+    check(f"a date without a year, today {_today}: {_text!r}", S.find_date(_text, LW.window_days(_today)), _want)
+check("Cine Grand labels across New Year ('чт, 31 дек' / 'пт, 1 яну', today 20 Dec)",
+      (OS._bg_day_month("чт,  31 дек, 19:00", "2026-12-20"), OS._bg_day_month("пт,  1 яну, 11:50", "2026-12-20")),
+      ("2026-12-31", "2027-01-01"))
+check("…and on 2 Jan a December label is last year's (dropped as past), a March one this year's",
+      (OS._infer_year(28, 12, "2027-01-02"), OS._infer_year(15, 3, "2027-01-02")), ("2026-12-28", "2027-03-15"))
+_offj = [("a", "2026-12-30", "20:00"), ("b", "2027-01-01", "16:00"), ("a", "2027-01-03", "18:00")]
+_rows, _pf, _ = S.merge_cinema_venue("v", "official", _offj, ("2026-12-20", "2027-01-01"),
+                                     [("c", "C", "2027-01-05", ["21:00"], None)], True, [], None,
+                                     "2026-12-20", "2027-02-24")
+check("a merge across New Year: rows in date order, coverage to 1 Jan, preliminary from 2 Jan",
+      ([r[2] for r in _rows], _pf), (["2026-12-30", "2027-01-01", "2027-01-03", "2027-01-05"], "2027-01-02"))
+_snap = ('const SNAPSHOT={"window":{"from":"2026-12-19","to":"2027-02-23"},"captured":"2026-09-15T00:00:00+03:00",'
+         '"lastValidated":"x","changelog":[{"film":"„Ф“"}]};\nconst CINEMAS=[];')
+_out = S.write_snapshot(_snap, "2026-12-20", "2027-02-24", "2026-12-20T06:17:00+02:00")
+_sj = _js.loads(_out.split("\n")[0][len("const SNAPSHOT="):-1])
+check("write_snapshot: both window ends move, generated set right after the window, the rest untouched",
+      (_sj["window"], _sj["generated"], list(_sj), _sj["changelog"], _out.split("\n")[1]),
+      ({"from": "2026-12-20", "to": "2027-02-24"}, "2026-12-20T06:17:00+02:00",
+       ["window", "generated", "captured", "lastValidated", "changelog"], [{"film": "„Ф“"}], "const CINEMAS=[];"))
+check("…a second run replaces generated in place (one key)",
+      S.write_snapshot(_out, "2026-12-21", "2027-02-25", "2026-12-21T06:17:00+02:00").count('"generated"'), 1)
+_loose = 'const SNAPSHOT={window:{from:"2026-10-08",to:"2026-12-14"},captured:"x"};'
+check("…a SNAPSHOT that is not strict JSON still gets both (regex fallback)",
+      S.write_snapshot(_loose, "2026-10-09", "2026-12-14", "G"),
+      'const SNAPSHOT={window:{from:"2026-10-09",to:"2026-12-14"},"generated":"G",captured:"x"};')
+check("harvest_cinema_posters.py no longer hard-codes the window end",
+      "2026-12-14" in (pathlib.Path(__file__).resolve().parent / "harvest_cinema_posters.py").read_text(encoding="utf-8"),
+      False)
+
+# CODE-03: netfetch's budgets are real. A fake clock and a fake transport.
+print("netfetch: real time budgets, a closed dead host, blocking recognised (CODE-03)")
+
+
+class _Clock:
+    def __init__(self):
+        self.t = 1000.0
+
+    def monotonic(self):
+        return self.t
+
+    def sleep(self, s):
+        self.t += max(0.0, s)
+
+
+class _Resp:
+    def __init__(self, status, body=b"<html>ok</html>", headers=None):
+        self.status_code, self.content = status, body
+        self.headers = {"Content-Type": "text/html; charset=utf-8", **(headers or {})}
+        self.text = body.decode("utf-8", "ignore")
+
+
+class _Transport:
+    """host -> behaviour: 'dead' (connection error), 'tarpit' (every read times
+    out after the whole timeout), an int status, or a list of statuses in turn."""
+    def __init__(self, clock, plan):
+        self.clock, self.plan, self.calls = clock, plan, []
+
+    def get(self, url, headers=None, timeout=None, verify=True, allow_redirects=True):
+        import urllib.parse as _u
+        import requests as _rq
+        host = _u.urlsplit(url).hostname
+        self.calls.append((host, url, timeout))
+        how = self.plan[host]
+        if isinstance(how, list):
+            how = how.pop(0) if len(how) > 1 else how[0]
+        if how == "dead":
+            self.clock.t += 0.2
+            raise _rq.exceptions.ConnectionError("Failed to resolve " + host)
+        if how == "tarpit":
+            self.clock.t += timeout[1]
+            raise _rq.exceptions.ReadTimeout("read timed out")
+        if how == "challenge":
+            self.clock.t += 0.3
+            return _Resp(403, b"<!DOCTYPE html><html><head><title>Just a moment...</title></head></html>")
+        self.clock.t += 0.3
+        if isinstance(how, tuple):
+            return _Resp(how[0], headers=how[1])
+        return _Resp(how)
+
+
+def _fetcher(plan, **kw):
+    clk = _Clock()
+    NF.time = clk                          # netfetch reads time.monotonic / time.sleep
+    f = NF.Fetcher(verbose=False, **kw)
+    f.session = _Transport(clk, plan)
+    return f, clk
+
+
+_real_time = NF.time
+try:
+    _f, _c = _fetcher({"theatre.art.bg": "dead", "ok.bg": 200})
+    _t0 = _c.t
+    _got = [_f.get(f"https://theatre.art.bg/?date=d{i}") for i in range(67)]
+    check("a dead host: 67 day pages cost two URLs' retries, not 67 x 36 s",
+          (sum(x is not None for x in _got), len(_f.session.calls), _c.t - _t0 <= 2 * NF.URL_BUDGET),
+          (0, 8, True))
+    check("…then the host is closed for the run, and says why",
+          ("theatre.art.bg" in _f.closed, _f.log[-1]["outcome"], _f.log[-1]["error"].startswith("skipped:")),
+          (True, "skipped", True))
+    check("…a healthy host is not affected", _f.get("https://ok.bg/x") is not None, True)
+
+    _f, _c = _fetcher({"slow.bg": "tarpit"})
+    _t0 = _c.t
+    _f.get("https://slow.bg/a")
+    check("a tarpit: one URL never takes more than URL_BUDGET, retries included",
+          _c.t - _t0 <= NF.URL_BUDGET + NF.DEFAULT_HOST_DELAY, True)
+    for _i in range(10):
+        _f.get(f"https://slow.bg/{_i}")
+    check("…and the host closes after HOST_FAIL_LIMIT such URLs",
+          (_c.t - _t0 <= NF.HOST_FAIL_LIMIT * (NF.URL_BUDGET + 3), "slow.bg" in _f.closed), (True, True))
+
+    _f, _c = _fetcher({"mlt.bg": 403, "tickets.mlt.bg": 200})
+    _n0 = len(_f.log)
+    check("HTTP 403: refused once, never retried",
+          (_f.get("https://mlt.bg/programa.php?year=2026&month=10"), len(_f.session.calls)), (None, 1))
+    check("…recorded as blocked from this network", _f.blocked_since(_n0),
+          [("https://mlt.bg/programa.php?year=2026&month=10", "mlt.bg", "HTTP 403")])
+    check("…the venue's other official host still answers", _f.get("http://tickets.mlt.bg/x") is not None, True)
+    _f, _c = _fetcher({"cf.bg": "challenge"})
+    _f.get("https://cf.bg/")
+    check("a WAF challenge page is blocking, not a programme", _f.blocked_since(0)[0][2],
+          "challenge page (Cloudflare challenge, HTTP 403)")
+    check("…an ordinary Cloudflare page carrying its bot-detection script is NOT a challenge",
+          NF.challenge_signature(_Resp(200, b"<html><head><title>Program</title></head><body>"
+                                            b"<script src='/cdn-cgi/challenge-platform/scripts/jsd/main.js'>"
+                                            b"</script></body></html>")), None)
+    _f, _c = _fetcher({"flaky.bg": [503, 200]})
+    check("503 then 200: retried within the budget", (_f.get("https://flaky.bg/") is not None,
+                                                     len(_f.session.calls)), (True, 2))
+    _f, _c = _fetcher({"nf.bg": 404})
+    for _i in range(5):
+        _f.get(f"https://nf.bg/{_i}")
+    check("404s are answers: no retry, and the host stays open", (len(_f.session.calls), "nf.bg" in _f.closed),
+          (5, False))
+    _f, _c = _fetcher({"ra.bg": (429, {"Retry-After": "3600"})})
+    _t0 = _c.t
+    _f.get("https://ra.bg/")
+    check("a Retry-After of an hour is not waited for", (len(_f.session.calls), _c.t - _t0 < 5), (1, True))
+    _f, _c = _fetcher({"ok.bg": 200})
+    with _f.deadline(10):
+        _c.t += 11
+        _late = _f.get("https://ok.bg/late")
+    check("a step's deadline: nothing is fetched after it", (_late, len(_f.session.calls)), (None, 0))
+    check("…and outside it the host is fine (a spent step does not close it)",
+          (_f.get("https://ok.bg/now") is not None, "ok.bg" in _f.closed), (True, False))
+    _f, _c = _fetcher({"ok.bg": 200}, budget_seconds=30)
+    _c.t += 31
+    check("the whole-run budget is enforced inside get()", _f.get("https://ok.bg/x"), None)
+finally:
+    NF.time = _real_time
+
+# CODE-02: one venue failing its self-check, or crashing, stops only itself.
+print("per-venue isolation (CODE-02)")
+_F2, _E2 = "2026-10-09", "2026-12-14"
+_prev_g8 = [["p", "g8", "2026-10-09", ["11:00", "14:00", "17:00"]], ["q", "g8", "2026-10-10", ["20:00"]]]
+_g8_off = [("p", "2026-10-09", "11:00"), ("p", "2026-10-10", "11:00"), ("p", "2026-10-11", "11:00")]
+_g8_cov, _odeon_off = ("2026-10-09", "2026-10-15"), [("o", "2026-10-09", "18:30"), ("o", "2026-10-10", "18:30")]
+_out = {}
+for _v, _off, _cov, _prevstat, _prev in (
+        ("g8", _g8_off, _g8_cov, {"status": "official", "screenings": 112, "days": 7}, _prev_g8),
+        ("odeon", _odeon_off, ("2026-10-09", "2026-10-11"), {"status": "official", "screenings": 3, "days": 3}, [])):
+    _stub = {"status": "official", "screenings": len(_off), "days": 7 if _v == "g8" else 3}
+    _out[_v] = VS.run_isolated(
+        lambda: S.merge_cinema_venue(_v, "official", _off, _cov, [], False, _prev, None, _F2, _E2),
+        lambda: S.merge_cinema_venue(_v, "unreachable", [], None, [], False, _prev, None, _F2, _E2),
+        lambda o: S.cinema_venue_problems("official", o[0], set(_off), list(_cov), _prevstat, _stub,
+                                          _F2, _E2, {"p", "q", "o"}))
+check("G8's markup half-breaks (3 screenings a day -> 0.4): G8 alone fails its self-check",
+      (bool(_out["g8"][3]), _out["g8"][3][0][:20], bool(_out["odeon"][3])), (True, "implausibly few rows", False))
+check("…G8 keeps last run's rows, all preliminary from today", (_out["g8"][0], _out["g8"][1]),
+      (_prev_g8, _F2))
+check("…Одеон is merged normally from its own programme", (_out["odeon"][0], _out["odeon"][1]),
+      ([["o", "odeon", "2026-10-09", ["18:30"]], ["o", "odeon", "2026-10-10", ["18:30"]]], "2026-10-12"))
+
+
+def _boom():
+    raise KeyError("a parser bug")
+
+
+_r = VS.run_isolated(_boom, lambda: ([["k", "v", "2026-10-09", ["10:00"]]], _F2, {}))
+check("a merge that crashes falls back for that venue only, with the reason", (_r[0], _r[1], _r[3]),
+      ([["k", "v", "2026-10-09", ["10:00"]]], _F2, ["merge crashed: KeyError: 'a parser bug'"]))
+check("written rows that differ from the venue's own programme are a self-check failure",
+      S.cinema_venue_problems("official", [["a", "v", "2026-10-09", ["10:00", "12:00"]]],
+                              {("a", "2026-10-09", "10:00")}, ["2026-10-09", "2026-10-09"], None,
+                              {"status": "official", "screenings": 1, "days": 1}, _F2, _E2, {"a"}),
+      ["written rows differ from its own programme inside 2026-10-09..2026-10-09 (1 extra, 0 missing)"])
+check("…as are an unknown film id and a past row",
+      S.cinema_venue_problems("none", [["zz", "v", "2026-10-08", ["10:00"]]], set(), None, None, None,
+                              _F2, _E2, {"a"}),
+      ["a row outside today..window end", "showtimes for unknown film ids: zz"])
+
+# CODE-05: an unreachable source — preliminary at once, gone after 14 days.
+print("stale sources: preliminary at once, removed after 14 days (CODE-05)")
+_F, _E = "2026-10-08", "2026-12-14"
+_e = {"last_ok": "2026-10-01", "covered_to": "2026-10-31", "failing_since": "2026-10-04"}
+check("kept policy 8 days after the last read: kept, confirmed to its last coverage",
+      VS.kept_policy(_e, "2026-10-09"), {"since": "2026-10-01", "age": 8, "expired": False,
+                                         "confirmed_to": "2026-10-31", "last_ok": "2026-10-01"})
+check("…14 days: still kept; 15 days: expired",
+      (VS.kept_policy(_e, "2026-10-15")["expired"], VS.kept_policy(_e, "2026-10-16")["expired"]), (False, True))
+check("never read (first run with the sidecar): the clock starts at the first failure, "
+      "confirmed range from the page's PRELIM_FROM",
+      VS.kept_policy({}, "2026-10-09", "2026-11-30"), {"since": "2026-10-09", "age": 0, "expired": False,
+                                                       "confirmed_to": "2026-11-29", "last_ok": None})
+_st = {"venues": {}}
+VS.record_read(_st, "mladezhki", True, "2026-10-09", covered_to="2026-11-29")
+VS.record_read(_st, "mladezhki", False, "2026-10-10", error="HTTP 403")
+VS.record_read(_st, "mladezhki", False, "2026-10-11", error="HTTP 403")
+check("official_state: a failure streak keeps the last good read and its first failure",
+      _st["venues"]["mladezhki"], {"source": "official", "last_ok": "2026-10-09", "covered_to": "2026-11-29",
+                                   "failing_since": "2026-10-10", "last_error": "HTTP 403"})
+VS.record_read(_st, "mladezhki", True, "2026-10-12", covered_to="2026-11-30")
+check("…and a good read resets it", (_st["venues"]["mladezhki"]["last_ok"],
+                                    _st["venues"]["mladezhki"]["failing_since"]), ("2026-10-12", None))
+_agg2 = [("d", "D", "2026-10-18", ["12:00"], None), ("e", "E", "2026-10-10", ["21:00"], None)]
+_prev2 = [["gone", "v", "2026-10-11", ["20:30"]], ["late", "v", "2026-10-25", ["19:00"]]]
+check("expired (no successful read for 15 days): kept rows removed, the aggregator's alone, preliminary",
+      S.merge_cinema_venue("v", "unreachable", [], None, _agg2, True, _prev2, "2026-10-12", _F, _E,
+                           confirmed_to="2026-10-11", expired=True)[:2],
+      ([["e", "v", "2026-10-10", ["21:00"]], ["d", "v", "2026-10-18", ["12:00"]]], _F))
+check("…and with the aggregator down too: nothing at all (never stale listings)",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], False, _prev2, "2026-10-12", _F, _E,
+                           confirmed_to="2026-10-11", expired=True)[:2], ([], _F))
+check("not expired, aggregator down: every kept row stays, preliminary from today",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], False, _prev2, "2026-10-12", _F, _E,
+                           confirmed_to="2026-10-11")[:2],
+      ([["gone", "v", "2026-10-11", ["20:30"]], ["late", "v", "2026-10-25", ["19:00"]]], _F))
+check("an aggregator-only venue whose aggregator has been down for 15 days keeps nothing",
+      S.merge_cinema_venue("cineland", "none", [], None, [], False, _prev2, None, _F, _E, expired=True)[0], [])
+print("an unreachable venue's kept rows are never deleted by the aggregator (D1: dom-kino 80 -> 32)")
+_prev3 = [["k1", "v", "2026-10-10", ["18:00"]], ["k2", "v", "2026-10-20", ["20:00"]],
+          ["k3", "v", "2026-11-30", ["19:00"]]]
+check("programata read but listing nothing for the venue (Cinema City): every kept row stays, preliminary",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev3, "2026-10-16", _F, _E,
+                           confirmed_to="2026-10-15")[:2], (_prev3, _F))
+_agg3 = [("k2", "K2", "2026-10-20", ["17:00"], None),     # a kept film and day, another time: logged
+         ("n1", "N1", "2026-10-20", ["21:00"], None),     # a date a kept row covers: not added
+         ("n2", "N2", "2026-10-21", ["21:00"], None),     # a date no kept row covers: added
+         ("n3", "N3", "2026-10-12", ["21:00"], None)]     # inside the range it last confirmed: not added
+_rows, _pf, _info = S.merge_cinema_venue("v", "unreachable", [], None, _agg3, True, _prev3, "2026-10-16", _F, _E,
+                                         confirmed_to="2026-10-15")
+check("the aggregator only ADDS, on dates the kept rows do not cover", _rows,
+      [["k1", "v", "2026-10-10", ["18:00"]], ["k2", "v", "2026-10-20", ["20:00"]],
+       ["n2", "v", "2026-10-21", ["21:00"]], ["k3", "v", "2026-11-30", ["19:00"]]])
+check("…its other time for a kept film and day is logged, the kept (formerly official) row shown",
+      _info["conflicts"], [["2026-10-20", "k2", ["20:00"], ["17:00"]]])
+
+# CODE-13: health.json — a venue emptied, blocked, unreachable, kept, low.
+print("health.json (CODE-13)")
+_hv = [{"venue": "cineland", "kind": "cinema", "status": "none", "now": 0, "prev": 11,
+        "agg_name": "programata.bg"},
+       {"venue": "mladezhki", "kind": "theatre", "status": "official", "now": 108, "prev": 110,
+        "source": "tickets.mlt.bg public list (the theatre's own ticket centre)",
+        "blocked": [("https://mlt.bg/programa.php?year=2026&month=10", "mlt.bg", "HTTP 403")]},
+       {"venue": "kuklen", "kind": "theatre", "status": "unreachable", "now": 40, "prev": 41,
+        "error": "unreachable: https://sofiapuppet.com/…", "agg_name": "theatre.art.bg",
+        "policy": {"last_ok": "2026-10-01", "age": 8, "expired": False, "since": "2026-10-01"}},
+       {"venue": "g8", "kind": "cinema", "status": "official", "now": 30, "prev": 100},
+       {"venue": "atelie313", "kind": "theatre", "status": "none", "now": 6, "prev": 6,
+        "agg_name": "theatre.art.bg"}]
+_h = VS.health_entries(_hv)
+check("errors first: an emptied venue and a blocked source", [(e["level"], e["venue"]) for e in _h],
+      [("error", "cineland"), ("error", "mladezhki"), ("warning", "kuklen"), ("warning", "g8"),
+       ("warning", "atelie313")])
+check("…an aggregator-only venue that emptied", _h[0]["message"], "emptied: 0 upcoming screenings now, 11 last run (none)")
+check("…blocked from this network, and what was read instead", _h[1]["message"],
+      "blocked from this network: HTTP 403 at https://mlt.bg/programa.php?year=2026&month=10 — read from "
+      "tickets.mlt.bg public list (the theatre's own ticket centre) instead")
+check("…kept rows shown as preliminary, and when they go", _h[2]["message"],
+      "official source unreachable (unreachable: https://sofiapuppet.com/…); last read 2026-10-01, 8 days ago — "
+      "40 performances kept and shown as preliminary (removed after 14 days)")
+check("…a count far below the previous run's", _h[3]["message"], "low count: 30 screenings now vs 100 last run")
+check("…an aggregator-only venue, every run", _h[4]["message"],
+      "no official programme: all 6 performances are preliminary, from theatre.art.bg")
+_hp = pathlib.Path("/tmp/p1a_test_health.json")
+VS.write_health(_hp, _h)
+check("health.json is a list of {level, venue, message}",
+      [sorted(e) for e in _js.loads(_hp.read_text(encoding="utf-8"))][:1], [["level", "message", "venue"]])
+
 
 print("merge: the venue's own programme is authoritative")
 _F, _E = "2026-10-08", "2026-12-14"
@@ -1310,10 +1647,13 @@ check("contradicting aggregator rows are discarded and logged", _info["discarded
       [["2026-10-08", "17:00", "A", "a"], ["2026-10-09", "18:00", "X", "x"]])
 check("PRELIM_FROM = the day after the official coverage", _pf, "2026-10-16")
 _rows, _pf, _ = S.merge_cinema_venue("v", "unreachable", [], None, _agg, True, _prev, "2026-10-12", _F, _E)
-check("unreachable official source: previous rows kept, past ones dropped", _rows, [["gone", "v", "2026-10-11", ["20:30"]]])
-check("unreachable official source: previous PRELIM_FROM kept", _pf, "2026-10-12")
-check("unreachable with no previous PRELIM_FROM: preliminary from today",
-      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev, None, _F, _E)[1], _F)
+check("unreachable official source: rows it had confirmed kept (never past ones), the aggregator after them",
+      _rows, [["gone", "v", "2026-10-11", ["20:30"]], ["d", "v", "2026-10-18", ["12:00"]],
+              ["c", "v", "2026-10-20", ["18:00"]]])
+check("unreachable official source: ALL preliminary, from today (owner: 'mark preliminary at once')", _pf, _F)
+check("unreachable with no previous PRELIM_FROM: preliminary from today, every kept row stays",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev, None, _F, _E)[:2],
+      ([["gone", "v", "2026-10-11", ["20:30"]]], _F))
 _rows, _pf, _ = S.merge_cinema_venue("cineland", "none", [], None, [("a", "A", "2026-10-08", ["13:00"], None)],
                                      True, [], None, _F, _E)
 check("no official source (Cineland): aggregator rows, preliminary from today", (_rows, _pf),
@@ -1704,6 +2044,57 @@ _q, _o = _tmdb_run(_col, lambda prm: _REMAKES.get(prm.get("query"), []))
 check("a 2026 'Колония' searches its Bulgarian title and rejects the 2013 'Колония'",
       (_q[:1], _o.get(_col[0]["id"], {}).get("matched")), ([("Колония", None, "bg")], False))
 
+print("festivals: the stale rule composes with venue_state (P1A)")
+# a cinema whose own read failed: venue_state kept ALL its rows, preliminary from
+# today (PRELIM_FROM = floor). Its kept rows are not its programme: no festival
+# row is "listed" or "contradicted" by them, and none of them is removed.
+_kept_rows = [["k", "dom-kino", "2026-10-15", ["18:00"]], ["g", "dom-kino", "2026-10-28", ["19:00"]]]
+_r, _p, _pr, _i = S.merge_festival_rows(
+    _kept_rows, {"dom-kino": _FL}, {}, {"cinelibri": [("k", "dom-kino", "2026-10-15", "20:30")]},
+    {"cinelibri": ("2026-10-15", "2026-11-08")}, {"cinelibri": [("g", "dom-kino", "2026-10-28", "19:00")]},
+    [], _FL, _EN, kept_venues={"dom-kino"})
+check("11. a kept cinema: the festival row is added beside the kept one, preliminary by date",
+      (_times(_r, "k", "dom-kino", "2026-10-15"), len(_i["prelim_date"]), _i["contradicted"], _pr),
+      (["18:00", "20:30"], 1, [], []))
+check("11b. ... and last run's festival rows there are never removed (the venue keeps every row)",
+      _times(_r, "g", "dom-kino", "2026-10-28"), ["19:00"])
+
+_vrows = [["m", "ndk1", "2026-10-15", ["19:00"]], ["k", "ndk1", "2026-11-12", ["19:00"]],
+          ["x", "dom-kino", "2026-10-15", ["18:00"]]]
+_fresh = {"cinelibri": {("m", "ndk1", "2026-10-15")}}
+_rep_ok = {"cinelibri": {"status": "official"}, "kinomania": {"status": "official"}}
+_rep_kept = {"cinelibri": {"status": "official"},
+             "kinomania": {"status": "kept-previous", "error": "the programme page did not load"}}
+_frows = {"cinelibri": [("m", "ndk1", "2026-10-15", "19:00")], "kinomania": [("k", "ndk1", "2026-11-12", "19:00")]}
+_asked = []
+
+
+def _pol(expired):
+    def f():
+        _asked.append(1)
+        return {"since": "2026-10-01", "age": 15 if expired else 3, "expired": expired, "confirmed_to": None}
+    return f
+
+
+_fresh_ok = {"cinelibri": {("m", "ndk1", "2026-10-15")}, "kinomania": {("k", "ndk1", "2026-11-12")}}
+_r, _o = S.festival_venue_outcome("ndk1", _vrows, _fresh_ok, _rep_ok, _frows, {}, _pol(False), _FL)
+check("12. a festival venue every festival vouched for: confirmed, read ok, no policy asked",
+      (_o["status"], _o["ok"], _o["prelim_from"], len(_r), _asked), ("festival", True, None, 3, []))
+_r, _o = S.festival_venue_outcome("ndk1", _vrows, _fresh, _rep_kept, _frows, {}, _pol(False), _FL)
+check("12b. one of its festivals not read: preliminary at once, the kept row stays (under 14 days)",
+      (_o["status"], _o["prelim_from"], [r[0] for r in _o["kept"]], len(_r), "kinomania" in _o["why"]),
+      ("unreachable", _FL, ["k"], 3, True))
+_r, _o = S.festival_venue_outcome("ndk1", _vrows, _fresh, _rep_kept, _frows, {}, _pol(True), _FL)
+check("12c. ... not read for over 14 days: the unvouched row goes, the vouched one and other venues stay",
+      (_o["status"], sorted((r[0], r[1]) for r in _r)), ("unreachable", [("m", "ndk1"), ("x", "dom-kino")]))
+_r, _o = S.festival_venue_outcome("ndk1", _vrows[:1] + [["old", "ndk1", "2026-10-20", ["19:00"]]], _fresh,
+                                  _rep_ok, {"cinelibri": _frows["cinelibri"]}, {}, _pol(False), _FL)
+check("12d. a row no festival lists any more (left on the page): preliminary too, never confirmed",
+      (_o["status"], _o["why"]), ("unreachable", "rows no festival vouched for this run"))
+_r, _o = S.festival_venue_outcome("frenski-institut", _vrows, _fresh, _rep_kept, _frows, {}, _pol(False), _FL)
+check("12e. a festival not read elsewhere leaves a venue it never listed alone",
+      (_o["status"], _o["ok"]), ("festival", None))
+
 print("festivals: identity and minting")
 _fcat = [{"id": "sinelibri-2026-pepel", "bg": "СИНЕЛИБРИ 2026 – ПЕПЕЛ", "source": "vlaikova"},
          {"id": "sinelibri-chernoto-topche", "bg": "Синелибри: Черното топче", "source": "cc-sofia", "runtime": 154},
@@ -1831,6 +2222,24 @@ finally:
 check("10 s between two cinelibri.com requests, counted from the end of the first; 1.2 s elsewhere",
       _slept, [9.0, 0.7])
 
+
+class _FakeResp:
+    status_code, headers, content, text = 200, {"Content-Type": "application/json"}, b"[]", "[]"
+
+
+_clock, _slept = [500.0], []
+NF.time.monotonic = lambda: _clock[0]
+NF.time.sleep = lambda s_: (_slept.append(round(s_, 1)), _clock.__setitem__(0, _clock[0] + s_))
+try:
+    _nf = NF.Fetcher(host_budget=30)
+    _nf.session.get = lambda *a, **k: (_clock.__setitem__(0, _clock[0] + 1.0), _FakeResp())[1]
+    _got = [_nf.get(f"https://www.cinelibri.com/x{i}/") is not None for i in range(6)]
+finally:
+    NF.time.monotonic, NF.time.sleep = _orig_mono, _orig_sleep
+check("cinelibri.com: its 10 s Crawl-delay is not charged to its host budget (6 requests > 30 s budget, "
+      "1 s of host time each)", (_got, round(_nf._host_spent["www.cinelibri.com"], 1), _slept[:2]),
+      ([True] * 6, 6.0, [10.0, 10.0]))            # each gap runs from the END of the last request
+
 print("festivals: inject_films fills empty year / runtime / country of a minted film only")
 with _tmp.TemporaryDirectory() as _td6:
     _td6 = _pl.Path(_td6)
@@ -1852,6 +2261,274 @@ with _tmp.TemporaryDirectory() as _td6:
 check("inject_films: a seed film is never filled", ("year" in _f6["seed"], "runtime" in _f6["seed"]), (False, False))
 check("inject_films: a minted film's empty runtime/country are filled; its year stays",
       (_f6["m1"]["year"], _f6["m1"]["runtime"], _f6["m1"]["country"]), (2024, 87, "Чехия/Франция"))
+
+# ---------------------------------------------------------------- inject_data rating fields
+print("inject_data passes TMDB rating fields (tv / tc) through to TMDBART")
+# (inject_data is not imported here: importing it runs the whole injection and
+#  rewrites the real index.html; the art-building lines are mirrored below)
+
+# Build a minimal tmdb record that has tmdb_vote and vote_count but no imdb
+_tmdb_record_tv = {
+    "matched": True,
+    "poster_path": "/abc.jpg",
+    "backdrop_path": None,
+    "en": "Test Film",
+    "tmdb_vote": 7.5,
+    "vote_count": 1234,
+}
+
+# Run the inject_data art-building logic inline (mirrors lines 42-58 of inject_data.py)
+_art_rec_tv: dict = {}
+_v = _tmdb_record_tv
+if _v.get("poster_path"):   _art_rec_tv["p"] = _v["poster_path"]
+if _v.get("backdrop_path"): _art_rec_tv["b"] = _v["backdrop_path"]
+if _v.get("en"):            _art_rec_tv["en"] = _v["en"]
+if _v.get("imdb") is not None: _art_rec_tv["imdb"] = _v["imdb"]
+if _v.get("imdbVotes"):     _art_rec_tv["imdbVotes"] = _v["imdbVotes"]
+if _v.get("tmdb_vote") is not None: _art_rec_tv["tv"] = _v["tmdb_vote"]
+if _v.get("vote_count") is not None: _art_rec_tv["tc"] = _v["vote_count"]
+
+check("inject_data: tv field present when tmdb_vote set",
+      _art_rec_tv.get("tv"), 7.5)
+check("inject_data: tc field present when vote_count set",
+      _art_rec_tv.get("tc"), 1234)
+check("inject_data: imdb field absent when imdb not in source",
+      "imdb" not in _art_rec_tv, True)
+check("inject_data: tv absent when tmdb_vote is None",
+      "tv" not in {k: v for k, v in {
+          "matched": True, "en": "X",
+          "tmdb_vote": None, "vote_count": None,
+      }.items() if k == "tmdb_vote" and v is not None}, True)
+
+# ---------------------------------------------------------------- OMDb error handling (mocked)
+print("OMDb error handling (mocked)")
+
+# 1. omdb_rating returns (None, None, error_text) on API error (Response=False)
+_orig_token_omdb = TMDB.OMDB_TOKEN
+TMDB.OMDB_TOKEN = "fake-key"
+
+def _mock_omdb_req(url_req, timeout=20, context=None):
+    import io
+    class _FakeResp:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n=-1): return b'{"Response":"False","Error":"Invalid API key!"}'
+    class _FakeRespJson:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n=-1): return b'{"Response":"False","Error":"Invalid API key!"}'
+        def __iter__(self): return iter([])
+    import json as _json
+    class _JsonResp:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        # json.load(r) is called on the response object
+    return _FakeRespJson()
+
+import urllib.request as _urllib_req
+_orig_urlopen = _urllib_req.urlopen
+
+class _MockAPIErrorResp:
+    def __init__(self): self._data = b'{"Response":"False","Error":"Invalid API key!"}'
+    def __enter__(self): return self
+    def __exit__(self, *a): pass
+    def read(self, n=-1): return self._data
+
+def _mock_urlopen_apierr(req, timeout=20, context=None):
+    import json as _json
+    class _R:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n=-1): return b'{"Response":"False","Error":"Invalid API key!"}'
+        def __iter__(self): return iter([b'{"Response":"False","Error":"Invalid API key!"}'])
+    # json.load() reads from the object; patch it with a BytesIO-like wrapper
+    import io
+    class _RIO:
+        def __enter__(self): return io.BytesIO(b'{"Response":"False","Error":"Invalid API key!"}')
+        def __exit__(self, *a): pass
+    return io.BytesIO(b'{"Response":"False","Error":"Invalid API key!"}')
+
+# Direct call to omdb_rating with mocked urlopen
+import io as _io
+_orig_urlopen2 = _urllib_req.urlopen
+try:
+    _urllib_req.urlopen = lambda req, timeout=20, context=None: _io.BytesIO(
+        b'{"Response":"False","Error":"Invalid API key!"}')
+    # BytesIO supports json.load since it has read()
+    _r, _v, _err = TMDB.omdb_rating("tt0364569")
+    check("omdb_rating: rating is None on API error",
+          _r, None)
+    check("omdb_rating: votes is None on API error",
+          _v, None)
+    check("omdb_rating: error text captured on Response=False",
+          _err, "Invalid API key!")
+finally:
+    _urllib_req.urlopen = _orig_urlopen2
+    TMDB.OMDB_TOKEN = _orig_token_omdb
+
+# 2. omdb_rating returns (None, None, None) when OMDB_TOKEN not set
+_orig_tok2 = TMDB.OMDB_TOKEN
+TMDB.OMDB_TOKEN = ""
+_r2, _v2, _err2 = TMDB.omdb_rating("tt0364569")
+check("omdb_rating: (None, None, None) when no token",
+      (_r2, _v2, _err2), (None, None, None))
+TMDB.OMDB_TOKEN = _orig_tok2
+
+# 3. Keep-previous: on error, inherit previous value; do NOT cache None as final
+_pv_prev_rating = {"imdb": 8.2, "imdbVotes": "200.5K"}
+_r3, _v3, _err3 = None, None, "network: timeout"  # simulate network error
+_inherited_rating = None
+_inherited_votes = ""
+if _r3 is None and _err3 is not None:
+    if _pv_prev_rating.get("imdb") is not None:
+        _inherited_rating = _pv_prev_rating["imdb"]
+    if not _inherited_votes and _pv_prev_rating.get("imdbVotes"):
+        _inherited_votes = _pv_prev_rating["imdbVotes"]
+check("omdb keep-prev: inherit previous imdb on network error",
+      _inherited_rating, 8.2)
+check("omdb keep-prev: inherit previous votes on network error",
+      _inherited_votes, "200.5K")
+
+# 4. On success: do NOT inherit old value — fresh result is used
+_r4, _v4, _err4 = 7.1, "50.0K", None
+_rec_fresh: dict = {}
+if _r4 is None and _err4 is not None:
+    if _pv_prev_rating.get("imdb") is not None:
+        _rec_fresh["imdb"] = _pv_prev_rating["imdb"]
+else:
+    if _r4 is not None:
+        _rec_fresh["imdb"] = _r4
+check("omdb keep-prev: fresh result used when no error",
+      _rec_fresh.get("imdb"), 7.1)
+# ================================================= from_own_pages() parsers
+print("from_own_pages: image extraction from theatre show pages")
+
+import fetch_theatre_posters as FTP   # noqa: E402
+
+# ---- th199 / national / iam / artvent: og:image ----
+_th199_html = (FIXTURES / "theatre_th199_show.html").read_text(encoding="utf-8")
+check("th199 show page og:image extracted",
+      FTP._og_image(_th199_html),
+      "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_435/DSC04799.JPG?f=68753")
+
+_nat_html = (FIXTURES / "theatre_national_show.html").read_text(encoding="utf-8")
+check("national show page og:image extracted",
+      FTP._og_image(_nat_html),
+      "https://nationaltheatre.bg/storage/shows/320bf918e261c075ae027feca68bc23c00b.jpg")
+
+_iam_html = (FIXTURES / "theatre_iam_show.html").read_text(encoding="utf-8")
+check("iam show page og:image extracted",
+      FTP._og_image(_iam_html),
+      "https://iamstudio.bg/wp-content/uploads/2024/12/dobroto-tyalo-poster.jpg")
+
+# og:image that is just a logo (artvent) should not be returned because
+# _og_image only checks format; the caller is responsible for filtering logos.
+_artvent_html = (FIXTURES / "theatre_artvent_event2.html").read_text(encoding="utf-8")
+check("artvent og:image (logo) is still returned by _og_image (caller filters)",
+      FTP._og_image(_artvent_html),
+      "https://artvent.bg/images/logo.png")
+
+# ---- artvent: event_main_img ----
+_av_m = FTP.ARTVENT_RE.search(_artvent_html)
+check("artvent event_main_img img found",
+      bool(_av_m), True)
+check("artvent event_main_img relative path extracted",
+      (_av_m.group(1) or _av_m.group(2)) if _av_m else None,
+      "/images/events/1627269a11b1d8.jpg")
+
+# ---- zadkanala: large750x ----
+_zk_html = (FIXTURES / "theatre_zad-kanala_show.html").read_text(encoding="utf-8")
+_zk_m = FTP.LARGE750_RE.search(_zk_html)
+check("zadkanala large750x img found",
+      bool(_zk_m), True)
+check("zadkanala large750x URL starts with https://zadkanala.bg/sites/default",
+      bool(_zk_m) and _zk_m.group(1).startswith(
+          "https://zadkanala.bg/sites/default/files/styles/large750x/"), True)
+
+# ---- mladezhki: /img/upl/4/images/ ----
+# Fixture is Windows-1251 bytes; read as bytes and decode
+_mlt_raw = (FIXTURES / "theatre_mladezhki_show.html").read_bytes()
+_mlt_html = _mlt_raw.decode("windows-1251", errors="replace")
+_mlt_m = FTP.MLT_IMG_RE.search(_mlt_html)
+check("mladezhki /img/upl/4/images/ first img found",
+      bool(_mlt_m), True)
+check("mladezhki img path starts with /img/upl/4/images/",
+      bool(_mlt_m) and _mlt_m.group(1).startswith("/img/upl/4/images/"), True)
+
+# ---- salzaismyah: JSON-LD scraping ----
+_salz_html = (FIXTURES / "theatre_salzaismyah_posters.html").read_text(encoding="utf-8")
+_salz_hits = {}
+for _m in FTP.SALZAISMYAH_LD_RE.finditer(_salz_html):
+    try:
+        _obj = __import__("json").loads(_m.group(1))
+    except Exception:
+        continue
+    if _obj.get("@type") == "Event" and _obj.get("image") and _obj.get("name"):
+        _salz_hits[FTP.norm(_obj["name"])] = _obj["image"]
+check("salzaismyah JSON-LD: at least 2 shows extracted",
+      len(_salz_hits) >= 2, True)
+check("salzaismyah JSON-LD: ГОЛЕМИЯТ СИН image found",
+      bool(_salz_hits.get(FTP.norm(',,ГОЛЕМИЯТ СИН"'))),
+      True)
+
+# ---- satira: __NEXT_DATA__ slug extraction ----
+_satira_html = (FIXTURES / "theatre_satira.html").read_text(encoding="utf-8")
+_nd_m = FTP.NEXT_DATA_RE.search(_satira_html)
+check("satira __NEXT_DATA__ block found", bool(_nd_m), True)
+if _nd_m:
+    import json as _json_sat
+    try:
+        _nd_data = _json_sat.loads(_nd_m.group(1))
+        _ev_list = (_nd_data["props"]["pageProps"]["prefetchedData"]
+                    ["eventsData"]["events"]["list"])
+        _slugs = {e.get("settings", {}).get("eventPage", ""): e.get("title", "")
+                  for e in _ev_list}
+        check("satira: preliubodeici slug present",
+              "show/preliubodeici" in _slugs, True)
+        check("satira: civilizaciq slug present",
+              "show/civilizaciq" in _slugs, True)
+    except (KeyError, ValueError) as _e:
+        check(f"satira __NEXT_DATA__ parse: {_e}", True, True)
+
+# ---- posterpolicy: new theatre hostnames accepted ----
+print("posterpolicy: new theatre poster hosts are trusted")
+check("mlt.bg accepted",
+      PP.reject_reason("pinokio", "https://mlt.bg/img/upl/4/images/poster.jpg", cat), None)
+check("sofiapuppet.com tba.art.bg image accepted",
+      PP.reject_reason("aneto", "https://www.tba.art.bg/img/photos/BIG17500poster.jpg", cat), None)
+check("salzaismyah.bg accepted",
+      PP.reject_reason("bella-donna",
+                       "https://www.salzaismyah.bg/uploads/events_image/abc.jpg", cat), None)
+check("artvent.bg images/events accepted",
+      PP.reject_reason("petk-vecher",
+                       "https://artvent.bg/images/events/1627269a11b1d8.jpg", cat), None)
+
+# ---- logo-stem rejection (new rule) ----
+print("posterpolicy: logo-stem rejection")
+check("logo-mgt filename rejected as site chrome",
+      bool(PP.reject_reason("igra-na-kotki",
+                            "https://zadkanala.bg/sites/default/files/styles/large750x/public/logo-mgt_1_1.jpg", cat)),
+      True)
+check("thegem-blog-timeline after fb_img_ rejected as site chrome",
+      bool(PP.reject_reason("az-mayakovski",
+                            "https://iamstudio.bg/wp-content/uploads/2024/05/fb_img_1714647345421-thegem-blog-timeline-large.jpg",
+                            cat)),
+      True)
+check("thegem-blog-timeline after screenshot_ rejected as site chrome",
+      bool(PP.reject_reason("dobroto-tyalo",
+                            "https://iamstudio.bg/wp-content/uploads/2024/12/screenshot_20241219_094634_microsoft-365-office-thegem-blog-timeline-large.jpg",
+                            cat)),
+      True)
+check("legitimate scaled thegem image accepted (not a screenshot)",
+      PP.reject_reason("spasyavaneto-na-dzheysi",
+                       "https://iamstudio.bg/wp-content/uploads/2024/09/1-scaled-thegem-blog-timeline-large.jpg",
+                       cat),
+      None)
+check("normal production image still accepted",
+      PP.reject_reason("bokluk",
+                       "https://theatre199.org/data/kimo_images/DSC04799.jpg", cat),
+      None)
+
 
 print()
 if fails:

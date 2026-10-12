@@ -25,6 +25,17 @@ So every request now goes through here:
     with verification off rather than losing the venue. Nothing else is exempt.
   * a diagnostic record of every attempt, so one workflow run tells you which
     source failed and how, instead of "unreachable".
+  * REAL time budgets (2026-10-09 audit, CODE-03: the old budget was never
+    checked, and a dead host cost 36 s per URL — 40 minutes for theatre.art.bg's
+    67 day pages, past the 30-minute step timeout). Each URL gets at most
+    URL_BUDGET seconds, retries and back-off included; each host HOST_BUDGET
+    for the run; a host that fails HOST_FAIL_LIMIT URLs in a row is closed for
+    the run; `with net.deadline(s):` bounds one step (one venue); and the
+    whole-run budget_seconds is enforced. A refused request returns None at
+    once, so the caller's keep-previous rule takes over.
+  * blocking is recognised: 401/403/429 or a WAF challenge page (Cloudflare,
+    Sucuri, Imunify360, DDoS-Guard) is recorded as `blocked` in the log, never
+    retried, and never parsed as a programme.
 
 Use it as a singleton:
 
@@ -79,6 +90,45 @@ DEFAULT_CONNECT_TIMEOUT = 15
 DEFAULT_READ_TIMEOUT = 45
 DEFAULT_ATTEMPTS = 4
 DEFAULT_HOST_DELAY = 1.2
+# Time budgets (CODE-03). A healthy run spends at most ~160 s on one host
+# (cinemacity.bg: 134 day payloads), so HOST_BUDGET leaves room for a slow day
+# while a dead host costs at most HOST_FAIL_LIMIT x URL_BUDGET.
+URL_BUDGET = 75            # one URL: every attempt, timeout and back-off included
+HOST_BUDGET = 420          # one host, the whole run
+HOST_FAIL_LIMIT = 2        # failed URLs in a row before a host is closed for the run
+MIN_TRY_SECONDS = 3        # an attempt with less time left than this is not made
+RETRY_STATUS = (408, 425, 429, 500, 502, 503, 504)   # worth another attempt
+BLOCK_STATUS = (401, 403, 429)                       # "not from this network / client"
+RETRY_AFTER_MAX = 30       # a Retry-After longer than this is not waited for
+
+# A page that is a WAF's challenge or block page, not the programme asked for.
+# Matched in the first few KB, lower-cased. NOT "/cdn-cgi/challenge-platform/":
+# Cloudflare injects that script into ordinary pages too (mlt.bg, 2026-10-09).
+CHALLENGE_SIGNS = (
+    ("<title>just a moment...</title>", "Cloudflare challenge"),
+    ("cf_chl_opt", "Cloudflare challenge"),
+    ("attention required! | cloudflare", "Cloudflare block page"),
+    ("sucuri website firewall", "Sucuri firewall"),
+    ("imunify360 bot-protection", "Imunify360 bot protection"),
+    ("<title>ddos-guard</title>", "DDoS-Guard"),
+)
+
+
+def challenge_signature(resp):
+    """The WAF a response is a challenge/block page of, or None."""
+    try:
+        if (resp.headers.get("cf-mitigated") or "").lower() == "challenge":
+            return "Cloudflare challenge"
+        ctype = (resp.headers.get("Content-Type") or "").lower()
+        if ctype and "html" not in ctype:
+            return None
+        head = (resp.content or b"")[:8192].decode("utf-8", errors="ignore").lower()
+    except Exception:
+        return None
+    for sign, name in CHALLENGE_SIGNS:
+        if sign in head:
+            return name
+    return None
 
 # Hosts whose robots.txt asks for a Crawl-delay (seconds between requests).
 # For these the gap is counted from the END of the previous request, retries
@@ -94,7 +144,8 @@ class Fetcher:
     def __init__(self, attempts=DEFAULT_ATTEMPTS, host_delay=DEFAULT_HOST_DELAY,
                  connect_timeout=DEFAULT_CONNECT_TIMEOUT,
                  read_timeout=DEFAULT_READ_TIMEOUT, verbose=True,
-                 budget_seconds=None):
+                 budget_seconds=None, url_budget=URL_BUDGET, host_budget=HOST_BUDGET,
+                 host_fail_limit=HOST_FAIL_LIMIT):
         self.attempts = attempts
         self.host_delay = host_delay
         self.timeout = (connect_timeout, read_timeout)
@@ -103,19 +154,23 @@ class Fetcher:
         self.log: list[dict] = []
         # A whole-run wall-clock budget. Retries are what make a dead host
         # expensive; without a ceiling, 118 lookups against a host that is down
-        # turn a five-minute job into an hour-long one.
+        # turn a five-minute job into an hour-long one. Enforced in every request.
         self.budget_seconds = budget_seconds
+        self.url_budget = url_budget
+        self.host_budget = host_budget
+        self.host_fail_limit = host_fail_limit
         self._t0 = time.monotonic()
+        self._host_spent = defaultdict(float)      # host -> seconds spent on it
+        self._host_streak = defaultdict(int)       # host -> failed URLs in a row
+        self.closed: dict[str, str] = {}           # host -> why it is closed for the run
+        self._step_end = None                      # monotonic end of the current deadline()
 
         self.session = requests.Session()
         self.session.headers.update(BROWSER_HEADERS)
-        # Transport-level retries handle the reconnect; the loop in get()
-        # handles the slow-response case, which Retry does not see as failure.
-        retry = Retry(total=2, connect=2, read=2, backoff_factor=1.0,
-                      status_forcelist=(408, 425, 429, 500, 502, 503, 504),
-                      allowed_methods=frozenset(["GET", "HEAD"]),
-                      raise_on_status=False, respect_retry_after_header=True)
-        adapter = HTTPAdapter(max_retries=retry, pool_connections=8, pool_maxsize=8)
+        # No transport-level retries: urllib3 retried read timeouts and waited
+        # out any Retry-After on its own, which no budget could bound (3 x 60 s
+        # per attempt). Every retry happens in get(), inside the budgets.
+        adapter = HTTPAdapter(max_retries=0, pool_connections=8, pool_maxsize=8)
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
         for h in CRAWL_DELAY:                      # longest prefix wins in requests
@@ -126,14 +181,78 @@ class Fetcher:
         return (self.budget_seconds is not None
                 and time.monotonic() - self._t0 > self.budget_seconds)
 
+    # --------------------------------------------------------------- budgets
+    class _Deadline:
+        def __init__(self, fetcher, seconds):
+            self.f, self.seconds, self.saved = fetcher, seconds, None
+
+        def __enter__(self):
+            self.saved = self.f._step_end
+            end = time.monotonic() + self.seconds
+            self.f._step_end = end if self.saved is None else min(self.saved, end)
+            return self.f
+
+        def __exit__(self, *exc):
+            self.f._step_end = self.saved
+            return False
+
+    def deadline(self, seconds):
+        """`with net.deadline(300):` — no request inside the block may run past
+        300 s from now (nested blocks keep the earlier end). One venue's fetch is
+        one block, so one slow venue cannot eat the others' time."""
+        return Fetcher._Deadline(self, seconds)
+
+    def _time_left(self, host, url_end=None):
+        """Seconds any request to `host` may still take (None = unbounded)."""
+        now = time.monotonic()
+        lefts = [self.host_budget - self._host_spent[host]] if self.host_budget is not None else []
+        if self.budget_seconds is not None:
+            lefts.append(self.budget_seconds - (now - self._t0))
+        if self._step_end is not None:
+            lefts.append(self._step_end - now)
+        if url_end is not None:
+            lefts.append(url_end - now)
+        return min(lefts) if lefts else None
+
+    def _refusal(self, host):
+        """Why no request to `host` may be made now, or None."""
+        if host in self.closed:
+            return f"skipped: {host} closed for this run ({self.closed[host]})"
+        if self.budget_spent():
+            return "skipped: the run's network budget is spent"
+        if self._step_end is not None and time.monotonic() >= self._step_end:
+            return "skipped: this step's time budget is spent"
+        if self.host_budget is not None and self._host_spent[host] >= self.host_budget:
+            self.closed[host] = f"{self.host_budget:.0f} s host budget spent"
+            return f"skipped: {host} closed for this run ({self.closed[host]})"
+        return None
+
+    def _settle(self, host, ok, answered=False, err=None):
+        """Bookkeeping after one URL: a success or an answer (404) resets the
+        host's failure streak; HOST_FAIL_LIMIT failures in a row close it."""
+        if ok or answered:
+            self._host_streak[host] = 0
+            return
+        self._host_streak[host] += 1
+        if self.host_fail_limit and self._host_streak[host] >= self.host_fail_limit:
+            self.closed.setdefault(host, f"{self._host_streak[host]} failed URLs in a row, last: {err}")
+
+    def blocked_since(self, start=0):
+        """[(url, host, reason)] of requests from log index `start` on that the
+        host refused as blocked (401/403/429 or a challenge page)."""
+        return [(e["url"], e["host"], e["blocked"]) for e in self.log[start:] if e.get("blocked")]
+
     # ------------------------------------------------------------------ core
     def _polite(self, host):
-        last = self._last_hit.get(host)
+        """Sleep until `host` may be asked again; returns the seconds slept."""
+        last, waited = self._last_hit.get(host), 0.0
         if last is not None:
             wait = max(self.host_delay, CRAWL_DELAY.get(host, 0.0)) - (time.monotonic() - last)
             if wait > 0:
                 time.sleep(wait)
+                waited = wait
         self._last_hit[host] = time.monotonic()
+        return waited
 
     def _done(self, host):
         """A crawl-delay host's gap runs from the end of the previous request."""
@@ -156,33 +275,85 @@ class Fetcher:
             headers.update(extra)
 
         tries = attempts or self.attempts
-        last_err = None
+        refused = self._refusal(host)
+        if refused:
+            self._record(url, host, "skipped", None, 0.0, 0, refused)
+            return None
+        last_err, status, blocked, answered, n = None, None, None, False, 0
         started = time.monotonic()
-        for n in range(1, tries + 1):
-            self._polite(host)
-            try:
+        url_end = started + self.url_budget if self.url_budget else None
+        crawl_wait = 0.0                               # robots.txt Crawl-delay waits, not charged
+        try:
+            for n in range(1, tries + 1):
+                left = self._time_left(host, url_end)
+                if left is not None and left < MIN_TRY_SECONDS:
+                    last_err = (last_err + "; " if last_err else "") + "time budget spent"
+                    n -= 1
+                    break
+                waited = self._polite(host)
+                if host in CRAWL_DELAY:
+                    crawl_wait += waited
+                left = self._time_left(host, url_end)
+                timeout = self.timeout if left is None else (
+                    max(1.0, min(self.timeout[0], left)), max(1.0, min(self.timeout[1], left)))
+                r = None
                 try:
-                    r = self.session.get(url, headers=headers, timeout=self.timeout,
+                    r = self.session.get(url, headers=headers, timeout=timeout,
                                          verify=verify, allow_redirects=True)
+                except requests.exceptions.SSLError as e:
+                    last_err = f"TLS: {self._short(e)}"
+                    break                              # retrying will not help
+                except requests.exceptions.RequestException as e:
+                    last_err = self._short(e)
                 finally:
                     self._done(host)
-                if r.status_code < 400:
-                    self._record(url, host, "ok", r.status_code,
-                                 time.monotonic() - started, n, None)
-                    return r
-                last_err = f"HTTP {r.status_code}"
-                # 404 and 410 are answers, not failures; retrying is just rude.
-                if r.status_code in (404, 410):
-                    break
-            except requests.exceptions.SSLError as e:
-                last_err = f"TLS: {self._short(e)}"
-                break                                  # retrying will not help
-            except requests.exceptions.RequestException as e:
-                last_err = self._short(e)
-            if n < tries:
-                time.sleep(min(2.0 * n * n, 20))       # 2s, 8s, 18s
-        self._record(url, host, "fail", None, time.monotonic() - started,
-                     tries, last_err)
+                if r is not None:
+                    status = r.status_code
+                    sign = challenge_signature(r)
+                    if status < 400 and not sign:
+                        self._settle(host, True)
+                        self._record(url, host, "ok", status, time.monotonic() - started, n, None)
+                        return r
+                    if sign:
+                        blocked = f"challenge page ({sign}, HTTP {status})"
+                        last_err = blocked
+                        break                          # a challenge is never solved here
+                    last_err = f"HTTP {status}"
+                    if status in BLOCK_STATUS:
+                        blocked = f"HTTP {status}"
+                    # 404 and 410 are answers, not failures; retrying is just rude.
+                    if status in (404, 410):
+                        answered = True
+                        break
+                    # 401, 403 and other 4xx are answers too: this client is refused.
+                    if status not in RETRY_STATUS:
+                        break
+                if n < tries:
+                    pause = min(2.0 * n * n, 20)       # 2s, 8s, 18s
+                    ra = (r.headers.get("Retry-After") or "").strip() if r is not None else ""
+                    if ra.isdigit():
+                        if int(ra) > RETRY_AFTER_MAX:
+                            last_err += f" (Retry-After {ra} s — not waited for)"
+                            break
+                        pause = max(pause, float(ra))
+                    left = self._time_left(host, url_end)
+                    if left is not None and pause + MIN_TRY_SECONDS > left:
+                        last_err = (last_err or "failed") + "; time budget spent"
+                        break
+                    time.sleep(pause)
+        finally:
+            # A host's budget measures the host: the pacing its robots.txt asks for
+            # (cinelibri.com: 10 s between requests) is not charged to it, or a
+            # crawl-delay host would close after ~40 requests. The run / step
+            # budgets still bound the wall time those waits take.
+            self._host_spent[host] += time.monotonic() - started - crawl_wait
+        if n == 0:                                     # no attempt made: a budget, not the host
+            self._record(url, host, "skipped", None, time.monotonic() - started, 0,
+                         "skipped: " + (last_err or "time budget spent"))
+            return None
+        self._settle(host, False, answered, last_err)
+        self._record(url, host, "fail", status, time.monotonic() - started,
+                     n, last_err, blocked)
         if self.verbose:
             print(f"  ! {url}: {last_err}", file=sys.stderr, flush=True)
         return None
@@ -195,17 +366,29 @@ class Fetcher:
         hdrs = {"Referer": referer or f"https://{host}/"}
         if headers:
             hdrs.update(headers)
+        refused = self._refusal(host)
+        if refused:
+            self._record(url, host, "skipped", None, 0.0, 0, refused)
+            return None
         started = time.monotonic()
         self._polite(host)
+        left = self._time_left(host, started + self.url_budget if self.url_budget else None)
+        timeout = self.timeout if left is None else (
+            max(1.0, min(self.timeout[0], left)), max(1.0, min(self.timeout[1], left)))
         try:
-            r = self.session.post(url, data=data, headers=hdrs, timeout=self.timeout,
+            r = self.session.post(url, data=data, headers=hdrs, timeout=timeout,
                                   verify=host not in TLS_EXEMPT, allow_redirects=True)
         except requests.exceptions.RequestException as e:
+            self._host_spent[host] += time.monotonic() - started
+            self._settle(host, False, err=self._short(e))
             self._record(url, host, "fail", None, time.monotonic() - started, 1, self._short(e))
             return None
+        self._host_spent[host] += time.monotonic() - started
         ok = r.status_code < 400
+        self._settle(host, ok, answered=r.status_code in (404, 410), err=f"HTTP {r.status_code}")
         self._record(url, host, "ok" if ok else "fail", r.status_code,
-                     time.monotonic() - started, 1, None if ok else f"HTTP {r.status_code}")
+                     time.monotonic() - started, 1, None if ok else f"HTTP {r.status_code}",
+                     f"HTTP {r.status_code}" if r.status_code in BLOCK_STATUS else None)
         return r if ok else None
 
     @staticmethod
@@ -213,10 +396,10 @@ class Fetcher:
         s = str(e).replace("\n", " ")
         return (s[:160] + "…") if len(s) > 160 else s
 
-    def _record(self, url, host, outcome, status, seconds, attempts, error):
+    def _record(self, url, host, outcome, status, seconds, attempts, error, blocked=None):
         self.log.append({"url": url, "host": host, "outcome": outcome,
                          "status": status, "seconds": round(seconds, 1),
-                         "attempts": attempts, "error": error})
+                         "attempts": attempts, "error": error, "blocked": blocked})
 
     # ------------------------------------------------------------- shortcuts
     def text(self, url, **kw):
@@ -275,15 +458,21 @@ class Fetcher:
     def head_ok(self, url, **kw):
         """Cheap existence probe that tolerates servers refusing HEAD."""
         host = urllib.parse.urlsplit(url).hostname or ""
+        if self._refusal(host):
+            return False
         self._polite(host)
+        started = time.monotonic()
+        left = self._time_left(host, started + self.url_budget if self.url_budget else None)
+        timeout = self.timeout if left is None else (
+            max(1.0, min(self.timeout[0], left)), max(1.0, min(self.timeout[1], left)))
         try:
-            r = self.session.head(url, timeout=self.timeout,
+            r = self.session.head(url, timeout=timeout,
                                   verify=host not in TLS_EXEMPT,
                                   allow_redirects=True)
             if r.status_code == 405:
                 self._done(host)
                 self._polite(host)
-                r = self.session.get(url, timeout=self.timeout, stream=True,
+                r = self.session.get(url, timeout=timeout, stream=True,
                                      verify=host not in TLS_EXEMPT)
                 r.close()
             return r.status_code < 400
@@ -291,25 +480,33 @@ class Fetcher:
             return False
         finally:
             self._done(host)
+            self._host_spent[host] += time.monotonic() - started
 
     # ----------------------------------------------------------- diagnostics
     def summary(self):
-        by_host = defaultdict(lambda: {"ok": 0, "fail": 0, "seconds": 0.0,
-                                       "errors": []})
+        by_host = defaultdict(lambda: {"ok": 0, "fail": 0, "skipped": 0, "seconds": 0.0,
+                                       "errors": [], "blocked": None, "closed": None})
         for e in self.log:
             h = by_host[e["host"]]
-            h[e["outcome"]] += 1
+            h[e["outcome"]] = h.get(e["outcome"], 0) + 1
             h["seconds"] += e["seconds"]
             if e["outcome"] == "fail" and e["error"] and len(h["errors"]) < 3:
                 h["errors"].append(e["error"])
+            if e.get("blocked") and not h["blocked"]:
+                h["blocked"] = e["blocked"]
+        for host, why in self.closed.items():
+            if host in by_host:
+                by_host[host]["closed"] = why
         return {h: {**v, "seconds": round(v["seconds"], 1)}
                 for h, v in sorted(by_host.items())}
 
     def print_report(self, stream=sys.stdout):
         print("\n=== network report ===", file=stream)
-        print(f"  {'host':34s} {'ok':>4s} {'fail':>5s} {'total s':>8s}  notes",
+        print(f"  {'host':34s} {'ok':>4s} {'fail':>5s} {'skip':>5s} {'total s':>8s}  notes",
               file=stream)
         for host, v in self.summary().items():
             note = v["errors"][0] if v["errors"] else ""
-            print(f"  {host:34s} {v['ok']:>4d} {v['fail']:>5d} "
-                  f"{v['seconds']:>8.1f}  {note[:70]}", file=stream)
+            if v.get("closed"):
+                note = f"CLOSED ({v['closed']}) " + note
+            print(f"  {host:34s} {v['ok']:>4d} {v['fail']:>5d} {v.get('skipped', 0):>5d} "
+                  f"{v['seconds']:>8.1f}  {note[:90]}", file=stream)

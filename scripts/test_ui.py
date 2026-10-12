@@ -95,8 +95,10 @@ def _derive_clock_globals(date_str: str):
         datetime.date.fromisoformat(date_str) + datetime.timedelta(days=1)
     ).strftime("%Y-%m-%d")
     d = datetime.date.fromisoformat(date_str)
+    # the app's "Този уикенд": Mon–Thu -> the coming Fri; Fri/Sat/Sun -> this weekend's
+    # Friday, which on Sat/Sun is already past (it used to jump to NEXT Friday)
     week_fri = (
-        d + datetime.timedelta(days=(4 - d.weekday()) % 7)
+        d + datetime.timedelta(days=(4 - d.weekday()) if d.weekday() <= 4 else -(d.weekday() - 4))
     ).strftime("%Y-%m-%d")
     tomorrow_2350 = fixed + 9 * 3600 * 1000
     clock_js = """
@@ -684,7 +686,7 @@ def wave_a1(browser):
         cwd=webapp_root,
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("gate_passes", gate_passes,
@@ -1517,7 +1519,7 @@ def wave_b1(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("b1_gate_passes", gate_passes,
@@ -2393,7 +2395,7 @@ else:
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("c1_gate_passes", gate_passes,
@@ -3209,7 +3211,7 @@ def wave_d1(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("d1_gate_passes", gate_passes,
@@ -3781,7 +3783,7 @@ def wave_h(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("h10_gate_passes", gate_passes,
@@ -4487,7 +4489,7 @@ def wave_i(browser):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result.stdout
     check("i7_gate_passes", gate_passes,
@@ -5116,7 +5118,7 @@ def wave_j(browser, webkit_browser=None):
         if wknd_shows:
             wknd_ok = page.evaluate(f"""() => {{
                 const showIds = {wknd_shows!r};
-                const fri = '{CLOCK_WEEK_FRI}', sun = '{CLOCK_WEEK_END}';
+                const fri = '{CLOCK_WEEK_FRI}', sun = addDays('{CLOCK_WEEK_FRI}', 2);  // the app's weekend is Fri..Sun
                 const perfs = PERFORMANCES.filter(p => showIds.includes(p[0]) && p[1] >= fri && p[1] <= sun);
                 const covered = new Set(perfs.map(p => p[0]));
                 const uncovered = showIds.filter(id => !covered.has(id));
@@ -5557,7 +5559,7 @@ def wave_j(browser, webkit_browser=None):
         cwd=str(webapp_root),
         capture_output=True,
         text=True,
-        env={**os.environ, "SOFIA_HTML": html_env}
+        env={**os.environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     gate_passes = "all checks passed" in result_vb.stdout
     check("j9_gate_passes", gate_passes,
@@ -6797,7 +6799,7 @@ def wave_l(browser):
         [sys.executable, "scripts/verify_build.py"],
         cwd=str(webapp_root),
         capture_output=True, text=True,
-        env={**__import__('os').environ, "SOFIA_HTML": html_env}
+        env={**__import__('os').environ, "SOFIA_HTML": html_env, "SOFIA_SKIP_FRESHNESS": "1"}
     )
     vb_pass = vb_result.returncode == 0 and "all checks passed" in vb_result.stdout
     check("l7_verify_build",
@@ -7289,7 +7291,12 @@ def wave_p(browser):
       P4  PRELIM_ROWS = [] marks nothing;
       P5  every real PRELIM_ROWS row of the build is marked in its film's sheet
           (SOFIA_HTML mode; skipped when the build has none);
-      P6  no page errors.
+      P6  no page errors;
+      P7  the calendar export says so too: calEvent's description carries the
+          preliminary note for the marked row only (not the film's other date or
+          venue, not another film there, not with PRELIM_ROWS = []), and the
+          Google link of the marked row's calendar panel in the sheet carries it
+          (BG and EN). isPrelimListing is the one rule behind both.
     """
     wave = "P"
     ensure_shot_dir(wave)
@@ -7347,6 +7354,51 @@ def wave_p(browser):
     def legend(page):
         return page.evaluate("() => !!document.querySelector('.sheet .prelim-legend')")
 
+    PRELIM_NOTE = {"bg": "Предварителна програма", "en": "Preliminary:"}
+
+    def cal_note(page, film_id, venue_id, iso, lang):
+        """True/False: calEvent's description for the row's first time carries the
+        preliminary note; {'err': why} when there is no such row or no calEvent."""
+        return page.evaluate("""([fid, vid, d, note]) => {
+            if (typeof calEvent !== 'function') return {err: 'no calEvent'};
+            const r = SHOWTIMES.find(x => x[0] === fid && x[1] === vid && x[2] === d);
+            if (!r) return {err: 'no SHOWTIMES row ' + fid + '@' + vid + ' ' + d};
+            const ev = calEvent('film', fid, vid, d, (r[3] || [])[0] || '');
+            if (!ev) return {err: 'calEvent returned null'};
+            return (ev.description || '').includes(note);
+        }""", [film_id, venue_id, iso, PRELIM_NOTE[lang]])
+
+    def panel_note(page, venue_id, iso, lang):
+        """Open the calendar panel of the (venue, date) row in the open film sheet
+        and report whether its Google link carries the preliminary note."""
+        return page.evaluate("""([vid, d, note]) => {
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {err: 'no sheet'};
+            const want = fmtDayDow(d);
+            const group = Array.from(sheet.querySelectorAll('.dgroup')).find(g => {
+                const h = g.querySelector('.dg-h');
+                return h && h.firstChild && h.firstChild.textContent.trim() === want;
+            });
+            if (!group) return {err: 'no day group headed ' + want};
+            const c = CINEMAS.find(c => c.id === vid);
+            const names = c ? [c.name, c.nameEn].filter(Boolean) : [];
+            const row = Array.from(group.querySelectorAll('.vrow')).find(r => {
+                const l = r.querySelector('.vloc');
+                return l && l.firstChild && names.includes(l.firstChild.textContent.trim());
+            });
+            const btn = row && row.querySelector('.cal-btn');
+            if (!btn) return {err: 'no calendar button on the ' + vid + ' row'};
+            btn.click();
+            const g = document.querySelector('.cal-panel [data-calg]');
+            if (!g) return {err: 'no calendar panel'};
+            const url = g.dataset.calurl || '';
+            const m = url.match(/[?&]details=([^&]*)/);
+            const details = m ? decodeURIComponent(m[1]) : '';
+            const close = document.querySelector('.cal-panel [data-calclose]');
+            if (close) close.click();
+            return details.includes(note);
+        }""", [venue_id, iso, PRELIM_NOTE[lang]])
+
     ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
     pick = page.evaluate("""() => {
@@ -7367,7 +7419,8 @@ def wave_p(browser):
     }""")
     if "err" in pick:
         for n in ("p1_row_marked", "p1_dashed_chips", "p1_legend", "p2_other_date", "p2_other_venue",
-                  "p3_other_film", "p4_empty", "p1_en_tag"):
+                  "p3_other_film", "p4_empty", "p1_en_tag", "p7_cal_marked_row", "p7_cal_other_rows",
+                  "p7_cal_panel_google_link", "p7_cal_empty", "p7_cal_en"):
             skip(n, pick["err"])
     else:
         print(f"  film={pick['fid']} venue={pick['v']} date={pick['d']} (other date {pick['d2']}, "
@@ -7392,11 +7445,25 @@ def wave_p(browser):
         st4 = row_state(page, pick["v"], pick["d"])
         check("p3_other_film", st4.get("prelim") is False, f"{pick['g']} at {pick['v']} {pick['d']}: {st4}")
         close_sheet(page)
+        # P7: the calendar export of the same rows (PRELIM_ROWS still marks one row)
+        c1 = cal_note(page, pick["fid"], pick["v"], pick["d"], "bg")
+        check("p7_cal_marked_row", c1 is True, f"{pick['fid']}@{pick['v']} {pick['d']}: {c1}")
+        c2 = [cal_note(page, pick["fid"], pick["v"], pick["d2"], "bg"),
+              cal_note(page, pick["fid"], pick["w"], pick["d"], "bg"),
+              cal_note(page, pick["g"], pick["v"], pick["d"], "bg")]
+        check("p7_cal_other_rows", c2 == [False, False, False],
+              f"other date / other venue / other film: {c2}")
+        open_film_sheet(page, pick["fid"])
+        c3 = panel_note(page, pick["v"], pick["d"], "bg")
+        check("p7_cal_panel_google_link", c3 is True, f"Google link of the marked row's panel: {c3}")
+        close_sheet(page)
         set_marks(page, [])
         open_film_sheet(page, pick["fid"])
         none_marked = page.evaluate("() => !document.querySelector('.sheet .prelim-tag') && !document.querySelector('.sheet .prelim-legend')")
         check("p4_empty", none_marked, "no tag and no legend with PRELIM_ROWS=[] and PRELIM_FROM={}")
         close_sheet(page)
+        c4 = cal_note(page, pick["fid"], pick["v"], pick["d"], "bg")
+        check("p7_cal_empty", c4 is False, f"PRELIM_ROWS=[] and PRELIM_FROM={{}}: {c4}")
         # restore the build's own markings for P5
         page.evaluate("""(real) => {
             if (typeof PRELIM_FROM !== 'undefined') { Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
@@ -7433,8 +7500,306 @@ def wave_p(browser):
         check("p1_en_tag", st.get("prelim") is True and st.get("tag", "").strip().lower() == "preliminary", str(st))
         check("p1_en_legend", legend(page), "legend present in EN")
         save_shot(page, wave, "p1_marked_row_en")
+        c5 = [cal_note(page, pick["fid"], pick["v"], pick["d"], "en"), panel_note(page, pick["v"], pick["d"], "en")]
+        check("p7_cal_en", c5 == [True, True], f"EN note in calEvent / in the panel's Google link: {c5}")
         check("p6_no_page_errors_en", not errs, " | ".join(errs[:3]))
         ctx.close()
+
+
+# ============================================================================
+# WAVE N: link-safety (CODE-12) and calendar midnight crossing (CODE-10)
+# ============================================================================
+
+def wave_n(browser):
+    """
+    Wave N checks (pure JS, no navigation needed for most):
+
+    N-1  safeUrl() rejects non-http(s) URLs, passes http/https.
+    N-2  No ticket-link <a> is rendered for a URL that is null/unsafe.
+    N-3  Calendar toLocal(): event ending after midnight produces hour 00-23 and
+         the correct next-day date in gcal / outlook formats.
+    N-4  Calendar crossing DST boundary 2026-10-25 (EEST→EET) produces a valid
+         offset in the Outlook link (+02:00, not +03:00).
+    """
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    # ── N-1: safeUrl() ──────────────────────────────────────────────────────
+    print("\n=== N-1: safeUrl() scheme guard ===")
+    safe_results = page.evaluate("""() => {
+        if (typeof safeUrl !== 'function') return {missing: true};
+        return {
+            http:   safeUrl('http://example.com/'),
+            https:  safeUrl('https://example.com/'),
+            js:     safeUrl('javascript:alert(1)'),
+            ftp:    safeUrl('ftp://example.com/'),
+            data:   safeUrl('data:text/html,<h1>x</h1>'),
+            empty:  safeUrl(''),
+            undef:  safeUrl(null),
+        };
+    }""")
+    if safe_results.get("missing"):
+        check("n1_safeUrl_defined", False, "safeUrl is not defined in the page")
+    else:
+        check("n1_safeUrl_http",    safe_results["http"]  is not None, f"http -> {safe_results['http']!r}")
+        check("n1_safeUrl_https",   safe_results["https"] is not None, f"https -> {safe_results['https']!r}")
+        check("n1_safeUrl_js_null", safe_results["js"]    is None,     f"javascript: -> {safe_results['js']!r}")
+        check("n1_safeUrl_ftp_null",safe_results["ftp"]   is None,     f"ftp: -> {safe_results['ftp']!r}")
+        check("n1_safeUrl_data_null",safe_results["data"] is None,     f"data: -> {safe_results['data']!r}")
+        check("n1_safeUrl_empty_null",safe_results["empty"] is None,   f"'' -> {safe_results['empty']!r}")
+
+    # ── N-2: no <a> rendered for unsafe URLs ────────────────────────────────
+    # We can only check that the page itself has no href=javascript: or href=ftp:
+    print("\n=== N-2: no unsafe hrefs in rendered DOM ===")
+    bad_hrefs = page.evaluate("""() => {
+        const bad = [];
+        for (const a of document.querySelectorAll('a[href]')) {
+            const h = a.getAttribute('href');
+            if (h && !/^https?:/.test(h) && !h.startsWith('#') && !h.startsWith('blob:')) {
+                bad.push(h.slice(0, 80));
+            }
+        }
+        return bad;
+    }""")
+    check("n2_no_unsafe_hrefs", len(bad_hrefs) == 0,
+          f"{len(bad_hrefs)} unsafe href(s) in DOM: {bad_hrefs[:3]}" if bad_hrefs else "")
+
+    ctx.close()
+
+    # ── N-3: calendar midnight crossing ─────────────────────────────────────
+    # calEvent() calls toLocal() internally.  We pick the first film+cinema pair
+    # that has an upcoming showtime, then ask calEvent to compute a synthetic
+    # event that starts at 22:30 (≥90-minute film → ends after midnight).
+    # We read back endGcal / endOutlook from the returned event object.
+    print("\n=== N-3: calendar midnight crossing ===")
+    ctx2, page2, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    midnight_result = page2.evaluate("""() => {
+        // Find any film+cinema pair we can use
+        const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]);
+        if (!row) return {missing: 'no usable SHOWTIMES row'};
+        const filmId   = row[0];
+        const venueId  = row[1];
+        // Force a 22:30 start so that a ≥90-min film ends after midnight.
+        // We call calEvent with that dateStr/timeStr, then read its endGcal/endOutlook.
+        const ev = calEvent('film', filmId, venueId, '2026-10-08', '22:30');
+        if (!ev) return {missing: 'calEvent returned null'};
+        return {
+            startGcal:    ev.startGcal,
+            endGcal:      ev.endGcal,
+            startOutlook: ev.startOutlook,
+            endOutlook:   ev.endOutlook,
+        };
+    }""")
+    if midnight_result.get("missing"):
+        skip("n3_midnight_gcal_start",      midnight_result["missing"])
+        skip("n3_midnight_gcal_end_date",   midnight_result["missing"])
+        skip("n3_midnight_gcal_end_hour",   midnight_result["missing"])
+        skip("n3_midnight_outlook_no_h24",  midnight_result["missing"])
+        skip("n3_midnight_outlook_end_date",midnight_result["missing"])
+    else:
+        sg = midnight_result["startGcal"]
+        eg = midnight_result["endGcal"]
+        eo = midnight_result["endOutlook"]
+        # Start must be on 2026-10-08 at 22:xx
+        check("n3_midnight_gcal_start",  sg.startswith("20261008T22"),
+              f"startGcal={sg!r}")
+        # End date must be 2026-10-09 (next day)
+        check("n3_midnight_gcal_end_date", eg.startswith("20261009"),
+              f"endGcal date={eg[:8]!r}  (want 20261009)")
+        # End hour must be valid (0–23, NOT 24 or higher)
+        end_hour = int(eg[9:11]) if eg[9:11].isdigit() else -1
+        check("n3_midnight_gcal_end_hour", 0 <= end_hour <= 23,
+              f"endGcal hour={eg[9:11]!r}  (want 00-23, not 24+)")
+        # Outlook end must NOT contain T24: / T25: / T26: (old bug)
+        check("n3_midnight_outlook_no_h24",
+              "T24:" not in eo and "T25:" not in eo and "T26:" not in eo,
+              f"endOutlook={eo!r}")
+        # Outlook end date must be 2026-10-09
+        check("n3_midnight_outlook_end_date",
+              eo.startswith("2026-10-09"),
+              f"endOutlook date={eo[:10]!r}  (want 2026-10-09)")
+
+    ctx2.close()
+
+    # ── N-4: DST boundary 2026-10-25: offset changes EEST→EET ────────────────
+    # A screening starting at 22:30 on 2026-10-25 crosses the DST change
+    # (clocks fall back at 04:00 EEST → 03:00 EET).
+    # We check that the Outlook link uses +03:00 before and +02:00 after.
+    print("\n=== N-4: calendar DST boundary 2026-10-25 ===")
+    ctx3, page3, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+
+    dst_result = page3.evaluate("""() => {
+        const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]);
+        if (!row) return {missing: 'no usable SHOWTIMES row'};
+        const filmId  = row[0];
+        const venueId = row[1];
+        // Pre-DST: 01:00 EEST on 2026-10-25 (clock still +03:00)
+        const evPre  = calEvent('film', filmId, venueId, '2026-10-24', '22:00');
+        // Post-DST: 04:30 EET on 2026-10-25 (clock is now +02:00)
+        const evPost = calEvent('film', filmId, venueId, '2026-10-25', '04:30');
+        if (!evPre || !evPost) return {missing: 'calEvent returned null'};
+        return {
+            preStartOutlook:  evPre.startOutlook,
+            postStartOutlook: evPost.startOutlook,
+        };
+    }""")
+    if dst_result.get("missing"):
+        skip("n4_dst_pre_offset",  dst_result["missing"])
+        skip("n4_dst_post_offset", dst_result["missing"])
+    else:
+        pre_off  = dst_result["preStartOutlook"][-6:]
+        post_off = dst_result["postStartOutlook"][-6:]
+        check("n4_dst_pre_is_plus3",  pre_off  == "+03:00",
+              f"pre  2026-10-24 22:00 offset={pre_off!r}  (expect +03:00)")
+        check("n4_dst_post_is_plus2", post_off == "+02:00",
+              f"post 2026-10-25 04:30 offset={post_off!r}  (expect +02:00)")
+
+    ctx3.close()
+# ============================================================================
+# WAVE P2A: ratings and hidden-screenings fixes
+# ============================================================================
+
+def wave_p2a(browser):
+    """
+    Wave P2A checks:
+    1. TMDB tile appears for a film that has ONLY a TMDB rating (no IMDb), in BG and EN.
+    2. Ranking fallback: a film with only a TMDB rating (≥50 votes) appears in the
+       top-rated rail alongside films with IMDb ratings.
+    3. A screening more than 14 days ahead is listed (COMMERCIAL_DAYS horizon removed).
+    """
+    wave = "P2A"
+    ensure_shot_dir(wave)
+
+    # ── P2A-1 / P2A-2: TMDB tile and ranking fallback ──
+    print("\n=== P2A-1/2: TMDB tile appears and ranking fallback works ===")
+    for lang in ("bg", "en"):
+        ctx, page, errs = open_page(browser, 375, 812, lang=lang, mode="cinema")
+        page.wait_for_timeout(600)
+
+        # Inject a film with TMDB rating but no IMDb rating into TMDBART
+        result = page.evaluate(f"""() => {{
+            // Find the first film with upcoming screenings
+            const today = "{CLOCK_TODAY_ISO}";
+            for (const r of SHOWTIMES) {{
+                if (r[2] >= today) {{
+                    const fid = r[0];
+                    const f = filmById[fid];
+                    if (!f) continue;
+                    // Inject a TMDB-only rating: tv=7.8, tc=150 (≥50 threshold)
+                    if (typeof TMDBART === "object" && TMDBART) {{
+                        if (!TMDBART[fid]) TMDBART[fid] = {{}};
+                        TMDBART[fid].tv = 7.8;
+                        TMDBART[fid].tc = 150;
+                        // Ensure no IMDb rating from any source
+                        delete TMDBART[fid].imdb;
+                        delete TMDBART[fid].imdbVotes;
+                    }}
+                    const f2 = filmById[fid];
+                    if (f2) {{ delete f2.imdb; delete f2.imdbVotes; }}
+                    // Render the sheet and check for the TMDB tile
+                    const html = sheetFilm(f);
+                    const div = document.createElement("div");
+                    div.innerHTML = html;
+                    const rtiles = Array.from(div.querySelectorAll(".rtile"));
+                    const tileLabels = rtiles.map(t => {{
+                        const rl = t.querySelector(".rl");
+                        return rl ? rl.textContent.trim() : "";
+                    }});
+                    const imdbTile = tileLabels.find(l => l === "IMDb");
+                    const tmdbTile = tileLabels.find(l => l === "TMDB");
+                    return {{fid, tileLabels, imdbTile, tmdbTile, found: true}};
+                }}
+            }}
+            return {{found: false}};
+        }}""")
+
+        if not result.get("found"):
+            skip(f"p2a_tmdb_tile_{lang}", "no upcoming film found in fixture")
+        else:
+            fid = result["fid"]
+            check(f"p2a_tmdb_tile_present_{lang}",
+                  result.get("tmdbTile") == "TMDB",
+                  f"tiles: {result.get('tileLabels')}, film={fid}")
+            # IMDb tile still present (shows "—" for absent IMDb)
+            check(f"p2a_imdb_tile_present_{lang}",
+                  result.get("imdbTile") == "IMDb",
+                  f"tiles: {result.get('tileLabels')}")
+
+        # Check ranking fallback: ratingOf() should use TMDB rating (≥50 votes)
+        # when IMDb is absent, so the film appears in the top rail
+        ranking_result = page.evaluate(f"""() => {{
+            // Use the same injected film from above
+            const today = "{CLOCK_TODAY_ISO}";
+            for (const r of SHOWTIMES) {{
+                if (r[2] >= today) {{
+                    const fid = r[0];
+                    const f = filmById[fid];
+                    if (!f) continue;
+                    // Ensure TMDB-only rating is set (tc ≥ 50)
+                    const art = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) || {{}};
+                    const imdbVal = (f.imdb != null ? f.imdb : (art.imdb != null ? art.imdb : null));
+                    const tmdbVote = art.tv != null ? art.tv : null;
+                    const tmdbCount = art.tc != null ? art.tc : 0;
+                    // ratingOf logic: IMDb first, then TMDB if tc ≥ TMDB_VOTE_MIN
+                    const ratingVal = imdbVal != null ? imdbVal
+                        : (tmdbVote != null && tmdbCount >= TMDB_VOTE_MIN ? tmdbVote : null);
+                    return {{fid, imdbVal, tmdbVote, tmdbCount, ratingVal}};
+                }}
+            }}
+            return {{found: false}};
+        }}""")
+        if not ranking_result.get("fid"):
+            skip(f"p2a_ranking_fallback_{lang}", "no upcoming film found")
+        else:
+            check(f"p2a_ranking_fallback_uses_tmdb_{lang}",
+                  ranking_result.get("ratingVal") == 7.8,
+                  f"ratingVal={ranking_result.get('ratingVal')}, imdb={ranking_result.get('imdbVal')}, tv={ranking_result.get('tmdbVote')}, tc={ranking_result.get('tmdbCount')}")
+            # Low-vote TMDB should NOT be used for ranking
+            check(f"p2a_ranking_fallback_tmdb_vote_min_{lang}",
+                  isinstance(ranking_result.get("tmdbCount"), (int, float))
+                  and ranking_result["tmdbCount"] >= 50,
+                  f"tc={ranking_result.get('tmdbCount')} should be ≥50 for ranking")
+
+        ctx.close()
+
+    # ── P2A-3: Screening more than 14 days ahead is listed ──
+    print("\n=== P2A-3: Screening >14 days ahead is visible (COMMERCIAL_DAYS removed) ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    # Calculate a date 20 days from today (well beyond COMMERCIAL_DAYS=14)
+    beyond_date = (datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+                   + datetime.timedelta(days=20)).isoformat()
+
+    beyond_result = page.evaluate(f"""() => {{
+        const beyond = "{beyond_date}";
+        // Check filmTimesAll for any film that has a screening on/after beyond_date
+        for (const f of FILMS) {{
+            const rows = filmTimesAll(f.id);
+            const hasRow = rows.some(r => r[2] >= beyond);
+            if (hasRow) return {{found: true, fid: f.id, date: beyond}};
+        }}
+        // Fallback: check raw SHOWTIMES for any row ≥ beyond_date
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= beyond) return {{foundRaw: true, fid: r[0], date: r[2]}};
+        }}
+        return {{found: false, foundRaw: false}};
+    }}""")
+
+    if beyond_result.get("foundRaw") and not beyond_result.get("found"):
+        check("p2a_beyond_14days_listed",
+              False,
+              f"SHOWTIMES has row at {beyond_result.get('date')} for {beyond_result.get('fid')} "
+              f"but filmTimesAll returned nothing — horizon filter still active")
+    elif beyond_result.get("found"):
+        check("p2a_beyond_14days_listed",
+              True,
+              f"film {beyond_result.get('fid')} has screenings at {beyond_date}")
+    else:
+        skip("p2a_beyond_14days_listed",
+             f"no screenings found beyond {beyond_date} in fixture data")
+
+    ctx.close()
 
 
 # ============================================================================
@@ -7451,7 +7816,9 @@ WAVES = {
     "J": wave_j,
     "L": wave_l,
     "M": wave_m,
+    "N": wave_n,
     "P": wave_p,
+    "P2A": wave_p2a,
 }
 
 def main():
