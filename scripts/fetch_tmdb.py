@@ -290,11 +290,13 @@ def _votes_compact(n):
 
 def omdb_rating(imdb_id):
     """Genuine IMDb rating + vote count via OMDb, keyed by the film's imdb_id. Returns
-    (rating_float, votes_compact) or (None, None). Never fabricates: a missing token,
-    an 'N/A' rating, or any error yields None so the score tile honestly stays '—'.
-    TMDB's own vote_average is NOT used here — it is a different metric, not IMDb."""
+    (rating_float, votes_compact, error_text) — error_text is None on success, a string
+    on any failure (missing token, API error, network issue). Never fabricates: a missing
+    token, an 'N/A' rating, or any error yields (None, None, <reason>) so the score tile
+    honestly stays '—'. TMDB's own vote_average is NOT used here — it is a different
+    metric, not IMDb."""
     if not OMDB_TOKEN or not imdb_id:
-        return None, None
+        return None, None, None
     try:
         q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
         req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
@@ -302,10 +304,14 @@ def omdb_rating(imdb_id):
         with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
             d = json.load(r)
     except Exception as e:
-        print("    ! omdb error", e, file=sys.stderr)
-        return None, None
+        err = str(e)
+        print(f"    ! omdb network error {imdb_id}: {err}", file=sys.stderr)
+        return None, None, f"network: {err}"
     if d.get("Response") == "False":
-        return None, None
+        # OMDb returns an Error field: "Invalid API key!", "Request limit reached!", etc.
+        err = d.get("Error") or "Response=False"
+        print(f"    ! omdb api error {imdb_id}: {err}", file=sys.stderr)
+        return None, None, err
     rating = d.get("imdbRating")
     try:
         rating = float(rating) if rating and rating != "N/A" else None
@@ -313,7 +319,7 @@ def omdb_rating(imdb_id):
         rating = None
     votes_raw = (d.get("imdbVotes") or "").replace(",", "")
     votes = _votes_compact(int(votes_raw)) if votes_raw.isdigit() else None
-    return rating, votes
+    return rating, votes, None
 
 
 def og_image(url):
@@ -470,6 +476,7 @@ def main():
             "orig_lang": best.get("original_language"),
             "tmdb_year": (best.get("release_date") or "")[:4],
             "tmdb_vote": best.get("vote_average"),
+            "vote_count": best.get("vote_count"),
         }
         # Owner's choice: fill English synopsis/country from TMDB where it exists,
         # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
@@ -497,15 +504,20 @@ def main():
             rec["ovBg"] = pv["ovBg"]
         # Genuine IMDb rating via OMDb (keyed by TMDB's imdb_id). The score tile is
         # labelled "IMDb", so only a real IMDb number may fill it — never TMDB's own
-        # vote_average. Keep-previous: no token / failed call inherits last run's value.
+        # vote_average. Retry on every run: films with imdb_id but no cached imdb are
+        # attempted again so a transient error or fixed token recovers automatically.
+        # Keep-previous: inherit last run's rating only on network/API error so a
+        # None is never cached as "final" — the next run will retry.
         if imdb_id:
             rec["imdb_id"] = imdb_id
-        rating, votes = omdb_rating(imdb_id)
+        rating, votes, omdb_err = omdb_rating(imdb_id)
         pv = prev.get(fid, {})
-        if rating is None and pv.get("imdb") is not None:
-            rating = pv["imdb"]
-        if not votes and pv.get("imdbVotes"):
-            votes = pv["imdbVotes"]
+        if rating is None and omdb_err is not None:
+            # Error (network/API) — inherit previous value so the tile keeps showing
+            if pv.get("imdb") is not None:
+                rating = pv["imdb"]
+            if not votes and pv.get("imdbVotes"):
+                votes = pv["imdbVotes"]
         if rating is not None:
             rec["imdb"] = rating
         if votes:
@@ -537,9 +549,30 @@ def main():
     json.dump(film_links, open(LINKS_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     matched = sum(1 for v in out.values() if v.get("matched"))
     rated = sum(1 for v in out.values() if v.get("imdb") is not None)
+    omdb_tried = sum(1 for v in out.values() if v.get("imdb_id"))
+    omdb_ok = rated  # films with an actual IMDb number
+    omdb_fail = omdb_tried - omdb_ok
     print(f"\nDONE: {matched}/{len(films)} matched, {posters} with posters, "
           f"{len(film_links)} og:image fallbacks, {rated} with IMDb ratings "
-          f"(OMDb {'on' if OMDB_TOKEN else 'OFF — ratings inherited'}) -> {OUT.name}")
+          f"(OMDb {'on' if OMDB_TOKEN else 'OFF — ratings inherited'}, "
+          f"{omdb_ok} ok / {omdb_fail} missing) -> {OUT.name}")
+    # Append a health entry to health.json (created by P1A; create if absent).
+    health_path = ROOT / "health.json"
+    try:
+        health = json.load(open(health_path, encoding="utf-8")) if health_path.exists() else []
+        # Remove any previous omdb entries so we don't accumulate stale ones
+        health = [e for e in health if e.get("venue") != "omdb"]
+        if OMDB_TOKEN:
+            level = "warn" if omdb_fail > 0 else "ok"
+            msg = (f"OMDb: {omdb_ok}/{omdb_tried} ok, {omdb_fail} missing IMDb ratings"
+                   if omdb_fail > 0 else f"OMDb: {omdb_ok}/{omdb_tried} ok")
+        else:
+            level = "warn"
+            msg = "OMDb: OMDB_TOKEN not set — IMDb ratings inherited from previous run"
+        health.append({"level": level, "venue": "omdb", "message": msg})
+        json.dump(health, open(health_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    except Exception as e:
+        print(f"  (could not update health.json: {e})", file=sys.stderr)
     return 0
 
 

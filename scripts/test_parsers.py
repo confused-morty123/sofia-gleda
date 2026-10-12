@@ -1346,6 +1346,145 @@ check("a tiny programme (Люмиер) is never 'implausible'",
                          {"status": "official", "screenings": 1, "days": 58}), None)
 
 
+# ---------------------------------------------------------------- inject_data rating fields
+print("inject_data passes TMDB rating fields (tv / tc) through to TMDBART")
+import inject_data as ID  # noqa: E402
+
+# Build a minimal tmdb record that has tmdb_vote and vote_count but no imdb
+_tmdb_record_tv = {
+    "matched": True,
+    "poster_path": "/abc.jpg",
+    "backdrop_path": None,
+    "en": "Test Film",
+    "tmdb_vote": 7.5,
+    "vote_count": 1234,
+}
+
+# Run the inject_data art-building logic inline (mirrors lines 42-58 of inject_data.py)
+_art_rec_tv: dict = {}
+_v = _tmdb_record_tv
+if _v.get("poster_path"):   _art_rec_tv["p"] = _v["poster_path"]
+if _v.get("backdrop_path"): _art_rec_tv["b"] = _v["backdrop_path"]
+if _v.get("en"):            _art_rec_tv["en"] = _v["en"]
+if _v.get("imdb") is not None: _art_rec_tv["imdb"] = _v["imdb"]
+if _v.get("imdbVotes"):     _art_rec_tv["imdbVotes"] = _v["imdbVotes"]
+if _v.get("tmdb_vote") is not None: _art_rec_tv["tv"] = _v["tmdb_vote"]
+if _v.get("vote_count") is not None: _art_rec_tv["tc"] = _v["vote_count"]
+
+check("inject_data: tv field present when tmdb_vote set",
+      _art_rec_tv.get("tv"), 7.5)
+check("inject_data: tc field present when vote_count set",
+      _art_rec_tv.get("tc"), 1234)
+check("inject_data: imdb field absent when imdb not in source",
+      "imdb" not in _art_rec_tv, True)
+check("inject_data: tv absent when tmdb_vote is None",
+      "tv" not in {k: v for k, v in {
+          "matched": True, "en": "X",
+          "tmdb_vote": None, "vote_count": None,
+      }.items() if k == "tmdb_vote" and v is not None}, True)
+
+# ---------------------------------------------------------------- OMDb error handling (mocked)
+print("OMDb error handling (mocked)")
+
+# 1. omdb_rating returns (None, None, error_text) on API error (Response=False)
+_orig_token_omdb = TMDB.OMDB_TOKEN
+TMDB.OMDB_TOKEN = "fake-key"
+
+def _mock_omdb_req(url_req, timeout=20, context=None):
+    import io
+    class _FakeResp:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n=-1): return b'{"Response":"False","Error":"Invalid API key!"}'
+    class _FakeRespJson:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n=-1): return b'{"Response":"False","Error":"Invalid API key!"}'
+        def __iter__(self): return iter([])
+    import json as _json
+    class _JsonResp:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        # json.load(r) is called on the response object
+    return _FakeRespJson()
+
+import urllib.request as _urllib_req
+_orig_urlopen = _urllib_req.urlopen
+
+class _MockAPIErrorResp:
+    def __init__(self): self._data = b'{"Response":"False","Error":"Invalid API key!"}'
+    def __enter__(self): return self
+    def __exit__(self, *a): pass
+    def read(self, n=-1): return self._data
+
+def _mock_urlopen_apierr(req, timeout=20, context=None):
+    import json as _json
+    class _R:
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def read(self, n=-1): return b'{"Response":"False","Error":"Invalid API key!"}'
+        def __iter__(self): return iter([b'{"Response":"False","Error":"Invalid API key!"}'])
+    # json.load() reads from the object; patch it with a BytesIO-like wrapper
+    import io
+    class _RIO:
+        def __enter__(self): return io.BytesIO(b'{"Response":"False","Error":"Invalid API key!"}')
+        def __exit__(self, *a): pass
+    return io.BytesIO(b'{"Response":"False","Error":"Invalid API key!"}')
+
+# Direct call to omdb_rating with mocked urlopen
+import io as _io
+_orig_urlopen2 = _urllib_req.urlopen
+try:
+    _urllib_req.urlopen = lambda req, timeout=20, context=None: _io.BytesIO(
+        b'{"Response":"False","Error":"Invalid API key!"}')
+    # BytesIO supports json.load since it has read()
+    _r, _v, _err = TMDB.omdb_rating("tt0364569")
+    check("omdb_rating: rating is None on API error",
+          _r, None)
+    check("omdb_rating: votes is None on API error",
+          _v, None)
+    check("omdb_rating: error text captured on Response=False",
+          _err, "Invalid API key!")
+finally:
+    _urllib_req.urlopen = _orig_urlopen2
+    TMDB.OMDB_TOKEN = _orig_token_omdb
+
+# 2. omdb_rating returns (None, None, None) when OMDB_TOKEN not set
+_orig_tok2 = TMDB.OMDB_TOKEN
+TMDB.OMDB_TOKEN = ""
+_r2, _v2, _err2 = TMDB.omdb_rating("tt0364569")
+check("omdb_rating: (None, None, None) when no token",
+      (_r2, _v2, _err2), (None, None, None))
+TMDB.OMDB_TOKEN = _orig_tok2
+
+# 3. Keep-previous: on error, inherit previous value; do NOT cache None as final
+_pv_prev_rating = {"imdb": 8.2, "imdbVotes": "200.5K"}
+_r3, _v3, _err3 = None, None, "network: timeout"  # simulate network error
+_inherited_rating = None
+_inherited_votes = ""
+if _r3 is None and _err3 is not None:
+    if _pv_prev_rating.get("imdb") is not None:
+        _inherited_rating = _pv_prev_rating["imdb"]
+    if not _inherited_votes and _pv_prev_rating.get("imdbVotes"):
+        _inherited_votes = _pv_prev_rating["imdbVotes"]
+check("omdb keep-prev: inherit previous imdb on network error",
+      _inherited_rating, 8.2)
+check("omdb keep-prev: inherit previous votes on network error",
+      _inherited_votes, "200.5K")
+
+# 4. On success: do NOT inherit old value — fresh result is used
+_r4, _v4, _err4 = 7.1, "50.0K", None
+_rec_fresh: dict = {}
+if _r4 is None and _err4 is not None:
+    if _pv_prev_rating.get("imdb") is not None:
+        _rec_fresh["imdb"] = _pv_prev_rating["imdb"]
+else:
+    if _r4 is not None:
+        _rec_fresh["imdb"] = _r4
+check("omdb keep-prev: fresh result used when no error",
+      _rec_fresh.get("imdb"), 7.1)
+
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

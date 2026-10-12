@@ -51,6 +51,8 @@ for fid, v in tmdb.items():
     if v.get("country"):       rec["country"] = v["country"]  # TMDB English country
     if v.get("imdb") is not None: rec["imdb"] = v["imdb"]  # genuine IMDb rating (OMDb)
     if v.get("imdbVotes"):     rec["imdbVotes"] = v["imdbVotes"]  # IMDb vote count (OMDb)
+    if v.get("tmdb_vote") is not None: rec["tv"] = v["tmdb_vote"]  # TMDB vote_average
+    if v.get("vote_count") is not None: rec["tc"] = v["vote_count"]  # TMDB vote count
     if v.get("dir"):           rec["dir"] = v["dir"]      # director(s) from TMDB credits
     if v.get("cast"):          rec["cast"] = v["cast"]    # top-5 cast from TMDB credits
     if v.get("ovBg"):          rec["ovBg"] = v["ovBg"]    # Bulgarian overview from TMDB

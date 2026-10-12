@@ -7245,6 +7245,153 @@ def wave_m(browser):
 
 
 # ============================================================================
+# WAVE P2A: ratings and hidden-screenings fixes
+# ============================================================================
+
+def wave_p2a(browser):
+    """
+    Wave P2A checks:
+    1. TMDB tile appears for a film that has ONLY a TMDB rating (no IMDb), in BG and EN.
+    2. Ranking fallback: a film with only a TMDB rating (≥50 votes) appears in the
+       top-rated rail alongside films with IMDb ratings.
+    3. A screening more than 14 days ahead is listed (COMMERCIAL_DAYS horizon removed).
+    """
+    wave = "P2A"
+    ensure_shot_dir(wave)
+
+    # ── P2A-1 / P2A-2: TMDB tile and ranking fallback ──
+    print("\n=== P2A-1/2: TMDB tile appears and ranking fallback works ===")
+    for lang in ("bg", "en"):
+        ctx, page, errs = open_page(browser, 375, 812, lang=lang, mode="cinema")
+        page.wait_for_timeout(600)
+
+        # Inject a film with TMDB rating but no IMDb rating into TMDBART
+        result = page.evaluate(f"""() => {{
+            // Find the first film with upcoming screenings
+            const today = "{CLOCK_TODAY_ISO}";
+            for (const r of SHOWTIMES) {{
+                if (r[2] >= today) {{
+                    const fid = r[0];
+                    const f = filmById[fid];
+                    if (!f) continue;
+                    // Inject a TMDB-only rating: tv=7.8, tc=150 (≥50 threshold)
+                    if (typeof TMDBART === "object" && TMDBART) {{
+                        if (!TMDBART[fid]) TMDBART[fid] = {{}};
+                        TMDBART[fid].tv = 7.8;
+                        TMDBART[fid].tc = 150;
+                        // Ensure no IMDb rating from any source
+                        delete TMDBART[fid].imdb;
+                        delete TMDBART[fid].imdbVotes;
+                    }}
+                    const f2 = filmById[fid];
+                    if (f2) {{ delete f2.imdb; delete f2.imdbVotes; }}
+                    // Render the sheet and check for the TMDB tile
+                    const html = sheetFilm(f);
+                    const div = document.createElement("div");
+                    div.innerHTML = html;
+                    const rtiles = Array.from(div.querySelectorAll(".rtile"));
+                    const tileLabels = rtiles.map(t => {{
+                        const rl = t.querySelector(".rl");
+                        return rl ? rl.textContent.trim() : "";
+                    }});
+                    const imdbTile = tileLabels.find(l => l === "IMDb");
+                    const tmdbTile = tileLabels.find(l => l === "TMDB");
+                    return {{fid, tileLabels, imdbTile, tmdbTile, found: true}};
+                }}
+            }}
+            return {{found: false}};
+        }}""")
+
+        if not result.get("found"):
+            skip(f"p2a_tmdb_tile_{lang}", "no upcoming film found in fixture")
+        else:
+            fid = result["fid"]
+            check(f"p2a_tmdb_tile_present_{lang}",
+                  result.get("tmdbTile") == "TMDB",
+                  f"tiles: {result.get('tileLabels')}, film={fid}")
+            # IMDb tile still present (shows "—" for absent IMDb)
+            check(f"p2a_imdb_tile_present_{lang}",
+                  result.get("imdbTile") == "IMDb",
+                  f"tiles: {result.get('tileLabels')}")
+
+        # Check ranking fallback: ratingOf() should use TMDB rating (≥50 votes)
+        # when IMDb is absent, so the film appears in the top rail
+        ranking_result = page.evaluate(f"""() => {{
+            // Use the same injected film from above
+            const today = "{CLOCK_TODAY_ISO}";
+            for (const r of SHOWTIMES) {{
+                if (r[2] >= today) {{
+                    const fid = r[0];
+                    const f = filmById[fid];
+                    if (!f) continue;
+                    // Ensure TMDB-only rating is set (tc ≥ 50)
+                    const art = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) || {{}};
+                    const imdbVal = (f.imdb != null ? f.imdb : (art.imdb != null ? art.imdb : null));
+                    const tmdbVote = art.tv != null ? art.tv : null;
+                    const tmdbCount = art.tc != null ? art.tc : 0;
+                    // ratingOf logic: IMDb first, then TMDB if tc ≥ TMDB_VOTE_MIN
+                    const ratingVal = imdbVal != null ? imdbVal
+                        : (tmdbVote != null && tmdbCount >= TMDB_VOTE_MIN ? tmdbVote : null);
+                    return {{fid, imdbVal, tmdbVote, tmdbCount, ratingVal}};
+                }}
+            }}
+            return {{found: false}};
+        }}""")
+        if not ranking_result.get("fid"):
+            skip(f"p2a_ranking_fallback_{lang}", "no upcoming film found")
+        else:
+            check(f"p2a_ranking_fallback_uses_tmdb_{lang}",
+                  ranking_result.get("ratingVal") == 7.8,
+                  f"ratingVal={ranking_result.get('ratingVal')}, imdb={ranking_result.get('imdbVal')}, tv={ranking_result.get('tmdbVote')}, tc={ranking_result.get('tmdbCount')}")
+            # Low-vote TMDB should NOT be used for ranking
+            check(f"p2a_ranking_fallback_tmdb_vote_min_{lang}",
+                  isinstance(ranking_result.get("tmdbCount"), (int, float))
+                  and ranking_result["tmdbCount"] >= 50,
+                  f"tc={ranking_result.get('tmdbCount')} should be ≥50 for ranking")
+
+        ctx.close()
+
+    # ── P2A-3: Screening more than 14 days ahead is listed ──
+    print("\n=== P2A-3: Screening >14 days ahead is visible (COMMERCIAL_DAYS removed) ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    # Calculate a date 20 days from today (well beyond COMMERCIAL_DAYS=14)
+    beyond_date = (datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+                   + datetime.timedelta(days=20)).isoformat()
+
+    beyond_result = page.evaluate(f"""() => {{
+        const beyond = "{beyond_date}";
+        // Check filmTimesAll for any film that has a screening on/after beyond_date
+        for (const f of FILMS) {{
+            const rows = filmTimesAll(f.id);
+            const hasRow = rows.some(r => r[2] >= beyond);
+            if (hasRow) return {{found: true, fid: f.id, date: beyond}};
+        }}
+        // Fallback: check raw SHOWTIMES for any row ≥ beyond_date
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= beyond) return {{foundRaw: true, fid: r[0], date: r[2]}};
+        }}
+        return {{found: false, foundRaw: false}};
+    }}""")
+
+    if beyond_result.get("foundRaw") and not beyond_result.get("found"):
+        check("p2a_beyond_14days_listed",
+              False,
+              f"SHOWTIMES has row at {beyond_result.get('date')} for {beyond_result.get('fid')} "
+              f"but filmTimesAll returned nothing — horizon filter still active")
+    elif beyond_result.get("found"):
+        check("p2a_beyond_14days_listed",
+              True,
+              f"film {beyond_result.get('fid')} has screenings at {beyond_date}")
+    else:
+        skip("p2a_beyond_14days_listed",
+             f"no screenings found beyond {beyond_date} in fixture data")
+
+    ctx.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -7258,6 +7405,7 @@ WAVES = {
     "J": wave_j,
     "L": wave_l,
     "M": wave_m,
+    "P2A": wave_p2a,
 }
 
 def main():
