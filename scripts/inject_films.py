@@ -16,6 +16,9 @@ Rules:
   * Never invents metadata: a minted entry carries only what the scraper could
     read (id, Bulgarian title, genres, a placeholder gradient). Missing year /
     runtime / director / cast are simply absent; the UI guards for that.
+  * Empty genres, year, runtime and country of a synthesised film are filled from
+    film_info.json (genres from the film's own page; year/runtime/country from a
+    festival's page). A seed film and a field that has a value are never touched.
 
     python3 scripts/inject_films.py            # edits index.html in place
 """
@@ -98,20 +101,27 @@ def main():
     # present in FILMS (the common case on refresh-only runs).  Never touch
     # seed films (only ids from cinema_films.json), never overwrite a non-empty
     # genres list.
-    patched = 0
+    patched = details = 0
     for entry in films:
         fid = entry.get("id")
         if fid not in synth_ids:
             continue                       # seed film — never touch
-        if entry.get("genres"):
-            continue                       # already has genres — leave as is
         fi = filminfo.get(fid, {})
         genres = fi.get("genres")
-        if genres and isinstance(genres, list):
-            entry["genres"] = genres
+        if not entry.get("genres") and genres and isinstance(genres, list):
+            entry["genres"] = genres       # empty genres only — never overwritten
             patched += 1
+        # Year / runtime / country a festival's own page printed (scrape_programs
+        # festival_details): EMPTY fields of a synthesised film only, sane values only.
+        for field, ok in (("year", lambda v: isinstance(v, int) and 1890 <= v <= 2100),
+                          ("runtime", lambda v: isinstance(v, int) and 20 <= v <= 400),
+                          ("country", lambda v: isinstance(v, str) and v.strip())):
+            v = fi.get(field)
+            if not entry.get(field) and v and ok(v):
+                entry[field] = v.strip() if isinstance(v, str) else v
+                details += 1
 
-    if not added and not patched:
+    if not added and not patched and not details:
         print(f"FILMS already carries all {len(cinema)} arthouse films — no change")
         return
 
@@ -122,6 +132,8 @@ def main():
         parts.append(f"merged {added} arthouse film(s)")
     if patched:
         parts.append(f"patched genres on {patched} existing synthesised film(s)")
+    if details:
+        parts.append(f"filled {details} empty year/runtime/country field(s) from film_info.json")
     print(f"{'; '.join(parts)} "
           f"({len(films)} total; {len(cinema)} synthesised)")
 

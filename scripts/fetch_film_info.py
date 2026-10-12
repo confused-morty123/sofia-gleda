@@ -107,17 +107,60 @@ _CREDIT_LABEL_RE = re.compile(
 )
 
 
+# The same labels as whole words, colon or not. Влайкова's markup runs the next
+# label into the value — "<strong>Режисьор: </strong>Ойер Плаза<br/><strong>
+# Сценаристи: </strong>…" reads "Режисьор : Ойер Плаза Сценаристи: …" — so a
+# value cut at the next colon still ends in "Сценаристи" (2026-10-09: six films).
+# Credits stop at any of these words; no person is named after one. ("Дублаж"
+# is not among them: a dubbed film's voice cast legitimately reads "дублаж: …".)
+_CREDIT_WORD_RE = re.compile(
+    r'(?<![\w-])(?:Сценаристи|Сценарист|Сценарий|Оператори|Оператор|Музика|Композитор|'
+    r'Продуценти|Продуцент|Копродуценти|Монтаж|Художник|Костюми|В\s+ролите|Участват|'
+    r'Актьори|Актьорски\s+състав|Език|Субтитри|Държава|Година|Времетраене|'
+    r'Продължителност|Жанр|Режисьори|Режисьор|Screenplay|Writers?|Cinematography|'
+    r'Music|Producers?|Editing|Starring|Cast|Language|Subtitles|Country|Runtime|'
+    r'Duration|Genre|Directors?)(?![\w-])',
+    re.I,
+)
+
+
 def _clean_credit_value(text: str) -> str:
     """Strip any trailing label-bleed from a director or cast value.
 
-    If the value contains a credit-label pattern (e.g. "Screenplay:",
-    "В ролите:"), truncate at the first such occurrence and strip trailing
-    punctuation.  Returns the cleaned string (possibly empty).
+    The value is cut at the first credit label — with a colon ("Screenplay:",
+    "В ролите:") or as a bare word ("Ойер Плаза Сценаристи" -> "Ойер Плаза") —
+    and trailing punctuation is stripped.  Returns the cleaned string (possibly
+    empty).
     """
     m = _CREDIT_LABEL_RE.search(text)
     if m:
         text = text[:m.start()]
+    w = _CREDIT_WORD_RE.search(text)
+    if w:
+        text = text[:w.start()]
     return text.strip().rstrip(",.;: ")
+
+
+def _has_label_bleed(value: str) -> bool:
+    """A stored dir/cast value that still carries a credit label."""
+    return bool(value) and bool(_CREDIT_LABEL_RE.search(value) or _CREDIT_WORD_RE.search(value))
+
+
+def sanitise_credits(entries):
+    """Cut every stored dir/cast value at its first credit label (_clean_credit_value);
+    a value that is nothing but a label is dropped. Returns how many were changed."""
+    n = 0
+    for entry in entries.values():
+        for field in ("dir", "cast"):
+            v = entry.get(field)
+            if isinstance(v, str) and _has_label_bleed(v):
+                cleaned = _clean_credit_value(v)
+                if cleaned:
+                    entry[field] = cleaned
+                else:
+                    del entry[field]
+                n += 1
+    return n
 
 
 def extract_array(src, name):
@@ -160,7 +203,8 @@ def _film_info_stale(existing: dict) -> bool:
     - It was written by an older parser version (pv < _PARSER_VERSION), OR
     - Its cast field is suspiciously long (>160 chars) — sign of synopsis bleed, OR
     - Its dir field is suspiciously long (>80 chars) — sign of bleed, OR
-    - Its dir or cast value contains a credit-label keyword (label bleed).
+    - Its dir or cast value contains a credit-label keyword (label bleed),
+      with a colon or as a bare word.
     """
     if existing.get("pv", 0) < _PARSER_VERSION:
         return True
@@ -170,8 +214,9 @@ def _film_info_stale(existing: dict) -> bool:
     dir_ = existing.get("dir") or ""
     if len(dir_) > 80:
         return True
-    # Detect label-bleed: a credit label inside dir or cast means bad data.
-    if _CREDIT_LABEL_RE.search(dir_) or _CREDIT_LABEL_RE.search(cast):
+    # Detect label-bleed: a credit label inside dir or cast means bad data —
+    # also a bare label word ("Ойер Плаза Сценаристи").
+    if _has_label_bleed(dir_) or _has_label_bleed(cast):
         return True
     return False
 
@@ -728,7 +773,7 @@ def main():
         # the keep-previous logic does not preserve contaminated values.
         for _cf in ("dir", "cast"):
             _cv = entry.get(_cf) or ""
-            if _CREDIT_LABEL_RE.search(_cv):
+            if _has_label_bleed(_cv):
                 del entry[_cf]
 
         # ----- Parse details (synopsis, dir, cast, genres) -----
@@ -769,6 +814,12 @@ def main():
         if entry:
             out[fid] = entry
 
+    # A stored credit that still carries a label ("Нани Морети В ролите", parsed
+    # before the label-word rule) is cleaned in place, whether or not its page was
+    # fetched again this run: the film's link may have moved to a host this script
+    # does not parse (Дом на киното), and keep-previous would otherwise keep it.
+    n_sanitised = sanitise_credits(out)
+
     # Write output
     out_clean = {k: v for k, v in out.items() if v}
     OUT.write_text(json.dumps(out_clean, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -781,6 +832,7 @@ def main():
     print(f"  cast:      {n_cast} new")
     print(f"  genres:    {n_genres} new")
     print(f"  img:       {n_img} new poster images harvested")
+    print(f"  credits:   {n_sanitised} stored dir/cast value(s) cleaned of a label")
     print(f"  {len(out_clean)} total entries in {OUT.name}")
     return 0
 

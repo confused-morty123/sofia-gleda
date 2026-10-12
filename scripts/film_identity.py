@@ -105,6 +105,13 @@ def clean_title(title, keep_prefix=False):
     return t
 
 
+def strip_prefix(title):
+    """The title without a known festival/series prefix ("СИНЕЛИБРИ 2026 – ПЕПЕЛ",
+    "Синелибри: Черното топче"); otherwise exactly as written."""
+    t = unicodedata.normalize("NFC", title or "").replace("\xa0", " ").strip()
+    return _FESTIVAL_RE.sub("", t, count=1).strip()
+
+
 def title_year(title):
     """A year the title itself carries ("Сънища (1990)", "КОСА | 1979 |")."""
     t = clean_title(title)

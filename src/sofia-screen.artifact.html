@@ -2150,7 +2150,8 @@ function sheetFilm(f){
   const venues=[...new Set(rows.map(r=>r[1]))];
   /* isPrelim: true when (venueId, date) is on or after PRELIM_FROM[venueId] */
   const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
-  const isPrelim=(vid,d)=>{const pDate=_pf[vid];return pDate?d>=pDate:false;};
+  /* ...or when PRELIM_ROWS lists this film at this venue on this date (a festival screening the venue's own programme does not list) */
+  const isPrelim=(vid,d)=>{const pDate=_pf[vid];return (pDate?d>=pDate:false)||(typeof PRELIM_ROWS!=="undefined"&&Array.isArray(PRELIM_ROWS)&&PRELIM_ROWS.some(x=>x[0]===f.id&&x[1]===vid&&x[2]===d));};
   let hasPrelim=false;
   const mkVrow=(r,d)=>{
     const c=cinById[r[1]],b=BOOKING[r[1]]||{};

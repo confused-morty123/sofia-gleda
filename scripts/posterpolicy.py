@@ -41,6 +41,9 @@ TRUSTED_HOSTS = {
     "comedyclub.bg", "melpomenatheatre.com", "atelie313.com", "artvent.bg",
     "ndk.bg", "image.tmdb.org", "sofiaopera.bg", "operasofia.bg", "salzaismyah.bg",
     "kinoarena.com", "cinemacity.bg",
+    # Киномания: every image sits in that film's own gallery (/public/uploads/
+    # gallery/…), its og:image included — checked on its 2026 film pages.
+    "kinomania.bg",
 }
 
 # Backends that serve whatever a cinema's ticketing system happened to upload.

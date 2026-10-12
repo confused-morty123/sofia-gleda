@@ -8,7 +8,10 @@ calls every Sunday.
     TMDB_TOKEN=... python3 scripts/refresh_all.py
 
 Steps (all best-effort; a step that fails leaves the previous data in place):
-    1. scrape_programs.py           cinema + theatre programmes -> index.html
+    1. scrape_programs.py           cinema + theatre programmes -> index.html, and the
+                                    festivals: official_festivals.py reads CineLibri and
+                                    Kinomania (screenings -> SHOWTIMES / PRELIM_ROWS,
+                                    film details and posters -> film_info.json)
     2. fetch_film_info.py           synopsis/director/cast from the films' own pages -> film_info.json
     3. inject_films.py              merge synthesised arthouse films -> index.html
     4. inject_shows.py              merge synthesised theatre shows -> index.html
@@ -35,6 +38,23 @@ CHANGES = ROOT / "changes.json"
 # reads them back to notice a source that suddenly yields a fraction of its rows.
 OFFICIAL_KEYS = ("kind", "status", "source", "covered", "days", "screenings", "written_screenings",
                  "prelim_from", "prelim_screenings", "discarded_aggregator", "minted", "error")
+
+
+# The scrape's festival state (changes.json "festivals": per festival its status,
+# covered days, rows at app venues and run report). The next scrape reads it back
+# from build_report.json: last run's festival rows leave before this run's are
+# added, and a festival whose site is down keeps them (keep-previous).
+def festival_summary(started, previous):
+    """This run's festival state, or the previous run's when the scrape did not
+    run or stopped itself."""
+    try:
+        ch = json.loads(CHANGES.read_text(encoding="utf-8"))
+        fresh = dt.datetime.fromisoformat(ch.get("ran", "")).timestamp() >= started - 5
+    except (OSError, ValueError, TypeError):
+        return previous
+    if not fresh or ch.get("aborted") or not isinstance(ch.get("festivals"), dict):
+        return previous
+    return ch["festivals"]
 
 
 def official_summary(started, previous):
@@ -96,11 +116,13 @@ def main():
               "previous posters kept.", file=sys.stderr)
     started = time.time()
     try:
-        previous = json.loads(REPORT.read_text(encoding="utf-8")).get("official") or {}
+        prev_report = json.loads(REPORT.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        previous = {}
+        prev_report = {}
+    previous = prev_report.get("official") or {}
     results = [run(*s) for s in STEPS]
     official, aborted = official_summary(started, previous)
+    festivals = festival_summary(started, prev_report.get("festivals") or {})
 
     # The gate. Everything above may fail softly; this may not.
     verdict = run(*VERIFY)
@@ -112,6 +134,7 @@ def main():
         "publishable": verdict["ok"],
         "steps": results,
         "official": official,
+        "festivals": festivals,
     }
     if aborted:
         report["official_aborted"] = aborted
@@ -128,6 +151,14 @@ def main():
                   f"{o.get('screenings') or 0:>4} official, {o.get('prelim_screenings') or 0:>4} preliminary "
                   f"from {o.get('prelim_from') or '—'}"
                   + (f"  ! {o['error']}" if o.get("error") and o.get("status") == "unreachable" else ""))
+    if festivals:
+        print("\n=== festival programmes (official_festivals.py) ===")
+        for fest, f in festivals.items():
+            cov = "..".join(f.get("covered") or []) or "—"
+            print(f"  {fest:10s} {f.get('status') or '?':13s} {cov:23s} "
+                  f"{f.get('confirmed') or 0:>3} confirmed, {f.get('prelim_row') or 0:>3} preliminary per row, "
+                  f"{f.get('prelim_date') or 0:>3} by date, {len(f.get('contradicted') or [])} contradicted"
+                  + (f"  ! {f['error']}" if f.get("error") else ""))
     if aborted:
         print("\nThe programme scrape stopped itself (official-source self-check):", file=sys.stderr)
         for a in aborted:

@@ -1346,6 +1346,513 @@ check("a tiny programme (Люмиер) is never 'implausible'",
                          {"status": "official", "screenings": 1, "days": 58}), None)
 
 
+# ============================================ festival programmes (wave F3)
+# Fixtures are trimmed copies of the live pages (2026-10-09): CineLibri's
+# programme / day / film / media REST answers and Kinomania's programme and film
+# pages. official_festivals.py reads; scrape_programs.py merges and mints.
+print("festivals: venue table (explicit; unknown names reported, never guessed)")
+import official_festivals as OFE                                 # noqa: E402
+for fest, name, want in [
+    ("cinelibri", "Зала 1 на НДК", ("app", "ndk1")),
+    ("cinelibri", "Френски институт", ("app", "frenski-institut")),
+    ("cinelibri", "Cine Grand Park center", ("app", "cg-park")),
+    ("cinelibri", "Cinema City Mall of Sofia", ("app", "cc-sofia")),
+    ("cinelibri", "Casa Libri", ("app", "casa-libri")),
+    ("cinelibri", "Евросинема", ("app", "g8")),
+    ("cinelibri", "Топлоцентрала", ("app", "toplo-film")),
+    ("cinelibri", "Сцена Централни Хали", ("app", "tsentralni-hali")),
+    ("cinelibri", "Евро Синема Варна", ("outside", None)),
+    ("cinelibri", "ФКЦ, Варна", ("outside", None)),
+    ("kinomania", "НДК - Зала 1", ("app", "ndk1")),
+    ("kinomania", "НДК – Зала 1", ("app", "ndk1")),
+    ("kinomania", "Синема Сити Парадайс Център", ("app", "cc-paradise")),
+    ("kinomania", "Арена", ("unknown", None)),
+    ("kinomania", "Euro Cinema", ("app", "g8")),
+    ("kinomania", "Lucky Пловдив", ("outside", None)),
+    ("kinomania", "Стара Загора - Регионална библиотека", ("outside", None)),
+]:
+    check(f"venue {fest}: {name!r}", OFE.venue_id(fest, name), want)
+
+print("festivals: CineLibri pages")
+_cl_prog = _json.loads((FIXTURES / "festival_cinelibri_programme.json").read_text(encoding="utf-8"))
+check("programme page -> day pages (a non-day banner ignored)",
+      OFE.cinelibri_days(_cl_prog[0]["content"]["rendered"], "2026-10-09"),
+      [("2026-10-15", "https://www.cinelibri.com/15-oktomvri/"),
+       ("2026-11-01", "https://www.cinelibri.com/1-noemvri/"),
+       ("2026-11-08", "https://www.cinelibri.com/8-noemvri/")])
+_sofia, _other, _bad = OFE.parse_cinelibri_day(
+    (FIXTURES / "festival_cinelibri_day.html").read_text(encoding="utf-8"), "2026-11-08")
+check("day page: Sofia cards", [(x["title"], x["venue"], x["date"], x["time"]) for x in _sofia], [
+    ("Кокухо: Живо съкровище", "Културен център G8", "2026-11-08", "13:00"),
+    ("Малкият Никола: Какво чакаме, за да бъдем щастливи?", "Евросинема", "2026-11-08", "13:15"),
+    ("Историите на нощта", "Френски институт", "2026-11-08", "14:15"),
+    ("Героят от гара „Фридрихщрасе“", "Влайкова", "2026-11-08", "15:00")])
+check("day page: film page and ticket of a card",
+      (_sofia[0]["film_url"], _sofia[0]["ticket_url"]),
+      ("https://www.cinelibri.com/kokuho-zhivo-sakrovishte/", "https://epaygo.bg/3140859053"))
+check("day page: the 'Прожекции в страната' grid is outside Sofia",
+      [(x["venue"], x["date"]) for x in _other], [("ФКЦ, Варна", "2026-11-08")])
+check("day page: no malformed card", _bad, 0)
+_s1, _o1, _ = OFE.parse_cinelibri_day(
+    (FIXTURES / "festival_cinelibri_day_single.html").read_text(encoding="utf-8"), "2026-10-15")
+check("unheaded single-grid day (15 Oct): its cards are the day's programme",
+      [(x["title"], x["venue"], x["time"], x["extra"]) for x in _s1],
+      [("Мастило", "Зала 1 на НДК", "19:00", "Официална церемония по откриване")])
+def _fraises(fn, *a):
+    try:
+        fn(*a)
+    except OFE.MarkupError:
+        return True
+    return False
+
+
+check("a page without a programme grid is a markup change", _fraises(OFE.parse_cinelibri_day,
+      "<html><body><h2>8 ноември</h2><p>нищо</p></body></html>", "2026-11-08"), True)
+
+_cl_pages = {p["slug"]: p for p in _json.loads((FIXTURES / "festival_cinelibri_films.json").read_text(encoding="utf-8"))}
+_pepel = OFE.parse_cinelibri_film(_cl_pages["pepel"])
+check("film page: title, original, country list, year, runtime",
+      [_pepel[k] for k in ("title_bg", "original", "country", "year", "runtime", "kind")],
+      ["Пепел", "Popel", "Чехия/Франция/Испания", 2025, 87, "film"])
+check("film page: director and cast (no 'и др.')", (_pepel["director"], _pepel["cast"]),
+      ("Ойер Плаза", "Унай Егуя, Антон Гандариас, Ева Сухи, Павел Палечек"))
+check("film page: synopsis stops before the festival list",
+      (_pepel["syn_bg"].startswith("След като прочита романа"), "Фестивали" in _pepel["syn_bg"],
+       "Не съм герой.“ – Франтишек Сухи-младши" in _pepel["syn_bg"]), (True, False, True))
+_mast = OFE.parse_cinelibri_film(_cl_pages["mastilo"])
+check("film page with an unlabelled 'Country (year), N мин.' line",
+      [_mast[k] for k in ("country", "year", "runtime", "director")],
+      ["Обединено кралство/Франция/САЩ", 2026, 116, "Дани Бойл"])
+check("'Режисьор и сценарист:' is the director",
+      OFE.parse_cinelibri_film(_cl_pages["svatba-s-vkus-na-portokal"])["director"], "Кристоф Оноре")
+_shorts = OFE.parse_cinelibri_film(_cl_pages["kasometrazhno-kino-izvyn-konkurs"])
+check("a shorts programme page: title and description only (its credits are the first short's)",
+      [_shorts[k] for k in ("kind", "title_bg", "original", "director", "year")],
+      ["programme", "Късометражно кино извън конкурс", None, None, None])
+
+
+class _FestNet:
+    """Serves the fixtures as the live site would; `down` URLs fail."""
+    def __init__(self, down=()):
+        self.calls, self.down = [], set(down)
+    def budget_spent(self):
+        return False
+    def json(self, url):
+        self.calls.append(url)
+        if url in self.down:
+            return None
+        if url == OFE.CL_PROGRAMME:
+            return _cl_prog
+        if url.startswith(OFE.CL_API + "/pages?per_page=100"):
+            import urllib.parse as _up
+            want = _up.parse_qs(_up.urlsplit(url).query)["slug"][0].split(",")
+            return [p for s_, p in _cl_pages.items() if s_ in want]
+        if url.startswith(OFE.CL_API + "/media"):
+            return _json.loads((FIXTURES / "festival_cinelibri_media.json").read_text(encoding="utf-8"))
+        return None
+    def text(self, url):
+        self.calls.append(url)
+        if url in self.down:
+            return None
+        pages = {"https://www.cinelibri.com/8-noemvri/": "festival_cinelibri_day.html",
+                 "https://www.cinelibri.com/15-oktomvri/": "festival_cinelibri_day_single.html",
+                 OFE.KM_PROGRAMME: "festival_kinomania_programme.html",
+                 "https://www.kinomania.bg/bg_BG/film/div-kon-devet-3672.html": "festival_kinomania_film.html",
+                 "https://www.kinomania.bg/bg_BG/film/fantomut-na-operata-3677.html": "festival_kinomania_film_parens.html"}
+        f = pages.get(url)
+        if f:
+            return (FIXTURES / f).read_text(encoding="utf-8")
+        if url == "https://www.cinelibri.com/1-noemvri/":   # served as an empty day grid
+            return "<html><body><h2>1 ноември</h2><div class='vc_grid-container'></div></body></html>"
+        return None
+
+
+_errs, _net1 = {}, _FestNet()
+_cl = OFE.read_festival("cinelibri", _net1, "2026-10-09", "2026-12-14", _errs)
+check("CineLibri reader: covered days", (_cl["covered_from"], _cl["covered_to"]), ("2026-10-15", "2026-11-08"))
+check("CineLibri reader: Sofia screenings (title, date, time, venue, ticket)", _cl["screenings"][:2], [
+    ("Мастило", "2026-10-15", "19:00", "Зала 1 на НДК", "https://epaygo.bg/3185539248"),
+    ("Кокухо: Живо съкровище", "2026-11-08", "13:00", "Културен център G8", "https://epaygo.bg/3140859053")])
+check("CineLibri reader: every Sofia venue is known (Евросинема is G8)", _cl["unknown_venues"], {})
+check("CineLibri reader: ... the Евросинема screening is kept under its own name for the venue table",
+      [s_[3] for s_ in _cl["screenings"] if s_[0].startswith("Малкият Никола")], ["Евросинема"])
+check("CineLibri reader: other towns are dropped and counted", _cl["outside_sofia"], {"ФКЦ, Варна": 1})
+_clf = {f["title_bg"]: f for f in _cl["films"]}
+check("CineLibri reader: a film's poster is its featured image",
+      _clf["Кокухо: Живо съкровище"]["poster"], "https://www.cinelibri.com/wp-content/uploads/2026/09/kokuho1.jpg")
+check("CineLibri reader: programme + 3 day pages + one REST call for the film pages + one for images",
+      len(_net1.calls), 6)
+_net2 = _FestNet(down={"https://www.cinelibri.com/8-noemvri/"})
+_cl2 = OFE.read_festival("cinelibri", _net2, "2026-10-09", "2026-12-14", {})
+check("CineLibri reader: a day page that fails ends the coverage before it",
+      (_cl2["covered_to"], any("8-noemvri" in n or "2026-11-08" in n for n in _cl2["notes"])), ("2026-11-01", True))
+_errs = {}
+check("CineLibri reader: programme page down -> None (keep previous)",
+      OFE.read_festival("cinelibri", _FestNet(down={OFE.CL_PROGRAMME}), "2026-10-09", "2026-12-14", _errs), None)
+check("CineLibri reader: ... with the reason", "programme" in _errs.get("cinelibri", ""), True)
+
+print("festivals: Kinomania pages")
+_km_rows, _km_bad = OFE.parse_kinomania_programme(
+    (FIXTURES / "festival_kinomania_programme.html").read_text(encoding="utf-8"))
+check("programme: venue, date, time, title, film page, ticket", _km_rows[0], (
+    "НДК - Зала 1", "2026-11-12", "19:00", "Див кон девет",
+    "https://www.kinomania.bg/bg_BG/film/div-kon-devet-3672.html", "https://epaygo.bg/1190981546"))
+check("programme: two screenings on one day", [r[2:4] for r in _km_rows if r[1] == "2026-11-21"],
+      [("17:00", "Минотавър"), ("20:00", "Фиорд")])
+check("programme: 5 rows, none malformed", (len(_km_rows), _km_bad), (5, 0))
+_kf = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film.html").read_text(encoding="utf-8"),
+                               "https://www.kinomania.bg/bg_BG/film/div-kon-devet-3672.html")
+check("film page: title, original, country, year, runtime, director",
+      [_kf[k] for k in ("title_bg", "original", "country", "year", "runtime", "director")],
+      ["Див кон девет", "Wild Horse Nine", "Великобритания/САЩ/Чили", 2026, 118, "Мартин Макдона"])
+check("film page: a gallery file named '…poster…' beats the og:image still",
+      _kf["poster"].rsplit("/", 1)[-1],
+      "digital-poster-1080-x-1920-px--wild-horse-nine-september-2026_2-0x450.jpg")
+check("film page: synopsis after 'Анотация:'",
+      _kf["syn_bg"].startswith("През 1973 г., малко преди военния преврат в Чили"), True)
+_kp = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film_parens.html").read_text(encoding="utf-8"),
+                               "https://www.kinomania.bg/bg_BG/film/fantomut-na-operata-3677.html")
+check("film page whose heading carries the original title",
+      [_kp[k] for k in ("title_bg", "original", "runtime", "cast")],
+      ["Фантомът на операта", "Le Fantôme de l'Opéra", 134,
+       "Дева Касел, Ромен Дюрис, Жулиен дьо Сен-Жан, Дороте Жилбер"])
+check("film page: the og:image (a gallery file) when no poster file",
+      _kp["poster"], "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/"
+                     "le_fantome_de_l_opera_snd_full_dawa_9_2d1067d340-0x450.jpg")
+_km = OFE.read_festival("kinomania", _FestNet(), "2026-10-09", "2026-12-14", {})
+check("Kinomania reader: covered days and screenings",
+      (_km["covered_from"], _km["covered_to"], len(_km["screenings"]), _km["screenings"][1][:4]),
+      ("2026-11-12", "2026-11-22", 5, ("Фантомът на операта", "2026-11-16", "19:00", "НДК - Зала 1")))
+
+
+class _EmptyKM(_FestNet):
+    def text(self, url):
+        if url == OFE.KM_PROGRAMME:
+            return (FIXTURES / "festival_kinomania_programme_empty.html").read_text(encoding="utf-8")
+        return super().text(url)
+
+
+_kme = OFE.read_festival("kinomania", _EmptyKM(), "2026-10-09", "2026-12-14", {})
+check("Kinomania before its programme is out: works and returns nothing",
+      (_kme is not None, _kme and _kme["screenings"], _kme and _kme["covered_from"]), (True, [], None))
+check("Kinomania programme page changed shape -> None",
+      OFE.read_festival("kinomania", type("N", (_FestNet,), {"text": lambda self, u: "<html><body>x</body></html>"})(),
+                        "2026-10-09", "2026-12-14", {}), None)
+
+print("festivals: merge rules (merge_festival_rows)")
+_FL, _EN = "2026-10-09", "2026-12-14"
+_rows0 = [["a", "dom-kino", "2026-10-15", ["18:00"]], ["b", "dom-kino", "2026-10-16", ["20:00"]],
+          ["z", "dom-kino", "2026-10-25", ["16:00"]], ["old", "ndk1", "2026-10-20", ["19:00"]],
+          ["keep", "ndk1", "2026-12-01", ["19:00"]]]
+_own0 = {"dom-kino": {("a", "2026-10-15"): {"18:00"}, ("b", "2026-10-16"): {"20:00"},
+                      ("adv", "2026-10-30"): {"21:00"}}}
+_pf0 = {"dom-kino": "2026-10-20"}
+
+
+def _M(fest_rows, rows=None, own=None, pf=None, cover=None, prev=None, prev_pr=()):
+    return S.merge_festival_rows(rows if rows is not None else _rows0, pf if pf is not None else _pf0,
+                                 own if own is not None else _own0, fest_rows,
+                                 cover if cover is not None else {"cinelibri": ("2026-10-15", "2026-11-08")},
+                                 prev or {}, list(prev_pr), _FL, _EN)
+
+
+def _times(rows, fid, v, d):
+    return next((r[3] for r in rows if r[:3] == [fid, v, d]), None)
+
+
+_r, _p, _pr, _i = _M({"cinelibri": [("a", "dom-kino", "2026-10-15", "18:00")]})
+check("1. the venue lists the film that day at that time: nothing added",
+      (_times(_r, "a", "dom-kino", "2026-10-15"), _pr, len(_i["listed"])), (["18:00"], [], 1))
+_r, _p, _pr, _i = _M({"cinelibri": [("a", "dom-kino", "2026-10-15", "21:00")]})
+check("2. same film, same day, different time: the venue wins, the festival row is logged",
+      (_times(_r, "a", "dom-kino", "2026-10-15"), _i["contradicted"]),
+      (["18:00"], [["cinelibri", "a", "dom-kino", "2026-10-15", "21:00"]]))
+_r, _p, _pr, _i = _M({"cinelibri": [("f", "dom-kino", "2026-10-17", "19:00")]})
+check("3. a covered date the venue does not list the film on: added, preliminary per row",
+      (_times(_r, "f", "dom-kino", "2026-10-17"), _pr, _p["dom-kino"]),
+      (["19:00"], [["f", "dom-kino", "2026-10-17"]], "2026-10-20"))
+check("3b. ... and a row added where the venue lists another film at that very time is reported",
+      _M({"cinelibri": [("f", "dom-kino", "2026-10-16", "20:00")]})[3]["clash"],
+      [["cinelibri", "f", "dom-kino", "2026-10-16", "20:00", ["b"]]])
+_r, _p, _pr, _i = _M({"cinelibri": [("f", "dom-kino", "2026-10-28", "19:00"), ("z", "dom-kino", "2026-10-25", "18:00")]})
+check("4. after the venue's coverage: added, preliminary by date (not per row)",
+      (_times(_r, "f", "dom-kino", "2026-10-28"), _times(_r, "z", "dom-kino", "2026-10-25"), _pr, len(_i["prelim_date"])),
+      (["19:00"], ["16:00", "18:00"], [], 2))
+_r, _p, _pr, _i = _M({"cinelibri": [("adv", "dom-kino", "2026-10-30", "19:00")]})
+check("4b. after coverage, the venue's own advance listing still wins over another time",
+      (_times(_r, "adv", "dom-kino", "2026-10-30"), len(_i["contradicted"])), (None, 1))
+_r, _p, _pr, _i = _M({"cinelibri": [("m", "ndk1", "2026-10-15", "19:00")]})
+check("5. a venue without a programme of its own: confirmed; PRELIM_FROM the day after the festival",
+      (_times(_r, "m", "ndk1", "2026-10-15"), _pr, _p["ndk1"], len(_i["confirmed"])),
+      (["19:00"], [], "2026-11-09", 1))
+check("5b. ... its rows on festival days are the festival's; later rows are kept",
+      (_times(_r, "old", "ndk1", "2026-10-20"), _times(_r, "keep", "ndk1", "2026-12-01")), (None, ["19:00"]))
+_r, _p, _pr, _i = _M({"cinelibri": [("m", "frenski-institut", "2026-10-16", "18:30"),
+                                    ("k", "ndk1", "2026-11-12", "19:00")]},
+                     cover={"cinelibri": ("2026-10-15", "2026-11-08"), "kinomania": ("2026-11-12", "2026-11-22")})
+check("5c. two festivals: PRELIM_FROM after the later one, for both festival venues",
+      (_p["ndk1"], _p["frenski-institut"]), ("2026-11-23", "2026-11-23"))
+_r, _p, _pr, _i = _M({"cinelibri": [("t", "toplo-film", "2026-10-18", "19:00"),
+                                    ("h", "tsentralni-hali", "2026-10-17", "17:00")]})
+check("5d. Топлоцентрала and Сцена „Централни хали“: festival venues, confirmed",
+      (len(_i["confirmed"]), _pr, _p["toplo-film"], _p["tsentralni-hali"]), (2, [], "2026-11-09", "2026-11-09"))
+_r, _p, _pr, _i = _M({"cinelibri": [("s", "casa-libri", "2026-10-16", "19:00")]})
+check("6. a cinema whose programme the app does not read: preliminary from today",
+      (_times(_r, "s", "casa-libri", "2026-10-16"), _p["casa-libri"], _pr), (["19:00"], _FL, []))
+_r, _p, _pr, _i = _M({"cinelibri": []}, rows=_rows0 + [["g", "dom-kino", "2026-10-28", ["19:00"]],
+                                                        ["a", "dom-kino", "2026-10-30", ["18:00"]]],
+                     own={"dom-kino": {("a", "2026-10-30"): {"18:00"}}},
+                     prev={"cinelibri": [("g", "dom-kino", "2026-10-28", "19:00"), ("a", "dom-kino", "2026-10-30", "18:00")]})
+check("7. a screening the festival dropped leaves; a time the venue lists never does",
+      (_times(_r, "g", "dom-kino", "2026-10-28"), _times(_r, "a", "dom-kino", "2026-10-30")), (None, ["18:00"]))
+_r, _p, _pr, _i = _M({}, rows=_rows0 + [["g", "dom-kino", "2026-10-28", ["19:00"]]],
+                     prev={"cinelibri": [("g", "dom-kino", "2026-10-28", "19:00")]}, cover={})
+check("8. a festival with no data at all this run keeps last run's rows",
+      _times(_r, "g", "dom-kino", "2026-10-28"), ["19:00"])
+_r, _p, _pr, _i = _M({}, rows=_rows0 + [["f", "dom-kino", "2026-10-17", ["19:00"]]],
+                     own={"dom-kino": {("a", "2026-10-15"): {"18:00"}}}, prev_pr=[("f", "dom-kino", "2026-10-17")],
+                     cover={})
+check("9. a row marked preliminary per row last run stays marked while it stands",
+      _pr, [["f", "dom-kino", "2026-10-17"]])
+_r, _p, _pr, _i = _M({"cinelibri": [("f", "dom-kino", "2026-10-08", "19:00"), ("f", "dom-kino", "2026-12-15", "19:00")]})
+check("10. rows outside today..window end are ignored",
+      (_times(_r, "f", "dom-kino", "2026-10-08"), _times(_r, "f", "dom-kino", "2026-12-15"), _pr), (None, None, []))
+
+check("festival rows persist one line each and read back (old list form too)",
+      (S.festival_rows_out([("f", "odeon", "2026-10-20", "18:00")]),
+       S.festival_rows_in(["f|odeon|2026-10-20|18:00", ["g", "g8", "2026-10-21", "19:00"], "bad"])),
+      (["f|odeon|2026-10-20|18:00"], [("f", "odeon", "2026-10-20", "18:00"), ("g", "g8", "2026-10-21", "19:00")]))
+
+print("festivals: credits stop at any label (fetch_film_info, Влайкова's run-on markup)")
+for _raw, _want in [("Ойер Плаза Сценаристи", "Ойер Плаза"), ("Фриц Ланг Сценарист", "Фриц Ланг"),
+                    ("Нани Морети В ролите", "Нани Морети"), ("Алекс Гибни Сценарист: Алекс Гибни", "Алекс Гибни"),
+                    ("Вим Вендерс Сценаристи", "Вим Вендерс"),
+                    ("Джон Малкович, Сам Рокуел Музика: Карлос Рафаел Ривера", "Джон Малкович, Сам Рокуел"),
+                    ("Анна Ролер Оператор", "Анна Ролер"), ("Марио Мартоне Продуцент", "Марио Мартоне"),
+                    ("Sergio Castellitto", "Sergio Castellitto"), ("Мартин Макдона", "Мартин Макдона"),
+                    ("Кристоф Оноре", "Кристоф Оноре")]:
+    check(f"_clean_credit_value({_raw!r})", FI._clean_credit_value(_raw), _want)
+check("a dubbed film's voice cast is not label bleed",
+      FI._film_info_stale({"pv": 5, "dir": "Х", "cast": "български дублаж: Весела Манолова, Георги Стоянов"}), False)
+check("a stored 'Ойер Плаза Сценаристи' is stale (re-fetched and re-parsed)",
+      FI._film_info_stale({"pv": 5, "dir": "Ойер Плаза Сценаристи", "cast": "А, Б"}), True)
+_vk_bleed = BeautifulSoup((FIXTURES / "vlaikova_credits_bleed.html").read_text(encoding="utf-8"), "lxml")
+check("Влайкова page: 'Режисьор: Ойер Плаза<br/>Сценаристи: …' -> director 'Ойер Плаза'",
+      FI.parse_vlaikova_page(_vk_bleed, "https://vlaikovacinema.com/screening/x/").get("dir"), "Ойер Плаза")
+
+_san = {"a": {"dir": "Нани Морети В ролите", "cast": "А, Б"}, "b": {"dir": "Сценаристи"},
+        "c": {"dir": "Ебс Бърнау", "cast": "български дублаж: Весела Манолова"}}
+check("stored credits are cleaned in place, wherever the film's link now points",
+      (FI.sanitise_credits(_san), _san["a"]["dir"], "dir" in _san["b"], _san["c"]),
+      (2, "Нани Морети", False, {"dir": "Ебс Бърнау", "cast": "български дублаж: Весела Манолова"}))
+
+print("festivals: It's Alive! — a curated year and original title keep TMDB off the remakes")
+_h = TMDB.tmdb_hints()
+check("hint for 'Нещото' (Дом на киното: САЩ, 1982, Джон Карпентър)",
+      _h.get("it-s-alive-horar-film-fest-chast-iv-neshtoto"),
+      {"original": "The Thing", "year": 1982, "director": "Джон Карпентър"})
+check("hint for 'Плетеният човек' (Великобритания, 1973, Робин Харди)",
+      (_h.get("it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek") or {}).get("original"), "The Wicker Man")
+check("a 2026 title gets its year only (no original title the venue does not print)",
+      _h.get("it-s-alive-horar-film-fest-chast-iv-koloniya"), {"original": None, "year": 2026, "director": "Йон Сан-хо"})
+check("hints never change film identity: the alias resolves to the same film",
+      FID.FilmIndex([{"id": "it-s-alive-horar-film-fest-chast-iv-neshtoto",
+                      "bg": "It’s Alive! Хорър Филм Фест Част IV: Нещото"}]).resolve(
+          "It’s Alive! Хорър Филм Фест Част IV: Нещото", "dom-kino")[0],
+      "it-s-alive-horar-film-fest-chast-iv-neshtoto")
+_REMAKES = {"The Thing": [{"id": 60935, "title": "The Thing", "original_title": "The Thing", "release_date": "2011-10-12",
+                           "vote_count": 3200, "poster_path": "/remake.jpg"},
+                          {"id": 1091, "title": "The Thing", "original_title": "The Thing", "release_date": "1982-06-25",
+                           "vote_count": 7900, "poster_path": "/classic.jpg"}],
+            "Колония": [{"id": 5, "title": "Колония", "original_title": "The Colony", "release_date": "2013-09-20",
+                         "vote_count": 900, "poster_path": "/c.jpg"}]}
+
+
+def _tmdb_run(films, results):
+    """fetch_tmdb.main() on a FILMS stub with a mocked API; returns (queries, tmdb_films.json)."""
+    seen = []
+
+    def api(path, params):
+        if path == "search/movie":
+            seen.append((params.get("query"), params.get("year"), params.get("language")))
+            return {"results": results(params)}
+        return {}
+    o = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT)
+    with _tmp.TemporaryDirectory() as td:
+        td = _pl.Path(td)
+        (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
+                                       + ";\nconst LINKS=[];\n/* SOFIA-DATA-END */", encoding="utf-8")
+        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = api, "t", td / "index.html", td / "t.json", td / "l.json"
+        try:
+            TMDB.main()
+            out = _json.loads((td / "t.json").read_text(encoding="utf-8")) if (td / "t.json").exists() else {}
+        finally:
+            TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = o
+    return seen, out
+
+
+_thing = [{"id": "it-s-alive-horar-film-fest-chast-iv-neshtoto", "bg": "It’s Alive! Хорър Филм Фест Част IV: Нещото", "en": ""}]
+_q, _o = _tmdb_run(_thing, lambda prm: _REMAKES.get(prm.get("query"), []))
+check("It's Alive! 'Нещото' searches 'The Thing' with the year 1982", _q[:1], [("The Thing", 1982, None)])
+check("... and gets The Thing (1982), not the 2011 film",
+      (_o.get(_thing[0]["id"], {}).get("tmdb_id"), _o.get(_thing[0]["id"], {}).get("tmdb_year")), (1091, "1982"))
+_q, _o = _tmdb_run(_thing, lambda prm: _REMAKES["The Thing"][:1])
+check("only the remake on TMDB -> no match (the curated year rejects it)",
+      _o.get(_thing[0]["id"], {}).get("matched"), False)
+_col = [{"id": "it-s-alive-horar-film-fest-chast-iv-koloniya", "bg": "It’s Alive! Хорър Филм Фест Част IV: Колония", "en": ""}]
+_q, _o = _tmdb_run(_col, lambda prm: _REMAKES.get(prm.get("query"), []))
+check("a 2026 'Колония' searches its Bulgarian title and rejects the 2013 'Колония'",
+      (_q[:1], _o.get(_col[0]["id"], {}).get("matched")), ([("Колония", None, "bg")], False))
+
+print("festivals: identity and minting")
+_fcat = [{"id": "sinelibri-2026-pepel", "bg": "СИНЕЛИБРИ 2026 – ПЕПЕЛ", "source": "vlaikova"},
+         {"id": "sinelibri-chernoto-topche", "bg": "Синелибри: Черното топче", "source": "cc-sofia", "runtime": 154},
+         {"id": "sinelibri-2026-embargo", "bg": "СИНЕЛИБРИ 2026 – ЕМБАРГО | представяне на творчеството на  Жозе Сарамаго",
+          "source": "vlaikova"},
+         {"id": "kukla-seed", "bg": "Кукла", "year": 2015, "runtime": 95}]
+_fidx = FID.FilmIndex(_fcat, {"sinelibri-2026-pepel", "sinelibri-chernoto-topche", "sinelibri-2026-embargo"}, aliases={})
+_taken, _mints = {f["id"] for f in _fcat}, []
+
+
+def _mint(title, venue, meta):
+    rec = S.minted_film_record(title, venue, meta, _taken)
+    _fidx.add(rec, minted=True)
+    _mints.append(rec)
+    return rec["id"]
+
+
+_ffilms = {"Пепел": {"year": 2025, "runtime": 87, "original": "Popel"},
+           "Черното топче": {"year": 2026, "runtime": 155, "original": "La bola negra"},
+           "Ембарго": {"year": 2010, "runtime": 83, "original": "Embargo"},
+           "Кукла": {"year": 2026, "runtime": 162, "original": "Lalka", "country": "Полша",
+                     "genres_text": "драма", "url": "https://www.cinelibri.com/kukla/"}}
+_fslots = {"Пепел": [("vlaikova", "2026-10-20", "19:00")], "Черното топче": [("cc-sofia", "2026-11-04", "19:00")],
+           "Ембарго": [("vlaikova", "2026-10-16", "19:30")], "Кукла": [("dom-kino", "2026-10-17", "16:00")]}
+_fmap, _fdec = S.resolve_festival_films(_fidx, _ffilms, _fslots,
+                                        {("vlaikova", "2026-10-16", "19:30"): {"sinelibri-2026-embargo"}}, _mint, "cinelibri")
+check("a festival title meets the cinemas' prefixed spellings ('СИНЕЛИБРИ 2026 – …', 'Синелибри: …')",
+      (_fmap["Пепел"], _fmap["Черното топче"]), ("sinelibri-2026-pepel", "sinelibri-chernoto-topche"))
+check("the SLOT rule: the venue lists 'ЕМБАРГО | представяне…' at the festival's venue, date and time",
+      (_fmap["Ембарго"], next(d["rule"] for d in _fdec if d["title"] == "Ембарго")), ("sinelibri-2026-embargo", "slot"))
+check("a slot merge is reported as unsure", next(d["unsure"] for d in _fdec if d["title"] == "Ембарго"), True)
+check("a year conflict keeps a same-titled film apart: 'Кукла' (2026) is minted, not 'Кукла' (2015)",
+      _fmap["Кукла"] != "kukla-seed", True)
+_mk = _mints[-1]
+check("minted from the festival page: title, runtime, year, original title, country, genres, source",
+      [_mk.get(k) for k in ("bg", "runtime", "year", "originalTitle", "country", "genres", "source")],
+      ["Кукла", 162, 2026, "Lalka", "Полша", ["Драма"], "dom-kino"])
+_fidx2 = FID.FilmIndex(_fcat[:3] + [{"id": "embargo-2", "bg": "Ембарго нощем", "source": "vlaikova"}],
+                       aliases={})
+_m2, _d2 = S.resolve_festival_films(_fidx2, {"Ембарго": {}}, {"Ембарго": [("vlaikova", "2026-10-16", "19:30")]},
+                                    {("vlaikova", "2026-10-16", "19:30"): {"sinelibri-2026-embargo", "embargo-2"}},
+                                    lambda t, v, m: "minted-embargo", "cinelibri")
+check("two films in the festival's slot: no slot merge, a film is minted instead",
+      _m2["Ембарго"], "minted-embargo")
+
+print("festivals: details, posters and ticket links")
+_e, _g = S.festival_details({"syn_bg": "Синопсис.", "director": "Реж", "cast": "Акт", "country": "Полша",
+                             "year": 2026, "runtime": 162, "poster": "https://www.cinelibri.com/wp-content/uploads/2026/09/kukla1.jpg",
+                             "url": "https://www.cinelibri.com/kukla/"},
+                            {"id": "x", "bg": "Кукла"}, {"cast": "Вече има"}, {}, False)
+check("details fill only empty fields (an existing film_info value stays)",
+      (_e["synBg"], _e["dir"], _e["cast"], _e["country"], _e["year"], _e["img"], sorted(_g)),
+      ("Синопсис.", "Реж", "Вече има", "Полша", 2026,
+       "https://www.cinelibri.com/wp-content/uploads/2026/09/kukla1.jpg",
+       ["country", "dir", "img", "runtime", "synBg", "year"]))
+_e, _g = S.festival_details({"syn_bg": "С.", "director": "Р", "poster": "https://www.cinelibri.com/a/x1.jpg"},
+                            {"director": "Сийд", "synBg": "Сийд синопсис"}, {}, {"poster_path": "/p.jpg", "ovBg": "TMDB"}, False)
+check("details never cover the seed record or TMDB (synopsis, director, poster)", _g, [])
+_e, _g = S.festival_details({"poster": "https://www.cinelibri.com/a/x1.jpg"}, {}, {}, {}, True)
+check("a harvested og:image keeps priority over a festival poster", _g, [])
+_rows_t = [["f1", "odeon", "2026-10-20", ["18:00"]], ["f2", "odeon", "2026-10-20", ["20:00"]],
+           ["f2", "odeon", "2026-10-27", ["20:00"]], ["f3", "dom-kino", "2026-10-21", ["19:00"]]]
+_scr = [("f1", "odeon", "2026-10-20", "https://epaygo.bg/111", "https://www.cinelibri.com/f1/"),
+        ("f2", "odeon", "2026-10-20", "https://epaygo.bg/222", "https://www.cinelibri.com/f2/"),
+        ("f2", "odeon", "2026-10-27", "https://epaygo.bg/333", "https://www.cinelibri.com/f2/"),
+        ("f3", "dom-kino", "2026-10-21", "https://epaygo.bg/444", "https://www.cinelibri.com/f3/")]
+check("ticket link: one screening -> its ticket; several dates -> the festival film page; a venue link stays",
+      S.festival_ticket_links(_scr, {("f3", "dom-kino")}, _rows_t),
+      {("f1", "odeon"): "https://epaygo.bg/111", ("f2", "odeon"): "https://www.cinelibri.com/f2/"})
+check("a festival ticket shop is an allowed link at any venue",
+      (S.allowed_festival_link("odeon", "https://epaygo.bg/1"), S.allowed_festival_link("odeon", "https://example.com/x"),
+       S.allowed_festival_link("cg-park", "https://cinegrand.bg/x")), (True, False, True))
+check("kinomania.bg images pass the poster policy (each sits in the film's own gallery)",
+      PP.reject_reason("x", "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/0123456789abcdef0123456789abcdef.jpg"), None)
+
+print("festivals: PRELIM_ROWS in the page")
+_pg = 'const VLINKS=[];\nconst PRELIM_FROM={"dom-kino":"2026-10-20"};\n/* x */'
+_pg2 = S.write_prelim_rows(_pg, [["f", "dom-kino", "2026-10-17"]])
+check("PRELIM_ROWS is inserted after PRELIM_FROM when the build lacks it",
+      _pg2.splitlines()[2], 'const PRELIM_ROWS=[["f","dom-kino","2026-10-17"]];')
+check("... and replaced in place next time",
+      S.read_prelim_rows(S.write_prelim_rows(_pg2, [])), [])
+check("read_prelim_rows", S.read_prelim_rows(_pg2), [("f", "dom-kino", "2026-10-17")])
+
+print("festivals: fetch_tmdb strips a festival prefix before searching (It's Alive!)")
+for _t, _want in [("It’s Alive! Хорър Филм Фест Част IV: Сиянието", "Сиянието"),
+                  ("It's Alive! Хорър Филм Фест Част IV: Къде ми е главата?", "Къде ми е главата?"),
+                  ("IT’S ALIVE! ХОРЪР ФИЛМ ФЕСТ ЧАСТ V – Нещото", "Нещото"),
+                  ("It’s Alive! Хорър Филм Фест Част IV: Петък 69-и", "Петък 69-и"),
+                  ("Синелибри 2026: ПЕПЕЛ", "ПЕПЕЛ"),
+                  ("Синелибри: Черното топче", "Черното топче"),
+                  ("Venom: The Last Dance", "Venom: The Last Dance"),
+                  ("It’s Alive", "It’s Alive")]:
+    check(f"strip_series_prefix({_t[:42]!r})", TMDB.strip_series_prefix(_t), _want)
+check("declutter strips it too", TMDB.declutter("It’s Alive! Хорър Филм Фест Част IV: Плетеният човек"),
+      ("Плетеният човек", None))
+_orig_api5, _q5 = TMDB.api, []
+TMDB.api = lambda path, params: (_q5.append(params.get("query")) or {"results": []})
+_orig_tok, _orig_html5, _orig_out5, _orig_lo5 = TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT
+with _tmp.TemporaryDirectory() as _td5:
+    _td5 = _pl.Path(_td5)
+    (_td5 / "index.html").write_text(
+        '/* SOFIA-DATA-START */\nconst FILMS=[{"id":"ia","bg":"It’s Alive! Хорър Филм Фест Част IV: Сиянието","en":""}];\n'
+        'const LINKS=[];\n/* SOFIA-DATA-END */', encoding="utf-8")
+    TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = "t", _td5 / "index.html", _td5 / "t.json", _td5 / "l.json"
+    try:
+        TMDB.main()
+    finally:
+        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT = _orig_api5, _orig_tok, _orig_html5, _orig_out5, _orig_lo5
+check("fetch_tmdb searches 'Сиянието', never the prefixed title", _q5[:1], ["Сиянието"])
+
+print("festivals: CineLibri's crawl delay (netfetch)")
+import netfetch as NF                                           # noqa: E402
+_clock, _slept = [100.0], []
+_orig_mono, _orig_sleep = NF.time.monotonic, NF.time.sleep
+NF.time.monotonic = lambda: _clock[0]
+NF.time.sleep = lambda s_: (_slept.append(round(s_, 1)), _clock.__setitem__(0, _clock[0] + s_))
+try:
+    _nf = NF.Fetcher()
+    _nf._polite("www.cinelibri.com"); _clock[0] += 3.0; _nf._done("www.cinelibri.com")
+    _clock[0] += 1.0; _nf._polite("www.cinelibri.com")
+    _nf._polite("www.ndk.bg"); _clock[0] += 0.5; _nf._polite("www.ndk.bg")
+finally:
+    NF.time.monotonic, NF.time.sleep = _orig_mono, _orig_sleep
+check("10 s between two cinelibri.com requests, counted from the end of the first; 1.2 s elsewhere",
+      _slept, [9.0, 0.7])
+
+print("festivals: inject_films fills empty year / runtime / country of a minted film only")
+with _tmp.TemporaryDirectory() as _td6:
+    _td6 = _pl.Path(_td6)
+    (_td6 / "index.html").write_text('const FILMS=' + _json.dumps(
+        [{"id": "seed", "bg": "Сийд", "genres": ["Драма"]},
+         {"id": "m1", "bg": "Минт", "genres": ["Драма"], "year": 2024}], ensure_ascii=False) + ';', encoding="utf-8")
+    (_td6 / "cinema_films.json").write_text(_json.dumps({"m1": {"id": "m1", "bg": "Минт", "genres": ["Драма"], "year": 2024}}), encoding="utf-8")
+    (_td6 / "film_info.json").write_text(_json.dumps({"seed": {"year": 1999, "runtime": 90},
+                                                      "m1": {"year": 2026, "runtime": 87, "country": "Чехия/Франция"}},
+                                                     ensure_ascii=False), encoding="utf-8")
+    _o = (IF.HTML, IF.CINEMA_FILMS, IF.FILM_INFO)
+    IF.HTML, IF.CINEMA_FILMS, IF.FILM_INFO = _td6 / "index.html", _td6 / "cinema_films.json", _td6 / "film_info.json"
+    try:
+        IF.main()
+    finally:
+        IF.HTML, IF.CINEMA_FILMS, IF.FILM_INFO = _o
+    _src6 = (_td6 / "index.html").read_text(encoding="utf-8")
+    _f6 = {f["id"]: f for f in _json.loads(_src6[_src6.index("["):_src6.rindex("]") + 1])}
+check("inject_films: a seed film is never filled", ("year" in _f6["seed"], "runtime" in _f6["seed"]), (False, False))
+check("inject_films: a minted film's empty runtime/country are filled; its year stays",
+      (_f6["m1"]["year"], _f6["m1"]["runtime"], _f6["m1"]["country"]), (2024, 87, "Чехия/Франция"))
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

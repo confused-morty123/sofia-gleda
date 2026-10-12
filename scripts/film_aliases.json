@@ -1,5 +1,5 @@
 {
- "_about": "Curated title variants that are verified to be ONE film. Read by scripts/film_identity.py. Each group lists every spelling seen on an official or aggregator programme; matching is direction-agnostic (any title in a group resolves to the group's film). 'film' pins the catalogue id; 'venues' (optional) limits the group to those venues. Add a group only after checking the venue's own film page (runtime, year, poster). Never add look-alikes that are different films ('Аватар' vs 'Аватар: Огън и пепел', 'Падане' vs 'Падане 2').",
+ "_about": "Curated title variants that are verified to be ONE film. Read by scripts/film_identity.py. Each group lists every spelling seen on an official or aggregator programme; matching is direction-agnostic (any title in a group resolves to the group's film). 'film' pins the catalogue id; 'venues' (optional) limits the group to those venues. Add a group only after checking the venue's own film page (runtime, year, poster). Never add look-alikes that are different films ('Аватар' vs 'Аватар: Огън и пепел', 'Падане' vs 'Падане 2'). A group may also carry 'year', 'director' and 'original' — as the venue's own film page prints them (the original title only where that year and director identify the film): fetch_tmdb.py searches TMDB with them and accepts only a film of that year (±1), so a yearless festival title (\"It’s Alive! … Нещото\") is matched to the classic, never to its remake.",
  "groups": [
   {
    "titles": [
@@ -62,6 +62,129 @@
     "vlaikova"
    ],
    "reason": "One screening event: Влайкова's post vlaikovacinema.com/screening/синелибри-2026-ембарго/ (its slug is the short title, its heading now the long one) lists a single screening, 16.10 (петък) 19:30, and the weekly grid links the long title to that same post; the short title has no screening of its own. Scoped to Влайкова. Verified 2026-10-08."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Нещото"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-neshtoto",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 1982,
+   "director": "Джон Карпентър",
+   "original": "The Thing",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-neshtoto-movie7192.html?a=) prints 'САЩ, 1982', 'Реж. Джон Карпентър', 109 min. Original title 'The Thing': that year and director. fetch_tmdb.py searches TMDB with them, so the classic is matched, not the 2011 prequel of the same name. Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Плетеният човек"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 1973,
+   "director": "Робин Харди",
+   "original": "The Wicker Man",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-pleteniyat-chovek-movie7229.html?a=) prints 'Великобритания, 1973', 'Реж. Робин Харди', 88 min. Original title 'The Wicker Man': that year and director. fetch_tmdb.py searches TMDB with them, so the classic is matched, not the 2006 remake. Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Сиянието"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-siyanieto",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 1980,
+   "director": "Стенли Кубрик",
+   "original": "The Shining",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-siyanieto-movie7253.html?a=) prints 'Великобритания, 1980', 'Реж. Стенли Кубрик', 144 min. Original title 'The Shining': that year and director. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Гневът на боговете"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Джъстин Харди",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete-movie7228.html?a=) prints 'Великобритания, 2026', 'Реж. Джъстин Харди', 94 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Историята на Бетона"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Джон Уилсън",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-istoriyata-na-betona-movie7237.html?a=) prints 'САЩ, 2026', 'Реж. Джон Уилсън', 101 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Колония"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-koloniya",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Йон Сан-хо",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-koloniya-movie7255.html?a=) prints 'Южна Корея, 2026', 'Реж. Йон Сан-хо', 122 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Обичам Париж"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-obicham-parizh",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Ники Мърфи",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-obicham-parizh-movie7227.html?a=) prints 'САЩ, 2026', 'Реж. Ники Мърфи', 108 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Опасният остров"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Джейк Кун и Ноа Стратън-Туайн",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-opasniyat-ostrov-movie7252.html?a=) prints 'Великобритания, 2026', 'Реж. Джейк Кун и Ноа Стратън-Туайн', 83 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Петък 69-и"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-petak-69-i",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Алекс Монтила",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-petak-69-i-movie7254.html?a=) prints 'САЩ, 2026', 'Реж. Алекс Монтила', 93 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "titles": [
+    "It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Камп Миазма"
+   ],
+   "film": "it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2026,
+   "director": "Джейн Шьонбрун",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp-miazma-movie7191.html?a=) prints 'САЩ, 2026', 'Реж. Джейн Шьонбрун', 112 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
   }
  ]
 }

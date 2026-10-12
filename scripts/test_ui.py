@@ -1469,23 +1469,17 @@ def wave_b1(browser):
         uroci_card.click()
         page.wait_for_timeout(800)
     else:
-        # Use app's own mechanism
-        opened = page.evaluate("""() => {
-            if (window.showById && window.showById['uroci'] && window.sheetShow && window.openSheet) {
-                const html = window.sheetShow(window.showById['uroci']);
-                window.curSheet = {kind:'show', id:'uroci'};
-                window.openSheet(html, null);
-                return true;
-            }
-            return false;
+        # Not on this week's view (no performance before the week ends): open it the
+        # way a shared link does. (`showById` is a top-level const, never a window
+        # property, so the old window.showById fallback could not open it — and the
+        # closed page it then read crashed the whole suite.)
+        page.evaluate("""() => {
+            location.hash = 'show=uroci';
+            if (window.openFromHash) window.openFromHash();
         }""")
         page.wait_for_timeout(800)
-        if not opened:
+        if not page.query_selector(".sheet"):
             check("b1_uroci_quote", False, "could not open uroci sheet")
-            ctx.close()
-            # Continue to final checks
-        else:
-            pass
 
     # Read sheet text and look for „Уроци" (U+201E + Уроци + U+201C)
     sheet_text = page.evaluate("""() => {
@@ -2318,6 +2312,13 @@ else:
     print("\n=== C1-9: Clearing filters ===")
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
+    # The event rails the unfiltered page shows on this build's date: dated events
+    # expire (on 2026-10-12 none is limited-and-on or beyond this week), so
+    # "restored" means "the same rails as before filtering", not "at least one".
+    event_rails_before = page.evaluate("""() => {
+        const h2s = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
+        return h2s.filter(h => h.includes('Лимитирано') || h.includes('Скоро'));
+    }""")
 
     # Select a venue filter
     page.evaluate("""() => {
@@ -2361,8 +2362,11 @@ else:
             const h2s = Array.from(document.querySelectorAll('.rhead h2')).map(h=>h.textContent.trim());
             return h2s.filter(h => h.includes('Лимитирано') || h.includes('Скоро'));
         }""")
-        check("c1_event_rails_restored", len(event_rails_after) >= 1,
-              f"event rails after clear: {event_rails_after}")
+        if not event_rails_before:
+            skip("c1_event_rails_restored", "no limited or upcoming event rail on this build's date")
+        else:
+            check("c1_event_rails_restored", event_rails_after == event_rails_before,
+                  f"event rails after clear: {event_rails_after} (before filtering: {event_rails_before})")
     else:
         check("c1_clear_resets_venues", False, "no [data-clearf] button found")
         check("c1_clear_resets_genres", False, "skipped")
@@ -2431,8 +2435,11 @@ def wave_d1(browser):
             "dom-kino": ["domnakinoto.com"],
             "odeon": ["bnf.bg"],
             "g8": ["g8cinema.com"],
-            "casa-libri": null  // inPerson – no URL expected
+            "casa-libri": null  // no host rule: only festival rows, linking the festival's pages
         }};
+        // A festival row (wave F3) links the festival's film page or ticket shop at
+        // any venue — the same hosts verify_build.py allows (official_festivals.TICKET_HOSTS).
+        const FESTIVAL = ["cinelibri.com", "kinomania.bg", "epaygo.bg", "urboapp.com"];
         const upcomingRows = SHOWTIMES.filter(r => r[2] >= today);
         const counts = {{}};
         const violations = [];
@@ -2463,7 +2470,8 @@ def wave_d1(browser):
             // Check host allowlist
             try {{
                 const host = new URL(url).hostname;
-                if (allowed && !allowed.some(h => host === h || host.endsWith("."+h))) {{
+                if (allowed && !allowed.some(h => host === h || host.endsWith("."+h))
+                    && !FESTIVAL.some(h => host === h || host.endsWith("."+h))) {{
                     violations.push({{venueId, filmId, date, url: url.slice(0,80), reason: "wrong_host:" + host}});
                 }}
             }} catch(e) {{}}
@@ -2689,8 +2697,9 @@ def wave_d1(browser):
 
     inperson_result = page.evaluate(f"""() => {{
         const today = "{CLOCK_TODAY_ISO}";
-        // Find a film whose upcoming rows are ONLY at inPerson venues
-        const inPersonVids = Object.keys(BOOKING).filter(v => BOOKING[v].inPerson);
+        // Find a film whose upcoming rows are ONLY at inPerson venues that have a
+        // page to link (an in-person venue without a url has no time links at all)
+        const inPersonVids = Object.keys(BOOKING).filter(v => BOOKING[v].inPerson && BOOKING[v].url);
         const upcomingByFilm = {{}};
         SHOWTIMES.filter(r => r[2] >= today).forEach(r => {{
             if (!upcomingByFilm[r[0]]) upcomingByFilm[r[0]] = new Set();
@@ -2762,9 +2771,11 @@ def wave_d1(browser):
         const lumiereFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today && r[1] === "lumiere").map(r => r[0]))];
         const noVlink = lumiereFilms.filter(fid => !VLINK_MAP[fid + "|lumiere"]);
         const withVlink = lumiereFilms.filter(fid => !!VLINK_MAP[fid + "|lumiere"]);
+        // epaygo.bg, or — for a festival film shown on several dates — the
+        // festival's film page, whose buy buttons lead to each date's epaygo page
         const epayVlinkOk = withVlink.every(fid => {{
             const url = filmTixUrl(fid, "lumiere", today);
-            return url && url.includes("epaygo.bg");
+            return url && (url.includes("epaygo.bg") || ["https://www.cinelibri.com/", "https://cinelibri.com/", "https://www.kinomania.bg/", "https://kinomania.bg/"].some(p => url.startsWith(p)));
         }});
         const sampleVlinkUrls = withVlink.map(fid => filmTixUrl(fid, "lumiere", today)).slice(0,3);
         // For no-vlink films, open the sheet and check for epaygo note
@@ -6462,6 +6473,13 @@ def wave_l(browser):
                 if (typeof PRELIM_FROM === 'undefined') return {};
                 return Object.assign({}, PRELIM_FROM);
             }""")
+            # The checks below are about PRELIM_FROM alone: set the build's
+            # PRELIM_ROWS (festival rows marked one by one, wave P) aside and
+            # restore it with PRELIM_FROM for the real-data checks.
+            real_prelim_rows = page.evaluate("""() => {
+                if (typeof PRELIM_ROWS === 'undefined') return [];
+                return PRELIM_ROWS.splice(0, PRELIM_ROWS.length);
+            }""")
 
             # Inject PRELIM_FROM={cin_id: date_late} and open film sheet
             # (inject_prelim_and_open clears PRELIM_FROM first, then sets one entry)
@@ -6613,8 +6631,13 @@ def wave_l(browser):
                 Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
                 const restored = {real_prelim_json};
                 Object.assign(PRELIM_FROM, restored);
+                if (typeof PRELIM_ROWS !== 'undefined') {{
+                    PRELIM_ROWS.length = 0;
+                    {json.dumps(real_prelim_rows)}.forEach(r => PRELIM_ROWS.push(r));
+                }}
             }}""")
-            print(f"  Restored PRELIM_FROM with {len(real_prelim_from)} entries")
+            print(f"  Restored PRELIM_FROM with {len(real_prelim_from)} entries"
+                  f" and PRELIM_ROWS with {len(real_prelim_rows)}")
 
             # Find up to 3 venues from real_prelim_from that have showtimes both
             # before and on/after their threshold in this build's window.
@@ -6625,8 +6648,12 @@ def wave_l(browser):
                 const shown = upcomingRows(SHOWTIMES);
                 for (const [vid, thresh] of Object.entries(PRELIM_FROM)) {{
                     if (!CINEMAS.some(c => c.id === vid)) continue;  // theatres: L6b
+                    // a festival row marked preliminary one by one (PRELIM_ROWS)
+                    // is tagged before the threshold too: not a "before" sample
+                    const perRow = s => typeof PRELIM_ROWS !== 'undefined' &&
+                        PRELIM_ROWS.some(x => x[0] === s[0] && x[1] === s[1] && x[2] === s[2]);
                     const before = shown.find(
-                        s => s[1] === vid && s[2] >= today && s[2] < thresh);
+                        s => s[1] === vid && s[2] >= today && s[2] < thresh && !perRow(s));
                     const onOrAfter = shown.find(
                         s => s[1] === vid && s[2] >= thresh);
                     if (before && onOrAfter) {{
@@ -7245,6 +7272,172 @@ def wave_m(browser):
 
 
 # ============================================================================
+# WAVE P: festival rows marked preliminary one by one (PRELIM_ROWS, wave F3)
+# ============================================================================
+
+def wave_p(browser):
+    """
+    PRELIM_ROWS = [[filmId, venueId, date], ...] marks ONE film's listing at one
+    venue on one date preliminary although PRELIM_FROM leaves that date confirmed
+    (a festival screening the venue's own programme does not list). In the film
+    sheet, with PRELIM_FROM cleared:
+      P1  the listed (film, venue, date) row gets the tag and dashed time chips,
+          and the sheet shows the preliminary legend (BG and EN);
+      P2  the same film's other rows — another date at that venue, another venue
+          on that date — stay confirmed;
+      P3  another film's row at the same venue and date stays confirmed;
+      P4  PRELIM_ROWS = [] marks nothing;
+      P5  every real PRELIM_ROWS row of the build is marked in its film's sheet
+          (SOFIA_HTML mode; skipped when the build has none);
+      P6  no page errors.
+    """
+    wave = "P"
+    ensure_shot_dir(wave)
+
+    def open_film_sheet(page, film_id):
+        page.evaluate(f"""() => {{
+            location.hash = 'film={film_id}';
+            if (window.openFromHash) window.openFromHash();
+        }}""")
+        page.wait_for_timeout(700)
+
+    def close_sheet(page):
+        page.evaluate("""() => {
+            location.hash = '';
+            const btn = document.querySelector('.sbar [data-back]');
+            if (btn) btn.click();
+        }""")
+        page.wait_for_timeout(300)
+
+    def set_marks(page, prelim_rows, keep_prelim_from=False):
+        page.evaluate("""([rows, keep]) => {
+            if (!keep && typeof PRELIM_FROM !== 'undefined')
+                Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+            if (typeof PRELIM_ROWS !== 'undefined') {
+                PRELIM_ROWS.length = 0;
+                rows.forEach(r => PRELIM_ROWS.push(r));
+            }
+        }""", [prelim_rows, keep_prelim_from])
+
+    def row_state(page, venue_id, iso):
+        """{'prelim': bool, 'dashed': bool} for the (venue, date) row of the open
+        film sheet, or {'err': why} — a missing row fails the caller."""
+        return page.evaluate(f"""() => {{
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {{err: 'no sheet'}};
+            const want = fmtDayDow('{iso}');
+            const group = Array.from(sheet.querySelectorAll('.dgroup')).find(g => {{
+                const h = g.querySelector('.dg-h');
+                return h && h.firstChild && h.firstChild.textContent.trim() === want;
+            }});
+            if (!group) return {{err: 'no day group headed ' + want}};
+            const c = CINEMAS.find(c => c.id === '{venue_id}');
+            if (!c) return {{err: 'unknown cinema {venue_id}'}};
+            const names = [c.name, c.nameEn].filter(Boolean);
+            const rows = Array.from(group.querySelectorAll('.vrow')).filter(r => {{
+                const l = r.querySelector('.vloc');
+                return l && l.firstChild && names.includes(l.firstChild.textContent.trim());
+            }});
+            if (!rows.length) return {{err: 'no row for {venue_id} on ' + want}};
+            return {{prelim: rows.some(r => r.querySelector('.prelim-tag') !== null),
+                     dashed: rows.some(r => r.querySelector('.prelim-time') !== null),
+                     tag: (rows.map(r => r.querySelector('.prelim-tag')).find(Boolean) || {{}}).textContent || ''}};
+        }}""")
+
+    def legend(page):
+        return page.evaluate("() => !!document.querySelector('.sheet .prelim-legend')")
+
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(400)
+    pick = page.evaluate("""() => {
+        if (typeof SHOWTIMES === 'undefined' || typeof upcomingRows !== 'function') return {err: 'no SHOWTIMES'};
+        const up = upcomingRows(SHOWTIMES.slice());
+        const by = {};
+        up.forEach(r => { (by[r[0]] = by[r[0]] || []).push(r); });
+        for (const [fid, rows] of Object.entries(by)) {
+            for (const a of rows) {
+                const sameVenue = rows.find(b => b[1] === a[1] && b[2] !== a[2]);
+                const sameDay = rows.find(b => b[1] !== a[1] && b[2] === a[2]);
+                const other = up.find(b => b[0] !== fid && b[1] === a[1] && b[2] === a[2]);
+                if (sameVenue && sameDay && other)
+                    return {fid, v: a[1], d: a[2], d2: sameVenue[2], w: sameDay[1], g: other[0]};
+            }
+        }
+        return {err: 'no film with rows on two dates at one venue and at two venues on one date'};
+    }""")
+    if "err" in pick:
+        for n in ("p1_row_marked", "p1_dashed_chips", "p1_legend", "p2_other_date", "p2_other_venue",
+                  "p3_other_film", "p4_empty", "p1_en_tag"):
+            skip(n, pick["err"])
+    else:
+        print(f"  film={pick['fid']} venue={pick['v']} date={pick['d']} (other date {pick['d2']}, "
+              f"other venue {pick['w']}, other film {pick['g']})")
+        real = page.evaluate("""() => ({pf: (typeof PRELIM_FROM === 'undefined') ? {} : Object.assign({}, PRELIM_FROM),
+                                       pr: (typeof PRELIM_ROWS === 'undefined') ? null : PRELIM_ROWS.slice()})""")
+        if real["pr"] is None:
+            check("p0_prelim_rows_declared", False, "PRELIM_ROWS is not declared in this build")
+        set_marks(page, [[pick["fid"], pick["v"], pick["d"]]])
+        open_film_sheet(page, pick["fid"])
+        st = row_state(page, pick["v"], pick["d"])
+        check("p1_row_marked", st.get("prelim") is True, str(st))
+        check("p1_dashed_chips", st.get("dashed") is True, str(st))
+        check("p1_legend", legend(page), "preliminary legend under the times")
+        save_shot(page, wave, "p1_marked_row")
+        st2 = row_state(page, pick["v"], pick["d2"])
+        check("p2_other_date", st2.get("prelim") is False, f"{pick['v']} {pick['d2']}: {st2}")
+        st3 = row_state(page, pick["w"], pick["d"])
+        check("p2_other_venue", st3.get("prelim") is False, f"{pick['w']} {pick['d']}: {st3}")
+        close_sheet(page)
+        open_film_sheet(page, pick["g"])
+        st4 = row_state(page, pick["v"], pick["d"])
+        check("p3_other_film", st4.get("prelim") is False, f"{pick['g']} at {pick['v']} {pick['d']}: {st4}")
+        close_sheet(page)
+        set_marks(page, [])
+        open_film_sheet(page, pick["fid"])
+        none_marked = page.evaluate("() => !document.querySelector('.sheet .prelim-tag') && !document.querySelector('.sheet .prelim-legend')")
+        check("p4_empty", none_marked, "no tag and no legend with PRELIM_ROWS=[] and PRELIM_FROM={}")
+        close_sheet(page)
+        # restore the build's own markings for P5
+        page.evaluate("""(real) => {
+            if (typeof PRELIM_FROM !== 'undefined') { Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
+                                                      Object.assign(PRELIM_FROM, real.pf); }
+            if (typeof PRELIM_ROWS !== 'undefined' && real.pr) { PRELIM_ROWS.length = 0;
+                                                                 real.pr.forEach(r => PRELIM_ROWS.push(r)); }
+        }""", real)
+    # P5: the build's real PRELIM_ROWS
+    real_rows = page.evaluate("""() => {
+        if (typeof PRELIM_ROWS === 'undefined' || typeof upcomingRows !== 'function') return [];
+        const up = new Set(upcomingRows(SHOWTIMES.slice()).map(r => r[0] + '|' + r[1] + '|' + r[2]));
+        return PRELIM_ROWS.filter(r => up.has(r[0] + '|' + r[1] + '|' + r[2])).slice(0, 6);
+    }""")
+    if not real_rows:
+        skip("p5_real_rows_marked", "this build has no upcoming PRELIM_ROWS row")
+    else:
+        bad = []
+        for fid, v, d in real_rows:
+            close_sheet(page)
+            open_film_sheet(page, fid)
+            st = row_state(page, v, d)
+            if st.get("prelim") is not True:
+                bad.append(f"{fid}@{v} {d}: {st}")
+        check("p5_real_rows_marked", not bad, f"{len(real_rows)} real row(s) checked" + (": " + "; ".join(bad) if bad else ""))
+    check("p6_no_page_errors_bg", not errs, " | ".join(errs[:3]))
+    ctx.close()
+
+    if "err" not in pick:
+        ctx, page, errs = open_page(browser, 430, 900, lang="en", mode="cinema")
+        page.wait_for_timeout(400)
+        set_marks(page, [[pick["fid"], pick["v"], pick["d"]]])
+        open_film_sheet(page, pick["fid"])
+        st = row_state(page, pick["v"], pick["d"])
+        check("p1_en_tag", st.get("prelim") is True and st.get("tag", "").strip().lower() == "preliminary", str(st))
+        check("p1_en_legend", legend(page), "legend present in EN")
+        save_shot(page, wave, "p1_marked_row_en")
+        check("p6_no_page_errors_en", not errs, " | ".join(errs[:3]))
+        ctx.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -7258,6 +7451,7 @@ WAVES = {
     "J": wave_j,
     "L": wave_l,
     "M": wave_m,
+    "P": wave_p,
 }
 
 def main():

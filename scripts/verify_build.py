@@ -153,7 +153,22 @@ VENUE_LINK_ALLOWLIST = {
     "dom-kino":     ["domnakinoto.com"],
     "odeon":        ["bnf.bg"],
     "g8":           ["g8cinema.com"],
+    "ndk1":         ["ndk.bg"],
+    "frenski-institut": ["institutfrancais.bg"],
 }
+# A festival row (official_festivals.py) links the festival's own film page or
+# its ticket shop, at any venue: cinelibri.com and kinomania.bg, epaygo.bg (both
+# festivals) and embed.urboapp.com (CineLibri at Френски институт) — checked live
+# 2026-10-09. Same list as official_festivals.TICKET_HOSTS.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from official_festivals import TICKET_HOSTS as FESTIVAL_TICKET_HOSTS   # noqa: E402
+except BaseException:                                    # bs4 missing: same list
+    FESTIVAL_TICKET_HOSTS = ("cinelibri.com", "kinomania.bg", "epaygo.bg", "urboapp.com")
+
+
+def festival_host(host):
+    return any(host == h or host.endswith("." + h) for h in FESTIVAL_TICKET_HOSTS)
 
 def const_arr_raw(name):
     """Return the parsed array for a const, or None."""
@@ -185,7 +200,7 @@ if vlinks_data is not None:
             if "programata.bg" in host:
                 bad_programata.append(f"{fid}/{vid}")
             allowed = VENUE_LINK_ALLOWLIST.get(vid, [])
-            if allowed and not any(a in host for a in allowed):
+            if allowed and not any(a in host for a in allowed) and not festival_host(host):
                 bad_allowlist.append(f"{fid}/{vid} -> {url[:60]}")
         if bad_programata:
             fail(f"VLINKS contains {len(bad_programata)} programata.bg URL(s) — "
@@ -368,6 +383,48 @@ else:
             if _late:
                 fail(f"theatres with no official programme are not preliminary from the first day: "
                      f"{', '.join(_late)}")
+
+# ---------------------------------------- 4c2. PRELIM_ROWS — festival rows marked one by one
+# [[filmId, venueId, "YYYY-MM-DD"], …]: a festival screening the venue's own
+# programme does not list on a date it otherwise covers. Each must be a real
+# SHOWTIMES row at a cinema the app lists, or the marking points at nothing.
+_pr = re.search(r"^const PRELIM_ROWS\s*=\s*(.*?);\s*$", js, flags=re.M)
+if _pr is None:
+    note("PRELIM_ROWS is not declared — no festival row is marked preliminary on its own")
+else:
+    try:
+        _prows = json.loads(_pr.group(1))
+    except Exception:
+        _prows = None
+    if not isinstance(_prows, list):
+        fail("PRELIM_ROWS is not a JSON array of [filmId, venueId, \"YYYY-MM-DD\"]")
+    else:
+        _bad_pr = [x for x in _prows if not (isinstance(x, list) and len(x) == 3
+                                             and all(isinstance(v, str) for v in x)
+                                             and re.fullmatch(r"\d{4}-\d\d-\d\d", x[2]))]
+        if _bad_pr:
+            fail(f"{len(_bad_pr)} PRELIM_ROWS entr(ies) are not [filmId, venueId, \"YYYY-MM-DD\"], "
+                 f"e.g. {str(_bad_pr[0])[:80]}")
+        _cin = {c.get("id") for c in (data["CINEMAS"] or [])}
+        _unk = sorted({x[1] for x in _prows if isinstance(x, list) and len(x) == 3} - _cin)
+        if _unk:
+            fail(f"PRELIM_ROWS names venues the app does not list: {', '.join(_unk[:6])}")
+        _st = {(r[0], r[1], r[2]) for r in (data["SHOWTIMES"] or []) if isinstance(r, list) and len(r) > 2}
+        _missing_pr = [x for x in _prows if isinstance(x, list) and len(x) == 3 and tuple(x) not in _st]
+        if _missing_pr:
+            fail(f"{len(_missing_pr)} PRELIM_ROWS row(s) have no SHOWTIMES row, "
+                 f"e.g. {', '.join('/'.join(x) for x in _missing_pr[:3])}")
+
+# ------------------------------------------- 4c3. every cinema has a BOOKING entry
+# A venue added to CINEMAS (Френски институт, wave F3) must come with its BOOKING
+# entry, or a row there whose film has no VLINKS entry opens nothing.
+if data["CINEMAS"] and isinstance(data.get("BOOKING"), dict):
+    _no_booking = sorted(c.get("id") for c in data["CINEMAS"]
+                         if not (isinstance(data["BOOKING"].get(c.get("id")), dict)
+                                 and (data["BOOKING"][c.get("id")].get("url")
+                                      or data["BOOKING"][c.get("id")].get("inPerson"))))
+    if _no_booking:
+        fail(f"cinemas without a BOOKING entry (url or inPerson): {', '.join(_no_booking[:6])}")
 
 # ------------------------------------------------- 4d. theatre rows are well-formed
 if data["SHOWS"] and data["THEATRES"]:

@@ -17,7 +17,8 @@ So every request now goes through here:
   * separate connect and read timeouts: a slow page is worth waiting for, an
     unroutable host is not.
   * per-host politeness, so twelve cinema pages on one host do not arrive as a
-    burst that earns us a rate limit.
+    burst that earns us a rate limit — and a host's robots.txt Crawl-delay
+    (CRAWL_DELAY: cinelibri.com asks for 10 s) is respected, retries included.
   * a named exemption list for hosts with genuinely broken TLS. tickets.ndk.bg
     serves a certificate that does not cover its own name; these are public
     programme pages with no credentials and nothing to steal, so we read them
@@ -79,6 +80,15 @@ DEFAULT_READ_TIMEOUT = 45
 DEFAULT_ATTEMPTS = 4
 DEFAULT_HOST_DELAY = 1.2
 
+# Hosts whose robots.txt asks for a Crawl-delay (seconds between requests).
+# For these the gap is counted from the END of the previous request, retries
+# included, and the transport layer does not retry on its own (its 1-2 s
+# backoff would break the delay). cinelibri.com: "Crawl-delay: 10" (2026-10-09).
+CRAWL_DELAY = {
+    "www.cinelibri.com": 10.0,
+    "cinelibri.com": 10.0,
+}
+
 
 class Fetcher:
     def __init__(self, attempts=DEFAULT_ATTEMPTS, host_delay=DEFAULT_HOST_DELAY,
@@ -108,6 +118,9 @@ class Fetcher:
         adapter = HTTPAdapter(max_retries=retry, pool_connections=8, pool_maxsize=8)
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
+        for h in CRAWL_DELAY:                      # longest prefix wins in requests
+            for scheme in ("https://", "http://"):
+                self.session.mount(f"{scheme}{h}/", HTTPAdapter(max_retries=0))
 
     def budget_spent(self):
         return (self.budget_seconds is not None
@@ -117,10 +130,15 @@ class Fetcher:
     def _polite(self, host):
         last = self._last_hit.get(host)
         if last is not None:
-            wait = self.host_delay - (time.monotonic() - last)
+            wait = max(self.host_delay, CRAWL_DELAY.get(host, 0.0)) - (time.monotonic() - last)
             if wait > 0:
                 time.sleep(wait)
         self._last_hit[host] = time.monotonic()
+
+    def _done(self, host):
+        """A crawl-delay host's gap runs from the end of the previous request."""
+        if host in CRAWL_DELAY:
+            self._last_hit[host] = time.monotonic()
 
     def get(self, url, referer=None, accept=None, attempts=None, headers=None):
         """Return a Response (2xx) or None. Never raises. `headers` adds or
@@ -143,8 +161,11 @@ class Fetcher:
         for n in range(1, tries + 1):
             self._polite(host)
             try:
-                r = self.session.get(url, headers=headers, timeout=self.timeout,
-                                     verify=verify, allow_redirects=True)
+                try:
+                    r = self.session.get(url, headers=headers, timeout=self.timeout,
+                                         verify=verify, allow_redirects=True)
+                finally:
+                    self._done(host)
                 if r.status_code < 400:
                     self._record(url, host, "ok", r.status_code,
                                  time.monotonic() - started, n, None)
@@ -260,12 +281,16 @@ class Fetcher:
                                   verify=host not in TLS_EXEMPT,
                                   allow_redirects=True)
             if r.status_code == 405:
+                self._done(host)
+                self._polite(host)
                 r = self.session.get(url, timeout=self.timeout, stream=True,
                                      verify=host not in TLS_EXEMPT)
                 r.close()
             return r.status_code < 400
         except requests.exceptions.RequestException:
             return False
+        finally:
+            self._done(host)
 
     # ----------------------------------------------------------- diagnostics
     def summary(self):

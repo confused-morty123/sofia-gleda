@@ -28,6 +28,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "tmdb_films.json"
 LINKS_OUT = ROOT / "film_links_posters.json"
+# Curated per-film facts: film_aliases.json groups that carry a 'year' (and maybe
+# an 'original' title) as the venue's own film page prints them — see tmdb_hints().
+ALIASES_PATH = pathlib.Path(__file__).resolve().parent / "film_aliases.json"
 TOKEN = os.environ.get("TMDB_TOKEN", "").strip()
 # Genuine IMDb rating + vote count come from OMDb (TMDB only exposes its own
 # vote_average, a different metric we deliberately never show as "IMDb"). Keyed by
@@ -55,6 +58,14 @@ _TRAILING_YEAR_BARS_RE = re.compile(r"\s*\|\s*(\d{4})\s*\|\s*$")
 # A prefix is ALL-CAPS (possibly with digits/spaces) followed by a dash or colon.
 _FESTIVAL_PREFIX_RE = re.compile(
     r"^(?:[А-ЯA-Z][А-ЯA-Z0-9\s]{2,30})\s*(?:[-–—]|[:：])\s*", re.U)
+# Festival / series names a cinema prepends to the film's own title. They are
+# never part of the title, so they go BEFORE the first search (strip_series_prefix):
+# "It’s Alive! Хорър Филм Фест Част IV: Сиянието" (Дом на киното) is "Сиянието".
+# film_identity.strip_prefix() adds the festivals the identity rules know
+# (Синелибри, Киномания, Кинокласики, Sofia Documental…), in either case.
+_SERIES_PREFIX_RE = re.compile(
+    r"^\s*it[’'`ʼ]?\s?s\s+alive\s*!?\s*(?:хорър\s+филм\s+фест(?:ивал)?)?"
+    r"(?:\s*[-–—,]?\s*(?:част|vol\.?|volume)\s*[ivxlc\d]+)?\s*[:\-–—|]\s*", re.I)
 # Person-name prefix: 2–4 words, letters only (Latin or Cyrillic), no digits.
 # Matches "Акира Куросава", "Alejandro Jodorowsky", etc.
 # Does NOT match "2001", "Spider-Man", "Venom", "Mission", "Oasis" (single word
@@ -169,6 +180,43 @@ def pick_bg(results, bg, year):
     return best if bestscore >= 60.0 else None
 
 
+def strip_series_prefix(title):
+    """The title without a festival / series prefix: _SERIES_PREFIX_RE (It's
+    Alive!) and film_identity's festival list. A title with no such prefix is
+    returned as written."""
+    t = (title or "").strip()
+    m = _SERIES_PREFIX_RE.match(t)
+    if m and t[m.end():].strip():
+        t = t[m.end():].strip()
+    try:
+        from film_identity import strip_prefix
+        t = strip_prefix(t) or t
+    except ImportError:                            # pragma: no cover
+        pass
+    return t
+
+
+def tmdb_hints(path=None):
+    """{film id: {"original", "year", "director"}} from the film_aliases.json groups
+    that carry a year. A festival title often prints no year ("It’s Alive! Хорър
+    Филм Фест Част IV: Нещото"), and a bare Bulgarian title is shared by a classic
+    and its remake (The Thing 1982 / 2011, The Wicker Man 1973 / 2006): the year and
+    director come from the venue's own film page, the original title only where
+    they identify the film. main() searches with them and keeps only a match of
+    that year (±1)."""
+    try:
+        data = json.load(open(path or ALIASES_PATH, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for g in data.get("groups", []) if isinstance(data, dict) else []:
+        fid, yr = g.get("film"), g.get("year")
+        if fid and isinstance(yr, int) and 1890 <= yr <= 2100:
+            out[fid] = {"original": (g.get("original") or "").strip() or None, "year": yr,
+                        "director": g.get("director")}
+    return out
+
+
 def declutter(title):
     """Strip clutter from a title and return (clean_title, year_or_None).
 
@@ -188,7 +236,7 @@ def declutter(title):
     Callers must search with the FULL title first and use the decluttered form
     only as a fallback (see main()).
     """
-    t = (title or "").strip()
+    t = strip_series_prefix(title)
     extracted_year = None
 
     # 1. Festival / ALL-CAPS series prefix — strip unconditionally.
@@ -377,9 +425,16 @@ def main():
             prev = {}
 
     out = {}
+    hints = tmdb_hints()
     for i, f in enumerate(films):
         fid = f["id"]
         en, bg, year = f.get("en"), f.get("bg"), f.get("year")
+        # A curated year / original title (film_aliases.json) for a yearless title:
+        # search "The Thing" (1982), never the bare "Нещото" that is also the 2011 film.
+        hint = hints.get(fid)
+        if hint:
+            year = year or hint["year"]
+            en = en or hint["original"]
         if fid in BLOCKLIST:
             print(f"[{i+1}/{len(films)}] {fid:24s} BLOCKED (known false match — generated art kept)")
             out[fid] = {"matched": False, "en": en}
@@ -394,6 +449,9 @@ def main():
         # (confirmed via language=bg in pick_bg) so posters/ratings fill where TMDB
         # has them, without ever accepting a loose, fabricated match.
         via_bg = False
+        # A festival prefix is not part of the title: search without it from the
+        # start ("It’s Alive! Хорър Филм Фест Част IV: Сиянието" -> "Сиянието").
+        en, bg = strip_series_prefix(en) or en, strip_series_prefix(bg) or bg
         if en:
             best = search_en(en, year)
             if not best:
@@ -444,6 +502,11 @@ def main():
                     best = None
         else:
             best = None
+        if best and hint:
+            tmdb_yr_str = (best.get("release_date") or "")[:4]
+            if not tmdb_yr_str.isdigit() or abs(int(tmdb_yr_str) - hint["year"]) > 1:
+                print(f"      (curated year {hint['year']} vs TMDB {tmdb_yr_str or '?'} — rejected)")
+                best = None
         if not best:
             print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
             out[fid] = {"matched": False, "en": en}

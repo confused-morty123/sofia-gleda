@@ -9,6 +9,12 @@ changelog.
 Guiding rule (the app's hard-won lesson): a dead or stale source must NEVER
 empty a venue. Any venue we can't reach keeps its previous rows.
 
+Festival programmes (official_festivals.py: CineLibri, Kinomania) are official
+for the venues with no programme of their own (FESTIVAL_VENUES) and add
+PRELIMINARY rows at every other cinema until the venue lists the screening —
+per row (PRELIM_ROWS) on a date the venue's programme covers, by date
+(PRELIM_FROM) after it. See merge_festival_rows().
+
     python3 scripts/scrape_programs.py                 # edits index.html
     python3 scripts/scrape_programs.py --dry-run       # diff only, no write
 
@@ -30,6 +36,7 @@ from netfetch import Fetcher                    # shared hardened HTTP layer
 import film_identity as FI                      # which film does a published title mean
 import official_sources as OS                   # each cinema's own programme
 import official_theatres as OT                  # each theatre's own programme
+import official_festivals as OF                 # festival programmes (CineLibri, Kinomania)
 import show_identity as SI                      # which show does a theatre's title mean
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -47,6 +54,10 @@ THEATRE_SHOWS = ROOT / "theatre_shows.json"
 # venue's official row count, so a source that suddenly returns a handful of
 # rows (markup half-broken) stops the scrape instead of thinning the app.
 BUILD_REPORT = ROOT / "build_report.json"
+# Film details (fetch_film_info.py's sidecar): festival pages fill its empty fields.
+FILM_INFO = ROOT / "film_info.json"
+TMDB_FILMS = ROOT / "tmdb_films.json"
+FILM_LINK_POSTERS = ROOT / "film_links_posters.json"
 
 # Headers, timeouts, retries and per-host politeness live in netfetch.py, so every
 # scraper behaves the same way against the same fragile sources. The old
@@ -145,6 +156,15 @@ VENUE_LINK_ALLOWLIST = {
     "odeon":        ["bnf.bg"],
     "g8":           ["g8cinema.com"],
 }
+
+# Venues with no (film) programme of their own: the festivals' programmes are
+# their official source (owner, 2026-10-09), so festival screenings there are
+# confirmed — НДК Зала 1, Френски институт, Топлоцентрала's film screenings
+# (toplo-film; `toplo` is the theatre) and Сцена „Централни хали“.
+# Every other cinema publishes its own programme (or the app reads none of it, as
+# for Casa Libri and Cineland): a festival screening there is preliminary until
+# the venue lists it. See merge_festival_rows().
+FESTIVAL_VENUES = ("ndk1", "frenski-institut", "toplo-film", "tsentralni-hali")
 
 # Regex to extract ticket-specific deep links from venue pages.
 # vlaikova pages embed an urboapp widget; lumiere pages link to epaygo.
@@ -1074,6 +1094,274 @@ def merge_cinema_venue(venue, status, official_rows, coverage, agg_rows, agg_fet
     return finish(_day_after(ct))
 
 
+# --- festivals: their programmes as official sources (wave F3) ----------------
+# official_festivals.py reads CineLibri and Kinomania. Their screenings join the
+# cinema rows by merge_festival_rows(); their titles are resolved (or minted) by
+# resolve_festival_films(); details and posters fill film_info.json only where the
+# app has nothing (festival_details()).
+
+def allowed_festival_link(venue, url):
+    """A festival row's ticket link: the venue's own ticketing, or a festival's
+    site / ticket shop (official_festivals.TICKET_HOSTS)."""
+    h = _host(url)
+    return bool(url and url.startswith("https://") and "programata.bg" not in h
+                and (allowed_vlink(venue, url) or any(h == t or h.endswith("." + t) for t in OF.TICKET_HOSTS)))
+
+
+def titles_related(title, rec):
+    """True when a festival title and a film record's title differ only by added
+    whole words: 'Ембарго' / 'СИНЕЛИБРИ 2026 – ЕМБАРГО | представяне на
+    творчеството на Жозе Сарамаго' (Влайкова's spelling), or by script."""
+    ka = FI.key(title)
+    if not ka:
+        return False
+    for t in (rec.get("bg"), rec.get("en"), rec.get("originalTitle")):
+        kb = FI.key(t or "")
+        if kb and (kb == ka or kb.startswith(ka + " ") or ka.startswith(kb + " ")
+                   or FI.translit(kb) == FI.translit(ka)):
+            return True
+    return False
+
+
+def resolve_festival_films(index, films, slots, own_slots, mint, festival):
+    """Map each festival film shown at an app venue to a film id.
+
+    films      {title: festival film record (official_festivals)}
+    slots      {title: [(venue, date, time)]} — its screenings at app venues
+    own_slots  {(venue, date, time): {film id}} — what the venues' own programmes
+               list in that slot
+    mint       callable(title, venue, meta) -> new film id
+    Rules, in order: FilmIndex (alias, exact, original title, translit; a subtitle
+    variant when a venue's own programme has the same venue/date/time under it;
+    a one-letter spelling variant); then SLOT — a venue's own programme lists
+    exactly one film in one of the festival's slots and the two titles differ only
+    by added words; else a film is minted from the festival page. A merge is never
+    forced: a wrong merge is worse than a second card. Returns ({title: fid},
+    decisions), a decision being {festival, title, film, rule, detail, unsure};
+    every rule but an exact match or a curated alias, and a match whose runtime
+    is more than 10 minutes off, is marked unsure for the run report."""
+    out, decisions = {}, []
+    for title in sorted(slots, key=lambda t: (-len(slots[t]), t)):
+        f = films.get(title) or {}
+        meta = {k: v for k, v in (("year", f.get("year")), ("runtime", f.get("runtime")),
+                                  ("original_title", f.get("original"))) if v}
+        sl = slots[title]
+        n_log = len(index.log)
+        fid, rule = index.resolve(title, sl[0][0], meta,
+                                  lambda c, sl=sl: any(c in own_slots.get(s, ()) for s in sl))
+        detail = index.log[-1]["detail"] if len(index.log) > n_log else ""
+        unsure = bool(fid) and rule not in ("exact", "alias")   # an alias is a human's decision
+        if fid:
+            fr, rr = index.film_runtime(fid), _pos_int(f.get("runtime"))
+            if fr and rr and abs(fr - rr) > 10:
+                unsure, detail = True, (detail + "; " if detail else "") + f"runtime {rr} vs {fr} min"
+        else:
+            cands = set()
+            for s in sl:
+                cands |= set(own_slots.get(s, ()))
+            near = sorted(c for c in cands if c in index.films
+                          and titles_related(title, index.films[c])
+                          and not index._veto(c, _pos_int(f.get("year")), _pos_int(f.get("runtime")), 20))
+            if len(near) == 1:
+                fid, rule, unsure = near[0], "slot", True
+                detail = (f"{title!r} ~ {index.films[fid].get('bg')!r}: the venue's own programme "
+                          f"lists it at the festival's time")
+            elif len(near) > 1:
+                detail = f"several films in the festival's slot ({', '.join(near)}) — not merged"
+        if not fid:
+            m = dict(meta)
+            if f.get("genres_text"):
+                m["genres_text"] = [f["genres_text"]]
+            for k in ("country", "url"):
+                if f.get(k):
+                    m[k] = f[k]
+            fid, rule = mint(title, sl[0][0], m), "minted"
+        out[title] = fid
+        decisions.append({"festival": festival, "title": title, "film": fid, "rule": rule,
+                          "detail": detail, "unsure": unsure})
+    return out, decisions
+
+
+def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest_rows,
+                        prev_prelim_rows, floor, end, festival_venues=FESTIVAL_VENUES):
+    """Festival screenings into the cinema rows. Pure — no network.
+
+    rows             SHOWTIMES after the cinema merge: [[fid, venue, date, [times]]]
+    prelim_from      {venue: first preliminary date} after the cinema merge
+    own              {venue: {(fid, date): {times}}} — what the venue's OWN programme
+                     lists: this run's official rows on every date (advance sales
+                     included); for a venue whose source failed, the kept rows dated
+                     before its PRELIM_FROM. Empty for a venue whose programme the
+                     app does not read (Casa Libri, Cineland).
+    fest_rows        {festival: [(fid, venue, date, time)]} — each festival's
+                     screenings at app venues this run (last run's, for a festival
+                     that could not be read: keep-previous)
+    fest_cover       {festival: (from, to)} — the festival days those rows cover
+    prev_fest_rows   {festival: [(fid, venue, date, time)]} — what each festival
+                     listed last run. Those times leave the rows first, so a
+                     screening the festival dropped goes, but never a time the
+                     venue's own programme lists. A festival absent from fest_rows
+                     (no data at all this run) keeps last run's rows untouched.
+    prev_prelim_rows last run's PRELIM_ROWS: [(fid, venue, date)]
+    Returns (rows, prelim_from, prelim_rows, info).
+
+    The rules (owner, 2026-10-09):
+      venue with its own programme (every cinema but FESTIVAL_VENUES)
+        * the venue lists the film that day at that time: nothing to add;
+        * it lists the film that day at other times only: the venue wins — the
+          festival row is dropped and logged in info["contradicted"];
+        * it does not list the film that day, on a date its programme covers
+          (before PRELIM_FROM): added, and [film, venue, date] goes into
+          PRELIM_ROWS — preliminary per row;
+        * the date is after its coverage: added, preliminary by date (PRELIM_FROM;
+          a venue with none — Casa Libri — gets PRELIM_FROM = today).
+      venue without a programme of its own (FESTIVAL_VENUES)
+        * added, confirmed. On a day a festival covers, its rows are exactly the
+          festivals' (last run's rows that day are replaced); its PRELIM_FROM is
+          the day after the last festival day covered.
+    A row marked preliminary per row last run stays marked while it stands and
+    the venue still does not list the film that day: a kept row never turns
+    confirmed. info["clash"] lists festival rows added where the venue's own
+    programme has ANOTHER film at that very venue, date and time — a likely
+    identity miss (a second card for one screening), for a human to judge."""
+    from collections import defaultdict
+    info = {k: [] for k in ("confirmed", "prelim_row", "prelim_date", "listed", "contradicted", "clash")}
+    slot_films = defaultdict(set)
+    for v, o in own.items():
+        for (fid, d), ts in o.items():
+            for t in ts:
+                slot_films[(v, d, t)].add(fid)
+    cells = defaultdict(set)
+    for r in rows:
+        cells[(r[0], r[1], r[2])].update(r[3])
+    pf = dict(prelim_from)
+
+    def own_times(fid, v, d):
+        return own.get(v, {}).get((fid, d)) or set()
+
+    # 1. last run's festival rows leave first (for a festival with data this run)
+    for fest, prev in (prev_fest_rows or {}).items():
+        if fest not in fest_rows:
+            continue
+        for fid, v, d, t in prev:
+            if t not in own_times(fid, v, d) and (fid, v, d) in cells:
+                cells[(fid, v, d)].discard(t)
+    spans = [tuple(c) for c in fest_cover.values() if c and c[0] and c[1]]
+    for k in list(cells):
+        if k[1] in festival_venues and any(a <= k[2] <= b for a, b in spans):
+            del cells[k]
+    # 2. this run's festival rows
+    prelim_rows = set()
+    for fest in sorted(fest_rows):
+        for fid, v, d, t in sorted({tuple(x) for x in fest_rows[fest]}):
+            if not (floor <= d <= end):
+                continue
+            rec = [fest, fid, v, d, t]
+            if v in festival_venues:
+                cells[(fid, v, d)].add(t)
+                info["confirmed"].append(rec)
+                continue
+            listed = own_times(fid, v, d)
+            if listed:
+                info["listed" if t in listed else "contradicted"].append(rec)
+                continue
+            if not pf.get(v):
+                pf[v] = floor                     # the app reads no programme of this venue
+            cells[(fid, v, d)].add(t)
+            others = sorted(slot_films.get((v, d, t), set()) - {fid})
+            if others:
+                info["clash"].append(rec + [others])
+            if d < pf[v]:
+                prelim_rows.add((fid, v, d))
+                info["prelim_row"].append(rec)
+            else:
+                info["prelim_date"].append(rec)
+    # 3. a row marked preliminary per row last run stays marked while it stands
+    for fid, v, d in prev_prelim_rows or ():
+        if (cells.get((fid, v, d)) and v not in festival_venues and not own_times(fid, v, d)
+                and pf.get(v) and d < pf[v] and floor <= d <= end):
+            prelim_rows.add((fid, v, d))
+    last = max((b for _a, b in spans), default=None)
+    if last:
+        for v in festival_venues:
+            pf[v] = max(_day_after(last), floor)
+    out = [[fid, v, d, sorted(ts)] for (fid, v, d), ts in cells.items() if ts]
+    out.sort(key=lambda r: (r[1], r[2], r[0]))
+    return out, pf, sorted([list(x) for x in prelim_rows]), info
+
+
+def festival_ticket_links(screens, fresh, rows):
+    """{(fid, venue): url} for festival rows. screens: [(fid, venue, date, ticket,
+    film page)] of the festival rows shown; fresh: the (fid, venue) pairs the
+    venue's own programme linked this run — those keep the venue's link; rows: the
+    final SHOWTIMES. VLINKS holds ONE link per film and venue, used for every date,
+    so a screening's own ticket page is used only when that film has exactly one
+    screening at the venue; otherwise the festival's film page, which lists every
+    date with its own buy button (a single ticket page would sell the wrong date)."""
+    from collections import defaultdict
+    slots = defaultdict(set)
+    for r in rows:
+        for t in r[3]:
+            slots[(r[0], r[1])].add((r[2], t))
+    by = defaultdict(lambda: {"tickets": set(), "pages": set()})
+    for fid, v, d, ticket, page in screens:
+        b = by[(fid, v)]
+        if ticket and allowed_festival_link(v, ticket):
+            b["tickets"].add(ticket)
+        if page and allowed_festival_link(v, page):
+            b["pages"].add(page)
+    out = {}
+    for k, b in by.items():
+        if k in fresh:
+            continue
+        if len(slots.get(k, ())) == 1 and len(b["tickets"]) == 1:
+            out[k] = next(iter(b["tickets"]))
+        elif b["pages"]:
+            out[k] = sorted(b["pages"])[0]
+    return out
+
+
+def festival_details(film, rec, fi, tmdb, has_link_poster):
+    """film_info.json fields from a festival's film page, ONLY where the app has
+    nothing: never over the film's own record (seed or minted), an existing
+    film_info value, or TMDB's (ovBg, dir, cast, a poster); a poster also yields to
+    an og:image already harvested (film_links_posters.json). Returns (entry, the
+    fields gained); `fsrc` records the festival page a gained field came from."""
+    entry, gained = dict(fi or {}), []
+    rec, tm = rec or {}, tmdb or {}
+
+    def put(field, value, *better):
+        if value and not entry.get(field) and not any(better):
+            entry[field] = value
+            gained.append(field)
+
+    put("synBg", film.get("syn_bg"), rec.get("synBg"), tm.get("ovBg"))
+    put("synEn", film.get("syn_en"), rec.get("synEn"), tm.get("ov"))
+    put("dir", film.get("director"), rec.get("director"), tm.get("dir"))
+    put("cast", film.get("cast"), rec.get("cast"), tm.get("cast"))
+    put("country", film.get("country"), rec.get("country"))
+    put("year", _pos_int(film.get("year")), rec.get("year"))
+    put("runtime", _pos_int(film.get("runtime")), rec.get("runtime"))
+    if film.get("genres_text") and not rec.get("genres"):
+        try:
+            from fetch_film_info import map_genres
+            put("genres", map_genres(film["genres_text"]))
+        except Exception:
+            pass
+    poster = film.get("poster")
+    if poster:
+        try:
+            from posterpolicy import reject_reason
+            if reject_reason("", poster):
+                poster = None
+        except ImportError:
+            pass
+    put("img", poster, tm.get("poster_path"), has_link_poster)
+    if gained:
+        entry["fsrc"] = film.get("url")
+    return entry, gained
+
+
 # --- theatres: the same rule, theatre by theatre -----------------------------
 # official_theatres.py reads each theatre's own programme; theatre.art.bg is the
 # aggregator. Its rows are attributed to a theatre ONLY by the theatre id in the
@@ -1496,10 +1784,62 @@ def read_prelim_from(page):
         return {}
 
 
+def write_prelim_rows(page, prelim_rows):
+    """Replace `const PRELIM_ROWS=[…];` in the SOFIA-DATA block, or insert it on the
+    line after `const PRELIM_FROM=…;` when the build does not declare it yet."""
+    lit = json.dumps(sorted(prelim_rows), ensure_ascii=False, separators=(",", ":"))
+    m = re.search(r"^const PRELIM_ROWS\s*=\s*\[[^\n]*?\];[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const PRELIM_ROWS={lit};" + page[m.end():]
+    pf = re.search(r"^const PRELIM_FROM\s*=[^\n]*;[ \t]*$", page, re.M)
+    if not pf:
+        raise KeyError("PRELIM_FROM")
+    return page[:pf.end()] + f"\nconst PRELIM_ROWS={lit};" + page[pf.end():]
+
+
+def read_prelim_rows(page):
+    """[(fid, venue, date)] the page marks preliminary per row ([] when undeclared)."""
+    m = re.search(r"^const PRELIM_ROWS\s*=\s*(\[[^\n]*?\]);[ \t]*$", page, re.M)
+    if not m:
+        return []
+    try:
+        v = json.loads(m.group(1))
+    except ValueError:
+        return []
+    return [tuple(x) for x in v if isinstance(x, list) and len(x) == 3] if isinstance(v, list) else []
+
+
 def previous_official_stats():
     try:
         rep = json.loads(BUILD_REPORT.read_text(encoding="utf-8"))
         return rep.get("official") or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def festival_rows_out(rows):
+    """Festival rows as build_report.json keeps them: one "fid|venue|date|time"
+    string per row (a list per row would cost six lines each at indent=2)."""
+    return ["|".join(r) for r in sorted(set(map(tuple, rows)))]
+
+
+def festival_rows_in(rows):
+    """Back from festival_rows_out (a [fid, venue, date, time] list is read too)."""
+    out = []
+    for r in rows or []:
+        x = r.split("|") if isinstance(r, str) else r
+        if isinstance(x, (list, tuple)) and len(x) == 4 and all(isinstance(v, str) for v in x):
+            out.append(tuple(x))
+    return out
+
+
+def previous_festivals():
+    """Last run's festival state (build_report.json "festivals", carried there by
+    refresh_all.py): per festival its covered days and its rows at app venues."""
+    try:
+        rep = json.loads(BUILD_REPORT.read_text(encoding="utf-8"))
+        v = rep.get("festivals") or {}
+        return v if isinstance(v, dict) else {}
     except (OSError, ValueError):
         return {}
 
@@ -1548,6 +1888,34 @@ def minted_genres(meta):
     return seen
 
 
+def minted_film_record(title, venue, meta, taken):
+    """A minimal, source-faithful film record for a title no identity rule can
+    place: the title as published, the venue, a placeholder gradient and only what
+    the source itself printed (runtime, year, original title, genres; a festival
+    page's country). Nothing is invented. `taken` (a set of ids) gets the new id."""
+    import hashlib
+    meta = meta or {}
+    base = slugify(title) or ("film-" + hashlib.md5(norm(title).encode()).hexdigest()[:8])
+    cand, i = base, 2
+    while cand in taken:
+        cand, i = f"{base}-{i}", i + 1
+    taken.add(cand)
+    rec = {"id": cand, "bg": title, "en": "", "genres": minted_genres(meta),
+           "g": grad_for(cand), "source": venue}
+    rt, yr = _pos_int(meta.get("runtime")), _pos_int(meta.get("year"))
+    if rt and 20 <= rt <= 400:
+        rec["runtime"] = rt
+    if yr and 1890 <= yr <= 2100:
+        rec["year"] = yr
+    ot = (meta.get("original_title") or "").strip()
+    if ot and FI.key(ot) != FI.key(title):
+        rec["originalTitle"] = ot
+    ct = meta.get("country")                     # a festival page prints it
+    if isinstance(ct, str) and ct.strip():
+        rec["country"] = ct.strip()
+    return rec
+
+
 def print_official_table(report):
     if not report:
         return
@@ -1559,6 +1927,27 @@ def print_official_table(report):
               f"{r['written_screenings']:>7d} {r['prelim_screenings']:>6d} "
               f"{r['discarded_aggregator']:>7d} {len(r['minted']):>6d}  {r.get('prelim_from') or '—'}"
               + (f"   ! {r['error']}" if r.get("error") and r["status"] != "none" else ""))
+
+
+def print_festival_table(report):
+    if not report:
+        return
+    print(f"\n  {'festival':10s} {'status':13s} {'covered':23s} {'films':>5s} {'minted':>6s} "
+          f"{'Sofia':>5s} {'conf':>4s} {'p-row':>5s} {'p-date':>6s} {'listed':>6s} {'contra':>6s}  unknown venues")
+    for fest, r in report.items():
+        cov = "..".join(r.get("covered") or []) or "—"
+        print(f"  {fest:10s} {r['status'] or '?':13s} {cov:23s} {r.get('films', 0):>5d} "
+              f"{len(r.get('minted') or []):>6d} {r.get('sofia_screenings', 0):>5d} "
+              f"{r.get('confirmed', 0):>4d} {r.get('prelim_row', 0):>5d} {r.get('prelim_date', 0):>6d} "
+              f"{r.get('listed', 0):>6d} {len(r.get('contradicted') or []):>6d}  "
+              + ", ".join(f"{k} ({v})" for k, v in (r.get("unknown_venues") or {}).items())
+              + (f"   ! {r['error']}" if r.get("error") else ""))
+        for c in r.get("contradicted") or []:
+            print(f"      contradicted by the venue's own programme: {c}")
+        for u in r.get("unsure") or []:
+            print(f"      unsure match: {u['title']!r} -> {u['film']} [{u['rule']}] {u['detail']}")
+        for c in r.get("clash") or []:
+            print(f"      added where the venue lists another film at that time: {c}")
 
 
 def print_venue_table(stats):
@@ -1620,6 +2009,11 @@ def main():
     ap.add_argument("--budget", type=int, default=1500,
                     help="seconds of network time before the run gives up gracefully, "
                          "so one dead host cannot stall the weekly job (default 1500)")
+    ap.add_argument("--festival-budget", type=int, default=600,
+                    help="seconds of network time for the festival programmes "
+                         "(official_festivals.py; CineLibri asks for 10 s between requests)")
+    ap.add_argument("--no-festivals", action="store_true",
+                    help="skip the festival programmes: keep last run's festival rows")
     args = ap.parse_args()
     html_path = pathlib.Path(args.html)
 
@@ -1754,26 +2148,11 @@ def main():
     minted_log = []                          # [fid, venue, title, how]
 
     def mint_film(title, venue, meta=None):
-        """A minimal, source-faithful record for a film no rule can place:
-        the official title, the venue, and only what the source itself printed
-        (runtime, year, original title, genres). Nothing is invented."""
-        import hashlib
+        """A minimal, source-faithful record for a film no rule can place
+        (minted_film_record); kept in cinema_films.json and the identity index."""
         meta = meta or {}
-        base = slugify(title) or ("film-" + hashlib.md5(norm(title).encode()).hexdigest()[:8])
-        cand, i = base, 2
-        while cand in existing_film_ids:
-            cand, i = f"{base}-{i}", i + 1
-        existing_film_ids.add(cand)
-        rec = {"id": cand, "bg": title, "en": "", "genres": minted_genres(meta),
-               "g": grad_for(cand), "source": venue}
-        rt, yr = _pos_int(meta.get("runtime")), _pos_int(meta.get("year"))
-        if rt and 20 <= rt <= 400:
-            rec["runtime"] = rt
-        if yr and 1890 <= yr <= 2100:
-            rec["year"] = yr
-        ot = (meta.get("original_title") or "").strip()
-        if ot and FI.key(ot) != FI.key(title):
-            rec["originalTitle"] = ot
+        rec = minted_film_record(title, venue, meta, existing_film_ids)
+        cand = rec["id"]
         cinema_films[cand] = rec
         index.add(rec, minted=True)
         minted_log.append([cand, venue, title, meta.get("url") or meta.get("booking")])
@@ -1908,6 +2287,8 @@ def main():
                 diff.unreachable.append(vid)
         else:
             new_showtimes += [r for r in prev_rows if floor <= r[2] <= end]
+            if old_prelim.get(vid):                # kept rows keep their marking; the
+                prelim[vid] = old_prelim[vid]      # festival merge below may reset it
             continue                               # no source at all (casa-libri, ndk1)
         rows, pf, info = merge_cinema_venue(vid, status, orows, cov, agg_rows, a["fetched"],
                                             prev_rows, old_prelim.get(vid), floor, end,
@@ -1929,6 +2310,141 @@ def main():
             "unplaced_aggregator": info["unplaced"][:12],
             "minted": sorted({m[0] for m in minted_log if m[1] == vid}),
             "error": official_errors.get(vid), "notes": (res.notes if res else [])}
+
+    # 3b) festival programmes (official_festivals.py). Official at the venues with
+    #     no programme of their own (FESTIVAL_VENUES); at every other cinema a
+    #     screening the venue does not list is shown preliminary — per row on a
+    #     date its programme covers (PRELIM_ROWS), by date after it. Last run's
+    #     festival state comes from build_report.json (refresh_all.py carries it),
+    #     so a festival whose site is down keeps its rows.
+    prev_prelim_rows = read_prelim_rows(src)
+    prev_fest = {} if args.no_festivals else previous_festivals()
+    own = {}                                       # venue -> {(fid, date): {times}}
+    for vid in cinema_ids:
+        st_ = (venue_report.get(vid) or {}).get("status")
+        o = defaultdict(set)
+        if st_ == "official":
+            for fid, d, t, _m, _t in resolved.get(vid, []):
+                o[(fid, d)].add(t)
+        elif st_ == "unreachable" and old_prelim.get(vid):
+            skip_ = set(prev_prelim_rows)
+            for r in old_showtimes:
+                if r[1] == vid and r[2] < old_prelim[vid] and (r[0], vid, r[2]) not in skip_:
+                    o[(r[0], r[2])].update(r[3])
+        if o:
+            own[vid] = o
+    own_slots = defaultdict(set)
+    for vid, o in own.items():
+        for (fid, d), ts in o.items():
+            for t in ts:
+                own_slots[(vid, d, t)].add(fid)
+    fest_session = Fetcher(budget_seconds=args.festival_budget)
+    fest_errors, fest_report, fest_rows, fest_cover = {}, {}, {}, {}
+    fest_screens, fest_films_used, fest_decisions = [], {}, []
+    for fest in ([] if args.no_festivals else OF.FESTIVALS):
+        print(f"festival {fest}")
+        prev = prev_fest.get(fest) or {}
+        prev_in = [x for x in festival_rows_in(prev.get("rows"))
+                   if floor <= x[2] <= end and x[0] in index.films]
+        res = OF.read_festival(fest, fest_session, floor, end, fest_errors)
+        rep = {"status": None, "source": (res or {}).get("source"), "error": fest_errors.get(fest),
+               "notes": (res or {}).get("notes", []), "films": 0, "sofia_screenings": 0,
+               "unknown_venues": (res or {}).get("unknown_venues", {}),
+               "outside_sofia": (res or {}).get("outside_sofia", {})}
+        rows_f = None
+        if res is not None:
+            films = {f["title_bg"]: f for f in res["films"] if f.get("title_bg")}
+            slots = defaultdict(list)
+            for title, d, t, vname, _ticket in res["screenings"]:
+                kind, vid = OF.venue_id(fest, vname)
+                if kind == "app" and vid in cinema_ids:
+                    slots[title].append((vid, d, t))
+                elif kind == "app":
+                    rep["unknown_venues"][f"{vname} ({vid} is not in CINEMAS)"] = \
+                        rep["unknown_venues"].get(f"{vname} ({vid} is not in CINEMAS)", 0) + 1
+            n_now = sum(len(v) for v in slots.values())
+            why = None
+            if prev_in and not n_now:
+                why = f"0 screenings at app venues now vs {len(prev_in)} last run"
+            elif len(prev_in) >= 20 and n_now < 0.25 * len(prev_in):
+                why = f"{n_now} screenings at app venues now vs {len(prev_in)} last run"
+            if why:
+                rep["error"] = f"implausibly thin programme ({why}) — last run's rows kept"
+                print(f"  ! {fest}: {rep['error']}")
+            else:
+                n_mint = len(minted_log)
+                title_fid, decisions = resolve_festival_films(index, films, slots, own_slots,
+                                                              mint_film, fest)
+                fest_decisions += decisions
+                rows_f = []
+                for title, d, t, vname, ticket in res["screenings"]:
+                    kind, vid = OF.venue_id(fest, vname)
+                    if kind != "app" or vid not in cinema_ids:
+                        continue
+                    fid = title_fid[title]
+                    rows_f.append((fid, vid, d, t))
+                    page = (films.get(title) or {}).get("url")
+                    fest_screens.append((fid, vid, d, t, ticket, page))
+                    fest_films_used.setdefault(fid, (films.get(title) or {}, fest))
+                for m in minted_log[n_mint:]:
+                    m.append(fest)                 # [fid, venue, title, url, festival]
+                rep.update(status="official", covered=[res["covered_from"], res["covered_to"]]
+                           if res["covered_from"] else None,
+                           films=len(res["films"]), sofia_screenings=len(res["screenings"]),
+                           films_at_app_venues=len(slots),
+                           matched=sum(1 for x in decisions if x["rule"] != "minted"),
+                           minted=sorted({x["film"] for x in decisions if x["rule"] == "minted"}))
+                fest_rows[fest] = rows_f
+                fest_cover[fest] = tuple(rep["covered"]) if rep["covered"] else None
+        if rows_f is None:
+            if prev.get("rows") is not None:
+                rep.update(status="kept-previous", covered=prev.get("covered"))
+                fest_rows[fest] = prev_in
+                fest_cover[fest] = tuple(prev["covered"]) if prev.get("covered") else None
+                print(f"  ! {fest}: {fest_errors.get(fest) or rep['error']} — last run's rows kept")
+            else:
+                rep["status"] = "unreachable"
+                print(f"  ! {fest}: {fest_errors.get(fest)} — nothing to keep; earlier rows left as they are")
+        fest_report[fest] = rep
+    new_showtimes, prelim, prelim_rows, fest_info = merge_festival_rows(
+        new_showtimes, prelim, own, fest_rows, fest_cover,
+        {f: festival_rows_in(p.get("rows")) for f, p in prev_fest.items()},
+        prev_prelim_rows, floor, end)
+    shown = {tuple(x[1:]) for k_ in ("confirmed", "prelim_row", "prelim_date") for x in fest_info[k_]}
+    shown_screens = [(fid, v, d, tk, pg) for fid, v, d, t, tk, pg in fest_screens if (fid, v, d, t) in shown]
+    for k, url in festival_ticket_links(shown_screens, fresh_vlinks, new_showtimes).items():
+        vlinks[k] = url                            # festival pages never go into LINKS:
+                                                   # fetch_tmdb fetches LINKS pages
+    for fest, rep in fest_report.items():
+        for key_ in ("confirmed", "prelim_row", "prelim_date", "listed"):
+            rep[key_] = sum(1 for x in fest_info[key_] if x[0] == fest)
+        rep["contradicted"] = [x[1:] for x in fest_info["contradicted"] if x[0] == fest]
+        rep["clash"] = [x[1:] for x in fest_info["clash"] if x[0] == fest]
+        by_venue = defaultdict(lambda: defaultdict(int))
+        for key_ in ("confirmed", "prelim_row", "prelim_date", "listed", "contradicted"):
+            for x in fest_info[key_]:
+                if x[0] == fest:
+                    by_venue[x[2]][key_] += 1
+        rep["by_venue"] = {v: dict(c_) for v, c_ in sorted(by_venue.items())}
+        rep["rows"] = festival_rows_out(fest_rows.get(fest) or [])
+        rep["unsure"] = [x for x in fest_decisions if x["festival"] == fest and x["unsure"]]
+    fresh_fest = any(r["status"] == "official" for r in fest_report.values())
+    spans = [c for c in fest_cover.values() if c]
+    for v in FESTIVAL_VENUES:
+        if v not in cinema_ids:
+            continue
+        vrows = [r for r in new_showtimes if r[1] == v]
+        if fresh_fest:
+            seen_venues.add(v)
+        venue_report[v] = {
+            "status": "festival", "source": "festival programmes ("
+            + ", ".join(f for f, r in fest_report.items() if r["status"] != "unreachable") + ")",
+            "covered": [min(a for a, b in spans), max(b for a, b in spans)] if spans else None,
+            "days": 0, "screenings": sum(1 for x in fest_info["confirmed"] if x[2] == v),
+            "rows": len(vrows), "written_screenings": sum(len(r[3]) for r in vrows),
+            "prelim_from": prelim.get(v), "prelim_screenings": 0, "discarded_aggregator": 0,
+            "discarded_examples": [], "official_not_in_aggregator": 0, "unplaced_aggregator": [],
+            "minted": sorted({m[0] for m in minted_log if m[1] == v}), "error": None, "notes": []}
 
     # Minted films that no longer stand for anything: no showtimes this run AND
     # superseded by an alias or a catalogue film (an earlier spelling of a film
@@ -2097,10 +2613,14 @@ def main():
     #    the venue's own programme; nothing past-dated; every film/show id known;
     #    and a source that worked last run must not suddenly yield a fraction of it.
     problems = []
+    prelim_row_set = {tuple(x) for x in prelim_rows}
     for vid, res in official.items():
         cf, ct = venue_report[vid]["covered"]
         want = {(fid, d, t) for fid, d, t, _m, _t in resolved.get(vid, []) if cf <= d <= ct}
-        got = {(r[0], r[2], t) for r in new_showtimes if r[1] == vid and cf <= r[2] <= ct for t in r[3]}
+        # a festival screening marked preliminary per row (PRELIM_ROWS) is shown
+        # beside the venue's programme, never as part of it
+        got = {(r[0], r[2], t) for r in new_showtimes if r[1] == vid and cf <= r[2] <= ct
+               and (r[0], vid, r[2]) not in prelim_row_set for t in r[3]}
         if want != got:
             problems.append(f"{vid}: written rows differ from its own programme inside {cf}..{ct} "
                             f"({len(got - want)} extra, {len(want - got)} missing)")
@@ -2109,6 +2629,12 @@ def main():
             problems.append(f"{vid}: implausibly few rows from {res.source} — {why}")
     if any(r[2] < floor for r in new_showtimes):
         problems.append("a showtime before today survived the merge")
+    st_keys = {(r[0], r[1], r[2]) for r in new_showtimes}
+    lost = sorted(x for x in prelim_row_set if x not in st_keys)
+    if lost:
+        problems.append(f"PRELIM_ROWS names rows SHOWTIMES does not have: {lost[:3]}")
+    if any(x[1] in FESTIVAL_VENUES for x in prelim_row_set):
+        problems.append("a festival venue's row is marked preliminary per row")
     orphan = sorted({r[0] for r in new_showtimes} - set(index.films))
     if orphan:
         problems.append(f"showtimes for unknown film ids: {', '.join(orphan[:5])}")
@@ -2140,6 +2666,7 @@ def main():
     if any(len(r) != 5 or not re.fullmatch(r"\d\d:\d\d", r[2] or "") for r in new_performances):
         problems.append("a performance row is not [show, date, HH:MM, hall, price]")
     print_official_table(venue_report)
+    print_festival_table(fest_report)
     suspects = index.suspected_duplicates({r[0] for r in new_showtimes} | {m[0] for m in minted_log})
     show_suspects = show_index.suspected_duplicates({r[0] for r in new_performances}
                                                     | {m[0] for m in minted_show_log})
@@ -2162,6 +2689,7 @@ def main():
             print("  ✗", p_)
         CHANGES.write_text(json.dumps({"ran": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                                        "aborted": problems, "official": venue_report,
+                                       "festivals": fest_report, "prelim_rows": prelim_rows,
                                        "identity": identity_report, "network": session.summary()},
                                       ensure_ascii=False, indent=2), encoding="utf-8")
         return 3
@@ -2186,6 +2714,8 @@ def main():
             continue
         from urllib.parse import urlparse as _up2
         lhost = _up2(page_url).netloc.lstrip("www.")
+        if any(_host(page_url) == h or _host(page_url).endswith("." + h) for h in OF.TICKET_HOSTS):
+            continue  # a festival's ticket shop / film page: already the link to open
         # Only upgrade pages that are themselves on the allowlist (skip if we
         # already stored an embed.urboapp.com or epaygo.bg deep-link last run)
         if vid == "vlaikova" and "embed.urboapp.com" in lhost:
@@ -2248,13 +2778,16 @@ def main():
               ", ".join(diff.emptied))
     print_venue_table(venue_stats)
     session.print_report()
+    print("\nfestival programmes (official_festivals.py):", end="")
+    fest_session.print_report()
 
     report = {"ran": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
               "summary": diff.summary(), "added": diff.added, "removed": diff.removed,
               "changed": diff.changed, "unreachable": diff.unreachable,
               "stale": diff.stale, "emptied": diff.emptied, "venues": venue_stats,
-              "official": venue_report, "prelim_from": prelim, "identity": identity_report,
-              "network": session.summary()}
+              "official": venue_report, "prelim_from": prelim, "prelim_rows": prelim_rows,
+              "festivals": fest_report, "identity": identity_report,
+              "network": session.summary(), "network_festivals": fest_session.summary()}
     CHANGES.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if args.dry_run:
@@ -2326,6 +2859,8 @@ def main():
               "(add 'const VLINKS=[];' to src/data.html between the SOFIA-DATA markers)")
     # which listings are preliminary: per venue, every date on/after PRELIM_FROM
     out = write_prelim_from(out, prelim)
+    # festival screenings a venue's covered programme does not list: per row
+    out = write_prelim_rows(out, prelim_rows)
     stamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     out = re.sub(r'"?lastValidated"?\s*:\s*"[^"]*"', f'"lastValidated":"{stamp}"', out)
     # Advance the snapshot window's opening to the dating floor so the stored
@@ -2348,6 +2883,33 @@ def main():
     print(f"wrote {html_path.name}, {CHANGES.name}, {CINEMA_FILMS.name} "
           f"({len(cinema_films)} arthouse films) and {THEATRE_SHOWS.name} "
           f"({len(theatre_shows)} theatre shows)")
+    # Festival film pages: details and posters into film_info.json, only where the
+    # app has nothing better (festival_details); fetch_film_info.py runs next and
+    # inject_data.py applies the poster policy to every image.
+    if fest_films_used:
+        def _load(path):
+            try:
+                v = json.loads(path.read_text(encoding="utf-8"))
+                return v if isinstance(v, dict) else {}
+            except (OSError, ValueError):
+                return {}
+        film_info, tmdb, flp = _load(FILM_INFO), _load(TMDB_FILMS), _load(FILM_LINK_POSTERS)
+        gains = defaultdict(int)
+        for fid, (film, fest) in sorted(fest_films_used.items()):
+            entry, gained = festival_details(film, index.films.get(fid) or cinema_films.get(fid),
+                                             film_info.get(fid), tmdb.get(fid), bool(flp.get(fid)))
+            if gained:
+                film_info[fid] = entry
+                for g in gained:
+                    gains[g] += 1
+                    fest_report[fest].setdefault("gained", {}).setdefault(g, 0)
+                    fest_report[fest]["gained"][g] += 1
+        if gains:
+            FILM_INFO.write_text(json.dumps(film_info, ensure_ascii=False, indent=1), encoding="utf-8")
+            report["festivals"] = fest_report
+            CHANGES.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"festival details -> {FILM_INFO.name}: "
+              + (", ".join(f"{k} {v}" for k, v in sorted(gains.items())) or "nothing new"))
     # The last lines are what refresh_all.py keeps as this step's tail.
     for kind, label in (("cinema", "cinema"), ("theatre", "theatre")):
         by = defaultdict(list)
@@ -2362,6 +2924,10 @@ def main():
           f"{len(retitled)} minted show title(s) respelled; "
           f"{len(retired_films)} film(s) and {len(retired_shows)} show(s) retired; "
           f"{len(suspects)} + {len(show_suspects)} suspected duplicate(s)")
+    print("festivals: " + "; ".join(
+        f"{f} {r['status']} ({r.get('confirmed', 0)} confirmed, {r.get('prelim_row', 0)} preliminary "
+        f"per row, {r.get('prelim_date', 0)} by date, {len(r.get('contradicted') or [])} contradicted)"
+        for f, r in fest_report.items()) + f"; PRELIM_ROWS {len(prelim_rows)}")
     print("PRELIM_FROM " + json.dumps(prelim, ensure_ascii=False, sort_keys=True))
     return 0
 
