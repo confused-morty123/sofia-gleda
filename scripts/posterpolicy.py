@@ -53,6 +53,18 @@ DISTRUSTED_HOSTS = {
 OPAQUE_STEM_RE = re.compile(r"^[0-9a-f]{16,}$|^[A-Za-z0-9+/_-]{24,}$")
 WORDY_RE = re.compile(r"[A-Za-zЀ-ӿ]{4,}")
 
+# Stems that indicate site-chrome rather than production art.
+# These patterns in a URL's filename fragment mean "this is not a show poster".
+#
+# - logo-mgt / logo_small / logo.png / logo_1 etc. — venue logo, not a production image.
+# - (fb_img|screenshot)_<epoch>-thegem-blog-timeline — a screenshot or Facebook image
+#   resized by the iamstudio.bg theme to blog-card size. Legitimate resized production
+#   photos do not start with 'fb_img_' or 'screenshot_'.
+LOGO_STEM_RE = re.compile(r"\blogo[_\-]|[_\-]logo\b|^logo$"
+                           r"|(?:fb[_\-]img|screenshot)[_\-].{0,80}thegem[_\-]blog[_\-]timeline"
+                           r"|\bdefault[_\-]avatar\b|\bplaceholder\b",
+                           re.I)
+
 # A poster we have already fetched and re-hosted beside index.html. Same-origin,
 # served over the app's own HTTPS, so there is no third-party host to trust or
 # distrust and no hotlink/cert risk — the provenance was checked once, when the
@@ -152,6 +164,9 @@ def reject_reason(poster_id, url, catalogue=None):
         if not _trusted(host) and OPAQUE_STEM_RE.match(stem) and not WORDY_RE.search(stem):
             return (f"opaque filename '{stem[:24]}' on untrusted host {host} — nothing "
                     "ties this image to the title")
+        if LOGO_STEM_RE.search(stem):
+            return (f"filename '{stem[:40]}' looks like site chrome (logo / template "
+                    "image), not production art")
     if catalogue is not None:
         mirrored = catalogue.mirrors_film(poster_id)
         if mirrored:

@@ -116,6 +116,16 @@ SEED = {
     "az-koiato-te-obica": "https://artvent.bg/images/events/kCgePZt1dJkOr492HEepEzW2FLm8SnB8OqbhCMCM.png",
     "nedelya-sutrin": "https://artvent.bg/images/events/164edb9d138ada.png",
     "albion": "https://mlt.bg/img/upl/4/images/ALBION-1080x1350%281%29.jpg",
+    # Театър 199 — posters from og:image on each show's /bg/plays/ page,
+    # verified 200/image on 2026-10-12.
+    "dokato-smartta-me-razdeli": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_612/dokatoSmartta-02.jpg?f=43052",
+    "razgovori-s-mama": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_415/razgovori-1024x1024.jpg?f=81515",
+    # Театър Сатира — superchovek new poster (2026-10 relaunch, verified from
+    # https://satirata.bg/show/superchovek __NEXT_DATA__ on 2026-10-12).
+    "superchovek": "https://storage.googleapis.com/is-satira/images/000/008/011/image/10_2026_Super_Chovek_484X686mm-jpg.jpg",
+    # TBA — baldahinat correct URL (verified HTTP 200, 346 KB on 2026-10-12; the
+    # previous run stored a malformed URL missing the "/" after the domain).
+    "baldahinat": "https://www.tba.art.bg/img/photos/BIG16083050091BALDAHINAT%20preview%20poster%20557x800.jpg",
     "ariya-na-sapernicata": "https://nationaltheatre.bg/storage/shows/310b6ce43729762add40dfcb142f9b42cc5.jpg",
     "az-plashtam": "https://nationaltheatre.bg/storage/shows/2686614cf0b5ee552142e6da474008d8e6.jpg",
     "az-sam-sofia": "https://iamsofia.bg/wp-content/uploads/2025/08/IamSofia2025.webp",
@@ -531,6 +541,8 @@ def rehost(merged, net, refresh=False):
 # ------------------------------------------------------------ theatre.art.bg
 ID_RE = re.compile(r"kupi-bilet\.php\?[^\"'>]*\bid=(\d+)[^\"'>]*\btheatre=(\d+)"
                    r"(?:[^\"'>]*\bcity=(\d+))?", re.I)
+# theatre.art.bg slug-format: …/slug-title_PRODID_THEATREID_CITYID
+SLUG_ID_RE = re.compile(r"theatre\.art\.bg/[^/]+_(\d+)_(\d+)_(\d+)$", re.I)
 OG_RE = re.compile(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', re.I)
 OG_RE2 = re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', re.I)
 # Toplocentrala's performance page embeds the real, show-specific poster as an
@@ -625,7 +637,7 @@ def from_links(net, html_src, matcher, wanted, verbose=False):
                     path = m.group(1).replace("_thumb-detail", "")
                     img = "https://toplocentrala.bg/" + path.lstrip("/")
         elif "theatre.art.bg" in url:
-            got = ID_RE.search(url)
+            got = ID_RE.search(url) or SLUG_ID_RE.search(url)
             if got:
                 prod, theatre, city = got.group(1), got.group(2), got.group(3) or "20"
                 page = net.text(ART_PROD.format(prod=prod, theatre=theatre, city=city),
@@ -644,11 +656,322 @@ def from_links(net, html_src, matcher, wanted, verbose=False):
     return found
 
 
+# ------------------------------------------------ each theatre's own pages
+# Regexes used only by from_own_pages():
+LARGE750_RE  = re.compile(
+    r'<img[^>]+src=["\']'
+    r'(https://zadkanala\.bg/sites/default/files/styles/large750x/public/[^"\']+)'
+    r'["\']', re.I)
+MLT_IMG_RE   = re.compile(r'<img[^>]+src=["\']'
+                          r'(/img/upl/4/images/[^"\']+\.(?:jpe?g|png|webp))["\']', re.I)
+TBA_BIG_RE   = re.compile(r'<img[^>]+src=["\']'
+                          r'((?:https?://(?:www\.)?tba\.art\.bg)?'
+                          r'/?img/photos/BIG[^"\']+\.(?:jpe?g|png|webp))["\']', re.I)
+KUKLEN_BIG_RE = re.compile(
+    r'<img[^>]+src=["\']'
+    r'(https?://(?:www\.)?(?:theatre\.|tba\.)?art\.bg/img/photos/BIG[^"\']+\.(?:jpe?g|png|webp))["\']',
+    re.I)
+ARTVENT_RE   = re.compile(
+    r'<img[^>]+class=["\']event_main_img["\'][^>]*src=["\']'
+    r'(/images/events/[^"\']+\.(?:jpe?g|png|webp))["\']'
+    r'|'
+    r'src=["\'](/images/events/[^"\']+\.(?:jpe?g|png|webp))["\']'
+    r'[^>]*class=["\']event_main_img["\']', re.I)
+SALZAISMYAH_LD_RE = re.compile(
+    r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>'
+    r'(\{[^<]+\})'
+    r'</script>', re.I)
+NEXT_DATA_RE  = re.compile(
+    r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>'
+    r'([^<]+)'
+    r'</script>', re.I)
+NATIONAL_SLUG_RE = re.compile(
+    r'(https://(?:www\.)?nationaltheatre\.bg/bg/predstavlenie/[^/|]+)'
+    r'(?:[/|][^/\'">\s]+)?$', re.I)
+
+
+def _og_image(html):
+    """Return og:image URL if it exists and looks like a real image."""
+    m = OG_RE.search(html) or OG_RE2.search(html)
+    if not m:
+        return None
+    u = m.group(1).strip()
+    if u.startswith("//"):
+        u = "https:" + u
+    if u.startswith("https://") and re.search(r"\.(jpe?g|png|webp|avif)(?:[?#]|$)", u, re.I):
+        return u
+    return None
+
+
+def _salzaismyah_slugmap(net):
+    """Fetch stage programme pages 1–3 and return {norm_title: image_url}."""
+    slug_map = {}
+    for stage in (1, 2, 3):
+        html = net.text(f"https://www.salzaismyah.bg/site/events/{stage}", attempts=2)
+        if not html:
+            continue
+        for m in SALZAISMYAH_LD_RE.finditer(html):
+            try:
+                obj = json.loads(m.group(1))
+            except Exception:
+                continue
+            if obj.get("@type") != "Event":
+                continue
+            img  = obj.get("image", "")
+            name = obj.get("name", "")
+            if img and name:
+                slug_map[norm(name)] = img
+        # Also read <img alt="TITLE"> pairs as fallback
+        for img_m, alt_m in re.findall(
+                r'<img[^>]+src=["\']'
+                r'(https://www\.salzaismyah\.bg/uploads/events_image/[^"\']+)["\']'
+                r'[^>]*alt=["\']([^"\']*)["\']',
+                html, re.I):
+            slug_map.setdefault(norm(alt_m), img_m)
+    return slug_map
+
+
+def _satira_slugmap(net):
+    """Read satirata.bg/program and return {norm_title: slug}.
+    The /program page carries __NEXT_DATA__ with 40+ show slugs;
+    the homepage does not reliably expose this."""
+    resp = net.get("https://satirata.bg/program", attempts=2)
+    if resp is None:
+        return {}
+    try:
+        html = resp.content.decode("utf-8", errors="replace")
+    except Exception:
+        return {}
+    nd = NEXT_DATA_RE.search(html)
+    if not nd:
+        return {}
+    try:
+        data = json.loads(nd.group(1))
+    except Exception:
+        return {}
+    slug_map = {}
+    try:
+        events_list = (data["props"]["pageProps"]["prefetchedData"]
+                       ["eventsData"]["events"]["list"])
+    except (KeyError, TypeError):
+        return {}
+    for ev in events_list:
+        slug = (ev.get("settings") or {}).get("eventPage", "")
+        title = ev.get("title", "")
+        if slug and title:
+            slug_map[norm(title)] = slug.lstrip("/")
+    return slug_map
+
+
+def from_own_pages(net, html_src, matcher, wanted, verbose=False):
+    """Fetch each show's own theatre page and extract the show-specific poster.
+
+    Handles th199, national, salzaismyah (stage pages), zadkanala, mladezhki
+    (mlt.bg), kuklen (sofiapuppet.com), tba (self-signed, via netfetch),
+    iam, artvent, and satira (satirata.bg show pages).
+    """
+    body = html_src.split("/* SOFIA-DATA-START */")[1].split("/* SOFIA-DATA-END */")[0]
+    links = {}
+    try:
+        for row in (grab(body, "LINKS") or []):
+            if isinstance(row, (list, tuple)) and len(row) >= 2 and row[0]:
+                links.setdefault(row[0], row[1])
+    except Exception as e:
+        print(f"  (could not read LINKS: {e})", file=sys.stderr)
+        return {}
+
+    # ---- pre-fetch aggregated data for multi-show pages ----
+    salzaismyah_imgs = {}
+    satira_slugs     = {}
+    for sid in wanted:
+        url = links.get(sid, "")
+        if "salzaismyah.bg" in url and not salzaismyah_imgs:
+            print("  fetching salzaismyah stage programme pages …", file=sys.stderr)
+            salzaismyah_imgs = _salzaismyah_slugmap(net)
+            if verbose:
+                print(f"  salzaismyah map: {len(salzaismyah_imgs)} titles")
+            break
+    for sid in wanted:
+        url = links.get(sid, "")
+        if "epaygo.bg" in url and not satira_slugs:
+            print("  fetching satirata.bg programme for slugs …", file=sys.stderr)
+            satira_slugs = _satira_slugmap(net)
+            if verbose:
+                print(f"  satira map: {len(satira_slugs)} slugs")
+            break
+
+    found = {}
+    for sid in sorted(wanted):
+        if net.budget_spent():
+            print("  time budget reached — stopping from_own_pages", file=sys.stderr)
+            break
+        url = links.get(sid)
+        img = None
+
+        # ---------- th199 ----------
+        if url and "theatre199.org" in url:
+            # Strip any date/booking suffix
+            clean = re.sub(r"/(?:booking|tickets|\d{4}-\d\d-\d\d)[^/]*$", "", url)
+            html = net.text(clean, attempts=2)
+            if html:
+                img = _og_image(html)
+
+        # ---------- national ----------
+        elif url and "nationaltheatre.bg" in url:
+            # LINKS carry a performance date; strip to show-page URL
+            m = NATIONAL_SLUG_RE.match(url)
+            show_url = m.group(1) if m else url
+            html = net.text(show_url, attempts=2)
+            if html:
+                img = _og_image(html)
+                if not img:
+                    # nationaltheatre.bg show pages don't always set og:image;
+                    # the first /storage/shows/<hash>.jpg is the show's poster.
+                    ns_m = re.search(
+                        r'["\'/](/storage/shows/[0-9a-f]{10,}[^"\'<>\s]*\.jpe?g)',
+                        html, re.I)
+                    if ns_m:
+                        img = "https://www.nationaltheatre.bg" + ns_m.group(1)
+
+        # ---------- salzaismyah ----------
+        elif url and "salzaismyah.bg" in url:
+            # LINKS point to /site/selector/<perf-id> — not a show page.
+            # We already loaded the stage pages; match by show title.
+            if salzaismyah_imgs:
+                title_hit = None
+                for s in matcher.shows:
+                    if s["id"] == sid:
+                        title_hit = s.get("title") or s.get("titleEn")
+                        break
+                if title_hit:
+                    img = salzaismyah_imgs.get(norm(title_hit))
+                    if not img:
+                        # Try same_title looser matching
+                        for t_norm, t_img in salzaismyah_imgs.items():
+                            if same_title(title_hit, t_norm):
+                                img = t_img
+                                break
+
+        # ---------- zadkanala ----------
+        elif url and "zadkanala.bg" in url:
+            html = net.text(url, attempts=2)
+            if html:
+                m = LARGE750_RE.search(html)
+                if m:
+                    img = m.group(1)
+                    # Strip itok= query params — the image itself is fine
+                    img = img.split("?")[0]
+
+        # ---------- mladezhki (mlt.bg) ----------
+        elif url and "mlt.bg" in url:
+            resp = net.get(url, attempts=2)
+            if resp is not None:
+                html = resp.content.decode("windows-1251", errors="replace")
+                m = MLT_IMG_RE.search(html)
+                if m:
+                    img = "https://mlt.bg" + m.group(1)
+
+        # ---------- kuklen (sofiapuppet.com) ----------
+        elif url and "sofiapuppet.com" in url:
+            resp = net.get(url, attempts=2)
+            if resp is not None:
+                html = resp.content.decode("windows-1251", errors="replace")
+                m = KUKLEN_BIG_RE.search(html)
+                if m:
+                    img = m.group(1)
+                    if img.startswith("http://"):
+                        img = "https://" + img[7:]
+
+        # ---------- tba (self-signed cert, handled by netfetch TLS_EXEMPT) ----------
+        elif url and "tba.art.bg" in url:
+            resp = net.get(url, attempts=2)
+            if resp is not None:
+                try:
+                    html = resp.content.decode("windows-1251", errors="replace")
+                except Exception:
+                    html = resp.content.decode("utf-8", errors="replace")
+                m = TBA_BIG_RE.search(html)
+                if m:
+                    img = m.group(1)
+                    if not img.startswith("http"):
+                        img = "https://www.tba.art.bg/" + img.lstrip("/")
+                    if img.startswith("http://"):
+                        img = "https://" + img[7:]
+
+        # ---------- iam (iamstudio.bg) ----------
+        elif url and "iamstudio.bg" in url:
+            html = net.text(url, attempts=2)
+            if html:
+                img = _og_image(html)
+
+        # ---------- artvent ----------
+        elif url and "artvent.bg" in url:
+            html = net.text(url, attempts=2)
+            if html:
+                m = ARTVENT_RE.search(html)
+                if m:
+                    rel = m.group(1) or m.group(2)
+                    img = "https://artvent.bg" + rel
+
+        # ---------- satira (epaygo LINKS → slug from __NEXT_DATA__) ----------
+        elif url and "epaygo.bg" in url and satira_slugs:
+            # Find title for this show id
+            title_hit = None
+            for s in matcher.shows:
+                if s["id"] == sid:
+                    title_hit = s.get("title") or s.get("titleEn")
+                    break
+            if title_hit:
+                slug = satira_slugs.get(norm(title_hit))
+                if not slug:
+                    # try a looser match
+                    for t_norm, t_slug in satira_slugs.items():
+                        if same_title(title_hit, t_norm):
+                            slug = t_slug
+                            break
+                if slug:
+                    show_url = f"https://satirata.bg/{slug.lstrip('/')}"
+                    resp = net.get(show_url, attempts=2)
+                    if resp is not None:
+                        page_html = resp.content.decode("utf-8", errors="replace")
+                        # Extract poster from __NEXT_DATA__ show-page structure:
+                        # props.pageProps.prefetchedData.data.settings.meta.image.image.urls.image
+                        nd = NEXT_DATA_RE.search(page_html)
+                        _nd_blocked = False
+                        if nd:
+                            try:
+                                nd_data = json.loads(nd.group(1))
+                                img = (nd_data["props"]["pageProps"]["prefetchedData"]
+                                       ["data"]["settings"]["meta"]["image"]["image"]
+                                       ["urls"]["image"])
+                                # Verify the filename is show-specific (not a generic
+                                # premiere placeholder shared across shows)
+                                img_fname = img.rsplit("/", 1)[-1] if img else ""
+                                if img and img_fname in ("Премиера.jpeg", "Premiere.jpeg",
+                                                         "premiere.jpeg"):
+                                    # Generic premiere image — useless as a poster;
+                                    # the og:image is the same URL, so skip that too.
+                                    img = None
+                                    _nd_blocked = True
+                            except (KeyError, TypeError):
+                                img = None
+                        if not img and not _nd_blocked:
+                            # Fall back to og:image only when __NEXT_DATA__ didn't
+                            # yield a blocked result (og:image is the same placeholder)
+                            img = _og_image(page_html)
+
+        if img:
+            found[sid] = img
+            print(f"  [own]        {sid:24s} {img.rsplit('/', 1)[-1][:50]}")
+    return found
+
+
 # -------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--source", choices=["all", "programata", "artbg", "links"], default="all")
+    ap.add_argument("--source", choices=["all", "programata", "artbg", "links", "own"],
+                    default="all")
     ap.add_argument("--only", help="comma-separated show ids, for debugging one match")
     ap.add_argument("--refresh", action="store_true",
                     help="re-resolve shows that already have a poster")
@@ -690,9 +1013,15 @@ def main():
     matcher = Matcher(shows)
     found = {}
 
-    if args.source in ("all", "programata"):
-        print("\n--- programata.bg (WordPress REST) ---")
-        found.update(from_programata(net, matcher, want))
+    # Own-pages first: each theatre's own show page is the most authoritative source.
+    if args.source in ("all", "own"):
+        print(f"\n--- theatres' own show pages ({len(want)} to try) ---")
+        found.update(from_own_pages(net, src, matcher, want, args.verbose))
+
+    remaining = want - set(found)
+    if remaining and args.source in ("all", "programata"):
+        print(f"\n--- programata.bg (WordPress REST) ({len(remaining)} still missing) ---")
+        found.update(from_programata(net, matcher, remaining))
 
     remaining = want - set(found)
     if remaining and args.source in ("all", "artbg"):
