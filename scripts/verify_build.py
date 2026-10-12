@@ -23,7 +23,7 @@ Checks, cheapest first:
 
 Non-zero exit means: do not commit, keep the previous site up.
 """
-import json, os, re, subprocess, sys, pathlib, tempfile
+import datetime, json, os, re, subprocess, sys, pathlib, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
@@ -181,11 +181,21 @@ if vlinks_data is not None:
             if not isinstance(url, str):
                 fail(f"VLINKS[{fid},{vid}] url is not a string")
                 continue
-            host = _urlparse(url).netloc.lstrip("www.")
-            if "programata.bg" in host:
+            parsed = _urlparse(url)
+            host = parsed.netloc.lower()
+            if host.startswith("www."):
+                host = host[4:]
+            # Scheme check: only http(s) are safe in href sinks (CODE-12)
+            if parsed.scheme not in ("http", "https"):
+                fail(f"VLINKS[{fid},{vid}] has non-http(s) scheme: {url[:80]}")
+                continue
+            if host == "programata.bg" or host.endswith(".programata.bg"):
                 bad_programata.append(f"{fid}/{vid}")
             allowed = VENUE_LINK_ALLOWLIST.get(vid, [])
-            if allowed and not any(a in host for a in allowed):
+            # Exact match or subdomain suffix — never substring (CODE-12)
+            def _host_ok(h, allowed_list):
+                return any(h == a or h.endswith("." + a) for a in allowed_list)
+            if allowed and not _host_ok(host, allowed):
                 bad_allowlist.append(f"{fid}/{vid} -> {url[:60]}")
         if bad_programata:
             fail(f"VLINKS contains {len(bad_programata)} programata.bg URL(s) — "
@@ -306,6 +316,38 @@ if isinstance(snap, dict):
             ex = [f"{r[0]}@{r[1]} {r[2]}" for r in past_st[:3]] + [f"{p[0]} {p[1]}" for p in past_pf[:3]]
             fail(f"{len(past_st)} showtime(s) and {len(past_pf)} performance(s) are dated before "
                  f"the window opens ({w['from']}), e.g. {', '.join(ex)}")
+
+# ---------------------------------------- 4b2. freshness gate (CODE-02)
+# Fail when SNAPSHOT.generated is missing or older than 36 hours (unless
+# SOFIA_SKIP_FRESHNESS=1, which test_ui.py and dev_build.py can set so fixture
+# and offline builds are not blocked by an old seed snapshot).
+_FRESHNESS_MAX_HOURS = 36
+_skip_freshness = os.environ.get("SOFIA_SKIP_FRESHNESS") == "1"
+if not _skip_freshness:
+    _gen = (snap or {}).get("generated") if isinstance(snap, dict) else None
+    if not _gen:
+        fail("SNAPSHOT.generated is missing — the scraper has not run on this build; "
+             "set SOFIA_SKIP_FRESHNESS=1 for fixture/dev builds")
+    else:
+        try:
+            # Parse ISO 8601 with offset (e.g. "2026-10-09T06:15:00+03:00")
+            import email.utils as _eu
+            _gen_clean = _gen.replace("Z", "+00:00")
+            _gen_dt = datetime.datetime.fromisoformat(_gen_clean)
+            _now = datetime.datetime.now(tz=datetime.timezone.utc)
+            _age_h = (_now - _gen_dt.astimezone(datetime.timezone.utc)).total_seconds() / 3600
+            if _age_h > _FRESHNESS_MAX_HOURS:
+                fail(f"SNAPSHOT.generated is {_age_h:.1f} h old (limit {_FRESHNESS_MAX_HOURS} h) — "
+                     "the scraper has not run recently; set SOFIA_SKIP_FRESHNESS=1 for fixture/dev builds")
+        except Exception as _fe:
+            fail(f"SNAPSHOT.generated could not be parsed as ISO 8601: {_gen!r} ({_fe})")
+    # Fail when there are no upcoming rows (CODE-02)
+    _today_iso = datetime.date.today().isoformat()
+    _upcoming_st = [r for r in (data.get("SHOWTIMES") or []) if len(r) > 2 and r[2] >= _today_iso]
+    _upcoming_pf = [p for p in (data.get("PERFORMANCES") or []) if len(p) > 1 and p[1] >= _today_iso]
+    if not _upcoming_st and not _upcoming_pf:
+        fail("no upcoming rows (all SHOWTIMES and PERFORMANCES are in the past) — "
+             "the build would show an empty programme; set SOFIA_SKIP_FRESHNESS=1 for fixture/dev builds")
 
 # ---------------------------------------- 4c. PRELIM_FROM — which listings are preliminary
 # {venueId: "YYYY-MM-DD"}: every listing of that venue dated on/after the date is
@@ -487,6 +529,41 @@ try:
 except Exception as e:
     note(f"SHOWALIAS wiring check skipped: {e}")
 
+# ----------------------------------------- 5d. no non-http(s) URLs in data constants (CODE-12)
+# Every URL that ends up in an href or window.open must be http(s).
+# Check the inline data constants: LINKS, BOOKING, VLINKS already checked above.
+from urllib.parse import urlparse as _up2
+_bad_scheme_urls: list[str] = []
+
+def _check_url_scheme(label, url):
+    if not isinstance(url, str) or not url:
+        return
+    p = _up2(url)
+    if p.scheme and p.scheme not in ("http", "https"):
+        _bad_scheme_urls.append(f"{label}: {url[:80]}")
+
+# LINKS = [[filmId, url], ...]
+_links_m = re.search(r"^const LINKS\s*=\s*(\[.*?\]);\s*$", js, flags=re.M | re.S)
+if _links_m:
+    try:
+        for entry in json.loads(_links_m.group(1)):
+            if isinstance(entry, list) and len(entry) == 2:
+                _check_url_scheme(f"LINKS[{entry[0]}]", entry[1])
+    except Exception:
+        pass
+
+# BOOKING = {venueId: {url, tix, deep, ...}, ...}
+if isinstance(data.get("BOOKING"), dict):
+    for _vid, _bv in data["BOOKING"].items():
+        if isinstance(_bv, dict):
+            for _k in ("url", "tix", "deep"):
+                _check_url_scheme(f"BOOKING[{_vid}].{_k}", _bv.get(_k))
+
+if _bad_scheme_urls:
+    fail(f"{len(_bad_scheme_urls)} non-http(s) URL(s) in data constants (CODE-12 — "
+         "these reach href/window.open without scheme filtering): "
+         + "; ".join(_bad_scheme_urls[:5]))
+
 # ----------------------------------------------------- 6. a real click, live
 def smoke():
     try:
@@ -494,53 +571,73 @@ def smoke():
     except ImportError:
         note("Playwright not installed — skipped the live click test")
         return
+    # Only pre-navigation failures (binary missing, launch error) are allowed to
+    # be notes.  Everything that happens after page.goto is a hard failure so a
+    # broken page can never pass the gate (CODE-04).
+    pw_ctx = None
     try:
-        with sync_playwright() as pw:
-            b = pw.chromium.launch()
-            for tz in ("Europe/Sofia", "UTC"):
-                ctx = b.new_context(viewport={"width": 430, "height": 900},
-                                    timezone_id=tz, locale="bg-BG")
-                page = ctx.new_page()
-                errs = []
-                page.on("pageerror", lambda e: errs.append(str(e)))
-                page.goto(HTML.resolve().as_uri())
-                page.wait_for_selector(".onb, .bar, #hardreset", timeout=20000)
-                if page.query_selector("#hardreset"):
-                    fail(f"[{tz}] the app booted straight into its error panel")
-                if page.query_selector("[data-onb-skip]"):
-                    page.click("[data-onb-skip]")
-                page.wait_for_selector(".bar", timeout=20000)
-                cards = page.query_selector_all("[data-film]")
-                if not cards:
-                    fail(f"[{tz}] no film cards rendered")
-                else:
-                    cards[0].click()
-                    page.wait_for_timeout(700)
-                    if not page.query_selector(".sheet"):
-                        fail(f"[{tz}] clicking a film did not open its detail sheet"
-                             + (" — " + errs[0] if errs else ""))
-                    elif not page.query_selector_all(".sheet a.time"):
-                        fail(f"[{tz}] the film sheet opened with no ticket links")
-                    else:
-                        page.go_back(); page.wait_for_timeout(400)
-                # same journey on the theatre side
-                sw = page.query_selector_all("[data-switch]")
-                if len(sw) > 1:
-                    sw[1].click(); page.wait_for_timeout(500)
-                    shows = page.query_selector_all("[data-show]")
-                    if not shows:
-                        fail(f"[{tz}] no theatre listings rendered")
-                    else:
-                        shows[0].click(); page.wait_for_timeout(700)
-                        if not page.query_selector(".sheet"):
-                            fail(f"[{tz}] clicking a performance did not open its sheet"
-                                 + (" — " + errs[0] if errs else ""))
-                if errs:
-                    fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
-                ctx.close()
-            b.close()
+        pw_ctx = sync_playwright().__enter__()
+        b = pw_ctx.chromium.launch()
     except Exception as e:
-        note(f"live click test could not run ({e.__class__.__name__}: {e})")
+        note(f"browser launch failed ({e.__class__.__name__}: {e}) — skipped the live click test")
+        if pw_ctx is not None:
+            try:
+                pw_ctx.__exit__(None, None, None)
+            except Exception:
+                pass
+        return
+    try:
+        for tz in ("Europe/Sofia", "UTC"):
+            ctx = b.new_context(viewport={"width": 430, "height": 900},
+                                timezone_id=tz, locale="bg-BG")
+            page = ctx.new_page()
+            errs = []
+            page.on("pageerror", lambda e: errs.append(str(e)))
+            # From here on: any exception is a hard fail, not a note (CODE-04)
+            page.goto(HTML.resolve().as_uri())
+            page.wait_for_selector(".onb, .bar, #hardreset", timeout=20000)
+            if page.query_selector("#hardreset"):
+                fail(f"[{tz}] the app booted straight into its error panel")
+            if page.query_selector("[data-onb-skip]"):
+                page.click("[data-onb-skip]")
+            page.wait_for_selector(".bar", timeout=20000)
+            cards = page.query_selector_all("[data-film]")
+            if not cards:
+                fail(f"[{tz}] no film cards rendered")
+            else:
+                cards[0].click()
+                page.wait_for_timeout(700)
+                if not page.query_selector(".sheet"):
+                    fail(f"[{tz}] clicking a film did not open its detail sheet"
+                         + (" — " + errs[0] if errs else ""))
+                elif not page.query_selector_all(".sheet a.time"):
+                    fail(f"[{tz}] the film sheet opened with no ticket links")
+                else:
+                    page.go_back(); page.wait_for_timeout(400)
+            # same journey on the theatre side
+            sw = page.query_selector_all("[data-switch]")
+            if len(sw) > 1:
+                sw[1].click(); page.wait_for_timeout(500)
+                shows = page.query_selector_all("[data-show]")
+                if not shows:
+                    fail(f"[{tz}] no theatre listings rendered")
+                else:
+                    shows[0].click(); page.wait_for_timeout(700)
+                    if not page.query_selector(".sheet"):
+                        fail(f"[{tz}] clicking a performance did not open its sheet"
+                             + (" — " + errs[0] if errs else ""))
+            if errs:
+                fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
+            ctx.close()
+        b.close()
+    except Exception as e:
+        # Any exception after page.goto is a hard failure (CODE-04)
+        fail(f"[live click test] {e.__class__.__name__}: {e}")
+    finally:
+        try:
+            pw_ctx.__exit__(None, None, None)
+        except Exception:
+            pass
 
 
 if os.environ.get("SOFIA_SKIP_SMOKE") != "1":

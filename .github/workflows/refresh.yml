@@ -1,6 +1,6 @@
-# Sofia Gleda — data refresh every three days.
+# Sofia Gleda — daily data refresh.
 #
-# Runs every third day (and whenever you press the manual button), scrapes the
+# Runs once a day (and whenever you press the manual button), scrapes the
 # latest programmes and posters, rebuilds index.html, and commits the result
 # back. Because GitHub Pages redeploys automatically on every push to the main
 # branch, the live site updates itself with no further action from you.
@@ -10,21 +10,22 @@
 # ratings; without it, ratings are inherited from the previous run. Everything
 # else is automatic.
 
-name: Three-day refresh
+name: Daily refresh
 
 on:
   schedule:
-    # 03:17 UTC every third day  ==  06:17 in Sofia (summer) / 05:17 (winter).
-    # "*/3" steps the day-of-month: the 1st, 4th, 7th … 31st, then resets at the
-    # month boundary, so the 31st→1st gap can be a single day — that is fine.
-    # GitHub may start scheduled runs a few minutes late under load — also fine.
-    - cron: "17 3 */3 * *"
+    # 03:17 UTC daily  ==  06:17 in Sofia (summer EEST +03:00) / 05:17 (winter EET +02:00).
+    # GitHub may start scheduled runs a few minutes late under load — that is fine.
+    - cron: "17 3 * * *"
   workflow_dispatch: {}          # adds a "Run workflow" button on the Actions tab
 
 # Allow the workflow to commit the refreshed files back to the repository.
 permissions:
   contents: write
 
+# Prevent two refreshes from running at the same time.  If a new run starts
+# while one is already in progress, the new run waits rather than cancels,
+# so no refresh is silently dropped.
 concurrency:
   group: sofia-gleda-refresh
   cancel-in-progress: false
@@ -63,6 +64,36 @@ jobs:
           DEEPL_AUTH_KEY: ${{ secrets.DEEPL_AUTH_KEY }}
         run: python3 scripts/refresh_all.py
 
+      - name: Print health report
+        # Print health.json (written by the pipeline) into the job summary so
+        # warnings and errors appear in the Actions UI, and emit ::warning:: /
+        # ::error:: annotations so GitHub highlights them on the run page.
+        if: always()
+        run: |
+          if [ ! -f health.json ]; then
+            echo "health.json not present — pipeline did not write a health report." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "## Health report" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat health.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          # Emit annotations for each entry
+          python3 - <<'PYEOF'
+          import json, sys
+          try:
+              items = json.load(open("health.json"))
+          except Exception as e:
+              print(f"::warning::health.json could not be parsed: {e}", flush=True)
+              sys.exit(0)
+          for item in items:
+              level = str(item.get("level", "warning")).lower()
+              venue = item.get("venue", "")
+              msg = item.get("message", "")
+              annotation = f"::{level}::" + (f"[{venue}] " if venue else "") + msg
+              print(annotation, flush=True)
+          PYEOF
+
       - name: Keep the translation cache when the refresh is not published
         # A run that fails the publish gate commits nothing, but the DeepL
         # translations it already paid for are only a cache (translations.json),
@@ -90,7 +121,7 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json; do
+          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage any new or updated poster images (re-hosted from venue websites).

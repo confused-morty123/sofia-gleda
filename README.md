@@ -63,13 +63,17 @@ python3 scripts/dev_build.py        # -> index.dev.html (offline, no tokens need
 This builds with today's UI source and the listings from the last committed
 `index.html`. Never deploy `index.dev.html`.
 
-Once you are happy, build for real and run the full pipeline:
+Once you are happy, build for real with live data and run the gate:
 
 ```bash
-python3 scripts/build_index.py
-TMDB_TOKEN=your_token OMDB_TOKEN=your_key python3 scripts/refresh_all.py
+python3 scripts/dev_build.py --from HEAD --out index.html
+python3 scripts/verify_build.py              # checks index.html (SOFIA_HTML=<file> for another file)
 # must end "all checks passed — safe to publish"
 ```
+
+> **Note:** `scripts/build_index.py` alone produces an empty-listing page because
+> `src/data.html` no longer carries seed listings.  Always use `dev_build.py` (which
+> reads listings from the last committed `index.html` or HEAD) when working locally.
 
 `scripts/make_icons.py` regenerates the PWA icons.
 
