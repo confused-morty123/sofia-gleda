@@ -1026,8 +1026,9 @@ def main():
     remaining = want - set(found)
     if remaining and args.source in ("all", "artbg"):
         print(f"\n--- theatre.art.bg ({len(remaining)} still missing) ---")
-        win = re.search(r'"?window"?\s*:\s*\{\s*"?from"?\s*:\s*"(\d{4}-\d\d-\d\d)"', src)
-        start = dt.date.fromisoformat(win.group(1)) if win else dt.date.today()
+        # today in Sofia, the listing window's first day (listing_window.py)
+        import listing_window
+        start = dt.date.fromisoformat(listing_window.listing_window()[0])
         days = [start + dt.timedelta(days=i) for i in range(args.days)]
         found.update(from_artbg(net, matcher, remaining, days, args.verbose))
 
