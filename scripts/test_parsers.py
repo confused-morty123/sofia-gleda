@@ -1278,8 +1278,8 @@ check("a year conflict vetoes a title match (2026 remake vs 2016 film)", _R("С�
 check("same title, no year conflict -> the catalogue film", _R("Смелата Ваяна", "cc-sofia"), "vayana")
 check("subtitle variant with same venue/date/time corroboration",
       _R("Милен", "odeon", corroborate=lambda f: f == "milen-filmat"), "milen-filmat")
-# a fuzzy decision is remembered for the run (one title, one film), so every
-# negative case below gets an index of its own
+# (an index of its own per negative case is a leftover of the run-wide fuzzy
+# cache, removed 2026-10-09: see "identity: no memory across titles" below)
 check("subtitle variant without corroboration is not merged",
       _R("Милен", "odeon", corroborate=lambda f: False, index=FID.FilmIndex(_cat, _minted)), None)
 check("subtitle variant corroborated by the venue's runtime",
@@ -1291,6 +1291,343 @@ check("an alias scoped to Люмиер does not apply elsewhere",
 _dup = FID.FilmIndex(_cat + [{"id": "av", "bg": "Аватар", "source": "cc-sofia"}], _minted | {"av"}, aliases={})
 check("the unmerged look-alike is listed as a suspected duplicate",
       [(d["title"], d["film"]) for d in _dup.suspected_duplicates(["av"])], [("Аватар", "avatar-3")])
+
+# ===================================================== P1A (2026-10-09 audit)
+# CODE-07: every identity decision stands on its own evidence — no run-wide
+# memory of a fuzzy match, and the year veto applies to every rule.
+print("identity: no memory across titles, the year check always (CODE-07)")
+_av = FID.FilmIndex(_cat, _minted)                       # ONE index, as in a real run
+check("Cinema City's 'Аватар', corroborated, is 'Аватар: Огън и пепел'",
+      _R("Аватар", "cc-sofia", corroborate=lambda f: f == "avatar-3", index=_av), "avatar-3")
+check("…later in the SAME run, Одеон's 'Аватар (2009)' (year 2009, 162 min) is not",
+      _R("Аватар (2009)", "odeon", index=_av, year=2009, runtime=162), None)
+check("…nor Одеон's plain 'Аватар' with its year in the meta",
+      _R("Аватар", "odeon", index=_av, year=2009), None)
+check("…nor another venue's 'Аватар' with no evidence of its own (nothing is remembered)",
+      _R("Аватар", "arena-mega", index=_av), None)
+check("…while the corroborated venue still resolves it, every time",
+      _R("Аватар", "cc-sofia", corroborate=lambda f: f == "avatar-3", index=_av), "avatar-3")
+check("the resolver keeps no fuzzy cache at all", hasattr(_av, "_fuzzy"), False)
+_sp = FID.FilmIndex(_cat[2:3], aliases={})
+check("a one-letter spelling match is not carried to a title with another year",
+      [_R("Капитан Саблезъб и графинята на Грел", "x", index=_sp, year=2026),
+       _R("Капитан Саблезъб и графинята на Грел", "y", index=_sp, year=1999)], ["sablezab", None])
+check("a curated alias obeys the year veto (Люмиер's 'Сънища' of 2024 is not Kurosawa's 1990 film)",
+      _R("Сънища", "lumiere", year=2024), None)
+check("…and still applies with the right year, or none", (_R("Сънища", "lumiere", year=1990),
+                                                          _R("Сънища", "lumiere")),
+      ("akira-kurosava-sanishta-1990", "akira-kurosava-sanishta-1990"))
+check("…a vetoed alias is listed for a human", any(t == "Сънища" for t, _c in _idx.suspects), True)
+
+# CODE-01: the listing window rolls with the date, from one shared rule.
+print("the rolling listing window (CODE-01), the year rollover included")
+import listing_window as LW                                      # noqa: E402
+import official_sources as OS                                    # noqa: E402
+import netfetch as NF                                            # noqa: E402
+import venue_state as VS                                         # noqa: E402
+import json as _js                                               # noqa: E402
+check("today's horizon kept: 9 Oct .. 14 Dec (66 days on, 67 listing days)",
+      (LW.listing_window("2026-10-09"), len(LW.window_days("2026-10-09"))), (("2026-10-09", "2026-12-14"), 67))
+check("on 20 Dec 2026 the window runs into 2027", LW.listing_window("2026-12-20"), ("2026-12-20", "2027-02-24"))
+check("on 2 Jan 2027", LW.listing_window("2027-01-02"), ("2027-01-02", "2027-03-09"))
+_W20 = LW.window_days("2026-12-20")
+check("the window's days are consecutive across New Year",
+      _W20[_W20.index("2026-12-31"):_W20.index("2026-12-31") + 2], ["2026-12-31", "2027-01-01"])
+check("'today' is Sofia's: 21:30 UTC on 9 Oct is already 10 Oct (EEST)",
+      LW.sofia_today(dt.datetime(2026, 10, 9, 21, 30, tzinfo=dt.timezone.utc)), dt.date(2026, 10, 10))
+check("…and 22:30 UTC on 31 Dec is 1 Jan 2027 (EET)",
+      LW.sofia_today(dt.datetime(2026, 12, 31, 22, 30, tzinfo=dt.timezone.utc)), dt.date(2027, 1, 1))
+check("SNAPSHOT.generated: ISO, Sofia offset (+03:00 in October, +02:00 in December)",
+      (LW.generated_stamp(dt.datetime(2026, 10, 9, 18, 30, 5, 123, tzinfo=dt.timezone.utc)),
+       LW.generated_stamp(dt.datetime(2026, 12, 20, 4, 17, tzinfo=dt.timezone.utc))),
+      ("2026-10-09T21:30:05+03:00", "2026-12-20T06:17:00+02:00"))
+check("the EU clock rule when the tz database is missing (25 Oct 2026, 28 Mar 2027 at 01:00 UTC)",
+      [LW._eu_offset_hours(dt.datetime(*a, tzinfo=dt.timezone.utc)) for a in
+       ((2026, 10, 25, 0, 59), (2026, 10, 25, 1, 0), (2027, 3, 28, 0, 59), (2027, 3, 28, 1, 0))], [3, 2, 2, 3])
+for _today, _text, _want in [("2026-12-20", "28 декември", "2026-12-28"), ("2026-12-20", "5 януари", "2027-01-05"),
+                             ("2026-12-20", "3 февруари", "2027-02-03"), ("2027-01-02", "5 януари", "2027-01-05"),
+                             ("2027-01-02", "9 март", "2027-03-09")]:
+    check(f"a date without a year, today {_today}: {_text!r}", S.find_date(_text, LW.window_days(_today)), _want)
+check("Cine Grand labels across New Year ('чт, 31 дек' / 'пт, 1 яну', today 20 Dec)",
+      (OS._bg_day_month("чт,  31 дек, 19:00", "2026-12-20"), OS._bg_day_month("пт,  1 яну, 11:50", "2026-12-20")),
+      ("2026-12-31", "2027-01-01"))
+check("…and on 2 Jan a December label is last year's (dropped as past), a March one this year's",
+      (OS._infer_year(28, 12, "2027-01-02"), OS._infer_year(15, 3, "2027-01-02")), ("2026-12-28", "2027-03-15"))
+_offj = [("a", "2026-12-30", "20:00"), ("b", "2027-01-01", "16:00"), ("a", "2027-01-03", "18:00")]
+_rows, _pf, _ = S.merge_cinema_venue("v", "official", _offj, ("2026-12-20", "2027-01-01"),
+                                     [("c", "C", "2027-01-05", ["21:00"], None)], True, [], None,
+                                     "2026-12-20", "2027-02-24")
+check("a merge across New Year: rows in date order, coverage to 1 Jan, preliminary from 2 Jan",
+      ([r[2] for r in _rows], _pf), (["2026-12-30", "2027-01-01", "2027-01-03", "2027-01-05"], "2027-01-02"))
+_snap = ('const SNAPSHOT={"window":{"from":"2026-12-19","to":"2027-02-23"},"captured":"2026-09-15T00:00:00+03:00",'
+         '"lastValidated":"x","changelog":[{"film":"„Ф“"}]};\nconst CINEMAS=[];')
+_out = S.write_snapshot(_snap, "2026-12-20", "2027-02-24", "2026-12-20T06:17:00+02:00")
+_sj = _js.loads(_out.split("\n")[0][len("const SNAPSHOT="):-1])
+check("write_snapshot: both window ends move, generated set right after the window, the rest untouched",
+      (_sj["window"], _sj["generated"], list(_sj), _sj["changelog"], _out.split("\n")[1]),
+      ({"from": "2026-12-20", "to": "2027-02-24"}, "2026-12-20T06:17:00+02:00",
+       ["window", "generated", "captured", "lastValidated", "changelog"], [{"film": "„Ф“"}], "const CINEMAS=[];"))
+check("…a second run replaces generated in place (one key)",
+      S.write_snapshot(_out, "2026-12-21", "2027-02-25", "2026-12-21T06:17:00+02:00").count('"generated"'), 1)
+_loose = 'const SNAPSHOT={window:{from:"2026-10-08",to:"2026-12-14"},captured:"x"};'
+check("…a SNAPSHOT that is not strict JSON still gets both (regex fallback)",
+      S.write_snapshot(_loose, "2026-10-09", "2026-12-14", "G"),
+      'const SNAPSHOT={window:{from:"2026-10-09",to:"2026-12-14"},"generated":"G",captured:"x"};')
+check("harvest_cinema_posters.py no longer hard-codes the window end",
+      "2026-12-14" in (pathlib.Path(__file__).resolve().parent / "harvest_cinema_posters.py").read_text(encoding="utf-8"),
+      False)
+
+# CODE-03: netfetch's budgets are real. A fake clock and a fake transport.
+print("netfetch: real time budgets, a closed dead host, blocking recognised (CODE-03)")
+
+
+class _Clock:
+    def __init__(self):
+        self.t = 1000.0
+
+    def monotonic(self):
+        return self.t
+
+    def sleep(self, s):
+        self.t += max(0.0, s)
+
+
+class _Resp:
+    def __init__(self, status, body=b"<html>ok</html>", headers=None):
+        self.status_code, self.content = status, body
+        self.headers = {"Content-Type": "text/html; charset=utf-8", **(headers or {})}
+        self.text = body.decode("utf-8", "ignore")
+
+
+class _Transport:
+    """host -> behaviour: 'dead' (connection error), 'tarpit' (every read times
+    out after the whole timeout), an int status, or a list of statuses in turn."""
+    def __init__(self, clock, plan):
+        self.clock, self.plan, self.calls = clock, plan, []
+
+    def get(self, url, headers=None, timeout=None, verify=True, allow_redirects=True):
+        import urllib.parse as _u
+        import requests as _rq
+        host = _u.urlsplit(url).hostname
+        self.calls.append((host, url, timeout))
+        how = self.plan[host]
+        if isinstance(how, list):
+            how = how.pop(0) if len(how) > 1 else how[0]
+        if how == "dead":
+            self.clock.t += 0.2
+            raise _rq.exceptions.ConnectionError("Failed to resolve " + host)
+        if how == "tarpit":
+            self.clock.t += timeout[1]
+            raise _rq.exceptions.ReadTimeout("read timed out")
+        if how == "challenge":
+            self.clock.t += 0.3
+            return _Resp(403, b"<!DOCTYPE html><html><head><title>Just a moment...</title></head></html>")
+        self.clock.t += 0.3
+        if isinstance(how, tuple):
+            return _Resp(how[0], headers=how[1])
+        return _Resp(how)
+
+
+def _fetcher(plan, **kw):
+    clk = _Clock()
+    NF.time = clk                          # netfetch reads time.monotonic / time.sleep
+    f = NF.Fetcher(verbose=False, **kw)
+    f.session = _Transport(clk, plan)
+    return f, clk
+
+
+_real_time = NF.time
+try:
+    _f, _c = _fetcher({"theatre.art.bg": "dead", "ok.bg": 200})
+    _t0 = _c.t
+    _got = [_f.get(f"https://theatre.art.bg/?date=d{i}") for i in range(67)]
+    check("a dead host: 67 day pages cost two URLs' retries, not 67 x 36 s",
+          (sum(x is not None for x in _got), len(_f.session.calls), _c.t - _t0 <= 2 * NF.URL_BUDGET),
+          (0, 8, True))
+    check("…then the host is closed for the run, and says why",
+          ("theatre.art.bg" in _f.closed, _f.log[-1]["outcome"], _f.log[-1]["error"].startswith("skipped:")),
+          (True, "skipped", True))
+    check("…a healthy host is not affected", _f.get("https://ok.bg/x") is not None, True)
+
+    _f, _c = _fetcher({"slow.bg": "tarpit"})
+    _t0 = _c.t
+    _f.get("https://slow.bg/a")
+    check("a tarpit: one URL never takes more than URL_BUDGET, retries included",
+          _c.t - _t0 <= NF.URL_BUDGET + NF.DEFAULT_HOST_DELAY, True)
+    for _i in range(10):
+        _f.get(f"https://slow.bg/{_i}")
+    check("…and the host closes after HOST_FAIL_LIMIT such URLs",
+          (_c.t - _t0 <= NF.HOST_FAIL_LIMIT * (NF.URL_BUDGET + 3), "slow.bg" in _f.closed), (True, True))
+
+    _f, _c = _fetcher({"mlt.bg": 403, "tickets.mlt.bg": 200})
+    _n0 = len(_f.log)
+    check("HTTP 403: refused once, never retried",
+          (_f.get("https://mlt.bg/programa.php?year=2026&month=10"), len(_f.session.calls)), (None, 1))
+    check("…recorded as blocked from this network", _f.blocked_since(_n0),
+          [("https://mlt.bg/programa.php?year=2026&month=10", "mlt.bg", "HTTP 403")])
+    check("…the venue's other official host still answers", _f.get("http://tickets.mlt.bg/x") is not None, True)
+    _f, _c = _fetcher({"cf.bg": "challenge"})
+    _f.get("https://cf.bg/")
+    check("a WAF challenge page is blocking, not a programme", _f.blocked_since(0)[0][2],
+          "challenge page (Cloudflare challenge, HTTP 403)")
+    check("…an ordinary Cloudflare page carrying its bot-detection script is NOT a challenge",
+          NF.challenge_signature(_Resp(200, b"<html><head><title>Program</title></head><body>"
+                                            b"<script src='/cdn-cgi/challenge-platform/scripts/jsd/main.js'>"
+                                            b"</script></body></html>")), None)
+    _f, _c = _fetcher({"flaky.bg": [503, 200]})
+    check("503 then 200: retried within the budget", (_f.get("https://flaky.bg/") is not None,
+                                                     len(_f.session.calls)), (True, 2))
+    _f, _c = _fetcher({"nf.bg": 404})
+    for _i in range(5):
+        _f.get(f"https://nf.bg/{_i}")
+    check("404s are answers: no retry, and the host stays open", (len(_f.session.calls), "nf.bg" in _f.closed),
+          (5, False))
+    _f, _c = _fetcher({"ra.bg": (429, {"Retry-After": "3600"})})
+    _t0 = _c.t
+    _f.get("https://ra.bg/")
+    check("a Retry-After of an hour is not waited for", (len(_f.session.calls), _c.t - _t0 < 5), (1, True))
+    _f, _c = _fetcher({"ok.bg": 200})
+    with _f.deadline(10):
+        _c.t += 11
+        _late = _f.get("https://ok.bg/late")
+    check("a step's deadline: nothing is fetched after it", (_late, len(_f.session.calls)), (None, 0))
+    check("…and outside it the host is fine (a spent step does not close it)",
+          (_f.get("https://ok.bg/now") is not None, "ok.bg" in _f.closed), (True, False))
+    _f, _c = _fetcher({"ok.bg": 200}, budget_seconds=30)
+    _c.t += 31
+    check("the whole-run budget is enforced inside get()", _f.get("https://ok.bg/x"), None)
+finally:
+    NF.time = _real_time
+
+# CODE-02: one venue failing its self-check, or crashing, stops only itself.
+print("per-venue isolation (CODE-02)")
+_F2, _E2 = "2026-10-09", "2026-12-14"
+_prev_g8 = [["p", "g8", "2026-10-09", ["11:00", "14:00", "17:00"]], ["q", "g8", "2026-10-10", ["20:00"]]]
+_g8_off = [("p", "2026-10-09", "11:00"), ("p", "2026-10-10", "11:00"), ("p", "2026-10-11", "11:00")]
+_g8_cov, _odeon_off = ("2026-10-09", "2026-10-15"), [("o", "2026-10-09", "18:30"), ("o", "2026-10-10", "18:30")]
+_out = {}
+for _v, _off, _cov, _prevstat, _prev in (
+        ("g8", _g8_off, _g8_cov, {"status": "official", "screenings": 112, "days": 7}, _prev_g8),
+        ("odeon", _odeon_off, ("2026-10-09", "2026-10-11"), {"status": "official", "screenings": 3, "days": 3}, [])):
+    _stub = {"status": "official", "screenings": len(_off), "days": 7 if _v == "g8" else 3}
+    _out[_v] = VS.run_isolated(
+        lambda: S.merge_cinema_venue(_v, "official", _off, _cov, [], False, _prev, None, _F2, _E2),
+        lambda: S.merge_cinema_venue(_v, "unreachable", [], None, [], False, _prev, None, _F2, _E2),
+        lambda o: S.cinema_venue_problems("official", o[0], set(_off), list(_cov), _prevstat, _stub,
+                                          _F2, _E2, {"p", "q", "o"}))
+check("G8's markup half-breaks (3 screenings a day -> 0.4): G8 alone fails its self-check",
+      (bool(_out["g8"][3]), _out["g8"][3][0][:20], bool(_out["odeon"][3])), (True, "implausibly few rows", False))
+check("…G8 keeps last run's rows, all preliminary from today", (_out["g8"][0], _out["g8"][1]),
+      (_prev_g8, _F2))
+check("…Одеон is merged normally from its own programme", (_out["odeon"][0], _out["odeon"][1]),
+      ([["o", "odeon", "2026-10-09", ["18:30"]], ["o", "odeon", "2026-10-10", ["18:30"]]], "2026-10-12"))
+
+
+def _boom():
+    raise KeyError("a parser bug")
+
+
+_r = VS.run_isolated(_boom, lambda: ([["k", "v", "2026-10-09", ["10:00"]]], _F2, {}))
+check("a merge that crashes falls back for that venue only, with the reason", (_r[0], _r[1], _r[3]),
+      ([["k", "v", "2026-10-09", ["10:00"]]], _F2, ["merge crashed: KeyError: 'a parser bug'"]))
+check("written rows that differ from the venue's own programme are a self-check failure",
+      S.cinema_venue_problems("official", [["a", "v", "2026-10-09", ["10:00", "12:00"]]],
+                              {("a", "2026-10-09", "10:00")}, ["2026-10-09", "2026-10-09"], None,
+                              {"status": "official", "screenings": 1, "days": 1}, _F2, _E2, {"a"}),
+      ["written rows differ from its own programme inside 2026-10-09..2026-10-09 (1 extra, 0 missing)"])
+check("…as are an unknown film id and a past row",
+      S.cinema_venue_problems("none", [["zz", "v", "2026-10-08", ["10:00"]]], set(), None, None, None,
+                              _F2, _E2, {"a"}),
+      ["a row outside today..window end", "showtimes for unknown film ids: zz"])
+
+# CODE-05: an unreachable source — preliminary at once, gone after 14 days.
+print("stale sources: preliminary at once, removed after 14 days (CODE-05)")
+_F, _E = "2026-10-08", "2026-12-14"
+_e = {"last_ok": "2026-10-01", "covered_to": "2026-10-31", "failing_since": "2026-10-04"}
+check("kept policy 8 days after the last read: kept, confirmed to its last coverage",
+      VS.kept_policy(_e, "2026-10-09"), {"since": "2026-10-01", "age": 8, "expired": False,
+                                         "confirmed_to": "2026-10-31", "last_ok": "2026-10-01"})
+check("…14 days: still kept; 15 days: expired",
+      (VS.kept_policy(_e, "2026-10-15")["expired"], VS.kept_policy(_e, "2026-10-16")["expired"]), (False, True))
+check("never read (first run with the sidecar): the clock starts at the first failure, "
+      "confirmed range from the page's PRELIM_FROM",
+      VS.kept_policy({}, "2026-10-09", "2026-11-30"), {"since": "2026-10-09", "age": 0, "expired": False,
+                                                       "confirmed_to": "2026-11-29", "last_ok": None})
+_st = {"venues": {}}
+VS.record_read(_st, "mladezhki", True, "2026-10-09", covered_to="2026-11-29")
+VS.record_read(_st, "mladezhki", False, "2026-10-10", error="HTTP 403")
+VS.record_read(_st, "mladezhki", False, "2026-10-11", error="HTTP 403")
+check("official_state: a failure streak keeps the last good read and its first failure",
+      _st["venues"]["mladezhki"], {"source": "official", "last_ok": "2026-10-09", "covered_to": "2026-11-29",
+                                   "failing_since": "2026-10-10", "last_error": "HTTP 403"})
+VS.record_read(_st, "mladezhki", True, "2026-10-12", covered_to="2026-11-30")
+check("…and a good read resets it", (_st["venues"]["mladezhki"]["last_ok"],
+                                    _st["venues"]["mladezhki"]["failing_since"]), ("2026-10-12", None))
+_agg2 = [("d", "D", "2026-10-18", ["12:00"], None), ("e", "E", "2026-10-10", ["21:00"], None)]
+_prev2 = [["gone", "v", "2026-10-11", ["20:30"]], ["late", "v", "2026-10-25", ["19:00"]]]
+check("expired (no successful read for 15 days): kept rows removed, the aggregator's alone, preliminary",
+      S.merge_cinema_venue("v", "unreachable", [], None, _agg2, True, _prev2, "2026-10-12", _F, _E,
+                           confirmed_to="2026-10-11", expired=True)[:2],
+      ([["e", "v", "2026-10-10", ["21:00"]], ["d", "v", "2026-10-18", ["12:00"]]], _F))
+check("…and with the aggregator down too: nothing at all (never stale listings)",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], False, _prev2, "2026-10-12", _F, _E,
+                           confirmed_to="2026-10-11", expired=True)[:2], ([], _F))
+check("not expired, aggregator down: every kept row stays, preliminary from today",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], False, _prev2, "2026-10-12", _F, _E,
+                           confirmed_to="2026-10-11")[:2],
+      ([["gone", "v", "2026-10-11", ["20:30"]], ["late", "v", "2026-10-25", ["19:00"]]], _F))
+check("an aggregator-only venue whose aggregator has been down for 15 days keeps nothing",
+      S.merge_cinema_venue("cineland", "none", [], None, [], False, _prev2, None, _F, _E, expired=True)[0], [])
+print("an unreachable venue's kept rows are never deleted by the aggregator (D1: dom-kino 80 -> 32)")
+_prev3 = [["k1", "v", "2026-10-10", ["18:00"]], ["k2", "v", "2026-10-20", ["20:00"]],
+          ["k3", "v", "2026-11-30", ["19:00"]]]
+check("programata read but listing nothing for the venue (Cinema City): every kept row stays, preliminary",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev3, "2026-10-16", _F, _E,
+                           confirmed_to="2026-10-15")[:2], (_prev3, _F))
+_agg3 = [("k2", "K2", "2026-10-20", ["17:00"], None),     # a kept film and day, another time: logged
+         ("n1", "N1", "2026-10-20", ["21:00"], None),     # a date a kept row covers: not added
+         ("n2", "N2", "2026-10-21", ["21:00"], None),     # a date no kept row covers: added
+         ("n3", "N3", "2026-10-12", ["21:00"], None)]     # inside the range it last confirmed: not added
+_rows, _pf, _info = S.merge_cinema_venue("v", "unreachable", [], None, _agg3, True, _prev3, "2026-10-16", _F, _E,
+                                         confirmed_to="2026-10-15")
+check("the aggregator only ADDS, on dates the kept rows do not cover", _rows,
+      [["k1", "v", "2026-10-10", ["18:00"]], ["k2", "v", "2026-10-20", ["20:00"]],
+       ["n2", "v", "2026-10-21", ["21:00"]], ["k3", "v", "2026-11-30", ["19:00"]]])
+check("…its other time for a kept film and day is logged, the kept (formerly official) row shown",
+      _info["conflicts"], [["2026-10-20", "k2", ["20:00"], ["17:00"]]])
+
+# CODE-13: health.json — a venue emptied, blocked, unreachable, kept, low.
+print("health.json (CODE-13)")
+_hv = [{"venue": "cineland", "kind": "cinema", "status": "none", "now": 0, "prev": 11,
+        "agg_name": "programata.bg"},
+       {"venue": "mladezhki", "kind": "theatre", "status": "official", "now": 108, "prev": 110,
+        "source": "tickets.mlt.bg public list (the theatre's own ticket centre)",
+        "blocked": [("https://mlt.bg/programa.php?year=2026&month=10", "mlt.bg", "HTTP 403")]},
+       {"venue": "kuklen", "kind": "theatre", "status": "unreachable", "now": 40, "prev": 41,
+        "error": "unreachable: https://sofiapuppet.com/…", "agg_name": "theatre.art.bg",
+        "policy": {"last_ok": "2026-10-01", "age": 8, "expired": False, "since": "2026-10-01"}},
+       {"venue": "g8", "kind": "cinema", "status": "official", "now": 30, "prev": 100},
+       {"venue": "atelie313", "kind": "theatre", "status": "none", "now": 6, "prev": 6,
+        "agg_name": "theatre.art.bg"}]
+_h = VS.health_entries(_hv)
+check("errors first: an emptied venue and a blocked source", [(e["level"], e["venue"]) for e in _h],
+      [("error", "cineland"), ("error", "mladezhki"), ("warning", "kuklen"), ("warning", "g8"),
+       ("warning", "atelie313")])
+check("…an aggregator-only venue that emptied", _h[0]["message"], "emptied: 0 upcoming screenings now, 11 last run (none)")
+check("…blocked from this network, and what was read instead", _h[1]["message"],
+      "blocked from this network: HTTP 403 at https://mlt.bg/programa.php?year=2026&month=10 — read from "
+      "tickets.mlt.bg public list (the theatre's own ticket centre) instead")
+check("…kept rows shown as preliminary, and when they go", _h[2]["message"],
+      "official source unreachable (unreachable: https://sofiapuppet.com/…); last read 2026-10-01, 8 days ago — "
+      "40 performances kept and shown as preliminary (removed after 14 days)")
+check("…a count far below the previous run's", _h[3]["message"], "low count: 30 screenings now vs 100 last run")
+check("…an aggregator-only venue, every run", _h[4]["message"],
+      "no official programme: all 6 performances are preliminary, from theatre.art.bg")
+_hp = pathlib.Path("/tmp/p1a_test_health.json")
+VS.write_health(_hp, _h)
+check("health.json is a list of {level, venue, message}",
+      [sorted(e) for e in _js.loads(_hp.read_text(encoding="utf-8"))][:1], [["level", "message", "venue"]])
+
 
 print("merge: the venue's own programme is authoritative")
 _F, _E = "2026-10-08", "2026-12-14"
@@ -1310,10 +1647,13 @@ check("contradicting aggregator rows are discarded and logged", _info["discarded
       [["2026-10-08", "17:00", "A", "a"], ["2026-10-09", "18:00", "X", "x"]])
 check("PRELIM_FROM = the day after the official coverage", _pf, "2026-10-16")
 _rows, _pf, _ = S.merge_cinema_venue("v", "unreachable", [], None, _agg, True, _prev, "2026-10-12", _F, _E)
-check("unreachable official source: previous rows kept, past ones dropped", _rows, [["gone", "v", "2026-10-11", ["20:30"]]])
-check("unreachable official source: previous PRELIM_FROM kept", _pf, "2026-10-12")
-check("unreachable with no previous PRELIM_FROM: preliminary from today",
-      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev, None, _F, _E)[1], _F)
+check("unreachable official source: rows it had confirmed kept (never past ones), the aggregator after them",
+      _rows, [["gone", "v", "2026-10-11", ["20:30"]], ["d", "v", "2026-10-18", ["12:00"]],
+              ["c", "v", "2026-10-20", ["18:00"]]])
+check("unreachable official source: ALL preliminary, from today (owner: 'mark preliminary at once')", _pf, _F)
+check("unreachable with no previous PRELIM_FROM: preliminary from today, every kept row stays",
+      S.merge_cinema_venue("v", "unreachable", [], None, [], True, _prev, None, _F, _E)[:2],
+      ([["gone", "v", "2026-10-11", ["20:30"]]], _F))
 _rows, _pf, _ = S.merge_cinema_venue("cineland", "none", [], None, [("a", "A", "2026-10-08", ["13:00"], None)],
                                      True, [], None, _F, _E)
 check("no official source (Cineland): aggregator rows, preliminary from today", (_rows, _pf),

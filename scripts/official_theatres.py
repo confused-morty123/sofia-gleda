@@ -43,10 +43,11 @@ Contract:
   * covered_from is today (Europe/Sofia) unless the source shows less.
 
 A month is "covered" only while it looks completely published: later months
-must carry at least COMPLETE_RATIO of the performance density of the next four
-weeks, or SPREAD_RATIO of it with performances right through the month — AND
-every stage that plays regularly in those four weeks must still be there (at
-least STAGE_RATIO of its own rate). Възраждане's December (eight evenings to
+must carry at least COMPLETE_RATIO of the performance density of the four weeks
+BEFORE them (never the month itself: see complete_until), or SPREAD_RATIO of it
+with performances right through the month — AND every stage that plays
+regularly in those four weeks must still be there (at least STAGE_RATIO of its
+own rate). Възраждане's December (eight evenings to
 the 19th, no matinées) is the half-entered state; treating it as complete would
 delete real listings the theatre simply has not typed in yet. Сълза и смях's
 November 2026 passed the count rules (22 evenings, every week to the 30th) but
@@ -89,6 +90,7 @@ SPREAD_RATIO = 0.4        # ≥ 40% when its performances run through the whole 
 STAGE_WEEKS = 3           # and a stage playing in ≥ 3 of the next four weeks (regular)
 STAGE_RATIO = 0.25        # keeps ≥ 25% of its own rate there (else it "nearly vanished")
 REF_DAYS = 28
+MIN_REF_DAYS = 7          # a shorter reference (a list of upcoming dates at a month's end) runs on into the month
 MONTHS_AHEAD = 6          # month-paged sources: current month + up to 5 more
 
 
@@ -115,8 +117,13 @@ def sofia_tz():
 
 
 def sofia_today():
-    tz = sofia_tz()
-    return (dt.datetime.now(tz) if tz else dt.datetime.now()).date()
+    """Today in Sofia — the one rule every script shares (listing_window.py)."""
+    try:
+        import listing_window
+        return listing_window.sofia_today()
+    except ImportError:                                # pragma: no cover
+        tz = sofia_tz()
+        return (dt.datetime.now(tz) if tz else dt.datetime.now()).date()
 
 
 BG_MONTHS = ("януари", "февруари", "март", "април", "май", "юни", "юли",
@@ -326,6 +333,18 @@ def spread_through(days, year, month):
             and max(have) >= last - 6)
 
 
+def runs_to_the_end(days, year, month):
+    """True when a month's performances run on to its end: some in at least
+    three of its first four weeks (days 1-7, 8-14, 15-21, 22-28) and some in
+    its last seven days. A month typed in only part-way stops early
+    (Възраждане's December 2026: to the 19th); a theatre that opens the month
+    late (Театър София's November 2026, from the 10th) does not."""
+    have = {int(d[8:10]) for d in days}
+    last = calendar.monthrange(year, month)[1]
+    weeks = sum(any(7 * w + 1 <= x <= 7 * w + 7 for x in have) for w in range(4))
+    return bool(have) and weeks >= 3 and max(have) >= last - 6
+
+
 def stage_of(row):
     """The stage a row is played on, as a comparison key: meta["stage"] (set by
     a fetcher that learns it outside its grid — Сълза и смях's per-stage pages)
@@ -334,69 +353,109 @@ def stage_of(row):
     return clean(meta.get("stage") or meta.get("hall")).lower() or None
 
 
-def regular_stages(rows, today):
-    """{stage: performances per day over the next REF_DAYS days} for every stage
-    that plays in at least STAGE_WEEKS of those four weeks."""
+def regular_stages(rows, start, days=REF_DAYS):
+    """{stage: performances per day over the `days` days from `start`} for every
+    stage that plays in at least STAGE_WEEKS of every four of those weeks (three
+    weeks of four; two of two, one of one) and at least twice."""
     weeks, count = defaultdict(set), Counter()
     for r in rows:
-        k = (dt.date.fromisoformat(r[1]) - today).days
+        k = (dt.date.fromisoformat(r[1]) - start).days
         s = stage_of(r)
-        if s and 0 <= k < REF_DAYS:
+        if s and 0 <= k < days:
             weeks[s].add(k // 7)
             count[s] += 1
-    return {s: count[s] / REF_DAYS for s, w in weeks.items() if len(w) >= STAGE_WEEKS}
+    need = max(1, min(STAGE_WEEKS, -(-STAGE_WEEKS * (days // 7) // 4)))
+    return {s: count[s] / days for s, w in weeks.items() if len(w) >= need and count[s] >= 2}
 
 
 def complete_until(rows, today, why=None):
-    """Last date of the programme that looks completely published: the current
-    month, then each following month while it is clearly published —
+    """Last date of the programme that looks completely published.
+
+    The current month always counts, from today to its last listed day (today
+    itself when nothing more is listed in it): a programme that was read is
+    never "unreachable" because a later month is not complete.
+
+    Each following month M then counts while it is clearly published —
       * its density (rows per day) at least COMPLETE_RATIO of the density of
-        the next REF_DAYS days, or at least SPREAD_RATIO of it with
-        performances right through the month (spread_through: a quieter month
-        such as Топлоцентрала's November 2026, 25 performances to the 30th);
-      * and every stage that is regular in those REF_DAYS days (regular_stages)
-        keeps at least STAGE_RATIO of its own rate in the month. A theatre that
-        has typed in only part of a month leaves a whole stage out: Сълза и
-        смях's chamber stage had 1 November date against 9 in the rest of
-        October, though the month's 22 evenings ran every week to the 30th.
+        its REFERENCE PERIOD, or at least SPREAD_RATIO of it with performances
+        right through the month (spread_through: a quieter month such as
+        Топлоцентрала's November 2026, 25 performances to the 30th);
+      * and every stage that is regular in the reference period
+        (regular_stages) keeps at least STAGE_RATIO of its own rate in M. A
+        theatre that has typed in only part of a month leaves a whole stage
+        out: Сълза и смях's chamber stage had 1 November date against 9 in the
+        rest of October, though the month's 22 evenings ran every week to the 30th.
+
+    The reference period is built from what the page shows BEFORE M — never M
+    itself (2026-10-09 audit, CODE-06: judged against "the next four weeks", a
+    run on 25 or 31 Oct compared a half-entered November with itself and passed
+    it): the REF_DAYS days before M's first day, from the source's own first
+    listed day on. A month page lists its whole month, past days included (pass
+    those rows in); a list of upcoming dates starts today. When fewer than
+    MIN_REF_DAYS such days exist — the last days of a month on a list of
+    upcoming dates — the reference runs on into M's first days to make
+    MIN_REF_DAYS, and M must then ALSO run on to its end (runs_to_the_end) and,
+    when that week had performances, keep COMPLETE_RATIO of its density: a
+    month typed in only part-way stops early, and that is what such a short
+    look can still tell (a stage left out of all of M it cannot see).
+
     Stops at the first month that is empty or thinner — the theatre has not
     finished entering it, so it cannot speak for the days it leaves blank. The
     reason for stopping at a listed month is appended to `why` (a list)."""
-    dates = sorted(r[1] for r in rows)
-    if not dates:
-        return None
     t0 = today.isoformat()
-    t1 = (today + dt.timedelta(days=REF_DAYS - 1)).isoformat()
-    ref = sum(1 for d in dates if t0 <= d <= t1) / REF_DAYS
-    regular = regular_stages(rows, today)
+    dates = sorted(r[1] for r in rows)
+    if not dates or dates[-1] < t0:
+        return None
+    src_from = min(dt.date.fromisoformat(dates[0]), today)
     by_month, staged = defaultdict(list), defaultdict(Counter)
     for r in rows:
+        if r[1] < t0:
+            continue
         ym = (int(r[1][:4]), int(r[1][5:7]))
         by_month[ym].append(r[1])
         s = stage_of(r)
         if s:
             staged[ym][s] += 1
     y, m = today.year, today.month
-    last = max(by_month[(y, m)]) if (y, m) in by_month else None
+    last = max(by_month[(y, m)]) if (y, m) in by_month else t0
     while True:
         y, m = (y + 1, 1) if m == 12 else (y, m + 1)
         days = by_month.get((y, m))
         if not days:
             break
+        first = dt.date(y, m, 1)
+        ref_from = max(first - dt.timedelta(days=REF_DAYS), src_from)
+        n_ref = (first - ref_from).days
+        short = n_ref < MIN_REF_DAYS
+        n_ref = max(n_ref, MIN_REF_DAYS)
+        lo, hi = ref_from.isoformat(), (ref_from + dt.timedelta(days=n_ref - 1)).isoformat()
+        span = f"{n_ref} days from {lo}" if short else f"{n_ref} days before it"
+        ref = sum(1 for d in dates if lo <= d <= hi) / n_ref
+        regular = regular_stages(rows, ref_from, n_ref)
         n_days = calendar.monthrange(y, m)[1]
         density = len(days) / n_days
-        if ref <= 0 or (density < COMPLETE_RATIO * ref
-                        and not (density >= SPREAD_RATIO * ref and spread_through(days, y, m))):
+        if short and not runs_to_the_end(days, y, m):
             if why is not None:
-                why.append(f"{y}-{m:02d}: {len(days)} performances — thinner than the next "
-                           f"four weeks ({ref * n_days:.0f} at their rate); not completely published")
+                why.append(f"{y}-{m:02d}: {len(days)} performances, not listed on to the month's end "
+                           f"(only {(first - ref_from).days} listed day(s) before it to compare with); "
+                           "not completely published")
+            break
+        if short:
+            ok = ref == 0 or density >= COMPLETE_RATIO * ref
+        else:
+            ok = ref > 0 and (density >= COMPLETE_RATIO * ref
+                              or (density >= SPREAD_RATIO * ref and spread_through(days, y, m)))
+        if not ok:
+            if why is not None:
+                why.append(f"{y}-{m:02d}: {len(days)} performances — thinner than the {span} "
+                           f"({ref * n_days:.0f} at their rate); not completely published")
             break
         gone = sorted(s for s, rate in regular.items() if staged[(y, m)][s] < STAGE_RATIO * rate * n_days)
         if gone:
             if why is not None:
                 why.append(f"{y}-{m:02d}: not completely published — " + "; ".join(
-                    f"{s}: {staged[(y, m)][s]} performance(s) against {regular[s] * REF_DAYS:.0f} "
-                    f"in the next four weeks" for s in gone))
+                    f"{s}: {staged[(y, m)][s]} performance(s) against {regular[s] * n_ref:.0f} "
+                    f"in the {span}" for s in gone))
             break
         last = max(days)
     return last
@@ -410,9 +469,9 @@ def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=No
     t0 = today.isoformat()
     uniq = OrderedDict()
     for r in rows:
-        if r[1] >= t0:
-            uniq.setdefault((r[0], r[1], r[2]), r)
-    rows = sorted(uniq.values(), key=lambda r: (r[1], r[2], r[0]))
+        uniq.setdefault((r[0], r[1], r[2]), r)
+    listed = list(uniq.values())                 # past days too: the completeness reference
+    rows = sorted((r for r in listed if r[1] >= t0), key=lambda r: (r[1], r[2], r[0]))
     if not rows:
         raise Unavailable("no performances parsed (implausibly empty)")
     cf = max(covered_from or t0, t0)
@@ -420,7 +479,7 @@ def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=No
     notes = list(notes)
     if month_check:
         why = []
-        cu = complete_until(rows, today, why)
+        cu = complete_until(listed, today, why)
         if cu is None:
             raise Unavailable("no completely published period")
         if cu < ct:
@@ -428,7 +487,9 @@ def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=No
         ct = min(ct, cu)
     inside = [r for r in rows if cf <= r[1] <= ct]
     extra = [r for r in rows if not (cf <= r[1] <= ct)]
-    if not inside:
+    if not inside and not (month_check and extra):
+        # (a month-checked programme covers at least today: nothing listed in
+        # the rest of this month is an answer, the later months its extra rows)
         raise Unavailable("no performances inside the covered range")
     exc = sorted({(clean(t), d, tm, why) for t, d, tm, why in excluded if d >= t0},
                  key=lambda e: (e[1], e[2] or "", e[0]))
@@ -823,6 +884,15 @@ def fetch_vazrazhdane(net, today):
 # =================================================================== mladezhki
 MLT_URL = "https://mlt.bg/programa.php?year={y}&month={m:02d}"
 MLT_SOURCE = "mlt.bg/programa.php (month pages)"
+# The theatre's own ticket centre (linked from every mlt.bg page as "Билети"): the
+# same public "Предстоящи представления" list as tickets.tba.bg, read with a plain
+# GET of its sign-in page, nothing submitted. mlt.bg sits behind Cloudflare and
+# answers GitHub's runners with HTTP 403 (CI, 2026-10-09); this host (IIS, not
+# behind Cloudflare) is the theatre's second official channel. On 2026-10-09 it
+# listed the same 110 performances as the programme, one with a typo'd time
+# (12:13 for 12:30): the programme wins whenever it can be read.
+MLT_TICKETS_URL = "https://tickets.mlt.bg/Account/Login.aspx?ReturnUrl=%2f"
+MLT_TICKETS_SOURCE = "tickets.mlt.bg public list (the theatre's own ticket centre)"
 
 
 def _check_heading(soup, year, month, venue):
@@ -856,24 +926,54 @@ def parse_mlt(html, year, month):
 
 
 def fetch_mladezhki(net, today):
-    rows, notes = [], []
+    """The month programme (mlt.bg) when it can be read — halls and all — with
+    the ticket centre's list as a cross-check; the ticket centre's list alone
+    (tickets.mlt.bg, no halls) when mlt.bg refuses this network. Both are the
+    theatre's own; the coverage rules are the same either way."""
+    rows, notes, prog_error = [], [], None
     for i, (y, m) in enumerate(months_from(today)):
         try:
             page = parse_mlt(_get(net, MLT_URL.format(y=y, m=m)), y, m)
-        except MarkupError:
+        except MarkupError as e:
             if i == 0:
-                raise
+                prog_error = e
+                break
             notes.append(f"{y}-{m:02d}: not this month's page — stopped")
             break
-        except Unavailable:
+        except Unavailable as e:
             if i == 0:
-                raise
+                prog_error = e
+                break
             notes.append(f"{y}-{m:02d}: page did not load — coverage ends before it")
             break
         if not page:
             break
         rows += page
-    return finish("mladezhki", MLT_SOURCE, rows, today, notes=notes)
+    try:
+        tickets = parse_tba_tickets(_get(net, MLT_TICKETS_URL), "mladezhki tickets")
+        tix_error = None
+    except Unavailable as e:                           # MarkupError included
+        tickets, tix_error = [], e
+    t0 = today.isoformat()
+    if prog_error is None:
+        if tix_error is None:
+            _, dis, _ = reconcile_tba([r for r in rows if r[1] >= t0], [r for r in tickets if r[1] >= t0])
+            notes += [f"tickets.mlt.bg: {kind} on {d}, {title}: {detail}"
+                      for kind, d, title, detail in dis if kind in ("time differs", "title differs")][:12]
+            one = Counter(d[0] for d in dis)
+            if one["only on tba.art.bg"] or one["only on tickets.tba.bg"]:
+                notes.append(f"tickets.mlt.bg cross-check: {one['only on tba.art.bg']} performance(s) only on "
+                             f"the programme, {one['only on tickets.tba.bg']} only on the ticket list")
+        else:
+            notes.append(f"tickets.mlt.bg not read ({tix_error}) — no cross-check")
+        return finish("mladezhki", MLT_SOURCE, rows, today, notes=notes)
+    if tix_error is not None:
+        raise Unavailable(f"{prog_error}; tickets.mlt.bg: {tix_error}")
+    notes.append(f"mlt.bg programme not read ({prog_error}) — the theatre's own ticket centre "
+                 "tickets.mlt.bg used instead (no halls)")
+    for r in tickets:
+        r[3]["sources"] = ["tickets"]
+    return finish("mladezhki", MLT_TICKETS_SOURCE, tickets, today, notes=notes)
 
 
 # ====================================================================== kuklen
@@ -917,6 +1017,44 @@ def parse_kuklen(html, year, month):
     return rows, excluded
 
 
+# The theatre sells its tickets online through theatre.art.bg (its own "Билети"
+# page links there). When sofiapuppet.com — behind Cloudflare, like mlt.bg —
+# cannot be read, that venue page is read instead (parse_art_venue, as for City
+# Mark). It is a reseller's page, not the theatre's own programme, so it is
+# NEVER official: fetch_venue() still says the source failed, and its rows go to
+# SECONDARY for the caller to show as PRELIMINARY (validator, 2026-10-12). It also
+# lists the theatre's performances elsewhere ("СКТ в училища и градини", "Театър
+# Азарян НДК"; 2026-10-09), so only rows on the theatre's own two halls are kept;
+# every other hall, or none, is excluded.
+KUKLEN_ART_URL = "https://theatre.art.bg/" + urllib.parse.quote("столичен-куклен-театър-софия") + "___10"
+KUKLEN_ART_SOURCE = "theatre.art.bg venue page (the theatre's online ticket sales)"
+KUKLEN_HALLS = ("гурко 14", "сакъзов 19")
+
+
+def kuklen_art_rows(rows):
+    """theatre.art.bg venue rows → (rows on the theatre's own halls, excluded)."""
+    own, excluded = [], []
+    for r in rows:
+        hall = clean(r[3].get("hall")).lower()
+        if any(h in hall for h in KUKLEN_HALLS):
+            own.append(r)
+        else:
+            excluded.append((r[0], r[1], r[2], f"theatre.art.bg hall {r[3].get('hall') or 'not given'!r} "
+                                               "— not one of the theatre's halls"))
+    return own, excluded
+
+
+def fetch_kuklen_art(net, today):
+    """The secondary (reseller) listing: {"source", "rows", "excluded", "notes"},
+    upcoming rows on the theatre's own halls only."""
+    rows, months = parse_art_venue(_get(net, KUKLEN_ART_URL), today)
+    own, excluded = kuklen_art_rows(rows)
+    t0 = today.isoformat()
+    return {"source": KUKLEN_ART_SOURCE, "rows": [r for r in own if r[1] >= t0],
+            "excluded": [e for e in excluded if e[1] >= t0],
+            "notes": ["months on the page: " + ", ".join(f"{y}-{m:02d}={n}" for (y, m), n in months.items())]}
+
+
 def fetch_kuklen(net, today):
     rows, excluded, notes = [], [], []
     for i, (y, m) in enumerate(months_from(today)):
@@ -927,9 +1065,14 @@ def fetch_kuklen(net, today):
                 raise
             notes.append(f"{y}-{m:02d}: not this month's page — stopped")
             break
-        except Unavailable:
+        except Unavailable as e:
             if i == 0:
-                raise
+                try:
+                    SECONDARY["kuklen"] = fetch_kuklen_art(net, today)
+                except Unavailable as e2:
+                    raise Unavailable(f"{e}; theatre.art.bg venue page: {e2}")
+                raise Unavailable(f"{e} — its ticket channel on theatre.art.bg read instead, "
+                                  "shown as preliminary")
             notes.append(f"{y}-{m:02d}: page did not load — coverage ends before it")
             break
         if not page and not exc:
@@ -1535,10 +1678,11 @@ def parse_tba_programme(html, year, month):
     return rows
 
 
-def parse_tba_tickets(html):
+def parse_tba_tickets(html, label="tba tickets"):
     """tickets.tba.bg's public sign-in page (plain GET, nothing submitted)
     carries "Предстоящи представления": table#MainContent_grdPlan rows of
-    Ден | "08-10-2026 г. 19:00 ч." | "ФЕЙК" — every stage, upper-case titles."""
+    Ден | "08-10-2026 г. 19:00 ч." | "ФЕЙК" — every stage, upper-case titles.
+    The same ticketing system serves tickets.mlt.bg (Младежки театър)."""
     soup = soup_of(html)
     table = soup.select_one("table#MainContent_grdPlan")
     if table is None:
@@ -1547,7 +1691,7 @@ def parse_tba_tickets(html):
                 table = t
                 break
     if table is None:
-        raise MarkupError("tba tickets: upcoming-performances table not found")
+        raise MarkupError(f"{label}: upcoming-performances table not found")
     rows = []
     for tr in table.select("tr"):
         tds = tr.find_all("td")
@@ -1557,10 +1701,10 @@ def parse_tba_tickets(html):
         dm = re.match(r"(\d{2})-(\d{2})-(\d{4})", when)
         time_ = hhmm(when[dm.end():] if dm else "")
         if not (dm and time_ and title):
-            raise MarkupError(f"tba tickets: unreadable row {when!r}")
+            raise MarkupError(f"{label}: unreadable row {when!r}")
         date = dt.date(int(dm.group(3)), int(dm.group(2)), int(dm.group(1)))
         if weekday_conflict(date, day):
-            raise MarkupError(f"tba tickets: weekday mismatch {day!r} {when!r}")
+            raise MarkupError(f"{label}: weekday mismatch {day!r} {when!r}")
         name, guest = split_guest(title)
         rows.append(mkrow(name, date, time_, guest=guest))
     return rows
@@ -1707,11 +1851,29 @@ FETCHERS = OrderedDict([
 
 # why the last fetch_* of each venue returned None (for the run report)
 LAST_STATUS: dict = {}
+# rows a venue's RESELLER lists, read when its own programme could not be (see
+# fetch_kuklen): never official — fetch_venue returns None — for the caller to
+# show as preliminary. {venue: {"source", "rows", "excluded", "notes"}}
+SECONDARY: dict = {}
+
+
+def off_grid_ticket_times(res):
+    """[(date, time, title)] of a result's rows that only a ticket list gives
+    (meta "sources" == ["tickets"]) at a minute off the 5-minute grid — 12:13
+    for a 12:30 matinée (tickets.mlt.bg, 21 Nov 2026). Published as listed;
+    reported for a human to look at, never altered."""
+    out = []
+    for part in ("rows", "extra_rows"):
+        for t, d, tm, meta in (res or {}).get(part) or []:
+            if (meta or {}).get("sources") == ["tickets"] and tm and int(tm[3:5]) % 5:
+                out.append((d, tm, t))
+    return sorted(out)
 
 
 def fetch_venue(venue, net=None, today=None):
     """The contract dict for `venue`, or None. Never raises."""
     today = today or sofia_today()
+    SECONDARY.pop(venue, None)
     if venue in NO_OFFICIAL_SOURCE:
         LAST_STATUS[venue] = "no official source: " + NO_OFFICIAL_SOURCE[venue]
         return None

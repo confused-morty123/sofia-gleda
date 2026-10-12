@@ -254,9 +254,11 @@ def main():
         def resolve(title):
             return film_by_bg.get(title.strip())
 
-    # Determine date range
-    today = datetime.date.today().isoformat()
-    last_day = "2026-12-14"
+    # The listing window, from the one shared rule (today in Sofia .. today +
+    # the horizon): it rolls forward with every run (CODE-01; the end date was
+    # once hard-coded here, and "today" was the runner's own date).
+    import listing_window
+    today, last_day = listing_window.listing_window()
 
     session = Fetcher(budget_seconds=args.budget)
 
