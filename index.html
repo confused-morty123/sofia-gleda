@@ -1118,7 +1118,10 @@ const filmTitle=f=>{
   return S.lang==="en"
     ?(f.en||((ART[f.id]||{}).en)||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[f.id])||f.bg||"")
     :(f.en||f.bg||((ART[f.id]||{}).en)||"");};
-const filmSubtitle=f=>{const en=filmTitle(f);return f.bg&&f.bg!==en?f.bg:(f.en&&f.en!==en?f.en:"");};
+/* filmSubtitle: the film's other title, shown small above the headline. A CineLibri film's Bulgarian
+   title is the festival's own (FILMINFO title_bg), not the cinema's "Синелибри 2026 – …" listing name,
+   so the line shows its official English title instead of repeating the prefix. */
+const filmSubtitle=f=>{const en=filmTitle(f);const bg=(cinelibriId(f.id)&&(FILMINFO[f.id]||{}).title_bg)||f.bg;return bg&&bg!==en?bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* safeUrl: accept only http(s) URLs in href/window.open sinks (CODE-12).
    Any other scheme (javascript:, data:, …) is dropped and returns null. */
