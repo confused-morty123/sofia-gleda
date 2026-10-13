@@ -186,8 +186,31 @@ if vlinks_data is not None:
     if not isinstance(vlinks_data, list):
         fail("VLINKS is not an array")
     else:
+        # Build a set of confirmed (fid, venue) pairs: rows whose date is before
+        # PRELIM_FROM[venue] (i.e. the venue's own programme listed them).
+        # Used to enforce that aggregator-domain links never serve confirmed pairs.
+        _prelim_from = const("PRELIM_FROM") or {}
+        _showtimes = data.get("SHOWTIMES") or []
+        _confirmed_pairs: set = set()
+        for _r in _showtimes:
+            if not (isinstance(_r, list) and len(_r) >= 3):
+                continue
+            _fid, _vid, _d = _r[0], _r[1], _r[2]
+            _pf = _prelim_from.get(_vid)
+            if _pf and _d < _pf:
+                _confirmed_pairs.add((_fid, _vid))
         bad_programata = []
+        bad_aggregator_confirmed = []
         bad_allowlist = []
+        bad_agg_homepage = []    # aggregator homepage: empty/root path or query-only
+
+        def _is_agg_homepage(parsed_url):
+            """Return True when the URL is an aggregator's homepage (no meaningful path)."""
+            p = parsed_url.path.rstrip("/")
+            q = parsed_url.query
+            # Empty path, root "/", or a URL with only a query string (e.g. ?city=20)
+            return not p or (not p and bool(q))
+
         for entry in vlinks_data:
             if not (isinstance(entry, list) and len(entry) == 3):
                 fail(f"VLINKS entry is not [filmId, venueId, url]: {str(entry)[:80]}")
@@ -204,23 +227,46 @@ if vlinks_data is not None:
             if parsed.scheme not in ("http", "https"):
                 fail(f"VLINKS[{fid},{vid}] has non-http(s) scheme: {url[:80]}")
                 continue
+            _is_agg_domain = (
+                host == "programata.bg" or host.endswith(".programata.bg") or
+                host == "theatre.art.bg" or host.endswith(".theatre.art.bg")
+            )
+            # Aggregator homepage gate: an aggregator URL with no path (e.g.
+            # https://programata.bg or https://theatre.art.bg/?city=20) is
+            # almost certainly a scraper bug — it would open the aggregator's
+            # front page rather than a specific show or film.
+            if _is_agg_domain and _is_agg_homepage(parsed):
+                bad_agg_homepage.append(f"{fid}/{vid} -> {url[:80]}")
             if host == "programata.bg" or host.endswith(".programata.bg"):
-                bad_programata.append(f"{fid}/{vid}")
+                # Allowed only when all rows for this pair are preliminary
+                if (fid, vid) in _confirmed_pairs:
+                    bad_programata.append(f"{fid}/{vid}")
+            if _is_agg_domain and (fid, vid) in _confirmed_pairs:
+                bad_aggregator_confirmed.append(f"{fid}/{vid} -> {url[:60]}")
             allowed = VENUE_LINK_ALLOWLIST.get(vid, [])
             # Exact match or subdomain suffix — never substring (CODE-12). A festival
             # row may also link the festival's own page or ticket shop (festival_host,
-            # matched the same way).
+            # matched the same way). Aggregator-domain links for preliminary-only
+            # pairs pass through: they are allowed explicitly (see scrape_programs.py).
             def _host_ok(h, allowed_list):
                 return any(h == a or h.endswith("." + a) for a in allowed_list)
-            if allowed and not _host_ok(host, allowed) and not festival_host(host):
+            if allowed and not _host_ok(host, allowed) and not festival_host(host) and not _is_agg_domain:
                 bad_allowlist.append(f"{fid}/{vid} -> {url[:60]}")
         if bad_programata:
-            fail(f"VLINKS contains {len(bad_programata)} programata.bg URL(s) — "
-                 "these must never appear in VLINKS: "
+            fail(f"VLINKS contains {len(bad_programata)} programata.bg URL(s) for "
+                 "confirmed (venue-listed) rows — only preliminary-only pairs may use programata: "
                  + ", ".join(bad_programata[:5]))
+        if bad_aggregator_confirmed:
+            fail(f"VLINKS contains {len(bad_aggregator_confirmed)} aggregator URL(s) serving "
+                 "confirmed (venue-listed) pairs — switch to the venue's own link: "
+                 + "; ".join(bad_aggregator_confirmed[:3]))
         if bad_allowlist:
             fail(f"VLINKS contains {len(bad_allowlist)} URL(s) not on the venue's allowlist: "
                  + "; ".join(bad_allowlist[:3]))
+        if bad_agg_homepage:
+            fail(f"VLINKS contains {len(bad_agg_homepage)} aggregator homepage URL(s) "
+                 "(empty/root path or query-only — likely a scraper bug; use a specific listing URL): "
+                 + "; ".join(bad_agg_homepage[:3]))
         # Check FILMINFO is a JSON object (not array, not null)
         filminfo_m = re.search(r"^const FILMINFO\s*=\s*(\{.*?\});\s*$", js, flags=re.M | re.S)
         if filminfo_m:
@@ -459,6 +505,94 @@ else:
             fail(f"{len(_missing_pr)} PRELIM_ROWS row(s) have no SHOWTIMES row, "
                  f"e.g. {', '.join('/'.join(x) for x in _missing_pr[:3])}")
 
+# ---------------------------------------- 4c2b. AGGLINKS integrity
+# AGGLINKS = {"<showId>": "theatre.art.bg", "<filmId>|<venueId>": "programata.bg", …}
+# Rules:
+#   1. Every key must exist as a LINKS entry (show id) or VLINKS entry ("fid|vid").
+#   2. The URL for that key must be on the named aggregator (exact or subdomain).
+#   3. No key may name a (film, venue) pair that has confirmed (non-preliminary) rows.
+#   4. The value must be a recognised aggregator name.
+_KNOWN_AGG = {"theatre.art.bg", "programata.bg"}
+_al_m = re.search(r"^const AGGLINKS\s*=\s*(\{[^\n]*?\});\s*$", js, re.M)
+if _al_m:
+    try:
+        _agglinks = json.loads(_al_m.group(1))
+    except Exception as _ale:
+        fail(f"AGGLINKS is not valid JSON: {_ale}")
+        _agglinks = {}
+    if not isinstance(_agglinks, dict):
+        fail("AGGLINKS is not a JSON object")
+        _agglinks = {}
+    if _agglinks:
+        from urllib.parse import urlparse as _up_al
+        # Build index of LINKS keys and their URLs
+        _links_m2 = re.search(r"^const LINKS\s*=\s*(\[.*?\]);\s*$", js, flags=re.M | re.S)
+        _links_idx = {}  # showId -> url
+        if _links_m2:
+            try:
+                for _e in json.loads(_links_m2.group(1)):
+                    if isinstance(_e, list) and len(_e) == 2:
+                        _links_idx[_e[0]] = _e[1]
+            except Exception:
+                pass
+        # Build index of VLINKS keys
+        _vlinks_idx = {}  # "fid|vid" -> url
+        if vlinks_data:
+            for _e in vlinks_data:
+                if isinstance(_e, list) and len(_e) == 3:
+                    _vlinks_idx[f"{_e[0]}|{_e[1]}"] = _e[2]
+        # Build confirmed pairs from PRELIM_FROM + SHOWTIMES (reuse earlier computation)
+        _pf2 = const("PRELIM_FROM") or {}
+        _confirmed2: set = set()
+        for _r in (_showtimes if "_showtimes" in dir() else (data.get("SHOWTIMES") or [])):
+            if isinstance(_r, list) and len(_r) >= 3:
+                _pf_d = _pf2.get(_r[1])
+                if _pf_d and _r[2] < _pf_d:
+                    _confirmed2.add((_r[0], _r[1]))
+        _al_bad_key, _al_bad_host, _al_bad_confirmed, _al_bad_value = [], [], [], []
+        for _ak, _av in _agglinks.items():
+            # Rule 4: recognised value
+            if _av not in _KNOWN_AGG:
+                _al_bad_value.append(f"{_ak!r}: {_av!r}")
+                continue
+            # Determine url and rule 1 (key exists in LINKS or VLINKS)
+            if "|" in _ak:
+                _aurl = _vlinks_idx.get(_ak)
+                if _aurl is None:
+                    _al_bad_key.append(_ak)
+                    continue
+                # Rule 3: confirmed pair
+                _parts = _ak.split("|", 1)
+                if len(_parts) == 2 and (_parts[0], _parts[1]) in _confirmed2:
+                    _al_bad_confirmed.append(_ak)
+            else:
+                _aurl = _links_idx.get(_ak)
+                if _aurl is None:
+                    _al_bad_key.append(_ak)
+                    continue
+            # Rule 2: URL host matches aggregator
+            try:
+                _ah = _up_al(_aurl).netloc.lower()
+                if _ah.startswith("www."):
+                    _ah = _ah[4:]
+                if not (_ah == _av or _ah.endswith("." + _av)):
+                    _al_bad_host.append(f"{_ak!r} claims {_av!r} but URL host is {_ah!r}")
+            except Exception:
+                _al_bad_host.append(f"{_ak!r}: could not parse URL {str(_aurl)[:60]!r}")
+        if _al_bad_value:
+            fail(f"AGGLINKS has {len(_al_bad_value)} unrecognised aggregator name(s) "
+                 f"(must be one of {sorted(_KNOWN_AGG)}): " + "; ".join(_al_bad_value[:3]))
+        if _al_bad_key:
+            fail(f"AGGLINKS has {len(_al_bad_key)} key(s) with no corresponding LINKS/VLINKS entry: "
+                 + ", ".join(_al_bad_key[:5]))
+        if _al_bad_host:
+            fail(f"AGGLINKS has {len(_al_bad_host)} key(s) whose URL host does not match the "
+                 "named aggregator: " + "; ".join(_al_bad_host[:3]))
+        if _al_bad_confirmed:
+            fail(f"AGGLINKS has {len(_al_bad_confirmed)} key(s) naming confirmed (venue-listed) "
+                 "pairs — only preliminary-only pairs may appear in AGGLINKS: "
+                 + ", ".join(_al_bad_confirmed[:5]))
+
 # ------------------------------------------- 4c3. every cinema has a BOOKING entry
 # A venue added to CINEMAS (Френски институт, wave F3) must come with its BOOKING
 # entry, or a row there whose film has no VLINKS entry opens nothing.
@@ -601,15 +735,30 @@ def _check_url_scheme(label, url):
     if p.scheme and p.scheme not in ("http", "https"):
         _bad_scheme_urls.append(f"{label}: {url[:80]}")
 
-# LINKS = [[filmId, url], ...]
+# LINKS = [[showId, url], ...]
 _links_m = re.search(r"^const LINKS\s*=\s*(\[.*?\]);\s*$", js, flags=re.M | re.S)
+_links_agg_homepages: list[str] = []
 if _links_m:
     try:
         for entry in json.loads(_links_m.group(1)):
             if isinstance(entry, list) and len(entry) == 2:
                 _check_url_scheme(f"LINKS[{entry[0]}]", entry[1])
+                # Aggregator homepage gate for LINKS (same rule as VLINKS)
+                if isinstance(entry[1], str) and entry[1]:
+                    _lp = _up2(entry[1])
+                    _lh = _lp.netloc.lower()
+                    if _lh.startswith("www."):
+                        _lh = _lh[4:]
+                    _l_is_agg = (_lh == "theatre.art.bg" or _lh.endswith(".theatre.art.bg") or
+                                  _lh == "programata.bg" or _lh.endswith(".programata.bg"))
+                    if _l_is_agg and not _lp.path.rstrip("/"):
+                        _links_agg_homepages.append(f"LINKS[{entry[0]}]: {entry[1][:80]}")
     except Exception:
         pass
+if _links_agg_homepages:
+    fail(f"LINKS contains {len(_links_agg_homepages)} aggregator homepage URL(s) "
+         "(empty/root path — likely a scraper bug; use a specific show-page URL): "
+         + "; ".join(_links_agg_homepages[:3]))
 
 # BOOKING = {venueId: {url, tix, deep, ...}, ...}
 if isinstance(data.get("BOOKING"), dict):

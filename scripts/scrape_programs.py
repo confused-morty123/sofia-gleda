@@ -1877,6 +1877,48 @@ def read_const_obj(page, name):
         return {}
 
 
+def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, existing=None):
+    """Return (th_links, agg_sids): {sid: url} dict and set of sids whose links
+    came FROM the theatre.art.bg aggregator (not from the venue's own programme).
+
+    status         "official" | "unreachable" | "none"
+    rr_rows        list of (sid, d, t, m_dict, _) — official coverage rows
+    rr_extra_rows  list of (sid, d, t, m_dict, _) — official extra rows
+    agg_full       list of (sid, title, d, tm, hall, link, page, price)
+                   — aggregator rows, price-keyed after P2D
+    on_stage       set of sids present in the merged venue rows this run
+    existing       optional {sid: url} pre-populated by minted-show logic
+
+    Official rows win over aggregator pages.  For a show in official coverage
+    its own URL is used.  For a show only the aggregator lists (after coverage,
+    or when status=="none") the theatre.art.bg event page is used.
+    agg_sids contains only the sids that received an aggregator-page link, i.e.
+    those not in official coverage — NOT official shows whose URL happens to be
+    on theatre.art.bg (Sfumato's box office, etc.).
+    """
+    th_links = dict(existing or {})
+    agg_sids = set()
+    if status == "official":
+        # Official URL always beats any pre-existing aggregator/minted link.
+        for sid, d, t, m, _ in sorted(rr_rows + rr_extra_rows, key=lambda x: (x[1], x[2])):
+            if m.get("url") and sid in on_stage:
+                th_links[sid] = m["url"]
+        official_sids = {sid for sid, d, t, m, _ in rr_rows + rr_extra_rows}
+        for sid, _t, d, tm, _h, _link, page, _p in sorted(agg_full, key=lambda x: (x[2], x[3])):
+            if page and sid and sid in on_stage and sid not in official_sids and sid not in th_links:
+                th_links[sid] = page
+                agg_sids.add(sid)
+    elif status == "none":
+        for sid, _t, d, tm, _h, _link, page, _p in sorted(agg_full, key=lambda x: (x[2], x[3])):
+            if page and sid and sid in on_stage and sid not in th_links:
+                th_links[sid] = page
+                agg_sids.add(sid)
+    # "unreachable": no new links are set from official rows; minted-show
+    # links (in existing) are kept; aggregator pages are not added (the
+    # kept rows from the previous run already have their links).
+    return th_links, agg_sids
+
+
 def drop_deep_vlinks(vlinks, booking):
     """Cinema City's per-film pages are chain-wide (every cinema, every date);
     the owner wants its ticket link to open the cinema's own page for the chosen
@@ -1921,6 +1963,20 @@ def write_prelim_rows(page, prelim_rows):
     if not pf:
         raise KeyError("PRELIM_FROM")
     return page[:pf.end()] + f"\nconst PRELIM_ROWS={lit};" + page[pf.end():]
+
+
+def write_agglinks(page, agglinks):
+    """Replace `const AGGLINKS={…};` in the SOFIA-DATA block with the given dict.
+    agglinks: {key: domain} where key is a show id or "filmId|venueId" and domain
+    is "theatre.art.bg" or "programata.bg"."""
+    lit = json.dumps(agglinks, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    m = re.search(r"^const AGGLINKS\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const AGGLINKS={lit};" + page[m.end():]
+    pr = re.search(r"^const PRELIM_ROWS\s*=[^\n]*;[ \t]*$", page, re.M)
+    if not pr:
+        raise KeyError("PRELIM_ROWS")
+    return page[:pr.end()] + f"\nconst AGGLINKS={lit};" + page[pr.end():]
 
 
 def read_prelim_rows(page):
@@ -2260,6 +2316,17 @@ def run_health(venue_report, venue_ids, counts_now, counts_prev, blocked, selfch
     if down:
         extra.append({"level": "warning", "venue": "programata.bg",
                       "message": f"aggregator not read this run ({len(down)} cinema page(s))"})
+    # Cinemas with an official source whose programata page was fetched but returned
+    # 0 rows — markup may have changed or the cinema is no longer listed.
+    no_agg_rows = sorted(
+        v for v, a in agg.items()
+        if a.get("fetched") and not a.get("rows")
+        and (venue_report.get(v) or {}).get("status") in ("official", "unreachable")
+    )
+    for v in no_agg_rows:
+        extra.append({"level": "warning", "venue": v,
+                      "message": "programata.bg page fetched but returned 0 rows — "
+                                 "cinema no longer listed there, or markup changed"})
     entries = VS.health_entries(venues, extra)
     VS.write_health(HEALTH, entries)
     n_err = sum(1 for e in entries if e["level"] == "error")
@@ -3006,6 +3073,7 @@ def main():
     # theatre.art.bg event page as the link. A theatre whose source is down keeps
     # last run's rows instead, so nothing is minted for it.
     th_links, minted_from_agg = {}, defaultdict(list)
+    _agg_sourced_sids = set()   # sids whose LINKS entry came from theatre.art.bg aggregator
     for v in theatre_ids:
         res = th_official.get(v)
         if res is not None:
@@ -3039,9 +3107,9 @@ def main():
         res = th_official.get(v)
         prev = [[show_index.canonical(r[0])] + list(r[1:5]) for r in old_performances
                 if show_index.theatre_of(r[0]) == v]
-        agg_full = [(show_index.resolve(t, v)[0], t, d, tm, hall, link, price)
-                    for t, d, tm, hall, link, _page, price in art_rows.get(v, [])]
-        agg_rows = [(a[0], a[1], a[2], a[3], a[4], a[6]) for a in agg_full]
+        agg_full = [(show_index.resolve(t, v)[0], t, d, tm, hall, link, page, price)
+                    for t, d, tm, hall, link, page, price in art_rows.get(v, [])]
+        agg_rows = [(a[0], a[1], a[2], a[3], a[4], a[7]) for a in agg_full]
         rr, excl_keys = th_resolved.get(v, {}), set()
         if res is not None:
             status, cov, source = "official", (res["covered_from"], res["covered_to"]), res["source"]
@@ -3087,17 +3155,15 @@ def main():
         if status != "unreachable":
             seen_theatres.add(v)
         # LINKS: the theatre's own page of each show it lists (that of its
-        # earliest upcoming performance); theatre.art.bg's buy link for a theatre
-        # with no programme of its own. Shows not listed this run keep theirs.
+        # earliest upcoming performance); theatre.art.bg's event page for an
+        # aggregator-only listing (a theatre with no programme of its own, or a
+        # show that falls past official coverage). Shows not listed this run keep
+        # theirs.
         on_stage = {r[0] for r in rows}
-        if status == "official":
-            for sid, d, t, m, _ in sorted(rr["rows"] + rr["extra_rows"], key=lambda x: (x[1], x[2])):
-                if m.get("url") and sid in on_stage and sid not in th_links:
-                    th_links[sid] = m["url"]
-        elif status == "none":
-            for sid, _t, d, tm, _h, link, _p in sorted(agg_full, key=lambda x: (x[2], x[3])):
-                if link and sid in on_stage and sid not in th_links:
-                    th_links[sid] = link
+        th_links, _agg_sids_v = theatre_link_choices(status, rr.get("rows", []) if rr else [],
+                                                      rr.get("extra_rows", []) if rr else [],
+                                                      agg_full, on_stage, existing=th_links)
+        _agg_sourced_sids.update(_agg_sids_v)
         cf_ct = [max(cov[0], floor), min(cov[1], end)] if cov else None
         venue_report[v] = {
             "kind": "theatre", "status": status, "source": source, "covered": cf_ct,
@@ -3354,6 +3420,23 @@ def main():
         out = out[:li_s] + emit_rows(link_rows) + out[li_e:]
     except (KeyError, ValueError):
         pass
+    # Programata links in VLINKS: allowed ONLY for (film, venue) pairs whose rows
+    # are all preliminary (no confirmed row within the venue's official coverage).
+    # A confirmed (film, venue) pair MUST never get a programata VLINKS entry.
+    for fid, purl in programata_links.items():
+        for vid in cinema_ids:
+            pf = prelim.get(vid)
+            if pf is None:
+                continue  # no prelim_from means venue has no aggregator rows
+            rows_for_pair = [r for r in new_showtimes if r[0] == fid and r[1] == vid]
+            if not rows_for_pair:
+                continue
+            # "all preliminary" = every row's date is at or after the venue's prelim_from
+            if all(r[2] >= pf for r in rows_for_pair):
+                # Only add if allowed_vlink would pass for the venue (minus the programata block),
+                # or if the venue has no allowlist entry but IS an aggregator-only venue.
+                if (fid, vid) not in vlinks:
+                    vlinks[(fid, vid)] = purl
     # per-(film, venue) ticket links → VLINKS=[[fid,venue,url],…]
     # Prune to only (film, venue) pairs that still have a showtime in new_showtimes,
     # and none for a venue whose BOOKING carries a dated `deep` page (Cinema City:
@@ -3380,6 +3463,37 @@ def main():
     out = write_prelim_from(out, prelim)
     # festival screenings a venue's covered programme does not list: per row
     out = write_prelim_rows(out, prelim_rows)
+    # aggregator-sourced links: theatre.art.bg show pages and programata.bg cinema pages
+    # (only those that ended up in the published LINKS / VLINKS).
+    def _agg_domain_of(url):
+        try:
+            from urllib.parse import urlparse as _up
+            h = _up(url).netloc.lower()
+            if h.startswith("www."):
+                h = h[4:]
+            if h == "theatre.art.bg" or h.endswith(".theatre.art.bg"):
+                return "theatre.art.bg"
+            if h == "programata.bg" or h.endswith(".programata.bg"):
+                return "programata.bg"
+        except Exception:
+            pass
+        return None
+    agglinks = {}
+    # Theatre shows: only those whose link was SOURCED from the aggregator
+    # (status=="none" or past official coverage), not official shows whose URL
+    # happens to be on theatre.art.bg (e.g. Sfumato's own box office).
+    for sid in _agg_sourced_sids:
+        if sid in links:
+            agglinks[sid] = "theatre.art.bg"
+    # Cinema films: every programata.bg VLINKS entry is aggregator-sourced.
+    for (fid, vid), url in vlinks_pruned.items():
+        d = _agg_domain_of(url)
+        if d:
+            agglinks[f"{fid}|{vid}"] = d
+    try:
+        out = write_agglinks(out, agglinks)
+    except (KeyError, ValueError):
+        pass   # AGGLINKS not in this build yet — harmless
     stamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     out = re.sub(r'"?lastValidated"?\s*:\s*"[^"]*"', f'"lastValidated":"{stamp}"', out)
     # The rolling window (CODE-01): the stored window is this run's, today ..

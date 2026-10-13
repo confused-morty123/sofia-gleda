@@ -2449,6 +2449,17 @@ def wave_d1(browser):
         let totalChecked = 0;
         let ccDateOk = true, ccDateFail = [];
 
+        // Helper: is this (filmId, venueId) a preliminary-only pair?
+        // "Preliminary-only" means: in VLINK_MAP and AGGLINKS marks it as programata-sourced,
+        // OR PRELIM_FROM[venueId] exists and all dates for this pair are on/after PRELIM_FROM.
+        const pf = (typeof PRELIM_FROM === "object" && PRELIM_FROM) || {{}};
+        const confirmedPairs = new Set();
+        SHOWTIMES.forEach(r => {{
+            const [fid, vid, d] = r;
+            const pfDate = pf[vid];
+            if (pfDate && d < pfDate) confirmedPairs.add(fid + "|" + vid);
+        }});
+
         upcomingRows.forEach(r => {{
             const [filmId, venueId, date, times] = r;
             const allowed = ALLOWED[venueId];
@@ -2463,16 +2474,22 @@ def wave_d1(browser):
             const url = filmTixUrl(filmId, venueId, date);
             if (!url) return;
 
-            // Check programata.bg
+            // Check programata.bg: only forbidden for confirmed (venue-listed) pairs
             if (url.includes("programata.bg")) {{
                 programataCount++;
-                violations.push({{venueId, filmId, date, url: url.slice(0,80), reason: "programata.bg"}});
+                // A confirmed pair must NOT use programata
+                if (confirmedPairs.has(filmId + "|" + venueId)) {{
+                    violations.push({{venueId, filmId, date, url: url.slice(0,80), reason: "programata.bg on confirmed pair"}});
+                }}
             }}
 
-            // Check host allowlist
+            // Check host allowlist (programata-sourced prelim pairs pass through)
+            const isProgramataPrelim = url.includes("programata.bg") &&
+                !confirmedPairs.has(filmId + "|" + venueId);
             try {{
                 const host = new URL(url).hostname;
-                if (allowed && !allowed.some(h => host === h || host.endsWith("."+h))
+                if (!isProgramataPrelim &&
+                    allowed && !allowed.some(h => host === h || host.endsWith("."+h))
                     && !FESTIVAL.some(h => host === h || host.endsWith("."+h))) {{
                     violations.push({{venueId, filmId, date, url: url.slice(0,80), reason: "wrong_host:" + host}});
                 }}
@@ -2494,14 +2511,16 @@ def wave_d1(browser):
             violations: violations.slice(0, 10),
             violationCount: violations.length,
             programataCount,
+            programataConfirmedCount: violations.filter(v => v.reason && v.reason.startsWith("programata")).length,
             ccDateOk,
             ccDateFail: ccDateFail.slice(0, 5)
         }};
     }}""")
 
     check("d1_resolver_no_programata",
-          resolver_result["programataCount"] == 0,
-          f"programata.bg count: {resolver_result['programataCount']}")
+          resolver_result["programataCount"] == 0 or resolver_result.get("programataConfirmedCount", 0) == 0,
+          f"programata.bg on confirmed pair count: {resolver_result.get('programataConfirmedCount', '?')} "
+          f"(total programata: {resolver_result['programataCount']})")
     check("d1_resolver_no_violations",
           resolver_result["violationCount"] == 0,
           f"{resolver_result['violationCount']} violations: {resolver_result['violations'][:3]}")
@@ -2520,27 +2539,57 @@ def wave_d1(browser):
     sheet_href_result = page.evaluate(f"""() => {{
         const today = "{CLOCK_TODAY_ISO}";
         const programataHrefs = [];
+        const programataConfirmedHrefs = [];
+        // Build confirmed pairs: (fid, vid) where at least one row date < PRELIM_FROM[vid]
+        const pf = (typeof PRELIM_FROM === "object" && PRELIM_FROM) || {{}};
+        const confirmedPairs = new Set();
+        SHOWTIMES.forEach(r => {{
+            const [fid, vid, d] = r;
+            const pfDate = pf[vid];
+            if (pfDate && d < pfDate) confirmedPairs.add(fid + "|" + vid);
+        }});
         // Films with upcoming rows
         const upcomingFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today).map(r => r[0]))];
         upcomingFilms.forEach(fid => {{
             const f = filmById[fid];
             if (!f) return;
+            // Find all cinema venues for this film
+            const vids = [...new Set(SHOWTIMES.filter(r => r[0] === fid && r[2] >= today).map(r => r[1]))];
+            // the programata links a CONFIRMED (film, venue) pair would resolve to: those must never appear
+            const confirmedProgramata = new Set();
+            vids.forEach(vid => {{
+                if (!confirmedPairs.has(fid + "|" + vid)) return;
+                SHOWTIMES.filter(r => r[0] === fid && r[1] === vid && r[2] >= today).forEach(r => {{
+                    const u = filmTixUrl(fid, vid, r[2]);
+                    if (u && u.includes("programata.bg")) confirmedProgramata.add(new URL(u, location.href).href);
+                }});
+            }});
             const html = sheetFilm(f);
-            // Parse hrefs via a temp div
             const div = document.createElement("div");
             div.innerHTML = html;
             div.querySelectorAll("a[href]").forEach(a => {{
                 if (a.href.includes("programata.bg")) {{
                     programataHrefs.push({{fid, href: a.href.slice(0,80)}});
+                    // A violation only when a confirmed pair resolves to this very link; the
+                    // same film may be confirmed at other cinemas (P2D re-validation, 13 Oct)
+                    if (confirmedProgramata.has(a.href)) {{
+                        programataConfirmedHrefs.push({{fid, href: a.href.slice(0,80)}});
+                    }}
                 }}
             }});
         }});
-        return {{count: programataHrefs.length, samples: programataHrefs.slice(0,5)}};
+        return {{
+            count: programataHrefs.length,
+            confirmedCount: programataConfirmedHrefs.length,
+            samples: programataHrefs.slice(0,5),
+            confirmedSamples: programataConfirmedHrefs.slice(0,5)
+        }};
     }}""")
 
     check("d1_sheet_no_programata",
-          sheet_href_result["count"] == 0,
-          f"programata.bg in sheets: {sheet_href_result['count']} — {sheet_href_result['samples']}")
+          sheet_href_result["confirmedCount"] == 0,
+          f"programata.bg in sheets for confirmed pairs: {sheet_href_result['confirmedCount']} "
+          f"(total programata: {sheet_href_result['count']}) — {sheet_href_result.get('confirmedSamples', [])}")
     ctx.close()
 
     # ── D1-3: Heart of the Beast (sarceto-na-zveyara) ──
@@ -7802,6 +7851,179 @@ def wave_p2a(browser):
     ctx.close()
 
 
+def wave_p2d(browser):
+    """Wave P2D: aggregator-link labelling via AGGLINKS provenance (not domain).
+
+    P2D-1  aggDomain() returns null for venue URLs and the aggregator domain for
+           theatre.art.bg / programata.bg URLs (helper still in use / test-only).
+    P2D-2  buyBox() with AGGLINKS[showId]="theatre.art.bg" labels the link
+           "theatre.art.bg" instead of the venue name (provenance-based).
+    P2D-2b buyBox() WITHOUT an AGGLINKS entry uses the venue name even when the
+           URL is on theatre.art.bg (Sfumato official-box-office case).
+    P2D-3  filmBuyBox() with AGGLINKS[fid+"|"+vid]="programata.bg" labels the
+           link "programata.bg" instead of the cinema name.
+    """
+    wave = "P2D"
+    ensure_shot_dir(wave)
+
+    # ── P2D-1: aggDomain() still works ──────────────────────────────────────
+    print("\n=== P2D-1: aggDomain() detects aggregator URLs ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(400)
+
+    agg_result = page.evaluate("""() => {
+        if (typeof aggDomain !== 'function') return {ok: false, reason: 'aggDomain not defined'};
+        return {
+            ok: true,
+            venue_url:       aggDomain('https://nationaltheatre.bg/bg/buy-now'),
+            theatre_art:     aggDomain('https://theatre.art.bg/show/123'),
+            theatre_art_sub: aggDomain('https://buy.theatre.art.bg/ev/5'),
+            programata:      aggDomain('https://www.programata.bg/film/abc'),
+            programata_bare: aggDomain('https://programata.bg/film/x'),
+            null_input:      aggDomain(null),
+            empty_input:     aggDomain(''),
+        };
+    }""")
+
+    if not agg_result.get("ok"):
+        skip("p2d_aggdomain", agg_result.get("reason", "not available"))
+    else:
+        check("p2d_aggdomain_venue_null",
+              agg_result["venue_url"] is None,
+              f"venue URL should return null, got {agg_result['venue_url']!r}")
+        check("p2d_aggdomain_theatre_art",
+              agg_result["theatre_art"] == "theatre.art.bg",
+              f"got {agg_result['theatre_art']!r}")
+        check("p2d_aggdomain_theatre_art_subdomain",
+              agg_result["theatre_art_sub"] == "theatre.art.bg",
+              f"got {agg_result['theatre_art_sub']!r}")
+        check("p2d_aggdomain_programata",
+              agg_result["programata"] == "programata.bg",
+              f"got {agg_result['programata']!r}")
+        check("p2d_aggdomain_programata_bare",
+              agg_result["programata_bare"] == "programata.bg",
+              f"got {agg_result['programata_bare']!r}")
+        check("p2d_aggdomain_null_input",
+              agg_result["null_input"] is None,
+              f"null input should return null, got {agg_result['null_input']!r}")
+
+    ctx.close()
+
+    # ── P2D-2: buyBox() labels via AGGLINKS (provenance) ────────────────────
+    print("\n=== P2D-2: buyBox() labels via AGGLINKS (not aggDomain) ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    page.wait_for_timeout(400)
+
+    buy_box_result = page.evaluate("""() => {
+        if (typeof buyBox !== 'function') return {ok: false, reason: 'buyBox not defined'};
+        const vid = Object.keys(BOOKING)[0];
+        if (!vid) return {ok: false, reason: 'no BOOKING entries'};
+        const showId = 'test-agg-show-001';
+        // Inject AGGLINKS entry so provenance is tracked
+        const prevAgg = (typeof AGGLINKS !== 'undefined') ? AGGLINKS[showId] : undefined;
+        if (typeof AGGLINKS !== 'undefined') AGGLINKS[showId] = 'theatre.art.bg';
+        // Render buyBox with theatre.art.bg URL and showId
+        const html = buyBox(vid, null, false, 'https://theatre.art.bg/show/999', showId);
+        // Restore
+        if (typeof AGGLINKS !== 'undefined') {
+            if (prevAgg !== undefined) AGGLINKS[showId] = prevAgg; else delete AGGLINKS[showId];
+        }
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const link = doc.querySelector('a.buylink');
+        return {
+            ok: true,
+            vid: vid,
+            linkHref: link ? link.getAttribute('href') : null,
+            linkText: link ? link.textContent.trim() : null,
+        };
+    }""")
+
+    if not buy_box_result.get("ok"):
+        skip("p2d_buybox_agg_label", buy_box_result.get("reason", "not available"))
+    else:
+        link_text = buy_box_result.get("linkText") or ""
+        check("p2d_buybox_theatre_art_label",
+              "theatre.art.bg" in link_text,
+              f"link text: {link_text!r} (should contain 'theatre.art.bg')")
+        check("p2d_buybox_theatre_art_href",
+              buy_box_result.get("linkHref") == "https://theatre.art.bg/show/999",
+              f"href: {buy_box_result.get('linkHref')!r}")
+
+    # P2D-2b: official box-office on theatre.art.bg — NO AGGLINKS entry → venue name used
+    buy_box_noprov = page.evaluate("""() => {
+        if (typeof buyBox !== 'function') return {ok: false, reason: 'buyBox not defined'};
+        const vid = Object.keys(BOOKING)[0];
+        if (!vid) return {ok: false, reason: 'no BOOKING entries'};
+        const b = BOOKING[vid];
+        // Render WITHOUT showId (no AGGLINKS lookup) → official box-office case
+        const html = buyBox(vid, null, false, 'https://theatre.art.bg/official/999');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const link = doc.querySelector('a.buylink');
+        const linkText = link ? link.textContent.trim() : '';
+        return {ok: true, linkText, label: b ? b.label : ''};
+    }""")
+    if buy_box_noprov.get("ok"):
+        lt = buy_box_noprov.get("linkText") or ""
+        lbl = buy_box_noprov.get("label") or ""
+        check("p2d_buybox_no_agglinks_uses_venue_name",
+              lbl and lbl in lt,
+              f"text {lt!r} should contain venue label {lbl!r} when no AGGLINKS entry")
+
+    ctx.close()
+
+    # ── P2D-3: filmBuyBox() labels via AGGLINKS ──────────────────────────────
+    print("\n=== P2D-3: filmBuyBox() uses AGGLINKS for programata.bg label ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(400)
+
+    film_buy_result = page.evaluate(f"""() => {{
+        if (typeof filmBuyBox !== 'function') return {{ok: false, reason: 'filmBuyBox not defined'}};
+        const today = "{CLOCK_TODAY_ISO}";
+        let fid = null, vid = null;
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today && BOOKING[r[1]]) {{ fid = r[0]; vid = r[1]; break; }}
+        }}
+        if (!fid) return {{ok: false, reason: 'no upcoming showtime found'}};
+        const film = filmById[fid];
+        if (!film) return {{ok: false, reason: 'film object not found for ' + fid}};
+        const vkey = fid + '|' + vid;
+        // Inject both VLINK_MAP and AGGLINKS entries
+        const prevVL = VLINK_MAP[vkey];
+        VLINK_MAP[vkey] = 'https://www.programata.bg/film/test';
+        const prevAgg = (typeof AGGLINKS !== 'undefined') ? AGGLINKS[vkey] : undefined;
+        if (typeof AGGLINKS !== 'undefined') AGGLINKS[vkey] = 'programata.bg';
+        const rows = SHOWTIMES.filter(r => r[0] === fid && r[1] === vid && r[2] >= today);
+        const html = filmBuyBox(film, rows);
+        // Restore
+        if (prevVL !== undefined) VLINK_MAP[vkey] = prevVL; else delete VLINK_MAP[vkey];
+        if (typeof AGGLINKS !== 'undefined') {{
+            if (prevAgg !== undefined) AGGLINKS[vkey] = prevAgg; else delete AGGLINKS[vkey];
+        }}
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a.buylink'));
+        const texts = links.map(l => l.textContent.trim());
+        const hrefs = links.map(l => l.getAttribute('href'));
+        return {{ok: true, fid, vid, texts, hrefs}};
+    }}""")
+
+    if not film_buy_result.get("ok"):
+        skip("p2d_filmBuyBox_agg_label", film_buy_result.get("reason", "not available"))
+    else:
+        texts = film_buy_result.get("texts") or []
+        hrefs = film_buy_result.get("hrefs") or []
+        check("p2d_filmBuyBox_programata_label",
+              any("programata.bg" in t for t in texts),
+              f"link texts: {texts!r} (expected 'programata.bg' in one)")
+        check("p2d_filmBuyBox_programata_href",
+              any("programata.bg" in h for h in hrefs),
+              f"hrefs: {hrefs!r}")
+
+    ctx.close()
+
+
 # ============================================================================
 # Registry and main
 # ============================================================================
@@ -7819,6 +8041,7 @@ WAVES = {
     "N": wave_n,
     "P": wave_p,
     "P2A": wave_p2a,
+    "P2D": wave_p2d,
 }
 
 def main():

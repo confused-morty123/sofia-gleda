@@ -1333,6 +1333,86 @@ check("a fetch of any venue starts with no reseller listing left over",
       (O.fetch_venue("kuklen", FakeNet({}), TODAY), "kuklen" in O.SECONDARY), (None, False))
 check("both channels down: unreachable", O.fetch_venue("kuklen", FakeNet({}), TODAY), None)
 
+# ================================================================ wave P2D: link choices (aggregator → venue)
+# Tests for theatre_link_choices (P2D: link aggregator-only listings to the
+# aggregator's own page, and switch to the official URL once the venue lists it).
+print("P2D link choices: official / aggregator-only / switches when venue lists it")
+_P = "https://theatre.art.bg/"
+# rr rows: (sid, date, time, meta_dict, _)
+_rr_rows = [
+    ("show-a", "2026-10-15", "19:00", {"url": "https://sfumato.bg/show-a"}, None),
+    ("show-b", "2026-10-16", "19:00", {"url": "https://sfumato.bg/show-b"}, None),
+]
+_rr_extra = [
+    ("show-c", "2026-11-10", "19:00", {"url": "https://sfumato.bg/show-c"}, None),
+]
+# agg_full: (sid, title, date, time, hall, link, page, price)
+_agg_full = [
+    ("show-a", "SHOW A", "2026-10-15", "19:00", None, "b1", _P + "show-a-page", None),  # official lists it
+    ("show-d", "SHOW D", "2026-10-20", "19:00", None, "b2", _P + "show-d-page", None),  # aggregator-only
+    ("show-d", "SHOW D", "2026-10-18", "19:00", None, "b3", _P + "show-d-earlier", None),  # earlier date wins
+    ("show-e", "SHOW E", "2026-11-01", "19:00", None, "b4", _P + "show-e-page", None),  # after coverage
+    ("show-f", "SHOW F", "2026-11-05", "19:00", None, "b5", None, None),   # no page → no link
+]
+_on_stage = {"show-a", "show-b", "show-c", "show-d", "show-e", "show-f"}
+_lc, _lc_agg = S.theatre_link_choices("official", _rr_rows, _rr_extra, _agg_full, _on_stage)
+check("official status: show in official rows gets its official URL",
+      _lc.get("show-a"), "https://sfumato.bg/show-a")
+check("official status: show only in extra_rows gets its official URL",
+      _lc.get("show-c"), "https://sfumato.bg/show-c")
+check("official status: aggregator-only show (after coverage) gets the art.bg page",
+      _lc.get("show-d"), _P + "show-d-earlier")    # earliest date wins
+check("official status: show after coverage gets art.bg page",
+      _lc.get("show-e"), _P + "show-e-page")
+check("official status: agg-only show with no page gets no link",
+      _lc.get("show-f"), None)
+check("official status: show NOT on-stage this run gets no link",
+      _lc.get("show-x"), None)
+check("official status: agg_sids contains only aggregator-sourced shows",
+      _lc_agg, {"show-d", "show-e"})
+check("official status: agg_sids does NOT contain official-coverage show",
+      "show-a" not in _lc_agg, True)
+
+# status=="none" (no official source, e.g. Ателие 313)
+_agg_none = [
+    ("show-g", "SHOW G", "2026-10-22", "19:00", None, "b6", _P + "show-g-page", None),
+    ("show-g", "SHOW G", "2026-10-20", "19:00", None, "b7", _P + "show-g-early", None),  # earlier
+    ("show-h", "SHOW H", "2026-10-25", "19:00", None, "b8", None, None),   # no page
+]
+_lc_none, _lc_none_agg = S.theatre_link_choices("none", [], [], _agg_none, {"show-g", "show-h"})
+check("none status: aggregator-only show gets its art.bg page (earliest date)",
+      _lc_none.get("show-g"), _P + "show-g-early")
+check("none status: show with no page gets no link",
+      _lc_none.get("show-h"), None)
+check("none status: agg_sids contains show with page",
+      "show-g" in _lc_none_agg, True)
+check("none status: agg_sids does not contain show with no page",
+      "show-h" not in _lc_none_agg, True)
+
+# "Switches the day the venue lists it": official URL wins over agg page even
+# when a minted-show link already exists in `existing`.
+# On the PREVIOUS run show-d was agg-only → minted, link in existing.
+# This run the venue lists it officially → official URL must override.
+_rr_rows2 = _rr_rows + [("show-d", "2026-10-18", "19:00", {"url": "https://sfumato.bg/show-d-official"}, None)]
+_lc2, _lc2_agg = S.theatre_link_choices("official", _rr_rows2, _rr_extra, _agg_full,
+                                         _on_stage, existing={"show-d": _P + "show-d-earlier"})
+check("switches the day the venue lists it: official URL overrides pre-existing minted/aggregator link",
+      _lc2.get("show-d"), "https://sfumato.bg/show-d-official")
+check("switches the day the venue lists it: show-d removed from agg_sids (now official)",
+      "show-d" not in _lc2_agg, True)
+
+# "unreachable" status: no new links added, only pre-existing (minted) links kept.
+_lc_unreach, _lc_unreach_agg = S.theatre_link_choices("unreachable", _rr_rows, _rr_extra, _agg_full,
+                                                        _on_stage, existing={"show-x": "https://prev.link/x"})
+check("unreachable: pre-existing minted link is kept",
+      _lc_unreach.get("show-x"), "https://prev.link/x")
+check("unreachable: no new links added from official rows",
+      _lc_unreach.get("show-a"), None)
+check("unreachable: no new links added from aggregator pages",
+      _lc_unreach.get("show-d"), None)
+check("unreachable: agg_sids is empty",
+      _lc_unreach_agg, set())
+
 print()
 if fails:
     print(f"{len(fails)} FAILED: {', '.join(fails)}")

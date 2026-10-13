@@ -1836,7 +1836,7 @@ NO_OFFICIAL_SOURCE = {
     "natfiz": "the monthly programme is a single JPG poster (natfiz.bg/udt-mesechna-programa/)",
     "new-ndk": "no programme of its own: tickets.ndk.bg lists every NDK hall without "
                "identifying Нов театър",
-    "derida": "derida-dance.com carries no current programme (archive only)",
+    "derida": "derida.eu/sabitiya/ (programme page) is JavaScript-rendered — no machine-readable dated programme",
 }
 
 FETCHERS = OrderedDict([

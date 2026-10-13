@@ -2123,17 +2123,38 @@ const EVENT_VENUE={
 function busiestVenue(rows){
   const tally={}; rows.forEach(r=>tally[r[1]]=(tally[r[1]]||0)+r[3].length);
   return Object.keys(tally).sort((a,b)=>tally[b]-tally[a])[0];}
-/* Theatre/show buy box (single venue) — unchanged */
-function buyBox(vid,date,isCinema,specificUrl){
+/* aggDomain: return the aggregator label when a URL points to a known listing
+   aggregator, or null when the URL is a venue's own page. Retained for test
+   compatibility; buyBox/filmBuyBox now use AGGLINKS for provenance-based labelling. */
+function aggDomain(url){
+  if(!url)return null;
+  try{const h=new URL(url).hostname.replace(/^www\./,"");
+    if(h==="theatre.art.bg"||h.endsWith(".theatre.art.bg"))return"theatre.art.bg";
+    if(h==="programata.bg"||h.endsWith(".programata.bg"))return"programata.bg";
+  }catch(e){}
+  return null;
+}
+/* Theatre/show buy box (single venue). When AGGLINKS lists the show id as
+   aggregator-sourced the label reads "theatre.art.bg ↗" or "programata.bg ↗"
+   instead of the venue name; otherwise the venue name is used.
+   showId (optional 5th param) is the show id to look up in AGGLINKS. */
+function buyBox(vid,date,isCinema,specificUrl,showId){
   const L=t(),b=BOOKING[vid]; if(!b)return"";
-  /* Only the venue's own ticketing — never generic aggregators. */
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
-      ${(()=>{const _su=safeUrl(specificUrl||bookUrl(vid,date));return _su?`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label)} ↗</a>`:""})()}
+      ${(()=>{
+        const _su=safeUrl(specificUrl||bookUrl(vid,date));
+        if(!_su)return"";
+        const _al=(showId&&typeof AGGLINKS==="object"&&AGGLINKS[showId])||null;
+        const _lbl=_al||((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label);
+        return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc(_lbl)} ↗</a>`;
+      })()}
     </div>
     <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
-/* Film buy box: compact pills per cinema, sorted by screening count desc then name */
+/* Film buy box: compact pills per cinema, sorted by screening count desc then name.
+   When the resolved VLINKS URL is a programata.bg page (preliminary-only pair),
+   the pill is labelled "programata.bg ↗" instead of the cinema name. */
 function filmBuyBox(f,rows){
   const L=t();
   /* Count screenings per venue */
@@ -2150,14 +2171,16 @@ function filmBuyBox(f,rows){
   let hasEpay=false;
   const items=vids.map(vid=>{
     const b=BOOKING[vid],c=cinById[vid]; if(!b)return"";
-    const cname=(S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label;
     const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+vid];
     if(viaEpay)hasEpay=true;
     if(b.inPerson){
+      const cname=(S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label;
       return`<span class="buylink inperson">${esc(cname)} — ${esc(S.lang==="bg"?"на касата":"box office")}</span>`;
     }
     const u=safeUrl(filmTixUrl(f.id,vid,null)||b.url);
     if(!u)return"";
+    const _al=(typeof AGGLINKS==="object"&&AGGLINKS[f.id+"|"+vid])||null;
+    const cname=_al||((S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label);
     return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(cname)} ↗</a>`;
   }).filter(Boolean);
   if(!items.length)return"";
@@ -2280,7 +2303,7 @@ function sheetShow(sh){
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
       ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}</div>
-    ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre))}
+    ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
     ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.aboutT)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
