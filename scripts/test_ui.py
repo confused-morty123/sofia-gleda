@@ -6777,6 +6777,150 @@ def wave_l(browser):
 
             ctx.close()
 
+    # ── L6c: P2F — PRELIM_ROWS show row marks only that show-day as preliminary ─
+    # A [showId, theatreId, date] triple in PRELIM_ROWS must cause the show sheet
+    # to show "предварителна програма" / "preliminary" on that date only, in both
+    # languages, and the calendar note must include the preliminary text too.
+    print("\n=== L6c: P2F — PRELIM_ROWS show row marks show-day preliminary ===")
+
+    # Pick a show that has a performance on at least two future dates
+    p2f_show_info = None
+    if "err" not in prelim_theatre_info:
+        ctx, page_p2f, _ = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+        page_p2f.wait_for_timeout(500)
+        p2f_show_info = page_p2f.evaluate(f"""() => {{
+            if (typeof PERFORMANCES === 'undefined' || typeof SHOWS === 'undefined') return {{err: 'no data'}};
+            const thId = '{prelim_theatre_info["theatreId"]}';
+            const thShows = SHOWS.filter(s => s.theatre === thId).map(s => s.id);
+            const byShow = {{}};
+            for (const p of PERFORMANCES) {{
+                if (!thShows.includes(p[0])) continue;
+                if (!byShow[p[0]]) byShow[p[0]] = [];
+                byShow[p[0]].push(p[1]);
+            }}
+            for (const [sid, dates] of Object.entries(byShow)) {{
+                if (dates.length >= 2) {{
+                    const sd = dates.slice().sort();
+                    return {{showId: sid, theatreId: thId, dateA: sd[0], dateB: sd[1]}};
+                }}
+            }}
+            return {{err: 'no show with 2+ dates'}};
+        }}""")
+        if p2f_show_info and "err" in p2f_show_info:
+            p2f_show_info = None
+            ctx.close()
+
+    if p2f_show_info is None:
+        skip("l6c_p2f_prelim_rows_show_bg", "no show with 2+ dates found")
+        skip("l6c_p2f_prelim_rows_show_en", "no show with 2+ dates found")
+        skip("l6c_p2f_prelim_rows_show_other_day_clear", "no show with 2+ dates found")
+        skip("l6c_p2f_prelim_rows_cal_note", "no show with 2+ dates found")
+    else:
+        sid = p2f_show_info["showId"]
+        thId = p2f_show_info["theatreId"]
+        dateA = p2f_show_info["dateA"]   # will be the prelim row date
+        dateB = p2f_show_info["dateB"]   # must NOT be preliminary
+
+        # Inject [showId, theatreId, dateA] into PRELIM_ROWS; clear PRELIM_FROM for this theatre
+        page_p2f.evaluate(f"""() => {{
+            if (typeof PRELIM_ROWS !== 'undefined') {{
+                // Remove any existing rows for this show/theatre
+                const keep = PRELIM_ROWS.filter(r => !(r[0] === '{sid}' && r[1] === '{thId}'));
+                PRELIM_ROWS.length = 0;
+                keep.forEach(r => PRELIM_ROWS.push(r));
+                PRELIM_ROWS.push(['{sid}', '{thId}', '{dateA}']);
+            }}
+            if (typeof PRELIM_FROM !== 'undefined') {{
+                delete PRELIM_FROM['{thId}'];
+            }}
+        }}""")
+
+        open_show_sheet(page_p2f, sid)
+        page_p2f.wait_for_timeout(700)
+
+        # BG: prelim-tag on dateA but NOT on dateB
+        prelim_a = page_p2f.evaluate(f"""() => {{
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {{err: 'no sheet'}};
+            const wantA = fmtDayDow('{dateA}');
+            const wantB = fmtDayDow('{dateB}');
+            const groups = Array.from(sheet.querySelectorAll('.dgroup'));
+            const findTag = (want) => {{
+                const g = groups.find(g => {{
+                    const h = g.querySelector('.dg-h');
+                    return h && h.firstChild && h.firstChild.textContent.trim() === want;
+                }});
+                if (!g) return null;
+                return g.querySelector('.prelim-tag') ? g.querySelector('.prelim-tag').textContent.trim() : null;
+            }};
+            return {{tagA: findTag(wantA), tagB: findTag(wantB)}};
+        }}""")
+
+        if "err" in prelim_a:
+            check("l6c_p2f_prelim_rows_show_bg", False, prelim_a["err"])
+            check("l6c_p2f_prelim_rows_show_other_day_clear", False, prelim_a["err"])
+        else:
+            check("l6c_p2f_prelim_rows_show_bg",
+                  prelim_a.get("tagA") is not None and "предварителна" in (prelim_a.get("tagA") or ""),
+                  f"BG tag on dateA={prelim_a.get('tagA')!r}")
+            check("l6c_p2f_prelim_rows_show_other_day_clear",
+                  prelim_a.get("tagB") is None,
+                  f"tag on non-prelim dateB={prelim_a.get('tagB')!r}")
+
+        # EN: same sheet re-opened with lang=EN
+        close_sheet(page_p2f)
+        page_p2f.evaluate("() => { S.lang = 'en'; }")
+        open_show_sheet(page_p2f, sid)
+        page_p2f.wait_for_timeout(700)
+
+        prelim_en = page_p2f.evaluate(f"""() => {{
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {{err: 'no sheet'}};
+            const wantA = fmtDayDow('{dateA}');
+            const groups = Array.from(sheet.querySelectorAll('.dgroup'));
+            const g = groups.find(g => {{
+                const h = g.querySelector('.dg-h');
+                return h && h.firstChild && h.firstChild.textContent.trim() === wantA;
+            }});
+            if (!g) return {{err: 'dateA group not found in EN'}};
+            const tag = g.querySelector('.prelim-tag');
+            return {{tag: tag ? tag.textContent.trim() : null}};
+        }}""")
+
+        if "err" in prelim_en:
+            check("l6c_p2f_prelim_rows_show_en", False, prelim_en["err"])
+        else:
+            check("l6c_p2f_prelim_rows_show_en",
+                  prelim_en.get("tag") is not None and "preliminary" in (prelim_en.get("tag") or "").lower(),
+                  f"EN tag on dateA={prelim_en.get('tag')!r}")
+
+        # Calendar note: cal_note must include the preliminary text when open on dateA
+        close_sheet(page_p2f)
+        page_p2f.evaluate("() => { S.lang = 'bg'; }")
+        open_show_sheet(page_p2f, sid)
+        page_p2f.wait_for_timeout(500)
+        perf_time_a = page_p2f.evaluate(f"""() => {{
+            const p = (PERFORMANCES || []).find(p => p[0] === '{sid}' && p[1] === '{dateA}');
+            return p ? p[2] : null;
+        }}""")
+        if not perf_time_a:
+            skip("l6c_p2f_prelim_rows_cal_note", f"no performance found for {sid} on {dateA}")
+        else:
+            cal = page_p2f.evaluate(f"""() => {{
+                if (typeof calEvent !== 'function') return {{err: 'calEvent not reachable'}};
+                const ev = calEvent('show', '{sid}', '{thId}', '{dateA}', '{perf_time_a}');
+                return ev ? {{description: ev.description}} : {{err: 'calEvent returned null'}};
+            }}""")
+            if "err" in cal:
+                check("l6c_p2f_prelim_rows_cal_note", False, cal["err"])
+            else:
+                check("l6c_p2f_prelim_rows_cal_note",
+                      "Предварителна програма" in (cal.get("description") or "")
+                      or "preliminary" in (cal.get("description") or "").lower(),
+                      f"cal description={cal.get('description','')[:80]!r}")
+
+        ctx.close()
+
     # ── L7: No page errors; verify_build.py; full test_ui.py L ────────────────
     print("\n=== L7: No page errors ===")
 

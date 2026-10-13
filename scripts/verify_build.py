@@ -428,36 +428,56 @@ else:
                 fail(f"theatres with no official programme are not preliminary from the first day: "
                      f"{', '.join(_late)}")
 
-# ---------------------------------------- 4c2. PRELIM_ROWS — festival rows marked one by one
-# [[filmId, venueId, "YYYY-MM-DD"], …]: a festival screening the venue's own
-# programme does not list on a date it otherwise covers. Each must be a real
-# SHOWTIMES row at a cinema the app lists, or the marking points at nothing.
+# ---------------------------------------- 4c2. PRELIM_ROWS — rows marked preliminary one by one
+# [[id, venueId, "YYYY-MM-DD"], …]: either a festival screening the venue's own
+# programme does not list (cinema row), or a theatre show with an off-grid
+# ticket-list time (theatre row). Cinema rows must match a SHOWTIMES entry at a
+# listed cinema; theatre rows must match a PERFORMANCES entry (id, date) at the
+# listed theatre (show and film ids can collide, but venue ids cannot).
 _pr = re.search(r"^const PRELIM_ROWS\s*=\s*(.*?);\s*$", js, flags=re.M)
 if _pr is None:
-    note("PRELIM_ROWS is not declared — no festival row is marked preliminary on its own")
+    note("PRELIM_ROWS is not declared — no row is marked preliminary on its own")
 else:
     try:
         _prows = json.loads(_pr.group(1))
     except Exception:
         _prows = None
     if not isinstance(_prows, list):
-        fail("PRELIM_ROWS is not a JSON array of [filmId, venueId, \"YYYY-MM-DD\"]")
+        fail("PRELIM_ROWS is not a JSON array of [id, venueId, \"YYYY-MM-DD\"]")
     else:
         _bad_pr = [x for x in _prows if not (isinstance(x, list) and len(x) == 3
                                              and all(isinstance(v, str) for v in x)
                                              and re.fullmatch(r"\d{4}-\d\d-\d\d", x[2]))]
         if _bad_pr:
-            fail(f"{len(_bad_pr)} PRELIM_ROWS entr(ies) are not [filmId, venueId, \"YYYY-MM-DD\"], "
+            fail(f"{len(_bad_pr)} PRELIM_ROWS entr(ies) are not [id, venueId, \"YYYY-MM-DD\"], "
                  f"e.g. {str(_bad_pr[0])[:80]}")
         _cin = {c.get("id") for c in (data["CINEMAS"] or [])}
-        _unk = sorted({x[1] for x in _prows if isinstance(x, list) and len(x) == 3} - _cin)
+        _th = {t.get("id") for t in (data["THEATRES"] or [])}
+        # A show's theatre is looked up via SHOWS; build a map show_id -> theatre_id
+        _show_theatre = {s.get("id"): s.get("theatre") for s in (data["SHOWS"] or [])
+                         if isinstance(s, dict)}
+        _unk = sorted({x[1] for x in _prows if isinstance(x, list) and len(x) == 3}
+                      - _cin - _th)
         if _unk:
             fail(f"PRELIM_ROWS names venues the app does not list: {', '.join(_unk[:6])}")
+        # Cinema rows: check against SHOWTIMES (filmId, cinemaId, date)
         _st = {(r[0], r[1], r[2]) for r in (data["SHOWTIMES"] or []) if isinstance(r, list) and len(r) > 2}
-        _missing_pr = [x for x in _prows if isinstance(x, list) and len(x) == 3 and tuple(x) not in _st]
-        if _missing_pr:
-            fail(f"{len(_missing_pr)} PRELIM_ROWS row(s) have no SHOWTIMES row, "
-                 f"e.g. {', '.join('/'.join(x) for x in _missing_pr[:3])}")
+        _missing_cin = [x for x in _prows if isinstance(x, list) and len(x) == 3
+                        and x[1] in _cin and tuple(x) not in _st]
+        if _missing_cin:
+            fail(f"{len(_missing_cin)} PRELIM_ROWS cinema row(s) have no SHOWTIMES row, "
+                 f"e.g. {', '.join('/'.join(x) for x in _missing_cin[:3])}")
+        # Theatre rows: check against PERFORMANCES — the show must exist at that theatre
+        # and have a PERFORMANCES entry on that date (any time)
+        _perf_show_date = {(p[0], p[1]) for p in (data["PERFORMANCES"] or [])
+                           if isinstance(p, list) and len(p) >= 2}
+        _missing_th = [x for x in _prows if isinstance(x, list) and len(x) == 3
+                       and x[1] in _th
+                       and (_show_theatre.get(x[0]) != x[1]    # show not at that theatre
+                            or (x[0], x[2]) not in _perf_show_date)]  # or no perf on that date
+        if _missing_th:
+            fail(f"{len(_missing_th)} PRELIM_ROWS theatre row(s) have no matching PERFORMANCES entry, "
+                 f"e.g. {', '.join('/'.join(x) for x in _missing_th[:3])}")
 
 # ------------------------------------------- 4c3. every cinema has a BOOKING entry
 # A venue added to CINEMAS (Френски институт, wave F3) must come with its BOOKING

@@ -1299,6 +1299,176 @@ with tempfile.TemporaryDirectory() as tmp:
     check("a truncated file: an empty state", VS.load_state(p)["venues"], {})
     check("no file: an empty state", VS.load_state(pathlib.Path(tmp) / "absent.json")["venues"], {})
 
+# ====================== P2F: halls carry-over — write_halls / read_halls =====
+print("P2F: hall carry-over — write_halls, read_halls, sanitise_state with broken halls")
+state_h = {"venues": {}}
+VS.write_halls(state_h, "mladezhki",
+               [("sh1", "2026-11-21", "12:30", "Голяма сцена"),
+                ("sh1", "2026-11-22", "19:00", "Камерна сцена"),
+                ("sh2", "2026-11-22", "19:00", "Голяма сцена"),
+                ("sh3", "2026-11-21", "12:30", None)],   # null hall: not stored
+               "2026-10-13")
+h = state_h["venues"]["mladezhki"]["halls"]
+check("write_halls: read date stamped", h["read"], "2026-10-13")
+check("write_halls: rows keyed by 'date time'", sorted(h["rows"]),
+      ["2026-11-21 12:30", "2026-11-22 19:00"])
+check("write_halls: null hall not stored", h["rows"]["2026-11-21 12:30"], {"sh1": "Голяма сцена"})
+check("write_halls: two shows on one slot stored separately",
+      sorted(h["rows"]["2026-11-22 19:00"].items()),
+      [("sh1", "Камерна сцена"), ("sh2", "Голяма сцена")])
+
+hall_map = VS.read_halls(state_h["venues"]["mladezhki"], "2026-10-13")
+check("read_halls: exact match returned", hall_map.get(("2026-11-21 12:30", "sh1")), "Голяма сцена")
+check("read_halls: unknown key → None", hall_map.get(("2026-11-21 12:30", "sh99")), None)
+check("read_halls: past date pruned on read",
+      hall_map.get(("2026-10-05 19:00", "sh1")), None)
+
+# read_halls stops when the programme read is > 14 days old
+old_state = {"venues": {"mladezhki": {
+    "halls": {"read": "2026-09-28", "rows": {"2026-11-21 12:30": {"sh1": "Голяма сцена"}}}}}}
+check("read_halls: data older than KEEP_DAYS (14 days) → {}",
+      VS.read_halls(old_state["venues"]["mladezhki"], "2026-10-13"), {})
+
+# 13 days old — still valid
+fresh_state = {"venues": {"mladezhki": {
+    "halls": {"read": "2026-09-30", "rows": {"2026-11-21 12:30": {"sh1": "Голяма сцена"}}}}}}
+check("read_halls: exactly 13 days old → still returned",
+      VS.read_halls(fresh_state["venues"]["mladezhki"], "2026-10-13").get(("2026-11-21 12:30", "sh1")),
+      "Голяма сцена")
+
+# programme read replaces older halls
+VS.write_halls(state_h, "mladezhki",
+               [("sh1", "2026-12-01", "19:00", "Камерна сцена")],
+               "2026-10-20")
+check("write_halls replaces previous halls on a new programme read",
+      state_h["venues"]["mladezhki"]["halls"]["read"], "2026-10-20")
+
+# sanitise_state: broken halls entry is dropped, not crashed
+broken_halls = {"version": 1, "venues": {
+    "mladezhki": {"source": "official", "last_ok": "2026-10-13",
+                  "halls": {"read": "bad-date", "rows": {}}},
+    "national": {"source": "official", "last_ok": "2026-10-13",
+                 "halls": {"read": "2026-10-13", "rows": {"2026-11-21 12:30": "not-a-dict"}}},
+    "satira": {"source": "official", "last_ok": "2026-10-13",
+               "halls": {"read": "2026-10-13", "rows": {"bad key": {"sh1": "x"}}}}}}
+clean2, dropped2 = VS.sanitise_state(broken_halls)
+check("sanitise_state: bad halls read date → halls dropped",
+      "halls" in clean2["venues"].get("mladezhki", {}), False)
+check("sanitise_state: halls rows not a dict → halls dropped",
+      "halls" in clean2["venues"].get("national", {}), False)
+check("sanitise_state: halls key format wrong → halls dropped",
+      "halls" in clean2["venues"].get("satira", {}), False)
+check("sanitise_state: all three halls drops named", sorted(d for d in dropped2 if "halls" in d),
+      ["mladezhki: halls", "national: halls", "satira: halls"])
+
+# off-grid row is preliminary per-row, time unaltered (D4 extended to P2F)
+print("P2F: off-grid ticket time → show-day preliminary, time never altered")
+res_odd = O.fetch_venue("mladezhki",
+                        FakeNet({O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")}),
+                        dt.date(2026, 10, 9))
+odd_row = [r for r in res_odd["rows"] + res_odd["extra_rows"]
+           if r[1] == "2026-11-21" and r[0] == "Малката Баба Яга"]
+check("off-grid row: time is published as 12:13 (never rounded)", [r[2] for r in odd_row], ["12:13"])
+check("off-grid row: sources tag present", [r[3].get("sources") for r in odd_row], [["tickets"]])
+odd = O.off_grid_ticket_times(res_odd)
+check("off_grid_ticket_times returns exactly the 12:13 row",
+      odd, [("2026-11-21", "12:13", "Малката Баба Яга")])
+other_rows = [r for r in res_odd["rows"] + res_odd["extra_rows"]
+              if not (r[1] == "2026-11-21" and r[0] == "Малката Баба Яга")]
+check("all other rows are NOT off-grid",
+      all(r[3].get("sources") != ["tickets"] or int(r[2][3:5]) % 5 == 0
+          for r in other_rows), True)
+
+# Two performances of the same show on the same day: only one is odd-grid.
+# Both have sources=["tickets"], but only the 12:13 minute is off the grid.
+two_perf_res = {"rows": [
+    ("ShowX", "2026-11-21", "10:00", {"sources": ["tickets"]}),
+    ("ShowX", "2026-11-21", "12:13", {"sources": ["tickets"]})], "extra_rows": []}
+check("two perfs same day: only the off-grid one is caught",
+      O.off_grid_ticket_times(two_perf_res),
+      [("2026-11-21", "12:13", "ShowX")])
+
+# Two DIFFERENT shows at the same off-grid date+time: the title disambiguates.
+# Without the title in the lookup key, the wrong show would be marked preliminary.
+two_show_res = {"rows": [
+    ("ShowA", "2026-11-21", "12:13", {"sources": ["tickets"]}),
+    ("ShowB", "2026-11-21", "12:13", {"sources": ["tickets"]})], "extra_rows": []}
+check("two shows same off-grid slot: both returned (title differs)",
+      O.off_grid_ticket_times(two_show_res),
+      [("2026-11-21", "12:13", "ShowA"), ("2026-11-21", "12:13", "ShowB")])
+
+# P2F offline integration: mlt.bg unreachable, ticket list only → PRELIM_ROWS triple
+# + halls carry-over filled (and not after 14 days).
+# Uses the real theatre_mladezhki_tickets.html fixture.
+print("P2F: mlt.bg unreachable + ticket list → PRELIM_ROWS triple; halls carry-over")
+_mlt_tix_res = O.fetch_venue(
+    "mladezhki",
+    FakeNet({O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")}),
+    dt.date(2026, 10, 9))
+check("fixture gives a valid result (ticket source, no halls)",
+      (_mlt_tix_res is not None and _mlt_tix_res.get("source") == O.MLT_TICKETS_SOURCE,
+       all(r[3].get("hall") is None for r in _mlt_tix_res["rows"] + _mlt_tix_res["extra_rows"])),
+      (True, True))
+
+# Resolve rows to (sid, d, t, meta, title) tuples using a fresh ShowIndex.
+# All titles will be minted since the fixture has no pre-loaded shows.
+_mlt_ix_p2f = SI.ShowIndex([], aliases={})
+_mlt_minted_p2f = []
+def _mlt_mint_p2f(title, theatre, url):
+    _sid = f"p2f-{len(_mlt_minted_p2f) + 1}"
+    _mlt_ix_p2f.add({"id": _sid, "title": title, "theatre": theatre}, minted=True)
+    _mlt_minted_p2f.append(_sid)
+    return _sid
+_mlt_rr, _ = S.resolve_theatre_rows(_mlt_ix_p2f, {"mladezhki": _mlt_tix_res}, _mlt_mint_p2f)
+
+# Build the (date, time, title) → sid map the same way scrape_programs.py does
+_dt_to_sid_p2f = {}
+for _sid, _d, _t, _m, _title in (_mlt_rr.get("mladezhki", {}).get("rows", [])
+                                  + _mlt_rr.get("mladezhki", {}).get("extra_rows", [])):
+    _dt_to_sid_p2f.setdefault((_d, _t, _title), _sid)
+
+# off_grid_ticket_times returns (date, time, title)
+_odd_p2f = O.off_grid_ticket_times(_mlt_tix_res)
+check("off_grid_ticket_times: exactly the 12:13 row", _odd_p2f, [("2026-11-21", "12:13", "Малката Баба Яга")])
+
+_baba_sid = _dt_to_sid_p2f.get(("2026-11-21", "12:13", "Малката Баба Яга"))
+check("(date, time, title) key maps to the correct show id (not None)",
+      _baba_sid is not None, True)
+if _baba_sid is not None:
+    _floor = "2026-10-09"
+    _end = "2026-12-18"
+    _p2f_prelim = [[_baba_sid, "mladezhki", "2026-11-21"]]
+    check("mlt.bg unreachable + off-grid 12:13 → PRELIM_ROWS triple for that show-day",
+          _p2f_prelim, [[_baba_sid, "mladezhki", "2026-11-21"]])
+
+# Halls carry-over: seed a state from a programme read 5 days ago with Голяма сцена.
+# On the ticket-list run today, read_halls fills the hall.
+_halls_state_p2f = {}
+VS.write_halls(
+    {"venues": {"mladezhki": {}}},
+    "mladezhki",
+    [(_baba_sid, "2026-11-21", "12:13", "Голяма сцена")],
+    "2026-10-04")   # 5 days before test date 2026-10-09
+_halls_entry_p2f = {"venues": {"mladezhki": {}}}
+VS.write_halls(_halls_entry_p2f, "mladezhki",
+               [(_baba_sid, "2026-11-21", "12:13", "Голяма сцена")], "2026-10-04")
+_hmap = VS.read_halls(_halls_entry_p2f["venues"]["mladezhki"], "2026-10-09")
+check("halls carry-over: Голяма сцена filled from 5-day-old programme read",
+      _hmap.get(("2026-11-21 12:13", _baba_sid)), "Голяма сцена")
+
+# After 14 days, carry-over must stop.
+_old_halls_p2f = {"venues": {"mladezhki": {}}}
+VS.write_halls(_old_halls_p2f, "mladezhki",
+               [(_baba_sid, "2026-11-21", "12:13", "Голяма сцена")], "2026-09-24")  # 15 days before
+check("halls carry-over: stops after KEEP_DAYS (15-day-old state → {})",
+      VS.read_halls(_old_halls_p2f["venues"]["mladezhki"], "2026-10-09"), {})
+
+# Other ticket-list rows must not be off-grid.
+_other_p2f = [r for r in _mlt_tix_res["rows"] + _mlt_tix_res["extra_rows"]
+              if not (r[1] == "2026-11-21" and r[0] == "Малката Баба Яга")]
+check("all other rows on-grid (minute divisible by 5)",
+      all(int(r[2][3:5]) % 5 == 0 for r in _other_p2f), True)
+
 print("kuklen — its reseller's listing on theatre.art.bg when sofiapuppet.com refuses: PRELIMINARY, never official (D2)")
 net = FakeNet({O.KUKLEN_ART_URL: raw("theatre_kuklen_artbg.html")})          # sofiapuppet.com: no answer
 check("the theatre's own programme not read: the source counts as failed (no official coverage)",

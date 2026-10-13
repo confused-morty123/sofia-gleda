@@ -46,6 +46,14 @@ dates, as far as it vouches for them); earlier days keep their last record —
 on daily runs, what the page listed on that very day. Rows are unique on
 (date, time, stage).
 
+   "halls": {                          stage carry-over: written only by a programme read
+     "read": "YYYY-MM-DD",             date the programme was read (write_halls stamps it)
+     "rows": {                         upcoming dates only, pruned as days pass
+       "YYYY-MM-DD HH:MM": {           date+time key (exact match)
+         "<showId>": "<hall>"}}}       show id → hall name
+Carry-over stops when "read" is more than KEEP_DAYS days ago. A ticket-list
+read never writes "halls" — only a programme read does (rows with halls).
+
 Everything here is pure (no network) and tested offline in test_parsers.py and
 test_theatres.py.
 """
@@ -83,6 +91,30 @@ def _seen_ok(seen):
             and all(_iso_or_none(d) and isinstance(c, str) for d, c in seen.get("days", {}).items()))
 
 
+def _halls_ok(halls):
+    """Validate the "halls" carry-over entry:
+      {"read": "YYYY-MM-DD", "rows": {"YYYY-MM-DD HH:MM": {"<showId>": "<hall>"}}}"""
+    if not isinstance(halls, dict):
+        return False
+    if _iso_or_none(halls.get("read")) is None:
+        return False
+    rows = halls.get("rows")
+    if not isinstance(rows, dict):
+        return False
+    for key, shows in rows.items():
+        # key must be "YYYY-MM-DD HH:MM"
+        if not (isinstance(key, str) and len(key) == 16
+                and _iso_or_none(key[:10]) is not None
+                and key[10] == " "
+                and len(key) == 16):
+            return False
+        if not isinstance(shows, dict):
+            return False
+        if not all(isinstance(k, str) and isinstance(v, str) for k, v in shows.items()):
+            return False
+    return True
+
+
 def sanitise_state(data):
     """The state with every malformed part dropped, and what was dropped. A
     hand-edited or damaged official_state.json must never stop the refresh: a
@@ -109,6 +141,9 @@ def sanitise_state(data):
         if "seen" in e and not _seen_ok(e["seen"]):
             dropped.append(f"{v}: seen")
             del e["seen"]
+        if "halls" in e and not _halls_ok(e["halls"]):
+            dropped.append(f"{v}: halls")
+            del e["halls"]
         clean[v] = e
     out = dict(data)
     out["venues"] = clean
@@ -282,6 +317,56 @@ def seen_history(entry, today):
     rows, observed = decode_seen((entry or {}).get("seen"))
     return {"rows": sorted((r for r in rows if r[0] < today), key=lambda r: (r[0], r[1], r[2] or "")),
             "dates": {d for d in observed if d < today}}
+
+
+# ------------------------------------------------------------- hall carry-over
+def write_halls(state, venue, page_rows, today):
+    """Store hall carry-over data from a programme read (rows with halls) for
+    `venue`. page_rows: [(showId, date, "HH:MM", hall)] — only rows with a
+    non-empty hall are stored. Only upcoming dates (>= today) are kept.
+    A ticket-list read must never call this; only a programme read should."""
+    e = state.setdefault("venues", {}).setdefault(venue, {})
+    rows_dict = {}
+    for sid, d, tm, hall in page_rows:
+        if not hall or d < today:
+            continue
+        key = f"{d} {tm}"
+        rows_dict.setdefault(key, {})[sid] = hall
+    e["halls"] = {"read": today, "rows": rows_dict}
+    return e
+
+
+def read_halls(entry, today, keep_days=KEEP_DAYS):
+    """Return the carry-over hall map {(date+" "+time, showId): hall} from a
+    venue's state entry, or {} if absent, malformed, or older than keep_days.
+    Never infers halls — only returns what was explicitly stored."""
+    halls = (entry or {}).get("halls")
+    if not _halls_ok(halls):
+        return {}
+    read_date = halls["read"]
+    age = (dt.date.fromisoformat(today) - dt.date.fromisoformat(read_date)).days
+    if age > keep_days:
+        return {}
+    out = {}
+    for key, shows in halls.get("rows", {}).items():
+        date_part = key[:10]
+        if date_part < today:
+            continue                 # prune past dates on read
+        for sid, hall in shows.items():
+            out[(key, sid)] = hall
+    return out
+
+
+def prune_halls(state, today):
+    """Drop past entries from every venue's 'halls' carry-over (dates before today)."""
+    for e in (state.get("venues") or {}).values():
+        if not isinstance(e, dict) or not isinstance(e.get("halls"), dict):
+            continue
+        rows = e["halls"].get("rows")
+        if not isinstance(rows, dict):
+            continue
+        pruned = {k: v for k, v in rows.items() if k[:10] >= today}
+        e["halls"]["rows"] = pruned
 
 
 # ------------------------------------------------------------- isolation
