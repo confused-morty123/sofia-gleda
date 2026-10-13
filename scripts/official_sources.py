@@ -226,7 +226,14 @@ def parse_cinemacity_day(payload, date, cinema=None):
                 "genres": [CC_GENRES[a] for a in (f.get("attributeIds") or []) if a in CC_GENRES],
                 "hall": e.get("auditorium"), "booking": e.get("bookingLink"),
                 "format": [a for a in attrs if a in CC_FORMATS],
-                "posterLink": f.get("posterLink")}
+                "posterLink": f.get("posterLink"),
+                "filmId": f.get("id")}
+        # releaseDate is the Bulgarian release date stated by Cinema City (ISO datetime).
+        # Keep the date part only; used by scrape_programs.py to populate PREMIERES.
+        _rd = f.get("releaseDate") or ""
+        _rd_m = re.match(r"(\d{4}-\d{2}-\d{2})", _rd)
+        if _rd_m:
+            meta["releaseDate"] = _rd_m.group(1)
         if lv:
             meta["lang_ver"] = lv
         if fmt_std:

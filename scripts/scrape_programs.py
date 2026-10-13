@@ -2031,6 +2031,19 @@ def write_showattr(page, showattr_obj):
     return page[:pr.end()] + f"\nconst SHOWATTR={lit};" + page[pr.end():]
 
 
+def write_premieres(page, premieres_obj):
+    """Replace `const PREMIERES={…};` in the SOFIA-DATA block, or insert it on
+    the line after `const VLINKS=…;` when the build does not declare it yet."""
+    lit = json.dumps(premieres_obj, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    m = re.search(r"^const PREMIERES\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const PREMIERES={lit};" + page[m.end():]
+    vl = re.search(r"^const VLINKS\s*=[^\n]*;[ \t]*$", page, re.M)
+    if not vl:
+        raise KeyError("VLINKS")
+    return page[:vl.start()] + f"const PREMIERES={lit};\n" + page[vl.start():]
+
+
 def previous_official_stats():
     try:
         rep = json.loads(BUILD_REPORT.read_text(encoding="utf-8"))
@@ -3154,6 +3167,23 @@ def main():
                 th_links[sid] = _mint_url[sid]
 
     new_performances, seen_theatres = [], set()
+    # Collect premiere dates per show from official venues only.
+    # Format: {"show:<sid>": sorted_list_of_iso_dates}
+    # Source: rr rows where m.get("premiere") is True, only for status=="official".
+    # Format for cinema films: {"film:<fid>": sorted_list_of_iso_dates}
+    # Source: Cinema City releaseDate field (only CC exposes an explicit date;
+    # Кино Арена and Cine Grand do not provide an equivalent field).
+    premiere_dates: dict = {}
+    # Collect Cinema City releaseDate as film premiere signal (P3A item 1b).
+    # CC states the Bulgarian national release date per-film. We scope to dates in
+    # [today − 6 days, window end] so the rail shows recently-released and upcoming
+    # films. The same fid may appear at cc-sofia and cc-paradise; set deduplicates.
+    _prem_window_start = (dt.date.fromisoformat(floor) - dt.timedelta(days=6)).isoformat()
+    for _ccvid in OS.CC_CINEMAS:
+        for fid, _d, _t, meta, _title in resolved.get(_ccvid, []):
+            rd = (meta or {}).get("releaseDate") or ""
+            if rd and _prem_window_start <= rd <= end:
+                premiere_dates.setdefault(f"film:{fid}", set()).add(rd)
     prev_unknown = sorted({r[0] for r in old_performances if not show_index.theatre_of(r[0])})
     for v in theatre_ids:
         res = th_official.get(v)
@@ -3169,6 +3199,13 @@ def main():
                      for sid, d, t, m, _ in rr.get("rows", [])]
             xrows = [(sid, d, t, m.get("hall"), theatre_price(m.get("price")))
                      for sid, d, t, m, _ in rr.get("extra_rows", [])]
+            # Collect premiere-flagged dates from official rows (status=="official").
+            # premiere=True is set by official_theatres.py mkrow when the title
+            # contains "премиер" but not "предпремиер".
+            for sid, d, _t, m, _title in rr.get("rows", []):
+                if m.get("premiere") and sid:
+                    key = f"show:{sid}"
+                    premiere_dates.setdefault(key, set()).add(d)
             # Hall carry-over: when this run's rows all lack a hall (ticket-list
             # source), fill in from the last programme read stored in state —
             # exact match on (date+" "+time, showId) only, never inferred.
@@ -3584,6 +3621,16 @@ def main():
         out = write_agglinks(out, agglinks)
     except (KeyError, ValueError):
         pass   # AGGLINKS not in this build yet — harmless
+    # PREMIERES: write collected premiere dates.
+    # show: keys — theatre shows where m.get("premiere") is True in official rows.
+    # film: keys — Cinema City films where releaseDate is within the window; Кино
+    # Арена and Cine Grand do not expose an equivalent field.
+    premieres_out = {k: sorted(v) for k, v in sorted(premiere_dates.items())}
+    try:
+        out = write_premieres(out, premieres_out)
+        print(f"wrote PREMIERES: {len(premieres_out)} shows with premiere dates")
+    except (KeyError, ValueError):
+        pass   # PREMIERES not in this build yet — harmless
     # per-screening language-version and format labels (CODE-09)
     # Build showattr: start from old (keep-previous), overlay with this run's fresh data,
     # then prune to only (film, venue) pairs still in new_showtimes.

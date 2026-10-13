@@ -50,8 +50,9 @@ a{color:inherit}
 .bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:60;
   background:color-mix(in srgb,var(--ink) 92%,transparent); backdrop-filter:blur(14px);
   border-bottom:1px solid var(--line); padding-block:14px}
-/* three zones: brand left · search centre · controls right */
-.bar-in{display:grid; grid-template-columns:1fr minmax(0,auto) 1fr; align-items:center; gap:18px}
+/* three zones: brand left · toggle CENTRE · search+lang right
+   P3A item 1: toggle moves to true centre column */
+.bar-in{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:18px}
 .brand{display:flex; align-items:center; gap:9px; justify-self:start; min-width:0;
   background:none; border:0; padding:0; margin:0; cursor:pointer; font:inherit; -webkit-tap-highlight-color:transparent}
 .brand-logo{height:clamp(32px,3.2vw,42px); width:auto; flex:0 1 auto; min-width:0; max-width:100%;
@@ -89,33 +90,36 @@ a{color:inherit}
   /* mobile search icon button — inherits .iconb; only expanded override needed here */
   /* mobile open search field */
   .bar-row-search .search{position:relative; width:100%; max-width:none}
-  /* mobile period header: date range on its own line, no wrap */
-  .phead-title{font-size:clamp(28px,7vw,36px)}
-  .phead-dates{display:block!important; white-space:nowrap; font-size:clamp(15px,4.5vw,20px)}
+  /* P3A item 4: phone period header — title on one line, dates on own line with spacing */
+  .phead-title{font-size:clamp(28px,7vw,36px); display:block}
+  .phead-dates{display:block!important; white-space:nowrap; font-size:clamp(15px,4.5vw,20px);
+    margin-top:6px; line-height:1.25}
+  /* P3A item 4: "Друг период" button — minimum 44px tap target */
+  .phead-other{min-height:44px; display:inline-flex; align-items:center; padding-block:4px}
 }
 /* ── Segmented toggle — FIXED equal halves, language-independent ──
-   Total fixed width: 220px desktop / auto-expands on mobile to fill remaining space.
-   Height: 44px. Each half: 1fr grid cell with icon + label, accent on active. */
-.seg{display:grid; grid-template-columns:1fr 1fr; background:var(--ink-3); border:1px solid var(--line); border-radius:999px; padding:3px; gap:2px; flex:0 0 auto; width:220px}
-.seg button{display:flex; align-items:center; justify-content:center; gap:6px; height:40px; border-radius:999px; font-size:13px; font-weight:600; color:var(--fg-2); white-space:nowrap; transition:background .18s,color .18s; padding:0 8px; overflow:hidden}
+   Desktop: ~300px wide × 50px tall, centred in the middle column (P3A item 1).
+   Mobile: fills remaining width in bar-row-controls row.
+   Collision-based shrink: when search is open and viewport <1100px the labels
+   fade out (JS adds .seg-q class exactly as before, but the threshold is now
+   driven by actual layout rather than a fixed breakpoint — see searchToggleInPlace). */
+.seg{display:grid; grid-template-columns:1fr 1fr; background:var(--ink-3); border:1px solid var(--line); border-radius:999px; padding:4px; gap:2px; flex:0 0 auto; width:300px; justify-self:center}
+.seg button{display:flex; align-items:center; justify-content:center; gap:6px; height:42px; border-radius:999px; font-size:13.5px; font-weight:600; color:var(--fg-2); white-space:nowrap; transition:background .18s,color .18s; padding:0 10px; overflow:hidden}
+.seg button svg{flex:0 0 20px; width:20px; height:20px}
 .seg button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent); font-weight:700}
-.seg button svg{flex:0 0 18px; width:18px; height:18px}
-/* mobile: seg fills remaining width (must come AFTER the base width:220px rule) */
+/* mobile: seg fills remaining width (must come AFTER the base width rule) */
 @media(max-width:760px){ .seg{flex:1 1 0!important; min-width:0; width:auto!important} }
 /* at very narrow viewports, drop the SVG icons from toggle to save space */
 @media(max-width:350px){ .seg button svg{display:none} }
-/* windowed desktop (761–1439px) with the search open (.seg-q): the toggle shrinks
-   to its two icons, in step with the search field, so the logo and the field keep
-   their room (below ~1000px the logo was squeezed, at 780px the bar overflowed).
-   Full-screen widths keep the labels; mobile opens the search on its own row. */
-@media(min-width:761px) and (max-width:1439px){
-  .seg{transition:width .22s ease-out}
-  .seg button{transition:background .18s,color .18s,gap .22s ease-out}
-  .seg .seg-l{display:inline-block; max-width:7em; overflow:hidden; transition:max-width .22s ease-out, opacity .22s ease-out}
-  .seg.seg-q{width:98px}
-  .seg.seg-q button{gap:0}
-  .seg.seg-q .seg-l{max-width:0; opacity:0}
-}
+/* collision-based shrink: when search is open AND it would touch the toggle, shrink to icons-only.
+   JS sets .seg-q only when getBoundingClientRect detects a collision; removed when no collision. */
+.seg{transition:width .22s ease-out}
+.seg button{transition:background .18s,color .18s,gap .22s ease-out}
+.seg .seg-l{display:inline-block; max-width:7em; overflow:hidden; transition:max-width .22s ease-out, opacity .22s ease-out}
+.seg.seg-q{width:100px}
+.seg.seg-q button{gap:0}
+.seg.seg-q .seg-l{max-width:0; opacity:0}
+@media(max-width:760px){.seg.seg-q{width:auto!important}}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
 .iconb:hover{border-color:var(--line-2); color:var(--fg)}
@@ -225,6 +229,42 @@ a{color:inherit}
 .fchip.off,.fchip:disabled{opacity:.4; pointer-events:none; text-decoration:line-through; text-decoration-thickness:1px}
 .fclear{font-size:11.5px; color:var(--fg-3); text-decoration:underline; text-underline-offset:3px; padding:5px 4px}
 
+/* ---------- favourites (P3A item 7) ---------- */
+.fav-star{background:none; border:none; cursor:pointer; padding:4px 6px; color:var(--fg-3);
+  font-size:15px; line-height:1; border-radius:6px; transition:color .15s, transform .15s}
+.fav-star:hover{color:var(--fg)}
+.fav-star.on{color:var(--accent)}
+.fav-star.on:hover{color:var(--accent); transform:scale(1.2)}
+.fav-toggle{display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:999px;
+  border:1px solid var(--line); background:var(--ink-2); font-size:12px; font-weight:600;
+  color:var(--fg-2); transition:border-color .15s, color .15s, background .15s}
+.fav-toggle:hover{border-color:var(--line-2); color:var(--fg)}
+.fav-toggle.on{border-color:var(--accent); color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,var(--ink-2))}
+.fav-toggle svg{width:14px; height:14px; flex:0 0 14px}
+
+/* ---------- late-day empty state (P3A item 6) ---------- */
+.late-day-card{display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center;
+  padding:36px 24px; border-radius:var(--r-lg); border:1px dashed var(--line-2);
+  background:var(--ink-2); margin-block:24px 30px}
+.late-day-card p{margin:0; font-size:16px; color:var(--fg-2)}
+.late-day-card .btn{margin-top:4px}
+
+/* ---------- tagline (P3A item 6) ---------- */
+/* Two lines under the header: hook (secondary) and listing line (quieter). */
+.tagline-block{padding-block:12px 4px; margin:0; display:flex; flex-direction:column; gap:3px}
+.tagline-hook{font-size:16px; font-weight:500; color:var(--fg-2); line-height:1.35;
+  white-space:nowrap; overflow:visible; max-width:100%}
+.tagline-listing{font-size:12.5px; font-weight:400; color:var(--fg-3); line-height:1.35;
+  white-space:nowrap; overflow:visible; max-width:100%}
+@media(max-width:760px){
+  .tagline-hook{font-size:14px}
+  .tagline-listing{font-size:11.5px} }
+/* legacy single-line tagline kept for graceful fallback */
+.site-tagline{font-size:15px; color:var(--fg-3); line-height:1.45; max-width:60ch;
+  padding-block:10px 4px; margin:0; display:none}
+@media(max-width:760px){ .site-tagline{font-size:14px; padding-block:6px 2px} }
+
 /* ---------- hero ---------- */
 .hero{position:relative; border-radius:var(--r-lg); overflow:hidden; margin-block:18px 30px;
   min-height:290px; display:flex; align-items:flex-end; border:1px solid var(--line)}
@@ -258,8 +298,9 @@ a{color:inherit}
   letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
 .rhead h2::before{content:""; display:inline-block; width:4px; height:.9em; border-radius:2px;
   background:var(--accent); flex:0 0 4px}
-[data-surface="theatre"] .rhead h2{font-family:"Playfair Display",Georgia,serif; text-transform:none;
-  letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
+/* P3A item 3: theatre rails use same Oswald + uppercase rule as cinema (one rule across both surfaces) */
+[data-surface="theatre"] .rhead h2{font-family:Oswald,sans-serif; text-transform:uppercase;
+  letter-spacing:.06em; font-size:clamp(20px,2.2vw,26px)}
 .rhead .sub{font-size:11.5px; color:var(--fg-3)}
 .rscroll{position:relative}
 .rtrack{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity; padding-bottom:6px; scroll-behavior:smooth; scrollbar-width:thin}
@@ -315,6 +356,8 @@ a{color:inherit}
   border-radius:5px; background:var(--accent); color:var(--on-accent); white-space:nowrap}
 .badge.lim{background:linear-gradient(135deg,#E0163A,#7E0C1F); color:#fff}
 .badge.free{background:#1B7A4B; color:#fff}
+/* P3A item 1/2: premiere badge — gold accent, sentence-case text */
+.badge.prem{background:#7A5A00; color:#FFD966; text-transform:none; letter-spacing:.02em}
 .cfoot{display:flex; flex-direction:column; gap:2px; padding-inline:2px}
 .cf1{font-size:12px; font-weight:500; color:var(--fg-2); line-height:1.3;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em}
@@ -448,15 +491,18 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
   font-size:clamp(34px,4vw,44px); letter-spacing:.04em; line-height:1.04; color:var(--fg); margin-bottom:2px}
 [data-surface="theatre"] .phead-title{font-family:"Playfair Display",Georgia,serif; text-transform:none;
   letter-spacing:-.01em; font-size:clamp(36px,4.2vw,46px)}
+/* P3A item 4: phead-dates on desktop is inline; mobile override makes it block (see below) */
 .phead-dates{font-size:clamp(18px,2.2vw,24px); color:var(--accent); font-family:inherit; font-weight:500; display:inline}
 .phead-other{display:inline-block; margin-top:8px; font-size:12px; color:var(--fg-3); text-decoration:none; cursor:pointer; border:0; background:none; padding:0; letter-spacing:.04em}
 .phead-other:hover{color:var(--fg)}
 /* Day strip */
 .daystrip{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-top:16px; margin-bottom:4px}
 .daystrip::-webkit-scrollbar{display:none}
+/* P3A item 5: dspill — minimum 40px tap target; rollover divider */
 .dspill{flex:0 0 auto; padding:6px 14px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-2); font-size:12.5px; font-weight:600; color:var(--fg-2); white-space:nowrap; position:relative;
-  transition:border-color .15s,background .15s,color .15s; line-height:1.3}
+  transition:border-color .15s,background .15s,color .15s; line-height:1.3; min-height:40px; display:inline-flex; align-items:center; justify-content:center; flex-direction:column}
+.dspill-divider{flex:0 0 auto; width:1px; height:24px; background:var(--line-2); margin-inline:4px; align-self:center}
 .dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}
 .dspill[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .dspill[disabled]{opacity:.32; cursor:default}
@@ -475,7 +521,8 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .sec-toggle:hover{color:var(--accent)}
 .sec-toggle-title{font-family:Oswald,sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,28px);
   letter-spacing:.05em; text-transform:uppercase; flex:1}
-[data-surface="theatre"] .sec-toggle-title{font-family:"Playfair Display",Georgia,serif; text-transform:uppercase; letter-spacing:.04em}
+/* P3A item 3: theatre section titles also use Oswald + uppercase */
+[data-surface="theatre"] .sec-toggle-title{font-family:Oswald,sans-serif; text-transform:uppercase; letter-spacing:.05em}
 .sec-toggle-count{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3);
   border:1px solid var(--line); border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums; flex:0 0 auto}
 .sec-toggle-chev{flex:0 0 20px; width:20px; height:20px; color:var(--fg-3); display:flex; align-items:center; justify-content:center;
@@ -632,15 +679,24 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
 
 /* ===================== i18n ===================== */
 const T={
-bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"Театър",all:"Цялата седмица",
+bg:{tagline:"кино и театър в софия",
+ siteTagline:"Програмата на кината и театрите в София, обновявана всеки ден от сайтовете им.",
+ hookLine:"Какво ще гледаш довечера?",listingLine:"Афишът на кината и театрите в София.",
+ cinema:"Кино",theatre:"Театър",all:"Цялата седмица",
  dows:["нд","пн","вт","ср","чт","пт","сб"],
  dowsLong:["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"],
  months:["януари","февруари","март","април","май","юни","юли","август","септември","октомври","ноември","декември"],
+ monthsShort:["яну","фев","мар","апр","май","юни","юли","авг","сеп","окт","ное","дек"],
+ premBadgeOn:"Премиера",premBadgePre:"Премиера на",
  onbT:"Здравей. Какво ти се гледа?",onbL:"Пет въпроса и малко вкус — после ти показваме само това, което си струва вечерта.",
  start:"Покажи ми програмата",skip:"Пропусни",back:"Назад",next:"Напред",step:"Стъпка",of:"от",
  railToday:"За теб днес",railLimited:"Лимитирано и ексклузивно",railSoon:"Скоро — отбележи си",
- railTop:"Най-високо оценени",railPrem:"Премиери и гостувания",allTitles:"Всичко в програмата",
- railRecommended:"Препоръчани",railTonightT:"Тази вечер",railTonightB:"Утре вечер",railWeekend:"Този уикенд",
+ railTop:"Най-високо оценени",
+ railPrem:"Премиери",railGuestProds:"Гостувания",
+ allTitles:"Всичко в програмата",
+ /* P3A item 8: new rail names */
+ railTonightT:"Тази вечер в София",railTonightB:"Утре в София",
+ railRecommended:"Препоръчано",railWeekend:"Този уикенд",
  venueShowing:"Програмата на:",venueRemove:"Премахни",
  forYou:"Избрано за теб",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
  buy:"Купи билет",buyAt:"Билети от",buyHub:"Или през платформа",evSource:"Източник",
@@ -674,7 +730,8 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
  railPopular:"Популярни тази седмица",railPopularPeriod:"Популярни за периода",
  railPopularSub:"най-много прожекции",railGems:"Скрити бижута",railGemsSub:"силни оценки, малко прожекции",
- railTomorrow:"За теб утре",
+ /* P3A item 8: renamed */
+ railTomorrow:"Утре в София",
  pheadEyebrow:"Програмата",pheadOtherDates:"Друг период ›",
  pheadThisWeek:"Тази седмица",pheadToday:"Днес",pheadThisMonth:"Този месец",
  pheadAll:"Цялата програма",pheadCustom:"Избран период",pheadDayFull:"",
@@ -684,16 +741,28 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
  noInfoShort:"няма информация",boxOffice:"Билети на касата",viaEpay:"билети чрез epaygo.bg",
  boxOfficeLabel:"Билети на касата",boxOfficeLabelEn:"Tickets at the box office",
- bgDub:"БГ дублаж",bgSub:"Субтитри",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX"},
-en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"Whole week",
+ bgDub:"БГ дублаж",bgSub:"Субтитри",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX",
+ lateDayMsg:"Всичко за днес приключи.",lateDayBtn:"Виж програмата за утре ›",
+ favStar:"Запази",favStarOn:"Запазено",favOnlyFav:"Само любимите",favOnlyFavOff:"Всички",
+ railFavToday:"Тази вечер в София"},
+en:{tagline:"cinema & theatre in sofia",
+ siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
+ hookLine:"What are you seeing tonight?",listingLine:"Sofia's cinema and theatre listings.",
+ cinema:"Cinema",theatre:"Theatre",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
  months:["January","February","March","April","May","June","July","August","September","October","November","December"],
+ monthsShort:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+ premBadgeOn:"Premiere",premBadgePre:"Premieres",
  onbT:"Hello. What are you in the mood for?",onbL:"Five questions and a taste test — then we show you only what's worth the evening.",
  start:"Show me the programme",skip:"Skip",back:"Back",next:"Next",step:"Step",of:"of",
  railToday:"For you today",railLimited:"Limited & exclusive",railSoon:"Coming up — mark it",
- railTop:"Highest rated",railPrem:"Premieres & guest productions",allTitles:"Everything on",
- railRecommended:"Recommended",railTonightT:"Tonight",railTonightB:"Tomorrow night",railWeekend:"This weekend",
+ railTop:"Highest rated",
+ railPrem:"Premieres",railGuestProds:"Guest productions",
+ allTitles:"Everything on",
+ /* P3A item 8: new rail names */
+ railTonightT:"Tonight in Sofia",railTonightB:"Tomorrow in Sofia",
+ railRecommended:"Recommended",railWeekend:"This weekend",
  venueShowing:"Showing:",venueRemove:"Remove",
  forYou:"Picked for you",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
  buy:"Buy a ticket",buyAt:"Tickets from",buyHub:"Or via a platform",evSource:"Source",
@@ -727,7 +796,8 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  subStateTheatres:"State & municipal",subIndependent:"Independent",
  railPopular:"Popular this week",railPopularPeriod:"Popular in this period",
  railPopularSub:"most screenings",railGems:"Hidden gems",railGemsSub:"great ratings, few screenings",
- railTomorrow:"For you tomorrow",
+ /* P3A item 8: renamed */
+ railTomorrow:"Tomorrow in Sofia",
  pheadEyebrow:"The programme",pheadOtherDates:"Other dates ›",
  pheadThisWeek:"This week",pheadToday:"Today",pheadThisMonth:"This month",
  pheadAll:"Full programme",pheadCustom:"Selected period",pheadDayFull:"",
@@ -738,7 +808,10 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  noEnFilm:"No English description available yet.",noEnShow:"No English description available yet.",
  noInfoShort:"no information",boxOffice:"Tickets at the box office",viaEpay:"tickets via epaygo.bg",
  boxOfficeLabel:"Tickets at the box office",boxOfficeLabelEn:"Tickets at the box office",
- bgDub:"BG dub",bgSub:"Subtitled",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX"}};
+ bgDub:"BG dub",bgSub:"Subtitled",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX",
+ lateDayMsg:"Nothing more on today.",lateDayBtn:"See tomorrow's programme ›",
+ favStar:"Save",favStarOn:"Saved",favOnlyFav:"Only my favourites",favOnlyFavOff:"Show all",
+ railFavToday:"Tonight in Sofia"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -788,13 +861,19 @@ const MONTHS=(()=>{
 /* Onboarding removed: the app always opens straight on the listings. `onb` stays
    false and `prefs` is seeded as if the taste quiz had been skipped (track:"both",
    when:"any"), so scoring degrades cleanly to IMDb / screening-count ranking. */
+/* P3A item 7: fav = {venues:[...ids]}; onlyFav = show only favourite venues */
 let S={lang:"bg",mode:"cinema",day:"week",onb:false,step:0,q:"",drawer:false,searchOpen:false,fStrands:[],limit:30,
   fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,secGenres:false,secVenues:false,secAll:false,
+  fav:{venues:[]},onlyFav:false,
   prefs:{track:"both",genres:[],mood:[],with:"",when:"any",taste:[]}};
 try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
   if(p&&p.prefs){S.prefs=Object.assign(S.prefs,p.prefs);S.onb=false;S.lang=p.lang||"bg";
-  S.mode=p.mode||(p.prefs.track==="theatre"?"theatre":"cinema");}}}catch(e){}
-function save(){try{localStorage.setItem(LS,JSON.stringify({prefs:S.prefs,lang:S.lang,mode:S.mode}));}catch(e){}}
+  S.mode=p.mode||(p.prefs.track==="theatre"?"theatre":"cinema");}
+  /* P3A item 7: restore favourites */
+  if(p&&p.fav&&Array.isArray(p.fav.venues))S.fav={venues:p.fav.venues};
+  if(p&&p.onlyFav)S.onlyFav=!!p.onlyFav;
+}}catch(e){}
+function save(){try{localStorage.setItem(LS,JSON.stringify({prefs:S.prefs,lang:S.lang,mode:S.mode,fav:S.fav,onlyFav:S.onlyFav}));}catch(e){}}
 
 /* ===================== helpers ===================== */
 const notEmpty=v=>v&&v.trim()&&v!=="—"?v:null;
@@ -1416,7 +1495,7 @@ function periodBannerText(){
    Only shown for S.day==="week" and for a single specific day within the current week. */
 function buildDayStrip(){
   const L=t();
-  /* Determine the week: Mon before TODAY to Sun after TODAY */
+  /* Determine the current week: Mon–Sun containing TODAY */
   const dow=dUTC(TODAY).getUTCDay(); /* 0=Sun … 6=Sat */
   const weekStart=addDays(TODAY,-(dow===0?6:dow-1)); /* Monday */
   const weekEnd=addDays(weekStart,6);                 /* Sunday */
@@ -1429,11 +1508,24 @@ function buildDayStrip(){
   /* "Whole week" pill */
   const allPill=`<button class="dspill" data-day="week" aria-pressed="${S.day==="week"}">${esc(L.dsAllWeek||"Цялата седмица")}</button>`;
   pills.push(allPill);
-  /* Start from TODAY — no past-day pills */
-  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0; /* dUTC: ISO parse works in every engine (Safari rejects 'YYYY-MM-DD UTC') */
-  for(let i=0;i<daysLeft;i++){
+  /* P3A item 5: build day list, rolling over into next week when <3 days remain.
+     Rule: show days from TODAY to weekEnd; if that gives <3 days, continue into
+     next week until we have 7 day-buttons total (or reach LASTDAY). */
+  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0;
+  const nextWeekStart=addDays(weekEnd,1);
+  const needRollover=daysLeft<3&&nextWeekStart<=LASTDAY;
+  const totalDays=needRollover?Math.min(7,Math.round((dUTC(LASTDAY)-dUTC(TODAY))/864e5)+1):daysLeft;
+  let addedDivider=false;
+  for(let i=0;i<totalDays;i++){
     const d=addDays(TODAY,i);
     if(d>LASTDAY)break;
+    /* Add divider + "Следващата седмица" pill before first next-week day */
+    if(needRollover&&d>weekEnd&&!addedDivider){
+      addedDivider=true;
+      pills.push(`<span class="dspill-divider" aria-hidden="true"></span>`);
+      const nextLabel=S.lang==="bg"?"Следващата седмица":"Next week";
+      pills.push(`<span class="dspill" style="opacity:.55;pointer-events:none;border-style:dashed;font-size:11px">${esc(nextLabel)}</span>`);
+    }
     const active=S.day===d;
     const hasSc=hasData.has(d);
     const isToday=d===TODAY;
@@ -1483,11 +1575,19 @@ function periodBanner(){
     showStrip=true;
   }
   const strip=showStrip?buildDayStrip():"";
+  /* P3A item 7: "Only my favourites" toggle near period header, shown when fav venues exist */
+  const starSVGsm=`<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+  const favToggleBtn=S.fav.venues.length>0
+    ?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav style="margin-top:8px">${starSVGsm} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`
+    :"";
   return`<div class="phead">
     <div class="phead-eyebrow">${esc(eyebrow)}</div>
     <div class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></div>
     ${strip}
-    <button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button>
+      ${favToggleBtn}
+    </div>
   </div>`;}
 /* dates that actually have something, for the calendar dots */
 function datesWith(){
@@ -1506,6 +1606,36 @@ function scoreBadge(f){
   const tv=tmdbOf(f);
   if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${tv.toFixed(1)}</span>`;
   return`<span class="score na"><i>IMDb</i>—</span>`;}
+/* P3A item 1: badge for premiere rail — "Премиера"/"Premiere" within 7 days,
+   "Премиера на DD мес"/"Premieres DD Mon" for upcoming. */
+function premBadgeFor(fid){
+  const dates=PREMIERES["film:"+fid];
+  if(!dates||!dates.length)return"";
+  const L=t();
+  /* find earliest date in array */
+  const d=dates.slice().sort()[0];
+  if(d<TODAY){/* released in last 7 days */
+    return`<span class="badge prem">${esc(L.premBadgeOn||"Премиера")}</span>`;}
+  /* upcoming — format "Премиера на DD мес" */
+  const parts=d.split("-");
+  const day=parseInt(parts[2],10);
+  const mon=(L.monthsShort||L.months)[parseInt(parts[1],10)-1]||"";
+  const label=`${L.premBadgePre||"Премиера на"} ${day} ${mon}`;
+  return`<span class="badge prem">${esc(label)}</span>`;}
+/* P3A item 2: dynamic badge for theatre shows — upcoming premiere dates from PREMIERES */
+function showPremBadge(sid){
+  const dates=PREMIERES["show:"+sid];
+  if(!dates||!dates.length)return"";
+  const L=t();
+  const upcoming=dates.filter(d=>d>=TODAY).sort();
+  if(!upcoming.length)return"";
+  const d=upcoming[0];
+  if(d===TODAY)return`<span class="badge prem">${esc(L.premBadgeOn||"Премиера")}</span>`;
+  const parts=d.split("-");
+  const day=parseInt(parts[2],10);
+  const mon=(L.monthsShort||L.months)[parseInt(parts[1],10)-1]||"";
+  const label=`${L.premBadgePre||"Премиера на"} ${day} ${mon}`;
+  return`<span class="badge prem">${esc(label)}</span>`;}
 function filmCard(f,all,rowsOverride){
   const rawRows=rowsOverride||(all?filmTimesAll(f.id):filmTimes(f.id));
   const rows=rowsOverride?rawRows:(S.fVenues.length?rawRows.filter(r=>venueOk(r[1])):rawRows);
@@ -1523,18 +1653,22 @@ function filmCard(f,all,rowsOverride){
   const meta=[f.runtime?`${f.runtime} ${esc(t().min)}`:"",
               n?`${n} ${esc(t().screenings)}`:"",
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
+  const _pb=premBadgeFor(f.id);
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g)}<div class="p-grain"></div>
       <div class="p-top">${scoreBadge(f)}
-        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${cinelibriId(f.id)?cinelibriMark():""}</div>
+        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${cinelibriId(f.id)?cinelibriMark():""}${_pb}</div>
       <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
 function showCard(sh,all){
   const p=all?showPerfsAll(sh.id):showPerfs(sh.id),th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
+  /* P3A item 2: suppress static "ПРЕМИЕРА" seed badge; replace with dynamic PREMIERES-based badge. */
+  const staticBadge=sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:"";
+  const _spb=showPremBadge(sh.id);
   return`<button class="card" data-show="${esc(sh.id)}">
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
-      <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+      <div class="p-top"><span></span>${staticBadge}${_spb}</div>
       <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
       <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${sh.duration} ${esc(t().min)}`:""}</span></div></button>`;}
@@ -1680,9 +1814,12 @@ function body(){
   const pushRail=(title,sub,items,fn)=>{ if(items&&items.length) out.push({t:title,s:sub,items,fn}); };
   if(S.mode==="cinema"){
     const vis=visibleFilms();
+    /* P3A item 7: when onlyFav active, restrict rows to favourite venues */
+    const favIds=new Set(S.onlyFav&&S.fav.venues.length?S.fav.venues:[]);
+    const venueOkFav=vid=>favIds.size===0||favIds.has(vid);
     /* filmRowsInPeriod: screenings for a film within the selected period, filtered by venue */
     const filmRowsInPeriod=fid=>{
-      let rows=_frows(fid).filter(r=>inRange(r[2]));
+      let rows=_frows(fid).filter(r=>inRange(r[2])&&venueOkFav(r[1]));
       return upcomingRows(rows);};
     /* "За теб днес" = films with a screening still to come TODAY. Decoupled from
        the selected-day filter (scoreFilm returns -1 off the selected day, which
@@ -1690,7 +1827,8 @@ function body(){
        (venue chain, genre, strand) still apply. Ranked by how many screenings
        remain today, then IMDb. Each card shows only today's remaining times. */
     const todayItems=FILMS.map(f=>{
-        let rows=filmTimesToday(f.id);
+        /* P3A item 7: when onlyFav, restrict today rows to fav venues */
+        let rows=upcomingRows(_frows(f.id).filter(r=>r[2]===NOW_DATE&&venueOkFav(r[1])));
         return{f,rows};}).filter(o=>o.rows.length)
       .filter(o=>{
         if(S.fGenres.length&&!genreHit(o.f.genres))return false;
@@ -1698,8 +1836,16 @@ function body(){
         return true;})
       .sort((a,b)=>{const na=a.rows.reduce((n,r)=>n+r[3].length,0),nb=b.rows.reduce((n,r)=>n+r[3].length,0);
         return nb-na||((ratingOf(b.f)||0)-(ratingOf(a.f)||0));}).slice(0,14);
-    if(todayItems.length){
-      pushRail(L.railToday,fmtDay(NOW_DATE,true),todayItems,x=>filmCard(x.f,false,x.rows));
+    /* P3A item 6: detect late-day state — today selected AND nothing left today */
+    const isTodaySelected=(S.day===TODAY||S.day==="week");
+    const isLateDayEmpty=isTodaySelected&&!todayItems.length&&
+      !SHOWTIMES.some(r=>r[2]===TODAY&&r[3]&&r[3].some(tm=>tm>=NOW_TIME));
+    if(isLateDayEmpty){
+      const TOMORROW=addDays(NOW_DATE,1);
+      const tmwBtn=TOMORROW<=LASTDAY?`<button class="btn" data-day="${esc(TOMORROW)}">${esc(L.lateDayBtn||"Виж програмата за утре ›")}</button>`:"";
+      out.push({html:()=>`<div class="late-day-card"><p>${esc(L.lateDayMsg||"Всичко за днес приключи.")}</p>${tmwBtn}</div>`});
+    } else if(todayItems.length){
+      pushRail(L.railFavToday||L.railToday,fmtDay(NOW_DATE,true),todayItems,x=>filmCard(x.f,false,x.rows));
     } else {
       /* "За теб утре" fallback: same logic, tomorrow's date, only if within data window */
       const TOMORROW=addDays(NOW_DATE,1);
@@ -1720,6 +1866,22 @@ function body(){
     /* Event rails hidden when any genre filter is active */
     if(!S.fGenres.length){
       pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);}
+    /* P3A item 1: cinema premieres — from official CC data.
+       PREMIERES maps "film:<filmId>" to an array of YYYY-MM-DD release dates.
+       Show films released in the last 7 days (recent) and upcoming.
+       Sort: recent (releaseDate < today) first, then upcoming by date asc. */
+    const _6ago=addDays(TODAY,-6);
+    const premFilms=vis.filter(f=>{
+      const dates=PREMIERES["film:"+f.id];
+      return dates&&dates.some(d=>d>=_6ago);
+    }).sort((a,b)=>{
+      const da=(PREMIERES["film:"+a.id]||[]).slice().sort()[0]||"";
+      const db=(PREMIERES["film:"+b.id]||[]).slice().sort()[0]||"";
+      const aRec=da<TODAY,bRec=db<TODAY;
+      if(aRec!==bRec)return aRec?-1:1;/* recent first */
+      return da<db?-1:da>db?1:0;
+    });
+    pushRail(L.railPrem||"Премиери","",premFilms,f=>filmCard(f,day));
     const top=vis.filter(f=>ratingOf(f)!=null).sort((a,b)=>ratingOf(b)-ratingOf(a)).slice(0,12);
     pushRail(L.railTop,"IMDb / TMDB",top,f=>filmCard(f,day));
     /* "Популярни тази седмица" — ranked by total screenings in period, then cinema count, then IMDb */
@@ -1792,8 +1954,17 @@ function body(){
     /* Event rails hidden when any venue or genre filter is active */
     if(!S.fGenres.length){
       pushRail(L.railLimited,S.lang==="bg"?"само сега — после го няма":"on now — then it's gone",act,eventCard);}
-    const prem=vis.filter(s=>s.badge);
-    pushRail(L.railPrem,"",prem,s=>showCard(s,day));
+    /* P3A item 9: theatre premiere rail — from official data only.
+       PREMIERES maps "show:<showId>" to an array of YYYY-MM-DD premiere dates.
+       Only shows with an upcoming premiere date (>= today) appear in the rail.
+       Guest productions keep their badge-based filter. */
+    const premShows=vis.filter(s=>{
+      const dates=PREMIERES["show:"+s.id];
+      return dates&&dates.some(d=>d>=TODAY);
+    });
+    const guestShows=vis.filter(s=>s.badge==="ГОСТУВАНЕ");
+    pushRail(L.railPrem||"Премиери","",premShows,s=>showCard(s,day));
+    pushRail(L.railGuestProds||"Гостувания","",guestShows,s=>showCard(s,day));
     /* Item 4a: "Тази вечер" — shows with a performance today at or after NOW_TIME,
        earliest first. Falls back to "Утре вечер" if nothing tonight. */
     (()=>{
@@ -2087,13 +2258,41 @@ function searchToggleInPlace(){
   const btns=document.querySelectorAll("[data-search-open]");
   btns.forEach(b=>{b.setAttribute("aria-expanded",String(willOpen));
     b.classList.toggle("expanded",willOpen);});
-  document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",willOpen));
+  /* Collision-based pill shrink: add .seg-q only when the open search would crowd
+     the centre toggle. On desktop: measure right column space vs 420px search width.
+     At narrow viewports (<~1100px) the column is smaller than 420px → crowded → shrink.
+     At wide viewports the column comfortably fits 420px → leave label text visible.
+     On mobile: search takes full bar width, always crowded → always shrink. */
   const reducedMotion=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   /* Desktop */
   const dw=document.querySelector(".desk-search-wrap");
   if(dw){
     dw.classList.toggle("open",willOpen);
-    if(willOpen&&!reducedMotion){/* force reflow handled by CSS transition */}}
+    if(!willOpen){
+      /* Closing: remove seg-q immediately — search is collapsing */
+      document.querySelectorAll(".seg").forEach(sg=>sg.classList.remove("seg-q"));
+    }else{
+      /* Opening: measure right column space vs search desired width (420px).
+         bar-in right edge - seg right edge - 18px gap = right 1fr column width.
+         If less than 420px, the search crowds the toggle → add .seg-q.
+         We use .bar-in (not .bar-controls) because bar-controls shifts left when
+         the search expands inside it, giving a false reading post-open. */
+      requestAnimationFrame(()=>{
+        const seg=document.querySelector(".seg");
+        const barIn=document.querySelector(".bar-in");
+        if(!seg||!barIn)return;
+        const segR=seg.getBoundingClientRect().right;
+        const barInR=barIn.getBoundingClientRect().right;
+        const availableForSearch=barInR-segR-18;
+        const crowded=availableForSearch<420;
+        document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
+      });
+    }
+  }else{
+    /* Mobile: .desk-search-wrap not in DOM. Search takes full bar row, always crowded. */
+    if(!willOpen)document.querySelectorAll(".seg").forEach(sg=>sg.classList.remove("seg-q"));
+    else document.querySelectorAll(".seg").forEach(sg=>sg.classList.add("seg-q"));
+  }
   /* Mobile: bar-row-search starts display:none (so #q-m bounding_box()===null).
      Opening: add .sr-visible (display:block) first, then .open for the CSS transition.
      Closing: remove .open; after animation ends remove .sr-visible (display:none again). */
@@ -2495,14 +2694,21 @@ function drawerHTML(){
   const theatreHasListings=id=>showsAtTheatre(id).length>0;
   /* Cinema venue section: one chip per cinema id, grouped by kind */
   let venueSection;
+  /* P3A item 7: star per venue + "Only my favourites" toggle */
+  const starSVG=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
   if(S.mode==="cinema"){
-    const mkChip=c=>{const on=cinemaHasListings(c);
-      return`<button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(cinName(c))}</button>`;};
+    const mkChip=c=>{const on=cinemaHasListings(c);const isFav=S.fav.venues.includes(c.id);
+      return`<div style="display:flex;align-items:center;gap:2px">
+        <button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(cinName(c))}</button>
+        ${on?`<button class="fav-star${isFav?" on":""}" data-fav-venue="${esc(c.id)}" title="${esc(isFav?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-pressed="${isFav}">${starSVG}</button>`:""}
+      </div>`;};
     const multiplexes=CINEMAS.filter(c=>c.kind==="multiplex");
     const independents=CINEMAS.filter(c=>c.kind==="independent");
+    const hasFav=S.fav.venues.length>0;
     venueSection=`<h3>${esc(L.venuesH)}</h3>
-    <div class="chipwrap">
+    <div class="chipwrap" style="margin-bottom:8px">
       <button class="fchip" data-venue="" aria-pressed="${!S.fVenues.length}">${esc(L.allVenues)}</button>
+      ${hasFav?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav>${starSVG} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`:""}
     </div>
     <div class="sec-subhead" style="margin-top:8px">${esc(L.subMultiplexes)}</div>
     <div class="chipwrap">${multiplexes.map(mkChip).join("")}</div>
@@ -2510,11 +2716,18 @@ function drawerHTML(){
     <div class="chipwrap">${independents.map(mkChip).join("")}</div>`;
   }else{
     const theatres=THEATRES.map(th=>({id:th.id,name:thName(th)}));
+    const hasFavT=S.fav.venues.length>0;
     venueSection=`<h3>${esc(L.theatresH)}</h3>
-    <div class="chipwrap">
+    <div class="chipwrap" style="margin-bottom:8px">
       <button class="fchip" data-venue="" aria-pressed="${!S.fVenues.length}">${esc(L.allTheatres)}</button>
-      ${theatres.map(v=>{const on=theatreHasListings(v.id);
-        return`<button class="fchip${on?"":" off"}" data-venue="${esc(v.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(v.id)}">${esc(v.name)}</button>`;}).join("")}
+      ${hasFavT?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav>${starSVG} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`:""}
+    </div>
+    <div class="chipwrap">
+      ${theatres.map(v=>{const on=theatreHasListings(v.id);const isFavT=S.fav.venues.includes(v.id);
+        return`<div style="display:flex;align-items:center;gap:2px">
+          <button class="fchip${on?"":" off"}" data-venue="${esc(v.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(v.id)}">${esc(v.name)}</button>
+          ${on?`<button class="fav-star${isFavT?" on":""}" data-fav-venue="${esc(v.id)}" title="${esc(isFavT?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-pressed="${isFavT}">${starSVG}</button>`:""}
+        </div>`;}).join("")}
     </div>`;
   }
   const hasActive=S.fGenres.length||S.fVenues.length||S.fStrands.length||S.day!=="week";
@@ -2572,7 +2785,7 @@ function render(){
   const iconTheatre=`<svg viewBox="0 0 473.194 473.194" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M464.653,167.757c-0.824-3.273-2.996-6.037-5.969-7.633c-2.965-1.586-6.47-1.855-9.65-0.738c-27.88,9.795-70.896,16.098-119.276,16.098c-11.762,0-23.098-0.449-34.089-1.156c-5.683,25.676-14.764,49.252-26.363,70.016c0.564-0.023,1.103-0.115,1.672-0.115c15.034,0,27.218-1.254,27.218,8.873c0,10.127-12.185,27.803-27.218,27.803c-8.757,0-16.467-2.834-21.442-7.162c-15.025,18.654-32.578,33.363-51.909,43.09c21.795,73.361,72.751,124.824,132.131,124.824c79.219,0,143.437-91.584,143.437-204.559C473.194,212.728,470.151,189.408,464.653,167.757z M386.92,381.927c-0.254,1.078-1.056,1.957-2.11,2.303c-1.056,0.353-2.218,0.131-3.066-0.586c-11.174-9.389-30.182-15.627-51.985-15.627c-21.805,0-40.813,6.238-51.986,15.627c-0.849,0.709-2.012,0.932-3.066,0.586c-1.055-0.354-1.856-1.225-2.11-2.303c-0.925-3.936-1.494-7.994-1.494-12.215c0-32.395,26.263-58.656,58.657-58.656c32.394,0,58.655,26.262,58.655,58.656C388.413,373.933,387.844,377.992,386.92,381.927z M388.537,280.904c-15.034,0-27.218-17.676-27.218-27.803c0-10.127,12.185-8.873,27.218-8.873c15.033,0,27.218,8.211,27.218,18.338C415.754,272.693,403.57,280.904,388.537,280.904z"/><path d="M286.874,109.925c0-24.367-3.043-47.688-8.541-69.338c-0.824-3.273-2.996-6.039-5.969-7.633c-1.756-0.939-3.705-1.416-5.669-1.416c-1.341,0-2.688,0.221-3.981,0.678c-27.88,9.795-70.895,16.096-119.276,16.096c-48.382,0-91.397-6.301-119.277-16.096c-1.286-0.457-2.626-0.678-3.966-0.678c-1.963,0-3.921,0.482-5.685,1.424c-2.965,1.594-5.144,4.359-5.969,7.625C3.043,62.238,0,85.558,0,109.925c0,112.977,64.217,204.559,143.438,204.559C222.657,314.484,286.874,222.902,286.874,109.925z M57.439,135.349c0-10.129,12.185-18.338,27.219-18.338c15.033,0,27.218,17.674,27.218,27.803c0,10.127-12.185,8.873-27.218,8.873C69.624,153.687,57.439,145.476,57.439,135.349z M143.438,275.812c-32.395,0-58.656-26.262-58.656-58.654c0-4.221,0.569-8.281,1.493-12.217c0.254-1.076,1.056-1.947,2.11-2.303c1.056-0.346,2.218-0.123,3.066,0.586c11.174,9.389,30.182,15.627,51.986,15.627c21.804,0,40.812-6.238,51.985-15.627c0.849-0.717,2.011-0.939,3.066-0.586c1.055,0.348,1.856,1.227,2.11,2.303c0.924,3.936,1.494,7.996,1.494,12.217C202.093,249.55,175.831,275.812,143.438,275.812z M174.998,144.814c0-10.129,12.185-27.803,27.219-27.803c15.033,0,27.218,8.209,27.218,18.338c0,10.127-12.185,18.338-27.218,18.338C187.183,153.687,174.998,154.941,174.998,144.814z"/></svg>`;
   /* .seg-q while the search is open: a windowed desktop shows only the two icons
      (CSS below); the buttons keep their names for screen readers and a tooltip */
-  const segHTML=`<div class="seg${S.searchOpen?" seg-q":""}">
+  const segHTML=`<div class="seg">
         <button data-switch="cinema" aria-pressed="${S.mode==="cinema"}" aria-label="${esc(L.cinema)}" title="${esc(L.cinema)}">${iconCinema}<span class="seg-l">${esc(L.cinema)}</span></button>
         <button data-switch="theatre" aria-pressed="${S.mode==="theatre"}" aria-label="${esc(L.theatre)}" title="${esc(L.theatre)}">${iconTheatre}<span class="seg-l">${esc(L.theatre)}</span></button>
       </div>`;
@@ -2608,12 +2821,11 @@ function render(){
       ${searchIconBtn}
     </div>
     ${searchMobileOpenHTML}`
-    :`<!-- Desktop: single-row brand | (search expand) | (toggle + search icon + lang) -->
+    :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
       <button class="brand" data-home aria-label="Sofia Gleda — ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async"></button>
-      <span></span>
+      ${segHTML}
       <div class="bar-controls">
-        ${segHTML}
         ${deskSearchHTML}${searchIconBtn}
         ${langBtn}
       </div>
@@ -2632,6 +2844,7 @@ function render(){
     ${headerHTML}
   </div></header>
   <main class="wrap">
+    ${(L.hookLine||L.listingLine)&&!sr?`<div class="tagline-block">${L.hookLine?`<p class="tagline-hook">${esc(L.hookLine)}</p>`:""} ${L.listingLine?`<p class="tagline-listing">${esc(L.listingLine)}</p>`:""}</div>`:""}
     ${sr?searchView(sr):`
     ${periodBanner()}
     ${isVenueMode?"":hero()}
@@ -2650,6 +2863,19 @@ function render(){
   const qiD=document.getElementById("q");
   const qi=isMob?qiM:qiD;
   if(qi&&S.searchOpen){qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}}
+  /* P3A item 3: re-run geometry check after every render while search is open,
+     so language switches and other re-renders don't leave .seg-q stale. */
+  if(S.searchOpen){
+    requestAnimationFrame(()=>{
+      const seg=document.querySelector(".seg");
+      const barIn=document.querySelector(".bar-inner,.bar-row-main");
+      if(!seg||!barIn)return;
+      const segR=seg.getBoundingClientRect().right;
+      const barInR=barIn.getBoundingClientRect().right;
+      const crowded=barInR-segR-18<420;
+      document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
+    });
+  }
 }
 /* Re-render while keeping the filter drawer where the user left it. The drawer
    lives inside #app, so a plain render() rebuilds it at scrollTop 0 and the list
@@ -3168,6 +3394,11 @@ document.addEventListener("click",e=>{
   const d=q("[data-day]"); if(d){S.day=d.dataset.day;render();return;}
   const gf=q("[data-genre]"); if(gf){const v=gf.dataset.genre;S.fGenres=v?toggleArr(S.fGenres,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   const vf=q("[data-venue]"); if(vf){const v=vf.dataset.venue;S.fVenues=v?toggleArr(S.fVenues,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
+  /* P3A item 7: star a venue / toggle only-favourites */
+  const fvs=q("[data-fav-venue]");
+  if(fvs){const v=fvs.dataset.favVenue;S.fav.venues=toggleArr(S.fav.venues,v);save();(S.drawer?renderKeepDrawer():render());return;}
+  const ofv=q("[data-only-fav]");
+  if(ofv){S.onlyFav=!S.onlyFav;S.fVenues=[];save();(S.drawer?renderKeepDrawer():render());return;}
   if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];S.day="week";S.rFrom=S.rTo=null;render();return;}
   if(q("[data-lang]")){S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();return;}
   /* collapsible section toggle — animate in-place (Item 1), fall back to render if section not in DOM */

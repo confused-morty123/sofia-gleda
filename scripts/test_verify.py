@@ -524,6 +524,107 @@ check("AGGLINKS unrecognised aggregator value exits non-zero",
 
 
 # ---------------------------------------------------------------------------
+# P3A: PREMIERES integrity
+# ---------------------------------------------------------------------------
+print("\nP3A: PREMIERES integrity")
+
+# Helper: build a page with a PREMIERES constant injected via extra_js
+def _with_premieres(prem_dict, extra_prelim=None, extra_perfs=None, extra_st=None):
+    """Minimal page with a custom PREMIERES constant (and optional overrides).
+
+    PREMIERES is injected via extra_js; PRELIM_FROM is replaced in the template
+    string so verify_build always sees exactly one declaration of each constant.
+
+    When extra_prelim is given, all 6 bulk theatre IDs (th0-th5) are covered
+    (far-future default) so the "theatres with performances but no PRELIM_FROM
+    entry" gate does not fire on theatres the test does not care about.
+    """
+    prem_js = f"const PREMIERES={_json.dumps(prem_dict)};"
+    pf = _json.dumps(extra_perfs) if extra_perfs is not None else None
+    st = _json.dumps(extra_st) if extra_st is not None else None
+    html = _minimal_html(
+        extra_js=prem_js,
+        performances_override=pf or "",
+        showtimes_override=st or "",
+    )
+    if extra_prelim is not None:
+        _far_future = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+        full_prelim = {f"th{i}": _far_future for i in range(6)}
+        full_prelim.update(extra_prelim)
+        html = html.replace(
+            "const PRELIM_FROM={};",
+            f"const PRELIM_FROM={_json.dumps(full_prelim)};",
+        )
+    return html
+
+# Dates used in tests
+_PREM_FUTURE = (datetime.date.today() + datetime.timedelta(days=5)).isoformat()
+_PREM_PAST   = (datetime.date.today() - datetime.timedelta(days=2)).isoformat()
+_PREM_PRE    = (datetime.date.today() + datetime.timedelta(days=30)).isoformat()  # PRELIM_FROM
+
+# PA-1: show: date in PERFORMANCES, before PRELIM_FROM → passes
+_pa1_perfs = _json.loads(_bulk_performances())
+_pa1_perfs.append(["show0", _PREM_FUTURE, "19:00", "Основна сцена", ""])
+_pa1_rc, _pa1_out = _run_out(_with_premieres(
+    {"show:show0": [_PREM_FUTURE]},
+    extra_prelim={"th0": _PREM_PRE},
+    extra_perfs=_pa1_perfs,
+))
+check("P3A PREMIERES show date in PERFS before PRELIM_FROM passes", _pa1_rc == 0)
+
+# PA-2: show: date NOT in PERFORMANCES → fails
+_pa2_rc, _pa2_out = _run_out(_with_premieres(
+    {"show:show0": ["2099-01-01"]},
+    extra_prelim={"th0": "2099-06-01"},
+))
+check("P3A PREMIERES show date missing from PERFORMANCES fails",
+      _pa2_rc != 0 and ("PERFORMANCES" in _pa2_out or "integrity" in _pa2_out.lower()))
+
+# PA-3: show: date on or after PRELIM_FROM → fails
+_pa3_perfs = _json.loads(_bulk_performances())
+_pa3_perfs.append(["show0", _PREM_FUTURE, "19:00", "Основна сцена", ""])
+_pa3_prelim_date = (datetime.date.today() + datetime.timedelta(days=3)).isoformat()
+_pa3_rc, _pa3_out = _run_out(_with_premieres(
+    {"show:show0": [_PREM_FUTURE]},
+    extra_prelim={"th0": _pa3_prelim_date},
+    extra_perfs=_pa3_perfs,
+))
+check("P3A PREMIERES show date on or after PRELIM_FROM fails",
+      _pa3_rc != 0 and ("PRELIM_FROM" in _pa3_out or "integrity" in _pa3_out.lower() or "preliminary" in _pa3_out.lower()))
+
+# PA-4: film: key with SHOWTIMES row at cc-sofia → passes
+# cc-sofia must appear in CINEMAS (for SHOWTIMES orphan check) and BOOKING, plus
+# SHOWTIMES must have a row for that film at cc-sofia.
+_pa4_cinemas_data = _json.loads(_bulk_cinemas())
+_pa4_cinemas_data.append({"id": "cc-sofia", "name": "Cinema City София", "coverage": [_FUTURE]})
+_pa4_booking_data = _json.loads(_bulk_booking())
+_pa4_booking_data["cc-sofia"] = {"label": "Cinema City", "url": "https://www.cinemacity.bg/tickets"}
+_pa4_st_data = _json.loads(_bulk_showtimes())
+_pa4_st_data.append(["f0", "cc-sofia", _FUTURE, ["18:00"]])
+_pa4_extra = f"const PREMIERES={_json.dumps({'film:f0': [_PREM_FUTURE]})};"
+_pa4_html = _minimal_html(
+    extra_js=_pa4_extra,
+    showtimes_override=_json.dumps(_pa4_st_data),
+)
+# Patch CINEMAS and BOOKING in place (template uses _bulk_* exactly once each)
+_pa4_html = _pa4_html.replace(
+    f"const CINEMAS={_bulk_cinemas()};",
+    f"const CINEMAS={_json.dumps(_pa4_cinemas_data)};",
+)
+_pa4_html = _pa4_html.replace(
+    f"const BOOKING={_bulk_booking()};",
+    f"const BOOKING={_json.dumps(_pa4_booking_data)};",
+)
+_pa4_rc, _pa4_out = _run_out(_pa4_html)
+check("P3A PREMIERES film with CC SHOWTIMES passes", _pa4_rc == 0)
+
+# PA-5: film: key with no SHOWTIMES row at CC → fails
+_pa5_rc, _pa5_out = _run_out(_with_premieres({"film:f0": [_PREM_FUTURE]}))
+check("P3A PREMIERES film without CC SHOWTIMES fails",
+      _pa5_rc != 0 and ("SHOWTIMES" in _pa5_out or "cc-" in _pa5_out.lower() or "integrity" in _pa5_out.lower()))
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()
