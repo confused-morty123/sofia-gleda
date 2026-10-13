@@ -309,6 +309,8 @@ a{color:inherit}
   border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; gap:4px; white-space:nowrap; color:#fff}
 .score i{font-style:normal; font-size:7.5px; letter-spacing:.1em; opacity:.72; font-family:Onest,sans-serif}
 .score.hi{color:#FFD84D} .score.na{color:#A99DAD; font-size:11px}
+.score.tmdb{background:rgba(1,180,228,.18); border-color:rgba(1,180,228,.42); color:#01B4E4}
+.fest-mark{font-family:Onest,sans-serif; font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
 .badge{font-size:8px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; padding:3px 7px;
   border-radius:5px; background:var(--accent); color:var(--on-accent); white-space:nowrap}
 .badge.lim{background:linear-gradient(135deg,#E0163A,#7E0C1F); color:#fff}
@@ -956,16 +958,18 @@ const ctryOf=o=>{
    films; for the rest, OMDb (keyed by TMDB's imdb_id) supplies the real IMDb number,
    inlined into TMDBART[id].imdb/.imdbVotes. The "IMDb" tile only ever shows a true
    IMDb value — never TMDB's own vote_average. Returns null when neither source has one
-   (tile stays "—"). */
+   (tile stays "—").
+   Priority: fresh TMDBART (daily OMDb fetch) wins over the seed's frozen snapshot
+   so stale hand-curated ratings are overridden by the current value. */
 const imdbOf=o=>{
-  if(o.imdb!=null)return o.imdb;
   const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
-  return art.imdb!=null?art.imdb:null;
+  if(art.imdb!=null)return art.imdb;
+  return o.imdb!=null?o.imdb:null;
 };
 const votesOf=o=>{
-  if(o.imdbVotes)return o.imdbVotes;
   const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
-  return art.imdbVotes||"";
+  if(art.imdbVotes)return art.imdbVotes;
+  return o.imdbVotes||"";
 };
 /* TMDB community rating (vote_average). Only used for display when IMDb is absent,
    and as a ranking fallback (≥50 votes required so 1-vote 10.0 films don't top the list).
@@ -992,11 +996,27 @@ const SHOWIMG=(typeof SHOWART==="object"&&SHOWART)||{};
 /* per-title ticket/detail URLs, keyed by film/show/event id, harvested by the
    scraper into the LINKS=[[id,url],…] data array; consulted by tixUrl first. */
 const LINK_MAP=Object.fromEntries((typeof LINKS!=="undefined"&&Array.isArray(LINKS))?LINKS:[]);
+/* CineLibri: strip festival prefix, fix ALL-CAPS to sentence-case */
+const cinelibriId=id=>typeof id==="string"&&id.startsWith("sinelibri-");
+function cinelibriMark(){
+  return`<span class="fest-mark">${S.lang==="en"?"CineLibri":"Синелибри"}</span>`;}
 /* movie names default to English (owner's preference), Bulgarian kept as the
-   secondary line so nothing is lost */
-const filmTitle=f=>S.lang==="en"
-  ? (f.en||((ART[f.id]||{}).en)||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[f.id])||f.bg||"")
-  : (f.en||f.bg||((ART[f.id]||{}).en)||""); /* EN mode: English title, then TMDB, then the translation, Bulgarian last */
+   secondary line so nothing is lost.
+   For CineLibri festival films: BG shows the festival's own title_bg (stored in
+   FILMINFO[id].title_bg by festival_details), which is properly cased without the
+   cinema prefix. EN shows the festival's title_en or TMDB's en — both written to
+   FILMS.en by inject_films.py, so the normal precedence already handles them.
+   Falls back to the cinema's prefixed title so nothing breaks if the pipeline
+   hasn't run yet. */
+const filmTitle=f=>{
+  if(cinelibriId(f.id)){
+    const fi=FILMINFO[f.id]||{};
+    if(S.lang==="en")
+      return f.en||((ART[f.id]||{}).en)||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[f.id])||fi.title_bg||f.bg||"";
+    return fi.title_bg||f.bg||"";}
+  return S.lang==="en"
+    ?(f.en||((ART[f.id]||{}).en)||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[f.id])||f.bg||"")
+    :(f.en||f.bg||((ART[f.id]||{}).en)||"");};
 const filmSubtitle=f=>{const en=filmTitle(f);return f.bg&&f.bg!==en?f.bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* safeUrl: accept only http(s) URLs in href/window.open sinks (CODE-12).
@@ -1309,7 +1329,7 @@ function searchAll(q){
   const n=q.trim().toLowerCase(); if(n.length<2)return null;
   const hit=(...v)=>v.some(x=>String(x||"").toLowerCase().includes(n));
   return {
-    films:FILMS.filter(f=>filmTimesAll(f.id).length&&hit(f.bg,f.en,f.director,f.cast,f.country,f.genres.join(" "))),
+    films:FILMS.filter(f=>filmTimesAll(f.id).length&&hit(f.bg,f.en,f.director,f.cast,f.country,f.genres.join(" "),(FILMINFO[f.id]||{}).title_bg,(FILMINFO[f.id]||{}).title_en)),
     shows:SHOWS.filter(s=>showPerfsAll(s.id).length&&hit(s.title,s.titleEn,s.author,s.director,s.cast,
       s.genres.join(" "),(thById[s.theatre]||{}).name))};}
 function rangeLabel(){
@@ -1451,6 +1471,13 @@ function datesWith(){
 
 /* ===================== cards ===================== */
 const scoreCls=v=>v==null?"na":v>=7.5?"hi":"";
+/* scoreBadge: show IMDb when present; fall back to TMDB (labelled "TMDB", distinct style) when votes ≥ threshold; otherwise show empty dash */
+function scoreBadge(f){
+  const im=imdbOf(f);
+  if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${im.toFixed(1)}</span>`;
+  const tv=tmdbOf(f);
+  if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${tv.toFixed(1)}</span>`;
+  return`<span class="score na"><i>IMDb</i>—</span>`;}
 function filmCard(f,all,rowsOverride){
   const rawRows=rowsOverride||(all?filmTimesAll(f.id):filmTimes(f.id));
   const rows=rowsOverride?rawRows:(S.fVenues.length?rawRows.filter(r=>venueOk(r[1])):rawRows);
@@ -1470,8 +1497,8 @@ function filmCard(f,all,rowsOverride){
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g)}<div class="p-grain"></div>
-      <div class="p-top"><span class="score ${scoreCls(imdbOf(f))}"><i>IMDb</i>${imdbOf(f)!=null?imdbOf(f).toFixed(1):"—"}</span>
-        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}</div>
+      <div class="p-top">${scoreBadge(f)}
+        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${cinelibriId(f.id)?cinelibriMark():""}</div>
       <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
@@ -1529,7 +1556,7 @@ function hero(){
       <div class="hero-scrim"></div><div class="hero-body">
       <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
       <h1>${esc(filmTitle(f))}</h1>
-      <div class="hero-meta">${imdbOf(f)!=null?`<span class="score ${scoreCls(imdbOf(f))}"><i>IMDb</i>${imdbOf(f).toFixed(1)}</span>`:""}
+      <div class="hero-meta">${scoreBadge(f)}
         <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${f.runtime} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${f.year}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
       ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
@@ -2232,7 +2259,7 @@ function sheetFilm(f){
       <h2>${esc(filmTitle(f))}</h2></div></div>
    <div class="sbody">
     <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}</div>
+      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${cinelibriId(f.id)?`<span class="chip">${S.lang==="en"?"CineLibri":"Синелибри"}</span>`:""}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}

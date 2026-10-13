@@ -120,6 +120,16 @@ def main():
             if not entry.get(field) and v and ok(v):
                 entry[field] = v.strip() if isinstance(v, str) else v
                 details += 1
+        # Official EN title from the festival page (title_en from festival_details):
+        # fills FILMS.en ONLY when empty and the value is non-Cyrillic.  Ranks
+        # above DeepL (TITLE_EN), which translate.build_mappings skips when FILMS.en
+        # is set.  Never overwrites a hand-curated or TMDB-sourced EN title.
+        fen = fi.get("title_en")
+        if fen and isinstance(fen, str) and fen.strip() and not entry.get("en"):
+            import re as _re
+            if not _re.search(r"[Ѐ-ӿ]", fen):
+                entry["en"] = fen.strip()
+                details += 1
 
     if not added and not patched and not details:
         print(f"FILMS already carries all {len(cinema)} arthouse films — no change")

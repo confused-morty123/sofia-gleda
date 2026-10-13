@@ -1419,6 +1419,13 @@ def festival_ticket_links(screens, fresh, rows):
     return out
 
 
+_CYRILLIC = re.compile(r"[Ѐ-ӿ]")
+
+
+def _has_cyrillic(s):
+    return bool(_CYRILLIC.search(s or ""))
+
+
 def festival_details(film, rec, fi, tmdb, has_link_poster):
     """film_info.json fields from a festival's film page, ONLY where the app has
     nothing: never over the film's own record (seed or minted), an existing
@@ -1433,6 +1440,26 @@ def festival_details(film, rec, fi, tmdb, has_link_poster):
             entry[field] = value
             gained.append(field)
 
+    # Festival's own BG title (properly cased, without cinema prefix): stored as a
+    # display hint only — NEVER overwrites FILMS.bg, ids, or FILMS.en (those come
+    # from inject_films.py and inject_data.py).  `title_bg` is written
+    # unconditionally (overrides a stale value on re-run) so a corrected festival
+    # page is picked up on the next refresh.
+    if film.get("title_bg"):
+        entry["title_bg"] = film["title_bg"]
+        if "title_bg" not in gained:
+            gained.append("title_bg")
+    # Festival's official EN title: `title_en` from the festival record when set;
+    # otherwise the `original` field when it is entirely Latin-script (no Cyrillic).
+    _fen = film.get("title_en") or (
+        film.get("original")
+        if film.get("original") and not _has_cyrillic(film["original"])
+        else None
+    )
+    if _fen:
+        entry["title_en"] = _fen
+        if "title_en" not in gained:
+            gained.append("title_en")
     put("synBg", film.get("syn_bg"), rec.get("synBg"), tm.get("ovBg"))
     put("synEn", film.get("syn_en"), rec.get("synEn"), tm.get("ov"))
     put("dir", film.get("director"), rec.get("director"), tm.get("dir"))

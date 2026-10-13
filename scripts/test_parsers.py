@@ -704,7 +704,7 @@ try:
 finally:
     TMDB.api = _orig_api4
 
-check("og:image pages: non-ASCII characters in the URL are percent-encoded (Дом на киното's "
+check("og:image pages: non-ASCII characters in the URL are percent-encoded (Дом на киното’s "
       "\"it’s-alive-…\" pages crashed the fetch), the rest is kept",
       [TMDB.ascii_url("https://domnakinoto.com/it’s-alive-x.html?a="),
        TMDB.ascii_url("https://x.bg/a%20b?c=1&d=ж"), TMDB.ascii_url("https://plain.bg/x?y=1")],
@@ -2086,8 +2086,12 @@ _REMAKES = {"The Thing": [{"id": 60935, "title": "The Thing", "original_title": 
                          "vote_count": 900, "poster_path": "/c.jpg"}]}
 
 
-def _tmdb_run(films, results):
-    """fetch_tmdb.main() on a FILMS stub with a mocked API; returns (queries, tmdb_films.json)."""
+def _tmdb_run(films, results, film_info=None):
+    """fetch_tmdb.main() on a FILMS stub with a mocked API; returns (queries, tmdb_films.json).
+
+    Optional `film_info` dict is written as film_info.json in the temp dir so the
+    FILMS.originalTitle / film_info.title_en fallback chain can be exercised offline.
+    """
     seen = []
 
     def api(path, params):
@@ -2095,18 +2099,22 @@ def _tmdb_run(films, results):
             seen.append((params.get("query"), params.get("year"), params.get("language")))
             return {"results": results(params)}
         return {}
-    o = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH)
+    o = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.FILM_INFO_PATH)
     with _tmp.TemporaryDirectory() as td:
         td = _pl.Path(td)
         (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
                                        + ";\nconst LINKS=[];\n/* SOFIA-DATA-END */", encoding="utf-8")
-        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = (
-            api, "t", td / "index.html", td / "t.json", td / "l.json", td / "health.json")
+        if film_info is not None:
+            (td / "film_info.json").write_text(_json.dumps(film_info, ensure_ascii=False), encoding="utf-8")
+        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.FILM_INFO_PATH = (
+            api, "t", td / "index.html", td / "t.json", td / "l.json", td / "health.json",
+            td / "film_info.json")
         try:
             TMDB.main()
             out = _json.loads((td / "t.json").read_text(encoding="utf-8")) if (td / "t.json").exists() else {}
         finally:
-            TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = o
+            (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT,
+             TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.FILM_INFO_PATH) = o
     return seen, out
 
 
@@ -2122,6 +2130,136 @@ _col = [{"id": "it-s-alive-horar-film-fest-chast-iv-koloniya", "bg": "It’s Ali
 _q, _o = _tmdb_run(_col, lambda prm: _REMAKES.get(prm.get("query"), []))
 check("a 2026 'Колония' searches its Bulgarian title and rejects the 2013 'Колония'",
       (_q[:1], _o.get(_col[0]["id"], {}).get("matched")), ([("Колония", None, "bg")], False))
+
+# -------------------------------------------------- P2C: original-title fallback + 6 classics
+print("P2C: original-title fallback — 6 classics need original-title hints")
+
+# Load the TMDB-search fixtures for the 4 classic films
+_p2c_fix = _json.loads((FIXTURES / "tmdb_classics.json").read_text(encoding="utf-8"))["results"]
+
+# tmdb_hints() reads 'original' for the 4 new classic hints from the real film_aliases.json
+_p2c_hints = TMDB.tmdb_hints()
+check("P2C hints: chunkin-ekspres has original='Chungking Express' year=1994",
+      (_p2c_hints.get("chunkin-ekspres", {}).get("original"),
+       _p2c_hints.get("chunkin-ekspres", {}).get("year")),
+      ("Chungking Express", 1994))
+check("P2C hints: obshtestvo-na-martvite-poeti has original='Dead Poets Society' year=1989",
+      (_p2c_hints.get("obshtestvo-na-martvite-poeti", {}).get("original"),
+       _p2c_hints.get("obshtestvo-na-martvite-poeti", {}).get("year")),
+      ("Dead Poets Society", 1989))
+check("P2C hints: kratak-film-za-ubiystvoto has original='A Short Film About Killing' year=1988",
+      (_p2c_hints.get("kratak-film-za-ubiystvoto", {}).get("original"),
+       _p2c_hints.get("kratak-film-za-ubiystvoto", {}).get("year")),
+      ("A Short Film About Killing", 1988))
+check("P2C hints: karay-kolata-mi has original='Drive My Car' year=2021",
+      (_p2c_hints.get("karay-kolata-mi", {}).get("original"),
+       _p2c_hints.get("karay-kolata-mi", {}).get("year")),
+      ("Drive My Car", 2021))
+
+# Full matching path for each classic via _tmdb_run with fixture results
+def _p2c_api(title):
+    """Return a results-lambda that serves fixture hits only when query matches title."""
+    hits = _p2c_fix[title]
+    return lambda prm: hits if prm.get("query") == title else []
+
+_cke = [{"id": "chunkin-ekspres", "bg": "Чункин експрес", "en": ""}]
+_q, _o = _tmdb_run(_cke, _p2c_api("Chungking Express"))
+check("P2C classic: Чункин експрес matches as Chungking Express (id=11104, year=1994)",
+      (_o.get("chunkin-ekspres", {}).get("tmdb_id"),
+       _o.get("chunkin-ekspres", {}).get("tmdb_year")), (11104, "1994"))
+check("P2C classic: Чункин експрес query uses original-title 'Chungking Express'",
+      any(q[0] == "Chungking Express" for q in _q), True)
+
+_dps = [{"id": "obshtestvo-na-martvite-poeti", "bg": "Общество на мъртвите поети", "en": ""}]
+_q, _o = _tmdb_run(_dps, _p2c_api("Dead Poets Society"))
+check("P2C classic: Общество на мъртвите поети matches as Dead Poets Society (id=207, year=1989)",
+      (_o.get("obshtestvo-na-martvite-poeti", {}).get("tmdb_id"),
+       _o.get("obshtestvo-na-martvite-poeti", {}).get("tmdb_year")), (207, "1989"))
+
+_sfak = [{"id": "kratak-film-za-ubiystvoto", "bg": "Кратък филм за убийството", "en": ""}]
+_q, _o = _tmdb_run(_sfak, _p2c_api("A Short Film About Killing"))
+check("P2C classic: Кратък филм за убийството matches as A Short Film About Killing (id=10754, year=1988)",
+      (_o.get("kratak-film-za-ubiystvoto", {}).get("tmdb_id"),
+       _o.get("kratak-film-za-ubiystvoto", {}).get("tmdb_year")), (10754, "1988"))
+
+_dmc = [{"id": "karay-kolata-mi", "bg": "Карай колата ми", "en": ""}]
+_q, _o = _tmdb_run(_dmc, _p2c_api("Drive My Car"))
+check("P2C classic: Карай колата ми matches as Drive My Car (id=758866, year=2021)",
+      (_o.get("karay-kolata-mi", {}).get("tmdb_id"),
+       _o.get("karay-kolata-mi", {}).get("tmdb_year")), (758866, "2021"))
+
+# Year guard: original-title result with wrong year must be rejected
+_p2c_wrong_yr = [{"id": 99999, "title": "Drive My Car", "original_title": "ドライブ・マイ・カー",
+                   "release_date": "2010-01-01", "vote_count": 2200, "poster_path": "/fake.jpg"}]
+_q, _o = _tmdb_run(_dmc, lambda prm: _p2c_wrong_yr if prm.get("query") == "Drive My Car" else [])
+check("P2C year guard: Drive My Car result from 2010 rejected when hint year is 2021",
+      _o.get("karay-kolata-mi", {}).get("matched"), False)
+
+# Two remaining classics: A Short Film About Love + LOTR
+check("P2C hints: kratak-film-za-lyubovta has original='A Short Film About Love' year=1988",
+      (_p2c_hints.get("kratak-film-za-lyubovta", {}).get("original"),
+       _p2c_hints.get("kratak-film-za-lyubovta", {}).get("year")),
+      ("A Short Film About Love", 1988))
+check("P2C hints: vlastelinat-na-prastenite has original='The Lord of the Rings: ...' year=2001",
+      (_p2c_hints.get("vlastelinat-na-prastenite-zadrugata-na-prastena", {}).get("original"),
+       _p2c_hints.get("vlastelinat-na-prastenite-zadrugata-na-prastena", {}).get("year")),
+      ("The Lord of the Rings: The Fellowship of the Ring", 2001))
+
+_sfal = [{"id": "kratak-film-za-lyubovta", "bg": "Кратък филм за любовта", "en": ""}]
+_q, _o = _tmdb_run(_sfal, _p2c_api("A Short Film About Love"))
+check("P2C classic: Кратък филм за любовта matches as A Short Film About Love (id=31056, year=1988)",
+      (_o.get("kratak-film-za-lyubovta", {}).get("tmdb_id"),
+       _o.get("kratak-film-za-lyubovta", {}).get("tmdb_year")), (31056, "1988"))
+
+_lotr = [{"id": "vlastelinat-na-prastenite-zadrugata-na-prastena",
+          "bg": "Властелинът на пръстените: Задругата на пръстена", "en": ""}]
+_q, _o = _tmdb_run(_lotr, _p2c_api("The Lord of the Rings: The Fellowship of the Ring"))
+check("P2C classic: LOTR Fellowship matches as Lord of the Rings (id=120, year=2001)",
+      (_o.get("vlastelinat-na-prastenite-zadrugata-na-prastena", {}).get("tmdb_id"),
+       _o.get("vlastelinat-na-prastenite-zadrugata-na-prastena", {}).get("tmdb_year")), (120, "2001"))
+
+# ---- P2C item 1: FILMS.originalTitle and film_info.title_en fallback chain ----
+print("P2C: general fallback chain — originalTitle and film_info.title_en")
+
+# FILMS.originalTitle fallback: a minted arthouse film with no FILMS.en but with an
+# originalTitle field (set from the festival page's original_title during minting).
+_orig_fix = [{"id": 120, "title": "The Thing", "original_title": "The Thing",
+              "release_date": "1982-01-01", "vote_count": 8000, "poster_path": "/fake-tt.jpg"}]
+_ot_film = [{"id": "test-originalTitle-film", "bg": "Тест оригинален", "en": "",
+             "originalTitle": "The Thing", "year": 1982}]
+_q, _o = _tmdb_run(_ot_film, lambda prm: _orig_fix if prm.get("query") == "The Thing" else [])
+check("P2C fallback: FILMS.originalTitle drives EN search when FILMS.en is empty",
+      (_q and _q[0][0], _o.get("test-originalTitle-film", {}).get("tmdb_id")), ("The Thing", 120))
+
+# film_info.title_en fallback: no FILMS.en, no originalTitle, but film_info has title_en.
+_fi_title_fix = [{"id": 77, "title": "Mulholland Drive", "original_title": "Mulholland Drive",
+                  "release_date": "2001-10-19", "vote_count": 9000, "poster_path": "/fake-md.jpg"}]
+_fi_film = [{"id": "test-fi-title-film", "bg": "Мълхоланд Драйв", "en": "", "year": 2001}]
+_fi_info = {"test-fi-title-film": {"title_en": "Mulholland Drive", "fsrc": "test"}}
+_q, _o = _tmdb_run(_fi_film,
+                   lambda prm: _fi_title_fix if prm.get("query") == "Mulholland Drive" else [],
+                   film_info=_fi_info)
+check("P2C fallback: film_info.title_en drives EN search when FILMS.en and originalTitle absent",
+      (_q and _q[0][0], _o.get("test-fi-title-film", {}).get("tmdb_id")), ("Mulholland Drive", 77))
+
+# Same-title remake year-guard: two films named "The Thing" (1982 original, 2011 remake).
+# When the film's year is 1982, the 2011 remake (release_date 2011-10-14) must be rejected
+# even though it carries the same title.
+_remake_fix = [{"id": 888, "title": "The Thing", "original_title": "The Thing",
+                "release_date": "2011-10-14", "vote_count": 3000, "poster_path": "/fake-tr.jpg"}]
+_ot_film82 = [{"id": "test-originalTitle-year-guard", "bg": "Нещото оригинал", "en": "",
+               "originalTitle": "The Thing", "year": 1982}]
+_q, _o = _tmdb_run(_ot_film82, lambda prm: _remake_fix if prm.get("query") == "The Thing" else [])
+check("P2C fallback: year guard rejects 2011 The Thing when film year is 1982",
+      _o.get("test-originalTitle-year-guard", {}).get("matched"), False)
+
+# Cyrillic originalTitle must NOT be used as EN search (it would query TMDB as a BG title instead).
+_cyr_film = [{"id": "test-cyrillic-ot", "bg": "Тест", "en": "", "originalTitle": "Тест на руски", "year": 2020}]
+_q, _o = _tmdb_run(_cyr_film, lambda prm: [])
+# No EN query should be issued; only a BG query or no match at all.
+_cyr_en_queries = [q for q in _q if q[2] is None]   # queries without language=bg
+check("P2C fallback: Cyrillic originalTitle is NOT used as EN search term",
+      _cyr_en_queries, [])
 
 print("festivals: the stale rule composes with venue_state (P1A)")
 # a cinema whose own read failed: venue_state kept ALL its rows, preliminary from

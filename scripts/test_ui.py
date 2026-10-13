@@ -7803,6 +7803,262 @@ def wave_p2a(browser):
 
 
 # ============================================================================
+# WAVE P2C: TMDB badge on cards/hero + CineLibri prefix stripping
+# ============================================================================
+
+def wave_p2c(browser):
+    """
+    Wave P2C checks:
+    1. Card shows TMDB badge (not IMDb) when only TMDB rating ≥50 votes exists.
+    2. Card shows IMDb badge when IMDb rating is present.
+    3. Card shows no number (dash) when neither IMDb nor TMDB exists.
+    4. CineLibri film cards show clean title (no 'СИНЕЛИБРИ 2026' prefix) with mark.
+    5. Searching 'Синелибри' finds CineLibri films.
+    """
+    wave = "P2C"
+    ensure_shot_dir(wave)
+
+    # ── P2C-1/2/3: score badge variants on cards ──
+    print("\n=== P2C-1/2/3: score badge on cards (TMDB, IMDb, none) ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    badge_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        // Find a film with a current/upcoming screening to use as test subject
+        let testFilm = null;
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today) {{
+                testFilm = filmById[r[0]];
+                if (testFilm) break;
+            }}
+        }}
+        if (!testFilm) return {{found: false}};
+        const fid = testFilm.id;
+        const origArt = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) || {{}};
+        const origImdb = testFilm.imdb;
+
+        // --- Test 1: TMDB-only (no IMDb) ---
+        if (typeof TMDBART === "object" && TMDBART) {{
+            if (!TMDBART[fid]) TMDBART[fid] = {{}};
+            TMDBART[fid].tv = 7.5;
+            TMDBART[fid].tc = 200;
+            delete TMDBART[fid].imdb;
+            delete TMDBART[fid].imdbVotes;
+        }}
+        testFilm.imdb = undefined;
+        const htmlTmdb = filmCard(testFilm, true);
+        const divTmdb = document.createElement("div");
+        divTmdb.innerHTML = htmlTmdb;
+        const scoreTmdb = divTmdb.querySelector(".p-top .score");
+        const labelTmdb = scoreTmdb ? (scoreTmdb.querySelector("i") || {{}}).textContent : "";
+        const hasTmdbClass = scoreTmdb ? scoreTmdb.classList.contains("tmdb") : false;
+        const hasNaClass1 = scoreTmdb ? scoreTmdb.classList.contains("na") : false;
+        const numTmdb = scoreTmdb ? scoreTmdb.textContent.replace(labelTmdb,"").trim() : "";
+
+        // --- Test 2: IMDb present ---
+        testFilm.imdb = 8.2;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            TMDBART[fid].tv = 7.5;
+            TMDBART[fid].tc = 200;
+        }}
+        const htmlImdb = filmCard(testFilm, true);
+        const divImdb = document.createElement("div");
+        divImdb.innerHTML = htmlImdb;
+        const scoreImdb = divImdb.querySelector(".p-top .score");
+        const labelImdb = scoreImdb ? (scoreImdb.querySelector("i") || {{}}).textContent : "";
+        const hasImdbTmdbClass = scoreImdb ? scoreImdb.classList.contains("tmdb") : false;
+        const numImdb = scoreImdb ? scoreImdb.textContent.replace(labelImdb,"").trim() : "";
+
+        // --- Test 3: neither (no IMDb, no TMDB / low votes) ---
+        testFilm.imdb = undefined;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            TMDBART[fid].tv = 6.5;
+            TMDBART[fid].tc = 10;  // below TMDB_VOTE_MIN=50
+        }}
+        const htmlNone = filmCard(testFilm, true);
+        const divNone = document.createElement("div");
+        divNone.innerHTML = htmlNone;
+        const scoreNone = divNone.querySelector(".p-top .score");
+        const hasNaClass = scoreNone ? scoreNone.classList.contains("na") : false;
+        const textNone = scoreNone ? scoreNone.textContent.trim() : "";
+
+        // Restore
+        testFilm.imdb = origImdb;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            Object.assign(TMDBART[fid], origArt);
+        }}
+
+        return {{
+            found: true, fid,
+            labelTmdb, hasTmdbClass, hasNaClass1, numTmdb,
+            labelImdb, hasImdbTmdbClass, numImdb,
+            hasNaClass, textNone
+        }};
+    }}""")
+
+    if not badge_result.get("found"):
+        skip("p2c_badge_tmdb", "no upcoming film in fixture")
+        skip("p2c_badge_imdb", "no upcoming film in fixture")
+        skip("p2c_badge_none", "no upcoming film in fixture")
+    else:
+        check("p2c_badge_tmdb_label",
+              badge_result.get("labelTmdb") == "TMDB",
+              f"label='{badge_result.get('labelTmdb')}' (expected 'TMDB')")
+        check("p2c_badge_tmdb_has_tmdb_class",
+              badge_result.get("hasTmdbClass") is True,
+              f"hasTmdbClass={badge_result.get('hasTmdbClass')}")
+        check("p2c_badge_tmdb_no_na_class",
+              badge_result.get("hasNaClass1") is False,
+              f"hasNaClass={badge_result.get('hasNaClass1')}")
+        check("p2c_badge_imdb_label",
+              badge_result.get("labelImdb") == "IMDb",
+              f"label='{badge_result.get('labelImdb')}' (expected 'IMDb')")
+        check("p2c_badge_imdb_no_tmdb_class",
+              badge_result.get("hasImdbTmdbClass") is False,
+              f"hasImdbTmdbClass={badge_result.get('hasImdbTmdbClass')}")
+        check("p2c_badge_none_has_na_class",
+              badge_result.get("hasNaClass") is True,
+              f"hasNaClass={badge_result.get('hasNaClass')}, text='{badge_result.get('textNone')}'")
+        check("p2c_badge_none_no_number",
+              badge_result.get("textNone") == "IMDb—" or "—" in badge_result.get("textNone", "") or "—" in badge_result.get("textNone", ""),
+              f"textNone='{badge_result.get('textNone')}'")
+
+    ctx.close()
+
+    # ── P2C-3b: fresh TMDBART.imdb wins over seed f.imdb ──
+    print("\n=== P2C-3b: fresh TMDBART IMDb overwrites seed IMDb ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    fresh_imdb_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        let testFilm = null;
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today) {{
+                testFilm = filmById[r[0]];
+                if (testFilm) break;
+            }}
+        }}
+        if (!testFilm) return {{found: false}};
+        const fid = testFilm.id;
+        const origImdb = testFilm.imdb;
+        const origArt = (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) ? Object.assign({{}}, TMDBART[fid]) : {{}};
+        // Set a stale seed value (lower) and a fresh TMDBART value (higher).
+        // imdbOf() must return the TMDBART value (fresh wins).
+        testFilm.imdb = 5.9;
+        if (typeof TMDBART === "object" && TMDBART) {{
+            if (!TMDBART[fid]) TMDBART[fid] = {{}};
+            TMDBART[fid].imdb = 6.3;
+            TMDBART[fid].imdbVotes = "12.5K";
+        }}
+        const freshImdb = imdbOf(testFilm);
+        const freshVotes = votesOf(testFilm);
+        // Restore
+        testFilm.imdb = origImdb;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            Object.assign(TMDBART[fid], origArt);
+            if (!origArt.imdb) delete TMDBART[fid].imdb;
+            if (!origArt.imdbVotes) delete TMDBART[fid].imdbVotes;
+        }}
+        return {{found: true, fid, freshImdb, freshVotes}};
+    }}""")
+
+    if not fresh_imdb_result.get("found"):
+        skip("p2c_fresh_imdb_wins", "no upcoming film in fixture")
+        skip("p2c_fresh_votes_wins", "no upcoming film in fixture")
+    else:
+        check("p2c_fresh_imdb_wins",
+              fresh_imdb_result.get("freshImdb") == 6.3,
+              f"freshImdb={fresh_imdb_result.get('freshImdb')} (expected 6.3, not seed 5.9)")
+        check("p2c_fresh_votes_wins",
+              fresh_imdb_result.get("freshVotes") == "12.5K",
+              f"freshVotes='{fresh_imdb_result.get('freshVotes')}' (expected '12.5K')")
+
+    ctx.close()
+
+    # ── P2C-4: CineLibri films show clean title and mark ──
+    print("\n=== P2C-4: CineLibri film cards show clean title and mark ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    cinelibri_result = page.evaluate("""() => {
+        // Find a sinelibri- film with the festival prefix in f.bg
+        const f = FILMS.find(f => f.id.startsWith("sinelibri-") && f.bg && f.bg.startsWith("СИНЕЛИБРИ"));
+        if (!f) return {found: false};
+        // Inject a test title_bg into FILMINFO (simulates what festival_details writes).
+        // filmTitle() reads FILMINFO[f.id].title_bg for CineLibri films; without it the
+        // prefixed f.bg would be shown. We test the code path, not a live data run.
+        const _prevFI = (typeof FILMINFO !== "undefined" && FILMINFO) ? FILMINFO[f.id] : undefined;
+        const _cleanTitle = f.bg.replace(/^СИНЕЛИБРИ [0-9]+ [-–—] /, "");
+        if (typeof FILMINFO !== "undefined" && FILMINFO) {
+            if (!FILMINFO[f.id]) FILMINFO[f.id] = {};
+            if (!FILMINFO[f.id].title_bg) FILMINFO[f.id].title_bg = _cleanTitle;
+        }
+        const html = filmCard(f, true);
+        // Restore FILMINFO state
+        if (typeof FILMINFO !== "undefined" && FILMINFO) {
+            if (_prevFI !== undefined) FILMINFO[f.id] = _prevFI;
+            else if (FILMINFO[f.id] && FILMINFO[f.id].title_bg === _cleanTitle) delete FILMINFO[f.id].title_bg;
+        }
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const titleEl = div.querySelector(".p-title");
+        const titleText = titleEl ? titleEl.textContent.trim() : "";
+        // Mark: look for 'Синелибри' text in any span in p-top (class="fest-mark")
+        const ptop = div.querySelector(".p-top");
+        const ptopText = ptop ? ptop.textContent : "";
+        const festMark = div.querySelector(".fest-mark");
+        const festMarkText = festMark ? festMark.textContent.trim() : "";
+        // Check no prefix present in the card title
+        const noPrefix1 = !titleText.startsWith("СИНЕЛИБРИ");
+        const noPrefix2 = !titleText.startsWith("Синелибри 2026");
+        const hasMark = ptopText.includes("Синелибри");
+        const hasFestMarkClass = !!festMark;
+        return {found: true, fid: f.id, bg: f.bg, titleText, noPrefix1, noPrefix2, hasMark,
+                hasFestMarkClass, festMarkText};
+    }""")
+
+    if not cinelibri_result.get("found"):
+        skip("p2c_cinelibri_clean_title", "no sinelibri- film with prefixed BG title in fixture")
+        skip("p2c_cinelibri_mark", "no sinelibri- film in fixture")
+        skip("p2c_cinelibri_fest_mark_class", "no sinelibri- film in fixture")
+    else:
+        check("p2c_cinelibri_no_СИНЕЛИБРИ_prefix",
+              cinelibri_result.get("noPrefix1") is True,
+              f"fid={cinelibri_result.get('fid')} bg='{cinelibri_result.get('bg')}' title='{cinelibri_result.get('titleText')}'")
+        check("p2c_cinelibri_no_2026_prefix",
+              cinelibri_result.get("noPrefix2") is True,
+              f"title='{cinelibri_result.get('titleText')}'")
+        check("p2c_cinelibri_mark_visible",
+              cinelibri_result.get("hasMark") is True,
+              f"p-top text='{cinelibri_result.get('ptopText', '')}'")
+        check("p2c_cinelibri_fest_mark_class",
+              cinelibri_result.get("hasFestMarkClass") is True,
+              f"fest-mark span not found in card HTML; festMarkText='{cinelibri_result.get('festMarkText')}'")
+
+    ctx.close()
+
+    # ── P2C-5: Searching 'Синелибри' finds CineLibri films ──
+    print("\n=== P2C-5: Search 'Синелибри' finds CineLibri films ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    search_result = page.evaluate("""() => {
+        const results = searchAll("Синелибри");
+        const films = results ? results.films : [];
+        const sinelibriFilms = films.filter(f => f.id.startsWith("sinelibri-"));
+        return {total: films.length, sinelibriCount: sinelibriFilms.length};
+    }""")
+
+    check("p2c_search_sinelibri_finds_films",
+          search_result.get("sinelibriCount", 0) > 0,
+          f"sinelibriCount={search_result.get('sinelibriCount')} total={search_result.get('total')}")
+
+    ctx.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -7819,6 +8075,7 @@ WAVES = {
     "N": wave_n,
     "P": wave_p,
     "P2A": wave_p2a,
+    "P2C": wave_p2c,
 }
 
 def main():

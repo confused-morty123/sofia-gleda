@@ -1,0 +1,32 @@
+{
+  "comment": "Trimmed TMDB search-result fixtures for 6 classics that need original-title hints. IDs and release dates verified from https://www.themoviedb.org/ on 2026-10-13.",
+  "results": {
+    "Chungking Express": [
+      {"id": 11104, "title": "Chungking Express", "original_title": "重慶森林",
+       "release_date": "1994-07-14", "vote_count": 1500, "poster_path": "/fake-cke.jpg"}
+    ],
+    "Dead Poets Society": [
+      {"id": 207, "title": "Dead Poets Society", "original_title": "Dead Poets Society",
+       "release_date": "1989-06-09", "vote_count": 9000, "poster_path": "/fake-dps.jpg"}
+    ],
+    "A Short Film About Killing": [
+      {"id": 10754, "title": "A Short Film About Killing",
+       "original_title": "Krótki film o zabijaniu",
+       "release_date": "1988-02-12", "vote_count": 900, "poster_path": "/fake-sfak.jpg"}
+    ],
+    "Drive My Car": [
+      {"id": 758866, "title": "Drive My Car", "original_title": "ドライブ・マイ・カー",
+       "release_date": "2021-08-20", "vote_count": 2200, "poster_path": "/fake-dmc.jpg"}
+    ],
+    "A Short Film About Love": [
+      {"id": 31056, "title": "A Short Film About Love",
+       "original_title": "Krótki film o miłości",
+       "release_date": "1988-08-21", "vote_count": 650, "poster_path": "/fake-sfal.jpg"}
+    ],
+    "The Lord of the Rings: The Fellowship of the Ring": [
+      {"id": 120, "title": "The Lord of the Rings: The Fellowship of the Ring",
+       "original_title": "The Lord of the Rings: The Fellowship of the Ring",
+       "release_date": "2001-12-19", "vote_count": 24000, "poster_path": "/fake-lotr.jpg"}
+    ]
+  }
+}
