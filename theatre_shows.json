@@ -5002,5 +5002,41 @@
   "synBg": "",
   "synEn": "",
   "source": "vazrazhdane"
+ },
+ "di-shtraus-tehnik-ideya-tekst-i-horeografiya-ot-ivo-dimchev": {
+  "id": "di-shtraus-tehnik-ideya-tekst-i-horeografiya-ot-ivo-dimchev",
+  "title": "Ди/Щраус техник - идея, текст и хореография от Иво Димчев",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "daniil": {
+  "id": "daniil",
+  "title": "Даниил",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
  }
 }

@@ -2457,5 +2457,102 @@
   ],
   "source": "dom-kino",
   "runtime": 100
+ },
+ "street-fighter": {
+  "id": "street-fighter",
+  "bg": "Street Fighter",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 119,
+  "year": 2026
+ },
+ "v-dalbinite": {
+  "id": "v-dalbinite",
+  "bg": "В дълбините",
+  "en": "",
+  "genres": [
+   "Трилър",
+   "Драма",
+   "Приключенски",
+   "Хорър"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 106,
+  "year": 2026
+ },
+ "dzhambo-magicheskoto-priklyuchenie": {
+  "id": "dzhambo-magicheskoto-priklyuchenie",
+  "bg": "ДЖЪМБО: Магическото приключение",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "arena-mega",
+  "runtime": 102
+ },
+ "neudobnata-istina": {
+  "id": "neudobnata-istina",
+  "bg": "НЕУДОБНАТА ИСТИНА",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cg-park",
+  "runtime": 91
+ },
+ "koleden-kontsert-na-andre-riyo-2026-let-it-snow": {
+  "id": "koleden-kontsert-na-andre-riyo-2026-let-it-snow",
+  "bg": "КОЛЕДЕН КОНЦЕРТ НА АНДРЕ РИЙО 2026: LET IT SNOW",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "arena-mega"
+ },
+ "mezhdunaroden-den-na-animatsiyata-vaobrazhenie-bez-vazrast": {
+  "id": "mezhdunaroden-den-na-animatsiyata-vaobrazhenie-bez-vazrast",
+  "bg": "Международен ден на анимацията: Въображение без възраст",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 60
+ },
+ "wtf-off-zavrashtaneto-mezhdu-haosa-i-svetovartezha": {
+  "id": "wtf-off-zavrashtaneto-mezhdu-haosa-i-svetovartezha",
+  "bg": "WTF OFF: Завръщането – между хаоса и световъртежа",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 60
  }
 }
