@@ -1,8 +1,18 @@
 [
  {
+  "level": "error",
+  "venue": "mladezhki",
+  "message": "blocked from this network: challenge page (Cloudflare challenge, HTTP 403) at https://mlt.bg/programa.php?year=2026&month=10"
+ },
+ {
   "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 141 screenings are preliminary, from programata.bg"
+  "message": "no official programme: all 104 screenings are preliminary, from programata.bg"
+ },
+ {
+  "level": "warning",
+  "venue": "mladezhki",
+  "message": "official source unreachable (unreachable: https://mlt.bg/programa.php?year=2026&month=10; tickets.mlt.bg: unreachable: https://tickets.mlt.bg/Account/Login.aspx?ReturnUrl=%2f); last read 2026-10-12, 1 day ago — 137 performances kept and shown as preliminary (removed after 14 days)"
  },
  {
   "level": "warning",
@@ -23,5 +33,10 @@
   "level": "warning",
   "venue": "atelie313",
   "message": "no official programme: all 21 performances are preliminary, from theatre.art.bg"
+ },
+ {
+  "level": "warn",
+  "venue": "omdb",
+  "message": "OMDb: OMDB_TOKEN not set — IMDb ratings inherited from previous run"
  }
 ]

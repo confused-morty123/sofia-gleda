@@ -2415,5 +2415,19 @@
   "year": 2026,
   "originalTitle": "Fjord",
   "country": "Румъния/Норвегия"
+ },
+ "gepi": {
+  "id": "gepi",
+  "bg": "Гепи",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 104
  }
 }
