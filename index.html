@@ -737,6 +737,7 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  buy:"Купи билет",buyAt:"Билети от",buyHub:"Или през платформа",evSource:"Източник",
  buyNoteC:"Отваря програмата на киното за избраната дата. Часовете по-долу водят към същата каса.",
  buyNoteT:"Отваря официалната каса на самия театър.",
+ buyNoteAgg:"Отваря {agg}. Театърът още не е публикувал това представление в своята програма.",
  min:"мин",screenings:"прожекции",performances:"представления",cinemasW:"кина",
  syn:"Резюме",about:"За филма",aboutT:"За спектакъла",credits:"Екип",press:"Какво пишат",
  times:"Прожекции",perfs:"Представления",dir:"Режисьор",cast:"В ролите",author:"Автор",
@@ -789,6 +790,7 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  buy:"Buy a ticket",buyAt:"Tickets from",buyHub:"Or via a platform",evSource:"Source",
  buyNoteC:"Opens the cinema's programme for the selected date. The times below go to the same box office.",
  buyNoteT:"Opens the theatre's own official box office.",
+ buyNoteAgg:"Opens {agg}. The theatre hasn't published this performance on its own programme yet.",
  min:"min",screenings:"screenings",performances:"performances",cinemasW:"cinemas",
  syn:"Synopsis",about:"About the film",aboutT:"About the production",credits:"Credits",press:"What the press says",
  times:"Showtimes",perfs:"Performances",dir:"Director",cast:"Cast",author:"Author",
@@ -2296,18 +2298,20 @@ function aggDomain(url){
    showId (optional 5th param) is the show id to look up in AGGLINKS. */
 function buyBox(vid,date,isCinema,specificUrl,showId){
   const L=t(),b=BOOKING[vid]; if(!b)return"";
+  /* a link chosen from an aggregator (AGGLINKS) is labelled with its name, and the note
+     says so: "the theatre's own official box office" would not be true */
+  const _al=(showId&&typeof AGGLINKS==="object"&&AGGLINKS[showId])||null;
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
       ${(()=>{
         const _su=safeUrl(specificUrl||bookUrl(vid,date));
         if(!_su)return"";
-        const _al=(showId&&typeof AGGLINKS==="object"&&AGGLINKS[showId])||null;
         const _lbl=_al||((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label);
         return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)} — ${esc(_lbl)} ↗</a>`;
       })()}
     </div>
-    <div class="buynote">${esc(isCinema?L.buyNoteC:L.buyNoteT)}</div></div>`;}
+    <div class="buynote">${esc(_al?L.buyNoteAgg.replace("{agg}",_al):(isCinema?L.buyNoteC:L.buyNoteT))}</div></div>`;}
 /* Film buy box: compact pills per cinema, sorted by screening count desc then name.
    When the resolved VLINKS URL is a programata.bg page (preliminary-only pair),
    the pill is labelled "programata.bg ↗" instead of the cinema name. */

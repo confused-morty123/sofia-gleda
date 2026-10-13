@@ -8080,6 +8080,7 @@ def wave_p2d(browser):
             vid: vid,
             linkHref: link ? link.getAttribute('href') : null,
             linkText: link ? link.textContent.trim() : null,
+            noteText: (doc.querySelector('.buynote') || {}).textContent || null,
         };
     }""")
 
@@ -8090,6 +8091,10 @@ def wave_p2d(browser):
         check("p2d_buybox_theatre_art_label",
               "theatre.art.bg" in link_text,
               f"link text: {link_text!r} (should contain 'theatre.art.bg')")
+        note_text = buy_box_result.get("noteText") or ""
+        check("p2d_buybox_agg_note_not_official",
+              "theatre.art.bg" in note_text and "официалната" not in note_text and "official" not in note_text,
+              f"note under an aggregator link: {note_text!r} (must name the aggregator, never 'official box office')")
         check("p2d_buybox_theatre_art_href",
               buy_box_result.get("linkHref") == "https://theatre.art.bg/show/999",
               f"href: {buy_box_result.get('linkHref')!r}")
