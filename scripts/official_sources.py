@@ -234,6 +234,13 @@ def parse_cinemacity_day(payload, date, cinema=None):
         _rd_m = re.match(r"(\d{4}-\d{2}-\d{2})", _rd)
         if _rd_m:
             meta["releaseDate"] = _rd_m.group(1)
+        # One-off events are not film releases: Cinema City tags live sports and
+        # esports broadcasts "sport" and concerts "music", and names marathon
+        # screenings of existing films "… Маратон". Their releaseDate is just the
+        # event's date, so they never count as premieres (PREMIERES, P3A).
+        if ({"sport", "music"} & set(f.get("attributeIds") or [])
+                or re.search(r"(?<!\w)(?:маратон|marathon)(?!\w)", name, re.I)):
+            meta["event"] = True
         if lv:
             meta["lang_ver"] = lv
         if fmt_std:

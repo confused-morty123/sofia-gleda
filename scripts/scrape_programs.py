@@ -3182,7 +3182,7 @@ def main():
     for _ccvid in OS.CC_CINEMAS:
         for fid, _d, _t, meta, _title in resolved.get(_ccvid, []):
             rd = (meta or {}).get("releaseDate") or ""
-            if rd and _prem_window_start <= rd <= end:
+            if rd and not (meta or {}).get("event") and _prem_window_start <= rd <= end:
                 premiere_dates.setdefault(f"film:{fid}", set()).add(rd)
     prev_unknown = sorted({r[0] for r in old_performances if not show_index.theatre_of(r[0])})
     for v in theatre_ids:

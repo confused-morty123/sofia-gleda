@@ -1178,6 +1178,20 @@ check("posterLink included in meta",
 check("releaseDate kept in meta (date part only)",
       [x for x in _r if x[0] == "Верити"][0][3].get("releaseDate"),
       "2026-10-02")
+import copy as _copy, re as _re_ev                              # noqa: E402,E401
+_ccev = _copy.deepcopy(_cc)
+_fv = next(f for f in _ccev["body"]["films"] if f.get("name") == "Верити")
+_fv_ids = list(_fv.get("attributeIds") or [])
+check("a film is not an event", [x for x in _r if x[0] == "Верити"][0][3].get("event"), None)
+for _tag in ("sport", "music"):
+    _fv["attributeIds"] = _fv_ids + [_tag]
+    check(f"Cinema City's '{_tag}' tag marks a one-off event (never a premiere)",
+          [x for x in OS.parse_cinemacity_day(_ccev, "2026-10-09", "1261") if x[0] == "Верити"][0][3].get("event"), True)
+_fv["attributeIds"] = _fv_ids
+_fv["name"] = "Годзила Маратон"
+check("a title naming a marathon marks an event; a word merely containing it does not",
+      ([x for x in OS.parse_cinemacity_day(_ccev, "2026-10-09", "1261") if x[0] == "Годзила Маратон"][0][3].get("event"),
+       bool(_re_ev.search(r"(?<!\w)(?:маратон|marathon)(?!\w)", "Маратонецът", _re_ev.I))), (True, False))
 
 print("official: where a published programme ends")
 _cnt = [("2026-10-08", 54), ("2026-10-09", 55), ("2026-10-10", 67), ("2026-10-11", 67),
