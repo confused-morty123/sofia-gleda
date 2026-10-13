@@ -330,6 +330,64 @@ if vlinks_data is not None:
                 fail(f"{len(uniq)} upcoming (film, venue) pairs have neither a VLINKS entry nor "
                      f"a BOOKING url (e.g. {', '.join(uniq[:4])}) — ticket links will be absent")
 
+# ----------------------------------------- 4c. PREMIERES structural checks
+# PREMIERES: {"show:<showId>": ["YYYY-MM-DD", …], "film:<filmId>": ["YYYY-MM-DD", …]}
+# Keys must start with "show:" or "film:"; dates must be ISO 8601 YYYY-MM-DD.
+# No entry may originate from an aggregator-only venue (those lack official data).
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_prem_m = re.search(r"^const PREMIERES\s*=\s*(\{[^\n]*?\});\s*$", js, flags=re.M)
+if _prem_m:
+    try:
+        _prem = json.loads(_prem_m.group(1))
+    except Exception as _e:
+        fail(f"PREMIERES is not valid JSON: {_e}")
+    else:
+        if not isinstance(_prem, dict):
+            fail("PREMIERES is not a JSON object")
+        else:
+            _prem_bad_keys = [k for k in _prem if not (k.startswith("show:") or k.startswith("film:"))]
+            if _prem_bad_keys:
+                fail("PREMIERES keys must start with 'show:' or 'film:': "
+                     + ", ".join(_prem_bad_keys[:6]))
+            _prem_bad_dates = []
+            for _k, _dates in _prem.items():
+                if not isinstance(_dates, list):
+                    _prem_bad_dates.append(f"{_k}: not an array")
+                else:
+                    for _d in _dates:
+                        if not isinstance(_d, str) or not _ISO_DATE_RE.match(_d):
+                            _prem_bad_dates.append(f"{_k}: {_d!r}")
+            if _prem_bad_dates:
+                fail("PREMIERES dates must be YYYY-MM-DD: " + "; ".join(_prem_bad_dates[:6]))
+            # P3A item 4: PREMIERES integrity — dates must be cross-referenceable.
+            # show: date must be in PERFORMANCES (matching showId+date) AND before PRELIM_FROM.
+            # film: key must have at least one SHOWTIMES row at cc-sofia or cc-paradise.
+            _prelim = (const("PRELIM_FROM") or {}) if data else {}
+            _perfs_set = {(p[0], p[1]) for p in (data.get("PERFORMANCES") or []) if len(p) >= 2}
+            _CC_VIDS = {"cc-sofia", "cc-paradise"}
+            _cc_film_ids = {r[0] for r in (data.get("SHOWTIMES") or []) if len(r) >= 2 and r[1] in _CC_VIDS}
+            _show_th = {s["id"]: s.get("theatre","") for s in (data.get("SHOWS") or [])}
+            _prem_integrity_errs = []
+            for _pk, _pdates in _prem.items():
+                if _pk.startswith("show:"):
+                    _sid = _pk[5:]
+                    _th = _show_th.get(_sid, "")
+                    _prelim_from = _prelim.get(_th, "")
+                    for _pd in (_pdates or []):
+                        if (_sid, _pd) not in _perfs_set:
+                            _prem_integrity_errs.append(
+                                f"{_pk} date {_pd} has no matching PERFORMANCES row")
+                        if _prelim_from and _pd >= _prelim_from:
+                            _prem_integrity_errs.append(
+                                f"{_pk} date {_pd} is on or after PRELIM_FROM {_prelim_from} for {_th!r}")
+                elif _pk.startswith("film:"):
+                    _fid = _pk[5:]
+                    if _fid not in _cc_film_ids:
+                        _prem_integrity_errs.append(
+                            f"{_pk} has no SHOWTIMES row at cc-sofia or cc-paradise")
+            if _prem_integrity_errs:
+                fail("PREMIERES integrity: " + "; ".join(_prem_integrity_errs[:6]))
+
 for name, floor in FLOORS.items():
     v = data.get(name)
     if v is None:

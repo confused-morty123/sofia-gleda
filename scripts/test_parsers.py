@@ -1060,6 +1060,9 @@ check("a body without films/events is broken, not 'no screenings'",
 check("posterLink included in meta",
       [x for x in _r if x[0] == "Верити"][0][3].get("posterLink"),
       "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8244S2R.jpg")
+check("releaseDate kept in meta (date part only)",
+      [x for x in _r if x[0] == "Верити"][0][3].get("releaseDate"),
+      "2026-10-02")
 
 print("official: where a published programme ends")
 _cnt = [("2026-10-08", 54), ("2026-10-09", 55), ("2026-10-10", 67), ("2026-10-11", 67),

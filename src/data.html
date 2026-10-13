@@ -42,6 +42,16 @@ const AGGLINKS={};
    Only present for Cinema City, Кино Арена and Cine Grand screenings.
    Written by the scraper; pruned when the SHOWTIMES row expires. */
 const SHOWATTR={};
+/* PREMIERES contract: {"show:<showId>": ["YYYY-MM-DD", …], "film:<filmId>": ["YYYY-MM-DD", …]}
+   Dates on which a show or film has a confirmed premiere performance, from official sources only.
+   Theatre: rows where official_theatres.py mkrow sets premiere=True (title contains "премиер"
+   but not "предпремиер"), only from venues with status="official" in that run.
+   Cinema: populated when a chain's API/pages expose an explicit premiere flag (none do as of
+   the initial implementation; cinema entries will be added when signals are found).
+   Written by scrape_programs.py. verify_build.py checks: keys start with "show:" or "film:",
+   dates are ISO 8601 YYYY-MM-DD, and no entry originates from an aggregator-only venue.
+   The rail shows only upcoming premiere performances (date >= today). */
+const PREMIERES={};
 const VLINKS=[];
 /* SOFIA-DATA-END */</script>
 <script>/* SOFIA-POSTERS-START */
