@@ -2289,6 +2289,7 @@ def save_run_state(state, venue_report, agg, art_read, today, stamp, th_official
             VS.record_read(state, vid, read, today, error="aggregator not read",
                            source="theatre.art.bg" if kind == "theatre" else "programata.bg")
     VS.prune_seen(state, today)
+    VS.prune_halls(state, today)
     VS.save_state(OFFICIAL_STATE, state, stamp)
 
 
@@ -3049,6 +3050,16 @@ def main():
                      for sid, d, t, m, _ in rr.get("rows", [])]
             xrows = [(sid, d, t, m.get("hall"), theatre_price(m.get("price")))
                      for sid, d, t, m, _ in rr.get("extra_rows", [])]
+            # Hall carry-over: when this run's rows all lack a hall (ticket-list
+            # source), fill in from the last programme read stored in state —
+            # exact match on (date+" "+time, showId) only, never inferred.
+            if orows and all(r[3] is None for r in orows):
+                hall_map = VS.read_halls(state.get("venues", {}).get(v), today_iso)
+                if hall_map:
+                    orows = [(sid, d, t, hall_map.get((f"{d} {t}", sid)), pr)
+                             for sid, d, t, _hall, pr in orows]
+                    xrows = [(sid, d, t, hall_map.get((f"{d} {t}", sid)), pr)
+                             for sid, d, t, _hall, pr in xrows]
             for t, d, tm, _why in res.get("excluded") or []:
                 sid = show_index.resolve(t, v)[0]
                 if sid:
@@ -3084,6 +3095,27 @@ def main():
                                                                   None, None, floor, end, show_index)]
         new_performances += rows
         prelim[v] = pf
+        # Off-grid ticket-list times become PRELIMINARY per show-day row.
+        # tickets.mlt.bg (and any ticket-list source) gives minutes off the
+        # 5-min grid for what is really a matinée at a rounded time (e.g. 12:13
+        # for a 12:30 show). The time is published unchanged; the listing is
+        # flagged as preliminary so no wrong time is shown as confirmed.
+        # If two performances of the same show on the same day exist and only
+        # one has an off-grid time, one [showId, v, date] triple covers both —
+        # the whole show-day is marked preliminary (conservative; noted here).
+        if res is not None:
+            odd = OT.off_grid_ticket_times(res)
+            if odd:
+                # Build a lookup from (date, time, title) -> showId using resolved
+                # rows. Title is included so two different shows at the same
+                # off-grid date+time are mapped to the right show each.
+                dt_to_sid = {}
+                for sid, d, t, _m, title in rr.get("rows", []) + rr.get("extra_rows", []):
+                    dt_to_sid.setdefault((d, t, title), sid)
+                for d, tm, title in odd:
+                    sid = dt_to_sid.get((d, tm, title))
+                    if sid and floor <= d <= end:
+                        prelim_rows.append([sid, v, d])
         if status != "unreachable":
             seen_theatres.add(v)
         # LINKS: the theatre's own page of each show it lists (that of its
@@ -3143,10 +3175,17 @@ def main():
             problems.append(f"{vid}: implausibly few rows from {res.source} — {why}")
     if any(r[2] < floor for r in new_showtimes):
         problems.append("a showtime before today survived the merge")
+    # PRELIM_ROWS can hold both cinema (film+showtime) and theatre (show+performance) rows.
+    # Check each against the right data set.
+    _th_id_set = set(theatre_ids)
     st_keys = {(r[0], r[1], r[2]) for r in new_showtimes}
-    lost = sorted(x for x in prelim_row_set if x not in st_keys)
-    if lost:
-        problems.append(f"PRELIM_ROWS names rows SHOWTIMES does not have: {lost[:3]}")
+    perf_keys = {(r[0], show_index.theatre_of(r[0]), r[1]) for r in new_performances}
+    lost_cin = sorted(x for x in prelim_row_set if x[1] not in _th_id_set and x not in st_keys)
+    lost_th = sorted(x for x in prelim_row_set if x[1] in _th_id_set and x not in perf_keys)
+    if lost_cin:
+        problems.append(f"PRELIM_ROWS names rows SHOWTIMES does not have: {lost_cin[:3]}")
+    if lost_th:
+        problems.append(f"PRELIM_ROWS names show rows PERFORMANCES does not have: {lost_th[:3]}")
     if any(x[1] in FESTIVAL_VENUES for x in prelim_row_set):
         problems.append("a festival venue's row is marked preliminary per row")
     orphan = sorted({r[0] for r in new_showtimes} - set(index.films))
@@ -3392,6 +3431,17 @@ def main():
         out = out[:cl[0]] + json.dumps(changelog, ensure_ascii=False, separators=(",", ":")) + out[cl[1]:]
 
     html_path.write_text(out, encoding="utf-8")
+    # Hall carry-over: for every theatre whose programme was read this run (and gave
+    # halls), store the halls in official_state.json so future ticket-list-only runs
+    # can fill in the hall field. A ticket-list read never calls write_halls.
+    for v, res in th_official.items():
+        if (venue_report.get(v) or {}).get("status") == "official":
+            rr_v = th_resolved.get(v, {})
+            hall_rows = [(sid, d, t, m.get("hall"))
+                         for sid, d, t, m, _title in rr_v.get("rows", []) + rr_v.get("extra_rows", [])
+                         if m.get("hall")]
+            if hall_rows:
+                VS.write_halls(state, v, hall_rows, today_iso)
     save_run_state(state, venue_report, agg, art_dates, today_iso, generated, th_official)
     # Persist the arthouse-film catalogue (keep-previous union of old + newly minted);
     # inject_films.py merges it into FILMS before the build gate.

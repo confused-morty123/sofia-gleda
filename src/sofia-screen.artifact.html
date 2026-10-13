@@ -2168,13 +2168,14 @@ function filmBuyBox(f,rows){
 
 /* ===================== sheets ===================== */
 /* isPrelimListing: is this listing preliminary? True on or after PRELIM_FROM[venueId]
-   (the venue's own programme does not cover that date yet) or, for a film, when
-   PRELIM_ROWS lists this film at this venue on this date (a festival screening the
-   venue's own programme does not list). One rule for the film sheet and the calendar. */
+   (the venue's own programme does not cover that date yet) or when PRELIM_ROWS lists
+   this id at this venue on this date (a festival screening the venue's own programme
+   does not list, OR a theatre show with an off-grid ticket-list time). One rule for
+   the film sheet, the show sheet, and the calendar. */
 function isPrelimListing(kind,id,venueId,dateStr){
   const pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
   if(pf[venueId]&&dateStr>=pf[venueId])return true;
-  return kind==="film"&&typeof PRELIM_ROWS!=="undefined"&&Array.isArray(PRELIM_ROWS)
+  return typeof PRELIM_ROWS!=="undefined"&&Array.isArray(PRELIM_ROWS)
     &&PRELIM_ROWS.some(x=>x[0]===id&&x[1]===venueId&&x[2]===dateStr);
 }
 /* Per-sheet state: whether "show all cinemas" has been tapped (reset on every open) */
@@ -2254,10 +2255,10 @@ function sheetShow(sh){
   const perfs=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id)).sort((a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]));
   const byDay={};perfs.forEach(p=>{(byDay[p[1]]=byDay[p[1]]||[]).push(p);});
   const u=safeUrl(tixUrl("show",sh.id,sh.theatre));
-  /* isPrelim: true when a (venueId, date) pair falls on or after PRELIM_FROM[venueId] */
-  const _pf=(typeof PRELIM_FROM==="object"&&PRELIM_FROM)||{};
-  const isPrelim=(vid,d)=>{const pDate=_pf[vid];return pDate?d>=pDate:false;};
+  /* isPrelim: delegates to isPrelimListing so both PRELIM_FROM (date-based) and
+     PRELIM_ROWS (per show-day, e.g. off-grid ticket-list time) are honoured. */
   const thId=sh.theatre;
+  const isPrelim=(vid,d)=>isPrelimListing("show",sh.id,vid,d);
   let hasPrelim=false;
   const list=Object.keys(byDay).sort().map(d=>{
     const prelim=isPrelim(thId,d);

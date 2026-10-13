@@ -330,6 +330,33 @@ check("a cinema without a BOOKING entry exits non-zero",
 
 
 # ---------------------------------------------------------------------------
+# Test 7 (P2F): PRELIM_ROWS — theatre show rows accepted and rejected
+# PRELIM_ROWS can now contain [showId, theatreId, "YYYY-MM-DD"] theatre rows.
+# The show must exist at that theatre AND have a PERFORMANCES entry on that date.
+# ---------------------------------------------------------------------------
+print("\nP2F: PRELIM_ROWS — theatre show rows in the gate")
+
+# show0 is at th0; _bulk_performances has show0 on _FUTURE at 10:00, 14:00, ...
+# Build a PRELIM_ROWS entry for show0 at th0 on _FUTURE (matches a PERFORMANCES row)
+_perf_show0_date = _FUTURE
+check("PRELIM_ROWS with a matching show/theatre/date PERFORMANCES row exits 0",
+      _run(_minimal_html(extra_js=f'const PRELIM_ROWS=[["show0","th0","{_perf_show0_date}"]];'),
+           skip_freshness=True) == 0)
+
+# show0 at th0 but on a date with NO PERFORMANCES row
+_rc, _out = _run_out(_minimal_html(
+    extra_js=f'const PRELIM_ROWS=[["show0","th0","2025-01-01"]];'))
+check("PRELIM_ROWS theatre row with no PERFORMANCES entry exits non-zero",
+      _rc != 0 and ("theatre row" in _out.lower() or "PERFORMANCES" in _out))
+
+# show0 at th1 — wrong theatre (show0 belongs to th0, not th1)
+_rc, _out = _run_out(_minimal_html(
+    extra_js=f'const PRELIM_ROWS=[["show0","th1","{_perf_show0_date}"]];'))
+check("PRELIM_ROWS theatre row with wrong theatre exits non-zero",
+      _rc != 0 and ("theatre row" in _out.lower() or "PERFORMANCES" in _out))
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()
