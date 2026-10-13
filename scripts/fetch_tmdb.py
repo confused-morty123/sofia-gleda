@@ -371,13 +371,21 @@ def omdb_rating(imdb_id):
     return rating, votes, None
 
 
+def ascii_url(url):
+    """`url` with every non-ASCII character (and space) percent-encoded as UTF-8:
+    urllib sends ASCII only, and Дом на киното's film pages carry a typographic
+    apostrophe in their path ("…/it’s-alive-…"). Everything else — reserved
+    characters, existing %-escapes — is left as it is."""
+    return re.sub(r"[^\x21-\x7e]", lambda m: urllib.parse.quote(m.group(0)), url)
+
+
 def og_image(url):
     """Best-effort og:image from a film's own programme page. Returns a usable image
     URL or None — site chrome (logos, share images) is rejected, never fabricated."""
     if not url:
         return None
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
+        req = urllib.request.Request(ascii_url(url), headers={"User-Agent": UA, "Accept": "text/html"})
         with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
             html = r.read(300000).decode("utf-8", "replace")
     except Exception as e:

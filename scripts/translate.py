@@ -25,6 +25,7 @@ TMDB_JSON = ROOT / "tmdb_films.json"
 
 DEEPL_KEY = os.environ.get("DEEPL_AUTH_KEY", "").strip()
 BATCH_SIZE = 50  # DeepL max texts per request
+BATCH_BYTES = 96_000  # …and its request body may not exceed 128 KiB (HTTP 413): stay well under it
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -100,7 +101,9 @@ def translate_batch(texts: list[str], kind: str) -> tuple[list[str], bool]:
     Send up to BATCH_SIZE texts to DeepL.
 
     Returns (translations, ok) where ok=False on quota/network errors.
-    translations may be shorter than texts if the call failed.
+    translations may be shorter than texts if the call failed. A request DeepL
+    finds too large (HTTP 413) is split in half and sent again, so one long
+    batch never stops the run.
     """
     import urllib.request, urllib.error
 
@@ -112,7 +115,9 @@ def translate_batch(texts: list[str], kind: str) -> tuple[list[str], bool]:
     if kind == "title":
         body["preserve_formatting"] = True
 
-    payload = json.dumps(body).encode("utf-8")
+    # UTF-8 as is: the default ASCII escapes (\uXXXX) triple the size of Cyrillic
+    # text, and 50 synopses then exceed DeepL's 128 KiB request limit
+    payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
         _deepl_endpoint(),
         data=payload,
@@ -127,6 +132,13 @@ def translate_batch(texts: list[str], kind: str) -> tuple[list[str], bool]:
             result = json.load(resp)
             return [t["text"] for t in result.get("translations", [])], True
     except urllib.error.HTTPError as e:
+        if e.code == 413 and len(texts) > 1:
+            half = len(texts) // 2
+            first, ok = translate_batch(texts[:half], kind)
+            if not ok:
+                return first, False
+            second, ok = translate_batch(texts[half:], kind)
+            return first + second, ok
         if e.code in (429, 456):
             print(f"  DeepL quota/rate-limit ({e.code}) — stopping, keeping results so far.",
                   file=sys.stderr)
@@ -219,6 +231,22 @@ def shows_needing_translation(shows: list) -> tuple[list, list]:
 # Translate missing texts in batches
 # ---------------------------------------------------------------------------
 
+def request_batches(items, size=BATCH_SIZE, max_bytes=BATCH_BYTES):
+    """[(id, text)] in DeepL-sized requests: at most `size` texts and about
+    `max_bytes` of UTF-8 text each (DeepL answers 413 above 128 KiB). A single
+    text over the limit still goes alone."""
+    batch, used = [], 0
+    for item in items:
+        n = len(item[1].encode("utf-8")) + 16          # + its JSON quoting
+        if batch and (len(batch) >= size or used + n > max_bytes):
+            yield batch
+            batch, used = [], 0
+        batch.append(item)
+        used += n
+    if batch:
+        yield batch
+
+
 def translate_missing(work: list[tuple[str, str]], kind: str,
                        cache: dict) -> bool:
     """
@@ -232,9 +260,7 @@ def translate_missing(work: list[tuple[str, str]], kind: str,
         return True
 
     today = datetime.date.today().isoformat()
-    idx = 0
-    while idx < len(missing):
-        batch = missing[idx: idx + BATCH_SIZE]
+    for batch in request_batches(missing):
         texts = [t for _, t in batch]
         translations, ok = translate_batch(texts, kind)
         for i, (entity_id, src_text) in enumerate(batch):
@@ -252,7 +278,6 @@ def translate_missing(work: list[tuple[str, str]], kind: str,
         save_cache(cache)
         if not ok:
             return False
-        idx += BATCH_SIZE
     return True
 
 

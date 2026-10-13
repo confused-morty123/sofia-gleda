@@ -704,6 +704,13 @@ try:
 finally:
     TMDB.api = _orig_api4
 
+check("og:image pages: non-ASCII characters in the URL are percent-encoded (Дом на киното's "
+      "\"it’s-alive-…\" pages crashed the fetch), the rest is kept",
+      [TMDB.ascii_url("https://domnakinoto.com/it’s-alive-x.html?a="),
+       TMDB.ascii_url("https://x.bg/a%20b?c=1&d=ж"), TMDB.ascii_url("https://plain.bg/x?y=1")],
+      ["https://domnakinoto.com/it%E2%80%99s-alive-x.html?a=", "https://x.bg/a%20b?c=1&d=%D0%B6",
+       "https://plain.bg/x?y=1"])
+
 # ================================================= translate.py (mocked HTTP)
 print("translate.py — offline tests with mocked HTTP")
 import json as _j, os as _os, tempfile as _tf, importlib.util as _ilu, types as _ty, hashlib as _hs, unicodedata as _ucd
@@ -746,6 +753,61 @@ with _tf.TemporaryDirectory() as _td:
     _tr.CACHE_FILE = _orig_cache
 
 _tr.translate_batch = _orig_tb
+
+# ---- 1b. request size: DeepL answers 413 above 128 KiB (the 13 Oct 2026 run) ----
+print("  request size (HTTP 413)")
+import urllib.request as _ur, urllib.error as _ue, io as _io  # noqa: E402,E401
+_long = [(f"id{i}", f"{i} " + "Дълъг синопсис " * 120) for i in range(60)]     # ~3.3 KB of UTF-8 each
+_bs = list(_tr.request_batches(_long))
+check("request_batches: ≤50 texts and ≤BATCH_BYTES of text per request, every text once, in order",
+      (max(len(b) for b in _bs) <= 50,
+       max(sum(len(t.encode("utf-8")) + 16 for _, t in b) for b in _bs) <= _tr.BATCH_BYTES,
+       [x for b in _bs for x in b] == _long, len(_bs) > 1), (True, True, True, True))
+
+
+class _Resp(_io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+_bodies = []
+
+
+def _fake_urlopen(req, timeout=None):
+    _bodies.append(req.data)
+    if len(req.data) > 128 * 1024:
+        raise _ue.HTTPError(req.full_url, 413, "Payload Too Large", {}, None)
+    texts = _j.loads(req.data.decode("utf-8"))["text"]
+    return _Resp(_j.dumps({"translations": [{"text": "EN " + t.split()[0]} for t in texts]}).encode())
+
+
+_orig_uo, _orig_key = _ur.urlopen, _tr.DEEPL_KEY
+_ur.urlopen, _tr.DEEPL_KEY = _fake_urlopen, "fake:fx"
+try:
+    _out, _ok = _tr.translate_batch([t for _, t in _long[:5]], "syn")
+    check("the request body is UTF-8 as is, not \\uXXXX escapes (a third of the size)",
+          (b"\\u04" in _bodies[-1], "Дълъг".encode("utf-8") in _bodies[-1], _ok), (False, True, True))
+    _bodies.clear()
+    _out, _ok = _tr.translate_batch([t for _, t in _long[:50]], "syn")
+    check("a request DeepL finds too large (413) is split and sent again: all 50 translated, in order",
+          (_ok, _out == [f"EN {i}" for i in range(50)], len(_bodies) > 1,
+           all(len(b) <= 128 * 1024 for b in _bodies[1:])), (True, True, True, True))
+    _bodies.clear()
+    with _tf.TemporaryDirectory() as _td:
+        _orig_cache = _tr.CACHE_FILE
+        _tr.CACHE_FILE = pathlib.Path(_td) / "translations.json"
+        try:
+            _c = {}
+            _ok = _tr.translate_missing(_long, "syn", _c)
+        finally:
+            _tr.CACHE_FILE = _orig_cache
+    check("translate_missing on 60 long synopses: no request over the limit, all 60 cached",
+          (_ok, len(_c), max(len(b) for b in _bodies) <= 128 * 1024), (True, 60, True))
+finally:
+    _ur.urlopen, _tr.DEEPL_KEY = _orig_uo, _orig_key
 
 # ---- 2. cache hit: no request made for already-cached text ----
 print("  cache hit")
