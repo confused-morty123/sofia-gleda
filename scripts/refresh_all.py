@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Sofia Gleda — weekly refresh orchestrator.
+"""Sofia Gleda — the refresh orchestrator.
 
 Runs the whole data pipeline in order, isolates each step so one failure can't
 abort the rest, and writes build_report.json. This is what the GitHub Action
-calls every Sunday.
+calls every day (.github/workflows/refresh.yml). It takes no options: keys and
+switches come from the environment (TMDB_TOKEN, OMDB_TOKEN, DEEPL_AUTH_KEY).
 
     TMDB_TOKEN=... python3 scripts/refresh_all.py
 
@@ -22,7 +23,7 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     9. inject_data.py               inline the poster maps and film details -> index.html
    10. verify_build.py              gate: is the result actually usable?
 
-Steps 1-6 are best-effort and never abort the run. Step 7 is not: if the rebuilt
+Steps 1-9 are best-effort and never abort the run. Step 10 is not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
 and the previous, working site stays up. That gate exists because the 2026-09-16
 refresh published a page that rendered perfectly and threw the moment you clicked
@@ -110,7 +111,13 @@ def run(name, script, extra):
                 "seconds": round(time.time() - start, 1), "tail": str(e)}
 
 
-def main():
+def main(argv=None):
+    # No options, but parse anyway: `--help` prints this docstring and exits, and
+    # a stray argument is an error. Without this, `refresh_all.py --help` started
+    # a full live refresh (13 Oct 2026).
+    import argparse
+    argparse.ArgumentParser(description=__doc__,
+                            formatter_class=argparse.RawDescriptionHelpFormatter).parse_args(argv)
     if not os.environ.get("TMDB_TOKEN"):
         print("note: TMDB_TOKEN not set — film posters will be skipped, "
               "previous posters kept.", file=sys.stderr)
