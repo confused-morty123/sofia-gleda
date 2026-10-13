@@ -47,11 +47,30 @@ _ROMAN = {
 _CYRILLIC = re.compile(r"[\u0400-\u04ff]")
 
 
+# Names whose owners spell them in Latin letters their own way: DeepL renders
+# the festival "Синелибри" as "Sinelibri", and so would the romanisation table,
+# but the festival writes itself "CineLibri". All-caps text keeps its capitals.
+_OFFICIAL_NAMES = [
+    (re.compile(r"(?<![\w-])(?:S[iy]n[ae]libri|Синелибри)(?![\w-])", re.I), "CineLibri"),
+]
+
+
+def official_names(text: str) -> str:
+    """`text` with the names in _OFFICIAL_NAMES spelt as their owners spell them
+    ("Sinelibri 2026: …" -> "CineLibri 2026: …", "SINELIBRI" -> "CINELIBRI")."""
+    for rx, name in _OFFICIAL_NAMES:
+        text = rx.sub(lambda m, n=name: n.upper() if m.group(0).isupper() else n, text)
+    return text
+
+
 def latinise(text: str) -> str:
     """Romanise any Cyrillic left in an English text, keeping each word's case
     ("София" -> "Sofia", "ЩЕ" -> "SHTE"); "-ия" at a word end is "-ia", as the
     official system has it. Letters outside the table are dropped, so the result
-    never contains Cyrillic."""
+    never contains Cyrillic. Official names are spelt their owners' way first
+    (official_names): every English text the page shows passes through here."""
+    if text:
+        text = official_names(text)
     if not _CYRILLIC.search(text or ""):
         return text
     out = []

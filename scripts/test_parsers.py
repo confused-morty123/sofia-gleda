@@ -809,6 +809,21 @@ try:
 finally:
     _ur.urlopen, _tr.DEEPL_KEY = _orig_uo, _orig_key
 
+# ---- 1c. official names: DeepL writes the festival "Sinelibri", it is "CineLibri" ----
+print("  official names")
+check("official_names / latinise: CineLibri spelt the festival's way, capitals kept, other words untouched",
+      [_tr.latinise(t) for t in ("Sinelibri 2026: PERFECT STRANGERS", "SINELIBRI 2026 – KNIFE",
+                                  "Синелибри: Историите на нощта", "at the Sinelibri festival",
+                                  "Sinelibrism", "CineLibri 2026", "Sinelibri’s guests")],
+      ["CineLibri 2026: PERFECT STRANGERS", "CINELIBRI 2026 – KNIFE", "CineLibri: Istoriite na noshtta",
+       "at the CineLibri festival", "Sinelibrism", "CineLibri 2026", "CineLibri’s guests"])
+_nm_cache = {_ck("Синелибри 2026: ПЕРФЕКТНИ НЕПОЗНАТИ"): {"src": "x", "en": "Sinelibri 2026: PERFECT STRANGERS",
+                                                        "kind": "title", "at": "2026-10-13"}}
+_nm_syn, _nm_title = _tr.build_mappings([{"id": "sl-pn", "bg": "Синелибри 2026: ПЕРФЕКТНИ НЕПОЗНАТИ"}], [], {}, {},
+                                        _nm_cache)
+check("…and a translation cached before the fix is served corrected (no new DeepL request)",
+      _nm_title.get("sl-pn"), "CineLibri 2026: PERFECT STRANGERS")
+
 # ---- 2. cache hit: no request made for already-cached text ----
 print("  cache hit")
 _requests_made = []
