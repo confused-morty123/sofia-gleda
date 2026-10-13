@@ -429,6 +429,121 @@ try:
 finally:
     TMDB.api = _orig_api2
 
+# -------------------------------------------------- OMDb rt/mc parsing (mocked HTTP)
+print("OMDb rt/mc parsing (mocked urllib)")
+import urllib.request as _ureq, io as _io, types as _ty
+import json as _json_mod
+
+class _FakeResp(_io.BytesIO):
+    """Minimal file-like object accepted by json.load / urllib."""
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+
+def _mock_urlopen_omdb(payload):
+    """Return a context manager that replaces urllib.request.urlopen for one call."""
+    import unittest.mock as _um
+    body = _FakeResp(_json_mod.dumps(payload).encode())
+    return _um.patch("urllib.request.urlopen", return_value=body)
+
+# ── 1. Full response: IMDb + RT + MC all present ──────────────────────────────
+_full_omdb = {
+    "Response": "True",
+    "imdbRating": "8.0",
+    "imdbVotes": "450,000",
+    "Ratings": [
+        {"Source": "Internet Movie Database", "Value": "8.0/10"},
+        {"Source": "Rotten Tomatoes",         "Value": "90%"},
+        {"Source": "Metacritic",              "Value": "66/100"},
+    ],
+    "Metascore": "66",
+}
+_orig_token = TMDB.OMDB_TOKEN
+TMDB.OMDB_TOKEN = "fake-key-for-test"
+try:
+    with _mock_urlopen_omdb(_full_omdb):
+        _r, _v, _rt, _mc, _err = TMDB.omdb_rating("tt0000001")
+    check("omdb full: IMDb rating parsed", _r, 8.0)
+    check("omdb full: votes compact", _v, "450.0K")
+    check("omdb full: RT from Ratings array", _rt, 90)
+    check("omdb full: MC from Ratings array", _mc, 66)
+    check("omdb full: no error", _err, None)
+
+    # ── 2. RT and MC absent (N/A or missing) ─────────────────────────────────
+    _partial_omdb = {
+        "Response": "True",
+        "imdbRating": "7.2",
+        "imdbVotes": "12,500",
+        "Ratings": [
+            {"Source": "Internet Movie Database", "Value": "7.2/10"},
+        ],
+        "Metascore": "N/A",
+    }
+    with _mock_urlopen_omdb(_partial_omdb):
+        _r2, _v2, _rt2, _mc2, _err2 = TMDB.omdb_rating("tt0000002")
+    check("omdb partial: IMDb still parsed", _r2, 7.2)
+    check("omdb partial: RT absent -> None", _rt2, None)
+    check("omdb partial: MC N/A -> None", _mc2, None)
+
+    # ── 3. MC from Metascore field when not in Ratings ────────────────────────
+    _meta_only_omdb = {
+        "Response": "True",
+        "imdbRating": "6.5",
+        "imdbVotes": "8,000",
+        "Ratings": [
+            {"Source": "Internet Movie Database", "Value": "6.5/10"},
+        ],
+        "Metascore": "72",
+    }
+    with _mock_urlopen_omdb(_meta_only_omdb):
+        _r3, _v3, _rt3, _mc3, _err3 = TMDB.omdb_rating("tt0000003")
+    check("omdb metascore-only: MC from Metascore field", _mc3, 72)
+    check("omdb metascore-only: RT still None", _rt3, None)
+
+    # ── 4. Network error => all None + error string ────────────────────────────
+    import unittest.mock as _um2
+    with _um2.patch("urllib.request.urlopen", side_effect=OSError("connection refused")):
+        _r4, _v4, _rt4, _mc4, _err4 = TMDB.omdb_rating("tt0000004")
+    check("omdb error: rating None on network error", _r4, None)
+    check("omdb error: rt None on network error",     _rt4, None)
+    check("omdb error: mc None on network error",     _mc4, None)
+    check("omdb error: error string returned",        bool(_err4), True)
+
+    # ── 5. Keep-previous for rt/mc on network error ───────────────────────────
+    _prev_rec = {"imdb": 7.1, "imdbVotes": "10.0K", "rt": 85, "mc": 70}
+    # Simulate fetch_tmdb main() keep-previous merge for rt/mc
+    _r5, _v5, _rt5, _mc5, _err5 = None, None, None, None, "network: test"
+    _rec5: dict = {}
+    if _err5 is not None:
+        if _r5 is None and _prev_rec.get("imdb") is not None:
+            _r5 = _prev_rec["imdb"]
+        if not _v5 and _prev_rec.get("imdbVotes"):
+            _v5 = _prev_rec["imdbVotes"]
+        if _rt5 is None and _prev_rec.get("rt") is not None:
+            _rt5 = _prev_rec["rt"]
+        if _mc5 is None and _prev_rec.get("mc") is not None:
+            _mc5 = _prev_rec["mc"]
+    if _r5 is not None:  _rec5["imdb"] = _r5
+    if _v5:              _rec5["imdbVotes"] = _v5
+    if _rt5 is not None: _rec5["rt"] = _rt5
+    if _mc5 is not None: _rec5["mc"] = _mc5
+    check("keep-prev rt: previous rt preserved on error", _rec5.get("rt"), 85)
+    check("keep-prev mc: previous mc preserved on error", _rec5.get("mc"), 70)
+
+    # ── 6. TMDBART rt/mc injected by inject_data ─────────────────────────────
+    # Verify that inject_data.py maps tmdb_films.json rt/mc into TMDBART rec
+    _tmdb_v = {"matched": True, "tmdb_id": 9999, "poster_path": "/p.jpg",
+               "en": "Test Film", "tmdb_vote": 7.5, "vote_count": 500,
+               "imdb": 8.0, "imdbVotes": "100.0K", "rt": 90, "mc": 66}
+    _art_rec = {}
+    if _tmdb_v.get("imdb") is not None:   _art_rec["imdb"]      = _tmdb_v["imdb"]
+    if _tmdb_v.get("imdbVotes"):          _art_rec["imdbVotes"] = _tmdb_v["imdbVotes"]
+    if _tmdb_v.get("rt") is not None:     _art_rec["rt"]        = _tmdb_v["rt"]
+    if _tmdb_v.get("mc") is not None:     _art_rec["mc"]        = _tmdb_v["mc"]
+    check("inject_data rt field mapped to TMDBART", _art_rec.get("rt"), 90)
+    check("inject_data mc field mapped to TMDBART", _art_rec.get("mc"), 66)
+finally:
+    TMDB.OMDB_TOKEN = _orig_token
+
 # ---------------------------------------- inject_films genre-patch
 print("inject_films genre-patch")
 import inject_films as IF
@@ -2589,7 +2704,7 @@ try:
     _urllib_req.urlopen = lambda req, timeout=20, context=None: _io.BytesIO(
         b'{"Response":"False","Error":"Invalid API key!"}')
     # BytesIO supports json.load since it has read()
-    _r, _v, _err = TMDB.omdb_rating("tt0364569")
+    _r, _v, _rt_e, _mc_e, _err = TMDB.omdb_rating("tt0364569")
     check("omdb_rating: rating is None on API error",
           _r, None)
     check("omdb_rating: votes is None on API error",
@@ -2600,13 +2715,49 @@ finally:
     _urllib_req.urlopen = _orig_urlopen2
     TMDB.OMDB_TOKEN = _orig_token_omdb
 
-# 2. omdb_rating returns (None, None, None) when OMDB_TOKEN not set
+# 2. no OMDB_TOKEN: no values, and an ERROR, so main() keeps last run's ratings
 _orig_tok2 = TMDB.OMDB_TOKEN
 TMDB.OMDB_TOKEN = ""
-_r2, _v2, _err2 = TMDB.omdb_rating("tt0364569")
-check("omdb_rating: (None, None, None) when no token",
-      (_r2, _v2, _err2), (None, None, None))
+_r2, _v2, _rt2_e, _mc2_e, _err2 = TMDB.omdb_rating("tt0364569")
+check("omdb_rating without a key: no values, and an error (an outage, not 'no ratings')",
+      (_r2, _v2, _rt2_e, _mc2_e, bool(_err2)), (None, None, None, None, True))
+check("omdb_rating without an imdb id: nothing, and no error (nothing to keep)",
+      TMDB.omdb_rating(None), (None, None, None, None, None))
 TMDB.OMDB_TOKEN = _orig_tok2
+
+# 2b. end to end: a run without the OMDb key keeps every film's previous IMDb / RT / MC
+#     (the 13 Oct 2026 scheduled run, secret misnamed, dropped them all)
+def _omdb_nokey_run():
+    films = [{"id": "film-x", "bg": "Oppenheimer", "en": "Oppenheimer", "year": 2023}]
+
+    def api(path, params):
+        if path == "search/movie":
+            return {"results": [{"id": 872585, "title": "Oppenheimer", "original_title": "Oppenheimer",
+                                 "release_date": "2023-07-19", "vote_count": 9000, "poster_path": "/o.jpg"}]}
+        if path == "movie/872585":
+            return {"imdb_id": "tt15398776", "overview": "x", "production_countries": [{"name": "United States of America"}]}
+        return {}
+    o = (TMDB.api, TMDB.TOKEN, TMDB.OMDB_TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.FILM_INFO_PATH)
+    with _tmp.TemporaryDirectory() as td:
+        td = _pl.Path(td)
+        (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
+                                       + ";\nconst LINKS=[];\n/* SOFIA-DATA-END */", encoding="utf-8")
+        (td / "t.json").write_text(_json.dumps({"film-x": {"matched": True, "tmdb_id": 872585, "imdb_id": "tt15398776",
+                                                           "imdb": 8.3, "imdbVotes": "900K", "rt": 93, "mc": 90}}),
+                                   encoding="utf-8")
+        TMDB.api, TMDB.TOKEN, TMDB.OMDB_TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.FILM_INFO_PATH = (
+            api, "t", "", td / "index.html", td / "t.json", td / "l.json", td / "health.json", td / "film_info.json")
+        try:
+            TMDB.main()
+            return _json.loads((td / "t.json").read_text(encoding="utf-8")).get("film-x", {})
+        finally:
+            (TMDB.api, TMDB.TOKEN, TMDB.OMDB_TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH,
+             TMDB.FILM_INFO_PATH) = o
+
+
+_nk = _omdb_nokey_run()
+check("a run without the OMDb key keeps the film's previous IMDb rating, votes, RT and MC",
+      (_nk.get("imdb"), _nk.get("imdbVotes"), _nk.get("rt"), _nk.get("mc")), (8.3, "900K", 93, 90))
 
 # 3. Keep-previous: on error, inherit previous value; do NOT cache None as final
 _pv_prev_rating = {"imdb": 8.2, "imdbVotes": "200.5K"}

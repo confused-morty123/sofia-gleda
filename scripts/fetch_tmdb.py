@@ -346,14 +346,21 @@ def _votes_compact(n):
 
 
 def omdb_rating(imdb_id):
-    """Genuine IMDb rating + vote count via OMDb, keyed by the film's imdb_id. Returns
-    (rating_float, votes_compact, error_text) — error_text is None on success, a string
-    on any failure (missing token, API error, network issue). Never fabricates: a missing
-    token, an 'N/A' rating, or any error yields (None, None, <reason>) so the score tile
-    honestly stays '—'. TMDB's own vote_average is NOT used here — it is a different
-    metric, not IMDb."""
-    if not OMDB_TOKEN or not imdb_id:
-        return None, None, None
+    """Genuine IMDb rating + vote count + RT critics % + Metacritic score via OMDb,
+    keyed by the film's imdb_id. Returns
+    (rating_float, votes_compact, rt_int, mc_int, error_text) — error_text is None on
+    success, a string on any failure (missing token, API error, network issue). Never
+    fabricates: a missing token, 'N/A' values, or any error yield None for each field.
+    rt_int is the Rotten Tomatoes critics' score as an integer percent (0-100), or None.
+    mc_int is the Metacritic score as an integer /100, or None.
+    TMDB's own vote_average is NOT used here — it is a different metric, not IMDb."""
+    if not imdb_id:
+        return None, None, None, None, None
+    if not OMDB_TOKEN:
+        # No key this run (a missing or misnamed secret) is an outage, not "this film
+        # has no ratings": the error makes main() keep last run's values. Returning
+        # no error here dropped every IMDb rating on 13 Oct 2026.
+        return None, None, None, None, "OMDB_TOKEN not set"
     try:
         q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
         req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
@@ -363,12 +370,12 @@ def omdb_rating(imdb_id):
     except Exception as e:
         err = str(e)
         print(f"    ! omdb network error {imdb_id}: {err}", file=sys.stderr)
-        return None, None, f"network: {err}"
+        return None, None, None, None, f"network: {err}"
     if d.get("Response") == "False":
         # OMDb returns an Error field: "Invalid API key!", "Request limit reached!", etc.
         err = d.get("Error") or "Response=False"
         print(f"    ! omdb api error {imdb_id}: {err}", file=sys.stderr)
-        return None, None, err
+        return None, None, None, None, err
     rating = d.get("imdbRating")
     try:
         rating = float(rating) if rating and rating != "N/A" else None
@@ -376,7 +383,31 @@ def omdb_rating(imdb_id):
         rating = None
     votes_raw = (d.get("imdbVotes") or "").replace(",", "")
     votes = _votes_compact(int(votes_raw)) if votes_raw.isdigit() else None
-    return rating, votes, None
+    # Rotten Tomatoes critics' score from the Ratings array ("90%") or Metascore field.
+    rt_int = None
+    mc_int = None
+    for src in (d.get("Ratings") or []):
+        if src.get("Source") == "Rotten Tomatoes":
+            val = (src.get("Value") or "").rstrip("%")
+            try:
+                rt_int = int(val)
+            except (ValueError, TypeError):
+                rt_int = None
+        elif src.get("Source") == "Metacritic":
+            val = (src.get("Value") or "").split("/")[0]
+            try:
+                mc_int = int(val)
+            except (ValueError, TypeError):
+                mc_int = None
+    # Metascore is also available directly; use it when the Ratings array didn't supply MC.
+    if mc_int is None:
+        ms = (d.get("Metascore") or "")
+        if ms and ms != "N/A":
+            try:
+                mc_int = int(ms)
+            except (ValueError, TypeError):
+                mc_int = None
+    return rating, votes, rt_int, mc_int, None
 
 
 def ascii_url(url):
@@ -632,18 +663,26 @@ def main():
         # None is never cached as "final" — the next run will retry.
         if imdb_id:
             rec["imdb_id"] = imdb_id
-        rating, votes, omdb_err = omdb_rating(imdb_id)
+        rating, votes, rt_score, mc_score, omdb_err = omdb_rating(imdb_id)
         pv = prev.get(fid, {})
-        if rating is None and omdb_err is not None:
-            # Error (network/API) — inherit previous value so the tile keeps showing
-            if pv.get("imdb") is not None:
+        if omdb_err is not None:
+            # Error (network/API) — inherit previous values so tiles keep showing
+            if rating is None and pv.get("imdb") is not None:
                 rating = pv["imdb"]
             if not votes and pv.get("imdbVotes"):
                 votes = pv["imdbVotes"]
+            if rt_score is None and pv.get("rt") is not None:
+                rt_score = pv["rt"]
+            if mc_score is None and pv.get("mc") is not None:
+                mc_score = pv["mc"]
         if rating is not None:
             rec["imdb"] = rating
         if votes:
             rec["imdbVotes"] = votes
+        if rt_score is not None:
+            rec["rt"] = rt_score
+        if mc_score is not None:
+            rec["mc"] = mc_score
         out[fid] = rec
         # A matched film with no TMDB poster still has its own programme-page image.
         if not rec["poster_path"]:
@@ -672,11 +711,14 @@ def main():
     json.dump(film_links, open(LINKS_OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     matched = sum(1 for v in out.values() if v.get("matched"))
     rated = sum(1 for v in out.values() if v.get("imdb") is not None)
+    rt_count = sum(1 for v in out.values() if v.get("rt") is not None)
+    mc_count = sum(1 for v in out.values() if v.get("mc") is not None)
     omdb_tried = sum(1 for v in out.values() if v.get("imdb_id"))
     omdb_ok = rated  # films with an actual IMDb number
     omdb_fail = omdb_tried - omdb_ok
     print(f"\nDONE: {matched}/{len(films)} matched, {posters} with posters, "
-          f"{len(film_links)} og:image fallbacks, {rated} with IMDb ratings "
+          f"{len(film_links)} og:image fallbacks, {rated} with IMDb ratings, "
+          f"{rt_count} with RT, {mc_count} with MC "
           f"(OMDb {'on' if OMDB_TOKEN else 'OFF — ratings inherited'}, "
           f"{omdb_ok} ok / {omdb_fail} missing) -> {OUT.name}")
     # Append a health entry to health.json (created by P1A; create if absent).

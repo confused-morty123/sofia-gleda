@@ -983,6 +983,19 @@ const votesOf=o=>{
   if(art.imdbVotes)return art.imdbVotes;
   return o.imdbVotes||"";
 };
+/* Rotten Tomatoes critics' score (integer %). Fresh TMDBART (daily OMDb) wins over
+   the seed's frozen snapshot. Returns null when neither source has a value. */
+const rtOf=o=>{
+  const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
+  if(art.rt!=null)return art.rt;
+  return o.rt!=null?o.rt:null;
+};
+/* Metacritic score (integer /100). Fresh TMDBART wins over the seed. Returns null. */
+const mcOf=o=>{
+  const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
+  if(art.mc!=null)return art.mc;
+  return o.mc!=null?o.mc:null;
+};
 /* TMDB community rating (vote_average). Only used for display when IMDb is absent,
    and as a ranking fallback (≥50 votes required so 1-vote 10.0 films don't top the list).
    Never relabelled "IMDb". Returns null when unavailable. */
@@ -2324,9 +2337,8 @@ function sheetFilm(f){
   const rt=[];
   rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?imdbOf(f).toFixed(1)+"<small>/10</small>":"—"}</div></div>`);
   {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${tv.toFixed(1)}<small>/10</small></div></div>`);}
-  if(f.rt!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${f.rt}<small>%</small></div></div>`);
-  if(f.rtAud!=null)rt.push(`<div class="rtile"><div class="rl">${S.lang==="bg"?"Публика":"Audience"}</div><div class="rv">${f.rtAud}<small>%</small></div></div>`);
-  if(f.mc!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${f.mc}<small>/100</small></div></div>`);
+  {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${rv}<small>%</small></div></div>`);}
+  {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${mv}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   return`<div class="sheet"><div class="shero" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g)}<div class="hero-scrim"></div>

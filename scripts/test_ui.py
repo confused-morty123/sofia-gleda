@@ -8916,6 +8916,266 @@ def wave_p2e(browser):
     ctx.close()
 
 
+def wave_p3d(browser):
+    """
+    Wave P3D checks: rating tiles on film sheets (P3D — RT/MC from OMDb).
+
+    1. Tile order: IMDb, TMDB, Rotten Tomatoes, Metacritic, Votes (when present).
+    2. Fresh TMDBART.rt wins over seed f.rt; fresh TMDBART.mc wins over seed f.mc.
+    3. No Audience tile in any language or viewport.
+    4. Absent values give no tile (a film with no rt/mc shows no RT/MC tile).
+    5. BG and EN — tile labels match each language.
+    6. 375 px phone viewport and 1024 px desktop viewport.
+    """
+    wave = "P3D"
+    ensure_shot_dir(wave)
+
+    # We inject synthetic rt/mc into TMDBART for a known film so we can verify tile
+    # rendering without needing a live keyed run.
+
+    # ── P3D-1/5/6: tile order, labels, BG/EN, phone/desktop ─────────────────────
+    print("\n=== P3D-1/5/6: tile order and labels (BG/EN, phone/desktop) ===")
+    for lang in ("bg", "en"):
+        for w, h, vp in ((375, 812, "phone"), (1024, 768, "desktop")):
+            ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
+            page.wait_for_timeout(400)
+
+            result = page.evaluate(f"""() => {{
+                const today = "{CLOCK_TODAY_ISO}";
+                // Find a film with a current/upcoming screening
+                let testFilm = null;
+                for (const r of SHOWTIMES) {{
+                    if (r[2] >= today) {{
+                        testFilm = filmById[r[0]];
+                        if (testFilm) break;
+                    }}
+                }}
+                if (!testFilm) return {{found: false, reason: "no upcoming film"}};
+                const fid = testFilm.id;
+                const origArt = (typeof TMDBART === "object" && TMDBART && TMDBART[fid])
+                                  ? Object.assign({{}}, TMDBART[fid]) : {{}};
+                const origFrt  = testFilm.rt;
+                const origFmc  = testFilm.mc;
+
+                // Inject full set of ratings: IMDb, TMDB, RT, MC
+                if (typeof TMDBART === "object" && TMDBART) {{
+                    if (!TMDBART[fid]) TMDBART[fid] = {{}};
+                    TMDBART[fid].imdb = 7.4;
+                    TMDBART[fid].imdbVotes = "250.0K";
+                    TMDBART[fid].tv = 7.8;
+                    TMDBART[fid].tc = 300;
+                    TMDBART[fid].rt = 88;
+                    TMDBART[fid].mc = 72;
+                }}
+                testFilm.rt  = undefined;
+                testFilm.mc  = undefined;
+
+                const html = sheetFilm(testFilm);
+                const div = document.createElement("div");
+                div.innerHTML = html;
+
+                // Collect all rating tiles in order
+                const rtiles = Array.from(div.querySelectorAll(".rtile"));
+                const labels = rtiles.map(t => {{
+                    const l = t.querySelector(".rl");
+                    return l ? l.textContent.trim() : "";
+                }});
+                const values = rtiles.map(t => {{
+                    const v = t.querySelector(".rv");
+                    return v ? v.textContent.trim() : "";
+                }});
+
+                // Check for Audience tile
+                const hasAudience = labels.some(l =>
+                    l === "Audience" || l === "Публика"
+                );
+
+                // Restore
+                testFilm.rt = origFrt;
+                testFilm.mc = origFmc;
+                if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+                    Object.assign(TMDBART[fid], origArt);
+                    if (origArt.imdb == null) delete TMDBART[fid].imdb;
+                    if (!origArt.imdbVotes)   delete TMDBART[fid].imdbVotes;
+                    if (origArt.tv == null)   delete TMDBART[fid].tv;
+                    if (origArt.tc == null)   delete TMDBART[fid].tc;
+                    if (origArt.rt == null)   delete TMDBART[fid].rt;
+                    if (origArt.mc == null)   delete TMDBART[fid].mc;
+                }}
+
+                return {{found: true, fid, labels, values, hasAudience}};
+            }}""")
+
+            tag = f"{lang}_{vp}"
+            if not result.get("found"):
+                for chk in ("tile_order_imdb_first", "tile_rt_present",
+                            "tile_mc_present", "tile_votes_last", "no_audience_tile"):
+                    skip(f"p3d_{chk}_{tag}", result.get("reason", "no upcoming film"))
+                ctx.close()
+                continue
+
+            labels = result.get("labels", [])
+            has_aud = result.get("hasAudience", False)
+
+            # Order: first label must be IMDb
+            check(f"p3d_tile_order_imdb_first_{tag}",
+                  labels[0] == "IMDb" if labels else False,
+                  f"labels={labels!r}")
+
+            # TMDB must come before RT if both present
+            if "TMDB" in labels and "Rotten Tomatoes" in labels:
+                check(f"p3d_tile_order_tmdb_before_rt_{tag}",
+                      labels.index("TMDB") < labels.index("Rotten Tomatoes"),
+                      f"labels={labels!r}")
+
+            # RT must come before MC if both present
+            rt_label = "Rotten Tomatoes"
+            mc_label = "Metacritic"
+            if rt_label in labels and mc_label in labels:
+                check(f"p3d_tile_order_rt_before_mc_{tag}",
+                      labels.index(rt_label) < labels.index(mc_label),
+                      f"labels={labels!r}")
+
+            # RT and MC tiles should be present with our injected values
+            check(f"p3d_tile_rt_present_{tag}",
+                  rt_label in labels,
+                  f"labels={labels!r}")
+            check(f"p3d_tile_mc_present_{tag}",
+                  mc_label in labels,
+                  f"labels={labels!r}")
+
+            # No Audience tile
+            check(f"p3d_no_audience_tile_{tag}",
+                  not has_aud,
+                  f"labels={labels!r}")
+
+            ctx.close()
+
+    # ── P3D-2: fresh TMDBART.rt/mc wins over seed f.rt/f.mc ──────────────────────
+    print("\n=== P3D-2: fresh TMDBART.rt/mc beats seed ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(400)
+
+    fresh_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        let testFilm = null;
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today) {{
+                testFilm = filmById[r[0]];
+                if (testFilm) break;
+            }}
+        }}
+        if (!testFilm) return {{found: false}};
+        const fid = testFilm.id;
+        const origArt = (typeof TMDBART === "object" && TMDBART && TMDBART[fid])
+                          ? Object.assign({{}}, TMDBART[fid]) : {{}};
+        const origFrt = testFilm.rt;
+        const origFmc = testFilm.mc;
+
+        // Stale seed values (lower)
+        testFilm.rt = 60;
+        testFilm.mc = 50;
+        // Fresh TMDBART values (higher) — must win
+        if (typeof TMDBART === "object" && TMDBART) {{
+            if (!TMDBART[fid]) TMDBART[fid] = {{}};
+            TMDBART[fid].rt = 91;
+            TMDBART[fid].mc = 78;
+        }}
+
+        const freshRt = rtOf(testFilm);
+        const freshMc = mcOf(testFilm);
+
+        // Restore
+        testFilm.rt = origFrt;
+        testFilm.mc = origFmc;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            Object.assign(TMDBART[fid], origArt);
+            if (origArt.rt == null) delete TMDBART[fid].rt;
+            if (origArt.mc == null) delete TMDBART[fid].mc;
+        }}
+
+        return {{found: true, fid, freshRt, freshMc}};
+    }}""")
+
+    if not fresh_result.get("found"):
+        skip("p3d_fresh_rt_wins", "no upcoming film in fixture")
+        skip("p3d_fresh_mc_wins", "no upcoming film in fixture")
+    else:
+        check("p3d_fresh_rt_wins",
+              fresh_result.get("freshRt") == 91,
+              f"freshRt={fresh_result.get('freshRt')} (expected 91, not seed 60)")
+        check("p3d_fresh_mc_wins",
+              fresh_result.get("freshMc") == 78,
+              f"freshMc={fresh_result.get('freshMc')} (expected 78, not seed 50)")
+    ctx.close()
+
+    # ── P3D-4: absent rt/mc values give no tile ───────────────────────────────────
+    print("\n=== P3D-4: absent rt/mc give no tile ===")
+    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    page.wait_for_timeout(400)
+
+    absent_result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        let testFilm = null;
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today) {{
+                testFilm = filmById[r[0]];
+                if (testFilm) break;
+            }}
+        }}
+        if (!testFilm) return {{found: false}};
+        const fid = testFilm.id;
+        const origArt = (typeof TMDBART === "object" && TMDBART && TMDBART[fid])
+                          ? Object.assign({{}}, TMDBART[fid]) : {{}};
+        const origFrt = testFilm.rt;
+        const origFmc = testFilm.mc;
+
+        // Clear rt/mc everywhere
+        testFilm.rt = null;
+        testFilm.mc = null;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            delete TMDBART[fid].rt;
+            delete TMDBART[fid].mc;
+        }}
+        // Keep IMDb so the film has at least one tile (ensures sheetFilm renders)
+        if (typeof TMDBART === "object" && TMDBART) {{
+            if (!TMDBART[fid]) TMDBART[fid] = {{}};
+            TMDBART[fid].imdb = 7.0;
+        }}
+
+        const html = sheetFilm(testFilm);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const labels = Array.from(div.querySelectorAll(".rtile .rl"))
+                           .map(l => l.textContent.trim());
+
+        // Restore
+        testFilm.rt = origFrt;
+        testFilm.mc = origFmc;
+        if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
+            Object.assign(TMDBART[fid], origArt);
+            if (origArt.rt == null) delete TMDBART[fid].rt;
+            if (origArt.mc == null) delete TMDBART[fid].mc;
+            if (origArt.imdb == null) delete TMDBART[fid].imdb;
+        }}
+
+        return {{found: true, labels}};
+    }}""")
+
+    if not absent_result.get("found"):
+        skip("p3d_absent_rt_no_tile", "no upcoming film in fixture")
+        skip("p3d_absent_mc_no_tile", "no upcoming film in fixture")
+    else:
+        lbl = absent_result.get("labels", [])
+        check("p3d_absent_rt_no_tile",
+              "Rotten Tomatoes" not in lbl,
+              f"labels={lbl!r}")
+        check("p3d_absent_mc_no_tile",
+              "Metacritic" not in lbl,
+              f"labels={lbl!r}")
+    ctx.close()
+
+
 # ============================================================================
 # Registry and main
 # ============================================================================
@@ -8936,6 +9196,7 @@ WAVES = {
     "P2C": wave_p2c,
     "P2D": wave_p2d,
     "P2E": wave_p2e,
+    "P3D": wave_p3d,
 }
 
 def main():
