@@ -2429,5 +2429,33 @@
   ],
   "source": "dom-kino",
   "runtime": 104
+ },
+ "shekspir-kato-ulichno-kuche": {
+  "id": "shekspir-kato-ulichno-kuche",
+  "bg": "ШЕКСПИР КАТО УЛИЧНО КУЧЕ",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 93
+ },
+ "davka-za-baloncheta": {
+  "id": "davka-za-baloncheta",
+  "bg": "ДЪВКА ЗА БАЛОНЧЕТА",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
  }
 }

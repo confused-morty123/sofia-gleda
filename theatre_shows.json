@@ -4966,5 +4966,41 @@
   "synBg": "",
   "synEn": "",
   "source": "atelie313"
+ },
+ "nora-stsenabezgranitsi": {
+  "id": "nora-stsenabezgranitsi",
+  "title": "НОРА | #СценаБезГраници",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "sluginite": {
+  "id": "sluginite",
+  "title": "Слугините",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
  }
 }
