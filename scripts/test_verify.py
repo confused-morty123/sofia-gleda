@@ -355,6 +355,154 @@ _rc, _out = _run_out(_minimal_html(
 check("PRELIM_ROWS theatre row with wrong theatre exits non-zero",
       _rc != 0 and ("theatre row" in _out.lower() or "PERFORMANCES" in _out))
 
+# Test 7 (P2D): aggregator-domain VLINKS only allowed for preliminary-only pairs
+# ---------------------------------------------------------------------------
+print("\nP2D: aggregator domain VLINKS rules")
+
+# _FUTURE is today+1 (from the top of this file). For these tests we need a
+# showtime date strictly after PRELIM_FROM, so use today+2 for showtimes.
+_DAY_AFTER = (datetime.date.today() + datetime.timedelta(days=2)).isoformat()
+_p2d_showtimes = _json.dumps(
+    [[f"f{i % 20}", f"cinema{i % 8}", _DAY_AFTER, ["10:00"]] for i in range(80)])
+
+def _with_prelim_from(base_html, pf_dict):
+    """Replace `const PRELIM_FROM={};` with the given dict in the HTML."""
+    return base_html.replace("const PRELIM_FROM={};",
+                             f"const PRELIM_FROM={_json.dumps(pf_dict)};")
+
+# PRELIM_FROM[cinema0] = _FUTURE (today+1). Showtimes for cinema0 use _DAY_AFTER
+# (today+2). Since today+2 >= today+1, all rows are preliminary → programata OK.
+_prelim_html = _with_prelim_from(
+    _minimal_html(showtimes_override=_p2d_showtimes),
+    {f"cinema{i}": _FUTURE for i in range(8)},
+)
+prel_ok_js = _json.dumps([["f0", "cinema0", "https://www.programata.bg/film/x"]])
+_rc, _out = _run_out(_prelim_html.replace("const VLINKS=[];", f"const VLINKS={prel_ok_js};"))
+check("programata.bg VLINKS for preliminary-only pair exits 0", _rc == 0)
+
+# PRELIM_FROM[cinema0] = a far-future date. Showtimes for cinema0 use _DAY_AFTER
+# (today+2). Since today+2 < far_future, the row is confirmed → programata FAILS.
+_far_future = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+_confirmed_html = _with_prelim_from(
+    _minimal_html(showtimes_override=_p2d_showtimes),
+    {"cinema0": _far_future},
+)
+_rc2, _out2 = _run_out(_confirmed_html.replace("const VLINKS=[];", f"const VLINKS={prel_ok_js};"))
+check("programata.bg VLINKS for confirmed pair exits non-zero",
+      _rc2 != 0 and ("programata" in _out2 or "confirmed" in _out2))
+
+# theatre.art.bg URL in VLINKS for a confirmed pair must FAIL.
+tart_confirmed_js = _json.dumps([["f0", "cinema0", "https://theatre.art.bg/show/123"]])
+_rc3, _out3 = _run_out(_confirmed_html.replace("const VLINKS=[];", f"const VLINKS={tart_confirmed_js};"))
+check("theatre.art.bg VLINKS for confirmed pair exits non-zero",
+      _rc3 != 0 and ("theatre.art.bg" in _out3 or "aggregator" in _out3))
+
+
+# ---------------------------------------------------------------------------
+# Test 8 (P2D Item 2): aggregator homepage gate in VLINKS and LINKS
+# ---------------------------------------------------------------------------
+print("\nP2D Item 2: aggregator homepage gate")
+
+# VLINKS entry with programata.bg root URL (no path) must FAIL.
+_vlink_homepage_prog = _json.dumps([["f0", "cinema0", "https://programata.bg"]])
+_rc4, _out4 = _run_out(_prelim_html.replace("const VLINKS=[];",
+                                            f"const VLINKS={_vlink_homepage_prog};"))
+check("VLINKS programata.bg homepage (no path) exits non-zero",
+      _rc4 != 0 and ("homepage" in _out4 or "aggregator" in _out4 or "empty" in _out4 or "path" in _out4))
+
+# VLINKS entry with programata.bg root + trailing slash (/) must FAIL.
+_vlink_homepage_slash = _json.dumps([["f0", "cinema0", "https://programata.bg/"]])
+_rc5, _out5 = _run_out(_prelim_html.replace("const VLINKS=[];",
+                                            f"const VLINKS={_vlink_homepage_slash};"))
+check("VLINKS programata.bg homepage (root slash) exits non-zero",
+      _rc5 != 0 and ("homepage" in _out5 or "aggregator" in _out5 or "empty" in _out5 or "path" in _out5))
+
+# VLINKS entry with theatre.art.bg + query-only (e.g. ?city=20) must FAIL.
+_vlink_homepage_query = _json.dumps([["f0", "cinema0", "https://theatre.art.bg/?city=20"]])
+_rc6, _out6 = _run_out(_prelim_html.replace("const VLINKS=[];",
+                                            f"const VLINKS={_vlink_homepage_query};"))
+check("VLINKS theatre.art.bg query-only homepage exits non-zero",
+      _rc6 != 0 and ("homepage" in _out6 or "aggregator" in _out6 or "empty" in _out6 or "path" in _out6))
+
+# VLINKS with a real programata.bg film path still passes (not a homepage).
+_vlink_real_path = _json.dumps([["f0", "cinema0", "https://www.programata.bg/film/abc-2026"]])
+_rc7, _out7 = _run_out(_prelim_html.replace("const VLINKS=[];",
+                                            f"const VLINKS={_vlink_real_path};"))
+check("VLINKS programata.bg with real film path exits 0", _rc7 == 0)
+
+# LINKS with theatre.art.bg homepage must FAIL.
+# _minimal_html() already emits `const LINKS=[];` — just replace it.
+_links_homepage = _json.dumps([["show-x", "https://theatre.art.bg"]])
+_links_base_html = _minimal_html()
+_rc8, _out8 = _run_out(_links_base_html.replace("const LINKS=[];",
+                                                  f"const LINKS={_links_homepage};"))
+check("LINKS theatre.art.bg homepage exits non-zero",
+      _rc8 != 0 and ("homepage" in _out8 or "aggregator" in _out8 or "empty" in _out8 or "LINKS" in _out8))
+
+# LINKS with a real theatre.art.bg show page passes.
+_links_real = _json.dumps([["show-x", "https://theatre.art.bg/spectakyl/show-x"]])
+_rc9, _out9 = _run_out(_links_base_html.replace("const LINKS=[];",
+                                                  f"const LINKS={_links_real};"))
+check("LINKS theatre.art.bg with real show path exits 0", _rc9 == 0)
+
+
+# ---------------------------------------------------------------------------
+# Test 9 (P2D Item 1): AGGLINKS integrity checks
+# ---------------------------------------------------------------------------
+print("\nP2D AGGLINKS integrity")
+
+# Helper: build a page with LINKS, VLINKS, PRELIM_FROM, and AGGLINKS set.
+# Uses _prelim_html as the base (all cinema rows are preliminary-only).
+_al_vlink_url = "https://www.programata.bg/film/test-film"
+_al_vlink = _json.dumps([["f0", "cinema0", _al_vlink_url]])
+_al_link_url = "https://theatre.art.bg/spectakyl/show-x"
+_al_link = _json.dumps([["show-x", _al_link_url]])
+
+def _al_page(agglinks_dict, vlinks=_al_vlink, links=_al_link):
+    """Build a page with given AGGLINKS, VLINKS, and LINKS constants."""
+    base = _prelim_html   # has PRELIM_FROM so all rows are preliminary
+    base = base.replace("const VLINKS=[];", f"const VLINKS={vlinks};")
+    base = base.replace("const LINKS=[];", f"const LINKS={links};")
+    ag_js = f"const AGGLINKS={_json.dumps(agglinks_dict)};"
+    # Inject AGGLINKS via extra_js pattern: append before SOFIA-DATA-END
+    return base.replace("/* SOFIA-DATA-END */", f"{ag_js}\n/* SOFIA-DATA-END */")
+
+# 9a: correct page (VLINKS + LINKS entries, hosts match, preliminary pair) → passes
+_rc_al_ok, _out_al_ok = _run_out(_al_page({
+    "f0|cinema0": "programata.bg",
+    "show-x": "theatre.art.bg",
+}))
+check("AGGLINKS correct page exits 0", _rc_al_ok == 0)
+
+# 9b: key with no corresponding VLINKS entry → fails
+_rc_al_nolink, _out_al_nolink = _run_out(_al_page({"f99|cinema0": "programata.bg"}))
+check("AGGLINKS key with no VLINKS entry exits non-zero",
+      _rc_al_nolink != 0 and ("AGGLINKS" in _out_al_nolink or "key" in _out_al_nolink.lower()))
+
+# 9c: host mismatch (AGGLINKS says programata.bg but URL is on theatre.art.bg) → fails
+_al_mismatch_vlink = _json.dumps([["f0", "cinema0", "https://theatre.art.bg/show/123"]])
+_rc_al_host, _out_al_host = _run_out(_al_page({"f0|cinema0": "programata.bg"}, vlinks=_al_mismatch_vlink))
+check("AGGLINKS host mismatch exits non-zero",
+      _rc_al_host != 0 and ("AGGLINKS" in _out_al_host or "host" in _out_al_host.lower()))
+
+# 9d: confirmed pair in AGGLINKS → fails
+# _confirmed_html has PRELIM_FROM set to far future so all cinema0 rows are confirmed.
+_al_confirmed_vlink = _json.dumps([["f0", "cinema0", _al_vlink_url]])
+_rc_al_conf, _out_al_conf = _run_out(
+    _confirmed_html
+    .replace("const VLINKS=[];", f"const VLINKS={_al_confirmed_vlink};")
+    .replace("const LINKS=[];", f"const LINKS={_al_link};")
+    .replace("/* SOFIA-DATA-END */",
+             f'const AGGLINKS={_json.dumps({"f0|cinema0": "programata.bg"})};\n/* SOFIA-DATA-END */')
+)
+check("AGGLINKS confirmed pair exits non-zero",
+      _rc_al_conf != 0 and ("AGGLINKS" in _out_al_conf or "confirmed" in _out_al_conf.lower()))
+
+# 9e: unrecognised aggregator value → fails
+_rc_al_badval, _out_al_badval = _run_out(_al_page({"f0|cinema0": "evil.com"}))
+check("AGGLINKS unrecognised aggregator value exits non-zero",
+      _rc_al_badval != 0 and ("AGGLINKS" in _out_al_badval or "aggregator" in _out_al_badval.lower()))
+
 
 # ---------------------------------------------------------------------------
 # Summary
