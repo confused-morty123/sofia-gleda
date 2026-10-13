@@ -1935,6 +1935,19 @@ def read_prelim_rows(page):
     return [tuple(x) for x in v if isinstance(x, list) and len(x) == 3] if isinstance(v, list) else []
 
 
+def write_showattr(page, showattr_obj):
+    """Replace `const SHOWATTR={…};` in the SOFIA-DATA block, or insert it on
+    the line after `const PRELIM_ROWS=…;` when the build does not declare it yet."""
+    lit = json.dumps(showattr_obj, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    m = re.search(r"^const SHOWATTR\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const SHOWATTR={lit};" + page[m.end():]
+    pr = re.search(r"^const PRELIM_ROWS\s*=[^\n]*;[ \t]*$", page, re.M)
+    if not pr:
+        raise KeyError("PRELIM_ROWS")
+    return page[:pr.end()] + f"\nconst SHOWATTR={lit};" + page[pr.end():]
+
+
 def previous_official_stats():
     try:
         rep = json.loads(BUILD_REPORT.read_text(encoding="utf-8"))
@@ -2534,6 +2547,11 @@ def main():
                 vlinks[(row[0], row[1])] = row[2]
     except (KeyError, ValueError):
         pass
+    # Per-(film, venue) per-time show attributes (language version + format).
+    # Seeded from previous SHOWATTR so an unreachable venue keeps its labels.
+    # Key: "fid|vid"; value: {"YYYY-MM-DD HH:MM": "dub,3d"}.
+    old_showattr = read_const_obj(src, "SHOWATTR")
+    fresh_showattr = {}   # collected this run: {(fid, vid): {datetime_key: attr_str}}
     # Track which (fid, venue) pairs were seen on programata pages so we can
     # prefer a programata link for LINKS (richest film-info page) while still
     # storing venue-specific ticket links in vlinks.
@@ -2657,6 +2675,12 @@ def main():
             status, cov = "official", (res.covered_from, res.covered_to)
             orows = [(fid, d, t) for fid, d, t, _m, _t in resolved.get(vid, [])]
             source = res.source
+            # Collect SHOWATTR entries for this venue's live rows
+            for fid, d, t, meta, _title in resolved.get(vid, []):
+                attr = OS._mk_showattr(meta) if meta else None
+                if attr:
+                    key = (fid, vid)
+                    fresh_showattr.setdefault(key, {})[f"{d} {t}"] = attr
         elif vid in OS.OFFICIAL:
             status, cov, orows = "unreachable", None, []
             source = "previous run kept as preliminary — official source failed"
@@ -3380,6 +3404,28 @@ def main():
     out = write_prelim_from(out, prelim)
     # festival screenings a venue's covered programme does not list: per row
     out = write_prelim_rows(out, prelim_rows)
+    # per-screening language-version and format labels (CODE-09)
+    # Build showattr: start from old (keep-previous), overlay with this run's fresh data,
+    # then prune to only (film, venue) pairs still in new_showtimes.
+    active_st_pairs = {(r[0], r[1]) for r in new_showtimes}
+    showattr_merged = {}
+    for key_str, times_map in old_showattr.items():
+        parts = key_str.split("|", 1)
+        if len(parts) == 2:
+            pair = (parts[0], parts[1])
+            if pair in active_st_pairs:
+                showattr_merged[pair] = dict(times_map)
+    for (fid, vid), times_map in fresh_showattr.items():
+        if (fid, vid) in active_st_pairs:
+            showattr_merged[(fid, vid)] = times_map
+    showattr_out = {f"{fid}|{vid}": v for (fid, vid), v in sorted(showattr_merged.items())}
+    try:
+        out = write_showattr(out, showattr_out)
+        total_attr = sum(len(v) for v in showattr_out.values())
+        print(f"wrote SHOWATTR: {len(showattr_out)} film+venue keys, {total_attr} timed entries")
+    except KeyError as _e:
+        print("SHOWATTR/PRELIM_ROWS constant not found — skipping SHOWATTR update "
+              "(add 'const SHOWATTR={};' to src/data.html between the SOFIA-DATA markers)")
     stamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     out = re.sub(r'"?lastValidated"?\s*:\s*"[^"]*"', f'"lastValidated":"{stamp}"', out)
     # The rolling window (CODE-01): the stored window is this run's, today ..

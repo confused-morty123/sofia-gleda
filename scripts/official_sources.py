@@ -161,6 +161,37 @@ CC_GENRES = {"action": "Екшън", "adventure": "Приключенски", "a
              "mystery": "Мистерия", "romance": "Романтика", "sci-fi": "Фантастика",
              "thriller": "Трилър", "history": "Исторически", "sport": "Спорт"}
 CC_FORMATS = ("2d", "3d", "imax", "4dx", "screenx", "d-box", "infinity-vision")
+# The language versions Cinema City writes in attributeIds.
+# "dubbed" / "bg-dub" / "bg-dubbed" → "dub";
+# "first-subbed-lang-bg" → "sub" (foreign film with BG subtitles);
+# "subbed" alone (no first-subbed-lang-bg) → "sub";
+# "bulgarian" → the film is in Bulgarian; no lang_ver label (not a translation).
+# The "-cc" caption variant ("first-subbed-lang-bg-cc") alone never implies "sub":
+# CC uses it on both dubbed+subtitled events and on Bulgarian-language films with
+# captions.  We label it only when "first-subbed-lang-bg" (non-cc) is also present.
+_CC_DUB_ATTRS    = frozenset(("dubbed", "bg-dub", "bg-dubbed"))
+_CC_SUB_ATTRS    = frozenset(("first-subbed-lang-bg", "subbed"))
+_CC_BG_LANG_ATTR = "bulgarian"
+
+# ------- show-attribute helpers -------
+# Each reader puts a compact "lang_ver" and "fmt_std" key in row meta when its
+# own programme states them; _mk_showattr turns those into the compact
+# comma-separated string used in SHOWATTR: "dub", "sub", "3d", "imax", "4dx",
+# "screenx", "d-box" — only what is stated, no 2D (the default).
+_STD_FMTS = frozenset(("3d", "imax", "4dx", "screenx", "d-box"))
+
+
+def _mk_showattr(meta):
+    """Compact attribute string from a row's meta, or None when nothing notable.
+    Tokens: "dub" | "sub" (at most one) then "3d" / "imax" / "4dx" / "screenx" / "d-box"."""
+    parts = []
+    lv = meta.get("lang_ver") or ""
+    if lv in ("dub", "sub"):
+        parts.append(lv)
+    for f in (meta.get("fmt_std") or []):
+        if f in _STD_FMTS:
+            parts.append(f)
+    return ",".join(parts) if parts else None
 
 
 def parse_cinemacity_day(payload, date, cinema=None):
@@ -184,12 +215,22 @@ def parse_cinemacity_day(payload, date, cinema=None):
         if not name:
             continue
         attrs = e.get("attributeIds") or []
+        is_bg_film = _CC_BG_LANG_ATTR in attrs
+        lv = ("" if is_bg_film
+              else "dub" if any(a in _CC_DUB_ATTRS for a in attrs)
+              else "sub" if any(a in _CC_SUB_ATTRS for a in attrs)
+              else "")
+        fmt_std = [a for a in attrs if a in _STD_FMTS]
         meta = {"url": f.get("link"), "runtime": f.get("length"),
                 "year": f.get("releaseYear"),
                 "genres": [CC_GENRES[a] for a in (f.get("attributeIds") or []) if a in CC_GENRES],
                 "hall": e.get("auditorium"), "booking": e.get("bookingLink"),
                 "format": [a for a in attrs if a in CC_FORMATS],
                 "posterLink": f.get("posterLink")}
+        if lv:
+            meta["lang_ver"] = lv
+        if fmt_std:
+            meta["fmt_std"] = fmt_std
         if "tbc" in attrs:
             meta["tbc"] = True
         rows.append((name, date, f"{m.group(2)}:{m.group(3)}", meta))
@@ -233,6 +274,42 @@ ARENA_URL = "https://www.kinoarena.com/bg/program/view/{slug}/{dmy}"
 ARENA_BASE = "https://www.kinoarena.com"
 ARENA_SLUGS = {"arena-mega": "arena-mega-mol", "arena-mall": "kino-arena-the-mall"}
 
+# Кино Арена: map data-title values to (lang_ver, fmt_std) tokens.
+# Language values seen on live pages (2026-10-13, both venues, today+tomorrow):
+#   "Dubbed"      → dub  (7 per page – the primary label for dubbed screenings)
+#   "BG Audio"    → dub  (seen in older fixtures; kept for safety)
+#   "BG дублаж"   → dub  (Cyrillic variant; kept for safety)
+#   "BG Subtitles"→ sub
+#   "BG субтитри" → sub  (Cyrillic variant; kept for safety)
+# Format values seen live: "LUXE", "Digital", "3D Digital".
+# An unrecognised value is logged so new labels surface in the run notes.
+_ARENA_DUB  = {"dubbed", "bg audio", "bg дублаж"}
+_ARENA_SUB  = {"bg subtitles", "bg субтитри"}
+_ARENA_FMT  = {"3d": "3d", "3d digital": "3d", "imax": "imax",
+               "4dx": "4dx", "screenx": "screenx", "d-box": "d-box"}
+# Format-only labels that are expected but carry no lang/fmt token (silently ignored).
+_ARENA_KNOWN_FMT_ONLY = {"luxe", "digital", "2d", "2d digital"}
+_ARENA_UNKNOWN_LOG: set = set()   # accumulates new values seen during a run
+
+
+def _arena_attrs(fmt_list):
+    """Return (lang_ver, fmt_std_list) from a Кино Арена data-title list.
+    lang_ver is "dub", "sub", or ""; fmt_std_list may be empty.
+    Unknown values are added to _ARENA_UNKNOWN_LOG."""
+    lv = ""
+    fs = []
+    for title in (fmt_list or []):
+        tl = title.lower()
+        if tl in _ARENA_DUB:
+            lv = "dub"
+        elif tl in _ARENA_SUB:
+            lv = "sub"
+        elif tl in _ARENA_FMT:
+            fs.append(_ARENA_FMT[tl])
+        elif tl not in _ARENA_KNOWN_FMT_ONLY:
+            _ARENA_UNKNOWN_LOG.add(title)
+    return lv, fs
+
 
 def parse_kinoarena_page(html, slug):
     """Returns (selected_date, tab_dates, rows). The page must be this cinema
@@ -267,9 +344,15 @@ def parse_kinoarena_page(html, slug):
             fmt = [x.get("data-title") for x in (line.select(".attr .item") if line else [])
                    if x.get("data-title")]
             bk = sp.find_parent("a")
-            rows.append((title, None, t, {"url": url, "format": fmt,
-                                           "booking": urllib.parse.urljoin(ARENA_BASE, bk.get("href"))
-                                           if bk and bk.get("href") else None}))
+            meta = {"url": url, "format": fmt,
+                    "booking": urllib.parse.urljoin(ARENA_BASE, bk.get("href"))
+                    if bk and bk.get("href") else None}
+            lv, fs = _arena_attrs(fmt)
+            if lv:
+                meta["lang_ver"] = lv
+            if fs:
+                meta["fmt_std"] = fs
+            rows.append((title, None, t, meta))
     return selected, tabs, rows
 
 
@@ -337,6 +420,10 @@ def fetch_kinoarena(session, venue, today, last_day):
         raise SourceBroken("Кино Арена: no normal programme day")
     if else_days:
         notes.append("advance sales: " + ", ".join(f"{d} ({n})" for d, n in else_days.items()))
+    if _ARENA_UNKNOWN_LOG:
+        notes.append("UNKNOWN data-title values (add mapping): "
+                     + ", ".join(sorted(_ARENA_UNKNOWN_LOG)))
+        _ARENA_UNKNOWN_LOG.clear()
     return OfficialResult(venue, "kinoarena.com programme pages", rows, today, end,
                           notes=notes, days={**dict(counts), **else_days})
 
@@ -346,6 +433,34 @@ CG_BASE = "https://www.cinegrand.bg"
 CG_CINEMAS = {"cg-ring": ("софия-ринг-мол", "BGSOFCG2"),
               "cg-park": ("парк-център-софия", "BGSOFCG1")}
 CG_SELECT = CG_BASE + "/site/default/select-cinema"
+
+# Cine Grand: parse <span class="info"> text like "2d, Дуб" / "3d, Суб"
+_CG_DUB_RE  = re.compile(r"\bдуб\b", re.IGNORECASE)
+_CG_SUB_RE  = re.compile(r"\bсуб\b", re.IGNORECASE)
+_CG_3D_RE   = re.compile(r"\b3d\b", re.IGNORECASE)
+_CG_4DX_RE  = re.compile(r"\b4dx\b", re.IGNORECASE)
+_CG_IMAX_RE = re.compile(r"\bimax\b", re.IGNORECASE)
+_CG_SCX_RE  = re.compile(r"\bscreenx\b", re.IGNORECASE)
+
+
+def _cg_attrs(info_text):
+    """Return (lang_ver, fmt_std_list) from a Cine Grand span.info text.
+    e.g. '2d, Дуб' -> ('dub', [])  '3d, Суб' -> ('sub', ['3d'])"""
+    if not info_text:
+        return "", []
+    lv = ("dub" if _CG_DUB_RE.search(info_text)
+          else "sub" if _CG_SUB_RE.search(info_text)
+          else "")
+    fs = []
+    if _CG_3D_RE.search(info_text):
+        fs.append("3d")
+    if _CG_4DX_RE.search(info_text):
+        fs.append("4dx")
+    if _CG_IMAX_RE.search(info_text):
+        fs.append("imax")
+    if _CG_SCX_RE.search(info_text):
+        fs.append("screenx")
+    return lv, fs
 
 
 def parse_cinegrand_page(html, slug, code, today):
@@ -387,11 +502,18 @@ def parse_cinegrand_page(html, slug, code, today):
             if buy and f"cinema_slug={slug}" not in buy:
                 foreign += 1
             hall = st.select_one("span.hall")
-            fmt = st.select_one("span.info")
-            rows.append((title, d, t, {"url": url, "runtime": int(rt.group(1)) if rt else None,
-                                       "genres_text": genres,
-                                       "hall": hall.get_text(" ", strip=True) if hall else None,
-                                       "format": [fmt.get_text(" ", strip=True)] if fmt else []}))
+            fmt_span = st.select_one("span.info")
+            fmt_text = fmt_span.get_text(" ", strip=True) if fmt_span else ""
+            lv_cg, fs_cg = _cg_attrs(fmt_text)
+            meta_cg = {"url": url, "runtime": int(rt.group(1)) if rt else None,
+                       "genres_text": genres,
+                       "hall": hall.get_text(" ", strip=True) if hall else None,
+                       "format": [fmt_text] if fmt_text else []}
+            if lv_cg:
+                meta_cg["lang_ver"] = lv_cg
+            if fs_cg:
+                meta_cg["fmt_std"] = fs_cg
+            rows.append((title, d, t, meta_cg))
     codes = set(re.findall(r"/files/movie-image/(BG[A-Z0-9]+)/", html))
     cinema_ok = foreign == 0 and (not codes or codes == {code})
     return selected, tabs, rows, cinema_ok

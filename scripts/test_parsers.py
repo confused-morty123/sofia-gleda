@@ -2611,6 +2611,91 @@ check("normal production image still accepted",
       None)
 
 
+# ============================================ P2E: show-attribute label extraction
+# Tests for per-screening language/format label extraction from Cinema City, Кино Арена
+# and Cine Grand. Uses three fixtures under scripts/fixtures/*.
+print("P2E: show-attribute label extraction (CC, KA, CG)")
+
+# Cinema City: parse_cinemacity_day reads attributeIds and sets lang_ver / fmt_std
+_cc_attrs = _jm.loads((FIXTURES / "cinemacity_attrs.json").read_text(encoding="utf-8"))
+_cc_attr_rows = OS.parse_cinemacity_day(_cc_attrs, "2026-11-01")
+# Row: Тест Дублаж 14:00 → bg-dub → dub
+_cc_dub = [r for r in _cc_attr_rows if r[0] == "Тест Дублаж" and r[2] == "14:00"]
+check("CC: bg-dub attr → lang_ver 'dub'", _cc_dub[0][3].get("lang_ver") if _cc_dub else None, "dub")
+check("CC: bg-dub attr → _mk_showattr 'dub'", OS._mk_showattr(_cc_dub[0][3]) if _cc_dub else None, "dub")
+# Row: Тест Субтитри 3D 16:00 → subbed + 3d
+_cc_sub3d = [r for r in _cc_attr_rows if r[0] == "Тест Субтитри 3D" and r[2] == "16:00"]
+check("CC: subbed+3d → lang_ver 'sub'", _cc_sub3d[0][3].get("lang_ver") if _cc_sub3d else None, "sub")
+check("CC: subbed+3d → _mk_showattr 'sub,3d'", OS._mk_showattr(_cc_sub3d[0][3]) if _cc_sub3d else None, "sub,3d")
+# Row: Тест IMAX 18:00 → subbed + imax
+_cc_imax = [r for r in _cc_attr_rows if r[0] == "Тест IMAX" and r[2] == "18:00"]
+check("CC: subbed+imax → _mk_showattr 'sub,imax'", OS._mk_showattr(_cc_imax[0][3]) if _cc_imax else None, "sub,imax")
+# Row: Тест Дублаж 20:00 → bg-dub + 4dx
+_cc_dub4dx = [r for r in _cc_attr_rows if r[0] == "Тест Дублаж" and r[2] == "20:00"]
+check("CC: bg-dub+4dx → _mk_showattr 'dub,4dx'", OS._mk_showattr(_cc_dub4dx[0][3]) if _cc_dub4dx else None, "dub,4dx")
+# Row: Тест Субтитри 3D 20:30 → no lang/fmt attrs → None
+_cc_none = [r for r in _cc_attr_rows if r[0] == "Тест Субтитри 3D" and r[2] == "20:30"]
+check("CC: no notable attrs → _mk_showattr None", OS._mk_showattr(_cc_none[0][3]) if _cc_none else None, None)
+# Row: Тест Български филм 15:00 → bulgarian + first-subbed-lang-bg-cc + subbed → no label
+# (Bulgarian-language film; cc captions do not make it "subtitled")
+_cc_bg = [r for r in _cc_attr_rows if r[0] == "Тест Български филм" and r[2] == "15:00"]
+check("CC: bulgarian film → no lang_ver", _cc_bg[0][3].get("lang_ver") if _cc_bg else "MISSING", None)
+check("CC: bulgarian film → _mk_showattr None", OS._mk_showattr(_cc_bg[0][3]) if _cc_bg else "MISSING", None)
+
+# Кино Арена: parse_kinoarena_page reads data-title and sets lang_ver / fmt_std
+_ka_html = (FIXTURES / "kinoarena_attrs.html").read_text(encoding="utf-8")
+try:
+    _ka_sel, _ka_tabs, _ka_rows = OS.parse_kinoarena_page(_ka_html, "arena-mega-mol")
+    # Тест Дублаж 15:00 → BG Audio → dub
+    _ka_dub = [r for r in _ka_rows if r[0] == "Тест Дублаж" and r[2] == "15:00"]
+    check("KA: BG Audio → lang_ver 'dub'", _ka_dub[0][3].get("lang_ver") if _ka_dub else None, "dub")
+    check("KA: BG Audio → _mk_showattr 'dub'", OS._mk_showattr(_ka_dub[0][3]) if _ka_dub else None, "dub")
+    # Тест Субтитри 3D 16:00 → BG Subtitles + 3D → sub,3d
+    _ka_sub3d = [r for r in _ka_rows if r[0] == "Тест Субтитри 3D" and r[2] == "16:00"]
+    check("KA: BG Subtitles+3D → lang_ver 'sub'", _ka_sub3d[0][3].get("lang_ver") if _ka_sub3d else None, "sub")
+    check("KA: BG Subtitles+3D → _mk_showattr 'sub,3d'", OS._mk_showattr(_ka_sub3d[0][3]) if _ka_sub3d else None, "sub,3d")
+    # Тест IMAX 19:00 → IMAX + BG Subtitles → sub,imax
+    _ka_imax = [r for r in _ka_rows if r[0] == "Тест IMAX" and r[2] == "19:00"]
+    check("KA: IMAX+BG Subtitles → _mk_showattr 'sub,imax'", OS._mk_showattr(_ka_imax[0][3]) if _ka_imax else None, "sub,imax")
+    # Тест Dubbed 14:00 → Dubbed (live label from 2026-10-13) → dub
+    _ka_dubbed = [r for r in _ka_rows if r[0] == "Тест Dubbed" and r[2] == "14:00"]
+    check("KA: Dubbed → lang_ver 'dub'", _ka_dubbed[0][3].get("lang_ver") if _ka_dubbed else None, "dub")
+    check("KA: Dubbed → _mk_showattr 'dub'", OS._mk_showattr(_ka_dubbed[0][3]) if _ka_dubbed else None, "dub")
+    # Тест Неизвестен 21:00 → SomeFutureLabel → no lang, but logs unknown.
+    # _arena_attrs was called during parse_kinoarena_page; reset the log before
+    # a fresh parse of just the unknown row to confirm the logging path.
+    OS._ARENA_UNKNOWN_LOG.clear()
+    OS._arena_attrs(["Digital", "SomeFutureLabel"])
+    _ka_unk = [r for r in _ka_rows if r[0] == "Тест Неизвестен" and r[2] == "21:00"]
+    check("KA: unknown label → _mk_showattr None", OS._mk_showattr(_ka_unk[0][3]) if _ka_unk else None, None)
+    check("KA: unknown label logged in _ARENA_UNKNOWN_LOG",
+          "SomeFutureLabel" in OS._ARENA_UNKNOWN_LOG, True)
+    OS._ARENA_UNKNOWN_LOG.clear()
+except Exception as _e:
+    fails.append(f"KA parse_kinoarena_page raised: {_e}")
+    print(f"  FAIL KA block: {_e}")
+
+# Cine Grand: parse_cinegrand_page reads span.info text and sets lang_ver / fmt_std
+_cg_html = (FIXTURES / "cinegrand_attrs.html").read_text(encoding="utf-8")
+try:
+    _cg_sel, _cg_tabs, _cg_rows, _cg_ok = OS.parse_cinegrand_page(
+        _cg_html, "sofia-ring-mol", "BGSOFCG2", "2026-11-01")
+    # ТЕСТ ДУБЛАЖ 14:00 → "2d, Дуб" → dub
+    _cg_dub = [r for r in _cg_rows if r[0] == "ТЕСТ ДУБЛАЖ" and r[2] == "14:00"]
+    check("CG: '2d, Дуб' → lang_ver 'dub'", _cg_dub[0][3].get("lang_ver") if _cg_dub else None, "dub")
+    check("CG: '2d, Дуб' → _mk_showattr 'dub'", OS._mk_showattr(_cg_dub[0][3]) if _cg_dub else None, "dub")
+    # ТЕСТ СУБТИТРИ 3D 18:00 → "3d, Суб" → sub,3d
+    _cg_sub3d = [r for r in _cg_rows if r[0] == "ТЕСТ СУБТИТРИ 3D" and r[2] == "18:00"]
+    check("CG: '3d, Суб' → lang_ver 'sub'", _cg_sub3d[0][3].get("lang_ver") if _cg_sub3d else None, "sub")
+    check("CG: '3d, Суб' → _mk_showattr 'sub,3d'", OS._mk_showattr(_cg_sub3d[0][3]) if _cg_sub3d else None, "sub,3d")
+    # ТЕСТ IMAX 20:00 → "2d, Суб" → sub
+    _cg_sub = [r for r in _cg_rows if r[0] == "ТЕСТ IMAX" and r[2] == "20:00"]
+    check("CG: '2d, Суб' → _mk_showattr 'sub'", OS._mk_showattr(_cg_sub[0][3]) if _cg_sub else None, "sub")
+except Exception as _e:
+    fails.append(f"CG parse_cinegrand_page raised: {_e}")
+    print(f"  FAIL CG block: {_e}")
+
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

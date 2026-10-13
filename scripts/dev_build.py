@@ -23,7 +23,7 @@ listings. index.dev.html is gitignored; never deploy it.
 import os, re, subprocess, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
-SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS"]
+SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS", "SHOWATTR"]
 
 
 def run(*cmd, env=None):

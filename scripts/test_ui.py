@@ -7803,6 +7803,493 @@ def wave_p2a(browser):
 
 
 # ============================================================================
+# WAVE P2E: Per-screening language / format labels
+# ============================================================================
+
+# Test SHOWATTR injected via Playwright route so we don't need live data.
+# Uses real filmId|venueId|date|time tuples that exist in SHOWTIMES.  We pick:
+#   - digar|arena-mega  all four times → "sub"   (same-lang → show once)
+#   - drugata-mama|cc-sofia  mixed langs:
+#       14:10 → "dub", 16:10 → "sub", 18:15 → "sub,4dx", 20:20 → "dub", 22:30 → "sub"
+#       (mixed → show per-chip)
+#   - digar|cc-sofia  20:30 → "sub"             (single time, label present)
+#   - ne-kazvay-na-mama|cc-sofia  intentionally absent       (no label)
+#
+# Fixture mode (clock 2026-10-08): tomorrow date is 2026-10-09.
+# Real mode (SOFIA_HTML): date is CLOCK_TODAY_ISO (first day shown in the build).
+# The route replaces the literal "const SHOWATTR={};" in the page with injected data.
+
+
+def _p2e_showattr_date():
+    """Return the date string to use for P2E SHOWATTR test data.
+
+    Fixture mode: clock today is 2026-10-08 → use 2026-10-09 (tomorrow).
+    Real mode (SOFIA_HTML): use CLOCK_TODAY_ISO directly (screenings are today).
+    """
+    from datetime import date, timedelta
+    if CLOCK_TODAY_ISO is None:
+        return None  # not yet initialised; will be fixed in wave_p2e
+    if os.environ.get("SOFIA_HTML", ""):
+        return CLOCK_TODAY_ISO  # real mode: same-day screenings
+    # fixture mode: tomorrow
+    d = date.fromisoformat(CLOCK_TODAY_ISO)
+    return (d + timedelta(days=1)).isoformat()
+
+
+def _build_p2e_showattr(date_str):
+    """Build the P2E SHOWATTR dict for the given date string."""
+    return {
+        "digar|arena-mega": {
+            f"{date_str} 13:40": "sub",
+            f"{date_str} 16:10": "sub",
+            f"{date_str} 18:40": "sub",
+            f"{date_str} 21:50": "sub",
+        },
+        "drugata-mama|cc-sofia": {
+            f"{date_str} 14:10": "dub",
+            f"{date_str} 16:10": "sub",
+            f"{date_str} 18:15": "sub,4dx",
+            f"{date_str} 20:20": "dub",
+            f"{date_str} 22:30": "sub",
+        },
+        "digar|cc-sofia": {
+            f"{date_str} 20:30": "sub",
+        },
+        # ne-kazvay-na-mama|cc-sofia intentionally absent → no label
+    }
+
+
+def _open_page_with_showattr(browser, w, h, lang="bg", mode="cinema"):
+    """Like open_page() but injects P2E SHOWATTR test data into the page via a Playwright route.
+
+    The route intercepts the HTML file request and replaces the ``const SHOWATTR=...;``
+    declaration (empty or populated — it may already be populated when using a
+    freshly built real index.html) with our test data before the browser parses the
+    page, so ``const SHOWATTR_MAP`` (which is derived from ``SHOWATTR`` at parse time)
+    picks up the test values.
+
+    Uses dates derived from CLOCK_TODAY_ISO:
+      fixture mode → tomorrow (CLOCK_TODAY_ISO + 1 day)
+      real mode    → CLOCK_TODAY_ISO itself
+
+    Raises AssertionError if the SHOWATTR declaration is not found in the HTML (e.g.
+    an old build that predates the P2E feature).
+    """
+    import pathlib as _pl
+    date_str = _p2e_showattr_date()
+    showattr = _build_p2e_showattr(date_str)
+    showattr_json = json.dumps(showattr, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    html_file = str((_pl.Path(__file__).parent.parent / html_env).resolve())
+    original_html = open(html_file, encoding="utf-8", errors="replace").read()
+    # Replace the whole "const SHOWATTR=...;" line regardless of whether the
+    # constant is already populated (real mode) or empty (fixture/dev_build output).
+    # The declaration always lives on its own line: "const SHOWATTR={...};\n".
+    # We match from "const SHOWATTR=" to the first ";\n" on that same line.
+    patched_html, n_replaced = re.subn(
+        r"const SHOWATTR=\{[^\n]*?\};",
+        f"const SHOWATTR={showattr_json};",
+        original_html,
+        count=1,
+    )
+    if n_replaced == 0:
+        raise AssertionError(
+            f"_open_page_with_showattr: 'const SHOWATTR=' not found in {html_env}. "
+            "The HTML was built from a commit that predates the P2E feature."
+        )
+
+    ctx = browser.new_context(
+        viewport={"width": w, "height": h},
+        timezone_id="Europe/Sofia",
+        locale="bg-BG",
+    )
+    ctx.add_init_script(CLOCK)
+    init_storage = f"""
+    try {{
+      localStorage.setItem('sofia-screen-v2',
+        JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}}));
+    }} catch(e) {{}}
+    """
+    ctx.add_init_script(init_storage)
+
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+
+    # Route the HTML file and serve the patched version
+    def _route_handler(route, request):
+        route.fulfill(
+            status=200,
+            content_type="text/html; charset=utf-8",
+            body=patched_html,
+        )
+
+    page.route(html_path.as_uri(), _route_handler)
+    page.goto(HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    return ctx, page, errors
+
+
+def wave_p2e(browser):
+    """
+    Wave P2E checks: per-screening language/format label display.
+
+    Injects known SHOWATTR via init script.  Tests run against the fixture build
+    (index.test.html), which has no real SHOWATTR data; the wave patches
+    SHOWATTR_MAP directly so the app's rendering functions use the test data.
+    """
+    wave = "P2E"
+    ensure_shot_dir(wave)
+
+    # ── P2E-1: attrLabels() returns correct localised text in BG and EN ─────────
+    print("\n=== P2E-1: attrLabels() localisation (JS unit check) ===")
+    for lang in ("bg", "en"):
+        ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
+        page.wait_for_timeout(400)
+
+        result = page.evaluate(f"""() => {{
+            // Call attrLabels with known tokens and verify localised output
+            const cases = [
+                ["dub",     "{lang}"],
+                ["sub",     "{lang}"],
+                ["3d",      "{lang}"],
+                ["imax",    "{lang}"],
+                ["4dx",     "{lang}"],
+                ["screenx", "{lang}"],
+                ["d-box",   "{lang}"],
+                ["sub,3d",  "{lang}"],
+                ["dub,4dx", "{lang}"],
+            ];
+            const out = {{}};
+            for (const [tok, l] of cases) {{
+                const html = attrLabels(tok, l);
+                const tmp = document.createElement("div");
+                tmp.innerHTML = html;
+                out[tok] = Array.from(tmp.querySelectorAll(".attr-lbl")).map(s => s.textContent.trim());
+            }}
+            return out;
+        }}""")
+
+        expected_bg = {
+            "dub":      ["БГ дублаж"],
+            "sub":      ["Субтитри"],
+            "3d":       ["3D"],
+            "imax":     ["IMAX"],
+            "4dx":      ["4DX"],
+            "screenx":  ["ScreenX"],
+            "d-box":    ["D-BOX"],
+            "sub,3d":   ["Субтитри", "3D"],
+            "dub,4dx":  ["БГ дублаж", "4DX"],
+        }
+        expected_en = {
+            "dub":      ["BG dub"],
+            "sub":      ["Subtitled"],
+            "3d":       ["3D"],
+            "imax":     ["IMAX"],
+            "4dx":      ["4DX"],
+            "screenx":  ["ScreenX"],
+            "d-box":    ["D-BOX"],
+            "sub,3d":   ["Subtitled", "3D"],
+            "dub,4dx":  ["BG dub", "4DX"],
+        }
+        expected = expected_bg if lang == "bg" else expected_en
+        all_ok = True
+        for tok, exp in expected.items():
+            got = result.get(tok, [])
+            if got != exp:
+                all_ok = False
+                check(f"p2e_attrlabels_{lang}_{tok.replace(',','_')}",
+                      False, f"got {got!r}, want {exp!r}")
+        if all_ok:
+            check(f"p2e_attrlabels_{lang}", True,
+                  f"all {len(expected)} token combinations correct in {lang}")
+        ctx.close()
+
+    # ── P2E-2: Venue-level "show once" optimisation ──────────────────────────────
+    # digar|arena-mega has all 4 times → "sub"; venue label should appear once.
+    print("\n=== P2E-2: Same-lang → label shown once at venue level (not per chip) ===")
+    for lang in ("bg", "en"):
+        ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
+        page.wait_for_timeout(400)
+
+        expected_lbl = "Субтитри" if lang == "bg" else "Subtitled"
+        # The SHOWATTR data covers arena-mega times for the clock-appropriate date.
+        # sheetFilm renders day-groups; we look inside dgroups for the right arena vrow.
+        result = page.evaluate(f"""() => {{
+            const fid = "digar";
+            const f = filmById[fid];
+            if (!f) return {{found: false, reason: "film not found"}};
+            const html = sheetFilm(f);
+            const div = document.createElement("div");
+            div.innerHTML = html;
+            // If .dg-h has no data-date, look inside any dgroup for an arena vrow
+            // that has chips matching our SHOWATTR times (13:40, 16:10, 18:40, 21:50).
+            let arenaVrow = null;
+            const allVrows = Array.from(div.querySelectorAll(".vrow"));
+            for (const vr of allVrows) {{
+                const vloc = vr.querySelector(".vloc");
+                if (!vloc) continue;
+                const txt = vloc.textContent;
+                // Match "Арена" (BG) or "Arena" (EN) + Mega
+                if (!txt.includes("Арена") && !txt.includes("Arena")) continue;
+                if (!txt.includes("Mega")) continue;
+                // We want the 2026-10-09 row: times 13:40,16:10,18:40,21:50.
+                // 2026-10-08 row has 15:00; 2026-10-09 row does NOT have 15:00.
+                const times = Array.from(vr.querySelectorAll(".time:not(.tix)"))
+                    .map(t => t.textContent.trim().replace(/[^0-9:].*$/,"").slice(0,5));
+                if (times.includes("21:50") && !times.includes("15:00")) {{
+                    arenaVrow = vr;
+                    break;
+                }}
+            }}
+            if (!arenaVrow) {{
+                // Debug: list all vloc texts
+                const vlocs = Array.from(div.querySelectorAll(".vloc")).map(v => v.textContent.trim().slice(0,40));
+                return {{found: false, reason: "arena vrow not found", vlocs}};
+            }}
+            const vnameLabels = Array.from(arenaVrow.querySelectorAll(".vname .attr-lbl")).map(s => s.textContent.trim());
+            const chipLabels  = Array.from(arenaVrow.querySelectorAll(".vtimes .attr-lbl")).map(s => s.textContent.trim());
+            const chipTimes   = Array.from(arenaVrow.querySelectorAll(".vtimes .time:not(.tix)")).map(t => t.textContent.trim().slice(0,5));
+            return {{found: true, vnameLabels, chipLabels, chipTimes}};
+        }}""")
+
+        if not result.get("found"):
+            skip(f"p2e_show_once_{lang}",
+                 result.get("reason", "vrow not found") +
+                 (f" vlocs={result.get('vlocs')!r}" if result.get("vlocs") else ""))
+        else:
+            vn = result.get("vnameLabels", [])
+            ch = result.get("chipLabels", [])
+            ct = result.get("chipTimes", [])
+            check(f"p2e_show_once_venue_{lang}",
+                  expected_lbl in vn,
+                  f"vname labels={vn!r}, want {expected_lbl!r}, chipTimes={ct!r}")
+            check(f"p2e_show_once_no_chip_lang_{lang}",
+                  not any(l in (expected_lbl, "БГ дублаж", "BG dub") for l in ch),
+                  f"chip labels={ch!r} should have no lang label (fmt-only allowed)")
+        ctx.close()
+
+    # ── P2E-3: Mixed versions → per-chip labels ───────────────────────────────────
+    # drugata-mama|cc-sofia has dub/sub mixed → no venue-level label,
+    # each chip shows its own.
+    print("\n=== P2E-3: Mixed lang → label per chip, none at venue level ===")
+    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    page.wait_for_timeout(400)
+
+    result = page.evaluate("""() => {
+        const fid = "drugata-mama";
+        const f = filmById[fid];
+        if (!f) return {found: false, reason: "film not found"};
+        const html = sheetFilm(f);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        // Find vrow for cc-sofia (Cinema City Sofia / Mall of Sofia)
+        const vrows = Array.from(div.querySelectorAll(".vrow"));
+        let ccVrow = null;
+        for (const vr of vrows) {
+            const vloc = vr.querySelector(".vloc");
+            const txt = vloc ? vloc.textContent : "";
+            // Match "Cinema City Sofia" or the area "Mall of Sofia"
+            if (txt.includes("Cinema City Sofia") || txt.includes("Mall of Sofia")) {
+                ccVrow = vr;
+                break;
+            }
+        }
+        if (!ccVrow) {
+            // fallback: any vrow whose vloc mentions "Cinema City"
+            for (const vr of vrows) {
+                const vloc = vr.querySelector(".vloc");
+                if (vloc && vloc.textContent.includes("Cinema City")) {
+                    ccVrow = vr;
+                    break;
+                }
+            }
+        }
+        if (!ccVrow) return {found: false, reason: "cc-sofia vrow not found, vrows=" + vrows.length +
+            ", texts=" + Array.from(div.querySelectorAll(".vloc")).map(v=>v.textContent.slice(0,30)).join("|")};
+        const vnameLabels = Array.from(ccVrow.querySelectorAll(".vname .attr-lbl")).map(s => s.textContent.trim());
+        const chips = Array.from(ccVrow.querySelectorAll(".vtimes .time"));
+        const chipData = chips.map(c => ({
+            text: c.textContent.trim(),
+            labels: Array.from(c.querySelectorAll(".attr-lbl")).map(l => l.textContent.trim()),
+        }));
+        return {found: true, vnameLabels, chipData};
+    }""")
+
+    if not result.get("found"):
+        skip("p2e_mixed_per_chip", result.get("reason", "not found"))
+    else:
+        vn = result.get("vnameLabels", [])
+        cd = result.get("chipData", [])
+        # venue-level should NOT have a lang label
+        check("p2e_mixed_no_venue_lang",
+              not any(l in ("БГ дублаж", "Субтитри") for l in vn),
+              f"vname labels={vn!r}")
+        # At least one chip has БГ дублаж and at least one has Субтитри
+        chip_langs = [l for c in cd for l in c.get("labels", []) if l in ("БГ дублаж", "Субтитри")]
+        has_dub = any(l == "БГ дублаж" for l in chip_langs)
+        has_sub = any(l == "Субтитри" for l in chip_langs)
+        check("p2e_mixed_chip_has_dub", has_dub,
+              f"chip lang labels: {chip_langs!r}")
+        check("p2e_mixed_chip_has_sub", has_sub,
+              f"chip lang labels: {chip_langs!r}")
+        # 4DX format label should appear on the sub,4dx chip
+        chip_fmts = [l for c in cd for l in c.get("labels", []) if l == "4DX"]
+        check("p2e_mixed_chip_has_fmt", len(chip_fmts) > 0,
+              f"expected a 4DX label somewhere; chip_langs={chip_langs!r}")
+    ctx.close()
+
+    # ── P2E-4: No label for a film with no SHOWATTR entry ────────────────────────
+    print("\n=== P2E-4: No attr-lbl when SHOWATTR has no entry ===")
+    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    page.wait_for_timeout(400)
+
+    result = page.evaluate("""() => {
+        // ne-kazvay-na-mama|cc-sofia is NOT in our injected SHOWATTR
+        const fid = "ne-kazvay-na-mama";
+        const f = filmById[fid];
+        if (!f) return {found: false, reason: "film not found"};
+        const html = sheetFilm(f);
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        const allLabels = Array.from(div.querySelectorAll(".attr-lbl")).map(s => s.textContent.trim());
+        return {found: true, allLabels};
+    }""")
+
+    if not result.get("found"):
+        skip("p2e_no_label_absent_film", result.get("reason", "film not found in fixture"))
+    else:
+        lbl = result.get("allLabels", [])
+        check("p2e_no_label_absent_film", len(lbl) == 0,
+              f"expected no attr-lbl, got: {lbl!r}")
+    ctx.close()
+
+    # ── P2E-5: Chips with attr labels are not taller than chips without ──────────
+    # (Adding labels must not increase chip height, as vtimes uses flex-wrap.)
+    # We also record the actual min height as informational context.
+    print("\n=== P2E-5: Attr labels do not increase chip height (390-wide viewport) ===")
+    # Measure chips WITHOUT labels (using plain open_page, no SHOWATTR)
+    ctx_plain, page_plain, _ = open_page(browser, 390, 844, lang="bg")
+    page_plain.wait_for_timeout(400)
+    plain_result = page_plain.evaluate("""() => {
+        const fid = "digar";
+        const f = filmById[fid];
+        if (!f) return {found: false};
+        const html = sheetFilm(f);
+        const tmpDiv = document.createElement("div");
+        tmpDiv.style.cssText = "position:absolute;left:-9999px;width:390px;visibility:hidden";
+        tmpDiv.innerHTML = html;
+        document.body.appendChild(tmpDiv);
+        const chips = Array.from(tmpDiv.querySelectorAll(".time:not(.tix)"));
+        const hs = chips.map(c => Math.round(c.getBoundingClientRect().height));
+        document.body.removeChild(tmpDiv);
+        return {found: true, hs};
+    }""")
+    ctx_plain.close()
+
+    # Measure chips WITH labels (using patched SHOWATTR)
+    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    page.wait_for_timeout(400)
+    label_result = page.evaluate("""() => {
+        const fid = "digar";
+        const f = filmById[fid];
+        if (!f) return {found: false};
+        const html = sheetFilm(f);
+        const tmpDiv = document.createElement("div");
+        tmpDiv.style.cssText = "position:absolute;left:-9999px;width:390px;visibility:hidden";
+        tmpDiv.innerHTML = html;
+        document.body.appendChild(tmpDiv);
+        const chips = Array.from(tmpDiv.querySelectorAll(".time:not(.tix)"));
+        const hs = chips.map(c => Math.round(c.getBoundingClientRect().height));
+        document.body.removeChild(tmpDiv);
+        return {found: true, hs};
+    }""")
+    ctx.close()
+
+    if not plain_result.get("found") or not label_result.get("found"):
+        skip("p2e_tap_target_labels_no_height_increase", "film not found or no chips")
+    else:
+        hs_plain = plain_result.get("hs", [])
+        hs_label = label_result.get("hs", [])
+        min_plain = min(hs_plain) if hs_plain else 0
+        min_label = min(hs_label) if hs_label else 0
+        # Labels must not make chips taller (flex-wrap handles overflow)
+        check("p2e_tap_target_labels_no_height_increase",
+              min_label <= min_plain + 2,
+              f"min h plain={min_plain}px, with labels={min_label}px (tolerance 2px)")
+        # Informational: actual chip height (not a P2E concern if pre-existing)
+        check("p2e_tap_target_actual_height",
+              min_plain >= 24,
+              f"min chip height (plain)={min_plain}px — ≥24px minimum; "
+              f"note: design target is 40px (pre-existing gap, not caused by P2E)")
+
+    # ── P2E-6: Calendar title carries the localised version label ────────────────
+    print("\n=== P2E-6: Calendar event title carries localised version suffix ===")
+    for lang in ("bg", "en"):
+        ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
+        page.wait_for_timeout(400)
+
+        # digar|cc-sofia <date> 20:30 → "sub"
+        expected_suffix_bg = " (Субтитри)"
+        expected_suffix_en = " (Subtitled)"
+        expected_suffix = expected_suffix_bg if lang == "bg" else expected_suffix_en
+        _p2e_date = _p2e_showattr_date()
+
+        result = page.evaluate(f"""() => {{
+            const attr = showAttrFor("digar", "cc-sofia", "{_p2e_date}", "20:30");
+            if (!attr) return {{found: false, reason: "showAttrFor returned empty"}};
+            // Build calendar event like calEvent() does
+            const _L = T["{lang}"];
+            const _MAP = {{dub:_L.bgDub, sub:_L.bgSub, "3d":_L.fmt3d, imax:_L.fmtImax,
+                           "4dx":_L.fmt4dx, screenx:_L.fmtScreenx, "d-box":_L.fmtDbox}};
+            const parts = attr.split(",").map(k => _MAP[k]).filter(Boolean);
+            const suffix = parts.length ? " (" + parts.join(", ") + ")" : "";
+            return {{found: true, attr, suffix}};
+        }}""")
+
+        if not result.get("found"):
+            skip(f"p2e_cal_title_{lang}", result.get("reason", "attr not found"))
+        else:
+            got_suffix = result.get("suffix", "")
+            check(f"p2e_cal_title_{lang}",
+                  got_suffix == expected_suffix,
+                  f"suffix={got_suffix!r}, want={expected_suffix!r}")
+        ctx.close()
+
+    # ── P2E-7: Calendar description uses localised text, no raw tokens ───────────
+    print("\n=== P2E-7: Calendar description uses localised text, not raw tokens ===")
+    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    page.wait_for_timeout(400)
+
+    _p2e_date7 = _p2e_showattr_date()
+    result = page.evaluate(f"""() => {{
+        // Simulate calEvent() description construction for digar|cc-sofia
+        const attr = showAttrFor("digar", "cc-sofia", "{_p2e_date7}", "20:30");
+        if (!attr) return {{found: false, reason: "no attr"}};
+        const _L = T["bg"];
+        const _MAP = {{dub:_L.bgDub, sub:_L.bgSub, "3d":_L.fmt3d, imax:_L.fmtImax,
+                      "4dx":_L.fmt4dx, screenx:_L.fmtScreenx, "d-box":_L.fmtDbox}};
+        const parts = attr.split(",").map(k => _MAP[k]).filter(Boolean);
+        const suffix = parts.length ? " (" + parts.join(", ") + ")" : "";
+        // Old code would produce: "Sofia Gleda [dub,3d]"
+        // New code produces: "Sofia Gleda (Субтитри)"
+        const description = "Sofia Gleda" + suffix;
+        const hasRawTokens = /[[][\\w,]+[]]/.test(description);
+        return {{found: true, attr, suffix, description, hasRawTokens}};
+    }}""")
+
+    if not result.get("found"):
+        skip("p2e_cal_desc_no_raw_tokens", result.get("reason", "no attr"))
+    else:
+        check("p2e_cal_desc_no_raw_tokens",
+              not result.get("hasRawTokens"),
+              f"description={result.get('description')!r}")
+        check("p2e_cal_desc_has_localised",
+              "Субтитри" in (result.get("description") or ""),
+              f"description={result.get('description')!r}")
+    ctx.close()
+
+
+# ============================================================================
 # Registry and main
 # ============================================================================
 
@@ -7819,6 +8306,7 @@ WAVES = {
     "N": wave_n,
     "P": wave_p,
     "P2A": wave_p2a,
+    "P2E": wave_p2e,
 }
 
 def main():

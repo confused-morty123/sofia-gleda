@@ -1,0 +1,127 @@
+{
+ "body": {
+  "films": [
+   {
+    "id": "f1",
+    "name": "Тест Дублаж",
+    "link": "https://www.cinemacity.bg/films/test/f1",
+    "length": 90,
+    "releaseYear": 2026,
+    "attributeIds": [
+     "comedy"
+    ],
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/f1.jpg"
+   },
+   {
+    "id": "f2",
+    "name": "Тест Субтитри 3D",
+    "link": "https://www.cinemacity.bg/films/test/f2",
+    "length": 120,
+    "releaseYear": 2026,
+    "attributeIds": [
+     "action"
+    ],
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/f2.jpg"
+   },
+   {
+    "id": "f3",
+    "name": "Тест IMAX",
+    "link": "https://www.cinemacity.bg/films/test/f3",
+    "length": 150,
+    "releaseYear": 2026,
+    "attributeIds": [
+     "sci-fi"
+    ],
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/f3.jpg"
+   },
+   {
+    "id": "f4",
+    "name": "Тест Български филм",
+    "link": "https://www.cinemacity.bg/films/test/f4",
+    "length": 95,
+    "releaseYear": 2026,
+    "attributeIds": [
+     "drama"
+    ],
+    "posterLink": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/f4.jpg"
+   }
+  ],
+  "events": [
+   {
+    "filmId": "f1",
+    "cinemaId": "1261",
+    "eventDateTime": "2026-11-01T14:00:00",
+    "attributeIds": [
+     "2d",
+     "comedy",
+     "dubbed",
+     "original-lang-en",
+     "bg-dub"
+    ],
+    "auditorium": "Зала 1"
+   },
+   {
+    "filmId": "f2",
+    "cinemaId": "1261",
+    "eventDateTime": "2026-11-01T16:00:00",
+    "attributeIds": [
+     "3d",
+     "action",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed"
+    ],
+    "auditorium": "Зала 2"
+   },
+   {
+    "filmId": "f3",
+    "cinemaId": "1261",
+    "eventDateTime": "2026-11-01T18:00:00",
+    "attributeIds": [
+     "2d",
+     "sci-fi",
+     "imax",
+     "first-subbed-lang-bg",
+     "original-lang-en",
+     "subbed"
+    ],
+    "auditorium": "IMAX"
+   },
+   {
+    "filmId": "f1",
+    "cinemaId": "1261",
+    "eventDateTime": "2026-11-01T20:00:00",
+    "attributeIds": [
+     "4dx",
+     "comedy",
+     "dubbed",
+     "original-lang-en",
+     "bg-dub"
+    ],
+    "auditorium": "4DX"
+   },
+   {
+    "filmId": "f2",
+    "cinemaId": "1261",
+    "eventDateTime": "2026-11-01T20:30:00",
+    "attributeIds": [
+     "2d",
+     "action"
+    ],
+    "auditorium": "Зала 3"
+   },
+   {
+    "filmId": "f4",
+    "cinemaId": "1261",
+    "eventDateTime": "2026-11-01T15:00:00",
+    "attributeIds": [
+     "2d",
+     "bulgarian",
+     "first-subbed-lang-bg-cc",
+     "subbed"
+    ],
+    "auditorium": "Зала 4"
+   }
+  ]
+ }
+}

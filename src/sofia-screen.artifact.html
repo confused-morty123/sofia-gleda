@@ -510,6 +510,14 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 [data-surface="theatre"] .venue-block-head h2{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
 .venue-block-head .sub{font-size:11.5px; color:var(--fg-3); margin-top:2px}
 
+/* ---------- show-attribute labels (lang / format) ---------- */
+.attr-lbl{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:1px 5px;border-radius:3px;white-space:nowrap;
+  margin-left:3px;vertical-align:middle;background:rgba(255,255,255,.08);
+  color:var(--fg-2);border:1px solid rgba(255,255,255,.12);line-height:1.5}
+.attr-lbl.lang{background:rgba(255,255,255,.12);color:var(--fg-1)}
+.venue-attr-line{font-size:10px;color:var(--fg-3);padding:2px 0 4px;display:flex;gap:4px;flex-wrap:wrap}
+
 /* ---------- preliminary programme markers ---------- */
 .prelim-tag{font-size:9px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;
   padding:2px 6px;border-radius:4px;background:rgba(217,178,60,.15);color:var(--gild);
@@ -672,7 +680,8 @@ bg:{tagline:"кино и театър в софия",cinema:"Кино",theatre:"
  showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички",
  noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
  noInfoShort:"няма информация",boxOffice:"Билети на касата",viaEpay:"билети чрез epaygo.bg",
- boxOfficeLabel:"Билети на касата",boxOfficeLabelEn:"Tickets at the box office"},
+ boxOfficeLabel:"Билети на касата",boxOfficeLabelEn:"Tickets at the box office",
+ bgDub:"БГ дублаж",bgSub:"Субтитри",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX"},
 en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -724,7 +733,8 @@ en:{tagline:"cinema & theatre in sofia",cinema:"Cinema",theatre:"Theatre",all:"W
  noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
  noEnFilm:"No English description available yet.",noEnShow:"No English description available yet.",
  noInfoShort:"no information",boxOffice:"Tickets at the box office",viaEpay:"tickets via epaygo.bg",
- boxOfficeLabel:"Tickets at the box office",boxOfficeLabelEn:"Tickets at the box office"}};
+ boxOfficeLabel:"Tickets at the box office",boxOfficeLabelEn:"Tickets at the box office",
+ bgDub:"BG dub",bgSub:"Subtitled",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -2091,6 +2101,31 @@ const VLINK_MAP=(()=>{
     VLINKS.forEach(([fid,vid,u])=>{m[fid+"|"+vid]=u;});
   return m;
 })();
+/* SHOWATTR_MAP: keyed by "filmId|venueId" → {"YYYY-MM-DD HH:MM": "dub,3d"} */
+const SHOWATTR_MAP=(()=>{
+  if(typeof SHOWATTR!=="undefined"&&typeof SHOWATTR==="object"&&!Array.isArray(SHOWATTR))
+    return SHOWATTR;
+  return {};
+})();
+/* showAttrFor: return attr string for a film+venue+date+time, or "" */
+function showAttrFor(filmId,venueId,date,tm){
+  const key=filmId+"|"+venueId;
+  const m=SHOWATTR_MAP[key]; if(!m)return"";
+  return m[date+" "+tm]||"";
+}
+/* attrLabels: render compact span tags from an attr string like "dub,3d" */
+function attrLabels(attrStr,lang){
+  if(!attrStr)return"";
+  const L=T[lang];
+  const MAP={dub:()=>`<span class="attr-lbl lang">${esc(L.bgDub)}</span>`,
+             sub:()=>`<span class="attr-lbl lang">${esc(L.bgSub)}</span>`,
+             "3d":()=>`<span class="attr-lbl">${esc(L.fmt3d)}</span>`,
+             imax:()=>`<span class="attr-lbl">${esc(L.fmtImax)}</span>`,
+             "4dx":()=>`<span class="attr-lbl">${esc(L.fmt4dx)}</span>`,
+             screenx:()=>`<span class="attr-lbl">${esc(L.fmtScreenx)}</span>`,
+             "d-box":()=>`<span class="attr-lbl">${esc(L.fmtDbox)}</span>`};
+  return attrStr.split(",").map(t=>MAP[t]?MAP[t]():"").join("");
+}
 /* Film-specific resolver (never uses LINK_MAP — that mapped one global URL per film,
    causing all venues to link to the wrong cinema page).
    Priority: VLINKS entry → BOOKING deep link with date → BOOKING tix → BOOKING url */
@@ -2201,13 +2236,25 @@ function sheetFilm(f){
     if(prelim)hasPrelim=true;
     const cName=S.lang==="bg"?c.name:(c.nameEn||c.name);
     const cArea=S.lang==="bg"?c.area:(c.areaEn||c.area);
+    /* Per-time show attributes: look up each time, gather unique lang tokens */
+    const tmAttrs=r[3].map(tm=>showAttrFor(f.id,r[1],d,tm));
+    const langToks=tmAttrs.map(a=>a?a.split(",").filter(x=>x==="dub"||x==="sub"):[]);
+    const allSameLang=langToks.length>0&&langToks.every(lt=>lt.join(",")===(langToks[0]||[]).join(","))&&langToks[0].length>0;
+    const venueLangLabel=allSameLang?attrLabels(langToks[0].join(","),S.lang):"";
     return`<div class="vrow"><div class="vname">
       <span class="vloc">${esc(cName)}<em>${esc(cArea)}</em></span>
       <span class="vkind">${esc(c.kind==="independent"?(S.lang==="bg"?"независимо":"independent"):(S.lang==="bg"?"мултиплекс":"multiplex"))}</span>
       ${prelim?`<span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}
+      ${venueLangLabel}
       ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}
       ${viaEpay?`<span class="vprice" style="opacity:.7">${esc(L.viaEpay)}</span>`:""}</div>
-      <div class="vtimes">${r[3].map(tm=>u?`<a class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}</a>`:`<span class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}">${esc(tm)}</span>`).join("")}
+      <div class="vtimes">${r[3].map((tm,i)=>{
+        const a=tmAttrs[i]||"";
+        const fmtPart=a?a.split(",").filter(x=>x!=="dub"&&x!=="sub").join(","):"";
+        const langPart=(!allSameLang&&a)?a.split(",").filter(x=>x==="dub"||x==="sub").join(","):"";
+        const chipAttr=(langPart||fmtPart)?attrLabels([langPart,fmtPart].filter(Boolean).join(","),S.lang):"";
+        return u?`<a class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}${chipAttr}</a>`:`<span class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}">${esc(tm)}${chipAttr}</span>`;
+      }).join("")}
       ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}
       ${calBtnHtml("film",f.id,r[1],d)}</div></div>`;};
   const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
@@ -2718,13 +2765,22 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     url=tixUrl("show",id,sh.theatre)||"";
     runtimeMin=sh.duration||120;
   }
-  const fullTitle=title+" — "+venue;
+  /* Attr suffix for title and description: "(БГ дублаж, 3D)" or "(BG dub, 3D)" */
+  const _calAttr=(kind==="film")?showAttrFor(id,venueId,dateStr,timeStr):"";
+  const _calAttrSuffix=(()=>{
+    if(!_calAttr)return"";
+    const _L=T[S.lang];
+    const _MAP={dub:_L.bgDub,sub:_L.bgSub,"3d":_L.fmt3d,imax:_L.fmtImax,"4dx":_L.fmt4dx,screenx:_L.fmtScreenx,"d-box":_L.fmtDbox};
+    const parts=_calAttr.split(",").map(k=>_MAP[k]).filter(Boolean);
+    return parts.length?" ("+parts.join(", ")+")":"";
+  })();
+  const fullTitle=title+_calAttrSuffix+" — "+venue;
   const location=venue+(area?", "+area:"");
   const prelimNote=isPrelimListing(kind,id,venueId,dateStr)
     ?(S.lang==="en"?"\nPreliminary: not yet checked against the venue's full programme — subject to change."
                    :"\nПредварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.")
     :"";
-  const description=(url?url+"\n":"")+"Sofia Gleda"+prelimNote;
+  const description=(url?url+"\n":"")+"Sofia Gleda"+_calAttrSuffix+prelimNote;
   const off=_sofiaOffset(dateStr,timeStr);
   /* Compute end time */
   const [y,mo,d]=dateStr.split("-").map(Number);

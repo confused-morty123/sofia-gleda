@@ -328,6 +328,25 @@ _rc, _out = _run_out(_good_html.replace(", " + _last, ""))
 check("a cinema without a BOOKING entry exits non-zero",
       _rc != 0 and "cinemas without a BOOKING entry" in _out and "cinema7" in _out)
 
+# SHOWATTR: {"filmId|venueId": {"YYYY-MM-DD HH:MM": "dub,3d"}, …}
+# Valid entry for a known film/venue with a SHOWTIMES row should exit 0.
+_sa_good = _json.dumps({"f0|cinema0": {f"{_FUTURE} 10:00": "dub"}})
+check("SHOWATTR with a valid entry exits 0",
+      _run(_minimal_html(extra_js=f"const SHOWATTR={_sa_good};"),
+           skip_freshness=True) == 0)
+_sa_badkey = _json.dumps({"f0cinema0": {f"{_FUTURE} 10:00": "dub"}})
+_rc, _out = _run_out(_minimal_html(extra_js=f"const SHOWATTR={_sa_badkey};"))
+check("SHOWATTR key missing pipe separator exits non-zero",
+      _rc != 0 and "SHOWATTR key" in _out)
+_sa_badtok = _json.dumps({"f0|cinema0": {f"{_FUTURE} 10:00": "dubbed"}})
+_rc, _out = _run_out(_minimal_html(extra_js=f"const SHOWATTR={_sa_badtok};"))
+check("SHOWATTR unknown token 'dubbed' exits non-zero",
+      _rc != 0 and "unknown tokens" in _out)
+_sa_orphan = _json.dumps({"f0|cinema0": {f"{_FUTURE} 23:59": "dub"}})
+_rc, _out = _run_out(_minimal_html(extra_js=f"const SHOWATTR={_sa_orphan};"))
+check("SHOWATTR entry with no matching SHOWTIMES row exits non-zero",
+      _rc != 0 and "no matching SHOWTIMES row" in _out)
+
 
 # ---------------------------------------------------------------------------
 # Summary
