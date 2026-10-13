@@ -5038,5 +5038,23 @@
   "synBg": "",
   "synEn": "",
   "source": "iam"
+ },
+ "dnevnikat-na-edin-lud": {
+  "id": "dnevnikat-na-edin-lud",
+  "title": "ДНЕВНИКЪТ НА ЕДИН ЛУД",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
  }
 }

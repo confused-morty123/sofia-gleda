@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-13T20:14:01+00:00",
+  "ran": "2026-10-13T20:51:44+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,16 +8,16 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 868.1,
-      "tail": "wrote SHOWATTR: 184 film+venue keys, 2439 timed entries\nwrote index.html, changes.json, cinema_films.json (182 arthouse films) and theatre_shows.json (280 theatre shows)\nfestival details -> film_info.json: title_bg 73, title_en 70\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 15 official, 0 kept-previous, 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n7 film(s) and 2 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 0 + 3 suspected duplicate(s)\nfestivals: cinelibri official (38 confirmed, 31 preliminary per row, 129 by date, 0 contradicted); kinomania official (4 confirmed, 0 preliminary per row, 0 by date, 0 contradicted); PRELIM_ROWS 31\nPRELIM_FROM {\"arena-mall\": \"2026-10-23\", \"arena-mega\": \"2026-10-23\", \"artvent\": \"2026-12-19\", \"atelie313\": \"2026-10-13\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-10-23\", \"cc-sofia\": \"2026-10-23\", \"cg-park\": \"2026-10-20\", \"cg-ring\": \"2026-10-16\", \"cineland\": \"2026-10-13\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-13\", \"dom-kino\": \"2026-10-23\", \"frenski-institut\": \"2026-11-23\", \"g8\": \"2026-10-16\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-16\", \"mladezhki\": \"2026-12-19\", \"natfiz\": \"2026-10-13\", \"national\": \"2026-12-19\", \"ndk1\": \"2026-11-23\", \"new-ndk\": \"2026-10-13\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-19\", \"th199\": \"2026-10-25\", \"toplo\": \"2026-12-01\", \"toplo-film\": \"2026-11-23\", \"tsentralni-hali\": \"2026-11-23\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-25\", \"zad-kanala\": \"2026-12-19\"}"
+      "seconds": 823.0,
+      "tail": "wrote SHOWATTR: 184 film+venue keys, 2438 timed entries\nwrote index.html, changes.json, cinema_films.json (182 arthouse films) and theatre_shows.json (281 theatre shows)\nfestival details -> film_info.json: title_bg 73, title_en 70\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 15 official, 0 kept-previous, 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n0 film(s) and 1 show(s) minted (1 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 0 + 3 suspected duplicate(s)\nfestivals: cinelibri official (38 confirmed, 31 preliminary per row, 129 by date, 0 contradicted); kinomania official (4 confirmed, 0 preliminary per row, 0 by date, 0 contradicted); PRELIM_ROWS 31\nPRELIM_FROM {\"arena-mall\": \"2026-10-23\", \"arena-mega\": \"2026-10-23\", \"artvent\": \"2026-12-19\", \"atelie313\": \"2026-10-13\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-10-23\", \"cc-sofia\": \"2026-10-23\", \"cg-park\": \"2026-10-20\", \"cg-ring\": \"2026-10-16\", \"cineland\": \"2026-10-13\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-13\", \"dom-kino\": \"2026-10-23\", \"frenski-institut\": \"2026-11-23\", \"g8\": \"2026-10-16\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-16\", \"mladezhki\": \"2026-12-19\", \"natfiz\": \"2026-10-13\", \"national\": \"2026-12-19\", \"ndk1\": \"2026-11-23\", \"new-ndk\": \"2026-10-13\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-19\", \"th199\": \"2026-10-25\", \"toplo\": \"2026-12-01\", \"toplo-film\": \"2026-11-23\", \"tsentralni-hali\": \"2026-11-23\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-25\", \"zad-kanala\": \"2026-12-19\"}"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 32.3,
-      "tail": "  272 films needed details, fetched 33 pages\n  synopsis:  24 new\n  director:  20 new\n  cast:      5 new\n  genres:    18 new\n  img:       0 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  191 total entries in film_info.json"
+      "seconds": 33.8,
+      "tail": "  279 films needed details, fetched 34 pages\n  synopsis:  24 new\n  director:  20 new\n  cast:      5 new\n  genres:    18 new\n  img:       0 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  195 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
@@ -25,15 +25,15 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 7 arthouse film(s) (279 total; 182 synthesised)"
+      "tail": "FILMS already carries all 182 arthouse films — no change"
     },
     {
       "step": "theatre shows",
       "script": "inject_shows.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "merged 2 theatre show(s) into SHOWS (548 total; 280 synthesised)"
+      "seconds": 0.1,
+      "tail": "merged 1 theatre show(s) into SHOWS (549 total; 281 synthesised)"
     },
     {
       "step": "film posters",
@@ -48,7 +48,7 @@
       "script": "harvest_cinema_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 369.6,
+      "seconds": 370.1,
       "tail": "  it-s-alive-horar-film-fest-chast-iv-obicham-parizh | It’s Alive! Хорър Филм Фест Част IV: Обичам Париж\n  it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov | It’s Alive! Хорър Филм Фест Част IV: Опасният остров\n  it-s-alive-horar-film-fest-chast-iv-petak-69-i | It’s Alive! Хорър Филм Фест Част IV: Петък 69-и\n  it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp | It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Кам\n  karay-kolata-mi | Карай колата ми\n  kasometrazhen-konkurs | Късометражен конкурс\n  kasometrazhno-kino-izvan-konkurs | Късометражно кино извън конкурс\n  kratak-film-za-ubiystvoto | Кратък филм за убийството"
     },
     {
@@ -56,8 +56,8 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 82.4,
-      "tail": "  toplocentrala.bg                      1     0     0      0.2  \n  www.tba.art.bg                        1     0     0      0.1  \n  zadkanala.bg                          2     0     0      1.8  \n\nnew this run: 2   rejected by policy: 6   total: 537/548 shows with art\nre-hosted 537/537 posters under posters/\nwrote theatre_posters.json\n  fetching satirata.bg programme for slugs …"
+      "seconds": 80.4,
+      "tail": "  theatre.art.bg                       45     0     0     51.7  \n  www.tba.art.bg                        1     0     0      0.1  \n  zadkanala.bg                          2     0     0      1.7  \n\nnew this run: 1   rejected by policy: 6   total: 538/549 shows with art\nre-hosted 538/538 posters under posters/\nwrote theatre_posters.json\n  fetching satirata.bg programme for slugs …"
     },
     {
       "step": "translations",
@@ -65,7 +65,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "texts needing translation: film syn 67, film title 77, show syn 60, show title 493\n  total characters to translate: 54812\n  DEEPL_AUTH_KEY not set — no new translations; serving the cached ones.\n  cache now covers SYN_EN: 127 ids, TITLE_EN: 557 ids"
+      "tail": "texts needing translation: film syn 67, film title 77, show syn 60, show title 494\n  total characters to translate: 54833\n  DEEPL_AUTH_KEY not set — no new translations; serving the cached ones.\n  cache now covers SYN_EN: 127 ids, TITLE_EN: 557 ids"
     },
     {
       "step": "inline posters",
@@ -73,15 +73,15 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "  fi-img dropped 'alehandro-hodorovski-sveshtenata-planina-1973': no film, show or event in the catalogue has this id\n  film_info img: added 44 fallback poster(s) to POSTERS\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 173 films (172 with posters), POSTERS: 75 entries (31 og:image + 44 film_info-img fallbacks), SHOWART: 537 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 127 ids, TITLE_EN: 557 ids (auto-translated)"
+      "tail": "  fi-img dropped 'alehandro-hodorovski-sveshtenata-planina-1973': no film, show or event in the catalogue has this id\n  film_info img: added 44 fallback poster(s) to POSTERS\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 173 films (172 with posters), POSTERS: 75 entries (31 og:image + 44 film_info-img fallbacks), SHOWART: 538 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 127 ids, TITLE_EN: 557 ids (auto-translated)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 10.7,
-      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp-int/index.html (1,452,817 bytes)\n  note: SHOWATTR: 184 film+venue key(s), 2439 timed entr(ies)\n  all checks passed — safe to publish"
+      "seconds": 8.0,
+      "tail": "verify_build: /Users/I589592/Downloads/Sofia Gleda/webapp-int/index.html (1,442,058 bytes)\n  note: SHOWATTR: 184 film+venue key(s), 2438 timed entr(ies)\n  all checks passed — safe to publish"
     }
   ],
   "official": {
@@ -99,10 +99,7 @@
       "prelim_from": "2026-10-23",
       "prelim_screenings": 60,
       "discarded_aggregator": 0,
-      "minted": [
-        "street-fighter",
-        "v-dalbinite"
-      ],
+      "minted": [],
       "error": null
     },
     "cc-paradise": {
@@ -136,10 +133,7 @@
       "prelim_from": "2026-10-23",
       "prelim_screenings": 42,
       "discarded_aggregator": 47,
-      "minted": [
-        "dzhambo-magicheskoto-priklyuchenie",
-        "koleden-kontsert-na-andre-riyo-2026-let-it-snow"
-      ],
+      "minted": [],
       "error": null
     },
     "arena-mall": {
@@ -168,11 +162,11 @@
         "2026-10-15"
       ],
       "days": 3,
-      "screenings": 100,
-      "written_screenings": 100,
+      "screenings": 99,
+      "written_screenings": 99,
       "prelim_from": "2026-10-16",
       "prelim_screenings": 0,
-      "discarded_aggregator": 49,
+      "discarded_aggregator": 50,
       "minted": [],
       "error": null
     },
@@ -190,9 +184,7 @@
       "prelim_from": "2026-10-20",
       "prelim_screenings": 116,
       "discarded_aggregator": 29,
-      "minted": [
-        "neudobnata-istina"
-      ],
+      "minted": [],
       "error": null
     },
     "cineland": {
@@ -219,9 +211,9 @@
       ],
       "days": 12,
       "screenings": 40,
-      "written_screenings": 52,
+      "written_screenings": 53,
       "prelim_from": "2026-10-25",
-      "prelim_screenings": 12,
+      "prelim_screenings": 13,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -257,10 +249,7 @@
       "prelim_from": "2026-10-23",
       "prelim_screenings": 53,
       "discarded_aggregator": 0,
-      "minted": [
-        "mezhdunaroden-den-na-animatsiyata-vaobrazhenie-bez-vazrast",
-        "wtf-off-zavrashtaneto-mezhdu-haosa-i-svetovartezha"
-      ],
+      "minted": [],
       "error": null
     },
     "g8": {
@@ -412,8 +401,10 @@
       "written_screenings": 70,
       "prelim_from": "2026-10-25",
       "prelim_screenings": 54,
-      "discarded_aggregator": 2,
-      "minted": [],
+      "discarded_aggregator": 0,
+      "minted": [
+        "dnevnikat-na-edin-lud"
+      ],
       "error": null
     },
     "sfumato": {
@@ -532,9 +523,7 @@
       "prelim_from": "2026-12-01",
       "prelim_screenings": 9,
       "discarded_aggregator": 0,
-      "minted": [
-        "di-shtraus-tehnik-ideya-tekst-i-horeografiya-ot-ivo-dimchev"
-      ],
+      "minted": [],
       "error": null
     },
     "citymark": {
@@ -627,9 +616,7 @@
       "prelim_from": "2026-10-28",
       "prelim_screenings": 3,
       "discarded_aggregator": 0,
-      "minted": [
-        "daniil"
-      ],
+      "minted": [],
       "error": null
     },
     "atelie313": {
@@ -693,10 +680,10 @@
       "outside_sofia": {
         "Lucky - Дом на киното, Пловдив": 24,
         "ФКЦ, Варна": 17,
-        "Cineland Искра, Велико Търново": 3
+        "Cineland Искра, Велико Търново": 5
       },
       "requests": 29,
-      "seconds": 287.0,
+      "seconds": 288.9,
       "blocked": [],
       "last_ok": "2026-10-13",
       "failing_since": null,
