@@ -36,6 +36,12 @@ const PRELIM_ROWS=[];
    that listing was sourced. Written by scrape_programs.py. The UI labels those links
    with the aggregator name so visitors are not misled about the source. */
 const AGGLINKS={};
+/* SHOWATTR contract: {"filmId|venueId": {"YYYY-MM-DD HH:MM": "dub,3d"}, …}
+   Per-screening language-version and format labels for cinemas that state them.
+   Tokens: "dub" | "sub" (at most one) then "3d" / "imax" / "4dx" / "screenx" / "d-box".
+   Only present for Cinema City, Кино Арена and Cine Grand screenings.
+   Written by the scraper; pruned when the SHOWTIMES row expires. */
+const SHOWATTR={};
 const VLINKS=[];
 /* SOFIA-DATA-END */</script>
 <script>/* SOFIA-POSTERS-START */

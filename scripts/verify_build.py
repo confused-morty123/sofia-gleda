@@ -613,7 +613,63 @@ if _al_m:
                  "pairs — only preliminary-only pairs may appear in AGGLINKS: "
                  + ", ".join(_al_bad_confirmed[:5]))
 
-# ------------------------------------------- 4c3. every cinema has a BOOKING entry
+# ------------------------------------------ 4c3. SHOWATTR — per-screening labels
+# {"filmId|venueId": {"YYYY-MM-DD HH:MM": "dub,3d"}, …}
+_sa_m = re.search(r"^const SHOWATTR\s*=\s*(\{[^\n]*?\});\s*$", js, flags=re.M)
+if _sa_m is None:
+    note("SHOWATTR is not declared — no per-screening language/format labels")
+else:
+    try:
+        _sa = json.loads(_sa_m.group(1))
+    except Exception:
+        _sa = None
+    if not isinstance(_sa, dict):
+        fail("SHOWATTR is not a JSON object")
+    else:
+        _VALID_TOKENS = frozenset(("dub", "sub", "3d", "imax", "4dx", "screenx", "d-box"))
+        _KNOWN_FILMS = {f.get("id") for f in (data.get("FILMS") or [])}
+        _KNOWN_VENUES = {c.get("id") for c in (data.get("CINEMAS") or [])}
+        # Build a set of (filmId, venueId, date, time) for quick lookup
+        _st_lookup = set()
+        for _r in (data.get("SHOWTIMES") or []):
+            if isinstance(_r, list) and len(_r) >= 4 and isinstance(_r[3], list):
+                for _tm in _r[3]:
+                    _st_lookup.add((_r[0], _r[1], _r[2], _tm))
+        _bad_sa_keys, _bad_sa_vals, _orphan_sa = [], [], []
+        for _k, _v in _sa.items():
+            _parts = _k.split("|", 1)
+            if len(_parts) != 2:
+                _bad_sa_keys.append(_k); continue
+            _fid, _vid = _parts
+            if _fid not in _KNOWN_FILMS:
+                _bad_sa_keys.append(_k); continue
+            if _vid not in _KNOWN_VENUES:
+                _bad_sa_keys.append(_k); continue
+            if not isinstance(_v, dict):
+                _bad_sa_vals.append(_k); continue
+            for _dt, _attr in _v.items():
+                if not re.fullmatch(r"\d{4}-\d\d-\d\d \d\d:\d\d", _dt):
+                    _bad_sa_vals.append(f"{_k}/{_dt}"); continue
+                _tokens = set(_attr.split(",")) if _attr else set()
+                _bad_tok = _tokens - _VALID_TOKENS
+                if _bad_tok:
+                    _bad_sa_vals.append(f"{_k}/{_dt}: unknown tokens {_bad_tok}")
+                _date, _tm = _dt.split(" ")
+                if (_fid, _vid, _date, _tm) not in _st_lookup:
+                    _orphan_sa.append(f"{_k}/{_dt}")
+        if _bad_sa_keys:
+            fail(f"{len(_bad_sa_keys)} SHOWATTR key(s) are not 'filmId|venueId' or reference "
+                 f"unknown films/venues: {', '.join(_bad_sa_keys[:4])}")
+        if _bad_sa_vals:
+            fail(f"{len(_bad_sa_vals)} SHOWATTR value(s) have bad format or unknown tokens: "
+                 f"{'; '.join(_bad_sa_vals[:4])}")
+        if _orphan_sa:
+            fail(f"{len(_orphan_sa)} SHOWATTR entry/entries have no matching SHOWTIMES row: "
+                 f"{', '.join(_orphan_sa[:4])}")
+        note(f"SHOWATTR: {len(_sa)} film+venue key(s), "
+             f"{sum(len(v) for v in _sa.values() if isinstance(v, dict))} timed entr(ies)")
+
+# ------------------------------------------- 4c4. every cinema has a BOOKING entry
 # A venue added to CINEMAS (Френски институт, wave F3) must come with its BOOKING
 # entry, or a row there whose film has no VLINKS entry opens nothing.
 if data["CINEMAS"] and isinstance(data.get("BOOKING"), dict):
