@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-13T04:03:14+00:00",
+  "ran": "2026-10-13T07:28:38+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,31 +8,31 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 1002.8,
-      "tail": "theatre programmes: 14 official, 1 kept-previous (mladezhki), 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n1 film(s) and 0 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 0 + 3 suspected duplicate(s)\nfestivals: cinelibri official (38 confirmed, 31 preliminary per row, 135 by date, 0 contradicted); kinomania official (4 confirmed, 0 preliminary per row, 0 by date, 0 contradicted); PRELIM_ROWS 31\nPRELIM_FROM {\"arena-mall\": \"2026-10-16\", \"arena-mega\": \"2026-10-16\", \"artvent\": \"2026-12-19\", \"atelie313\": \"2026-10-13\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-10-16\", \"cc-sofia\": \"2026-10-16\", \"cg-park\": \"2026-10-16\", \"cg-ring\": \"2026-10-16\", \"cineland\": \"2026-10-13\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-13\", \"dom-kino\": \"2026-10-22\", \"frenski-institut\": \"2026-11-23\", \"g8\": \"2026-10-16\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-16\", \"mladezhki\": \"2026-10-13\", \"natfiz\": \"2026-10-13\", \"national\": \"2026-12-19\", \"ndk1\": \"2026-11-23\", \"new-ndk\": \"2026-10-13\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-19\", \"th199\": \"2026-10-25\", \"toplo\": \"2026-11-30\", \"toplo-film\": \"2026-11-23\", \"tsentralni-hali\": \"2026-11-23\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-25\", \"zad-kanala\": \"2026-12-19\"}\n  ! https://tickets.tba.bg/Account/Login.aspx?ReturnUrl=%2f: HTTPSConnectionPool(host='tickets.tba.bg', port=443): Max retries exceeded with url: /Account/Login.aspx?ReturnUrl=%2F (Caused by ConnectTimeoutError(<HTTPSConn…; time budget spent\n  ! https://mlt.bg/programa.php?year=2026&month=10: challenge page (Cloudflare challenge, HTTP 403)\n  ! https://tickets.mlt.bg/Account/Login.aspx?ReturnUrl=%2f: HTTPSConnectionPool(host='tickets.mlt.bg', port=443): Max retries exceeded with url: /Account/Login.aspx?ReturnUrl=%2F (Caused by ConnectTimeoutError(<HTTPSConn…; time budget spent\n  ! official mladezhki: unreachable: https://mlt.bg/programa.php?year=2026&month=10; tickets.mlt.bg: unreachable: https://tickets.mlt.bg/Account/Login.aspx?ReturnUrl=%2f"
+      "seconds": 845.3,
+      "tail": "wrote index.html, changes.json, cinema_films.json (173 arthouse films) and theatre_shows.json (276 theatre shows)\nfestival details -> film_info.json: nothing new\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 15 official, 0 kept-previous, 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n0 film(s) and 0 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 0 + 3 suspected duplicate(s)\nfestivals: cinelibri official (38 confirmed, 31 preliminary per row, 135 by date, 0 contradicted); kinomania official (4 confirmed, 0 preliminary per row, 0 by date, 0 contradicted); PRELIM_ROWS 31\nPRELIM_FROM {\"arena-mall\": \"2026-10-16\", \"arena-mega\": \"2026-10-16\", \"artvent\": \"2026-12-19\", \"atelie313\": \"2026-10-13\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-10-16\", \"cc-sofia\": \"2026-10-16\", \"cg-park\": \"2026-10-16\", \"cg-ring\": \"2026-10-16\", \"cineland\": \"2026-10-13\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-13\", \"dom-kino\": \"2026-10-22\", \"frenski-institut\": \"2026-11-23\", \"g8\": \"2026-10-16\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-16\", \"mladezhki\": \"2026-12-19\", \"natfiz\": \"2026-10-13\", \"national\": \"2026-12-19\", \"ndk1\": \"2026-11-23\", \"new-ndk\": \"2026-10-13\", \"odeon\": \"2026-10-16\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-19\", \"th199\": \"2026-10-25\", \"toplo\": \"2026-11-30\", \"toplo-film\": \"2026-11-23\", \"tsentralni-hali\": \"2026-11-23\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-10-25\", \"zad-kanala\": \"2026-12-19\"}\n  ! https://mlt.bg/programa.php?year=2026&month=10: challenge page (Cloudflare challenge, HTTP 403)"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 35.7,
-      "tail": "  269 films needed details, fetched 35 pages\n  synopsis:  24 new\n  director:  22 new\n  cast:      7 new\n  genres:    18 new\n  img:       0 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  191 total entries in film_info.json"
+      "seconds": 33.2,
+      "tail": "  270 films needed details, fetched 33 pages\n  synopsis:  24 new\n  director:  20 new\n  cast:      5 new\n  genres:    18 new\n  img:       0 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  191 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
       "script": "inject_films.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
-      "tail": "merged 1 arthouse film(s) (270 total; 173 synthesised)"
+      "seconds": 0.0,
+      "tail": "FILMS already carries all 173 arthouse films — no change"
     },
     {
       "step": "theatre shows",
       "script": "inject_shows.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.1,
+      "seconds": 0.0,
       "tail": "SHOWS already carries all 276 theatre shows — no change"
     },
     {
@@ -40,15 +40,15 @@
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 158.9,
-      "tail": "    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)\n    ! og fetch error 'ascii' codec can't encode character '\\u2019' in position 7: ordinal not in range(128)"
+      "seconds": 172.8,
+      "tail": "[265/270] taksi-za-raya            NO MATCH (Такси за рая 2026)\n[266/270] div-kon-devet            -> Wild Horse Nine (2026) id=891621\n[267/270] minotavar                -> Hercules in the Maze of the Minotaur (1994) id=70811\n[268/270] fantomat-na-operata      NO MATCH (Фантомът на операта 2026)\n[269/270] fiord                    NO MATCH (Фиорд 2026)\n[270/270] gepi                     -> Snatch (2000) id=107\n\nDONE: 173/270 matched, 172 with posters, 31 og:image fallbacks, 136 with IMDb ratings (OMDb on, 136 ok / 29 missing) -> tmdb_films.json"
     },
     {
       "step": "cinema posters",
       "script": "harvest_cinema_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 363.2,
+      "seconds": 363.0,
       "tail": "  it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov | It’s Alive! Хорър Филм Фест Част IV: Опасният остров\n  it-s-alive-horar-film-fest-chast-iv-petak-69-i | It’s Alive! Хорър Филм Фест Част IV: Петък 69-и\n  it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp | It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Кам\n  karay-kolata-mi | Карай колата ми\n  kasometrazhen-konkurs | Късометражен конкурс\n  kasometrazhno-kino-izvan-konkurs | Късометражно кино извън конкурс\n  kratak-film-za-ubiystvoto | Кратък филм за убийството\n  lachi-i-senki | Лъчи и сенки"
     },
     {
@@ -56,16 +56,16 @@
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 118.0,
-      "tail": "  theatre.art.bg                       45     0     0     80.7  \n  www.tba.art.bg                        1     0     0      3.3  \n  zadkanala.bg                          2     0     0      3.4  \n\nnew this run: 0   rejected by policy: 6   total: 532/544 shows with art\nre-hosted 532/532 posters under posters/\nwrote theatre_posters.json\n  fetching satirata.bg programme for slugs …"
+      "seconds": 103.9,
+      "tail": "  theatre.art.bg                       45     0     0     71.3  \n  www.tba.art.bg                        1     0     0      0.8  \n  zadkanala.bg                          2     0     0      3.5  \n\nnew this run: 0   rejected by policy: 6   total: 532/544 shows with art\nre-hosted 532/532 posters under posters/\nwrote theatre_posters.json\n  fetching satirata.bg programme for slugs …"
     },
     {
       "step": "translations",
       "script": "translate.py",
       "ok": true,
       "code": 0,
-      "seconds": 1.1,
-      "tail": "texts needing translation: film syn 67, film title 124, show syn 60, show title 489\n  total characters to translate: 56046\n  cache now covers SYN_EN: 81 ids, TITLE_EN: 571 ids\n  DeepL HTTP 413 — stopping.\n  stopping further batches (quota/error)."
+      "seconds": 4.4,
+      "tail": "texts needing translation: film syn 67, film title 124, show syn 60, show title 489\n  total characters to translate: 56046\n  cache now covers SYN_EN: 127 ids, TITLE_EN: 613 ids"
     },
     {
       "step": "inline posters",
@@ -73,15 +73,15 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "  fi-img dropped 'alehandro-hodorovski-sveshtenata-planina-1973': no film, show or event in the catalogue has this id\n  film_info img: added 40 fallback poster(s) to POSTERS\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 173 films (172 with posters), POSTERS: 71 entries (31 og:image + 40 film_info-img fallbacks), SHOWART: 532 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 81 ids, TITLE_EN: 571 ids (auto-translated)"
+      "tail": "  fi-img dropped 'alehandro-hodorovski-sveshtenata-planina-1973': no film, show or event in the catalogue has this id\n  film_info img: added 40 fallback poster(s) to POSTERS\n  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\ninjected TMDBART: 173 films (172 with posters), POSTERS: 71 entries (31 og:image + 40 film_info-img fallbacks), SHOWART: 532 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 127 ids, TITLE_EN: 613 ids (auto-translated)"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 7.7,
-      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (1,253,765 bytes)\n  all checks passed — safe to publish"
+      "seconds": 7.3,
+      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (1,287,990 bytes)\n  all checks passed — safe to publish"
     }
   ],
   "official": {
@@ -249,9 +249,7 @@
       "prelim_from": "2026-10-22",
       "prelim_screenings": 52,
       "discarded_aggregator": 0,
-      "minted": [
-        "gepi"
-      ],
+      "minted": [],
       "error": null
     },
     "g8": {
@@ -433,8 +431,8 @@
         "2026-12-18"
       ],
       "days": 67,
-      "screenings": 118,
-      "written_screenings": 118,
+      "screenings": 121,
+      "written_screenings": 121,
       "prelim_from": "2026-12-19",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -468,26 +466,29 @@
       ],
       "days": 48,
       "screenings": 57,
-      "written_screenings": 64,
+      "written_screenings": 69,
       "prelim_from": "2026-11-30",
-      "prelim_screenings": 7,
+      "prelim_screenings": 12,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
     },
     "mladezhki": {
       "kind": "theatre",
-      "status": "unreachable",
-      "source": "previous run kept as preliminary — official source failed",
-      "covered": null,
-      "days": 0,
-      "screenings": 0,
+      "status": "official",
+      "source": "tickets.mlt.bg public list (the theatre's own ticket centre)",
+      "covered": [
+        "2026-10-13",
+        "2026-12-18"
+      ],
+      "days": 67,
+      "screenings": 137,
       "written_screenings": 137,
-      "prelim_from": "2026-10-13",
-      "prelim_screenings": 137,
-      "discarded_aggregator": 0,
+      "prelim_from": "2026-12-19",
+      "prelim_screenings": 0,
+      "discarded_aggregator": 1,
       "minted": [],
-      "error": "unreachable: https://mlt.bg/programa.php?year=2026&month=10; tickets.mlt.bg: unreachable: https://tickets.mlt.bg/Account/Login.aspx?ReturnUrl=%2f"
+      "error": null
     },
     "kuklen": {
       "kind": "theatre",
@@ -679,7 +680,7 @@
         "ФКЦ, Варна": 17
       },
       "requests": 29,
-      "seconds": 296.7,
+      "seconds": 293.5,
       "blocked": [],
       "last_ok": "2026-10-13",
       "failing_since": null,
@@ -1015,7 +1016,7 @@
       "unknown_venues": {},
       "outside_sofia": {},
       "requests": 5,
-      "seconds": 6.3,
+      "seconds": 5.7,
       "blocked": [],
       "last_ok": "2026-10-13",
       "failing_since": null,
