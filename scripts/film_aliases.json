@@ -184,7 +184,47 @@
    ],
    "year": 2026,
    "director": "Джейн Шьонбрун",
-   "reason": "Дом на киното's own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp-miazma-movie7191.html?a=) prints 'САЩ, 2026', 'Реж. Джейнс Шьонбрун' (sic; its synopsis spells it Джейн Шьонбрун), 112 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+   "reason": "Дом на киното’s own page (https://domnakinoto.com/it’s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp-miazma-movie7191.html?a=) prints ‘САЩ, 2026’, ‘Реж. Джейнс Шьонбрун’ (sic; its synopsis spells it Джейн Шьонбрун), 112 min. fetch_tmdb.py searches TMDB with them (year ±1). Verified 2026-10-09."
+  },
+  {
+   "film": "chunkin-ekspres",
+   "year": 1994,
+   "original": "Chungking Express",
+   "reason": "BG title ‘Чункин експрес’ does not match TMDB which has ‘Chungking Express’ (1994, dir. Wong Kar-wai, TMDB ID 11104). Original title search returns exact match with year guard. Source: https://www.themoviedb.org/movie/11104. Verified 2026-10-13."
+  },
+  {
+   "film": "obshtestvo-na-martvite-poeti",
+   "year": 1989,
+   "original": "Dead Poets Society",
+   "reason": "BG title ‘Общество на мъртвите поети’ translates literally as ‘Society of Dead Poets’, not matching TMDB’s ‘Dead Poets Society’ (1989, dir. Peter Weir, TMDB ID 207). Original title search returns exact match with year guard. Source: https://www.themoviedb.org/movie/207. Verified 2026-10-13."
+  },
+  {
+   "film": "kratak-film-za-ubiystvoto",
+   "year": 1988,
+   "original": "A Short Film About Killing",
+   "director": "Кшищоф Кешловски",
+   "reason": "BG title ‘Кратък филм за убийството’ does not match TMDB’s ‘A Short Film About Killing’ (Krótki film o zabijaniu, 1988, dir. Kieslowski, TMDB ID 10754). Year+director guard prevents wrong match. Source: https://www.themoviedb.org/movie/10754. Verified 2026-10-13."
+  },
+  {
+   "film": "karay-kolata-mi",
+   "year": 2021,
+   "original": "Drive My Car",
+   "director": "Рюсуке Хамагучи",
+   "reason": "BG title ‘Карай колата ми’ does not match TMDB’s ‘Drive My Car’ (ドライブ・マイ・カー, 2021, dir. Hamaguchi, TMDB ID 758866). Year+director guard ensures correct match. Source: https://www.themoviedb.org/movie/758866. Verified 2026-10-13."
+  },
+  {
+   "film": "kratak-film-za-lyubovta",
+   "year": 1988,
+   "original": "A Short Film About Love",
+   "director": "Кшищоф Кешловски",
+   "reason": "BG title ‘Кратък филм за любовта’ does not match TMDB’s ‘A Short Film About Love’ (Krótki film o miłości, 1988, dir. Kieslowski, TMDB ID 31056). Year+director guard prevents wrong match. Source: https://www.themoviedb.org/movie/31056. Verified 2026-10-13."
+  },
+  {
+   "film": "vlastelinat-na-prastenite-zadrugata-na-prastena",
+   "year": 2001,
+   "original": "The Lord of the Rings: The Fellowship of the Ring",
+   "director": "Питър Джаксън",
+   "reason": "BG title ‘Властелинът на пръстените: Задругата на пръстена’ does not match TMDB’s ‘The Lord of the Rings: The Fellowship of the Ring’ (2001, dir. Peter Jackson, TMDB ID 120). Original title search returns exact match with year guard. Source: https://www.themoviedb.org/movie/120. Verified 2026-10-13."
   }
  ]
 }

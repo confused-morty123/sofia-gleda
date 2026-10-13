@@ -28,6 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 OUT  = ROOT / "tmdb_films.json"
 LINKS_OUT = ROOT / "film_links_posters.json"
+FILM_INFO_PATH = ROOT / "film_info.json"
 HEALTH = ROOT / "health.json"           # the run's health report (scrape_programs writes it first)
 # Curated per-film facts: film_aliases.json groups that carry a 'year' (and maybe
 # an 'original' title) as the venue's own film page prints them — see tmdb_hints().
@@ -132,6 +133,13 @@ def norm(s):
 def cnorm(s):
     """Like norm but keeps Cyrillic, so Bulgarian titles can be compared."""
     return re.sub(r"[^a-z0-9а-я]", "", (s or "").lower())
+
+
+_CYRILLIC_RE = re.compile(r"[Ѐ-ӿ]")
+
+def _has_cyrillic(s: str) -> bool:
+    """Return True if s contains any Cyrillic character."""
+    return bool(_CYRILLIC_RE.search(s or ""))
 
 
 def pick(results, en, year):
@@ -441,15 +449,35 @@ def main():
 
     out = {}
     hints = tmdb_hints()
+    # film_info.json: festival/venue details (title_bg, title_en, original, …).
+    # Used as fallback sources for the EN title when FILMS carries nothing.
+    film_info: dict = {}
+    try:
+        film_info = json.load(open(FILM_INFO_PATH, encoding="utf-8")) if FILM_INFO_PATH.exists() else {}
+    except Exception as e:
+        print(f"  (could not read film_info.json: {e})", file=sys.stderr)
     for i, f in enumerate(films):
         fid = f["id"]
         en, bg, year = f.get("en"), f.get("bg"), f.get("year")
+        fi = film_info.get(fid) or {}
         # A curated year / original title (film_aliases.json) for a yearless title:
         # search "The Thing" (1982), never the bare "Нещото" that is also the 2011 film.
         hint = hints.get(fid)
         if hint:
             year = year or hint["year"]
             en = en or hint["original"]
+        # Fallback chain for films the alias list doesn't cover:
+        #   1. FILMS.originalTitle (set during minting from festival `original_title`)
+        #   2. festival/venue title_en from film_info.json (written by festival_details)
+        # Both require non-Cyrillic content; the year guard ±1 still applies downstream.
+        if not en:
+            ot = (f.get("originalTitle") or "").strip()
+            if ot and not _has_cyrillic(ot):
+                en = ot
+        if not en:
+            fi_en = (fi.get("title_en") or "").strip()
+            if fi_en and not _has_cyrillic(fi_en):
+                en = fi_en
         if fid in BLOCKLIST:
             print(f"[{i+1}/{len(films)}] {fid:24s} BLOCKED (known false match — generated art kept)")
             out[fid] = {"matched": False, "en": en}
@@ -464,11 +492,19 @@ def main():
         # (confirmed via language=bg in pick_bg) so posters/ratings fill where TMDB
         # has them, without ever accepting a loose, fabricated match.
         via_bg = False
+        match_source = None   # for the log: bg / original / en
         # A festival prefix is not part of the title: search without it from the
-        # start ("It’s Alive! Хорър Филм Фест Част IV: Сиянието" -> "Сиянието").
+        # start ("Хорър Филм Фест: Сиянието" -> "Сиянието").
         en, bg = strip_series_prefix(en) or en, strip_series_prefix(bg) or bg
+        # Track whether 'en' came from a fallback source (alias original, FILMS.originalTitle,
+        # or film_info.title_en) rather than the film's own FILMS.en field.  Used for the
+        # match_source log label ("original") which downstream code stores verbatim.
+        _f_en = f.get("en")   # original FILMS.en value before any fallback was applied
+        _en_is_original = (not _f_en) and bool(en)
         if en:
             best = search_en(en, year)
+            if best:
+                match_source = "original" if _en_is_original else "en"
             if not best:
                 # Re-release decoration / Director-prefix clutter blocks the match;
                 # retry with the canonical title (and any year extracted from it).
@@ -477,6 +513,7 @@ def main():
                 if clean and clean.lower() != en.lower():
                     best = search_en(clean, use_year)
                     if best:
+                        match_source = "original" if _en_is_original else "en"
                         print(f"      (matched after declutter: {en!r} -> {clean!r})")
             # When a year was embedded in the title, REQUIRE the match's release
             # year to be within ±1 so a retrospective can't pick up a remake.
@@ -488,6 +525,7 @@ def main():
                         print(f"      (year mismatch: title year {embedded_yr} "
                               f"vs TMDB {tmdb_yr_str} — rejected)")
                         best = None
+                        match_source = None
         elif bg:
             via_bg = True
             # Always search with the FULL Bulgarian title first.
@@ -495,6 +533,8 @@ def main():
                                        "include_adult": "false"})
             results = (res or {}).get("results", [])
             best = pick_bg(results, bg, year)
+            if best:
+                match_source = "bg"
             # Fallback: if full title found nothing, try decluttered form
             # (strips "Director: Title (Year)" and festival prefixes).
             clean_bg, extracted_yr_bg = declutter(bg)
@@ -505,6 +545,7 @@ def main():
                 results2 = (res2 or {}).get("results", [])
                 best = pick_bg(results2, clean_bg, use_year_bg)
                 if best:
+                    match_source = "bg-BG"
                     print(f"      (bg matched after declutter: {bg!r} -> {clean_bg!r})")
             else:
                 extracted_yr_bg = None  # full-title matched; no embedded year to enforce
@@ -515,12 +556,21 @@ def main():
                     print(f"      (bg year mismatch: title year {extracted_yr_bg} "
                           f"vs TMDB {tmdb_yr_str} — rejected)")
                     best = None
+                    match_source = None
         else:
             best = None
         if best and hint:
             tmdb_yr_str = (best.get("release_date") or "")[:4]
             if not tmdb_yr_str.isdigit() or abs(int(tmdb_yr_str) - hint["year"]) > 1:
                 print(f"      (curated year {hint['year']} vs TMDB {tmdb_yr_str or '?'} — rejected)")
+                best = None
+        # When the EN title came from a fallback source (FILMS.originalTitle or
+        # film_info.title_en) and we know the film's year, apply the same ±1 year
+        # guard so a same-title remake in a different decade cannot steal the poster.
+        if best and _en_is_original and year and not hint:
+            tmdb_yr_str = (best.get("release_date") or "")[:4]
+            if tmdb_yr_str.isdigit() and abs(int(tmdb_yr_str) - int(year)) > 1:
+                print(f"      (fallback year {year} vs TMDB {tmdb_yr_str} — rejected)")
                 best = None
         if not best:
             print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
@@ -606,7 +656,8 @@ def main():
             # higher-priority POSTERS override can never shadow the better image.
             film_links.pop(fid, None)
         flag = "" if rec["poster_path"] else "  (no poster!)"
-        print(f"[{i+1}/{len(films)}] {fid:24s} -> {rec['en']} ({rec['tmdb_year']}) id={rec['tmdb_id']}{flag}")
+        src_tag = f"  [{match_source}]" if match_source else ""
+        print(f"[{i+1}/{len(films)}] {fid:24s} -> {rec['en']} ({rec['tmdb_year']}) id={rec['tmdb_id']}{src_tag}{flag}")
         time.sleep(0.12)
 
     posters = sum(1 for v in out.values() if v.get("poster_path"))
