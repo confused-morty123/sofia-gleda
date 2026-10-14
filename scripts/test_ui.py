@@ -3530,14 +3530,14 @@ def wave_h(browser):
     }""")
     top_idx = next((i for i, r in enumerate(rails_order) if "оценени" in r), -1)
     pop_idx = next((i for i, r in enumerate(rails_order) if "Популярни" in r and "седмица" in r), -1)
-    gem_idx = next((i for i, r in enumerate(rails_order) if "бижута" in r.lower()), -1)
+    gem_idx = next((i for i, r in enumerate(rails_order) if "нишово" in r.lower()), -1)
 
     check("h5_top_rated_exists", top_idx != -1,
           f"'Най-високо оценени' rail not found in {rails_order[:8]}")
     check("h5_popular_exists", pop_idx != -1,
           f"'Популярни тази седмица' rail not found in {rails_order[:8]}")
     check("h5_gems_exists", gem_idx != -1,
-          f"'Скрити бижута' rail not found in {rails_order[:8]}")
+          f"'Нишово кино' rail not found in {rails_order[:8]}")
 
     if top_idx != -1 and pop_idx != -1 and gem_idx != -1:
         check("h5_rails_order_top_before_pop", top_idx < pop_idx,
@@ -3580,7 +3580,7 @@ def wave_h(browser):
     # Gems: verify ≥5 films visible
     gem_film_ids = page.evaluate("""() => {
         const heads = Array.from(document.querySelectorAll('.rhead h2'));
-        const gemH = heads.find(h => h.textContent.toLowerCase().includes('бижута'));
+        const gemH = heads.find(h => h.textContent.toLowerCase().includes('нишово'));
         if (!gemH) return [];
         const rail = gemH.closest('.rail');
         if (!rail) return [];
@@ -4414,7 +4414,7 @@ def wave_i(browser):
             const l = lines.find(x => x.startsWith(prop+':'));
             return l ? l.slice(prop.length+1) : null;
         };
-        /* SUMMARY: title — venue */
+        /* SUMMARY: title, venue */
         const summary = get('SUMMARY');
         const loc = get('LOCATION');
         const desc = get('DESCRIPTION');
@@ -4431,7 +4431,7 @@ def wave_i(browser):
             summary, loc, desc,
             cArea, cName, fTitle, tixU,
             summaryHasTitle: summary ? summary.includes(fTitle) : false,
-            summaryHasDash: summary ? summary.includes(' — ') : false,
+            summaryHasCommaVenue: summary ? summary.includes(', ' + cName) : false,
             summaryHasVenue: summary ? summary.includes(cName) : false,
             locHasArea: loc ? (function() {
                 /* loc may have escaped commas; unescape for comparison */
@@ -4453,8 +4453,8 @@ def wave_i(browser):
             check("i5_summary_title", content_check["summaryHasTitle"],
                   f"SUMMARY={content_check['summary']!r}, fTitle={content_check['fTitle']!r}")
             check("i5_summary_dash_venue",
-                  content_check["summaryHasDash"] and content_check["summaryHasVenue"],
-                  f"hasDash={content_check['summaryHasDash']}, hasVenue={content_check['summaryHasVenue']}, cName={content_check['cName']!r}")
+                  content_check["summaryHasCommaVenue"],
+                  f"hasCommaVenue={content_check['summaryHasCommaVenue']}, hasVenue={content_check['summaryHasVenue']}, cName={content_check['cName']!r}")
             check("i5_location_area", content_check["locHasArea"],
                   f"LOCATION={content_check['loc']!r}, cArea={content_check['cArea']!r}")
             check("i5_desc_tix_url", content_check["descHasTixUrl"],
@@ -11844,6 +11844,370 @@ def wave_p3e(browser):
     ctx.close()
 
 
+def wave_p3f(browser):
+    """
+    Wave P3F: Phase-3F copy pass — no em dash in UI-authored strings.
+
+    P3F-1  T.bg table: no em dash (—) in any string value
+    P3F-2  T.en table: no em dash (—) in any string value
+    P3F-3  Home page UI chrome: no em dash in bar, nav, rail heads, filter labels,
+           gap notices, empty-state messages, button labels (excludes card content)
+    P3F-4  Film sheet labels and notes: no em dash in sheet metadata labels,
+           prelim/box-office notices, buy-link labels, calendar copy
+           (excludes .syn-body, cast rows, score badges, film title)
+    P3F-5  Show sheet labels and notes: same exclusion scope as P3F-4
+    P3F-6  Screening sheet UI copy: box-office notice, prelim notice, agg notice,
+           calendar panel (excludes venue address, hall name data fields)
+    P3F-7  Empty states and gap messages: no em dash in .nodata, .gap-*, late-day
+    """
+    wave = "P3F"
+    ensure_shot_dir(wave)
+
+    EM = "—"  # em dash
+
+    # ── P3F-1: T.bg — no em dash in any string ─────────────────────────────────
+    print("\n=== P3F-1: T.bg values — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    t_bg_result = page.evaluate(r"""() => {
+        const EM = '—';
+        function scan(obj, path) {
+            const hits = [];
+            if (typeof obj === 'string') {
+                if (obj.includes(EM)) hits.push({path, value: obj});
+            } else if (Array.isArray(obj)) {
+                obj.forEach((v, i) => hits.push(...scan(v, path + '[' + i + ']')));
+            } else if (obj && typeof obj === 'object') {
+                for (const k of Object.keys(obj)) {
+                    hits.push(...scan(obj[k], path ? path + '.' + k : k));
+                }
+            }
+            return hits;
+        }
+        const hits = scan(window.T && window.T.bg, 'T.bg');
+        return {ok: hits.length === 0, hits};
+    }""")
+    check("p3f_1_t_bg_no_emdash",
+          t_bg_result["ok"],
+          f"hits: {t_bg_result['hits']}" if not t_bg_result["ok"] else "T.bg clean")
+    save_shot(page, wave, "p3f_1_t_bg")
+    ctx.close()
+
+    # ── P3F-2: T.en — no em dash in any string ─────────────────────────────────
+    print("\n=== P3F-2: T.en values — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="en", mode="cinema")
+    page.wait_for_timeout(500)
+
+    t_en_result = page.evaluate(r"""() => {
+        const EM = '—';
+        function scan(obj, path) {
+            const hits = [];
+            if (typeof obj === 'string') {
+                if (obj.includes(EM)) hits.push({path, value: obj});
+            } else if (Array.isArray(obj)) {
+                obj.forEach((v, i) => hits.push(...scan(v, path + '[' + i + ']')));
+            } else if (obj && typeof obj === 'object') {
+                for (const k of Object.keys(obj)) {
+                    hits.push(...scan(obj[k], path ? path + '.' + k : k));
+                }
+            }
+            return hits;
+        }
+        const hits = scan(window.T && window.T.en, 'T.en');
+        return {ok: hits.length === 0, hits};
+    }""")
+    check("p3f_2_t_en_no_emdash",
+          t_en_result["ok"],
+          f"hits: {t_en_result['hits']}" if not t_en_result["ok"] else "T.en clean")
+    save_shot(page, wave, "p3f_2_t_en")
+    ctx.close()
+
+    # ── P3F-3: Home page UI chrome — no em dash ────────────────────────────────
+    print("\n=== P3F-3: Home page UI chrome — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    home_result = page.evaluate(r"""() => {
+        const EM = '—';
+        // Selectors that should contain only UI-authored copy (not data fields)
+        const uiSelectors = [
+            '.bar',           // top navigation bar
+            '.mode-btn',      // cinema/theatre switcher
+            '.day-chip',      // day picker chips (if present at home level)
+            '.rail-head',     // rail heading labels
+            '.rail-sub',      // rail sub-labels
+            '.filter-label',  // filter labels
+            '.fab-label',     // FAB button labels
+            '.gap-wrap',      // gap notice (date not yet published)
+            '.gap-msg',
+            '.nodata',        // empty state
+            '.late-day',      // late-day message
+            '.late-day-msg',
+            '[data-nodata]',
+            '.search-hint',   // search-area hints
+            '.until-note',
+        ];
+        const hits = [];
+        for (const sel of uiSelectors) {
+            const els = document.querySelectorAll(sel);
+            for (const el of els) {
+                const text = el.textContent || '';
+                if (text.includes(EM)) {
+                    hits.push({sel, text: text.trim().slice(0, 80)});
+                }
+            }
+        }
+        return {ok: hits.length === 0, hits};
+    }""")
+    check("p3f_3_home_ui_chrome_no_emdash",
+          home_result["ok"],
+          f"hits: {home_result['hits']}" if not home_result["ok"] else "home UI chrome clean")
+    save_shot(page, wave, "p3f_3_home_chrome")
+    ctx.close()
+
+    # ── P3F-4: Film sheet labels and notes — no em dash ────────────────────────
+    print("\n=== P3F-4: Film sheet labels/notes — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    # Open first film card
+    opened = False
+    for sel in [".card-link", ".card", ".fcard"]:
+        try:
+            page.wait_for_selector(sel, timeout=1000)
+            page.click(sel, timeout=1000)
+            page.wait_for_selector(".sheet", timeout=5000)
+            opened = True
+            break
+        except Exception:
+            pass
+
+    if not opened:
+        skip("p3f_4_film_sheet_no_emdash", "no film card to click")
+    else:
+        page.wait_for_timeout(400)
+        sheet_result = page.evaluate(r"""() => {
+            const EM = '—';
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {found: false};
+            // Selectors within the sheet that should contain only UI-authored copy.
+            // Excludes: .syn-body (synopsis), .credits-body, .cast-row,
+            //           .score (IMDb/RT badge), .card-title, .sheet-title,
+            //           .press-item (press quotes), .rtile (rating tiles with data)
+            const uiSelectors = [
+                '.sheet-section-label',  // section headers: "Резюме", "Екип", etc.
+                '.sheet-meta-label',     // metadata labels: "Режисьор", "Държава", etc.
+                '.sheet-meta-key',
+                '.buy-label',            // buy-ticket button labels
+                '.buy-note',             // buy-ticket explanatory note
+                '.prelim-note',          // preliminary programme note
+                '.ss-prelim-head',       // screening-sheet prelim head
+                '.p3e-prelim-fn',        // prelim footnote
+                '.buy-hub-head',         // "Or via a platform" head
+                '.nodata',
+                '[data-seclab]',         // section labels
+            ];
+            const hits = [];
+            for (const sel of uiSelectors) {
+                const els = sheet.querySelectorAll(sel);
+                for (const el of els) {
+                    const text = el.textContent || '';
+                    if (text.includes(EM)) {
+                        hits.push({sel, text: text.trim().slice(0, 80)});
+                    }
+                }
+            }
+            return {found: true, ok: hits.length === 0, hits};
+        }""")
+        if not sheet_result.get("found"):
+            skip("p3f_4_film_sheet_no_emdash", "no sheet found")
+        else:
+            check("p3f_4_film_sheet_no_emdash",
+                  sheet_result["ok"],
+                  f"hits: {sheet_result['hits']}" if not sheet_result["ok"] else "film sheet UI labels clean")
+    save_shot(page, wave, "p3f_4_film_sheet")
+    ctx.close()
+
+    # ── P3F-5: Show sheet labels and notes — no em dash ────────────────────────
+    print("\n=== P3F-5: Show sheet labels/notes — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="theatre")
+    page.wait_for_timeout(500)
+
+    # Open first show card
+    opened = False
+    for sel in [".card-link", ".card", ".scard"]:
+        try:
+            page.wait_for_selector(sel, timeout=1000)
+            page.click(sel, timeout=1000)
+            page.wait_for_selector(".sheet", timeout=5000)
+            opened = True
+            break
+        except Exception:
+            pass
+
+    if not opened:
+        skip("p3f_5_show_sheet_no_emdash", "no show card to click")
+    else:
+        page.wait_for_timeout(400)
+        show_result = page.evaluate(r"""() => {
+            const EM = '—';
+            const sheet = document.querySelector('.sheet');
+            if (!sheet) return {found: false};
+            const uiSelectors = [
+                '.sheet-section-label',
+                '.sheet-meta-label',
+                '.sheet-meta-key',
+                '.buy-label',
+                '.buy-note',
+                '.prelim-note',
+                '.p3e-prelim-fn',
+                '.buy-hub-head',
+                '.nodata',
+                '[data-seclab]',
+            ];
+            const hits = [];
+            for (const sel of uiSelectors) {
+                const els = sheet.querySelectorAll(sel);
+                for (const el of els) {
+                    const text = el.textContent || '';
+                    if (text.includes(EM)) {
+                        hits.push({sel, text: text.trim().slice(0, 80)});
+                    }
+                }
+            }
+            return {found: true, ok: hits.length === 0, hits};
+        }""")
+        if not show_result.get("found"):
+            skip("p3f_5_show_sheet_no_emdash", "no sheet found")
+        else:
+            check("p3f_5_show_sheet_no_emdash",
+                  show_result["ok"],
+                  f"hits: {show_result['hits']}" if not show_result["ok"] else "show sheet UI labels clean")
+    save_shot(page, wave, "p3f_5_show_sheet")
+    ctx.close()
+
+    # ── P3F-6: Screening sheet UI copy — no em dash ────────────────────────────
+    # Opens a film sheet, clicks a time pill to open the screening sheet,
+    # then checks UI-copy selectors inside it.
+    print("\n=== P3F-6: Screening sheet UI copy — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    # Open first film card
+    card_opened = False
+    for sel in [".card-link", ".card", ".fcard"]:
+        try:
+            page.wait_for_selector(sel, timeout=1000)
+            page.click(sel, timeout=1000)
+            page.wait_for_selector(".sheet", timeout=5000)
+            card_opened = True
+            break
+        except Exception:
+            pass
+
+    ss_opened = False
+    if card_opened:
+        page.wait_for_timeout(400)
+        # Click first time pill to open screening sheet
+        try:
+            page.wait_for_selector(".p3e-pill[data-sspill]", timeout=2000)
+            page.click(".p3e-pill[data-sspill]", timeout=2000)
+            page.wait_for_selector("#ss-wrap", timeout=3000)
+            ss_opened = True
+        except Exception:
+            pass
+
+    if not ss_opened:
+        skip("p3f_6_ss_ui_no_emdash", "could not open screening sheet")
+    else:
+        page.wait_for_timeout(300)
+        ss_result = page.evaluate(r"""() => {
+            const EM = '—';
+            const ss = document.querySelector('#ss-wrap');
+            if (!ss) return {found: false};
+            // UI copy selectors inside screening sheet.
+            // Excludes: .ss-venue-addr (address data), .ss-hall (hall name data),
+            //           .ss-time-pill, .ss-buy-url
+            const uiSelectors = [
+                '.ss-head',        // sheet header
+                '.ss-prelim-head', // preliminary notice heading
+                '.ss-prelim-body', // preliminary notice body
+                '.ss-box-head',    // box-office-only heading
+                '.ss-box-body',    // box-office-only body
+                '.ss-agg-head',    // aggregator preliminary heading
+                '.ss-agg-body',    // aggregator preliminary body
+                '.ss-buy-lbl',     // buy ticket button label
+                '.ss-map-lbl',     // show on map label
+                '.ss-cal-lbl',     // add to calendar label
+                '.ss-cal-title',   // calendar panel title
+                '.ss-cal-li',      // calendar option items (Apple/Google/Outlook)
+                '.ss-buy-opens',   // "Opens the X website" label
+                '.ss-dashed-fn',   // dashed-border footnote
+            ];
+            const hits = [];
+            for (const sel of uiSelectors) {
+                const els = ss.querySelectorAll(sel);
+                for (const el of els) {
+                    const text = el.textContent || '';
+                    if (text.includes(EM)) {
+                        hits.push({sel, text: text.trim().slice(0, 80)});
+                    }
+                }
+            }
+            return {found: true, ok: hits.length === 0, hits};
+        }""")
+        if not ss_result.get("found"):
+            skip("p3f_6_ss_ui_no_emdash", "screening sheet #ss-wrap not found")
+        else:
+            check("p3f_6_ss_ui_no_emdash",
+                  ss_result["ok"],
+                  f"hits: {ss_result['hits']}" if not ss_result["ok"] else "screening sheet UI copy clean")
+    save_shot(page, wave, "p3f_6_screening_sheet")
+    ctx.close()
+
+    # ── P3F-7: Empty states and gap messages — no em dash ──────────────────────
+    print("\n=== P3F-7: Empty states and gap messages — no em dash ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(800)
+
+    empty_result = page.evaluate(r"""() => {
+        const EM = '—';
+        // Collect all potential empty-state and gap text nodes
+        const selectors = [
+            '.nodata',
+            '[data-nodata]',
+            '.gap-wrap',
+            '.gap-msg',
+            '.gap-title',
+            '.gap-body',
+            '.late-day',
+            '.late-day-msg',
+            '.no-filter',
+            '[class*="empty"]',
+            '[class*="nodata"]',
+        ];
+        const hits = [];
+        const seen = new Set();
+        for (const sel of selectors) {
+            for (const el of document.querySelectorAll(sel)) {
+                if (seen.has(el)) continue;
+                seen.add(el);
+                const text = el.textContent || '';
+                if (text.includes(EM)) {
+                    hits.push({sel, text: text.trim().slice(0, 80)});
+                }
+            }
+        }
+        return {ok: hits.length === 0, hits};
+    }""")
+    check("p3f_7_empty_states_no_emdash",
+          empty_result["ok"],
+          f"hits: {empty_result['hits']}" if not empty_result["ok"] else "empty states clean (or none visible)")
+    save_shot(page, wave, "p3f_7_empty_states")
+    ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -11865,6 +12229,7 @@ WAVES = {
     "P3B": wave_p3b,
     "P3C": wave_p3c,
     "P3E": wave_p3e,
+    "P3F": wave_p3f,
 }
 
 def main():
