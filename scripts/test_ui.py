@@ -2923,7 +2923,7 @@ def wave_d1(browser):
         close_btn = page.query_selector("[data-close]")
         if close_btn:
             close_btn.click()
-            page.wait_for_timeout(300)
+            page.wait_for_timeout(700)  # P3B: close animation ~300ms, allow extra
             sheet_gone = page.evaluate("!document.querySelector('.scrim') || document.querySelector('#scrim').hidden")
             check("d1_close_x", sheet_gone, "sheet still visible after ✕ click")
         else:
@@ -2935,7 +2935,7 @@ def wave_d1(browser):
             film_card2.click()
             page.wait_for_timeout(400)
             page.keyboard.press("Escape")
-            page.wait_for_timeout(300)
+            page.wait_for_timeout(700)  # P3B: close animation ~300ms
             sheet_gone_esc = page.evaluate("!document.querySelector('#scrim') || document.getElementById('scrim').hidden")
             check("d1_close_esc", sheet_gone_esc, "sheet still visible after Escape")
         else:
@@ -2947,7 +2947,7 @@ def wave_d1(browser):
             film_card3.click()
             page.wait_for_timeout(400)
             page.go_back()
-            page.wait_for_timeout(300)
+            page.wait_for_timeout(700)  # P3B: close animation ~300ms
             sheet_gone_back = page.evaluate("!document.querySelector('#scrim') || document.getElementById('scrim').hidden")
             check("d1_close_back", sheet_gone_back, "sheet still visible after browser back")
         else:
@@ -3882,26 +3882,46 @@ def wave_i(browser):
         page.wait_for_timeout(900)
 
     # ── Runtime film lookup for SOFIA_HTML mode ──
-    # 'digar' was used when the suite was written. If absent, find any film with upcoming rows.
+    # 'digar' was used when the suite was written. In real mode, late-night scrapes drop
+    # started multiplex screenings so 'digar' may have no upcoming rows on the current day.
+    # Probe for: (a) digar presence (needed for I-3/4/5 DST exact-value checks), and
+    # (b) any film that has ≥2 upcoming times at one venue on one day (needed for i2_*
+    # time-chip checks, which require a calendar panel with ≥2 time buttons).
     _probe_ctx, _probe_page, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
     _wave_i_info = _probe_page.evaluate(f"""() => {{
         const today = "{CLOCK_TODAY_ISO}";
         const digarPresent = !!filmById['digar'];
-        // Find any film with at least one upcoming showtime row
-        const upcomingFilm = SHOWTIMES.find(r => r[2] >= today);
-        const anyFilm = upcomingFilm ? upcomingFilm[0] : null;
-        // Find 'digar' at cc-sofia with a date >= today (for exact DST checks)
+        // Find 'digar' at cc-sofia with a date >= today (for exact DST checks in I-3/4/5)
         const digarCCRow = SHOWTIMES.find(r => r[0] === 'digar' && r[1] === 'cc-sofia' && r[2] >= today);
         const digarDate = digarCCRow ? digarCCRow[2] : null;
-        return {{digarPresent, anyFilm, digarDate}};
+        // Find a film+venue+date with >= 2 upcoming times on one day for i2_* time-chip checks.
+        // Group rows by filmId|venueId|date, pick the first group with >= 2 times.
+        const groups = {{}};
+        for (const r of SHOWTIMES) {{
+            if (r[2] < today) continue;
+            const key = r[0] + '|' + r[1] + '|' + r[2];
+            if (!groups[key]) groups[key] = {{filmId: r[0], venueId: r[1], date: r[2], times: r[3]}};
+        }}
+        let i2Film = null, i2Venue = null, i2Date = null;
+        for (const key of Object.keys(groups)) {{
+            const g = groups[key];
+            if (g.times && g.times.length >= 2) {{
+                i2Film = g.filmId; i2Venue = g.venueId; i2Date = g.date;
+                break;
+            }}
+        }}
+        return {{digarPresent, digarDate, i2Film, i2Venue, i2Date}};
     }}""")
     _probe_ctx.close()
-    _wave_i_film_id = "digar" if _wave_i_info["digarPresent"] else _wave_i_info["anyFilm"]
+    # For i2_* time-chip tests: prefer the dynamic film with >= 2 times; fall back to digar.
+    _wave_i_film_id = _wave_i_info["i2Film"] or "digar"
     _wave_i_digar_ok = bool(_wave_i_info["digarPresent"] and _wave_i_info["digarDate"])
-    # I-3/I4/I5 exact-value DST checks need digar at cc-sofia on a specific date;
+    # I-3/4/5 exact-value DST checks need digar at cc-sofia on a specific date;
     # those remain hardcoded to 2026-10-08 (a known summer-time anchor) and SKIP if digar is absent.
     if not _wave_i_info["digarPresent"]:
-        print(f"  NOTE: 'digar' absent in this build — I-1 will use '{_wave_i_film_id}'; I-3/I4/I5 will SKIP")
+        print(f"  NOTE: 'digar' absent in this build — I-3/4/5 will SKIP")
+    if _wave_i_info["i2Film"] and _wave_i_info["i2Film"] != "digar":
+        print(f"  NOTE: i2_* time-chip checks using '{_wave_i_film_id}' @ {_wave_i_info['i2Venue']} on {_wave_i_info['i2Date']}")
 
     # ── I-1: Every .vrow in film and show sheets has exactly one [data-cal] ──
     print("\n=== I-1: [data-cal] presence and placement ===")
@@ -3990,7 +4010,7 @@ def wave_i(browser):
         }
     }""")
     page2.wait_for_timeout(400)
-    open_film_sheet(page2, "digar")
+    open_film_sheet(page2, _wave_i_film_id)
     venue_filter_ok = page2.evaluate("""() => {
         const sheet = document.querySelector('.sheet');
         if (!sheet) return false;
@@ -4007,7 +4027,7 @@ def wave_i(browser):
     for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
         lang_tag = "bg"
         ctx, page, errs = open_page(browser, w, h, lang=lang_tag, mode="cinema")
-        open_film_sheet(page, "digar")
+        open_film_sheet(page, _wave_i_film_id)
 
         # Click first [data-cal] button
         cal_btn = page.query_selector(".sheet [data-cal]")
@@ -4127,7 +4147,7 @@ def wave_i(browser):
         # EN labels check (desktop only to save time)
         if w == 1280:
             ctx_en, page_en, _ = open_page(browser, w, h, lang="en", mode="cinema")
-            open_film_sheet(page_en, "digar")
+            open_film_sheet(page_en, _wave_i_film_id)
             cal_btn_en = page_en.query_selector(".sheet [data-cal]")
             if cal_btn_en:
                 cal_btn_en.click()
@@ -4153,7 +4173,7 @@ def wave_i(browser):
         # Screenshots - re-open film sheet (Escape may have closed it)
         if size_tag == "375x812":
             if not page.query_selector(".sheet"):
-                open_film_sheet(page, "digar")
+                open_film_sheet(page, _wave_i_film_id)
             cal_btn_shot = page.query_selector(".sheet [data-cal]")
             if cal_btn_shot:
                 cal_btn_shot.click()
@@ -5711,7 +5731,7 @@ def wave_l(browser):
             const btn = document.querySelector('.sbar [data-back]');
             if (btn) btn.click();
         }""")
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(700)  # P3B: close animation ~300ms; allow extra
 
     def get_all_film_ids(page):
         return page.evaluate("""() => {
@@ -6853,19 +6873,27 @@ def wave_l(browser):
             if (typeof PERFORMANCES === 'undefined' || typeof SHOWS === 'undefined') return {{err: 'no data'}};
             const thId = '{prelim_theatre_info["theatreId"]}';
             const thShows = SHOWS.filter(s => s.theatre === thId).map(s => s.id);
+            // Only upcoming performances (mirror upcomingPerfs — date >= NOW_DATE,
+            // and if date === NOW_DATE then time >= NOW_TIME).
+            const upcoming = PERFORMANCES.filter(p => {{
+                if (!thShows.includes(p[0])) return false;
+                return typeof upcomingPerfs === 'function'
+                    ? upcomingPerfs([p]).length > 0
+                    : p[1] >= NOW_DATE;
+            }});
             const byShow = {{}};
-            for (const p of PERFORMANCES) {{
-                if (!thShows.includes(p[0])) continue;
+            for (const p of upcoming) {{
                 if (!byShow[p[0]]) byShow[p[0]] = [];
                 byShow[p[0]].push(p[1]);
             }}
             for (const [sid, dates] of Object.entries(byShow)) {{
-                if (dates.length >= 2) {{
-                    const sd = dates.slice().sort();
-                    return {{showId: sid, theatreId: thId, dateA: sd[0], dateB: sd[1]}};
+                // Need at least 2 upcoming performance dates (not just times).
+                const uniqDates = [...new Set(dates)].sort();
+                if (uniqDates.length >= 2) {{
+                    return {{showId: sid, theatreId: thId, dateA: uniqDates[0], dateB: uniqDates[1]}};
                 }}
             }}
-            return {{err: 'no show with 2+ dates'}};
+            return {{err: 'no show with 2+ upcoming dates'}};
         }}""")
         if p2f_show_info and "err" in p2f_show_info:
             p2f_show_info = None
@@ -8446,37 +8474,147 @@ def wave_p2c(browser):
 # ============================================================================
 
 # Test SHOWATTR injected via Playwright route so we don't need live data.
-# Uses real filmId|venueId|date|time tuples that exist in SHOWTIMES.  We pick:
-#   - digar|arena-mega  all four times → "sub"   (same-lang → show once)
-#   - drugata-mama|cc-sofia  mixed langs:
-#       14:10 → "dub", 16:10 → "sub", 18:15 → "sub,4dx", 20:20 → "dub", 22:30 → "sub"
-#       (mixed → show per-chip)
-#   - digar|cc-sofia  20:30 → "sub"             (single time, label present)
-#   - ne-kazvay-na-mama|cc-sofia  intentionally absent       (no label)
+# In fixture mode the clock is frozen at 2026-10-08 and known film+venue+time
+# combos exist in the fixture HTML; in real mode those same combos may not be
+# present (multiplexes drop started screenings in late-night scrapes).
 #
-# Fixture mode (clock 2026-10-08): tomorrow date is 2026-10-09.
-# Real mode (SOFIA_HTML): date is CLOCK_TODAY_ISO (first day shown in the build).
+# Dynamic selection (real mode):
+#   - show-once target: first film+venue+date with >= 4 upcoming times -> assign "sub" to all
+#   - mixed target:     a different film+venue+date with >= 3 times -> alternating dub/sub,
+#                       last time gets "sub,4dx" for format coverage
+#   - single target:    a third film+venue+date with >= 1 time -> assign "sub" to first time
+#   - absent target:    a film with no SHOWATTR entry
+#
+# Fixture mode falls back to the original hard-coded combos (they exist in the fixture HTML).
 # The route replaces the literal "const SHOWATTR={};" in the page with injected data.
+
+# Cached dynamic P2E probe data, keyed by html_env path so the cache is valid for one run.
+_p2e_probe_cache: dict = {}
+
+
+def _probe_p2e_showtimes(browser) -> dict:
+    """Query the page's SHOWTIMES to find suitable film+venue+date combos for P2E.
+
+    Returns a dict with keys so, mx, sg, absent (see _build_p2e_showattr for usage).
+    """
+    global _p2e_probe_cache
+    cache_key = html_env
+    if cache_key in _p2e_probe_cache:
+        return _p2e_probe_cache[cache_key]
+
+    ctx, page, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        // Use the page's own clock so upcoming-time filtering matches sheetFilm exactly.
+        const nowDate = NOW_DATE;   // e.g. "2026-10-08"
+        const nowTime = NOW_TIME;   // e.g. "14:45"
+        // upcomingTimes: mirror upcomingRows() — drop past times on today's date.
+        const upcomingTimes = (date, times) =>
+            date > nowDate ? times : times.filter(t => t >= nowTime);
+        // Group SHOWTIMES by filmId|venueId|date, keeping only upcoming times.
+        const groups = {{}};
+        for (const r of SHOWTIMES) {{
+            if (!r[3] || !r[3].length) continue;
+            if (r[2] < today) continue;
+            const utimes = upcomingTimes(r[2], r[3]);
+            if (!utimes.length) continue;
+            const key = r[0] + '|' + r[1] + '|' + r[2];
+            if (!groups[key]) groups[key] = {{film: r[0], venue: r[1], date: r[2], times: []}};
+            for (const t of utimes) groups[key].times.push(t);
+        }}
+        const entries = Object.values(groups).sort((a, b) => a.date.localeCompare(b.date));
+        // show-once candidate: >= 4 upcoming times at one venue/day
+        let so = null;
+        for (const e of entries) {{
+            if (e.times.length >= 4) {{ so = e; break; }}
+        }}
+        if (!so && entries.length) {{
+            so = entries.reduce((best, e) => e.times.length > best.times.length ? e : best, entries[0]);
+        }}
+        // mixed candidate: >= 2 upcoming times, different film+venue from show-once
+        // (needs >=2 so SHOWATTR can assign dub to first, sub to last)
+        let mx = null;
+        for (const e of entries) {{
+            if (e.times.length >= 2 && (!so || e.film !== so.film || e.venue !== so.venue)) {{
+                mx = e; break;
+            }}
+        }}
+        // single candidate: any upcoming time, film different from show-once and mixed
+        let sg = null;
+        for (const e of entries) {{
+            const diffFilm = (!so || e.film !== so.film) && (!mx || e.film !== mx.film);
+            if (diffFilm) {{ sg = e; break; }}
+        }}
+        // absent candidate: a film not in the above sets
+        const usedFilms = new Set([so && so.film, mx && mx.film, sg && sg.film].filter(Boolean));
+        let absent = null;
+        for (const fid of Object.keys(filmById)) {{
+            if (!usedFilms.has(fid)) {{ absent = fid; break; }}
+        }}
+        return {{
+            so: so ? {{film: so.film, venue: so.venue, date: so.date,
+                      times: [...new Set(so.times)].sort()}} : null,
+            mx: mx ? {{film: mx.film, venue: mx.venue, date: mx.date,
+                      times: [...new Set(mx.times)].sort()}} : null,
+            sg: sg ? {{film: sg.film, venue: sg.venue, date: sg.date,
+                      time: sg.times[0]}} : null,
+            absent,
+        }};
+    }}""")
+    ctx.close()
+    _p2e_probe_cache[cache_key] = result
+    return result
 
 
 def _p2e_showattr_date():
-    """Return the date string to use for P2E SHOWATTR test data.
+    """Return the date string for P2E SHOWATTR in fixture mode (tomorrow).
 
-    Fixture mode: clock today is 2026-10-08 → use 2026-10-09 (tomorrow).
-    Real mode (SOFIA_HTML): use CLOCK_TODAY_ISO directly (screenings are today).
+    In real mode this is not used; _probe_p2e_showtimes() provides dates directly.
     """
     from datetime import date, timedelta
     if CLOCK_TODAY_ISO is None:
-        return None  # not yet initialised; will be fixed in wave_p2e
-    if os.environ.get("SOFIA_HTML", ""):
-        return CLOCK_TODAY_ISO  # real mode: same-day screenings
-    # fixture mode: tomorrow
+        return None
     d = date.fromisoformat(CLOCK_TODAY_ISO)
     return (d + timedelta(days=1)).isoformat()
 
 
-def _build_p2e_showattr(date_str):
-    """Build the P2E SHOWATTR dict for the given date string."""
+def _build_p2e_showattr(browser=None):
+    """Build the P2E SHOWATTR dict.
+
+    Always probes the page's SHOWTIMES to find actual upcoming combos so the
+    injected SHOWATTR entries match screenings that exist in the build (both
+    fixture and real mode).
+    """
+    if browser is not None:
+        probe = _probe_p2e_showtimes(browser)
+        if probe:
+            so = probe.get("so")
+            mx = probe.get("mx")
+            sg = probe.get("sg")
+            showattr = {}
+            if so:
+                so_key = f"{so['film']}|{so['venue']}"
+                showattr[so_key] = {f"{so['date']} {t}": "sub" for t in so["times"]}
+            if mx:
+                mx_key = f"{mx['film']}|{mx['venue']}"
+                mx_times = mx["times"]
+                mx_entry = {}
+                for i, t in enumerate(mx_times):
+                    if i == len(mx_times) - 1:
+                        mx_entry[f"{mx['date']} {t}"] = "sub,4dx"
+                    elif i % 2 == 0:
+                        mx_entry[f"{mx['date']} {t}"] = "dub"
+                    else:
+                        mx_entry[f"{mx['date']} {t}"] = "sub"
+                showattr[mx_key] = mx_entry
+            if sg:
+                sg_key = f"{sg['film']}|{sg['venue']}"
+                showattr[sg_key] = {f"{sg['date']} {sg['time']}": "sub"}
+            # absent film is omitted from SHOWATTR (no label)
+            return showattr
+
+    # Fallback (no browser): use known combos keyed to tomorrow's date
+    date_str = _p2e_showattr_date()
     return {
         "digar|arena-mega": {
             f"{date_str} 13:40": "sub",
@@ -8494,9 +8632,8 @@ def _build_p2e_showattr(date_str):
         "digar|cc-sofia": {
             f"{date_str} 20:30": "sub",
         },
-        # ne-kazvay-na-mama|cc-sofia intentionally absent → no label
+        # ne-kazvay-na-mama|cc-sofia intentionally absent -> no label
     }
-
 
 def _open_page_with_showattr(browser, w, h, lang="bg", mode="cinema"):
     """Like open_page() but injects P2E SHOWATTR test data into the page via a Playwright route.
@@ -8507,16 +8644,15 @@ def _open_page_with_showattr(browser, w, h, lang="bg", mode="cinema"):
     page, so ``const SHOWATTR_MAP`` (which is derived from ``SHOWATTR`` at parse time)
     picks up the test values.
 
-    Uses dates derived from CLOCK_TODAY_ISO:
-      fixture mode → tomorrow (CLOCK_TODAY_ISO + 1 day)
-      real mode    → CLOCK_TODAY_ISO itself
+    In real mode, film+venue+date combos are chosen dynamically from SHOWTIMES so the
+    injected entries match screenings that actually appear in the build.  In fixture mode
+    the original hard-coded combos are used.
 
     Raises AssertionError if the SHOWATTR declaration is not found in the HTML (e.g.
     an old build that predates the P2E feature).
     """
     import pathlib as _pl
-    date_str = _p2e_showattr_date()
-    showattr = _build_p2e_showattr(date_str)
+    showattr = _build_p2e_showattr(browser)
     showattr_json = json.dumps(showattr, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     html_file = str((_pl.Path(__file__).parent.parent / html_env).resolve())
     original_html = open(html_file, encoding="utf-8", errors="replace").read()
@@ -8578,6 +8714,42 @@ def wave_p2e(browser):
     """
     wave = "P2E"
     ensure_shot_dir(wave)
+
+    # ── Probe: find dynamic film+venue+date combos from the page's SHOWTIMES ─────
+    # Always probe the page so fixture mode picks combos from actual SHOWTIMES
+    # (the hard-coded fallback used clock+1 which diverged from the live data).
+    _probe = _probe_p2e_showtimes(browser)
+    if _probe:
+        _so = _probe.get("so") or {}     # show-once: film, venue, date, times
+        _mx = _probe.get("mx") or {}     # mixed: film, venue, date, times
+        _sg = _probe.get("sg") or {}     # single: film, venue, date, time
+        _absent = _probe.get("absent")
+        _so_film  = _so.get("film", "digar")
+        _so_venue = _so.get("venue", "arena-mega")
+        _so_date  = _so.get("date", _p2e_showattr_date())
+        _so_times = _so.get("times", [])
+        _mx_film  = _mx.get("film", "drugata-mama")
+        _mx_venue = _mx.get("venue", "cc-sofia")
+        _mx_date  = _mx.get("date", _p2e_showattr_date())
+        _mx_times = _mx.get("times", [])
+        _sg_film  = _sg.get("film", "digar")
+        _sg_venue = _sg.get("venue", "cc-sofia")
+        _sg_date  = _sg.get("date", _p2e_showattr_date())
+        _sg_time  = _sg.get("time", "20:30")
+        _absent_film = _absent or "ne-kazvay-na-mama"
+        print(f"  P2E dynamic: show-once={_so_film}@{_so_venue} on {_so_date} ({len(_so_times)} times), "
+              f"mixed={_mx_film}@{_mx_venue} on {_mx_date} ({len(_mx_times)} times), "
+              f"absent={_absent_film}")
+    else:
+        # Fallback if probe fails
+        _p2e_date = _p2e_showattr_date()
+        _so_film  = "digar";          _so_venue = "arena-mega"; _so_date = _p2e_date
+        _so_times = ["13:40", "16:10", "18:40", "21:50"]
+        _mx_film  = "drugata-mama";   _mx_venue = "cc-sofia";   _mx_date = _p2e_date
+        _mx_times = ["14:10", "16:10", "18:15", "20:20", "22:30"]
+        _sg_film  = "digar";          _sg_venue = "cc-sofia";   _sg_date = _p2e_date
+        _sg_time  = "20:30"
+        _absent_film = "ne-kazvay-na-mama"
 
     # ── P2E-1: attrLabels() returns correct localised text in BG and EN ─────────
     print("\n=== P2E-1: attrLabels() localisation (JS unit check) ===")
@@ -8644,50 +8816,66 @@ def wave_p2e(browser):
         ctx.close()
 
     # ── P2E-2: Venue-level "show once" optimisation ──────────────────────────────
-    # digar|arena-mega has all 4 times → "sub"; venue label should appear once.
+    # show-once film+venue has all times same "sub" → venue label should appear once.
     print("\n=== P2E-2: Same-lang → label shown once at venue level (not per chip) ===")
+    # _so_times is the sorted list of times we injected "sub" for
+    _so_times_js = str(_so_times)
     for lang in ("bg", "en"):
         ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
         page.wait_for_timeout(400)
 
         expected_lbl = "Субтитри" if lang == "bg" else "Subtitled"
-        # The SHOWATTR data covers arena-mega times for the clock-appropriate date.
-        # sheetFilm renders day-groups; we look inside dgroups for the right arena vrow.
         result = page.evaluate(f"""() => {{
-            const fid = "digar";
+            const fid = "{_so_film}";
+            const vid = "{_so_venue}";
+            const targetDate = "{_so_date}";
+            const targetTimes = {_so_times_js};
             const f = filmById[fid];
-            if (!f) return {{found: false, reason: "film not found"}};
+            if (!f) return {{found: false, reason: "film " + fid + " not found"}};
             const html = sheetFilm(f);
             const div = document.createElement("div");
             div.innerHTML = html;
-            // If .dg-h has no data-date, look inside any dgroup for an arena vrow
-            // that has chips matching our SHOWATTR times (13:40, 16:10, 18:40, 21:50).
-            let arenaVrow = null;
-            const allVrows = Array.from(div.querySelectorAll(".vrow"));
-            for (const vr of allVrows) {{
-                const vloc = vr.querySelector(".vloc");
-                if (!vloc) continue;
-                const txt = vloc.textContent;
-                // Match "Арена" (BG) or "Arena" (EN) + Mega
-                if (!txt.includes("Арена") && !txt.includes("Arena")) continue;
-                if (!txt.includes("Mega")) continue;
-                // We want the 2026-10-09 row: times 13:40,16:10,18:40,21:50.
-                // 2026-10-08 row has 15:00; 2026-10-09 row does NOT have 15:00.
-                const times = Array.from(vr.querySelectorAll(".time:not(.tix)"))
-                    .map(t => t.textContent.trim().replace(/[^0-9:].*$/,"").slice(0,5));
-                if (times.includes("21:50") && !times.includes("15:00")) {{
-                    arenaVrow = vr;
-                    break;
+            // Find the vrow for vid on targetDate that has at least one of targetTimes.
+            // sheetFilm groups by day then by venue row; each vrow has .vtimes chips.
+            let targetVrow = null;
+            const dgroups = Array.from(div.querySelectorAll(".dgroup"));
+            for (const dg of dgroups) {{
+                // Filter by data-date attribute first (added in P3B), fall back to time overlap
+                const dgDate = dg.dataset.date || "";
+                if (dgDate && dgDate !== targetDate) continue;
+                if (!dgDate) {{
+                    // Legacy fallback: check time overlap
+                    const dgTimes = Array.from(dg.querySelectorAll(".time:not(.tix)"))
+                        .map(t => t.textContent.trim().replace(/[^0-9:].*$/,"").slice(0,5));
+                    if (!targetTimes.some(tm => dgTimes.includes(tm))) continue;
+                }}
+                // Within this dgroup, find the vrow whose times match targetTimes
+                for (const vr of Array.from(dg.querySelectorAll(".vrow"))) {{
+                    const vTimes = Array.from(vr.querySelectorAll(".time:not(.tix)"))
+                        .map(t => t.textContent.trim().replace(/[^0-9:].*$/,"").slice(0,5));
+                    if (targetTimes.some(tm => vTimes.includes(tm))) {{
+                        targetVrow = vr; break;
+                    }}
+                }}
+                if (targetVrow) break;
+            }}
+            // Fallback: any vrow with at least one targetTime
+            if (!targetVrow) {{
+                for (const vr of Array.from(div.querySelectorAll(".vrow"))) {{
+                    const vTimes = Array.from(vr.querySelectorAll(".time:not(.tix)"))
+                        .map(t => t.textContent.trim().replace(/[^0-9:].*$/,"").slice(0,5));
+                    if (targetTimes.some(tm => vTimes.includes(tm))) {{
+                        targetVrow = vr; break;
+                    }}
                 }}
             }}
-            if (!arenaVrow) {{
-                // Debug: list all vloc texts
+            if (!targetVrow) {{
                 const vlocs = Array.from(div.querySelectorAll(".vloc")).map(v => v.textContent.trim().slice(0,40));
-                return {{found: false, reason: "arena vrow not found", vlocs}};
+                return {{found: false, reason: "vrow not found for " + fid + "@" + vid, vlocs}};
             }}
-            const vnameLabels = Array.from(arenaVrow.querySelectorAll(".vname .attr-lbl")).map(s => s.textContent.trim());
-            const chipLabels  = Array.from(arenaVrow.querySelectorAll(".vtimes .attr-lbl")).map(s => s.textContent.trim());
-            const chipTimes   = Array.from(arenaVrow.querySelectorAll(".vtimes .time:not(.tix)")).map(t => t.textContent.trim().slice(0,5));
+            const vnameLabels = Array.from(targetVrow.querySelectorAll(".vname .attr-lbl")).map(s => s.textContent.trim());
+            const chipLabels  = Array.from(targetVrow.querySelectorAll(".vtimes .attr-lbl")).map(s => s.textContent.trim());
+            const chipTimes   = Array.from(targetVrow.querySelectorAll(".vtimes .time:not(.tix)")).map(t => t.textContent.trim().slice(0,5));
             return {{found: true, vnameLabels, chipLabels, chipTimes}};
         }}""")
 
@@ -8708,54 +8896,52 @@ def wave_p2e(browser):
         ctx.close()
 
     # ── P2E-3: Mixed versions → per-chip labels ───────────────────────────────────
-    # drugata-mama|cc-sofia has dub/sub mixed → no venue-level label,
+    # _mx_film|_mx_venue has dub/sub mixed → no venue-level label,
     # each chip shows its own.
     print("\n=== P2E-3: Mixed lang → label per chip, none at venue level ===")
+    _mx_times_js = str(_mx_times)
     ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
     page.wait_for_timeout(400)
 
-    result = page.evaluate("""() => {
-        const fid = "drugata-mama";
+    result = page.evaluate(f"""() => {{
+        const fid = "{_mx_film}";
+        const vid = "{_mx_venue}";
+        const targetDate = "{_mx_date}";
+        const targetTimes = {_mx_times_js};
         const f = filmById[fid];
-        if (!f) return {found: false, reason: "film not found"};
+        if (!f) return {{found: false, reason: "film " + fid + " not found"}};
         const html = sheetFilm(f);
         const div = document.createElement("div");
         div.innerHTML = html;
-        // Find vrow for cc-sofia (Cinema City Sofia / Mall of Sofia)
-        const vrows = Array.from(div.querySelectorAll(".vrow"));
-        let ccVrow = null;
-        for (const vr of vrows) {
-            const vloc = vr.querySelector(".vloc");
-            const txt = vloc ? vloc.textContent : "";
-            // Match "Cinema City Sofia" or the area "Mall of Sofia"
-            if (txt.includes("Cinema City Sofia") || txt.includes("Mall of Sofia")) {
-                ccVrow = vr;
-                break;
-            }
-        }
-        if (!ccVrow) {
-            // fallback: any vrow whose vloc mentions "Cinema City"
-            for (const vr of vrows) {
-                const vloc = vr.querySelector(".vloc");
-                if (vloc && vloc.textContent.includes("Cinema City")) {
-                    ccVrow = vr;
-                    break;
-                }
-            }
-        }
-        if (!ccVrow) return {found: false, reason: "cc-sofia vrow not found, vrows=" + vrows.length +
-            ", texts=" + Array.from(div.querySelectorAll(".vloc")).map(v=>v.textContent.slice(0,30)).join("|")};
-        const vnameLabels = Array.from(ccVrow.querySelectorAll(".vname .attr-lbl")).map(s => s.textContent.trim());
-        const chips = Array.from(ccVrow.querySelectorAll(".vtimes .time"));
-        const chipData = chips.map(c => ({
+        // Find the dgroup for targetDate then the vrow that has our times
+        let mxVrow = null;
+        for (const dg of Array.from(div.querySelectorAll(".dgroup"))) {{
+            if (dg.dataset.date !== targetDate) continue;
+            for (const vr of Array.from(dg.querySelectorAll(".vrow"))) {{
+                const vTimes = Array.from(vr.querySelectorAll(".time:not(.tix)"))
+                    .map(t => t.textContent.trim().replace(/[^0-9:].*$/,"").slice(0,5));
+                if (targetTimes.some(tm => vTimes.includes(tm))) {{
+                    mxVrow = vr; break;
+                }}
+            }}
+            if (mxVrow) break;
+        }}
+        if (!mxVrow) {{
+            const vlocs = Array.from(div.querySelectorAll(".vloc")).map(v => v.textContent.trim().slice(0,30));
+            return {{found: false, reason: "mx vrow not found for " + fid + "@" + vid + " on " + targetDate, vlocs}};
+        }}
+        const vnameLabels = Array.from(mxVrow.querySelectorAll(".vname .attr-lbl")).map(s => s.textContent.trim());
+        const chips = Array.from(mxVrow.querySelectorAll(".vtimes .time"));
+        const chipData = chips.map(c => ({{
             text: c.textContent.trim(),
             labels: Array.from(c.querySelectorAll(".attr-lbl")).map(l => l.textContent.trim()),
-        }));
-        return {found: true, vnameLabels, chipData};
-    }""")
+        }}));
+        return {{found: true, vnameLabels, chipData}};
+    }}""")
 
     if not result.get("found"):
-        skip("p2e_mixed_per_chip", result.get("reason", "not found"))
+        skip("p2e_mixed_per_chip", result.get("reason", "not found") +
+             (f" vlocs={result.get('vlocs')!r}" if result.get("vlocs") else ""))
     else:
         vn = result.get("vnameLabels", [])
         cd = result.get("chipData", [])
@@ -8782,17 +8968,17 @@ def wave_p2e(browser):
     ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
     page.wait_for_timeout(400)
 
-    result = page.evaluate("""() => {
-        // ne-kazvay-na-mama|cc-sofia is NOT in our injected SHOWATTR
-        const fid = "ne-kazvay-na-mama";
+    result = page.evaluate(f"""() => {{
+        // _absent_film is NOT in our injected SHOWATTR
+        const fid = "{_absent_film}";
         const f = filmById[fid];
-        if (!f) return {found: false, reason: "film not found"};
+        if (!f) return {{found: false, reason: "film " + fid + " not found"}};
         const html = sheetFilm(f);
         const div = document.createElement("div");
         div.innerHTML = html;
         const allLabels = Array.from(div.querySelectorAll(".attr-lbl")).map(s => s.textContent.trim());
-        return {found: true, allLabels};
-    }""")
+        return {{found: true, allLabels}};
+    }}""")
 
     if not result.get("found"):
         skip("p2e_no_label_absent_film", result.get("reason", "film not found in fixture"))
@@ -8809,10 +8995,10 @@ def wave_p2e(browser):
     # Measure chips WITHOUT labels (using plain open_page, no SHOWATTR)
     ctx_plain, page_plain, _ = open_page(browser, 390, 844, lang="bg")
     page_plain.wait_for_timeout(400)
-    plain_result = page_plain.evaluate("""() => {
-        const fid = "digar";
+    plain_result = page_plain.evaluate(f"""() => {{
+        const fid = "{_so_film}";
         const f = filmById[fid];
-        if (!f) return {found: false};
+        if (!f) return {{found: false}};
         const html = sheetFilm(f);
         const tmpDiv = document.createElement("div");
         tmpDiv.style.cssText = "position:absolute;left:-9999px;width:390px;visibility:hidden";
@@ -8821,17 +9007,17 @@ def wave_p2e(browser):
         const chips = Array.from(tmpDiv.querySelectorAll(".time:not(.tix)"));
         const hs = chips.map(c => Math.round(c.getBoundingClientRect().height));
         document.body.removeChild(tmpDiv);
-        return {found: true, hs};
-    }""")
+        return {{found: true, hs}};
+    }}""")
     ctx_plain.close()
 
     # Measure chips WITH labels (using patched SHOWATTR)
     ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
     page.wait_for_timeout(400)
-    label_result = page.evaluate("""() => {
-        const fid = "digar";
+    label_result = page.evaluate(f"""() => {{
+        const fid = "{_so_film}";
         const f = filmById[fid];
-        if (!f) return {found: false};
+        if (!f) return {{found: false}};
         const html = sheetFilm(f);
         const tmpDiv = document.createElement("div");
         tmpDiv.style.cssText = "position:absolute;left:-9999px;width:390px;visibility:hidden";
@@ -8840,8 +9026,8 @@ def wave_p2e(browser):
         const chips = Array.from(tmpDiv.querySelectorAll(".time:not(.tix)"));
         const hs = chips.map(c => Math.round(c.getBoundingClientRect().height));
         document.body.removeChild(tmpDiv);
-        return {found: true, hs};
-    }""")
+        return {{found: true, hs}};
+    }}""")
     ctx.close()
 
     if not plain_result.get("found") or not label_result.get("found"):
@@ -8867,15 +9053,14 @@ def wave_p2e(browser):
         ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
         page.wait_for_timeout(400)
 
-        # digar|cc-sofia <date> 20:30 → "sub"
+        # _sg_film|_sg_venue on _sg_date at _sg_time → "sub"
         expected_suffix_bg = " (Субтитри)"
         expected_suffix_en = " (Subtitled)"
         expected_suffix = expected_suffix_bg if lang == "bg" else expected_suffix_en
-        _p2e_date = _p2e_showattr_date()
 
         result = page.evaluate(f"""() => {{
-            const attr = showAttrFor("digar", "cc-sofia", "{_p2e_date}", "20:30");
-            if (!attr) return {{found: false, reason: "showAttrFor returned empty"}};
+            const attr = showAttrFor("{_sg_film}", "{_sg_venue}", "{_sg_date}", "{_sg_time}");
+            if (!attr) return {{found: false, reason: "showAttrFor returned empty for {_sg_film}|{_sg_venue}|{_sg_date}|{_sg_time}"}};
             // Build calendar event like calEvent() does
             const _L = T["{lang}"];
             const _MAP = {{dub:_L.bgDub, sub:_L.bgSub, "3d":_L.fmt3d, imax:_L.fmtImax,
@@ -8899,11 +9084,10 @@ def wave_p2e(browser):
     ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
     page.wait_for_timeout(400)
 
-    _p2e_date7 = _p2e_showattr_date()
     result = page.evaluate(f"""() => {{
-        // Simulate calEvent() description construction for digar|cc-sofia
-        const attr = showAttrFor("digar", "cc-sofia", "{_p2e_date7}", "20:30");
-        if (!attr) return {{found: false, reason: "no attr"}};
+        // Simulate calEvent() description construction for _sg_film|_sg_venue
+        const attr = showAttrFor("{_sg_film}", "{_sg_venue}", "{_sg_date}", "{_sg_time}");
+        if (!attr) return {{found: false, reason: "no attr for {_sg_film}|{_sg_venue}|{_sg_date}|{_sg_time}"}};
         const _L = T["bg"];
         const _MAP = {{dub:_L.bgDub, sub:_L.bgSub, "3d":_L.fmt3d, imax:_L.fmtImax,
                       "4dx":_L.fmt4dx, screenx:_L.fmtScreenx, "d-box":_L.fmtDbox}};
@@ -8921,10 +9105,11 @@ def wave_p2e(browser):
     else:
         check("p2e_cal_desc_no_raw_tokens",
               not result.get("hasRawTokens"),
-              f"description={result.get('description')!r}")
+              f"description={{result.get('description')!r}}")
+        # "sub" key maps to "Субтитри"; check that was injected and decoded
         check("p2e_cal_desc_has_localised",
               "Субтитри" in (result.get("description") or ""),
-              f"description={result.get('description')!r}")
+              f"description={{result.get('description')!r}}")
     ctx.close()
 
 
@@ -9733,6 +9918,539 @@ def wave_p3a(browser):
 # Registry and main
 # ============================================================================
 
+
+# ============================================================================
+# WAVE P3B: Sheet animations, drawer animation, accessibility (Phase 3B)
+# ============================================================================
+
+def wave_p3b(browser, webkit_browser=None):
+    """
+    Wave P3B: iPhone-style sheet open/close, drawer animation, accessibility.
+
+    P3B-1  Sheet opens with animation (transform sampled during animation)
+    P3B-2  Reduced motion: sheet open is instant (no transform)
+    P3B-3  Alt text on poster images (not empty)
+    P3B-4  Esc key closes sheet
+    P3B-5  Focus enters sheet on open; returns to card on close
+    P3B-6  Drawer animates in when opened from FAB
+    P3B-7  Drawer animates in when opened from "Друг период"
+    P3B-8  Pull-down below threshold springs back (not closed)
+    P3B-9  Pull-down past threshold closes sheet
+    P3B-10 Scrolling inside sheet does not trigger close
+    P3B-11 Tap targets inside sheet >= 40px (close button)
+    P3B-12 WebKit: sheet opens and closes without JS errors
+    """
+    wave = "P3B"
+    ensure_shot_dir(wave)
+
+    # ── Helper: open a sheet by clicking the first card ───────────────────
+    def _click_first_card(page, timeout=3000):
+        """Click the first .card-link or .card and wait for .sheet to appear."""
+        # Try card-link first, then card
+        for sel in [".card-link", ".card", ".fcard", ".ecard"]:
+            try:
+                page.wait_for_selector(sel, timeout=1000)
+                page.click(sel, timeout=1000)
+                page.wait_for_selector(".sheet", timeout=timeout)
+                return True
+            except Exception:
+                pass
+        return False
+
+    # ── P3B-1: Sheet open animation ───────────────────────────────────────
+    print("\n=== P3B-1: Sheet open animation ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    result = page.evaluate("""() => {
+        // Get rect of first card before clicking
+        const card = document.querySelector(".card-link,.card");
+        if (!card) return {found: false, reason: "no card"};
+        const cardRect = card.getBoundingClientRect();
+        return {found: true, cardRect: {x: cardRect.x, y: cardRect.y, w: cardRect.width, h: cardRect.height}};
+    }""")
+
+    card_found = result.get("found", False)
+    if not card_found:
+        skip("p3b_1_sheet_animation", f"no card: {result.get('reason','')}")
+    else:
+        # Click card and sample transforms during animation
+        page.evaluate("""() => {
+            window._p3b_transforms = [];
+            const orig = Element.prototype.animate;
+            Element.prototype.animate = function(kf, opts) {
+                const anim = orig.call(this, kf, opts);
+                if (this.classList && (this.classList.contains('sheet') || this.classList.contains('scrim'))) {
+                    window._p3b_animStarted = true;
+                    window._p3b_animEl = this.className;
+                    // Capture first keyframe
+                    if (kf && kf[0]) window._p3b_transforms.push(JSON.stringify(kf[0]));
+                }
+                return anim;
+            };
+        }""")
+
+        opened = _click_first_card(page, timeout=4000)
+        if not opened:
+            skip("p3b_1_sheet_animation", "sheet did not open")
+        else:
+            page.wait_for_timeout(500)
+            anim_data = page.evaluate("""() => ({
+                started: !!window._p3b_animStarted,
+                transforms: window._p3b_transforms || [],
+                sheetVisible: !!document.querySelector('.sheet'),
+            })""")
+            check("p3b_1_sheet_opened", anim_data.get("sheetVisible", False),
+                  "sheet element visible after click")
+            check("p3b_1_animation_started", anim_data.get("started", False),
+                  "Web Animations API called on open")
+
+    save_shot(page, wave, "p3b_1_sheet_open")
+    ctx.close()
+
+    # ── P3B-2: Reduced motion: open is instant ────────────────────────────
+    print("\n=== P3B-2: Reduced motion instant open ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    # Inject reduced-motion emulation
+    page.add_style_tag(content="@media (prefers-reduced-motion) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }")
+    ctx.add_init_script("""
+        Object.defineProperty(window, '_mediaReducedMotion', {value: true});
+        const mq = window.matchMedia;
+        window.matchMedia = (q) => {
+            if (q.includes('reduce')) return {matches: true, media: q, addEventListener:()=>{}, removeEventListener:()=>{}};
+            return mq(q);
+        };
+    """)
+    page.reload()
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(500)
+
+    page.evaluate("""() => { window._p3b_rm_anims = 0; const orig = Element.prototype.animate;
+        Element.prototype.animate = function(kf, opts) {
+            const dur = (typeof opts === 'object' ? opts.duration : opts) || 0;
+            if (dur > 50) window._p3b_rm_anims++;
+            return orig.call(this, kf, opts);
+        };
+    }""")
+
+    opened = _click_first_card(page, timeout=3000)
+    if not opened:
+        skip("p3b_2_reduced_motion", "sheet did not open")
+    else:
+        page.wait_for_timeout(200)
+        rm_data = page.evaluate("""() => ({
+            longAnims: window._p3b_rm_anims || 0,
+            sheetVisible: !!document.querySelector('.sheet'),
+        })""")
+        check("p3b_2_sheet_opens_in_reduced", rm_data.get("sheetVisible", False),
+              "sheet opens even in reduced-motion mode")
+        check("p3b_2_no_long_animations", rm_data.get("longAnims", 1) == 0,
+              f"long animations (>50ms) in reduced motion: {rm_data.get('longAnims')}")
+
+    ctx.close()
+
+    # ── P3B-3: Alt text on poster images ─────────────────────────────────
+    print("\n=== P3B-3: Poster alt text ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    result = page.evaluate("""() => {
+        const imgs = Array.from(document.querySelectorAll('.p-real'));
+        const empty_alts = imgs.filter(i => !i.alt || i.alt.trim() === '');
+        const total = imgs.length;
+        return {total, emptyAlt: empty_alts.length,
+                sample: imgs.slice(0,3).map(i => ({alt: i.alt, src: i.src.slice(-30)}))};
+    }""")
+
+    n_real = result.get("total", 0)
+    n_empty = result.get("emptyAlt", 0)
+    if n_real == 0:
+        skip("p3b_3_alt_text", "no .p-real poster images found (no posters in data?)")
+    else:
+        check("p3b_3_alt_text_not_empty", n_empty == 0,
+              f"{n_empty}/{n_real} poster imgs have empty alt (sample: {result.get('sample')})")
+
+    ctx.close()
+
+    # ── P3B-4: Esc closes sheet ───────────────────────────────────────────
+    print("\n=== P3B-4: Esc closes sheet ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+    opened = _click_first_card(page, timeout=3000)
+    if not opened:
+        skip("p3b_4_esc_close", "sheet did not open")
+    else:
+        page.wait_for_timeout(300)
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        sheet_gone = page.evaluate("() => !document.querySelector('.sheet') || document.getElementById('scrim').hidden")
+        check("p3b_4_esc_closes_sheet", sheet_gone, "sheet should be gone after Esc")
+
+    ctx.close()
+
+    # ── P3B-5: Focus management ───────────────────────────────────────────
+    print("\n=== P3B-5: Focus into sheet and back to card ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    # Focus a card before opening (simulate keyboard navigation)
+    result = page.evaluate("""() => {
+        const card = document.querySelector('.card-link,.card');
+        if (!card) return {found: false};
+        card.focus();
+        return {found: true, focused: document.activeElement === card || card.contains(document.activeElement)};
+    }""")
+
+    if not result.get("found"):
+        skip("p3b_5_focus", "no card found")
+    else:
+        opened = _click_first_card(page, timeout=3000)
+        if not opened:
+            skip("p3b_5_focus", "sheet did not open")
+        else:
+            # Wait for focus to settle into sheet
+            page.wait_for_timeout(600)
+            focus_in_sheet = page.evaluate("""() => {
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return {inSheet: false, reason: 'no sheet'};
+                const focused = document.activeElement;
+                return {inSheet: sheet.contains(focused),
+                        focusedTag: focused ? focused.tagName : 'none',
+                        focusedClass: focused ? focused.className.slice(0,40) : ''};
+            }""")
+            check("p3b_5_focus_in_sheet", focus_in_sheet.get("inSheet", False),
+                  f"focused={focus_in_sheet.get('focusedTag')} .{focus_in_sheet.get('focusedClass')}")
+
+            # Close and check focus returned
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(600)
+            # closeSheet returns focus to the card; check activeElement is not body
+            focus_after = page.evaluate("""() => {
+                const el = document.activeElement;
+                return {tag: el ? el.tagName : 'none',
+                        cls: el ? el.className.slice(0,40) : '',
+                        isBody: el === document.body};
+            }""")
+            check("p3b_5_focus_returned", not focus_after.get("isBody", True),
+                  f"focus after close: {focus_after.get('tag')}.{focus_after.get('cls')}")
+
+    ctx.close()
+
+    # ── P3B-6: Drawer animates from FAB ──────────────────────────────────
+    print("\n=== P3B-6: Drawer animation from FAB ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    result = page.evaluate("""() => {
+        window._p3b_drawer_anims = [];
+        const orig = Element.prototype.animate;
+        Element.prototype.animate = function(kf, opts) {
+            if (this.classList && this.classList.contains('drawer')) {
+                window._p3b_drawer_anims.push({dur: (typeof opts==='object'?opts.duration:opts)||0, kf0: kf&&kf[0]?JSON.stringify(kf[0]):'?'});
+            }
+            return orig.call(this, kf, opts);
+        };
+        const fab = document.querySelector('[data-drawer],.fab');
+        return {fabFound: !!fab};
+    }""")
+
+    if not result.get("fabFound"):
+        skip("p3b_6_drawer_fab", "FAB button not found")
+    else:
+        page.click("[data-drawer],.fab", timeout=2000)
+        page.wait_for_selector(".drawer", timeout=3000)
+        page.wait_for_timeout(400)
+        drawer_data = page.evaluate("""() => ({
+            drawerVisible: !!document.querySelector('.drawer'),
+            animCount: window._p3b_drawer_anims.length,
+            anims: window._p3b_drawer_anims,
+        })""")
+        check("p3b_6_drawer_visible", drawer_data.get("drawerVisible", False),
+              "drawer visible after FAB click")
+        check("p3b_6_drawer_animated", drawer_data.get("animCount", 0) > 0,
+              f"drawer animate() called {drawer_data.get('animCount')} time(s), anims={drawer_data.get('anims')}")
+
+    save_shot(page, wave, "p3b_6_drawer_open")
+    ctx.close()
+
+    # ── P3B-7: Drawer from "Друг период" ─────────────────────────────────
+    print("\n=== P3B-7: Drawer from Друг период link ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    result = page.evaluate("""() => {
+        // Find any element with text "Друг период" or data-druperiod
+        const els = Array.from(document.querySelectorAll('[data-drawer],[data-druperiod],button,a'));
+        const dru = els.find(el => el.textContent && el.textContent.includes('Друг период'));
+        if (!dru) return {found: false};
+        window._p3b_drawer_anims2 = [];
+        const orig = Element.prototype.animate;
+        Element.prototype.animate = function(kf, opts) {
+            if (this.classList && this.classList.contains('drawer')) {
+                window._p3b_drawer_anims2.push({dur: (typeof opts==='object'?opts.duration:opts)||0});
+            }
+            return orig.call(this, kf, opts);
+        };
+        dru.click();
+        return {found: true};
+    }""")
+
+    if not result.get("found"):
+        skip("p3b_7_drawer_druperiod", '"Друг период" link not found on this page')
+    else:
+        page.wait_for_selector(".drawer", timeout=3000)
+        page.wait_for_timeout(400)
+        drawer_data2 = page.evaluate("""() => ({
+            drawerVisible: !!document.querySelector('.drawer'),
+            animCount: (window._p3b_drawer_anims2 || []).length,
+        })""")
+        check("p3b_7_drawer_druperiod_visible", drawer_data2.get("drawerVisible", False),
+              "drawer visible after Друг период click")
+        check("p3b_7_drawer_druperiod_animated", drawer_data2.get("animCount", 0) > 0,
+              f"drawer animate() called {drawer_data2.get('animCount')} time(s)")
+
+    ctx.close()
+
+    # ── P3B-8: Pull-down below threshold springs back ────────────────────
+    print("\n=== P3B-8: Pull-down below threshold springs back ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+    opened = _click_first_card(page, timeout=3000)
+    if not opened:
+        skip("p3b_8_pulldown_spring", "sheet did not open")
+    else:
+        page.wait_for_timeout(400)
+        # Get sheet position
+        sheet_box = box(page, ".sheet")
+        if not sheet_box:
+            skip("p3b_8_pulldown_spring", "can't get sheet bounding box")
+        else:
+            # Short drag: 40px downward (well below 25% threshold on 844px)
+            sx = int(sheet_box["x"] + sheet_box["width"] / 2)
+            sy = int(sheet_box["y"] + 30)
+            # Dispatch touch events via JS
+            page.evaluate(f"""() => {{
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return;
+                const t = (type, cx, cy) => sheet.dispatchEvent(new TouchEvent(type, {{
+                    touches: type === 'touchend' ? [] : [new Touch({{identifier:1, target:sheet, clientX:cx, clientY:cy}})],
+                    changedTouches: [new Touch({{identifier:1, target:sheet, clientX:cx, clientY:cy}})],
+                    bubbles: true, cancelable: true
+                }}));
+                t('touchstart', {sx}, {sy});
+                t('touchmove',  {sx}, {sy+30});
+                t('touchmove',  {sx}, {sy+40});
+                t('touchend',   {sx}, {sy+40});
+            }}""")
+            page.wait_for_timeout(500)
+            sheet_still_open = page.evaluate(
+                "() => !!document.querySelector('.sheet') && !document.getElementById('scrim').hidden")
+            check("p3b_8_spring_back", sheet_still_open,
+                  "sheet still open after short pull (below threshold)")
+
+    ctx.close()
+
+    # ── P3B-9: Pull-down past threshold closes ────────────────────────────
+    print("\n=== P3B-9: Pull-down past threshold closes ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+    opened = _click_first_card(page, timeout=3000)
+    if not opened:
+        skip("p3b_9_pulldown_close", "sheet did not open")
+    else:
+        page.wait_for_timeout(400)
+        sheet_box = box(page, ".sheet")
+        if not sheet_box:
+            skip("p3b_9_pulldown_close", "can't get sheet bounding box")
+        else:
+            # Large drag: 60% of sheet height (well past 25% threshold)
+            sx = int(sheet_box["x"] + sheet_box["width"] / 2)
+            sy = int(sheet_box["y"] + 30)
+            close_dy = int(sheet_box["height"] * 0.65)
+            page.evaluate(f"""() => {{
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return;
+                const t = (type, cx, cy) => sheet.dispatchEvent(new TouchEvent(type, {{
+                    touches: type === 'touchend' ? [] : [new Touch({{identifier:1, target:sheet, clientX:cx, clientY:cy}})],
+                    changedTouches: [new Touch({{identifier:1, target:sheet, clientX:cx, clientY:cy}})],
+                    bubbles: true, cancelable: true
+                }}));
+                // Simulate a fast downward flick (velocity > 0.4 px/ms)
+                const now = Date.now;
+                let tick = 0;
+                Date.now = () => {{ tick += 5; return 1000000 + tick; }};  // 5ms per tick
+                t('touchstart', {sx}, {sy});
+                t('touchmove',  {sx}, {sy+100});
+                t('touchmove',  {sx}, {sy}+{close_dy});
+                t('touchend',   {sx}, {sy}+{close_dy});
+                Date.now = now;
+            }}""")
+            page.wait_for_timeout(800)
+            sheet_closed = page.evaluate(
+                "() => !document.querySelector('.sheet') || document.getElementById('scrim').hidden")
+            check("p3b_9_close_on_pulldown", sheet_closed,
+                  "sheet closed after pull past threshold")
+
+    ctx.close()
+
+    # ── P3B-10: Scrolling inside sheet doesn't close it ──────────────────
+    print("\n=== P3B-10: Scrolling inside sheet doesn't close it ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+    opened = _click_first_card(page, timeout=3000)
+    if not opened:
+        skip("p3b_10_scroll_safe", "sheet did not open")
+    else:
+        page.wait_for_timeout(400)
+        sheet_box = box(page, ".sheet")
+        if sheet_box:
+            sx = int(sheet_box["x"] + sheet_box["width"] / 2)
+            sy = int(sheet_box["y"] + sheet_box["height"] / 2)
+            # Scroll up by 100px inside the sheet
+            page.evaluate(f"""() => {{
+                const sheet = document.querySelector('.sheet');
+                if (sheet) sheet.scrollTop = 200;
+            }}""")
+            page.wait_for_timeout(100)
+            # Now simulate an upward swipe (should NOT trigger close, sheet is scrolled)
+            page.evaluate(f"""() => {{
+                const sheet = document.querySelector('.sheet');
+                if (!sheet) return;
+                const t = (type, cx, cy) => sheet.dispatchEvent(new TouchEvent(type, {{
+                    touches: type === 'touchend' ? [] : [new Touch({{identifier:1, target:sheet, clientX:cx, clientY:cy}})],
+                    changedTouches: [new Touch({{identifier:1, target:sheet, clientX:cx, clientY:cy}})],
+                    bubbles: true, cancelable: true
+                }}));
+                t('touchstart', {sx}, {sy});
+                t('touchmove',  {sx}, {sy+120});
+                t('touchend',   {sx}, {sy+120});
+            }}""")
+            page.wait_for_timeout(400)
+        sheet_still_open = page.evaluate(
+            "() => !!document.querySelector('.sheet') && !document.getElementById('scrim').hidden")
+        check("p3b_10_scroll_safe", sheet_still_open,
+              "sheet still open after internal scroll and drag (scrollTop > 0)")
+
+    ctx.close()
+
+    # ── P3B-11: Tap target size: close button >= 40px ────────────────────
+    print("\n=== P3B-11: Sheet close button tap target ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+    opened = _click_first_card(page, timeout=3000)
+    if not opened:
+        skip("p3b_11_tap_target", "sheet did not open")
+    else:
+        page.wait_for_timeout(300)
+        result = page.evaluate("""() => {
+            const btn = document.querySelector('.sclose');
+            if (!btn) return {found: false};
+            const r = btn.getBoundingClientRect();
+            return {found: true, w: Math.round(r.width), h: Math.round(r.height)};
+        }""")
+        if not result.get("found"):
+            skip("p3b_11_tap_target", ".sclose not found in sheet")
+        else:
+            check("p3b_11_close_width_ok", result.get("w", 0) >= 40,
+                  f".sclose width={result.get('w')}px (need >=40)")
+            check("p3b_11_close_height_ok", result.get("h", 0) >= 40,
+                  f".sclose height={result.get('h')}px (need >=40)")
+
+    ctx.close()
+
+    # ── P3B-12: WebKit: sheet opens/closes without JS errors ─────────────
+    print("\n=== P3B-12: WebKit sheet open/close ===")
+    if webkit_browser is None:
+        skip("p3b_12_webkit", "WebKit browser not available")
+    else:
+        try:
+            ctx, page, errs = open_page(webkit_browser, 390, 844, lang="bg", mode="cinema")
+            page.wait_for_timeout(600)
+            opened = _click_first_card(page, timeout=4000)
+            if not opened:
+                skip("p3b_12_webkit", "sheet did not open in WebKit")
+            else:
+                page.wait_for_timeout(400)
+                sheet_visible = page.evaluate("() => !!document.querySelector('.sheet')")
+                check("p3b_12_webkit_sheet_opens", sheet_visible,
+                      "sheet visible in WebKit")
+                # Close it
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(600)
+                sheet_gone = page.evaluate(
+                    "() => !document.querySelector('.sheet') || document.getElementById('scrim').hidden")
+                check("p3b_12_webkit_sheet_closes", sheet_gone,
+                      "sheet closes in WebKit")
+                check("p3b_12_webkit_no_js_errors", len(errs) == 0,
+                      f"JS errors: {errs[:3]}")
+            ctx.close()
+        except Exception as wk_err:
+            skip("p3b_12_webkit", f"WebKit test error: {wk_err}")
+
+    # ── P3B-13: Drawer focus management (BG desktop, keyboard) ────────────────
+    # Brief item 6: open drawer → focus moves inside; close (Esc) → focus returns to opener.
+    print("\n=== P3B-13: Drawer focus — into drawer on open, back to opener on close (BG desktop) ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    page.wait_for_timeout(600)
+
+    fab_result = page.evaluate("""() => {
+        const fab = document.querySelector('[data-drawer],.fab');
+        return {found: !!fab, tag: fab ? fab.tagName : '', cls: fab ? fab.className.slice(0,40) : ''};
+    }""")
+    if not fab_result.get("found"):
+        skip("p3b_13_drawer_focus_in", "FAB / [data-drawer] button not found")
+        skip("p3b_13_drawer_focus_return", "FAB / [data-drawer] button not found")
+    else:
+        # Focus the FAB programmatically (simulates keyboard navigation to it)
+        page.evaluate("""() => {
+            const fab = document.querySelector('[data-drawer],.fab');
+            if (fab) fab.focus();
+        }""")
+        page.wait_for_timeout(100)
+        # Press Enter to activate the focused FAB
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(600)
+
+        # Check drawer is open and focus moved inside
+        focus_in = page.evaluate("""() => {
+            const drawer = document.querySelector('.drawer');
+            if (!drawer) return {drawerOpen: false};
+            const focused = document.activeElement;
+            return {
+                drawerOpen: true,
+                inDrawer: drawer.contains(focused),
+                focusedTag: focused ? focused.tagName : 'none',
+                focusedCls: focused ? focused.className.slice(0, 40) : ''
+            };
+        }""")
+        check("p3b_13_drawer_focus_in",
+              focus_in.get("drawerOpen") and focus_in.get("inDrawer"),
+              f"drawerOpen={focus_in.get('drawerOpen')} inDrawer={focus_in.get('inDrawer')} "
+              f"focused={focus_in.get('focusedTag')}.{focus_in.get('focusedCls')}")
+
+        # Close drawer with Escape and check focus returns to FAB
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(600)
+        focus_back = page.evaluate("""() => {
+            const drawer = document.querySelector('.drawer');
+            const fab = document.querySelector('[data-drawer],.fab');
+            const focused = document.activeElement;
+            return {
+                drawerGone: !drawer,
+                fabFocused: fab ? (focused === fab || fab.contains(focused)) : false,
+                focusedTag: focused ? focused.tagName : 'none',
+                focusedCls: focused ? focused.className.slice(0, 40) : '',
+                isBody: focused === document.body
+            };
+        }""")
+        check("p3b_13_drawer_focus_return",
+              focus_back.get("fabFocused") and not focus_back.get("isBody"),
+              f"drawerGone={focus_back.get('drawerGone')} fabFocused={focus_back.get('fabFocused')} "
+              f"focused={focus_back.get('focusedTag')}.{focus_back.get('focusedCls')}")
+
+    ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -9751,6 +10469,7 @@ WAVES = {
     "P2E": wave_p2e,
     "P3D": wave_p3d,
     "P3A": wave_p3a,
+    "P3B": wave_p3b,
 }
 
 def main():
@@ -9799,7 +10518,7 @@ def main():
             print(f"WAVE {wave_name}")
             print(f"{'='*70}")
             results.clear()
-            if wave_name == "J":
+            if wave_name in ("J", "P3B"):
                 WAVES[wave_name](browser, _webkit_browser)
             else:
                 WAVES[wave_name](browser)

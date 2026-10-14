@@ -17,6 +17,9 @@
   --accent:var(--crimson); --on-accent:#fff;
   --shadow:0 20px 48px rgba(0,0,0,.55);
   --r:12px; --r-lg:20px;
+  --motion-dur-sm:160ms; --motion-dur-md:380ms;
+  --motion-ease-spring:cubic-bezier(.34,1.48,.64,1);
+  --motion-ease-out:cubic-bezier(.25,.46,.45,.94);
   color-scheme:dark;
 }
 :root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; }
@@ -336,6 +339,8 @@ a{color:inherit}
 .ebox:has(.p-real) .p-grain{background:
   linear-gradient(to top,rgba(0,0,0,.86),rgba(0,0,0,.32) 46%,rgba(0,0,0,.08) 78%),
   linear-gradient(to bottom,rgba(0,0,0,.5),transparent 34%)}
+/* QA UI-05: when ebox has a real poster, hide the SVG generated art beneath it */
+.ebox:has(.p-real) .p-art:not(.p-real){display:none}
 .p-grain{position:absolute; inset:0; z-index:1; pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px),
              radial-gradient(130% 80% at 50% 105%,rgba(0,0,0,.72),transparent 62%)}
@@ -382,7 +387,7 @@ a{color:inherit}
   overflow:hidden; box-shadow:var(--shadow); margin-block:auto}
 .shero{position:relative; min-height:210px; display:flex; align-items:flex-end; padding:22px; color:#fff; overflow:hidden}
 .shero .hero-scrim{background:linear-gradient(to top,rgba(0,0,0,.93),rgba(0,0,0,.3))}
-.sclose{position:absolute; top:12px; right:12px; z-index:6; width:32px; height:32px; border-radius:50%;
+.sclose{position:absolute; top:8px; right:8px; z-index:6; width:40px; height:40px; border-radius:50%;
   background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.24); color:#fff; display:grid; place-items:center; font-size:15px}
 .sheet h2{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
   font-size:clamp(23px,4.2vw,34px); line-height:1.02; position:relative; z-index:3}
@@ -390,7 +395,10 @@ a{color:inherit}
 .sbody{padding:22px; display:flex; flex-direction:column; gap:19px}
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:3px 9px; border-radius:999px;
-  border:1px solid var(--line-2); color:var(--fg-2)}
+  border:1px solid var(--line-2); color:var(--fg-2);
+  transition:background var(--motion-dur-sm) var(--motion-ease-out),
+             border-color var(--motion-dur-sm) var(--motion-ease-out),
+             color var(--motion-dur-sm) var(--motion-ease-out)}
 .chip.solid{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .ratings{display:flex; gap:9px; flex-wrap:wrap}
 .rtile{border:1px solid var(--line); border-radius:10px; padding:8px 13px; min-width:82px; background:var(--ink-3)}
@@ -447,7 +455,7 @@ a{color:inherit}
 /* Themed open animations removed (Wave D1). Plain neutral expand only. */
 
 /* share button + read-more + toast */
-.sshare{position:absolute; top:12px; right:52px; z-index:6; width:32px; height:32px; border-radius:50%;
+.sshare{position:absolute; top:8px; right:56px; z-index:6; width:40px; height:40px; border-radius:50%;
   background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.24); color:#fff; display:grid; place-items:center; cursor:pointer}
 .sshare:hover{border-color:#fff; background:rgba(0,0,0,.72)}
 .synwrap{position:relative}
@@ -455,7 +463,8 @@ a{color:inherit}
 .synbody p{margin:0 0 8px; color:var(--fg-2); font-size:14px; max-width:68ch}
 .synbody p:last-child{margin-bottom:0}
 .readmore{margin-top:4px; background:none; border:0; padding:0; cursor:pointer;
-  color:var(--accent); font:inherit; font-size:13px; font-weight:600; letter-spacing:.02em}
+  color:var(--accent); font:inherit; font-size:13px; font-weight:600; letter-spacing:.02em;
+  transition:opacity var(--motion-dur-sm) var(--motion-ease-out)}
 .readmore:hover{text-decoration:underline}
 .toast{position:fixed; left:50%; bottom:26px; transform:translate(-50%,14px); z-index:300;
   background:var(--ink-2); border:1px solid var(--line-2); color:var(--fg); border-radius:10px;
@@ -1270,7 +1279,7 @@ function realPoster(id,size){
   }
   if(SHOWIMG[base])return SHOWIMG[base];
   return null;}
-function posterArt(id,genres,g){
+function posterArt(id,genres,g,altText){
   const big=/^(hero|sh)-/.test(String(id));
   /* Full-res on the hero and the open sheet — upscaled w780 looked pixelated on
      wide and retina screens; w342 is plenty for the small grid cards and lighter
@@ -1280,7 +1289,7 @@ function posterArt(id,genres,g){
      exists it is overlaid on top; onerror removes the <img> and the SVG
      beneath becomes visible again (and .p-title reappears via :has). */
   const svg=genPoster(id,genres,g);
-  if(real) return svg+`<img class="p-art p-real" src="${esc(real)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`;
+  if(real) return svg+`<img class="p-art p-real" src="${esc(real)}" alt="${esc(altText||"")}" loading="lazy" decoding="async" onerror="this.remove()">`;
   return svg;
 }
 function genPoster(id,genres,g){
@@ -1655,7 +1664,7 @@ function filmCard(f,all,rowsOverride){
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
   const _pb=premBadgeFor(f.id);
   return`<button class="card" data-film="${esc(f.id)}">
-    <div class="poster">${posterArt(f.id,f.genres,f.g)}<div class="p-grain"></div>
+    <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
       <div class="p-top">${scoreBadge(f)}
         ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${cinelibriId(f.id)?cinelibriMark():""}${_pb}</div>
       <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
@@ -1667,7 +1676,7 @@ function showCard(sh,all){
   const staticBadge=sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:"";
   const _spb=showPremBadge(sh.id);
   return`<button class="card" data-show="${esc(sh.id)}">
-    <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
+    <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
       <div class="p-top"><span></span>${staticBadge}${_spb}</div>
       <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
@@ -1676,7 +1685,7 @@ const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
   return`<button class="ecard" data-event="${esc(ev.id)}"><div class="ebox">
-    ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g)}<div class="p-grain"></div>
+    ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="p-grain"></div>
     <span class="badge ${ev.status==="active"?"lim":""}">${esc(badgeDisplay(ev.tag))}</span>
     <div><h3>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h3>
       <div class="edate">${esc(range)} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
@@ -1714,7 +1723,7 @@ function hero(){
     const rk=visibleFilms().map(f=>({f,s:scoreFilm(f,day)})).sort((a,b)=>b.s-a.s);
     if(!rk.length)return"";
     const f=rk[0].f,n=filmCount(f.id,day);
-    return`<div class="hero"><div class="hero-art" style="background:${grad(f.g)}">${posterArt("hero-"+f.id,f.genres,f.g)}</div>
+    return`<div class="hero"><div class="hero-art" style="background:${grad(f.g)}">${posterArt("hero-"+f.id,f.genres,f.g,filmTitle(f))}</div>
       <div class="hero-scrim"></div><div class="hero-body">
       <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
       <h1>${esc(filmTitle(f))}</h1>
@@ -1727,7 +1736,7 @@ function hero(){
   const rk=visibleShows().map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v);
   if(!rk.length)return"";
   const sh=rk[0].s,th=thById[sh.theatre],p=showPerfs(sh.id,day);
-  return`<div class="hero"><div class="hero-art" style="background:${grad(sh.g)}">${posterArt("hero-"+sh.id,sh.genres,sh.g)}</div>
+  return`<div class="hero"><div class="hero-art" style="background:${grad(sh.g)}">${posterArt("hero-"+sh.id,sh.genres,sh.g,titleOf(sh))}</div>
     <div class="hero-scrim"></div><div class="hero-body">
     <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
     <h1>${esc(titleOf(sh))}</h1>
@@ -1983,7 +1992,7 @@ function body(){
           const sh=x.s,p=x.ps,th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
           const times=p.slice(0,3).map(r=>r[2]).join(" · ");
           return`<button class="card" data-show="${esc(sh.id)}">
-            <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
+            <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
               <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
               <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
@@ -2004,7 +2013,7 @@ function body(){
               const sh=x.s,p=x.ps,th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
               const times=p.slice(0,3).map(r=>r[2]).join(" · ");
               return`<button class="card" data-show="${esc(sh.id)}">
-                <div class="poster">${posterArt(sh.id,sh.genres,sh.g)}<div class="p-grain"></div>
+                <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
                   <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
                   <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
@@ -2527,7 +2536,7 @@ function sheetFilm(f){
       }).join("")}
       ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}
       ${calBtnHtml("film",f.id,r[1],d)}</div></div>`;};
-  const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}</div>
+  const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup" data-date="${d}"><div class="dg-h">${esc(fmtDayDow(d))}</div>
     ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
   const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
   /* "Showing selected cinemas only" note with "Show all" button */
@@ -2540,7 +2549,7 @@ function sheetFilm(f){
   {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${mv}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   return`<div class="sheet"><div class="shero" style="background:${grad(f.g)}">
-    ${posterArt("sh-"+f.id,f.genres,f.g)}<div class="hero-scrim"></div>
+    ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="film:${esc(f.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
@@ -2578,7 +2587,7 @@ function sheetShow(sh){
   const list=Object.keys(byDay).sort().map(d=>{
     const prelim=isPrelim(thId,d);
     if(prelim)hasPrelim=true;
-    return`<div class="dgroup"><div class="dg-h">${esc(fmtDayDow(d))}${prelim?` <span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}</div>
+    return`<div class="dgroup" data-date="${d}"><div class="dg-h">${esc(fmtDayDow(d))}${prelim?` <span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}</div>
     ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(hallDisplay(p[3])||thName(th))}</div>
       <div class="vtimes">${u?`<a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>`:`<span class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}">${esc(p[2])}</span>`}${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
       ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`;}).join("");
@@ -2587,7 +2596,7 @@ function sheetShow(sh){
   const thName_=S.lang==="bg"?th.name:(th.nameEn||th.name);
   const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
   return`<div class="sheet"><div class="shero" style="background:${grad(sh.g)}">
-    ${posterArt("sh-"+sh.id,sh.genres,sh.g)}<div class="hero-scrim"></div>
+    ${posterArt("sh-"+sh.id,sh.genres,sh.g,titleOf(sh))}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
@@ -2621,7 +2630,7 @@ function sheetEvent(ev){
      тъгата" complaint traced to exactly that blanket hub list). */
   const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
   return`<div class="sheet"><div class="shero" style="background:${grad(ev.g)}">
-    ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g)}<div class="hero-scrim"></div>
+    ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
@@ -2876,6 +2885,27 @@ function render(){
       document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
     });
   }
+  /* P3B: animate drawer entrance when newly opened, then move focus inside */
+  if(S.drawer){
+    requestAnimationFrame(()=>{
+      const dr=document.querySelector(".drawer");
+      const ds=document.querySelector(".drawer-scrim");
+      if(!dr)return;
+      const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const delay=reduced?10:340;
+      if(!reduced){
+        dr.animate([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}],
+          {duration:320,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"backwards"});
+        if(ds)ds.animate([{opacity:0},{opacity:1}],{duration:200,easing:"ease-out",fill:"backwards"});
+      }
+      /* Move keyboard focus into the drawer after animation */
+      setTimeout(()=>{
+        const focusable=dr.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+        const first=Array.from(focusable).find(el=>!el.disabled);
+        if(first)first.focus({preventScroll:true});
+      },delay);
+    });
+  }
 }
 /* Re-render while keeping the filter drawer where the user left it. The drawer
    lives inside #app, so a plain render() rebuilds it at scrollTop 0 and the list
@@ -2925,10 +2955,23 @@ function openSheet(html,fromEl){
   s.innerHTML=html;s.hidden=false;document.body.style.overflow="hidden";
   /* a detail view must always have a visible way out: the back bar is the
      reliable one, history and swipe are conveniences on top of it */
+  _lastOpenEl=fromEl||null;
+  _closing=false;
   decorateSheet(s);
   if(!sheetOpen){try{history.pushState({ss:"sheet"},"");}catch(e){}}
   sheetOpen=true;
   animateOpen(s,fromEl);
+  /* Move keyboard focus into the sheet after the opening animation. */
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const delay=reduced?10:420;
+  setTimeout(()=>{
+    const sheet=s.querySelector(".sheet");
+    if(!sheet)return;
+    const focusable=sheet.querySelectorAll(
+      'button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+    const first=Array.from(focusable).find(el=>!el.disabled);
+    if(first)first.focus({preventScroll:true});
+  },delay);
 }
 /* Regenerate the open sheet's contents in the current language without the
    open animation or a new history entry — used by the language toggle so an
@@ -2939,12 +2982,32 @@ function rerenderOpenSheet(){
   if(s&&html){s.innerHTML=html;decorateSheet(s);}
 }
 function closeSheet(fromPop){
+  if(_closing)return;
+  _closing=true;
   const s=document.getElementById("scrim");
-  if(s){s.hidden=true;s.innerHTML="";}
-  document.body.style.overflow="";curSheet=null;
+  const returnEl=_lastOpenEl;
   const was=sheetOpen; sheetOpen=false;
-  if(was&&!fromPop){try{history.back();}catch(e){}}
+  curSheet=null;
+  function _finalise(){
+    if(s){s.hidden=true;s.innerHTML="";}
+    document.body.style.overflow="";
+    _closing=false;
+    /* Return focus to the card that opened the sheet */
+    if(returnEl&&typeof returnEl.focus==="function"){
+      try{returnEl.focus({preventScroll:true});}catch(e){}
+    }
+    if(was&&!fromPop){try{history.back();}catch(e){}}
+  }
+  if(s&&!s.hidden){
+    animateClose(s,returnEl,_finalise);
+  } else {
+    _finalise();
+  }
 }
+/* Close sheet on Esc key */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&sheetOpen){closeSheet();e.preventDefault();}
+},{passive:false});
 window.addEventListener("popstate",()=>{
   if(sheetOpen){closeSheet(true);return;}
 });
@@ -2977,28 +3040,180 @@ function toast(msg){
   clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2200);
 }
 window.addEventListener("hashchange",()=>{ if(!sheetOpen)openFromHash(); });
+
+/* ── P3B motion helpers ──────────────────────────────────────────────────── */
+/* Reference to the card that last opened a sheet — used by closeSheet to
+   animate the sheet back to the card's position. */
+let _lastOpenEl=null;
+/* CSS selector of the element (FAB or "Друг период" link) that last opened the
+   filter drawer — used to return keyboard focus when the drawer closes.
+   Stored as a selector rather than a DOM reference because render() re-creates
+   the FAB element, making any stored reference stale. */
+let _lastDrawerOpener=null;
+/* Whether a close animation is in flight (prevents double-close). */
+let _closing=false;
+
+/* Smoothly animate the drawer (translateX) out, then call cb when done.
+   Falls back to instant if reduced-motion is set. */
+function animateDrawerClose(cb){
+  const dr=document.querySelector(".drawer");
+  const ds=document.querySelector(".drawer-scrim");
+  if(!dr||window.matchMedia("(prefers-reduced-motion: reduce)").matches){cb();return;}
+  const anim=dr.animate([{transform:"translateX(0)",opacity:1},{transform:"translateX(100%)",opacity:0}],
+    {duration:260,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  if(ds)ds.animate([{opacity:1},{opacity:0}],{duration:200,easing:"ease-in",fill:"forwards"});
+  anim.onfinish=cb;
+}
+
+/* iPhone-style pull-to-close on phones.
+   - Tracks the sheet position while dragging down (only when scrolled to top).
+   - Scales the sheet down toward 0.9 at the close threshold.
+   - Fades the backdrop proportionally.
+   - Commits close (shrink-to-card) if dy > 25 % of sheet height or velocity > 0.4 px/ms.
+   - Springs back otherwise.
+   - Non-passive touchstart so we can call preventDefault when we take over. */
 function swipeToClose(sheet){
-  let y0=null;
-  sheet.addEventListener("touchstart",e=>{y0=sheet.scrollTop<=0?e.touches[0].clientY:null;},{passive:true});
+  const THRESHOLD=0.25; /* 25 % of sheet height */
+  const VEL_CLOSE=0.4;  /* px/ms flick velocity */
+  let y0=null,t0=null,lastY=null,lastT=null;
+  const scrim=document.getElementById("scrim");
+
+  sheet.addEventListener("touchstart",e=>{
+    if(sheet.scrollTop>2){y0=null;return;}
+    y0=e.touches[0].clientY; t0=lastT=Date.now(); lastY=y0;
+  },{passive:true});
+
   sheet.addEventListener("touchmove",e=>{
     if(y0==null)return;
-    if(e.touches[0].clientY-y0>90){y0=null;closeSheet();}},{passive:true});
-  sheet.addEventListener("touchend",()=>{y0=null;},{passive:true});
-}
-/* Plain neutral expand: scrim fades in, sheet grows in — no themed effects. */
-function animateOpen(scrim,fromEl){
-  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-  const sheet=scrim.querySelector(".sheet"); if(!sheet)return;
-  scrim.animate([{opacity:0},{opacity:1}],{duration:150,easing:"ease-out"});
-  /* mobile bottom-sheet: slide up; desktop: opacity + subtle scale */
-  const isMobile=innerWidth<=620;
-  if(isMobile){
-    sheet.animate([{opacity:0,transform:"translateY(32px)"},{opacity:1,transform:"translateY(0)"}],
-      {duration:200,easing:"ease-out",fill:"backwards"});
-  }else{
-    sheet.animate([{opacity:0,transform:"translateY(14px) scale(.96)"},{opacity:1,transform:"none"}],
-      {duration:200,easing:"ease-out",fill:"backwards"});
+    const dy=e.touches[0].clientY-y0;
+    if(dy<0){y0=null;return;} /* upward scroll — hand off */
+    const now=Date.now(); lastY=e.touches[0].clientY; lastT=now;
+    /* Live transform: sheet follows finger, scrim opacity tracks */
+    const h=sheet.getBoundingClientRect().height||600;
+    const progress=Math.min(dy/h,1);
+    const scale=1-progress*0.1;        /* 1 → 0.9 at threshold */
+    const opacity=Math.max(1-progress*1.4,0.15);
+    sheet.style.transform=`translateY(${dy}px) scale(${scale})`;
+    sheet.style.transformOrigin="center bottom";
+    if(scrim)scrim.style.background=`rgba(5,3,7,${(0.8*opacity).toFixed(3)})`;
+  },{passive:true});
+
+  function _reset(){
+    sheet.style.transform="";
+    sheet.style.transformOrigin="";
+    if(scrim)scrim.style.background="";
+    y0=null;
   }
+
+  sheet.addEventListener("touchend",e=>{
+    if(y0==null)return;
+    const dy=lastY-y0;
+    const dt=lastT-t0;
+    const vel=dt>0?dy/dt:0;
+    const h=sheet.getBoundingClientRect().height||600;
+    if(dy>h*THRESHOLD||vel>VEL_CLOSE){
+      /* commit close */
+      _reset();
+      closeSheet();
+    } else {
+      /* spring back */
+      if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){_reset();return;}
+      sheet.animate(
+        [{transform:sheet.style.transform||"none"},{transform:"translateY(0) scale(1)"}],
+        {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"forwards"});
+      if(scrim){
+        const curAlpha=parseFloat((scrim.style.background||"").match(/[\d.]+\)$/)?
+          (scrim.style.background||"").match(/([\d.]+)\)$/)[1]:0.8);
+        scrim.animate([{opacity:curAlpha/0.8},{opacity:1}],{duration:260,easing:"ease-out",fill:"forwards"});
+        scrim.style.background="";
+      }
+      sheet.style.transform=""; sheet.style.transformOrigin="";
+    }
+    y0=null;
+  },{passive:true});
+}
+
+/* iPhone-style open animation: sheet zooms from the tapped card's rect.
+   Falls back to slide-up / scale-in when card rect is unavailable. */
+function animateOpen(scrim,fromEl){
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sheet=scrim.querySelector(".sheet"); if(!sheet)return;
+  const isMobile=innerWidth<=620;
+
+  /* Always fade the scrim backdrop */
+  const bgDur=reduced?1:200;
+  scrim.animate([{opacity:0},{opacity:1}],{duration:bgDur,easing:"ease-out"});
+
+  if(reduced){
+    /* Instant: no transform animation */
+    return;
+  }
+
+  const rect=fromEl?fromEl.getBoundingClientRect():null;
+  if(rect&&isMobile&&rect.width>0&&rect.height>0){
+    /* FLIP: compute where to start so the sheet appears to grow from the card */
+    const sheetR=sheet.getBoundingClientRect();
+    const sheetH=sheetR.height||window.innerHeight*0.92;
+    const sheetW=sheetR.width||window.innerWidth;
+    /* origin: card centre relative to sheet centre */
+    const ox=(rect.left+rect.width/2)-(sheetR.left+sheetW/2);
+    const oy=(rect.top+rect.height/2)-(window.innerHeight*0.97); /* sheet anchors to bottom */
+    const sx=rect.width/sheetW;
+    const sy=rect.height/sheetH;
+    sheet.style.transformOrigin="center bottom";
+    sheet.animate([
+      {opacity:0,transform:`translate(${ox}px,${oy}px) scale(${sx},${sy})`},
+      {opacity:1,transform:"translate(0,0) scale(1)"}
+    ],{duration:400,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"backwards"});
+  } else if(isMobile){
+    /* fallback: slide up from the bottom */
+    sheet.animate([{opacity:0,transform:"translateY(40px)"},{opacity:1,transform:"translateY(0)"}],
+      {duration:380,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+  } else {
+    /* desktop: scale+fade from centre */
+    sheet.animate([{opacity:0,transform:"scale(.93) translateY(16px)"},{opacity:1,transform:"none"}],
+      {duration:340,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+  }
+}
+
+/* Animate the sheet closing back to the card it came from (or centre-fade if unavailable). */
+function animateClose(scrim,toEl,cb){
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sheet=scrim?scrim.querySelector(".sheet"):null;
+
+  if(reduced||!sheet){cb();return;}
+
+  const isMobile=innerWidth<=620;
+  const rect=toEl?toEl.getBoundingClientRect():null;
+
+  /* Fade the scrim first */
+  scrim.animate([{opacity:1},{opacity:0}],{duration:260,easing:"ease-in",fill:"forwards"});
+
+  let anim;
+  if(rect&&isMobile&&rect.width>0&&rect.height>0&&
+     rect.top>-rect.height&&rect.top<window.innerHeight){
+    /* Card is in viewport: shrink sheet back to card */
+    const sheetR=sheet.getBoundingClientRect();
+    const sheetH=sheetR.height||window.innerHeight*0.92;
+    const sheetW=sheetR.width||window.innerWidth;
+    const ox=(rect.left+rect.width/2)-(sheetR.left+sheetW/2);
+    const oy=(rect.top+rect.height/2)-(window.innerHeight*0.97);
+    const sx=rect.width/sheetW;
+    const sy=rect.height/sheetH;
+    sheet.style.transformOrigin="center bottom";
+    anim=sheet.animate([
+      {opacity:1,transform:"translate(0,0) scale(1)"},
+      {opacity:0,transform:`translate(${ox}px,${oy}px) scale(${sx},${sy})`}
+    ],{duration:300,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  } else if(isMobile){
+    anim=sheet.animate([{opacity:1,transform:"translateY(0)"},{opacity:0,transform:"translateY(50px)"}],
+      {duration:260,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  } else {
+    anim=sheet.animate([{opacity:1,transform:"none"},{opacity:0,transform:"scale(.93) translateY(16px)"}],
+      {duration:220,easing:"ease-in",fill:"forwards"});
+  }
+  if(anim)anim.onfinish=cb;
+  else cb();
 }
 
 /* ===================== calendar export ===================== */
@@ -3355,8 +3570,34 @@ document.addEventListener("click",e=>{
   if(q(".time")||q(".buylink"))return;            /* let real links through */
 
   const rm=q("[data-readmore]");
-  if(rm){const w=rm.closest(".synwrap");if(w){const on=w.classList.toggle("clamp");
-    rm.textContent=on?rm.dataset.moreLabel:rm.dataset.lessLabel;}return;}
+  if(rm){const w=rm.closest(".synwrap");if(w){
+    const body=w.querySelector(".synbody");
+    const expanding=w.classList.contains("clamp"); /* true → will expand */
+    if(body&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+      if(expanding){
+        /* Expanding: remove clamp first so we can measure full height */
+        w.classList.remove("clamp");
+        const full=body.scrollHeight;
+        const start=body.getBoundingClientRect().height;
+        body.style.overflow="hidden";
+        body.animate([{maxHeight:start+"px"},{maxHeight:full+"px"}],
+          {duration:260,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"forwards"})
+          .onfinish=()=>{body.style.overflow="";};
+      } else {
+        /* Collapsing: animate down then add clamp */
+        const start=body.getBoundingClientRect().height;
+        const anim=body.animate([{maxHeight:start+"px"},{maxHeight:"0px"}],
+          {duration:200,easing:"ease-in",fill:"forwards"});
+        anim.onfinish=()=>{
+          w.classList.add("clamp");
+          body.style.maxHeight="";body.style.overflow="";
+        };
+      }
+    } else {
+      w.classList.toggle("clamp");
+    }
+    rm.textContent=expanding?rm.dataset.lessLabel:rm.dataset.moreLabel;
+  }return;}
   const shr=q("[data-share]");
   if(shr){const[kind,...rest]=shr.dataset.share.split(":");const id=rest.join(":");
     let title="";
@@ -3373,8 +3614,12 @@ document.addEventListener("click",e=>{
   const sw=q("[data-switch]");
   if(sw){S.mode=sw.dataset.switch;S.fGenres=[];S.fVenues=[];S.fStrands=[];S.limit=30;save();render();window.scrollTo({top:0});return;}
   if(q("[data-more]")){S.limit+=30;render();return;}
-  if(q("[data-drawer]")){S.drawer=true;S.qFocus=false;render();return;}
-  if(q("[data-dclose]")){S.drawer=false;render();return;}
+  if(q("[data-drawer]")){
+    /* Store a selector string (not a DOM ref) so focus still works after render() recreates the FAB */
+    const _opener=q("[data-drawer]");
+    _lastDrawerOpener=_opener.classList.contains("fab")?".fab":(_opener.classList.contains("phead-other")?".phead-other":"[data-drawer]");
+    S.drawer=true;S.qFocus=false;render();return;}
+  if(q("[data-dclose]")){const _dsel=_lastDrawerOpener;animateDrawerClose(()=>{S.drawer=false;render();if(_dsel){const _dret=document.querySelector(_dsel);if(_dret&&typeof _dret.focus==="function"){try{_dret.focus({preventScroll:true});}catch(e){}}}});return;}
   const rg=q("[data-range]"); if(rg){S.day=rg.dataset.range;S.rFrom=S.rTo=null;S.limit=30;render();return;}
   const cstep=q("[data-calstep]"); if(cstep&&!cstep.disabled){
     S.calMonth=Math.max(0,Math.min((S.calMonth||0)+Number(cstep.dataset.calstep),MONTHS.length-1));render();return;}
@@ -3432,7 +3677,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
   if(document.getElementById("scrim")&&!document.getElementById("scrim").hidden){closeSheet();return;}
-  if(S.drawer){S.drawer=false;render();return;}
+  if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{S.drawer=false;render();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}
 });
 /* live search */
