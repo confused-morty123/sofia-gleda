@@ -9730,6 +9730,242 @@ def wave_p3a(browser):
     ctx.close()
 
 
+def wave_p3c(browser):
+    """
+    Wave P3C: share pages and deep-link query parameter tests.
+
+    1. shareItem() builds /film/<id>/ URL (not #film=).
+    2. ?film=<id> on load opens the film sheet.
+    3. ?show=<id> on load opens the show sheet.
+    4. ?film=<unlisted-id> shows the notInProgramme toast (no sheet).
+    """
+    wave = "P3C"
+    ensure_shot_dir(wave)
+
+    # ── P3C-1: shareItem() URL shape ─────────────────────────────────────────
+    print("\n=== P3C-1: shareItem() produces /film/<id>/ URL ===")
+    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page.wait_for_timeout(500)
+
+    result = page.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        // Pick any film that has a current or upcoming screening.
+        let testFilm = null;
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today) {{
+                testFilm = filmById[r[0]];
+                if (testFilm) break;
+            }}
+        }}
+        if (!testFilm) return {{found: false}};
+        const fid = testFilm.id;
+
+        // Capture the URL that shareItem() would share.
+        // We mock navigator.share and navigator.clipboard to capture rather than act.
+        let captured = null;
+        const origShare  = navigator.share;
+        const origClip   = navigator.clipboard;
+        try {{
+            let clipCalled = false;
+            navigator.share = undefined;
+            Object.defineProperty(navigator, "clipboard", {{
+                get: () => ({{ writeText: (u) => {{ captured = u; return Promise.resolve(); }} }}),
+                configurable: true,
+            }});
+            shareItem("film", fid, testFilm.bg || fid);
+        }} finally {{
+            // Restore
+            if (origShare !== undefined) navigator.share = origShare;
+            try {{ Object.defineProperty(navigator, "clipboard", {{ get: () => origClip, configurable: true }}); }} catch(e) {{}}
+        }}
+
+        return {{
+            found: true,
+            filmId: fid,
+            url: captured,
+            siteUrl: typeof SITE_URL !== "undefined" ? SITE_URL : null,
+        }};
+    }}""")
+
+    if not result.get("found"):
+        skip("p3c_1_share_url", "no upcoming film found in fixture data")
+    else:
+        fid = result.get("filmId", "")
+        url = result.get("url") or ""
+        site = result.get("siteUrl") or ""
+        expected_path = f"/film/{fid}/"
+        check("p3c_1_share_url_starts_with_site",
+              url.startswith(site) and bool(site),
+              f"url={url!r} site={site!r}")
+        check("p3c_1_share_url_has_film_path",
+              expected_path in url,
+              f"url={url!r} expected path {expected_path!r}")
+        check("p3c_1_share_url_no_hash_fragment",
+              "#" not in url,
+              f"url={url!r}")
+    save_shot(page, wave, "p3c_1_share_url")
+    ctx.close()
+
+    # ── P3C-2: ?film=<id> opens the sheet ────────────────────────────────────
+    print("\n=== P3C-2: ?film=<id> opens film sheet ===")
+    ctx2 = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        timezone_id="Europe/Sofia",
+        locale="bg-BG",
+    )
+    ctx2.add_init_script(CLOCK)
+    ctx2.add_init_script("""
+    try {
+      localStorage.setItem('sofia-screen-v2',
+        JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'}));
+    } catch(e) {}
+    """)
+    page2 = ctx2.new_page()
+    errs2 = []
+    page2.on("pageerror", lambda e: errs2.append(str(e)))
+
+    # Pick a film id from the running fixture data (already loaded in page)
+    ctx_tmp, page_tmp, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page_tmp.wait_for_timeout(300)
+    first_film_id = page_tmp.evaluate(f"""() => {{
+        const today = "{CLOCK_TODAY_ISO}";
+        for (const r of SHOWTIMES) {{
+            if (r[2] >= today) {{
+                const f = filmById[r[0]];
+                if (f) return f.id;
+            }}
+        }}
+        return null;
+    }}""")
+    ctx_tmp.close()
+
+    if not first_film_id:
+        skip("p3c_2_query_film_opens_sheet", "no upcoming film found in fixture data")
+        skip("p3c_3_query_show_opens_sheet", "prerequisite skip")
+        ctx2.close()
+    else:
+        film_url = HTML + f"?film={first_film_id}"
+        page2.goto(film_url)
+        page2.wait_for_selector(".bar", timeout=20000)
+        page2.wait_for_timeout(600)
+
+        sheet_visible = page2.evaluate("""() => {
+            const s = document.querySelector(".sheet");
+            if (!s) return false;
+            const style = window.getComputedStyle(s);
+            return style.display !== "none" && style.visibility !== "hidden"
+                   && parseFloat(style.opacity || "1") > 0.05;
+        }""")
+        check("p3c_2_query_film_opens_sheet", sheet_visible,
+              f"?film={first_film_id} — sheet visible={sheet_visible}")
+        save_shot(page2, wave, "p3c_2_query_film")
+        ctx2.close()
+
+        # ── P3C-3: ?show=<id> opens the show sheet ───────────────────────────
+        print("\n=== P3C-3: ?show=<id> opens show sheet ===")
+        ctx3 = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            timezone_id="Europe/Sofia",
+            locale="bg-BG",
+        )
+        ctx3.add_init_script(CLOCK)
+        ctx3.add_init_script("""
+        try {
+          localStorage.setItem('sofia-screen-v2',
+            JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'theatre'}));
+        } catch(e) {}
+        """)
+        page3 = ctx3.new_page()
+        page3.on("pageerror", lambda e: None)
+
+        ctx_tmp2, page_tmp2, _ = open_page(browser, 390, 844, lang="bg", mode="theatre")
+        page_tmp2.wait_for_timeout(300)
+        first_show_id = page_tmp2.evaluate(f"""() => {{
+            const today = "{CLOCK_TODAY_ISO}";
+            for (const r of SHOWTIMES) {{
+                if (r[2] >= today) {{
+                    const sh = showById[r[0]];
+                    if (sh) return sh.id;
+                }}
+            }}
+            return null;
+        }}""")
+        ctx_tmp2.close()
+
+        if not first_show_id:
+            skip("p3c_3_query_show_opens_sheet", "no upcoming show found in fixture data")
+            ctx3.close()
+        else:
+            show_url = HTML + f"?show={first_show_id}"
+            page3.goto(show_url)
+            page3.wait_for_selector(".bar", timeout=20000)
+            page3.wait_for_timeout(600)
+
+            sheet_visible3 = page3.evaluate("""() => {
+                const s = document.querySelector(".sheet");
+                if (!s) return false;
+                const style = window.getComputedStyle(s);
+                return style.display !== "none" && style.visibility !== "hidden"
+                       && parseFloat(style.opacity || "1") > 0.05;
+            }""")
+            check("p3c_3_query_show_opens_sheet", sheet_visible3,
+                  f"?show={first_show_id} — sheet visible={sheet_visible3}")
+            save_shot(page3, wave, "p3c_3_query_show")
+            ctx3.close()
+
+    # ── P3C-4: ?film=<unlisted-id> shows notInProgramme toast ────────────────
+    print("\n=== P3C-4: ?film=<unlisted-id> shows notInProgramme toast ===")
+    ctx4 = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        timezone_id="Europe/Sofia",
+        locale="bg-BG",
+    )
+    ctx4.add_init_script(CLOCK)
+    ctx4.add_init_script("""
+    try {
+      localStorage.setItem('sofia-screen-v2',
+        JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'}));
+    } catch(e) {}
+    """)
+    page4 = ctx4.new_page()
+    page4.on("pageerror", lambda e: None)
+
+    unlisted_id = "__p3c_nonexistent_film__"
+    unlisted_url = HTML + f"?film={unlisted_id}"
+    page4.goto(unlisted_url)
+    page4.wait_for_selector(".bar", timeout=20000)
+    page4.wait_for_timeout(800)
+
+    toast_result = page4.evaluate("""() => {
+        // Toast may still be visible, or the DOM element may carry the text.
+        const toast = document.querySelector(".toast, [class*='toast'], [id*='toast']");
+        const text = toast ? toast.textContent.trim() : "";
+        // Also check body text for the Bulgarian "not in programme" message.
+        const body = document.body.innerText || "";
+        return {
+            toastText: text,
+            bodyHasNotice: body.includes("програма") || body.includes("programme"),
+            toastFound: !!toast,
+        };
+    }""")
+
+    # Verify: no sheet opened, and a notice appeared
+    sheet_open4 = page4.evaluate("""() => {
+        const s = document.querySelector(".sheet");
+        if (!s) return false;
+        const style = window.getComputedStyle(s);
+        return style.display !== "none" && style.visibility !== "hidden"
+               && parseFloat(style.opacity || "1") > 0.05;
+    }""")
+    check("p3c_4_unlisted_no_sheet", not sheet_open4,
+          f"sheet open={sheet_open4} for unlisted id")
+    check("p3c_4_unlisted_toast_or_notice",
+          toast_result.get("toastFound") or toast_result.get("bodyHasNotice"),
+          f"toastFound={toast_result.get('toastFound')} bodyHasNotice={toast_result.get('bodyHasNotice')}")
+    save_shot(page4, wave, "p3c_4_unlisted_toast")
+    ctx4.close()
+
+
 # Registry and main
 # ============================================================================
 
@@ -9751,6 +9987,7 @@ WAVES = {
     "P2E": wave_p2e,
     "P3D": wave_p3d,
     "P3A": wave_p3a,
+    "P3C": wave_p3c,
 }
 
 def main():

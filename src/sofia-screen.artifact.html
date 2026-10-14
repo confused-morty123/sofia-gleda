@@ -744,7 +744,8 @@ bg:{tagline:"кино и театър в софия",
  bgDub:"БГ дублаж",bgSub:"Субтитри",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX",
  lateDayMsg:"Всичко за днес приключи.",lateDayBtn:"Виж програмата за утре ›",
  favStar:"Запази",favStarOn:"Запазено",favOnlyFav:"Само любимите",favOnlyFavOff:"Всички",
- railFavToday:"Тази вечер в София"},
+ railFavToday:"Тази вечер в София",
+ notInProgramme:"Заглавието не е в текущата програма."},
 en:{tagline:"cinema & theatre in sofia",
  siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
  hookLine:"What are you seeing tonight?",listingLine:"Sofia's cinema and theatre listings.",
@@ -811,7 +812,8 @@ en:{tagline:"cinema & theatre in sofia",
  bgDub:"BG dub",bgSub:"Subtitled",fmt3d:"3D",fmtImax:"IMAX",fmt4dx:"4DX",fmtScreenx:"ScreenX",fmtDbox:"D-BOX",
  lateDayMsg:"Nothing more on today.",lateDayBtn:"See tomorrow's programme ›",
  favStar:"Save",favStarOn:"Saved",favOnlyFav:"Only my favourites",favOnlyFavOff:"Show all",
- railFavToday:"Tonight in Sofia"}};
+ railFavToday:"Tonight in Sofia",
+ notInProgramme:"This title is no longer in the programme."}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -2948,23 +2950,39 @@ function closeSheet(fromPop){
 window.addEventListener("popstate",()=>{
   if(sheetOpen){closeSheet(true);return;}
 });
-/* deep links: #film=id / #show=id / #event=id open the matching detail sheet,
-   so a shared URL lands directly on that title */
-function openFromHash(){
-  const m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
-  if(!m)return false;
-  const kind=m[1],id=decodeURIComponent(m[2]);
+/* deep links: #film=id / ?film=id / #show=id / ?show=id open the matching detail
+   sheet. The ?param form is used by the static share pages so messaging-app
+   crawlers see a real URL path (film/<id>/) while the app still opens the sheet. */
+const SITE_URL="__SITE_URL__";
+function _openById(kind,id){
   let html=null;
-  if(kind==="film"&&filmById[id])html=sheetFilm(filmById[id]);
-  else if(kind==="show"&&showById[id])html=sheetShow(showById[id]);
-  else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
+  if(kind==="film"){
+    if(filmById[id])html=sheetFilm(filmById[id]);
+    else if(id){toast(t().notInProgramme);return true;}
+  }else if(kind==="show"){
+    if(showById[id])html=sheetShow(showById[id]);
+    else if(id){toast(t().notInProgramme);return true;}
+  }else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
   if(html){curSheet={kind,id};openSheet(html,null);return true;}
   return false;
 }
+function openFromHash(){
+  const m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
+  if(!m)return false;
+  return _openById(m[1],decodeURIComponent(m[2]));
+}
+/* Read ?film= / ?show= query params written by the static share pages. */
+function openFromQuery(){
+  const sp=new URLSearchParams(location.search||"");
+  for(const kind of["film","show"]){
+    const id=sp.get(kind);
+    if(id)return _openById(kind,id);
+  }
+  return false;
+}
 function shareItem(kind,id,title){
-  const url=location.origin+location.pathname+location.search+"#"+kind+"="+encodeURIComponent(id);
-  try{history.replaceState(history.state,"",url);}catch(e){}
-  const data={title:"Sofia Gleda — "+(title||""),text:title||"",url:url};
+  const url=SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
+  const data={title:title||"Sofia Gleda",text:title||"",url:url};
   if(navigator.share){navigator.share(data).catch(()=>{});return;}
   const done=()=>toast(S.lang==="bg"?"Копиран линк":"Link copied");
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,()=>toast(url));}
@@ -3477,7 +3495,7 @@ render=function(){
   try{ origRender();mountProgressive(); }
   catch(e){ fatal(e); }
 };
-try{ boot(); openFromHash(); }catch(e){ fatal(e); }
+try{ boot(); if(!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");
   if(app&&app.innerHTML.indexOf("Зареждане на програмата")>-1) fatal(e.error||e.message);

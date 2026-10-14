@@ -121,9 +121,13 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json; do
+          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json icons/apple-touch-icon.png; do
             [ -f "$f" ] && git add "$f"
           done
+          # Stage per-title share pages and the site share-preview image.
+          [ -d film ] && git add film/
+          [ -d show ] && git add show/
+          [ -f share/share-preview.jpg ] && git add share/share-preview.jpg
           # Stage any new or updated poster images (re-hosted from venue websites).
           # This is safe: posters/ is append-only in practice, and the gitignore
           # never excludes it, so only genuinely new files are added here.

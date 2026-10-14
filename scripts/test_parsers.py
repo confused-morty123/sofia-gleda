@@ -3017,6 +3017,190 @@ except Exception as _e:
     print(f"  FAIL CG block: {_e}")
 
 
+# ------------------------------------------------------------ gen_share_pages
+print("\ngen_share_pages: OG tags, escaping, URLs, redirect target")
+
+import gen_share_pages as GSP
+import re as _re2
+
+def _make_sp(kind, item_id, title_bg, title_en, syn_bg, poster_url, site_url):
+    try:
+        return GSP._share_page(kind, item_id, title_bg, title_en, syn_bg, poster_url, site_url), None
+    except Exception as e:
+        return None, str(e)
+
+# Basic film page: required OG tags all present
+_sp, _sperr = _make_sp(
+    "film", "odiseya",
+    "Одисея", "Odyssey",
+    "Тест синопсис",
+    "https://image.tmdb.org/t/p/w500/abc.jpg",
+    "https://confused-morty123.github.io/sofia-gleda",
+)
+if _sperr:
+    fails.append(f"share_page film basic raised: {_sperr}")
+    print(f"  FAIL share_page film basic raised: {_sperr}")
+else:
+    for _tag in ["og:type", "og:site_name", "og:url", "og:title", "og:description",
+                 "og:image", "og:locale", "twitter:card", "twitter:title",
+                 "twitter:description", "twitter:image"]:
+        check(f"share_page film {_tag}", True, _tag in _sp)
+    _after_ogimage = _sp.split("og:image")[1].split(">")[0] if "og:image" in _sp else ""
+    check("share_page film og:image absolute https", True, 'content="https://' in _after_ogimage)
+    check("share_page film canonical",          True, 'rel="canonical"' in _sp)
+    check("share_page film meta refresh",       True, 'http-equiv="refresh"' in _sp)
+    check("share_page film redirect ?film=",    True, "?film=odiseya" in _sp)
+    check("share_page film no #hash fragment",  True, "#film=" not in _sp)
+
+# Titles with special characters are HTML-escaped
+_sp2, _sperr2 = _make_sp(
+    "show", "test-show",
+    'Пиесата "Тест" & Театър', "",
+    "",
+    "https://example.com/poster.jpg",
+    "https://confused-morty123.github.io/sofia-gleda",
+)
+if _sperr2:
+    fails.append(f"share_page escaping raised: {_sperr2}")
+    print(f"  FAIL share_page escaping raised: {_sperr2}")
+else:
+    _head_only = _sp2.split("<body>")[0]
+    # Raw double-quote must not appear in meta attribute values
+    check("share_page title quote escaped",   True, '"Тест"' not in _head_only)
+    # Raw ampersand must not appear unescaped inside attribute values
+    check("share_page title ampersand escaped", True, "& Театър" not in _head_only)
+
+# Long synopsis is truncated to DESC_MAX characters
+_sp3, _sperr3 = _make_sp(
+    "film", "long-film",
+    "Дълъг синопсис", "",
+    "А" * 300,
+    "https://example.com/p.jpg",
+    "https://confused-morty123.github.io/sofia-gleda",
+)
+if _sperr3:
+    fails.append(f"share_page truncation raised: {_sperr3}")
+    print(f"  FAIL share_page truncation raised: {_sperr3}")
+else:
+    _dm = _re2.search(r'og:description[^>]+content="([^"]*)"', _sp3)
+    if _dm:
+        _desc_len = len(_dm.group(1))
+        if _desc_len > GSP.DESC_MAX + 1:
+            fails.append(f"share_page synopsis truncated: len={_desc_len} > {GSP.DESC_MAX+1}")
+            print(f"  FAIL share_page synopsis truncated: len={_desc_len}")
+        else:
+            print(f"  ok   share_page synopsis truncated (len={_desc_len})")
+    else:
+        fails.append("share_page truncation: og:description not found")
+        print("  FAIL share_page truncation: og:description not found")
+
+# SITE_URL from site_config is the single source of truth
+import site_config as _SC
+check("share_page SITE_URL matches site_config", GSP.SITE_URL, _SC.SITE_URL)
+
+# Fallback image must be an absolute HTTPS URL
+check("share_page fallback image is https",
+      True, GSP.FALLBACK_IMAGE.startswith("https://"))
+
+# og:title must be the title alone — no "Sofia Gleda — " prefix (em dash banned)
+_sp4, _sperr4 = _make_sp(
+    "film", "em-dash-check",
+    "Спайдър-мен: Нов ден", "",
+    "",
+    "https://example.com/p.jpg",
+    "https://confused-morty123.github.io/sofia-gleda",
+)
+if _sperr4:
+    fails.append(f"share_page og:title no-em-dash raised: {_sperr4}")
+    print(f"  FAIL share_page og:title no-em-dash raised: {_sperr4}")
+else:
+    _title_m = _re2.search(r'og:title[^>]+content="([^"]*)"', _sp4)
+    _t_got = _title_m.group(1) if _title_m else ""
+    check("share_page og:title is title alone (no Sofia Gleda prefix)",
+          "Sofia" not in _t_got, True)
+    check("share_page og:title has no em dash",
+          "—" not in _t_got, True)
+
+# Poster coverage test against real committed index.html
+print("\ngen_share_pages: poster coverage against real index.html")
+_cov_src = pathlib.Path(__file__).resolve().parent.parent / "index.html"
+if not _cov_src.exists():
+    fails.append("poster coverage: index.html not found")
+    print("  FAIL poster coverage: index.html not found")
+else:
+    _cov_html = _cov_src.read_text(encoding="utf-8")
+
+    def _cov_const(name):
+        _m = _re2.search(r"^const %s\s*=\s*([\[{].*?[}\]]);$" % _re2.escape(name),
+                         _cov_html, _re2.M)
+        if not _m:
+            return None
+        try:
+            import json as _json_cov
+            return _json_cov.loads(_m.group(1))
+        except Exception:
+            return None
+
+    _cov_films   = _cov_const("FILMS")   or []
+    _cov_shows   = _cov_const("SHOWS")   or []
+    _cov_alias   = _cov_const("SHOWALIAS") or {}
+    _cov_posters = _cov_const("POSTERS")   or {}
+    _cov_tmdb    = _cov_const("TMDBART")   or {}
+    _cov_showart = _cov_const("SHOWART")   or {}
+    _cov_tmdb_base = "https://image.tmdb.org/t/p/w500"
+    _cov_fallback  = GSP.FALLBACK_IMAGE
+
+    def _cov_poster(item_id):
+        base = _cov_alias.get(item_id, item_id)
+        if _cov_posters.get(base):
+            url = _cov_posters[base]
+            if url.startswith("https://"):
+                return url
+        art = _cov_tmdb.get(base, {})
+        if art.get("p"):
+            return _cov_tmdb_base + art["p"]
+        if art.get("b"):
+            return "https://image.tmdb.org/t/p/w780" + art["b"]
+        if _cov_showart.get(base):
+            val = _cov_showart[base]
+            if val.startswith("https://"):
+                return val
+            return GSP.SITE_URL + "/" + val.lstrip("/")
+        return _cov_fallback
+
+    _film_with_poster = sum(1 for f in _cov_films if _cov_poster(f["id"]) != _cov_fallback)
+    _show_with_poster = sum(1 for s in _cov_shows if _cov_poster(s["id"]) != _cov_fallback)
+    _film_total = len(_cov_films)
+    _show_total = len(_cov_shows)
+    _film_pct = _film_with_poster / _film_total * 100 if _film_total else 0
+    _show_pct = _show_with_poster / _show_total * 100 if _show_total else 0
+    print(f"  films: {_film_with_poster}/{_film_total} ({_film_pct:.0f}%) have poster")
+    print(f"  shows: {_show_with_poster}/{_show_total} ({_show_pct:.0f}%) have poster")
+    if _film_pct < 90:
+        fails.append(f"film poster coverage {_film_pct:.0f}% < 90%")
+        print(f"  FAIL film poster coverage {_film_pct:.0f}% < 90%")
+    else:
+        print(f"  ok   film poster coverage >= 90%")
+    if _show_pct < 90:
+        fails.append(f"show poster coverage {_show_pct:.0f}% < 90%")
+        print(f"  FAIL show poster coverage {_show_pct:.0f}% < 90%")
+    else:
+        print(f"  ok   show poster coverage >= 90%")
+
+    # Spider-Man's og:image must be its TMDB poster URL
+    _spidey_id = "spider-man"
+    _spidey = next((f for f in _cov_films if f["id"] == _spidey_id), None)
+    if _spidey is None:
+        print(f"  skip Spider-Man poster check (not in current data)")
+    else:
+        _spidey_poster = _cov_poster(_spidey_id)
+        _tmdb_prefix = "https://image.tmdb.org/t/p/"
+        if _spidey_poster.startswith(_tmdb_prefix):
+            print(f"  ok   Spider-Man og:image is TMDB: {_spidey_poster}")
+        else:
+            fails.append(f"Spider-Man og:image not TMDB: {_spidey_poster!r}")
+            print(f"  FAIL Spider-Man og:image not TMDB: {_spidey_poster!r}")
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))

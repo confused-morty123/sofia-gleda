@@ -21,9 +21,10 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     7. fetch_theatre_posters.py     theatre posters              -> theatre_posters.json
     8. translate.py                 DeepL English for BG-only synopses/titles -> translations.json
     9. inject_data.py               inline the poster maps and film details -> index.html
-   10. verify_build.py              gate: is the result actually usable?
+   10. gen_share_pages.py           static /film/<id>/ and /show/<id>/ share pages -> film/, show/
+   11. verify_build.py              gate: is the result actually usable?
 
-Steps 1-9 are best-effort and never abort the run. Step 10 is not: if the rebuilt
+Steps 1-10 are best-effort and never abort the run. Step 11 is not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
 and the previous, working site stays up. That gate exists because the 2026-09-16
 refresh published a page that rendered perfectly and threw the moment you clicked
@@ -84,6 +85,7 @@ STEPS = [
     ("theatre posters", "fetch_theatre_posters.py",  []),
     ("translations",    "translate.py",              []),    # auto-translate BG-only syn/titles -> EN cache
     ("inline posters",  "inject_data.py",            []),
+    ("share pages",     "gen_share_pages.py",        []),
 ]
 
 # Run after the steps above, and treated as a gate rather than best-effort.

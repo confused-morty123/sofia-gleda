@@ -91,8 +91,11 @@ def main():
     on_field(art, 192, 0.90).save(ICONS / "icon-192.png")
     on_field(art, 512, 0.90).save(ICONS / "icon-512.png")
     on_field(art, 512, 0.66).save(ICONS / "icon-maskable-512.png")
-    print("wrote icon-192.png, icon-512.png, icon-maskable-512.png "
-          "(icon.svg left as the source of truth)")
+    # apple-touch-icon: 180×180 with opaque background (iOS ignores transparency
+    # and fills it with black if the image has an alpha channel).
+    on_field(art, 180, 0.90).save(ICONS / "apple-touch-icon.png")
+    print("wrote icon-192.png, icon-512.png, icon-maskable-512.png, "
+          "apple-touch-icon.png (icon.svg left as the source of truth)")
 
 
 if __name__ == "__main__":

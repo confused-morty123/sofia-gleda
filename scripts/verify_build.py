@@ -27,6 +27,9 @@ import datetime, json, os, re, subprocess, sys, pathlib, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
+# SOFIA_ROOT overrides the directory used for icon/share-page file existence
+# checks (6b, 6c). Set it in test environments to point at a temp fixture tree.
+_FILE_ROOT = pathlib.Path(os.environ["SOFIA_ROOT"]) if "SOFIA_ROOT" in os.environ else ROOT
 
 # A refresh may legitimately shrink the data (a venue stops publishing), but not
 # by an order of magnitude. Below these floors something has gone wrong upstream.
@@ -906,7 +909,128 @@ if _bad_scheme_urls:
          "these reach href/window.open without scheme filtering): "
          + "; ".join(_bad_scheme_urls[:5]))
 
-# ----------------------------------------------------- 6. a real click, live
+# ----------------------------------------- 6a. OG / Twitter Card meta in head
+# OG tags are required for share previews; their absence silently degrades to a
+# bare URL in Viber/WhatsApp/Telegram so the check is hard (fail, not note).
+_head_m = re.search(r"<head>(.*?)</head>", src, re.S | re.I)
+_head_src = _head_m.group(1) if _head_m else src
+
+for _og_tag in [
+    ('property="og:type"',          "og:type"),
+    ('property="og:site_name"',     "og:site_name"),
+    ('property="og:url"',           "og:url"),
+    ('property="og:title"',         "og:title"),
+    ('property="og:description"',   "og:description"),
+    ('property="og:image"',         "og:image"),
+    ('property="og:locale"',        "og:locale"),
+    ('name="twitter:card"',         "twitter:card"),
+    ('name="twitter:title"',        "twitter:title"),
+    ('name="twitter:image"',        "twitter:image"),
+]:
+    _attr, _label = _og_tag
+    if _attr not in _head_src:
+        fail(f"OG/Twitter meta missing from <head>: {_label}")
+
+# og:image must be an absolute HTTPS URL
+_og_img_m = re.search(r'property="og:image"[^>]*content="([^"]*)"', _head_src)
+if _og_img_m:
+    _og_img_url = _og_img_m.group(1)
+    if not _og_img_url.startswith("https://"):
+        fail(f"og:image is not an absolute HTTPS URL: {_og_img_url!r}")
+else:
+    fail("og:image meta tag not found in <head>")
+
+# ----------------------------------------- 6a2. SITE_URL in page JS matches site_config
+# build_index.py injects SITE_URL from site_config.py via a __SITE_URL__ placeholder.
+# If the artifact ever hard-codes a URL again, this check catches the mismatch.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from site_config import SITE_URL as _CFG_SITE_URL                  # noqa: E402
+    _su_m = re.search(r"(?m)^const SITE_URL=\"([^\"]*)\";", js)
+    if _su_m is None:
+        fail("const SITE_URL not found in page JS — build_index.py may not have run")
+    elif _su_m.group(1) != _CFG_SITE_URL:
+        fail(f"page JS has SITE_URL={_su_m.group(1)!r} but site_config.SITE_URL={_CFG_SITE_URL!r} "
+             "— rebuild with scripts/build_index.py to sync them")
+except ImportError:
+    note("site_config.py not importable — SITE_URL consistency check skipped")
+except Exception as _su_err:
+    note(f"SITE_URL check skipped: {_su_err}")
+
+# ----------------------------------------- 6b. PWA icon files exist and are plausible
+for _icon_rel, _expected_size in [
+    ("icons/apple-touch-icon.png", 180),
+    ("icons/icon-192.png",         192),
+    ("icons/icon-512.png",         512),
+]:
+    _icon_path = _FILE_ROOT / _icon_rel
+    if not _icon_path.exists():
+        fail(f"icon file missing: {_icon_rel}")
+    else:
+        try:
+            from PIL import Image as _PIL_Image
+            with _PIL_Image.open(_icon_path) as _img:
+                _w, _h = _img.size
+                if _w != _expected_size or _h != _expected_size:
+                    fail(f"{_icon_rel}: expected {_expected_size}x{_expected_size}, "
+                         f"got {_w}x{_h}")
+                if _icon_rel == "icons/apple-touch-icon.png" and _img.mode == "RGBA":
+                    fail(f"{_icon_rel}: apple-touch-icon must be opaque (no alpha channel)")
+        except ImportError:
+            note("PIL not available — skipped icon dimension checks")
+        except Exception as _ie:
+            note(f"icon check {_icon_rel}: {_ie}")
+
+# ----------------------------------------- 6c. per-title share page spot checks
+# Pick 3 film ids and 2 show ids from the data and verify each share page has the
+# correct og:url/canonical pointing to SITE_URL, and og:image is absolute HTTPS.
+# A missing share page is a hard failure once the film/ or show/ directory exists.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from site_config import SITE_URL as _SITE_URL
+
+    def _check_share_page_file(kind, item_id):
+        _page_path = _FILE_ROOT / kind / item_id / "index.html"
+        if not _page_path.exists():
+            fail(f"share page missing: {kind}/{item_id}/index.html")
+            return
+        _page_src = _page_path.read_text(encoding="utf-8")
+        _expected_url = f"{_SITE_URL}/{kind}/{item_id}/"
+        if _expected_url not in _page_src:
+            fail(f"share page {kind}/{item_id}: og:url/canonical not {_expected_url!r}")
+        _img_m = re.search(r'og:image[^>]*content="([^"]*)"', _page_src)
+        if _img_m:
+            if not _img_m.group(1).startswith("https://"):
+                fail(f"share page {kind}/{item_id}: og:image not absolute HTTPS")
+        else:
+            fail(f"share page {kind}/{item_id}: og:image missing")
+
+    # Sample up to 3 films
+    _film_dir = _FILE_ROOT / "film"
+    if _film_dir.is_dir():
+        _film_ids = [d.name for d in sorted(_film_dir.iterdir())
+                     if d.is_dir()][:3]
+        for _fid in _film_ids:
+            _check_share_page_file("film", _fid)
+    else:
+        note("film/ directory not yet created — share page checks skipped")
+
+    # Sample up to 2 shows
+    _show_dir = _FILE_ROOT / "show"
+    if _show_dir.is_dir():
+        _show_ids = [d.name for d in sorted(_show_dir.iterdir())
+                     if d.is_dir()][:2]
+        for _sid in _show_ids:
+            _check_share_page_file("show", _sid)
+    else:
+        note("show/ directory not yet created — share page checks skipped")
+
+except ImportError:
+    note("site_config.py not importable — share page URL checks skipped")
+except Exception as _sp_err:
+    note(f"share page spot-check error: {_sp_err}")
+
+# ----------------------------------------------------- 7. a real click, live (gate)
 def smoke():
     try:
         from playwright.sync_api import sync_playwright
