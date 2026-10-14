@@ -634,6 +634,123 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   border-color:var(--line-2)}
 .cal-apps button svg{flex-shrink:0}
 </style>
+<style id="p3e-css">
+/* ===================== P3E: day picker (phone) ===================== */
+/* Phone-only: ≤760px */
+@media(max-width:760px){
+  /* Day strip */
+  .p3e-days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;
+    padding-bottom:4px;margin:0 0 12px}
+  .p3e-days::-webkit-scrollbar{display:none}
+  .p3e-day{flex:0 0 40px;width:40px;padding:6px 0;border-radius:11px;
+    text-align:center;background:var(--ink-2);border:none;cursor:pointer;
+    transition:background .15s,color .15s;min-height:44px;display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .p3e-day b{display:block;font-family:Oswald,sans-serif;font-weight:500;
+    font-size:17px;line-height:1.1;color:var(--fg)}
+  .p3e-day span{font-size:11px;color:var(--fg-3)}
+  .p3e-day[aria-pressed="true"]{background:var(--crimson)}
+  .p3e-day[aria-pressed="true"] b,.p3e-day[aria-pressed="true"] span{color:#fff}
+  /* Venue group list */
+  .p3e-grp{background:var(--ink-3);border-radius:14px;overflow:hidden}
+  .p3e-row{display:flex;align-items:center;gap:10px;padding:12px;
+    border-top:1px solid rgba(255,255,255,.07)}
+  .p3e-row:first-child{border-top:0}
+  .p3e-vninfo{flex:1;min-width:0}
+  .p3e-vname{font-size:14px;font-weight:500;line-height:1.3;color:var(--fg)}
+  .p3e-vsec{font-size:12px;color:var(--fg-3);line-height:1.4;margin-top:1px}
+  .p3e-ambert{display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:var(--gild);margin-right:5px;vertical-align:1px}
+  .p3e-prelim-line{color:#C9A54A;display:block}
+  .p3e-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+  /* Pill styling for P3E */
+  .p3e-pill{font-family:Oswald,sans-serif;font-weight:500;font-size:17px;
+    font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;
+    background:var(--ink-4);color:var(--fg);border:1px solid transparent;
+    cursor:pointer;display:inline-block;min-height:44px;min-width:44px;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:border-color .15s,color .15s;text-decoration:none;line-height:1}
+  .p3e-pill:hover,.p3e-pill:focus-visible{border-color:var(--fg-2)}
+  .p3e-pill.prelim{background:transparent;border:1px dashed rgba(217,178,60,.65)}
+  .p3e-pill.prelim:hover,.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}
+  .p3e-prelim-fn{font-size:11.5px;color:var(--fg-3);margin:10px 4px 0;line-height:1.4}
+  /* Desktop grid hidden on phone */
+  .p3e-grid-wrap{display:none}
+  /* Phone: remove buybox */
+  .buybox{display:none}
+}
+/* ===================== P3E: week grid (desktop) ===================== */
+@media(min-width:761px){
+  /* Day picker hidden on desktop */
+  .p3e-days,.p3e-grp,.p3e-prelim-fn{display:none}
+  /* Grid wrapper */
+  .p3e-grid-wrap{margin:0 0 4px}
+  .p3e-grp-desk{background:var(--ink-3);border-radius:14px;padding:14px 14px 8px;overflow-x:auto}
+  .p3e-gt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .p3e-gt th{font-weight:400;color:var(--fg-3);padding:0 0 10px;text-align:center;white-space:nowrap}
+  .p3e-gt th b{display:block;font-family:Oswald,sans-serif;font-weight:500;font-size:17px;color:var(--fg)}
+  .p3e-gt td{padding:8px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:center;vertical-align:middle}
+  .p3e-gt td.p3e-vcol{text-align:left;font-weight:500;width:170px;min-width:140px;
+    position:sticky;left:0;background:var(--ink-3);z-index:1}
+  .p3e-gt td.p3e-vcol small{display:block;font-weight:400;color:var(--fg-3);font-size:12px;margin-top:1px}
+  .p3e-gt .p3e-pill{font-size:14px;padding:5px 10px;min-height:36px}
+  .p3e-gt-fn{font-size:11.5px;color:var(--fg-3);margin:8px 4px 0;line-height:1.4}
+}
+/* ===================== P3E: screening sheet ===================== */
+/* Phone bottom sheet — reuses .scrim/.sheet P3B mechanics */
+.ss-sheet{display:flex;flex-direction:column;height:100%}
+.ss-grab{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 18px;flex-shrink:0}
+.ss-time{font-family:Oswald,sans-serif;font-weight:500;line-height:1;
+  font-variant-numeric:tabular-nums;font-size:52px;color:var(--fg)}
+.ss-date{font-size:16px;font-weight:500;margin:12px 0 2px;color:var(--fg)}
+.ss-venue{font-size:14px;color:var(--fg-2);margin-bottom:0}
+.ss-attrs{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 0}
+.ss-status{margin:20px 0 0;padding:14px 16px;border-radius:14px;background:var(--ink-2);
+  font-size:13.5px;line-height:1.5;color:var(--fg-2)}
+.ss-status-head{display:flex;align-items:center;gap:8px;font-weight:500;
+  color:#D9C27A;margin-bottom:4px}
+.ss-ambert{width:7px;height:7px;border-radius:50%;background:var(--gild);display:inline-block;flex-shrink:0}
+.ss-spacer{flex:1;min-height:16px}
+.ss-btns{display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.ss-btn{display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;height:54px;border:0;border-radius:16px;
+  font-family:Onest,"Segoe UI",system-ui,sans-serif;font-size:16px;font-weight:500;
+  cursor:pointer;text-decoration:none;transition:filter .15s}
+.ss-btn:hover,.ss-btn:focus-visible{filter:brightness(1.08)}
+.ss-btn.pri{background:var(--fg);color:var(--ink)}
+.ss-btn.sec{background:var(--ink-4);color:var(--fg)}
+.ss-help{font-size:12.5px;color:var(--fg-3);text-align:center;margin:8px 0 0}
+/* Calendar step */
+.ss-cal-title{font-size:18px;font-weight:600;text-align:center;margin:4px 0 0;color:var(--fg)}
+.ss-cal-ev{margin:26px 0 22px;padding:14px 16px;border-radius:14px;background:var(--ink-2)}
+.ss-cal-ev .a{font-size:14.5px;font-weight:500;color:var(--fg)}
+.ss-cal-ev .b{font-size:13px;color:var(--fg-2);margin-top:4px}
+.ss-cal-lst{border-radius:16px;background:var(--ink-4);overflow:hidden}
+.ss-cal-li{display:flex;align-items:center;gap:14px;height:58px;padding:0 16px;
+  border-top:1px solid rgba(255,255,255,.07);font-size:15.5px;font-weight:500;
+  cursor:pointer;color:var(--fg);text-decoration:none;transition:background .12s}
+.ss-cal-li:first-child{border-top:0}
+.ss-cal-li small{display:block;font-size:12px;font-weight:400;color:var(--fg-3);margin-top:1px}
+.ss-cal-li .cv{margin-left:auto;color:var(--fg-3)}
+.ss-cal-li:hover,.ss-cal-li:focus-visible{background:rgba(255,255,255,.06)}
+/* Desktop popover */
+@media(min-width:761px){
+  .ss-sheet{font-size:.95em}
+  .ss-time{font-size:44px}
+  /* popover container */
+  .ss-pop{position:absolute;width:340px;background:var(--ink-3);border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;padding:18px 20px 20px;z-index:200;box-shadow:0 8px 40px rgba(0,0,0,.55)}
+  .ss-pop .ss-btn{height:48px;font-size:15px}
+  .ss-pop .ss-grab{display:none}
+}
+/* Close/back buttons inside ss-sheet */
+.ss-close-btn,.ss-back-btn{position:absolute;width:32px;height:32px;border-radius:50%;
+  background:var(--ink-4);border:none;display:flex;align-items:center;justify-content:center;
+  color:var(--fg-2);font-size:16px;cursor:pointer;transition:background .12s,color .12s;z-index:2}
+.ss-close-btn{right:18px;top:18px}
+.ss-back-btn{left:18px;top:18px}
+.ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}
+</style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
   <div style="font:600 13px/1.4 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#E0163A">Sofia Gleda</div>
@@ -754,7 +871,27 @@ bg:{tagline:"кино и театър в софия",
  lateDayMsg:"Всичко за днес приключи.",lateDayBtn:"Виж програмата за утре ›",
  favStar:"Запази",favStarOn:"Запазено",favOnlyFav:"Само любимите",favOnlyFavOff:"Всички",
  railFavToday:"Тази вечер в София",
- notInProgramme:"Заглавието не е в текущата програма."},
+ notInProgramme:"Заглавието не е в текущата програма.",
+ /* P3E */
+ ssBoxOfficeHead:"Билети само на касата",
+ ssBoxOfficeBody:"Киното не продава билети онлайн за тази прожекция.",
+ ssBoxOfficeFull:"От {price}. Киното не продава билети онлайн за тази прожекция.",
+ ssBoxOfficeBodyT:"Театърът не продава билети онлайн за това представление.",
+ ssAggHead:"Предварителна програма от {agg}",
+ ssAggBody:"Театърът още не е публикувал това представление в своята програма.",
+ ssPrelimHead:"Предварителна програма",
+ ssPrelimBody:"Часът не е потвърден. Провери го при покупката.",
+ ssBuyTicket:"Купи билет",
+ ssShowMap:"Покажи на картата",
+ ssAddCal:"Добави в календара",
+ ssBuyOpens:"Отваря сайта на {name}",
+ ssDashedFn:"Пунктираните часове са от предварителна програма. Кината още не са ги потвърдили.",
+ ssDashedFnT:"Пунктираните часове са от предварителна програма.",
+ ssCalTitle:"Добави в календара",
+ ssCalApple:"Apple Календар",
+ ssCalAppleSub:"iPhone, iPad, Mac",
+ ssCalGoogle:"Google Календар",
+ ssCalOutlook:"Outlook"},
 en:{tagline:"cinema & theatre in sofia",
  siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
  hookLine:"What are you seeing tonight?",listingLine:"Sofia's cinema and theatre listings.",
@@ -822,7 +959,27 @@ en:{tagline:"cinema & theatre in sofia",
  lateDayMsg:"Nothing more on today.",lateDayBtn:"See tomorrow's programme ›",
  favStar:"Save",favStarOn:"Saved",favOnlyFav:"Only my favourites",favOnlyFavOff:"Show all",
  railFavToday:"Tonight in Sofia",
- notInProgramme:"This title is no longer in the programme."}};
+ notInProgramme:"This title is no longer in the programme.",
+ /* P3E */
+ ssBoxOfficeHead:"Tickets at the box office only",
+ ssBoxOfficeBody:"This cinema does not sell tickets online for this screening.",
+ ssBoxOfficeFull:"From {price}. This cinema does not sell tickets online for this screening.",
+ ssBoxOfficeBodyT:"This theatre does not sell tickets online for this performance.",
+ ssAggHead:"Preliminary listing from {agg}",
+ ssAggBody:"The theatre has not published this performance on its own programme yet.",
+ ssPrelimHead:"Preliminary programme",
+ ssPrelimBody:"This time is not confirmed yet. Check before buying.",
+ ssBuyTicket:"Buy a ticket",
+ ssShowMap:"Show on the map",
+ ssAddCal:"Add to calendar",
+ ssBuyOpens:"Opens the {name} website",
+ ssDashedFn:"Dashed times are from the preliminary programme. The cinemas have not confirmed them yet.",
+ ssDashedFnT:"Dashed times are from the preliminary programme.",
+ ssCalTitle:"Add to calendar",
+ ssCalApple:"Apple Calendar",
+ ssCalAppleSub:"iPhone, iPad, Mac",
+ ssCalGoogle:"Google Calendar",
+ ssCalOutlook:"Outlook"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -2495,6 +2652,186 @@ function isPrelimListing(kind,id,venueId,dateStr){
 }
 /* Per-sheet state: whether "show all cinemas" has been tapped (reset on every open) */
 let _sheetShowAllCinemas=false;
+/* P3E day-picker render registry: maps grp slot id → buildVenueList(dateStr) fn */
+const _p3DayRenderFns=new Map();
+
+/* p3eShowtimesHtml: generate the P3E day-picker (phone) + week-grid (desktop)
+   showtimes section for a film or show.
+
+   rows is an array of SHOWTIMES rows [filmId, venueId, dateStr, [times], ...]
+   or PERFORMANCES rows [showId, dateStr, timeStr, hall, price, ...].
+   For films: itemKind="film", itemId=f.id.
+   For shows: itemKind="show", itemId=sh.id, fixed venueId=th.id.
+   venueMap: function(venueId) → {name, area, price}
+   isP: function(venueId, dateStr) → bool
+   normalizedRows: [{venueId, dateStr, times:[str], price}]
+*/
+function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defaultDate){
+  const L=t();
+  if(!normalizedRows||!normalizedRows.length)return`<div class="empty">${esc(L.noData)}</div>`;
+
+  /* collect unique dates and venues */
+  const dateSet=new Set(), venueSet=new Set();
+  normalizedRows.forEach(r=>{dateSet.add(r.dateStr);venueSet.add(r.venueId);});
+  const dates=[...dateSet].sort();
+  const venues=[...venueSet];
+
+  /* default selected date */
+  const todayIso=(()=>{
+    try{const p=new Intl.DateTimeFormat("sv",{timeZone:"Europe/Sofia"}).format(new Date());return p;}catch(e){return"";}
+  })();
+  const selDate=defaultDate&&dates.includes(defaultDate)?defaultDate
+    :(dates.includes(todayIso)?todayIso:dates[0]);
+
+  /* check if any prelim */
+  let anyPrelim=false;
+  normalizedRows.forEach(r=>{if(isP(r.venueId,r.dateStr))anyPrelim=true;});
+
+  /* ---- PHONE: day-strip + venue list ---- */
+  const dayWod=iso=>{
+    const dow=["нд","пн","вт","ср","чт","пт","сб"];
+    const dowen=["Su","Mo","Tu","We","Th","Fr","Sa"];
+    try{
+      const d=new Date(iso+"T12:00:00");
+      const wd=d.getUTCDay();
+      const dn=d.getUTCDate();
+      return{abbr:(S.lang==="bg"?dow:dowen)[wd],num:String(dn)};
+    }catch(e){return{abbr:"",num:iso.slice(8)};}
+  };
+
+  const daysHtml=`<div class="p3e-days" role="group" aria-label="${esc(L.times)}" data-p3dayswrap>
+    ${dates.map(d=>{
+      const{abbr,num}=dayWod(d);
+      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}"><span>${esc(abbr)}</span><b>${esc(num)}</b></button>`;
+    }).join("")}</div>`;
+
+  /* build venue list for a given date */
+  const buildVenueList=(dateStr)=>{
+    const rows=normalizedRows.filter(r=>r.dateStr===dateStr);
+    if(!rows.length)return"";
+    /* sort rows by first time */
+    rows.sort((a,b)=>(a.times[0]||"").localeCompare(b.times[0]||""));
+    return rows.map(r=>{
+      const v=venueMap(r.venueId)||{};
+      const prelim=isP(r.venueId,dateStr);
+      const price=r.price||v.price||"";
+      const sec=(prelim?`<span class="p3e-ambert"></span><span class="p3e-prelim-line">${esc(L.ssPrelimHead)}</span> `:"")
+        +`${esc(v.area||"")}${price?" · "+esc(price):""}`;
+      const pills=r.times.map(tm=>{
+        const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
+      }).join("");
+      return`<div class="p3e-row">
+        <div class="p3e-vninfo">
+          <div class="p3e-vname">${esc(v.name||r.venueId)}</div>
+          <div class="p3e-vsec">${sec}</div>
+        </div>
+        <div class="p3e-pills">${pills}</div>
+      </div>`;
+    }).join("");
+  };
+
+  /* Register the venue-list render fn so the global day-chip click handler can call it */
+  _p3DayRenderFns.set("p3e-grp-"+itemId,(dateStr,grpEl)=>{grpEl.innerHTML=buildVenueList(dateStr);});
+  const initialList=buildVenueList(selDate);
+  const grpHtml=`<div class="p3e-grp p3e-grp-slot" id="p3e-grp-${esc(itemId)}" data-p3dates="${esc(dates.join(","))}">${initialList}</div>`;
+  const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(L.ssDashedFn)}</p>`:"";  /* cinema footnote */
+
+  /* ---- DESKTOP: week grid ---- */
+  const MAX_COLS=7;
+  /* up to 7 dates; future paging left as enhancement */
+  const visibleDates=dates.slice(0,MAX_COLS);
+  const dayAbbrLong=iso=>{
+    const dow=["нд","пн","вт","ср","чт","пт","сб"];
+    const dowen=["Su","Mo","Tu","We","Th","Fr","Sa"];
+    try{
+      const d=new Date(iso+"T12:00:00");
+      return{abbr:(S.lang==="bg"?dow:dowen)[d.getUTCDay()],num:String(d.getUTCDate())};
+    }catch(e){return{abbr:"",num:iso.slice(8)};}
+  };
+
+  /* Build row lookup: venueId → dateStr → [times] */
+  const gridMap={};
+  normalizedRows.forEach(r=>{
+    if(!gridMap[r.venueId])gridMap[r.venueId]={};
+    gridMap[r.venueId][r.dateStr]=r;
+  });
+  /* Sort venues by earliest screening overall */
+  const venuesSorted=venues.slice().sort((a,b)=>{
+    const firstA=Math.min(...Object.keys(gridMap[a]).map(d=>(gridMap[a][d].times[0]||"99:99")));
+    const firstB=Math.min(...Object.keys(gridMap[b]).map(d=>(gridMap[b][d].times[0]||"99:99")));
+    return String(firstA).localeCompare(String(firstB));
+  });
+
+  const theadCols=visibleDates.map(d=>{const{abbr,num}=dayAbbrLong(d);return`<th>${esc(abbr)}<b>${esc(num)}</b></th>`;}).join("");
+  const tbodyRows=venuesSorted.map(vid=>{
+    const v=venueMap(vid)||{};
+    const price=v.price||"";
+    const vcell=`<td class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</td>`;
+    const dayCells=visibleDates.map(d=>{
+      const rr=gridMap[vid]&&gridMap[vid][d];
+      if(!rr||!rr.times.length)return`<td></td>`;
+      const prelim=isP(vid,d);
+      const pillsD=rr.times.map(tm=>{
+        const pillKey=`${itemKind}:${itemId}|${vid}|${d}|${tm}`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}">${esc(tm)}</button>`;
+      }).join(" ");
+      return`<td>${pillsD}</td>`;
+    }).join("");
+    return`<tr>${vcell}${dayCells}</tr>`;
+  }).join("");
+
+  const gridHtml=`<div class="p3e-grid-wrap">
+    <div class="p3e-grp-desk">
+      <table class="p3e-gt" role="table">
+        <thead><tr><th></th>${theadCols}</tr></thead>
+        <tbody>${tbodyRows}</tbody>
+      </table>
+    </div>
+    ${anyPrelim?`<p class="p3e-gt-fn">${esc(L.ssDashedFnT)}</p>`:""}
+  </div>`;
+
+  return daysHtml+grpHtml+fnHtml+gridHtml;
+}
+
+/* p3eRegisterDayPicker: attach live day-switching to the p3e day strip.
+   Called from decorateSheet after the sheet HTML is in the DOM. */
+function p3eRegisterDayPicker(container, itemKind, itemId, normalizedRows, venueMap, isP){
+  const wrap=container&&container.querySelector("[data-p3dayswrap]");
+  const grp=container&&container.querySelector(".p3e-grp-slot");
+  if(!wrap||!grp)return;
+  const buildList=(dateStr)=>{
+    const rows=normalizedRows.filter(r=>r.dateStr===dateStr);
+    rows.sort((a,b)=>(a.times[0]||"").localeCompare(b.times[0]||""));
+    if(!rows.length){grp.innerHTML="";return;}
+    grp.innerHTML=rows.map(r=>{
+      const v=venueMap(r.venueId)||{};
+      const prelim=isP(r.venueId,dateStr);
+      const price=r.price||v.price||"";
+      const sec=(prelim?`<span class="p3e-ambert"></span><span class="p3e-prelim-line">${esc(t().ssPrelimHead)}</span> `:"")
+        +`${esc(v.area||"")}${price?" · "+esc(price):""}`;
+      const pills=r.times.map(tm=>{
+        const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
+      }).join("");
+      return`<div class="p3e-row">
+        <div class="p3e-vninfo">
+          <div class="p3e-vname">${esc(v.name||r.venueId)}</div>
+          <div class="p3e-vsec">${sec}</div>
+        </div>
+        <div class="p3e-pills">${pills}</div>
+      </div>`;
+    }).join("");
+  };
+  wrap.addEventListener("click",e=>{
+    const btn=e.target.closest("[data-p3day]");
+    if(!btn)return;
+    wrap.querySelectorAll("[data-p3day]").forEach(b=>b.setAttribute("aria-pressed","false"));
+    btn.setAttribute("aria-pressed","true");
+    buildList(btn.dataset.p3day);
+  });
+}
+
 function sheetFilm(f){
   const L=t(),x=FILM_EXTRA[f.id]||{};
   const allRows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));
@@ -2506,43 +2843,29 @@ function sheetFilm(f){
   const venues=[...new Set(rows.map(r=>r[1]))];
   /* isPrelim: this film's listing at venue vid on date d is preliminary (isPrelimListing) */
   const isPrelim=(vid,d)=>isPrelimListing("film",f.id,vid,d);
-  let hasPrelim=false;
-  const mkVrow=(r,d)=>{
-    const c=cinById[r[1]],b=BOOKING[r[1]]||{};
-    const inPerson=!!b.inPerson;
-    const viaEpay=b.via==="epaygo.bg"&&!VLINK_MAP[f.id+"|"+r[1]];
-    const u=safeUrl(inPerson?(b.url||null):filmTixUrl(f.id,r[1],d));
-    const tixLabel=inPerson?(S.lang==="bg"?L.boxOfficeLabel:L.boxOfficeLabelEn):(L.tix+" ↗");
-    const prelim=isPrelim(r[1],d);
-    if(prelim)hasPrelim=true;
-    const cName=S.lang==="bg"?c.name:(c.nameEn||c.name);
-    const cArea=S.lang==="bg"?c.area:(c.areaEn||c.area);
-    /* Per-time show attributes: look up each time, gather unique lang tokens */
-    const tmAttrs=r[3].map(tm=>showAttrFor(f.id,r[1],d,tm));
-    const langToks=tmAttrs.map(a=>a?a.split(",").filter(x=>x==="dub"||x==="sub"):[]);
-    const allSameLang=langToks.length>0&&langToks.every(lt=>lt.join(",")===(langToks[0]||[]).join(","))&&langToks[0].length>0;
-    const venueLangLabel=allSameLang?attrLabels(langToks[0].join(","),S.lang):"";
-    return`<div class="vrow"><div class="vname">
-      <span class="vloc">${esc(cName)}<em>${esc(cArea)}</em></span>
-      <span class="vkind">${esc(c.kind==="independent"?(S.lang==="bg"?"независимо":"independent"):(S.lang==="bg"?"мултиплекс":"multiplex"))}</span>
-      ${prelim?`<span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}
-      ${venueLangLabel}
-      ${PRICES[r[1]]?`<span class="vprice">${esc(L.fromPrice)} ${esc(PRICES[r[1]])}</span>`:""}
-      ${viaEpay?`<span class="vprice" style="opacity:.7">${esc(L.viaEpay)}</span>`:""}</div>
-      <div class="vtimes">${r[3].map((tm,i)=>{
-        const a=tmAttrs[i]||"";
-        const fmtPart=a?a.split(",").filter(x=>x!=="dub"&&x!=="sub").join(","):"";
-        const langPart=(!allSameLang&&a)?a.split(",").filter(x=>x==="dub"||x==="sub").join(","):"";
-        const chipAttr=(langPart||fmtPart)?attrLabels([langPart,fmtPart].filter(Boolean).join(","),S.lang):"";
-        return u?`<a class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tm)}${chipAttr}</a>`:`<span class="time ${inWhen(tm)?"fits":""} ${prelim?"prelim-time":""}">${esc(tm)}${chipAttr}</span>`;
-      }).join("")}
-      ${u?`<a class="time tix${inPerson?" alt":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(tixLabel)}</a>`:`<span class="time tix alt">${esc(tixLabel)}</span>`}
-      ${calBtnHtml("film",f.id,r[1],d)}</div></div>`;};
-  const times=Object.keys(byDay).sort().map(d=>`<div class="dgroup" data-date="${d}"><div class="dg-h">${esc(fmtDayDow(d))}</div>
-    ${byDay[d].map(r=>mkVrow(r,d)).join("")}</div>`).join("");
-  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
-  /* "Showing selected cinemas only" note with "Show all" button */
-  const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8">${esc(L.showSelCinemasOnly)}
+  /* Build normalizedRows for p3eShowtimesHtml */
+  const normRows=rows.map(r=>{
+    const c=cinById[r[1]];
+    const price=PRICES[r[1]]?(L.fromPrice+" "+PRICES[r[1]]):"";
+    return{
+      venueId:r[1],
+      dateStr:r[2],
+      times:r[3],
+      price
+    };
+  });
+  const venueMapFn=(vid)=>{
+    const c=cinById[vid];
+    if(!c)return{name:vid,area:"",price:""};
+    return{
+      name:S.lang==="bg"?c.name:(c.nameEn||c.name),
+      area:S.lang==="bg"?c.area:(c.areaEn||c.area),
+      price:PRICES[vid]?(L.fromPrice+" "+PRICES[vid]):""
+    };
+  };
+  const timesHtml=p3eShowtimesHtml("film",f.id,normRows,venueMapFn,isPrelim,null);
+  /* "Showing selected cinemas only" note with "Show all" button — shown above picker */
+  const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8;margin-bottom:10px">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
   rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?imdbOf(f).toFixed(1)+"<small>/10</small>":"—"}</div></div>`);
@@ -2571,29 +2894,48 @@ function sheetFilm(f){
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
       ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
-    <div class="sec"><h4>${esc(L.times)} · ${rows.reduce((n,r)=>n+r[3].length,0)}</h4>
+    <div class="sec"><h4>${esc(L.times)}</h4>
       ${selNote}
-      ${times||`<div class="empty">${esc(L.noData)}</div>`}${prelimLegend}</div>
+      ${timesHtml}</div>
    </div></div>`;}
 
 function sheetShow(sh){
   const L=t(),th=thById[sh.theatre],x=SHOW_EXTRA[sh.id]||{};
   const perfs=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id)).sort((a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]));
-  const byDay={};perfs.forEach(p=>{(byDay[p[1]]=byDay[p[1]]||[]).push(p);});
-  const u=safeUrl(tixUrl("show",sh.id,sh.theatre));
-  /* isPrelim: delegates to isPrelimListing so both PRELIM_FROM (date-based) and
-     PRELIM_ROWS (per show-day, e.g. off-grid ticket-list time) are honoured. */
   const thId=sh.theatre;
   const isPrelim=(vid,d)=>isPrelimListing("show",sh.id,vid,d);
-  let hasPrelim=false;
-  const list=Object.keys(byDay).sort().map(d=>{
-    const prelim=isPrelim(thId,d);
-    if(prelim)hasPrelim=true;
-    return`<div class="dgroup" data-date="${d}"><div class="dg-h">${esc(fmtDayDow(d))}${prelim?` <span class="prelim-tag">${S.lang==="bg"?"предварителна програма":"preliminary"}</span>`:""}</div>
-    ${byDay[d].map(p=>`<div class="vrow"><div class="vname">${esc(hallDisplay(p[3])||thName(th))}</div>
-      <div class="vtimes">${u?`<a class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}" href="${esc(u)}" target="_blank" rel="noopener">${esc(p[2])}</a>`:`<span class="time ${inWhen(p[2])?"fits":""} ${prelim?"prelim-time":""}">${esc(p[2])}</span>`}${p[4]?`<span class="vprice">${esc(priceDisplay(p[4]))}</span>`:""}
-      ${calBtnHtml("show",sh.id,sh.theatre,d)}</div></div>`).join("")}</div>`;}).join("");
-  const prelimLegend=hasPrelim?`<div class="prelim-legend">${S.lang==="bg"?"Предварителна програма: още не е сверена с пълната програма на мястото — възможни са промени.":"Preliminary: not yet checked against the venue's full programme — subject to change."}</div>`:"";
+  /* Normalize PERFORMANCES rows for p3eShowtimesHtml.
+     PERFORMANCES row: [showId, dateStr, timeStr, hall, price, …]
+     We treat the single theatre as the "venue" row.
+     Hall (sala) may differ per date; store the first hall per date in the price slot
+     so it appears as secondary text in the listing row. */
+  const normRowsShow=[];
+  const byDayMap={};
+  const dayHallMap={};
+  perfs.forEach(p=>{
+    (byDayMap[p[1]]=byDayMap[p[1]]||[]).push(p[2]);
+    if(!dayHallMap[p[1]]&&p[3])dayHallMap[p[1]]=p[3];
+  });
+  Object.keys(byDayMap).sort().forEach(d=>{
+    const hallRaw=dayHallMap[d]||"";
+    const hallTxt=hallRaw&&hallRaw!==th.name?hallDisplay(hallRaw):"";
+    normRowsShow.push({
+      venueId:thId,
+      dateStr:d,
+      times:[...new Set(byDayMap[d])].sort(),
+      price:hallTxt
+    });
+  });
+  const venueMapFnShow=(vid)=>{
+    const v=thById[vid];
+    if(!v)return{name:vid,area:"",price:""};
+    return{
+      name:S.lang==="bg"?v.name:(v.nameEn||v.name),
+      area:S.lang==="bg"?v.area:(v.areaEn||v.area),
+      price:""
+    };
+  };
+  const perfsHtml=p3eShowtimesHtml("show",sh.id,normRowsShow,venueMapFnShow,isPrelim,null);
   /* venue display: use nameEn in EN mode */
   const thName_=S.lang==="bg"?th.name:(th.nameEn||th.name);
   const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
@@ -2620,7 +2962,7 @@ function sheetShow(sh){
       ${(()=>{const pr=S.lang==="en"?x.premiereEn:x.premiere;return pr?`<dt>${esc(L.premiere)}</dt><dd>${esc(pr)}</dd>`:""})()}
       ${(()=>{const se=S.lang==="en"?x.seasonEn:x.season;return se?`<dt>${esc(L.season)}</dt><dd>${esc(se)}</dd>`:""})()}
       <dt>${esc(L.venue)}</dt><dd>${esc(thName_)} — ${esc(thArea_)}</dd></dl></div>
-    <div class="sec"><h4>${esc(L.perfs)} · ${perfs.length}</h4>${list||`<div class="empty">${esc(L.noData)}</div>`}${prelimLegend}</div>
+    <div class="sec"><h4>${esc(L.perfs)}</h4>${perfsHtml}</div>
    </div></div>`;}
 
 function sheetEvent(ev){
@@ -3006,9 +3348,9 @@ function closeSheet(fromPop){
     _finalise();
   }
 }
-/* Close sheet on Esc key */
+/* Close sheet on Esc key — skip if screening sheet is open (P3E handler closes SS first) */
 document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"&&sheetOpen){closeSheet();e.preventDefault();}
+  if(e.key==="Escape"&&sheetOpen&&!_ssOpen){closeSheet();e.preventDefault();}
 },{passive:false});
 window.addEventListener("popstate",()=>{
   if(sheetOpen){closeSheet(true);return;}
@@ -3581,6 +3923,385 @@ document.addEventListener("keydown",e=>{
   }
 },{capture:true});
 
+/* ===================== P3E: maps + screening sheet ===================== */
+
+/* venueMapUrl: build a Google Maps search link for a cinema or theatre.
+   Uses the optional "maps" field (a query string or place URL) from the venue
+   data when present; otherwise constructs the standard search form. */
+function venueMapUrl(venue){
+  if(!venue)return"";
+  if(venue.maps){
+    /* If the override is already a full URL, use it; otherwise treat as a query string */
+    if(venue.maps.startsWith("http"))return venue.maps;
+    return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(venue.maps);
+  }
+  const name=venue.name||"";
+  const area=venue.area||"";
+  const query=name+(area?", "+area:"")+", София";
+  return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(query);
+}
+
+/* screeningSheetHtml: build the content of a screening sheet (bottom sheet on
+   phone, popover on desktop). Handles film and show kinds.
+   step: "main" (default) or "cal" (calendar step). */
+function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
+  const L=t();
+  let title="",venueName="",venueArea="",tixUrl_="",runtimeMin=120,mapUrl="";
+  let isPrelim=false,aggSource=null,isBoxOfficeOnly=false,boxPrice="";
+  let attrStr="";
+
+  if(kind==="film"){
+    const f=filmById[id]; if(!f)return"";
+    const c=cinById[venueId]; if(!c)return"";
+    title=filmTitle(f);
+    venueName=S.lang==="bg"?c.name:(c.nameEn||c.name);
+    venueArea=S.lang==="en"?(c.areaEn||c.area):c.area;
+    runtimeMin=f.runtime||120;
+    mapUrl=venueMapUrl(c);
+    const b=BOOKING[venueId]||{};
+    isPrelim=isPrelimListing("film",id,venueId,dateStr);
+    aggSource=(typeof AGGLINKS==="object"&&AGGLINKS[id+"|"+venueId])||null;
+    const u=filmTixUrl(id,venueId,dateStr);
+    if(b.inPerson){isBoxOfficeOnly=true;boxPrice=PRICES[venueId]||"";}
+    else{tixUrl_=safeUrl(u)||"";}
+    attrStr=showAttrFor(id,venueId,dateStr,timeStr)||"";
+  } else {
+    const sh=showById[id]; if(!sh)return"";
+    const th=thById[venueId]||thById[sh.theatre]; if(!th)return"";
+    title=titleOf(sh);
+    venueName=S.lang==="bg"?th.name:(th.nameEn||th.name);
+    venueArea=S.lang==="en"?(th.areaEn||th.area):th.area;
+    runtimeMin=sh.duration||120;
+    mapUrl=venueMapUrl(th);
+    const b=BOOKING[venueId]||BOOKING[sh.theatre]||{};
+    isPrelim=isPrelimListing("show",id,venueId,dateStr);
+    aggSource=(typeof AGGLINKS==="object"&&AGGLINKS[id])||null;
+    const tu=safeUrl(tixUrl("show",id,sh.theatre));
+    if(b.inPerson){isBoxOfficeOnly=true;boxPrice="";}
+    else{tixUrl_=tu||"";}
+  }
+
+  /* Format date line */
+  const dateDisplay=fmtDayDow(dateStr);
+
+  if(step==="cal"){
+    /* Calendar step */
+    const ev=calEvent(kind,id,venueId,dateStr,timeStr);
+    const gUrl=ev?calGoogleUrl(ev):"";
+    const oUrl=ev?calOutlookUrl(ev):"";
+    const icsData=ev?JSON.stringify({kind,id,venueId,dateStr,timeStr}):"{}";
+    const icsId=ev?("sg-"+kind+"-"+id+"-"+venueId+"-"+dateStr+"-"+(timeStr||"").replace(/:/g,"")):"";
+    /* End time string */
+    let endStr="";
+    if(ev){
+      try{
+        const [y,mo,d]=dateStr.split("-").map(Number);
+        const [hh,mm]=timeStr.split(":").map(Number);
+        const endMs=Date.UTC(y,mo-1,d,hh-ev.off,mm,0)+runtimeMin*60000;
+        const edt=new Date(endMs);
+        const fmt2=new Intl.DateTimeFormat("en",{timeZone:"Europe/Sofia",hour:"2-digit",minute:"2-digit",hour12:false});
+        const pp=Object.fromEntries(fmt2.formatToParts(edt).map(p=>[p.type,p.value]));
+        endStr=" – "+(pp.hour==="24"?"00":pp.hour)+":"+pp.minute;
+      }catch(e){}
+    }
+    return`<div class="ss-grab"></div>
+<button class="ss-back-btn" data-ssback aria-label="${esc(L.back||"Назад")}">‹</button>
+<button class="ss-close-btn" data-ssclose aria-label="close">✕</button>
+<div class="ss-cal-title">${esc(L.ssCalTitle)}</div>
+<div class="ss-cal-ev">
+  <div class="a">${esc(title)}</div>
+  <div class="b">${esc(dateDisplay)}, ${esc(timeStr)}${esc(endStr)}</div>
+  <div class="b">${esc(venueName)}</div>
+</div>
+<div class="ss-cal-lst">
+  <a class="ss-cal-li" href="${esc(calIcs_href(ev))}" download="${esc(icsId+".ics")}" data-sscalics="${esc(icsData)}" data-ssicalid="${esc(icsId)}">
+    <div><span>${esc(L.ssCalApple)}</span><small>${esc(L.ssCalAppleSub)}</small></div>
+    <span class="cv">›</span>
+  </a>
+  <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener">
+    <div>${esc(L.ssCalGoogle)}</div>
+    <span class="cv">›</span>
+  </a>
+  <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener">
+    <div>${esc(L.ssCalOutlook)}</div>
+    <span class="cv">›</span>
+  </a>
+</div>`;
+  }
+
+  /* Main step */
+  /* Status card: prelim > aggSource > box office only */
+  let statusHtml="";
+  if(isPrelim){
+    statusHtml=`<div class="ss-status">
+      <div class="ss-status-head"><span class="ss-ambert"></span>${esc(L.ssPrelimHead)}</div>
+      ${esc(L.ssPrelimBody)}</div>`;
+  } else if(aggSource){
+    statusHtml=`<div class="ss-status">
+      <div class="ss-status-head"><span class="ss-ambert"></span>${esc((L.ssAggHead||"").replace("{agg}",aggSource))}</div>
+      ${esc(L.ssAggBody)}</div>`;
+  } else if(isBoxOfficeOnly){
+    const body=boxPrice
+      ?(L.ssBoxOfficeFull||"").replace("{price}",boxPrice)
+      :(kind==="film"?L.ssBoxOfficeBody:L.ssBoxOfficeBodyT);
+    statusHtml=`<div class="ss-status" style="background:var(--ink-2)">
+      <div class="a" style="font-size:14.5px;font-weight:500;color:var(--fg);margin-bottom:4px">${esc(L.ssBoxOfficeHead)}</div>
+      <div class="b" style="font-size:13px;color:var(--fg-2)">${esc(body)}</div>
+    </div>`;
+  }
+
+  /* SHOWATTR chips */
+  let chipsHtml="";
+  if(attrStr){
+    const chips=attrLabels(attrStr,S.lang);
+    if(chips)chipsHtml=`<div class="ss-attrs">${chips}</div>`;
+  }
+
+  /* Buttons */
+  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(L.ssShowMap)}</a>`;
+  const calBtn=`<button class="ss-btn sec" data-sscal="${esc(kind+":"+id+"|"+venueId+"|"+dateStr+"|"+timeStr)}">${esc(L.ssAddCal)}</button>`;
+
+  let buyBtnHtml="";
+  if(!isBoxOfficeOnly&&tixUrl_){
+    /* Determine the buy button label's "opens X" line */
+    let opensName="";
+    if(kind==="film"){
+      const _al=(typeof AGGLINKS==="object"&&AGGLINKS[id+"|"+venueId])||null;
+      if(_al)opensName=_al;
+      else{const c=cinById[venueId];opensName=S.lang==="bg"?(c&&c.name||""):(c&&(c.nameEn||c.name)||"");}
+    } else {
+      const _al=(typeof AGGLINKS==="object"&&AGGLINKS[id])||null;
+      const sh=showById[id];
+      if(_al)opensName=_al;
+      else{const th=thById[venueId]||thById[sh&&sh.theatre];opensName=S.lang==="bg"?(th&&th.name||""):(th&&(th.nameEn||th.name)||"");}
+    }
+    const helpLine=(L.ssBuyOpens||"").replace("{name}",opensName);
+    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener">${esc(L.ssBuyTicket)}</a>
+<p class="ss-help">${esc(helpLine)}</p>`;
+  }
+
+  return`<div class="ss-grab"></div>
+<button class="ss-close-btn" data-ssclose aria-label="close">✕</button>
+<div class="ss-time">${esc(timeStr)}</div>
+<div class="ss-date">${esc(dateDisplay)}</div>
+<div class="ss-venue">${esc(venueName)}${venueArea?", "+esc(venueArea):""}</div>
+${chipsHtml}
+${statusHtml}
+<div class="ss-spacer"></div>
+<div class="ss-btns">
+  ${buyBtnHtml}
+  ${mapBtn}
+  ${calBtn}
+</div>`;
+}
+
+/* calIcs_href: build a data: URI from ICS content for direct download */
+function calIcs_href(ev){
+  if(!ev)return"#";
+  try{
+    const ics=calIcs(ev);
+    /* Build a blob URL — the browser downloads it on click */
+    /* We use a data: URI here so it works without JS event (href on <a> download) */
+    const enc=typeof TextEncoder!=="undefined"?new TextEncoder().encode(ics):ics;
+    /* Return # and handle via click handler instead */
+    return"#";
+  }catch(e){return"#";}
+}
+
+/* ssSwipeToClose: P3B-style drag-to-close wired to the SS inner sheet.
+   Uses ssWrap (the #ss-wrap backdrop) for the opacity fade instead of the
+   parent scrim, so the parent sheet is unaffected.  Calls closeScreeningSheet()
+   on threshold/flick; springs back on short drag. */
+function ssSwipeToClose(ssWrap,ssSheet){
+  const THRESHOLD=0.25;
+  const VEL_CLOSE=0.4;
+  let y0=null,t0=null,lastY=null,lastT=null;
+
+  ssSheet.addEventListener("touchstart",e=>{
+    if(ssSheet.scrollTop>2){y0=null;return;}
+    y0=e.touches[0].clientY; t0=lastT=Date.now(); lastY=y0;
+  },{passive:true});
+
+  ssSheet.addEventListener("touchmove",e=>{
+    if(y0==null)return;
+    const dy=e.touches[0].clientY-y0;
+    if(dy<0){y0=null;return;}
+    const now=Date.now(); lastY=e.touches[0].clientY; lastT=now;
+    const h=ssSheet.getBoundingClientRect().height||400;
+    const progress=Math.min(dy/h,1);
+    const scale=1-progress*0.1;
+    const opacity=Math.max(1-progress*1.4,0.15);
+    ssSheet.style.transform=`translateY(${dy}px) scale(${scale})`;
+    ssSheet.style.transformOrigin="center bottom";
+    ssWrap.style.background=`rgba(0,0,0,${(0.55*opacity).toFixed(3)})`;
+  },{passive:true});
+
+  function _ssReset(){
+    ssSheet.style.transform="";
+    ssSheet.style.transformOrigin="";
+    ssWrap.style.background="";
+    y0=null;
+  }
+
+  ssSheet.addEventListener("touchend",e=>{
+    if(y0==null)return;
+    const dy=lastY-y0;
+    const dt=lastT-t0;
+    const vel=dt>0?dy/dt:0;
+    const h=ssSheet.getBoundingClientRect().height||400;
+    if(dy>h*THRESHOLD||vel>VEL_CLOSE){
+      _ssReset();
+      closeScreeningSheet();
+    } else {
+      if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){_ssReset();return;}
+      ssSheet.animate(
+        [{transform:ssSheet.style.transform||"none"},{transform:"translateY(0) scale(1)"}],
+        {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"forwards"});
+      const curBg=ssWrap.style.background||"";
+      const curAlphaM=curBg.match(/([\d.]+)\)$/);
+      const curAlpha=curAlphaM?parseFloat(curAlphaM[1]):0.55;
+      ssWrap.animate([{opacity:curAlpha/0.55},{opacity:1}],{duration:260,easing:"ease-out",fill:"forwards"});
+      ssWrap.style.background="";
+      ssSheet.style.transform=""; ssSheet.style.transformOrigin="";
+    }
+    y0=null;
+  },{passive:true});
+}
+
+/* openScreeningSheet: open the screening sheet for a time pill.
+   On phone: inserts content into the existing .sheet element that wraps
+   the sheet body (reusing P3B scrim). On desktop: positions a popover. */
+let _ssOpen=null; /* {kind,id,venueId,dateStr,timeStr,popEl,fromEl} */
+
+function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
+  const isMobile=innerWidth<=760;
+  if(isMobile){
+    _ssOpen={kind,id,venueId,dateStr,timeStr,fromEl};
+    /* Reuse the P3B sheet scrim but as a nested "secondary" panel inside the
+       open film/show sheet.  We keep the parent sheet open and render a new
+       sheet inside a wrapper attached to the scrim. */
+    let wrap=document.getElementById("ss-wrap");
+    if(!wrap){
+      wrap=document.createElement("div");
+      wrap.id="ss-wrap";
+      wrap.className="scrim";
+      wrap.style.cssText="position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,.55)";
+      document.body.appendChild(wrap);
+    }
+    const inner=document.createElement("div");
+    inner.className="sheet ss-sheet";
+    inner.style.cssText="position:relative;top:0;border-radius:26px 26px 16px 16px;max-height:88vh;overflow-y:auto;padding:16px 22px 28px";
+    inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");
+    wrap.innerHTML="";
+    wrap.appendChild(inner);
+    wrap.hidden=false;
+    document.body.style.overflow="hidden";
+    /* Slide up animation */
+    const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(!reduced){
+      inner.animate([{transform:"translateY(60px)",opacity:0},{transform:"none",opacity:1}],
+        {duration:320,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+    }
+    /* Backdrop tap: tapping outside .ss-sheet closes only the screening sheet */
+    wrap.addEventListener("click",e=>{
+      if(!e.target.closest(".ss-sheet")){closeScreeningSheet();}
+    });
+    /* Swipe-to-close: drag down on the inner sheet closes only SS */
+    ssSwipeToClose(wrap,inner);
+    /* Focus first interactive element */
+    setTimeout(()=>{
+      const first=inner.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
+      if(first)first.focus({preventScroll:true});
+    },reduced?10:340);
+  } else {
+    /* Desktop: position a popover anchored to fromEl */
+    closeScreeningSheet(); /* close any previous SS (sets _ssOpen=null) */
+    _ssOpen={kind,id,venueId,dateStr,timeStr,fromEl}; /* re-assign after close */
+    const pop=document.createElement("div");
+    pop.className="ss-pop";
+    pop.id="ss-pop";
+    /* Build inner shell */
+    const inner=document.createElement("div");
+    inner.className="ss-sheet";
+    inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");
+    pop.appendChild(inner);
+    /* Position near fromEl */
+    const scrim=document.getElementById("scrim");
+    const container=scrim||document.body;
+    container.appendChild(pop);
+    if(fromEl){
+      const r=fromEl.getBoundingClientRect();
+      const cr=container.getBoundingClientRect?container.getBoundingClientRect():{top:0,left:0};
+      let top=r.bottom-cr.top+8;
+      let left=r.left-cr.left;
+      /* Clamp so it fits in viewport */
+      const pw=340;
+      if(left+pw>window.innerWidth-16)left=Math.max(8,window.innerWidth-pw-16);
+      pop.style.top=top+"px";
+      pop.style.left=left+"px";
+    }
+    /* Trap focus */
+    const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(!reduced){
+      pop.animate([{opacity:0,transform:"scale(.96) translateY(-6px)"},{opacity:1,transform:"none"}],
+        {duration:200,easing:"ease-out",fill:"backwards"});
+    }
+    setTimeout(()=>{
+      const first=pop.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
+      if(first)first.focus({preventScroll:true});
+    },reduced?10:220);
+    _ssOpen.popEl=pop;
+  }
+}
+
+function closeScreeningSheet(){
+  /* Mobile */
+  const wrap=document.getElementById("ss-wrap");
+  if(wrap){wrap.hidden=true;wrap.innerHTML="";}
+  /* Desktop */
+  const pop=document.getElementById("ss-pop");
+  if(pop)pop.remove();
+  if(_ssOpen&&_ssOpen.fromEl){
+    try{_ssOpen.fromEl.focus({preventScroll:true});}catch(e){}
+  }
+  _ssOpen=null;
+  /* Only restore body overflow if the parent sheet is not open */
+  if(!sheetOpen)document.body.style.overflow="";
+}
+
+function screeningSheetCalStep(){
+  if(!_ssOpen)return;
+  const {kind,id,venueId,dateStr,timeStr}=_ssOpen;
+  const isMobile=innerWidth<=760;
+  const container=isMobile?document.getElementById("ss-wrap"):document.getElementById("ss-pop");
+  const inner=container&&container.querySelector(".ss-sheet");
+  if(!inner)return;
+  inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"cal");
+  /* Focus first interactive */
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(()=>{
+    const first=inner.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
+    if(first)first.focus({preventScroll:true});
+  },reduced?10:100);
+}
+
+/* ICS download via click handler on .ss-cal-li[data-sscalics] */
+function _ssHandleIcsClick(el){
+  try{
+    const d=JSON.parse(el.dataset.sscalics||"{}");
+    const ev=calEvent(d.kind,d.id,d.venueId,d.dateStr,d.timeStr);
+    if(!ev)return;
+    const ics=calIcs(ev);
+    const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=(el.dataset.ssicalid||"sofia-gleda")+".ics";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  }catch(err){console.error("ss ics",err);}
+}
+
 /* ===================== events ===================== */
 document.addEventListener("click",e=>{
   const q=sel=>e.target.closest(sel);
@@ -3688,12 +4409,64 @@ document.addEventListener("click",e=>{
       const newSec=newSheet.querySelector(".sec:last-child");
       const oldSec=shBody.querySelector(".sec:last-child");
       if(oldSec&&newSec)oldSec.replaceWith(newSec);}return;}
+  /* P3E: time pill → screening sheet */
+  const sspill=q("[data-sspill]");
+  if(sspill){
+    const parts=sspill.dataset.sspill.split(":");/* "film:id|venueId|dateStr|timeStr" or "show:…" */
+    const kKind=parts[0];
+    const rest2=parts.slice(1).join(":").split("|");
+    const [kId,kVenueId,kDateStr,kTimeStr]=rest2;
+    openScreeningSheet(kKind,kId,kVenueId,kDateStr,kTimeStr,sspill);
+    return;
+  }
+  /* P3E day-picker chip (phone) */
+  const p3day=q("[data-p3day]");
+  if(p3day){
+    const wrap=p3day.closest("[data-p3dayswrap]");
+    if(wrap){
+      wrap.querySelectorAll("[data-p3day]").forEach(b=>b.setAttribute("aria-pressed","false"));
+      p3day.setAttribute("aria-pressed","true");
+      /* Re-render the venue list below using the registered render fn */
+      const grpSlot=wrap.parentElement&&wrap.parentElement.querySelector(".p3e-grp-slot");
+      if(grpSlot){
+        const fn=_p3DayRenderFns.get(grpSlot.id);
+        if(fn)try{fn(p3day.dataset.p3day,grpSlot);}catch(e){}
+      }
+    }
+    return;
+  }
+  /* P3E screening sheet: close */
+  const ssclose=q("[data-ssclose]");
+  if(ssclose){closeScreeningSheet();return;}
+  /* P3E screening sheet: back to main step */
+  const ssback=q("[data-ssback]");
+  if(ssback){
+    if(!_ssOpen)return;
+    const {kind,id,venueId,dateStr,timeStr}=_ssOpen;
+    const isMobile=innerWidth<=760;
+    const container=isMobile?document.getElementById("ss-wrap"):document.getElementById("ss-pop");
+    const inner=container&&container.querySelector(".ss-sheet");
+    if(inner){inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");}
+    return;
+  }
+  /* P3E screening sheet: add to calendar → cal step */
+  const sscal=q("[data-sscal]");
+  if(sscal){screeningSheetCalStep();return;}
+  /* P3E screening sheet calendar: ICS download */
+  const sscalics=q("[data-sscalics]");
+  if(sscalics){_ssHandleIcsClick(sscalics);return;}
+  /* P3E: close screening sheet when clicking outside the popover (desktop) */
+  if(!q("#ss-pop")&&!q("#ss-wrap")&&document.getElementById("ss-pop")){
+    closeScreeningSheet();return;
+  }
   const fc=q("[data-film]"); if(fc){_sheetShowAllCinemas=false;curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
   const shc=q("[data-show]"); if(shc){curSheet={kind:"show",id:shc.dataset.show};openSheet(sheetShow(showById[shc.dataset.show]),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
 });
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
+  /* P3E: Esc closes screening sheet first (only when one is actually open) */
+  if(_ssOpen){closeScreeningSheet();return;}
   if(document.getElementById("scrim")&&!document.getElementById("scrim").hidden){closeSheet();return;}
   if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{S.drawer=false;render();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}

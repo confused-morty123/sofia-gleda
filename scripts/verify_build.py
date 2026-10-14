@@ -1030,6 +1030,40 @@ except ImportError:
 except Exception as _sp_err:
     note(f"share page spot-check error: {_sp_err}")
 
+# ----------------------------------------- 6d. Maps links — every venue resolves
+# venueMapUrl() falls back to name+area+", София" when no maps field is present.
+# Verify: every CINEMA and THEATRE entry produces a non-empty URL starting with
+# https://www.google.com/maps/.
+try:
+    from urllib.parse import quote as _quote
+
+    def _venue_map_url(venue):
+        if not venue:
+            return ""
+        m = venue.get("maps")
+        if m:
+            if m.startswith("http"):
+                return m
+            return "https://www.google.com/maps/search/?api=1&query=" + _quote(m)
+        name = venue.get("name") or ""
+        area = venue.get("area") or ""
+        query = name + (", " + area if area else "") + ", София"
+        return "https://www.google.com/maps/search/?api=1&query=" + _quote(query)
+
+    _MAPS_PREFIX = "https://www.google.com/maps/"
+    _map_bad: list[str] = []
+    for _v in (data.get("CINEMAS") or []) + (data.get("THEATRES") or []):
+        _vid = _v.get("id", "?")
+        _url = _venue_map_url(_v)
+        if not _url:
+            _map_bad.append(f"{_vid}: empty URL")
+        elif not _url.startswith(_MAPS_PREFIX):
+            _map_bad.append(f"{_vid}: unexpected URL prefix {_url[:60]!r}")
+    if _map_bad:
+        fail("venue Maps URLs are malformed:\n  " + "\n  ".join(_map_bad))
+except Exception as _mp_err:
+    note(f"maps link check error: {_mp_err}")
+
 # ----------------------------------------------------- 7. a real click, live (gate)
 def smoke():
     try:
@@ -1076,8 +1110,16 @@ def smoke():
                 if not page.query_selector(".sheet"):
                     fail(f"[{tz}] clicking a film did not open its detail sheet"
                          + (" — " + errs[0] if errs else ""))
-                elif not page.query_selector_all(".sheet a.time"):
-                    fail(f"[{tz}] the film sheet opened with no ticket links")
+                elif not (page.query_selector_all(".sheet a.time") or
+                          page.query_selector_all(".sheet .p3e-pill[data-sspill]") or
+                          page.query_selector_all(".sheet .p3e-row")):
+                    # P3E redesign: showtimes are now .p3e-pill buttons (not a.time links)
+                    fail(f"[{tz}] the film sheet opened with no ticket links or showtime pills")
+                # Close the sheet before testing the theatre side
+                scrim = page.query_selector("#scrim")
+                if scrim and not page.evaluate("document.getElementById('scrim').hidden"):
+                    page.keyboard.press("Escape")
+                    page.wait_for_timeout(400)
                 else:
                     page.go_back(); page.wait_for_timeout(400)
             # same journey on the theatre side
