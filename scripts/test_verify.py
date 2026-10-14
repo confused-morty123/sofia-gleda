@@ -78,13 +78,19 @@ def _bulk_performances(n=40, date_offset=0):
     return _json.dumps(rows)
 
 
+_SITE_URL_FOR_TEST = "https://confused-morty123.github.io/sofia-gleda"
+
 def _minimal_html(snapshot_extra: str = "", extra_js: str = "",
                   showtimes_override: str = "",
                   performances_override: str = "",
-                  vlinks_override: str = "") -> str:
+                  vlinks_override: str = "",
+                  site_url: str = "") -> str:
     """Build a valid-enough page for the gate, meeting all floor requirements.
 
     All three SHOWTIMES/PERFORMANCES/VLINKS can be overridden for special test cases.
+    The <head> includes the OG / Twitter Card meta tags required by check 6a.
+    site_url defaults to _SITE_URL_FOR_TEST; pass a different value to test the
+    SITE_URL consistency check (6a2), or "" to omit the SITE_URL declaration.
     """
     # Build floor-meeting defaults
     films_js      = _bulk_films()
@@ -111,8 +117,22 @@ def _minimal_html(snapshot_extra: str = "", extra_js: str = "",
     title_en_js = _json.dumps({fid: f"Film {fid}" for fid in film_ids})
 
     snap_gen = f',"generated":"{_NOW_ISO}"' + snapshot_extra
+    _og_image = f"{_SITE_URL_FOR_TEST}/share/share-preview.jpg"
+    _site_url_line = (f'const SITE_URL="{site_url or _SITE_URL_FOR_TEST}";'
+                      if site_url != "OMIT" else "")
     return textwrap.dedent(f"""\
-        <!doctype html><html><head><meta charset="utf-8"/></head><body>
+        <!doctype html><html><head><meta charset="utf-8"/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:site_name" content="Sofia Gleda"/>
+        <meta property="og:url" content="{_SITE_URL_FOR_TEST}/"/>
+        <meta property="og:title" content="София гледа"/>
+        <meta property="og:description" content="Афишът на кината и театрите в София."/>
+        <meta property="og:image" content="{_og_image}"/>
+        <meta property="og:locale" content="bg_BG"/>
+        <meta name="twitter:card" content="summary_large_image"/>
+        <meta name="twitter:title" content="София гледа"/>
+        <meta name="twitter:image" content="{_og_image}"/>
+        </head><body>
         <script>/* SOFIA-DATA-START */
         const SNAPSHOT={{"window":{{"from":"2026-09-15","to":"2026-12-31"}}{snap_gen}}};
         const CINEMAS={cinemas_js};
@@ -132,6 +152,7 @@ def _minimal_html(snapshot_extra: str = "", extra_js: str = "",
         const LINKS=[];
         const VLINKS={vlinks_data};
         const PRELIM_FROM={{}};
+        {_site_url_line}
         {extra_js}
         /* SOFIA-DATA-END */</script>
         <script>/* SOFIA-POSTERS-START */
@@ -173,10 +194,13 @@ def _run(html_content: str, skip_smoke: bool = True,
         os.unlink(path)
 
 
-def _run_out(html_content: str) -> tuple[int, str]:
+def _run_out(html_content: str,
+             extra_env: dict | None = None) -> tuple[int, str]:
     """Like _run (smoke and freshness skipped), but also returns the gate's output,
     so a test can tell WHICH check failed."""
     env = dict(os.environ, SOFIA_SKIP_SMOKE="1", SOFIA_SKIP_FRESHNESS="1")
+    if extra_env:
+        env.update(extra_env)
     with tempfile.NamedTemporaryFile(suffix=".html", mode="w",
                                      encoding="utf-8", delete=False) as fh:
         fh.write(html_content)
@@ -622,6 +646,213 @@ check("P3A PREMIERES film with CC SHOWTIMES passes", _pa4_rc == 0)
 _pa5_rc, _pa5_out = _run_out(_with_premieres({"film:f0": [_PREM_FUTURE]}))
 check("P3A PREMIERES film without CC SHOWTIMES fails",
       _pa5_rc != 0 and ("SHOWTIMES" in _pa5_out or "cc-" in _pa5_out.lower() or "integrity" in _pa5_out.lower()))
+
+
+# ---------------------------------------------------------------------------
+# P3C: OG/Twitter meta, icon files, and share page spot checks (6a/6b/6c)
+# ---------------------------------------------------------------------------
+# These tests use SOFIA_ROOT to point verify_build at a controlled temp tree
+# so we can test both positive and negative scenarios independently of the
+# live worktree.
+
+import shutil as _shutil
+from PIL import Image as _PIL_Image_tv
+
+def _make_file_root(with_icons: bool = True,
+                    film_ids_ok: list[str] | None = None,
+                    film_ids_relative_og: list[str] | None = None,
+                    show_ids_ok: list[str] | None = None,
+                    film_dir_exists: bool = True) -> pathlib.Path:
+    """Create a temp directory tree with icon and share-page fixtures.
+
+    Returns the path; caller is responsible for cleanup with shutil.rmtree.
+    """
+    root = pathlib.Path(tempfile.mkdtemp(prefix="sv_test_root_"))
+    if with_icons:
+        icons = root / "icons"
+        icons.mkdir()
+        for fname, sz in [("apple-touch-icon.png", 180),
+                          ("icon-192.png", 192), ("icon-512.png", 512)]:
+            img = _PIL_Image_tv.new("RGB", (sz, sz), color=(10, 10, 20))
+            img.save(str(icons / fname))
+    # Share pages with correct og:url and absolute og:image
+    if film_ids_ok:
+        for fid in film_ids_ok:
+            p = root / "film" / fid
+            p.mkdir(parents=True)
+            _og = f"https://image.tmdb.org/t/p/w500/test.jpg"
+            _url = f"{_SITE_URL_FOR_TEST}/film/{fid}/"
+            (p / "index.html").write_text(
+                f'<html><head>'
+                f'<link rel="canonical" href="{_url}"/>'
+                f'<meta property="og:url" content="{_url}"/>'
+                f'<meta property="og:image" content="{_og}"/>'
+                f'</head></html>', encoding="utf-8")
+    elif film_dir_exists:
+        # Create an empty film/ dir so 6c's "directory exists" branch fires
+        (root / "film").mkdir(parents=True)
+    if film_ids_relative_og:
+        for fid in film_ids_relative_og:
+            p = root / "film" / fid
+            p.mkdir(parents=True)
+            _url = f"{_SITE_URL_FOR_TEST}/film/{fid}/"
+            (p / "index.html").write_text(
+                f'<html><head>'
+                f'<link rel="canonical" href="{_url}"/>'
+                f'<meta property="og:url" content="{_url}"/>'
+                f'<meta property="og:image" content="/share/share-preview.jpg"/>'
+                f'</head></html>', encoding="utf-8")
+    if show_ids_ok:
+        for sid in show_ids_ok:
+            p = root / "show" / sid
+            p.mkdir(parents=True)
+            _og = f"https://image.tmdb.org/t/p/w500/test.jpg"
+            _url = f"{_SITE_URL_FOR_TEST}/show/{sid}/"
+            (p / "index.html").write_text(
+                f'<html><head>'
+                f'<link rel="canonical" href="{_url}"/>'
+                f'<meta property="og:url" content="{_url}"/>'
+                f'<meta property="og:image" content="{_og}"/>'
+                f'</head></html>', encoding="utf-8")
+    return root
+
+print("\nP3C: OG/Twitter meta and share page checks")
+
+# 6a negative: page missing OG tags fails
+_p3c_noOG_html = textwrap.dedent(f"""\
+    <!doctype html><html><head><meta charset="utf-8"/></head><body>
+    <script>/* SOFIA-DATA-START */
+    const SNAPSHOT={{"window":{{"from":"2026-09-15","to":"2026-12-31"}},"generated":"{_NOW_ISO}"}};
+    const CINEMAS={_bulk_cinemas()};
+    const FILMS={_bulk_films()};
+    const SHOWTIMES={_bulk_showtimes()};
+    const THEATRES={_bulk_theatres()};
+    const SHOWS={_bulk_shows()};
+    const PERFORMANCES={_bulk_performances()};
+    const EVENTS=[];
+    const BOOKING={_bulk_booking()};
+    const TICKET_HUBS=[];
+    const FILM_EXTRA={{}};
+    const SHOW_EXTRA={{}};
+    const TASTE_FILMS=[];
+    const TASTE_SHOWS=[];
+    const VENUE_UNTIL={{}};
+    const LINKS=[];
+    const VLINKS=[];
+    const PRELIM_FROM={{}};
+    /* SOFIA-DATA-END */</script>
+    <script>/* SOFIA-POSTERS-START */
+    const POSTERS={{}};
+    const SHOWART={{}};
+    const SYN_EN={_json.dumps({fid: "Synopsis." for fid in [f"f{{i}}" for i in range(20)]})};
+    const TITLE_EN={_json.dumps({fid: f"Film {{fid}}" for fid in [f"f{{i}}" for i in range(20)]})};
+    const FILMINFO={{}};
+    /* SOFIA-POSTERS-END */</script>
+    </body></html>
+""")
+_p3c_root_ok = _make_file_root(with_icons=True,
+                                film_ids_ok=["test-film"],
+                                show_ids_ok=["test-show"])
+try:
+    _p3c_noOG_rc, _p3c_noOG_out = _run_out(_p3c_noOG_html,
+                                             extra_env={"SOFIA_ROOT": str(_p3c_root_ok)})
+    check("missing OG tags fails",
+          _p3c_noOG_rc != 0 and ("og:type" in _p3c_noOG_out or "OG/Twitter" in _p3c_noOG_out))
+finally:
+    _shutil.rmtree(str(_p3c_root_ok), ignore_errors=True)
+
+# 6a negative: relative og:image fails
+_p3c_rel_html = _minimal_html().replace(
+    f'content="{_SITE_URL_FOR_TEST}/share/share-preview.jpg"',
+    'content="/share/share-preview.jpg"',
+)
+_p3c_root_ok2 = _make_file_root(with_icons=True,
+                                 film_ids_ok=["test-film"],
+                                 show_ids_ok=["test-show"])
+try:
+    _p3c_rel_rc, _p3c_rel_out = _run_out(_p3c_rel_html,
+                                          extra_env={"SOFIA_ROOT": str(_p3c_root_ok2)})
+    check("relative og:image fails",
+          _p3c_rel_rc != 0 and ("og:image" in _p3c_rel_out or "absolute" in _p3c_rel_out))
+finally:
+    _shutil.rmtree(str(_p3c_root_ok2), ignore_errors=True)
+
+# 6c negative: missing share page for a listed film fails
+# film/ dir exists with a dir but no index.html inside it
+_p3c_root_miss = _make_file_root(with_icons=True,
+                                  film_ids_ok=[],
+                                  film_dir_exists=True,
+                                  show_ids_ok=[])
+_p3c_miss_fid = "missing-film"
+(_p3c_root_miss / "film" / _p3c_miss_fid).mkdir(parents=True)
+# No index.html created — the page is missing
+_p3c_miss_rc, _p3c_miss_out = _run_out(_minimal_html(),
+                                         extra_env={"SOFIA_ROOT": str(_p3c_root_miss)})
+_shutil.rmtree(str(_p3c_root_miss), ignore_errors=True)
+check("missing share page for a listed film fails",
+      _p3c_miss_rc != 0 and ("share page missing" in _p3c_miss_out or "missing" in _p3c_miss_out))
+
+# 6c negative: share page with relative og:image fails
+_p3c_root_relshare = _make_file_root(with_icons=True,
+                                      film_ids_relative_og=["rel-film"],
+                                      show_ids_ok=[])
+_p3c_relshare_rc, _p3c_relshare_out = _run_out(_minimal_html(),
+                                                 extra_env={"SOFIA_ROOT": str(_p3c_root_relshare)})
+_shutil.rmtree(str(_p3c_root_relshare), ignore_errors=True)
+check("share page with relative og:image fails",
+      _p3c_relshare_rc != 0 and ("og:image" in _p3c_relshare_out or "absolute" in _p3c_relshare_out))
+
+# 6b/6c positive: good icons + good share pages passes
+_p3c_root_full = _make_file_root(with_icons=True,
+                                  film_ids_ok=["good-film"],
+                                  show_ids_ok=["good-show"])
+_p3c_good_rc = _run(_minimal_html(), skip_freshness=True,
+                     extra_env={"SOFIA_ROOT": str(_p3c_root_full)})
+_shutil.rmtree(str(_p3c_root_full), ignore_errors=True)
+check("good icons + good share pages passes", _p3c_good_rc == 0)
+
+
+# ---------------------------------------------------------------------------
+# P3C: SITE_URL in page JS matches site_config (check 6a2)
+# ---------------------------------------------------------------------------
+print("\nP3C: SITE_URL consistency check")
+
+# Positive: correct SITE_URL matches site_config → passes
+_p3c_su_ok_root = _make_file_root(with_icons=True,
+                                   film_ids_ok=["test-film"],
+                                   show_ids_ok=["test-show"])
+try:
+    _su_ok_rc = _run(_minimal_html(), skip_freshness=True,
+                     extra_env={"SOFIA_ROOT": str(_p3c_su_ok_root)})
+    check("correct SITE_URL in page JS passes", _su_ok_rc == 0)
+finally:
+    _shutil.rmtree(str(_p3c_su_ok_root), ignore_errors=True)
+
+# Negative: unreplaced __SITE_URL__ placeholder → fails
+_p3c_su_bad_root = _make_file_root(with_icons=True,
+                                    film_ids_ok=["test-film"],
+                                    show_ids_ok=["test-show"])
+try:
+    _su_ph_rc, _su_ph_out = _run_out(
+        _minimal_html(site_url="__SITE_URL__"),
+        extra_env={"SOFIA_ROOT": str(_p3c_su_bad_root)})
+    check("unreplaced __SITE_URL__ placeholder fails",
+          _su_ph_rc != 0 and ("SITE_URL" in _su_ph_out or "site_config" in _su_ph_out))
+finally:
+    _shutil.rmtree(str(_p3c_su_bad_root), ignore_errors=True)
+
+# Negative: wrong SITE_URL value → fails
+_p3c_su_mism_root = _make_file_root(with_icons=True,
+                                     film_ids_ok=["test-film"],
+                                     show_ids_ok=["test-show"])
+try:
+    _su_mism_rc, _su_mism_out = _run_out(
+        _minimal_html(site_url="https://wrong.example.com"),
+        extra_env={"SOFIA_ROOT": str(_p3c_su_mism_root)})
+    check("mismatched SITE_URL fails",
+          _su_mism_rc != 0 and ("SITE_URL" in _su_mism_out or "site_config" in _su_mism_out))
+finally:
+    _shutil.rmtree(str(_p3c_su_mism_root), ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------

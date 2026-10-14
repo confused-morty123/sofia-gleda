@@ -19,6 +19,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
 SRC  = ROOT / "src" / "sofia-screen.artifact.html"             # dev source (in repo)
 OUT  = ROOT / "index.html"
 
+import sys as _sys, pathlib as _pathlib
+_sys.path.insert(0, str(_pathlib.Path(__file__).parent))
+from site_config import SITE_URL as _SITE_URL  # noqa: E402
+
 HEAD = """<!doctype html>
 <html lang="bg">
 <head>
@@ -28,16 +32,30 @@ HEAD = """<!doctype html>
 <meta name="color-scheme" content="dark">
 <meta name="description" content="Sofia Gleda — what's on in Sofia: cinema and theatre in one place.">
 <link rel="manifest" href="manifest.webmanifest">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sofia Gleda">
+<meta property="og:url" content="{SITE_URL}/">
+<meta property="og:title" content="Sofia Gleda — кино и театър в София">
+<meta property="og:description" content="Какво ще гледаш довечера? Афишът на кината и театрите в София. What are you seeing tonight? Sofia's cinema and theatre listings.">
+<meta property="og:image" content="{SITE_URL}/share/share-preview.jpg">
+<meta property="og:locale" content="bg_BG">
+<meta property="og:locale:alternate" content="en_US">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sofia Gleda — кино и театър в София">
+<meta name="twitter:description" content="Какво ще гледаш довечера? Афишът на кината и театрите в София.">
+<meta name="twitter:image" content="{SITE_URL}/share/share-preview.jpg">
 <!-- icon.svg uses embedded data: PNG tiles inside masks; browsers block nested
      data: URIs in SVG favicons (opaque origin restriction) — SVG renders blank.
      make_icons.py composites those tiles correctly into real PNGs, used here. -->
 <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="icon" href="icons/icon-512.png" sizes="512x512" type="image/png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sofia Gleda">
-"""
+""".replace("{SITE_URL}", _SITE_URL)
 
 SW_REG = """
 <script>
@@ -80,6 +98,9 @@ def main():
     if not SRC.exists():
         sys.exit(f"source not found: {SRC}")
     frag = assemble(SRC)
+    # Inject SITE_URL from site_config so the page always matches the canonical URL.
+    frag = frag.replace('const SITE_URL="__SITE_URL__";',
+                        f'const SITE_URL="{_SITE_URL}";')
 
     # body content begins at the #app container; everything before it is head.
     marker = '<div id="app">'
