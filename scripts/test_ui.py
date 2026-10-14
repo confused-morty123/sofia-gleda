@@ -3592,6 +3592,19 @@ def wave_h(browser):
     save_shot(page, wave, "d-bg-rails")
     ctx.close()
 
+    # Gems rail: EN mode must say "Niche films", not "Niche picks"
+    ctx_en, page_en, _errs_en = open_page(browser, 1280, 800, lang="en", mode="cinema")
+    page_en.wait_for_timeout(800)
+    _force_mount(page_en)
+    en_rail_heads = page_en.evaluate("""() => {
+        return Array.from(document.querySelectorAll('.rhead h2')).map(h => h.textContent.trim());
+    }""")
+    en_gem_idx = next((i for i, r in enumerate(en_rail_heads) if "niche" in r.lower()), -1)
+    check("h5_en_gems_name",
+          en_gem_idx != -1 and "films" in en_rail_heads[en_gem_idx].lower(),
+          f"EN gems rail not found or wrong name; heads={en_rail_heads[:8]}")
+    ctx_en.close()
+
     # ── H6: Tomorrow fallback (FakeDate at 23:50) ──
     print("\n=== H6: Tomorrow fallback at 23:50 ===")
     # At 23:50 the app should already show tomorrow's date (2026-10-08) in the day strip
