@@ -234,7 +234,9 @@ def wave_a1(browser):
     # Check 1: Geometry BG vs EN identical at 375×812 and 1280×800
     print("\n=== Check 1: Geometry BG vs EN ===")
     # Wave H: .burger removed; [data-search-open] present on both mobile and desktop
-    selectors = [".brand", ".seg", ".seg button", "[data-lang]", "[data-search-open]", "#q"]
+    # .brand's own box is as wide as its subtext, which differs by language;
+    # the logo inside it must not move.
+    selectors = [".brand-logo", ".seg", ".seg button", "[data-lang]", "[data-search-open]", "#q"]
     geometries = {}
     for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
@@ -9724,38 +9726,99 @@ def wave_p3a(browser):
               f".seg.seg-q width CSS: {result.get('segqWidth')!r}")
     ctx.close()
 
-    # ── P3A-2: Tagline ─────────────────────────────────────────────────────────
-    print("\n=== P3A-2: Tagline ===")
-    for lang, hook_frag, listing_frag in [
-        ("bg", "какво ще гледаш довечера", "афишът на кината и театрите в софия"),
-        ("en", "what are you seeing tonight", "sofia's cinema and theatre listings"),
+    # ── P3A-2: Brand subtext under logo ────────────────────────────────────────
+    print("\n=== P3A-2: Brand subtext under logo ===")
+    for lang, expected_text, expected_first_char in [
+        ("bg", "Афишът на кината и театрите в София", "А"),
+        ("en", "Sofia's cinema and theatre listings", "S"),
     ]:
+        # Desktop: 1280px, check subtext exists, exact text, position below logo, left-aligned
         ctx, page, errs = open_page(browser, 1280, 800, lang=lang, mode="cinema")
         page.wait_for_timeout(400)
 
         result = page.evaluate(f"""() => {{
+            const sub = document.querySelector(".brand-sub");
+            const logo = document.querySelector(".brand-logo");
             const hook = document.querySelector(".tagline-hook");
-            const listing = document.querySelector(".tagline-listing");
+            const block = document.querySelector(".tagline-block");
+            if (!sub) return {{found: false}};
+            const subRect = sub.getBoundingClientRect();
+            const logoRect = logo ? logo.getBoundingClientRect() : null;
+            const cs = window.getComputedStyle(sub);
+            const topGap = logoRect ? subRect.top - logoRect.bottom : null;
+            const leftDiff = logoRect ? subRect.left - logoRect.left : null;
             return {{
+                found: true,
+                text: sub.textContent.trim(),
+                firstChar: sub.textContent.trim()[0] || "",
+                ariaHidden: sub.getAttribute("aria-hidden"),
+                topGap: topGap,
+                leftDiff: leftDiff,
+                fontSize: cs.fontSize,
+                noEllipsis: cs.textOverflow !== "ellipsis",
+                noClip: sub.scrollWidth <= sub.clientWidth + 2,
                 hookFound: !!hook,
-                hookText: hook ? hook.textContent.trim() : "",
-                hookVisible: hook ? hook.offsetParent !== null : false,
-                listingFound: !!listing,
-                listingText: listing ? listing.textContent.trim() : "",
-                listingVisible: listing ? listing.offsetParent !== null : false
+                blockFound: !!block,
             }};
         }}""")
 
-        check(f"p3a_2_tagline_hook_visible_{lang}", result.get("hookVisible", False),
-              f"hookText={result.get('hookText', '')[:60]!r}")
-        check(f"p3a_2_tagline_hook_text_{lang}",
-              hook_frag in (result.get("hookText") or "").lower(),
-              f"expected={hook_frag!r} got={result.get('hookText', '')[:80]!r}")
-        check(f"p3a_2_tagline_listing_visible_{lang}", result.get("listingVisible", False),
-              f"listingText={result.get('listingText', '')[:60]!r}")
-        check(f"p3a_2_tagline_listing_text_{lang}",
-              listing_frag in (result.get("listingText") or "").lower(),
-              f"expected={listing_frag!r} got={result.get('listingText', '')[:80]!r}")
+        check(f"p3a_2_sub_found_desktop_{lang}", result.get("found", False),
+              f"brand-sub not found on desktop")
+        check(f"p3a_2_sub_text_desktop_{lang}", result.get("text") == expected_text,
+              f"expected={expected_text!r} got={result.get('text', '')!r}")
+        check(f"p3a_2_sub_first_char_desktop_{lang}", result.get("firstChar") == expected_first_char,
+              f"expected first char={expected_first_char!r} got={result.get('firstChar', '')!r}")
+        top_gap = result.get("topGap")
+        check(f"p3a_2_sub_top_gap_desktop_{lang}", top_gap is not None and 4 <= top_gap <= 12,
+              f"topGap={top_gap} (expected 4-12px)")
+        left_diff = result.get("leftDiff")
+        check(f"p3a_2_sub_left_aligned_desktop_{lang}", left_diff is not None and abs(left_diff) <= 2,
+              f"leftDiff={left_diff} (expected within 2px)")
+        check(f"p3a_2_sub_fontsize_desktop_{lang}", result.get("fontSize") == "12.5px",
+              f"fontSize={result.get('fontSize')!r} (expected 12.5px)")
+        check(f"p3a_2_no_tagline_block_{lang}", not result.get("blockFound", True),
+              f"tagline-block still present")
+        check(f"p3a_2_no_hook_{lang}", not result.get("hookFound", True),
+              f"tagline-hook still present")
+        save_shot(page, wave, f"p3a_brand_sub_desktop_{lang}")
+        ctx.close()
+
+        # Phone: 390px, check subtext centred
+        ctx, page, errs = open_page(browser, 390, 844, lang=lang, mode="cinema")
+        page.wait_for_timeout(400)
+
+        result_mob = page.evaluate("""() => {
+            const sub = document.querySelector(".brand-sub");
+            const logo = document.querySelector(".brand-logo");
+            if (!sub) return {found: false};
+            const subRect = sub.getBoundingClientRect();
+            const logoRect = logo ? logo.getBoundingClientRect() : null;
+            const cs = window.getComputedStyle(sub);
+            const topGap = logoRect ? subRect.top - logoRect.bottom : null;
+            const subCentre = subRect.left + subRect.width / 2;
+            const logoCentre = logoRect ? logoRect.left + logoRect.width / 2 : null;
+            const centreDiff = logoCentre !== null ? subCentre - logoCentre : null;
+            return {
+                found: true,
+                topGap: topGap,
+                centreDiff: centreDiff,
+                fontSize: cs.fontSize,
+                noEllipsis: cs.textOverflow !== "ellipsis",
+                noClip: sub.scrollWidth <= sub.clientWidth + 2,
+            };
+        }""")
+
+        check(f"p3a_2_sub_found_phone_{lang}", result_mob.get("found", False),
+              f"brand-sub not found on phone")
+        top_gap_m = result_mob.get("topGap")
+        check(f"p3a_2_sub_top_gap_phone_{lang}", top_gap_m is not None and 4 <= top_gap_m <= 12,
+              f"topGap={top_gap_m} (expected 4-12px)")
+        centre_diff = result_mob.get("centreDiff")
+        check(f"p3a_2_sub_centred_phone_{lang}", centre_diff is not None and abs(centre_diff) <= 2,
+              f"centreDiff={centre_diff} (expected within 2px)")
+        check(f"p3a_2_sub_fontsize_phone_{lang}", result_mob.get("fontSize") == "12px",
+              f"fontSize={result_mob.get('fontSize')!r} (expected 12px)")
+        save_shot(page, wave, f"p3a_brand_sub_phone_{lang}")
         ctx.close()
 
     # ── P3A-3: Theatre headings use Oswald + uppercase ─────────────────────────
@@ -10046,53 +10109,55 @@ def wave_p3a(browser):
               f"guestInVis={result.get('guestInVis')}")
     ctx.close()
 
-    # ── P3A-2b: Tagline in EN and BG render check ─────────────────────────────
-    print("\n=== P3A-2b: Tagline renders on desktop and phone ===")
-    for vp_w, vp_h, label, lang, hook_exp, listing_exp in [
-        (1280, 800, "desktop_bg", "bg", "Какво ще гледаш довечера?", "Афишът на кината и театрите в София."),
-        (390, 844, "phone_bg", "bg", "Какво ще гледаш довечера?", "Афишът на кината и театрите в София."),
-        (1280, 800, "desktop_en", "en", "What are you seeing tonight?", "Sofia's cinema and theatre listings."),
-        (390, 844, "phone_en", "en", "What are you seeing tonight?", "Sofia's cinema and theatre listings."),
+    # ── P3A-2b: Brand subtext exact text at desktop and phone ─────────────────
+    print("\n=== P3A-2b: Brand subtext exact text at desktop and phone ===")
+    for vp_w, vp_h, label, lang, sub_exp in [
+        (1280, 800, "desktop_bg", "bg", "Афишът на кината и театрите в София"),
+        (390, 844, "phone_bg", "bg", "Афишът на кината и театрите в София"),
+        (1280, 800, "desktop_en", "en", "Sofia's cinema and theatre listings"),
+        (390, 844, "phone_en", "en", "Sofia's cinema and theatre listings"),
     ]:
         ctx, page, errs = open_page(browser, vp_w, vp_h, lang=lang, mode="cinema")
         page.wait_for_timeout(400)
         result = page.evaluate("""() => {
-            const hook = document.querySelector(".tagline-hook");
-            const listing = document.querySelector(".tagline-listing");
+            const sub = document.querySelector(".brand-sub");
             return {
-                hookFound: !!hook, hookText: hook ? hook.textContent.trim() : "",
-                listingFound: !!listing, listingText: listing ? listing.textContent.trim() : ""
+                found: !!sub,
+                text: sub ? sub.textContent.trim() : "",
             };
         }""")
-        check(f"p3a_2b_tagline_hook_{label}", result.get("hookFound", False) and result.get("hookText") == hook_exp,
-              f"got={result.get('hookText', '')!r}")
-        check(f"p3a_2b_tagline_listing_{label}", result.get("listingFound", False) and result.get("listingText") == listing_exp,
-              f"got={result.get('listingText', '')!r}")
-        save_shot(page, wave, f"p3a_tagline_{label}")
+        check(f"p3a_2b_sub_found_{label}", result.get("found", False),
+              f"brand-sub not found")
+        check(f"p3a_2b_sub_text_{label}", result.get("text") == sub_exp,
+              f"expected={sub_exp!r} got={result.get('text', '')!r}")
+        save_shot(page, wave, f"p3a_sub_{label}")
         ctx.close()
 
-    # ── P3A-2c: Tagline no-ellipsis at 375/390/440px in BG and EN ─────────────
-    print("\n=== P3A-2c: Tagline no ellipsis at narrow widths ===")
-    for vp_w, lang in [(375, "bg"), (375, "en"), (390, "bg"), (390, "en"), (440, "bg"), (440, "en")]:
+    # ── P3A-2c: Brand subtext no-ellipsis/no-clip at 375/390/440/960/1280/1440px ─
+    print("\n=== P3A-2c: Brand subtext no ellipsis or clip at all widths ===")
+    for vp_w, lang in [
+        (375, "bg"), (375, "en"),
+        (390, "bg"), (390, "en"),
+        (440, "bg"), (440, "en"),
+        (960, "bg"), (960, "en"),
+        (1280, "bg"), (1280, "en"),
+        (1440, "bg"), (1440, "en"),
+    ]:
         ctx, page, errs = open_page(browser, vp_w, 844, lang=lang, mode="cinema")
         page.wait_for_timeout(400)
         result = page.evaluate("""() => {
-            const els = [
-                document.querySelector(".tagline-hook"),
-                document.querySelector(".tagline-listing"),
-            ].filter(Boolean);
+            const sub = document.querySelector(".brand-sub");
+            if (!sub) return {found: false, ok: false, issues: ["brand-sub not found"]};
+            const cs = window.getComputedStyle(sub);
+            const hasEllipsis = cs.textOverflow === "ellipsis";
+            const clipped = sub.scrollWidth > sub.clientWidth + 2;
             const issues = [];
-            for (const el of els) {
-                const cs = window.getComputedStyle(el);
-                const hasEllipsis = cs.textOverflow === "ellipsis";
-                const clipped = el.scrollWidth > el.clientWidth + 2;
-                if (hasEllipsis) issues.push(el.className + ":has-ellipsis-style");
-                if (clipped) issues.push(el.className + ":scrollWidth>clientWidth(clipped)");
-            }
-            return { issues, ok: issues.length === 0 };
+            if (hasEllipsis) issues.push("has-ellipsis-style");
+            if (clipped) issues.push("scrollWidth>clientWidth(clipped)");
+            return {found: true, ok: issues.length === 0, issues};
         }""")
         label = f"{vp_w}_{lang}"
-        check(f"p3a_2c_tagline_no_ellipsis_{label}", result.get("ok", False),
+        check(f"p3a_2c_sub_no_ellipsis_{label}", result.get("ok", False),
               f"issues={result.get('issues', [])}")
         ctx.close()
 

@@ -30,21 +30,21 @@ HEAD = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C0A0F">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Sofia Gleda — what's on in Sofia: cinema and theatre in one place.">
+<meta name="description" content="Програмата на кината и театрите в София, обновявана всеки ден от сайтовете им.">
 <link rel="manifest" href="manifest.webmanifest">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Sofia Gleda">
 <meta property="og:url" content="{SITE_URL}/">
-<meta property="og:title" content="Sofia Gleda — кино и театър в София">
-<meta property="og:description" content="Какво ще гледаш довечера? Афишът на кината и театрите в София. What are you seeing tonight? Sofia's cinema and theatre listings.">
+<meta property="og:title" content="Sofia Gleda">
+<meta property="og:description" content="Афишът на кината и театрите в София">
 <meta property="og:image" content="{SITE_URL}/share/share-preview.jpg">
 <meta property="og:locale" content="bg_BG">
 <meta property="og:locale:alternate" content="en_US">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Sofia Gleda — кино и театър в София">
-<meta name="twitter:description" content="Какво ще гледаш довечера? Афишът на кината и театрите в София.">
+<meta name="twitter:title" content="Sofia Gleda">
+<meta name="twitter:description" content="Афишът на кината и театрите в София">
 <meta name="twitter:image" content="{SITE_URL}/share/share-preview.jpg">
 <!-- icon.svg uses embedded data: PNG tiles inside masks; browsers block nested
      data: URIs in SVG favicons (opaque origin restriction) — SVG renders blank.

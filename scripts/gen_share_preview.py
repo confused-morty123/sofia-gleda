@@ -131,7 +131,7 @@ body{{
 .logo-wrap{{
   width:{logo_w}px;
   height:{logo_h}px;
-  margin-bottom:32px;
+  margin-bottom:20px;
   flex-shrink:0;
 }}
 .logo-wrap img{{
@@ -140,16 +140,8 @@ body{{
   display:block;
 }}
 
-.tagline-main{{
-  font-size:34px;
-  font-weight:400;
-  line-height:1.3;
-  color:#F4EFF6;
-  letter-spacing:-0.01em;
-  margin-bottom:12px;
-}}
 .tagline-sub{{
-  font-size:18px;
+  font-size:22px;
   font-weight:400;
   line-height:1.5;
   color:#F4EFF6;
@@ -208,8 +200,7 @@ body{{
   <div class="logo-wrap">
     <img src="{logo_uri}" alt="Sofia Gleda">
   </div>
-  <div class="tagline-main">Какво ще гледаш довечера?</div>
-  <div class="tagline-sub">Афишът на кината и театрите в София.</div>
+  <div class="tagline-sub">Афишът на кината и театрите в София</div>
 </div>
 
 </body>
@@ -241,7 +232,7 @@ def main():
 
             # Verify Onest is actually applied (not a fallback)
             font_check = page.evaluate("""() => {
-                const el = document.querySelector('.tagline-main');
+                const el = document.querySelector('.tagline-sub');
                 if (!el) return 'element not found';
                 return getComputedStyle(el).fontFamily;
             }""")

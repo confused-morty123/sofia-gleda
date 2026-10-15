@@ -56,8 +56,9 @@ a{color:inherit}
 /* three zones: brand left · toggle CENTRE · search+lang right
    P3A item 1: toggle moves to true centre column */
 .bar-in{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:18px}
-.brand{display:flex; align-items:center; gap:9px; justify-self:start; min-width:0;
+.brand{display:flex; flex-direction:column; align-items:flex-start; justify-self:start; min-width:0;
   background:none; border:0; padding:0; margin:0; cursor:pointer; font:inherit; -webkit-tap-highlight-color:transparent}
+@media(max-width:760px){ .brand{align-items:center} }
 .brand-logo{height:clamp(32px,3.2vw,42px); width:auto; flex:0 1 auto; min-width:0; max-width:100%;
   object-fit:contain; display:block; transition:filter .15s}
 .brand:hover .brand-logo{filter:brightness(1.12)}
@@ -79,9 +80,9 @@ a{color:inherit}
 /* Row 1: 3-column grid — left placeholder | logo centred | lang button right.
    Row 2: seg toggle (fills width) + search icon.
    Row 3 (optional): full-width open search field when S.searchOpen.
-   --logo-row-h = 42px row (the language button is the tallest item) + 14px padding-block-top + 10px gap = 66px. */
+   --logo-row-h = 45px row (logo 28px + 5px gap + 12px subtext, taller than the 42px language button) + 14px padding-block-top + 10px gap = 69px. */
 @media(max-width:760px){
-  :root{ --logo-row-h:66px } /* 42px row (language button) + 14px top padding + 10px gap */
+  :root{ --logo-row-h:69px } /* 45px row (logo + subtext) + 14px top padding + 10px gap */
   .bar{top:calc(env(safe-area-inset-top,0px) - var(--logo-row-h) + 8px)}
   .bar-row-logo{display:grid; grid-template-columns:42px 1fr 42px; align-items:center; margin-bottom:10px; gap:0}
   .bar-row-logo .brand{justify-self:center; grid-column:2}
@@ -253,20 +254,13 @@ a{color:inherit}
 .late-day-card p{margin:0; font-size:16px; color:var(--fg-2)}
 .late-day-card .btn{margin-top:4px}
 
-/* ---------- tagline (P3A item 6) ---------- */
-/* Two lines under the header: hook (secondary) and listing line (quieter). */
-.tagline-block{padding-block:12px 4px; margin:0; display:flex; flex-direction:column; gap:3px}
-.tagline-hook{font-size:16px; font-weight:500; color:var(--fg-2); line-height:1.35;
-  white-space:nowrap; overflow:visible; max-width:100%}
-.tagline-listing{font-size:12.5px; font-weight:400; color:var(--fg-3); line-height:1.35;
-  white-space:nowrap; overflow:visible; max-width:100%}
+/* ---------- brand subtext (option A: under logo in header) ---------- */
+.brand .brand-sub{display:block; font-family:Onest,sans-serif; font-weight:400;
+  font-size:12.5px; color:var(--fg-2); white-space:nowrap; overflow:visible;
+  line-height:1; margin-top:5px; text-align:left;
+  text-transform:none; letter-spacing:normal}
 @media(max-width:760px){
-  .tagline-hook{font-size:14px}
-  .tagline-listing{font-size:11.5px} }
-/* legacy single-line tagline kept for graceful fallback */
-.site-tagline{font-size:15px; color:var(--fg-3); line-height:1.45; max-width:60ch;
-  padding-block:10px 4px; margin:0; display:none}
-@media(max-width:760px){ .site-tagline{font-size:14px; padding-block:6px 2px} }
+  .brand .brand-sub{font-size:12px; text-align:center} }
 
 /* ---------- hero ---------- */
 .hero{position:relative; border-radius:var(--r-lg); overflow:hidden; margin-block:18px 30px;
@@ -569,8 +563,8 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .venue-block-head .sub{font-size:11.5px; color:var(--fg-3); margin-top:2px}
 
 /* ---------- show-attribute labels (lang / format) ---------- */
-.attr-lbl{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;padding:1px 5px;border-radius:3px;white-space:nowrap;
+.attr-lbl{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.02em;
+  padding:1px 5px;border-radius:3px;white-space:nowrap;
   margin-left:3px;vertical-align:middle;background:rgba(255,255,255,.08);
   color:var(--fg-2);border:1px solid rgba(255,255,255,.12);line-height:1.5}
 .attr-lbl.lang{background:rgba(255,255,255,.12);color:var(--fg-1)}
@@ -807,7 +801,7 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
 const T={
 bg:{tagline:"кино и театър в софия",
  siteTagline:"Програмата на кината и театрите в София, обновявана всеки ден от сайтовете им.",
- hookLine:"Какво ще гледаш довечера?",listingLine:"Афишът на кината и театрите в София.",
+ listingLine:"Афишът на кината и театрите в София",
  cinema:"Кино",theatre:"Театър",all:"Цялата седмица",
  dows:["нд","пн","вт","ср","чт","пт","сб"],
  dowsLong:["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"],
@@ -894,7 +888,7 @@ bg:{tagline:"кино и театър в софия",
  ssCalOutlook:"Outlook"},
 en:{tagline:"cinema & theatre in sofia",
  siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
- hookLine:"What are you seeing tonight?",listingLine:"Sofia's cinema and theatre listings.",
+ listingLine:"Sofia's cinema and theatre listings",
  cinema:"Cinema",theatre:"Theatre",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -3166,7 +3160,7 @@ function render(){
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async"></button>
+      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
@@ -3176,7 +3170,7 @@ function render(){
     ${searchMobileOpenHTML}`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async"></button>
+      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
         ${deskSearchHTML}${searchIconBtn}
@@ -3197,7 +3191,6 @@ function render(){
     ${headerHTML}
   </div></header>
   <main class="wrap">
-    ${(L.hookLine||L.listingLine)&&!sr?`<div class="tagline-block">${L.hookLine?`<p class="tagline-hook">${esc(L.hookLine)}</p>`:""} ${L.listingLine?`<p class="tagline-listing">${esc(L.listingLine)}</p>`:""}</div>`:""}
     ${sr?searchView(sr):`
     ${periodBanner()}
     ${isVenueMode?"":hero()}
