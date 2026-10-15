@@ -15165,6 +15165,178 @@ def wave_ev3(browser):
             pass
 
 
+# ============================================================================
+# WAVE EV4: event key art (fetch_event_posters.py -> EVENTART, posters/ev-*)
+# ============================================================================
+_EV4_RENDER_JS = """(art) => Object.keys(art).map(id => {
+    const ev = EVENTS.find(e => e.id === id);
+    if (!ev) return {id, ev: false};
+    const box = document.createElement('div'); box.innerHTML = eventCard(ev);
+    const sh = document.createElement('div'); sh.innerHTML = sheetEvent(ev);
+    const ci = box.querySelector('img.p-real'), si = sh.querySelector('.shero img.p-real');
+    return {id, ev: true, card: ci ? ci.getAttribute('src') : null, sheet: si ? si.getAttribute('src') : null};
+})"""
+_EV4_LOAD_JS = """async (srcs) => Promise.all(srcs.map(s => new Promise(res => {
+    const i = new Image();
+    i.onload = () => res([s, i.naturalWidth, i.naturalHeight]);
+    i.onerror = () => res([s, 0, 0]);
+    i.src = s;
+})))"""
+
+
+def _ev4_open(browser, url, lang, mode):
+    ctx = browser.new_context(viewport={"width": 1280, "height": 900}, timezone_id="Europe/Sofia", locale="bg-BG")
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',
+        genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'%s', mode:'%s'})); } catch(e) {}""" % (lang, mode))
+    page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(url)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(300)
+    return ctx, page, errs
+
+
+def _ev4_card(page, eid):
+    """The mounted card's real image for an event: rails stream in on scroll."""
+    sel = f'.ecard[data-event="{eid}"]'
+    for _ in range(20):
+        if page.query_selector(sel):
+            break
+        page.mouse.wheel(0, 900)
+        page.wait_for_timeout(150)
+    el = page.query_selector(sel)
+    if not el:
+        return None
+    el.scroll_into_view_if_needed()
+    page.wait_for_timeout(400)
+    return page.evaluate("""(sel) => { const im = document.querySelector(sel + ' img.p-real');
+        return im ? {src: im.getAttribute('src'), w: im.naturalWidth, done: im.complete,
+                     shown: im.getBoundingClientRect().width > 0} : {src: null}; }""", sel)
+
+
+def wave_ev4(browser):
+    """An event with an EVENTART entry (its re-hosted key art) shows that image on
+    its card and in its sheet, and the file loads; EVENTART is read before SHOWART,
+    whose hand-added CineLibri file stays the fallback. BG and EN."""
+    wave = "EV4"
+    ensure_shot_dir(wave)
+    src = (webapp_root / html_env).read_text(encoding="utf-8")
+    m = re.search(r"^const EVENTART\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    check("ev4_eventart_declared", m is not None, "the build has no EVENTART line")
+    art = json.loads(m.group(1)) if m else {}
+    sa = re.search(r"^const SHOWART\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    showart = json.loads(sa.group(1)) if sa else {}
+
+    # 1. the build's own entries: card and sheet markup, the files load, mounted cards
+    for lang in ("bg", "en"):
+        print(f"\n=== EV4: the build's event art ({lang}) ===")
+        if not art:
+            skip(f"ev4_real_{lang}", "EVENTART is empty in this build")
+            continue
+        for mode in ("cinema", "theatre"):
+            ctx, page, errs = open_page(browser, 1280, 900, lang=lang, mode=mode)
+            page.wait_for_timeout(300)
+            if mode == "cinema":
+                for r in page.evaluate(_EV4_RENDER_JS, art):
+                    if not r["ev"]:
+                        skip(f"ev4_real_{r['id']}_{lang}", "not an event of this build")
+                        continue
+                    check(f"ev4_real_{r['id']}_card_{lang}", r["card"] == art[r["id"]], f"card img {r['card']!r}")
+                    check(f"ev4_real_{r['id']}_sheet_{lang}", r["sheet"] == art[r["id"]], f"sheet img {r['sheet']!r}")
+                for s, w, h in page.evaluate(_EV4_LOAD_JS, sorted(set(art.values()))):
+                    check(f"ev4_real_file_loads_{s.rsplit('/', 1)[-1]}_{lang}", w > 0 and h > 0,
+                          f"{s}: {w}x{h}")
+            on_mode = page.evaluate("""(ids) => EVENTS.filter(e => ids.includes(e.id) &&
+                (e.scope === 'both' || e.scope === S.mode)).map(e => e.id)""", list(art))
+            for eid in on_mode:
+                c = _ev4_card(page, eid)
+                if c is None:
+                    skip(f"ev4_real_{eid}_on_page_{mode}_{lang}", "its card is not on this page today")
+                    continue
+                check(f"ev4_real_{eid}_on_page_{mode}_{lang}", c["src"] == art[eid] and c["done"] and c["w"] > 0 and c["shown"],
+                      f"{c}")
+            check(f"ev4_real_no_js_errors_{mode}_{lang}", not errs, "; ".join(errs[:3]))
+            ctx.close()
+        # the sheet opened by its link shows the art in its hero
+        eid = sorted(art)[0]
+        ctx, page, errs = _ev4_open(browser, (webapp_root / html_env).as_uri() + "#event=" + eid, lang, "cinema")
+        try:
+            page.wait_for_selector(".scrim .sheet .shero img.p-real", timeout=5000)
+            got = page.evaluate("""() => document.querySelector('.scrim .sheet .shero img.p-real').getAttribute('src')""")
+            check(f"ev4_real_sheet_link_{eid}_{lang}", got == art[eid], f"{got!r}")
+            save_shot(page, wave, f"ev4_sheet_{eid}_{lang}")
+        except Exception as ex:
+            check(f"ev4_real_sheet_link_{eid}_{lang}", False, str(ex)[:120])
+        ctx.close()
+
+    # 2. a controlled EVENTART: a running festival with art; CineLibri without an
+    #    EVENTART entry (its SHOWART file is the fallback) and, when an ev- file
+    #    exists, CineLibri pointed at another picture (EVENTART wins over SHOWART)
+    if not m:
+        return
+    today = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    iso = lambda n: (today + datetime.timedelta(days=n)).isoformat()
+    test_event = {"id": "ev4-test-fest", "kind": "festival", "scope": "both", "status": "active", "tag": "СЛЕД 0 ДНИ",
+                  "title": "Тестов фестивал EV4", "titleEn": "EV4 Test Festival", "from": iso(-1), "to": iso(3),
+                  "g": ["#952343", "#23060E"], "blurbBg": "Фестивал.", "blurbEn": "Festival.",
+                  "source": "programata.bg", "url": "https://programata.bg/stsena/ev4/", "auto": True}
+    pic = "posters/cinelibri.jpg" if (webapp_root / "posters" / "cinelibri.jpg").exists() else None
+    other = next((p for p in ("posters/ev-kinomania.jpg", "posters/ev-act-festival-za-svoboden-teatar-p187545.jpg")
+                  if (webapp_root / p).exists()), None)
+    if not pic:
+        skip("ev4_controlled", "posters/cinelibri.jpg is not in this checkout")
+        return
+    cases = [("fallback", {"ev4-test-fest": pic}), ("precedence", {"ev4-test-fest": pic, "cinelibri": other})]
+    test_file = webapp_root / "index.ev4.html"
+    try:
+        for name, test_art in cases:
+            if name == "precedence" and not other:
+                skip("ev4_eventart_before_showart", "no posters/ev-* file in this checkout")
+                continue
+            t = re.sub(r"^const EVENTART\s*=.*$", lambda _m: "const EVENTART = " + json.dumps(test_art) + ";",
+                       src, count=1, flags=re.M)
+            t = re.sub(r"^const EVENTS_AUTO\s*=.*$", lambda _m: "const EVENTS_AUTO = " + json.dumps(
+                [test_event], ensure_ascii=False, separators=(",", ":")) + ";", t, count=1, flags=re.M)
+            test_file.write_text(t, encoding="utf-8")
+            for lang in ("bg", "en"):
+                print(f"\n=== EV4: controlled EVENTART, {name} ({lang}) ===")
+                ctx, page, errs = _ev4_open(browser, test_file.as_uri(), lang, "theatre")
+                cl = page.evaluate("""() => { const ev = EVENTS.find(e => e.id === 'cinelibri'); if (!ev) return null;
+                    const b = document.createElement('div'); b.innerHTML = eventCard(ev);
+                    const im = b.querySelector('img.p-real'); return im ? im.getAttribute('src') : ''; }""")
+                if cl is None:
+                    skip(f"ev4_{name}_cinelibri_{lang}", "no cinelibri event in this build")
+                elif name == "fallback":
+                    check(f"ev4_showart_fallback_cinelibri_{lang}", cl == showart.get("cinelibri"),
+                          f"card img {cl!r}, SHOWART {showart.get('cinelibri')!r}")
+                else:
+                    check(f"ev4_eventart_before_showart_{lang}", cl == other, f"card img {cl!r}, expected {other!r}")
+                if name == "fallback":
+                    c = _ev4_card(page, "ev4-test-fest")
+                    check(f"ev4_test_card_on_page_{lang}", bool(c) and c["src"] == pic and c["done"] and c["w"] > 0,
+                          f"{c}")
+                    if c:
+                        page.click('.ecard[data-event="ev4-test-fest"]')
+                        try:
+                            page.wait_for_selector(".scrim .sheet .shero img.p-real", timeout=5000)
+                            page.wait_for_timeout(450)
+                            sh = page.evaluate("""() => { const im = document.querySelector('.scrim .sheet .shero img.p-real');
+                                return {src: im.getAttribute('src'), w: im.naturalWidth}; }""")
+                            check(f"ev4_test_sheet_{lang}", sh["src"] == pic and sh["w"] > 0, f"{sh}")
+                            save_shot(page, wave, f"ev4_test_sheet_{lang}")
+                        except Exception as ex:
+                            check(f"ev4_test_sheet_{lang}", False, str(ex)[:120])
+                check(f"ev4_{name}_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+                ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -15192,6 +15364,7 @@ WAVES = {
     "EV1": wave_ev1,
     "EV2": wave_ev2,
     "EV3": wave_ev3,
+    "EV4": wave_ev4,
 }
 
 def main():

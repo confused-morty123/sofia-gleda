@@ -50,8 +50,11 @@ Run in order by `scripts/refresh_all.py` (which the robot calls every 3 days):
    (its festival categories, only posts with dates and in Sofia) into `events.json`;
    keeps the previous events when the site is down. Shown in "Лимитирано и
    ексклузивно" with a link to the source page.
-7. **`inject_data.py`** — inlines the poster and details maps, and the auto events
-   (`EVENTS_AUTO`, `EVENT_MEMBERS`), into `index.html`.
+7. **`fetch_event_posters.py`** — key art for the events shown (the festival's own
+   site, else the programata post's featured image; logos, small images and strips
+   refused), re-hosted as `posters/ev-<id>.jpg`; sources in `event_posters.json`.
+8. **`inject_data.py`** — inlines the poster and details maps, and the auto events
+   (`EVENTS_AUTO`, `EVENT_MEMBERS`, `EVENTART`), into `index.html`.
 
 Every step is best-effort and isolated: one failure never empties the app, and
 the run is logged to `build_report.json`.

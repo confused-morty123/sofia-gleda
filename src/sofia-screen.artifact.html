@@ -904,7 +904,7 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
-  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS"].forEach(function(n){
+  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS","EVENTART"].forEach(function(n){
     try{ if(typeof window[n]==="undefined" && !(n in globalThis)) window[n]={}; }catch(e){ window[n]={}; }
   });
   function panel(msg){
@@ -1611,6 +1611,11 @@ const TMDB_IMG="https://image.tmdb.org/t/p/";
    film we already list), so a new limited screening is covered the day it
    appears rather than when someone remembers. */
 const POSTER_ALIAS=(typeof SHOWALIAS==="object"&&SHOWALIAS)||{};
+/* Event key art (scripts/fetch_event_posters.py -> EVENTART, inlined by inject_data.py):
+   the festival's own image, re-hosted under posters/ev-*. Keys are event ids only
+   (the gate checks), read before the theatre posters so the automated CineLibri
+   art replaces the hand-added SHOWART file, which stays as the fallback. */
+const EVENTIMG=(typeof EVENTART==="object"&&EVENTART)||{};
 function realPoster(id,size){
   /* ids are prefixed for the hero ("hero-x") and sheet ("sh-x") variants.
      Priority: alias -> embedded base64/override POSTERS -> TMDB film poster ->
@@ -1619,6 +1624,7 @@ function realPoster(id,size){
   const s=String(id);
   let base=s.replace(/^(hero|sh)-/,"");
   if(POSTER_ALIAS[base])base=POSTER_ALIAS[base];
+  if(EVENTIMG[base])return EVENTIMG[base];
   if(POSTER_MAP[base])return POSTER_MAP[base];
   const m=ART[base];
   if(m){

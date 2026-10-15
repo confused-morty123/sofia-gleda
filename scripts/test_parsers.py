@@ -3326,6 +3326,161 @@ finally:
     _TR.load_cache, _TR.DEEPL_KEY = _saved_cache, _saved_key
 
 
+# ------------------------------------------- fetch_event_posters: event key art
+# Fixtures: cinelibri.com's and kinomania.bg's home pages and programata's ACT post
+# (saved 2026-10-15, trimmed), and a hand-made page whose og:image is a logo.
+# Images are made here with Pillow; nothing touches the network.
+print("\nfetch_event_posters: picking and re-hosting event key art")
+import fetch_event_posters as EP
+import shutil as _evp_shutil, tempfile as _evp_tf
+from PIL import Image as _EvpImg
+
+
+def _evp_page(name):
+    return (FIXTURES / f"evposter_{name}.html").read_text(encoding="utf-8")
+
+
+_ACT_POST = "https://programata.bg/stsena/ne-se-prav%d1%9d-zapochva-16-izdanie-na-act/"
+print("  the pictures a page names as its own")
+check("programata: og:image, then the post's own featured image (not a related post's)",
+      [u.rsplit("/", 1)[-1] for u in EP.page_images(_evp_page("programata_act"), _ACT_POST)],
+      ["act_fest_digital_fb_cover_website-1-1024x576.png", "act_fest_digital_fb_cover_website-1-scaled.png"])
+check("programata: the organiser's site is the post's own link",
+      EP.organiser_link(_evp_page("programata_act"), _ACT_POST), "https://actfest.org")
+check("cinelibri.com: its og:image is the 2026 key visual",
+      EP.page_images(_evp_page("cinelibri_home"), "https://www.cinelibri.com/"),
+      ["https://www.cinelibri.com/wp-content/uploads/2026/06/website-key-visual-2026.jpg"])
+check("kinomania.bg: no og:image, and its 1000x200 header <img> is no candidate",
+      EP.page_images(_evp_page("kinomania_home"), "https://www.kinomania.bg/bg_BG/"), [])
+_lg = EP.page_images(_evp_page("logo_og"), "https://festival.example.bg/fest/")
+check("logo site: og, twitter, then the own featured image (not the linked related post)",
+      [u.rsplit("/", 1)[-1] for u in _lg], ["site-logo-fb.png", "logo_square.jpg", "key-visual-2026-1920x1080.jpg"])
+check("logo site: the two logos are refused by name, the key visual is not",
+      [bool(EP.url_problem(u)) for u in _lg], [True, True, False])
+check("logo site: a Facebook link is not the organiser's site",
+      EP.organiser_link(_evp_page("logo_og"), "https://festival.example.bg/fest/"), None)
+for _u, _bad in [("https://x.bg/25764107879854-logosupport2cveten.jpg", True), ("https://x.bg/site-icon-512.png", True),
+                 ("https://x.bg/favicon.png", True), ("https://x.bg/default.jpg", True), ("https://x.bg/a.svg", True),
+                 ("http://x.bg/key-visual.jpg", True), ("https://x.bg/iconic-poster.jpg", False),
+                 ("https://x.bg/blanket-fest-2026.jpg", False)]:
+    check(f"url: {_u.rsplit('/', 1)[-1]} {'refused' if _bad else 'accepted'}", bool(EP.url_problem(_u)), _bad)
+
+_evp_td = pathlib.Path(_evp_tf.mkdtemp(prefix="sg_evp_"))
+try:
+    def _evp_img(name, size, mode="RGB", fmt="JPEG", hole=False):
+        im = _EvpImg.new(mode, size, (180, 40, 60, 255) if mode == "RGBA" else (180, 40, 60))
+        if hole:
+            im.putpixel((0, 0), (0, 0, 0, 0))
+        p = _evp_td / name
+        im.save(p, fmt)
+        return p
+    _wide = _evp_img("wide.jpg", (1200, 675))
+    _opaque_png = _evp_img("opaque.png", (1024, 576), "RGBA", "PNG")
+    _cutout = _evp_img("cutout.png", (900, 900), "RGBA", "PNG", hole=True)
+    _small = _evp_img("small.jpg", (500, 300))
+    _strip = _evp_img("strip.jpg", (1000, 200))
+    _tall = _evp_img("tall.jpg", (700, 1000))
+    _html = _evp_td / "page.jpg"
+    _html.write_text("<html>not a picture</html>", encoding="utf-8")
+    print("  what a downloaded picture must be")
+    check("image: 1200x675 landscape accepted", EP.image_problem(_wide), (None, (1200, 675)))
+    check("image: an opaque PNG (ACT's cover) accepted", EP.image_problem(_opaque_png)[0], None)
+    check("image: transparent pixels (a cut-out logo) refused",
+          "transparent" in (EP.image_problem(_cutout)[0] or ""), True)
+    check("image: under 600 px wide refused", "under 600" in (EP.image_problem(_small)[0] or ""), True)
+    check("image: a 5:1 header strip refused", "strip" in (EP.image_problem(_strip)[0] or ""), True)
+    check("image: HTML saved as .jpg refused", (EP.image_problem(_html)[0] or "").startswith("not an image"), True)
+    check("image: a portrait picture is acceptable (used only without a wider one)", EP.image_problem(_tall)[0], None)
+
+    print("  choosing, re-hosting, keep-previous")
+    _bank = {"https://festival.example.bg/u/portrait-2026.jpg": _tall,
+             "https://cdn.example.net/u/key-visual-2026.jpg": _wide,
+             "https://programata.bg/wp-content/uploads/2026/10/fest-small.jpg": _small,
+             "https://programata.bg/wp-content/uploads/2026/10/fest-cover.png": _opaque_png,
+             "https://programata.bg/wp-content/uploads/2026/10/fest-wide.jpg": _wide}
+    _calls = []
+
+    def _dl(url, path):
+        _calls.append(url)
+        src = _bank.get(url)
+        if src is None:
+            return False
+        pathlib.Path(path).write_bytes(src.read_bytes())
+        return True
+    _root = _evp_td / "root"
+    (_root / "posters").mkdir(parents=True)
+    _post = "https://programata.bg/stsena/test-fest/"
+    _ev = {"id": "test-fest-p1", "to": "2026-11-30", "auto": True, "url": _post}
+    _src = [("organiser", "https://festival.example.bg/", _post,
+             ["https://festival.example.bg/u/site-logo.png", "https://cdn.example.net/u/key-visual-2026.jpg",
+              "https://festival.example.bg/u/portrait-2026.jpg"]),
+            ("programata", _post, None,
+             ["https://programata.bg/wp-content/uploads/2026/10/fest-small.jpg",
+              "https://programata.bg/wp-content/uploads/2026/10/fest-cover.png"])]
+    _refused, _sizes = {}, {}
+    _rec = EP.pick(_ev, _src, None, _refused, _dl, _root, _sizes)
+    check("pick: the organiser's portrait loses to programata's landscape cover",
+          (_rec or {}).get("src"), "https://programata.bg/wp-content/uploads/2026/10/fest-cover.png")
+    check("pick: the logo is never downloaded; the CDN image (not the organiser's site) is refused unread",
+          ("https://festival.example.bg/u/site-logo.png" in _calls, "https://cdn.example.net/u/key-visual-2026.jpg" in _calls,
+           "organiser's own site" in _refused.get("https://cdn.example.net/u/key-visual-2026.jpg", "")),
+          (False, False, True))
+    check("pick: the small picture is refused and remembered",
+          "under 600" in _refused.get("https://programata.bg/wp-content/uploads/2026/10/fest-small.jpg", ""), True)
+    _f = _root / (_rec or {}).get("file", "x")
+    with _EvpImg.open(_f) as _im:
+        check("re-hosted: posters/ev-<id>.jpg, a JPEG, 800 px on the longest edge",
+              ((_rec or {}).get("file"), _im.format, max(_im.size)), ("posters/ev-test-fest-p1.jpg", "JPEG", 800))
+    check("record: passes the gate's rule", EP.record_problem("test-fest-p1", _rec, _root), None)
+    _calls.clear()
+    _rec2 = EP.pick(_ev, _src, _rec, _refused, _dl, _root, _sizes)
+    check("next run, same sources: nothing downloaded, the same record",
+          (_calls, (_rec2 or {}).get("src"), (_rec2 or {}).get("file")), ([], _rec["src"], _rec["file"]))
+    _src3 = [_src[0], ("programata", _post, None, ["https://programata.bg/wp-content/uploads/2026/10/fest-wide.jpg"])]
+    _calls.clear()
+    _rec3 = EP.pick(_ev, _src3, _rec, _refused, _dl, _root, _sizes)
+    check("the source URL changes: the new picture is downloaded and replaces the file",
+          (_calls, (_rec3 or {}).get("src"), (_rec3 or {}).get("file")),
+          (["https://programata.bg/wp-content/uploads/2026/10/fest-wide.jpg"],
+           "https://programata.bg/wp-content/uploads/2026/10/fest-wide.jpg", "posters/ev-test-fest-p1.jpg"))
+    check("only a portrait anywhere: it is used",
+          (EP.pick({"id": "tall-p2", "to": "2026-11-30"}, [_src[0]], None, {}, _dl, _root, {}) or {}).get("src"),
+          "https://festival.example.bg/u/portrait-2026.jpg")
+    check("nothing acceptable: None (the caller keeps the previous art)",
+          EP.pick({"id": "none-p3", "to": "2026-11-30"}, [("programata", _post, None,
+                  ["https://programata.bg/wp-content/uploads/2026/10/gone.jpg"])], None, {}, _dl, _root, {}), None)
+
+    print("  the record rule (shared with verify_build) and EVENTART")
+    _site_rec = {"file": "posters/ev-test-fest-p1.jpg", "src": "https://www.cinelibri.com/wp-content/uploads/kv.jpg",
+                 "page": "https://www.cinelibri.com/", "via": "site"}
+    check("rule: a seed festival's own site", EP.record_problem("cinelibri", _site_rec, _root), None)
+    check("rule: the site of another event is refused",
+          bool(EP.record_problem("kinomania", _site_rec, _root)), True)
+    check("rule: 'via programata' with the image elsewhere is refused",
+          bool(EP.record_problem("x", dict(_rec, src="https://example.com/a.jpg"), _root)), True)
+    check("rule: an organiser image needs the programata post that links it",
+          bool(EP.record_problem("x", {"file": _rec["file"], "src": "https://festival.example.bg/a.jpg",
+                                       "page": "https://festival.example.bg/", "via": "organiser"}, _root)), True)
+    check("rule: a missing file is refused",
+          "missing" in (EP.record_problem("x", dict(_rec, file="posters/ev-gone.jpg"), _root) or ""), True)
+    check("EVENTART: shown events with a good record only",
+          EP.eventart({"events": {"test-fest-p1": _rec, "old-p9": _rec, "bad-p8": dict(_rec, file="posters/ev-gone.jpg")}},
+                      {"test-fest-p1", "bad-p8"}, _root),
+          {"test-fest-p1": "posters/ev-test-fest-p1.jpg"})
+
+    print("  a run: keep-previous and the end date")
+    _today = dt.date(2026, 10, 15)
+    _prev = {"events": {"test-fest-p1": _rec,
+                        "ended-p7": dict(_rec, file="posters/ev-ended-p7.jpg", to="2026-10-01")}}
+    (_root / "posters" / "ev-ended-p7.jpg").write_bytes((_root / _rec["file"]).read_bytes())
+    _doc, _log = EP.run([_ev], {}, _prev, lambda u: None, _dl, _today, _root)
+    check("run: the post cannot be read -> the event keeps its art", _doc["events"].get("test-fest-p1"), _rec)
+    check("run: an ended event's record and file go",
+          ("ended-p7" in _doc["events"], (_root / "posters" / "ev-ended-p7.jpg").exists()), (False, False))
+finally:
+    _evp_shutil.rmtree(_evp_td, ignore_errors=True)
+
+
 # ------------------------------------------------------------ gen_share_pages
 print("\ngen_share_pages: OG tags, escaping, URLs, redirect target")
 

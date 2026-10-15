@@ -939,6 +939,66 @@ check("no EVENTS_AUTO at all is a note, not a failure", _run_out(_minimal_html()
 
 
 # ---------------------------------------------------------------------------
+# EVENTART (fetch_event_posters.py -> event_posters.json + posters/ev-*)
+# ---------------------------------------------------------------------------
+print("\nEVENTART: event key art is re-hosted, exists and has an allowed source")
+_ea_root = _make_file_root(with_icons=True, film_ids_ok=["test-film"], show_ids_ok=["test-show"])
+(_ea_root / "posters").mkdir()
+for _n in ("ev-act-festival-p187545.jpg", "ev-cinelibri.jpg"):
+    _PIL_Image_tv.new("RGB", (800, 450), color=(150, 30, 40)).save(str(_ea_root / "posters" / _n), "JPEG")
+_ea_rec = {"file": "posters/ev-act-festival-p187545.jpg", "via": "programata",
+           "src": "https://programata.bg/wp-content/uploads/2026/10/act_fest_cover-1024x576.png",
+           "page": "https://programata.bg/stsena/act/", "w": 1024, "h": 576, "to": _ev_to}
+_ea_seed = ('[{"id":"cinelibri","kind":"festival","scope":"cinema","title":"Синелибри","titleEn":"CineLibri",'
+            '"from":"2026-10-15","to":"2026-11-08","g":["#B3122D","#26040A"]}]')
+
+
+def _ea_run(art, recs, seed="[]"):
+    (_ea_root / "event_posters.json").write_text(_json.dumps({"events": recs}), encoding="utf-8")
+    js = ("const EVENTS_AUTO=" + _json.dumps([_ev_auto()], ensure_ascii=False) + ";"
+          + "\n        const EVENTART=" + _json.dumps(art) + ";")
+    html = _minimal_html(extra_js=js).replace("const EVENTS=[];", "const EVENTS=" + seed + ";", 1)
+    return _run_out(html, extra_env={"SOFIA_ROOT": str(_ea_root)})
+
+
+def _ea_fails(art, recs, seed="[]"):
+    rc, out = _ea_run(art, recs, seed)
+    return rc != 0 and "EVENTART has" in out
+
+
+try:
+    _ok_art = {"act-festival-p187545": "posters/ev-act-festival-p187545.jpg"}
+    _rc, _out = _ea_run(_ok_art, {"act-festival-p187545": _ea_rec})
+    check("an auto event's programata art, re-hosted, passes", _rc == 0)
+    if _rc != 0:
+        print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+    _site_rec = {"file": "posters/ev-cinelibri.jpg", "via": "site", "page": "https://www.cinelibri.com/",
+                 "src": "https://www.cinelibri.com/wp-content/uploads/2026/06/website-key-visual-2026.jpg"}
+    check("a seed festival's art from its own site passes",
+          _ea_run({"cinelibri": "posters/ev-cinelibri.jpg"}, {"cinelibri": _site_rec}, _ea_seed)[0] == 0)
+    check("a missing file fails",
+          _ea_fails({"act-festival-p187545": "posters/ev-gone.jpg"},
+                    {"act-festival-p187545": dict(_ea_rec, file="posters/ev-gone.jpg")}))
+    check("an entry for no event fails", _ea_fails({"no-such-event": _ok_art["act-festival-p187545"]},
+                                                     {"no-such-event": _ea_rec}))
+    check("an entry with no record in event_posters.json fails", _ea_fails(_ok_art, {}))
+    check("a source that is not programata.bg (via programata) fails",
+          _ea_fails(_ok_art, {"act-festival-p187545": dict(_ea_rec, src="https://example.com/act.jpg")}))
+    check("a seed festival's art from another site fails",
+          _ea_fails({"cinelibri": "posters/ev-cinelibri.jpg"},
+                    {"cinelibri": dict(_site_rec, src="https://www.kinomania.bg/x.jpg")}, _ea_seed))
+    check("a remote URL instead of a re-hosted file fails",
+          _ea_fails({"act-festival-p187545": "https://programata.bg/act.png"},
+                    {"act-festival-p187545": dict(_ea_rec, file="https://programata.bg/act.png")}))
+    check("a file that is not a picture fails",
+          (_ea_root / "posters" / "ev-text.jpg").write_text("<html>", encoding="utf-8") is not None
+          and _ea_fails({"act-festival-p187545": "posters/ev-text.jpg"},
+                        {"act-festival-p187545": dict(_ea_rec, file="posters/ev-text.jpg")}))
+finally:
+    _shutil.rmtree(str(_ea_root), ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()
