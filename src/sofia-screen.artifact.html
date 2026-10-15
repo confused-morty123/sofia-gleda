@@ -836,7 +836,7 @@ bg:{tagline:"кино и театър в софия",
  votes:"гласа",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
  coverage:"Програмата не е публикувана за този прозорец.",
  notePre:"Програмата обхваща",noteMid:": театри и независими кина три месеца напред, мултиплексите две седмици (толкова обявяват). Проверява се наново всеки понеделник.",
- upcoming:"предстои",active:"тече сега",sources:"Източници",
+ upcoming:"предстои",active:"тече сега",evTomorrow:"утре",evInDays:"след {n} дни",evUntil:"до {d}",evToday:"днес",sources:"Източници",
  allGenres:"Всички жанрове",allVenues:"Всички вериги и кина",allTheatres:"Всички театри",clear:"Изчисти",home:"начало",share:"Сподели",tix:"Билети",fromPrice:"от",
  filters:"Филтри",menu:"Меню",period:"Период",genresH:"Жанр",venuesH:"Място",theatresH:"Театри",strandH:"Вид",
  today:"Днес",thisWeek:"Тази седмица",thisMonth:"Този месец",everything:"Всичко",
@@ -923,7 +923,7 @@ en:{tagline:"cinema & theatre in sofia",
  votes:"votes",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
  coverage:"No programme published for this window.",
  notePre:"Programme covers",noteMid:": theatres and independent cinemas three months out, multiplexes as far ahead as they announce. Rechecked every Monday.",
- upcoming:"upcoming",active:"on now",sources:"Sources",
+ upcoming:"upcoming",active:"on now",evTomorrow:"tomorrow",evInDays:"in {n} days",evUntil:"until {d}",evToday:"today",sources:"Sources",
  allGenres:"All genres",allVenues:"All chains & cinemas",allTheatres:"All theatres",clear:"Clear",home:"home",share:"Share",tix:"Tickets",fromPrice:"from",
  filters:"Filters",menu:"Menu",period:"Period",genresH:"Genre",venuesH:"Venue",theatresH:"Theatres",strandH:"Strand",
  today:"Today",thisWeek:"This week",thisMonth:"This month",everything:"Everything",
@@ -1308,6 +1308,20 @@ const fmtDay=(iso,long)=>{const d=dUTC(iso);
    "Monday, 6 October" — used on individual film/show sheets next to each date. */
 const fmtDayDow=iso=>{const d=dUTC(iso);
   return `${t().dowsLong[d.getUTCDay()]}, ${d.getUTCDate()} ${t().months[d.getUTCMonth()]}`;};
+/* An event's state and badge come from its dates, never from the seed's frozen
+   text: the seed gave CineLibri status "upcoming" and the badge "СЛЕД 30 ДНИ",
+   and the card kept saying so on its opening day. A countdown badge is
+   recomputed; descriptive badges ("РЕТРОСПЕКТИВА", "7 ДНИ") stay as written. */
+const evState=ev=>ev.from>NOW_DATE?"upcoming":ev.to<NOW_DATE?"ended":"active";
+function evBadge(ev){
+  const L=t();
+  if(!/^СЛЕД \d+ (ДНИ|ДЕН)$/.test(ev.tag||""))return badgeDisplay(ev.tag);
+  if(evState(ev)==="upcoming"){
+    const n=Math.round((dUTC(ev.from)-dUTC(NOW_DATE))/864e5);
+    return n===1?L.evTomorrow:L.evInDays.replace("{n}",n);
+  }
+  return ev.from===ev.to?L.evToday:L.evUntil.replace("{d}",fmtDay(ev.to,true));
+}
 const grad=g=>`linear-gradient(152deg,${g[0]} 0%,${g[1]} 100%)`;
 const mins=hm=>{const[h,m]=hm.split(":").map(Number);return h*60+m;};
 function inWhen(hm){const m=mins(hm),w=S.prefs.when;
@@ -1845,9 +1859,9 @@ function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
   return`<button class="ecard" data-event="${esc(ev.id)}"><div class="ebox">
     ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="p-grain"></div>
-    <span class="badge ${ev.status==="active"?"lim":""}">${esc(badgeDisplay(ev.tag))}</span>
+    <span class="badge ${evState(ev)==="active"?"lim":""}">${esc(evBadge(ev))}</span>
     <div><h3>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h3>
-      <div class="edate">${esc(range)} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
+      <div class="edate">${esc(range)} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
 function rail(title,sub,cards){
   if(!cards.length)return"";
   return`<section class="rail"><div class="rhead"><h2>${esc(title)}</h2>${sub?`<span class="sub">${esc(sub)}</span>`:""}</div>
@@ -2966,7 +2980,7 @@ function sheetShow(sh){
    </div></div>`;}
 
 function sheetEvent(ev){
-  const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)} 2026`;
+  const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)} ${ev.to.slice(0,4)}`;
   /* Events are festivals or one-off screenings, not single bookable listings.
      Link to the host venue's own ticketing when the event unambiguously belongs
      to one catalogued venue; otherwise show only where the information came from.
@@ -2978,7 +2992,7 @@ function sheetEvent(ev){
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(badgeDisplay(ev.tag))} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div>
+      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
       <h2>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
    <div class="sbody">
     <div class="chips"><span class="chip solid">${esc(range)}</span>

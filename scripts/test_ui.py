@@ -12228,6 +12228,107 @@ def wave_p3f(browser):
     ctx.close()
 
 
+# ============================================================================
+# WAVE EV1: event cards and sheets take their state and badge from the dates
+# ============================================================================
+_EV_COUNTDOWN = re.compile(r"^СЛЕД \d+ (ДНИ|ДЕН)$")
+
+def _ev_expected(ev, now_iso, lang, months, translated_tag):
+    """(badge, active) an event card must show on now_iso, computed here
+    independently of the page's own helpers."""
+    d = datetime.date.fromisoformat
+    now, frm, to = d(now_iso), d(ev["from"]), d(ev["to"])
+    active = frm <= now <= to
+    if not _EV_COUNTDOWN.match(ev.get("tag") or ""):
+        return translated_tag, active
+    if frm > now:
+        n = (frm - now).days
+        if n == 1:
+            return ("утре" if lang == "bg" else "tomorrow"), active
+        return (f"след {n} дни" if lang == "bg" else f"in {n} days"), active
+    if ev["from"] == ev["to"]:
+        return ("днес" if lang == "bg" else "today"), active
+    day = f"{to.day} {months[to.month - 1]}"
+    return (f"до {day}" if lang == "bg" else f"until {day}"), active
+
+def wave_ev1(browser):
+    """A seed event's frozen status/badge ("СЛЕД 30 ДНИ", "upcoming") must never
+    reach the page: CineLibri showed both on its opening day (15 Oct 2026)."""
+    wave = "EV1"
+    for lang in ("bg", "en"):
+        print(f"\n=== EV1: event cards and sheets from the dates ({lang}) ===")
+        ctx, page, errs = open_page(browser, 1280, 900, lang=lang, mode="cinema")
+        page.wait_for_timeout(400)
+        info = page.evaluate("""() => ({now: NOW_DATE, months: t().months,
+                                         active: t().active, upcoming: t().upcoming})""")
+        now, months = info["now"], info["months"]
+
+        # 1. every event card the page renders from the real seed
+        cards = page.evaluate("""() => [...document.querySelectorAll('.ecard[data-event]')].map(c => {
+            const ev = EVENTS.find(e => e.id === c.dataset.event);
+            return {ev, tagShown: badgeDisplay(ev.tag),
+                    badge: ((c.querySelector('.badge') || {}).textContent || '').trim(),
+                    edate: ((c.querySelector('.edate') || {}).textContent || '').trim()};
+        })""")
+        if not cards:
+            skip(f"ev1_real_cards_{lang}", f"no event card is on the page on {now}")
+        for c in cards:
+            ev = c["ev"]
+            want_badge, active = _ev_expected(ev, now, lang, months, c["tagShown"])
+            want_status = info["active"] if active else info["upcoming"]
+            check(f"ev1_real_{ev['id']}_badge_{lang}", c["badge"].lower() == (want_badge or "").lower(),
+                  f"{ev['from']}..{ev['to']} on {now}: badge {c['badge']!r}, expected {want_badge!r}")
+            check(f"ev1_real_{ev['id']}_status_{lang}", c["edate"].endswith(want_status),
+                  f"{ev['from']}..{ev['to']} on {now}: {c['edate']!r}, expected to end with {want_status!r}")
+        cl = next((c for c in cards if c["ev"]["id"] == "cinelibri"), None)
+        if cl and cl["ev"]["from"] <= now <= cl["ev"]["to"]:
+            check(f"ev1_cinelibri_not_stale_{lang}",
+                  "30" not in cl["badge"] and cl["edate"].endswith(info["active"]),
+                  f"badge {cl['badge']!r}, {cl['edate']!r}")
+
+        # 2. synthetic events with deliberately wrong seed status/tag, rendered
+        #    straight through eventCard() and sheetEvent() (independent of which
+        #    rails the current period shows)
+        def iso_plus(n):
+            return (datetime.date.fromisoformat(now) + datetime.timedelta(days=n)).isoformat()
+        synth = [
+            ("up3", 3, 5, "active", "СЛЕД 99 ДНИ"),
+            ("up1", 1, 1, "active", "СЛЕД 99 ДНИ"),
+            ("act", -2, 4, "upcoming", "СЛЕД 5 ДНИ"),
+            ("today1", 0, 0, "upcoming", "СЛЕД 2 ДНИ"),
+            ("descr", -1, 1, "upcoming", "РЕТРОСПЕКТИВА"),
+        ]
+        for sid, a, b, wrong_status, tag in synth:
+            ev = {"id": f"ev1-{sid}", "kind": "festival", "scope": "cinema", "status": wrong_status,
+                  "tag": tag, "from": iso_plus(a), "to": iso_plus(b), "g": ["#333333", "#111111"],
+                  "title": "Тест", "titleEn": "Test", "blurbBg": "", "blurbEn": "", "source": "test"}
+            got = page.evaluate("""(ev) => {
+                const box = document.createElement('div');
+                box.innerHTML = eventCard(ev);
+                const sh = document.createElement('div');
+                sh.innerHTML = sheetEvent(ev);
+                return {badge: box.querySelector('.badge').textContent.trim(),
+                        edate: box.querySelector('.edate').textContent.trim(),
+                        eyebrow: sh.querySelector('.eyebrow').textContent.trim(),
+                        chip: sh.querySelector('.chip.solid').textContent.trim(),
+                        tagShown: badgeDisplay(ev.tag)};
+            }""", ev)
+            want_badge, active = _ev_expected(ev, now, lang, months, got["tagShown"])
+            want_status = info["active"] if active else info["upcoming"]
+            check(f"ev1_synth_{sid}_card_{lang}",
+                  got["badge"].lower() == want_badge.lower() and got["edate"].endswith(want_status),
+                  f"badge {got['badge']!r} / {got['edate']!r}; expected {want_badge!r} / …{want_status!r}")
+            check(f"ev1_synth_{sid}_sheet_{lang}",
+                  got["eyebrow"].lower() == f"{want_badge} · {want_status}".lower(),
+                  f"eyebrow {got['eyebrow']!r}")
+            if ev["from"] != ev["to"]:
+                check(f"ev1_synth_{sid}_sheet_year_{lang}", got["chip"].endswith(ev["to"][:4]),
+                      f"date chip {got['chip']!r}")
+        check(f"ev1_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+        save_shot(page, wave, f"ev1_home_{lang}")
+        ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -12250,6 +12351,7 @@ WAVES = {
     "P3C": wave_p3c,
     "P3E": wave_p3e,
     "P3F": wave_p3f,
+    "EV1": wave_ev1,
 }
 
 def main():
