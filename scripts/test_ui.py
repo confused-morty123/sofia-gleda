@@ -5,6 +5,7 @@ Usage:
   python3 scripts/test_ui.py           # build fixture from FIXTURE_REF, run all waves
   python3 scripts/test_ui.py A1        # run wave A1 only (still uses fixture)
   SOFIA_HTML=index.html python3 scripts/test_ui.py  # test a real build; clock derived from its SNAPSHOT
+  SOFIA_BROWSER=webkit python3 scripts/test_ui.py HF1  # run a wave in WebKit (default: Chromium)
 
 Default mode: builds index.test.html from FIXTURE_REF (commit whose listings start
 2026-10-07) and tests against it with the frozen 2026-10-07 14:45 Europe/Sofia clock.
@@ -12293,6 +12294,1478 @@ def wave_p3f(browser):
     ctx.close()
 
 
+# ============================================================================
+# WAVE HF1: hotfix for the live sheet bugs (owner reports, 2026-10-15)
+#   1 cards stop opening (or open and close at once) after a time popup was used
+#   2 the desktop time popup appears "somewhere on the page"
+#   3 opening a film breaks the page scroll
+#   4 phone venue rows: name and address squeezed under the time pills
+#   5 every filter tap re-renders the drawer (slide-in replays)
+#   6/7 the FAB and "Добави в календара" need two taps on an iPhone
+#   8 "Apple Календар (.ics)" does nothing on an iPhone
+# Runs in Chromium by default; SOFIA_BROWSER=webkit runs the same checks in WebKit.
+# ============================================================================
+
+HF_STATE_JS = r"""() => {
+  const s=document.getElementById('scrim');
+  /* shown = laid out AND actually visible: the product of the opacities up to <body>
+     (a sheet left at opacity 0 by a stale animation still covers the page and takes taps) */
+  const vis=el=>{if(!el||!el.getClientRects().length)return false;let o=1;
+    for(let e=el;e&&e!==document.body;e=e.parentElement){const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')return false;o*=parseFloat(cs.opacity);}
+    return o>0.95;};
+  const sheet=s&&s.querySelector('.sheet');
+  const w=document.getElementById('ss-wrap'), p=document.getElementById('ss-pop');
+  const h2=sheet&&sheet.querySelector('h2');
+  return {film:!!(s&&!s.hidden&&sheet&&vis(sheet)), title:h2?h2.textContent.trim():null,
+          scrimInDom:!!(s&&!s.hidden&&sheet),
+          pop:!!((w&&!w.hidden&&w.querySelector('.ss-sheet *')&&vis(w.querySelector('.ss-sheet')))||(p&&vis(p))),
+          ssVar:(typeof _ss!=='undefined')&&!!_ss, sheetVar:(typeof sheetOpen!=='undefined')&&sheetOpen,
+          y:Math.round(scrollY), body:document.body.getAttribute('style')||'', html:document.documentElement.getAttribute('style')||'',
+          hd:(history.state&&history.state.d)||0, depth:(typeof _histDepth!=='undefined')?_histDepth:-1,
+          active:document.activeElement?(document.activeElement.className||document.activeElement.tagName).toString().slice(0,40):''};
+}"""
+
+# ids of films / shows with a time pill that is visible in the open sheet at this width
+HF_CANDIDATES_JS = r"""(kind) => {
+  const attr=kind==='film'?'data-film':'data-show';
+  const out=[];
+  for(const el of document.querySelectorAll('#app .card['+attr+']')){
+    const id=el.getAttribute(attr); if(out.includes(id))continue;
+    try{ if(kind==='film'? !upcomingRows(SHOWTIMES.filter(r=>r[0]===id)).length : !upcomingPerfs(PERFORMANCES.filter(p=>p[0]===id)).length) continue; }catch(e){}
+    out.push(id); if(out.length>=6)break;
+  }
+  return out;
+}"""
+
+HF_TITLE_JS = r"""([k,id]) => k==='film'?filmTitle(filmById[id]):titleOf(showById[id])"""
+
+
+def _hf_engine(browser):
+    try:
+        return browser.browser_type.name
+    except Exception:
+        return "chromium"
+
+
+def _hf_shot(page, name):
+    """Hotfix screenshots for review: /tmp/hf_shots/<name>.png from a real build
+    (SOFIA_HTML); WebKit runs add _webkit. Fixture runs only keep /tmp/sg-shots/HF1."""
+    save_shot(page, "HF1", name)
+    if os.environ.get("SOFIA_HTML"):
+        eng = _hf_engine(page.context.browser)
+        Path("/tmp/hf_shots").mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=f"/tmp/hf_shots/{name}{'' if eng == 'chromium' else '_' + eng}.png")
+
+
+def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None):
+    """open_page with touch emulation on phones and no external traffic (new tabs
+    from the buy/map/calendar links are aborted; webfonts still load)."""
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
+    if phone:
+        kw.update(has_touch=True, is_mobile=True)
+    if ua:
+        kw["user_agent"] = ua
+    ctx = browser.new_context(**kw)
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script(f"""try {{ localStorage.setItem('sofia-screen-v2', JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}})); }} catch(e) {{}}""")
+
+    def _route(route):
+        u = route.request.url
+        if "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
+            return route.continue_()
+        return route.abort()
+    ctx.route("http://**/*", _route)
+    ctx.route("https://**/*", _route)
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(300)
+    return ctx, page, errors
+
+
+def _hf_tap(page, phone, x, y):
+    if phone:
+        page.touchscreen.tap(x, y)
+    else:
+        page.mouse.click(x, y)
+
+
+def _hf_tap_el(page, phone, js_el, arg=None):
+    """Tap/click the centre of the element returned by js_el (a JS function body
+    returning an element), as a user would: no scripted click."""
+    r = page.evaluate("(arg)=>{const el=(" + js_el + ")(arg); if(!el)return null; const r=el.getBoundingClientRect(); return r.width?{x:r.left+r.width/2,y:r.top+r.height/2}:null;}", arg)
+    if not r:
+        return False
+    _hf_tap(page, phone, r["x"], r["y"])
+    return True
+
+
+def _hf_open_card(page, phone, kind, cid, scroll=True):
+    attr = "data-film" if kind == "film" else "data-show"
+    r = page.evaluate("""([attr,id,scroll])=>{const el=document.querySelector('#app .card['+attr+'="'+CSS.escape(id)+'"]');
+        if(!el)return null; if(scroll){const rr=el.getBoundingClientRect(); if(rr.top<90||rr.bottom>innerHeight-110)window.scrollBy(0,rr.top-innerHeight/3);}
+        const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+Math.min(r.height/2,60)};}""", [attr, cid, scroll])
+    if not r:
+        return False
+    page.wait_for_timeout(100)
+    _hf_tap(page, phone, r["x"], r["y"])
+    return True
+
+
+def _hf_pill(page, frac=0.5, index=0, scroll=True):
+    """A visible time pill of the open sheet; optionally scroll its sheet so the pill sits
+    at `frac` of the viewport height. Returns its rect and key."""
+    return page.evaluate("""([frac,index,scroll])=>{
+      const pills=[...document.querySelectorAll('#scrim [data-sspill]')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
+      const el=pills[Math.min(index,pills.length-1)]; if(!el)return null;
+      const s=document.getElementById('scrim'), sh=s.querySelector('.sheet');
+      const sc=(sh&&sh.scrollHeight>sh.clientHeight+2&&['auto','scroll'].includes(getComputedStyle(sh).overflowY))?sh:s;
+      if(scroll&&frac!=null){const r=el.getBoundingClientRect(); sc.scrollTop+=(r.top+r.height/2)-innerHeight*frac;}
+      const r=el.getBoundingClientRect();
+      return {x:r.left+r.width/2,y:r.top+r.height/2,top:r.top,bottom:r.bottom,left:r.left,right:r.right,key:el.dataset.sspill,n:pills.length};
+    }""", [frac, index, scroll])
+
+
+def _hf_tap_pill(page, phone, frac=0.5, index=0):
+    r = _hf_pill(page, frac, index)
+    if not r:
+        return None
+    page.wait_for_timeout(60)
+    r = _hf_pill(page, None, index, scroll=False)
+    _hf_tap(page, phone, r["x"], r["y"])
+    return r
+
+
+def _hf_drag(page, sel, frac=0.45):
+    """touchstart/move/end on sel (plain Events carrying a touches list: WebKit has no
+    Touch constructor). Drives the drag-to-close handlers."""
+    return page.evaluate("""([sel,frac])=>{const el=document.querySelector(sel); if(!el)return false;
+      const r=el.getBoundingClientRect(),h=r.height||400,y0=Math.max(r.top+30,60),y1=y0+h*frac;
+      const fire=(type,y)=>{const ev=new Event(type,{bubbles:true,cancelable:true});const t={clientX:r.left+r.width/2,clientY:y,identifier:9,target:el};
+        Object.defineProperty(ev,'touches',{value:type==='touchend'?[]:[t]});Object.defineProperty(ev,'changedTouches',{value:[t]});el.dispatchEvent(ev);};
+      fire('touchstart',y0);fire('touchmove',(y0+y1)/2);fire('touchmove',y1);fire('touchend',y1);return true;}""", [sel, frac])
+
+
+def _hf_close_popup(page, phone, route, ctx):
+    """Close (or use, then close) the time popup by one route; returns a note."""
+    scope = "#ss-wrap " if phone else "#ss-pop "
+    note = ""
+    if route == "x":
+        _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssclose]')")
+    elif route == "backdrop":
+        if phone:
+            _hf_tap(page, phone, 195, 24)
+        else:
+            # inside the film sheet, away from the popover and from any control
+            r = page.evaluate("""()=>{const sh=document.querySelector('#scrim .sheet');const p=document.getElementById('ss-pop');
+              const rr=sh.getBoundingClientRect(),pr=p?p.getBoundingClientRect():null;
+              for(const y of [rr.top+60,innerHeight-40,innerHeight/2]){for(const x of [rr.left+14,rr.right-14]){
+                if(pr&&x>pr.left-6&&x<pr.right+6&&y>pr.top-6&&y<pr.bottom+6)continue;
+                const el=document.elementFromPoint(x,y); if(el&&el.closest('#scrim .sheet')&&!el.closest('a,button,[data-sspill]'))return {x,y};}}
+              return null;}""")
+            if r:
+                _hf_tap(page, phone, r["x"], r["y"])
+            else:
+                note = "no free spot"
+    elif route == "dim":
+        _hf_tap(page, phone, 10, page.viewport_size["height"] // 2)
+    elif route == "esc":
+        page.keyboard.press("Escape")
+    elif route == "drag":
+        _hf_drag(page, "#ss-wrap .ss-sheet")
+    elif route == "back":
+        page.evaluate("history.back()")
+    elif route == "calback":
+        _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-sscal]')")
+        page.wait_for_timeout(250)
+        _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssback]')")
+        page.wait_for_timeout(250)
+        _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssclose]')")
+    elif route in ("buy", "map", "google", "outlook", "ics"):
+        if route in ("google", "outlook", "ics"):
+            _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-sscal]')")
+            page.wait_for_timeout(300)
+        js = {"buy": "()=>document.querySelector('" + scope + ".ss-btn.pri')",
+              "map": "()=>document.querySelector('" + scope + "a.ss-btn.sec')",
+              "google": "()=>[...document.querySelectorAll('" + scope + "a.ss-cal-li')].find(a=>(a.href||'').includes('google'))",
+              "outlook": "()=>[...document.querySelectorAll('" + scope + "a.ss-cal-li')].find(a=>(a.href||'').includes('outlook'))",
+              "ics": "()=>document.querySelector('" + scope + "[data-sscalics]')"}[route]
+        url0 = page.url
+        downloads = []
+        page.on("download", lambda d: downloads.append(d.suggested_filename))
+        exists = page.evaluate("(" + js + ")()!==undefined&&(" + js + ")()!==null")
+        if not exists:
+            return "no " + route + " link (box office only?)"
+        if route == "ics":
+            _hf_tap_el(page, phone, js)
+            page.wait_for_timeout(900)
+        else:
+            try:
+                with ctx.expect_page(timeout=4000):
+                    _hf_tap_el(page, phone, js)
+            except Exception:
+                pass
+            page.wait_for_timeout(250)
+        others = [p for p in ctx.pages if p is not page]
+        for p in others:
+            try:
+                p.close()
+            except Exception:
+                pass
+        s = page.evaluate(HF_STATE_JS)
+        note = f"tabs={len(others)} dl={len(downloads)} sameUrl={page.url == url0} popStill={s['pop']} film={s['film']}"
+        _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssclose]')")
+    page.wait_for_timeout(600)
+    return note
+
+
+def _hf_tap_backbar(page, phone):
+    """Tap the sheet's '‹ Назад' bar. It is sticky only on phones; on wider screens it sits
+    at the top of the sheet, so scroll the sheet up first, as a user would."""
+    page.evaluate("()=>{const s=document.querySelector('#scrim .sheet'); if(s) s.scrollTop=0; document.getElementById('scrim').scrollTop=0;}")
+    page.wait_for_timeout(80)
+    return _hf_tap_el(page, phone, "()=>document.querySelector('#scrim .sback')")
+
+
+def _hf_close_sheet(page, phone, route):
+    if route == "backbar":
+        _hf_tap_backbar(page, phone)
+    elif route == "x":
+        page.evaluate("()=>{const s=document.querySelector('#scrim .sheet'); if(s) s.scrollTop=0; document.getElementById('scrim').scrollTop=0;}")
+        page.wait_for_timeout(80)
+        _hf_tap_el(page, phone, "()=>document.querySelector('#scrim .sclose')")
+    elif route == "backdrop":
+        if phone:
+            _hf_tap(page, phone, 195, 12)
+        else:
+            _hf_tap(page, phone, 10, page.viewport_size["height"] // 2)
+    elif route == "esc":
+        page.keyboard.press("Escape")
+    elif route == "drag":
+        page.evaluate("()=>{const s=document.querySelector('#scrim .sheet'); if(s) s.scrollTop=0;}")
+        page.wait_for_timeout(80)
+        _hf_drag(page, "#scrim .sheet")
+    elif route == "back":
+        page.evaluate("history.back()")
+    page.wait_for_timeout(750)
+
+
+def _hf_check_stays_open(page, phone, kind, cid, label, wave_tag):
+    exp = page.evaluate(HF_TITLE_JS, [kind, cid])
+    _hf_open_card(page, phone, kind, cid)
+    page.wait_for_timeout(600)
+    s1 = page.evaluate(HF_STATE_JS)
+    page.wait_for_timeout(1500)
+    s2 = page.evaluate(HF_STATE_JS)
+    ok = s1["film"] and s2["film"] and (s2["title"] or "").lower() == (exp or "").lower() and s2["depth"] == 1
+    check(f"{wave_tag}_{label}", ok,
+          f"open@0.6s={s1['film']} open@2.1s={s2['film']} title={s2['title']!r} expected={exp!r} historyDepth={s2['depth']}")
+    return ok
+
+
+def _hf_flows(browser, eng, phone):
+    """Every way of closing the time popup, each followed by a different way of closing
+    the film sheet, on one page (state accumulates as it would for a user); then another
+    film and a theatre show must open on the first tap and stay open with the right title."""
+    w, h = (390, 844) if phone else (1440, 900)
+    tag = f"hf1_{'phone' if phone else 'desk'}"
+    ctx, page, errs = _hf_open(browser, w, h, phone)
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    if len(films) < 2:
+        skip(tag + "_flows", "fewer than two films with showtimes")
+        ctx.close()
+        return
+    pop_routes = ["x", "backdrop", "esc", "back", "calback", "buy", "map", "google", "outlook", "ics"] + (["drag"] if phone else ["dim"])
+    film_routes = ["backbar", "x", "backdrop", "esc", "back"] + (["drag"] if phone else [])
+    for i, pr in enumerate(pop_routes):
+        fr = film_routes[i % len(film_routes)]
+        fid = films[i % 2]
+        exp = page.evaluate(HF_TITLE_JS, ["film", fid])
+        _hf_open_card(page, phone, "film", fid)
+        page.wait_for_timeout(650)
+        y_before = page.evaluate("(typeof _lockY!=='undefined'&&_lockY!==null)?Math.round(_lockY):Math.round(scrollY)")
+        s0 = page.evaluate(HF_STATE_JS)
+        p = _hf_tap_pill(page, phone, 0.5)
+        page.wait_for_timeout(550)
+        s1 = page.evaluate(HF_STATE_JS)
+        note = _hf_close_popup(page, phone, pr, ctx)
+        s2 = page.evaluate(HF_STATE_JS)
+        _hf_close_sheet(page, phone, fr)
+        s3 = page.evaluate(HF_STATE_JS)
+        ok = (s0["film"] and (s0["title"] or "").lower() == exp.lower() and bool(p) and s1["pop"] and s1["depth"] == 2
+              and not s2["pop"] and not s2["ssVar"] and s2["film"] and s2["depth"] == 1
+              and not s3["film"] and not s3["pop"] and s3["depth"] == 0
+              and abs(s3["y"] - y_before) <= 2 and s3["body"] == "" and s3["html"] == "")
+        if pr in ("buy", "map", "google", "outlook"):
+            ok = ok and "tabs=1" in note and "sameUrl=True" in note and "popStill=True" in note
+        if pr == "ics":
+            ok = ok and "sameUrl=True" in note and "popStill=True" in note and "film=True" in note
+        check(f"{tag}_popup_{pr}_then_sheet_{fr}", ok,
+              f"opened={s0['film']} title={s0['title']!r} pill={bool(p)} popup={s1['pop']} depth={s1['depth']} | "
+              f"after popup [{pr}] popup={s2['pop']} ssVar={s2['ssVar']} film={s2['film']} depth={s2['depth']} {note} | "
+              f"after sheet [{fr}] film={s3['film']} depth={s3['depth']} y={s3['y']} (was {y_before}) body='{s3['body']}' html='{s3['html']}'")
+    _hf_check_stays_open(page, phone, "film", films[1], "film_opens_after_all_routes", tag)
+    _hf_close_sheet(page, phone, "backbar")
+    page.evaluate("()=>{const b=document.querySelector('[data-switch=\"theatre\"]'); b&&b.click();}")
+    page.wait_for_timeout(600)
+    shows = page.evaluate(HF_CANDIDATES_JS, "show")
+    if shows:
+        _hf_check_stays_open(page, phone, "show", shows[0], "show_opens_after_all_routes", tag)
+        p = _hf_tap_pill(page, phone, 0.5)
+        page.wait_for_timeout(500)
+        s1 = page.evaluate(HF_STATE_JS)
+        page.keyboard.press("Escape"); page.wait_for_timeout(450)
+        s2 = page.evaluate(HF_STATE_JS)
+        page.keyboard.press("Escape"); page.wait_for_timeout(700)
+        s3 = page.evaluate(HF_STATE_JS)
+        check(f"{tag}_show_popup_esc_esc", bool(p) and s1["pop"] and not s2["pop"] and s2["film"] and not s3["film"] and s3["depth"] == 0,
+              f"pill={bool(p)} popup={s1['pop']} afterEsc1 popup={s2['pop']} film={s2['film']} afterEsc2 film={s3['film']} depth={s3['depth']}")
+        if len(shows) > 1:
+            _hf_check_stays_open(page, phone, "show", shows[1], "second_show_opens", tag)
+            _hf_close_sheet(page, phone, "esc")
+    else:
+        skip(tag + "_show_opens_after_all_routes", "no theatre card")
+    check(f"{tag}_flows_no_js_errors", len(errs) == 0, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _hf_special_flows(browser, eng, phone):
+    w, h = (390, 844) if phone else (1440, 900)
+    tag = f"hf1_{'phone' if phone else 'desk'}"
+    # (a) close the film sheet while the popup is open: back, back / Esc, Esc / back bar by keyboard
+    for how in ("back_back", "esc_esc", "backbar_key"):
+        ctx, page, errs = _hf_open(browser, w, h, phone)
+        films = page.evaluate(HF_CANDIDATES_JS, "film")
+        _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
+        _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(550)
+        s0 = page.evaluate(HF_STATE_JS)
+        if how == "back_back":
+            page.evaluate("history.back()"); page.wait_for_timeout(500)
+            mid = page.evaluate(HF_STATE_JS)
+            page.evaluate("history.back()"); page.wait_for_timeout(800)
+        elif how == "esc_esc":
+            page.keyboard.press("Escape"); page.wait_for_timeout(450)
+            mid = page.evaluate(HF_STATE_JS)
+            page.keyboard.press("Escape"); page.wait_for_timeout(800)
+        else:
+            # a keyboard user can reach the sheet's back bar while the popup is open
+            mid = s0
+            page.evaluate("()=>{const b=document.querySelector('#scrim .sback'); b.focus(); }")
+            page.keyboard.press("Enter"); page.wait_for_timeout(800)
+        s1 = page.evaluate(HF_STATE_JS)
+        mid_ok = (how == "backbar_key") or (not mid["pop"] and mid["film"])
+        ok = s0["pop"] and mid_ok and not s1["film"] and not s1["pop"] and not s1["ssVar"] and s1["depth"] == 0 and s1["body"] == ""
+        check(f"{tag}_close_sheet_with_popup_{how}", ok,
+              f"popup={s0['pop']} mid: popup={mid['pop']} film={mid['film']} | end: film={s1['film']} popup={s1['pop']} ssVar={s1['ssVar']} depth={s1['depth']} body='{s1['body']}'")
+        _hf_check_stays_open(page, phone, "film", films[1], f"opens_after_{how}", tag)
+        ctx.close()
+    # (b) a tap during the close animation is swallowed: nothing falls through to the card
+    #     under it. The first tap after the close has finished opens that card.
+    ctx, page, errs = _hf_open(browser, w, h, phone)
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    for with_pop in (False, True):
+        _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
+        if with_pop:
+            _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+            _hf_close_popup(page, phone, "x", ctx)
+        y0 = page.evaluate("(typeof _lockY!=='undefined'&&_lockY!==null)?Math.round(_lockY):Math.round(scrollY)")
+        _hf_tap_backbar(page, phone)
+        page.wait_for_timeout(90)
+        card = page.evaluate(HF_VISIBLE_CARD_JS, films[0])
+        name = f"{tag}_tap_during_close{'_after_popup' if with_pop else ''}"
+        if not card:
+            skip(name, "no other card on screen under the closing sheet")
+            page.wait_for_timeout(900)
+            continue
+        exp = page.evaluate(HF_TITLE_JS, ["film", card["id"]])
+        _hf_tap(page, phone, card["x"], card["y"])          # during the close
+        page.wait_for_timeout(700)
+        s1 = page.evaluate(HF_STATE_JS)
+        _hf_tap(page, phone, card["x"], card["y"])          # the first tap after it
+        page.wait_for_timeout(600)
+        s2a = page.evaluate(HF_STATE_JS)
+        page.wait_for_timeout(1500)
+        s2 = page.evaluate(HF_STATE_JS)
+        page.keyboard.press("Escape"); page.wait_for_timeout(800)
+        s3 = page.evaluate(HF_STATE_JS)
+        check(name,
+              not s1["film"] and not s1["scrimInDom"] and s1["depth"] == 0 and abs(s1["y"] - y0) <= 2
+              and s2a["film"] and s2["film"] and (s2["title"] or "").lower() == exp.lower() and s2["depth"] == 1
+              and not s3["film"] and s3["depth"] == 0 and abs(s3["y"] - y0) <= 2 and s3["body"] == "",
+              f"tap during close: opened={s1['film'] or s1['scrimInDom']} y={s1['y']} (was {y0}) | first tap after: "
+              f"open@0.6={s2a['film']} open@2.1={s2['film']} title={s2['title']!r} exp={exp!r} depth={s2['depth']} | "
+              f"after Esc film={s3['film']} y={s3['y']} body='{s3['body']}'")
+    check(f"{tag}_fast_tap_no_js_errors", len(errs) == 0, f"errors={errs[:3]}")
+    ctx.close()
+    # (c) the language toggle while the sheet and the popup are open
+    ctx, page, errs = _hf_open(browser, w, h, phone, lang="bg")
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
+    _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+    page.evaluate("()=>document.querySelector('[data-lang]').click()")
+    page.wait_for_timeout(500)
+    s1 = page.evaluate(HF_STATE_JS)
+    en_title = page.evaluate(HF_TITLE_JS, ["film", films[0]])
+    pop_txt = page.evaluate("()=>{const e=document.querySelector('#ss-wrap .ss-sheet');return e?e.innerText:''}")
+    if phone:
+        # the popup stays and follows the language
+        lang_ok = s1["pop"] and s1["ssVar"] and ("Buy ticket" in pop_txt or "Show on map" in pop_txt or "Add to calendar" in pop_txt)
+    else:
+        # activating the header's language button is a click outside: the popover closes
+        lang_ok = not s1["pop"] and not s1["ssVar"]
+    escs = 0
+    s3 = page.evaluate(HF_STATE_JS)
+    while (s3["film"] or s3["pop"]) and escs < 3:
+        page.keyboard.press("Escape"); page.wait_for_timeout(700)
+        escs += 1
+        s3 = page.evaluate(HF_STATE_JS)
+    lang_ok = lang_ok and escs == (2 if s1["pop"] else 1)
+    check(f"{tag}_lang_toggle_with_popup", s1["film"] and (s1["title"] or "").lower() == en_title.lower() and lang_ok and not s3["film"] and s3["depth"] == 0,
+          f"film={s1['film']} title={s1['title']!r} exp={en_title!r} popup={s1['pop']} ssVar={s1['ssVar']} popupText={pop_txt[:60]!r} | Esc presses to close={escs} closed={not s3['film']} depth={s3['depth']}")
+    _hf_check_stays_open(page, phone, "film", films[1], "opens_after_lang_toggle_en", tag)
+    check(f"{tag}_lang_no_js_errors", len(errs) == 0, f"errors={errs[:3]}")
+    ctx.close()
+    # (d) five open / time / close cycles, mixed routes
+    ctx, page, errs = _hf_open(browser, w, h, phone)
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    notes, all_ok = [], True
+    pops = ["x", "esc", "backdrop", "back", "calback"]
+    sheets = ["backbar", "esc", "backdrop", "back", "x"]
+    for i in range(5):
+        _hf_open_card(page, phone, "film", films[i % 2]); page.wait_for_timeout(650)
+        a = page.evaluate(HF_STATE_JS)
+        _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+        b = page.evaluate(HF_STATE_JS)
+        _hf_close_popup(page, phone, pops[i], ctx)
+        c = page.evaluate(HF_STATE_JS)
+        _hf_close_sheet(page, phone, sheets[i])
+        d = page.evaluate(HF_STATE_JS)
+        ok = a["film"] and b["pop"] and not c["pop"] and c["film"] and not d["film"] and d["depth"] == 0 and d["body"] == ""
+        all_ok = all_ok and ok
+        notes.append(f"c{i + 1}:{'ok' if ok else 'BAD'}(open={a['film']},pop={b['pop']},popClosed={not c['pop']},filmClosed={not d['film']},depth={d['depth']})")
+    check(f"{tag}_five_cycles", all_ok, " ".join(notes))
+    _hf_check_stays_open(page, phone, "film", films[1], "opens_after_five_cycles", tag)
+    ctx.close()
+
+
+def _hf_scroll(browser, eng, phone):
+    """The page does not move when a sheet opens, does not scroll behind it, the sheet
+    scrolls, and after closing scrollY is restored with no inline styles left, and the
+    page scrolls again (wheel, keyboard, touch)."""
+    w, h = (390, 844) if phone else (1440, 900)
+    tag = f"hf1_{'phone' if phone else 'desk'}"
+    wheel_ok = not (phone and eng == "webkit")   # mobile WebKit has no wheel events
+    for with_pop in (False, True):
+        for route in ("backbar", "back"):
+            ctx, page, errs = _hf_open(browser, w, h, phone)
+            page.evaluate("window.scrollTo(0,1400)"); page.wait_for_timeout(350)
+            card = page.evaluate("""()=>{for(const el of document.querySelectorAll('#app .card[data-film]')){const r=el.getBoundingClientRect();
+                if(r.top>100&&r.bottom<innerHeight-120){(el.parentElement||el).setAttribute('data-hf-ref','1');return {x:r.left+r.width/2,y:r.top+Math.min(r.height/2,60)};}}return null;}""")
+            if not card:
+                skip(f"{tag}_scroll_{'pop' if with_pop else 'nopop'}_{route}", "no film card in view at y=1400")
+                ctx.close()
+                continue
+            ref = "()=>Math.round(document.querySelector('[data-hf-ref]').getBoundingClientRect().top)"
+            y0 = page.evaluate("Math.round(scrollY)")
+            top0 = page.evaluate(ref)
+            styles0 = page.evaluate("[document.body.getAttribute('style')||'',document.documentElement.getAttribute('style')||'']")
+            _hf_tap(page, phone, card["x"], card["y"])
+            page.wait_for_timeout(100)
+            top_early = page.evaluate(ref)
+            page.wait_for_timeout(600)
+            top_open = page.evaluate(ref)
+            sc_js = "()=>{const s=document.getElementById('scrim'),sh=s.querySelector('.sheet');return s.scrollTop+sh.scrollTop;}"
+            sc0 = page.evaluate(sc_js)
+            if wheel_ok:
+                if not phone:
+                    page.mouse.move(10, h // 2); page.mouse.wheel(0, 500); page.wait_for_timeout(250)
+                page.mouse.move(w // 2, h // 2); page.mouse.wheel(0, 500); page.wait_for_timeout(300)
+            if phone and eng == "chromium":
+                cdp = page.context.new_cdp_session(page)
+                cdp.send("Input.synthesizeScrollGesture", {"x": w // 2, "y": h // 2, "yDistance": -300, "gestureSourceType": "touch", "speed": 1200})
+                page.wait_for_timeout(400)
+            if not wheel_ok and not (phone and eng == "chromium"):
+                page.evaluate("()=>{const sh=document.querySelector('#scrim .sheet');sh.scrollTop+=400;}")
+            page.keyboard.press("PageDown"); page.wait_for_timeout(250)
+            sc1 = page.evaluate(sc_js)
+            top_locked = page.evaluate(ref)
+            if with_pop:
+                _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+                if wheel_ok and not phone:
+                    page.mouse.move(10, h // 2); page.mouse.wheel(0, 400); page.wait_for_timeout(250)
+                page.keyboard.press("Escape"); page.wait_for_timeout(450)
+            top_locked2 = page.evaluate(ref)
+            if route == "backbar":
+                _hf_tap_backbar(page, phone)
+            else:
+                page.evaluate("history.back()")
+            page.wait_for_timeout(800)
+            s = page.evaluate(HF_STATE_JS)
+            y_after = s["y"]
+            page.evaluate("()=>{document.activeElement&&document.activeElement.blur&&document.activeElement.blur()}")
+            # the page scrolls again by wheel, keyboard and touch (down, or up when the
+            # page is already near its end, as it can be with the shorter fixture data)
+            moved, scroll_again = [], True
+            methods = (["wheel"] if wheel_ok else []) + ["key"] + (["touch"] if phone and eng == "chromium" else [])
+            for m in methods:
+                ya, ymax = page.evaluate("[Math.round(scrollY),Math.round(document.documentElement.scrollHeight-innerHeight)]")
+                down = ymax - ya > 400
+                if m == "wheel":
+                    page.mouse.move(w // 2, h // 2); page.mouse.wheel(0, 300 if down else -300); page.wait_for_timeout(350)
+                elif m == "key":
+                    page.keyboard.press("PageDown" if down else "PageUp"); page.wait_for_timeout(450)
+                else:
+                    cdp = page.context.new_cdp_session(page)
+                    cdp.send("Input.synthesizeScrollGesture", {"x": w // 2, "y": h // 2, "yDistance": -300 if down else 300, "gestureSourceType": "touch", "speed": 1200})
+                    page.wait_for_timeout(500)
+                yb = page.evaluate("Math.round(scrollY)")
+                scroll_again = scroll_again and ((yb > ya) if down else (yb < ya))
+                moved.append((m, ya, yb))
+            name = f"{tag}_scroll_{'pop' if with_pop else 'nopop'}_{route}"
+            check(name,
+                  styles0 == ["", ""] and abs(top_early - top0) <= 2 and abs(top_open - top0) <= 2 and abs(top_locked - top0) <= 2
+                  and abs(top_locked2 - top0) <= 2 and sc1 > sc0 and not s["film"] and abs(y_after - y0) <= 2
+                  and s["body"] == "" and s["html"] == "" and scroll_again,
+                  f"y0={y0} cardTop {top0}->{top_early}/{top_open} locked {top_locked}/{top_locked2} sheetScroll {sc0}->{sc1} | "
+                  f"closed={not s['film']} y={y_after} body='{s['body']}' html='{s['html']}' | scrolls again {moved}")
+            ctx.close()
+
+
+def _hf_place_pill(page, films, frac, h):
+    """Open films in turn until one of them has a time that can sit at `frac` of the
+    viewport height; leaves that sheet open and returns the time's rect, or None."""
+    for fid in films:
+        s = page.evaluate(HF_STATE_JS)
+        if not s["film"] or (s["title"] or "").lower() != page.evaluate(HF_TITLE_JS, ["film", fid]).lower():
+            if s["film"]:
+                page.keyboard.press("Escape"); page.wait_for_timeout(650)
+            _hf_open_card(page, False, "film", fid); page.wait_for_timeout(600)
+        for idx in (0, 3, 8):
+            r = _hf_pill(page, frac, idx)
+            page.wait_for_timeout(80)
+            r = _hf_pill(page, None, idx, scroll=False)
+            if r and abs(r["y"] - h * frac) < 50:
+                return r
+    return None
+
+
+def _hf_measure_pop(page, key):
+    return page.evaluate("""(key)=>{const p=document.getElementById('ss-pop');
+        const t=[...document.querySelectorAll('#scrim [data-sspill]')].find(e=>e.dataset.sspill===key&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
+        if(!p||!t)return null;const a=p.getBoundingClientRect(),b=t.getBoundingClientRect(),ce=p.querySelector('.ss-caret'),c=ce?ce.getBoundingClientRect():{left:-99,top:-99,right:-99,bottom:-99};
+        return {pop:[a.left,a.top,a.right,a.bottom],time:[b.left,b.top,b.right,b.bottom],caret:[c.left,c.top,c.right,c.bottom],
+          place:p.dataset.place,pos:getComputedStyle(p).position,inScrim:!!p.closest('#scrim'),
+          natural:p.offsetHeight-p.querySelector('.ss-sheet').clientHeight+p.querySelector('.ss-sheet').scrollHeight,
+          scrollable:p.querySelector('.ss-sheet').scrollHeight>p.querySelector('.ss-sheet').clientHeight+1};}""", key)
+
+
+HF_POPUP_VIS_JS = r"""()=>{
+  const pop=document.getElementById('ss-pop');
+  const box=pop||document.querySelector('#ss-wrap:not([hidden]) .ss-sheet');
+  if(!box)return {err:'no popup'};
+  const inner=pop?pop.querySelector('.ss-sheet'):box;
+  const ir=inner.getBoundingClientRect();
+  const ctrls=[...box.querySelectorAll('button,a[href]')].filter(e=>getComputedStyle(e).display!=='none');
+  const hidden=[];
+  for(const e of ctrls){const r=e.getBoundingClientRect();
+    if(r.top<-0.5||r.left<-0.5||r.bottom>innerHeight+0.5||r.right>innerWidth+0.5||r.top<ir.top-0.5||r.bottom>ir.bottom+0.5)
+      hidden.push((e.textContent||e.getAttribute('aria-label')||'?').trim().slice(0,18));}
+  const hs=[...box.querySelectorAll('.ss-btn,.ss-cal-li')].map(e=>e.getBoundingClientRect().height);
+  return {mode:pop?'pop':'panel',place:pop?pop.dataset.place:'',controls:ctrls.length,hidden,
+          scrollNeeded:inner.scrollHeight>inner.clientHeight+1,minBtn:hs.length?Math.min(...hs):0};
+}"""
+
+
+def _hf_popover_rule(g, w, h):
+    """The placement the stated order picks for this card and time: above, below, right,
+    left (12 px margins, 10 px gap); None means the bottom panel."""
+    pl, pt, pr_, pb = g["pop"]
+    tl, tt, tr, tb = g["time"]
+    pw, ph = pr_ - pl, pb - pt
+    if pw <= w - 24 and tt - 10 - ph >= 12:
+        return "above"
+    if pw <= w - 24 and tb + 10 + ph <= h - 12:
+        return "below"
+    if ph <= h - 24 and tr + 10 + pw <= w - 12:
+        return "right"
+    if ph <= h - 24 and tl - 10 - pw >= 12:
+        return "left"
+    return None
+
+
+def _hf_geometry(browser, eng):
+    """R3 / bug 2: the popover sits 10 px above the time, else below it, else beside it (right,
+    then left), centred on the time where it can be, 12 px inside the viewport, never over the
+    time, fixed, caret toward the time, never height-capped: every button shows without
+    scrolling, in both steps. It follows a scroll of the sheet, closes when its time leaves the
+    viewport, and Esc / outside click / x return focus to the time."""
+    for (w, h) in ((1024, 768), (1280, 800), (1440, 900), (1920, 1080)):
+        ctx, page, errs = _hf_open(browser, w, h, False)
+        films = page.evaluate(HF_CANDIDATES_JS, "film")
+        for frac, pos in ((0.1, "top"), (0.5, "middle"), (0.9, "bottom")):
+            name = f"hf1_popover_{w}_{pos}"
+            got = _hf_place_pill(page, films, frac, h)
+            if not got:
+                skip(name, f"no film whose times can sit at {int(frac * 100)}% of the viewport")
+                continue
+            _hf_tap(page, False, got["x"], got["y"])
+            page.wait_for_timeout(450)
+            g = _hf_measure_pop(page, got["key"])
+            vis = page.evaluate(HF_POPUP_VIS_JS)
+            if not g:
+                check(name, False, f"no popover after the tap (popup state: {vis})")
+                continue
+            pl, pt, pr_, pb = g["pop"]
+            tl, tt, tr, tb = g["time"]
+            cl, ct, cr, cb = g["caret"]
+            want = _hf_popover_rule(g, w, h)
+            place = g["place"]
+            inside = pl >= 11.5 and pr_ <= w - 11.5 and pt >= 11.5 and pb <= h - 11.5
+            gap = {"above": tt - pb, "below": pt - tb, "right": pl - tr, "left": tl - pr_}.get(place, -1)
+            covers = not (pr_ <= tl or pl >= tr or pb <= tt or pt >= tb)
+            tcx, tcy = (tl + tr) / 2, (tt + tb) / 2
+            if place in ("above", "below"):
+                centred = abs((pl + pr_) / 2 - tcx) <= 1.5 or abs(pl - 12) <= 1 or abs(pr_ - (w - 12)) <= 1
+                caret_ok = abs((cl + cr) / 2 - tcx) <= 2.5 and ((cb > pb) if place == "above" else (ct < pt))
+            else:
+                centred = abs((pt + pb) / 2 - tcy) <= 1.5 or abs(pt - 12) <= 1 or abs(pb - (h - 12)) <= 1
+                caret_ok = abs((ct + cb) / 2 - tcy) <= 2.5 and ((cl < pl) if place == "right" else (cr > pr_))
+            # the calendar step: every control in view too
+            page.evaluate("()=>{const b=document.querySelector('#ss-pop [data-sscal]');b&&b.click()}")
+            page.wait_for_timeout(350)
+            vis2 = page.evaluate(HF_POPUP_VIS_JS)
+            buttons_ok = (not vis.get("err") and not vis["hidden"] and not vis["scrollNeeded"] and vis["minBtn"] >= 44
+                          and not vis2.get("err") and not vis2["hidden"] and not vis2["scrollNeeded"] and vis2["minBtn"] >= 44)
+            check(name, place == want and inside and 8 <= gap <= 12 and not covers and centred and caret_ok
+                  and g["pos"] == "fixed" and not g["inScrim"] and buttons_ok,
+                  f"place={place} (rule says {want}) pop={[round(v) for v in g['pop']]} time={[round(v) for v in g['time']]} gap={gap:.1f} "
+                  f"inside={inside} covers={covers} centred={centred} caret={caret_ok} pos={g['pos']} | "
+                  f"main: hidden={vis.get('hidden')} scroll={vis.get('scrollNeeded')} minBtn={vis.get('minBtn')} | "
+                  f"calendar: {vis2.get('mode')}/{vis2.get('place')} hidden={vis2.get('hidden')} scroll={vis2.get('scrollNeeded')} minBtn={vis2.get('minBtn')}")
+            page.evaluate("()=>{const b=document.querySelector('#ss-pop [data-ssback]');b&&b.click()}")
+            page.wait_for_timeout(250)
+            if w in (1024, 1440):
+                _hf_shot(page, f"desktop_popover_{w}_{pos}")
+            if place in ("right", "left"):
+                _hf_shot(page, f"desktop_popover_side_{w}_{pos}")
+            if pos == "middle" and w == 1440:
+                # follows a scroll of the sheet, then closes once the time leaves the viewport
+                g0 = _hf_measure_pop(page, got["key"])
+                page.evaluate("()=>{document.getElementById('scrim').scrollTop+=40;}")
+                page.wait_for_timeout(250)
+                g2 = _hf_measure_pop(page, got["key"])
+                moved = bool(g0 and g2) and abs((g2["time"][1] - g0["time"][1]) + 40) <= 2
+                kept = bool(g0 and g2) and abs((g2["pop"][1] - g2["time"][1]) - (g0["pop"][1] - g0["time"][1])) <= 2 if g2 and g0 and g2["place"] == g0["place"] else bool(g2)
+                check("hf1_popover_follows_scroll", moved and kept,
+                      f"time moved {g0['time'][1] if g0 else None}->{g2['time'][1] if g2 else None}, popover-to-time offset kept={kept} place {g0 and g0['place']}->{g2 and g2['place']}")
+                page.evaluate("()=>{document.getElementById('scrim').scrollTop+=2400;}")
+                page.wait_for_timeout(300)
+                s = page.evaluate(HF_STATE_JS)
+                check("hf1_popover_closes_when_time_leaves_view", not s["pop"] and not s["ssVar"] and s["film"] and s["depth"] == 1,
+                      f"popup={s['pop']} ssVar={s['ssVar']} film={s['film']} depth={s['depth']}")
+                for how in ("esc", "outside", "x"):
+                    r = _hf_place_pill(page, films, 0.5, h)
+                    _hf_tap(page, False, r["x"], r["y"]); page.wait_for_timeout(400)
+                    sc_before = page.evaluate("document.getElementById('scrim').scrollTop")
+                    if how == "esc":
+                        page.keyboard.press("Escape"); page.wait_for_timeout(350)
+                    else:
+                        _hf_close_popup(page, False, "backdrop" if how == "outside" else "x", ctx)
+                    f = page.evaluate("""(key)=>({pop:!!document.getElementById('ss-pop'),onTime:!!(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.sspill===key),
+                        sc:document.getElementById('scrim').scrollTop,film:!document.getElementById('scrim').hidden})""", r["key"])
+                    check(f"hf1_popover_close_{how}_focus_time", not f["pop"] and f["onTime"] and f["film"] and abs(f["sc"] - sc_before) <= 1,
+                          f"popover={f['pop']} focusOnTime={f['onTime']} sheetScroll {sc_before}->{f['sc']} film={f['film']}")
+            page.keyboard.press("Escape"); page.wait_for_timeout(350)
+        ctx.close()
+    # a landscape phone (844x390, wider than 760 but shorter than 520): the bottom panel, compact,
+    # every control in view without scrolling, both steps, wherever the time sits
+    ctx, page, errs = _hf_open(browser, 844, 390, True)
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    for frac, pos in ((0.2, "top"), (0.5, "middle"), (0.85, "bottom")):
+        name = f"hf1_landscape_phone_panel_{pos}"
+        s = page.evaluate(HF_STATE_JS)
+        if not s["film"]:
+            _hf_open_card(page, True, "film", films[0]); page.wait_for_timeout(650)
+        r = _hf_pill(page, frac)
+        page.wait_for_timeout(80)
+        r = _hf_pill(page, None, scroll=False)
+        if not r:
+            skip(name, "no time pill")
+            continue
+        _hf_tap(page, True, r["x"], r["y"]); page.wait_for_timeout(500)
+        vis = page.evaluate(HF_POPUP_VIS_JS)
+        if pos == "middle":
+            _hf_shot(page, "landscape_phone_panel_844x390")
+        page.evaluate("()=>{const b=document.querySelector('#ss-wrap [data-sscal]');b&&b.click()}")
+        page.wait_for_timeout(350)
+        vis2 = page.evaluate(HF_POPUP_VIS_JS)
+        if pos == "middle":
+            _hf_shot(page, "landscape_phone_panel_844x390_calendar")
+        ok = (vis.get("mode") == "panel" and not vis["hidden"] and not vis["scrollNeeded"] and vis["minBtn"] >= 44
+              and vis2.get("mode") == "panel" and not vis2["hidden"] and not vis2["scrollNeeded"] and vis2["minBtn"] >= 44)
+        check(name, ok, f"time at {r['y']:.0f}px | main: {vis} | calendar: {vis2}")
+        page.keyboard.press("Escape"); page.wait_for_timeout(400)
+    ctx.close()
+
+
+
+def _hf_phone_sheet(browser, eng):
+    # phone bottom sheet: inside the visible viewport, pinned to the bottom, <= 88% tall,
+    # scrolls inside, safe-area padding, last button clear of Safari's bottom strip
+    for (w, h) in ((390, 844), (375, 667)):
+        ctx, page, errs = _hf_open(browser, w, h, True)
+        films = page.evaluate(HF_CANDIDATES_JS, "film")
+        _hf_open_card(page, True, "film", films[0]); page.wait_for_timeout(650)
+        _hf_tap_pill(page, True, 0.5); page.wait_for_timeout(500)
+        g = page.evaluate("""()=>{const s=document.querySelector('#ss-wrap .ss-sheet');if(!s)return null;const r=s.getBoundingClientRect();
+            const btns=[...s.querySelectorAll('.ss-btn')];const last=btns[btns.length-1].getBoundingClientRect();
+            const cs=getComputedStyle(s);return {top:r.top,bottom:r.bottom,h:r.height,vh:innerHeight,ov:cs.overflowY,pb:parseFloat(cs.paddingBottom),
+              lastGap:innerHeight-last.bottom,wrapClass:document.getElementById('ss-wrap').className};}""")
+        ok = bool(g) and g["top"] >= 0 and abs(g["bottom"] - g["vh"]) <= 1 and g["h"] <= 0.88 * g["vh"] + 1 and g["ov"] in ("auto", "scroll") and g["pb"] >= 28 and g["lastGap"] >= 72 and "scrim" not in g["wrapClass"]
+        check(f"hf1_phone_sheet_geometry_{w}x{h}", ok, f"{g}")
+        if w == 390:
+            _hf_shot(page, "phone_bottom_sheet_390")
+        ctx.close()
+
+
+HF_VISIBLE_CARD_JS = r"""(exclude)=>{
+  for(const el of document.querySelectorAll('#app .card[data-film]')){
+    const id=el.dataset.film; if(id===exclude)continue;
+    const r=el.getBoundingClientRect();
+    if(r.top>90&&r.top<innerHeight-170&&r.width>40)return {id,x:r.left+r.width/2,y:r.top+40};
+  }
+  return null;
+}"""
+
+
+HF_TAPLOG_JS = r"""()=>{window.__hfLog=[];const t0=performance.now();
+  if(!window.__hfLogOn){window.__hfLogOn=1;
+    document.addEventListener('click',e=>{if(window.__hfLog)window.__hfLog.push({k:'click',t:performance.now()});},true);}
+  const s=document.getElementById('scrim');
+  if(window.__hfMO)window.__hfMO.disconnect();
+  window.__hfMO=new MutationObserver(()=>{if(s.hidden&&!window.__hfLog.some(e=>e.k==='hidden'))window.__hfLog.push({k:'hidden',t:performance.now()});});
+  window.__hfMO.observe(s,{attributes:true,attributeFilter:['hidden']});
+}"""
+
+
+def _hf_ctx_motion(browser, w, h, phone, reduced):
+    """_hf_open with prefers-reduced-motion set on or off."""
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
+              reduced_motion="reduce" if reduced else "no-preference")
+    if phone:
+        kw.update(has_touch=True, is_mobile=True)
+    ctx = browser.new_context(**kw)
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'})); } catch(e) {}""")
+    ctx.route("http://**/*", lambda r: r.continue_() if ("fonts.g" in r.request.url) else r.abort())
+    ctx.route("https://**/*", lambda r: r.continue_() if ("fonts.g" in r.request.url) else r.abort())
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(300)
+    return ctx, page, errors
+
+
+def _hf_scroll_restore(browser, eng):
+    """R1: with reduced motion on and off, every close route (and the time popup's own entry)
+    leaves the page exactly where it was (+-2 px); history.scrollRestoration is "auto" again
+    once the page is back on its own entry."""
+    for (w, h, phone) in ((390, 844, True), (1280, 800, False)):
+        for reduced in (True, False):
+            routes = ["x", "backbar", "esc", "backdrop", "back", "popup_back_back", "popup_esc_esc", "popup_x_then_backbar"] + (["drag"] if phone else [])
+            notes, all_ok = [], True
+            ctx, page, errs = _hf_ctx_motion(browser, w, h, phone, reduced)
+            for i, route in enumerate(routes):
+                card = None
+                for nudge in (0, 150, 300, 450, 600, 750, 900, 1050):
+                    page.evaluate(f"window.scrollTo(0,{900 + 150 * i + nudge})"); page.wait_for_timeout(200)
+                    card = page.evaluate(HF_VISIBLE_CARD_JS, "")
+                    if card:
+                        break
+                if not card:
+                    notes.append(f"{route}:no card"); all_ok = False; continue
+                y0 = page.evaluate("Math.round(scrollY)")
+                _hf_tap(page, phone, card["x"], card["y"]); page.wait_for_timeout(650)
+                if route.startswith("popup_"):
+                    _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+                    if route == "popup_back_back":
+                        page.evaluate("history.back()"); page.wait_for_timeout(450); page.evaluate("history.back()")
+                    elif route == "popup_esc_esc":
+                        page.keyboard.press("Escape"); page.wait_for_timeout(450); page.keyboard.press("Escape")
+                    else:
+                        _hf_close_popup(page, phone, "x", None)
+                        _hf_tap_backbar(page, phone)
+                else:
+                    _hf_close_sheet(page, phone, route)
+                page.wait_for_timeout(900)
+                s = page.evaluate(HF_STATE_JS)
+                ok = not s["film"] and abs(s["y"] - y0) <= 2 and s["body"] == ""
+                all_ok = all_ok and ok
+                notes.append(f"{route}:{y0}->{s['y']}{'' if ok else ' BAD'}")
+            page.wait_for_timeout(500)
+            sr = page.evaluate("history.scrollRestoration")
+            check(f"hf1_scroll_restore_{w}_{'reduced' if reduced else 'motion'}", all_ok and sr == "auto",
+                  " ".join(notes) + f" | scrollRestoration after={sr}")
+            ctx.close()
+
+
+def _hf_double_tap(browser, eng):
+    """R2: a double tap (phone) or double click (desktop) on x or "‹ Назад" closes the sheet and
+    nothing else: the second tap never opens the card under it. The page is scrolled so that a
+    card sits right under the button (three cards each), reduced motion on and off."""
+    for (w, h, phone) in ((390, 844, True), (1440, 900, False)):
+        for reduced in (False, True):
+            ctx, page, errs = _hf_ctx_motion(browser, w, h, phone, reduced)
+            films = page.evaluate(HF_CANDIDATES_JS, "film")
+            open_js = "(id)=>{curSheet={kind:'film',id};openSheet(sheetFilm(filmById[id]),null);}"
+            # where the two buttons sit, and where the page header ends once the page is scrolled
+            page.evaluate("window.scrollTo(0,900)"); page.wait_for_timeout(250)
+            page.evaluate(open_js, films[1]); page.wait_for_timeout(600)   # the sheet each case opens
+            page.evaluate("()=>{const s=document.querySelector('#scrim .sheet');if(s)s.scrollTop=0;document.getElementById('scrim').scrollTop=0;}")
+            # tap points well inside each (rounded) button: the centre and points around it (a
+            # fast second tap can land anywhere on it, e.g. below the sticky header on a phone)
+            spots = page.evaluate("""()=>{const c=sel=>{const r=document.querySelector(sel).getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,dx=r.width*.28,dy=r.height*.28;
+                  return [[x,y],[x-dx,y],[x+dx,y],[x,y+dy],[x-dx*.7,y+dy*.7],[x+dx*.7,y+dy*.7]];};
+                return {x:c('#scrim .sclose'),backbar:c('#scrim .sback'),header:Math.round(document.querySelector('.bar').getBoundingClientRect().bottom)};}""")
+            page.keyboard.press("Escape"); page.wait_for_timeout(700)
+            notes, all_ok, under_n = [], True, 0
+            for target in ("x", "backbar"):
+                # page offsets that put a card right under one of the button's tap points
+                cases = page.evaluate("""(pts)=>{const out=[];const cards=[...document.querySelectorAll('#app .card[data-film]')];
+                    for(const [px,py] of pts){for(const el of cards){const r=el.getBoundingClientRect();
+                      if(r.left+2<px&&r.right-2>px&&r.height>80){out.push({px,py,y:Math.max(0,Math.round(r.top+scrollY+30-py))});if(out.length>=12)return out;}}}
+                    return out;}""", spots[target])
+                # three cases per button: a card right under it where the layout allows one,
+                # else plain page positions (on wide screens ‹ Назад sits over the page header)
+                fallback = [{"px": spots[target][0][0], "py": spots[target][0][1], "y": yy, "fb": True} for yy in (900, 1500, 2100)]
+                done, fb_used = 0, False
+                for cs in cases + fallback:
+                    if done >= 3:
+                        break
+                    if cs.get("fb") and done and not fb_used and any(n.startswith(target + "@") and "under it" in n for n in notes):
+                        break
+                    page.evaluate(f"window.scrollTo(0,{cs['y']})"); page.wait_for_timeout(180)
+                    y0 = page.evaluate("Math.round(scrollY)")
+                    bx, by = cs["px"], cs["py"]
+                    under = page.evaluate("""([x,y])=>{const e=document.elementFromPoint(x,y);
+                        const c=e&&e.closest('[data-film],[data-show],[data-event]');return c?(c.dataset.film||c.dataset.show||c.dataset.event):null}""", [bx, by])
+                    if not cs.get("fb") and not under:
+                        continue
+                    fb_used = fb_used or bool(cs.get("fb"))
+                    done += 1
+                    # the second tap must land while the close still runs (or, with reduced
+                    # motion, within the shield) to be a double tap; the page logs when each
+                    # click arrived and when the scrim went away, and a late second tap is retried
+                    for attempt in range(3):
+                        page.evaluate(open_js, films[1]); page.wait_for_timeout(600)
+                        page.evaluate("()=>{const s=document.querySelector('#scrim .sheet');if(s)s.scrollTop=0;document.getElementById('scrim').scrollTop=0;}")
+                        page.wait_for_timeout(60)
+                        page.evaluate(HF_TAPLOG_JS)
+                        if phone:
+                            page.touchscreen.tap(bx, by); page.touchscreen.tap(bx, by)
+                        else:
+                            page.mouse.dblclick(bx, by)
+                        page.wait_for_timeout(900)
+                        lg = page.evaluate("window.__hfLog")
+                        s = page.evaluate(HF_STATE_JS)
+                        clicks = [e["t"] for e in lg if e["k"] == "click"]
+                        gone = [e["t"] for e in lg if e["k"] == "hidden"]
+                        if len(clicks) < 2:
+                            in_window = False
+                        else:
+                            # the close ends when the scrim hides (never, if the second tap
+                            # reopened a sheet during it); reduced motion adds the shield time
+                            close_end = gone[0] if gone else float("inf")
+                            end = max(close_end, clicks[0] + 340) if reduced else close_end
+                            in_window = clicks[1] < end
+                        if in_window or attempt == 2:
+                            break
+                        page.keyboard.press("Escape"); page.wait_for_timeout(700)
+                    gap = (clicks[1] - clicks[0]) if len(clicks) >= 2 else -1
+                    ok = (not s["film"] and not s["scrimInDom"] and abs(s["y"] - y0) <= 2) if in_window else True
+                    under_n += 1 if (under and in_window) else 0
+                    if not ok:
+                        all_ok = False
+                        notes.append(f"{target}@{y0}: BAD second tap +{gap:.0f}ms opened {s['title']!r} (card under={under})")
+                        page.keyboard.press("Escape"); page.wait_for_timeout(700)
+                    elif not in_window:
+                        notes.append(f"{target}@{y0}: second tap came late (+{gap:.0f}ms), not a double tap")
+                        if s["film"]:
+                            page.keyboard.press("Escape"); page.wait_for_timeout(700)
+                    else:
+                        notes.append(f"{target}@{y0}:ok +{gap:.0f}ms{' (card ' + under + ' under it)' if under else ''}")
+            name = f"hf1_double_{'tap' if phone else 'click'}_x_and_back_{w}_{'reduced' if reduced else 'motion'}"
+            check(name, all_ok, f"{under_n} of {len(notes)} cases had a card right under the button | " + " ".join(notes))
+            if under_n == 0:
+                skip(name + "_card_under", f"no card can sit under x or ‹ Назад at this size (the header ends at {spots['header']}px)")
+            ctx.close()
+
+
+HF_GRID_DATES_JS = r"""(w)=>{
+  /* for every film and show: the dates the desktop grid can show over all its pages, from the
+     sheet's own markup, against the dates of its listings for the shown period */
+  const bad=[],rowBad=[];let films=0,shows=0,multi=0,pagesMax=1,rowsChecked=0;
+  const check=(kind,id,html,expect,pairs)=>{
+    const d=document.createElement('div');d.innerHTML=html;
+    const pages=[...d.querySelectorAll('.p3e-gpage')];
+    const got=new Set(pages.flatMap(p=>[...p.querySelectorAll('th[data-date]')].map(t=>t.dataset.date)));
+    const exp=new Set(expect);
+    const pg=d.querySelector('.p3e-gpager');
+    if(pages.length>1)multi++;
+    pagesMax=Math.max(pagesMax,pages.length);
+    const sizes=pages.map(p=>p.querySelectorAll('th[data-date]').length);
+    const okPages=pages.length===Math.max(1,Math.ceil(exp.size/7))&&sizes.every((n,i)=>n===(i<pages.length-1?7:exp.size-7*(pages.length-1)));
+    const okPager=(pages.length>1)===!!pg;
+    if(got.size!==exp.size||[...exp].some(x=>!got.has(x))||!okPages||!okPager)
+      bad.push(kind+':'+id+' got '+got.size+' expected '+exp.size+' pages '+pages.length);
+    /* rows: a page lists only venues with a time on its own dates (no empty rows), and
+       the times over all pages are exactly the listings, none lost and none doubled */
+    const rows=pages.flatMap(p=>[...p.querySelectorAll('tbody tr')]);
+    rowsChecked+=rows.length;
+    const empty=rows.filter(tr=>!tr.querySelector('[data-sspill]')).length;
+    const shown=pages.flatMap(p=>[...p.querySelectorAll('[data-sspill]')].map(b=>{const k=b.dataset.sspill.split('|');return k[2]+'|'+k[3];})).sort();
+    const want=pairs.slice().sort();
+    if(empty||shown.length!==want.length||shown.some((x,i)=>x!==want[i]))
+      rowBad.push(kind+':'+id+' empty rows '+empty+', times shown '+shown.length+' of '+want.length);
+  };
+  for(const f of FILMS){
+    const rows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));
+    if(!rows.length)continue;
+    films++;
+    check('film',f.id,sheetFilm(f),rows.map(r=>r[2]),rows.flatMap(r=>(r[3]||[]).map(t=>r[2]+'|'+t)));
+  }
+  for(const sh of SHOWS){
+    const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));
+    if(!ps.length||!thById[sh.theatre])continue;
+    shows++;
+    check('show',sh.id,sheetShow(sh),ps.map(p=>p[1]),ps.map(p=>p[1]+'|'+p[2]));
+  }
+  return {films,shows,multi,pagesMax,bad:bad.slice(0,8),nbad:bad.length,rowsChecked,rowBad:rowBad.slice(0,8),nRowBad:rowBad.length};
+}"""
+
+
+def _hf_grid_paging(browser, eng):
+    """G1: the desktop week grid pages 7 dates at a time; over its pages it shows every date
+    of every film and show; each page lists only the venues with a time on its dates; the
+    pager is keyboard-usable, labelled in BG and EN, disabled at the ends, keeps the venue
+    column sticky and the table's top in place, and closes the popover."""
+    for w, h in ((1280, 800), (1024, 768)):
+        ctx, page, errs = _hf_open(browser, w, h, False)
+        r = page.evaluate(HF_GRID_DATES_JS, w)
+        check(f"hf1_grid_all_dates_{w}", r["nbad"] == 0 and r["films"] > 0,
+              f"{r['films']} films, {r['shows']} shows, {r['multi']} with more than one page (up to {r['pagesMax']}); mismatches={r['nbad']} {r['bad']}")
+        check(f"hf1_grid_rows_only_with_times_{w}", r["nRowBad"] == 0 and r["rowsChecked"] > 0,
+              f"{r['rowsChecked']} rows over all pages; problems={r['nRowBad']} {r['rowBad']}")
+        ctx.close()
+    for lang in ("bg", "en"):
+        for kind, mode in (("film", "cinema"), ("show", "theatre")):
+            ctx, page, errs = _hf_open(browser, 1280, 800, False, lang=lang, mode=mode)
+            best = page.evaluate("""(kind)=>{let best=null;
+                if(kind==='film'){for(const f of FILMS){const n=new Set(upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id)).map(r=>r[2])).size;if(!best||n>best.n)best={id:f.id,n};}}
+                else{for(const s of SHOWS){if(!thById[s.theatre])continue;const n=new Set(upcomingPerfs(PERFORMANCES.filter(p=>p[0]===s.id)).map(p=>p[1])).size;if(!best||n>best.n)best={id:s.id,n};}}
+                return best;}""", kind)
+            name = f"hf1_grid_paging_{kind}_{lang}"
+            if not best or best["n"] <= 7:
+                skip(name, f"no {kind} with more than 7 dates in this build")
+                ctx.close()
+                continue
+            page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, best["id"]])
+            page.wait_for_timeout(600)
+            exp = page.evaluate("""([k,id])=>[...new Set(k==='film'?upcomingRows(SHOWTIMES.filter(r=>r[0]===id)).map(r=>r[2]):upcomingPerfs(PERFORMANCES.filter(p=>p[0]===id)).map(p=>p[1]))].sort()""", [kind, best["id"]])
+            shown_js = """()=>{const pages=[...document.querySelectorAll('#scrim .p3e-gpage')];
+                const vis=pages.filter(p=>getComputedStyle(p).display!=='none');
+                const pg=document.querySelector('#scrim .p3e-gpager');const [pv,nx]=pg?pg.querySelectorAll('[data-gnav]'):[null,null];
+                const vc=vis[0]&&vis[0].querySelector('td.p3e-vcol');
+                return {nvis:vis.length,dates:vis.length?[...vis[0].querySelectorAll('th[data-date]')].map(t=>t.dataset.date):[],
+                  prevDis:pv?pv.disabled:null,nextDis:nx?nx.disabled:null,prevLabel:pv?pv.getAttribute('aria-label'):null,nextLabel:nx?nx.getAttribute('aria-label'):null,
+                  range:pg?pg.querySelector('.p3e-grange').textContent:null,h:Math.round(document.querySelector('#scrim .p3e-gpages').getBoundingClientRect().height),
+                  sticky:vc?getComputedStyle(vc).position:null,top:Math.round(document.querySelector('#scrim .p3e-gpages').getBoundingClientRect().top)}}"""
+            seen, steps, ok_steps = [], [], True
+            s0 = page.evaluate(shown_js)
+            labels_ok = (s0["prevLabel"], s0["nextLabel"]) == (("Предишни дати", "Следващи дати") if lang == "bg" else ("Earlier dates", "Later dates"))
+            first_ok = s0["nvis"] == 1 and s0["prevDis"] is True and s0["nextDis"] is False and s0["sticky"] == "sticky"
+            seen += s0["dates"]
+            # open a popover, then page with the keyboard: the popover closes, the page turns
+            p = _hf_pill(page, 0.5)
+            page.wait_for_timeout(80)
+            p = _hf_pill(page, None, scroll=False)
+            if p:
+                _hf_tap(page, False, p["x"], p["y"]); page.wait_for_timeout(400)
+            pop_open = page.evaluate("!!document.getElementById('ss-pop')")
+            page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.scrollIntoView({block:'center'});n.focus();}")
+            page.wait_for_timeout(150)
+            prev = page.evaluate(shown_js)       # after the test's own scroll, before paging
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(250)
+            pop_after = page.evaluate("!!document.getElementById('ss-pop')")
+            guard = 0
+            while True:
+                cur = page.evaluate(shown_js)
+                if cur["dates"] and cur["dates"] != prev["dates"]:
+                    seen += cur["dates"]
+                # the height follows each page's rows now (no empty rows); the table's top stays put
+                ok_step = cur["nvis"] == 1 and cur["sticky"] == "sticky" and abs(cur["top"] - prev["top"]) <= 1
+                ok_steps = ok_steps and ok_step
+                steps.append(f"{cur['range']}{'' if ok_step else ' BAD'}")
+                if cur["nextDis"] or guard > 12:
+                    break
+                prev = cur
+                page.mouse.click(*page.evaluate("()=>{const r=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]').getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}"))
+                page.wait_for_timeout(250)
+                guard += 1
+            end = page.evaluate(shown_js)
+            # and back to the first page with the other arrow
+            while not end["prevDis"] and guard < 30:
+                page.mouse.click(*page.evaluate("()=>{const r=document.querySelector('#scrim .p3e-gpager [data-gnav=\"-1\"]').getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}"))
+                page.wait_for_timeout(200)
+                end = page.evaluate(shown_js)
+                guard += 1
+            union_ok = sorted(set(seen)) == exp
+            check(name, labels_ok and first_ok and union_ok and ok_steps and end["dates"] == s0["dates"] and end["prevDis"] and pop_open and not pop_after,
+                  f"{best['id']}: {len(exp)} dates; pages {steps}; union matches={union_ok}; labels={s0['prevLabel']!r}/{s0['nextLabel']!r}; "
+                  f"first page prev disabled={s0['prevDis']} sticky venue column={s0['sticky']}; top steady={ok_steps}; popover {pop_open}->{pop_after}; back to first={end['dates'] == s0['dates']}")
+            if lang == "bg" and kind == "film":
+                page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.click();}")
+                page.wait_for_timeout(200)
+                page.evaluate("()=>{document.querySelector('#scrim .p3e-gpager').scrollIntoView({block:'start'});document.getElementById('scrim').scrollTop-=40;}")
+                page.wait_for_timeout(200)
+                _hf_shot(page, "desktop_grid_paging_1280")
+            ctx.close()
+
+
+def _hf_grid_months(browser, eng):
+    """G2: when a grid's dates span more than one month, every column header carries the
+    short month (BG "ное", EN "Nov"); a single-month grid shows none."""
+    for lang in ("bg", "en"):
+        ctx, page, errs = _hf_open(browser, 1280, 800, False, lang=lang)
+        r = page.evaluate("""()=>{const L=T[S.lang];let multi=0,single=0;const bad=[];
+            const each=(kind,id,html,dates)=>{const d=document.createElement('div');d.innerHTML=html;
+              const ths=[...d.querySelectorAll('.p3e-gpage th[data-date]')];if(!ths.length)return;
+              const many=new Set(dates.map(x=>x.slice(0,7))).size>1;
+              if(many){multi++;for(const th of ths){const m=th.querySelector('small.p3e-gmon');const want=L.monthsShort[parseInt(th.dataset.date.slice(5,7),10)-1];
+                if(!m||m.textContent.trim()!==want){bad.push(kind+':'+id+' '+th.dataset.date+' month='+(m?m.textContent:'none'));break;}}}
+              else{single++;if(ths.some(th=>th.querySelector('small.p3e-gmon')))bad.push(kind+':'+id+' single month shows a month');}};
+            for(const f of FILMS){const rows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));if(rows.length)each('film',f.id,sheetFilm(f),rows.map(r=>r[2]));}
+            for(const sh of SHOWS){const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));if(ps.length&&thById[sh.theatre])each('show',sh.id,sheetShow(sh),ps.map(p=>p[1]));}
+            return {multi,single,bad:bad.slice(0,6),nbad:bad.length,sample:(()=>{for(const sh of SHOWS){const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));
+              if(ps.length&&thById[sh.theatre]&&new Set(ps.map(p=>p[1].slice(0,7))).size>1){const d=document.createElement('div');d.innerHTML=sheetShow(sh);
+              return [...d.querySelectorAll('.p3e-gpage th[data-date]')].slice(0,3).map(t=>t.textContent.replace(/\\s+/g,' ').trim());}}return null;})()};}""")
+        check(f"hf1_grid_month_headers_{lang}", r["nbad"] == 0 and r["multi"] > 0,
+              f"{r['multi']} multi-month grids, {r['single']} single-month; sample headers {r['sample']}; problems={r['nbad']} {r['bad']}")
+        ctx.close()
+
+
+HF_BUSIEST_JS = r"""(kind)=>{
+  if(kind==='film'){
+    let best=null;
+    for(const r of SHOWTIMES){ if(!filmById[r[0]]||!upcomingRows([r]).length)continue;
+      const n=(r[3]||[]).length; if(!best||n>best.n)best={id:r[0],venue:r[1],date:r[2],n}; }
+    return best;
+  }
+  const by={};
+  for(const p of upcomingPerfs(PERFORMANCES)){ if(!showById[p[0]])continue; const k=p[0]+'|'+p[1]; (by[k]=by[k]||new Set()).add(p[2]); }
+  let best=null; for(const k in by){ const n=by[k].size; if(!best||n>best.n){const i=k.lastIndexOf('|');best={id:k.slice(0,i),date:k.slice(i+1),n,venue:showById[k.slice(0,i)].theatre};} }
+  return best;
+}"""
+
+HF_ROW_JS = r"""([venue,date])=>{
+  const s=document.querySelector('#scrim .sheet'); if(!s)return {err:'no sheet'};
+  const chip=s.querySelector('[data-p3day="'+date+'"]'); if(chip)chip.click();
+  const rows=[...s.querySelectorAll('.p3e-grp .p3e-row')];
+  const row=rows.find(rw=>[...rw.querySelectorAll('[data-sspill]')].some(p=>p.dataset.sspill.split('|')[1]===venue))||rows[0];
+  if(!row)return {err:'no row'};
+  row.scrollIntoView({block:'center'});
+  const R=e=>{const r=e.getBoundingClientRect();return {l:r.left,t:r.top,r:r.right,b:r.bottom,w:r.width,h:r.height};};
+  const cs=getComputedStyle(row), rr=R(row);
+  const cw=row.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const name=row.querySelector('.p3e-vname'), price=row.querySelector('.p3e-vprice');
+  const secs=[...row.querySelectorAll('.p3e-vsec')];
+  const texts=[name,price,...secs].filter(Boolean);
+  const pills=[...row.querySelectorAll('[data-sspill]')];
+  const inter=(a,b)=>!(a.r<=b.l||a.l>=b.r||a.b<=b.t||a.t>=b.b);
+  /* the text's own glyph boxes as well, so text spilling out of a squeezed box counts */
+  const ink=el=>{const rg=document.createRange();rg.selectNodeContents(el);return [...rg.getClientRects()].map(r=>({l:r.left,t:r.top,r:r.right,b:r.bottom}));};
+  let overlaps=0; for(const p of pills){const pr=R(p); for(const tx of texts){ for(const ir of [R(tx),...ink(tx)]){ if(inter(pr,ir)){overlaps++;break;} } }}
+  const outside=pills.filter(p=>{const pr=R(p);return pr.l<rr.l-0.5||pr.r>rr.r+0.5||pr.t<rr.t-0.5||pr.b>rr.b+0.5;}).length;
+  return {n:pills.length, ratio:name?R(name).w/cw:0, overflow:row.scrollWidth-row.clientWidth, overlaps, outside,
+    minH:Math.min(...pills.map(p=>p.getBoundingClientRect().height)), dot:secs.some(x=>x.textContent.includes(' · ')),
+    name:name?name.textContent.trim():'', price:price?price.textContent.trim():'', secs:secs.map(x=>x.textContent.trim())};
+}"""
+
+
+def _hf_rows(browser, eng):
+    """Bug 4: the busiest real venue row of a film and of a theatre show on phones."""
+    for kind, mode in (("film", "cinema"), ("show", "theatre")):
+        for lang in ("bg", "en"):
+            for w in (375, 390, 430, 440):
+                ctx, page, errs = _hf_open(browser, w, 860, True, lang=lang, mode=mode)
+                best = page.evaluate(HF_BUSIEST_JS, kind)
+                name = f"hf1_rows_{kind}_{lang}_{w}"
+                if not best:
+                    skip(name, "no upcoming listing")
+                    ctx.close()
+                    continue
+                page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, best["id"]])
+                page.wait_for_timeout(500)
+                r = page.evaluate(HF_ROW_JS, [best["venue"], best["date"]])
+                ok = "err" not in r and r["overlaps"] == 0 and r["ratio"] >= 0.6 and r["overflow"] <= 1 and r["outside"] == 0 and r["minH"] >= 44 and not r["dot"]
+                check(name, ok, f"{best['id']} {best['date']} {best['n']} times: {r}")
+                if (w == 390 and lang == "bg" and kind == "film") or (w == 375 and lang == "en" and kind == "film"):
+                    page.wait_for_timeout(150)
+                    _hf_shot(page, f"phone_rows_{w}_{lang}")
+                ctx.close()
+    # the desktop week grid between 761 and 1024 px: the sticky venue column keeps its width
+    for w in (761, 860, 1024):
+        ctx, page, errs = _hf_open(browser, w, 800, False)
+        best = page.evaluate(HF_BUSIEST_JS, "film")
+        page.evaluate("([id])=>{curSheet={kind:'film',id};openSheet(sheetFilm(filmById[id]),null);}", [best["id"]])
+        page.wait_for_timeout(500)
+        g = page.evaluate(r"""()=>{const t=document.querySelector('#scrim .p3e-gt'); if(!t)return {err:'no grid'};
+            const ws=[...t.querySelectorAll('td.p3e-vcol')].map(c=>c.getBoundingClientRect().width);
+            let ov=0; for(const tr of t.querySelectorAll('tbody tr')){const v=tr.querySelector('td.p3e-vcol').getBoundingClientRect();
+              for(const p of tr.querySelectorAll('[data-sspill]')){const r=p.getBoundingClientRect(); if(r.left<v.right-0.5&&r.right>v.left)ov++;}}
+            return {minW:Math.min(...ws), rows:ws.length, overlap:ov};}""")
+        check(f"hf1_grid_venue_column_{w}", "err" not in g and g["minW"] >= 140 and g["overlap"] == 0, f"{g}")
+        ctx.close()
+
+
+HF_COUNT_ANIM_JS = """(()=>{const o=Element.prototype.animate;window.__drAnims=0;Element.prototype.animate=function(...a){
+  if(this.classList&&(this.classList.contains('drawer')||this.classList.contains('drawer-scrim')))window.__drAnims++;return o.apply(this,a);};})();"""
+
+
+def _hf_drawer(browser, eng, phone):
+    """Bug 5 and 6: one tap on the FAB opens the drawer; filter taps update the chips and
+    the page behind without re-creating or re-animating the drawer; scroll positions stay."""
+    w, h = (390, 844) if phone else (1440, 900)
+    tag = f"hf1_{'phone' if phone else 'desk'}"
+    for mode in ("cinema", "theatre"):
+        ctx, page, errs = _hf_open(browser, w, h, phone, mode=mode)
+        page.add_init_script(HF_COUNT_ANIM_JS)
+        page.evaluate(HF_COUNT_ANIM_JS)
+        if mode == "theatre":
+            # a starred theatre makes the favourites toggle appear
+            page.evaluate("()=>{const p=PERFORMANCES.find(p=>showById[p[0]]);S.fav.venues=[p?showById[p[0]].theatre:THEATRES[0].id];save();render();}")
+            page.wait_for_timeout(200)
+        page.evaluate("window.scrollTo(0,1600)"); page.wait_for_timeout(400)
+        y0 = page.evaluate("Math.round(scrollY)")
+        _hf_tap_el(page, phone, "()=>document.querySelector('.fab')")
+        page.wait_for_timeout(450)
+        opened = page.evaluate("()=>{const d=document.querySelector('.drawer');if(!d||!d.getClientRects().length)return false;d.__hf=1;return true}")
+        check(f"{tag}_{mode}_fab_one_tap", opened, "drawer visible after one tap on the FAB")
+        if not opened:
+            ctx.close()
+            continue
+        page.wait_for_timeout(300)
+        page.evaluate("()=>{document.querySelector('.drawer').scrollTop=120;}")
+        a0 = page.evaluate("window.__drAnims")
+        top0 = page.evaluate("document.querySelector('.drawer').scrollTop")
+        targets = ["[data-genre]:not([data-genre=''])", "[data-range='all']", "[data-only-fav]" if mode == "theatre" else "[data-strand='arthouse']",
+                   "[data-genre]:not([data-genre=''])", "[data-clearf]"]
+        notes, all_ok = [], True
+        for sel in targets:
+            info = page.evaluate("""(sel)=>{const d=document.querySelector('.drawer');const els=[...d.querySelectorAll(sel)].filter(e=>!e.disabled);
+                const e=els.find(e=>{const r=e.getBoundingClientRect();return r.top>50&&r.bottom<innerHeight-60;})||els[0];
+                if(!e)return null; if(!(e.getBoundingClientRect().top>50&&e.getBoundingClientRect().bottom<innerHeight-60))e.scrollIntoView({block:'center'});
+                const key=[...e.attributes].find(a=>a.name.startsWith('data-'));
+                return {key:key?key.name+'='+key.value:'',pressed:e.getAttribute('aria-pressed'),cls:e.className,top:d.scrollTop};}""", sel)
+            if not info:
+                notes.append(f"{sel}: absent")
+                continue
+            top_before = info["top"]
+            y_before = page.evaluate("Math.round(scrollY)")
+            n, v = info["key"].split("=", 1)
+            _hf_tap_el(page, phone, "(k)=>document.querySelector('.drawer ['+k[0]+'=\"'+CSS.escape(k[1])+'\"]')", [n, v])
+            page.wait_for_timeout(380)
+            after = page.evaluate("""(k)=>{const d=document.querySelector('.drawer');const e=d&&d.querySelector('['+k[0]+'="'+CSS.escape(k[1])+'"]');
+                return {same:!!(d&&d.__hf),top:d?d.scrollTop:-1,pressed:e?e.getAttribute('aria-pressed'):null,cls:e?e.className:'',
+                        y:Math.round(scrollY),maxY:Math.round(document.documentElement.scrollHeight-innerHeight),fGenres:S.fGenres.length,day:S.day,onlyFav:S.onlyFav};}""", [n, v])
+            changed = (after["pressed"] != info["pressed"]) or (after["cls"] != info["cls"]) or n == "data-clearf"
+            y_ok = abs(after["y"] - y_before) <= 2 or (after["maxY"] < y_before and abs(after["y"] - after["maxY"]) <= 2)
+            ok = after["same"] and abs(after["top"] - top_before) <= 2 and changed and y_ok
+            all_ok = all_ok and ok
+            notes.append(f"{info['key']}: pressed {info['pressed']}->{after['pressed']} class changed={after['cls'] != info['cls']} same={after['same']} top {top_before}->{after['top']} y {y_before}->{after['y']} (max {after['maxY']})")
+        a1 = page.evaluate("window.__drAnims")
+        check(f"{tag}_{mode}_drawer_kept_across_filter_taps", all_ok and a1 == a0,
+              f"drawer animations {a0}->{a1} | " + " | ".join(notes))
+        # close with one tap: on the dimmed area beside the drawer (cinema; iOS only sends a
+        # click there because the backdrop now listens for one) or on its x (theatre)
+        if mode == "cinema":
+            _hf_tap(page, phone, 20 if phone else 100, h // 2)
+        else:
+            _hf_tap_el(page, phone, "()=>document.querySelector('.drawer .dclose')")
+        page.wait_for_timeout(600)
+        closed = page.evaluate("()=>!document.querySelector('.drawer')&&!!document.querySelector('.fab')")
+        check(f"{tag}_{mode}_drawer_close_one_tap_{'backdrop' if mode == 'cinema' else 'x'}", closed, f"drawer gone and FAB back: {closed}")
+        if phone:
+            gap = page.evaluate("()=>{const f=document.querySelector('.fab').getBoundingClientRect();return Math.round(innerHeight-f.bottom)}")
+            check(f"{tag}_{mode}_fab_clear_of_safari_toolbar_strip", gap >= 72, f"FAB bottom edge {gap}px above the viewport bottom (need >= 72 on touch screens)")
+        check(f"{tag}_{mode}_drawer_no_js_errors", len(errs) == 0, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _hf_one_tap(browser, eng, phone):
+    """Bugs 6/7: one tap is enough for every control of the sheet, the popup and its
+    calendar step."""
+    w, h = (390, 844) if phone else (1440, 900)
+    tag = f"hf1_{'phone' if phone else 'desk'}"
+    ctx, page, errs = _hf_open(browser, w, h, phone)
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
+    s = page.evaluate(HF_STATE_JS)
+    check(f"{tag}_card_one_tap", s["film"], "film sheet open after one tap on a card")
+    rm = page.evaluate("()=>{const b=[...document.querySelectorAll('#scrim .readmore')].find(e=>e.getClientRects().length&&getComputedStyle(e).display!=='none');if(!b)return null;b.scrollIntoView({block:'center'});const w=b.closest('.synwrap');return {clamp:w.classList.contains('clamp')}}")
+    if rm:
+        _hf_tap_el(page, phone, "()=>[...document.querySelectorAll('#scrim .readmore')].find(e=>e.getClientRects().length&&getComputedStyle(e).display!=='none')")
+        page.wait_for_timeout(400)
+        rm2 = page.evaluate("()=>[...document.querySelectorAll('#scrim .synwrap')].some(w=>!w.classList.contains('clamp'))")
+        check(f"{tag}_readmore_one_tap", rm2, f"synopsis expanded after one tap (was clamped={rm['clamp']})")
+    if phone:
+        day = page.evaluate("()=>{const c=[...document.querySelectorAll('#scrim [data-p3day]')].find(e=>e.getAttribute('aria-pressed')!=='true');if(!c)return null;c.scrollIntoView({block:'center'});return c.dataset.p3day}")
+        if day:
+            _hf_tap_el(page, phone, "(d)=>document.querySelector('#scrim [data-p3day=\"'+d+'\"]')", day)
+            page.wait_for_timeout(300)
+            pressed = page.evaluate("(d)=>document.querySelector('#scrim [data-p3day=\"'+d+'\"]').getAttribute('aria-pressed')", day)
+            check(f"{tag}_day_chip_one_tap", pressed == "true", f"day {day} pressed={pressed}")
+    p = _hf_tap_pill(page, phone, 0.5)
+    page.wait_for_timeout(500)
+    s = page.evaluate(HF_STATE_JS)
+    check(f"{tag}_time_one_tap", bool(p) and s["pop"], "time popup open after one tap on a time")
+    scope = "#ss-wrap " if phone else "#ss-pop "
+    if phone:
+        gap = page.evaluate("()=>{const b=[...document.querySelectorAll('#ss-wrap .ss-btn')].pop().getBoundingClientRect();return Math.round(innerHeight-b.bottom)}")
+        check(f"{tag}_calendar_button_clear_of_safari_toolbar_strip", gap >= 72, f"'Добави в календара' bottom edge {gap}px above the viewport bottom (need >= 72 on touch screens)")
+    _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-sscal]')")
+    page.wait_for_timeout(350)
+    cal = page.evaluate("()=>!!document.querySelector('" + scope + ".ss-cal-lst')")
+    check(f"{tag}_add_to_calendar_one_tap", cal, "calendar step shown after one tap on 'Добави в календара'")
+    _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssback]')")
+    page.wait_for_timeout(300)
+    back = page.evaluate("()=>!!document.querySelector('" + scope + "[data-sscal]')")
+    check(f"{tag}_calendar_back_one_tap", back, "main step back after one tap on ‹")
+    _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssclose]')")
+    page.wait_for_timeout(450)
+    s = page.evaluate(HF_STATE_JS)
+    check(f"{tag}_popup_close_one_tap", not s["pop"] and s["film"], f"popup={s['pop']} film={s['film']}")
+    _hf_tap_backbar(page, phone)
+    page.wait_for_timeout(750)
+    s = page.evaluate(HF_STATE_JS)
+    check(f"{tag}_back_bar_one_tap", not s["film"], f"film={s['film']}")
+    ctx.close()
+
+
+def _hf_ics(browser, eng):
+    """Bug 8: the Apple row is a real link to a text/calendar Blob; a valid VCALENDAR; a
+    download on desktop browsers; no download attribute for iPhone Safari."""
+    IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1"
+    for phone, ua, label in ((False, None, "desktop"), (True, None, "phone"), (True, IPHONE_UA, "iphone_ua")):
+        w, h = (390, 844) if phone else (1440, 900)
+        ctx, page, errs = _hf_open(browser, w, h, phone, ua=ua)
+        films = page.evaluate(HF_CANDIDATES_JS, "film")
+        _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
+        _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(450)
+        scope = "#ss-wrap " if phone else "#ss-pop "
+        _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-sscal]')")
+        page.wait_for_timeout(350)
+        info = page.evaluate("""async (scope)=>{const a=document.querySelector(scope+'[data-sscalics]');if(!a)return {err:'no apple row'};
+            const href=a.getAttribute('href')||'';const dl=a.getAttribute('download');let text='',type='';
+            if(href.startsWith('blob:')){const r=await fetch(href);type=(await r.clone().blob()).type;text=await r.text();}
+            return {href:href.slice(0,40),dl,type,text};}""", scope)
+        name = f"hf1_ics_{label}"
+        if "err" in info:
+            check(name, False, info["err"])
+            ctx.close()
+            continue
+        apple = page.evaluate("typeof _isAppleTouch==='function'&&_isAppleTouch()")
+        t = info["text"]
+        lines = t.replace("\r\n", "\n").split("\n")
+        has = lambda k: any(l.startswith(k) for l in lines)
+        valid = (t.startswith("BEGIN:VCALENDAR") and "END:VCALENDAR" in t and "BEGIN:VEVENT" in t and "END:VEVENT" in t
+                 and has("DTSTART") and has("DTEND") and has("SUMMARY:") and has("LOCATION:") and has("UID:")
+                 and any(("TZID=Europe/Sofia" in l or l.rstrip().endswith("Z")) for l in lines if l.startswith("DTSTART")))
+        if label == "iphone_ua" or apple:
+            ok = apple and info["href"].startswith("blob:") and info["dl"] is None and valid and info["type"].startswith("text/calendar")
+        else:
+            ok = info["href"].startswith("blob:") and (info["dl"] or "").startswith("sg-") and (info["dl"] or "").endswith(".ics") and valid and info["type"].startswith("text/calendar")
+        check(name, ok, f"appleTouch={apple} href={info['href']}... download={info['dl']!r} type={info['type']!r} valid={valid} "
+                        f"DTSTART={[l for l in lines if l.startswith('DTSTART')][:1]}")
+        if label == "desktop":
+            try:
+                with page.expect_download(timeout=5000) as dl_info:
+                    _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-sscalics]')")
+                d = dl_info.value
+                path = d.path()
+                body = open(path, encoding="utf-8").read() if path else ""
+                s = page.evaluate(HF_STATE_JS)
+                check("hf1_ics_desktop_download", d.suggested_filename.startswith("sg-") and body.startswith("BEGIN:VCALENDAR") and s["film"] and s["pop"],
+                      f"file={d.suggested_filename} bytes={len(body)} sheet still open={s['film']} popup still open={s['pop']}")
+            except Exception as ex:
+                check("hf1_ics_desktop_download", False, f"no download: {str(ex)[:120]}")
+        ctx.close()
+
+
+def wave_hf1(browser):
+    """
+    Wave HF1: hotfix regression tests for the owner's reports of 2026-10-15 (bugs 1-8).
+    HF1-A every popup close route x every sheet close route, then another film and a show
+    HF1-B sheet closed under the popup, fast tap during a close, language toggle, 5 cycles
+    HF1-C scroll lock and restore (phone, desktop; with and without the popup)
+    HF1-D popover geometry at 1024/1280/1440/1920 (top/middle/bottom); phone bottom sheet
+    HF1-E phone venue rows at 375/390/430/440 BG/EN; desktop grid venue column 761-1024
+    HF1-F filter drawer kept across taps; FAB one tap
+    HF1-G one tap for every sheet/popup control
+    HF1-H Apple Calendar .ics link
+    HF1-I page position after closing, reduced motion on and off, every route (R1)
+    HF1-J double tap / double click on x and ‹ Назад never opens the card under it (R2)
+    HF1-K desktop week grid: paging over every date, month headers (G1, G2)
+    (HF1-D also covers R3: placement above / below / beside, panel on short screens,
+    every button in view without scrolling)
+    """
+    eng = _hf_engine(browser)
+    print(f"\n=== HF1 in {eng} ===")
+    ensure_shot_dir("HF1")
+    for phone in (True, False):
+        print(f"\n=== HF1-A flows ({'phone 390' if phone else 'desktop 1440'}) ===")
+        _hf_flows(browser, eng, phone)
+        print(f"\n=== HF1-B special flows ({'phone' if phone else 'desktop'}) ===")
+        _hf_special_flows(browser, eng, phone)
+        print(f"\n=== HF1-C scroll ({'phone' if phone else 'desktop'}) ===")
+        _hf_scroll(browser, eng, phone)
+        print(f"\n=== HF1-F drawer ({'phone' if phone else 'desktop'}) ===")
+        _hf_drawer(browser, eng, phone)
+        print(f"\n=== HF1-G one tap ({'phone' if phone else 'desktop'}) ===")
+        _hf_one_tap(browser, eng, phone)
+    print("\n=== HF1-D popover geometry ===")
+    _hf_geometry(browser, eng)
+    _hf_phone_sheet(browser, eng)
+    print("\n=== HF1-I page position after closing (reduced motion on and off) ===")
+    _hf_scroll_restore(browser, eng)
+    print("\n=== HF1-J double tap / double click on x and ‹ Назад ===")
+    _hf_double_tap(browser, eng)
+    print("\n=== HF1-K week grid paging and month headers ===")
+    _hf_grid_paging(browser, eng)
+    _hf_grid_months(browser, eng)
+    print("\n=== HF1-E venue rows ===")
+    _hf_rows(browser, eng)
+    print("\n=== HF1-H .ics ===")
+    _hf_ics(browser, eng)
+    # the page after closing, scrolled, BG
+    ctx, page, errs = _hf_open(browser, 390, 844, True)
+    page.evaluate("window.scrollTo(0,1400)"); page.wait_for_timeout(300)
+    films = page.evaluate(HF_CANDIDATES_JS, "film")
+    _hf_open_card(page, True, "film", films[0]); page.wait_for_timeout(650)
+    _hf_tap_pill(page, True, 0.5); page.wait_for_timeout(450)
+    _hf_close_popup(page, True, "x", ctx)
+    _hf_close_sheet(page, True, "backbar")
+    page.wait_for_timeout(300)
+    _hf_shot(page, "page_after_close_scrolled_bg")
+    ctx.close()
+
+
+# ============================================================================
+# WAVE EV1: event cards and sheets take their state and badge from the dates
+# ============================================================================
+_EV_COUNTDOWN = re.compile(r"^СЛЕД \d+ (ДНИ|ДЕН)$")
+
+def _ev_expected(ev, now_iso, lang, months, translated_tag):
+    """(badge, active) an event card must show on now_iso, computed here
+    independently of the page's own helpers."""
+    d = datetime.date.fromisoformat
+    now, frm, to = d(now_iso), d(ev["from"]), d(ev["to"])
+    active = frm <= now <= to
+    if not _EV_COUNTDOWN.match(ev.get("tag") or ""):
+        return translated_tag, active
+    if frm > now:
+        n = (frm - now).days
+        if n == 1:
+            return ("утре" if lang == "bg" else "tomorrow"), active
+        return (f"след {n} дни" if lang == "bg" else f"in {n} days"), active
+    if ev["from"] == ev["to"]:
+        return ("днес" if lang == "bg" else "today"), active
+    day = f"{to.day} {months[to.month - 1]}"
+    return (f"до {day}" if lang == "bg" else f"until {day}"), active
+
+def wave_ev1(browser):
+    """A seed event's frozen status/badge ("СЛЕД 30 ДНИ", "upcoming") must never
+    reach the page: CineLibri showed both on its opening day (15 Oct 2026)."""
+    wave = "EV1"
+    for lang in ("bg", "en"):
+        print(f"\n=== EV1: event cards and sheets from the dates ({lang}) ===")
+        ctx, page, errs = open_page(browser, 1280, 900, lang=lang, mode="cinema")
+        page.wait_for_timeout(400)
+        info = page.evaluate("""() => ({now: NOW_DATE, months: t().months,
+                                         active: t().active, upcoming: t().upcoming})""")
+        now, months = info["now"], info["months"]
+
+        # 1. every event card the page renders from the real seed
+        cards = page.evaluate("""() => [...document.querySelectorAll('.ecard[data-event]')].map(c => {
+            const ev = EVENTS.find(e => e.id === c.dataset.event);
+            return {ev, tagShown: badgeDisplay(ev.tag),
+                    badge: ((c.querySelector('.badge') || {}).textContent || '').trim(),
+                    edate: ((c.querySelector('.edate') || {}).textContent || '').trim()};
+        })""")
+        if not cards:
+            skip(f"ev1_real_cards_{lang}", f"no event card is on the page on {now}")
+        for c in cards:
+            ev = c["ev"]
+            want_badge, active = _ev_expected(ev, now, lang, months, c["tagShown"])
+            want_status = info["active"] if active else info["upcoming"]
+            check(f"ev1_real_{ev['id']}_badge_{lang}", c["badge"].lower() == (want_badge or "").lower(),
+                  f"{ev['from']}..{ev['to']} on {now}: badge {c['badge']!r}, expected {want_badge!r}")
+            check(f"ev1_real_{ev['id']}_status_{lang}", c["edate"].endswith(want_status),
+                  f"{ev['from']}..{ev['to']} on {now}: {c['edate']!r}, expected to end with {want_status!r}")
+        cl = next((c for c in cards if c["ev"]["id"] == "cinelibri"), None)
+        if cl and cl["ev"]["from"] <= now <= cl["ev"]["to"]:
+            check(f"ev1_cinelibri_not_stale_{lang}",
+                  "30" not in cl["badge"] and cl["edate"].endswith(info["active"]),
+                  f"badge {cl['badge']!r}, {cl['edate']!r}")
+
+        # 2. synthetic events with deliberately wrong seed status/tag, rendered
+        #    straight through eventCard() and sheetEvent() (independent of which
+        #    rails the current period shows)
+        def iso_plus(n):
+            return (datetime.date.fromisoformat(now) + datetime.timedelta(days=n)).isoformat()
+        synth = [
+            ("up3", 3, 5, "active", "СЛЕД 99 ДНИ"),
+            ("up1", 1, 1, "active", "СЛЕД 99 ДНИ"),
+            ("act", -2, 4, "upcoming", "СЛЕД 5 ДНИ"),
+            ("today1", 0, 0, "upcoming", "СЛЕД 2 ДНИ"),
+            ("descr", -1, 1, "upcoming", "РЕТРОСПЕКТИВА"),
+        ]
+        for sid, a, b, wrong_status, tag in synth:
+            ev = {"id": f"ev1-{sid}", "kind": "festival", "scope": "cinema", "status": wrong_status,
+                  "tag": tag, "from": iso_plus(a), "to": iso_plus(b), "g": ["#333333", "#111111"],
+                  "title": "Тест", "titleEn": "Test", "blurbBg": "", "blurbEn": "", "source": "test"}
+            got = page.evaluate("""(ev) => {
+                const box = document.createElement('div');
+                box.innerHTML = eventCard(ev);
+                const sh = document.createElement('div');
+                sh.innerHTML = sheetEvent(ev);
+                return {badge: box.querySelector('.badge').textContent.trim(),
+                        edate: box.querySelector('.edate').textContent.trim(),
+                        eyebrow: sh.querySelector('.eyebrow').textContent.trim(),
+                        chip: sh.querySelector('.chip.solid').textContent.trim(),
+                        tagShown: badgeDisplay(ev.tag)};
+            }""", ev)
+            want_badge, active = _ev_expected(ev, now, lang, months, got["tagShown"])
+            want_status = info["active"] if active else info["upcoming"]
+            check(f"ev1_synth_{sid}_card_{lang}",
+                  got["badge"].lower() == want_badge.lower() and got["edate"].endswith(want_status),
+                  f"badge {got['badge']!r} / {got['edate']!r}; expected {want_badge!r} / …{want_status!r}")
+            check(f"ev1_synth_{sid}_sheet_{lang}",
+                  got["eyebrow"].lower() == f"{want_badge} · {want_status}".lower(),
+                  f"eyebrow {got['eyebrow']!r}")
+            if ev["from"] != ev["to"]:
+                check(f"ev1_synth_{sid}_sheet_year_{lang}", got["chip"].endswith(ev["to"][:4]),
+                      f"date chip {got['chip']!r}")
+        check(f"ev1_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+        save_shot(page, wave, f"ev1_home_{lang}")
+        ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -12315,6 +13788,8 @@ WAVES = {
     "P3C": wave_p3c,
     "P3E": wave_p3e,
     "P3F": wave_p3f,
+    "HF1": wave_hf1,
+    "EV1": wave_ev1,
 }
 
 def main():
@@ -12345,7 +13820,13 @@ def main():
     all_wave_results = []
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
+        # SOFIA_BROWSER=webkit runs the selected waves in WebKit (meant for HF1, which
+        # covers the owner's Safari); the default stays Chromium
+        engine = os.environ.get("SOFIA_BROWSER", "chromium").strip().lower() or "chromium"
+        if engine not in ("chromium", "webkit"):
+            sys.exit(f"SOFIA_BROWSER must be chromium or webkit, not {engine!r}")
+        browser = getattr(pw, engine).launch(headless=True)
+        print(f"Browser: {engine}")
 
         # Launch WebKit once for use by Wave J (J1 needs both engines)
         _webkit_browser = None

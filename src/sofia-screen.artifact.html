@@ -30,6 +30,9 @@
 
 *{box-sizing:border-box}
 html,body{min-height:100%}
+/* the page is pinned (position:fixed) while a sheet is open; a stable gutter keeps it
+   from reflowing sideways where scrollbars take up space */
+html{scrollbar-gutter:stable}
 body{margin:0; background:var(--ink); color:var(--fg);
   font-family:"Onest","Segoe UI",system-ui,sans-serif; font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{margin:0; text-wrap:balance}
@@ -376,7 +379,7 @@ a{color:inherit}
 /* ---------- sheet ---------- */
 .scrim[hidden]{display:none!important}
 .scrim{position:fixed; inset:0; z-index:90; background:rgba(5,3,7,.8); backdrop-filter:blur(8px);
-  display:grid; place-items:start center; padding:16px; overflow-y:auto}
+  display:grid; place-items:start center; padding:16px; overflow-y:auto; overscroll-behavior:contain}
 .sheet{width:min(860px,100%); background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-lg);
   overflow:hidden; box-shadow:var(--shadow); margin-block:auto}
 .shero{position:relative; min-height:210px; display:flex; align-items:flex-end; padding:22px; color:#fff; overflow:hidden}
@@ -587,13 +590,29 @@ a.prelim-time,span.prelim-time{border:1px dashed var(--line-2)!important;backgro
   font:600 13px/1 "Onest","Segoe UI",system-ui,sans-serif; letter-spacing:.03em;
   box-shadow:0 4px 20px rgba(0,0,0,.45); cursor:pointer;
   transition:filter .15s, transform .15s}
-.fab:hover{filter:brightness(1.1); transform:translateY(-2px)}
+@media (hover:hover){ .fab:hover{filter:brightness(1.1); transform:translateY(-2px)} }
 .fab svg{flex:0 0 18px; width:18px; height:18px}
 .fab-badge{background:var(--on-accent); color:var(--accent);
   font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%;
   display:grid; place-items:center; flex:0 0 18px}
 .fab[hidden]{display:none!important}
 main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+/* Touch screens in a browser tab: once Safari's bottom toolbar has collapsed, it takes
+   the first tap in roughly the bottom 44-72 px to bring itself back, so a button there
+   needs two taps. Keep the FAB, the time popup's last button, and the last rows of the
+   sheets and the drawer above that strip. A home-screen app has no toolbar. */
+@media (hover:none) and (pointer:coarse){
+  .fab{bottom:max(72px,calc(16px + env(safe-area-inset-bottom,0px)))}
+  main{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
+  .drawer{padding-bottom:max(84px,calc(28px + env(safe-area-inset-bottom,0px)))}
+  .scrim .sbody{padding-bottom:max(84px,calc(22px + env(safe-area-inset-bottom,0px)))}
+}
+@media (hover:none) and (pointer:coarse) and (display-mode:standalone){
+  .fab{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+  main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .drawer{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+  .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 <style id="cal-css">
 /* ---- calendar export panel ---- */
@@ -647,16 +666,22 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-day[aria-pressed="true"] b,.p3e-day[aria-pressed="true"] span{color:#fff}
   /* Venue group list */
   .p3e-grp{background:var(--ink-3);border-radius:14px;overflow:hidden}
-  .p3e-row{display:flex;align-items:center;gap:10px;padding:12px;
+  /* A venue row stacks: the name (with the price on its right), the address, the
+     preliminary note, then the times in a wrapping row of their own, so a busy day
+     can never squeeze the name into a one-word column under the pills. */
+  .p3e-row{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:12px;
     border-top:1px solid rgba(255,255,255,.07)}
   .p3e-row:first-child{border-top:0}
-  .p3e-vninfo{flex:1;min-width:0}
-  .p3e-vname{font-size:14px;font-weight:500;line-height:1.3;color:var(--fg)}
-  .p3e-vsec{font-size:12px;color:var(--fg-3);line-height:1.4;margin-top:1px}
+  .p3e-vninfo{min-width:0}
+  .p3e-vhead{display:flex;align-items:baseline;gap:10px}
+  .p3e-vname{flex:1 1 auto;min-width:0;font-size:14px;font-weight:500;line-height:1.3;color:var(--fg);
+    overflow-wrap:break-word}
+  .p3e-vprice{flex:none;font-size:12.5px;line-height:1.3;color:var(--fg-2);white-space:nowrap}
+  .p3e-vsec{font-size:12px;color:var(--fg-3);line-height:1.4;margin-top:2px;overflow-wrap:break-word}
   .p3e-ambert{display:inline-block;width:6px;height:6px;border-radius:50%;
     background:var(--gild);margin-right:5px;vertical-align:1px}
-  .p3e-prelim-line{color:#C9A54A;display:block}
-  .p3e-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+  .p3e-prelim-line{color:#C9A54A}
+  .p3e-pills{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;justify-content:flex-start;min-width:0}
   /* Pill styling for P3E */
   .p3e-pill{font-family:Oswald,sans-serif;font-weight:500;font-size:17px;
     font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;
@@ -681,6 +706,18 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grid-wrap{margin:0 0 4px}
   .p3e-grp-desk{background:var(--ink-3);border-radius:14px;padding:14px 14px 8px;overflow-x:auto}
   .p3e-gt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  /* paging: only the current page is shown; each lists only its own venues */
+  .p3e-gpages{display:grid}
+  .p3e-gpages>.p3e-gpage{grid-area:1 / 1;align-self:start}
+  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{display:none}
+  .p3e-gpager{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px;
+    position:sticky;left:0}
+  .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
+  .p3e-gnav{width:44px;height:44px;border-radius:10px;border:1px solid var(--line-2);background:var(--ink-4);
+    color:var(--fg);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
+  .p3e-gnav:hover:not([disabled]),.p3e-gnav:focus-visible{border-color:var(--fg-2)}
+  .p3e-gnav[disabled]{opacity:.35;cursor:default}
+  .p3e-gt th small.p3e-gmon{display:block;font-size:11px;color:var(--fg-3);margin-top:1px}
   .p3e-gt th{font-weight:400;color:var(--fg-3);padding:0 0 10px;text-align:center;white-space:nowrap}
   .p3e-gt th b{display:block;font-family:Oswald,sans-serif;font-weight:500;font-size:17px;color:var(--fg)}
   .p3e-gt td{padding:8px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:center;vertical-align:middle}
@@ -691,8 +728,51 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-gt-fn{font-size:11.5px;color:var(--fg-3);margin:8px 4px 0;line-height:1.4}
 }
 /* ===================== P3E: screening sheet ===================== */
-/* Phone bottom sheet — reuses .scrim/.sheet P3B mechanics */
-.ss-sheet{display:flex;flex-direction:column;height:100%}
+/* The time popup. Phones: the approved tall bottom sheet in its own overlay (#ss-wrap),
+   pinned to the bottom of the visible viewport, 88dvh tall and scrolling inside; the
+   spacer keeps the buttons at its foot. */
+.ss-sheet{display:flex;flex-direction:column}
+.ss-wrap{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;justify-content:flex-end;
+  background:rgba(0,0,0,.55);overscroll-behavior:contain}
+.ss-wrap[hidden]{display:none!important}
+.ss-wrap .ss-sheet{position:relative;flex:0 0 auto;width:100%;max-width:640px;margin:0 auto;
+  height:88vh;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  background:var(--ink-3);border:1px solid var(--line);border-bottom:0;border-radius:26px 26px 16px 16px;
+  box-shadow:0 -12px 40px rgba(0,0,0,.45);
+  padding:16px 22px calc(28px + env(safe-area-inset-bottom,0px))}
+@supports (height:1dvh){ .ss-wrap .ss-sheet{height:88dvh;max-height:88dvh} }
+@media (hover:none) and (pointer:coarse){
+  .ss-wrap .ss-sheet{padding-bottom:max(72px,calc(28px + env(safe-area-inset-bottom,0px)))} }
+@media (hover:none) and (pointer:coarse) and (display-mode:standalone){
+  .ss-wrap .ss-sheet{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))} }
+/* Short screens (landscape phones, small windows): the panel takes only the height it needs
+   and tightens up, so every button shows without scrolling. A landscape phone has no
+   bottom toolbar strip to keep clear. */
+@media (max-height:520px){
+  .ss-wrap .ss-sheet{height:auto;max-height:calc(100vh - 8px);
+    padding:10px 20px calc(14px + env(safe-area-inset-bottom,0px))}
+  @supports (height:1dvh){ .ss-wrap .ss-sheet{height:auto;max-height:calc(100dvh - 8px)} }
+  .ss-wrap .ss-grab{margin-bottom:10px}
+  .ss-wrap .ss-time{font-size:36px}
+  .ss-wrap .ss-date{margin:8px 0 2px}
+  .ss-wrap .ss-status{margin-top:12px;padding:10px 12px}
+  .ss-wrap .ss-spacer{display:none}
+  .ss-wrap .ss-btns{gap:8px;margin-top:12px}
+  .ss-wrap .ss-btn{height:44px;font-size:15px}
+  .ss-wrap .ss-help{margin:4px 0 0}
+  .ss-wrap .ss-cal-title{margin-top:0}
+  .ss-wrap .ss-cal-ev{margin:12px 0 10px;padding:10px 14px}
+  .ss-wrap .ss-cal-li{height:46px}
+}
+/* ... and in two columns when there is the width for them: the details on the left, the
+   buttons (or the calendar list) on the right, below the close button */
+@media (max-height:520px) and (min-width:600px){
+  .ss-wrap .ss-sheet{max-width:880px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    column-gap:28px;align-content:start}
+  .ss-wrap .ss-sheet>*{grid-column:1}
+  .ss-wrap .ss-sheet>.ss-btns,.ss-wrap .ss-sheet>.ss-cal-lst{grid-column:2;grid-row:1 / span 20;
+    align-self:start;margin-top:44px}
+}
 .ss-grab{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 18px;flex-shrink:0}
 .ss-time{font-family:Oswald,sans-serif;font-weight:500;line-height:1;
   font-variant-numeric:tabular-nums;font-size:52px;color:var(--fg)}
@@ -727,15 +807,36 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-cal-li small{display:block;font-size:12px;font-weight:400;color:var(--fg-3);margin-top:1px}
 .ss-cal-li .cv{margin-left:auto;color:var(--fg-3)}
 .ss-cal-li:hover,.ss-cal-li:focus-visible{background:rgba(255,255,255,.06)}
-/* Desktop popover */
+/* Wider screens: a popover card anchored to the clicked time (just above it, below it
+   when there is no room above), on a fixed layer of its own so no scroll offset can move
+   it away from the time. JS sets top/left, data-place and --ss-caret-x. */
 @media(min-width:761px){
   .ss-sheet{font-size:.95em}
   .ss-time{font-size:44px}
-  /* popover container */
-  .ss-pop{position:absolute;width:340px;background:var(--ink-3);border:1px solid rgba(255,255,255,.12);
-    border-radius:22px;padding:18px 20px 20px;z-index:200;box-shadow:0 8px 40px rgba(0,0,0,.55)}
-  .ss-pop .ss-btn{height:48px;font-size:15px}
+  .ss-pop{position:fixed;left:0;top:0;width:340px;max-width:calc(100vw - 24px);display:flex;flex-direction:column;
+    background:var(--ink-3);border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;padding:16px 18px 18px;z-index:130;box-shadow:0 8px 40px rgba(0,0,0,.55)}
+  .ss-pop .ss-sheet{flex:1 1 auto;min-height:0}
+  /* a little tighter than the panel, so the card fits above or below a time more often */
+  .ss-pop .ss-time{font-size:40px}
+  .ss-pop .ss-date{margin:10px 0 2px}
+  .ss-pop .ss-status{margin-top:14px;padding:12px 14px}
+  .ss-pop .ss-spacer{min-height:14px}
+  .ss-pop .ss-btns{gap:10px}
+  .ss-pop .ss-btn{height:44px;font-size:15px}
+  .ss-pop .ss-help{margin:4px 0 0}
+  .ss-pop .ss-cal-ev{margin:18px 0 14px}
+  .ss-pop .ss-cal-li{height:48px}
   .ss-pop .ss-grab{display:none}
+  .ss-caret{position:absolute;left:var(--ss-caret-x,50%);width:14px;height:14px;margin-left:-7px;
+    background:var(--ink-3);border:1px solid rgba(255,255,255,.12);transform:rotate(45deg);pointer-events:none}
+  .ss-pop[data-place="above"] .ss-caret{bottom:-8px;border-top:0;border-left:0}
+  .ss-pop[data-place="below"] .ss-caret{top:-8px;border-bottom:0;border-right:0}
+  /* beside the time: the caret on the card's side, at the time's height */
+  .ss-pop[data-place="right"] .ss-caret,.ss-pop[data-place="left"] .ss-caret{top:var(--ss-caret-y,50%);margin:-7px 0 0}
+  .ss-pop[data-place="right"] .ss-caret{left:-8px;border-top:0;border-right:0}
+  .ss-pop[data-place="left"] .ss-caret{left:auto;right:-8px;border-bottom:0;border-left:0}
+  .ss-pop[data-place="center"] .ss-caret{display:none}
 }
 /* Close/back buttons inside ss-sheet */
 .ss-close-btn,.ss-back-btn{position:absolute;width:32px;height:32px;border-radius:50%;
@@ -830,7 +931,7 @@ bg:{tagline:"кино и театър в софия",
  votes:"гласа",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
  coverage:"Програмата не е публикувана за този прозорец.",
  notePre:"Програмата обхваща",noteMid:": театри и независими кина три месеца напред, мултиплексите две седмици (толкова обявяват). Проверява се наново всеки понеделник.",
- upcoming:"предстои",active:"тече сега",sources:"Източници",
+ upcoming:"предстои",active:"тече сега",evTomorrow:"утре",evInDays:"след {n} дни",evUntil:"до {d}",evToday:"днес",sources:"Източници",
  allGenres:"Всички жанрове",allVenues:"Всички вериги и кина",allTheatres:"Всички театри",clear:"Изчисти",home:"начало",share:"Сподели",tix:"Билети",fromPrice:"от",
  filters:"Филтри",menu:"Меню",period:"Период",genresH:"Жанр",venuesH:"Място",theatresH:"Театри",strandH:"Вид",
  today:"Днес",thisWeek:"Тази седмица",thisMonth:"Този месец",everything:"Всичко",
@@ -917,7 +1018,7 @@ en:{tagline:"cinema & theatre in sofia",
  votes:"votes",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
  coverage:"No programme published for this window.",
  notePre:"Programme covers",noteMid:": theatres and independent cinemas three months out, multiplexes as far ahead as they announce. Rechecked every Monday.",
- upcoming:"upcoming",active:"on now",sources:"Sources",
+ upcoming:"upcoming",active:"on now",evTomorrow:"tomorrow",evInDays:"in {n} days",evUntil:"until {d}",evToday:"today",sources:"Sources",
  allGenres:"All genres",allVenues:"All chains & cinemas",allTheatres:"All theatres",clear:"Clear",home:"home",share:"Share",tix:"Tickets",fromPrice:"from",
  filters:"Filters",menu:"Menu",period:"Period",genresH:"Genre",venuesH:"Venue",theatresH:"Theatres",strandH:"Strand",
  today:"Today",thisWeek:"This week",thisMonth:"This month",everything:"Everything",
@@ -1302,6 +1403,20 @@ const fmtDay=(iso,long)=>{const d=dUTC(iso);
    "Monday, 6 October" — used on individual film/show sheets next to each date. */
 const fmtDayDow=iso=>{const d=dUTC(iso);
   return `${t().dowsLong[d.getUTCDay()]}, ${d.getUTCDate()} ${t().months[d.getUTCMonth()]}`;};
+/* An event's state and badge come from its dates, never from the seed's frozen
+   text: the seed gave CineLibri status "upcoming" and the badge "СЛЕД 30 ДНИ",
+   and the card kept saying so on its opening day. A countdown badge is
+   recomputed; descriptive badges ("РЕТРОСПЕКТИВА", "7 ДНИ") stay as written. */
+const evState=ev=>ev.from>NOW_DATE?"upcoming":ev.to<NOW_DATE?"ended":"active";
+function evBadge(ev){
+  const L=t();
+  if(!/^СЛЕД \d+ (ДНИ|ДЕН)$/.test(ev.tag||""))return badgeDisplay(ev.tag);
+  if(evState(ev)==="upcoming"){
+    const n=Math.round((dUTC(ev.from)-dUTC(NOW_DATE))/864e5);
+    return n===1?L.evTomorrow:L.evInDays.replace("{n}",n);
+  }
+  return ev.from===ev.to?L.evToday:L.evUntil.replace("{d}",fmtDay(ev.to,true));
+}
 const grad=g=>`linear-gradient(152deg,${g[0]} 0%,${g[1]} 100%)`;
 const mins=hm=>{const[h,m]=hm.split(":").map(Number);return h*60+m;};
 function inWhen(hm){const m=mins(hm),w=S.prefs.when;
@@ -1839,9 +1954,9 @@ function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
   return`<button class="ecard" data-event="${esc(ev.id)}"><div class="ebox">
     ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="p-grain"></div>
-    <span class="badge ${ev.status==="active"?"lim":""}">${esc(badgeDisplay(ev.tag))}</span>
+    <span class="badge ${evState(ev)==="active"?"lim":""}">${esc(evBadge(ev))}</span>
     <div><h3>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h3>
-      <div class="edate">${esc(range)} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
+      <div class="edate">${esc(range)} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
 function rail(title,sub,cards){
   if(!cards.length)return"";
   return`<section class="rail"><div class="rhead"><h2>${esc(title)}</h2>${sub?`<span class="sub">${esc(sub)}</span>`:""}</div>
@@ -2646,9 +2761,30 @@ function isPrelimListing(kind,id,venueId,dateStr){
 }
 /* Per-sheet state: whether "show all cinemas" has been tapped (reset on every open) */
 let _sheetShowAllCinemas=false;
+/* Desktop week grid paging: the page each open grid shows, by "film:id" / "show:id", so a
+   language redraw keeps it; cleared when the sheet closes. */
+const _gridPage={};
+const GRID_T={bg:{prev:"Предишни дати",next:"Следващи дати"},en:{prev:"Earlier dates",next:"Later dates"}};
 /* P3E day-picker render registry: maps grp slot id → buildVenueList(dateStr) fn */
 const _p3DayRenderFns=new Map();
 
+/* One venue row of the phone day list, stacked: the name with the price on its right,
+   then the stage (theatre), the address and the preliminary note, each on its own line,
+   then the times. For a show the row's price slot carries the stage name. */
+function p3eRowHtml(itemKind,v,r,prelim,pills){
+  const isShow=itemKind==="show";
+  const price=isShow?"":(r.price||v.price||"");
+  const stage=isShow?(r.price||""):"";
+  return`<div class="p3e-row">
+        <div class="p3e-vninfo">
+          <div class="p3e-vhead"><div class="p3e-vname">${esc(v.name||r.venueId)}</div>${price?`<span class="p3e-vprice">${esc(price)}</span>`:""}</div>
+          ${stage?`<div class="p3e-vsec p3e-vstage">${esc(stage)}</div>`:""}
+          ${v.area?`<div class="p3e-vsec p3e-varea">${esc(v.area)}</div>`:""}
+          ${prelim?`<div class="p3e-vsec p3e-vprelim"><span class="p3e-ambert"></span><span class="p3e-prelim-line">${esc(t().ssPrelimHead)}</span></div>`:""}
+        </div>
+        <div class="p3e-pills">${pills}</div>
+      </div>`;
+}
 /* p3eShowtimesHtml: generate the P3E day-picker (phone) + week-grid (desktop)
    showtimes section for a film or show.
 
@@ -2708,20 +2844,11 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     return rows.map(r=>{
       const v=venueMap(r.venueId)||{};
       const prelim=isP(r.venueId,dateStr);
-      const price=r.price||v.price||"";
-      const sec=(prelim?`<span class="p3e-ambert"></span><span class="p3e-prelim-line">${esc(L.ssPrelimHead)}</span> `:"")
-        +`${esc(v.area||"")}${price?" · "+esc(price):""}`;
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
         return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
       }).join("");
-      return`<div class="p3e-row">
-        <div class="p3e-vninfo">
-          <div class="p3e-vname">${esc(v.name||r.venueId)}</div>
-          <div class="p3e-vsec">${sec}</div>
-        </div>
-        <div class="p3e-pills">${pills}</div>
-      </div>`;
+      return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
   };
 
@@ -2731,10 +2858,18 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const grpHtml=`<div class="p3e-grp p3e-grp-slot" id="p3e-grp-${esc(itemId)}" data-p3dates="${esc(dates.join(","))}">${initialList}</div>`;
   const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(L.ssDashedFn)}</p>`:"";  /* cinema footnote */
 
-  /* ---- DESKTOP: week grid ---- */
-  const MAX_COLS=7;
-  /* up to 7 dates; future paging left as enhancement */
-  const visibleDates=dates.slice(0,MAX_COLS);
+  /* ---- DESKTOP: week grid, 7 dates a page ----
+     Every page is rendered and only the current one is shown. A page lists only the
+     venues with a screening on its own dates (the owner's rule: no empty rows), so its
+     height follows its rows; the pager sits above the table and never moves. When the
+     dates span more than one month, every column header carries the short month. */
+  const PAGE=7;
+  const pages=[];
+  for(let i=0;i<dates.length;i+=PAGE)pages.push(dates.slice(i,i+PAGE));
+  const gkey=itemKind+":"+itemId;
+  const cur=Math.max(0,Math.min(_gridPage[gkey]||0,pages.length-1));
+  const multiMonth=new Set(dates.map(d=>d.slice(0,7))).size>1;
+  const monShort=iso=>(L.monthsShort||[])[parseInt(iso.slice(5,7),10)-1]||"";
   const dayAbbrLong=iso=>{
     const dow=["нд","пн","вт","ср","чт","пт","сб"];
     const dowen=["Su","Mo","Tu","We","Th","Fr","Sa"];
@@ -2742,6 +2877,12 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const d=new Date(iso+"T12:00:00");
       return{abbr:(S.lang==="bg"?dow:dowen)[d.getUTCDay()],num:String(d.getUTCDate())};
     }catch(e){return{abbr:"",num:iso.slice(8)};}
+  };
+  /* "15–21 окт", "29 окт – 4 ное": the dates a page shows, for the pager */
+  const pageLabel=pd=>{
+    const a=pd[0],b=pd[pd.length-1],da=String(parseInt(a.slice(8),10)),db=String(parseInt(b.slice(8),10));
+    if(a===b)return da+" "+monShort(a);
+    return a.slice(0,7)===b.slice(0,7)?da+"–"+db+" "+monShort(b):da+" "+monShort(a)+" – "+db+" "+monShort(b);
   };
 
   /* Build row lookup: venueId → dateStr → [times] */
@@ -2757,12 +2898,15 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     return String(firstA).localeCompare(String(firstB));
   });
 
-  const theadCols=visibleDates.map(d=>{const{abbr,num}=dayAbbrLong(d);return`<th>${esc(abbr)}<b>${esc(num)}</b></th>`;}).join("");
-  const tbodyRows=venuesSorted.map(vid=>{
+  const headCell=d=>{
+    const{abbr,num}=dayAbbrLong(d);
+    return`<th data-date="${esc(d)}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
+  };
+  const rowFor=(vid,pd)=>{
     const v=venueMap(vid)||{};
     const price=v.price||"";
     const vcell=`<td class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</td>`;
-    const dayCells=visibleDates.map(d=>{
+    const dayCells=pd.map(d=>{
       const rr=gridMap[vid]&&gridMap[vid][d];
       if(!rr||!rr.times.length)return`<td></td>`;
       const prelim=isP(vid,d);
@@ -2773,14 +2917,24 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       return`<td>${pillsD}</td>`;
     }).join("");
     return`<tr>${vcell}${dayCells}</tr>`;
-  }).join("");
+  };
+  /* the venues with at least one time on a page's dates */
+  const venuesOn=pd=>venuesSorted.filter(vid=>pd.some(d=>{const rr=gridMap[vid]&&gridMap[vid][d];return rr&&rr.times.length;}));
+  const tables=pages.map((pd,i)=>`<table class="p3e-gt p3e-gpage" role="table" data-gpage="${i}" data-glabel="${esc(pageLabel(pd))}"${i===cur?"":` aria-hidden="true"`}>
+        <thead><tr><th></th>${pd.map(headCell).join("")}</tr></thead>
+        <tbody>${venuesOn(pd).map(vid=>rowFor(vid,pd)).join("")}</tbody>
+      </table>`).join("");
+  const GT=GRID_T[S.lang]||GRID_T.bg;
+  const pager=pages.length>1?`<div class="p3e-gpager" data-gpager="${esc(gkey)}" data-gcur="${cur}" data-gn="${pages.length}">
+        <button type="button" class="p3e-gnav" data-gnav="-1" aria-label="${esc(GT.prev)}" title="${esc(GT.prev)}"${cur===0?" disabled":""}>‹</button>
+        <span class="p3e-grange" aria-live="polite">${esc(pageLabel(pages[cur]))}</span>
+        <button type="button" class="p3e-gnav" data-gnav="1" aria-label="${esc(GT.next)}" title="${esc(GT.next)}"${cur===pages.length-1?" disabled":""}>›</button>
+      </div>`:"";
 
   const gridHtml=`<div class="p3e-grid-wrap">
     <div class="p3e-grp-desk">
-      <table class="p3e-gt" role="table">
-        <thead><tr><th></th>${theadCols}</tr></thead>
-        <tbody>${tbodyRows}</tbody>
-      </table>
+      ${pager}
+      <div class="p3e-gpages">${tables}</div>
     </div>
     ${anyPrelim?`<p class="p3e-gt-fn">${esc(L.ssDashedFnT)}</p>`:""}
   </div>`;
@@ -2801,20 +2955,11 @@ function p3eRegisterDayPicker(container, itemKind, itemId, normalizedRows, venue
     grp.innerHTML=rows.map(r=>{
       const v=venueMap(r.venueId)||{};
       const prelim=isP(r.venueId,dateStr);
-      const price=r.price||v.price||"";
-      const sec=(prelim?`<span class="p3e-ambert"></span><span class="p3e-prelim-line">${esc(t().ssPrelimHead)}</span> `:"")
-        +`${esc(v.area||"")}${price?" · "+esc(price):""}`;
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
         return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
       }).join("");
-      return`<div class="p3e-row">
-        <div class="p3e-vninfo">
-          <div class="p3e-vname">${esc(v.name||r.venueId)}</div>
-          <div class="p3e-vsec">${sec}</div>
-        </div>
-        <div class="p3e-pills">${pills}</div>
-      </div>`;
+      return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
   };
   wrap.addEventListener("click",e=>{
@@ -2960,7 +3105,7 @@ function sheetShow(sh){
    </div></div>`;}
 
 function sheetEvent(ev){
-  const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)} 2026`;
+  const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)} ${ev.to.slice(0,4)}`;
   /* Events are festivals or one-off screenings, not single bookable listings.
      Link to the host venue's own ticketing when the event unambiguously belongs
      to one catalogued venue; otherwise show only where the information came from.
@@ -2972,7 +3117,7 @@ function sheetEvent(ev){
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(badgeDisplay(ev.tag))} · ${esc(ev.status==="active"?L.active:L.upcoming)}</div>
+      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
       <h2>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
    <div class="sbody">
     <div class="chips"><span class="chip solid">${esc(range)}</span>
@@ -3186,7 +3331,16 @@ function render(){
   const bodyContent=body();
   /* venue mode: body() returns a [string] array — join it; else it is a string */
   const bodyHTML=Array.isArray(bodyContent)?bodyContent[0]:bodyContent;
-  document.getElementById("app").innerHTML=`
+  /* An open filter drawer survives the re-render a filter tap causes: the same nodes
+     are put back and only their content is refreshed, so the drawer does not slide in
+     again, keeps its scroll position, and focus stays on the tapped control. */
+  const app=document.getElementById("app");
+  const keptDr=S.drawer?app.querySelector(":scope > .drawer"):null;
+  const keptDs=keptDr?app.querySelector(":scope > .drawer-scrim"):null;
+  const drTop=keptDr?keptDr.scrollTop:0;
+  const drFocus=keptDr?_ctlKey(document.activeElement,keptDr):null;
+  if(keptDr){keptDr.remove();if(keptDs)keptDs.remove();}
+  app.innerHTML=`
   <header class="bar"><div class="wrap">
     ${headerHTML}
   </div></header>
@@ -3202,8 +3356,25 @@ function render(){
     <span>cinemacity.bg</span><span>kinoarena.com</span><span>cinegrand.bg</span>
     <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>
   </div></footer>
-  ${S.drawer?drawerHTML():""}
+  ${S.drawer&&!keptDr?drawerHTML():""}
   ${fabHTML}`;
+  if(keptDr){
+    const tmp=document.createElement("div");tmp.innerHTML=drawerHTML();
+    const fresh=tmp.querySelector(".drawer");
+    if(keptDs)app.appendChild(keptDs);
+    app.appendChild(keptDr);
+    if(fresh){
+      for(const at of fresh.getAttributeNames())keptDr.setAttribute(at,fresh.getAttribute(at));
+      keptDr.innerHTML=fresh.innerHTML;
+    }
+    keptDr.scrollTop=drTop;
+    if(drFocus){const el=keptDr.querySelector(drFocus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
+  }else if(S.drawer){
+    /* iOS sends a click for a tap only to an element that listens for one: without this
+       a tap on the dimmed area beside the drawer did nothing on an iPhone */
+    const ds=app.querySelector(":scope > .drawer-scrim");
+    if(ds)ds.addEventListener("click",()=>{});
+  }
   /* focus search input after open */
   const qiM=document.getElementById("q-m");
   const qiD=document.getElementById("q");
@@ -3223,7 +3394,7 @@ function render(){
     });
   }
   /* P3B: animate drawer entrance when newly opened, then move focus inside */
-  if(S.drawer){
+  if(S.drawer&&!keptDr){
     requestAnimationFrame(()=>{
       const dr=document.querySelector(".drawer");
       const ds=document.querySelector(".drawer-scrim");
@@ -3243,6 +3414,17 @@ function render(){
       },delay);
     });
   }
+}
+/* A selector for a drawer control, so the same control can take focus back after the
+   drawer's content is refreshed (its data-* attribute and value identify it). */
+function _ctlKey(el,root){
+  if(!el||!root||!root.contains(el)||el===root)return null;
+  for(const a of el.getAttributeNames()){
+    if(a.startsWith("data-")){
+      try{return el.tagName.toLowerCase()+"["+a+'="'+CSS.escape(el.getAttribute(a))+'"]';}catch(e){return null;}
+    }
+  }
+  return null;
 }
 /* Re-render while keeping the filter drawer where the user left it. The drawer
    lives inside #app, so a plain render() rebuilds it at scrollTop 0 and the list
@@ -3286,22 +3468,126 @@ function decorateSheet(s){
     if(body&&btn&&body.scrollHeight<=body.clientHeight+2){btn.style.display="none";w.classList.remove("clamp");}
   });
 }
-function openSheet(html,fromEl){
+/* ---- one open sheet at a time, and no stale close can touch a newer one ----
+   Every open bumps _sheetGen. A close finalises (hides and empties the scrim, unlocks the
+   page, returns focus) only if no newer sheet opened while its animation ran; a newer
+   open also cancels that animation and takes over the scroll lock and the history entry. */
+let _sheetGen=0;
+let _closeAnims=[];
+/* Cancel the scrim's close fade (and any other animation left on it). The fade fills
+   forwards at opacity 0: left in place, it outlived the close, so every sheet opened
+   later faded in and then turned invisible while still covering the page and taking
+   every tap. */
+function _cancelCloseAnims(s){
+  _closeAnims.forEach(a=>{try{a.cancel();}catch(e){}});_closeAnims=[];
+  if(s&&s.getAnimations)s.getAnimations().forEach(a=>{try{a.cancel();}catch(e){}});
+}
+/* ---- background scroll lock ----
+   overflow:hidden on body does not stop iOS Safari from scrolling the page while its
+   toolbar is collapsed, so the page is pinned with position:fixed at its current offset
+   and put back exactly on unlock. One lock for the whole sheet layer: a time popup only
+   ever opens inside a film or show sheet. Nothing is left in body's style attribute. */
+let _lockY=null;
+const _LOCK_PROPS=["position","top","left","right","width","overflow"];
+function lockScroll(){
+  if(_lockY!==null)return;
+  _lockY=window.scrollY||window.pageYOffset||0;
+  const b=document.body.style;
+  b.position="fixed";b.top=(-_lockY)+"px";b.left="0";b.right="0";b.width="100%";b.overflow="hidden";
+}
+function unlockScroll(){
+  if(_lockY===null)return;
+  const y=_lockY;_lockY=null;
+  const b=document.body.style;
+  _LOCK_PROPS.forEach(p=>b.removeProperty(p));
+  if(!document.body.getAttribute("style"))document.body.removeAttribute("style");
+  window.scrollTo(0,y);
+}
+/* ---- history: one entry per open layer ----
+   Depth 1 is a film/show sheet, depth 2 its time popup. Entries carry this page load's
+   key, so entries left from an earlier load never count. A traversal started here
+   (closing by the back bar, x, Esc, backdrop or drag) is counted in _histPending and its
+   popstate only re-syncs: it can never close a sheet opened while it was in flight. */
+const _HK="k"+Math.random().toString(36).slice(2,10);
+let _histDepth=0,_histPending=0,_histTimer=null;
+function _histWant(){return sheetOpen?(_ss?2:1):0;}
+/* The browser restores the page's saved scroll offset after every popstate. The page is
+   pinned (scrollY 0) while a sheet is open, so with "auto" that restore could land after
+   the unlock and throw the page to the top (it did with reduced motion, where the unlock
+   is immediate). While our entries exist the mode is "manual" and unlockScroll restores
+   the offset itself; "auto" comes back once the page is back on its own entry. */
+let _srTimer=0;
+function _scrollRestoreManual(){
+  clearTimeout(_srTimer);
+  try{if(history.scrollRestoration!=="manual")history.scrollRestoration="manual";}catch(e){}
+}
+function _scrollRestoreAutoLater(){
+  clearTimeout(_srTimer);
+  _srTimer=setTimeout(()=>{
+    if(sheetOpen||_ss||_histDepth||_histPending||_lockY!==null)return;
+    try{history.scrollRestoration="auto";}catch(e){}
+  },400);
+}
+function _syncHistory(){
+  if(_histPending>0)return;
+  const want=_histWant();
+  try{
+    if(_histDepth<want)_scrollRestoreManual();
+    while(_histDepth<want){
+      history.pushState({ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},"");
+      _histDepth++;
+    }
+    if(_histDepth>want){
+      const delta=want-_histDepth;
+      _histDepth=want;_histPending++;
+      clearTimeout(_histTimer);
+      _histTimer=setTimeout(()=>{if(_histPending){_histPending=0;_syncHistory();}},1500);
+      history.go(delta);
+    }
+  }catch(e){_histPending=0;}
+}
+function _scrimEl(){
   let s=document.getElementById("scrim");
-  if(!s){s=document.createElement("div");s.id="scrim";s.className="scrim";document.body.appendChild(s);}
-  s.innerHTML=html;s.hidden=false;document.body.style.overflow="hidden";
+  if(!s){
+    s=document.createElement("div");s.id="scrim";s.className="scrim";s.hidden=true;
+    document.body.appendChild(s);
+    /* iOS sends a click for a tap only to an element that listens for one; the delegated
+       document handler does the actual closing */
+    s.addEventListener("click",()=>{});
+  }
+  return s;
+}
+/* The card that opened the sheet; after a re-render (language toggle) the stored node is
+   gone, so look the card up again by the sheet's id. */
+function _openerEl(c){
+  if(_lastOpenEl&&_lastOpenEl.isConnected)return _lastOpenEl;
+  if(!c)return null;
+  const attr=c.kind==="film"?"data-film":c.kind==="show"?"data-show":"data-event";
+  try{return document.querySelector("#app ["+attr+'="'+CSS.escape(c.id)+'"]');}catch(e){return null;}
+}
+function openSheet(html,fromEl){
+  if(!html)return;
+  const gen=++_sheetGen;
+  if(_ss)closeScreeningSheet({silent:true,noHist:true});
+  const s=_scrimEl();
+  _cancelCloseAnims(s);
+  /* history first, while the page still sits at its real offset; then pin it */
+  sheetOpen=true;
+  _scrollRestoreManual();
+  _syncHistory();
+  lockScroll();
+  s.classList.remove("closing");
+  s.innerHTML=html;s.hidden=false;s.scrollTop=0;
   /* a detail view must always have a visible way out: the back bar is the
      reliable one, history and swipe are conveniences on top of it */
   _lastOpenEl=fromEl||null;
-  _closing=false;
   decorateSheet(s);
-  if(!sheetOpen){try{history.pushState({ss:"sheet"},"");}catch(e){}}
-  sheetOpen=true;
   animateOpen(s,fromEl);
   /* Move keyboard focus into the sheet after the opening animation. */
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const delay=reduced?10:420;
   setTimeout(()=>{
+    if(gen!==_sheetGen||!sheetOpen||_ss)return;
     const sheet=s.querySelector(".sheet");
     if(!sheet)return;
     const focusable=sheet.querySelectorAll(
@@ -3312,28 +3598,44 @@ function openSheet(html,fromEl){
 }
 /* Regenerate the open sheet's contents in the current language without the
    open animation or a new history entry — used by the language toggle so an
-   open card flips language (synopsis, weekday, every label) immediately. */
+   open card flips language (synopsis, weekday, every label) immediately. The
+   sheet keeps its scroll position and an open time popup follows the language. */
 function rerenderOpenSheet(){
   if(!sheetOpen||!curSheet)return;
   const s=document.getElementById("scrim"),html=sheetHTMLFor(curSheet);
-  if(s&&html){s.innerHTML=html;decorateSheet(s);}
+  if(!s||!html)return;
+  const old=s.querySelector(".sheet"),top1=s.scrollTop,top2=old?old.scrollTop:0;
+  s.innerHTML=html;decorateSheet(s);
+  s.scrollTop=top1;
+  const sh=s.querySelector(".sheet");if(sh)sh.scrollTop=top2;
+  if(_ss)_ssRefresh();
 }
 function closeSheet(fromPop){
-  if(_closing)return;
-  _closing=true;
+  if(!sheetOpen)return;
+  const gen=_sheetGen;
+  const c=curSheet;
+  /* the time popup belongs to this sheet: it always goes first */
+  if(_ss)closeScreeningSheet({silent:true,noHist:true});
+  sheetOpen=false;curSheet=null;
+  for(const k in _gridPage)delete _gridPage[k];
   const s=document.getElementById("scrim");
-  const returnEl=_lastOpenEl;
-  const was=sheetOpen; sheetOpen=false;
-  curSheet=null;
+  const returnEl=_openerEl(c);
+  _syncHistory();
+  if(s)s.classList.add("closing");
+  /* animateClose runs only with motion allowed and a sheet to move (else it ends at once) */
+  const animated=!!(s&&!s.hidden&&s.querySelector(".sheet")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   function _finalise(){
-    if(s){s.hidden=true;s.innerHTML="";}
-    document.body.style.overflow="";
-    _closing=false;
+    if(gen!==_sheetGen||sheetOpen)return;
+    if(s){s.hidden=true;s.innerHTML="";s.classList.remove("closing");}
+    _cancelCloseAnims(s);
+    unlockScroll();
+    if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
+    /* an animated close shields taps until it ends; an instant one keeps the short shield */
+    if(animated)_tapShieldUntil=Math.min(_tapShieldUntil,performance.now());
     /* Return focus to the card that opened the sheet */
-    if(returnEl&&typeof returnEl.focus==="function"){
+    if(returnEl&&returnEl.isConnected&&typeof returnEl.focus==="function"){
       try{returnEl.focus({preventScroll:true});}catch(e){}
     }
-    if(was&&!fromPop){try{history.back();}catch(e){}}
   }
   if(s&&!s.hidden){
     animateClose(s,returnEl,_finalise);
@@ -3341,12 +3643,31 @@ function closeSheet(fromPop){
     _finalise();
   }
 }
-/* Close sheet on Esc key — skip if screening sheet is open (P3E handler closes SS first) */
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"&&sheetOpen&&!_ssOpen){closeSheet();e.preventDefault();}
-},{passive:false});
+/* ---- tap shield ----
+   A double tap or double click on x or "‹ Назад" must not open the card under it: after a
+   close started by a tap or click, further taps are swallowed until the close animation
+   ends (with reduced motion, for SHIELD_MS). Keyboard activation (detail 0) is never held. */
+const SHIELD_MS=350;
+let _tapShieldUntil=0;
+function _shieldTaps(){_tapShieldUntil=performance.now()+SHIELD_MS;}
+document.addEventListener("click",e=>{
+  if(e.detail===0)return;
+  const closing=e.target.closest&&e.target.closest("#scrim.closing");
+  if(closing||performance.now()<_tapShieldUntil){e.preventDefault();e.stopPropagation();}
+},true);
 window.addEventListener("popstate",()=>{
-  if(sheetOpen){closeSheet(true);return;}
+  if(_histPending>0){
+    _histPending--;
+    if(!_histPending)clearTimeout(_histTimer);
+    _syncHistory();
+  }else{
+    const st=history.state;
+    _histDepth=(st&&st.k===_HK&&st.d)||0;
+    if(_histDepth<1&&sheetOpen)closeSheet(true);
+    else if(_histDepth<2&&_ss)closeScreeningSheet({fromPop:true});
+    _syncHistory();
+  }
+  if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
 });
 /* deep links: #film=id / ?film=id / #show=id / ?show=id open the matching detail
    sheet. The ?param form is used by the static share pages so messaging-app
@@ -3403,8 +3724,6 @@ let _lastOpenEl=null;
    Stored as a selector rather than a DOM reference because render() re-creates
    the FAB element, making any stored reference stale. */
 let _lastDrawerOpener=null;
-/* Whether a close animation is in flight (prevents double-close). */
-let _closing=false;
 
 /* Smoothly animate the drawer (translateX) out, then call cb when done.
    Falls back to instant if reduced-motion is set. */
@@ -3539,8 +3858,8 @@ function animateClose(scrim,toEl,cb){
   const isMobile=innerWidth<=620;
   const rect=toEl?toEl.getBoundingClientRect():null;
 
-  /* Fade the scrim first */
-  scrim.animate([{opacity:1},{opacity:0}],{duration:260,easing:"ease-in",fill:"forwards"});
+  /* Fade the scrim first (kept in _closeAnims so a sheet opened meanwhile can cancel it) */
+  _closeAnims.push(scrim.animate([{opacity:1},{opacity:0}],{duration:260,easing:"ease-in",fill:"forwards"}));
 
   let anim;
   if(rect&&isMobile&&rect.width>0&&rect.height>0&&
@@ -3565,7 +3884,7 @@ function animateClose(scrim,toEl,cb){
     anim=sheet.animate([{opacity:1,transform:"none"},{opacity:0,transform:"scale(.93) translateY(16px)"}],
       {duration:220,easing:"ease-in",fill:"forwards"});
   }
-  if(anim)anim.onfinish=cb;
+  if(anim){_closeAnims.push(anim);anim.onfinish=cb;}
   else cb();
 }
 
@@ -4007,7 +4326,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   <div class="b">${esc(venueName)}</div>
 </div>
 <div class="ss-cal-lst">
-  <a class="ss-cal-li" href="${esc(calIcs_href(ev))}" download="${esc(icsId+".ics")}" data-sscalics="${esc(icsData)}" data-ssicalid="${esc(icsId)}">
+  <a class="ss-cal-li"${ev?` href="${esc(_ssIcsUrl(ev))}"${_isAppleTouch()?"":` download="${esc(icsId+".ics")}"`}`:` aria-disabled="true"`} data-sscalics="${esc(icsData)}" data-ssicalid="${esc(icsId)}">
     <div><span>${esc(L.ssCalApple)}</span><small>${esc(L.ssCalAppleSub)}</small></div>
     <span class="cv">›</span>
   </a>
@@ -4088,17 +4407,29 @@ ${statusHtml}
 </div>`;
 }
 
-/* calIcs_href: build a data: URI from ICS content for direct download */
-function calIcs_href(ev){
-  if(!ev)return"#";
+/* ---- Apple Calendar (.ics) ----
+   The calendar step's Apple row is a real link to a Blob URL of the event (text/calendar).
+   iPhone and iPad Safari open the Calendar "add event" sheet when the user follows such a
+   link without a download attribute (a data: URL is blocked there, and a scripted click
+   on a download link only saves a file to Downloads); everywhere else the download
+   attribute saves sg-<...>.ics. The URL is revoked a minute after the popup moves on. */
+let _ssIcsBlobUrl=null;
+function _isAppleTouch(){
+  const ua=navigator.userAgent||"";
+  return /iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+}
+function _ssRevokeIcs(){
+  if(!_ssIcsBlobUrl)return;
+  const u=_ssIcsBlobUrl;_ssIcsBlobUrl=null;
+  setTimeout(()=>{try{URL.revokeObjectURL(u);}catch(e){}},60000);
+}
+function _ssIcsUrl(ev){
+  _ssRevokeIcs();
+  if(!ev)return"";
   try{
-    const ics=calIcs(ev);
-    /* Build a blob URL — the browser downloads it on click */
-    /* We use a data: URI here so it works without JS event (href on <a> download) */
-    const enc=typeof TextEncoder!=="undefined"?new TextEncoder().encode(ics):ics;
-    /* Return # and handle via click handler instead */
-    return"#";
-  }catch(e){return"#";}
+    _ssIcsBlobUrl=URL.createObjectURL(new Blob([calIcs(ev)],{type:"text/calendar;charset=utf-8"}));
+    return _ssIcsBlobUrl;
+  }catch(e){return"";}
 }
 
 /* ssSwipeToClose: P3B-style drag-to-close wired to the SS inner sheet.
@@ -4161,144 +4492,250 @@ function ssSwipeToClose(ssWrap,ssSheet){
   },{passive:true});
 }
 
-/* openScreeningSheet: open the screening sheet for a time pill.
-   On phone: inserts content into the existing .sheet element that wraps
-   the sheet body (reusing P3B scrim). On desktop: positions a popover. */
-let _ssOpen=null; /* {kind,id,venueId,dateStr,timeStr,popEl,fromEl} */
-
-function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
-  const isMobile=innerWidth<=760;
-  if(isMobile){
-    _ssOpen={kind,id,venueId,dateStr,timeStr,fromEl};
-    /* Reuse the P3B sheet scrim but as a nested "secondary" panel inside the
-       open film/show sheet.  We keep the parent sheet open and render a new
-       sheet inside a wrapper attached to the scrim. */
-    let wrap=document.getElementById("ss-wrap");
-    if(!wrap){
-      wrap=document.createElement("div");
-      wrap.id="ss-wrap";
-      wrap.className="scrim";
-      wrap.style.cssText="position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,.55)";
-      document.body.appendChild(wrap);
-    }
+/* ===================== the time popup ("screening sheet") =====================
+   Phones, and screens shorter than 520 px (landscape phones): a bottom panel in its own
+   overlay #ss-wrap, built once with its listeners. Otherwise a popover card #ss-pop on a
+   fixed layer of its own, anchored to the clicked time; when no placement holds the whole
+   card it becomes the bottom panel too. Either way it belongs to the open film/show sheet:
+   closing the sheet closes it first.
+   _ss = {kind,id,venueId,dateStr,timeStr,key,anchor,mode,el,inner,step}. */
+let _ss=null;
+const SS_GAP=10,SS_MARGIN=12,SS_POP_MIN_VH=520;
+function _ssIsPhone(){return window.innerWidth<=760;}
+function _ssWantsSheet(){return window.innerWidth<=760||window.innerHeight<SS_POP_MIN_VH;}
+function _ssReduced(){return window.matchMedia("(prefers-reduced-motion: reduce)").matches;}
+function _ssWrapEl(){
+  let w=document.getElementById("ss-wrap");
+  if(!w){
+    w=document.createElement("div");w.id="ss-wrap";w.className="ss-wrap";w.hidden=true;
     const inner=document.createElement("div");
-    inner.className="sheet ss-sheet";
-    inner.style.cssText="position:relative;top:0;border-radius:26px 26px 16px 16px;max-height:88vh;overflow-y:auto;padding:16px 22px 28px";
-    inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");
-    wrap.innerHTML="";
-    wrap.appendChild(inner);
-    wrap.hidden=false;
-    document.body.style.overflow="hidden";
-    /* Slide up animation */
-    const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if(!reduced){
-      inner.animate([{transform:"translateY(60px)",opacity:0},{transform:"none",opacity:1}],
-        {duration:320,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
-    }
-    /* Backdrop tap: tapping outside .ss-sheet closes only the screening sheet */
-    wrap.addEventListener("click",e=>{
-      if(!e.target.closest(".ss-sheet")){closeScreeningSheet();}
-    });
-    /* Swipe-to-close: drag down on the inner sheet closes only SS */
-    ssSwipeToClose(wrap,inner);
-    /* Focus first interactive element */
-    setTimeout(()=>{
-      const first=inner.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
-      if(first)first.focus({preventScroll:true});
-    },reduced?10:340);
-  } else {
-    /* Desktop: position a popover anchored to fromEl */
-    closeScreeningSheet(); /* close any previous SS (sets _ssOpen=null) */
-    _ssOpen={kind,id,venueId,dateStr,timeStr,fromEl}; /* re-assign after close */
-    const pop=document.createElement("div");
-    pop.className="ss-pop";
-    pop.id="ss-pop";
-    /* Build inner shell */
-    const inner=document.createElement("div");
-    inner.className="ss-sheet";
-    inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");
-    pop.appendChild(inner);
-    /* Position near fromEl */
-    const scrim=document.getElementById("scrim");
-    const container=scrim||document.body;
-    container.appendChild(pop);
-    if(fromEl){
-      const r=fromEl.getBoundingClientRect();
-      const cr=container.getBoundingClientRect?container.getBoundingClientRect():{top:0,left:0};
-      let top=r.bottom-cr.top+8;
-      let left=r.left-cr.left;
-      /* Clamp so it fits in viewport */
-      const pw=340;
-      if(left+pw>window.innerWidth-16)left=Math.max(8,window.innerWidth-pw-16);
-      pop.style.top=top+"px";
-      pop.style.left=left+"px";
-    }
-    /* Trap focus */
-    const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if(!reduced){
-      pop.animate([{opacity:0,transform:"scale(.96) translateY(-6px)"},{opacity:1,transform:"none"}],
-        {duration:200,easing:"ease-out",fill:"backwards"});
-    }
-    setTimeout(()=>{
-      const first=pop.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
-      if(first)first.focus({preventScroll:true});
-    },reduced?10:220);
-    _ssOpen.popEl=pop;
+    inner.className="ss-sheet";inner.setAttribute("role","dialog");inner.setAttribute("aria-modal","true");
+    w.appendChild(inner);
+    document.body.appendChild(w);
+    /* a tap on the dimmed backdrop closes only the popup */
+    w.addEventListener("click",e=>{if(!e.target.closest(".ss-sheet")){if(e.detail)_shieldTaps();closeScreeningSheet();}});
+    ssSwipeToClose(w,inner);
   }
+  return w;
 }
-
-function closeScreeningSheet(){
-  /* Mobile */
-  const wrap=document.getElementById("ss-wrap");
-  if(wrap){wrap.hidden=true;wrap.innerHTML="";}
-  /* Desktop */
-  const pop=document.getElementById("ss-pop");
-  if(pop)pop.remove();
-  if(_ssOpen&&_ssOpen.fromEl){
-    try{_ssOpen.fromEl.focus({preventScroll:true});}catch(e){}
+/* a time element that is really on screen: not display:none (the phone list on wide
+   screens) and not visibility:hidden (the week grid's other pages) */
+function _ssShown(el){
+  return !!(el&&el.isConnected&&el.getClientRects().length&&getComputedStyle(el).visibility!=="hidden");
+}
+/* the time element to point at: the clicked one, or after a re-render the shown time
+   with the same key */
+function _ssFindPill(key){
+  const s=document.getElementById("scrim");
+  if(!s)return null;
+  for(const el of s.querySelectorAll("[data-sspill]")){
+    if(el.dataset.sspill===key&&_ssShown(el))return el;
   }
-  _ssOpen=null;
-  /* Only restore body overflow if the parent sheet is not open */
-  if(!sheetOpen)document.body.style.overflow="";
+  return null;
 }
-
-function screeningSheetCalStep(){
-  if(!_ssOpen)return;
-  const {kind,id,venueId,dateStr,timeStr}=_ssOpen;
-  const isMobile=innerWidth<=760;
-  const container=isMobile?document.getElementById("ss-wrap"):document.getElementById("ss-pop");
-  const inner=container&&container.querySelector(".ss-sheet");
-  if(!inner)return;
-  inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"cal");
-  /* Focus first interactive */
-  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function _ssAnchor(){
+  if(!_ss)return null;
+  const a=_ss.anchor;
+  if(_ssShown(a))return a;
+  _ss.anchor=_ssFindPill(_ss.key);
+  return _ss.anchor;
+}
+function _ssFocusFirst(st,delay){
   setTimeout(()=>{
-    const first=inner.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
+    if(_ss!==st)return;
+    const first=st.inner.querySelector('button,a[href],[tabindex]:not([tabindex="-1"])');
     if(first)first.focus({preventScroll:true});
-  },reduced?10:100);
+  },delay);
 }
-
-/* ICS download via click handler on .ss-cal-li[data-sscalics] */
-function _ssHandleIcsClick(el){
-  try{
-    const d=JSON.parse(el.dataset.sscalics||"{}");
-    const ev=calEvent(d.kind,d.id,d.venueId,d.dateStr,d.timeStr);
-    if(!ev)return;
-    const ics=calIcs(ev);
-    const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;
-    a.download=(el.dataset.ssicalid||"sofia-gleda")+".ics";
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-  }catch(err){console.error("ss ics",err);}
+/* Popover placement, in this order: 10 px above the time, 10 px below it, then beside it
+   (right, then left) vertically centred on it; centred on the time where it can be, 12 px
+   inside the viewport, never over the time and never cut short (no height cap, so every
+   button stays in view). Returns false when no placement holds the whole card; the caller
+   then uses the bottom panel. Closes the popover once its time scrolls out of view. */
+function _ssPlace(){
+  if(!_ss||_ss.mode!=="pop")return true;
+  const pop=_ss.el;
+  if(!pop||!pop.isConnected)return true;
+  const vw=document.documentElement.clientWidth||window.innerWidth,vh=window.innerHeight;
+  const M=SS_MARGIN,G=SS_GAP,pw=pop.offsetWidth,ph=pop.offsetHeight;
+  const clamp=(v,lo,hi)=>Math.max(lo,Math.min(v,hi));
+  const a=_ssAnchor();
+  if(!a){
+    /* no shown time to point at: a centred card without a caret, if it fits */
+    if(pw>vw-2*M||ph>vh-2*M)return false;
+    pop.dataset.place="center";
+    pop.style.left=Math.round((vw-pw)/2)+"px";
+    pop.style.top=Math.round((vh-ph)/2)+"px";
+    _ss.placed=true;
+    return true;
+  }
+  let r=a.getBoundingClientRect();
+  const out=r.bottom<=0||r.top>=vh||r.right<=0||r.left>=vw;
+  if(out&&_ss.placed){closeScreeningSheet({noFocus:true});return true;}
+  if(out){a.scrollIntoView({block:"center",inline:"nearest"});r=a.getBoundingClientRect();}
+  const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  let place=null,top=0,left=0;
+  if(pw<=vw-2*M&&r.top-G-ph>=M){place="above";top=r.top-G-ph;left=clamp(cx-pw/2,M,vw-M-pw);}
+  else if(pw<=vw-2*M&&r.bottom+G+ph<=vh-M){place="below";top=r.bottom+G;left=clamp(cx-pw/2,M,vw-M-pw);}
+  else if(ph<=vh-2*M&&r.right+G+pw<=vw-M){place="right";left=r.right+G;top=clamp(cy-ph/2,M,vh-M-ph);}
+  else if(ph<=vh-2*M&&r.left-G-pw>=M){place="left";left=r.left-G-pw;top=clamp(cy-ph/2,M,vh-M-ph);}
+  if(!place)return false;
+  pop.style.top=Math.round(top)+"px";
+  pop.style.left=Math.round(left)+"px";
+  pop.dataset.place=place;
+  if(place==="above"||place==="below")pop.style.setProperty("--ss-caret-x",Math.round(clamp(cx-left,22,pw-22))+"px");
+  else pop.style.setProperty("--ss-caret-y",Math.round(clamp(cy-top,22,ph-22))+"px");
+  _ss.placed=true;
+  return true;
+}
+/* move an open popover into the bottom panel: same time, same step, same history entry */
+function _ssToSheet(){
+  const st=_ss;
+  if(!st||st.mode!=="pop")return;
+  const hadFocus=!!(st.el&&st.el.contains(document.activeElement));
+  if(_ssRO&&st.inner)_ssRO.unobserve(st.inner);
+  if(st.el)st.el.remove();
+  const w=_ssWrapEl(),inner=w.querySelector(".ss-sheet");
+  inner.innerHTML=screeningSheetHtml(st.kind,st.id,st.venueId,st.dateStr,st.timeStr,st.step);
+  inner.scrollTop=0;inner.style.transform="";w.style.background="";
+  w.hidden=false;
+  st.mode="sheet";st.el=w;st.inner=inner;
+  if(hadFocus)_ssFocusFirst(st,0);
+}
+let _ssRaf=0;
+function _ssSchedule(){
+  if(_ssRaf||!_ss||_ss.mode!=="pop")return;
+  _ssRaf=requestAnimationFrame(()=>{_ssRaf=0;if(!_ssPlace())_ssToSheet();});
+}
+const _ssRO=window.ResizeObserver?new ResizeObserver(()=>_ssSchedule()):null;
+/* attached once: follow every scroll (the sheet, the backdrop, the week grid) and resize */
+document.addEventListener("scroll",()=>{if(_ss&&_ss.mode==="pop")_ssSchedule();},{capture:true,passive:true});
+window.addEventListener("resize",()=>{
+  if(!_ss||_ss.mode!=="pop")return;
+  if(_ssWantsSheet()){_ssToSheet();return;}
+  _ssSchedule();
+});
+/* openScreeningSheet: open (or switch) the popup for a time pill of the open sheet. */
+function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
+  if(!sheetOpen)return;
+  const html=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");
+  if(!html)return;
+  const mode=_ssWantsSheet()?"sheet":"pop";
+  const key=kind+":"+id+"|"+venueId+"|"+dateStr+"|"+timeStr;
+  if(_ss&&_ss.mode!==mode)closeScreeningSheet({silent:true,noHist:true});
+  const wasOpen=!!_ss;
+  const st={kind,id,venueId,dateStr,timeStr,key,anchor:fromEl||null,mode,step:"main",placed:false};
+  const reduced=_ssReduced();
+  const slideUp=inner=>{
+    if(!wasOpen&&!reduced)inner.animate([{transform:"translateY(60px)",opacity:0},{transform:"none",opacity:1}],
+      {duration:320,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+  };
+  if(mode==="sheet"){
+    const w=_ssWrapEl();
+    const inner=w.querySelector(".ss-sheet");
+    inner.innerHTML=html;inner.scrollTop=0;inner.style.transform="";w.style.background="";
+    w.hidden=false;
+    st.el=w;st.inner=inner;
+    _ss=st;
+    slideUp(inner);
+  }else{
+    let pop=_ss&&_ss.el;
+    if(!pop||!pop.isConnected){
+      pop=document.createElement("div");pop.id="ss-pop";pop.className="ss-pop";
+      pop.setAttribute("role","dialog");
+      pop.innerHTML='<div class="ss-sheet"></div><span class="ss-caret" aria-hidden="true"></span>';
+      document.body.appendChild(pop);
+    }
+    const inner=pop.querySelector(".ss-sheet");
+    if(_ss&&_ss.inner&&_ssRO)_ssRO.unobserve(_ss.inner);
+    inner.innerHTML=html;inner.scrollTop=0;
+    st.el=pop;st.inner=inner;
+    _ss=st;
+    if(!_ssPlace()){
+      /* no placement holds the whole card: the bottom panel instead */
+      _ssToSheet();
+      slideUp(st.inner);
+    }else{
+      if(_ss!==st)return;
+      if(_ssRO)_ssRO.observe(inner);
+      if(!wasOpen&&!reduced){
+        const from={above:"translateY(6px)",below:"translateY(-6px)",right:"translateX(-6px)",left:"translateX(6px)"}[pop.dataset.place]||"none";
+        pop.animate([{opacity:0,transform:"scale(.96) "+from},{opacity:1,transform:"none"}],
+          {duration:200,easing:"ease-out",fill:"backwards"});
+      }
+    }
+  }
+  _syncHistory();
+  _ssFocusFirst(st,reduced?10:(st.mode==="sheet"?340:220));
+}
+/* closeScreeningSheet: take the popup down. opts.silent / opts.noFocus: leave focus
+   alone (the sheet is closing too, or the user clicked elsewhere); opts.noHist: the
+   caller syncs the history itself; opts.fromPop: a back navigation closed it. */
+function closeScreeningSheet(opts){
+  opts=opts||{};
+  const st=_ss;
+  if(!st)return;
+  _ss=null;
+  if(_ssRaf){cancelAnimationFrame(_ssRaf);_ssRaf=0;}
+  if(st.mode==="sheet"){
+    /* the overlay is reused: drop what a drag or its spring-back left on it */
+    [st.el,st.inner].forEach(el=>{if(el&&el.getAnimations)el.getAnimations().forEach(a=>{try{a.cancel();}catch(e){}});});
+    if(st.el){st.el.hidden=true;st.el.style.background="";}
+    if(st.inner){st.inner.innerHTML="";st.inner.style.transform="";st.inner.style.transformOrigin="";}
+  }else{
+    if(_ssRO&&st.inner)_ssRO.unobserve(st.inner);
+    if(st.el)st.el.remove();
+  }
+  _ssRevokeIcs();
+  if(!opts.silent&&!opts.noFocus){
+    const a=(st.anchor&&st.anchor.isConnected)?st.anchor:_ssFindPill(st.key);
+    if(a){try{a.focus({preventScroll:true});}catch(e){}}
+  }
+  if(!opts.noHist)_syncHistory();
+}
+/* switch the popup between its main step and the calendar step */
+function _ssStep(step){
+  if(!_ss)return;
+  const {kind,id,venueId,dateStr,timeStr}=_ss;
+  _ss.inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step);
+  _ss.inner.scrollTop=0;
+  _ss.step=step;
+  if(!_ssPlace())_ssToSheet();
+  _ssFocusFirst(_ss,_ssReduced()?10:100);
+}
+function screeningSheetCalStep(){_ssStep("cal");}
+/* the language toggle re-renders the sheet: redraw the popup's current step in the new
+   language and point it at the re-rendered time */
+function _ssRefresh(){
+  if(!_ss)return;
+  const {kind,id,venueId,dateStr,timeStr,step}=_ss;
+  const html=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step);
+  if(!html){closeScreeningSheet({silent:true});return;}
+  _ss.inner.innerHTML=html;
+  _ss.anchor=null;
+  if(!_ssPlace())_ssToSheet();
 }
 
 /* ===================== events ===================== */
 document.addEventListener("click",e=>{
   const q=sel=>e.target.closest(sel);
-  if(q("[data-close]")||e.target.id==="scrim"){_sheetShowAllCinemas=false;closeSheet();return;}
+  /* The time popup first: its own buttons; its links (buy, map, Google, Outlook,
+     Apple .ics) keep their default action. #ss-wrap's own listener handles its backdrop. */
+  if(q("#ss-pop")||q("#ss-wrap")){
+    if(q("[data-ssclose]")){if(e.detail)_shieldTaps();closeScreeningSheet();return;}
+    if(q("[data-ssback]")){_ssStep("main");return;}
+    if(q("[data-sscal]")){_ssStep("cal");return;}
+    const ics=q("[data-sscalics]");
+    if(ics&&!ics.getAttribute("href"))e.preventDefault();
+    return;
+  }
+  /* A click anywhere else closes the desktop popover (another time switches it). On the
+     dimmed backdrop that is all it does; the sheet stays open. */
+  if(_ss&&_ss.mode==="pop"&&!q("[data-sspill]")){
+    closeScreeningSheet({noFocus:!!q("a[href],button,input,select,textarea,[tabindex]")});
+    if(e.target.id==="scrim"){if(e.detail)_shieldTaps();return;}
+  }
+  if(q("[data-close]")||e.target.id==="scrim"){_sheetShowAllCinemas=false;if(sheetOpen&&e.detail)_shieldTaps();closeSheet();return;}
   if(q(".time")||q(".buylink"))return;            /* let real links through */
 
   const rm=q("[data-readmore]");
@@ -4402,6 +4839,27 @@ document.addEventListener("click",e=>{
       const newSec=newSheet.querySelector(".sec:last-child");
       const oldSec=shBody.querySelector(".sec:last-child");
       if(oldSec&&newSec)oldSec.replaceWith(newSec);}return;}
+  /* desktop week grid: the previous / next 7 dates */
+  const gnav=q("[data-gnav]");
+  if(gnav){
+    const pager=gnav.closest("[data-gpager]"),box=pager&&pager.closest(".p3e-grp-desk");
+    if(!pager||!box||gnav.disabled)return;
+    const n=parseInt(pager.dataset.gn,10)||1;
+    const cur=Math.max(0,Math.min(n-1,(parseInt(pager.dataset.gcur,10)||0)+parseInt(gnav.dataset.gnav,10)));
+    pager.dataset.gcur=String(cur);
+    _gridPage[pager.dataset.gpager]=cur;
+    let label="";
+    box.querySelectorAll(".p3e-gpage").forEach(tb=>{
+      if(parseInt(tb.dataset.gpage,10)===cur){tb.removeAttribute("aria-hidden");label=tb.dataset.glabel||"";}
+      else tb.setAttribute("aria-hidden","true");
+    });
+    const rg=pager.querySelector(".p3e-grange");if(rg)rg.textContent=label;
+    const [prev,next]=pager.querySelectorAll("[data-gnav]");
+    prev.disabled=cur===0;next.disabled=cur===n-1;
+    /* keyboard: keep focus on the pager when the pressed arrow turns disabled at an end */
+    if(gnav.disabled){const other=gnav===prev?next:prev;if(!other.disabled)other.focus({preventScroll:true});}
+    return;
+  }
   /* P3E: time pill → screening sheet */
   const sspill=q("[data-sspill]");
   if(sspill){
@@ -4428,39 +4886,15 @@ document.addEventListener("click",e=>{
     }
     return;
   }
-  /* P3E screening sheet: close */
-  const ssclose=q("[data-ssclose]");
-  if(ssclose){closeScreeningSheet();return;}
-  /* P3E screening sheet: back to main step */
-  const ssback=q("[data-ssback]");
-  if(ssback){
-    if(!_ssOpen)return;
-    const {kind,id,venueId,dateStr,timeStr}=_ssOpen;
-    const isMobile=innerWidth<=760;
-    const container=isMobile?document.getElementById("ss-wrap"):document.getElementById("ss-pop");
-    const inner=container&&container.querySelector(".ss-sheet");
-    if(inner){inner.innerHTML=screeningSheetHtml(kind,id,venueId,dateStr,timeStr,"main");}
-    return;
-  }
-  /* P3E screening sheet: add to calendar → cal step */
-  const sscal=q("[data-sscal]");
-  if(sscal){screeningSheetCalStep();return;}
-  /* P3E screening sheet calendar: ICS download */
-  const sscalics=q("[data-sscalics]");
-  if(sscalics){_ssHandleIcsClick(sscalics);return;}
-  /* P3E: close screening sheet when clicking outside the popover (desktop) */
-  if(!q("#ss-pop")&&!q("#ss-wrap")&&document.getElementById("ss-pop")){
-    closeScreeningSheet();return;
-  }
   const fc=q("[data-film]"); if(fc){_sheetShowAllCinemas=false;curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
   const shc=q("[data-show]"); if(shc){curSheet={kind:"show",id:shc.dataset.show};openSheet(sheetShow(showById[shc.dataset.show]),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
 });
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
-  /* P3E: Esc closes screening sheet first (only when one is actually open) */
-  if(_ssOpen){closeScreeningSheet();return;}
-  if(document.getElementById("scrim")&&!document.getElementById("scrim").hidden){closeSheet();return;}
+  /* Esc closes the top layer only: the time popup, then the sheet */
+  if(_ss){closeScreeningSheet();e.preventDefault();return;}
+  if(sheetOpen){closeSheet();e.preventDefault();return;}
   if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{S.drawer=false;render();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}
 });
@@ -4503,9 +4937,29 @@ try{
 function boot(){ render(); }
 const origRender=render;
 render=function(){
-  try{ origRender();mountProgressive(); }
+  try{
+    /* behind an open (or closing) filter drawer the page keeps its place: mount enough
+       of the lazily built rails to hold the old offset, then put the offset back */
+    const keepY=document.querySelector("#app > .drawer")?(window.scrollY||0):null;
+    origRender();mountProgressive();
+    if(keepY!==null)_keepPageY(keepY);
+  }
   catch(e){ fatal(e); }
 };
+function _keepPageY(y){
+  let guard=0;
+  while(document.documentElement.scrollHeight<y+window.innerHeight&&railIdx<RAILS.length&&guard++<=RAILS.length){
+    const sent=document.getElementById("rail-sentinel");
+    if(!sent)break;
+    sent.insertAdjacentHTML("beforebegin",RAILS.slice(railIdx,railIdx+RAIL_MORE).map(matRail).join(""));
+    railIdx+=RAIL_MORE;
+  }
+  if(railIdx>=RAILS.length){
+    if(railObs){railObs.disconnect();railObs=null;}
+    const sent=document.getElementById("rail-sentinel");if(sent)sent.remove();
+  }
+  if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
+}
 try{ boot(); if(!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");

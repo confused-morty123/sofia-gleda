@@ -2289,8 +2289,8 @@ def run_flags(secondary, th_official, venue_report):
     """Health entries a person should look at beyond each venue's status: a
     reseller's listing shown in place of a theatre's own programme
     (preliminary), a next month left unjudged for want of known days before it
-    (no stage memory yet), ticket-list times off the 5-minute grid (published
-    as listed), and aggregator times that disagree with an unreachable venue's
+    (no stage memory yet), ticket-list times off the 5-minute grid (shown as
+    listed but marked preliminary), and aggregator times that disagree with an unreachable venue's
     kept rows (the kept rows are shown)."""
     out = []
     for v, sec in secondary.items():
@@ -2306,7 +2306,7 @@ def run_flags(secondary, th_official, venue_report):
         odd = OT.off_grid_ticket_times(res)
         if odd:
             out.append({"level": "warning", "venue": v,
-                        "message": "ticket-list time(s) off the 5-minute grid, published as listed — check by "
+                        "message": "ticket-list time(s) off the 5-minute grid, shown as preliminary; check by "
                                    "hand: " + "; ".join(f"{d} {tm} {t}" for d, tm, t in odd[:8])})
     for vid, r in venue_report.items():
         if r.get("kept_conflicts"):
