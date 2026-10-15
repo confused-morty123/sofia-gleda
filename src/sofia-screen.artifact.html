@@ -712,10 +712,10 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grid-wrap{margin:0 0 4px}
   .p3e-grp-desk{background:var(--ink-3);border-radius:14px;padding:14px 14px 8px;overflow-x:auto}
   .p3e-gt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-  /* paging: every page in one grid cell, the others kept invisible (no height change) */
+  /* paging: only the current page is shown; each lists only its own venues */
   .p3e-gpages{display:grid}
   .p3e-gpages>.p3e-gpage{grid-area:1 / 1;align-self:start}
-  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{visibility:hidden}
+  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{display:none}
   .p3e-gpager{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px;
     position:sticky;left:0}
   .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
@@ -2770,7 +2770,7 @@ let _sheetShowAllCinemas=false;
 /* Desktop week grid paging: the page each open grid shows, by "film:id" / "show:id", so a
    language redraw keeps it; cleared when the sheet closes. */
 const _gridPage={};
-const GRID_T={bg:{prev:"Предишните 7 дни",next:"Следващите 7 дни"},en:{prev:"Previous 7 days",next:"Next 7 days"}};
+const GRID_T={bg:{prev:"Предишни дати",next:"Следващи дати"},en:{prev:"Earlier dates",next:"Later dates"}};
 /* P3E day-picker render registry: maps grp slot id → buildVenueList(dateStr) fn */
 const _p3DayRenderFns=new Map();
 
@@ -2865,8 +2865,9 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(L.ssDashedFn)}</p>`:"";  /* cinema footnote */
 
   /* ---- DESKTOP: week grid, 7 dates a page ----
-     Every page is rendered and stacked in one grid cell with only the current one shown,
-     so paging never changes the height and the sticky venue column stays put. When the
+     Every page is rendered and only the current one is shown. A page lists only the
+     venues with a screening on its own dates (the owner's rule: no empty rows), so its
+     height follows its rows; the pager sits above the table and never moves. When the
      dates span more than one month, every column header carries the short month. */
   const PAGE=7;
   const pages=[];
@@ -2923,9 +2924,11 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     }).join("");
     return`<tr>${vcell}${dayCells}</tr>`;
   };
+  /* the venues with at least one time on a page's dates */
+  const venuesOn=pd=>venuesSorted.filter(vid=>pd.some(d=>{const rr=gridMap[vid]&&gridMap[vid][d];return rr&&rr.times.length;}));
   const tables=pages.map((pd,i)=>`<table class="p3e-gt p3e-gpage" role="table" data-gpage="${i}" data-glabel="${esc(pageLabel(pd))}"${i===cur?"":` aria-hidden="true"`}>
         <thead><tr><th></th>${pd.map(headCell).join("")}</tr></thead>
-        <tbody>${venuesSorted.map(vid=>rowFor(vid,pd)).join("")}</tbody>
+        <tbody>${venuesOn(pd).map(vid=>rowFor(vid,pd)).join("")}</tbody>
       </table>`).join("");
   const GT=GRID_T[S.lang]||GRID_T.bg;
   const pager=pages.length>1?`<div class="p3e-gpager" data-gpager="${esc(gkey)}" data-gcur="${cur}" data-gn="${pages.length}">

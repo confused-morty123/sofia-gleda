@@ -13143,8 +13143,8 @@ def _hf_double_tap(browser, eng):
 HF_GRID_DATES_JS = r"""(w)=>{
   /* for every film and show: the dates the desktop grid can show over all its pages, from the
      sheet's own markup, against the dates of its listings for the shown period */
-  const bad=[];let films=0,shows=0,multi=0,pagesMax=1;
-  const check=(kind,id,html,expect)=>{
+  const bad=[],rowBad=[];let films=0,shows=0,multi=0,pagesMax=1,rowsChecked=0;
+  const check=(kind,id,html,expect,pairs)=>{
     const d=document.createElement('div');d.innerHTML=html;
     const pages=[...d.querySelectorAll('.p3e-gpage')];
     const got=new Set(pages.flatMap(p=>[...p.querySelectorAll('th[data-date]')].map(t=>t.dataset.date)));
@@ -13157,32 +13157,44 @@ HF_GRID_DATES_JS = r"""(w)=>{
     const okPager=(pages.length>1)===!!pg;
     if(got.size!==exp.size||[...exp].some(x=>!got.has(x))||!okPages||!okPager)
       bad.push(kind+':'+id+' got '+got.size+' expected '+exp.size+' pages '+pages.length);
+    /* rows: a page lists only venues with a time on its own dates (no empty rows), and
+       the times over all pages are exactly the listings, none lost and none doubled */
+    const rows=pages.flatMap(p=>[...p.querySelectorAll('tbody tr')]);
+    rowsChecked+=rows.length;
+    const empty=rows.filter(tr=>!tr.querySelector('[data-sspill]')).length;
+    const shown=pages.flatMap(p=>[...p.querySelectorAll('[data-sspill]')].map(b=>{const k=b.dataset.sspill.split('|');return k[2]+'|'+k[3];})).sort();
+    const want=pairs.slice().sort();
+    if(empty||shown.length!==want.length||shown.some((x,i)=>x!==want[i]))
+      rowBad.push(kind+':'+id+' empty rows '+empty+', times shown '+shown.length+' of '+want.length);
   };
   for(const f of FILMS){
     const rows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));
     if(!rows.length)continue;
     films++;
-    check('film',f.id,sheetFilm(f),rows.map(r=>r[2]));
+    check('film',f.id,sheetFilm(f),rows.map(r=>r[2]),rows.flatMap(r=>(r[3]||[]).map(t=>r[2]+'|'+t)));
   }
   for(const sh of SHOWS){
     const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));
     if(!ps.length||!thById[sh.theatre])continue;
     shows++;
-    check('show',sh.id,sheetShow(sh),ps.map(p=>p[1]));
+    check('show',sh.id,sheetShow(sh),ps.map(p=>p[1]),ps.map(p=>p[1]+'|'+p[2]));
   }
-  return {films,shows,multi,pagesMax,bad:bad.slice(0,8),nbad:bad.length};
+  return {films,shows,multi,pagesMax,bad:bad.slice(0,8),nbad:bad.length,rowsChecked,rowBad:rowBad.slice(0,8),nRowBad:rowBad.length};
 }"""
 
 
 def _hf_grid_paging(browser, eng):
     """G1: the desktop week grid pages 7 dates at a time; over its pages it shows every date
-    of every film and show; the pager is keyboard-usable, labelled in BG and EN, disabled at
-    the ends, keeps the venue column sticky and the height unchanged, and closes the popover."""
+    of every film and show; each page lists only the venues with a time on its dates; the
+    pager is keyboard-usable, labelled in BG and EN, disabled at the ends, keeps the venue
+    column sticky and the table's top in place, and closes the popover."""
     for w, h in ((1280, 800), (1024, 768)):
         ctx, page, errs = _hf_open(browser, w, h, False)
         r = page.evaluate(HF_GRID_DATES_JS, w)
         check(f"hf1_grid_all_dates_{w}", r["nbad"] == 0 and r["films"] > 0,
               f"{r['films']} films, {r['shows']} shows, {r['multi']} with more than one page (up to {r['pagesMax']}); mismatches={r['nbad']} {r['bad']}")
+        check(f"hf1_grid_rows_only_with_times_{w}", r["nRowBad"] == 0 and r["rowsChecked"] > 0,
+              f"{r['rowsChecked']} rows over all pages; problems={r['nRowBad']} {r['rowBad']}")
         ctx.close()
     for lang in ("bg", "en"):
         for kind, mode in (("film", "cinema"), ("show", "theatre")):
@@ -13200,7 +13212,7 @@ def _hf_grid_paging(browser, eng):
             page.wait_for_timeout(600)
             exp = page.evaluate("""([k,id])=>[...new Set(k==='film'?upcomingRows(SHOWTIMES.filter(r=>r[0]===id)).map(r=>r[2]):upcomingPerfs(PERFORMANCES.filter(p=>p[0]===id)).map(p=>p[1]))].sort()""", [kind, best["id"]])
             shown_js = """()=>{const pages=[...document.querySelectorAll('#scrim .p3e-gpage')];
-                const vis=pages.filter(p=>getComputedStyle(p).visibility!=='hidden');
+                const vis=pages.filter(p=>getComputedStyle(p).display!=='none');
                 const pg=document.querySelector('#scrim .p3e-gpager');const [pv,nx]=pg?pg.querySelectorAll('[data-gnav]'):[null,null];
                 const vc=vis[0]&&vis[0].querySelector('td.p3e-vcol');
                 return {nvis:vis.length,dates:vis.length?[...vis[0].querySelectorAll('th[data-date]')].map(t=>t.dataset.date):[],
@@ -13209,7 +13221,7 @@ def _hf_grid_paging(browser, eng):
                   sticky:vc?getComputedStyle(vc).position:null,top:Math.round(document.querySelector('#scrim .p3e-gpages').getBoundingClientRect().top)}}"""
             seen, steps, ok_steps = [], [], True
             s0 = page.evaluate(shown_js)
-            labels_ok = (s0["prevLabel"], s0["nextLabel"]) == (("Предишните 7 дни", "Следващите 7 дни") if lang == "bg" else ("Previous 7 days", "Next 7 days"))
+            labels_ok = (s0["prevLabel"], s0["nextLabel"]) == (("Предишни дати", "Следващи дати") if lang == "bg" else ("Earlier dates", "Later dates"))
             first_ok = s0["nvis"] == 1 and s0["prevDis"] is True and s0["nextDis"] is False and s0["sticky"] == "sticky"
             seen += s0["dates"]
             # open a popover, then page with the keyboard: the popover closes, the page turns
@@ -13230,7 +13242,8 @@ def _hf_grid_paging(browser, eng):
                 cur = page.evaluate(shown_js)
                 if cur["dates"] and cur["dates"] != prev["dates"]:
                     seen += cur["dates"]
-                ok_step = cur["nvis"] == 1 and abs(cur["h"] - s0["h"]) <= 1 and cur["sticky"] == "sticky" and abs(cur["top"] - prev["top"]) <= 1
+                # the height follows each page's rows now (no empty rows); the table's top stays put
+                ok_step = cur["nvis"] == 1 and cur["sticky"] == "sticky" and abs(cur["top"] - prev["top"]) <= 1
                 ok_steps = ok_steps and ok_step
                 steps.append(f"{cur['range']}{'' if ok_step else ' BAD'}")
                 if cur["nextDis"] or guard > 12:
@@ -13249,7 +13262,7 @@ def _hf_grid_paging(browser, eng):
             union_ok = sorted(set(seen)) == exp
             check(name, labels_ok and first_ok and union_ok and ok_steps and end["dates"] == s0["dates"] and end["prevDis"] and pop_open and not pop_after,
                   f"{best['id']}: {len(exp)} dates; pages {steps}; union matches={union_ok}; labels={s0['prevLabel']!r}/{s0['nextLabel']!r}; "
-                  f"first page prev disabled={s0['prevDis']} sticky venue column={s0['sticky']}; height steady={ok_steps}; popover {pop_open}->{pop_after}; back to first={end['dates'] == s0['dates']}")
+                  f"first page prev disabled={s0['prevDis']} sticky venue column={s0['sticky']}; top steady={ok_steps}; popover {pop_open}->{pop_after}; back to first={end['dates'] == s0['dates']}")
             if lang == "bg" and kind == "film":
                 page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.click();}")
                 page.wait_for_timeout(200)
