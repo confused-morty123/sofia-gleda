@@ -32,7 +32,7 @@
 html,body{min-height:100%}
 /* the page is pinned (position:fixed) while a sheet is open; a stable gutter keeps it
    from reflowing sideways where scrollbars take up space */
-html{scrollbar-gutter:stable}
+html{scrollbar-gutter:stable; -webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{margin:0; background:var(--ink); color:var(--fg);
   font-family:"Onest","Segoe UI",system-ui,sans-serif; font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{margin:0; text-wrap:balance}
@@ -40,22 +40,31 @@ button{font:inherit; color:inherit; background:none; border:none; cursor:pointer
 a{color:inherit}
 :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important}}
-.wrap{max-width:none; margin:0; padding-inline:16px}
-@media(min-width:900px){ .wrap{padding-inline:40px} }
-@media(min-width:1440px){ .wrap{padding-inline:56px} }
+/* Safe areas: the page asks for the whole screen (viewport-fit=cover), so on a phone it
+   is laid out under the rounded corners, the notch or Dynamic Island, the status bar of
+   the home-screen app and the home indicator. Every edge of the layout keeps clear of
+   those insets (they are 0 on other screens, where nothing changes). */
+.wrap{max-width:none; margin:0;
+  padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+@media(min-width:900px){ .wrap{padding-inline:max(40px,env(safe-area-inset-left,0px)) max(40px,env(safe-area-inset-right,0px))} }
+@media(min-width:1440px){ .wrap{padding-inline:max(56px,env(safe-area-inset-left,0px)) max(56px,env(safe-area-inset-right,0px))} }
 /* the header spans the full viewport, content fluid to 100% */
-.bar .wrap{padding-inline:14px}
-@media(min-width:900px){ .bar .wrap{padding-inline:28px} }
-@media(min-width:1440px){ .bar .wrap{padding-inline:40px} }
+.bar .wrap{padding-inline:max(14px,env(safe-area-inset-left,0px)) max(14px,env(safe-area-inset-right,0px))}
+@media(min-width:900px){ .bar .wrap{padding-inline:max(28px,env(safe-area-inset-left,0px)) max(28px,env(safe-area-inset-right,0px))} }
+@media(min-width:1440px){ .bar .wrap{padding-inline:max(40px,env(safe-area-inset-left,0px)) max(40px,env(safe-area-inset-right,0px))} }
+/* the status-bar band of an edge-to-edge screen keeps the page colour: neither the pinned
+   header's logo row nor the listing shows behind the clock and the Dynamic Island */
+body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top,0px);
+  background:var(--ink); z-index:61; pointer-events:none}
 
 /* ---------- header ---------- */
 /* Desktop: position:sticky, single row. Mobile: two rows (logo centred + controls).
    The logo row is allowed to scroll away; the controls row stays pinned via a
    negative top offset equal to the logo row height (28px logo + 14px padding-block + 10px gap = 52px).
    --logo-row-h is the single source of truth so the pinned offset cannot drift. */
-.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:60;
+.bar{position:sticky; top:0; z-index:60;
   background:color-mix(in srgb,var(--ink) 92%,transparent); backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--line); padding-block:14px}
+  border-bottom:1px solid var(--line); padding-block:calc(14px + env(safe-area-inset-top,0px)) 14px}
 /* three zones: brand left · toggle CENTRE · search+lang right
    P3A item 1: toggle moves to true centre column */
 .bar-in{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:18px}
@@ -86,7 +95,9 @@ a{color:inherit}
    --logo-row-h = 45px row (logo 28px + 5px gap + 12px subtext, taller than the 42px language button) + 14px padding-block-top + 10px gap = 69px. */
 @media(max-width:760px){
   :root{ --logo-row-h:69px } /* 45px row (logo + subtext) + 14px top padding + 10px gap */
-  .bar{top:calc(env(safe-area-inset-top,0px) - var(--logo-row-h) + 8px)}
+  /* the header's top padding holds the safe-area inset, so pinned, its controls row
+     sits 8px below that inset whatever its size */
+  .bar{top:calc(8px - var(--logo-row-h))}
   .bar-row-logo{display:grid; grid-template-columns:42px 1fr 42px; align-items:center; margin-bottom:10px; gap:0}
   .bar-row-logo .brand{justify-self:center; grid-column:2}
   .bar-row-logo .lang-right{grid-column:3; justify-self:end}
@@ -126,7 +137,11 @@ a{color:inherit}
 .seg.seg-q{width:100px}
 .seg.seg-q button{gap:0}
 .seg.seg-q .seg-l{max-width:0; opacity:0}
-@media(max-width:760px){.seg.seg-q{width:auto!important}}
+/* phones: the search opens in its own row below the toggle, so nothing collides and the
+   toggle keeps its icons and names while the search opens and closes (JS never sets
+   .seg-q there; these rules hold the look even if it did) */
+@media(max-width:760px){.seg.seg-q{width:auto!important} .seg.seg-q button{gap:6px}
+  .seg.seg-q .seg-l{max-width:7em; opacity:1}}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
 .iconb:hover{border-color:var(--line-2); color:var(--fg)}
@@ -136,17 +151,22 @@ a{color:inherit}
 /* Desktop: search is the expand-on-demand panel, not always visible.
    The iconb search-icon-btn lives in bar-controls (far right-ish).
    When expanded, .desk-search-wrap grows into view from the right side.
-   Item 2: smooth animation — opacity fades in with width; JS adds/removes .open */
+   Item 2: smooth animation — opacity fades in with width; JS adds/removes .open.
+   Closing mirrors opening: the same .22s, with the reversed curve (ease-in for the
+   way out, ease-out for the way in; a transition takes the timing of the state it
+   goes to). */
 .desk-search-wrap{display:flex; align-items:center; gap:0; overflow:hidden; max-width:0; opacity:0;
-  transition:max-width .22s ease-out, opacity .22s ease-out}
-.desk-search-wrap.open{max-width:420px; opacity:1}
+  transition:max-width .22s ease-in, opacity .22s ease-in}
+.desk-search-wrap.open{max-width:420px; opacity:1; transition-timing-function:ease-out}
 /* mobile search row: animated height. Default display:none keeps #q-m out of
    layout (bounding_box()===null for tests). JS sets display:block before adding
-   .open to trigger the CSS transition, then restores display:none after close. */
+   .open to trigger the CSS transition, then restores display:none after close.
+   The row opens to its own height (--sr-h, measured by JS) rather than a cap above
+   it, so no part of either animation is spent where nothing moves. */
 .bar-row-search{display:none; overflow:hidden; max-height:0; opacity:0;
-  transition:max-height .22s ease-out, opacity .22s ease-out}
+  transition:max-height .22s ease-in, opacity .22s ease-in}
 .bar-row-search.sr-visible{display:block} /* JS adds this before animating open */
-.bar-row-search.open{max-height:64px; opacity:1}
+.bar-row-search.open{max-height:var(--sr-h,64px); opacity:1; transition-timing-function:ease-out}
 @media (prefers-reduced-motion:reduce){
   .desk-search-wrap,.bar-row-search{transition:none!important}
 }
@@ -164,7 +184,8 @@ a{color:inherit}
 .drawer-scrim{position:fixed; inset:0; z-index:100; background:rgba(5,3,7,.6); backdrop-filter:blur(3px)}
 .drawer{position:fixed; top:0; right:0; bottom:0; z-index:101; width:min(380px,88vw);
   background:var(--ink-2); border-left:1px solid var(--line); overflow-y:auto;
-  padding:18px 18px calc(28px + env(safe-area-inset-bottom,0px)); box-shadow:-20px 0 50px rgba(0,0,0,.4)}
+  padding:calc(18px + env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px))
+    calc(28px + env(safe-area-inset-bottom,0px)) 18px; box-shadow:-20px 0 50px rgba(0,0,0,.4)}
 .drawer h3{font-family:Oswald,sans-serif; font-size:11px; letter-spacing:.17em; text-transform:uppercase;
   color:var(--fg-3); margin:20px 0 9px; padding-bottom:6px; border-bottom:1px solid var(--line)}
 .drawer h3:first-of-type{margin-top:6px}
@@ -220,14 +241,16 @@ a{color:inherit}
      rule, which is defined LATER in the file: without it the base
      `overflow:hidden` overrode `overflow-y:auto` and the bottom sheet could not
      scroll on mobile, clipping everything past 94vh. */
-  .scrim .sheet{width:100%; border-radius:18px 18px 0 0; margin-bottom:0; max-height:94vh;
+  .scrim .sheet{width:100%; border-radius:18px 18px 0 0; margin-bottom:0;
+    max-height:calc(94vh - env(safe-area-inset-top,0px));
     overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
   /* On a phone, vh is the screen height with the browser's toolbars HIDDEN: while
      they show, a 94vh sheet is taller than the visible area and its last rows (the
      times and ticket links) sit behind the toolbar, out of reach of the sheet's own
      scroll. dvh follows the toolbars (vh stays the fallback for older browsers), and
      the body clears the iPhone home indicator. */
-  @supports (height:1dvh){ .scrim .sheet{max-height:94dvh} }
+  /* (and its top, with the back bar, stays below the status bar of an edge-to-edge screen) */
+  @supports (height:1dvh){ .scrim .sheet{max-height:calc(94dvh - env(safe-area-inset-top,0px))} }
   .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} }
 .fchip{padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--ink-2);
   font-size:12px; color:var(--fg-2); transition:border-color .15s,background .15s; white-space:nowrap}
@@ -381,7 +404,9 @@ a{color:inherit}
 /* ---------- sheet ---------- */
 .scrim[hidden]{display:none!important}
 .scrim{position:fixed; inset:0; z-index:90; background:rgba(5,3,7,.8); backdrop-filter:blur(8px);
-  display:grid; place-items:start center; padding:16px; overflow-y:auto; overscroll-behavior:contain}
+  display:grid; place-items:start center; overflow-y:auto; overscroll-behavior:contain;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px))
+    max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .sheet{width:min(860px,100%); background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-lg);
   overflow:hidden; box-shadow:var(--shadow); margin-block:auto}
 .shero{position:relative; min-height:210px; display:flex; align-items:flex-end; padding:22px; color:#fff; overflow:hidden}
@@ -465,7 +490,7 @@ a{color:inherit}
   color:var(--accent); font:inherit; font-size:13px; font-weight:600; letter-spacing:.02em;
   transition:opacity var(--motion-dur-sm) var(--motion-ease-out)}
 .readmore:hover{text-decoration:underline}
-.toast{position:fixed; left:50%; bottom:26px; transform:translate(-50%,14px); z-index:300;
+.toast{position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,14px); z-index:300;
   background:var(--ink-2); border:1px solid var(--line-2); color:var(--fg); border-radius:10px;
   padding:11px 18px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
   transition:opacity .2s, transform .2s; max-width:86vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -599,6 +624,9 @@ a.prelim-time,span.prelim-time{border:1px dashed var(--line-2)!important;backgro
   display:grid; place-items:center; flex:0 0 18px}
 .fab[hidden]{display:none!important}
 main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+/* refreshPage() lays an update out here, unseen and untappable, before it is shown */
+.sg-probe{position:fixed; top:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none;
+  z-index:-1; contain:layout paint}
 /* Touch screens in a browser tab: once Safari's bottom toolbar has collapsed, it takes
    the first tap in roughly the bottom 44-72 px to bring itself back, so a button there
    needs two taps. Keep the FAB, the time popup's last button, and the last rows of the
@@ -735,7 +763,8 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
    spacer keeps the buttons at its foot. */
 .ss-sheet{display:flex;flex-direction:column}
 .ss-wrap{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;justify-content:flex-end;
-  background:rgba(0,0,0,.55);overscroll-behavior:contain}
+  background:rgba(0,0,0,.55);overscroll-behavior:contain;
+  padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px)} /* landscape notch */
 .ss-wrap[hidden]{display:none!important}
 .ss-wrap .ss-sheet{position:relative;flex:0 0 auto;width:100%;max-width:640px;margin:0 auto;
   height:88vh;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
@@ -2633,9 +2662,30 @@ function secToggleInPlace(key){
   pinHeader(willOpen?360:320);
   return true;
 }
+/* cb once el's own transition has ended (or after maxMs at the latest; maxMs 0: now) */
+function _afterTransition(el,maxMs,cb){
+  if(!el||!maxMs){cb();return;}
+  let done=false,timer=0;
+  const fin=e=>{
+    if(done||(e&&e.target!==el))return;
+    done=true;clearTimeout(timer);
+    el.removeEventListener("transitionend",fin);el.removeEventListener("transitioncancel",fin);
+    cb();
+  };
+  el.addEventListener("transitionend",fin);el.addEventListener("transitioncancel",fin);
+  timer=setTimeout(fin,maxMs);
+}
+/* The phone search row opens to exactly its field's height (--sr-h): with a taller cap
+   the start of the close and the end of the open moved nothing. */
+function _srFit(mr){
+  const c=mr&&mr.firstElementChild;
+  const h=c?c.offsetHeight:0;
+  if(h)mr.style.setProperty("--sr-h",h+"px");
+}
 /* ---- Search animation (Item 2) ----
    Toggle search open/close WITHOUT a full render(). Animate width (desk) or
-   height (mobile). On close with a query: animate closed, then clear + render. */
+   height (mobile). On close with a query: animate closed, then clear the query and
+   bring the page back in place (refreshPage, the header is never rebuilt). */
 function searchToggleInPlace(){
   const willOpen=!S.searchOpen;
   S.searchOpen=willOpen;
@@ -2647,7 +2697,8 @@ function searchToggleInPlace(){
      the centre toggle. On desktop: measure right column space vs 420px search width.
      At narrow viewports (<~1100px) the column is smaller than 420px → crowded → shrink.
      At wide viewports the column comfortably fits 420px → leave label text visible.
-     On mobile: search takes full bar width, always crowded → always shrink. */
+     On phones the search opens in its own row below the toggle: nothing collides, so
+     the toggle is left exactly as it is (no shrink, no animation). */
   const reducedMotion=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
   /* Desktop */
   const dw=document.querySelector(".desk-search-wrap");
@@ -2673,24 +2724,24 @@ function searchToggleInPlace(){
         document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
       });
     }
-  }else{
-    /* Mobile: .desk-search-wrap not in DOM. Search takes full bar row, always crowded. */
-    if(!willOpen)document.querySelectorAll(".seg").forEach(sg=>sg.classList.remove("seg-q"));
-    else document.querySelectorAll(".seg").forEach(sg=>sg.classList.add("seg-q"));
   }
+  /* Phones (.desk-search-wrap not in the DOM): the toggle is not touched. */
   /* Mobile: bar-row-search starts display:none (so #q-m bounding_box()===null).
      Opening: add .sr-visible (display:block) first, then .open for the CSS transition.
-     Closing: remove .open; after animation ends remove .sr-visible (display:none again). */
+     Closing: remove .open; after animation ends remove .sr-visible (display:none again),
+     unless the search was opened again meanwhile. */
   const mr=document.querySelector(".bar-row-search");
   if(mr){
     if(willOpen){
       mr.classList.add("sr-visible"); /* display:block — make animatable */
       void mr.offsetHeight; /* force reflow so transition sees start state */
+      _srFit(mr);
       mr.classList.add("open");
     }else{
       mr.classList.remove("open");
-      const rmDelay=reducedMotion?0:240;
-      setTimeout(()=>{mr.classList.remove("sr-visible");},rmDelay);
+      /* display:none again once the row is shut: on its transitionend, not on a timer
+         that could cut the end of the closing animation short */
+      _afterTransition(mr,reducedMotion?0:320,()=>{if(!S.searchOpen)mr.classList.remove("sr-visible");});
     }
   }
   if(willOpen){
@@ -2698,10 +2749,15 @@ function searchToggleInPlace(){
     const isMob=window.innerWidth<=760;
     const qi=isMob?document.getElementById("q-m"):document.getElementById("q");
     if(qi)setTimeout(()=>{qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}},50);
-  }else if(S.q){
-    /* closing with a query: after animation, clear and re-render results */
-    const delay=reducedMotion?0:230;
-    setTimeout(()=>{S.q="";S.searchOpen=false;render();},delay);
+  }else{
+    /* the field stays in the page (hidden): let go of it, so the phone keyboard closes */
+    const ae=document.activeElement;
+    if(ae&&(ae.id==="q"||ae.id==="q-m"))ae.blur();
+    if(S.q){
+      /* closing with a query: once the field is shut, clear it and bring the page back
+         (the rebuild never runs while the closing animation still plays) */
+      _afterTransition(mr||dw,reducedMotion?0:320,()=>{if(!S.searchOpen)clearSearch();});
+    }
   }
 }
 
@@ -3383,6 +3439,9 @@ function searchView(sr){
 }
 function render(){
   const L=t();
+  /* a full rebuild supersedes an in-place update still waiting for its posters */
+  _pageGen++;_refreshLater=null;
+  document.querySelectorAll(".sg-probe").forEach(p=>p.remove());
   document.documentElement.setAttribute("data-surface",S.mode);
   const sr=S.q.trim().length>=2?searchAll(S.q):null;
   const isMob=window.innerWidth<=760;
@@ -3436,18 +3495,9 @@ function render(){
         ${langBtn}
       </div>
     </div>`;
-  const activeFilterCount=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
-  const fabHTML=(!S.drawer&&!S.q)?`<button class="fab" data-drawer aria-label="${esc(L.fabFilters||L.filters)}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
-    <span>${esc(L.fabFilters||L.filters)}</span>
-    ${activeFilterCount?`<span class="fab-badge">${activeFilterCount}</span>`:""}</button>`:"";
-  const isVenueMode=S.fVenues.length>0;
-  const bodyContent=body();
-  /* venue mode: body() returns a [string] array — join it; else it is a string */
-  const bodyHTML=Array.isArray(bodyContent)?bodyContent[0]:bodyContent;
-  /* An open filter drawer survives the re-render a filter tap causes: the same nodes
-     are put back and only their content is refreshed, so the drawer does not slide in
-     again, keeps its scroll position, and focus stays on the tapped control. */
+  /* An open filter drawer survives a full re-render (e.g. the viewport crossing 760 px):
+     the same nodes are put back and only their content is refreshed, so the drawer does
+     not slide in again, keeps its scroll position, and focus stays on the tapped control. */
   const app=document.getElementById("app");
   const keptDr=S.drawer?app.querySelector(":scope > .drawer"):null;
   const keptDs=keptDr?app.querySelector(":scope > .drawer-scrim"):null;
@@ -3459,10 +3509,7 @@ function render(){
     ${headerHTML}
   </div></header>
   <main class="wrap">
-    ${sr?searchView(sr):`
-    ${periodBanner()}
-    ${isVenueMode?"":hero()}
-    ${bodyHTML}`}
+    ${mainHTML(sr)}
   </main>
   <footer class="wrap"><div>${esc(L.sources)}</div><div class="srcs">
     <span>programata.bg</span><span>theatre.art.bg</span><span>nationaltheatre.bg</span><span>ndk.bg</span>
@@ -3471,7 +3518,10 @@ function render(){
     <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>
   </div></footer>
   ${S.drawer&&!keptDr?drawerHTML():""}
-  ${fabHTML}`;
+  ${fabHTML()}`;
+  const mainEl=app.querySelector(":scope > main");
+  if(mainEl)mainEl.__sgView=sr?"search":"page";
+  if(isMob&&S.searchOpen)_srFit(app.querySelector(".bar-row-search"));
   if(keptDr){
     const tmp=document.createElement("div");tmp.innerHTML=drawerHTML();
     const fresh=tmp.querySelector(".drawer");
@@ -3484,48 +3534,25 @@ function render(){
     keptDr.scrollTop=drTop;
     if(drFocus){const el=keptDr.querySelector(drFocus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
   }else if(S.drawer){
-    /* iOS sends a click for a tap only to an element that listens for one: without this
-       a tap on the dimmed area beside the drawer did nothing on an iPhone */
-    const ds=app.querySelector(":scope > .drawer-scrim");
-    if(ds)ds.addEventListener("click",()=>{});
+    _drawerEnter(app);
   }
   /* focus search input after open */
   const qiM=document.getElementById("q-m");
   const qiD=document.getElementById("q");
   const qi=isMob?qiM:qiD;
   if(qi&&S.searchOpen){qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}}
-  /* P3A item 3: re-run geometry check after every render while search is open,
-     so language switches and other re-renders don't leave .seg-q stale. */
-  if(S.searchOpen){
+  /* P3A item 3: re-run the desktop geometry check after every render while the search is
+     open, so language switches and other re-renders don't leave .seg-q stale. Phones never
+     shrink the toggle: their search opens in its own row below it. */
+  if(S.searchOpen&&!isMob){
     requestAnimationFrame(()=>{
       const seg=document.querySelector(".seg");
-      const barIn=document.querySelector(".bar-inner,.bar-row-main");
+      const barIn=document.querySelector(".bar-in");
       if(!seg||!barIn)return;
       const segR=seg.getBoundingClientRect().right;
       const barInR=barIn.getBoundingClientRect().right;
       const crowded=barInR-segR-18<420;
       document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
-    });
-  }
-  /* P3B: animate drawer entrance when newly opened, then move focus inside */
-  if(S.drawer&&!keptDr){
-    requestAnimationFrame(()=>{
-      const dr=document.querySelector(".drawer");
-      const ds=document.querySelector(".drawer-scrim");
-      if(!dr)return;
-      const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const delay=reduced?10:340;
-      if(!reduced){
-        dr.animate([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}],
-          {duration:320,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"backwards"});
-        if(ds)ds.animate([{opacity:0},{opacity:1}],{duration:200,easing:"ease-out",fill:"backwards"});
-      }
-      /* Move keyboard focus into the drawer after animation */
-      setTimeout(()=>{
-        const focusable=dr.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
-        const first=Array.from(focusable).find(el=>!el.disabled);
-        if(first)first.focus({preventScroll:true});
-      },delay);
     });
   }
 }
@@ -3540,16 +3567,299 @@ function _ctlKey(el,root){
   }
   return null;
 }
-/* Re-render while keeping the filter drawer where the user left it. The drawer
-   lives inside #app, so a plain render() rebuilds it at scrollTop 0 and the list
-   jumps to the top on every chip tap — which made multi-selecting genres/venues
-   feel broken. Capture and restore the drawer's scroll position across render. */
+/* What <main> holds: the search results, or the period banner, the hero and the rails. */
+function mainHTML(sr){
+  if(sr)return searchView(sr);
+  const bodyContent=body();
+  /* venue mode: body() returns a [string] array; else it is a string */
+  const bodyHTML=Array.isArray(bodyContent)?bodyContent[0]:bodyContent;
+  return `
+    ${periodBanner()}
+    ${S.fVenues.length?"":hero()}
+    ${bodyHTML}`;
+}
+/* The floating filters button: not shown while the drawer is open or a search is typed. */
+function fabHTML(){
+  if(S.drawer||S.q)return "";
+  const L=t();
+  const activeFilterCount=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
+  return `<button class="fab" data-drawer aria-label="${esc(L.fabFilters||L.filters)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+    <span>${esc(L.fabFilters||L.filters)}</span>
+    ${activeFilterCount?`<span class="fab-badge">${activeFilterCount}</span>`:""}</button>`;
+}
+/* Bring the FAB in line with the state; nothing else on the page is touched. */
+function _syncFab(){
+  const app=document.getElementById("app");
+  if(!app)return;
+  const cur=app.querySelector(":scope > .fab");
+  const html=fabHTML();
+  if(!html){if(cur)cur.remove();return;}
+  const tmp=document.createElement("div");tmp.innerHTML=html;
+  const fresh=tmp.firstElementChild;
+  if(cur&&cur.isEqualNode(fresh))return;
+  if(cur)cur.replaceWith(fresh);else app.appendChild(fresh);
+}
+/* A drawer just put on the page: the iOS backdrop tap, the slide-in, then focus inside. */
+function _drawerEnter(app){
+  /* iOS sends a click for a tap only to an element that listens for one: without this
+     a tap on the dimmed area beside the drawer did nothing on an iPhone */
+  const ds0=app.querySelector(":scope > .drawer-scrim");
+  if(ds0)ds0.addEventListener("click",()=>{});
+  /* P3B: animate drawer entrance when newly opened, then move focus inside */
+  requestAnimationFrame(()=>{
+    const dr=document.querySelector(".drawer");
+    const ds=document.querySelector(".drawer-scrim");
+    if(!dr)return;
+    const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const delay=reduced?10:340;
+    if(!reduced){
+      dr.animate([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}],
+        {duration:320,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"backwards"});
+      if(ds)ds.animate([{opacity:0},{opacity:1}],{duration:200,easing:"ease-out",fill:"backwards"});
+    }
+    /* Move keyboard focus into the drawer after animation */
+    setTimeout(()=>{
+      const focusable=dr.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+      const first=Array.from(focusable).find(el=>!el.disabled);
+      if(first)first.focus({preventScroll:true});
+    },delay);
+  });
+}
+/* Open and close the filter drawer over the page as it is: a full render() rebuilt the
+   page under the drawer, so every poster behind it blinked as it slid in and out. */
+function openDrawer(){
+  S.drawer=true;S.qFocus=false;
+  const app=document.getElementById("app");
+  if(!app||!app.querySelector(":scope > main")||app.querySelector(":scope > .drawer")){render();return;}
+  const fab=app.querySelector(":scope > .fab");
+  if(fab)fab.remove();
+  app.insertAdjacentHTML("beforeend",drawerHTML());
+  _drawerEnter(app);
+}
+function closeDrawerNow(){
+  S.drawer=false;
+  const app=document.getElementById("app");
+  if(!app||!app.querySelector(":scope > main")){render();return;}
+  app.querySelectorAll(":scope > .drawer,:scope > .drawer-scrim").forEach(n=>n.remove());
+  _syncFab();
+}
+/* A tap in the filter drawer: the drawer keeps its node, scroll position and focus (only
+   its content is refreshed, so it does not slide in again and the list does not jump to
+   the top), and the page behind it is updated in place by refreshPage(). */
 function renderKeepDrawer(){
-  const d=document.querySelector(".drawer");
-  const top=d?d.scrollTop:0;
-  render();
-  const d2=document.querySelector(".drawer");
-  if(d2)d2.scrollTop=top;
+  const app=document.getElementById("app");
+  const dr=app&&app.querySelector(":scope > .drawer");
+  if(!dr||!app.querySelector(":scope > main")){render();return;}
+  const top=dr.scrollTop;
+  const focus=_ctlKey(document.activeElement,dr);
+  const tmp=document.createElement("div");tmp.innerHTML=drawerHTML();
+  const fresh=tmp.querySelector(".drawer");
+  if(fresh){
+    for(const at of fresh.getAttributeNames())dr.setAttribute(at,fresh.getAttribute(at));
+    dr.innerHTML=fresh.innerHTML;
+  }
+  dr.scrollTop=top;
+  if(focus){const el=dr.querySelector(focus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
+  refreshPage();
+}
+
+/* ===================== in-place page updates =====================
+   A filter tap and a letter typed in the search change only the listing under the
+   header, yet render() rebuilt the whole app for them. On every letter the search field
+   was a new element (iOS dropped and restored its focus, so the keyboard and the page
+   jumped), and on every tap each poster became a new <img>, which paints blank until it
+   is decoded, so the page behind the filter drawer blinked. refreshPage() rebuilds <main>
+   alone. The new content is laid out off-screen first; the posters it shows in view that
+   the page does not show yet are loaded and decoded before the swap (DECODE_CAP ms at
+   most, so an update never lags), and every poster already on the page moves into the
+   new content instead of being created again. The header, the search field, the drawer
+   and the scroll position stay as they are.
+   opts.search: only the query changed; opts.toY: scroll there with the update;
+   opts.anim: the Кино/Театър switch, which dips the content out and back in. */
+let _pageGen=0,_searchY0=null,_refreshLater=null;
+const DECODE_CAP=180;
+const SWITCH_OUT=100,SWITCH_IN=160,SWITCH_DIM=.25;
+function refreshPage(opts){
+  const app=document.getElementById("app");
+  const main=app&&app.querySelector(":scope > main");
+  if(!main){render();return;}
+  /* never under an open sheet: the page is pinned there (scrollY 0); the update runs
+     once the sheet has closed and the page is back at its offset */
+  if(sheetOpen||_lockY!==null){_deferRefresh(opts);return;}
+  const gen=++_pageGen;
+  document.querySelectorAll(".sg-probe").forEach(p=>p.remove());
+  let probe=null;
+  try{
+    _syncFab();
+    const sr=S.q.trim().length>=2?searchAll(S.q):null;
+    const was=main.__sgView||"page",now=sr?"search":"page";
+    /* a query of one letter leaves the listing as it is */
+    if(opts&&opts.search&&was==="page"&&now==="page")return;
+    const y0=window.scrollY||0;
+    const mainY=main.getBoundingClientRect().top+y0;
+    /* results open at their top, right under the header (from a page scrolled further
+       down); leaving them puts the page back where it was */
+    /* _searchY0 holds how far into the listing the page was scrolled (from the top of
+       <main>), so the same place comes back even if the header changed height meanwhile
+       (the search row closing); keepY0 is what it becomes once the swap is done */
+    let toY=null,keepY0;
+    if(opts&&typeof opts.toY==="number")toY=opts.toY;
+    else if(now==="search"&&was!=="search"){
+      keepY0=y0-mainY;
+      const pin=_pinnedY(app,mainY);
+      if(y0>pin)toY=pin;
+    }else if(now==="page"&&was==="search"&&_searchY0!==null){toY=Math.max(0,Math.round(mainY+_searchY0));keepY0=null;}
+    /* the switch: the content dims out while the new programme is built and decoded */
+    const dip=!!(opts&&opts.anim)&&_motionOK(main);
+    if(dip){
+      const o0=parseFloat(getComputedStyle(main).opacity);
+      main.getAnimations().forEach(a=>a.cancel());
+      main.animate([{opacity:isNaN(o0)?1:o0},{opacity:SWITCH_DIM}],
+        {duration:SWITCH_OUT,easing:"cubic-bezier(.55,0,.1,1)",fill:"forwards"});
+    }
+    /* the rails on the page stop growing: body() below starts the new page's rails */
+    if(railObs){railObs.disconnect();railObs=null;}
+    const fresh=document.createElement("main");
+    fresh.className=main.className;
+    fresh.innerHTML=mainHTML(sr);
+    probe=document.createElement("div");
+    probe.className="sg-probe";probe.setAttribute("aria-hidden","true");
+    const mr=main.getBoundingClientRect();
+    probe.style.left=mr.left+"px";probe.style.width=mr.width+"px";
+    probe.appendChild(fresh);document.body.appendChild(probe);
+    const top=mainY-(toY!==null?toY:y0);  /* where the content will start on screen */
+    _fillRails(fresh,top);
+    /* posters the page shows loaded will be moved over (in document order, as the swap
+       does); the rest that will be in view are loaded and decoded first */
+    const have=new Map();
+    for(const im of main.querySelectorAll("img.p-real")){
+      if(!im.complete||!im.naturalWidth)continue;
+      const k=im.getAttribute("src");have.set(k,(have.get(k)||0)+1);
+    }
+    const fTop=fresh.getBoundingClientRect().top,waits=[];
+    for(const im of fresh.querySelectorAll("img.p-real")){
+      const k=im.getAttribute("src"),n=have.get(k)||0;
+      if(n){have.set(k,n-1);continue;}
+      const r=im.getBoundingClientRect(),y=r.top-fTop+top;
+      if(r.width&&y<innerHeight&&y+r.height>0&&r.right>0&&r.left<innerWidth){
+        im.loading="eager";
+        if(im.decode)waits.push(im.decode().catch(()=>{}));
+      }
+    }
+    const pr=probe;
+    const swap=()=>{
+      if(gen!==_pageGen){pr.remove();return;}
+      /* a card was opened while the posters decoded: finish after the sheet closes */
+      if(sheetOpen||_lockY!==null){pr.remove();main.getAnimations().forEach(a=>a.cancel());_deferRefresh(opts);return;}
+      try{_swapMain(main,fresh,now,toY,dip,!!(opts&&opts.anim));}
+      catch(e){pr.remove();main.getAnimations().forEach(a=>a.cancel());render();return;}
+      if(keepY0!==undefined)_searchY0=keepY0;
+      pr.remove();
+    };
+    if(dip){
+      const out=new Promise(r=>setTimeout(r,SWITCH_OUT));
+      Promise.all([out,Promise.race([Promise.all(waits),new Promise(r=>setTimeout(r,DECODE_CAP))])]).then(swap);
+    }else if(!waits.length)swap();
+    else Promise.race([Promise.all(waits),new Promise(r=>setTimeout(r,DECODE_CAP))]).then(swap);
+  }catch(e){if(probe)probe.remove();render();}
+}
+/* Remember an update that arrived under an open sheet; closeSheet runs it. A full
+   update (filters, switch) outranks a search-only one. */
+function _deferRefresh(opts){
+  const only=!!(opts&&opts.search);
+  _refreshLater=Object.assign({},opts||{},{search:only&&(!_refreshLater||!!_refreshLater.search)});
+}
+/* The swap itself, in one go (nothing is painted in between). */
+function _swapMain(main,fresh,now,toY,dip,surface){
+  /* posters already on the page move into the new content: loaded and decoded, they
+     paint at once, where a new <img> of the same picture would blink */
+  const pool=new Map();
+  for(const im of main.querySelectorAll("img.p-real")){
+    if(!im.complete||!im.naturalWidth)continue;
+    const k=im.getAttribute("src"),a=pool.get(k);
+    if(a)a.push(im);else pool.set(k,[im]);
+  }
+  for(const im of fresh.querySelectorAll("img.p-real")){
+    const a=pool.get(im.getAttribute("src"));
+    if(!a||!a.length)continue;
+    const old=a.shift();
+    if(old.alt!==im.alt)old.alt=im.alt;
+    im.replaceWith(old);
+  }
+  const y=toY!==null?toY:(window.scrollY||0);
+  const mainY=main.getBoundingClientRect().top+(window.scrollY||0);
+  /* the switch restyles the page (fonts, accent) together with the new content */
+  if(surface)document.documentElement.setAttribute("data-surface",S.mode);
+  main.replaceChildren(...fresh.childNodes);
+  main.__sgView=now;
+  /* while results are shown the content reaches at least the bottom of the screen, so
+     fewer results never make the page shorter than the scroll position (that moved it) */
+  main.style.minHeight=now==="search"?Math.max(0,Math.ceil(innerHeight-(mainY-y)))+"px":"";
+  mountProgressive();
+  _keepPageY(y);
+  /* ...and the new programme comes up from the dimmed state, with a slight rise (also
+     when this update overtook a switch that had dimmed the content) */
+  const dimmed=main.getAnimations().length>0;
+  main.getAnimations().forEach(a=>a.cancel());
+  if((dip||dimmed)&&_motionOK(main))
+    main.animate([{opacity:SWITCH_DIM,transform:"translateY(8px)"},{opacity:1,transform:"none"}],
+      {duration:SWITCH_IN,easing:"cubic-bezier(.25,.46,.45,.94)"});
+}
+/* Motion is allowed (and possible) for this element. */
+function _motionOK(el){
+  return typeof el.animate==="function"&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+/* Mount the lazily built rails into the off-screen copy until they reach the bottom of
+   the screen, as scrolling there would have, so the posters that will be in view are known. */
+function _fillRails(fresh,top){
+  if(S.fVenues.length)return;
+  const sent=fresh.querySelector("#rail-sentinel");
+  if(!sent)return;
+  const fTop=fresh.getBoundingClientRect().top;
+  let guard=0;
+  while(railIdx<RAILS.length&&guard++<=RAILS.length){
+    if(sent.getBoundingClientRect().top-fTop+top>innerHeight)break;
+    sent.insertAdjacentHTML("beforebegin",RAILS.slice(railIdx,railIdx+RAIL_MORE).map(matRail).join(""));
+    railIdx+=RAIL_MORE;
+  }
+  if(railIdx>=RAILS.length)sent.remove();
+}
+/* The scroll position at which the content starts right under the pinned header. */
+function _pinnedY(app,mainY){
+  const hdr=app.querySelector(":scope > header.bar");
+  if(!hdr)return 0;
+  const pin=parseFloat(getComputedStyle(hdr).top)||0;
+  return Math.max(0,Math.floor(mainY-pin-hdr.offsetHeight));
+}
+/* The search field's clear state follows the query; the field itself is never rebuilt. */
+function _syncSearchField(){
+  document.querySelectorAll(".bar .search").forEach(s=>s.classList.toggle("has",!!S.q));
+}
+/* Let go of the search field (the phone keyboard closes); the query stays. */
+function _releaseSearchField(){
+  const ae=document.activeElement;
+  if(ae&&(ae.id==="q"||ae.id==="q-m"))ae.blur();
+}
+/* Empty the search (the field, the query and the results) without rebuilding the header. */
+function clearSearch(){
+  clearTimeout(qTimer);qTimer=null;
+  S.q="";
+  document.querySelectorAll("#q,#q-m").forEach(i=>{i.value="";});
+  _syncSearchField();
+  refreshPage({search:true});
+}
+/* Кино / Театър. The header stays (the toggle keeps its own transition); the content
+   dips out (SWITCH_OUT ms, the drawer's closing curve), the other programme is put in
+   place with its posters decoded, and it comes back up (SWITCH_IN ms, the drawer's
+   opening curve) at the top of the page. Reduced motion: an instant switch. */
+function switchMode(mode){
+  const changed=S.mode!==mode;
+  S.mode=mode;S.fGenres=[];S.fVenues=[];S.fStrands=[];S.limit=30;save();
+  const app=document.getElementById("app");
+  if(!app||!app.querySelector(":scope > main")||S.drawer||sheetOpen){render();window.scrollTo({top:0});return;}
+  app.querySelectorAll(".seg [data-switch]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.switch===S.mode)));
+  refreshPage({toY:0,anim:changed});
 }
 
 /* ===================== sheet open + animation ===================== */
@@ -3750,6 +4060,9 @@ function closeSheet(fromPop){
     if(returnEl&&returnEl.isConnected&&typeof returnEl.focus==="function"){
       try{returnEl.focus({preventScroll:true});}catch(e){}
     }
+    /* a search letter typed just before the card was opened updates the results now,
+       with the page back at its own offset */
+    if(_refreshLater){const o=_refreshLater;_refreshLater=null;refreshPage(o);}
   }
   if(s&&!s.hidden){
     animateClose(s,returnEl,_finalise);
@@ -4897,17 +5210,17 @@ document.addEventListener("click",e=>{
     save();render();window.scrollTo({top:0,behavior:"smooth"});return;}
 
   const sw=q("[data-switch]");
-  if(sw){S.mode=sw.dataset.switch;S.fGenres=[];S.fVenues=[];S.fStrands=[];S.limit=30;save();render();window.scrollTo({top:0});return;}
+  if(sw){switchMode(sw.dataset.switch);return;}
   if(q("[data-more]")){S.limit+=30;render();return;}
   if(q("[data-drawer]")){
     /* Store a selector string (not a DOM ref) so focus still works after render() recreates the FAB */
     const _opener=q("[data-drawer]");
     _lastDrawerOpener=_opener.classList.contains("fab")?".fab":(_opener.classList.contains("phead-other")?".phead-other":"[data-drawer]");
-    S.drawer=true;S.qFocus=false;render();return;}
-  if(q("[data-dclose]")){const _dsel=_lastDrawerOpener;animateDrawerClose(()=>{S.drawer=false;render();if(_dsel){const _dret=document.querySelector(_dsel);if(_dret&&typeof _dret.focus==="function"){try{_dret.focus({preventScroll:true});}catch(e){}}}});return;}
-  const rg=q("[data-range]"); if(rg){S.day=rg.dataset.range;S.rFrom=S.rTo=null;S.limit=30;render();return;}
+    openDrawer();return;}
+  if(q("[data-dclose]")){const _dsel=_lastDrawerOpener;animateDrawerClose(()=>{closeDrawerNow();if(_dsel){const _dret=document.querySelector(_dsel);if(_dret&&typeof _dret.focus==="function"){try{_dret.focus({preventScroll:true});}catch(e){}}}});return;}
+  const rg=q("[data-range]"); if(rg){S.day=rg.dataset.range;S.rFrom=S.rTo=null;S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   const cstep=q("[data-calstep]"); if(cstep&&!cstep.disabled){
-    S.calMonth=Math.max(0,Math.min((S.calMonth||0)+Number(cstep.dataset.calstep),MONTHS.length-1));render();return;}
+    S.calMonth=Math.max(0,Math.min((S.calMonth||0)+Number(cstep.dataset.calstep),MONTHS.length-1));(S.drawer?renderKeepDrawer():render());return;}
   const pk=q("[data-pick]"); if(pk&&!pk.disabled){
     const iso=pk.dataset.pick; S.limit=30;
     /* first tap starts a range, second tap ends it (swap if reversed),
@@ -4915,13 +5228,16 @@ document.addEventListener("click",e=>{
     if(S.day!=="range"||!S.rFrom||S.rTo){S.day="range";S.rFrom=iso;S.rTo=null;}
     else if(iso<S.rFrom){S.rTo=S.rFrom;S.rFrom=iso;}
     else{S.rTo=iso;}
-    render();return;}
+    (S.drawer?renderKeepDrawer():render());return;}
   const st=q("[data-strand]"); if(st){const v=st.dataset.strand;S.fStrands=v?toggleArr(S.fStrands,v):[];S.qFocus=false;S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   /* search icon button is a TOGGLE: animate in-place (Item 2) */
   if(q("[data-search-open]")){S.qFocus=false;searchToggleInPlace();return;}
-  if(q("[data-qclear-m]")){S.q="";S.qFocus=false;S.searchOpen=false;render();return;}
-  if(q("[data-qclear]")){S.q="";S.qFocus=false;render();return;}
-  const d=q("[data-day]"); if(d){S.day=d.dataset.day;render();return;}
+  /* phone x: clears and closes, the same way the magnifier closes (row animates shut,
+     then the page comes back in place); desktop x: clears and keeps typing */
+  if(q("[data-qclear-m]")){S.qFocus=false;if(S.searchOpen)searchToggleInPlace();else clearSearch();return;}
+  if(q("[data-qclear]")){S.qFocus=false;clearSearch();
+    const qd=document.getElementById("q");if(qd&&S.searchOpen){try{qd.focus({preventScroll:true});}catch(e){}}return;}
+  const d=q("[data-day]"); if(d){S.day=d.dataset.day;(S.drawer?renderKeepDrawer():render());return;}
   const gf=q("[data-genre]"); if(gf){const v=gf.dataset.genre;S.fGenres=v?toggleArr(S.fGenres,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   const vf=q("[data-venue]"); if(vf){const v=vf.dataset.venue;S.fVenues=v?toggleArr(S.fVenues,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   /* P3A item 7: star a venue / toggle only-favourites */
@@ -4929,7 +5245,7 @@ document.addEventListener("click",e=>{
   if(fvs){const v=fvs.dataset.favVenue;S.fav.venues=toggleArr(S.fav.venues,v);save();(S.drawer?renderKeepDrawer():render());return;}
   const ofv=q("[data-only-fav]");
   if(ofv){S.onlyFav=!S.onlyFav;S.fVenues=[];save();(S.drawer?renderKeepDrawer():render());return;}
-  if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];S.day="week";S.rFrom=S.rTo=null;render();return;}
+  if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];S.day="week";S.rFrom=S.rTo=null;(S.drawer?renderKeepDrawer():render());return;}
   if(q("[data-lang]")){S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();return;}
   /* collapsible section toggle — animate in-place (Item 1), fall back to render if section not in DOM */
   const st2=q("[data-sectoggle]");
@@ -5002,6 +5318,11 @@ document.addEventListener("click",e=>{
     }
     return;
   }
+  /* A card tapped while the search field has focus: the field lets go first, so the
+     phone keyboard goes down before the sheet opens. iOS keeps an input focused when a
+     button is tapped, so the keyboard used to close only later, under the open sheet,
+     moving the viewport while the sheet was being used. */
+  if(q("[data-film]")||q("[data-show]")||q("[data-event]"))_releaseSearchField();
   const fc=q("[data-film]"); if(fc){_sheetShowAllCinemas=false;curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
   const shc=q("[data-show]"); if(shc){curSheet={kind:"show",id:shc.dataset.show};openSheet(sheetShow(showById[shc.dataset.show]),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
@@ -5011,16 +5332,19 @@ document.addEventListener("keydown",e=>{
   /* Esc closes the top layer only: the time popup, then the sheet */
   if(_ss){closeScreeningSheet();e.preventDefault();return;}
   if(sheetOpen){closeSheet();e.preventDefault();return;}
-  if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{S.drawer=false;render();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
+  if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{closeDrawerNow();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}
 });
-/* live search */
+/* live search: only the results under the header follow the query (refreshPage); the
+   field is never rebuilt, so it keeps its focus, caret and composition, and on a phone
+   the keyboard stays up and the page stays where it is while the user types */
 let qTimer=null;
 document.addEventListener("input",e=>{
   if(e.target.id!=="q"&&e.target.id!=="q-m")return;
   S.q=e.target.value; S.qFocus=true;
+  _syncSearchField();
   clearTimeout(qTimer);
-  qTimer=setTimeout(()=>render(),160);
+  qTimer=setTimeout(()=>{qTimer=null;refreshPage({search:true});},160);
 });
 
 function fatal(e){
