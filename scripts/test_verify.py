@@ -875,6 +875,70 @@ finally:
 
 
 # ---------------------------------------------------------------------------
+# EVENTS_AUTO / EVENT_MEMBERS (fetch_events.py -> events.json -> inject_data.py)
+# ---------------------------------------------------------------------------
+print("\nEVENTS_AUTO: aggregator-listed events are well-formed")
+_ev_from = (datetime.date.today() + datetime.timedelta(days=2)).isoformat()
+_ev_to = (datetime.date.today() + datetime.timedelta(days=9)).isoformat()
+
+
+def _ev_auto(**over):
+    ev = {"id": "act-festival-p187545", "kind": "festival", "scope": "theatre", "status": "upcoming",
+          "title": "ACT Фестивал за свободен театър", "titleEn": "ACT Festival", "from": _ev_from,
+          "to": _ev_to, "g": ["#952343", "#23060E"], "blurbBg": "Фестивал.", "blurbEn": "Festival.",
+          "tag": "СЛЕД 2 ДНИ", "source": "programata.bg",
+          "url": "https://programata.bg/stsena/ne-se-prav%d1%9d-zapochva-16-izdanie-na-act/", "auto": True}
+    ev.update(over)
+    return {k: v for k, v in ev.items() if v is not None}
+
+
+def _ev_page(events, members=None, seed="[]"):
+    js = "const EVENTS_AUTO=" + _json.dumps(events, ensure_ascii=False) + ";"
+    if members is not None:
+        # each const on its own line, indented like the template, so dedent keeps them at column 0
+        js += "\n        const EVENT_MEMBERS=" + _json.dumps(members, ensure_ascii=False) + ";"
+    html = _minimal_html(extra_js=js)
+    return html.replace("const EVENTS=[];", "const EVENTS=" + seed + ";", 1)
+
+
+def _ev_fails(events, members=None, seed="[]", word="EVENTS_AUTO has"):
+    rc, out = _run_out(_ev_page(events, members, seed))
+    return rc != 0 and word in out
+
+
+_rc, _out = _run_out(_ev_page([_ev_auto()], {"act-festival-p187545": ["show0"]}))
+check("a well-formed auto event and its members pass", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+check("a date that is not ISO fails", _ev_fails([_ev_auto(**{"from": "17.10.2026"})]))
+check("from after to fails", _ev_fails([_ev_auto(**{"from": _ev_to, "to": _ev_from})]))
+_past = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+check("an event that has ended fails", _ev_fails([_ev_auto(**{"from": _past, "to": _past})]))
+check("an http (not https) source url fails", _ev_fails([_ev_auto(url="http://programata.bg/stsena/act/")]))
+check("a source url off the allowlist fails", _ev_fails([_ev_auto(url="https://example.com/act/")]))
+check("a lookalike host fails", _ev_fails([_ev_auto(url="https://programata.bg.evil.example/act/")]))
+check("a sofialive.bg source url passes",
+      _run_out(_ev_page([_ev_auto(url="https://www.sofialive.bg/arts/theater/x-2637121.html",
+                                  source="sofialive.bg")]))[0] == 0)
+check("duplicate ids fail", _ev_fails([_ev_auto(), _ev_auto(title="Друго")]))
+check("an id the seed EVENTS already uses fails",
+      _ev_fails([_ev_auto()], seed='[{"id":"act-festival-p187545","kind":"festival","scope":"theatre",'
+                                   '"title":"ACT","titleEn":"ACT","from":"2026-10-17","to":"2026-10-24",'
+                                   '"g":["#000000","#111111"]}]'))
+check("an invalid scope fails", _ev_fails([_ev_auto(scope="music")]))
+check("an invalid kind fails", _ev_fails([_ev_auto(kind="concert")]))
+check("missing colours fail", _ev_fails([_ev_auto(g=None)]))
+check("auto not true fails", _ev_fails([_ev_auto(auto=False)]))
+check("Cyrillic in titleEn fails (English mode shows none)",
+      _ev_fails([_ev_auto(titleEn="ACT Фестивал за свободен театър")]))
+check("EVENT_MEMBERS naming no film or show fails",
+      _ev_fails([_ev_auto()], {"act-festival-p187545": ["no-such-show"]}, word="EVENT_MEMBERS has"))
+check("EVENT_MEMBERS for no such event fails",
+      _ev_fails([_ev_auto()], {"no-such-event": ["show0"]}, word="EVENT_MEMBERS has"))
+check("no EVENTS_AUTO at all is a note, not a failure", _run_out(_minimal_html())[0] == 0)
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()

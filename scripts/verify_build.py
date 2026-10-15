@@ -798,6 +798,104 @@ if vlinks_data and isinstance(data.get("BOOKING"), dict):
         fail(f"VLINKS has entries for {', '.join(_deep_rows)}, whose BOOKING.deep per-date page "
              "must be used instead")
 
+# ------------------------------------------- 4f. EVENTS_AUTO / EVENT_MEMBERS
+# Festivals and limited runs an aggregator announces (fetch_events.py -> events.json
+# -> inject_data.py). The UI merges them into EVENTS and links each one's source
+# page, so: ISO dates in order, not ended, a valid scope and kind, two colours for
+# the card, English text with no Cyrillic, an https URL on an aggregator we read,
+# ids that clash with nothing.
+# EVENT_MEMBERS (event id -> film/show ids) must name things that exist.
+_EV_KINDS = {"festival", "city", "limited", "premiere"}
+_EV_SCOPES = {"cinema", "theatre", "both"}
+_EV_HOSTS = ("programata.bg", "sofialive.bg")
+_ISO = re.compile(r"\d{4}-\d\d-\d\d")
+from urllib.parse import urlparse as _up_ev
+_ea_m = re.search(r"^const EVENTS_AUTO\s*=\s*(.*?);\s*$", js, flags=re.M)
+_events_auto: list = []
+if _ea_m is None:
+    note("EVENTS_AUTO is not declared: no aggregator-listed events in this build")
+else:
+    try:
+        _events_auto = json.loads(_ea_m.group(1))
+    except Exception as _eae:
+        fail(f"EVENTS_AUTO is not valid JSON: {_eae}")
+    if not isinstance(_events_auto, list) or not all(isinstance(e, dict) for e in _events_auto):
+        fail("EVENTS_AUTO is not an array of objects")
+        _events_auto = []
+    _ev_today = datetime.date.today().isoformat()
+    _seed_ev_ids = {e.get("id") for e in (data.get("EVENTS") or []) if isinstance(e, dict)}
+    _ev_bad: list[str] = []
+    _ev_seen: set = set()
+    for _e in _events_auto:
+        _eid = _e.get("id")
+        _who = str(_eid)[:48]
+        if not (isinstance(_eid, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]*", _eid)):
+            _ev_bad.append(f"{_who}: id is not a slug")
+        elif _eid in _ev_seen:
+            _ev_bad.append(f"{_who}: duplicate id")
+        elif _eid in _seed_ev_ids:
+            _ev_bad.append(f"{_who}: id is also a seed EVENTS id")
+        _ev_seen.add(_eid)
+        _f, _t = _e.get("from"), _e.get("to")
+        _dates_ok = False
+        if not (isinstance(_f, str) and isinstance(_t, str) and _ISO.fullmatch(_f) and _ISO.fullmatch(_t)):
+            _ev_bad.append(f"{_who}: from/to not ISO dates ({_f!r}, {_t!r})")
+        else:
+            try:
+                datetime.date.fromisoformat(_f); datetime.date.fromisoformat(_t)
+                _dates_ok = True
+            except ValueError:
+                _ev_bad.append(f"{_who}: from/to not real dates ({_f!r}, {_t!r})")
+        if _dates_ok and _f > _t:
+            _ev_bad.append(f"{_who}: from {_f} is after to {_t}")
+        if _dates_ok and _t < _ev_today:
+            _ev_bad.append(f"{_who}: ended {_t}")
+        if _e.get("scope") not in _EV_SCOPES:
+            _ev_bad.append(f"{_who}: scope {_e.get('scope')!r}")
+        if _e.get("kind") not in _EV_KINDS:
+            _ev_bad.append(f"{_who}: kind {_e.get('kind')!r}")
+        if _e.get("auto") is not True:
+            _ev_bad.append(f"{_who}: auto is not true")
+        if not (isinstance(_e.get("title"), str) and _e["title"].strip()
+                and isinstance(_e.get("titleEn"), str) and _e["titleEn"].strip()):
+            _ev_bad.append(f"{_who}: title/titleEn missing")
+        elif any(re.search(r"[\u0400-\u04FF]", str(_e.get(k) or "")) for k in ("titleEn", "blurbEn")):
+            _ev_bad.append(f"{_who}: Cyrillic in titleEn/blurbEn (English mode shows none)")
+        _g = _e.get("g")
+        if not (isinstance(_g, list) and len(_g) == 2
+                and all(isinstance(c, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", c) for c in _g)):
+            _ev_bad.append(f"{_who}: g is not two #RRGGBB colours")
+        for _u in [_e.get("url")] + list(_e.get("urls") or []):
+            _p = _up_ev(_u) if isinstance(_u, str) else None
+            _h = (_p.hostname or "").lower() if _p else ""
+            if not (_p and _p.scheme == "https"
+                    and any(_h == a or _h.endswith("." + a) for a in _EV_HOSTS)):
+                _ev_bad.append(f"{_who}: url {str(_u)[:60]!r} is not https on {'/'.join(_EV_HOSTS)}")
+    if _ev_bad:
+        fail(f"EVENTS_AUTO has {len(_ev_bad)} problem(s): " + "; ".join(_ev_bad[:5]))
+_em_m = re.search(r"^const EVENT_MEMBERS\s*=\s*(.*?);\s*$", js, flags=re.M)
+if _em_m is not None:
+    try:
+        _members = json.loads(_em_m.group(1))
+    except Exception as _eme:
+        fail(f"EVENT_MEMBERS is not valid JSON: {_eme}")
+        _members = {}
+    if not isinstance(_members, dict):
+        fail("EVENT_MEMBERS is not an object")
+        _members = {}
+    _all_ev = ({e.get("id") for e in (data.get("EVENTS") or []) if isinstance(e, dict)}
+               | {e.get("id") for e in _events_auto})
+    _items = ({f.get("id") for f in (data.get("FILMS") or [])}
+              | {s.get("id") for s in (data.get("SHOWS") or [])})
+    _em_bad = [f"{k}: no such event" for k in _members if k not in _all_ev]
+    for _k, _v in _members.items():
+        if not isinstance(_v, list) or not _v:
+            _em_bad.append(f"{_k}: not a non-empty list")
+            continue
+        _em_bad += [f"{_k}: {i!r} is no film or show" for i in _v if i not in _items]
+    if _em_bad:
+        fail(f"EVENT_MEMBERS has {len(_em_bad)} problem(s): " + "; ".join(_em_bad[:5]))
+
 # ------------------------------------------- 5a2. SYN_EN / TITLE_EN translation maps
 def _const_obj_tr(name):
     m = re.search(r"^const %s\s*=\s*(\{.*?\});\s*$" % name, js, flags=re.M)

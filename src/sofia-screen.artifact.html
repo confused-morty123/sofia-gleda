@@ -869,7 +869,7 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
-  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM"].forEach(function(n){
+  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS"].forEach(function(n){
     try{ if(typeof window[n]==="undefined" && !(n in globalThis)) window[n]={}; }catch(e){ window[n]={}; }
   });
   function panel(msg){
@@ -898,6 +898,17 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
     catch(err){ missing.push(n); }
   });
   if(missing.length){ panel("Данните не се заредиха: "+missing.join(", ")); throw new Error("data missing"); }
+})();
+/* Festivals and limited runs that programata.bg announces (scripts/fetch_events.py ->
+   events.json -> EVENTS_AUTO, inlined by inject_data.py) join the hand-curated seed
+   here, before anything reads EVENTS: the rails, sheets, search and share links see
+   one list. A seed id always wins. Each carries auto:true and url (its source page). */
+(function(){
+  var auto=(typeof EVENTS_AUTO!=="undefined"&&Array.isArray(EVENTS_AUTO))?EVENTS_AUTO:[];
+  var have={};EVENTS.forEach(function(e){have[e.id]=1;});
+  auto.forEach(function(e){
+    if(e&&e.id&&!have[e.id]&&e.from&&e.to&&Array.isArray(e.g)&&e.g.length===2){have[e.id]=1;EVENTS.push(e);}
+  });
 })();
 
 /* ===================== i18n ===================== */
@@ -3209,7 +3220,13 @@ function sheetEvent(ev){
     <div class="buybox">
       ${u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
         <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
-      <div class="buynote">${esc(L.evSource)}: ${esc(ev.source)}</div></div>
+      ${(()=>{
+        /* an event an aggregator listed (fetch_events.py, auto:true) links the page it
+           came from and says plainly whose listing it is */
+        const su=ev.auto?safeUrl(ev.url):null;
+        if(!su)return`<div class="buynote">${esc(L.evSource)}: ${esc(ev.source)}</div>`;
+        return`<div class="buylinks"><a class="buylink evsrc" href="${esc(su)}" target="_blank" rel="noopener">${esc(L.evSource)}: ${esc(ev.source)} ↗</a></div>
+      <div class="buynote evagg">${esc(S.lang==="bg"?`Събитието е от афиша на ${ev.source}, не от сайта на организаторите.`:`From the ${ev.source} events guide, not the organisers' own site.`)}</div>`;})()}</div>
    </div></div>`;}
 
 /* ===================== shell ===================== */
