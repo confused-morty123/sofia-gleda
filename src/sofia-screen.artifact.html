@@ -287,6 +287,10 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   text-transform:none; letter-spacing:normal}
 @media(max-width:760px){
   .brand .brand-sub{font-size:12px; text-align:center} }
+/* Tablet widths: the logo column is too narrow for the line (it would run under
+   the centred toggle, and stop the logo from shrinking); the header stays as it
+   was there. Phones and desktops keep it. */
+@media(min-width:761px) and (max-width:1023px){ .brand .brand-sub{display:none} }
 
 /* ---------- hero ---------- */
 .hero{position:relative; border-radius:var(--r-lg); overflow:hidden; margin-block:18px 30px;
@@ -725,8 +729,10 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-prelim-fn{font-size:11.5px;color:var(--fg-3);margin:10px 4px 0;line-height:1.4}
   /* Desktop grid hidden on phone */
   .p3e-grid-wrap{display:none}
-  /* Phone: remove buybox */
+  /* Phone: remove buybox (the film sheet's ticket block); an event sheet's
+     source and ticket block stays */
   .buybox{display:none}
+  .buybox.evbox{display:block}
 }
 /* ===================== P3E: week grid (desktop) ===================== */
 @media(min-width:761px){
@@ -1826,8 +1832,11 @@ function searchAll(q){
   /* a festival matches its full name in the query, or a query of 5+ letters that
      starts its name ("cinel", "кином"); "kino" alone is too common a word */
   const fests=new Set(Object.keys(FEST_NAMES).filter(id=>[FEST_NAMES[id].bg,FEST_NAMES[id].en,id].some(n=>{
-    const c=searchLoose(searchKey(n)).replace(/ /g,"");
-    return c&&(kc.includes(c)||(kc.length>=Math.min(5,c.length)&&c.startsWith(kc)));})));
+    const cl=searchLoose(searchKey(n)),c=cl.replace(/ /g,"");
+    /* whole words ("act", "kino mania"), a name of 5+ letters inside the query
+       ("cinelibri2026"), or the start of the name; a short name like "ACT" never
+       matches inside a word ("фактор", "пакт") */
+    return c&&((" "+kl+" ").includes(" "+cl+" ")||(c.length>=5&&kc.includes(c))||(kc.length>=Math.min(5,c.length)&&c.startsWith(kc)));})));
   const loose=kl.length>=2;
   const rank=e=>{
     let r=99;
@@ -3287,7 +3296,7 @@ function sheetEvent(ev){
     <div class="chips"><span class="chip solid">${esc(range)}</span>
       <span class="chip">${esc(ev.scope==="both"?(S.lang==="bg"?"кино и театър":"cinema & theatre"):ev.scope==="cinema"?L.cinema:L.theatre)}</span></div>
     <div class="sec">${synBlock(S.lang==="bg"?ev.blurbBg:ev.blurbEn)}</div>
-    <div class="buybox">
+    <div class="buybox evbox">
       ${u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
         <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
       ${(()=>{
