@@ -649,6 +649,25 @@ check("P3A PREMIERES film without CC SHOWTIMES fails",
 
 
 # ---------------------------------------------------------------------------
+# FESTMARK: a festival mark names only titles the page lists (owner, 2026-10-15)
+# ---------------------------------------------------------------------------
+print("\nFESTMARK: festival marks")
+def _with_festmark(fm):
+    return _minimal_html(extra_js=f"const FESTMARK={_json.dumps(fm, ensure_ascii=False)};")
+
+_fm1_rc, _fm1_out = _run_out(_with_festmark(
+    {"kinomania": {"bg": "Киномания", "en": "Kinomania", "films": ["f0", "f1"], "shows": ["show0"]}}))
+check("FESTMARK naming listed films and a listed play passes", _fm1_rc == 0)
+_fm2_rc, _fm2_out = _run_out(_with_festmark(
+    {"kinomania": {"bg": "Киномания", "en": "Kinomania", "films": ["f0", "no-such-film"], "shows": []}}))
+check("FESTMARK naming a film with no SHOWTIMES row fails", _fm2_rc != 0 and "FESTMARK" in _fm2_out)
+_fm3_rc, _fm3_out = _run_out(_with_festmark({"kinomania": {"films": ["f0"]}}))
+check("FESTMARK entry without its names fails", _fm3_rc != 0 and "FESTMARK" in _fm3_out)
+_fm4_rc, _fm4_out = _run_out(_minimal_html())
+check("a page without FESTMARK passes (marks from the listing titles alone)", _fm4_rc == 0)
+
+
+# ---------------------------------------------------------------------------
 # P3C: OG/Twitter meta, icon files, and share page spot checks (6a/6b/6c)
 # ---------------------------------------------------------------------------
 # These tests use SOFIA_ROOT to point verify_build at a controlled temp tree

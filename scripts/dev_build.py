@@ -7,8 +7,10 @@ This builds index.dev.html instead, with no network and no tokens:
 
   1. build_index.py --out <PATH>               (UI from src/, seed data)
   2. transplant the constants scrape_programs.py writes (SNAPSHOT, SHOWTIMES,
-     PERFORMANCES, LINKS, VLINKS, PRELIM_FROM, PRELIM_ROWS) from the committed index.html
-     (git HEAD or REF); a constant the UI source does not declare is skipped
+     PERFORMANCES, LINKS, VLINKS, PRELIM_FROM, PRELIM_ROWS, …, FESTMARK) from the
+     committed index.html (git HEAD or REF); a constant the UI source does not
+     declare is skipped. A ref from before FESTMARK gets it from that ref's
+     build_report.json festival rows, counted the way the scraper counts them
   3. inject_films.py / inject_shows.py / inject_data.py against it, reading the
      sidecar JSON files exactly as the real pipeline does
 
@@ -20,10 +22,10 @@ listings. index.dev.html is gitignored; never deploy it.
     python3 scripts/dev_build.py --out index.test.html   # write to a different output file
     python3 scripts/dev_build.py --from REF --out PATH   # combine both options
 """
-import os, re, subprocess, sys, pathlib
+import json, os, re, subprocess, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
-SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS", "AGGLINKS", "SHOWATTR", "PREMIERES"]
+SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS", "AGGLINKS", "SHOWATTR", "PREMIERES", "FESTMARK"]
 
 
 def run(*cmd, env=None):
@@ -37,6 +39,32 @@ def run(*cmd, env=None):
 def const_line(text, name):
     m = re.search(rf"^const {name}\s*=.*$", text, flags=re.M)
     return m
+
+
+def festmark_from_report(ref, page):
+    """FESTMARK for a ref whose index.html predates it: the festival rows in that
+    ref's build_report.json ("fid|venue|date|time"), counted only where the page's
+    SHOWTIMES has that very time, as scrape_programs.festival_marks counts them."""
+    rep = subprocess.run(["git", "show", f"{ref}:build_report.json"], cwd=ROOT,
+                         capture_output=True, text=True)
+    st = const_line(page, "SHOWTIMES")
+    try:
+        fests = json.loads(rep.stdout).get("festivals") or {} if rep.returncode == 0 else {}
+        rows = json.loads(st.group(0).split("=", 1)[1].strip().rstrip(";")) if st else []
+    except ValueError:
+        return None
+    shown = {}
+    for r in rows:
+        shown.setdefault(tuple(r[:3]), set()).update(r[3])
+    names = {"cinelibri": ("Синелибри", "CineLibri"), "kinomania": ("Киномания", "Kinomania")}
+    out = {}
+    for fest, rep_f in sorted(fests.items()):
+        films = sorted({r.split("|")[0] for r in rep_f.get("rows") or []
+                        if r.count("|") == 3 and r.split("|")[3] in shown.get(tuple(r.split("|")[:3]), ())})
+        if films:
+            bg, en = names.get(fest, (fest, fest))
+            out[fest] = {"bg": bg, "en": en, "films": films, "shows": []}
+    return out
 
 
 def main():
@@ -58,6 +86,13 @@ def main():
         if src_m and dst_m:
             page = page[:dst_m.start()] + src_m.group(0) + page[dst_m.end():]
             moved.append(name)
+    if not const_line(good, "FESTMARK") and const_line(page, "FESTMARK"):
+        fm = festmark_from_report(ref, page)          # a ref from before the scraper wrote it
+        if fm:
+            m = const_line(page, "FESTMARK")
+            lit = json.dumps(fm, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+            page = page[:m.start()] + f"const FESTMARK={lit};" + page[m.end():]
+            moved.append("FESTMARK (from build_report.json)")
     OUT.write_text(page, encoding="utf-8")
     print(f"  transplanted: {', '.join(moved)}")
 

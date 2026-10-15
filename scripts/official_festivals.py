@@ -673,6 +673,15 @@ def parse_kinomania_film(html, url):
     m = re.fullmatch(r"(.+?)\s*\(([^()]+)\)", title)
     if m:
         title, film["original"] = m.group(1).strip(), m.group(2).strip()
+    # the Bulgarian shorts' pages (15 Oct 2026) pair the titles with a bar:
+    # "голишар | nestling". The Cyrillic side is the film's title as the programme
+    # lists it, the Latin side its English title; both are kept as printed.
+    parts = [p.strip() for p in title.split("|")]
+    if len(parts) == 2 and all(parts):
+        cyr = [p for p in parts if re.search(r"[а-яА-Я]", p)]
+        lat = [p for p in parts if not re.search(r"[а-яА-Я]", p)]
+        if len(cyr) == 1 and len(lat) == 1:
+            title, film["title_en"] = cyr[0], lat[0]
     i = html.find('class="movieDetails"')
     j = html.find('class="programaSpot"', max(i, 0))
     region = html[i:j] if 0 <= i < j else ""
@@ -702,7 +711,7 @@ def parse_kinomania_film(html, url):
     ym = re.search(r"(?:18|19|20)\d{2}", labels.get("година", ""))
     film["year"] = int(ym.group(0)) if ym else None
     film["runtime"] = runtime_min(labels.get("продължителност"))
-    film["director"] = _person_list(_label(labels, "режисьор") or "")
+    film["director"] = _person_list(_label(labels, "режисьор", "режисура") or "")
     film["cast"] = _person_list(_label(labels, "с участието", "в ролите", "участват") or "")
     film["genres_text"] = _label(labels, "жанр")
     film["syn_bg"] = _ws(" ".join(syn)) or None

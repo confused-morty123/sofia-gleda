@@ -2097,6 +2097,103 @@ check("Kinomania programme page changed shape -> None",
       OFE.read_festival("kinomania", type("N", (_FestNet,), {"text": lambda self, u: "<html><body>x</body></html>"})(),
                         "2026-10-09", "2026-12-14", {}), None)
 
+# The programme as published on the afternoon of 15 Oct 2026 (saved, trimmed to its
+# block): the morning refresh read only the five НДК entries; Люмиер and Дом на
+# киното were added later that day (their film galleries are dated 2026/10/15).
+print("festivals: Kinomania pages of 15 Oct 2026 (Люмиер, Дом на киното)")
+_km15, _km15_bad = OFE.parse_kinomania_programme(
+    (FIXTURES / "festival_kinomania_programme_1015.html").read_text(encoding="utf-8"))
+check("programme 15 Oct: 8 entries, none malformed", (len(_km15), _km15_bad), (8, 0))
+check("programme 15 Oct: the new venues' screenings, each title as printed",
+      [r[:4] for r in _km15 if r[0] != "НДК - Зала 1"],
+      [("Люмиер", "2026-11-13", "20:00", "Среднощно слънце"),
+       ("Люмиер", "2026-11-27", "18:00", "Черни пари за бели нощи"),
+       ("Дом на киното", "2026-11-14", "18:00", "голишар")])
+check("programme 15 Oct: every venue with screenings is an app venue",
+      sorted({(r[0],) + OFE.venue_id("kinomania", r[0]) for r in _km15}),
+      [("Дом на киното", "app", "dom-kino"), ("Люмиер", "app", "lumiere"), ("НДК - Зала 1", "app", "ndk1")])
+_kb = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film_bar.html").read_text(encoding="utf-8"),
+                               "https://www.kinomania.bg/bg_BG/film/golishar-3692.html")
+check("film page heading 'голишар | nestling': the Cyrillic title, the Latin one as the English title",
+      [_kb[k] for k in ("title_bg", "title_en", "original", "director", "genres_text")],
+      ["голишар", "nestling", None, "Георги Мартев", "Драма, Coming-of-Age"])
+check("film page heading with a bar: the poster is still the film's own gallery file",
+      _kb["poster"], "https://www.kinomania.bg/public/uploads/gallery/2026/10/15/nestling_still_3-1-0x450.jpg")
+_kr = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film_rezhisura.html").read_text(encoding="utf-8"),
+                               "https://www.kinomania.bg/bg_BG/film/cherni-pari-za-beli-noshti-3680.html")
+check("film page credit 'Режисура:' is the director",
+      (_kr["title_bg"], _kr["title_en"], _kr["director"]),
+      ("Черни пари за бели нощи", None, "Кристина Грозева, Петър Вълчанов"))
+
+
+class _KM1015(_FestNet):
+    """kinomania.bg on 15 Oct 2026; a film page without a fixture does not load."""
+    PAGES = {OFE.KM_PROGRAMME: "festival_kinomania_programme_1015.html",
+             "https://www.kinomania.bg/bg_BG/film/golishar-3692.html": "festival_kinomania_film_bar.html",
+             "https://www.kinomania.bg/bg_BG/film/cherni-pari-za-beli-noshti-3680.html":
+                 "festival_kinomania_film_rezhisura.html",
+             "https://www.kinomania.bg/bg_BG/film/div-kon-devet-3672.html": "festival_kinomania_film.html",
+             "https://www.kinomania.bg/bg_BG/film/fantomut-na-operata-3677.html": "festival_kinomania_film_parens.html"}
+    def text(self, url):
+        self.calls.append(url)
+        f = self.PAGES.get(url)
+        return (FIXTURES / f).read_text(encoding="utf-8") if f else None
+
+
+_km15r = OFE.read_festival("kinomania", _KM1015(), "2026-10-15", "2026-12-20", {})
+check("Kinomania reader 15 Oct: covered days, 7 Sofia screenings, the stage show left out",
+      (_km15r["covered_from"], _km15r["covered_to"], len(_km15r["screenings"]),
+       any(n.startswith("not a film, left out: Великата илюзия") for n in _km15r["notes"])),
+      ("2026-11-12", "2026-11-27", 7, True))
+check("Kinomania reader 15 Oct: screenings per app venue",
+      sorted(__import__("collections").Counter(OFE.venue_id("kinomania", s_[3])[1]
+                                               for s_ in _km15r["screenings"]).items()),
+      [("dom-kino", 1), ("lumiere", 2), ("ndk1", 4)])
+check("Kinomania reader 15 Oct: a screening's title is the film page's, without the English half",
+      [s_[:4] for s_ in _km15r["screenings"] if s_[3] == "Дом на киното"],
+      [("голишар", "2026-11-14", "18:00", "Дом на киното")])
+check("Kinomania reader 15 Oct: no unknown venue, nothing outside Sofia",
+      (_km15r["unknown_venues"], _km15r["outside_sofia"]), ({}, {}))
+# What the next refresh makes of it (the merge rules, with this morning's PRELIM_FROM:
+# Люмиер's programme covers to 15 Dec, Дом на киното's to 22 Oct; neither lists these).
+_km_fid = {"Див кон девет": "div-kon-devet", "Фантомът на операта": "fantomat-na-operata",
+           "Минотавър": "minotavar", "Фиорд": "fiord", "Среднощно слънце": "srednoshtno-slantse",
+           "Черни пари за бели нощи": "cherni-pari-za-beli-noshti", "голишар": "golishar"}
+_km_rows = [(_km_fid[s_[0]], OFE.venue_id("kinomania", s_[3])[1], s_[1], s_[2]) for s_ in _km15r["screenings"]]
+_r, _p, _pr, _i = S.merge_festival_rows(
+    [], {"lumiere": "2026-12-16", "dom-kino": "2026-10-23"}, {}, {"kinomania": _km_rows},
+    {"kinomania": (_km15r["covered_from"], _km15r["covered_to"])}, {}, [], "2026-10-15", "2026-12-20")
+check("next refresh: НДК 4 confirmed, Люмиер 2 preliminary per row, Дом на киното 1 preliminary by date",
+      (sorted(x[2] for x in _i["confirmed"]), sorted(x[2] for x in _i["prelim_row"]),
+       sorted(x[2] for x in _i["prelim_date"]), _p["ndk1"]),
+      (["ndk1"] * 4, ["lumiere"] * 2, ["dom-kino"], "2026-11-28"))
+check("next refresh: the Люмиер rows go into PRELIM_ROWS", _pr,
+      [["cherni-pari-za-beli-noshti", "lumiere", "2026-11-27"], ["srednoshtno-slantse", "lumiere", "2026-11-13"]])
+
+print("festivals: FESTMARK (festival marks for the app)")
+_fm = S.festival_marks(_i, _r, OFE.NAMES)
+check("FESTMARK: the festival's short names and every film it shows",
+      (_fm["kinomania"]["bg"], _fm["kinomania"]["en"], _fm["kinomania"]["films"], _fm["kinomania"]["shows"]),
+      ("Киномания", "Kinomania", sorted(_km_fid.values()), []))
+_r2, _p2, _pr2, _i2 = S.merge_festival_rows(
+    [["a", "dom-kino", "2026-10-15", ["18:00"]], ["b", "dom-kino", "2026-10-16", ["20:00"]]],
+    {"dom-kino": "2026-10-20"},
+    {"dom-kino": {("a", "2026-10-15"): {"18:00"}, ("b", "2026-10-16"): {"20:00"}}},
+    {"cinelibri": [("a", "dom-kino", "2026-10-15", "18:00"),        # the venue lists it
+                   ("b", "dom-kino", "2026-10-16", "21:00"),        # the venue contradicts it
+                   ("m", "ndk1", "2026-10-15", "19:00")]},          # a festival venue: confirmed
+    {"cinelibri": ("2026-10-15", "2026-11-08")}, {}, [], "2026-10-09", "2026-12-14")
+_fm2 = S.festival_marks(_i2, _r2, OFE.NAMES)
+check("FESTMARK: a row the venue lists counts, one the venue contradicts does not",
+      _fm2, {"cinelibri": {"bg": "Синелибри", "en": "CineLibri", "films": ["a", "m"], "shows": []}})
+check("FESTMARK: a festival with no row shown is left out", S.festival_marks(_i2, [], OFE.NAMES), {})
+_pg = "const PREMIERES={};\nconst VLINKS=[];\n"
+_pg1 = S.write_festmark(_pg, _fm2)
+check("write_festmark: inserted before VLINKS when the build has none",
+      _pg1.splitlines()[1].startswith('const FESTMARK={"cinelibri":{"bg":"Синелибри"'), True)
+check("write_festmark: replaced in place, one line", S.write_festmark(_pg1, {}),
+      "const PREMIERES={};\nconst FESTMARK={};\nconst VLINKS=[];\n")
+
 print("festivals: merge rules (merge_festival_rows)")
 _FL, _EN = "2026-10-09", "2026-12-14"
 _rows0 = [["a", "dom-kino", "2026-10-15", ["18:00"]], ["b", "dom-kino", "2026-10-16", ["20:00"]],

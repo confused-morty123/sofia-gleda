@@ -391,6 +391,35 @@ if _prem_m:
             if _prem_integrity_errs:
                 fail("PREMIERES integrity: " + "; ".join(_prem_integrity_errs[:6]))
 
+# ----------------------------------------- 4c1. FESTMARK — festival marks
+# FESTMARK: {"<festival>": {"bg": str, "en": str, "films": [filmId…], "shows": [showId…]}}
+# A mark must never name a title the page does not list: every film needs a
+# SHOWTIMES row and every show a PERFORMANCES row.
+_fm_m = re.search(r"^const FESTMARK\s*=\s*(\{[^\n]*?\});\s*$", js, flags=re.M)
+if not _fm_m:
+    note("FESTMARK is not declared: festival marks come from the listing titles alone")
+else:
+    try:
+        _fm = json.loads(_fm_m.group(1))
+    except Exception as _e:
+        fail(f"FESTMARK is not valid JSON: {_e}")
+    else:
+        _fm_films = {r[0] for r in (data.get("SHOWTIMES") or []) if r}
+        _fm_shows = {p[0] for p in (data.get("PERFORMANCES") or []) if p}
+        _fm_bad = []
+        for _fk, _fv in (_fm.items() if isinstance(_fm, dict) else [("FESTMARK", None)]):
+            if not (isinstance(_fv, dict) and isinstance(_fv.get("bg"), str) and _fv["bg"].strip()
+                    and isinstance(_fv.get("en", ""), str)
+                    and all(isinstance(_fv.get(k_, []), list) for k_ in ("films", "shows"))):
+                _fm_bad.append(f"{_fk}: not {{bg, en, films, shows}}")
+                continue
+            _fm_bad += [f"{_fk}: film {i!r} has no SHOWTIMES row" for i in _fv.get("films", [])
+                        if i not in _fm_films]
+            _fm_bad += [f"{_fk}: show {i!r} has no PERFORMANCES row" for i in _fv.get("shows", [])
+                        if i not in _fm_shows]
+        if _fm_bad:
+            fail("FESTMARK: " + "; ".join(_fm_bad[:6]))
+
 for name, floor in FLOORS.items():
     v = data.get(name)
     if v is None:

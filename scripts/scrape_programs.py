@@ -2044,6 +2044,46 @@ def write_premieres(page, premieres_obj):
     return page[:vl.start()] + f"const PREMIERES={lit};\n" + page[vl.start():]
 
 
+def festival_marks(fest_info, rows, names):
+    """FESTMARK: per festival, its short names and the films its own programme
+    lists among the rows shown, so the app can mark their cards and sheets and
+    find them by the festival's name (owner, 2026-10-15).
+    fest_info  merge_festival_rows' info: records [festival, fid, venue, date, time]
+    rows       the SHOWTIMES written: [[fid, venue, date, [times]]]
+    names      {festival: "Синелибри / CineLibri"} (official_festivals.NAMES)
+    A festival screening counts when its row stands: added by the festival
+    (confirmed, preliminary per row or by date) or listed by the venue itself at
+    the festival's time. One the venue contradicts is not shown and counts for
+    nothing; a festival with no row shown is left out."""
+    shown = defaultdict(set)
+    for r in rows:
+        shown[(r[0], r[1], r[2])].update(r[3])
+    films = defaultdict(set)
+    for key in ("confirmed", "prelim_row", "prelim_date", "listed"):
+        for fest, fid, v, d, t in (fest_info or {}).get(key, ()):
+            if t in shown.get((fid, v, d), ()):
+                films[fest].add(fid)
+    out = {}
+    for fest in sorted(films):
+        bg, _, en = (names.get(fest) or fest).partition(" / ")
+        bg = bg.strip() or fest
+        out[fest] = {"bg": bg, "en": en.strip() or bg, "films": sorted(films[fest]), "shows": []}
+    return out
+
+
+def write_festmark(page, festmark):
+    """Replace `const FESTMARK={…};` in the SOFIA-DATA block, or insert it on the
+    line before `const VLINKS=…;` when the build does not declare it yet."""
+    lit = json.dumps(festmark, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    m = re.search(r"^const FESTMARK\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const FESTMARK={lit};" + page[m.end():]
+    vl = re.search(r"^const VLINKS\s*=[^\n]*;[ \t]*$", page, re.M)
+    if not vl:
+        raise KeyError("VLINKS")
+    return page[:vl.start()] + f"const FESTMARK={lit};\n" + page[vl.start():]
+
+
 def previous_official_stats():
     try:
         rep = json.loads(BUILD_REPORT.read_text(encoding="utf-8"))
@@ -3631,6 +3671,14 @@ def main():
         print(f"wrote PREMIERES: {len(premieres_out)} shows with premiere dates")
     except (KeyError, ValueError):
         pass   # PREMIERES not in this build yet — harmless
+    # FESTMARK: the films each festival's own programme lists among the rows shown
+    festmark = festival_marks(fest_info, new_showtimes, OF.NAMES)
+    try:
+        out = write_festmark(out, festmark)
+        print("wrote FESTMARK: " + (", ".join(f"{f} {len(v['films'])} film(s)"
+                                             for f, v in festmark.items()) or "no festival rows shown"))
+    except (KeyError, ValueError):
+        pass   # no VLINKS line to anchor it — harmless, the app marks nothing
     # per-screening language-version and format labels (CODE-09)
     # Build showattr: start from old (keep-previous), overlay with this run's fresh data,
     # then prune to only (film, venue) pairs still in new_showtimes.

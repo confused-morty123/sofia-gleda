@@ -57,6 +57,13 @@ const SHOWATTR={};
    dates are ISO 8601 YYYY-MM-DD, and no entry originates from an aggregator-only venue.
    The rail shows only upcoming premiere performances (date >= today). */
 const PREMIERES={};
+/* FESTMARK contract: {"<festival>": {"bg": "Синелибри", "en": "CineLibri",
+   "films": [filmId, …], "shows": [showId, …]}, …}
+   The titles a festival's own programme lists among the listings shown (a row
+   the festival vouched for, confirmed or preliminary): their cards and sheets
+   carry the festival's short name, and searching that name finds them. Written
+   by scrape_programs.py; verify_build.py checks every id has a listing. */
+const FESTMARK={};
 const VLINKS=[];
 /* SOFIA-DATA-END */</script>
 <script>/* SOFIA-POSTERS-START */

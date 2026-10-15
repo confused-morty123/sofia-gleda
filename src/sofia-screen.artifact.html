@@ -354,6 +354,8 @@ a{color:inherit}
 .score.hi{color:#FFD84D} .score.na{color:#A99DAD; font-size:11px}
 .score.tmdb{background:rgba(1,180,228,.18); border-color:rgba(1,180,228,.42); color:#01B4E4}
 .fest-mark{font-family:Onest,sans-serif; font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
+/* a festival mark and a premiere badge stack in the poster's top-right corner */
+.p-tags{display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:0}
 .badge{font-size:8px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; padding:3px 7px;
   border-radius:5px; background:var(--accent); color:var(--on-accent); white-space:nowrap}
 .badge.lim{background:linear-gradient(135deg,#E0163A,#7E0C1F); color:#fff}
@@ -1365,8 +1367,31 @@ const SHOWIMG=(typeof SHOWART==="object"&&SHOWART)||{};
 const LINK_MAP=Object.fromEntries((typeof LINKS!=="undefined"&&Array.isArray(LINKS))?LINKS:[]);
 /* CineLibri: strip festival prefix, fix ALL-CAPS to sentence-case */
 const cinelibriId=id=>typeof id==="string"&&id.startsWith("sinelibri-");
-function cinelibriMark(){
-  return`<span class="fest-mark">${S.lang==="en"?"CineLibri":"Синелибри"}</span>`;}
+/* Festival marks on films and plays (owner, 15 Oct 2026). FESTMARK, written by the
+   scraper, lists the titles each festival's own programme has in the listings. A
+   venue's own listing that names the festival ("Синелибри 2026 – Пепел" at a cinema,
+   "ЮЛИ / JULI |Синелибри 2026" at Топлоцентрала) counts as well, so a build without
+   FESTMARK still marks those. FEST_NAMES: each festival's short name in both
+   languages, the data's own names first. */
+const _FESTMARK=(typeof FESTMARK==="object"&&FESTMARK)||{};
+const FEST_NAMES=Object.assign({cinelibri:{bg:"Синелибри",en:"CineLibri"},kinomania:{bg:"Киномания",en:"Kinomania"}},
+  Object.fromEntries(Object.entries(_FESTMARK).filter(([,v])=>v&&v.bg).map(([k,v])=>[k,{bg:v.bg,en:v.en||v.bg}])));
+const _FEST_OF=(()=>{const m={film:new Map(),show:new Map()};
+  const add=(kind,id,fest)=>{const a=m[kind].get(id)||[];if(!a.includes(fest))a.push(fest);m[kind].set(id,a);};
+  Object.entries(_FESTMARK).forEach(([fest,v])=>{
+    ((v&&v.films)||[]).forEach(id=>add("film",id,fest));((v&&v.shows)||[]).forEach(id=>add("show",id,fest));});
+  FILMS.forEach(f=>{if(cinelibriId(f.id))add("film",f.id,"cinelibri");});
+  const named=Object.entries(FEST_NAMES).map(([fest,n])=>[fest,[n.bg,n.en].map(k=>" "+searchKey(k)+" ").filter(k=>k.length>=7)]);
+  const says=(kind,id,title)=>{const k=" "+searchKey(title)+" ";
+    named.forEach(([fest,keys])=>{if(keys.some(x=>k.includes(x)))add(kind,id,fest);});};
+  FILMS.forEach(f=>says("film",f.id,f.bg));
+  SHOWS.forEach(s=>says("show",s.id,s.title));
+  return m;})();
+const festsOf=(kind,id)=>_FEST_OF[kind].get(id)||[];
+const festName=fid=>{const n=FEST_NAMES[fid]||{bg:fid,en:fid};return S.lang==="en"?n.en:n.bg;};
+/* the poster corner marks (cards) and the chips (sheets) of a film or a play */
+const festMarks=(kind,id)=>festsOf(kind,id).map(x=>`<span class="fest-mark">${esc(festName(x))}</span>`).join("");
+const festChips=(kind,id)=>festsOf(kind,id).map(x=>`<span class="chip fest-chip">${esc(festName(x))}</span>`).join("");
 /* movie names default to English (owner's preference), Bulgarian kept as the
    secondary line so nothing is lost.
    For CineLibri festival films: BG shows the festival's own title_bg (stored in
@@ -1708,14 +1733,64 @@ function showsAtTheatre(tid){
   return SHOWS.filter(s=>ids.has(s.id));}
 const cinName=c=>S.lang==="bg"?c.name:(c.nameEn||c.name);
 const thName=x=>S.lang==="bg"?x.name:(x.nameEn||x.name);
-/* ---- search across the whole three-month window ---- */
+/* ---- search across the whole three-month window ----
+   Script-insensitive (owner, 15 Oct 2026: "cinelibri" did not find the Синелибри
+   films). Every searchable text and the query reduce to one key: lower case, ё/ы/э
+   folded, Cyrillic through translitBG() (the Bulgarian Streamlined System), accents
+   dropped, punctuation to spaces; so "pepel" finds "Пепел" and "метрополис" finds
+   "Metropolis". The loose key also folds what a Latin typist mixes up (y/j/i, c,
+   ph, w, x, q, doubled letters): "fjord" finds "Фиорд", "маика" finds "Майка".
+   A festival's name in either script finds the titles in its programme (FESTMARK).
+   Ranking: exact title, title start, a word in the title, anywhere in the title,
+   the loose spellings of a title, festival membership, then credits, country,
+   genre and venue; the catalogue order breaks ties. */
+function searchKey(s){
+  const k=String(s==null?"":s).normalize("NFC").toLowerCase().replace(/[ёыэ]/g,c=>({"ё":"е","ы":"и","э":"е"})[c]);
+  return translitBG(k).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\p{L}\p{N}]+/gu," ").trim();}
+const searchLoose=k=>k.replace(/ph/g,"f").replace(/ck/g,"k").replace(/c(?=[eiy])/g,"s").replace(/c(?!h)/g,"k")
+  .replace(/x/g,"ks").replace(/w/g,"v").replace(/q/g,"k").replace(/[yj]/g,"i").replace(/([a-z])\1+/g,"$1");
+let _SEARCH_IDX=null;
+function searchIndex(){
+  if(_SEARCH_IDX)return _SEARCH_IDX;
+  const TE=(typeof TITLE_EN==="object"&&TITLE_EN)||{};
+  const keys=v=>[...new Set(v.filter(x=>typeof x==="string"&&x).map(searchKey).filter(Boolean))];
+  const ent=(o,kind,titles,other)=>{const t=keys(titles),x=keys(other);
+    return{o,t,tl:t.map(searchLoose),x,xl:x.map(searchLoose),fest:festsOf(kind,o.id)};};
+  const gen=g=>(g||[]).flatMap(x=>[x,GENRE_EN[x]]);
+  _SEARCH_IDX={
+    films:FILMS.map(f=>{const fi=FILMINFO[f.id]||{},ctry=f.country||"";
+      return ent(f,"film",[f.bg,f.en,fi.title_bg,fi.title_en,(ART[f.id]||{}).en,TE[f.id]],
+        [f.director,f.cast,fi.dir,fi.cast,ctry,ctry&&ctryTranslate(ctry),(ART[f.id]||{}).country,...gen(f.genres)]);}),
+    shows:SHOWS.map(s=>{const th=thById[s.theatre]||{};
+      return ent(s,"show",[s.title,s.titleEn,TE[s.id]],
+        [s.author,s.director,s.cast,...gen(s.genres),th.name,th.nameEn]);})};
+  return _SEARCH_IDX;}
 function searchAll(q){
-  const n=q.trim().toLowerCase(); if(n.length<2)return null;
-  const hit=(...v)=>v.some(x=>String(x||"").toLowerCase().includes(n));
-  return {
-    films:FILMS.filter(f=>filmTimesAll(f.id).length&&hit(f.bg,f.en,f.director,f.cast,f.country,f.genres.join(" "),(FILMINFO[f.id]||{}).title_bg,(FILMINFO[f.id]||{}).title_en)),
-    shows:SHOWS.filter(s=>showPerfsAll(s.id).length&&hit(s.title,s.titleEn,s.author,s.director,s.cast,
-      s.genres.join(" "),(thById[s.theatre]||{}).name))};}
+  const raw=q.trim(); if(raw.length<2)return null;
+  const k=searchKey(raw),kl=searchLoose(k),kc=kl.replace(/ /g,"");
+  if(!k)return{films:[],shows:[]};
+  /* a festival matches its full name in the query, or a query of 5+ letters that
+     starts its name ("cinel", "кином"); "kino" alone is too common a word */
+  const fests=new Set(Object.keys(FEST_NAMES).filter(id=>[FEST_NAMES[id].bg,FEST_NAMES[id].en,id].some(n=>{
+    const c=searchLoose(searchKey(n)).replace(/ /g,"");
+    return c&&(kc.includes(c)||(kc.length>=Math.min(5,c.length)&&c.startsWith(kc)));})));
+  const loose=kl.length>=2;
+  const rank=e=>{
+    let r=99;
+    for(const t of e.t){
+      if(t===k)return 0;
+      r=Math.min(r,t.startsWith(k)?1:(" "+t).includes(" "+k)?2:t.includes(k)?3:99);}
+    if(r<99)return r;
+    if(loose){for(const t of e.tl)r=Math.min(r,t===kl?4:t.startsWith(kl)?5:t.includes(kl)?6:99);
+      if(r<99)return r;}
+    if(e.fest.some(f=>fests.has(f)))return 7;
+    if(e.x.some(x=>x.includes(k)))return 8;
+    if(loose&&e.xl.some(x=>x.includes(kl)))return 9;
+    return 99;};
+  const pick=(list,keep)=>list.map((e,i)=>({e,i,r:rank(e)})).filter(m=>m.r<99&&keep(m.e.o))
+    .sort((a,b)=>a.r-b.r||a.i-b.i).map(m=>m.e.o);
+  const ix=searchIndex();
+  return{films:pick(ix.films,f=>filmTimesAll(f.id).length),shows:pick(ix.shows,s=>showPerfsAll(s.id).length)};}
 function rangeLabel(){
   const L=t();
   if(S.day==="all")return L.everything;
@@ -1930,11 +2005,11 @@ function filmCard(f,all,rowsOverride){
   const meta=[f.runtime?`${f.runtime} ${esc(t().min)}`:"",
               n?`${n} ${esc(t().screenings)}`:"",
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
-  const _pb=premBadgeFor(f.id);
+  const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
       <div class="p-top">${scoreBadge(f)}
-        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${cinelibriId(f.id)?cinelibriMark():""}${_pb}</div>
+        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${_tags?`<span class="p-tags">${_tags}</span>`:""}</div>
       <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
@@ -1942,10 +2017,10 @@ function showCard(sh,all){
   const p=all?showPerfsAll(sh.id):showPerfs(sh.id),th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
   /* P3A item 2: suppress static "ПРЕМИЕРА" seed badge; replace with dynamic PREMIERES-based badge. */
   const staticBadge=sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:"";
-  const _spb=showPremBadge(sh.id);
+  const _spb=showPremBadge(sh.id),_stags=festMarks("show",sh.id)+_spb;
   return`<button class="card" data-show="${esc(sh.id)}">
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
-      <div class="p-top"><span></span>${staticBadge}${_spb}</div>
+      <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
       <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
       <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${sh.duration} ${esc(t().min)}`:""}</span></div></button>`;}
@@ -2079,13 +2154,21 @@ function body(){
   const L=t(),day=dayOrAll(),out=[];
   /* VENUE MODE: S.fVenues non-empty → bypass all curated rails */
   if(S.fVenues.length) return[venueModeBody()];
-  /* Events are shown only if not yet ended (to >= today) and overlapping the
-     selected range; "active" = already running, "soon" = starts later. The old
-     static e.status is ignored so a finished festival never lingers past its end. */
+  /* Events (owner, 15 Oct 2026: Киномания must be in "Лимитирано и ексклузивно" when
+     the period is November). That rail lists every event not yet ended that overlaps
+     the selected period: the running ones first (soonest end first), then the coming
+     ones by start date, each with its date badge ("до 8 ноември", "след 28 дни").
+     "Предстои скоро" keeps the events that start after the period, up to the last
+     listed day, so a festival weeks away still shows from the default week. The
+     old static e.status is ignored so a finished festival never lingers past its end. */
   const [evS,evE]=rangeBounds();
-  const evLive=e=>(e.scope==="both"||e.scope===S.mode)&&e.to>=NOW_DATE&&e.from<=evE&&e.to>=evS;
-  const act=EVENTS.filter(e=>evLive(e)&&e.from<=TODAY).sort((a,b)=>a.to.localeCompare(b.to));
-  const soon=EVENTS.filter(e=>evLive(e)&&e.from>TODAY).sort((a,b)=>a.from.localeCompare(b.from));
+  const evOn=e=>(e.scope==="both"||e.scope===S.mode)&&e.to>=NOW_DATE;
+  const act=EVENTS.filter(e=>evOn(e)&&e.from<=evE&&e.to>=evS).sort((a,b)=>{
+    const ra=evState(a)==="active",rb=evState(b)==="active";
+    return ra!==rb?(ra?-1:1):ra?a.to.localeCompare(b.to):a.from.localeCompare(b.from);});
+  const soon=EVENTS.filter(e=>evOn(e)&&e.from>evE&&e.from<=LASTDAY).sort((a,b)=>a.from.localeCompare(b.from));
+  const actSub=S.lang==="bg"?"текат сега или започват в периода":"on now or starting in this period";
+  const soonSub=S.lang==="bg"?"започват след периода":"starting after this period";
   /* push a rail descriptor only if it has content — emptiness is known from the
      item count, so no card HTML is built for empty or not-yet-visible rails */
   const pushRail=(title,sub,items,fn)=>{ if(items&&items.length) out.push({t:title,s:sub,items,fn}); };
@@ -2142,7 +2225,7 @@ function body(){
     }
     /* Event rails hidden when any genre filter is active */
     if(!S.fGenres.length){
-      pushRail(L.railLimited,S.lang==="bg"?"само сега, после го няма":"on now, then it's gone",act,eventCard);}
+      pushRail(L.railLimited,actSub,act,eventCard);}
     /* P3A item 1: cinema premieres — from official CC data.
        PREMIERES maps "film:<filmId>" to an array of YYYY-MM-DD release dates.
        Show films released in the last 7 days (recent) and upcoming.
@@ -2180,7 +2263,7 @@ function body(){
     if(gemsItems.length>=3){
       pushRail(L.railGems||"Нишово кино",L.railGemsSub||"силни оценки, малко прожекции",gemsItems,f=>filmCard(f,day));}
     if(!S.fGenres.length){
-      pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);}
+      pushRail(L.railSoon,soonSub,soon,eventCard);}
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const visSet=new Set(vis.map(f=>f.id));
     const genreRails=[];
@@ -2230,7 +2313,7 @@ function body(){
     pushRail(L.railRecommended||"Препоръчани",periodLabel(),rk,x=>showCard(x.s,day));
     /* Event rails hidden when any venue or genre filter is active */
     if(!S.fGenres.length){
-      pushRail(L.railLimited,S.lang==="bg"?"само сега, после го няма":"on now, then it's gone",act,eventCard);}
+      pushRail(L.railLimited,actSub,act,eventCard);}
     /* P3A item 9: theatre premiere rail — from official data only.
        PREMIERES maps "show:<showId>" to an array of YYYY-MM-DD premiere dates.
        Only shows with an upcoming premiere date (>= today) appear in the rail.
@@ -2317,7 +2400,7 @@ function body(){
       pushRail(L.railWeekend||"Този уикенд",wkSub,wkItems,x=>showCard(x.s,day));
     })();
     if(!S.fGenres.length){
-      pushRail(L.railSoon,S.lang==="bg"?"извън тази седмица":"beyond this week",soon,eventCard);}
+      pushRail(L.railSoon,soonSub,soon,eventCard);}
     const visSet=new Set(vis.map(s=>s.id));
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const genreRails=[];
@@ -3021,7 +3104,7 @@ function sheetFilm(f){
       <h2>${esc(filmTitle(f))}</h2></div></div>
    <div class="sbody">
     <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${cinelibriId(f.id)?`<span class="chip">${S.lang==="en"?"CineLibri":"Синелибри"}</span>`:""}</div>
+      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
@@ -3087,7 +3170,7 @@ function sheetShow(sh){
    <div class="sbody">
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}</div>
+      ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>

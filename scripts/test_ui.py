@@ -13766,6 +13766,440 @@ def wave_ev1(browser):
         ctx.close()
 
 
+# ============================================================================
+# WAVE EV2: search in both scripts and by festival, the events rail for any
+# period, festival marks on films and plays (owner, 15 Oct 2026)
+# ============================================================================
+# The Bulgarian Streamlined System, kept here independently of the page's translitBG
+_EV2_TR = {"а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ж": "zh", "з": "z", "и": "i",
+           "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s",
+           "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "sht",
+           "ъ": "a", "ь": "y", "ю": "yu", "я": "ya"}
+# Latin letters with one obvious Cyrillic spelling (for a Cyrillic query of a Latin title)
+_EV2_REV = dict(zip("abdefghiklmnoprstuvz", "абдефгхиклмнопрстувз"))
+_EV2_FEST = {"cinelibri": ("Синелибри", "CineLibri"), "kinomania": ("Киномания", "Kinomania")}
+
+
+def _ev2_translit(s):
+    """Lower case, Bulgarian Streamlined System ("ия" ending a word -> "ia")."""
+    s = re.sub(r"ия(?![а-яё])", "ia", (s or "").lower())
+    return "".join(_EV2_TR.get(c, c) for c in s)
+
+
+def _ev2_key(s):
+    """A title as words: transliterated, accents and punctuation dropped."""
+    import unicodedata
+    k = unicodedata.normalize("NFD", _ev2_translit(unicodedata.normalize("NFC", s or "")))
+    k = "".join(c for c in k if not unicodedata.combining(c))
+    return " ".join(re.findall(r"\w+", k))
+
+
+def _ev2_members(data, fest, names):
+    """(films, shows) a festival mark belongs on, worked out here from the data:
+    FESTMARK, the "sinelibri-" ids of the cinemas' CineLibri listings, and listing
+    titles that name the festival."""
+    fm = (data["fm"].get(fest) or {})
+    keys = [_ev2_key(n) for n in names]
+    says = lambda t: any(f" {k} " in f" {_ev2_key(t)} " for k in keys)
+    films = {f["id"] for f in data["films"]
+             if f["id"] in fm.get("films", []) or says(f["bg"])
+             or (fest == "cinelibri" and f["id"].startswith("sinelibri-"))}
+    shows = {s["id"] for s in data["shows"] if s["id"] in fm.get("shows", []) or says(s["title"])}
+    return films, shows
+
+
+def _ev2_rails_expected(events, mode, now, lo, hi, lastday):
+    """(limited, soon) event ids for the period lo..hi, worked out here: limited =
+    not ended and overlapping the period, the running ones first by end date,
+    then the coming ones by start date; soon = starting after the period, by
+    the last listed day, by start date."""
+    on = [e for e in events if e.get("scope") in ("both", mode) and e["to"] >= now]
+    lim = [e for e in on if e["from"] <= hi and e["to"] >= lo]
+    run = sorted((e for e in lim if e["from"] <= now), key=lambda e: e["to"])
+    up = sorted((e for e in lim if e["from"] > now), key=lambda e: e["from"])
+    soon = sorted((e for e in on if hi < e["from"] <= lastday), key=lambda e: e["from"])
+    return [e["id"] for e in run + up], [e["id"] for e in soon]
+
+
+def _ev2_open(browser, lang, mode, html=None, w=1280, h=900):
+    """open_page(), or the same page served with `html` in place of the build."""
+    if html is None:
+        return open_page(browser, w, h, lang=lang, mode=mode)
+    ctx = browser.new_context(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script("try{localStorage.setItem('sofia-screen-v2',JSON.stringify({prefs:{track:'both',"
+                        "genres:[],mood:[],with:'',when:'any',taste:[]},lang:'%s',mode:'%s'}));}catch(e){}"
+                        % (lang, mode))
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.route(html_path.as_uri(), lambda route, request: route.fulfill(
+        status=200, content_type="text/html; charset=utf-8", body=html))
+    page.goto(HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    return ctx, page, errors
+
+
+def _ev2_patched(festmark_extra, events_extra):
+    """The build with FESTMARK entries merged in and EVENTS appended to."""
+    src = html_path.read_text(encoding="utf-8")
+    m = re.search(r"^const FESTMARK=(\{.*?\});$", src, re.M)
+    fm = json.loads(m.group(1)) if m else {}
+    for fest, v in festmark_extra.items():
+        cur = fm.setdefault(fest, {"bg": v["bg"], "en": v["en"], "films": [], "shows": []})
+        for k in ("films", "shows"):
+            cur[k] = sorted(set(cur.get(k, [])) | set(v.get(k, [])))
+    lit = json.dumps(fm, ensure_ascii=False, separators=(",", ":"))
+    src, n = re.subn(r"^const FESTMARK=\{.*?\};$", lambda _: f"const FESTMARK={lit};", src, count=1, flags=re.M)
+    if not n:
+        raise AssertionError("EV2: 'const FESTMARK=' is not in the build")
+    m = re.search(r"^const EVENTS=(\[.*\]);$", src, re.M)
+    lit = json.dumps(json.loads(m.group(1)) + events_extra, ensure_ascii=False, separators=(",", ":"))
+    return re.sub(r"^const EVENTS=\[.*\];$", lambda _: f"const EVENTS={lit};", src, count=1, flags=re.M)
+
+
+def _ev2_set_period(page, period):
+    """The owner's path: "Друг период ›" opens the drawer (the FAB when the link is
+    not shown); a range is two taps on the calendar, stepping to its month;
+    "month" is the "Този месец" chip; then Apply."""
+    link = page.query_selector(".phead-other")
+    if link and link.is_visible():
+        link.click()
+    else:
+        page.click(".fab")
+    page.wait_for_selector("[data-dclose]", timeout=5000)
+    page.wait_for_timeout(350)
+    if period == "month":
+        page.click('[data-range="month"]')
+        page.wait_for_timeout(250)
+    else:
+        for iso in period:
+            for _ in range(6):
+                if page.query_selector(f'[data-pick="{iso}"]'):
+                    break
+                page.click('[data-calstep="1"]')
+                page.wait_for_timeout(200)
+            page.click(f'[data-pick="{iso}"]')
+            page.wait_for_timeout(250)
+    page.click("[data-dclose]")
+    page.wait_for_timeout(900)
+
+
+def _ev2_rails(page):
+    """The two event rails as the last render laid them out (RAILS: every rail,
+    mounted or not yet), and the limited rail as mounted (it is among the first)."""
+    return page.evaluate("""() => { const L = t(), out = {lim: null, soon: null};
+        RAILS.forEach(r => { if (r.t === L.railLimited) out.lim = {sub: r.s, ids: r.items.map(e => e.id)};
+                              if (r.t === L.railSoon) out.soon = {sub: r.s, ids: r.items.map(e => e.id)}; });
+        const sec = [...document.querySelectorAll('section.rail')].find(s =>
+            ((s.querySelector('.rhead h2') || {}).textContent || '').trim() === L.railLimited);
+        out.dom = sec ? {sub: ((sec.querySelector('.rhead .sub') || {}).textContent || '').trim(),
+            cards: [...sec.querySelectorAll('[data-event]')].map(c => ({id: c.dataset.event,
+                badge: ((c.querySelector('.badge') || {}).textContent || '').trim()}))} : null;
+        out.state = [S.day, S.rFrom, S.rTo];
+        return out; }""")
+
+
+def _ev2_type_search(page, q):
+    """Type into the header search field the way a visitor does."""
+    if not page.evaluate("S.searchOpen"):
+        page.click("[data-search-open]")
+        page.wait_for_timeout(450)
+    page.fill("#q", q)
+    page.wait_for_timeout(650)
+
+
+def _ev2_cards(page, attr="data-film"):
+    return page.evaluate("""(attr) => [...document.querySelectorAll('[' + attr + ']')]
+        .filter(c => c.classList.contains('card'))
+        .map(c => [c.getAttribute(attr), [...c.querySelectorAll('.fest-mark')].map(x => x.textContent.trim())])""",
+        attr)
+
+
+def _ev2_sheet_chips(page, sel):
+    """Open a card's sheet with a real click; its festival chips; close it."""
+    page.click(sel)
+    page.wait_for_selector(".sheet", timeout=5000)
+    page.wait_for_timeout(500)
+    chips = page.evaluate("() => [...document.querySelectorAll('.sheet .chips .fest-chip')].map(x => x.textContent.trim())")
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(500)
+    return chips
+
+
+def wave_ev2(browser):
+    """Owner, 15 Oct 2026: "cinelibri" must find the Синелибри films (search in
+    either script); Киномания must be in "Лимитирано и ексклузивно" when the period
+    is November; festival tags on the individual films and plays."""
+    wave = "EV2"
+    ensure_shot_dir(wave)
+    d = datetime.date.fromisoformat
+    for lang in ("bg", "en"):
+        print(f"\n=== EV2: search, event rails and festival marks ({lang}) ===")
+        ctx, page, errs = _ev2_open(browser, lang, "cinema")
+        page.wait_for_timeout(400)
+        info = page.evaluate("""() => ({now: NOW_DATE, last: LASTDAY, weekEnd: WEEK_END, months: t().months,
+            events: EVENTS, railLimited: t().railLimited,
+            fm: (typeof FESTMARK === 'object' && FESTMARK) || {},
+            films: FILMS.filter(f => filmTimesAll(f.id).length).map(f => ({id: f.id, bg: f.bg || '', en: f.en || ''})),
+            shows: SHOWS.filter(s => showPerfsAll(s.id).length).map(s => ({id: s.id, title: s.title || '',
+                                                                          en: s.titleEn || ''}))})""")
+        now, last, months = info["now"], info["last"], info["months"]
+
+        # 1. a festival's name in either script finds the titles of its programme
+        for fest, names in _EV2_FEST.items():
+            want_f, want_s = _ev2_members(info, fest, names)
+            queries = ({"cinelibri": ["cinelibri", "синелибри", "sinelibri", "cine libri", "CINELIBRI", "Синелибри",
+                                      "cinel"],
+                        "kinomania": ["kinomania", "киномания", "Киномания", "KINOMANIA", "кином"]})[fest]
+            if not want_f and not want_s:
+                skip(f"ev2_search_{fest}_{lang}", f"no {fest} title has listings in this build (synthetic below)")
+            for q in queries:
+                got = page.evaluate("(q) => { const r = searchAll(q); return {f: r.films.map(x => x.id), "
+                                    "s: r.shows.map(x => x.id)}; }", q)
+                check(f"ev2_search_{fest}_{q.replace(' ', '_')}_{lang}",
+                      set(got["f"]) == want_f and set(got["s"]) == want_s,
+                      f"{q!r}: {len(got['f'])} films / {len(got['s'])} shows, expected {len(want_f)} / "
+                      f"{len(want_s)}; missing {sorted(want_f - set(got['f']))[:3]}, "
+                      f"extra {sorted(set(got['f']) - want_f)[:3]}")
+        km_f, _ = _ev2_members(info, "kinomania", _EV2_FEST["kinomania"])
+        kino = page.evaluate("""() => { const ix = searchIndex(), r = searchAll('kino');
+            return r.films.map(f => { const e = ix.films.find(x => x.o === f);
+                return [f.id, e.t.concat(e.x, e.tl, e.xl).some(k => k.includes('kino'))]; }); }""")
+        check(f"ev2_search_kino_is_not_kinomania_{lang}",
+              all(has for fid, has in kino if fid in km_f),
+              f"'kino' found Kinomania films without the word: {[f for f, h in kino if f in km_f and not h]}")
+
+        # 2. Latin <-> Cyrillic titles, case, accents, й/ё, exact titles first
+        def found(q, kind="f"):
+            return page.evaluate("(q) => { const r = searchAll(q); return {f: r.films.map(x => x.id), "
+                                 "s: r.shows.map(x => x.id)}; }", q)[kind]
+        cyr = [f for f in info["films"] if re.fullmatch(r"[А-Яа-я][А-Яа-я ,.:!?–-]{3,}", f["bg"])
+               and _ev2_translit(f["bg"]) not in f["en"].lower()]
+        if not cyr:
+            skip(f"ev2_latin_finds_cyrillic_{lang}", "no Cyrillic-only title with listings")
+        for f in cyr[:4]:
+            q = _ev2_translit(f["bg"])
+            res = found(q)
+            twin = {g["id"] for g in info["films"] if _ev2_key(g["bg"]) == _ev2_key(f["bg"])}
+            check(f"ev2_latin_finds_cyrillic_{f['id']}_{lang}", bool(res) and res[0] in twin,
+                  f"{q!r} for {f['bg']!r}: first {res[:3]}")
+        lat = [x for x in info["films"] + info["shows"]
+               if re.fullmatch(r"[A-Za-z][A-Za-z ]{4,}", x.get("bg") or x.get("title") or "")
+               and not re.search(r"[cjqwxyCJQWXY]", x.get("bg") or x.get("title"))]
+        if not lat:
+            skip(f"ev2_cyrillic_finds_latin_{lang}", "no plain Latin title with listings")
+        for x in lat[:3]:
+            t_ = x.get("bg") or x.get("title")
+            q = "".join(_EV2_REV.get(c, c) for c in t_.lower())
+            kind = "f" if "bg" in x else "s"
+            check(f"ev2_cyrillic_finds_latin_{x['id']}_{lang}", x["id"] in found(q, kind), f"{q!r} for {t_!r}")
+        f0 = (cyr or info["films"])[0]
+        check(f"ev2_upper_case_{lang}", f0["id"] in found(f0["bg"].upper()), f"{f0['bg'].upper()!r}")
+        import unicodedata
+        acc = [x for x in info["films"] for t_ in (x["bg"], x["en"])
+               if t_ and unicodedata.normalize("NFD", t_) != t_ and re.search(r"[À-ž]", t_)]
+        if acc:
+            x = acc[0]
+            t_ = next(t_ for t_ in (x["bg"], x["en"]) if re.search(r"[À-ž]", t_ or ""))
+            plain = "".join(c for c in unicodedata.normalize("NFD", t_) if not unicodedata.combining(c))
+            check(f"ev2_accents_ignored_{lang}", x["id"] in found(plain), f"{plain!r} for {t_!r}")
+        else:
+            skip(f"ev2_accents_ignored_{lang}", "no accented title with listings")
+        yot = [x for x in info["films"] + info["shows"] if "й" in (x.get("bg") or x.get("title") or "")]
+        if yot:
+            x = yot[0]
+            t_ = x.get("bg") or x.get("title")
+            check(f"ev2_й_as_и_{lang}", x["id"] in found(t_.replace("й", "и"), "f" if "bg" in x else "s"),
+                  f"{t_.replace('й', 'и')!r} for {t_!r}")
+        else:
+            skip(f"ev2_й_as_и_{lang}", "no title with й")
+        yo = next((x for x in info["films"] if "е" in x["bg"]), None)
+        if yo:
+            check(f"ev2_ё_as_е_{lang}", yo["id"] in found(yo["bg"].replace("е", "ё", 1)),
+                  f"{yo['bg'].replace('е', 'ё', 1)!r}")
+        fkeys = [(f, _ev2_key(f["bg"])) for f in info["films"]]
+        pair = next(((a, b) for a, ka in fkeys if len(ka) >= 4 for b, kb in fkeys
+                     if ka != kb and f" {ka} " in f" {kb} "), None)
+        if pair:
+            res = found(pair[0]["bg"])
+            same = {g["id"] for g in info["films"] if _ev2_key(g["bg"]) == _ev2_key(pair[0]["bg"])}
+            check(f"ev2_exact_title_first_{lang}", bool(res) and res[0] in same and pair[1]["id"] in res,
+                  f"{pair[0]['bg']!r} (also in {pair[1]['bg']!r}): {res[:4]}")
+        else:
+            skip(f"ev2_exact_title_first_{lang}", "no title inside another title")
+
+        # 3. typed into the real search field: every CineLibri card carries its mark,
+        #    and the sheet a chip, in the page's language
+        cl_f, _ = _ev2_members(info, "cinelibri", _EV2_FEST["cinelibri"])
+        name = {"bg": 0, "en": 1}[lang]
+        if cl_f:
+            _ev2_type_search(page, "cinelibri")
+            cards = _ev2_cards(page)
+            check(f"ev2_cinelibri_cards_marked_{lang}",
+                  {c[0] for c in cards} == cl_f and all(_EV2_FEST["cinelibri"][name] in c[1] for c in cards),
+                  f"{len(cards)} cards for {len(cl_f)} films; unmarked "
+                  f"{[c[0] for c in cards if _EV2_FEST['cinelibri'][name] not in c[1]][:3]}")
+            save_shot(page, wave, f"ev2_search_cinelibri_{lang}")
+            plain = next((c[0] for c in cards if not c[0].startswith("sinelibri-")), cards[0][0])
+            chips = _ev2_sheet_chips(page, f'.card[data-film="{plain}"]')
+            check(f"ev2_cinelibri_sheet_chip_{lang}", chips == [_EV2_FEST["cinelibri"][name]],
+                  f"{plain}: {chips}")
+        else:
+            skip(f"ev2_cinelibri_cards_marked_{lang}", "no CineLibri film has listings")
+        if km_f:
+            _ev2_type_search(page, "киномания")
+            cards = _ev2_cards(page)
+            check(f"ev2_kinomania_cards_marked_{lang}",
+                  {c[0] for c in cards} == km_f and all(_EV2_FEST["kinomania"][name] in c[1] for c in cards),
+                  f"{[c for c in cards][:5]}")
+            chips = _ev2_sheet_chips(page, f'.card[data-film="{sorted(km_f)[0]}"]')
+            check(f"ev2_kinomania_sheet_chip_{lang}", chips == [_EV2_FEST["kinomania"][name]], f"{chips}")
+        else:
+            skip(f"ev2_kinomania_cards_marked_{lang}", "no Kinomania film has listings yet (synthetic below)")
+        none_ = next((f["id"] for f in info["films"] if f["id"] not in cl_f | km_f), None)
+        if none_:
+            check(f"ev2_no_mark_without_festival_{lang}",
+                  page.evaluate("(id) => { const b = document.createElement('div'); "
+                                "b.innerHTML = filmCard(filmById[id], true); return !b.querySelector('.fest-mark'); }",
+                                none_), none_)
+        page.evaluate("() => { S.q = ''; S.searchOpen = false; render(); }")
+        page.wait_for_timeout(400)
+
+        # 4. the events rails, cinema: the default week, 1-30 Nov through "Друг период",
+        #    and "Този месец"; Kinomania is in the limited rail in November
+        sub_lim = {"bg": "текат сега или започват в периода", "en": "on now or starting in this period"}[lang]
+        sub_soon = {"bg": "започват след периода", "en": "starting after this period"}[lang]
+        month_end = (d(now).replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+        nov = (max(now, "2026-11-01"), min("2026-11-30", last))
+        periods = [("week", None, (now, info["weekEnd"]))] + (
+            [("november", nov, nov)] if nov[0] <= nov[1] else []) + [
+            ("month", "month", (now, month_end.isoformat()))]
+        if nov[0] > nov[1]:
+            skip(f"ev2_november_{lang}", f"November is not in the listings on {now}")
+        for tag, how, (lo, hi) in periods:
+            if how:
+                _ev2_set_period(page, how)
+            r = _ev2_rails(page)
+            want_lim, want_soon = _ev2_rails_expected(info["events"], "cinema", now, lo, hi, last)
+            check(f"ev2_cinema_{tag}_limited_{lang}", (r["lim"] or {}).get("ids", []) == want_lim,
+                  f"{r['state']}: {(r['lim'] or {}).get('ids')} expected {want_lim}")
+            check(f"ev2_cinema_{tag}_soon_{lang}", (r["soon"] or {}).get("ids", []) == want_soon,
+                  f"{(r['soon'] or {}).get('ids')} expected {want_soon}")
+            if want_lim:
+                dom = r["dom"] or {"sub": None, "cards": []}
+                badges = [_ev_expected(next(e for e in info["events"] if e["id"] == i), now, lang, months,
+                                       page.evaluate("(id) => badgeDisplay(EVENTS.find(e => e.id === id).tag)", i))[0]
+                          for i in want_lim]
+                check(f"ev2_cinema_{tag}_limited_rendered_{lang}",
+                      [c["id"] for c in dom["cards"]] == want_lim
+                      and [c["badge"].lower() for c in dom["cards"]] == [b.lower() for b in badges]
+                      and dom["sub"] == sub_lim,
+                      f"{dom}; expected {want_lim} {badges} {sub_lim!r}")
+            if want_soon:
+                check(f"ev2_cinema_{tag}_soon_subtitle_{lang}", r["soon"]["sub"] == sub_soon, r["soon"]["sub"])
+            if tag == "november":
+                kev = next((e for e in info["events"] if e["id"] == "kinomania"), None)
+                km = next((c for c in (r["dom"] or {}).get("cards", []) if c["id"] == "kinomania"), None)
+                if kev is None:
+                    skip(f"ev2_kinomania_in_november_{lang}", "no Kinomania event in EVENTS")
+                else:
+                    want = _ev_expected(kev, now, lang, months, "")[0]
+                    check(f"ev2_kinomania_in_november_{lang}", bool(km) and km["badge"].lower() == want.lower(),
+                          f"{km} expected {want!r}")
+                    if now < kev["from"]:
+                        check(f"ev2_kinomania_counts_down_{lang}",
+                              want == (f"след {(d(kev['from']) - d(now)).days} дни" if lang == "bg"
+                                       else f"in {(d(kev['from']) - d(now)).days} days"), want)
+                page.evaluate("() => { const c = document.querySelector('[data-event=\"kinomania\"]');"
+                              " if (c) c.scrollIntoView({block: 'center'}); }")
+                page.wait_for_timeout(300)
+                save_shot(page, wave, f"ev2_november_limited_{lang}")
+        check(f"ev2_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+        # 5. synthetic data: Kinomania marks (two films, one also CineLibri), a
+        #    theatre festival's play, and two theatre events for the theatre rails
+        pick = [f["id"] for f in info["films"] if f["id"] not in cl_f | km_f][:2]
+        both = sorted(cl_f)[0] if cl_f else None
+        _, cl_s = _ev2_members(info, "cinelibri", _EV2_FEST["cinelibri"])
+        play = next((s["id"] for s in info["shows"] if s["id"] not in cl_s), None)
+        th_names = ("Театрален фестивал Тест", "Theatre Test Festival")
+        run_to = "2026-11-05" if now < "2026-11-01" else (d(now) + datetime.timedelta(days=5)).isoformat()
+        synth_ev = [
+            {"id": "ev2-th-run", "kind": "festival", "scope": "theatre", "status": "upcoming", "tag": "СЛЕД 9 ДНИ",
+             "from": (d(now) - datetime.timedelta(days=3)).isoformat(), "to": run_to, "g": ["#333333", "#111111"],
+             "title": "Тест текущ", "titleEn": "Test running", "blurbBg": "", "blurbEn": "", "source": "test"},
+            {"id": "ev2-th-nov", "kind": "festival", "scope": "theatre", "status": "active", "tag": "СЛЕД 9 ДНИ",
+             "from": "2026-11-20", "to": "2026-11-22", "g": ["#333333", "#111111"],
+             "title": "Тест ноември", "titleEn": "Test November", "blurbBg": "", "blurbEn": "", "source": "test"}]
+        html = _ev2_patched({"kinomania": {"bg": "Киномания", "en": "Kinomania", "films": pick + ([both] if both else [])},
+                             "ev2-teatar": {"bg": th_names[0], "en": th_names[1], "films": [],
+                                            "shows": [play] if play else []}}, synth_ev)
+        ctx, page, errs = _ev2_open(browser, lang, "cinema", html=html)
+        page.wait_for_timeout(400)
+        for q in ("kinomania", "киномания"):
+            got = set(page.evaluate("(q) => searchAll(q).films.map(f => f.id)", q))
+            check(f"ev2_synth_search_{_ev2_key(q)}_{lang}", set(pick + ([both] if both else [])) <= got,
+                  f"{q!r}: {sorted(got)[:6]}")
+        _ev2_type_search(page, "Kinomania")
+        cards = dict(_ev2_cards(page))
+        check(f"ev2_synth_kinomania_marks_{lang}",
+              all(cards.get(i) == [_EV2_FEST["kinomania"][name]] for i in pick),
+              f"{[(i, cards.get(i)) for i in pick]}")
+        if both:
+            check(f"ev2_synth_two_festivals_two_marks_{lang}",
+                  sorted(cards.get(both) or []) == sorted([_EV2_FEST["cinelibri"][name], _EV2_FEST["kinomania"][name]]),
+                  f"{both}: {cards.get(both)}")
+        if pick:
+            chips = _ev2_sheet_chips(page, f'.card[data-film="{pick[0]}"]')
+            check(f"ev2_synth_kinomania_sheet_chip_{lang}", chips == [_EV2_FEST["kinomania"][name]], f"{chips}")
+        save_shot(page, wave, f"ev2_synth_kinomania_{lang}")
+        check(f"ev2_synth_no_js_errors_cinema_{lang}", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+        ctx, page, errs = _ev2_open(browser, lang, "theatre", html=html)
+        page.wait_for_timeout(400)
+        if play:
+            for q in (th_names[0], "teatralen festival test", th_names[1]):
+                check(f"ev2_synth_play_found_{_ev2_key(q).replace(' ', '_')}_{lang}",
+                      play in page.evaluate("(q) => searchAll(q).shows.map(s => s.id)", q), q)
+            _ev2_type_search(page, th_names[1])
+            cards = dict(_ev2_cards(page, "data-show"))
+            check(f"ev2_synth_play_mark_{lang}", cards.get(play) == [th_names[name]], f"{play}: {cards.get(play)}")
+            chips = _ev2_sheet_chips(page, f'.card[data-show="{play}"]')
+            check(f"ev2_synth_play_sheet_chip_{lang}", chips == [th_names[name]], f"{chips}")
+            page.evaluate("() => { S.q = ''; S.searchOpen = false; render(); }")
+            page.wait_for_timeout(400)
+        events = page.evaluate("EVENTS")
+        for tag, how, (lo, hi) in periods:
+            if how:
+                _ev2_set_period(page, how)
+            r = _ev2_rails(page)
+            want_lim, want_soon = _ev2_rails_expected(events, "theatre", now, lo, hi, last)
+            check(f"ev2_theatre_{tag}_rails_{lang}",
+                  (r["lim"] or {}).get("ids", []) == want_lim and (r["soon"] or {}).get("ids", []) == want_soon,
+                  f"{r['state']}: {(r['lim'] or {}).get('ids')} / {(r['soon'] or {}).get('ids')}, "
+                  f"expected {want_lim} / {want_soon}")
+            if want_lim:
+                dom = r["dom"] or {"sub": None, "cards": []}
+                badges = [_ev_expected(next(e for e in events if e["id"] == i), now, lang, months,
+                                       page.evaluate("(id) => badgeDisplay(EVENTS.find(e => e.id === id).tag)", i))[0]
+                          for i in want_lim]
+                check(f"ev2_theatre_{tag}_limited_rendered_{lang}",
+                      [c["id"] for c in dom["cards"]] == want_lim
+                      and [c["badge"].lower() for c in dom["cards"]] == [b.lower() for b in badges]
+                      and dom["sub"] == sub_lim,
+                      f"{dom}; expected {badges}")
+            if tag == "november":
+                check(f"ev2_theatre_november_running_then_coming_{lang}",
+                      (r["lim"] or {}).get("ids", [])[-2:] == ["ev2-th-run", "ev2-th-nov"],
+                      f"{(r['lim'] or {}).get('ids')}")
+                save_shot(page, wave, f"ev2_theatre_november_{lang}")
+        check(f"ev2_synth_no_js_errors_theatre_{lang}", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -13790,6 +14224,7 @@ WAVES = {
     "P3F": wave_p3f,
     "HF1": wave_hf1,
     "EV1": wave_ev1,
+    "EV2": wave_ev2,
 }
 
 def main():
