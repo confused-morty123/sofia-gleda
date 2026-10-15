@@ -1,0 +1,289 @@
+{
+ "events": [
+  {
+   "auto": true,
+   "blurbBg": "Фестивал, 17–24 октомври 2026. Сред местата: Сцена „Дерида“, I AM Studio, Топлоцентрала.",
+   "blurbEn": "Festival, 17–24 October 2026. Venues include Derida Stage, I AM Studio, Toplocentrala.",
+   "dates_from": "date field",
+   "from": "2026-10-17",
+   "g": [
+    "#952343",
+    "#23060E"
+   ],
+   "id": "act-festival-za-svoboden-teatar-p187545",
+   "kind": "festival",
+   "missed": 0,
+   "modified": "2026-10-09T16:21:24",
+   "post": 187545,
+   "scope": "theatre",
+   "source": "programata.bg",
+   "status": "upcoming",
+   "tag": "СЛЕД 2 ДНИ",
+   "title": "ACT Фестивал за свободен театър",
+   "titleEn": "ACT Festival za svoboden teatar",
+   "titles": [
+    {
+     "t": "Такъв е животът",
+     "v": []
+    },
+    {
+     "t": "Лимони х5",
+     "v": [
+      "derida"
+     ]
+    },
+    {
+     "t": "Докато чакаме Годо",
+     "v": [
+      "iam"
+     ]
+    },
+    {
+     "t": "Камшичен вятър",
+     "v": []
+    },
+    {
+     "t": "[EOL]. End of Life",
+     "v": []
+    },
+    {
+     "t": "Theatertreffen",
+     "v": []
+    },
+    {
+     "t": "In Between #2",
+     "v": []
+    },
+    {
+     "t": "Вакханки",
+     "v": []
+    },
+    {
+     "t": "Спирален ефект",
+     "v": []
+    },
+    {
+     "t": "Seems Familiar",
+     "v": []
+    },
+    {
+     "t": "със и през другия",
+     "v": []
+    },
+    {
+     "t": "Шампионът и комарът",
+     "v": []
+    }
+   ],
+   "to": "2026-10-24",
+   "url": "https://programata.bg/stsena/ne-se-prav%d1%9d-zapochva-16-izdanie-na-act/",
+   "venues": [
+    "derida",
+    "iam",
+    "toplo"
+   ]
+  },
+  {
+   "auto": true,
+   "blurbBg": "Фестивал, 12–29 ноември 2026. Сред местата: НДК (Зала 1).",
+   "blurbEn": "Festival, 12–29 November 2026. Venues include NDK (Hall 1).",
+   "dates_from": "date field",
+   "from": "2026-11-12",
+   "g": [
+    "#953423",
+    "#230A06"
+   ],
+   "id": "kinomaniya-p186611",
+   "kind": "festival",
+   "missed": 0,
+   "modified": "2026-09-24T16:49:22",
+   "post": 186611,
+   "scope": "cinema",
+   "source": "programata.bg",
+   "status": "upcoming",
+   "tag": "СЛЕД 28 ДНИ",
+   "title": "Киномания",
+   "titleEn": "Kinomania",
+   "titles": [
+    {
+     "t": "от Кан, Венеция, Торонто и Карлови Вари",
+     "v": []
+    },
+    {
+     "t": "Специален документален филм за историята на фестивала",
+     "v": []
+    },
+    {
+     "t": "а тепърва ще бъдат обявени международните гости и още изненади",
+     "v": []
+    },
+    {
+     "t": "Официално начало",
+     "v": []
+    },
+    {
+     "t": "Див кон девет",
+     "v": []
+    },
+    {
+     "t": "Фантомът на операта",
+     "v": [
+      "ndk1"
+     ]
+    }
+   ],
+   "to": "2026-11-29",
+   "url": "https://programata.bg/kino/40-izdanie-na-kinomaniya/",
+   "venues": [
+    "ndk1"
+   ]
+  }
+ ],
+ "generated": "2026-10-15T15:48:36+00:00",
+ "ok": true,
+ "posts": {
+  "179727": {
+   "date": "2026-04-24T11:42:15",
+   "modified": "2026-05-15T14:27:26",
+   "verdict": "skip: ended 2026-07-07"
+  },
+  "179778": {
+   "date": "2026-04-24T14:37:08",
+   "modified": "2026-04-24T14:37:25",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "180082": {
+   "date": "2026-05-04T20:36:56",
+   "modified": "2026-05-04T20:36:56",
+   "verdict": "skip: ended 2026-05-10"
+  },
+  "180132": {
+   "date": "2026-05-05T10:28:20",
+   "modified": "2026-05-05T10:28:20",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "180162": {
+   "date": "2026-05-05T11:02:17",
+   "modified": "2026-05-05T11:02:18",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "180884": {
+   "date": "2026-05-15T14:33:57",
+   "modified": "2026-05-15T14:34:04",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "181238": {
+   "date": "2026-05-20T17:35:38",
+   "modified": "2026-09-23T13:07:09",
+   "verdict": "skip: ended 2026-09-30"
+  },
+  "181582": {
+   "date": "2026-05-29T16:09:13",
+   "modified": "2026-05-29T16:09:13",
+   "verdict": "skip: ended 2026-06-30"
+  },
+  "181624": {
+   "date": "2026-05-29T17:01:34",
+   "modified": "2026-05-29T17:01:35",
+   "verdict": "skip: ended 2026-06-12"
+  },
+  "181666": {
+   "date": "2026-05-29T17:33:00",
+   "modified": "2026-05-29T17:33:37",
+   "verdict": "skip: ended 2026-06-19"
+  },
+  "182222": {
+   "date": "2026-06-12T16:44:46",
+   "modified": "2026-06-12T16:44:53",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "182856": {
+   "date": "2026-06-30T12:03:17",
+   "modified": "2026-06-30T12:03:18",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "183492": {
+   "date": "2026-07-16T17:50:40",
+   "modified": "2026-07-16T17:50:40",
+   "verdict": "skip: ended 2026-08-13"
+  },
+  "183532": {
+   "date": "2026-07-17T17:42:15",
+   "modified": "2026-07-17T17:42:16",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "183719": {
+   "date": "2026-07-21T16:30:15",
+   "modified": "2026-07-21T16:30:31",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "183733": {
+   "date": "2026-07-21T16:44:42",
+   "modified": "2026-07-21T16:44:42",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "185009": {
+   "date": "2026-08-26T14:33:37",
+   "modified": "2026-08-26T14:33:38",
+   "verdict": "skip: ended 2026-09-12"
+  },
+  "185127": {
+   "date": "2026-08-27T16:44:22",
+   "modified": "2026-08-27T16:44:55",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "185188": {
+   "date": "2026-08-27T17:36:20",
+   "modified": "2026-08-27T17:36:21",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "185300": {
+   "date": "2026-08-31T15:31:19",
+   "modified": "2026-08-31T15:31:20",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "185887": {
+   "date": "2026-09-15T16:01:11",
+   "modified": "2026-09-15T16:01:12",
+   "verdict": "skip: not in Sofia (the post does not place it in Sofia)"
+  },
+  "186299": {
+   "date": "2026-09-17T14:39:04",
+   "modified": "2026-09-17T14:39:07",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "186342": {
+   "date": "2026-09-21T16:33:23",
+   "modified": "2026-09-21T16:33:23",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "186611": {
+   "date": "2026-09-24T16:49:22",
+   "id": "kinomaniya-p186611",
+   "modified": "2026-09-24T16:49:22",
+   "verdict": "event"
+  },
+  "186736": {
+   "date": "2026-09-24T18:00:00",
+   "modified": "2026-09-25T15:12:18",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "186957": {
+   "date": "2026-09-30T15:12:11",
+   "modified": "2026-09-30T15:12:12",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "187545": {
+   "date": "2026-10-09T16:21:23",
+   "id": "act-festival-za-svoboden-teatar-p187545",
+   "modified": "2026-10-09T16:21:24",
+   "verdict": "event"
+  }
+ },
+ "read": {
+  "listed": 27,
+  "pages": 27,
+  "unreadable": 1
+ },
+ "source": "programata.bg"
+}

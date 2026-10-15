@@ -3017,6 +3017,218 @@ except Exception as _e:
     print(f"  FAIL CG block: {_e}")
 
 
+# ------------------------------------------------- fetch_events: programata.bg events
+# Fixtures: programata.bg festival posts saved 2026-10-15, trimmed (structure kept,
+# most prose cut), and the REST listing of categories 159 + 146.
+print("\nfetch_events: programata.bg festival posts -> events.json")
+import json as _evjson
+import fetch_events as FE
+
+_EV_TODAY = dt.date(2026, 10, 15)
+_ev_list = _evjson.loads((FIXTURES / "events_programata_list.json").read_text(encoding="utf-8"))
+_ev_post = {p["id"]: p for p in _ev_list}
+_ev_page = {k: FE.parse_page((FIXTURES / f"events_programata_{k}.html").read_text(encoding="utf-8"))
+            for k in ("act", "kinomania", "nosht", "kinodvor", "nofield")}
+_EV_CAT = {
+    "THEATRES": [{"id": "derida", "name": "Сцена „Дерида“", "nameEn": "Derida Stage"},
+                 {"id": "iam", "name": "I AM Studio", "nameEn": "I AM Studio"},
+                 {"id": "toplo", "name": "Топлоцентрала", "nameEn": "Toplocentrala"},
+                 {"id": "national", "name": "Народен театър „Иван Вазов“", "nameEn": "Ivan Vazov National Theatre"},
+                 {"id": "sofia-th", "name": "Театър „София“", "nameEn": "Sofia Theatre"}],
+    "CINEMAS": [{"id": "ndk1", "name": "НДК — Зала 1", "nameEn": "NDK — Hall 1"},
+                {"id": "frenski-institut", "name": "Френски институт", "nameEn": "French Institute"},
+                {"id": "lumiere", "name": "Кино Люмиер", "nameEn": "Lumiere Cinema"}],
+    "SHOWS": [{"id": "dokato-chakame-godo", "title": "Докато чакаме Годо", "theatre": "iam"},
+              {"id": "vakhanki", "title": "Вакханки", "theatre": "national"},
+              # same title as the ACT post's opener at Театър О3, but at Дерида: its clause
+              # names Театър О3, so it must not become an ACT member
+              {"id": "takav-e-zhivotat", "title": "Такъв е животът", "theatre": "derida"}],
+    "PERFORMANCES": [["dokato-chakame-godo", "2026-10-17", "19:30", None, None],
+                     ["vakhanki", "2026-10-20", "19:00", None, None],
+                     ["takav-e-zhivotat", "2026-10-17", "20:00", None, None]],
+    "FILMS": [{"id": "fantomat-na-operata", "bg": "Фантомът на операта"},
+              {"id": "div-kon-devet", "bg": "Див кон девет"}],
+    "SHOWTIMES": [["fantomat-na-operata", "ndk1", "2026-11-16", ["19:00"]],
+                  ["div-kon-devet", "ndk1", "2026-11-12", ["19:00"]]],
+    "EVENTS": [{"id": "kinomania", "title": "Киномания 2026", "from": "2026-11-12", "to": "2026-11-29",
+                "scope": "cinema"},
+               {"id": "cinelibri", "title": "Синелибри 2026: „Цивилизация на зрелището“",
+                "from": "2026-10-15", "to": "2026-11-08", "scope": "cinema"}],
+}
+
+print("  the post's date field and dates in a headline")
+check("field: a range", FE.parse_field_dates("12 ноември 2026         - 29 ноември 2026"),
+      ("2026-11-12", "2026-11-29"))
+check("field: one day", FE.parse_field_dates("21 ноември 2026"), ("2026-11-21", "2026-11-21"))
+check("field: empty", FE.parse_field_dates(""), None)
+check("field: reversed range refused", FE.parse_field_dates("29 ноември 2026 - 12 ноември 2026"), None)
+_pub = dt.date(2026, 9, 15)
+check("title: 'идва на 21 ноември', year from the publication date",
+      FE.parse_title_dates("14-тата Нощ на театрите идва на 21 ноември", _pub), ("2026-11-21", "2026-11-21"))
+check("title: '17–24 октомври'", FE.parse_title_dates("Фест X | 17–24 октомври", _pub), ("2026-10-17", "2026-10-24"))
+check("title: '28 октомври – 3 ноември'", FE.parse_title_dates("Фест X: 28 октомври – 3 ноември", _pub),
+      ("2026-10-28", "2026-11-03"))
+check("title: a December-January run ends the next year",
+      FE.parse_title_dates("Зимен фест 28 декември – 3 януари", dt.date(2026, 11, 20)), ("2026-12-28", "2027-01-03"))
+check("title: '18 – 25 по 5' is no date (no month)",
+      FE.parse_title_dates("18 – 25 по 5 | Кампанията за млада публика", _pub), None)
+check("title: a month without a day is no date",
+      FE.parse_title_dates("Месец на българската драматургия | Януари 2026", _pub), None)
+check("title: two separate dates are not guessed between",
+      FE.parse_title_dates("Премиери на 3 ноември и на 5 декември", _pub), None)
+
+print("  the event's name in the headline's own words")
+for _h, _want in [
+    ("Не се правѝ! | Започва 16. издание на ACT Фестивал за свободен театър", "ACT Фестивал за свободен театър"),
+    ("40. издание на Киномания | Празник на киното със световни шедьоври и специални събития", "Киномания"),
+    ("14-тата Нощ на театрите идва на 21 ноември", "Нощ на театрите"),
+    ("Хофкино 2026 | Лятно кино в двора на Гьоте-институт България", "Хофкино 2026"),
+    ("Sofia Short Fest 2026 със силен акцент върху портретното документално кино", "Sofia Short Fest 2026"),
+    ("Синелибри 2026: Билетите за всички кинопремиери в София са в продажба", "Синелибри 2026"),
+]:
+    check(f"name: {_h[:44]!r}", FE.event_name(_h), _want)
+
+print("  one post -> one event (or why not)")
+_act, _why = FE.build_event(_ev_post[187545], _ev_page["act"], _EV_CAT, _EV_TODAY)
+check("ACT: an event", _why, None)
+if _act:
+    check("ACT: dates from the date field", (_act["from"], _act["to"], _act["dates_from"]),
+          ("2026-10-17", "2026-10-24", "date field"))
+    check("ACT: theatre festival", (_act["scope"], _act["kind"]), ("theatre", "festival"))
+    check("ACT: stable id", _act["id"], "act-festival-za-svoboden-teatar-p187545")
+    check("ACT: the source page, https on programata.bg",
+          _act["url"].startswith("https://programata.bg/stsena/") and _act["source"] == "programata.bg"
+          and _act["auto"] is True, True)
+    check("ACT: venues the post names as places, in its order", _act["venues"], ["derida", "iam"])
+    check("ACT: blurb BG is facts only",
+          _act["blurbBg"], "Фестивал, 17–24 октомври 2026. Сред местата: Сцена „Дерида“, I AM Studio.")
+    check("ACT: blurb EN", _act["blurbEn"], "Festival, 17–24 October 2026. Venues include Derida Stage, I AM Studio.")
+    check("ACT: no em dash in the copy", any("—" in _act[k] for k in ("title", "blurbBg", "blurbEn")), False)
+    check("ACT: countdown tag (evBadge recomputes it)", _act["tag"], "СЛЕД 2 ДНИ")
+    _t = {t["t"]: t["v"] for t in _act["titles"]}
+    check("ACT: 'Докато чакаме Годо' goes with I AM Studio (its own clause)", _t.get("Докато чакаме Годо"), ["iam"])
+    check("ACT: 'Такъв е животът' goes with no catalogued venue (Театър О3)", _t.get("Такъв е животът"), [])
+    check("ACT: 'Вакханки' (an inspiration) has no venue", _t.get("Вакханки"), [])
+    check("ACT: colours are two #RRGGBB, derived from the id",
+          (_act["g"] == FE.colours(_act["id"]) and all(re.fullmatch(r"#[0-9A-F]{6}", c) for c in _act["g"])), True)
+_km, _why = FE.build_event(_ev_post[186611], _ev_page["kinomania"], _EV_CAT, _EV_TODAY)
+check("Киномания: an event, Sofia from the description", _why, None)
+if _km:
+    check("Киномания: НДК Зала 1 is a place; the French Institute is only a partner", _km["venues"], ["ndk1"])
+    check("Киномания: venue named without an em dash", "НДК (Зала 1)" in _km["blurbBg"], True)
+_ev, _why = FE.build_event(_ev_post[185887], _ev_page["nosht"], _EV_CAT, _EV_TODAY)
+check("Нощ на театрите: the post never places it in Sofia -> left out",
+      (_ev, (_why or "").startswith("not in Sofia")), (None, True))
+_ev, _why = FE.build_event(_ev_post[181238], _ev_page["kinodvor"], _EV_CAT, _EV_TODAY)
+check("Кинодвор: ended -> left out", (_ev, _why), (None, "ended 2026-09-30"))
+_ev, _why = FE.build_event(_ev_post[185127], _ev_page["nofield"], _EV_CAT, _EV_TODAY)
+check("Севтополис: no date field, no date in the headline -> left out",
+      (_ev, (_why or "").startswith("no dates")), (None, True))
+check("Sofia: a Stara Zagora category decides",
+      FE.is_sofia(_ev_post[185127]["categories"], _ev_page["nofield"], [])[0], False)
+check("Sofia: a headline naming Шумен and not Sofia",
+      FE.is_sofia([329, 146], {"h1": "Шумен отново става столица на смеха", "desc": "в София", "text": ""}, [])[0], False)
+check("Sofia: 'в София' in the text", FE.is_sofia([329, 146], {"h1": "Фест", "desc": "", "text": "в София"}, [])[0], True)
+check("scope: both categories and both sections", FE.scope_of([328, 329, 159, 146]), "both")
+check("scope: a music festival only is none", FE.scope_of([97, 102]), None)
+
+print("  for_page: the seed wins, ended go, duplicates merge, members")
+_doc = {"events": [e for e in (_act, _km) if e]}
+_shown, _members, _rep = FE.for_page(_doc, _EV_CAT, _EV_TODAY)
+check("for_page: Киномания is the seed's, ACT is shown",
+      ([e["id"] for e in _shown], _rep["seed"]),
+      (["act-festival-za-svoboden-teatar-p187545"], [("kinomaniya-p186611", "kinomania")]))
+check("for_page: titleEn and blurbEn hold no Cyrillic",
+      [bool(re.search(r"[\u0400-\u04FF]", e["titleEn"] + e["blurbEn"])) for e in _shown], [False])
+check("for_page: an untranslated title is romanised", [e["titleEn"] for e in _shown],
+      ["ACT Festival za svoboden teatar"])
+check("for_page: the page record is the EVENTS shape + url + auto, no internals",
+      sorted(_shown[0]) if _shown else None,
+      sorted(["id", "kind", "scope", "status", "title", "titleEn", "from", "to", "g", "blurbBg", "blurbEn",
+              "tag", "source", "url", "auto"]))
+check("members: ACT lists 'Докато чакаме Годо' only (not the Дерида namesake, not Вакханки)",
+      _members.get("act-festival-za-svoboden-teatar-p187545"), ["dokato-chakame-godo"])
+check("members: the seed's Киномания gets the film its post places in Зала 1",
+      _members.get("kinomania"), ["fantomat-na-operata"])
+_amb = dict(_EV_CAT, SHOWS=_EV_CAT["SHOWS"] + [{"id": "godo-2", "title": "Докато чакаме Годо", "theatre": "iam"}])
+check("members: two catalogue items with the title -> none",
+      FE.for_page(_doc, _amb, _EV_TODAY)[1].get("act-festival-za-svoboden-teatar-p187545"), None)
+_nodate = dict(_EV_CAT, PERFORMANCES=[["dokato-chakame-godo", "2026-11-30", "19:30", None, None]])
+check("members: no performance within the festival's dates -> none",
+      FE.for_page(_doc, _nodate, _EV_TODAY)[1].get("act-festival-za-svoboden-teatar-p187545"), None)
+check("for_page: an ended event is dropped", FE.for_page(_doc, _EV_CAT, dt.date(2026, 10, 25))[0], [])
+if _act:
+    _twin = dict(_act, id="act-fest-p999", post=999, url="https://programata.bg/stsena/act-2/", venues=[], titles=[])
+    _sh2 = FE.for_page({"events": [_act, _twin]}, _EV_CAT, _EV_TODAY)[0]
+    check("for_page: two posts on one festival -> one event, the richer, both pages kept",
+          [(e["id"], e.get("urls")) for e in _sh2],
+          [(_act["id"], [_act["url"], "https://programata.bg/stsena/act-2/"])])
+
+print("  keep-previous: the listing, the 3-run rule, a changed post")
+if _act:
+    _prev = [dict(_act)]
+    _m1 = FE.merge(_prev, {}, set(), True, _EV_TODAY)
+    check("merge: not listed once -> kept, missed 1", [(e["id"], e["missed"]) for e in _m1], [(_act["id"], 1)])
+    _m2 = FE.merge(FE.merge(_m1, {}, set(), True, _EV_TODAY), {}, set(), True, _EV_TODAY)
+    check("merge: not listed for 3 runs -> gone", _m2, [])
+    check("merge: listing failed -> kept, missed unchanged",
+          [(e["id"], e["missed"]) for e in FE.merge(_prev, {}, set(), False, _EV_TODAY)], [(_act["id"], 0)])
+    check("merge: the post re-read and no longer an event -> gone",
+          FE.merge(_prev, {}, {187545}, True, _EV_TODAY, rejected={187545}), [])
+    check("merge: ended -> gone", FE.merge(_prev, {}, {187545}, True, dt.date(2026, 10, 25)), [])
+    _new = dict(_act, id="renamed-p187545", g=["#000000", "#000000"])
+    check("merge: a re-read post keeps its first id and colours",
+          [(e["id"], e["g"]) for e in FE.merge(_prev, {187545: _new}, {187545}, True, _EV_TODAY)],
+          [(_act["id"], _act["g"])])
+
+    class _FakeNet:
+        def __init__(self, listing, pages):
+            self.listing, self.pages, self.calls = listing, pages, []
+        def json(self, url, **kw):
+            self.calls.append(url)
+            return self.listing
+        def text(self, url, **kw):
+            self.calls.append(url)
+            return self.pages.get(url)
+    _pages = {_ev_post[187545]["link"]: (FIXTURES / "events_programata_act.html").read_text(encoding="utf-8")}
+    _net = _FakeNet([_ev_post[187545]], _pages)
+    _d1 = FE.run(_net, _EV_CAT, _EV_TODAY, {})
+    check("run: the listing and one page read -> one event",
+          ([e["id"] for e in _d1["events"]], len(_net.calls), _d1["ok"]), ([_act["id"]], 2, True))
+    _net2 = _FakeNet([_ev_post[187545]], _pages)
+    _d2 = FE.run(_net2, _EV_CAT, _EV_TODAY, _d1)
+    check("run: an unmodified post is not read again, its event stays",
+          ([e["id"] for e in _d2["events"]], len(_net2.calls)), ([_act["id"]], 1))
+    _d3 = FE.run(_FakeNet(None, {}), _EV_CAT, dt.date(2026, 10, 16), _d2)
+    check("run: the listing fails -> previous events kept, ok false, tag follows the calendar",
+          ([e["id"] for e in _d3["events"]], _d3["ok"], _d3["events"][0]["tag"] if _d3["events"] else None),
+          ([_act["id"]], False, "СЛЕД 1 ДЕН"))
+    _d4 = FE.run(_FakeNet(None, {}), _EV_CAT, dt.date(2026, 10, 25), _d2)
+    check("run: the listing fails after the end date -> the event still goes", _d4["events"], [])
+    _net5 = _FakeNet([_ev_post[187545]], {})
+    _d5 = FE.run(_net5, _EV_CAT, _EV_TODAY, dict(_d1, posts={}))
+    check("run: a post page that cannot be read keeps the post's event",
+          [e["id"] for e in _d5["events"]], [_act["id"]])
+
+print("  English titles: translate.py's cache and official names, else the Bulgarian title")
+import translate as _TR
+_saved_cache, _saved_key = _TR.load_cache, _TR.DEEPL_KEY
+try:
+    _TR.DEEPL_KEY = ""
+    _TR.load_cache = lambda: {_TR.cache_key("Фест на театъра"): {"en": "Theatre Fest"},
+                              _TR.cache_key("Синелибри 2026"): {"en": "Sinelibri 2026"}}
+    _evs = [{"id": "a", "title": "Фест на театъра"}, {"id": "b", "title": "Синелибри 2026"},
+            {"id": "c", "title": "Непреведен фестивал"}, {"id": "d", "title": "Sofia Short Fest 2026"}]
+    FE.english_titles(_evs, use_deepl=False)
+    check("titleEn: cached DeepL translation", _evs[0]["titleEn"], "Theatre Fest")
+    check("titleEn: CineLibri spelt its own way", _evs[1]["titleEn"], "CineLibri 2026")
+    check("titleEn: no translation -> the title romanised (no Cyrillic in English mode)",
+          _evs[2]["titleEn"], "Nepreveden festival")
+    check("titleEn: a Latin title stays", _evs[3]["titleEn"], "Sofia Short Fest 2026")
+finally:
+    _TR.load_cache, _TR.DEEPL_KEY = _saved_cache, _saved_key
+
+
 # ------------------------------------------------------------ gen_share_pages
 print("\ngen_share_pages: OG tags, escaping, URLs, redirect target")
 

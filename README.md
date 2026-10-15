@@ -46,7 +46,12 @@ Run in order by `scripts/refresh_all.py` (which the robot calls every 3 days):
 4. **`fetch_tmdb.py`** — matches each film to TMDB for real posters, English titles,
    director, cast, and Bulgarian overview. Needs the `TMDB_TOKEN` secret.
 5. **`fetch_theatre_posters.py`** — best-effort theatre posters from theatre.art.bg.
-6. **`inject_data.py`** — inlines the poster and details maps into `index.html`.
+6. **`fetch_events.py`** — festivals and limited runs that programata.bg announces
+   (its festival categories, only posts with dates and in Sofia) into `events.json`;
+   keeps the previous events when the site is down. Shown in "Лимитирано и
+   ексклузивно" with a link to the source page.
+7. **`inject_data.py`** — inlines the poster and details maps, and the auto events
+   (`EVENTS_AUTO`, `EVENT_MEMBERS`), into `index.html`.
 
 Every step is best-effort and isolated: one failure never empties the app, and
 the run is logged to `build_report.json`.

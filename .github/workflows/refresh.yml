@@ -121,7 +121,7 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json icons/apple-touch-icon.png; do
+          for f in index.html tmdb_films.json theatre_posters.json cinema_films.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json events.json icons/apple-touch-icon.png; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage per-title share pages and the site share-preview image.

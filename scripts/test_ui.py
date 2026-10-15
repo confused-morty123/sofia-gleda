@@ -13766,6 +13766,174 @@ def wave_ev1(browser):
         ctx.close()
 
 
+# ============================================================================
+# WAVE EV3: events an aggregator lists (fetch_events.py -> EVENTS_AUTO)
+# ============================================================================
+_EV3_SOURCE_JS = """() => {
+    const out = [];
+    const auto = (typeof EVENTS_AUTO !== 'undefined' && Array.isArray(EVENTS_AUTO)) ? EVENTS_AUTO : [];
+    for (const ev of auto) {
+        const box = document.createElement('div'); box.innerHTML = eventCard(ev);
+        const sh = document.createElement('div'); sh.innerHTML = sheetEvent(ev);
+        const a = sh.querySelector('a.evsrc');
+        out.push({id: ev.id, url: ev.url, inEvents: EVENTS.filter(e => e.id === ev.id).length,
+                  merged: EVENTS.find(e => e.id === ev.id) || null,
+                  cardTitle: ((box.querySelector('h3') || {}).textContent || '').trim(),
+                  badge: ((box.querySelector('.badge') || {}).textContent || '').trim(),
+                  title: S.lang === 'bg' ? ev.title : ev.titleEn,
+                  href: a ? a.getAttribute('href') : null, target: a ? a.getAttribute('target') : null,
+                  rel: a ? a.getAttribute('rel') : null, text: a ? a.textContent.trim() : null,
+                  note: ((sh.querySelector('.buynote.evagg') || {}).textContent || '').trim()});
+    }
+    return out;
+}"""
+
+
+def _ev3_link_ok(r, lang):
+    want = ("Източник: " if lang == "bg" else "Source: ") + "programata.bg ↗"
+    note_ok = ("не от сайта на организаторите" in r["note"]) if lang == "bg" else ("not the organisers" in r["note"])
+    return (r["href"] == r["url"] and r["target"] == "_blank" and "noopener" in (r["rel"] or "")
+            and r["text"] == want and "programata.bg" in r["note"] and note_ok)
+
+
+def wave_ev3(browser):
+    """Festivals and limited runs that programata.bg announces reach the page as
+    EVENTS_AUTO. They join EVENTS once (a seed id wins; an entry without dates or
+    colours is refused), render as event cards, and their sheet links the source
+    page ("Източник: programata.bg ↗", new tab, rel noopener) with a plain note that
+    an events guide listed them. A seed event's sheet keeps its plain source line."""
+    wave = "EV3"
+    ensure_shot_dir(wave)
+    src = (webapp_root / html_env).read_text(encoding="utf-8")
+    m = re.search(r"^const EVENTS_AUTO\s*=\s*(.*?);\s*$", src, flags=re.M)
+    check("ev3_events_auto_declared", m is not None, "the build has no EVENTS_AUTO line")
+    real_auto = json.loads(m.group(1)) if m else []
+    seed_m = re.search(r"^const EVENTS=(\[.*?\]);\s*$", src, flags=re.M)
+    seed = json.loads(seed_m.group(1)) if seed_m else []
+
+    # 1. the real build's auto events, BG and EN, rendered through eventCard/sheetEvent
+    for lang in ("bg", "en"):
+        print(f"\n=== EV3: the build's auto events ({lang}) ===")
+        ctx, page, errs = open_page(browser, 1280, 900, lang=lang, mode="theatre")
+        page.wait_for_timeout(300)
+        rows = page.evaluate(_EV3_SOURCE_JS)
+        if not real_auto:
+            skip(f"ev3_real_{lang}", "EVENTS_AUTO is empty in this build")
+        for r in rows:
+            check(f"ev3_real_{r['id']}_merged_once_{lang}", r["inEvents"] == 1 and (r["merged"] or {}).get("auto") is True,
+                  f"in EVENTS {r['inEvents']} time(s)")
+            check(f"ev3_real_{r['id']}_card_{lang}", r["cardTitle"] == r["title"] and bool(r["badge"]),
+                  f"card title {r['cardTitle']!r}, badge {r['badge']!r}")
+            if lang == "en":
+                check(f"ev3_real_{r['id']}_en_no_cyrillic", not re.search(r"[Ѐ-ӿ]", r["cardTitle"]),
+                      f"English card title {r['cardTitle']!r}")
+            check(f"ev3_real_{r['id']}_source_link_{lang}", _ev3_link_ok(r, lang),
+                  f"href {r['href']!r} target {r['target']!r} rel {r['rel']!r} text {r['text']!r} note {r['note'][:80]!r}")
+        seed_sheet = page.evaluate("""() => { const ev = EVENTS.find(e => !e.auto);
+            if (!ev) return null; const sh = document.createElement('div'); sh.innerHTML = sheetEvent(ev);
+            return {links: sh.querySelectorAll('a.evsrc').length,
+                    note: [...sh.querySelectorAll('.buynote')].map(n => n.textContent.trim()).join(' | ')}; }""")
+        if seed_sheet is None:
+            skip(f"ev3_seed_sheet_plain_{lang}", "no seed event")
+        else:
+            check(f"ev3_seed_sheet_plain_{lang}", seed_sheet["links"] == 0 and ("Източник" if lang == "bg" else "Source") in seed_sheet["note"],
+                  f"links {seed_sheet['links']}, note {seed_sheet['note'][:80]!r}")
+        check(f"ev3_real_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+    # 2. a controlled EVENTS_AUTO: a running festival, an entry reusing a seed id, an
+    #    entry with no colours and an entry whose url is not http(s)
+    today = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    iso = lambda n: (today + datetime.timedelta(days=n)).isoformat()
+    seed_id = seed[0]["id"] if seed else "cinelibri"
+    base = {"kind": "festival", "scope": "both", "status": "active", "tag": "СЛЕД 0 ДНИ",
+            "source": "programata.bg", "auto": True, "blurbBg": "Фестивал, тест.", "blurbEn": "Festival, test.",
+            "g": ["#952343", "#23060E"]}
+    test_auto = [
+        dict(base, id="ev3-test-fest", title="Тестов фестивал EV3", titleEn="EV3 Test Festival",
+             **{"from": iso(-1), "to": iso(3)}, url="https://programata.bg/stsena/ev3-test-fest/"),
+        dict(base, id=seed_id, title="Дубликат на сийда", titleEn="Seed duplicate",
+             **{"from": iso(0), "to": iso(2)}, url="https://programata.bg/kino/ev3-dup/"),
+        dict({k: v for k, v in base.items() if k != "g"}, id="ev3-no-colours", title="Без цветове",
+             titleEn="No colours", **{"from": iso(0), "to": iso(1)}, url="https://programata.bg/kino/ev3-x/"),
+        dict(base, id="ev3-bad-url", title="Лош адрес", titleEn="Bad address",
+             **{"from": iso(0), "to": iso(1)}, url="javascript:alert(1)"),
+    ]
+    test_file = webapp_root / "index.ev3.html"
+    line = "const EVENTS_AUTO = " + json.dumps(test_auto, ensure_ascii=False, separators=(",", ":")) + ";"
+    test_src = re.sub(r"^const EVENTS_AUTO\s*=.*$", lambda _m: line, src, count=1, flags=re.M) if m else src
+    test_file.write_text(test_src, encoding="utf-8")
+    try:
+        for lang in ("bg", "en"):
+            print(f"\n=== EV3: controlled EVENTS_AUTO ({lang}) ===")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, timezone_id="Europe/Sofia", locale="bg-BG")
+            ctx.add_init_script(CLOCK)
+            ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',
+                genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'%s', mode:'theatre'})); } catch(e) {}""" % lang)
+            page = ctx.new_page()
+            errs = []
+            page.on("pageerror", lambda e: errs.append(str(e)))
+            page.goto(test_file.as_uri())
+            page.wait_for_selector(".bar", timeout=20000)
+            page.wait_for_timeout(300)
+            # rails stream in on scroll: scroll like a reader until the card is mounted
+            for _ in range(20):
+                if page.query_selector('.ecard[data-event="ev3-test-fest"]'):
+                    break
+                page.mouse.wheel(0, 900)
+                page.wait_for_timeout(150)
+            st = page.evaluate(f"""() => ({{
+                test: EVENTS.filter(e => e.id === 'ev3-test-fest').length,
+                seed: EVENTS.filter(e => e.id === {json.dumps(seed_id)}).map(e => !!e.auto),
+                noColours: EVENTS.some(e => e.id === 'ev3-no-colours'),
+                card: !!document.querySelector('.ecard[data-event="ev3-test-fest"]')}})""")
+            check(f"ev3_merge_adds_once_{lang}", st["test"] == 1, f"{st['test']}")
+            check(f"ev3_merge_seed_wins_{lang}", st["seed"] == [False], f"{st['seed']}")
+            check(f"ev3_merge_refuses_no_colours_{lang}", not st["noColours"], "")
+            # the running festival is a card on the page, and a click opens its sheet
+            check(f"ev3_card_on_page_{lang}", st["card"], "no .ecard for the running test festival")
+            if st["card"]:
+                page.click('.ecard[data-event="ev3-test-fest"]')
+                page.wait_for_selector(".scrim .sheet a.evsrc", timeout=5000)
+                page.wait_for_timeout(450)
+                r = page.evaluate("""() => { const sh = document.querySelector('.scrim .sheet');
+                    const a = sh.querySelector('a.evsrc');
+                    return {href: a.getAttribute('href'), target: a.getAttribute('target'), rel: a.getAttribute('rel'),
+                            text: a.textContent.trim(), url: 'https://programata.bg/stsena/ev3-test-fest/',
+                            note: ((sh.querySelector('.buynote.evagg') || {}).textContent || '').trim(),
+                            h2: ((sh.querySelector('h2') || {}).textContent || '').trim(),
+                            visible: a.getBoundingClientRect().height > 0}; }""")
+                check(f"ev3_sheet_source_link_{lang}", _ev3_link_ok(r, lang) and r["visible"],
+                      f"href {r['href']!r} text {r['text']!r} note {r['note'][:70]!r}")
+                check(f"ev3_sheet_title_{lang}", r["h2"].lower() == ("Тестов фестивал EV3" if lang == "bg" else "EV3 Test Festival").lower(),
+                      f"{r['h2']!r}")
+                save_shot(page, wave, f"ev3_sheet_{lang}")
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(400)
+            # deep link: #event=<id> opens the same sheet on a fresh load
+            page.goto("about:blank")
+            page.goto(test_file.as_uri() + "#event=ev3-test-fest")
+            page.wait_for_selector(".bar", timeout=20000)
+            try:
+                page.wait_for_selector(".scrim .sheet a.evsrc", timeout=5000)
+                check(f"ev3_hash_opens_sheet_{lang}", True, "")
+            except Exception as ex:
+                check(f"ev3_hash_opens_sheet_{lang}", False, str(ex)[:100])
+            bad = page.evaluate("""() => { const ev = EVENTS.find(e => e.id === 'ev3-bad-url');
+                if (!ev) return null; const sh = document.createElement('div'); sh.innerHTML = sheetEvent(ev);
+                return {links: [...sh.querySelectorAll('a')].map(a => a.getAttribute('href')),
+                        note: ((sh.querySelector('.buynote') || {}).textContent || '').trim()}; }""")
+            check(f"ev3_unsafe_url_not_linked_{lang}", bad is not None and not any("javascript" in (h or "") for h in bad["links"]),
+                  f"{bad}")
+            check(f"ev3_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+            ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -13790,6 +13958,7 @@ WAVES = {
     "P3F": wave_p3f,
     "HF1": wave_hf1,
     "EV1": wave_ev1,
+    "EV3": wave_ev3,
 }
 
 def main():

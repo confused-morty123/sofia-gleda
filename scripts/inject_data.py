@@ -6,6 +6,8 @@
   POSTERS: id -> full image URL (film_links_posters.json + film_info img fallback)
   SYN_EN:  id -> English synopsis (from translations.json cache, for BG-only items)
   TITLE_EN: id -> English title   (from translations.json cache, for BG-only items)
+  EVENTS_AUTO: festivals / limited runs programata.bg announces    (from events.json)
+  EVENT_MEMBERS: event id -> [film/show ids] the event's page lists (from events.json)
 
 Priority (highest first):
   1. TMDB poster (TMDBART[id].p)
@@ -187,6 +189,29 @@ if _cat is not None:
             print(f"  {_name}: dropped {_pid!r} — no film, show or event has this id")
             del _map[_pid]
 
+# Festivals and limited runs that programata.bg announces (fetch_events.py ->
+# events.json). Shaped for THIS page here, not in the fetch step: ended events
+# go, the hand-curated seed wins any duplicate, and the membership map is
+# computed against the listings this build actually has. Always emitted
+# (possibly empty), like SYN_EN: the UI declares nothing else for them.
+EVENTS_JSON = ROOT / "events.json"
+_events_auto: list = []
+_event_members: dict = {}
+if EVENTS_JSON.exists():
+    try:
+        import fetch_events as _FE
+        _ev_doc = json.load(open(EVENTS_JSON, encoding="utf-8"))
+        _ev_cat = _FE.catalogue(HTML.read_text(encoding="utf-8"))
+        _events_auto, _event_members, _ev_rep = _FE.for_page(_ev_doc, _ev_cat, _FE.sofia_today())
+        for _a, _s in _ev_rep["seed"]:
+            print(f"  EVENTS_AUTO: {_a} left out, the seed's {_s} lists it")
+        _known = {f.get("id") for f in _ev_cat["FILMS"]} | {s.get("id") for s in _ev_cat["SHOWS"]}
+        _event_members = {k: [i for i in v if i in _known] for k, v in _event_members.items()}
+        _event_members = {k: v for k, v in _event_members.items() if v}
+    except Exception as e:
+        print(f"  (could not read {EVENTS_JSON.name}: {e}; no auto events this build)")
+        _events_auto, _event_members = [], {}
+
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
     '   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"} from TMDB;\n'
@@ -204,6 +229,11 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
     '            other source. Always emitted (possibly empty).\n'
     '   TITLE_EN: id -> English title auto-translated from Bulgarian. Only present for\n'
     '            ids with no English title from any other source. Always emitted.\n'
+    '   EVENTS_AUTO: festivals and limited runs programata.bg announces, in the EVENTS\n'
+    '            shape plus url (the source page) and auto:true; the UI adds them to\n'
+    '            EVENTS (the seed wins an id). Written by fetch_events.py. Always emitted.\n'
+    '   EVENT_MEMBERS: event id -> [film/show ids] whose exact titles the event\'s page\n'
+    '            lists with their venue and dates. Always emitted.\n'
     '   Missing ids keep the generated SVG artwork. */')
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
@@ -215,6 +245,9 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     + "const FILMINFO = " + json.dumps(filminfo, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const SYN_EN = " + json.dumps(_syn_en, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "const TITLE_EN = " + json.dumps(_title_en, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    # "</" escaped: these strings come from another site's headlines
+    + "const EVENTS_AUTO = " + json.dumps(_events_auto, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";\n"
+    + "const EVENT_MEMBERS = " + json.dumps(_event_members, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -227,7 +260,8 @@ assert found, "marker block not found in " + str(HTML)
 # destroyed on every run. That is exactly how `const PRICES` was lost in the
 # 2026-09-16 refresh and every film became unclickable. Refuse to run rather
 # than silently delete app code again.
-GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO", "SYN_EN", "TITLE_EN"}
+GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO", "SYN_EN", "TITLE_EN",
+             "EVENTS_AUTO", "EVENT_MEMBERS"}
 declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
 stray = declared - GENERATED
 if stray:
@@ -246,3 +280,5 @@ print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' 
       f"SHOWART: {len(showart)} shows, SHOWALIAS: {len(alias)} mirrored events"
       + (" (" + ", ".join(f"{k}->{v}" for k, v in alias.items()) + ")" if alias else ""))
 print(f"  SYN_EN: {len(_syn_en)} ids, TITLE_EN: {len(_title_en)} ids (auto-translated)")
+print(f"  EVENTS_AUTO: {len(_events_auto)} event(s), EVENT_MEMBERS: "
+      f"{sum(len(v) for v in _event_members.values())} title(s) in {len(_event_members)} event(s)")
