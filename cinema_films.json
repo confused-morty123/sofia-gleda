@@ -2554,5 +2554,56 @@
   ],
   "source": "dom-kino",
   "runtime": 60
+ },
+ "tom-i-dzheri-zabraneniyat-kompas": {
+  "id": "tom-i-dzheri-zabraneniyat-kompas",
+  "bg": "ТОМ И ДЖЕРИ: ЗАБРАНЕНИЯТ КОМПАС",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cg-ring",
+  "runtime": 101
+ },
+ "stray-kids-world-tour-run-it-live-viewing": {
+  "id": "stray-kids-world-tour-run-it-live-viewing",
+  "bg": "Stray Kids World Tour <RUN IT> LIVE VIEWING",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 195,
+  "year": 2026
+ },
+ "ida-peeshe-tolkova-zle-che-dori-martvite-y-priglasyat": {
+  "id": "ida-peeshe-tolkova-zle-che-dori-martvite-y-priglasyat",
+  "bg": "Ида пееше толкова зле, че дори мъртвите й пригласят",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
+ },
+ "via-egnatia-your-steps-as-you-go-are-uneven-lektsiya-na-stra": {
+  "id": "via-egnatia-your-steps-as-you-go-are-uneven-lektsiya-na-stra",
+  "bg": "Via Egnatia: Your steps as you go are uneven - Лекция на Стратос Калафатис",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
  }
 }

@@ -22,7 +22,7 @@
  {
   "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 72 screenings are preliminary, from programata.bg"
+  "message": "no official programme: all 40 screenings are preliminary, from programata.bg"
  },
  {
   "level": "warning",
@@ -47,6 +47,6 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 162/211 ok, 49 missing IMDb ratings"
+  "message": "OMDb: 163/213 ok, 50 missing IMDb ratings"
  }
 ]
