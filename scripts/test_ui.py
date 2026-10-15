@@ -2679,9 +2679,16 @@ def wave_d1(browser):
             "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
             for lnk in sarceto_bg.get("vlaikovaLinks", [])
         )
-        check("d1_sarceto_vlaikova_link",
-              vlaikova_link_ok,
-              f"vlaikova links: {sarceto_bg.get('vlaikovaLinks', [])}")
+        # Only while the film still plays at Кино Влайкова: on real data its run there
+        # ends (last screening 14 Oct 2026), and then there is no Влайкова link to check.
+        sarceto_at_vlaikova = page.evaluate(f"""() => typeof SHOWTIMES !== 'undefined' && SHOWTIMES.some(
+            r => r[0] === 'sarceto-na-zveyara' && r[1] === 'vlaikova' && r[2] >= "{CLOCK_TODAY_ISO}")""")
+        if sarceto_at_vlaikova:
+            check("d1_sarceto_vlaikova_link",
+                  vlaikova_link_ok,
+                  f"vlaikova links: {sarceto_bg.get('vlaikovaLinks', [])}")
+        else:
+            skip("d1_sarceto_vlaikova_link", "sarceto-na-zveyara no longer plays at vlaikova in this build")
         buy_labels = sarceto_bg.get("buyLabels", [])
         unique_labels = sarceto_bg.get("uniqueLabels", [])
         check("d1_sarceto_buybox_7", len(buy_labels) == expected_sarceto_venues,
