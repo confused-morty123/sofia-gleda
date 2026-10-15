@@ -1387,10 +1387,24 @@ const cinelibriId=id=>typeof id==="string"&&id.startsWith("sinelibri-");
 const _FESTMARK=(typeof FESTMARK==="object"&&FESTMARK)||{};
 const FEST_NAMES=Object.assign({cinelibri:{bg:"Синелибри",en:"CineLibri"},kinomania:{bg:"Киномания",en:"Kinomania"}},
   Object.fromEntries(Object.entries(_FESTMARK).filter(([,v])=>v&&v.bg).map(([k,v])=>[k,{bg:v.bg,en:v.en||v.bg}])));
+/* An event an aggregator lists (EVENT_MEMBERS, fetch_events.py) marks its titles
+   too, under a short name only: a leading Latin acronym ("ACT") or a title of at
+   most 18 characters. A long title gets no mark rather than a guessed one. */
+const evShortName=ev=>{
+  const t=(ev&&ev.title||"").trim(),te=(ev&&ev.titleEn||"").trim();
+  const acr=/^([A-Z][A-Z0-9]{1,5})(?=\s|$)/.exec(t);
+  if(acr)return{bg:acr[1],en:acr[1]};
+  if(t&&t.length<=18)return{bg:t,en:te&&te.length<=18?te:t};
+  return null;};
 const _FEST_OF=(()=>{const m={film:new Map(),show:new Map()};
   const add=(kind,id,fest)=>{const a=m[kind].get(id)||[];if(!a.includes(fest))a.push(fest);m[kind].set(id,a);};
   Object.entries(_FESTMARK).forEach(([fest,v])=>{
     ((v&&v.films)||[]).forEach(id=>add("film",id,fest));((v&&v.shows)||[]).forEach(id=>add("show",id,fest));});
+  const _EM=(typeof EVENT_MEMBERS==="object"&&EVENT_MEMBERS)||{};
+  const fids=new Set(FILMS.map(f=>f.id)),sids=new Set(SHOWS.map(x=>x.id));
+  Object.entries(_EM).forEach(([evId,ids])=>{
+    if(!FEST_NAMES[evId]){const n=evShortName(EVENTS.find(e=>e.id===evId));if(!n)return;FEST_NAMES[evId]=n;}
+    (ids||[]).forEach(id=>{if(fids.has(id))add("film",id,evId);else if(sids.has(id))add("show",id,evId);});});
   FILMS.forEach(f=>{if(cinelibriId(f.id))add("film",f.id,"cinelibri");});
   const named=Object.entries(FEST_NAMES).map(([fest,n])=>[fest,[n.bg,n.en].map(k=>" "+searchKey(k)+" ").filter(k=>k.length>=7)]);
   const says=(kind,id,title)=>{const k=" "+searchKey(title)+" ";
@@ -3790,17 +3804,19 @@ function openFromHash(){
   if(!m)return false;
   return _openById(m[1],decodeURIComponent(m[2]));
 }
-/* Read ?film= / ?show= query params written by the static share pages. */
+/* Read ?film= / ?show= (written by the static share pages) and ?event= (an event's share link). */
 function openFromQuery(){
   const sp=new URLSearchParams(location.search||"");
-  for(const kind of["film","show"]){
+  for(const kind of["film","show","event"]){
     const id=sp.get(kind);
     if(id)return _openById(kind,id);
   }
   return false;
 }
 function shareItem(kind,id,title){
-  const url=SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
+  /* films and plays have static share pages (film/<id>/, show/<id>/); events
+     have none, so their link opens the app at ?event=<id> */
+  const url=kind==="event"?SITE_URL+"/?event="+encodeURIComponent(id):SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
   const data={title:title||"Sofia Gleda",text:title||"",url:url};
   if(navigator.share){navigator.share(data).catch(()=>{});return;}
   const done=()=>toast(S.lang==="bg"?"Копиран линк":"Link copied");
