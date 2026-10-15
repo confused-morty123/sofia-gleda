@@ -1070,7 +1070,7 @@ check("…the disagreeing time is logged", info["conflicts"], [["2026-12-02", "s
 print("ticket-list times off the 5-minute grid are flagged, never altered (D4)")
 res = O.fetch_venue("mladezhki", FakeNet({O.MLT_TICKETS_URL: raw("theatre_mladezhki_tickets.html")}),
                     dt.date(2026, 10, 9))
-check("tickets.mlt.bg alone: its 12:13 is published as listed, and flagged for a human",
+check("tickets.mlt.bg alone: its 12:13 is kept as listed, and flagged for a human",
       ([r[2] for r in res["rows"] + res["extra_rows"] if r[1] == "2026-11-21" and r[0] == "Малката Баба Яга"],
        O.off_grid_ticket_times(res)),
       (["12:13"], [("2026-11-21", "12:13", "Малката Баба Яга")]))
@@ -1084,7 +1084,7 @@ flags = S.run_flags({"kuklen": {"source": O.KUKLEN_ART_SOURCE, "rows": [1, 2, 3]
 check("health.json entries: a reseller filling in, an odd ticket time, a kept-row conflict",
       [(f["level"], f["venue"], f["message"][:44]) for f in flags],
       [("warning", "kuklen", "own programme not read: its listing on theat"),
-       ("warning", "mladezhki", "ticket-list time(s) off the 5-minute grid, p"),
+       ("warning", "mladezhki", "ticket-list time(s) off the 5-minute grid, s"),
        ("warning", "toplo", "the aggregator lists other times than the ke")])
 check("…the odd time itself is in the message", flags[1]["message"].endswith("2026-11-21 12:13 Малката Баба Яга"), True)
 rows, pf, info = S.merge_theatre_venue("mladezhki", "unreachable", [], None, [], agg_m, dates_m, prev_m, None,

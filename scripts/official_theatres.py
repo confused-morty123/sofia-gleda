@@ -1864,8 +1864,9 @@ SECONDARY: dict = {}
 def off_grid_ticket_times(res):
     """[(date, time, title)] of a result's rows that only a ticket list gives
     (meta "sources" == ["tickets"]) at a minute off the 5-minute grid — 12:13
-    for a 12:30 matinée (tickets.mlt.bg, 21 Nov 2026). Published as listed;
-    reported for a human to look at, never altered."""
+    for a 12:30 matinée (tickets.mlt.bg, 21 Nov 2026). The time is never
+    altered; scrape_programs marks that show-day preliminary (PRELIM_ROWS) and
+    reports it for a human to look at."""
     out = []
     for part in ("rows", "extra_rows"):
         for t, d, tm, meta in (res or {}).get(part) or []:
