@@ -7453,8 +7453,10 @@ def wave_m(browser):
     }""")
 
     if "err" not in state_375:
-        check("m1_seg_q_at_375", state_375["segQ"],
-              f"seg-q not present on mobile (CSS class still applied to DOM, needed for S.searchOpen)")
+        # phones: the search opens in its own row below the toggle, so the toggle is left
+        # exactly as it is (owner's report of 2026-10-15; HF2-A checks it frame by frame)
+        check("m1_seg_q_at_375", not state_375["segQ"],
+              f"seg-q present on mobile: the toggle must not change while searching on a phone")
         # On mobile the CSS overrides the width to flex, so just confirm no overflow
         scroll_w = page.evaluate("document.documentElement.scrollWidth")
         check("m1_no_overflow_375_search", scroll_w <= 375,
@@ -13666,6 +13668,801 @@ def wave_hf1(browser):
 
 
 # ============================================================================
+# WAVE HF2: the owner's phone reports of 2026-10-15, round 2
+#   1 opening the search on a phone squeezed the Кино/Театър toggle to its icons
+#   2 every letter typed in the search rebuilt the page (header and field) and moved it
+#   3 a filter tap made the page behind the drawer blink (every poster re-created)
+#   4 a result opened from the search on a phone: the sheet "closing issue" again
+#   5 the phone layout looked cropped (the safe areas of an edge-to-edge screen)
+#   6 the search row closed without the smooth animation of its opening
+#   7 no transition between the cinema and the theatre screens
+# Runs in Chromium by default; SOFIA_BROWSER=webkit runs it in WebKit (the safe-area
+# emulation needs Chromium's DevTools protocol and is skipped there).
+# ============================================================================
+import hashlib
+
+HF2_POSTERS = sorted((webapp_root / "posters").glob("*.jpg"))
+_HF2_BYTES = {}
+
+# marks every <img> whose decode() resolved: "decoded" in the poster checks below means
+# the element was on the page (loaded) before the tap, or was decoded before it showed
+HF2_DECODE_PATCH = """(()=>{const P=HTMLImageElement.prototype,od=P.decode;if(!od||P.__hf2)return;P.__hf2=1;
+  P.decode=function(){const im=this,p=od.call(this);p.then(()=>{im.__hf2dec=true;},()=>{});return p;};})();"""
+
+
+def _hf2_open(browser, w, h, phone, lang="bg", mode="cinema", reduced=False):
+    """_hf_open plus real poster bytes for the CDN posters (TMDB, programata): each URL
+    always gets the same local picture, so posters load, decode and can blink as on a
+    phone; every other request stays offline."""
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
+    if phone:
+        kw.update(has_touch=True, is_mobile=True)
+    if reduced:
+        kw["reduced_motion"] = "reduce"
+    ctx = browser.new_context(**kw)
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script(f"""try {{ localStorage.setItem('sofia-screen-v2', JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}})); }} catch(e) {{}}""")
+    ctx.add_init_script(HF2_DECODE_PATCH)
+
+    def _route(route):
+        u = route.request.url
+        if "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
+            return route.continue_()
+        if HF2_POSTERS and ("image.tmdb.org" in u or "programata.bg" in u):
+            f = HF2_POSTERS[int(hashlib.md5(u.encode()).hexdigest(), 16) % len(HF2_POSTERS)]
+            if f not in _HF2_BYTES:
+                _HF2_BYTES[f] = f.read_bytes()
+            return route.fulfill(status=200, body=_HF2_BYTES[f],
+                                 headers={"content-type": "image/jpeg", "cache-control": "max-age=3600"})
+        return route.abort()
+    ctx.route("http://**/*", _route)
+    ctx.route("https://**/*", _route)
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(400)
+    return ctx, page, errors
+
+
+def _hf2_shot(page, name):
+    """/tmp/sg-shots/HF2/<name>.png always; /tmp/hf2_shots/<name>[_webkit].png from a real build."""
+    save_shot(page, "HF2", name)
+    if os.environ.get("SOFIA_HTML"):
+        eng = _hf_engine(page.context.browser)
+        Path("/tmp/hf2_shots").mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=f"/tmp/hf2_shots/{name}{'' if eng == 'chromium' else '_' + eng}.png")
+
+
+# ── 1: the toggle ──────────────────────────────────────────────────────────────
+HF2_SEG_JS = r"""()=>{const s=document.querySelector('.seg');if(!s)return null;const r=s.getBoundingClientRect();
+  const R=v=>Math.round(v*10)/10;
+  return {cls:s.className, rect:[R(r.left),R(r.top),R(r.width),R(r.height)],
+    btns:[...s.querySelectorAll('button')].map(b=>{const q=b.getBoundingClientRect();return [R(q.left),R(q.width)];}),
+    labels:[...s.querySelectorAll('.seg-l')].map(l=>{const q=l.getBoundingClientRect();
+      return {op:parseFloat(getComputedStyle(l).opacity),w:R(q.width),txt:l.textContent.trim()};})};}"""
+
+# every frame: animations on the toggle or inside it, and transition/animation events
+HF2_SEG_REC_JS = r"""(ms)=>{const s=document.querySelector('.seg');const R=window.__hf2seg={anims:0,events:0,frames:0};
+  const on=()=>{R.events++;};s.addEventListener('transitionrun',on);s.addEventListener('animationstart',on);
+  const until=performance.now()+ms;
+  const tick=()=>{R.frames++;R.anims+=document.getAnimations().filter(a=>{const t=a.effect&&a.effect.target;return t&&s.contains(t);}).length;
+    if(performance.now()<until)requestAnimationFrame(tick);
+    else{s.removeEventListener('transitionrun',on);s.removeEventListener('animationstart',on);}};
+  requestAnimationFrame(tick);}"""
+
+
+def _hf2_toggle(browser, eng):
+    """Bug 1: on phones opening and closing the search never touches the toggle; desktops
+    keep the collision-based shrink (P3A): icons only when the field would crowd it."""
+    for w, h in ((390, 844), (375, 812)):
+        for lang in ("bg", "en"):
+            ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang)
+            tag = f"hf2_toggle_{w}_{lang}"
+            s0 = page.evaluate(HF2_SEG_JS)
+            for step in ("open", "close"):
+                page.evaluate(HF2_SEG_REC_JS, 650)
+                _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+                page.wait_for_timeout(750)
+                s1 = page.evaluate(HF2_SEG_JS)
+                rec = page.evaluate("window.__hf2seg")
+                is_open = page.evaluate("S.searchOpen")
+                labels_ok = all(l["op"] > 0.99 and l["w"] > 10 for l in s1["labels"])
+                ok = s1 == s0 and labels_ok and rec["anims"] == 0 and rec["events"] == 0 and is_open == (step == "open")
+                check(f"{tag}_search_{step}", ok,
+                      f"searchOpen={is_open} class {s0['cls']!r}->{s1['cls']!r} rect {s0['rect']}->{s1['rect']} "
+                      f"buttons {s0['btns']}->{s1['btns']} labels {[(l['txt'], l['op'], l['w']) for l in s1['labels']]} "
+                      f"animations sampled={rec['anims']} transition events={rec['events']} ({rec['frames']} frames)")
+                if step == "open" and w == 390 and lang == "bg":
+                    _hf2_shot(page, "phone_390_search_open_bg")
+                page.wait_for_timeout(200)
+            check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+            ctx.close()
+    for w, h in ((1024, 768), (1280, 800)):
+        ctx, page, errs = _hf2_open(browser, w, h, False)
+        g = page.evaluate("()=>{const s=document.querySelector('.seg').getBoundingClientRect(),b=document.querySelector('.bar-in').getBoundingClientRect();return {room:b.right-s.right-18,w:s.width};}")
+        crowded = g["room"] < 420
+        page.click("[data-search-open]")
+        page.wait_for_timeout(450)
+        s1 = page.evaluate(HF2_SEG_JS)
+        q1 = "seg-q" in s1["cls"].split()
+        size_ok = abs(s1["rect"][2] - 100) <= 4 if crowded else abs(s1["rect"][2] - g["w"]) <= 1
+        check(f"hf2_toggle_desk_{w}_open", q1 == crowded and size_ok,
+              f"room for the 420px field {g['room']:.0f}px (crowded={crowded}) -> class {s1['cls']!r} width {s1['rect'][2]} "
+              f"(P3A: ~100 when crowded, else unchanged {g['w']})")
+        page.keyboard.type("сп")
+        page.wait_for_timeout(650)
+        s2 = page.evaluate(HF2_SEG_JS)
+        check(f"hf2_toggle_desk_{w}_typing", s2["cls"] == s1["cls"] and abs(s2["rect"][2] - s1["rect"][2]) <= 1,
+              f"after typing: class {s2['cls']!r} width {s2['rect'][2]} (open: {s1['cls']!r} {s1['rect'][2]})")
+        page.click("[data-search-open]")
+        page.wait_for_timeout(550)
+        s3 = page.evaluate(HF2_SEG_JS)
+        check(f"hf2_toggle_desk_{w}_close", "seg-q" not in s3["cls"].split() and abs(s3["rect"][2] - g["w"]) <= 1,
+              f"after closing: class {s3['cls']!r} width {s3['rect'][2]} (full {g['w']})")
+        check(f"hf2_toggle_desk_{w}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
+# ── 2: live search ─────────────────────────────────────────────────────────────
+# every frame: scroll offset, header top, results top, the field (same node, focused)
+HF2_FRAMES_JS = r"""()=>{const qi=document.getElementById('q-m')||document.getElementById('q');window.__hf2qi=qi;
+  const hd=document.querySelector('#app > header.bar');if(hd)hd.__hf2=1;
+  const R=window.__hf2f={frames:[],stop:false};const r10=v=>Math.round(v*10)/10;
+  const tick=()=>{const h=document.querySelector('#app > header.bar'),m=document.querySelector('#app > main');
+    const q=document.getElementById('q-m')||document.getElementById('q');
+    R.frames.push({y:r10(scrollY),h:h?r10(h.getBoundingClientRect().top):null,hb:h?r10(h.getBoundingClientRect().bottom):null,
+      m:m?r10(m.getBoundingClientRect().top):null,same:q===qi,act:document.activeElement===qi,hdr:!!(h&&h.__hf2),
+      res:!!(m&&m.querySelector('.sechead')),n:m?m.querySelectorAll('.card').length:0});
+    if(!R.stop)requestAnimationFrame(tick);};requestAnimationFrame(tick);}"""
+HF2_FRAMES_STOP = "()=>{window.__hf2f.stop=true;return window.__hf2f.frames;}"
+HF2_FIELD_JS = r"""()=>{const qi=document.getElementById('q-m')||document.getElementById('q');
+  return {same:qi===window.__hf2qi,act:document.activeElement===qi,v:qi?qi.value:null,caret:qi?qi.selectionStart:null};}"""
+HF2_RESULTS_JS = r"""(q)=>{const m=document.querySelector('#app > main');const r=searchAll(q);
+  return {exp:r?r.films.length+r.shows.length:null,got:m.querySelectorAll('.card').length,head:!!m.querySelector('.sechead'),
+          page:!!m.querySelector('.phead'),q:S.q};}"""
+
+
+def _hf2_spread(frames, key):
+    vals = [f[key] for f in frames if f[key] is not None]
+    return (max(vals) - min(vals)) if vals else 0.0
+
+
+def _hf2_type(page, word, gap_ms):
+    """Type word letter by letter; after each key the same field is focused, with its value
+    and the caret at its end."""
+    bad = []
+    for i, ch in enumerate(word):
+        page.keyboard.type(ch)
+        page.wait_for_timeout(gap_ms)
+        st = page.evaluate(HF2_FIELD_JS)
+        if not (st["same"] and st["act"] and st["v"] == word[:i + 1] and st["caret"] == i + 1):
+            bad.append(f"{word[:i + 1]!r}: {st}")
+    return bad
+
+
+def _hf2_search(browser, eng):
+    """Bug 2: typing updates only the results; the field, the header and the scroll stay."""
+    words = {"bg": "спайдър", "en": "spider"}
+    for w, h in ((390, 844), (375, 812)):
+        for lang in ("bg", "en"):
+            word = words[lang]
+            tag = f"hf2_search_{w}_{lang}"
+            ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang)
+            seg0 = page.evaluate(HF2_SEG_JS)
+            _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+            page.wait_for_timeout(600)
+            # A: ~120 ms between keys, every frame recorded up to 700 ms after the last one
+            page.evaluate(HF2_FRAMES_JS)
+            bad = _hf2_type(page, word, 120)
+            page.wait_for_timeout(700)
+            fr = page.evaluate(HF2_FRAMES_STOP)
+            res = page.evaluate(HF2_RESULTS_JS, word)
+            check(f"{tag}_field_kept_every_letter", not bad,
+                  f"{len(word)} letters, 120 ms apart: same field, focused, caret at the end" + (f"; broken: {bad[:3]}" if bad else ""))
+            ok = (all(f["same"] and f["act"] and f["hdr"] for f in fr) and _hf2_spread(fr, "y") <= 1
+                  and _hf2_spread(fr, "h") <= 0.5 and _hf2_spread(fr, "m") <= 0.5)
+            check(f"{tag}_page_still_while_typing", ok,
+                  f"{len(fr)} frames: scrollY spread {_hf2_spread(fr, 'y')}, header top spread {_hf2_spread(fr, 'h')}, "
+                  f"results top spread {_hf2_spread(fr, 'm')}, field replaced in {sum(1 for f in fr if not f['same'])}, "
+                  f"unfocused in {sum(1 for f in fr if not f['act'])}, header re-created in {sum(1 for f in fr if not f['hdr'])}")
+            check(f"{tag}_results_updated", res["head"] and res["got"] == res["exp"],
+                  f"results for {word!r}: {res['got']} cards shown, searchAll finds {res['exp']}")
+            if w == 390 and lang == "bg":
+                page.wait_for_timeout(100)
+            # B: 600 ms after every key, the results follow each prefix
+            page.evaluate("()=>{const qi=document.getElementById('q-m');qi.select();}")
+            page.keyboard.press("Backspace")
+            page.wait_for_timeout(700)
+            back = page.evaluate(HF2_RESULTS_JS, "")
+            page.evaluate(HF2_FRAMES_JS)
+            counts, follow = [], True
+            for i, ch in enumerate(word):
+                page.keyboard.type(ch)
+                if w == 390 and lang == "bg" and i == 3:
+                    page.wait_for_timeout(250)
+                    _hf2_shot(page, "phone_390_mid_typing_bg")
+                    page.wait_for_timeout(350)
+                else:
+                    page.wait_for_timeout(600)
+                r = page.evaluate(HF2_RESULTS_JS, word[:i + 1])
+                counts.append(r["got"] if r["head"] else "page")
+                follow = follow and ((r["head"] and r["got"] == r["exp"]) if i >= 1 else (r["page"] and not r["head"]))
+            fr = page.evaluate(HF2_FRAMES_STOP)
+            ok = (all(f["same"] and f["act"] and f["hdr"] for f in fr) and _hf2_spread(fr, "y") <= 1
+                  and _hf2_spread(fr, "h") <= 0.5 and _hf2_spread(fr, "m") <= 0.5)
+            changed = len({c for c in counts if c != "page"}) > 1
+            check(f"{tag}_results_follow_each_letter", follow and changed and back["page"] and not back["head"],
+                  f"emptied: page back={back['page']}; per letter (600 ms each): {counts}")
+            check(f"{tag}_page_still_letter_by_letter", ok,
+                  f"{len(fr)} frames: scrollY spread {_hf2_spread(fr, 'y')}, header top spread {_hf2_spread(fr, 'h')}, "
+                  f"results top spread {_hf2_spread(fr, 'm')}, field replaced in {sum(1 for f in fr if not f['same'])}, "
+                  f"header re-created in {sum(1 for f in fr if not f['hdr'])}")
+            # x clears and closes in place: same field and header, the page and the FAB back
+            y_before = page.evaluate("Math.round(scrollY)")
+            _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+            page.wait_for_timeout(700)
+            st = page.evaluate("""()=>{const qi=document.getElementById('q-m');const m=document.querySelector('#app > main');
+              return {q:S.q,open:S.searchOpen,same:qi===window.__hf2qi,val:qi?qi.value:null,hdr:!!(document.querySelector('#app > header.bar')||{}).__hf2,
+                rowShown:!!qi&&qi.getClientRects().length>0,page:!!m.querySelector('.phead'),fab:!!document.querySelector('.fab'),
+                act:document.activeElement===qi,y:Math.round(scrollY),minH:m.style.minHeight};}""")
+            seg1 = page.evaluate(HF2_SEG_JS)
+            check(f"{tag}_clear_restores_page_in_place",
+                  st["q"] == "" and not st["open"] and st["same"] and st["val"] == "" and st["hdr"] and not st["rowShown"]
+                  and st["page"] and st["fab"] and not st["act"] and st["minH"] == "" and seg1 == seg0 and abs(st["y"] - y_before) <= 2,
+                  f"{st} toggle unchanged={seg1 == seg0}")
+            check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+            ctx.close()
+    # scrolled down first: the results open at their top, right under the pinned header,
+    # then nothing moves while they change (also when they shrink to one); x returns the
+    # page to where it was
+    for w, h in ((390, 844), (375, 812)):
+        tag = f"hf2_search_scrolled_{w}"
+        ctx, page, errs = _hf2_open(browser, w, h, True)
+        page.evaluate("window.scrollTo(0,1500)")
+        page.wait_for_timeout(500)
+        y0 = page.evaluate("Math.round(scrollY)")
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+        page.wait_for_timeout(600)
+        # how far into the listing the screen is, with the search row open (a browser with
+        # scroll anchoring keeps the listing still as the row opens; one without moves it)
+        c0 = page.evaluate("Math.round(scrollY-(document.querySelector('#app > main').getBoundingClientRect().top+scrollY))")
+        page.evaluate(HF2_FRAMES_JS)
+        word = "спайдър"
+        seq = []
+        for i, ch in enumerate(word):
+            page.keyboard.type(ch)
+            page.wait_for_timeout(600 if i >= 1 else 300)
+            seq.append(page.evaluate(HF2_RESULTS_JS, word[:i + 1])["got"])
+        fr = page.evaluate(HF2_FRAMES_STOP)
+        first = next((i for i, f in enumerate(fr) if f["res"]), None)
+        after = fr[first:] if first is not None else []
+        top_ok = bool(after) and abs(after[0]["m"] - after[0]["hb"]) <= 1.5
+        still = bool(after) and _hf2_spread(after, "y") <= 1 and _hf2_spread(after, "m") <= 0.5
+        check(f"{tag}_results_open_under_header", top_ok,
+              f"page at y={y0}: first results frame y={after[0]['y'] if after else None} results top {after[0]['m'] if after else None} "
+              f"header bottom {after[0]['hb'] if after else None}")
+        check(f"{tag}_results_still_while_they_change", still and _hf2_spread(fr, "h") <= 0.5 and all(f["same"] and f["act"] and f["hdr"] for f in fr),
+              f"cards per letter {seq}; after the first results: scrollY spread {_hf2_spread(after, 'y') if after else None}, "
+              f"results top spread {_hf2_spread(after, 'm') if after else None}; header top spread {_hf2_spread(fr, 'h')}")
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+        page.wait_for_timeout(800)
+        y1, c1 = page.evaluate("()=>{const m=document.querySelector('#app > main').getBoundingClientRect().top+scrollY;return [Math.round(scrollY),Math.round(scrollY-m)];}")
+        hdr = page.evaluate("!!(document.querySelector('#app > header.bar')||{}).__hf2")
+        check(f"{tag}_clear_returns_to_the_page_position", abs(c1 - c0) <= 2 and hdr,
+              f"the screen {c0}px into the listing before the results (page at y={y0}), {c1}px after x (y={y1}); header kept={hdr}")
+        check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
+# ── 3: filter taps behind the drawer ──────────────────────────────────────────
+# every frame for ms: in-view posters that are blank or not decoded, animations inside <main>
+HF2_POSTER_REC_JS = r"""(ms)=>{
+  for(const im of document.querySelectorAll('#app > main img.p-real'))if(im.complete&&im.naturalWidth)im.__hf2old=true;
+  const R=window.__hf2p={frames:0,bad:[],anims:[],nbad:0};const until=performance.now()+ms;
+  const tick=()=>{R.frames++;const m=document.querySelector('#app > main');
+    for(const p of m.querySelectorAll('.poster,.hero-art,.ebox')){
+      const r=p.getBoundingClientRect();
+      if(!(r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth))continue;
+      const tr=p.closest('.rtrack');if(tr){const t=tr.getBoundingClientRect();if(r.right<=t.left||r.left>=t.right)continue;}
+      let why=null;const im=p.querySelector('img.p-real');
+      if(!p.querySelector('.p-art'))why='blank';
+      else if(im&&!(im.complete&&im.naturalWidth>0))why='not loaded';
+      else if(im&&!(im.__hf2old||im.__hf2dec))why='not decoded';
+      if(why){R.nbad++;if(R.bad.length<4)R.bad.push(why+': '+(im?im.getAttribute('src').split('/').pop():'-'));}}
+    for(const a of document.getAnimations()){const t=a.effect&&a.effect.target;if(t&&m.contains(t)&&R.anims.length<4)R.anims.push(String(t.className||t.tagName).slice(0,30));}
+    if(performance.now()<until)requestAnimationFrame(tick);};
+  requestAnimationFrame(tick);}"""
+HF2_SIG_JS = r"""()=>{const m=document.querySelector('#app > main');const t=s=>{const e=m.querySelector(s);return e?e.textContent.trim().slice(0,60):'';};
+  return [m.querySelectorAll('.card').length,m.querySelectorAll('.venue-block').length,t('.phead'),t('.hero h1'),
+          [...m.querySelectorAll('.rhead h2')].map(e=>e.textContent.trim()).join('|').slice(0,160)].join(' / ');}"""
+HF2_COUNT_ANIM_JS = """(()=>{const o=Element.prototype.animate;if(o.__hf2)return;const f=function(...a){
+  if(this.classList&&(this.classList.contains('drawer')||this.classList.contains('drawer-scrim')))window.__hf2dr=(window.__hf2dr||0)+1;
+  return o.apply(this,a);};f.__hf2=1;Element.prototype.animate=f;})();"""
+
+
+def _hf2_drawer_target(page, sel, pick):
+    """The pick-th enabled control matching sel in the drawer, scrolled into view in it.
+    sel "genre": the genre chip that leaves the most titles (and fewer than all)."""
+    return page.evaluate("""([sel,pick])=>{const d=document.querySelector('.drawer');let els;
+      if(sel==='genre'){const vis=()=>(S.mode==='cinema'?visibleFilms():visibleShows()).length;const all=vis(),keep=S.fGenres;
+        els=[...d.querySelectorAll("[data-genre]:not([data-genre=''])")].filter(e=>!e.disabled).map(e=>{S.fGenres=[e.dataset.genre];const n=vis();return [n,e];})
+          .filter(x=>x[0]>0&&x[0]<all).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);S.fGenres=keep;}
+      else els=[...d.querySelectorAll(sel)].filter(e=>!e.disabled&&e.getClientRects().length);
+      const e=els[Math.min(pick,els.length-1)];if(!e)return null;
+      const r=e.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-90)d.scrollTop+=r.top-innerHeight/2;
+      const k=[...e.attributes].find(a=>a.name.startsWith('data-'));return [k.name,k.value];}""", [sel, pick])
+
+
+def _hf2_filters(browser, eng):
+    """Bug 3: a tap in the drawer updates only the page behind it: no in-view poster ever
+    blank or undecoded, no entrance animation, the scroll kept, the drawer, the header kept;
+    opening and closing the drawer do not rebuild the page either."""
+    # every tap changes the page: a period (the banner changes), "only favourites" (the
+    # favourite is the smallest cinema; the toggle filters the cinema programme only), the
+    # largest genre and the arthouse strand (strict subsets), a venue (venue mode), Изчисти
+    plans = {
+        "cinema": [("[data-range='all']", 0), ("[data-only-fav]", 0), ("genre", 0), ("[data-strand='arthouse']", 0),
+                   ("[data-venue]:not([data-venue=''])", 0), ("[data-clearf]", 0)],
+        "theatre": [("[data-range='month']", 0), ("genre", 0), ("[data-range='all']", 0),
+                    ("[data-venue]:not([data-venue=''])", 1), ("[data-range='week']", 0), ("[data-clearf]", 0)],
+    }
+    for w, h, lang, mode in ((390, 844, "bg", "cinema"), (390, 844, "en", "theatre"), (375, 812, "bg", "theatre"), (375, 812, "en", "cinema")):
+        tag = f"hf2_filters_{w}_{lang}_{mode}"
+        ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang, mode=mode)
+        page.add_init_script(HF2_COUNT_ANIM_JS)
+        page.evaluate(HF2_COUNT_ANIM_JS)
+        if mode == "cinema":
+            # a favourite (the cinema with the fewest films, but some) shows the toggle
+            page.evaluate("""()=>{const n=CINEMAS.map(c=>[c.id,filmsAtCinema(c.id).length]).filter(x=>x[1]>0).sort((a,b)=>a[1]-b[1]);
+              S.fav.venues=[n.length?n[0][0]:CINEMAS[0].id];save();render();}""")
+            page.wait_for_timeout(300)
+        page.evaluate("window.scrollTo(0,900)")
+        page.wait_for_timeout(900)
+        # opening the drawer leaves the page as it is
+        page.evaluate("()=>{document.querySelector('#app > header.bar').__hf2=1;for(const im of document.querySelectorAll('#app > main img'))im.__hf2keep=1;}")
+        y0 = page.evaluate("Math.round(scrollY)")
+        _hf_tap_el(page, True, "()=>document.querySelector('.fab')")
+        page.wait_for_timeout(700)
+        o = page.evaluate("""()=>({drawer:!!document.querySelector('.drawer'),hdr:!!document.querySelector('#app > header.bar').__hf2,
+            fresh:[...document.querySelectorAll('#app > main img')].filter(i=>!i.__hf2keep).length,y:Math.round(scrollY),fab:!!document.querySelector('.fab')})""")
+        check(f"{tag}_drawer_opens_over_the_page", o["drawer"] and o["hdr"] and o["fresh"] == 0 and abs(o["y"] - y0) <= 1 and not o["fab"],
+              f"{o} (page at y={y0})")
+        if not o["drawer"]:
+            ctx.close()
+            continue
+        page.evaluate("()=>{document.querySelector('.drawer').__hf2=1;}")
+        a0 = page.evaluate("window.__hf2dr||0")
+        notes, flags = [], {"content": True, "posters": True, "anims": True, "scroll": True, "drawer": True, "header": True}
+        for i, (sel, pick) in enumerate(plans[mode]):
+            key = _hf2_drawer_target(page, sel, pick)
+            if not key:
+                notes.append(f"{sel}: absent")
+                flags["content"] = False
+                continue
+            page.wait_for_timeout(450)
+            before = page.evaluate("()=>({sig:(%s)(),y:Math.round(scrollY),top:document.querySelector('.drawer').scrollTop})" % HF2_SIG_JS)
+            page.evaluate(HF2_POSTER_REC_JS, 500)
+            _hf_tap_el(page, True, "(k)=>document.querySelector('.drawer ['+k[0]+'=\"'+CSS.escape(k[1])+'\"]')", key)
+            page.wait_for_timeout(650)
+            after = page.evaluate("""()=>{const d=document.querySelector('.drawer');return {sig:(%s)(),y:Math.round(scrollY),
+                maxY:Math.round(document.documentElement.scrollHeight-innerHeight),same:!!(d&&d.__hf2),top:d?d.scrollTop:-1,
+                hdr:!!document.querySelector('#app > header.bar').__hf2,fab:!!document.querySelector('.fab'),probe:document.querySelectorAll('.sg-probe').length,
+                rec:window.__hf2p};}""" % HF2_SIG_JS)
+            rec = after["rec"]
+            y_ok = abs(after["y"] - before["y"]) <= 1 or (after["maxY"] < before["y"] and abs(after["y"] - after["maxY"]) <= 1)
+            flags["content"] &= after["sig"] != before["sig"]
+            flags["posters"] &= rec["nbad"] == 0
+            flags["anims"] &= not rec["anims"]
+            flags["scroll"] &= y_ok
+            flags["drawer"] &= after["same"] and abs(after["top"] - before["top"]) <= 1 and not after["fab"] and after["probe"] == 0
+            flags["header"] &= after["hdr"]
+            notes.append(f"{key[0]}={key[1]}: changed={after['sig'] != before['sig']} bad poster frames={rec['nbad']} {rec['bad'][:2]} "
+                         f"anims={rec['anims'][:2]} y {before['y']}->{after['y']} (max {after['maxY']}) drawer same={after['same']} "
+                         f"top {before['top']}->{after['top']} ({rec['frames']} frames)")
+            if w == 390 and lang == "bg" and i == 1:
+                _hf2_shot(page, "phone_390_drawer_after_filter_tap_bg")
+        a1 = page.evaluate("window.__hf2dr||0")
+        detail = " | ".join(notes)
+        check(f"{tag}_content_updates", flags["content"], detail)
+        check(f"{tag}_no_poster_blank_or_undecoded", flags["posters"], detail)
+        check(f"{tag}_no_entrance_animation", flags["anims"], detail)
+        check(f"{tag}_scroll_kept", flags["scroll"], detail)
+        check(f"{tag}_drawer_and_header_kept", flags["drawer"] and flags["header"] and a1 == a0,
+              f"drawer animations {a0}->{a1}; header kept={flags['header']}; " + detail)
+        # closing leaves the page as it is too
+        page.evaluate("()=>{for(const im of document.querySelectorAll('#app > main img'))im.__hf2keep=1;}")
+        y1 = page.evaluate("Math.round(scrollY)")
+        _hf_tap_el(page, True, "()=>document.querySelector('.drawer .dclose')")
+        page.wait_for_timeout(700)
+        c = page.evaluate("""()=>({drawer:!!document.querySelector('.drawer'),fab:!!document.querySelector('.fab'),hdr:!!document.querySelector('#app > header.bar').__hf2,
+            fresh:[...document.querySelectorAll('#app > main img')].filter(i=>!i.__hf2keep).length,y:Math.round(scrollY)})""")
+        check(f"{tag}_drawer_closes_over_the_page", not c["drawer"] and c["fab"] and c["hdr"] and c["fresh"] == 0 and abs(c["y"] - y1) <= 1,
+              f"{c} (page at y={y1})")
+        check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
+# ── 4: a search result's sheet ────────────────────────────────────────────────
+# iOS keeps the field focused (keyboard up) when a button is tapped: here a mousedown on
+# anything but the field must not move the focus either
+HF2_KB_UP_JS = """()=>{if(window.__hf2kb)return;window.__hf2kb=e=>{const qi=document.getElementById('q-m');
+  if(qi&&document.activeElement===qi&&e.target!==qi)e.preventDefault();};document.addEventListener('mousedown',window.__hf2kb,true);}"""
+HF2_KB_DOWN_JS = "()=>{if(window.__hf2kb){document.removeEventListener('mousedown',window.__hf2kb,true);window.__hf2kb=null;}}"
+HF2_RESULT_JS = r"""(i)=>{const c=[...document.querySelectorAll('#app > main .card')].filter(e=>e.getClientRects().length);
+  const e=c[i%c.length];if(!e)return null;window.__hf2card=e;
+  const r0=e.getBoundingClientRect();if(r0.top<170||r0.bottom>innerHeight-90)window.scrollBy(0,r0.top-innerHeight/2.6);
+  const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+Math.min(r.height/2,60),id:e.dataset.film||e.dataset.show,kind:e.dataset.film?'film':'show'};}"""
+HF2_UNDER_SHEET_JS = r"""()=>{const qi=document.getElementById('q-m');return {fieldFocused:document.activeElement===qi,
+  cardKept:!!(window.__hf2card&&window.__hf2card.isConnected),q:S.q};}"""
+
+
+def _hf2_result_sheets(browser, eng):
+    """Item 4: open search, type, tap a result, close the sheet every way, tap another: with
+    the keyboard up (and a letter still pending in the live search) and down."""
+    routes = ["backbar", "x", "backdrop", "drag", "back"]
+    for w, h in ((390, 844), (440, 956)):
+        tag = f"hf2_result_sheet_{w}"
+        ctx, page, errs = _hf2_open(browser, w, h, True)
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+        page.wait_for_timeout(500)
+        page.keyboard.type("сп", delay=60)
+        page.wait_for_timeout(700)
+        idx = 0
+        for kb in ("up", "down"):
+            for route in routes:
+                label = f"{tag}_kb_{kb}_{route}"
+                if kb == "up":
+                    page.evaluate(HF2_KB_UP_JS)
+                    page.evaluate("()=>{const q=document.getElementById('q-m');if(q&&document.activeElement!==q)q.focus();}")
+                else:
+                    page.evaluate(HF2_KB_DOWN_JS)
+                    page.evaluate("()=>{if(document.activeElement)document.activeElement.blur();}")
+                r = page.evaluate(HF2_RESULT_JS, idx * 3 + 1)
+                idx += 1
+                if not r:
+                    check(label, False, "no result card")
+                    continue
+                page.wait_for_timeout(150)
+                r = page.evaluate(HF2_RESULT_JS.replace("if(r0.top<170||r0.bottom>innerHeight-90)window.scrollBy(0,r0.top-innerHeight/2.6);", ""), (idx - 1) * 3 + 1)
+                if kb == "up":
+                    # a letter (a trailing space) still waiting in the live search: it lands under the sheet
+                    page.keyboard.type(" ")
+                y_open = page.evaluate("Math.round(scrollY)")
+                exp = page.evaluate(HF_TITLE_JS, [r["kind"], r["id"]])
+                _hf_tap(page, True, r["x"], r["y"])
+                # 250 ms: after the live search's 160 ms wait, before the sheet takes the focus
+                page.wait_for_timeout(250)
+                u0 = page.evaluate(HF2_UNDER_SHEET_JS)
+                page.wait_for_timeout(350)
+                s1 = page.evaluate(HF_STATE_JS)
+                u1 = page.evaluate(HF2_UNDER_SHEET_JS)
+                page.wait_for_timeout(900)
+                s2 = page.evaluate(HF_STATE_JS)
+                u2 = page.evaluate(HF2_UNDER_SHEET_JS)
+                opened = s1["film"] and s2["film"] and (s2["title"] or "").lower() == (exp or "").lower() and s2["depth"] == 1
+                quiet = (not u0["fieldFocused"] and not u1["fieldFocused"] and not u2["fieldFocused"]
+                         and u0["cardKept"] and u2["cardKept"] and "fixed" in s2["body"])
+                _hf_close_sheet(page, True, route)
+                s3 = page.evaluate(HF_STATE_JS)
+                u3 = page.evaluate(HF2_UNDER_SHEET_JS)
+                res = page.evaluate(HF2_RESULTS_JS, page.evaluate("S.q"))
+                closed = (not s3["film"] and not s3["scrimInDom"] and s3["body"] == "" and s3["depth"] == 0
+                          and abs(s3["y"] - y_open) <= 2 and not u3["fieldFocused"] and res["head"] and res["got"] == res["exp"])
+                check(label, opened and quiet and closed,
+                      f"tapped {exp!r}: open@0.6s={s1['film']} open@1.5s={s2['film']} title={s2['title']!r} depth={s2['depth']}; "
+                      f"under the sheet: field focused {u0['fieldFocused']}/{u1['fieldFocused']}/{u2['fieldFocused']} (0.25/0.6/1.5 s), "
+                      f"tapped card kept={u0['cardKept']}/{u2['cardKept']}, "
+                      f"page pinned={'fixed' in s2['body']}; closed by {route}: sheet={s3['film']} body={s3['body']!r} "
+                      f"y {y_open}->{s3['y']} depth={s3['depth']} field focused={u3['fieldFocused']} results {res['got']}/{res['exp']} for {res['q']!r}")
+                page.wait_for_timeout(450)
+        page.evaluate(HF2_KB_DOWN_JS)
+        # then out of the search: a card of the page opens and stays open
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+        page.wait_for_timeout(800)
+        films = page.evaluate(HF_CANDIDATES_JS, "film")
+        if films:
+            _hf_check_stays_open(page, True, "film", films[0], f"w{w}_page_card_after_search_stays_open", "hf2")
+            _hf_close_sheet(page, True, "backbar")
+        check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
+# ── 5: fit on phone screens ───────────────────────────────────────────────────
+HF2_FIT_JS = r"""()=>{const W=innerWidth,out=[];
+  const clips=a=>{const s=getComputedStyle(a);return ['hidden','auto','scroll','clip'].includes(s.overflowX);};
+  for(const el of document.querySelectorAll('body *')){
+    const r=el.getBoundingClientRect();if(!r.width||!r.height)continue;
+    if(r.right<=W+0.5&&r.left>=-0.5)continue;
+    let skip=false;
+    for(let a=el;a&&a!==document.documentElement;a=a.parentElement){const s=getComputedStyle(a);
+      if(s.display==='none'||s.visibility==='hidden'||parseFloat(s.opacity)===0){skip=true;break;}}
+    if(skip)continue;
+    for(let a=el.parentElement;a&&a!==document.body;a=a.parentElement){
+      if(clips(a)){const q=a.getBoundingClientRect();if(q.right<=W+0.5&&q.left>=-0.5){skip=true;break;}}}
+    if(skip)continue;
+    const p=el.parentElement&&el.parentElement.getBoundingClientRect();
+    if(p&&(p.right>W+0.5||p.left<-0.5))continue;
+    out.push(el.tagName.toLowerCase()+'.'+String(el.className&&el.className.baseVal!==undefined?el.className.baseVal:el.className).slice(0,24)+' '+Math.round(r.left)+'..'+Math.round(r.right));
+  }
+  return {W,sw:document.documentElement.scrollWidth,n:out.length,out:out.slice(0,4)};}"""
+HF2_FORCE_RAILS = r"""()=>{let g=0;while(railIdx<RAILS.length&&g++<200){const s=document.getElementById('rail-sentinel');if(!s)break;
+  s.insertAdjacentHTML('beforebegin',RAILS.slice(railIdx,railIdx+4).map(matRail).join(''));railIdx+=4;}}"""
+# controls and text of a layer whose visible part (clipped by its scrolling ancestors and
+# the screen) reaches into an unsafe band; edges given as 0 are not checked
+HF2_UNSAFE_JS = r"""([t,r,b,l,scope])=>{const W=innerWidth,H=innerHeight,out=[];
+  const SEL='button,a,input,h1,h2,h3,b,img,.brand-sub,.phead-title,.ss-time';
+  const clip=v=>['auto','scroll','hidden','clip'].includes(v);
+  const vis=el=>{for(let a=el;a;a=a.parentElement){const s=getComputedStyle(a);if(s.display==='none'||s.visibility==='hidden'||parseFloat(s.opacity)<0.05)return false;}return true;};
+  for(const root of document.querySelectorAll(scope))for(const el of [root.matches(SEL)?root:null,...root.querySelectorAll(SEL)]){
+    if(!el)continue;const q=el.getBoundingClientRect();if(!q.width||!q.height||!vis(el))continue;
+    let x0=q.left,y0=q.top,x1=q.right,y1=q.bottom;
+    for(let a=el.parentElement;a&&a!==document.body;a=a.parentElement){const s=getComputedStyle(a);
+      if(clip(s.overflowX)||clip(s.overflowY)){const z=a.getBoundingClientRect();
+        x0=Math.max(x0,z.left);y0=Math.max(y0,z.top);x1=Math.min(x1,z.right);y1=Math.min(y1,z.bottom);}}
+    if(Math.min(x1,W)-Math.max(x0,0)<1||Math.min(y1,H)-Math.max(y0,0)<1)continue;
+    if((t&&y0<t-0.5)||(l&&x0<l-0.5)||(r&&x1>W-r+0.5)||(b&&y1>H-b+0.5))
+      out.push(el.tagName.toLowerCase()+'.'+String(el.className).slice(0,20)+' '+[x0,y0,x1,y1].map(Math.round).join(','));}
+  return out.slice(0,5);}"""
+
+
+def _hf2_insets(page, t, r, b, l):
+    cdp = page.context.new_cdp_session(page)
+    cdp.send("Emulation.setSafeAreaInsetsOverride",
+             {"insets": {"top": t, "topMax": t, "left": l, "leftMax": l, "bottom": b, "bottomMax": b, "right": r, "rightMax": r}})
+
+
+def _hf2_fit(browser, eng):
+    """Item 5: nothing wider than the screen, nothing cut off at the right edge, on home,
+    film and show sheets, the drawer, search results and the time panel, BG and EN; and
+    (Chromium) nothing of the fixed layers under the notch, status bar or home indicator."""
+    sizes = ((440, 956), (402, 874), (393, 852), (375, 812), (360, 800))
+    for w, h in sizes:
+        for lang in ("bg", "en"):
+            res = {}
+            for mode in ("cinema", "theatre"):
+                ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang, mode=mode)
+                page.evaluate(HF2_FORCE_RAILS)
+                page.wait_for_timeout(250)
+                res[f"home_{mode}"] = page.evaluate(HF2_FIT_JS)
+                if mode == "cinema":
+                    films = page.evaluate(HF_CANDIDATES_JS, "film")
+                    page.evaluate("([id])=>{curSheet={kind:'film',id};openSheet(sheetFilm(filmById[id]),null);}", [films[0]])
+                    page.wait_for_timeout(650)
+                    res["film_sheet"] = page.evaluate(HF2_FIT_JS)
+                    if _hf_tap_pill(page, True, 0.5):
+                        page.wait_for_timeout(550)
+                        res["time_panel"] = page.evaluate(HF2_FIT_JS)
+                        _hf_close_popup(page, True, "x", ctx)
+                    _hf_close_sheet(page, True, "backbar")
+                    page.wait_for_timeout(250)
+                    _hf_tap_el(page, True, "()=>document.querySelector('.fab')")
+                    page.wait_for_timeout(650)
+                    res["drawer"] = page.evaluate(HF2_FIT_JS)
+                    _hf_tap_el(page, True, "()=>document.querySelector('.drawer .dclose')")
+                    page.wait_for_timeout(600)
+                    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+                    page.wait_for_timeout(450)
+                    page.keyboard.type("сп" if lang == "bg" else "the", delay=40)
+                    page.wait_for_timeout(700)
+                    res["search"] = page.evaluate(HF2_FIT_JS)
+                else:
+                    shows = page.evaluate(HF_CANDIDATES_JS, "show")
+                    page.evaluate("([id])=>{curSheet={kind:'show',id};openSheet(sheetShow(showById[id]),null);}", [shows[0]])
+                    page.wait_for_timeout(650)
+                    res["show_sheet"] = page.evaluate(HF2_FIT_JS)
+                if errs:
+                    res[f"errors_{mode}"] = {"W": w, "sw": w, "n": len(errs), "out": errs[:2]}
+                ctx.close()
+            ok = all(v["sw"] <= v["W"] and v["n"] == 0 for v in res.values())
+            check(f"hf2_fit_{w}x{h}_{lang}", ok and len(res) >= 7,
+                  "; ".join(f"{k}: scrollWidth {v['sw']}/{v['W']}" + (f" past the edge {v['n']} {v['out']}" if v["n"] else "") for k, v in res.items()))
+    if eng != "chromium":
+        for name in ("portrait_440", "portrait_375", "landscape_956"):
+            skip(f"hf2_safe_area_{name}", "safe-area emulation needs Chromium's DevTools protocol")
+        return
+    # status bar / Dynamic Island and home indicator (portrait), notch sides (landscape)
+    for name, (w, h), (t, r, b, l) in (("portrait_440", (440, 956), (62, 0, 34, 0)), ("portrait_375", (375, 812), (47, 0, 34, 0)),
+                                        ("landscape_956", (956, 440), (0, 62, 21, 62))):
+        ctx, page, errs = _hf2_open(browser, w, h, True)
+        try:
+            _hf2_insets(page, t, r, b, l)
+        except Exception as ex:
+            skip(f"hf2_safe_area_{name}", f"no safe-area emulation: {str(ex)[:80]}")
+            ctx.close()
+            continue
+        page.wait_for_timeout(250)
+        found = {}
+        found["header_at_top"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > header.bar"])
+        found["content_at_top"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > main .phead"])
+        page.evaluate("window.scrollTo(0,1200)")
+        page.wait_for_timeout(300)
+        found["pinned_controls"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > header.bar .bar-row-controls, #app > header.bar .bar-in"])
+        found["fab"] = page.evaluate(HF2_UNSAFE_JS, [0, r, b, 0, "#app > .fab"])
+        # the pinned header's logo row sits in the status-bar band: an opaque layer above it covers the band
+        band = page.evaluate("""(t)=>{const s=getComputedStyle(document.body,'::before'),h=document.querySelector('#app > header.bar');
+            return {pos:s.position,h:parseFloat(s.height)||0,z:parseInt(s.zIndex)||0,hz:parseInt(getComputedStyle(h).zIndex)||0,bg:s.backgroundColor};}""", t)
+        band_ok = t == 0 or (band["pos"] == "fixed" and abs(band["h"] - t) <= 0.5 and band["z"] > band["hz"] and band["bg"].startswith("rgb(") )
+        if w > 760:
+            found["content_sides"] = page.evaluate(HF2_UNSAFE_JS, [0, r, 0, l, "#app > main .rail .rhead, #app > main .card"])
+        _hf_tap_el(page, True, "()=>document.querySelector('.fab')")
+        page.wait_for_timeout(650)
+        found["drawer"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, 0, ".drawer .drawer-top"])
+        _hf_tap_el(page, True, "()=>document.querySelector('.drawer .dclose')")
+        page.wait_for_timeout(600)
+        films = page.evaluate(HF_CANDIDATES_JS, "film")
+        page.evaluate("([id])=>{curSheet={kind:'film',id};openSheet(sheetFilm(filmById[id]),null);}", [films[0]])
+        page.wait_for_timeout(650)
+        found["sheet_back_bar"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#scrim .sbar"])
+        if _hf_tap_pill(page, True, 0.5):
+            page.wait_for_timeout(550)
+            found["time_panel"] = page.evaluate(HF2_UNSAFE_JS, [t, r, b, l, "#ss-wrap .ss-sheet .ss-time, #ss-wrap .ss-sheet .ss-btn, #ss-wrap .ss-sheet [data-ssclose]"])
+        if name == "portrait_440":
+            _hf2_shot(page, "phone_440_safe_area_time_panel")
+        ok = all(not v for v in found.values()) and band_ok
+        check(f"hf2_safe_area_{name}", ok,
+              f"insets t{t} r{r} b{b} l{l}; status-bar band {band}; " + "; ".join(f"{k}: {v if v else 'clear'}" for k, v in found.items()))
+        check(f"hf2_safe_area_{name}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
+# ── 6: the search row closes as it opens ──────────────────────────────────────
+HF2_ROW_REC_JS = r"""(ms)=>{const row=document.querySelector('.bar-row-search');const R=window.__hf2row=[];const t0=performance.now();
+  const tick=()=>{const t=performance.now()-t0;R.push([Math.round(t),getComputedStyle(row).display==='none'?0:Math.round(row.getBoundingClientRect().height*10)/10]);
+    if(t<ms)requestAnimationFrame(tick);};requestAnimationFrame(tick);}"""
+
+
+def _hf2_span(samples, full, rising):
+    """(half, end) of a height animation, in ms from its start (the last frame before the
+    height moved), or (None, None)."""
+    moved = (lambda v: v > 0.05) if rising else (lambda v: v < full - 0.05)
+    i = next((k for k, (_, v) in enumerate(samples) if moved(v)), None)
+    if i is None:
+        return None, None
+    t0 = samples[max(0, i - 1)][0]
+    half = next((t for t, v in samples[i:] if (v >= 0.5 * full if rising else v <= 0.5 * full)), None)
+    # within half a pixel of the end state, both ways (an exact 0 only shows once the row
+    # is display:none again, a frame or two after the transition)
+    end = next((t for t, v in samples[i:] if (v >= full - 0.5 if rising else v <= 0.5)), None)
+    return (half - t0 if half is not None else None), (end - t0 if end is not None else None)
+
+
+def _hf2_search_close(browser, eng):
+    """Item 6: closing mirrors opening (same length, reversed curve), with and without a
+    query, by the magnifier and by x; the header is never rebuilt; reduced motion: instant."""
+    for w, h, how in ((390, 844, "magnifier"), (375, 812, "x")):
+        tag = f"hf2_search_close_{w}_{how}"
+        ctx, page, errs = _hf2_open(browser, w, h, True)
+        page.evaluate(HF2_ROW_REC_JS, 420)
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+        page.wait_for_timeout(500)
+        opening = page.evaluate("window.__hf2row")
+        page.keyboard.type("сп", delay=50)
+        page.wait_for_timeout(700)
+        page.evaluate("()=>{document.querySelector('#app > header.bar').__hf2=1;}")
+        page.evaluate(HF2_ROW_REC_JS, 480)
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')" if how == "magnifier" else "()=>document.querySelector('[data-qclear-m]')")
+        page.wait_for_timeout(650)
+        closing = page.evaluate("window.__hf2row")
+        st = page.evaluate("""()=>({q:S.q,open:S.searchOpen,hdr:!!document.querySelector('#app > header.bar').__hf2,
+            page:!!document.querySelector('#app > main .phead'),field:document.activeElement===document.getElementById('q-m')})""")
+        full = max(v for _, v in opening) if opening else 0
+        mid = sorted({v for _, v in closing if 0 < v < full - 0.5})
+        mono = all(closing[i][1] >= closing[i + 1][1] - 0.5 for i in range(len(closing) - 1))
+        t50o, end_open = _hf2_span(opening, full, True)
+        t50c, end_close = _hf2_span(closing, full, False)
+        # the same length (frame timing allows some slack: the ratio, not a fixed margin)
+        # and mirrored curves (the half-way times of the two add up to that length)
+        mirrored = (None not in (end_close, end_open, t50o, t50c) and end_open > 0
+                    and 0.75 <= end_close / end_open <= 1.35
+                    and abs((t50o + t50c) - end_open) <= 0.25 * end_open + 20)
+        check(f"{tag}_animates", full > 30 and mono and len(mid) >= 4 and end_close is not None and end_close <= 300,
+              f"field row {full}px; closing heights {[v for _, v in closing][:16]} ({len(mid)} in between, shut {end_close} ms after it started)")
+        check(f"{tag}_mirrors_opening", mirrored,
+              f"open: half {t50o} ms, full {end_open} ms after it started; close: half {t50c} ms, shut {end_close} ms "
+              f"(a mirror: the same length, and the half-way times add up to it)")
+        check(f"{tag}_query_cleared_in_place", st["q"] == "" and not st["open"] and st["hdr"] and st["page"] and not st["field"], f"{st}")
+        check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+    ctx, page, errs = _hf2_open(browser, 390, 844, True, reduced=True)
+    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+    page.wait_for_timeout(400)
+    page.keyboard.type("сп", delay=50)
+    page.wait_for_timeout(600)
+    page.evaluate(HF2_ROW_REC_JS, 300)
+    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+    page.wait_for_timeout(450)
+    closing = page.evaluate("window.__hf2row")
+    full = max(v for _, v in closing) if closing else 0
+    check("hf2_search_close_reduced_motion_instant", not [v for _, v in closing if 0 < v < full - 0.5] and closing and closing[-1][1] == 0,
+          f"heights {[v for _, v in closing][:10]}")
+    ctx.close()
+
+
+# ── 7: Кино / Театър ──────────────────────────────────────────────────────────
+HF2_MAIN_REC_JS = r"""(ms)=>{const R=window.__hf2m=[];const t0=performance.now();
+  const tick=()=>{const m=document.querySelector('#app > main');const t=performance.now()-t0;
+    if(m){const cs=getComputedStyle(m);let vis=0;
+      for(const c of m.children){const q=c.getBoundingClientRect();if(q.height>0&&q.bottom>0&&q.top<innerHeight){vis=1;break;}}
+      R.push([Math.round(t),Math.round(parseFloat(cs.opacity)*100)/100,cs.transform,m.children.length,vis,
+              document.documentElement.getAttribute('data-surface'),m.getAnimations().length]);}
+    if(t<ms)requestAnimationFrame(tick);};requestAnimationFrame(tick);}"""
+
+
+def _hf2_switch(browser, eng):
+    """Item 7: the switch fades and lifts the content (the drawer's curves, ~260 ms), never
+    blank, posters decoded, the header kept, nothing left behind; reduced motion: instant."""
+    for w, h, phone, reduced in ((390, 844, True, False), (1280, 800, False, False), (390, 844, True, True)):
+        tag = f"hf2_switch_{w}{'_reduced' if reduced else ''}"
+        ctx, page, errs = _hf2_open(browser, w, h, phone, reduced=reduced)
+        page.evaluate("window.scrollTo(0,700)")
+        page.wait_for_timeout(700)
+        page.evaluate("()=>{document.querySelector('#app > header.bar').__hf2=1;}")
+        page.evaluate(HF2_MAIN_REC_JS, 650)
+        page.evaluate(HF2_POSTER_REC_JS, 650)
+        _hf_tap_el(page, phone, "()=>document.querySelector('.seg [data-switch=\"theatre\"]')")
+        page.wait_for_timeout(800)
+        s = page.evaluate("window.__hf2m")
+        p = page.evaluate("window.__hf2p")
+        end = page.evaluate("""()=>{const m=document.querySelector('#app > main');return {style:m.getAttribute('style')||'',anims:m.getAnimations().length,
+            surface:document.documentElement.getAttribute('data-surface'),shows:m.querySelectorAll('.card[data-show]').length,
+            films:m.querySelectorAll('.card[data-film]').length,y:Math.round(scrollY),hdr:!!document.querySelector('#app > header.bar').__hf2,
+            pressed:[...document.querySelectorAll('.seg [data-switch]')].map(b=>b.dataset.switch+':'+b.getAttribute('aria-pressed')).join(' ')};}""")
+        moving = [x for x in s if 0.02 < x[1] < 0.99 or x[2] not in ("none", "matrix(1, 0, 0, 1, 0, 0)")]
+        blank = [x for x in s if x[1] < 0.2 or x[3] == 0 or not x[4]]
+        clean = (end["style"].replace(" ", "") in ("", "min-height:;") and end["anims"] == 0 and end["surface"] == "theatre"
+                 and end["shows"] > 0 and end["films"] == 0 and end["y"] == 0 and end["hdr"])
+        if reduced:
+            check(f"{tag}_instant", not moving and not blank and clean, f"animated frames {len(moving)}; blank {len(blank)}; end {end}")
+        else:
+            check(f"{tag}_animates", len(moving) >= 4, f"{len(moving)} of {len(s)} frames between states: {[x[:3] for x in moving[:5]]}")
+            check(f"{tag}_never_blank", not blank and p["nbad"] == 0,
+                  f"blank frames {blank[:3]}; posters blank/undecoded in {p['nbad']} frames {p['bad'][:2]}")
+            check(f"{tag}_nothing_left_behind", clean, f"{end}")
+        check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+
+def wave_hf2(browser):
+    """
+    Wave HF2: the owner's phone reports of 2026-10-15, round 2.
+    HF2-A toggle: phone 390/375 BG/EN, search open and close leave it exactly as it was;
+          desktop 1024/1280 shrink only when crowded (P3A), also while typing
+    HF2-B live search: "спайдър"/"spider" letter by letter (120 ms and 600 ms apart),
+          every frame: same focused field, header and results top still, scrollY still;
+          results follow every letter; x restores the page in place; from a scrolled page
+          the results open under the header and stay put
+    HF2-C filter taps with the drawer open (5 options and Изчисти), 390/375 BG/EN, both
+          programmes: every frame for 500 ms no blank or undecoded poster in view, no
+          entrance animation, scroll, drawer and header kept; open/close keep the page
+    HF2-D a search result's sheet: every close route, keyboard up (with a letter pending)
+          and down, 390 and 440, then the next result
+    HF2-E fit: 440/402/393/375/360 BG/EN on home, sheets, drawer, search, time panel;
+          safe areas (Chromium): portrait status bar and home indicator, landscape notch
+    HF2-F the search row closes as it opens (also with a query and by x); reduced motion
+    HF2-G Кино/Театър transition, never blank, nothing left behind; reduced motion
+    """
+    eng = _hf_engine(browser)
+    print(f"\n=== HF2 in {eng} ===")
+    ensure_shot_dir("HF2")
+    print("\n=== HF2-A toggle ===")
+    _hf2_toggle(browser, eng)
+    print("\n=== HF2-B live search ===")
+    _hf2_search(browser, eng)
+    print("\n=== HF2-C filter taps behind the drawer ===")
+    _hf2_filters(browser, eng)
+    print("\n=== HF2-D search result sheets ===")
+    _hf2_result_sheets(browser, eng)
+    print("\n=== HF2-E fit on phone screens ===")
+    _hf2_fit(browser, eng)
+    print("\n=== HF2-F search row closing ===")
+    _hf2_search_close(browser, eng)
+    print("\n=== HF2-G Кино/Театър switch ===")
+    _hf2_switch(browser, eng)
+
+
+# ============================================================================
 # WAVE EV1: event cards and sheets take their state and badge from the dates
 # ============================================================================
 _EV_COUNTDOWN = re.compile(r"^СЛЕД \d+ (ДНИ|ДЕН)$")
@@ -13789,6 +14586,7 @@ WAVES = {
     "P3E": wave_p3e,
     "P3F": wave_p3f,
     "HF1": wave_hf1,
+    "HF2": wave_hf2,
     "EV1": wave_ev1,
 }
 
@@ -13820,8 +14618,8 @@ def main():
     all_wave_results = []
 
     with sync_playwright() as pw:
-        # SOFIA_BROWSER=webkit runs the selected waves in WebKit (meant for HF1, which
-        # covers the owner's Safari); the default stays Chromium
+        # SOFIA_BROWSER=webkit runs the selected waves in WebKit (meant for HF1 and HF2,
+        # which cover the owner's Safari); the default stays Chromium
         engine = os.environ.get("SOFIA_BROWSER", "chromium").strip().lower() or "chromium"
         if engine not in ("chromium", "webkit"):
             sys.exit(f"SOFIA_BROWSER must be chromium or webkit, not {engine!r}")
