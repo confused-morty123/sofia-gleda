@@ -61,8 +61,9 @@ SW_REG = """
 <script>
 /* Register the service worker: instant repeat loads + offline. Non-fatal on
    failure — the app works without it. Registered after load so it never
-   competes with first paint. */
-if ("serviceWorker" in navigator) {
+   competes with first paint. Not on the old github.io address: there the
+   worker retires itself before the move to sofiagleda.com (see sw.js). */
+if ("serviceWorker" in navigator && !/(^|\.)github\.io$/.test(location.hostname)) {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   });

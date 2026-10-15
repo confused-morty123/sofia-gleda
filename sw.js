@@ -15,7 +15,16 @@
  *
  * Bump CACHE_VERSION whenever this file changes so old caches are cleared.
  */
-const CACHE_VERSION = "sofia-gleda-v5";
+const CACHE_VERSION = "sofia-gleda-v6";
+
+// Domain move (2026-10): on the old github.io address this worker retires itself.
+// Once sofiagleda.com is the custom domain, GitHub redirects every request here,
+// including the browser's update check for this file, and a service worker never
+// follows a redirect for its own script: an old worker would stay installed for
+// good, serving a frozen copy offline. So before the switch the worker on
+// github.io deletes its own caches and unregisters, and the page there no longer
+// registers it (scripts/build_index.py). On any other host it works as before.
+const RETIRED = /(^|\.)github\.io$/.test(self.location.hostname);
 const SHELL_CACHE = CACHE_VERSION + "-shell";
 const ASSET_CACHE = CACHE_VERSION + "-assets";
 
@@ -47,6 +56,7 @@ const ASSET_HOSTS = [
 ];
 
 self.addEventListener("install", (event) => {
+  if (RETIRED) { self.skipWaiting(); return; }
   event.waitUntil(
     caches.open(SHELL_CACHE)
       .then((cache) => cache.addAll(SHELL))
@@ -56,10 +66,20 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  // Only this site's caches: github.io is shared by every project on the account.
+  const ours = (k) => k.startsWith("sofia-gleda");
+  if (RETIRED) {
+    event.waitUntil(
+      caches.keys()
+        .then((keys) => Promise.all(keys.filter(ours).map((k) => caches.delete(k))))
+        .then(() => self.registration.unregister())
+    );
+    return;
+  }
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((k) => !k.startsWith(CACHE_VERSION)).map((k) => caches.delete(k))
+        keys.filter((k) => ours(k) && !k.startsWith(CACHE_VERSION)).map((k) => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -99,6 +119,7 @@ async function staleWhileRevalidate(request) {
 }
 
 self.addEventListener("fetch", (event) => {
+  if (RETIRED) return;      // straight to the network
   const req = event.request;
   if (req.method !== "GET") return;
 

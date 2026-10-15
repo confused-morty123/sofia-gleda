@@ -103,18 +103,44 @@ jobs:
         run: |
           git config user.name  "Sofia Gleda bot"
           git config user.email "actions@github.com"
+          # Push, rebasing onto anything that landed on main during the run (a
+          # release, or GitHub's own CNAME commit when the custom domain is set).
+          # These data files are the bot's own; a real conflict aborts the
+          # rebase and fails the step rather than overwriting someone's commit.
+          push_with_rebase() {
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then return 0; fi
+              git rebase --abort 2>/dev/null || true
+              echo "push attempt $attempt failed; retrying"
+              sleep 10
+            done
+            return 1
+          }
           [ -f translations.json ] && git add translations.json
           if git diff --cached --quiet; then
             echo "No new translations to keep."
           else
             git commit -m "Keep the translation cache from a refresh that was not published: $(date -u +'%Y-%m-%d')"
-            git push
+            push_with_rebase
           fi
 
       - name: Commit the refreshed data
         run: |
           git config user.name  "Sofia Gleda bot"
           git config user.email "actions@github.com"
+          # Push, rebasing onto anything that landed on main during the run (a
+          # release, or GitHub's own CNAME commit when the custom domain is set).
+          # These data files are the bot's own; a real conflict aborts the
+          # rebase and fails the step rather than overwriting someone's commit.
+          push_with_rebase() {
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then return 0; fi
+              git rebase --abort 2>/dev/null || true
+              echo "push attempt $attempt failed; retrying"
+              sleep 10
+            done
+            return 1
+          }
           # Stage each output only if it exists. A tolerated missing file (e.g.
           # tmdb_films.json when no token is set, or a source that stayed down)
           # must not abort the commit and discard the data that DID refresh.
@@ -136,5 +162,5 @@ jobs:
             echo "No changes this run — nothing to commit."
           else
             git commit -m "Scheduled refresh: $(date -u +'%Y-%m-%d')"
-            git push
+            push_with_rebase
           fi
