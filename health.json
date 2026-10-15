@@ -1,5 +1,15 @@
 [
  {
+  "level": "error",
+  "venue": "mladezhki",
+  "message": "blocked from this network: challenge page (Cloudflare challenge, HTTP 403) at https://mlt.bg/programa.php?year=2026&month=10 — read from tickets.mlt.bg public list (the theatre's own ticket centre) instead"
+ },
+ {
+  "level": "warning",
+  "venue": "mladezhki",
+  "message": "ticket-list time(s) off the 5-minute grid, published as listed — check by hand: 2026-11-21 12:13 Малката Баба Яга"
+ },
+ {
   "level": "warning",
   "venue": "cc-paradise",
   "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
@@ -12,7 +22,7 @@
  {
   "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 72 screenings are preliminary, from programata.bg"
+  "message": "no official programme: all 40 screenings are preliminary, from programata.bg"
  },
  {
   "level": "warning",
@@ -33,5 +43,10 @@
   "level": "warning",
   "venue": "atelie313",
   "message": "no official programme: all 21 performances are preliminary, from theatre.art.bg"
+ },
+ {
+  "level": "warn",
+  "venue": "omdb",
+  "message": "OMDb: 163/213 ok, 50 missing IMDb ratings"
  }
 ]
