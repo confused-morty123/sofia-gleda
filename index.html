@@ -10,17 +10,18 @@
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Sofia Gleda">
-<meta property="og:url" content="https://confused-morty123.github.io/sofia-gleda/">
+<link rel="canonical" href="https://sofiagleda.com/">
+<meta property="og:url" content="https://sofiagleda.com/">
 <meta property="og:title" content="Sofia Gleda">
 <meta property="og:description" content="Афишът на кината и театрите в София">
-<meta property="og:image" content="https://confused-morty123.github.io/sofia-gleda/share/share-preview.jpg">
+<meta property="og:image" content="https://sofiagleda.com/share/share-preview.jpg">
 <meta property="og:locale" content="bg_BG">
 <meta property="og:locale:alternate" content="en_US">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Sofia Gleda">
 <meta name="twitter:description" content="Афишът на кината и театрите в София">
-<meta name="twitter:image" content="https://confused-morty123.github.io/sofia-gleda/share/share-preview.jpg">
+<meta name="twitter:image" content="https://sofiagleda.com/share/share-preview.jpg">
 <!-- icon.svg uses embedded data: PNG tiles inside masks; browsers block nested
      data: URIs in SVG favicons (opaque origin restriction) — SVG renders blank.
      make_icons.py composites those tiles correctly into real PNGs, used here. -->
@@ -4242,7 +4243,7 @@ window.addEventListener("popstate",()=>{
 /* deep links: #film=id / ?film=id / #show=id / ?show=id open the matching detail
    sheet. The ?param form is used by the static share pages so messaging-app
    crawlers see a real URL path (film/<id>/) while the app still opens the sheet. */
-const SITE_URL="https://confused-morty123.github.io/sofia-gleda";
+const SITE_URL="https://sofiagleda.com";
 function _openById(kind,id){
   let html=null;
   if(kind==="film"){
@@ -4658,7 +4659,7 @@ function calIcs(ev){
     String(now.getUTCSeconds()).padStart(2,"0"),
     "Z"
   ].join("");
-  const uid=ev.kind+"-"+ev.id+"-"+ev.venueId+"-"+ev.dateStr+"-"+(ev.timeStr||"").replace(/:/g,"")+"-sg@sofia-gleda";
+  const uid=ev.kind+"-"+ev.id+"-"+ev.venueId+"-"+ev.dateStr+"-"+(ev.timeStr||"").replace(/:/g,"")+"@sofiagleda.com";
   const lines=[
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

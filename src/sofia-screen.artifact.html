@@ -4524,7 +4524,7 @@ function calIcs(ev){
     String(now.getUTCSeconds()).padStart(2,"0"),
     "Z"
   ].join("");
-  const uid=ev.kind+"-"+ev.id+"-"+ev.venueId+"-"+ev.dateStr+"-"+(ev.timeStr||"").replace(/:/g,"")+"-sg@sofia-gleda";
+  const uid=ev.kind+"-"+ev.id+"-"+ev.venueId+"-"+ev.dateStr+"-"+(ev.timeStr||"").replace(/:/g,"")+"@sofiagleda.com";
   const lines=[
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

@@ -35,6 +35,7 @@ HEAD = """<!doctype html>
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Sofia Gleda">
+<link rel="canonical" href="{SITE_URL}/">
 <meta property="og:url" content="{SITE_URL}/">
 <meta property="og:title" content="Sofia Gleda">
 <meta property="og:description" content="Афишът на кината и театрите в София">

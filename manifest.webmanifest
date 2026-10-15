@@ -1,7 +1,8 @@
 {
-  "name": "Sofia Gleda — кино и театър",
+  "id": "/",
+  "name": "Sofia Gleda",
   "short_name": "Sofia Gleda",
-  "description": "Какво дава в София: кино и театър на едно място, с български и английски.",
+  "description": "Афишът на кината и театрите в София",
   "lang": "bg",
   "start_url": "./",
   "scope": "./",
@@ -9,7 +10,10 @@
   "orientation": "portrait-primary",
   "background_color": "#0C0A0F",
   "theme_color": "#0C0A0F",
-  "categories": ["entertainment", "lifestyle"],
+  "categories": [
+    "entertainment",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",

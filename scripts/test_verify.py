@@ -78,7 +78,8 @@ def _bulk_performances(n=40, date_offset=0):
     return _json.dumps(rows)
 
 
-_SITE_URL_FOR_TEST = "https://confused-morty123.github.io/sofia-gleda"
+# the gate compares the page with site_config, so the tests use the same value
+from site_config import SITE_URL as _SITE_URL_FOR_TEST
 
 def _minimal_html(snapshot_extra: str = "", extra_js: str = "",
                   showtimes_override: str = "",
