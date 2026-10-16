@@ -24,7 +24,13 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
    10. fetch_event_posters.py       those events' key art, re-hosted -> posters/ev-*, event_posters.json
    11. inject_data.py               inline the poster maps, film details and auto events -> index.html
    12. gen_share_pages.py           static /film/<id>/ and /show/<id>/ share pages -> film/, show/
-   13. verify_build.py              gate: is the result actually usable?
+   13. csp.py                       the Content-Security-Policy meta (script hashes) of
+                                    index.html and every share page, after the last edit
+   14. verify_build.py              gate: is the result actually usable?
+
+Every step's output is scrubbed of keys (a URL's apikey=…, a Bearer token, the
+secrets' own values) before it is printed or kept in build_report.json, which is
+committed to the public repository; health.json likewise.
 
 Steps 1-12 are best-effort and never abort the run. Step 13 is not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
@@ -32,7 +38,7 @@ and the previous, working site stays up. That gate exists because the 2026-09-16
 refresh published a page that rendered perfectly and threw the moment you clicked
 a film.
 """
-import json, os, subprocess, sys, time, pathlib, datetime as dt
+import json, os, re, subprocess, sys, time, pathlib, datetime as dt
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -90,10 +96,45 @@ STEPS = [
     ("event posters",   "fetch_event_posters.py",    []),    # their key art -> posters/ev-*, event_posters.json
     ("inline posters",  "inject_data.py",            []),
     ("share pages",     "gen_share_pages.py",        []),
+    ("csp",             "csp.py",                    []),    # LAST edit of the pages: their CSP script hashes
 ]
 
 # Run after the steps above, and treated as a gate rather than best-effort.
 VERIFY = ("verify",  "verify_build.py", [])
+
+
+SECRET_ENV = ("TMDB_TOKEN", "OMDB_TOKEN", "DEEPL_AUTH_KEY", "GITHUB_TOKEN", "GH_TOKEN")
+_KEY_PARAM = re.compile(r"(?i)\b((?:api|auth|access|client)?[_-]?(?:key|token|secret)|apikey|password|sig(?:nature)?)=([^&#\s\"'<>]+)")
+_AUTH_HDR = re.compile(r"(?i)\b(Bearer|DeepL-Auth-Key|token)\s+[A-Za-z0-9._~+/=:-]{8,}")
+_USERINFO = re.compile(r"(?i)\b(https?://)[^/\s:@]+:[^/\s@]+@")
+
+
+def scrub(text):
+    """text without credentials: the secrets' own values, ?apikey=…-style URL
+    parameters, Authorization header values and user:password@ in URLs. Run on
+    everything printed to the public Actions log and kept in build_report.json."""
+    text = str(text or "")
+    for name in SECRET_ENV:
+        v = os.environ.get(name, "").strip()
+        if len(v) >= 6:
+            text = text.replace(v, "***")
+    text = _KEY_PARAM.sub(lambda m: m.group(1) + "=***", text)
+    text = _AUTH_HDR.sub(lambda m: m.group(1) + " ***", text)
+    return _USERINFO.sub(lambda m: m.group(1) + "***@", text)
+
+
+def scrub_health(path):
+    """health.json messages pass through scrub() too (the workflow prints them)."""
+    try:
+        items = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if not isinstance(items, list):
+        return
+    clean = [{k: scrub(v) if isinstance(v, str) else v for k, v in e.items()} if isinstance(e, dict) else e
+             for e in items]
+    if clean != items:
+        path.write_text(json.dumps(clean, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
 def run(name, script, extra):
@@ -105,16 +146,16 @@ def run(name, script, extra):
             cwd=str(ROOT), env=os.environ.copy(),
             capture_output=True, text=True, timeout=60 * 30,
         )
-        out = (proc.stdout or "") + (proc.stderr or "")
+        out = scrub((proc.stdout or "") + (proc.stderr or ""))
         print(out, flush=True)
         ok = proc.returncode == 0
         tail = "\n".join(out.strip().splitlines()[-8:])
         return {"step": name, "script": script, "ok": ok, "code": proc.returncode,
                 "seconds": round(time.time() - start, 1), "tail": tail}
     except Exception as e:
-        print(f"  ! {script} crashed: {e}", file=sys.stderr, flush=True)
+        print(f"  ! {script} crashed: {scrub(e)}", file=sys.stderr, flush=True)
         return {"step": name, "script": script, "ok": False, "code": -1,
-                "seconds": round(time.time() - start, 1), "tail": str(e)}
+                "seconds": round(time.time() - start, 1), "tail": scrub(e)}
 
 
 def main(argv=None):
@@ -136,6 +177,8 @@ def main(argv=None):
     results = [run(*s) for s in STEPS]
     official, aborted = official_summary(started, previous)
     festivals = festival_summary(started, prev_report.get("festivals") or {})
+
+    scrub_health(ROOT / "health.json")
 
     # The gate. Everything above may fail softly; this may not.
     verdict = run(*VERIFY)

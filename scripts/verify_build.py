@@ -1239,7 +1239,75 @@ try:
 except Exception as _mp_err:
     note(f"maps link check error: {_mp_err}")
 
-# ----------------------------------------- 6e. legal pages and the cookie notice
+# ----------------------------------------- 6e. security: CSP, referrer, links, frames
+# The Content-Security-Policy meta must allow exactly the page's inline scripts (by
+# hash: it is computed by scripts/csp.py after the last edit), with the directives
+# csp.DIRECTIVES lists; a <script> the build does not make, or a data script cut
+# short by a value that closed it ("</script>" in a title), fails here. Every share
+# page carries its own policy too. A stale hash would block the whole app in the
+# browser, so this is a hard failure, not a note.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import csp as _csp                                              # noqa: E402
+    for _p in _csp.check(src, "page"):
+        fail(f"CSP: {_p}")
+    _share_bad, _share_n = [], 0
+    for _sp in _csp.share_pages(_FILE_ROOT):
+        _share_n += 1
+        _probs = _csp.check(_sp.read_text(encoding="utf-8"), "share")
+        if _probs:
+            _share_bad.append(f"{_sp.parent.parent.name}/{_sp.parent.name}: {_probs[0]}")
+    if _share_bad:
+        fail(f"CSP: {len(_share_bad)} of {_share_n} share page(s) fail: " + "; ".join(_share_bad[:3])
+             + " — run scripts/csp.py")
+except ImportError:
+    fail("scripts/csp.py not importable — the CSP cannot be checked")
+
+if '<meta name="referrer" content="strict-origin-when-cross-origin">' not in _head_src:
+    fail('referrer policy meta missing from <head> (strict-origin-when-cross-origin)')
+for _host in ("fonts.googleapis.com", "fonts.gstatic.com"):
+    if _host in src:
+        fail(f"the page still contacts {_host}: the webfonts are self-hosted (fonts/fonts.css)")
+if not (_FILE_ROOT / "fonts" / "fonts.css").exists():
+    fail("fonts/fonts.css missing: the page links it for its webfonts")
+# Every link that opens a new tab gives the other site no handle on this one
+# (noopener) and no referrer (noreferrer); window.open likewise.
+_blank_bad = re.findall(r'target="_blank"(?! rel="noopener noreferrer")[^>]{0,40}', src)
+if _blank_bad:
+    fail(f"{len(_blank_bad)} target=\"_blank\" link(s) without rel=\"noopener noreferrer\": {_blank_bad[0][:60]!r}")
+_wo_bad = [m for m in re.findall(r'window\.open\(([^)]*)\)', js) if "noopener,noreferrer" not in m]
+if _wo_bad:
+    fail(f"window.open without \"noopener,noreferrer\": {_wo_bad[0][:60]!r}")
+# no inline event handlers anywhere in what the app writes (the CSP blocks them)
+_inline_h = re.findall(r'<[a-z][^>]*\son(?:error|load|click|mouseover|focus|input|change)\s*=\s*["\']', src, re.I)
+if _inline_h:
+    fail(f"{len(_inline_h)} inline event handler(s) in the page (blocked by the CSP): {_inline_h[0][:60]!r}")
+if re.search(r"\beval\s*\(|new Function\s*\(", js):
+    fail("eval / new Function in the page JS (blocked by the CSP)")
+# Ids and times have one shape each. An id names a share page directory (film/<id>/)
+# and goes into attributes and URLs: letters (any script), digits, hyphens. A time
+# is HH:MM. Anything else is a scraper bug and never ships.
+_SAFE_ID = re.compile(r"[^\W_][\w-]{0,150}")
+_ea_ids = []
+try:
+    _ea_m2 = re.search(r"^const EVENTS_AUTO\s*=\s*(.*?);\s*$", js, flags=re.M)
+    _ea_ids = [e.get("id") for e in (json.loads(_ea_m2.group(1)) if _ea_m2 else []) if isinstance(e, dict)]
+except ValueError:
+    pass
+_bad_ids = [f"{k}:{o.get('id')!r}" for k in ("FILMS", "SHOWS", "EVENTS", "CINEMAS", "THEATRES")
+            for o in (data.get(k) or []) if isinstance(o, dict)
+            and not (isinstance(o.get("id"), str) and _SAFE_ID.fullmatch(o["id"]))]
+_bad_ids += [f"EVENTS_AUTO:{i!r}" for i in _ea_ids if not (isinstance(i, str) and _SAFE_ID.fullmatch(i))]
+if _bad_ids:
+    fail(f"{len(_bad_ids)} id(s) are not slugs (letters, digits, hyphens): {', '.join(_bad_ids[:4])}")
+_bad_times = [r for r in (data.get("SHOWTIMES") or [])
+              if not (isinstance(r, list) and len(r) >= 4 and isinstance(r[3], list)
+                      and all(isinstance(t, str) and re.fullmatch(r"\d\d:\d\d", t) for t in r[3]))]
+if _bad_times:
+    fail(f"{len(_bad_times)} SHOWTIMES row(s) whose times are not HH:MM, e.g. {str(_bad_times[0])[:80]}")
+
+
+# ----------------------------------------- 6f. legal pages and the cookie notice
 # The app links a terms page, a privacy policy and a cookie policy in BG and EN
 # (legal/, written by scripts/gen_legal_pages.py). They must match the page they
 # describe:
@@ -1409,6 +1477,11 @@ def smoke():
         for tz in ("Europe/Sofia", "UTC"):
             ctx = b.new_context(viewport={"width": 430, "height": 900},
                                 timezone_id=tz, locale="bg-BG")
+            # Any Content-Security-Policy violation during the journey fails the gate
+            # (a stale hash blocks a script; a poster host outside img-src, etc.).
+            ctx.add_init_script("window.__cspv=[];document.addEventListener("
+                                "'securitypolicyviolation',function(e){window.__cspv.push("
+                                "e.violatedDirective+' '+(e.blockedURI||'')+' '+(e.sample||''))},true);")
             page = ctx.new_page()
             errs = []
             page.on("pageerror", lambda e: errs.append(str(e)))
@@ -1465,6 +1538,9 @@ def smoke():
                              + (" — " + errs[0] if errs else ""))
             if errs:
                 fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
+            _v = page.evaluate("window.__cspv||[]")
+            if _v:
+                fail(f"[{tz}] {len(_v)} Content-Security-Policy violation(s): " + " | ".join(_v[:3]))
             ctx.close()
         b.close()
     except Exception as e:

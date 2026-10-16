@@ -85,7 +85,9 @@ MIRROR_SUFFIXES = ("-screening", "-prozhekciya", "-prem", "-premiere", "-gala",
 
 
 def host_of(url):
-    return (urlsplit(url).hostname or "").lower().lstrip("www.") or ""
+    # removeprefix, not lstrip("www."): lstrip drops ANY leading "w" and ".", so
+    # "wwwcinemacity.bg" (someone else's domain) came out as the trusted cinemacity.bg
+    return (urlsplit(url).hostname or "").lower().removeprefix("www.")
 
 
 def _trusted(host):

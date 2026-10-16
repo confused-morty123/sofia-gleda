@@ -175,6 +175,7 @@ def open_page(browser, w, h, lang="bg", mode="cinema"):
     - Adds CLOCK init script (fixed time)
     - Adds localStorage with prefs, lang, mode
     - Collects pageerror messages
+    - Reports CSP violations (the browser's new_context is wrapped by _watch_csp)
     - Waits for '.bar' selector
     - Returns (ctx, page, errors_list)
     """
@@ -224,6 +225,87 @@ def save_shot(page, wave, name):
     path = d / f"{name}.png"
     page.screenshot(path=str(path), full_page=False)
     return path
+
+
+# ── Content-Security-Policy watch ─────────────────────────────────────────────
+# Every page any wave opens reports CSP violations: an init script listens for
+# `securitypolicyviolation` (Chromium and WebKit both fire it) and logs it, and a
+# console listener collects that line and the engines' own "Refused to …" /
+# "… violates the following Content Security Policy …" messages. main() turns what
+# a wave collected into one check, csp_no_violations_<wave>, so a stale script hash,
+# an inline handler or a request outside the policy fails the suite. Installed on
+# every browser main() launches (_watch_csp), so open_page() and every wave's own
+# helpers are covered. A page a test patches is re-stamped with csp.stamp (the real
+# pipeline does the same after its last edit).
+sys.path.insert(0, str(webapp_root / "scripts"))
+import csp as _csp  # noqa: E402
+
+CSP_VIOLATIONS = []
+CSP_WATCH_JS = ("document.addEventListener('securitypolicyviolation',function(e){console.error("
+                "'[CSP-VIOLATION] '+e.violatedDirective+' '+(e.blockedURI||'')+' '+(e.sample||''));},true);")
+
+
+def _csp_console(msg):
+    t = msg.text or ""
+    if "[CSP-VIOLATION]" in t or "Content Security Policy" in t or "Content-Security-Policy" in t:
+        CSP_VIOLATIONS.append(t[:240])
+
+
+def _watch_csp(browser):
+    """Make every context and page this browser creates report CSP violations."""
+    if browser is None or getattr(browser, "_sg_csp_watch", False):
+        return browser
+    orig_ctx, orig_page = browser.new_context, browser.new_page
+
+    def new_context(*a, **kw):
+        ctx = orig_ctx(*a, **kw)
+        ctx.add_init_script(CSP_WATCH_JS)
+        ctx.on("console", _csp_console)
+        return ctx
+
+    def new_page(*a, **kw):
+        pg = orig_page(*a, **kw)
+        pg.add_init_script(CSP_WATCH_JS)
+        pg.on("console", _csp_console)
+        return pg
+
+    browser.new_context, browser.new_page = new_context, new_page
+    browser._sg_csp_watch = True
+    return browser
+
+
+class _Relaunching:
+    """A WebKit browser that relaunches itself every `every` contexts, at a moment when
+    none of its contexts is open. Playwright's WebKit stops navigating to file:// URLs
+    after some hundreds of page loads in one browser (2026-10-16, macOS: an HF1 real-mode
+    run stuck at about:blank from its 48th context on, also with the 4ca8029 code and
+    page; a loop of theatre pages failed at context 64, after ~1000 file:// loads)."""
+
+    def __init__(self, launch, every=24):
+        self._launch, self._every = launch, every
+        self._b, self._n, self._open = launch(), 0, set()
+
+    def new_context(self, *a, **kw):
+        if self._n >= self._every and not self._open:
+            self._b.close()
+            self._b, self._n = self._launch(), 0
+        ctx = self._b.new_context(*a, **kw)
+        self._n += 1
+        self._open.add(ctx)
+        ctx.on("close", lambda c: self._open.discard(c))
+        return ctx
+
+    def new_page(self, *a, **kw):
+        self._n += 1
+        return self._b.new_page(*a, **kw)
+
+    def __getattr__(self, name):
+        return getattr(self._b, name)
+
+
+def _restamp(html):
+    """A test's patched copy of the page: its CSP meta recomputed for the new scripts."""
+    return _csp.stamp(html)
 
 # ============================================================================
 # WAVE A1: Header redesign
@@ -8855,6 +8937,7 @@ def _open_page_with_showattr(browser, w, h, lang="bg", mode="cinema"):
             f"_open_page_with_showattr: 'const SHOWATTR=' not found in {html_env}. "
             "The HTML was built from a commit that predates the P2E feature."
         )
+    patched_html = _restamp(patched_html)
 
     ctx = browser.new_context(
         viewport={"width": w, "height": h},
@@ -12370,7 +12453,8 @@ def _hf_shot(page, name):
 
 def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None):
     """open_page with touch emulation on phones and no external traffic (new tabs
-    from the buy/map/calendar links are aborted; webfonts still load)."""
+    from the buy/map/calendar links are aborted; the webfonts are self-hosted, so
+    they still load from fonts/)."""
     kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
     if phone:
         kw.update(has_touch=True, is_mobile=True)
@@ -12381,9 +12465,6 @@ def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None):
     ctx.add_init_script(f"""try {{ localStorage.setItem('sofia-screen-v2', JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}})); }} catch(e) {{}}""")
 
     def _route(route):
-        u = route.request.url
-        if "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
-            return route.continue_()
         return route.abort()
     ctx.route("http://**/*", _route)
     ctx.route("https://**/*", _route)
@@ -13070,8 +13151,8 @@ def _hf_ctx_motion(browser, w, h, phone, reduced):
     ctx = browser.new_context(**kw)
     ctx.add_init_script(CLOCK)
     ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'})); } catch(e) {}""")
-    ctx.route("http://**/*", lambda r: r.continue_() if ("fonts.g" in r.request.url) else r.abort())
-    ctx.route("https://**/*", lambda r: r.continue_() if ("fonts.g" in r.request.url) else r.abort())
+    ctx.route("http://**/*", lambda r: r.abort())          # the webfonts are local (fonts/)
+    ctx.route("https://**/*", lambda r: r.abort())
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -13575,6 +13656,11 @@ def _hf_ics(browser, eng):
     for phone, ua, label in ((False, None, "desktop"), (True, None, "phone"), (True, IPHONE_UA, "iphone_ua")):
         w, h = (390, 844) if phone else (1440, 900)
         ctx, page, errs = _hf_open(browser, w, h, phone, ua=ua)
+        # The page's CSP (connect-src 'self') does not let script fetch a blob: URL, and the
+        # app never does: the row is a link. So the test keeps each Blob the app makes a
+        # URL for and reads the .ics from it directly.
+        page.evaluate("""()=>{if(window.__sgBlobs)return;window.__sgBlobs=new Map();const o=URL.createObjectURL;
+            URL.createObjectURL=function(b){const u=o.call(URL,b);window.__sgBlobs.set(u,b);return u;};}""")
         films = page.evaluate(HF_CANDIDATES_JS, "film")
         _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
         _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(450)
@@ -13583,7 +13669,8 @@ def _hf_ics(browser, eng):
         page.wait_for_timeout(350)
         info = page.evaluate("""async (scope)=>{const a=document.querySelector(scope+'[data-sscalics]');if(!a)return {err:'no apple row'};
             const href=a.getAttribute('href')||'';const dl=a.getAttribute('download');let text='',type='';
-            if(href.startsWith('blob:')){const r=await fetch(href);type=(await r.clone().blob()).type;text=await r.text();}
+            const b=href.startsWith('blob:')&&window.__sgBlobs.get(href);
+            if(b){type=b.type;text=await b.text();}
             return {href:href.slice(0,40),dl,type,text};}""", scope)
         name = f"hf1_ics_{label}"
         if "err" in info:
@@ -13715,8 +13802,6 @@ def _hf2_open(browser, w, h, phone, lang="bg", mode="cinema", reduced=False):
 
     def _route(route):
         u = route.request.url
-        if "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
-            return route.continue_()
         if HF2_POSTERS and ("image.tmdb.org" in u or "programata.bg" in u):
             f = HF2_POSTERS[int(hashlib.md5(u.encode()).hexdigest(), 16) % len(HF2_POSTERS)]
             if f not in _HF2_BYTES:
@@ -14661,7 +14746,7 @@ def _ev2_patched(festmark_extra, events_extra):
         raise AssertionError("EV2: 'const FESTMARK=' is not in the build")
     m = re.search(r"^const EVENTS=(\[.*\]);$", src, re.M)
     lit = json.dumps(json.loads(m.group(1)) + events_extra, ensure_ascii=False, separators=(",", ":"))
-    return re.sub(r"^const EVENTS=\[.*\];$", lambda _: f"const EVENTS={lit};", src, count=1, flags=re.M)
+    return _restamp(re.sub(r"^const EVENTS=\[.*\];$", lambda _: f"const EVENTS={lit};", src, count=1, flags=re.M))
 
 
 def _ev2_set_period(page, period):
@@ -15102,7 +15187,7 @@ def wave_ev3(browser):
     test_file = webapp_root / "index.ev3.html"
     line = "const EVENTS_AUTO = " + json.dumps(test_auto, ensure_ascii=False, separators=(",", ":")) + ";"
     test_src = re.sub(r"^const EVENTS_AUTO\s*=.*$", lambda _m: line, src, count=1, flags=re.M) if m else src
-    test_file.write_text(test_src, encoding="utf-8")
+    test_file.write_text(_restamp(test_src), encoding="utf-8")
     try:
         for lang in ("bg", "en"):
             print(f"\n=== EV3: controlled EVENTS_AUTO ({lang}) ===")
@@ -16042,7 +16127,10 @@ def main():
         engine = os.environ.get("SOFIA_BROWSER", "chromium").strip().lower() or "chromium"
         if engine not in ("chromium", "webkit"):
             sys.exit(f"SOFIA_BROWSER must be chromium or webkit, not {engine!r}")
-        browser = getattr(pw, engine).launch(headless=True)
+        if engine == "webkit":
+            browser = _watch_csp(_Relaunching(lambda: pw.webkit.launch(headless=True)))
+        else:
+            browser = _watch_csp(getattr(pw, engine).launch(headless=True))
         print(f"Browser: {engine}")
         # every wave but LG1-LG3 starts as a visitor who has answered the cookie notice
         _seed = _consent_seed_js(_consent_version()) if _consent_version() else None
@@ -16051,7 +16139,7 @@ def main():
         # Launch WebKit once for use by Wave J (J1 needs both engines)
         _webkit_browser = None
         try:
-            _webkit_browser = _ConsentSeeded(pw.webkit.launch(headless=True), _seed)
+            _webkit_browser = _ConsentSeeded(_watch_csp(_Relaunching(lambda: pw.webkit.launch(headless=True))), _seed)
         except Exception as _wk_err:
             print(f"  NOTE: WebKit launch failed ({_wk_err}); Wave J WebKit checks will be skipped")
 
@@ -16064,10 +16152,14 @@ def main():
             print(f"WAVE {wave_name}")
             print(f"{'='*70}")
             results.clear()
+            CSP_VIOLATIONS.clear()
             if wave_name in ("J", "P3B"):
                 WAVES[wave_name](browser, _webkit_browser)
             else:
                 WAVES[wave_name](browser)
+            _v = sorted(set(CSP_VIOLATIONS))
+            check(f"csp_no_violations_{wave_name}", not _v,
+                  f"{len(CSP_VIOLATIONS)} violation report(s): " + " | ".join(_v[:3]) if _v else "none")
             # Snapshot this wave's results before the next wave clears them
             wave_snapshot = list(results)
             all_wave_results.append((wave_name, wave_snapshot))

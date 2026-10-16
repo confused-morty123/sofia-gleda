@@ -13,6 +13,7 @@ This builds index.dev.html instead, with no network and no tokens:
      build_report.json festival rows, counted the way the scraper counts them
   3. inject_films.py / inject_shows.py / inject_data.py against it, reading the
      sidecar JSON files exactly as the real pipeline does
+  4. the Content-Security-Policy meta (scripts/csp.py), after the last edit
 
 The result is what the next refresh would publish, minus any newly scraped
 listings. index.dev.html is gitignored; never deploy it.
@@ -23,6 +24,8 @@ listings. index.dev.html is gitignored; never deploy it.
     python3 scripts/dev_build.py --from REF --out PATH   # combine both options
 """
 import json, os, re, subprocess, sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from csp import json_for_script, stamp_file  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
 SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS", "AGGLINKS", "SHOWATTR", "PREMIERES", "FESTMARK"]
@@ -90,7 +93,7 @@ def main():
         fm = festmark_from_report(ref, page)          # a ref from before the scraper wrote it
         if fm:
             m = const_line(page, "FESTMARK")
-            lit = json.dumps(fm, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+            lit = json_for_script(fm, sort_keys=True)
             page = page[:m.start()] + f"const FESTMARK={lit};" + page[m.end():]
             moved.append("FESTMARK (from build_report.json)")
     OUT.write_text(page, encoding="utf-8")
@@ -99,6 +102,9 @@ def main():
     env = dict(os.environ, SOFIA_HTML=str(OUT))
     for step in ("inject_films.py", "inject_shows.py", "inject_data.py"):
         run(sys.executable, f"scripts/{step}", env=env)
+    # Last: the Content-Security-Policy meta for the page as it now is (script
+    # hashes), exactly as refresh_all.py's final csp step does (scripts/csp.py).
+    stamp_file(OUT, kind="page")
     print(f"wrote {OUT} ({OUT.stat().st_size:,} bytes) — preview with: open {OUT.name}")
 
 

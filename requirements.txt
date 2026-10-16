@@ -1,18 +1,32 @@
-# Sofia Gleda — weekly data refresh dependencies.
+# Sofia Gleda — daily data refresh dependencies.
 # Installed automatically by the GitHub Action; you do not need to install
 # anything on your own computer.
-requests>=2.31
-beautifulsoup4>=4.12
-lxml>=5.0
-certifi>=2024.2.2
+#
+# Every package is pinned to an exact version (the direct ones and what they pull
+# in), so the pipeline runs the code that was tested, and a new release of any of
+# them (or a compromised one) never reaches it unannounced. To update: bump the
+# version here, run the suites (README), and check `pip-audit -r requirements.txt`.
+requests==2.34.2
+beautifulsoup4==4.15.0
+lxml==6.1.1
+certifi==2026.7.22
 
 # Used by scripts/fetch_theatre_posters.py to downscale and re-encode each
 # re-hosted poster (a 20 MB source must not ship to every visitor). Without it,
 # re-hosting silently fails and posters stay as remote URLs that are often
 # cert-blocked, mixed-content or hotlink-protected, so they never render.
-Pillow>=10.0
+Pillow==12.3.0
 
 # Used only by scripts/verify_build.py, to click a film card in a real headless
 # browser before the refreshed page is allowed to go live. The browser binary
 # itself is installed by the workflow (python3 -m playwright install chromium).
-playwright>=1.44
+playwright==1.62.0
+
+# Pulled in by the packages above (pinned too).
+charset-normalizer==3.4.9
+idna==3.18
+urllib3==2.8.0
+soupsieve==2.10
+typing_extensions==4.16.0
+greenlet==3.5.5
+pyee==13.0.1
