@@ -38,6 +38,11 @@ FIXTURE_REF = "d3e9ff1"
 
 webapp_root = pathlib.Path(__file__).parent.parent.resolve()
 
+# The gate (verify_build.py) fails while the owner's input is missing: TMDB's logo file
+# (icons/tmdb.svg; downloading it needs the owner's OK). The waves that run the gate test the
+# code, so they see it as a note; wave LG2 checks the gate still blocks on it.
+os.environ["SOFIA_OWNER_PENDING_OK"] = "1"
+
 # ── Clock derivation ───────────────────────────────────────────────────────────
 def _sofia_1445_epoch_ms(date_str: str) -> int:
     """Return epoch ms for 14:45 Europe/Sofia on the given YYYY-MM-DD date.
@@ -7956,13 +7961,17 @@ def wave_n(browser):
         check("n1_safeUrl_empty_null",safe_results["empty"] is None,   f"'' -> {safe_results['empty']!r}")
 
     # ── N-2: no <a> rendered for unsafe URLs ────────────────────────────────
-    # We can only check that the page itself has no href=javascript: or href=ftp:
+    # We can only check that the page itself has no href=javascript: or href=ftp:. Any scheme
+    # but http(s) and blob: is flagged, after stripping the whitespace and control characters a
+    # browser ignores ("java\tscript:"); relative same-site links (the footer's legal/terms/)
+    # and #anchors carry no scheme and are safe.
     print("\n=== N-2: no unsafe hrefs in rendered DOM ===")
     bad_hrefs = page.evaluate("""() => {
         const bad = [];
         for (const a of document.querySelectorAll('a[href]')) {
             const h = a.getAttribute('href');
-            if (h && !/^https?:/.test(h) && !h.startsWith('#') && !h.startsWith('blob:')) {
+            const n = (h || '').replace(/[\\u0000-\\u0020\\u007f]/g, '').toLowerCase();
+            if (/^[a-z][a-z0-9+.-]*:/.test(n) && !/^(https?|blob):/.test(n)) {
                 bad.push(h.slice(0, 80));
             }
         }
@@ -15337,6 +15346,636 @@ def wave_ev4(browser):
             pass
 
 
+# Waves LG1-LG3: the cookie notice, the footer's legal lines and the legal pages
+# ============================================================================
+# Every other wave starts as a returning visitor who has already answered the cookie
+# notice: main() wraps the browser so each new context gets that record, and the notice
+# never covers what those waves test. These waves take the bare browser (browser.raw)
+# to see first visits. LG2 serves the worktree over HTTP: the legal pages link their
+# siblings as directories (legal/terms/), which only a web server resolves.
+
+LEGAL_DOCS = ("terms", "privacy", "cookies")
+LEGAL_PAGES = [f"legal/{d}/" for d in LEGAL_DOCS] + [f"legal/en/{d}/" for d in LEGAL_DOCS]
+LEGAL_TITLES = {"terms": ("Общи условия", "Terms of use"),
+                "privacy": ("Политика за поверителност", "Privacy policy"),
+                "cookies": ("Политика за бисквитките", "Cookie policy")}
+LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg",
+                        "github.com"}
+ISSUES_URL = "https://github.com/confused-morty123/sofia-gleda/issues"
+TMDB_NOTICE = "This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
+DASHES = ("\u2014", "\u2013")          # em dash, en dash: the copy rules allow neither
+AI_TELLS = ("delve", "seamless", "leverage", "robust", "comprehensive", "rest assured", "in today's",
+            "we value your privacy", "крайно важно", "безпроблем", "в днешния", "не се колебайте")
+
+
+def _consent_version(text=None):
+    text = text if text is not None else html_path.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r'(?m)^const CONSENT_VERSION="([^"]+)";', text)
+    return m.group(1) if m else None
+
+
+def _consent_seed_js(version, opt="{}", raw=None):
+    """An init script that stores a cookie record: {v: version, opt}, or the raw string."""
+    value = json.dumps(raw) if raw is not None else (
+        "JSON.stringify({v:%s,at:'2026-01-01T00:00:00.000Z',opt:%s})" % (json.dumps(version), opt))
+    return "try{localStorage.setItem('sofia-consent',%s);}catch(e){}" % value
+
+
+class _ConsentSeeded:
+    """A Browser whose new contexts start with an answered cookie notice (see above)."""
+    def __init__(self, raw, seed_js):
+        self.raw, self._seed = raw, seed_js
+
+    def new_context(self, *a, **kw):
+        ctx = self.raw.new_context(*a, **kw)
+        if self._seed:
+            ctx.add_init_script(self._seed)
+        return ctx
+
+    def new_page(self, *a, **kw):
+        return self.new_context(*a, **kw).new_page()
+
+    def __getattr__(self, name):
+        return getattr(self.raw, name)
+
+
+def _lg_open(browser, w, h, lang="bg", seed=None, mobile=False, reduced=None, url=None, sw_block=False):
+    """A context on the bare browser with the frozen clock, the app's prefs in `lang` and,
+    when given, the cookie record `seed`. Opens `url` (default: the page under test)."""
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
+    if mobile:
+        kw.update(is_mobile=True, has_touch=True)
+    if reduced:
+        kw["reduced_motion"] = reduced
+    if sw_block:
+        kw["service_workers"] = "block"
+    ctx = getattr(browser, "raw", browser).new_context(**kw)
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script(
+        "try{localStorage.setItem('sofia-screen-v2',JSON.stringify({prefs:{track:'both',genres:[],mood:[],"
+        "with:'',when:'any',taste:[]},lang:%s,mode:'cinema'}));}catch(e){}" % json.dumps(lang))
+    if seed:
+        ctx.add_init_script(seed)
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(url or HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(400)          # the notice's entrance (0.28 s) has finished
+    return ctx, page, errors
+
+
+_LG_PROBE = """() => {
+  const el = document.getElementById('sg-consent');
+  const base = {sw: document.documentElement.scrollWidth, iw: innerWidth, ih: innerHeight,
+                pad: document.documentElement.style.scrollPaddingBottom};
+  if (!el || el.hidden) return Object.assign(base, {shown: false});
+  const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+  const byId = id => document.getElementById(el.getAttribute(id) || '');
+  const more = el.querySelector('.consent-more');
+  return Object.assign(base, {shown: true, first: document.body.firstElementChild === el,
+    role: el.getAttribute('role'), lang: el.lang,
+    title: byId('aria-labelledby') ? byId('aria-labelledby').textContent.trim() : null,
+    desc: byId('aria-describedby') ? byId('aria-describedby').textContent.trim() : null,
+    x: r.left, y: r.top, w: r.width, h: r.height, b: innerHeight - r.bottom, rgap: innerWidth - r.right,
+    pos: cs.position, z: cs.zIndex, anim: cs.animationName,
+    boxes: el.querySelectorAll('input[type=checkbox]').length,
+    ok: el.querySelector('[data-consent-ok]') ? el.querySelector('[data-consent-ok]').textContent : null,
+    more: more ? more.textContent.trim() : null, moreHref: more ? more.href : null,
+    btnH: [...el.querySelectorAll('button,a')].map(b => b.getBoundingClientRect().height),
+    coarse: matchMedia('(hover:none) and (pointer:coarse)').matches,
+    standalone: matchMedia('(display-mode:standalone)').matches});
+}"""
+
+_LG_FOOTER = """() => { const f = document.querySelector('footer'); if (!f) return null;
+  const q = s => f.querySelector(s);
+  return {line: q('.legal-line') ? q('.legal-line').textContent : null,
+          attr: q('.legal-attr') ? q('.legal-attr').textContent : null,
+          label: q('.legal-nav') ? q('.legal-nav').getAttribute('aria-label') : null,
+          links: [...f.querySelectorAll('.legal-nav a')].map(a => [a.textContent, a.href]),
+          btn: q('[data-consent-open]') ? q('[data-consent-open]').textContent : null}; }"""
+
+
+def _lg_file_exists(url):
+    """A file:// link to a directory resolves to its index.html on the site."""
+    from urllib.parse import urlparse, unquote
+    u = urlparse(url)
+    if u.scheme != "file":
+        return False
+    p = pathlib.Path(unquote(u.path))
+    return (p / "index.html").is_file() if url.endswith("/") else p.is_file()
+
+
+def _lg_record(page):
+    return json.loads(page.evaluate("localStorage.getItem('sofia-consent')") or "null") or {}
+
+
+def _lg_scroll_to_footer(page):
+    page.evaluate("""async () => { for (let i = 0; i < 60; i++) { window.scrollTo(0, document.documentElement.scrollHeight);
+        await new Promise(r => setTimeout(r, 60)); if (!document.getElementById('rail-sentinel')) break; }
+        document.querySelector('footer').scrollIntoView({block: 'end'}); }""")
+    page.wait_for_timeout(200)
+
+
+def wave_lg1(browser):
+    """LG1: the cookie notice in the app. First visit on desktop and phone, BG and EN; honest
+    content (no switches while nothing is optional); geometry, overflow, safe-area strip and
+    reduced motion; keyboard order and focus; the choice persists, a new policy version or a
+    broken record asks again; the footer's legal lines and links; "Настройки за бисквитки" and
+    #cookies reopen it; it sits under the sheets; what the page stores is what the policy lists."""
+    wave = "LG1"
+    ensure_shot_dir(wave)
+    ver = _consent_version()
+    check("lg1_consent_version", bool(ver), f"CONSENT_VERSION={ver}")
+    if not ver:
+        return
+    cookie_policy = (webapp_root / "legal" / "cookies" / "index.html").read_text(encoding="utf-8")
+
+    print("\n=== LG1: desktop, BG, first visit ===")
+    ctx, page, errs = _lg_open(browser, 1280, 900)
+    T = page.evaluate("({bg: T.bg, en: T.en})")
+    p = page.evaluate(_LG_PROBE)
+    save_shot(page, wave, "desktop_bg_first_visit")
+    check("lg1_first_visit_shows_notice", p["shown"], "")
+    if p["shown"]:
+        check("lg1_notice_first_in_page_region", p["first"] and p["role"] == "region",
+              f"first={p['first']} role={p['role']}")
+        check("lg1_notice_text_bg", p["title"] == T["bg"]["consentTitle"] and p["desc"] == T["bg"]["consentText"],
+              repr(p["title"]))
+        check("lg1_no_switches_while_nothing_optional",
+              p["boxes"] == 0 and p["ok"] == T["bg"]["consentOk"] and p["more"] == T["bg"]["consentMore"],
+              f"boxes={p['boxes']} ok={p['ok']!r} more={p['more']!r}")
+        check("lg1_learn_more_link", (p["moreHref"] or "").endswith("/legal/cookies/") and _lg_file_exists(p["moreHref"]),
+              p["moreHref"])
+        check("lg1_desktop_card_bottom_left",
+              p["pos"] == "fixed" and abs(p["x"] - 24) <= 2 and abs(p["b"] - 24) <= 2 and p["w"] <= 381 and p["y"] > 0,
+              f"x={p['x']:.0f} bottom gap={p['b']:.0f} w={p['w']:.0f} y={p['y']:.0f}")
+        check("lg1_desktop_no_overflow", p["sw"] <= p["iw"], f"scrollWidth={p['sw']} innerWidth={p['iw']}")
+        check("lg1_scroll_padding_while_open", p["pad"].endswith("px") and float(p["pad"][:-2]) >= p["h"],
+              f"scroll-padding-bottom={p['pad']} card h={p['h']:.0f}")
+        check("lg1_motion_entrance", p["anim"] == "consentIn", f"animation={p['anim']}")
+    # no layout shift: the notice is on its own fixed layer
+    shift = page.evaluate("""() => { const m = document.querySelector('main').getBoundingClientRect();
+        const b = document.querySelector('.bar').getBoundingClientRect(); return [m.top, m.left, m.width, b.top, b.height]; }""")
+
+    print("\n=== LG1: keyboard ===")
+    # Safari leaves links out of the Tab order by default (Option+Tab reaches them): in WebKit
+    # the step to "Научи повече" is Alt+Tab
+    webkit = getattr(browser, "raw", browser).browser_type.name == "webkit"
+    page.evaluate("document.activeElement && document.activeElement.blur && document.activeElement.blur()")
+    page.keyboard.press("Tab")
+    f1 = page.evaluate("document.activeElement.hasAttribute('data-consent-ok')")
+    page.keyboard.press("Alt+Tab" if webkit else "Tab")
+    f2 = page.evaluate("document.activeElement.classList.contains('consent-more')")
+    check("lg1_first_in_tab_order", f1 and f2, f"Tab 1 on the button: {f1}, next on the link: {f2}")
+    page.keyboard.press("Shift+Tab")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(150)
+    after = page.evaluate(_LG_PROBE)
+    rec = _lg_record(page)
+    check("lg1_ok_closes_and_stores",
+          not after["shown"] and rec.get("v") == ver and rec.get("opt") == {}
+          and bool(re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d", rec.get("at") or "")), f"record={rec}")
+    check("lg1_focus_lands_in_the_page",
+          page.evaluate("document.activeElement.hasAttribute('data-home')") and after["pad"] == "",
+          f"scroll-padding-bottom={after['pad']!r}")
+    shift2 = page.evaluate("""() => { const m = document.querySelector('main').getBoundingClientRect();
+        const b = document.querySelector('.bar').getBoundingClientRect(); return [m.top, m.left, m.width, b.top, b.height]; }""")
+    check("lg1_no_layout_shift", all(abs(a - b) < 0.5 for a, b in zip(shift, shift2)), f"{shift} -> {shift2}")
+
+    print("\n=== LG1: the choice persists; the footer ===")
+    page.reload()
+    page.wait_for_selector(".bar", timeout=20000)
+    check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"], "")
+    _lg_scroll_to_footer(page)
+    ft = page.evaluate(_LG_FOOTER)
+    save_shot(page, wave, "desktop_bg_footer")
+    check("lg1_footer_line_bg", ft is not None and ft["line"] == T["bg"]["legalLine"], repr((ft or {}).get("line"))[:80])
+    check("lg1_footer_attributions", ft is not None and ft["attr"] == T["bg"]["legalAttr"]
+          and all(s in ft["attr"] for s in ("TMDB", "OMDb", "DeepL (deepl.com)")), repr((ft or {}).get("attr"))[:80])
+    links = (ft or {}).get("links") or []
+    check("lg1_footer_links_bg",
+          [h.split("/legal/", 1)[-1] for _, h in links] == ["terms/", "privacy/", "cookies/"]
+          and all(_lg_file_exists(h) for _, h in links)
+          and [t_ for t_, _ in links] == [T["bg"]["legalTerms"], T["bg"]["legalPrivacy"], T["bg"]["legalCookies"]],
+          str(links)[:160])
+    check("lg1_footer_settings_button", (ft or {}).get("btn") == T["bg"]["consentSettings"]
+          and (ft or {}).get("label") == T["bg"]["legalNav"], f"{(ft or {}).get('btn')!r}")
+    before_open = page.evaluate("document.querySelector('main').getBoundingClientRect().top")
+    page.focus("footer [data-consent-open]")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(150)
+    p = page.evaluate(_LG_PROBE)
+    check("lg1_footer_reopens_with_focus", p["shown"] and page.evaluate("document.activeElement.id") == "sg-consent",
+          f"shown={p['shown']}")
+    check("lg1_reopen_does_not_move_page",
+          abs(page.evaluate("document.querySelector('main').getBoundingClientRect().top") - before_open) < 0.5, "")
+    page.keyboard.press("Tab")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(150)
+    check("lg1_focus_returns_to_footer",
+          not page.evaluate(_LG_PROBE)["shown"]
+          and page.evaluate("document.activeElement.hasAttribute('data-consent-open')"), "")
+
+    print("\n=== LG1: English ===")
+    page.click("footer [data-consent-open]")
+    page.click("[data-lang]")
+    page.wait_for_timeout(200)
+    p = page.evaluate(_LG_PROBE)
+    check("lg1_notice_follows_language",
+          p["shown"] and p["lang"] == "en" and p["title"] == T["en"]["consentTitle"] and p["ok"] == T["en"]["consentOk"]
+          and (p["moreHref"] or "").endswith("/legal/en/cookies/") and _lg_file_exists(p["moreHref"]),
+          f"{p.get('title')!r} {p.get('moreHref')}")
+    page.click("[data-consent-ok]")
+    _lg_scroll_to_footer(page)
+    ft = page.evaluate(_LG_FOOTER)
+    links = (ft or {}).get("links") or []
+    check("lg1_footer_en",
+          ft["line"] == T["en"]["legalLine"] and TMDB_NOTICE in (ft["attr"] or "")
+          and [h.split("/legal/", 1)[-1] for _, h in links] == ["en/terms/", "en/privacy/", "en/cookies/"]
+          and all(_lg_file_exists(h) for _, h in links) and ft["btn"] == T["en"]["consentSettings"],
+          str(links)[:160])
+    save_shot(page, wave, "desktop_en_footer")
+
+    print("\n=== LG1: what the page stores ===")
+    keys = page.evaluate("Object.keys(localStorage)")
+    check("lg1_storage_is_documented",
+          set(keys) >= {"sofia-screen-v2", "sofia-consent"} and all(f"<code>{k}</code>" in cookie_policy for k in keys),
+          f"keys={keys}")
+    check("lg1_no_cookies", page.evaluate("document.cookie") == "", repr(page.evaluate("document.cookie")))
+    check("lg1_no_js_errors_desktop", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    print("\n=== LG1: it sits under the sheets ===")
+    ctx, page, errs = _lg_open(browser, 1280, 900)
+    target = page.evaluate("""() => { const top = document.getElementById('sg-consent').getBoundingClientRect().top;
+        const el = [...document.querySelectorAll('[data-film]')].find(e => { const r = e.getBoundingClientRect();
+          return r.width > 20 && r.height > 20 && r.top > 60 && r.bottom < top - 4; });
+        if (!el) return null; const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }""")
+    if target:
+        page.mouse.click(target[0], target[1])
+        page.wait_for_timeout(700)
+        covered = page.evaluate("""() => { const el = document.getElementById('sg-consent'); const r = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return {sheet: !!document.querySelector('.sheet'), inside: !!(hit && hit.closest('#sg-consent'))}; }""")
+        check("lg1_sheet_covers_notice", covered["sheet"] and not covered["inside"], str(covered))
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(600)
+        check("lg1_notice_back_after_sheet", page.evaluate(_LG_PROBE)["shown"], "")
+    else:
+        skip("lg1_sheet_covers_notice", "no film card above the notice")
+    check("lg1_no_js_errors_sheet", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    print("\n=== LG1: a new policy version, a broken record, #cookies ===")
+    for name, seed in (("old_version", _consent_seed_js("2000-01-01")),
+                       ("broken_json", _consent_seed_js(ver, raw="{")),
+                       ("opt_not_object", _consent_seed_js(ver, opt="[]"))):
+        ctx, page, errs = _lg_open(browser, 1280, 900, seed=seed)
+        check(f"lg1_asks_again_{name}", page.evaluate(_LG_PROBE)["shown"] and not errs, "; ".join(errs[:2]))
+        ctx.close()
+    ctx, page, errs = _lg_open(browser, 1280, 900, seed=_consent_seed_js(ver))
+    check("lg1_answered_record_hides_notice", not page.evaluate(_LG_PROBE)["shown"], "")
+    ctx.close()
+    ctx, page, errs = _lg_open(browser, 1280, 900, seed=_consent_seed_js(ver), url=HTML + "#cookies")
+    check("lg1_hash_cookies_opens_notice",
+          page.evaluate(_LG_PROBE)["shown"] and page.evaluate("document.activeElement.id") == "sg-consent"
+          and page.evaluate("location.hash") == "", page.evaluate("location.hash"))
+    check("lg1_no_js_errors_hash", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    for lang in ("bg", "en"):
+        print(f"\n=== LG1: phone, {lang}, first visit ===")
+        ctx, page, errs = _lg_open(browser, 390, 844, lang=lang, mobile=True)
+        p = page.evaluate(_LG_PROBE)
+        save_shot(page, wave, f"phone_{lang}_first_visit")
+        check(f"lg1_phone_notice_{lang}", p["shown"] and p["title"] == T[lang]["consentTitle"], repr(p.get("title")))
+        if p["shown"]:
+            strip = 71 if (p["coarse"] and not p["standalone"]) else 11
+            check(f"lg1_phone_card_geometry_{lang}",
+                  abs(p["x"] - 12) <= 1 and abs(p["rgap"] - 12) <= 1 and p["b"] >= strip and p["y"] > 0,
+                  f"x={p['x']:.0f} right gap={p['rgap']:.0f} bottom gap={p['b']:.0f} (coarse={p['coarse']})")
+            check(f"lg1_phone_no_overflow_{lang}", p["sw"] <= p["iw"], f"scrollWidth={p['sw']} innerWidth={p['iw']}")
+            check(f"lg1_phone_tap_targets_{lang}", min(p["btnH"]) >= 44, f"heights={p['btnH']}")
+        page.tap("[data-consent-ok]")
+        page.wait_for_timeout(200)
+        fab = page.evaluate("""() => { const f = document.querySelector('.fab'); if (!f) return null; const r = f.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!(hit && hit.closest('.fab')); }""")
+        check(f"lg1_phone_fab_free_after_ok_{lang}", fab is not False and not page.evaluate(_LG_PROBE)["shown"], f"fab hit={fab}")
+        check(f"lg1_phone_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+    print("\n=== LG1: reduced motion ===")
+    ctx, page, errs = _lg_open(browser, 1280, 900, reduced="reduce")
+    p = page.evaluate(_LG_PROBE)
+    check("lg1_reduced_motion_no_animation", p["shown"] and p["anim"] == "none", f"animation={p.get('anim')}")
+    ctx.close()
+
+
+def _lg_serve():
+    """Serve the worktree on a free local port (the legal pages link directories)."""
+    import functools
+    import http.server
+    import threading
+
+    class _Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0),
+                                          functools.partial(_Quiet, directory=str(webapp_root)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}/"
+
+
+_LG_PAGE = """() => {
+  const all = [...document.querySelectorAll('*')];
+  const meta = document.querySelector('meta[http-equiv="Content-Security-Policy" i]');
+  return {lang: document.documentElement.lang, title: document.title,
+    h1: (document.querySelector('h1') || {}).textContent,
+    updated: (document.querySelector('.lg-updated') || {}).textContent,
+    datetime: (document.querySelector('.lg-updated time') || {getAttribute(){return null}}).getAttribute('datetime'),
+    current: [...document.querySelectorAll('.lg-docs a[aria-current="page"]')].map(a => a.getAttribute('href')),
+    scripts: document.scripts.length,
+    handlers: all.filter(e => [...e.attributes].some(a => /^on/i.test(a.name))).length,
+    csp: meta ? meta.getAttribute('content') : null,
+    sheets: [...document.querySelectorAll('link[rel~="stylesheet"]')].map(l => l.href),
+    links: [...document.querySelectorAll('a[href]')].map(a => [a.getAttribute('href'), a.href]),
+    headings: [...document.querySelectorAll('h1,h2,h3')].map(h => h.textContent.trim()),
+    text: document.body.innerText, html: document.documentElement.outerHTML,
+    sw: document.documentElement.scrollWidth, iw: innerWidth,
+    other: (document.querySelector('.lg-lang') || {}).href, cookie: document.cookie};
+}"""
+
+
+def _lg_csp(value):
+    """A CSP string as {directive: sources}, hashes and nonces left out (the app's change daily)."""
+    if value is None:
+        return None
+    out = {}
+    for part in value.split(";"):
+        toks = part.split()
+        if toks:
+            out[toks[0].lower()] = {t for t in toks[1:] if not re.match(r"'(sha256|sha384|sha512|nonce)-", t)} or {"'none'"}
+    return out
+
+
+def wave_lg2(browser):
+    """LG2: the six legal pages over HTTP. They load in BG and EN on phone and desktop without
+    overflow, carry no script, link each other, the other language and back to the listings;
+    "Настройки за бисквитки" there reopens the notice in the app; same CSP and fonts as the
+    app; the owner's statements and TMDB's notice are in the terms; no dashes or stock AI
+    phrases; English headings in sentence case; every internal link answers 200; the
+    privacy policy names Google Fonts exactly while the pages load them; the gate fails
+    only on the owner's pending input."""
+    wave = "LG2"
+    ensure_shot_dir(wave)
+    ver = _consent_version()
+    srv, base = _lg_serve()
+    try:
+        # the app under test, for the CSP, the fonts and the requests it makes
+        ctx, page, errs = _lg_open(browser, 1280, 900, url=base + html_env, sw_block=True,
+                                   seed=_consent_seed_js(ver))
+        hosts = set()
+        page.on("request", lambda r: hosts.add(re.sub(r"^https?://([^/]+).*$", r"\1", r.url)))
+        page.reload()
+        page.wait_for_selector(".bar", timeout=20000)
+        page.wait_for_timeout(800)
+        app = page.evaluate(_LG_PAGE)
+        app_google = any(h in ("fonts.googleapis.com", "fonts.gstatic.com") for h in hosts)
+        check("lg2_app_over_http_no_cookies", app["cookie"] == "" and not ctx.cookies(base), repr(app["cookie"]))
+        ctx.close()
+
+        texts, checked, bad_links = {}, {}, []
+        for rel in LEGAL_PAGES:
+            doc = rel.rstrip("/").split("/")[-1]
+            lang = "en" if "/en/" in rel else "bg"
+            for w, h in ((390, 844), (1280, 900)):
+                ctx = getattr(browser, "raw", browser).new_context(
+                    viewport={"width": w, "height": h}, service_workers="block", locale="bg-BG",
+                    **({"is_mobile": True, "has_touch": True} if w < 500 else {}))
+                pg = ctx.new_page()
+                errs = []
+                pg.on("pageerror", lambda e: errs.append(str(e)))
+                resp = pg.goto(base + rel)
+                d = pg.evaluate(_LG_PAGE)
+                tag = f"{rel.strip('/').replace('/', '_')}_{w}"
+                check(f"lg2_{tag}_loads", resp is not None and resp.status == 200 and d["lang"] == lang
+                      and d["h1"] == LEGAL_TITLES[doc][lang == "en"], f"status={resp and resp.status} h1={d['h1']!r}")
+                check(f"lg2_{tag}_no_overflow", d["sw"] <= d["iw"], f"scrollWidth={d['sw']} innerWidth={d['iw']}")
+                if w == 390:
+                    save_shot(pg, wave, tag)
+                    ctx.close()
+                    continue
+                texts[rel] = d
+                want = ver if doc != "terms" else None
+                check(f"lg2_{tag}_dated", (d["updated"] or "").startswith("Последна актуализация:" if lang == "bg" else "Last updated:")
+                      and (want is None or d["datetime"] == want), f"{d['updated']!r} datetime={d['datetime']}")
+                check(f"lg2_{tag}_no_script", d["scripts"] == 0 and d["handlers"] == 0,
+                      f"scripts={d['scripts']} inline handlers={d['handlers']}")
+                check(f"lg2_{tag}_current_doc", d["current"] == [f"../{doc}/"], str(d["current"]))
+                other = ("legal/en/" if lang == "bg" else "legal/") + doc + "/"
+                check(f"lg2_{tag}_language_switch", d["other"] == base + other, d["other"])
+                check(f"lg2_{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+                # the same CSP and fonts as the app
+                a_csp, l_csp = _lg_csp(app["csp"]), _lg_csp(d["csp"])
+                same = (a_csp is None and l_csp is None) or (a_csp is not None and l_csp is not None and all(
+                    a_csp.get(k) == l_csp.get(k) or (k == "script-src" and l_csp.get(k) == {"'none'"})
+                    for k in set(a_csp) | set(l_csp)))
+                check(f"lg2_{tag}_same_csp", same, f"app={app['csp']!r} page={d['csp']!r}")
+                check(f"lg2_{tag}_same_fonts", sorted(d["sheets"]) == sorted(app["sheets"]),
+                      f"page={d['sheets']} app={app['sheets']}")
+                # links: siblings, the other language, the app; anchors on the page
+                for raw, absu in d["links"]:
+                    if raw.startswith("mailto:"):
+                        if raw != "mailto:kzld@cpdp.bg":       # the supervisory authority's; the site gives none
+                            bad_links.append(f"{rel}: unexpected email link {raw}")
+                    elif absu.startswith(base):
+                        url = absu.split("#", 1)[0]
+                        if url not in checked:
+                            r = ctx.request.get(url)
+                            checked[url] = r.status
+                        if checked[url] != 200:
+                            bad_links.append(f"{rel}: {raw} -> {checked[url]}")
+                        if "#" in absu and absu.split("#", 1)[0] == base + rel:
+                            if not pg.evaluate("id => !!document.getElementById(id)", absu.split("#", 1)[1]):
+                                bad_links.append(f"{rel}: anchor {raw} missing")
+                    else:
+                        from urllib.parse import urlparse
+                        u = urlparse(absu)
+                        if u.scheme != "https" or u.hostname not in LEGAL_EXTERNAL_HOSTS:
+                            bad_links.append(f"{rel}: unexpected external link {absu}")
+                ctx.close()
+        check("lg2_every_link_resolves", not bad_links, "; ".join(bad_links[:4]))
+        check("lg2_internal_links_checked", len(checked) == len(LEGAL_PAGES) + 1,
+              f"{len(checked)} internal URLs (the six pages and the listings) answered 200")
+
+        print("\n=== LG2: the copy ===")
+        for rel, d in texts.items():
+            tag = rel.strip("/").replace("/", "_")
+            dash = [c for c in DASHES if c in d["text"]]
+            check(f"lg2_{tag}_no_dashes", not dash, f"found {dash}")
+            tells = [t_ for t_ in AI_TELLS if t_ in d["text"].lower()]
+            check(f"lg2_{tag}_no_stock_phrases", not tells, str(tells))
+            leftover = sorted(set(re.findall(r"\{[A-Z_]+\}", d["html"])))
+            check(f"lg2_{tag}_no_placeholders", not leftover, str(leftover))
+            check(f"lg2_{tag}_contact_is_github_issues",
+                  any(absu == ISSUES_URL for _, absu in d["links"]) and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"]),
+                  "the GitHub issues link, and no email address but the supervisory authority's")
+            if "/en/" in rel:
+                proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb"}
+                caps = [h for h in d["headings"] for wd in re.sub(r"^\d+\.\s*", "", h).split()[1:]
+                        if wd[:1].isupper() and wd.strip("(),.") not in proper]
+                check(f"lg2_{tag}_sentence_case", not caps, str(caps[:3]))
+        required = {
+            "legal/terms/": ["агрегатор", "Не сме свързани с никое кино", "създаден с помощта на изкуствен интелект",
+                             "може да има грешки", "по техните условия", "умисъл и груба небрежност",
+                             "проверете датата, часа и мястото при организатора", TMDB_NOTICE,
+                             "българското право"],
+            "legal/en/terms/": ["aggregator", "not affiliated with any cinema", "built with the help of AI",
+                                "can contain mistakes", "under their terms", "intent and gross negligence",
+                                "check the date, time and venue with the organiser", TMDB_NOTICE, "Bulgarian law"],
+        }
+        for rel, phrases in required.items():
+            text = texts.get(rel, {}).get("text", "")
+            missing = [s for s in phrases if s not in text]
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_owner_statements", not missing, str(missing))
+        for rel in ("legal/cookies/", "legal/en/cookies/"):
+            html_ = texts.get(rel, {}).get("html", "")
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_lists_storage",
+                  all(s in html_ for s in ("<code>sofia-screen-v2</code>", "<code>sofia-consent</code>", "sofia-gleda-v")),
+                  "")
+        for rel, warn in (("legal/terms/", "Не публикувайте лични данни"), ("legal/en/terms/", "Do not post personal data"),
+                          ("legal/privacy/", "Не публикувайте там лични данни"),
+                          ("legal/en/privacy/", "Do not post personal data there")):
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_warns_public_channel", warn in texts.get(rel, {}).get("text", ""), warn)
+        for rel, rights in (("legal/privacy/", ["Не пазим лични данни на сървър, който управляваме",
+                                                 "декларацията за поверителност на GitHub", "техните политики",
+                                                 "Комисията за защита на личните данни", "kzld@cpdp.bg"]),
+                            ("legal/en/privacy/", ["We keep no personal data on any server we control",
+                                                   "GitHub's privacy statement", "their own policies",
+                                                   "Commission for Personal Data Protection", "kzld@cpdp.bg"])):
+            missing = [r_ for r_ in rights if r_ not in texts.get(rel, {}).get("text", "")]
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_privacy_requests_explained", not missing, str(missing))
+        for rel in ("legal/privacy/", "legal/en/privacy/"):
+            says = "Google Fonts" in texts.get(rel, {}).get("text", "")
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_fonts_match_requests", says == app_google,
+                  f"policy names Google Fonts: {says}; the app requested Google: {app_google}")
+
+        print("\n=== LG2: back to the listings; cookie settings from a legal page ===")
+        ctx, page, errs = _lg_open(browser, 1280, 900, url=base + html_env, sw_block=True, seed=_consent_seed_js(ver))
+        page.goto(base + "legal/cookies/")
+        page.click(".lg-foot-nav a[href$='#cookies']")
+        page.wait_for_selector(".bar", timeout=20000)
+        page.wait_for_timeout(200)
+        p = page.evaluate(_LG_PROBE)
+        check("lg2_cookie_settings_link_opens_notice",
+              p["shown"] and page.evaluate("document.activeElement.id") == "sg-consent"
+              and page.evaluate("location.hash") == "" and page.url == base, page.url)
+        page.goto(base + "legal/en/terms/")
+        page.click(".lg-brand")
+        page.wait_for_selector(".bar", timeout=20000)
+        check("lg2_brand_links_back_to_listings", page.url == base, page.url)
+        check("lg2_no_js_errors_app", not errs, "; ".join(errs[:3]))
+        ctx.close()
+    finally:
+        srv.shutdown()
+
+    print("\n=== LG2: the gate and the owner's input ===")
+    env = {k: v for k, v in os.environ.items() if k != "SOFIA_OWNER_PENDING_OK"}
+    env.update(SOFIA_HTML=html_env, SOFIA_SKIP_FRESHNESS="1", SOFIA_SKIP_SMOKE="1")
+    r1 = subprocess.run([sys.executable, "scripts/verify_build.py"], cwd=str(webapp_root), capture_output=True,
+                        text=True, env=env)
+    problems = [ln.strip()[2:] for ln in r1.stdout.splitlines() if ln.strip().startswith("✗")]
+    pending = not (webapp_root / "icons" / "tmdb.svg").exists()
+    if pending:
+        check("lg2_gate_blocks_until_owner_input",
+              r1.returncode != 0 and problems and all(p_.startswith("owner input pending:") for p_ in problems),
+              " | ".join(problems)[:200])
+    else:
+        check("lg2_gate_passes_with_owner_input", r1.returncode == 0, " | ".join(problems)[:200])
+    env["SOFIA_OWNER_PENDING_OK"] = "1"
+    r2 = subprocess.run([sys.executable, "scripts/verify_build.py"], cwd=str(webapp_root), capture_output=True,
+                        text=True, env=env)
+    check("lg2_gate_passes_otherwise", r2.returncode == 0 and "all checks passed" in r2.stdout,
+          (r2.stdout + r2.stderr)[-200:])
+
+
+def wave_lg3(browser):
+    """LG3: the consent framework, on a copy of the page with one made-up optional category.
+    The notice then shows switches (off), "Приемам всички", "Само необходимите" and "Запази
+    избора"; consentRun waits for the choice, runs once it is given and at once on later
+    visits; an unknown category never runs; withdrawing reloads the page."""
+    wave = "LG3"
+    ensure_shot_dir(wave)
+    src = html_path.read_text(encoding="utf-8")
+    ver = _consent_version(src)
+    hook = "try{ consentBoot(); }catch(e){}"
+    if not ver or "const CONSENT_OPTIONAL=[];" not in src or hook not in src:
+        check("lg3_page_has_consent_framework", False, "CONSENT_OPTIONAL / consentBoot not found")
+        return
+    patched = src.replace(
+        "const CONSENT_OPTIONAL=[];",
+        'const CONSENT_OPTIONAL=[{id:"lgtest",bg:{name:"Тестова категория",desc:"Само за теста"},'
+        'en:{name:"Test category",desc:"For the test only"}}];').replace(
+        hook, 'consentRun("lgtest",()=>{window.__lgRan=(window.__lgRan||0)+1;});'
+              'consentRun("nope",()=>{window.__lgNope=1;});' + hook)
+    # a copy edits the main script, so a CSP with its hash would block it: drop the CSP here
+    patched = re.sub(r'<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>\n?', "", patched, flags=re.I)
+    test_file = webapp_root / "index.lgtest.html"
+    test_file.write_text(patched, encoding="utf-8")
+    try:
+        ctx, page, errs = _lg_open(browser, 1280, 900, url=test_file.as_uri())
+        state = lambda: page.evaluate("""() => ({ran: window.__lgRan || 0, nope: !!window.__lgNope,
+            shown: !!(document.getElementById('sg-consent') && !document.getElementById('sg-consent').hidden),
+            box: (document.querySelector('#sg-consent [data-consent-cat="lgtest"]') || {}).checked,
+            title: (document.getElementById('sgc-t') || {}).textContent,
+            rec: localStorage.getItem('sofia-consent')})""")
+        T = page.evaluate("T.bg")
+        s = state()
+        need = page.evaluate("(() => { const n = document.querySelector('#sgc-necessary'); return n ? [n.checked, n.disabled] : null; })()")
+        btns = page.evaluate("[...document.querySelectorAll('#sg-consent button')].map(b => b.textContent)")
+        save_shot(page, wave, "optional_category")
+        check("lg3_switches_shown_off", s["shown"] and s["title"] == T["consentTitleOpt"] and s["box"] is False
+              and need == [True, True], f"title={s['title']!r} box={s['box']} necessary={need}")
+        check("lg3_three_choices", btns == [T["consentAll"], T["consentNone"], T["consentSave"]], str(btns))
+        check("lg3_waits_for_choice", s["ran"] == 0 and not s["nope"], str(s["ran"]))
+        page.click("[data-consent-none]")
+        s = state()
+        check("lg3_necessary_only", not s["shown"] and s["ran"] == 0
+              and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": False}, s["rec"])
+        page.click("[data-consent-open]")
+        page.check('#sg-consent [data-consent-cat="lgtest"]')
+        page.click("[data-consent-save]")
+        s = state()
+        check("lg3_saved_choice_runs_once", not s["shown"] and s["ran"] == 1
+              and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": True}, f"ran={s['ran']} rec={s['rec']}")
+        page.reload()
+        page.wait_for_selector(".bar", timeout=20000)
+        s = state()
+        check("lg3_runs_at_once_next_visit", s["ran"] == 1 and not s["shown"], f"ran={s['ran']}")
+        page.click("[data-consent-open]")
+        check("lg3_reopened_shows_choice", state()["box"] is True, "")
+        page.uncheck('#sg-consent [data-consent-cat="lgtest"]')
+        with page.expect_navigation():
+            page.click("[data-consent-save]")
+        page.wait_for_selector(".bar", timeout=20000)
+        s = state()
+        check("lg3_withdrawal_reloads", s["ran"] == 0 and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": False},
+              f"ran={s['ran']} rec={s['rec']}")
+        page.click("[data-consent-open]")
+        page.click("[data-consent-all]")
+        s = state()
+        check("lg3_accept_all_runs", s["ran"] == 1 and not s["shown"], f"ran={s['ran']}")
+        check("lg3_unknown_category_never_runs", not s["nope"], "")
+        check("lg3_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -15365,6 +16004,9 @@ WAVES = {
     "EV2": wave_ev2,
     "EV3": wave_ev3,
     "EV4": wave_ev4,
+    "LG1": wave_lg1,
+    "LG2": wave_lg2,
+    "LG3": wave_lg3,
 }
 
 def main():
@@ -15402,11 +16044,14 @@ def main():
             sys.exit(f"SOFIA_BROWSER must be chromium or webkit, not {engine!r}")
         browser = getattr(pw, engine).launch(headless=True)
         print(f"Browser: {engine}")
+        # every wave but LG1-LG3 starts as a visitor who has answered the cookie notice
+        _seed = _consent_seed_js(_consent_version()) if _consent_version() else None
+        browser = _ConsentSeeded(browser, _seed)
 
         # Launch WebKit once for use by Wave J (J1 needs both engines)
         _webkit_browser = None
         try:
-            _webkit_browser = pw.webkit.launch(headless=True)
+            _webkit_browser = _ConsentSeeded(pw.webkit.launch(headless=True), _seed)
         except Exception as _wk_err:
             print(f"  NOTE: WebKit launch failed ({_wk_err}); Wave J WebKit checks will be skipped")
 

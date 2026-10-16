@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0C0A0F">
+<title>Политика за поверителност | Sofia Gleda</title>
+<meta name="description" content="Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, връзка с нас и правата ви.">
+<link rel="canonical" href="https://confused-morty123.github.io/sofia-gleda/legal/privacy/">
+<link rel="alternate" hreflang="bg" href="https://confused-morty123.github.io/sofia-gleda/legal/privacy/">
+<link rel="alternate" hreflang="en" href="https://confused-morty123.github.io/sofia-gleda/legal/en/privacy/">
+<link rel="alternate" hreflang="x-default" href="https://confused-morty123.github.io/sofia-gleda/legal/privacy/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sofia Gleda">
+<meta property="og:url" content="https://confused-morty123.github.io/sofia-gleda/legal/privacy/">
+<meta property="og:title" content="Политика за поверителност">
+<meta property="og:description" content="Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, връзка с нас и правата ви.">
+<meta property="og:image" content="https://confused-morty123.github.io/sofia-gleda/share/share-preview.jpg">
+<meta property="og:locale" content="bg_BG">
+<link rel="icon" href="../../icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<!-- FONTS -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,600;0,800;1,600&amp;family=Onest:wght@400;500;600;700&amp;display=swap">
+<!-- /FONTS -->
+<style>
+/* Sofia Gleda: the legal pages (scripts/gen_legal_pages.py inlines this in each page).
+   The app's tokens: ink and fg, crimson accent, Onest for text, Oswald for the title. */
+:root{
+  --ink:#0C0A0F; --ink-2:#141018; --ink-3:#1C1622; --ink-4:#28202F;
+  --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.17);
+  --fg:#F4EFF6; --fg-2:#B6ABBC; --fg-3:#7E7386;
+  --crimson:#E0163A; --accent:var(--crimson);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ink); color:var(--fg-2);
+  font-family:"Onest","Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--fg); text-decoration:underline; text-decoration-color:rgba(224,22,58,.65);
+  text-underline-offset:3px; overflow-wrap:anywhere}
+a:hover{text-decoration-color:var(--crimson)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+p,li,dd{overflow-wrap:break-word}
+strong{color:var(--fg); font-weight:600}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9em; color:var(--fg);
+  background:var(--ink-3); border-radius:6px; padding:1px 6px; overflow-wrap:anywhere}
+
+.lg-skip{position:absolute; left:12px; top:-60px; z-index:10; padding:10px 16px; border-radius:10px;
+  background:var(--fg); color:var(--ink); text-decoration:none; font-weight:600}
+.lg-skip:focus{top:calc(10px + env(safe-area-inset-top,0px))}
+.lg-wrap{max-width:760px; margin:0 auto;
+  padding-inline:max(18px,env(safe-area-inset-left,0px)) max(18px,env(safe-area-inset-right,0px))}
+
+.lg-bar{position:sticky; top:0; z-index:5; padding-top:env(safe-area-inset-top,0px);
+  background:color-mix(in srgb,var(--ink) 92%,transparent); backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line)}
+.lg-bar-in{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:60px}
+.lg-brand{display:inline-flex; align-items:center; min-height:44px}
+.lg-brand img{display:block; height:30px; width:auto}
+.lg-lang{display:inline-flex; align-items:center; min-height:40px; padding:0 14px; border-radius:999px;
+  border:1px solid var(--line-2); color:var(--fg); text-decoration:none; font-size:14px; font-weight:500}
+.lg-lang:hover{background:rgba(255,255,255,.08)}
+
+.lg-docs{display:flex; flex-wrap:wrap; gap:8px; margin:28px 0 22px}
+.lg-docs a{display:inline-flex; align-items:center; min-height:38px; padding:0 15px; border-radius:999px;
+  border:1px solid var(--line-2); color:var(--fg-2); text-decoration:none; font-size:14px}
+.lg-docs a:hover{color:var(--fg); background:rgba(255,255,255,.06)}
+.lg-docs a[aria-current="page"]{background:var(--fg); border-color:var(--fg); color:var(--ink); font-weight:600}
+
+h1{display:flex; align-items:center; gap:12px; margin:0 0 6px; color:var(--fg);
+  font-family:Oswald,"Arial Narrow",sans-serif; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; font-size:clamp(28px,6vw,40px); line-height:1.1; text-wrap:balance}
+h1::before{content:""; flex:0 0 5px; width:5px; height:.9em; border-radius:2px; background:var(--accent)}
+.lg-updated{margin:0 0 24px; color:var(--fg-3); font-size:14px}
+.lg-lead{font-size:17px; color:var(--fg)}
+h2{margin:40px 0 10px; color:var(--fg); font-size:20px; font-weight:600; line-height:1.3; text-wrap:balance;
+  scroll-margin-top:84px}
+h3{margin:0; color:var(--fg); font-size:15px; font-weight:600}
+ul{padding-left:22px}
+li{margin:6px 0}
+
+.lg-key{margin:22px 0 8px; padding:18px 20px 12px; border-radius:18px; background:var(--ink-2);
+  border:1px solid var(--line); border-left:3px solid var(--accent)}
+.lg-key h2{margin:0 0 4px; font-family:Oswald,"Arial Narrow",sans-serif; text-transform:uppercase;
+  letter-spacing:.06em; font-size:17px}
+.lg-key li{color:var(--fg)}
+.lg-warn{margin:12px 0; padding:12px 16px; border-radius:14px; color:var(--fg);
+  background:rgba(217,178,60,.08); border:1px solid rgba(217,178,60,.3)}
+.lg-attr{margin:14px 0; padding:14px 16px; border-radius:14px; background:var(--ink-2); border:1px solid var(--line)}
+.lg-attr p{margin:6px 0}
+.lg-tmdb{display:block; height:20px; width:auto; margin:2px 0 8px}
+.lg-item{margin:12px 0; padding:16px 18px; border-radius:16px; background:var(--ink-2); border:1px solid var(--line)}
+.lg-item dl{display:grid; grid-template-columns:minmax(120px,max-content) 1fr; gap:6px 16px; margin:12px 0 0}
+.lg-item dt{color:var(--fg-3); font-size:14px}
+.lg-item dd{margin:0}
+@media (max-width:520px){
+  .lg-item dl{grid-template-columns:1fr; gap:2px}
+  .lg-item dt{margin-top:8px}
+}
+
+.lg-foot{margin-top:56px; border-top:1px solid var(--line); color:var(--fg-3); font-size:14px;
+  padding-block:20px calc(36px + env(safe-area-inset-bottom,0px))}
+.lg-foot-nav{display:flex; flex-wrap:wrap; gap:4px 18px}
+.lg-foot-nav a{display:inline-flex; align-items:center; min-height:36px; color:var(--fg-2)}
+.lg-foot p{margin:10px 0 0; max-width:62ch}
+</style>
+</head>
+<body>
+<a class="lg-skip" href="#main">Към съдържанието</a>
+<header class="lg-bar"><div class="lg-wrap lg-bar-in">
+<a class="lg-brand" href="../../" aria-label="Sofia Gleda, към програмата"><img src="../../logo.svg" alt="Sofia Gleda" width="154" height="30"></a>
+<a class="lg-lang" href="../../legal/en/privacy/" hreflang="en" lang="en">English</a>
+</div></header>
+<main id="main" class="lg-wrap">
+<nav class="lg-docs" aria-label="Правна информация">
+<a href="../terms/">Общи условия</a>
+<a href="../privacy/" aria-current="page">Поверителност</a>
+<a href="../cookies/">Бисквитки</a>
+</nav>
+<h1>Политика за поверителност</h1>
+<p class="lg-updated">Последна актуализация: <time datetime="2026-10-15">15 октомври 2026 г.</time></p>
+<p class="lg-lead">Тази политика описва какви лични данни се обработват, когато ползвате Sofia Gleda, с каква цел и на какво основание, както и какви права имате. Тя е съобразена с Общия регламент относно защитата на данните (Регламент (ЕС) 2016/679, по-нататък „ОРЗД“) и със Закона за защита на личните данни.</p>
+<section class="lg-key" aria-labelledby="nakratko">
+<h2 id="nakratko">Накратко</h2>
+<ul>
+<li>Сайтът няма потребителски профили, формуляри, статистика за посещенията и реклами.</li>
+<li>Не пазим лични данни на сървър, който управляваме. Настройките ви се пазят само в браузъра ви и не ни се изпращат.</li>
+<li>Не поставяме бисквитки.</li>
+<li>При всяко посещение хостинг доставчикът GitHub записва IP адреса ви от съображения за сигурност.</li>
+<li>Плакатите се зареждат директно от TMDB и от сайтовете на кината и фестивалите, затова TMDB и тези сайтове също получават IP адреса ви.</li>
+<li>Връзка с нас: публичната страница на проекта в GitHub. Не публикувайте там лични данни.</li>
+</ul>
+</section>
+
+<h2 id="administrator">1. Администратор на личните данни</h2>
+<p>Администратор е физическото лице, което поддържа Sofia Gleda без търговска цел. Сайтът не посочва име или имейл адрес за връзка. Единственият начин да се свържете с нас е публичната страница на проекта в GitHub (вижте т. 7). Длъжностно лице по защита на данните не е определено, защото чл. 37 от ОРЗД не го изисква при обработване като това.</p>
+
+<h2 id="ne">2. Какво не правим</h2>
+<p>Не изискваме регистрация и не събираме чрез сайта имена, имейл адреси или телефони. Нямаме база данни и не пазим лични данни на сървър, който управляваме. Не използваме инструменти за статистика, проследяване или реклама. Не профилираме посетителите и не вземаме автоматизирани решения по смисъла на чл. 22 от ОРЗД. Не продаваме данни и не ги предоставяме за маркетинг.</p>
+
+<h2 id="hosting">3. Посещение на сайта (хостинг)</h2>
+<p>Сайтът се хоства в GitHub Pages, услуга на GitHub. Когато отворите страница, браузърът ви изпраща на сървърите на GitHub IP адреса ви и технически данни, например вида на браузъра и адреса на страницата. Според документацията на GitHub IP адресът на всеки посетител се записва и съхранява от съображения за сигурност. Нямаме достъп до тези записи. GitHub ги обработва по своята <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларация за поверителност</a> и сам определя колко дълго да ги пази.</p>
+<p>Основание: легитимният интерес сайтът да бъде достъпен и защитен (чл. 6, пар. 1, буква „е“ от ОРЗД).</p>
+<p>GitHub, Inc. се намира в САЩ и е сертифициран по Рамката за защита на личните данни в отношенията между ЕС и САЩ, за която Европейската комисия е приела решение за адекватност (Решение за изпълнение (ЕС) 2023/1795).</p>
+<p>Шрифтовете на сайта се зареждат от Google Fonts, услуга на Google. При зареждането им браузърът ви изпраща IP адреса ви на сървърите на Google. Основание: легитимният интерес текстът да се показва с шрифтовете на сайта (чл. 6, пар. 1, буква „е“ от ОРЗД). Google LLC е сертифициран по Рамката за защита на личните данни в отношенията между ЕС и САЩ.</p>
+
+<h2 id="izobrazhenia">4. Изображения от други сайтове</h2>
+<p>Плакатите и снимките на филмите се зареждат директно от сървърите на TMDB (image.tmdb.org), а някои плакати и от сайтовете на кината, фестивалите и programata.bg. Плакатите на театрите се зареждат от нашия сайт. За да покаже изображение от друг сайт, браузърът ви се свързва с него и му изпраща IP адреса ви, данни за браузъра и адреса на нашия сайт, без конкретната страница. Тези сайтове обработват данните по своите правила. TMDB се управлява от Xperi Inc. (САЩ).</p>
+<p>Някои от тези сайтове поставят свои бисквитки. Подробности има в <a href="../cookies/">Политиката за бисквитките</a>.</p>
+<p>Основание: легитимният интерес към програмата да се показват оригиналните плакати (чл. 6, пар. 1, буква „е“ от ОРЗД). Ако не желаете това, можете да спрете изображенията от други сайтове в браузъра си, например с разширение за блокиране на съдържание. Сайтът продължава да работи и показва свои заместващи плакати.</p>
+
+<h2 id="vrazki">5. Връзки към други сайтове</h2>
+<p>Когато отворите връзка към сайт за билети, карта (Google Maps) или календар (Google Calendar, Outlook), браузърът ви се свързва директно с него и оттам нататък се прилагат неговите правила. Файлът за Apple Календар (.ics) се създава в браузъра ви и не ни се изпраща.</p>
+
+<h2 id="brauzar">6. Какво остава в браузъра ви</h2>
+<p>Сайтът пази в браузъра ви езика, режима (кино или театър), любимите ви кина и театри и избора ви от съобщението за бисквитките. На основния адрес на сайта (sofiagleda.com) браузърът пази и копие на сайта, за да се отваря бързо и без интернет. Тези данни не ни се изпращат и не можем да ги видим. Изтривате ги сами, като изчистите данните на сайта в настройките на браузъра. Подробности има в <a href="../cookies/">Политиката за бисквитките</a>.</p>
+
+<h2 id="github">7. Връзка с нас през GitHub</h2>
+<p>Въпроси и сигнали можете да оставите на публичната страница на проекта в GitHub: <a href="https://github.com/confused-morty123/sofia-gleda/issues">github.com/confused-morty123/sofia-gleda/issues</a>. За това е нужен профил в GitHub. Съобщението ви се публикува под този профил и се вижда от всички. GitHub обработва профила и съобщенията по своите условия и <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларация за поверителност</a>. Когато отговаряме, ползваме само това, което сте публикували там (легитимен интерес да отговаряме на въпроси, чл. 6, пар. 1, буква „е“ от ОРЗД).</p>
+<p class="lg-warn">Не публикувайте там лични данни: имейл, телефон, адрес или друга информация за себе си или за други хора. Ако сте публикували такива по погрешка, можете сами да редактирате съобщението си, а ние ще изтрием цялото съобщение, ако ни помолите.</p>
+
+<h2 id="prava">8. Вашите права и как да ги упражните</h2>
+<p>Имате право да поискате достъп до личните си данни, коригирането или изтриването им и ограничаване на обработването им, както и да възразите срещу обработване, основано на легитимен интерес (чл. 15, 16, 17, 18 и 21 от ОРЗД). Право на преносимост (чл. 20 от ОРЗД) имате, когато обработването се основава на съгласие или на договор; в момента такова обработване няма. Ако в бъдеще поискаме съгласието ви за нещо, ще можете да го оттеглите по всяко време.</p>
+<p>Ето какво означава това на практика:</p>
+<ul>
+<li>Не пазим лични данни на сървър, който управляваме, затова при нас няма данни, до които да ви дадем достъп или които да изтрием.</li>
+<li>Настройките и любимите ви места са само в браузъра ви. Изтривате ги, като изчистите данните на сайта в настройките на браузъра (вижте <a href="../cookies/">Политиката за бисквитките</a>).</li>
+<li>Записите на GitHub за посещенията и данните в профила ви в GitHub се уреждат от <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларацията за поверителност на GitHub</a>; искания за тях отправяте към GitHub.</li>
+<li>Данните, които получават TMDB и сайтовете на кината и театрите при зареждане на изображения, се уреждат от техните политики; искания за тях отправяте към тях.</li>
+<li>Ако смятате, че все пак обработваме ваши лични данни, опишете случая на <a href="https://github.com/confused-morty123/sofia-gleda/issues">github.com/confused-morty123/sofia-gleda/issues</a>, без да публикувате самите данни, и ще ви отговорим там. Тъй като не водим потребителски профили, може да не успеем да свържем искането ви с конкретни данни (чл. 11 от ОРЗД).</li>
+</ul>
+
+<h2 id="zhalba">9. Жалба</h2>
+<p>Ако смятате, че правата ви са нарушени, можете да подадете жалба до Комисията за защита на личните данни: София 1592, бул. „Проф. Цветан Лазаров“ № 2, <a href="mailto:kzld@cpdp.bg">kzld@cpdp.bg</a>, <a href="https://www.cpdp.bg/">www.cpdp.bg</a>. Жалбата се подава в срок 6 месеца от узнаването на нарушението, но не по-късно от две години от извършването му (чл. 38 от Закона за защита на личните данни). Можете да се обърнете и към надзорния орган в държавата от ЕС, в която живеете или работите (чл. 77 от ОРЗД), или към съда (чл. 39 от Закона за защита на личните данни).</p>
+
+<h2 id="promeni">10. Промени</h2>
+<p>При промяна публикуваме новата версия на тази страница с новата дата. При съществена промяна съобщението за бисквитките се показва отново.</p>
+</main>
+<footer class="lg-foot"><div class="lg-wrap">
+<nav class="lg-foot-nav" aria-label="Връзки">
+<a href="../../">Към програмата</a>
+<a href="../../#cookies">Настройки за бисквитки</a>
+<a href="https://github.com/confused-morty123/sofia-gleda/issues">Проектът в GitHub</a>
+</nav>
+<p>Sofia Gleda е агрегатор и не е свързан с кината и театрите, чиито програми показва.</p>
+</div></footer>
+</body>
+</html>
