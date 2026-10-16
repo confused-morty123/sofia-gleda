@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="color-scheme" content="dark">
@@ -22,9 +23,7 @@
 <link rel="icon" href="../../../icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="../../../icons/apple-touch-icon.png">
 <!-- FONTS -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,600;0,800;1,600&amp;family=Onest:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="../../../fonts/fonts.css">
 <!-- /FONTS -->
 <style>
 /* Sofia Gleda: the legal pages (scripts/gen_legal_pages.py inlines this in each page).
@@ -147,7 +146,7 @@ li{margin:6px 0}
 <p>The site is hosted on GitHub Pages, a GitHub service. When you open a page, your browser sends GitHub's servers your IP address and technical data such as the browser type and the page address. According to GitHub's documentation, every visitor's IP address is logged and stored for security purposes. We have no access to these logs. GitHub processes them under its <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">privacy statement</a> and decides how long to keep them.</p>
 <p>Legal basis: our legitimate interest in keeping the site available and secure (Article 6(1)(f) GDPR).</p>
 <p>GitHub, Inc. is based in the United States and is certified under the EU-U.S. Data Privacy Framework, for which the European Commission has adopted an adequacy decision (Implementing Decision (EU) 2023/1795).</p>
-<p>The site's fonts load from Google Fonts, a Google service. When they load, your browser sends your IP address to Google's servers. Legal basis: our legitimate interest in showing the text in the site's fonts (Article 6(1)(f) GDPR). Google LLC is certified under the EU-U.S. Data Privacy Framework.</p>
+<p>The fonts are served from our own site too, with no request to any other server.</p>
 
 <h2 id="images">4. Images from other websites</h2>
 <p>Film posters and photos load directly from TMDB's servers (image.tmdb.org), and some posters from the websites of cinemas, festivals and programata.bg. Theatre posters load from our own site. To show an image from another website, your browser connects to it and sends your IP address, browser details and the address of our site, without the specific page. Those websites process the data under their own rules. TMDB is run by Xperi Inc. (United States).</p>

@@ -52,12 +52,10 @@ TERMS_UPDATED = "2026-10-15"
 DOCS = ("terms", "privacy", "cookies")
 LANGS = ("bg", "en")
 
-# Same families, weights and URL as the app's font block, so the stylesheet is shared from the
-# HTTP cache. The security work swaps this block for the self-hosted fonts.
+# The app's self-hosted fonts (fonts/, SIL OFL): the same stylesheet, so no font request
+# leaves the site from a legal page either. Filled before [[ROOT]] (see tpl's call).
 FONTS = """<!-- FONTS -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&amp;family=Playfair+Display:ital,wght@0,600;0,800;1,600&amp;family=Onest:wght@400;500;600;700&amp;display=swap">
+<link rel="stylesheet" href="[[ROOT]]fonts/fonts.css">
 <!-- /FONTS -->"""
 
 # The one <head> for every legal page. A CSP meta goes right after the charset line.
@@ -690,7 +688,7 @@ def page(doc, lang, updated, google):
     head = tpl(HEAD, LANG=lang, TITLE=html.escape(u["titles"][doc]), DESC=html.escape(u["desc"][doc]),
                CANONICAL=f"{SITE_URL}/{here}", URL_BG=f"{SITE_URL}/{path_of(doc, 'bg')}",
                URL_EN=f"{SITE_URL}/{path_of(doc, 'en')}", SITE=SITE_URL, OG_LOCALE=u["og_locale"],
-               ROOT=root, FONTS=FONTS, CSS=CSS)
+               FONTS=FONTS, ROOT=root, CSS=CSS)
     body = tpl(BODY, ROOT=root, SKIP=html.escape(u["skip"]), HOME=html.escape(u["home"]),
                OTHER_URL=root + path_of(doc, other), OTHER_LANG=other,
                OTHER_NAME=html.escape(u["other_name"]), DOCS_LABEL=html.escape(u["docs_label"]),

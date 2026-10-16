@@ -221,11 +221,18 @@ def share_pages(root=ROOT):
         yield from sorted((root / d).glob("*/index.html"))
 
 
+def legal_pages(root=ROOT):
+    """The terms, privacy and cookie pages (legal/, legal/en/): no script, so their
+    policy narrows script-src to 'none'; the other directives are the app's."""
+    yield from sorted((root / "legal").glob("**/index.html"))
+
+
 def main(argv):
     check_only = "--check" in argv
     files = [a for a in argv if not a.startswith("--")]
     if not files:
-        files = [os.environ.get("SOFIA_HTML") or str(ROOT / "index.html")] + [str(p) for p in share_pages()]
+        files = ([os.environ.get("SOFIA_HTML") or str(ROOT / "index.html")] + [str(p) for p in share_pages()]
+                 + [str(p) for p in legal_pages()])
     bad = 0
     changed = 0
     for f in files:
