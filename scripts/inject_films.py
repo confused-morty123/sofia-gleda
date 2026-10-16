@@ -23,6 +23,8 @@ Rules:
     python3 scripts/inject_films.py            # edits index.html in place
 """
 import json, os, re, sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from csp import json_for_script  # noqa: E402  (a value can never close the <script>)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
@@ -135,7 +137,7 @@ def main():
         print(f"FILMS already carries all {len(cinema)} arthouse films — no change")
         return
 
-    new_literal = json.dumps(films, ensure_ascii=False, separators=(",", ":"))
+    new_literal = json_for_script(films)
     HTML.write_text(src[:start] + new_literal + src[end:], encoding="utf-8")
     parts = []
     if added:

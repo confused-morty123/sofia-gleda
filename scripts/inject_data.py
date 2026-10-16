@@ -23,6 +23,7 @@ generated SVG artwork.
 import json, os, re, sys, pathlib
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from csp import json_for_script, stamp as stamp_csp  # noqa: E402
 try:
     from posterpolicy import Catalogue, reject_reason
 except ImportError:
@@ -238,16 +239,18 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
     + header + "\n"
-    + "const POSTERS = " + json.dumps(posters_override, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    + "const TMDBART = " + json.dumps(art, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    + "const SHOWART = " + json.dumps(showart, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    + "const SHOWALIAS = " + json.dumps(alias, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    + "const FILMINFO = " + json.dumps(filminfo, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    + "const SYN_EN = " + json.dumps(_syn_en, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    + "const TITLE_EN = " + json.dumps(_title_en, ensure_ascii=False, separators=(",", ":")) + ";\n"
-    # "</" escaped: these strings come from another site's headlines
-    + "const EVENTS_AUTO = " + json.dumps(_events_auto, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";\n"
-    + "const EVENT_MEMBERS = " + json.dumps(_event_members, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";\n"
+    # Every value goes through csp.json_for_script: these strings come from other
+    # sites (TMDB's community-edited overviews, the venues' pages, programata.bg's
+    # headlines, DeepL), and a "</script>" in one of them must not end this script.
+    + "const POSTERS = " + json_for_script(posters_override) + ";\n"
+    + "const TMDBART = " + json_for_script(art) + ";\n"
+    + "const SHOWART = " + json_for_script(showart) + ";\n"
+    + "const SHOWALIAS = " + json_for_script(alias) + ";\n"
+    + "const FILMINFO = " + json_for_script(filminfo) + ";\n"
+    + "const SYN_EN = " + json_for_script(_syn_en) + ";\n"
+    + "const TITLE_EN = " + json_for_script(_title_en) + ";\n"
+    + "const EVENTS_AUTO = " + json_for_script(_events_auto) + ";\n"
+    + "const EVENT_MEMBERS = " + json_for_script(_event_members) + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -272,6 +275,10 @@ if stray:
           "their own <script> outside the SOFIA-POSTERS markers, then re-run.")
 
 new = re.sub(MARKERS, lambda m: block, data, count=1, flags=re.S)
+# The data script changed, so its hash did: re-stamp the page's CSP meta here too
+# (refresh_all.py stamps once more after the last step). csp.stamp refuses a page
+# whose scripts are not the known set, e.g. a data value that broke out of its script.
+new = stamp_csp(new)
 HTML.write_text(new, encoding="utf-8")
 _n_fi_img_in_posters = sum(1 for fid in _fi_img_pending if fid in posters_override)
 print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' in r)} with posters), "

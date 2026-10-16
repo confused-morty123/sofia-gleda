@@ -23,11 +23,18 @@ import json
 import pathlib
 import re
 import sys
+import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 from site_config import SITE_URL  # noqa: E402
+import csp  # noqa: E402
+
+# An id names a directory (film/<id>/) and goes into a URL: letters (any script),
+# digits and hyphens only, so no id can climb out of film/ or show/ ("../") or
+# carry markup. The scraper mints slugs; anything else is skipped, loudly.
+SAFE_ID = re.compile(r"[^\W_][\w-]{0,150}")
 
 HTML_PATH = pathlib.Path(__file__).resolve().parent.parent / "index.html"
 
@@ -127,8 +134,9 @@ def _share_page(
     og_title = _e(title_bg)
     og_desc = _e(_truncate(syn_bg, DESC_MAX)) if syn_bg else _e(display_title)
     og_image = _e(poster_url)
+    qid = urllib.parse.quote(item_id, safe="")
     canonical = _e(f"{site_url}/{kind}/{item_id}/")
-    redirect_url = _e(f"{site_url}/?{kind}={item_id}")
+    redirect_url = _e(f"{site_url}/?{kind}={qid}")
     # Human-readable fallback link text uses the BG title only (safe for Cyrillic)
     title_safe = _e(title_bg)
     page_title = _e(f"{title_bg} | Sofia Gleda")
@@ -138,6 +146,7 @@ def _share_page(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{page_title}</title>
 <meta name="description" content="{og_desc}">
 <link rel="canonical" href="{canonical}">
@@ -156,7 +165,7 @@ def _share_page(
 <meta name="twitter:image" content="{og_image}">
 <!-- Redirect to the app -->
 <meta http-equiv="refresh" content="0; url={redirect_url}">
-<script>location.replace({json.dumps(f"{site_url}/?{kind}={item_id}")});</script>
+<script>/* SOFIA-SHARE */location.replace({csp.json_for_script(f"{site_url}/?{kind}={qid}")});</script>
 <style>
 body{{font-family:system-ui,sans-serif;background:#0C0A0F;color:#F4EFF6;
      display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -173,6 +182,8 @@ a{{color:#E0163A;}}
 
 
 def _write(path, content):
+    # The page's Content-Security-Policy meta: the hash of its one redirect script.
+    content = csp.stamp(content, kind="share")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
@@ -190,8 +201,12 @@ def main():
         return _poster_url(item_id, poster_alias, poster_map, tmdbart, showart, tmdb_base)
 
     # --- films ---
+    skipped = []
     for film in films:
         fid = film["id"]
+        if not isinstance(fid, str) or not SAFE_ID.fullmatch(fid):
+            skipped.append(f"film:{fid!r}")
+            continue
         page = ROOT / "film" / fid / "index.html"
         content = _share_page(
             kind="film",
@@ -208,6 +223,9 @@ def main():
     # --- shows ---
     for show in shows:
         sid = show["id"]
+        if not isinstance(sid, str) or not SAFE_ID.fullmatch(sid):
+            skipped.append(f"show:{sid!r}")
+            continue
         page = ROOT / "show" / sid / "index.html"
         content = _share_page(
             kind="show",
@@ -234,6 +252,9 @@ def main():
 
     print(f"gen_share_pages: wrote {written} share pages"
           + (f", kept {kept} pages for unlisted titles" if kept else ""))
+    if skipped:
+        print(f"gen_share_pages: skipped {len(skipped)} id(s) that are not slugs: "
+              + ", ".join(skipped[:10]), file=sys.stderr)
 
 
 if __name__ == "__main__":

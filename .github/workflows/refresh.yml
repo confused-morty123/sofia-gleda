@@ -19,9 +19,10 @@ on:
     - cron: "17 3 * * *"
   workflow_dispatch: {}          # adds a "Run workflow" button on the Actions tab
 
-# Allow the workflow to commit the refreshed files back to the repository.
+# Least privilege: the workflow token can only read by default; the one job that
+# commits the refreshed files back gets contents: write (below), nothing else.
 permissions:
-  contents: write
+  contents: read
 
 # Prevent two refreshes from running at the same time.  If a new run starts
 # while one is already in progress, the new run waits rather than cancels,
@@ -33,16 +34,25 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # This job pushes the refreshed data to main, so it alone may write contents.
+    permissions:
+      contents: write
     steps:
+      # Third-party actions are pinned to a full commit SHA (a tag can be moved to
+      # other code; a SHA cannot). To update: take the release's commit from
+      # `git ls-remote --tags https://github.com/actions/<name>` and change both the
+      # SHA and the version comment.
       - name: Check out the repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
 
       - name: Install dependencies
+        # Exact versions (requirements.txt pins every package): a new release of a
+        # dependency never reaches the pipeline until it is pinned on purpose.
         run: pip install -r requirements.txt
 
       - name: Install the headless browser for the publish gate
@@ -74,24 +84,31 @@ jobs:
             echo "health.json not present — pipeline did not write a health report." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          echo "## Health report" >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          cat health.json >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          # Emit annotations for each entry
+          # The messages quote other sites (an error text, a URL), so they are data:
+          # the summary's code fence is longer than any run of backticks inside it,
+          # and each annotation's level is one of GitHub's three and its text is
+          # escaped (%, CR, LF), so no message can start a workflow command of its own.
           python3 - <<'PYEOF'
-          import json, sys
+          import json, os, re, sys
+          raw = open("health.json", encoding="utf-8").read()
+          fence = "`" * max(3, 1 + max((len(m) for m in re.findall(r"`+", raw)), default=0))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write(f"## Health report\n{fence}json\n{raw.rstrip()}\n{fence}\n")
           try:
-              items = json.load(open("health.json"))
+              items = json.loads(raw)
           except Exception as e:
-              print(f"::warning::health.json could not be parsed: {e}", flush=True)
+              print(f"::warning::health.json could not be parsed: {type(e).__name__}", flush=True)
               sys.exit(0)
-          for item in items:
-              level = str(item.get("level", "warning")).lower()
+          LEVELS = {"error": "error", "warning": "warning", "warn": "warning", "notice": "notice", "ok": "notice"}
+          def data(s):
+              return str(s).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          for item in items if isinstance(items, list) else []:
+              if not isinstance(item, dict):
+                  continue
+              level = LEVELS.get(str(item.get("level", "warning")).lower(), "warning")
               venue = item.get("venue", "")
               msg = item.get("message", "")
-              annotation = f"::{level}::" + (f"[{venue}] " if venue else "") + msg
-              print(annotation, flush=True)
+              print(f"::{level}::" + data((f"[{venue}] " if venue else "") + str(msg)), flush=True)
           PYEOF
 
       - name: Keep the translation cache when the refresh is not published

@@ -166,13 +166,31 @@ def _minimal_html(snapshot_extra: str = "", extra_js: str = "",
     """)
 
 
+sys.path.insert(0, str(ROOT / "scripts"))
+import csp as _csp  # noqa: E402
+
+
+def _finish(html: str) -> str:
+    """What build_index.py and csp.py give every real page: the referrer policy meta
+    and the Content-Security-Policy meta for its scripts (the gate requires both).
+    Pages for the other checks get them here; the CSP tests below pass finish=False."""
+    if 'name="referrer"' not in html:
+        html = html.replace("<head>", '<head><meta name="referrer" content="strict-origin-when-cross-origin">', 1)
+    try:
+        return _csp.stamp(html, strict=False)
+    except _csp.CSPError:
+        return html
+
+
 def _run(html_content: str, skip_smoke: bool = True,
          skip_freshness: bool = False,
-         extra_env: dict | None = None) -> int:
+         extra_env: dict | None = None, finish: bool = True) -> int:
     """Write HTML to a tmp file, run verify_build.py, return exit code.
 
     verify_build.py reads the HTML path from SOFIA_HTML env var (not argv).
     """
+    if finish:
+        html_content = _finish(html_content)
     env = dict(os.environ)
     env["SOFIA_SKIP_SMOKE"] = "1" if skip_smoke else "0"
     if skip_freshness:
@@ -195,9 +213,11 @@ def _run(html_content: str, skip_smoke: bool = True,
 
 
 def _run_out(html_content: str,
-             extra_env: dict | None = None) -> tuple[int, str]:
+             extra_env: dict | None = None, finish: bool = True) -> tuple[int, str]:
     """Like _run (smoke and freshness skipped), but also returns the gate's output,
     so a test can tell WHICH check failed."""
+    if finish:
+        html_content = _finish(html_content)
     env = dict(os.environ, SOFIA_SKIP_SMOKE="1", SOFIA_SKIP_FRESHNESS="1")
     if extra_env:
         env.update(extra_env)
@@ -733,6 +753,16 @@ def _make_file_root(with_icons: bool = True,
                 f'<meta property="og:url" content="{_url}"/>'
                 f'<meta property="og:image" content="{_og}"/>'
                 f'</head></html>', encoding="utf-8")
+    # Like gen_share_pages.py + csp.py make them: the redirect script and its CSP meta.
+    for _kind in ("film", "show"):
+        for _pg in (root / _kind).glob("*/index.html") if (root / _kind).is_dir() else []:
+            _u = f"{_SITE_URL_FOR_TEST}/?{_kind}={_pg.parent.name}"
+            _h = _pg.read_text(encoding="utf-8").replace(
+                "</head>", f'<script>/* SOFIA-SHARE */location.replace("{_u}");</script></head>', 1)
+            _pg.write_text(_csp.stamp(_h.replace("<html><head>", '<html><head><meta charset="utf-8">', 1),
+                                      kind="share"), encoding="utf-8")
+    (root / "fonts").mkdir(exist_ok=True)
+    (root / "fonts" / "fonts.css").write_text("/* test */\n", encoding="utf-8")
     return root
 
 print("\nP3C: OG/Twitter meta and share page checks")
@@ -936,6 +966,77 @@ check("EVENT_MEMBERS naming no film or show fails",
 check("EVENT_MEMBERS for no such event fails",
       _ev_fails([_ev_auto()], {"no-such-event": ["show0"]}, word="EVENT_MEMBERS has"))
 check("no EVENTS_AUTO at all is a note, not a failure", _run_out(_minimal_html())[0] == 0)
+
+
+# ---------------------------------------------------------------------------
+# Security: the CSP meta, its hashes, the known scripts (scripts/csp.py)
+# ---------------------------------------------------------------------------
+print("\nsecurity: Content-Security-Policy and links")
+_sec_root = _make_file_root(with_icons=True, film_ids_ok=["test-film"], show_ids_ok=["test-show"])
+_sec_env = {"SOFIA_ROOT": str(_sec_root)}
+try:
+    _good = _finish(_minimal_html())
+    _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
+    check("a stamped page passes the CSP checks", _rc == 0)
+    if _rc:
+        print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+    _rc, _out = _run_out(_csp.META_RE.sub("", _good), extra_env=_sec_env, finish=False)
+    check("a page without the CSP meta fails", _rc != 0 and "Content-Security-Policy meta" in _out)
+    _rc, _out = _run_out(_good.replace("const LINKS=[];", "const LINKS=[];const X=1;", 1),
+                         extra_env=_sec_env, finish=False)
+    check("a data edit after stamping (stale hash) fails", _rc != 0 and "script-src does not match" in _out)
+    _inj = _minimal_html().replace("const LINKS=[];", 'const LINKS=[["x","</script><script>alert(1)//"]];', 1)
+    _rc, _out = _run_out(_inj, extra_env=_sec_env)              # stamped non-strictly, as an attacker would want
+    check("a value that closes the data script fails (data cut short + unknown script)",
+          _rc != 0 and "ends before /* SOFIA-DATA-END */" in _out and "unknown inline script" in _out)
+    _rc, _out = _run_out(_good.replace("</body>", "<script>alert(1)</script></body>", 1),
+                         extra_env=_sec_env)
+    check("an extra inline script (even with its hash allowed) fails", _rc != 0 and "unknown inline script" in _out)
+    _rc, _out = _run_out(_good.replace("'unsafe-inline';", "'unsafe-inline' https:;", 1)
+                         .replace("script-src ", "script-src 'unsafe-inline' ", 1), extra_env=_sec_env, finish=False)
+    check("script-src 'unsafe-inline' fails", _rc != 0 and "script-src allows 'unsafe-inline'" in _out)
+    _rc, _out = _run_out(_good.replace("object-src 'none'", "object-src *", 1), extra_env=_sec_env, finish=False)
+    check("a weakened directive fails", _rc != 0 and "object-src" in _out)
+    _rc, _out = _run_out(_good.replace('<meta name="referrer" content="strict-origin-when-cross-origin">', "", 1),
+                         extra_env=_sec_env, finish=False)
+    check("a page without the referrer policy fails", _rc != 0 and "referrer policy" in _out)
+    _rc, _out = _run_out(_minimal_html().replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest"></head>', 1),
+                         extra_env=_sec_env)
+    check("a page that loads Google Fonts fails", _rc != 0 and "fonts.googleapis.com" in _out)
+    _rc, _out = _run_out(_minimal_html(extra_js='const A=`<a href="x" target="_blank" rel="noopener">`;'),
+                         extra_env=_sec_env)
+    check("a new-tab link without noreferrer fails", _rc != 0 and "noopener noreferrer" in _out)
+    _rc, _out = _run_out(_minimal_html(extra_js='const B=`<img src="x" onerror="this.remove()">`;'),
+                         extra_env=_sec_env)
+    check("an inline event handler fails", _rc != 0 and "inline event handler" in _out)
+    _rc, _out = _run_out(_minimal_html().replace('"id": "f0"', '"id": "f0\\"><img src=x>"', 1), extra_env=_sec_env)
+    check("an id that is not a slug fails", _rc != 0 and "not slugs" in _out)
+    _rc, _out = _run_out(_minimal_html().replace('["10:00"]', '["10:00<b>"]', 1), extra_env=_sec_env)
+    check("a showtime that is not HH:MM fails", _rc != 0 and "not HH:MM" in _out)
+    # a share page whose policy is missing or stale
+    _sp = _sec_root / "film" / "test-film" / "index.html"
+    _orig = _sp.read_text(encoding="utf-8")
+    _sp.write_text(_csp.META_RE.sub("", _orig), encoding="utf-8")
+    _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
+    check("a share page without its CSP meta fails", _rc != 0 and "share page(s) fail" in _out)
+    _sp.write_text(_orig.replace("?film=test-film", "?film=other"), encoding="utf-8")
+    _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
+    check("a share page with a stale hash fails", _rc != 0 and "share page(s) fail" in _out)
+    _sp.write_text(_orig, encoding="utf-8")
+finally:
+    _shutil.rmtree(str(_sec_root), ignore_errors=True)
+
+# csp.json_for_script keeps every value inside its script
+_v = {"t": "</script><script>alert(1)</script><!-- x", "u": "https://a/b?c=<d>"}
+_lit = _csp.json_for_script(_v)
+check("json_for_script: no '<' survives", "<" not in _lit)
+check("json_for_script: reads back identically", _json.loads(_lit) == _v)
+try:
+    _csp.stamp("<html><head><meta charset=\"utf-8\"></head><body><script>/* SOFIA-DATA-START */\n"
+               "const X=\"</script><script>alert(1)</script>\";\n/* SOFIA-DATA-END */</script></body></html>")
+    check("csp.stamp refuses a page whose data script was closed early", False)
+except _csp.CSPError:
+    check("csp.stamp refuses a page whose data script was closed early", True)
 
 
 # ---------------------------------------------------------------------------

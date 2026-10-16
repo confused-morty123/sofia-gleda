@@ -620,17 +620,28 @@ def harvest_kinoarena_img(soup, url):
     return None
 
 
+def _host_is(url, *domains):
+    """The URL's host is one of `domains` or a subdomain of one: an exact or
+    dot-suffix match, so "programata.bg.example.com" or "evilndk.bg" is neither.
+    (A substring test, and netloc.lstrip("www."), which strips any leading w and
+    dots, both let lookalike hosts through.)"""
+    from urllib.parse import urlparse
+    try:
+        h = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return False
+    return any(h == d or h.endswith("." + d) for d in domains)
+
+
 def harvest_img(soup, url):
     """Dispatch image harvesting to the right function based on URL host."""
-    from urllib.parse import urlparse
-    host = urlparse(url).netloc.lstrip("www.")
-    if "ndk.bg" in host:
+    if _host_is(url, "ndk.bg"):
         return harvest_ndk_img(soup, url)
-    elif "programata.bg" in host:
+    elif _host_is(url, "programata.bg"):
         return harvest_programata_img(soup, url)
-    elif "vlaikovacinema.com" in host:
+    elif _host_is(url, "vlaikovacinema.com"):
         return harvest_vlaikova_img(soup, url)
-    elif "kinoarena.com" in host:
+    elif _host_is(url, "kinoarena.com"):
         return harvest_kinoarena_img(soup, url)
     return None
 
@@ -641,13 +652,11 @@ def harvest_img(soup, url):
 
 def parse_film_page(soup, url):
     """Dispatch to the right parser based on URL host."""
-    from urllib.parse import urlparse
-    host = urlparse(url).netloc.lstrip("www.")
-    if "programata.bg" in host:
+    if _host_is(url, "programata.bg"):
         return parse_programata(soup, url)
-    elif "vlaikovacinema.com" in host:
+    elif _host_is(url, "vlaikovacinema.com"):
         return parse_vlaikova_page(soup, url)
-    elif "ndk.bg" in host:
+    elif _host_is(url, "ndk.bg"):
         return parse_ndk_page(soup, url)
     else:
         return {}   # unsupported host — skip
@@ -753,11 +762,8 @@ def main():
         if not url:
             continue
 
-        from urllib.parse import urlparse
-        host = urlparse(url).netloc.lstrip("www.")
-        # Only supported parsers
-        if not any(h in host for h in ("programata.bg", "vlaikovacinema.com", "ndk.bg",
-                                       "kinoarena.com")):
+        # Only supported parsers, on their own hosts (exact or subdomain)
+        if not _host_is(url, "programata.bg", "vlaikovacinema.com", "ndk.bg", "kinoarena.com"):
             continue
 
         soup = session.soup(url)

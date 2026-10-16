@@ -22,12 +22,14 @@ OUT  = ROOT / "index.html"
 import sys as _sys, pathlib as _pathlib
 _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
 from site_config import SITE_URL as _SITE_URL  # noqa: E402
+import csp  # noqa: E402
 
 HEAD = """<!doctype html>
 <html lang="bg">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#0C0A0F">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="Програмата на кината и театрите в София, обновявана всеки ден от сайтовете им.">
@@ -57,8 +59,8 @@ HEAD = """<!doctype html>
 <meta name="apple-mobile-web-app-title" content="Sofia Gleda">
 """.replace("{SITE_URL}", _SITE_URL)
 
-SW_REG = """
-<script>
+SW_REG = r"""
+<script>/* SOFIA-SW */
 /* Register the service worker: instant repeat loads + offline. Non-fatal on
    failure — the app works without it. Registered after load so it never
    competes with first paint. Not on the old github.io address: there the
@@ -113,6 +115,9 @@ def main():
     body_part = frag[i:].rstrip()
 
     html = HEAD + head_part + "\n</head>\n<body>\n" + body_part + "\n" + SW_REG
+    # The Content-Security-Policy meta (script hashes): every later step that edits
+    # the page stamps it again, and refresh_all.py does it last (scripts/csp.py).
+    html = csp.stamp(html)
     out.write_text(html, encoding="utf-8")
     print(f"wrote {out} ({len(html):,} bytes)")
 

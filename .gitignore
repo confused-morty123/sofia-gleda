@@ -23,3 +23,18 @@ index.test.html
 translations_syn_en.json
 translations_title_en.json
 index.*.html
+
+# Local Python environments, editor and tool state — never part of the site.
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.idea/
+.vscode/
+*.swp
+*.log
+
+# Keys and certificates must never be committed (public repo).
+*.pem
+*.key
+*.p12

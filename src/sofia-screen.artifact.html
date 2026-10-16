@@ -1,12 +1,9 @@
 <title>Sofia Gleda</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- loaded non-blocking: a stalled font request must never hold up first paint.
-     Every rule declares a real fallback stack, so the page is fully usable
-     before (or without) the webfonts. -->
-<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Onest:wght@400;500;600;700&display=swap">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Onest:wght@400;500;600;700&display=swap"></noscript>
+<!-- Webfonts are self-hosted (fonts/, SIL OFL): no request leaves the site for a
+     font. fonts.css only declares the faces (font-display:swap, per-script subsets),
+     so a font file never holds up first paint, and every rule declares a real
+     fallback stack, so the page is fully usable before (or without) the webfonts. -->
+<link rel="stylesheet" href="fonts/fonts.css">
 
 <style>
 :root{
@@ -897,10 +894,39 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
    theatre prices are per-performance (PERFORMANCES p[4]) and come from the scraper. */
 const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","arena-mall":"9 €","cg-ring":"7,50 €","cg-park":"7,50 €","cineland":"8 €","dom-kino":"7,50 €","g8":"5 €","vlaikova":"7 €","odeon":"10 €"};
 </script>
-<script>
+<script>/* SOFIA-APP */
+/* ---- clickjacking guard: a meta CSP cannot send frame-ancestors, so a page that
+   finds itself inside another site's frame renders no app, only a link that opens
+   Sofia Gleda in its own tab; the throw stops this script before any of the app is
+   set up. A frame of the site's own origin is left alone. ---- */
+(function(){
+  var framed=false;
+  try{ framed=window.top!==window.self&&window.top.location.origin!==location.origin; }
+  catch(e){ framed=true; }                     /* a foreign top's location cannot be read */
+  if(!framed)return;
+  var app=document.getElementById("app");
+  if(app){
+    app.textContent="";
+    var box=document.createElement("div"),a=document.createElement("a");
+    box.setAttribute("style","max-width:560px;margin:56px auto;padding:0 20px;font:15px/1.6 system-ui;color:#B6ABBC;text-align:center");
+    a.href=location.href;a.target="_top";a.setAttribute("data-framed","");
+    a.setAttribute("style","color:#E0163A;font-weight:600");
+    a.textContent="Отвори Sofia Gleda · Open Sofia Gleda";
+    box.appendChild(a);app.appendChild(box);
+  }
+  throw new Error("Sofia Gleda: not rendered inside another site's frame");
+})();
 /* ---- failure trap: installed first, so a bad data.js still shows something ---- */
 (function(){
   var LSKEY="sofia-screen-v2";
+  /* A poster that fails to load is removed, so the generated artwork under it shows
+     again (and .p-title via :has). Was an inline onerror="this.remove()", which the
+     CSP does not allow; error events do not bubble, so this listens in the capture
+     phase. */
+  document.addEventListener("error",function(e){
+    var el=e.target;
+    if(el&&el.tagName==="IMG"&&el.classList.contains("p-real"))el.remove();
+  },true);
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
@@ -926,11 +952,19 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
     if(app&&app.innerHTML.indexOf("Зареждане на програмата")>-1)
       panel((e&&(e.message||e.error))||"script error");
   });
+  /* `typeof NAME` written out per name (no eval: the CSP forbids it). The constants
+     are global `const`s, not window properties: an undeclared one reads "undefined",
+     one whose data script threw before declaring it throws. */
   var missing=[];
-  ["FILMS","SHOWTIMES","CINEMAS","SHOWS","PERFORMANCES","THEATRES","EVENTS",
-   "BOOKING","TICKET_HUBS","TASTE_FILMS","TASTE_SHOWS","SNAPSHOT"].forEach(function(n){
-    try{ if(typeof window[n]==="undefined"&&typeof eval("typeof "+n)==="undefined")missing.push(n); }
-    catch(err){ missing.push(n); }
+  [["FILMS",function(){return typeof FILMS;}],["SHOWTIMES",function(){return typeof SHOWTIMES;}],
+   ["CINEMAS",function(){return typeof CINEMAS;}],["SHOWS",function(){return typeof SHOWS;}],
+   ["PERFORMANCES",function(){return typeof PERFORMANCES;}],["THEATRES",function(){return typeof THEATRES;}],
+   ["EVENTS",function(){return typeof EVENTS;}],["BOOKING",function(){return typeof BOOKING;}],
+   ["TICKET_HUBS",function(){return typeof TICKET_HUBS;}],["TASTE_FILMS",function(){return typeof TASTE_FILMS;}],
+   ["TASTE_SHOWS",function(){return typeof TASTE_SHOWS;}],["SNAPSHOT",function(){return typeof SNAPSHOT;}]
+  ].forEach(function(p){
+    try{ if(p[1]()==="undefined")missing.push(p[0]); }
+    catch(err){ missing.push(p[0]); }
   });
   if(missing.length){ panel("Данните не се заредиха: "+missing.join(", ")); throw new Error("data missing"); }
 })();
@@ -1177,11 +1211,22 @@ let S={lang:"bg",mode:"cinema",day:"week",onb:false,step:0,q:"",drawer:false,sea
   fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,secGenres:false,secVenues:false,secAll:false,
   fav:{venues:[]},onlyFav:false,
   prefs:{track:"both",genres:[],mood:[],with:"",when:"any",taste:[]}};
+/* The saved settings are read back field by field, in the shapes save() writes; any
+   other value keeps its default. A corrupt or hand-edited entry (on github.io every
+   project of the account shares this storage) can neither stop the start-up (a
+   "genres" that is not a list used to throw in the first render) nor smuggle other
+   keys into S.prefs. */
 try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
-  if(p&&p.prefs){S.prefs=Object.assign(S.prefs,p.prefs);S.onb=false;S.lang=p.lang||"bg";
-  S.mode=p.mode||(p.prefs.track==="theatre"?"theatre":"cinema");}
+  const ids=a=>Array.isArray(a)?a.filter(x=>typeof x==="string"&&x.length<=100).slice(0,300):[];
+  if(p&&typeof p==="object"&&p.prefs&&typeof p.prefs==="object"){const q=p.prefs,P=S.prefs;
+    if(["both","cinema","theatre"].includes(q.track))P.track=q.track;
+    if(typeof q.when==="string"&&/^[a-z]{1,20}$/.test(q.when))P.when=q.when;
+    if(typeof q.with==="string"&&/^[a-z]{0,20}$/.test(q.with))P.with=q.with;
+    P.genres=ids(q.genres);P.mood=ids(q.mood);P.taste=ids(q.taste);
+    S.onb=false;S.lang=p.lang==="en"?"en":"bg";
+    S.mode=p.mode==="cinema"||p.mode==="theatre"?p.mode:(P.track==="theatre"?"theatre":"cinema");}
   /* P3A item 7: restore favourites */
-  if(p&&p.fav&&Array.isArray(p.fav.venues))S.fav={venues:p.fav.venues};
+  if(p&&p.fav&&Array.isArray(p.fav.venues))S.fav={venues:ids(p.fav.venues)};
   if(p&&p.onlyFav)S.onlyFav=!!p.onlyFav;
 }}catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify({prefs:S.prefs,lang:S.lang,mode:S.mode,fav:S.fav,onlyFav:S.onlyFav}));}catch(e){}}
@@ -1474,9 +1519,22 @@ const filmTitle=f=>{
    so the line shows its official English title instead of repeating the prefix. */
 const filmSubtitle=f=>{const en=filmTitle(f);const bg=(cinelibriId(f.id)&&(FILMINFO[f.id]||{}).title_bg)||f.bg;return bg&&bg!==en?bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* a rating with one decimal; a value from the data that is not a number shows "—" */
+const fx1=v=>{const n=Number(v);return isFinite(n)?n.toFixed(1):"—";};
 /* safeUrl: accept only http(s) URLs in href/window.open sinks (CODE-12).
    Any other scheme (javascript:, data:, …) is dropped and returns null. */
 const safeUrl=u=>{if(!u)return null;try{const p=new URL(u);return(p.protocol==="https:"||p.protocol==="http:")?(u):null;}catch(e){return null;}};
+/* safeImg: an image URL from the data is used only when it is http(s), a raster or
+   SVG data:image/ (POSTERS overrides) or a plain path on this site (posters/x.jpg).
+   javascript:, vbscript:, any other data: or scheme gives null: the generated
+   artwork shows instead. */
+const safeImg=u=>{if(!u||typeof u!=="string")return null;const s=u.trim();
+  if(/^data:image\/(png|jpe?g|gif|webp|avif|svg\+xml)[;,]/i.test(s))return s;
+  if(/^[a-z][a-z0-9+.-]*:/i.test(s))return /^https?:\/\//i.test(s)?s:null;
+  return /^[\w\/.%-]+$/.test(s)&&!s.startsWith("//")?s:null;};
+/* own: an id from a link (?film=…, #show=…) is looked up as the map's own key only,
+   so "constructor" or "__proto__" never resolve to Object's built-ins */
+const own=(o,k)=>typeof k==="string"&&Object.prototype.hasOwnProperty.call(o,k);
 const filmById=Object.fromEntries(FILMS.map(f=>[f.id,f]));
 const showById=Object.fromEntries(SHOWS.map(s=>[s.id,s]));
 const cinById=Object.fromEntries(CINEMAS.map(c=>[c.id,c]));
@@ -1502,7 +1560,10 @@ function evBadge(ev){
   }
   return ev.from===ev.to?L.evToday:L.evUntil.replace("{d}",fmtDay(ev.to,true));
 }
-const grad=g=>`linear-gradient(152deg,${g[0]} 0%,${g[1]} 100%)`;
+/* grad: g comes from the data (g:["#hex","#hex"]) and lands in a style="" attribute,
+   so only a plain hex colour gets through; anything else falls back to the ink. */
+const _col=(c,d)=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:d;
+const grad=g=>{g=Array.isArray(g)?g:[];return`linear-gradient(152deg,${_col(g[0],"#28202F")} 0%,${_col(g[1],"#0C0A0F")} 100%)`;};
 const mins=hm=>{const[h,m]=hm.split(":").map(Number);return h*60+m;};
 function inWhen(hm){const m=mins(hm),w=S.prefs.when;
   if(!w||w==="any")return true;
@@ -1642,7 +1703,10 @@ function posterArt(id,genres,g,altText){
      exists it is overlaid on top; onerror removes the <img> and the SVG
      beneath becomes visible again (and .p-title reappears via :has). */
   const svg=genPoster(id,genres,g);
-  if(real) return svg+`<img class="p-art p-real" src="${esc(real)}" alt="${esc(altText||"")}" loading="lazy" decoding="async" onerror="this.remove()">`;
+  /* a poster that fails to load is removed by the capture-phase "error" listener
+     in the failure trap (no inline onerror: the CSP allows no inline handlers) */
+  const src=safeImg(real);
+  if(src) return svg+`<img class="p-art p-real" src="${esc(src)}" alt="${esc(altText||"")}" loading="lazy" decoding="async">`;
   return svg;
 }
 function genPoster(id,genres,g){
@@ -2017,9 +2081,9 @@ const scoreCls=v=>v==null?"na":v>=7.5?"hi":"";
 /* scoreBadge: show IMDb when present; fall back to TMDB (labelled "TMDB", distinct style) when votes ≥ threshold; otherwise show empty dash */
 function scoreBadge(f){
   const im=imdbOf(f);
-  if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${im.toFixed(1)}</span>`;
+  if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${fx1(im)}</span>`;
   const tv=tmdbOf(f);
-  if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${tv.toFixed(1)}</span>`;
+  if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${fx1(tv)}</span>`;
   return`<span class="score na"><i>IMDb</i>—</span>`;}
 /* P3A item 1: badge for premiere rail — "Премиера"/"Premiere" within 7 days,
    "Премиера на DD мес"/"Premieres DD Mon" for upcoming. */
@@ -2065,7 +2129,7 @@ function filmCard(f,all,rowsOverride){
      rowsOverride for the today rail always comes from the caller with perVenue:true
      when it really is a single-venue context (per-cinema section). */
   const singleVenue=(rowsOverride&&rowsOverride._perVenue===true)||(S.fVenues.length===1);
-  const meta=[f.runtime?`${f.runtime} ${esc(t().min)}`:"",
+  const meta=[f.runtime?`${esc(f.runtime)} ${esc(t().min)}`:"",
               n?`${n} ${esc(t().screenings)}`:"",
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
   const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
@@ -2086,7 +2150,7 @@ function showCard(sh,all){
       <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
       <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${sh.duration} ${esc(t().min)}`:""}</span></div></button>`;}
+      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
@@ -2134,7 +2198,7 @@ function hero(){
       <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
       <h1>${esc(filmTitle(f))}</h1>
       <div class="hero-meta">${scoreBadge(f)}
-        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${f.runtime} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${f.year}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
+        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${esc(f.year)}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
       ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
@@ -2147,7 +2211,7 @@ function hero(){
     <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
     <h1>${esc(titleOf(sh))}</h1>
     <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
-      ${sh.duration?`<span>·</span><span>${sh.duration} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
+      ${sh.duration?`<span>·</span><span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
     ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
@@ -2410,7 +2474,7 @@ function body(){
               <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
               <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-              <span class="cf2">${th?esc(thName(th)):""}${times?" · "+times:""}</span></div></button>`;});
+              <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});
       } else {
         /* "Утре вечер" fallback */
         const TOMORROW=addDays(NOW_DATE,1);
@@ -2431,7 +2495,7 @@ function body(){
                   <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
                   <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-                  <span class="cf2">${th?esc(thName(th)):""}${times?" · "+times:""}</span></div></button>`;});}
+                  <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});}
         }
       }
     })();
@@ -2879,7 +2943,7 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
         const _su=safeUrl(specificUrl||bookUrl(vid,date));
         if(!_su)return"";
         const _lbl=_al||((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label);
-        return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)}: ${esc(_lbl)} ↗</a>`;
+        return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(_lbl)} ↗</a>`;
       })()}
     </div>
     <div class="buynote">${esc(_al?L.buyNoteAgg.replace("{agg}",_al):(isCinema?L.buyNoteC:L.buyNoteT))}</div></div>`;}
@@ -2912,7 +2976,7 @@ function filmBuyBox(f,rows){
     if(!u)return"";
     const _al=(typeof AGGLINKS==="object"&&AGGLINKS[f.id+"|"+vid])||null;
     const cname=_al||((S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label);
-    return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(cname)} ↗</a>`;
+    return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(cname)} ↗</a>`;
   }).filter(Boolean);
   if(!items.length)return"";
   const epayNote=hasEpay?`<div class="buynote">${esc(S.lang==="bg"?"Кино Люмиер: билети чрез epaygo.bg":"Lumière: tickets via epaygo.bg")}</div>`:"";
@@ -3180,10 +3244,10 @@ function sheetFilm(f){
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8;margin-bottom:10px">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
-  rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?imdbOf(f).toFixed(1)+"<small>/10</small>":"—"}</div></div>`);
-  {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${tv.toFixed(1)}<small>/10</small></div></div>`);}
-  {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${rv}<small>%</small></div></div>`);}
-  {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${mv}<small>/100</small></div></div>`);}
+  rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?fx1(imdbOf(f))+"<small>/10</small>":"—"}</div></div>`);
+  {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div></div>`);}
+  {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(rv)}<small>%</small></div></div>`);}
+  {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${esc(mv)}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   return`<div class="sheet"><div class="shero" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
@@ -3194,7 +3258,7 @@ function sheetFilm(f){
       <h2>${esc(filmTitle(f))}</h2></div></div>
    <div class="sbody">
     <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
+      ${f.runtime?`<span class="chip">${esc(f.runtime)} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
@@ -3205,7 +3269,7 @@ function sheetFilm(f){
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
-      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
+      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year?esc(f.year):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
     <div class="sec"><h4>${esc(L.times)}</h4>
       ${selNote}
       ${timesHtml}</div>
@@ -3260,7 +3324,7 @@ function sheetShow(sh){
    <div class="sbody">
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
+      ${sh.duration?`<span class="chip">${esc(sh.duration)} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
@@ -3298,13 +3362,13 @@ function sheetEvent(ev){
     <div class="sec">${synBlock(S.lang==="bg"?ev.blurbBg:ev.blurbEn)}</div>
     <div class="buybox evbox">
       ${u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
-        <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
+        <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
       ${(()=>{
         /* an event an aggregator listed (fetch_events.py, auto:true) links the page it
            came from and says plainly whose listing it is */
         const su=ev.auto?safeUrl(ev.url):null;
         if(!su)return`<div class="buynote">${esc(L.evSource)}: ${esc(ev.source)}</div>`;
-        return`<div class="buylinks"><a class="buylink evsrc" href="${esc(su)}" target="_blank" rel="noopener">${esc(L.evSource)}: ${esc(ev.source)} ↗</a></div>
+        return`<div class="buylinks"><a class="buylink evsrc" href="${esc(su)}" target="_blank" rel="noopener noreferrer">${esc(L.evSource)}: ${esc(ev.source)} ↗</a></div>
       <div class="buynote evagg">${esc(S.lang==="bg"?`Събитието е от афиша на ${ev.source}, не от сайта на организаторите.`:`From the ${ev.source} events guide, not the organisers' own site.`)}</div>`;})()}</div>
    </div></div>`;}
 
@@ -4110,12 +4174,14 @@ window.addEventListener("popstate",()=>{
    crawlers see a real URL path (film/<id>/) while the app still opens the sheet. */
 const SITE_URL="__SITE_URL__";
 function _openById(kind,id){
+  /* id comes from the address bar: it is only ever a key to look up (own keys,
+     so "constructor" finds nothing) and never written into the page itself */
   let html=null;
   if(kind==="film"){
-    if(filmById[id])html=sheetFilm(filmById[id]);
+    if(own(filmById,id))html=sheetFilm(filmById[id]);
     else if(id){toast(t().notInProgramme);return true;}
   }else if(kind==="show"){
-    if(showById[id])html=sheetShow(showById[id]);
+    if(own(showById,id))html=sheetShow(showById[id]);
     else if(id){toast(t().notInProgramme);return true;}
   }else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
   if(html){curSheet={kind,id};openSheet(html,null);return true;}
@@ -4124,7 +4190,8 @@ function _openById(kind,id){
 function openFromHash(){
   const m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
   if(!m)return false;
-  return _openById(m[1],decodeURIComponent(m[2]));
+  let id;try{id=decodeURIComponent(m[2]);}catch(e){return false;}   /* a malformed %-escape */
+  return _openById(m[1],id);
 }
 /* Read ?film= / ?show= (written by the static share pages) and ?event= (an event's share link). */
 function openFromQuery(){
@@ -4623,10 +4690,10 @@ document.addEventListener("click",e=>{
   }
   /* Google Calendar button */
   const cg=q("[data-calg]");
-  if(cg){const u=safeUrl(cg.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
+  if(cg){const u=safeUrl(cg.dataset.calurl);if(u)window.open(u,"_blank","noopener,noreferrer");return;}
   /* Outlook button */
   const co=q("[data-calo]");
-  if(co){const u=safeUrl(co.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
+  if(co){const u=safeUrl(co.dataset.calurl);if(u)window.open(u,"_blank","noopener,noreferrer");return;}
   /* Apple ICS download */
   const ci=q("[data-calics]");
   if(ci){
@@ -4681,9 +4748,10 @@ document.addEventListener("keydown",e=>{
 function venueMapUrl(venue){
   if(!venue)return"";
   if(venue.maps){
-    /* If the override is already a full URL, use it; otherwise treat as a query string */
-    if(venue.maps.startsWith("http"))return venue.maps;
-    return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(venue.maps);
+    /* If the override is already a full URL, use it (http(s) only); otherwise treat as
+       a query string. A URL safeUrl refuses falls back to the name + area search. */
+    if(venue.maps.startsWith("http")){const u=safeUrl(venue.maps);if(u)return u;}
+    else return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(venue.maps);
   }
   const name=venue.name||"";
   const area=venue.area||"";
@@ -4768,11 +4836,11 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     <div><span>${esc(L.ssCalApple)}</span><small>${esc(L.ssCalAppleSub)}</small></div>
     <span class="cv">›</span>
   </a>
-  <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener">
+  <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalGoogle)}</div>
     <span class="cv">›</span>
   </a>
-  <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener">
+  <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalOutlook)}</div>
     <span class="cv">›</span>
   </a>
@@ -4808,7 +4876,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   }
 
   /* Buttons */
-  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(L.ssShowMap)}</a>`;
+  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" target="_blank" rel="noopener noreferrer">${esc(L.ssShowMap)}</a>`;
   const calBtn=`<button class="ss-btn sec" data-sscal="${esc(kind+":"+id+"|"+venueId+"|"+dateStr+"|"+timeStr)}">${esc(L.ssAddCal)}</button>`;
 
   let buyBtnHtml="";
@@ -4826,7 +4894,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
       else{const th=thById[venueId]||thById[sh&&sh.theatre];opensName=S.lang==="bg"?(th&&th.name||""):(th&&(th.nameEn||th.name)||"");}
     }
     const helpLine=(L.ssBuyOpens||"").replace("{name}",opensName);
-    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener">${esc(L.ssBuyTicket)}</a>
+    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener noreferrer">${esc(L.ssBuyTicket)}</a>
 <p class="ss-help">${esc(helpLine)}</p>`;
   }
 
