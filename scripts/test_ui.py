@@ -219,6 +219,20 @@ def box(page, selector):
     except Exception:
         return None
 
+def layout_width(page):
+    """Width of the layout viewport (the initial containing block), which position:fixed
+    boxes and centred rows measure against. It is the viewport width minus the scrollbar
+    gutter that html{scrollbar-gutter:stable} reserves wherever scrollbars take space:
+    nothing on phones and on macOS without a mouse (overlay scrollbars), 15 px on
+    Windows, Linux and macOS with a mouse connected (classic scrollbars). Headless
+    Chromium follows the host's style even with its scrollbars hidden (2026-10-16: the
+    live 4ca8029 page and harness measured the logo at 180 of 375 on the owner's Mac
+    with its Bluetooth mouse on), so a check that hard-codes the viewport width passes or
+    fails with the machine it runs on."""
+    return page.evaluate("""() => { const d = document.createElement('div');
+        d.style.cssText = 'position:fixed;left:0;right:0;top:0;height:0;visibility:hidden;pointer-events:none';
+        document.documentElement.appendChild(d); const w = d.getBoundingClientRect().width; d.remove(); return w; }""")
+
 def save_shot(page, wave, name):
     """Save a viewport screenshot to /tmp/sg-shots/<wave>/<name>.png"""
     d = ensure_shot_dir(wave)
@@ -389,12 +403,14 @@ def wave_a1(browser):
     q_box = box(page, "#q")
     qm_box = box(page, "#q-m")
 
-    # Logo centred
+    # Logo centred in the layout viewport (375 px, or 360 where a scrollbar gutter is reserved)
     if brand_box:
+        lw = layout_width(page)
         centre_x = brand_box["x"] + brand_box["width"] / 2
-        centred = abs(centre_x - 187.5) <= 2
+        centred = abs(centre_x - lw / 2) <= 2
         check("logo_centred", centred,
-              f"centre_x={centre_x:.1f}, offset={abs(centre_x - 187.5):.1f}px" if not centred else "")
+              f"centre_x={centre_x:.1f}, offset={abs(centre_x - lw / 2):.1f}px (layout viewport {lw:.0f}px)"
+              if not centred else "")
 
     # Controls below logo
     if brand_box and seg_box:
@@ -1118,10 +1134,11 @@ def wave_b1(browser):
     }""")
     if fab_m and fab_m["visible"]:
         check("b1_fab_mobile_visible", True, "")
-        right_edge_dist = 375 - fab_m["right"]
+        lw = layout_width(page)             # position:fixed; right:16px is from this edge
+        right_edge_dist = lw - fab_m["right"]
         bottom_edge_dist = 812 - fab_m["bottom"]
         check("b1_fab_mobile_right_edge", right_edge_dist <= 24,
-              f"gap to right={right_edge_dist:.1f}px (need ≤24)")
+              f"gap to right={right_edge_dist:.1f}px (need ≤24; layout viewport {lw:.0f}px)")
         check("b1_fab_mobile_bottom_edge", bottom_edge_dist <= 24,
               f"gap to bottom={bottom_edge_dist:.1f}px (need ≤24)")
     else:
@@ -1194,10 +1211,11 @@ def wave_b1(browser):
     }""")
     if fab_d and fab_d["visible"]:
         check("b1_fab_desktop_visible", True, "")
-        right_edge_dist_d = 1280 - fab_d["right"]
+        lw = layout_width(page)
+        right_edge_dist_d = lw - fab_d["right"]
         bottom_edge_dist_d = 800 - fab_d["bottom"]
         check("b1_fab_desktop_right_edge", right_edge_dist_d <= 24,
-              f"gap to right={right_edge_dist_d:.1f}px")
+              f"gap to right={right_edge_dist_d:.1f}px (layout viewport {lw:.0f}px)")
         check("b1_fab_desktop_bottom_edge", bottom_edge_dist_d <= 24,
               f"gap to bottom={bottom_edge_dist_d:.1f}px")
     else:
@@ -3528,8 +3546,9 @@ def wave_h(browser):
     }""")
     if mobile_geo["brand"]:
         cx = mobile_geo["brand"]["cx"]
-        check("h3_mobile_logo_centred", abs(cx - 187.5) <= 4,
-              f"brand centre_x={cx:.1f}, expected 187.5±4")
+        lw = layout_width(page)
+        check("h3_mobile_logo_centred", abs(cx - lw / 2) <= 4,
+              f"brand centre_x={cx:.1f}, expected {lw / 2:.1f}±4 (layout viewport {lw:.0f}px)")
 
     # lang should be on same row as brand (logo row) — not on same row as seg
     if mobile_geo["lang"] and mobile_geo["brand"] and mobile_geo["seg"]:
@@ -15393,7 +15412,9 @@ def wave_ev4(browser):
                        src, count=1, flags=re.M)
             t = re.sub(r"^const EVENTS_AUTO\s*=.*$", lambda _m: "const EVENTS_AUTO = " + json.dumps(
                 [test_event], ensure_ascii=False, separators=(",", ":")) + ";", t, count=1, flags=re.M)
-            test_file.write_text(t, encoding="utf-8")
+            # the edited script (SOFIA-POSTERS, which also holds SHOWART) needs its new hash in
+            # the CSP, or the browser refuses it and the failure trap leaves all three maps {}
+            test_file.write_text(_restamp(t), encoding="utf-8")
             for lang in ("bg", "en"):
                 print(f"\n=== EV4: controlled EVENTART, {name} ({lang}) ===")
                 ctx, page, errs = _ev4_open(browser, test_file.as_uri(), lang, "theatre")

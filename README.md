@@ -179,4 +179,8 @@ TMDB_TOKEN=your_token OMDB_TOKEN=your_key python3 scripts/refresh_all.py
   month is aliased the day it appears.
 - **`scripts/test_parsers.py` pins all of this offline**, in about a second, and
   runs as a blocking workflow step before the refresh. `scripts/test_ui.py` is the
-  Playwright UI regression suite (run against `index.dev.html` or `index.html`).
+  Playwright UI regression suite (run against `index.dev.html` or `index.html`). Its
+  geometry checks measure against the layout viewport (`layout_width`), so they read
+  the same with overlay scrollbars (phones, a Mac without a mouse) and with classic
+  ones (Windows, Linux, a Mac with a mouse), where `html{scrollbar-gutter:stable}`
+  reserves 15 px.
