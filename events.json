@@ -18,9 +18,9 @@
    "scope": "theatre",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 2 ДНИ",
+   "tag": "СЛЕД 1 ДЕН",
    "title": "ACT Фестивал за свободен театър",
-   "titleEn": "ACT Festival za svoboden teatar",
+   "titleEn": "ACT Independent Theatre Festival",
    "titles": [
     {
      "t": "Такъв е животът",
@@ -101,9 +101,9 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 28 ДНИ",
+   "tag": "СЛЕД 27 ДНИ",
    "title": "Киномания",
-   "titleEn": "Kinomania",
+   "titleEn": "Cinema Mania",
    "titles": [
     {
      "t": "от Кан, Венеция, Торонто и Карлови Вари",
@@ -139,7 +139,7 @@
    ]
   }
  ],
- "generated": "2026-10-15T15:48:36+00:00",
+ "generated": "2026-10-16T04:13:04+00:00",
  "ok": true,
  "posts": {
   "179727": {
@@ -282,8 +282,8 @@
  },
  "read": {
   "listed": 27,
-  "pages": 27,
-  "unreadable": 1
+  "pages": 0,
+  "unreadable": 0
  },
  "source": "programata.bg"
 }

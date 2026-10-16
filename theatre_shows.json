@@ -5110,5 +5110,77 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "cherven-flag-interaktiven-teatar-na-raba-na-psihologiyata": {
+  "id": "cherven-flag-interaktiven-teatar-na-raba-na-psihologiyata",
+  "title": "\"Червен флаг\" - интерактивен театър на ръба на психологията",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "edin-den-posveten-na-mladite-unmute-yourself": {
+  "id": "edin-den-posveten-na-mladite-unmute-yourself",
+  "title": "Един ден, посветен на младите: Unmute Yourself",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "blagunite-priyateli-zavinagi": {
+  "id": "blagunite-priyateli-zavinagi",
+  "title": "БЛАГУНИТЕ - ПРИЯТЕЛИ ЗАВИНАГИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "kak-se-tarsi-nov-saprug": {
+  "id": "kak-se-tarsi-nov-saprug",
+  "title": "Как се търси нов съпруг",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }

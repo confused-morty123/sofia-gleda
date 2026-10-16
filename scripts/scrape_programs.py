@@ -38,6 +38,7 @@ except ImportError:
     sys.exit("pip install requests beautifulsoup4 lxml")
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from csp import json_for_script                 # data written into the page's <script>
 from netfetch import Fetcher                    # shared hardened HTTP layer
 import film_identity as FI                      # which film does a published title mean
 import official_sources as OS                   # each cinema's own programme
@@ -292,7 +293,7 @@ def js_rows(literal):
 
 def emit_rows(rows):
     """Compact single-line JSON to preserve the app's minified data block."""
-    return json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
+    return json_for_script(rows)
 
 
 def scrape_cinema(venue_id, url, session, window, stats=None):
@@ -1958,7 +1959,7 @@ def drop_deep_vlinks(vlinks, booking):
 def write_prelim_from(page, prelim):
     """Replace `const PRELIM_FROM=…;` in the SOFIA-DATA block, or insert it on
     the line after `const VLINKS=…;` when the build does not declare it yet."""
-    lit = json.dumps(prelim, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    lit = json_for_script(prelim, sort_keys=True)
     m = re.search(r"^const PRELIM_FROM\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
     if m:
         return page[:m.start()] + f"const PRELIM_FROM={lit};" + page[m.end():]
@@ -1982,7 +1983,7 @@ def read_prelim_from(page):
 def write_prelim_rows(page, prelim_rows):
     """Replace `const PRELIM_ROWS=[…];` in the SOFIA-DATA block, or insert it on the
     line after `const PRELIM_FROM=…;` when the build does not declare it yet."""
-    lit = json.dumps(sorted(prelim_rows), ensure_ascii=False, separators=(",", ":"))
+    lit = json_for_script(sorted(prelim_rows))
     m = re.search(r"^const PRELIM_ROWS\s*=\s*\[[^\n]*?\];[ \t]*$", page, re.M)
     if m:
         return page[:m.start()] + f"const PRELIM_ROWS={lit};" + page[m.end():]
@@ -1996,7 +1997,7 @@ def write_agglinks(page, agglinks):
     """Replace `const AGGLINKS={…};` in the SOFIA-DATA block with the given dict.
     agglinks: {key: domain} where key is a show id or "filmId|venueId" and domain
     is "theatre.art.bg" or "programata.bg"."""
-    lit = json.dumps(agglinks, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    lit = json_for_script(agglinks, sort_keys=True)
     m = re.search(r"^const AGGLINKS\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
     if m:
         return page[:m.start()] + f"const AGGLINKS={lit};" + page[m.end():]
@@ -2021,7 +2022,7 @@ def read_prelim_rows(page):
 def write_showattr(page, showattr_obj):
     """Replace `const SHOWATTR={…};` in the SOFIA-DATA block, or insert it on
     the line after `const PRELIM_ROWS=…;` when the build does not declare it yet."""
-    lit = json.dumps(showattr_obj, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    lit = json_for_script(showattr_obj, sort_keys=True)
     m = re.search(r"^const SHOWATTR\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
     if m:
         return page[:m.start()] + f"const SHOWATTR={lit};" + page[m.end():]
@@ -2034,7 +2035,7 @@ def write_showattr(page, showattr_obj):
 def write_premieres(page, premieres_obj):
     """Replace `const PREMIERES={…};` in the SOFIA-DATA block, or insert it on
     the line after `const VLINKS=…;` when the build does not declare it yet."""
-    lit = json.dumps(premieres_obj, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    lit = json_for_script(premieres_obj, sort_keys=True)
     m = re.search(r"^const PREMIERES\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
     if m:
         return page[:m.start()] + f"const PREMIERES={lit};" + page[m.end():]
@@ -2074,7 +2075,7 @@ def festival_marks(fest_info, rows, names):
 def write_festmark(page, festmark):
     """Replace `const FESTMARK={…};` in the SOFIA-DATA block, or insert it on the
     line before `const VLINKS=…;` when the build does not declare it yet."""
-    lit = json.dumps(festmark, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    lit = json_for_script(festmark, sort_keys=True)
     m = re.search(r"^const FESTMARK\s*=\s*\{[^\n]*?\};[ \t]*$", page, re.M)
     if m:
         return page[:m.start()] + f"const FESTMARK={lit};" + page[m.end():]
@@ -2473,7 +2474,7 @@ def write_snapshot(page, w_from, w_to, generated):
             if k == "window":
                 new[k] = {**v, "from": w_from, "to": w_to}
                 new["generated"] = generated
-        lit = json.dumps(new, ensure_ascii=False, separators=(",", ":"))
+        lit = json_for_script(new)
         return page[:m.start(1)] + lit + page[m.end(1):]
     wm = re.search(r'("?window"?\s*:\s*\{\s*"?from"?\s*:\s*")\d{4}-\d\d-\d\d'
                    r'("\s*,\s*"?to"?\s*:\s*")\d{4}-\d\d-\d\d("\s*\})', page)
@@ -3466,7 +3467,7 @@ def main():
         if vid not in upgrade_venues:
             continue
         from urllib.parse import urlparse as _up2
-        lhost = _up2(page_url).netloc.lstrip("www.")
+        lhost = _up2(page_url).netloc.removeprefix("www.")
         if any(_host(page_url) == h or _host(page_url).endswith("." + h) for h in OF.TICKET_HOSTS):
             continue  # a festival's ticket shop / film page: already the link to open
         # Only upgrade pages that are themselves on the allowlist (skip if we
@@ -3575,7 +3576,7 @@ def main():
         for r in kept:
             if r.get("id") in retitle:
                 r["title"] = retitle[r["id"]][1]
-        out = out[:a_s] + json.dumps(kept, ensure_ascii=False, separators=(",", ":")) + out[a_e:]
+        out = out[:a_s] + json_for_script(kept) + out[a_e:]
         if gone:
             print(f"retired from {name}: {', '.join(sorted(gone & {r.get('id') for r in recs}))}")
         if retitle:
@@ -3710,7 +3711,7 @@ def main():
     cl = find_prop_array(out, "changelog")
     if cl:
         changelog = diff.added[:40] + diff.removed[:40] + diff.changed[:40]
-        out = out[:cl[0]] + json.dumps(changelog, ensure_ascii=False, separators=(",", ":")) + out[cl[1]:]
+        out = out[:cl[0]] + json_for_script(changelog) + out[cl[1]:]
 
     html_path.write_text(out, encoding="utf-8")
     # Hall carry-over: for every theatre whose programme was read this run (and gave

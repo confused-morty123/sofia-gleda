@@ -38,6 +38,11 @@ FIXTURE_REF = "d3e9ff1"
 
 webapp_root = pathlib.Path(__file__).parent.parent.resolve()
 
+# The gate (verify_build.py) fails while the owner's input is missing: TMDB's logo file
+# (icons/tmdb.svg; downloading it needs the owner's OK). The waves that run the gate test the
+# code, so they see it as a note; wave LG2 checks the gate still blocks on it.
+os.environ["SOFIA_OWNER_PENDING_OK"] = "1"
+
 # ── Clock derivation ───────────────────────────────────────────────────────────
 def _sofia_1445_epoch_ms(date_str: str) -> int:
     """Return epoch ms for 14:45 Europe/Sofia on the given YYYY-MM-DD date.
@@ -170,6 +175,7 @@ def open_page(browser, w, h, lang="bg", mode="cinema"):
     - Adds CLOCK init script (fixed time)
     - Adds localStorage with prefs, lang, mode
     - Collects pageerror messages
+    - Reports CSP violations (the browser's new_context is wrapped by _watch_csp)
     - Waits for '.bar' selector
     - Returns (ctx, page, errors_list)
     """
@@ -219,6 +225,87 @@ def save_shot(page, wave, name):
     path = d / f"{name}.png"
     page.screenshot(path=str(path), full_page=False)
     return path
+
+
+# ── Content-Security-Policy watch ─────────────────────────────────────────────
+# Every page any wave opens reports CSP violations: an init script listens for
+# `securitypolicyviolation` (Chromium and WebKit both fire it) and logs it, and a
+# console listener collects that line and the engines' own "Refused to …" /
+# "… violates the following Content Security Policy …" messages. main() turns what
+# a wave collected into one check, csp_no_violations_<wave>, so a stale script hash,
+# an inline handler or a request outside the policy fails the suite. Installed on
+# every browser main() launches (_watch_csp), so open_page() and every wave's own
+# helpers are covered. A page a test patches is re-stamped with csp.stamp (the real
+# pipeline does the same after its last edit).
+sys.path.insert(0, str(webapp_root / "scripts"))
+import csp as _csp  # noqa: E402
+
+CSP_VIOLATIONS = []
+CSP_WATCH_JS = ("document.addEventListener('securitypolicyviolation',function(e){console.error("
+                "'[CSP-VIOLATION] '+e.violatedDirective+' '+(e.blockedURI||'')+' '+(e.sample||''));},true);")
+
+
+def _csp_console(msg):
+    t = msg.text or ""
+    if "[CSP-VIOLATION]" in t or "Content Security Policy" in t or "Content-Security-Policy" in t:
+        CSP_VIOLATIONS.append(t[:240])
+
+
+def _watch_csp(browser):
+    """Make every context and page this browser creates report CSP violations."""
+    if browser is None or getattr(browser, "_sg_csp_watch", False):
+        return browser
+    orig_ctx, orig_page = browser.new_context, browser.new_page
+
+    def new_context(*a, **kw):
+        ctx = orig_ctx(*a, **kw)
+        ctx.add_init_script(CSP_WATCH_JS)
+        ctx.on("console", _csp_console)
+        return ctx
+
+    def new_page(*a, **kw):
+        pg = orig_page(*a, **kw)
+        pg.add_init_script(CSP_WATCH_JS)
+        pg.on("console", _csp_console)
+        return pg
+
+    browser.new_context, browser.new_page = new_context, new_page
+    browser._sg_csp_watch = True
+    return browser
+
+
+class _Relaunching:
+    """A WebKit browser that relaunches itself every `every` contexts, at a moment when
+    none of its contexts is open. Playwright's WebKit stops navigating to file:// URLs
+    after some hundreds of page loads in one browser (2026-10-16, macOS: an HF1 real-mode
+    run stuck at about:blank from its 48th context on, also with the 4ca8029 code and
+    page; a loop of theatre pages failed at context 64, after ~1000 file:// loads)."""
+
+    def __init__(self, launch, every=24):
+        self._launch, self._every = launch, every
+        self._b, self._n, self._open = launch(), 0, set()
+
+    def new_context(self, *a, **kw):
+        if self._n >= self._every and not self._open:
+            self._b.close()
+            self._b, self._n = self._launch(), 0
+        ctx = self._b.new_context(*a, **kw)
+        self._n += 1
+        self._open.add(ctx)
+        ctx.on("close", lambda c: self._open.discard(c))
+        return ctx
+
+    def new_page(self, *a, **kw):
+        self._n += 1
+        return self._b.new_page(*a, **kw)
+
+    def __getattr__(self, name):
+        return getattr(self._b, name)
+
+
+def _restamp(html):
+    """A test's patched copy of the page: its CSP meta recomputed for the new scripts."""
+    return _csp.stamp(html)
 
 # ============================================================================
 # WAVE A1: Header redesign
@@ -7956,13 +8043,17 @@ def wave_n(browser):
         check("n1_safeUrl_empty_null",safe_results["empty"] is None,   f"'' -> {safe_results['empty']!r}")
 
     # ── N-2: no <a> rendered for unsafe URLs ────────────────────────────────
-    # We can only check that the page itself has no href=javascript: or href=ftp:
+    # We can only check that the page itself has no href=javascript: or href=ftp:. Any scheme
+    # but http(s) and blob: is flagged, after stripping the whitespace and control characters a
+    # browser ignores ("java\tscript:"); relative same-site links (the footer's legal/terms/)
+    # and #anchors carry no scheme and are safe.
     print("\n=== N-2: no unsafe hrefs in rendered DOM ===")
     bad_hrefs = page.evaluate("""() => {
         const bad = [];
         for (const a of document.querySelectorAll('a[href]')) {
             const h = a.getAttribute('href');
-            if (h && !/^https?:/.test(h) && !h.startsWith('#') && !h.startsWith('blob:')) {
+            const n = (h || '').replace(/[\\u0000-\\u0020\\u007f]/g, '').toLowerCase();
+            if (/^[a-z][a-z0-9+.-]*:/.test(n) && !/^(https?|blob):/.test(n)) {
                 bad.push(h.slice(0, 80));
             }
         }
@@ -8846,6 +8937,7 @@ def _open_page_with_showattr(browser, w, h, lang="bg", mode="cinema"):
             f"_open_page_with_showattr: 'const SHOWATTR=' not found in {html_env}. "
             "The HTML was built from a commit that predates the P2E feature."
         )
+    patched_html = _restamp(patched_html)
 
     ctx = browser.new_context(
         viewport={"width": w, "height": h},
@@ -9758,6 +9850,7 @@ def wave_p3a(browser):
                 topGap: topGap,
                 leftDiff: leftDiff,
                 fontSize: cs.fontSize,
+                ratio: logoRect ? subRect.width / logoRect.width : null,
                 noEllipsis: cs.textOverflow !== "ellipsis",
                 noClip: sub.scrollWidth <= sub.clientWidth + 2,
                 hookFound: !!hook,
@@ -9777,8 +9870,11 @@ def wave_p3a(browser):
         left_diff = result.get("leftDiff")
         check(f"p3a_2_sub_left_aligned_desktop_{lang}", left_diff is not None and abs(left_diff) <= 2,
               f"leftDiff={left_diff} (expected within 2px)")
-        check(f"p3a_2_sub_fontsize_desktop_{lang}", result.get("fontSize") == "12.5px",
-              f"fontSize={result.get('fontSize')!r} (expected 12.5px)")
+        # 16 Oct 2026: the line scales with the logo (one lockup), so its width, not a
+        # fixed 12.5 px, is the rule: 90-110% of the logo's
+        ratio = result.get("ratio")
+        check(f"p3a_2_sub_width_tracks_logo_desktop_{lang}", ratio is not None and 0.9 <= ratio <= 1.1,
+              f"line/logo width={ratio} fontSize={result.get('fontSize')!r}")
         check(f"p3a_2_no_tagline_block_{lang}", not result.get("blockFound", True),
               f"tagline-block still present")
         check(f"p3a_2_no_hook_{lang}", not result.get("hookFound", True),
@@ -12361,7 +12457,8 @@ def _hf_shot(page, name):
 
 def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None):
     """open_page with touch emulation on phones and no external traffic (new tabs
-    from the buy/map/calendar links are aborted; webfonts still load)."""
+    from the buy/map/calendar links are aborted; the webfonts are self-hosted, so
+    they still load from fonts/)."""
     kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
     if phone:
         kw.update(has_touch=True, is_mobile=True)
@@ -12372,9 +12469,6 @@ def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None):
     ctx.add_init_script(f"""try {{ localStorage.setItem('sofia-screen-v2', JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}})); }} catch(e) {{}}""")
 
     def _route(route):
-        u = route.request.url
-        if "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
-            return route.continue_()
         return route.abort()
     ctx.route("http://**/*", _route)
     ctx.route("https://**/*", _route)
@@ -13061,8 +13155,8 @@ def _hf_ctx_motion(browser, w, h, phone, reduced):
     ctx = browser.new_context(**kw)
     ctx.add_init_script(CLOCK)
     ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'})); } catch(e) {}""")
-    ctx.route("http://**/*", lambda r: r.continue_() if ("fonts.g" in r.request.url) else r.abort())
-    ctx.route("https://**/*", lambda r: r.continue_() if ("fonts.g" in r.request.url) else r.abort())
+    ctx.route("http://**/*", lambda r: r.abort())          # the webfonts are local (fonts/)
+    ctx.route("https://**/*", lambda r: r.abort())
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -13566,6 +13660,11 @@ def _hf_ics(browser, eng):
     for phone, ua, label in ((False, None, "desktop"), (True, None, "phone"), (True, IPHONE_UA, "iphone_ua")):
         w, h = (390, 844) if phone else (1440, 900)
         ctx, page, errs = _hf_open(browser, w, h, phone, ua=ua)
+        # The page's CSP (connect-src 'self') does not let script fetch a blob: URL, and the
+        # app never does: the row is a link. So the test keeps each Blob the app makes a
+        # URL for and reads the .ics from it directly.
+        page.evaluate("""()=>{if(window.__sgBlobs)return;window.__sgBlobs=new Map();const o=URL.createObjectURL;
+            URL.createObjectURL=function(b){const u=o.call(URL,b);window.__sgBlobs.set(u,b);return u;};}""")
         films = page.evaluate(HF_CANDIDATES_JS, "film")
         _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
         _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(450)
@@ -13574,7 +13673,8 @@ def _hf_ics(browser, eng):
         page.wait_for_timeout(350)
         info = page.evaluate("""async (scope)=>{const a=document.querySelector(scope+'[data-sscalics]');if(!a)return {err:'no apple row'};
             const href=a.getAttribute('href')||'';const dl=a.getAttribute('download');let text='',type='';
-            if(href.startsWith('blob:')){const r=await fetch(href);type=(await r.clone().blob()).type;text=await r.text();}
+            const b=href.startsWith('blob:')&&window.__sgBlobs.get(href);
+            if(b){type=b.type;text=await b.text();}
             return {href:href.slice(0,40),dl,type,text};}""", scope)
         name = f"hf1_ics_{label}"
         if "err" in info:
@@ -13706,8 +13806,6 @@ def _hf2_open(browser, w, h, phone, lang="bg", mode="cinema", reduced=False):
 
     def _route(route):
         u = route.request.url
-        if "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
-            return route.continue_()
         if HF2_POSTERS and ("image.tmdb.org" in u or "programata.bg" in u):
             f = HF2_POSTERS[int(hashlib.md5(u.encode()).hexdigest(), 16) % len(HF2_POSTERS)]
             if f not in _HF2_BYTES:
@@ -14652,7 +14750,7 @@ def _ev2_patched(festmark_extra, events_extra):
         raise AssertionError("EV2: 'const FESTMARK=' is not in the build")
     m = re.search(r"^const EVENTS=(\[.*\]);$", src, re.M)
     lit = json.dumps(json.loads(m.group(1)) + events_extra, ensure_ascii=False, separators=(",", ":"))
-    return re.sub(r"^const EVENTS=\[.*\];$", lambda _: f"const EVENTS={lit};", src, count=1, flags=re.M)
+    return _restamp(re.sub(r"^const EVENTS=\[.*\];$", lambda _: f"const EVENTS={lit};", src, count=1, flags=re.M))
 
 
 def _ev2_set_period(page, period):
@@ -15093,7 +15191,7 @@ def wave_ev3(browser):
     test_file = webapp_root / "index.ev3.html"
     line = "const EVENTS_AUTO = " + json.dumps(test_auto, ensure_ascii=False, separators=(",", ":")) + ";"
     test_src = re.sub(r"^const EVENTS_AUTO\s*=.*$", lambda _m: line, src, count=1, flags=re.M) if m else src
-    test_file.write_text(test_src, encoding="utf-8")
+    test_file.write_text(_restamp(test_src), encoding="utf-8")
     try:
         for lang in ("bg", "en"):
             print(f"\n=== EV3: controlled EVENTS_AUTO ({lang}) ===")
@@ -15158,6 +15256,809 @@ def wave_ev3(browser):
                   f"{bad}")
             check(f"ev3_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
             ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
+# ============================================================================
+# WAVE EV4: event key art (fetch_event_posters.py -> EVENTART, posters/ev-*)
+# ============================================================================
+_EV4_RENDER_JS = """(art) => Object.keys(art).map(id => {
+    const ev = EVENTS.find(e => e.id === id);
+    if (!ev) return {id, ev: false};
+    const box = document.createElement('div'); box.innerHTML = eventCard(ev);
+    const sh = document.createElement('div'); sh.innerHTML = sheetEvent(ev);
+    const ci = box.querySelector('img.p-real'), si = sh.querySelector('.shero img.p-real');
+    return {id, ev: true, card: ci ? ci.getAttribute('src') : null, sheet: si ? si.getAttribute('src') : null};
+})"""
+_EV4_LOAD_JS = """async (srcs) => Promise.all(srcs.map(s => new Promise(res => {
+    const i = new Image();
+    i.onload = () => res([s, i.naturalWidth, i.naturalHeight]);
+    i.onerror = () => res([s, 0, 0]);
+    i.src = s;
+})))"""
+
+
+def _ev4_open(browser, url, lang, mode):
+    ctx = browser.new_context(viewport={"width": 1280, "height": 900}, timezone_id="Europe/Sofia", locale="bg-BG")
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',
+        genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'%s', mode:'%s'})); } catch(e) {}""" % (lang, mode))
+    page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(url)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(300)
+    return ctx, page, errs
+
+
+def _ev4_card(page, eid):
+    """The mounted card's real image for an event: rails stream in on scroll."""
+    sel = f'.ecard[data-event="{eid}"]'
+    for _ in range(20):
+        if page.query_selector(sel):
+            break
+        page.mouse.wheel(0, 900)
+        page.wait_for_timeout(150)
+    el = page.query_selector(sel)
+    if not el:
+        return None
+    el.scroll_into_view_if_needed()
+    page.wait_for_timeout(400)
+    return page.evaluate("""(sel) => { const im = document.querySelector(sel + ' img.p-real');
+        return im ? {src: im.getAttribute('src'), w: im.naturalWidth, done: im.complete,
+                     shown: im.getBoundingClientRect().width > 0} : {src: null}; }""", sel)
+
+
+def wave_ev4(browser):
+    """An event with an EVENTART entry (its re-hosted key art) shows that image on
+    its card and in its sheet, and the file loads; EVENTART is read before SHOWART,
+    whose hand-added CineLibri file stays the fallback. BG and EN."""
+    wave = "EV4"
+    ensure_shot_dir(wave)
+    src = (webapp_root / html_env).read_text(encoding="utf-8")
+    m = re.search(r"^const EVENTART\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    check("ev4_eventart_declared", m is not None, "the build has no EVENTART line")
+    art = json.loads(m.group(1)) if m else {}
+    sa = re.search(r"^const SHOWART\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    showart = json.loads(sa.group(1)) if sa else {}
+
+    # 1. the build's own entries: card and sheet markup, the files load, mounted cards
+    for lang in ("bg", "en"):
+        print(f"\n=== EV4: the build's event art ({lang}) ===")
+        if not art:
+            skip(f"ev4_real_{lang}", "EVENTART is empty in this build")
+            continue
+        for mode in ("cinema", "theatre"):
+            ctx, page, errs = open_page(browser, 1280, 900, lang=lang, mode=mode)
+            page.wait_for_timeout(300)
+            if mode == "cinema":
+                for r in page.evaluate(_EV4_RENDER_JS, art):
+                    if not r["ev"]:
+                        skip(f"ev4_real_{r['id']}_{lang}", "not an event of this build")
+                        continue
+                    check(f"ev4_real_{r['id']}_card_{lang}", r["card"] == art[r["id"]], f"card img {r['card']!r}")
+                    check(f"ev4_real_{r['id']}_sheet_{lang}", r["sheet"] == art[r["id"]], f"sheet img {r['sheet']!r}")
+                for s, w, h in page.evaluate(_EV4_LOAD_JS, sorted(set(art.values()))):
+                    check(f"ev4_real_file_loads_{s.rsplit('/', 1)[-1]}_{lang}", w > 0 and h > 0,
+                          f"{s}: {w}x{h}")
+            on_mode = page.evaluate("""(ids) => EVENTS.filter(e => ids.includes(e.id) &&
+                (e.scope === 'both' || e.scope === S.mode)).map(e => e.id)""", list(art))
+            for eid in on_mode:
+                c = _ev4_card(page, eid)
+                if c is None:
+                    skip(f"ev4_real_{eid}_on_page_{mode}_{lang}", "its card is not on this page today")
+                    continue
+                check(f"ev4_real_{eid}_on_page_{mode}_{lang}", c["src"] == art[eid] and c["done"] and c["w"] > 0 and c["shown"],
+                      f"{c}")
+            check(f"ev4_real_no_js_errors_{mode}_{lang}", not errs, "; ".join(errs[:3]))
+            ctx.close()
+        # the sheet opened by its link shows the art in its hero
+        eid = sorted(art)[0]
+        ctx, page, errs = _ev4_open(browser, (webapp_root / html_env).as_uri() + "#event=" + eid, lang, "cinema")
+        try:
+            page.wait_for_selector(".scrim .sheet .shero img.p-real", timeout=5000)
+            got = page.evaluate("""() => document.querySelector('.scrim .sheet .shero img.p-real').getAttribute('src')""")
+            check(f"ev4_real_sheet_link_{eid}_{lang}", got == art[eid], f"{got!r}")
+            save_shot(page, wave, f"ev4_sheet_{eid}_{lang}")
+        except Exception as ex:
+            check(f"ev4_real_sheet_link_{eid}_{lang}", False, str(ex)[:120])
+        ctx.close()
+
+    # 2. a controlled EVENTART: a running festival with art; CineLibri without an
+    #    EVENTART entry (its SHOWART file is the fallback) and, when an ev- file
+    #    exists, CineLibri pointed at another picture (EVENTART wins over SHOWART)
+    if not m:
+        return
+    today = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    iso = lambda n: (today + datetime.timedelta(days=n)).isoformat()
+    test_event = {"id": "ev4-test-fest", "kind": "festival", "scope": "both", "status": "active", "tag": "СЛЕД 0 ДНИ",
+                  "title": "Тестов фестивал EV4", "titleEn": "EV4 Test Festival", "from": iso(-1), "to": iso(3),
+                  "g": ["#952343", "#23060E"], "blurbBg": "Фестивал.", "blurbEn": "Festival.",
+                  "source": "programata.bg", "url": "https://programata.bg/stsena/ev4/", "auto": True}
+    pic = "posters/cinelibri.jpg" if (webapp_root / "posters" / "cinelibri.jpg").exists() else None
+    other = next((p for p in ("posters/ev-kinomania.jpg", "posters/ev-act-festival-za-svoboden-teatar-p187545.jpg")
+                  if (webapp_root / p).exists()), None)
+    if not pic:
+        skip("ev4_controlled", "posters/cinelibri.jpg is not in this checkout")
+        return
+    cases = [("fallback", {"ev4-test-fest": pic}), ("precedence", {"ev4-test-fest": pic, "cinelibri": other})]
+    test_file = webapp_root / "index.ev4.html"
+    try:
+        for name, test_art in cases:
+            if name == "precedence" and not other:
+                skip("ev4_eventart_before_showart", "no posters/ev-* file in this checkout")
+                continue
+            t = re.sub(r"^const EVENTART\s*=.*$", lambda _m: "const EVENTART = " + json.dumps(test_art) + ";",
+                       src, count=1, flags=re.M)
+            t = re.sub(r"^const EVENTS_AUTO\s*=.*$", lambda _m: "const EVENTS_AUTO = " + json.dumps(
+                [test_event], ensure_ascii=False, separators=(",", ":")) + ";", t, count=1, flags=re.M)
+            import csp as _csp_ev4                    # the patched data script needs its own hash
+            test_file.write_text(_csp_ev4.stamp(t), encoding="utf-8")
+            for lang in ("bg", "en"):
+                print(f"\n=== EV4: controlled EVENTART, {name} ({lang}) ===")
+                ctx, page, errs = _ev4_open(browser, test_file.as_uri(), lang, "theatre")
+                cl = page.evaluate("""() => { const ev = EVENTS.find(e => e.id === 'cinelibri'); if (!ev) return null;
+                    const b = document.createElement('div'); b.innerHTML = eventCard(ev);
+                    const im = b.querySelector('img.p-real'); return im ? im.getAttribute('src') : ''; }""")
+                if cl is None:
+                    skip(f"ev4_{name}_cinelibri_{lang}", "no cinelibri event in this build")
+                elif name == "fallback":
+                    check(f"ev4_showart_fallback_cinelibri_{lang}", cl == showart.get("cinelibri"),
+                          f"card img {cl!r}, SHOWART {showart.get('cinelibri')!r}")
+                else:
+                    check(f"ev4_eventart_before_showart_{lang}", cl == other, f"card img {cl!r}, expected {other!r}")
+                if name == "fallback":
+                    c = _ev4_card(page, "ev4-test-fest")
+                    check(f"ev4_test_card_on_page_{lang}", bool(c) and c["src"] == pic and c["done"] and c["w"] > 0,
+                          f"{c}")
+                    if c:
+                        page.click('.ecard[data-event="ev4-test-fest"]')
+                        try:
+                            page.wait_for_selector(".scrim .sheet .shero img.p-real", timeout=5000)
+                            page.wait_for_timeout(450)
+                            sh = page.evaluate("""() => { const im = document.querySelector('.scrim .sheet .shero img.p-real');
+                                return {src: im.getAttribute('src'), w: im.naturalWidth}; }""")
+                            check(f"ev4_test_sheet_{lang}", sh["src"] == pic and sh["w"] > 0, f"{sh}")
+                            save_shot(page, wave, f"ev4_test_sheet_{lang}")
+                        except Exception as ex:
+                            check(f"ev4_test_sheet_{lang}", False, str(ex)[:120])
+                check(f"ev4_{name}_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+                ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
+# Waves LG1-LG3: the cookie notice, the footer's legal lines and the legal pages
+# ============================================================================
+# Every other wave starts as a returning visitor who has already answered the cookie
+# notice: main() wraps the browser so each new context gets that record, and the notice
+# never covers what those waves test. These waves take the bare browser (browser.raw)
+# to see first visits. LG2 serves the worktree over HTTP: the legal pages link their
+# siblings as directories (legal/terms/), which only a web server resolves.
+
+LEGAL_DOCS = ("terms", "privacy", "cookies")
+LEGAL_PAGES = [f"legal/{d}/" for d in LEGAL_DOCS] + [f"legal/en/{d}/" for d in LEGAL_DOCS]
+LEGAL_TITLES = {"terms": ("Общи условия", "Terms of use"),
+                "privacy": ("Политика за поверителност", "Privacy policy"),
+                "cookies": ("Политика за бисквитките", "Cookie policy")}
+LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg",
+                        "github.com"}
+ISSUES_URL = "https://github.com/confused-morty123/sofia-gleda/issues"
+TMDB_NOTICE = "This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
+DASHES = ("\u2014", "\u2013")          # em dash, en dash: the copy rules allow neither
+AI_TELLS = ("delve", "seamless", "leverage", "robust", "comprehensive", "rest assured", "in today's",
+            "we value your privacy", "крайно важно", "безпроблем", "в днешния", "не се колебайте")
+
+
+def _consent_version(text=None):
+    text = text if text is not None else html_path.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r'(?m)^const CONSENT_VERSION="([^"]+)";', text)
+    return m.group(1) if m else None
+
+
+def _consent_seed_js(version, opt="{}", raw=None):
+    """An init script that stores a cookie record: {v: version, opt}, or the raw string."""
+    value = json.dumps(raw) if raw is not None else (
+        "JSON.stringify({v:%s,at:'2026-01-01T00:00:00.000Z',opt:%s})" % (json.dumps(version), opt))
+    return "try{localStorage.setItem('sofia-consent',%s);}catch(e){}" % value
+
+
+class _ConsentSeeded:
+    """A Browser whose new contexts start with an answered cookie notice (see above)."""
+    def __init__(self, raw, seed_js):
+        self.raw, self._seed = raw, seed_js
+
+    def new_context(self, *a, **kw):
+        ctx = self.raw.new_context(*a, **kw)
+        if self._seed:
+            ctx.add_init_script(self._seed)
+        return ctx
+
+    def new_page(self, *a, **kw):
+        return self.new_context(*a, **kw).new_page()
+
+    def __getattr__(self, name):
+        return getattr(self.raw, name)
+
+
+def _lg_open(browser, w, h, lang="bg", seed=None, mobile=False, reduced=None, url=None, sw_block=False):
+    """A context on the bare browser with the frozen clock, the app's prefs in `lang` and,
+    when given, the cookie record `seed`. Opens `url` (default: the page under test)."""
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
+    if mobile:
+        kw.update(is_mobile=True, has_touch=True)
+    if reduced:
+        kw["reduced_motion"] = reduced
+    if sw_block:
+        kw["service_workers"] = "block"
+    ctx = getattr(browser, "raw", browser).new_context(**kw)
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script(
+        "try{localStorage.setItem('sofia-screen-v2',JSON.stringify({prefs:{track:'both',genres:[],mood:[],"
+        "with:'',when:'any',taste:[]},lang:%s,mode:'cinema'}));}catch(e){}" % json.dumps(lang))
+    if seed:
+        ctx.add_init_script(seed)
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(url or HTML)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_timeout(400)          # the notice's entrance (0.28 s) has finished
+    return ctx, page, errors
+
+
+_LG_PROBE = """() => {
+  const el = document.getElementById('sg-consent');
+  const base = {sw: document.documentElement.scrollWidth, iw: innerWidth, ih: innerHeight,
+                pad: document.documentElement.style.scrollPaddingBottom};
+  if (!el || el.hidden) return Object.assign(base, {shown: false});
+  const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+  const byId = id => document.getElementById(el.getAttribute(id) || '');
+  const more = el.querySelector('.consent-more');
+  return Object.assign(base, {shown: true, first: document.body.firstElementChild === el,
+    role: el.getAttribute('role'), lang: el.lang,
+    title: byId('aria-labelledby') ? byId('aria-labelledby').textContent.trim() : null,
+    desc: byId('aria-describedby') ? byId('aria-describedby').textContent.trim() : null,
+    x: r.left, y: r.top, w: r.width, h: r.height, b: innerHeight - r.bottom, rgap: innerWidth - r.right,
+    pos: cs.position, z: cs.zIndex, anim: cs.animationName,
+    boxes: el.querySelectorAll('input[type=checkbox]').length,
+    ok: el.querySelector('[data-consent-ok]') ? el.querySelector('[data-consent-ok]').textContent : null,
+    more: more ? more.textContent.trim() : null, moreHref: more ? more.href : null,
+    btnH: [...el.querySelectorAll('button,a')].map(b => b.getBoundingClientRect().height),
+    coarse: matchMedia('(hover:none) and (pointer:coarse)').matches,
+    standalone: matchMedia('(display-mode:standalone)').matches});
+}"""
+
+_LG_FOOTER = """() => { const f = document.querySelector('footer'); if (!f) return null;
+  const q = s => f.querySelector(s);
+  return {line: q('.legal-line') ? q('.legal-line').textContent : null,
+          attr: q('.legal-attr') ? q('.legal-attr').textContent : null,
+          label: q('.legal-nav') ? q('.legal-nav').getAttribute('aria-label') : null,
+          links: [...f.querySelectorAll('.legal-nav a')].map(a => [a.textContent, a.href]),
+          btn: q('[data-consent-open]') ? q('[data-consent-open]').textContent : null}; }"""
+
+
+def _lg_file_exists(url):
+    """A file:// link to a directory resolves to its index.html on the site."""
+    from urllib.parse import urlparse, unquote
+    u = urlparse(url)
+    if u.scheme != "file":
+        return False
+    p = pathlib.Path(unquote(u.path))
+    return (p / "index.html").is_file() if url.endswith("/") else p.is_file()
+
+
+def _lg_record(page):
+    return json.loads(page.evaluate("localStorage.getItem('sofia-consent')") or "null") or {}
+
+
+def _lg_scroll_to_footer(page):
+    page.evaluate("""async () => { for (let i = 0; i < 60; i++) { window.scrollTo(0, document.documentElement.scrollHeight);
+        await new Promise(r => setTimeout(r, 60)); if (!document.getElementById('rail-sentinel')) break; }
+        document.querySelector('footer').scrollIntoView({block: 'end'}); }""")
+    page.wait_for_timeout(200)
+
+
+def wave_lg1(browser):
+    """LG1: the cookie notice in the app. First visit on desktop and phone, BG and EN; honest
+    content (no switches while nothing is optional); geometry, overflow, safe-area strip and
+    reduced motion; keyboard order and focus; the choice persists, a new policy version or a
+    broken record asks again; the footer's legal lines and links; "Настройки за бисквитки" and
+    #cookies reopen it; it sits under the sheets; what the page stores is what the policy lists."""
+    wave = "LG1"
+    ensure_shot_dir(wave)
+    ver = _consent_version()
+    check("lg1_consent_version", bool(ver), f"CONSENT_VERSION={ver}")
+    if not ver:
+        return
+    cookie_policy = (webapp_root / "legal" / "cookies" / "index.html").read_text(encoding="utf-8")
+
+    print("\n=== LG1: desktop, BG, first visit ===")
+    ctx, page, errs = _lg_open(browser, 1280, 900)
+    T = page.evaluate("({bg: T.bg, en: T.en})")
+    p = page.evaluate(_LG_PROBE)
+    save_shot(page, wave, "desktop_bg_first_visit")
+    check("lg1_first_visit_shows_notice", p["shown"], "")
+    if p["shown"]:
+        check("lg1_notice_first_in_page_region", p["first"] and p["role"] == "region",
+              f"first={p['first']} role={p['role']}")
+        check("lg1_notice_text_bg", p["title"] == T["bg"]["consentTitle"] and p["desc"] == T["bg"]["consentText"],
+              repr(p["title"]))
+        check("lg1_no_switches_while_nothing_optional",
+              p["boxes"] == 0 and p["ok"] == T["bg"]["consentOk"] and p["more"] == T["bg"]["consentMore"],
+              f"boxes={p['boxes']} ok={p['ok']!r} more={p['more']!r}")
+        check("lg1_learn_more_link", (p["moreHref"] or "").endswith("/legal/cookies/") and _lg_file_exists(p["moreHref"]),
+              p["moreHref"])
+        check("lg1_desktop_card_bottom_left",
+              p["pos"] == "fixed" and abs(p["x"] - 24) <= 2 and abs(p["b"] - 24) <= 2 and p["w"] <= 381 and p["y"] > 0,
+              f"x={p['x']:.0f} bottom gap={p['b']:.0f} w={p['w']:.0f} y={p['y']:.0f}")
+        check("lg1_desktop_no_overflow", p["sw"] <= p["iw"], f"scrollWidth={p['sw']} innerWidth={p['iw']}")
+        check("lg1_scroll_padding_while_open", p["pad"].endswith("px") and float(p["pad"][:-2]) >= p["h"],
+              f"scroll-padding-bottom={p['pad']} card h={p['h']:.0f}")
+        check("lg1_motion_entrance", p["anim"] == "consentIn", f"animation={p['anim']}")
+    # no layout shift: the notice is on its own fixed layer
+    shift = page.evaluate("""() => { const m = document.querySelector('main').getBoundingClientRect();
+        const b = document.querySelector('.bar').getBoundingClientRect(); return [m.top, m.left, m.width, b.top, b.height]; }""")
+
+    print("\n=== LG1: keyboard ===")
+    # Safari leaves links out of the Tab order by default (Option+Tab reaches them): in WebKit
+    # the step to "Научи повече" is Alt+Tab
+    webkit = getattr(browser, "raw", browser).browser_type.name == "webkit"
+    page.evaluate("document.activeElement && document.activeElement.blur && document.activeElement.blur()")
+    page.keyboard.press("Tab")
+    f1 = page.evaluate("document.activeElement.hasAttribute('data-consent-ok')")
+    page.keyboard.press("Alt+Tab" if webkit else "Tab")
+    f2 = page.evaluate("document.activeElement.classList.contains('consent-more')")
+    check("lg1_first_in_tab_order", f1 and f2, f"Tab 1 on the button: {f1}, next on the link: {f2}")
+    page.keyboard.press("Shift+Tab")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(150)
+    after = page.evaluate(_LG_PROBE)
+    rec = _lg_record(page)
+    check("lg1_ok_closes_and_stores",
+          not after["shown"] and rec.get("v") == ver and rec.get("opt") == {}
+          and bool(re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d", rec.get("at") or "")), f"record={rec}")
+    check("lg1_focus_lands_in_the_page",
+          page.evaluate("document.activeElement.hasAttribute('data-home')") and after["pad"] == "",
+          f"scroll-padding-bottom={after['pad']!r}")
+    shift2 = page.evaluate("""() => { const m = document.querySelector('main').getBoundingClientRect();
+        const b = document.querySelector('.bar').getBoundingClientRect(); return [m.top, m.left, m.width, b.top, b.height]; }""")
+    check("lg1_no_layout_shift", all(abs(a - b) < 0.5 for a, b in zip(shift, shift2)), f"{shift} -> {shift2}")
+
+    print("\n=== LG1: the choice persists; the footer ===")
+    page.reload()
+    page.wait_for_selector(".bar", timeout=20000)
+    check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"], "")
+    _lg_scroll_to_footer(page)
+    ft = page.evaluate(_LG_FOOTER)
+    save_shot(page, wave, "desktop_bg_footer")
+    check("lg1_footer_line_bg", ft is not None and ft["line"] == T["bg"]["legalLine"], repr((ft or {}).get("line"))[:80])
+    check("lg1_footer_attributions", ft is not None and ft["attr"] == T["bg"]["legalAttr"]
+          and all(s in ft["attr"] for s in ("TMDB", "OMDb", "DeepL (deepl.com)")), repr((ft or {}).get("attr"))[:80])
+    links = (ft or {}).get("links") or []
+    check("lg1_footer_links_bg",
+          [h.split("/legal/", 1)[-1] for _, h in links] == ["terms/", "privacy/", "cookies/"]
+          and all(_lg_file_exists(h) for _, h in links)
+          and [t_ for t_, _ in links] == [T["bg"]["legalTerms"], T["bg"]["legalPrivacy"], T["bg"]["legalCookies"]],
+          str(links)[:160])
+    check("lg1_footer_settings_button", (ft or {}).get("btn") == T["bg"]["consentSettings"]
+          and (ft or {}).get("label") == T["bg"]["legalNav"], f"{(ft or {}).get('btn')!r}")
+    before_open = page.evaluate("document.querySelector('main').getBoundingClientRect().top")
+    page.focus("footer [data-consent-open]")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(150)
+    p = page.evaluate(_LG_PROBE)
+    check("lg1_footer_reopens_with_focus", p["shown"] and page.evaluate("document.activeElement.id") == "sg-consent",
+          f"shown={p['shown']}")
+    check("lg1_reopen_does_not_move_page",
+          abs(page.evaluate("document.querySelector('main').getBoundingClientRect().top") - before_open) < 0.5, "")
+    page.keyboard.press("Tab")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(150)
+    check("lg1_focus_returns_to_footer",
+          not page.evaluate(_LG_PROBE)["shown"]
+          and page.evaluate("document.activeElement.hasAttribute('data-consent-open')"), "")
+
+    print("\n=== LG1: English ===")
+    page.click("footer [data-consent-open]")
+    page.click("[data-lang]")
+    page.wait_for_timeout(200)
+    p = page.evaluate(_LG_PROBE)
+    check("lg1_notice_follows_language",
+          p["shown"] and p["lang"] == "en" and p["title"] == T["en"]["consentTitle"] and p["ok"] == T["en"]["consentOk"]
+          and (p["moreHref"] or "").endswith("/legal/en/cookies/") and _lg_file_exists(p["moreHref"]),
+          f"{p.get('title')!r} {p.get('moreHref')}")
+    page.click("[data-consent-ok]")
+    _lg_scroll_to_footer(page)
+    ft = page.evaluate(_LG_FOOTER)
+    links = (ft or {}).get("links") or []
+    check("lg1_footer_en",
+          ft["line"] == T["en"]["legalLine"] and TMDB_NOTICE in (ft["attr"] or "")
+          and [h.split("/legal/", 1)[-1] for _, h in links] == ["en/terms/", "en/privacy/", "en/cookies/"]
+          and all(_lg_file_exists(h) for _, h in links) and ft["btn"] == T["en"]["consentSettings"],
+          str(links)[:160])
+    save_shot(page, wave, "desktop_en_footer")
+
+    print("\n=== LG1: what the page stores ===")
+    keys = page.evaluate("Object.keys(localStorage)")
+    check("lg1_storage_is_documented",
+          set(keys) >= {"sofia-screen-v2", "sofia-consent"} and all(f"<code>{k}</code>" in cookie_policy for k in keys),
+          f"keys={keys}")
+    check("lg1_no_cookies", page.evaluate("document.cookie") == "", repr(page.evaluate("document.cookie")))
+    check("lg1_no_js_errors_desktop", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    print("\n=== LG1: it sits under the sheets ===")
+    ctx, page, errs = _lg_open(browser, 1280, 900)
+    target = page.evaluate("""() => { const top = document.getElementById('sg-consent').getBoundingClientRect().top;
+        const el = [...document.querySelectorAll('[data-film]')].find(e => { const r = e.getBoundingClientRect();
+          return r.width > 20 && r.height > 20 && r.top > 60 && r.bottom < top - 4; });
+        if (!el) return null; const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }""")
+    if target:
+        page.mouse.click(target[0], target[1])
+        page.wait_for_timeout(700)
+        covered = page.evaluate("""() => { const el = document.getElementById('sg-consent'); const r = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return {sheet: !!document.querySelector('.sheet'), inside: !!(hit && hit.closest('#sg-consent'))}; }""")
+        check("lg1_sheet_covers_notice", covered["sheet"] and not covered["inside"], str(covered))
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(600)
+        check("lg1_notice_back_after_sheet", page.evaluate(_LG_PROBE)["shown"], "")
+    else:
+        skip("lg1_sheet_covers_notice", "no film card above the notice")
+    check("lg1_no_js_errors_sheet", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    print("\n=== LG1: a new policy version, a broken record, #cookies ===")
+    for name, seed in (("old_version", _consent_seed_js("2000-01-01")),
+                       ("broken_json", _consent_seed_js(ver, raw="{")),
+                       ("opt_not_object", _consent_seed_js(ver, opt="[]"))):
+        ctx, page, errs = _lg_open(browser, 1280, 900, seed=seed)
+        check(f"lg1_asks_again_{name}", page.evaluate(_LG_PROBE)["shown"] and not errs, "; ".join(errs[:2]))
+        ctx.close()
+    ctx, page, errs = _lg_open(browser, 1280, 900, seed=_consent_seed_js(ver))
+    check("lg1_answered_record_hides_notice", not page.evaluate(_LG_PROBE)["shown"], "")
+    ctx.close()
+    ctx, page, errs = _lg_open(browser, 1280, 900, seed=_consent_seed_js(ver), url=HTML + "#cookies")
+    check("lg1_hash_cookies_opens_notice",
+          page.evaluate(_LG_PROBE)["shown"] and page.evaluate("document.activeElement.id") == "sg-consent"
+          and page.evaluate("location.hash") == "", page.evaluate("location.hash"))
+    check("lg1_no_js_errors_hash", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    for lang in ("bg", "en"):
+        print(f"\n=== LG1: phone, {lang}, first visit ===")
+        ctx, page, errs = _lg_open(browser, 390, 844, lang=lang, mobile=True)
+        p = page.evaluate(_LG_PROBE)
+        save_shot(page, wave, f"phone_{lang}_first_visit")
+        check(f"lg1_phone_notice_{lang}", p["shown"] and p["title"] == T[lang]["consentTitle"], repr(p.get("title")))
+        if p["shown"]:
+            strip = 71 if (p["coarse"] and not p["standalone"]) else 11
+            check(f"lg1_phone_card_geometry_{lang}",
+                  abs(p["x"] - 12) <= 1 and abs(p["rgap"] - 12) <= 1 and p["b"] >= strip and p["y"] > 0,
+                  f"x={p['x']:.0f} right gap={p['rgap']:.0f} bottom gap={p['b']:.0f} (coarse={p['coarse']})")
+            check(f"lg1_phone_no_overflow_{lang}", p["sw"] <= p["iw"], f"scrollWidth={p['sw']} innerWidth={p['iw']}")
+            check(f"lg1_phone_tap_targets_{lang}", min(p["btnH"]) >= 44, f"heights={p['btnH']}")
+        page.tap("[data-consent-ok]")
+        page.wait_for_timeout(200)
+        fab = page.evaluate("""() => { const f = document.querySelector('.fab'); if (!f) return null; const r = f.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!(hit && hit.closest('.fab')); }""")
+        check(f"lg1_phone_fab_free_after_ok_{lang}", fab is not False and not page.evaluate(_LG_PROBE)["shown"], f"fab hit={fab}")
+        check(f"lg1_phone_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+        ctx.close()
+
+    print("\n=== LG1: reduced motion ===")
+    ctx, page, errs = _lg_open(browser, 1280, 900, reduced="reduce")
+    p = page.evaluate(_LG_PROBE)
+    check("lg1_reduced_motion_no_animation", p["shown"] and p["anim"] == "none", f"animation={p.get('anim')}")
+    ctx.close()
+
+
+def _lg_serve():
+    """Serve the worktree on a free local port (the legal pages link directories)."""
+    import functools
+    import http.server
+    import threading
+
+    class _Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0),
+                                          functools.partial(_Quiet, directory=str(webapp_root)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}/"
+
+
+_LG_PAGE = """() => {
+  const all = [...document.querySelectorAll('*')];
+  const meta = document.querySelector('meta[http-equiv="Content-Security-Policy" i]');
+  return {lang: document.documentElement.lang, title: document.title,
+    h1: (document.querySelector('h1') || {}).textContent,
+    updated: (document.querySelector('.lg-updated') || {}).textContent,
+    datetime: (document.querySelector('.lg-updated time') || {getAttribute(){return null}}).getAttribute('datetime'),
+    current: [...document.querySelectorAll('.lg-docs a[aria-current="page"]')].map(a => a.getAttribute('href')),
+    scripts: document.scripts.length,
+    handlers: all.filter(e => [...e.attributes].some(a => /^on/i.test(a.name))).length,
+    csp: meta ? meta.getAttribute('content') : null,
+    sheets: [...document.querySelectorAll('link[rel~="stylesheet"]')].map(l => l.href),
+    links: [...document.querySelectorAll('a[href]')].map(a => [a.getAttribute('href'), a.href]),
+    headings: [...document.querySelectorAll('h1,h2,h3')].map(h => h.textContent.trim()),
+    text: document.body.innerText, html: document.documentElement.outerHTML,
+    sw: document.documentElement.scrollWidth, iw: innerWidth,
+    other: (document.querySelector('.lg-lang') || {}).href, cookie: document.cookie};
+}"""
+
+
+def _lg_csp(value):
+    """A CSP string as {directive: sources}, hashes and nonces left out (the app's change daily)."""
+    if value is None:
+        return None
+    out = {}
+    for part in value.split(";"):
+        toks = part.split()
+        if toks:
+            out[toks[0].lower()] = {t for t in toks[1:] if not re.match(r"'(sha256|sha384|sha512|nonce)-", t)} or {"'none'"}
+    return out
+
+
+def wave_lg2(browser):
+    """LG2: the six legal pages over HTTP. They load in BG and EN on phone and desktop without
+    overflow, carry no script, link each other, the other language and back to the listings;
+    "Настройки за бисквитки" there reopens the notice in the app; same CSP and fonts as the
+    app; the owner's statements and TMDB's notice are in the terms; no dashes or stock AI
+    phrases; English headings in sentence case; every internal link answers 200; the
+    privacy policy names Google Fonts exactly while the pages load them; the gate fails
+    only on the owner's pending input."""
+    wave = "LG2"
+    ensure_shot_dir(wave)
+    ver = _consent_version()
+    srv, base = _lg_serve()
+    try:
+        # the app under test, for the CSP, the fonts and the requests it makes
+        ctx, page, errs = _lg_open(browser, 1280, 900, url=base + html_env, sw_block=True,
+                                   seed=_consent_seed_js(ver))
+        hosts = set()
+        page.on("request", lambda r: hosts.add(re.sub(r"^https?://([^/]+).*$", r"\1", r.url)))
+        page.reload()
+        page.wait_for_selector(".bar", timeout=20000)
+        page.wait_for_timeout(800)
+        app = page.evaluate(_LG_PAGE)
+        app_google = any(h in ("fonts.googleapis.com", "fonts.gstatic.com") for h in hosts)
+        check("lg2_app_over_http_no_cookies", app["cookie"] == "" and not ctx.cookies(base), repr(app["cookie"]))
+        ctx.close()
+
+        texts, checked, bad_links = {}, {}, []
+        for rel in LEGAL_PAGES:
+            doc = rel.rstrip("/").split("/")[-1]
+            lang = "en" if "/en/" in rel else "bg"
+            for w, h in ((390, 844), (1280, 900)):
+                ctx = getattr(browser, "raw", browser).new_context(
+                    viewport={"width": w, "height": h}, service_workers="block", locale="bg-BG",
+                    **({"is_mobile": True, "has_touch": True} if w < 500 else {}))
+                pg = ctx.new_page()
+                errs = []
+                pg.on("pageerror", lambda e: errs.append(str(e)))
+                resp = pg.goto(base + rel)
+                d = pg.evaluate(_LG_PAGE)
+                tag = f"{rel.strip('/').replace('/', '_')}_{w}"
+                check(f"lg2_{tag}_loads", resp is not None and resp.status == 200 and d["lang"] == lang
+                      and d["h1"] == LEGAL_TITLES[doc][lang == "en"], f"status={resp and resp.status} h1={d['h1']!r}")
+                check(f"lg2_{tag}_no_overflow", d["sw"] <= d["iw"], f"scrollWidth={d['sw']} innerWidth={d['iw']}")
+                if w == 390:
+                    save_shot(pg, wave, tag)
+                    ctx.close()
+                    continue
+                texts[rel] = d
+                want = ver if doc != "terms" else None
+                check(f"lg2_{tag}_dated", (d["updated"] or "").startswith("Последна актуализация:" if lang == "bg" else "Last updated:")
+                      and (want is None or d["datetime"] == want), f"{d['updated']!r} datetime={d['datetime']}")
+                check(f"lg2_{tag}_no_script", d["scripts"] == 0 and d["handlers"] == 0,
+                      f"scripts={d['scripts']} inline handlers={d['handlers']}")
+                check(f"lg2_{tag}_current_doc", d["current"] == [f"../{doc}/"], str(d["current"]))
+                other = ("legal/en/" if lang == "bg" else "legal/") + doc + "/"
+                check(f"lg2_{tag}_language_switch", d["other"] == base + other, d["other"])
+                check(f"lg2_{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+                # the same CSP and fonts as the app
+                a_csp, l_csp = _lg_csp(app["csp"]), _lg_csp(d["csp"])
+                same = (a_csp is None and l_csp is None) or (a_csp is not None and l_csp is not None and all(
+                    a_csp.get(k) == l_csp.get(k) or (k == "script-src" and l_csp.get(k) == {"'none'"})
+                    for k in set(a_csp) | set(l_csp)))
+                check(f"lg2_{tag}_same_csp", same, f"app={app['csp']!r} page={d['csp']!r}")
+                check(f"lg2_{tag}_same_fonts", sorted(d["sheets"]) == sorted(app["sheets"]),
+                      f"page={d['sheets']} app={app['sheets']}")
+                # links: siblings, the other language, the app; anchors on the page
+                for raw, absu in d["links"]:
+                    if raw.startswith("mailto:"):
+                        if raw != "mailto:kzld@cpdp.bg":       # the supervisory authority's; the site gives none
+                            bad_links.append(f"{rel}: unexpected email link {raw}")
+                    elif absu.startswith(base):
+                        url = absu.split("#", 1)[0]
+                        if url not in checked:
+                            r = ctx.request.get(url)
+                            checked[url] = r.status
+                        if checked[url] != 200:
+                            bad_links.append(f"{rel}: {raw} -> {checked[url]}")
+                        if "#" in absu and absu.split("#", 1)[0] == base + rel:
+                            if not pg.evaluate("id => !!document.getElementById(id)", absu.split("#", 1)[1]):
+                                bad_links.append(f"{rel}: anchor {raw} missing")
+                    else:
+                        from urllib.parse import urlparse
+                        u = urlparse(absu)
+                        if u.scheme != "https" or u.hostname not in LEGAL_EXTERNAL_HOSTS:
+                            bad_links.append(f"{rel}: unexpected external link {absu}")
+                ctx.close()
+        check("lg2_every_link_resolves", not bad_links, "; ".join(bad_links[:4]))
+        check("lg2_internal_links_checked", len(checked) == len(LEGAL_PAGES) + 1,
+              f"{len(checked)} internal URLs (the six pages and the listings) answered 200")
+
+        print("\n=== LG2: the copy ===")
+        for rel, d in texts.items():
+            tag = rel.strip("/").replace("/", "_")
+            dash = [c for c in DASHES if c in d["text"]]
+            check(f"lg2_{tag}_no_dashes", not dash, f"found {dash}")
+            tells = [t_ for t_ in AI_TELLS if t_ in d["text"].lower()]
+            check(f"lg2_{tag}_no_stock_phrases", not tells, str(tells))
+            leftover = sorted(set(re.findall(r"\{[A-Z_]+\}", d["html"])))
+            check(f"lg2_{tag}_no_placeholders", not leftover, str(leftover))
+            check(f"lg2_{tag}_contact_is_github_issues",
+                  any(absu == ISSUES_URL for _, absu in d["links"]) and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"]),
+                  "the GitHub issues link, and no email address but the supervisory authority's")
+            if "/en/" in rel:
+                proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb"}
+                caps = [h for h in d["headings"] for wd in re.sub(r"^\d+\.\s*", "", h).split()[1:]
+                        if wd[:1].isupper() and wd.strip("(),.") not in proper]
+                check(f"lg2_{tag}_sentence_case", not caps, str(caps[:3]))
+        required = {
+            "legal/terms/": ["агрегатор", "Не сме свързани с никое кино", "създаден с помощта на изкуствен интелект",
+                             "може да има грешки", "по техните условия", "умисъл и груба небрежност",
+                             "проверете датата, часа и мястото при организатора", TMDB_NOTICE,
+                             "българското право"],
+            "legal/en/terms/": ["aggregator", "not affiliated with any cinema", "built with the help of AI",
+                                "can contain mistakes", "under their terms", "intent and gross negligence",
+                                "check the date, time and venue with the organiser", TMDB_NOTICE, "Bulgarian law"],
+        }
+        for rel, phrases in required.items():
+            text = texts.get(rel, {}).get("text", "")
+            missing = [s for s in phrases if s not in text]
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_owner_statements", not missing, str(missing))
+        for rel in ("legal/cookies/", "legal/en/cookies/"):
+            html_ = texts.get(rel, {}).get("html", "")
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_lists_storage",
+                  all(s in html_ for s in ("<code>sofia-screen-v2</code>", "<code>sofia-consent</code>", "sofia-gleda-v")),
+                  "")
+        for rel, warn in (("legal/terms/", "Не публикувайте лични данни"), ("legal/en/terms/", "Do not post personal data"),
+                          ("legal/privacy/", "Не публикувайте там лични данни"),
+                          ("legal/en/privacy/", "Do not post personal data there")):
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_warns_public_channel", warn in texts.get(rel, {}).get("text", ""), warn)
+        for rel, rights in (("legal/privacy/", ["Не пазим лични данни на сървър, който управляваме",
+                                                 "декларацията за поверителност на GitHub", "техните политики",
+                                                 "Комисията за защита на личните данни", "kzld@cpdp.bg"]),
+                            ("legal/en/privacy/", ["We keep no personal data on any server we control",
+                                                   "GitHub's privacy statement", "their own policies",
+                                                   "Commission for Personal Data Protection", "kzld@cpdp.bg"])):
+            missing = [r_ for r_ in rights if r_ not in texts.get(rel, {}).get("text", "")]
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_privacy_requests_explained", not missing, str(missing))
+        for rel in ("legal/privacy/", "legal/en/privacy/"):
+            says = "Google Fonts" in texts.get(rel, {}).get("text", "")
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_fonts_match_requests", says == app_google,
+                  f"policy names Google Fonts: {says}; the app requested Google: {app_google}")
+
+        print("\n=== LG2: back to the listings; cookie settings from a legal page ===")
+        ctx, page, errs = _lg_open(browser, 1280, 900, url=base + html_env, sw_block=True, seed=_consent_seed_js(ver))
+        page.goto(base + "legal/cookies/")
+        page.click(".lg-foot-nav a[href$='#cookies']")
+        page.wait_for_selector(".bar", timeout=20000)
+        page.wait_for_timeout(200)
+        p = page.evaluate(_LG_PROBE)
+        check("lg2_cookie_settings_link_opens_notice",
+              p["shown"] and page.evaluate("document.activeElement.id") == "sg-consent"
+              and page.evaluate("location.hash") == "" and page.url == base + "home/", page.url)
+        page.goto(base + "legal/en/terms/")
+        page.click(".lg-brand")
+        page.wait_for_selector(".bar", timeout=20000)
+        check("lg2_brand_links_back_to_listings", page.url == base + "home/", page.url)
+        check("lg2_no_js_errors_app", not errs, "; ".join(errs[:3]))
+        ctx.close()
+    finally:
+        srv.shutdown()
+
+    print("\n=== LG2: the gate and the owner's input ===")
+    env = {k: v for k, v in os.environ.items() if k != "SOFIA_OWNER_PENDING_OK"}
+    env.update(SOFIA_HTML=html_env, SOFIA_SKIP_FRESHNESS="1", SOFIA_SKIP_SMOKE="1")
+    r1 = subprocess.run([sys.executable, "scripts/verify_build.py"], cwd=str(webapp_root), capture_output=True,
+                        text=True, env=env)
+    problems = [ln.strip()[2:] for ln in r1.stdout.splitlines() if ln.strip().startswith("✗")]
+    pending = not (webapp_root / "icons" / "tmdb.svg").exists()
+    if pending:
+        check("lg2_gate_blocks_until_owner_input",
+              r1.returncode != 0 and problems and all(p_.startswith("owner input pending:") for p_ in problems),
+              " | ".join(problems)[:200])
+    else:
+        check("lg2_gate_passes_with_owner_input", r1.returncode == 0, " | ".join(problems)[:200])
+    env["SOFIA_OWNER_PENDING_OK"] = "1"
+    r2 = subprocess.run([sys.executable, "scripts/verify_build.py"], cwd=str(webapp_root), capture_output=True,
+                        text=True, env=env)
+    check("lg2_gate_passes_otherwise", r2.returncode == 0 and "all checks passed" in r2.stdout,
+          (r2.stdout + r2.stderr)[-200:])
+
+
+def wave_lg3(browser):
+    """LG3: the consent framework, on a copy of the page with one made-up optional category.
+    The notice then shows switches (off), "Приемам всички", "Само необходимите" and "Запази
+    избора"; consentRun waits for the choice, runs once it is given and at once on later
+    visits; an unknown category never runs; withdrawing reloads the page."""
+    wave = "LG3"
+    ensure_shot_dir(wave)
+    src = html_path.read_text(encoding="utf-8")
+    ver = _consent_version(src)
+    hook = "try{ consentBoot(); }catch(e){}"
+    if not ver or "const CONSENT_OPTIONAL=[];" not in src or hook not in src:
+        check("lg3_page_has_consent_framework", False, "CONSENT_OPTIONAL / consentBoot not found")
+        return
+    patched = src.replace(
+        "const CONSENT_OPTIONAL=[];",
+        'const CONSENT_OPTIONAL=[{id:"lgtest",bg:{name:"Тестова категория",desc:"Само за теста"},'
+        'en:{name:"Test category",desc:"For the test only"}}];').replace(
+        hook, 'consentRun("lgtest",()=>{window.__lgRan=(window.__lgRan||0)+1;});'
+              'consentRun("nope",()=>{window.__lgNope=1;});' + hook)
+    # a copy edits the main script, so a CSP with its hash would block it: drop the CSP here
+    patched = re.sub(r'<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>\n?', "", patched, flags=re.I)
+    test_file = webapp_root / "index.lgtest.html"
+    test_file.write_text(patched, encoding="utf-8")
+    try:
+        ctx, page, errs = _lg_open(browser, 1280, 900, url=test_file.as_uri())
+        state = lambda: page.evaluate("""() => ({ran: window.__lgRan || 0, nope: !!window.__lgNope,
+            shown: !!(document.getElementById('sg-consent') && !document.getElementById('sg-consent').hidden),
+            box: (document.querySelector('#sg-consent [data-consent-cat="lgtest"]') || {}).checked,
+            title: (document.getElementById('sgc-t') || {}).textContent,
+            rec: localStorage.getItem('sofia-consent')})""")
+        T = page.evaluate("T.bg")
+        s = state()
+        need = page.evaluate("(() => { const n = document.querySelector('#sgc-necessary'); return n ? [n.checked, n.disabled] : null; })()")
+        btns = page.evaluate("[...document.querySelectorAll('#sg-consent button')].map(b => b.textContent)")
+        save_shot(page, wave, "optional_category")
+        check("lg3_switches_shown_off", s["shown"] and s["title"] == T["consentTitleOpt"] and s["box"] is False
+              and need == [True, True], f"title={s['title']!r} box={s['box']} necessary={need}")
+        check("lg3_three_choices", btns == [T["consentAll"], T["consentNone"], T["consentSave"]], str(btns))
+        check("lg3_waits_for_choice", s["ran"] == 0 and not s["nope"], str(s["ran"]))
+        page.click("[data-consent-none]")
+        s = state()
+        check("lg3_necessary_only", not s["shown"] and s["ran"] == 0
+              and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": False}, s["rec"])
+        page.click("[data-consent-open]")
+        page.check('#sg-consent [data-consent-cat="lgtest"]')
+        page.click("[data-consent-save]")
+        s = state()
+        check("lg3_saved_choice_runs_once", not s["shown"] and s["ran"] == 1
+              and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": True}, f"ran={s['ran']} rec={s['rec']}")
+        page.reload()
+        page.wait_for_selector(".bar", timeout=20000)
+        s = state()
+        check("lg3_runs_at_once_next_visit", s["ran"] == 1 and not s["shown"], f"ran={s['ran']}")
+        page.click("[data-consent-open]")
+        check("lg3_reopened_shows_choice", state()["box"] is True, "")
+        page.uncheck('#sg-consent [data-consent-cat="lgtest"]')
+        with page.expect_navigation():
+            page.click("[data-consent-save]")
+        page.wait_for_selector(".bar", timeout=20000)
+        s = state()
+        check("lg3_withdrawal_reloads", s["ran"] == 0 and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": False},
+              f"ran={s['ran']} rec={s['rec']}")
+        page.click("[data-consent-open]")
+        page.click("[data-consent-all]")
+        s = state()
+        check("lg3_accept_all_runs", s["ran"] == 1 and not s["shown"], f"ran={s['ran']}")
+        check("lg3_unknown_category_never_runs", not s["nope"], "")
+        check("lg3_no_js_errors", not errs, "; ".join(errs[:3]))
+        ctx.close()
     finally:
         try:
             test_file.unlink()
@@ -15270,7 +16171,7 @@ def _ux_server(share_root):
 
         def translate_path(self, path):
             p = _ux_up.unquote(_ux_up.urlsplit(path).path)
-            if p in ("/", "/index.html"):
+            if p in ("/", "/index.html", "/home/", "/home/index.html", "/home/theatre/", "/home/theatre/index.html"):
                 return str(html_path)
             m = re.match(r"^/(film|show|event)/([^/]+)/(?:index\.html)?$", p)
             if m:
@@ -15589,7 +16490,8 @@ def _ux_share(browser, base, eng, items):
         page.go_back()
         page.wait_for_timeout(800)
         s2 = page.evaluate(UX_SHEET_JS)
-        check(f"ux1_{eng}_share_{kind}_browser_opens_app", ok1 and not s2["open"] and s2["path"] == "/" and s2["search"] == "",
+        home = "/home/theatre/" if kind == "show" else "/home/"
+        check(f"ux1_{eng}_share_{kind}_browser_opens_app", ok1 and not s2["open"] and s2["path"] == home and s2["search"] == "",
               f"open={s['open']} title={s['title']!r} path={s['path']} search={s['search']!r} depth={s['depth']} | after Back: open={s2['open']} path={s2['path']} search={s2['search']!r} errors={errs[:2]}")
         page.close()
     ctx.close()
@@ -15599,7 +16501,7 @@ def _ux_share(browser, base, eng, items):
     page.wait_for_timeout(500)
     link = page.evaluate("""() => { const a = document.querySelector('a.open'); if (!a) return null; const r = a.getBoundingClientRect(); return {href: a.getAttribute('href'), w: r.width, h: r.height}; }""")
     check(f"ux1_{eng}_share_nojs_fallback_link", page.url.endswith(f"/film/{_ux_up.quote(items['film'])}/") and bool(link) and link["w"] > 0
-          and link["href"] == f"/?film={_ux_up.quote(items['film'], safe='')}",
+          and link["href"] == f"/home/?film={_ux_up.quote(items['film'], safe='')}",
           f"url={page.url.replace(base, '')} link={link}")
     ctx.close()
     # an address no share page covers still reaches the app (404.html)
@@ -15639,7 +16541,7 @@ def _ux_urls(browser, base, eng, items):
             s2 = page.evaluate(UX_SHEET_JS)
             check(f"{tag}_open_then_close_{route}",
                   opened and s1["open"] and s1["path"] == f"/film/{fq}/" and s1["depth"] == 1
-                  and not s2["open"] and s2["path"] == "/" and s2["depth"] == 0,
+                  and not s2["open"] and s2["path"] == "/home/" and s2["depth"] == 0,
                   f"open: sheet={s1['open']} path={s1['path']} depth={s1['depth']} | closed by {route}: sheet={s2['open']} path={s2['path']} depth={s2['depth']}")
         # the time popup keeps the title's address on its own entry
         page.wait_for_timeout(450)
@@ -15659,7 +16561,7 @@ def _ux_urls(browser, base, eng, items):
         s5 = page.evaluate(UX_SHEET_JS)
         if p:
             check(f"{tag}_popup_keeps_address", s3["depth"] == 2 and s3["path"] == f"/film/{fq}/" and s4["depth"] == 1 and s4["path"] == f"/film/{fq}/"
-                  and s5["path"] == "/" and s5["depth"] == 0,
+                  and s5["path"] == "/home/" and s5["depth"] == 0,
                   f"popup: depth={s3['depth']} path={s3['path']} | Esc: depth={s4['depth']} path={s4['path']} | Esc: depth={s5['depth']} path={s5['path']}")
         else:
             skip(f"{tag}_popup_keeps_address", "no time pill in the sheet")
@@ -15678,7 +16580,7 @@ def _ux_urls(browser, base, eng, items):
             page.keyboard.press("Escape")
             page.wait_for_timeout(700)
             s7 = page.evaluate(UX_SHEET_JS)
-            check(f"{tag}_show_address", s6["open"] and s6["path"] == f"/show/{_ux_up.quote(sid, safe='')}/" and s7["path"] == "/",
+            check(f"{tag}_show_address", s6["open"] and s6["path"] == f"/show/{_ux_up.quote(sid, safe='')}/" and s7["path"] == "/home/theatre/",
                   f"open={s6['open']} path={s6['path']} | closed: path={s7['path']}")
         else:
             skip(f"{tag}_show_address", "no theatre card")
@@ -15709,7 +16611,7 @@ def _ux_urls(browser, base, eng, items):
     page.wait_for_timeout(700)
     s2 = page.evaluate(UX_SHEET_JS)
     check(f"{tag}_arrival_by_query", s1["open"] and s1["path"] == f"/film/{fq}/" and s1["search"] == "" and s1["depth"] == 1
-          and not s2["open"] and s2["path"] == "/" and s2["search"] == "" and s2["st"] is None,
+          and not s2["open"] and s2["path"] == "/home/" and s2["search"] == "" and (s2["st"] or {}).get("m") == "cinema",
           f"arrived: open={s1['open']} path={s1['path']} search={s1['search']!r} depth={s1['depth']} | Back: open={s2['open']} path={s2['path']} search={s2['search']!r} state={s2['st']}")
     # reload with the sheet open: it opens again at the same address; Back closes it
     page.wait_for_timeout(450)
@@ -15723,7 +16625,7 @@ def _ux_urls(browser, base, eng, items):
     page.wait_for_timeout(800)
     s4 = page.evaluate(UX_SHEET_JS)
     check(f"{tag}_reload_at_title_address", s3["open"] and s3["path"] == f"/film/{fq}/" and (s3["title"] or "").lower() == items["filmSheet"].lower()
-          and not s4["open"] and s4["path"] == "/",
+          and not s4["open"] and s4["path"] == "/home/",
           f"after reload: open={s3['open']} path={s3['path']} title={s3['title']!r} | Back: open={s4['open']} path={s4['path']}")
     page.close()
     # the app served at the title's address itself (the service worker's copy, any uncovered path)
@@ -15742,7 +16644,7 @@ def _ux_urls(browser, base, eng, items):
     page.go_back()
     page.wait_for_timeout(700)
     s6 = page.evaluate(UX_SHEET_JS)
-    check(f"{tag}_app_at_title_path_opens_sheet", s5["open"] and s5["path"] == f"/film/{fq}/" and s5["depth"] == 1 and not s6["open"] and s6["path"] == "/",
+    check(f"{tag}_app_at_title_path_opens_sheet", s5["open"] and s5["path"] == f"/film/{fq}/" and s5["depth"] == 1 and not s6["open"] and s6["path"] == "/home/",
           f"open={s5['open']} path={s5['path']} depth={s5['depth']} | Back: open={s6['open']} path={s6['path']}")
     check(f"{tag}_base_href_resolves_from_root", (res["logo"] or 0) > 0 and res["logoSrc"] == base + "/logo.svg" and res["base"] == base + "/",
           f"logo {res['logoSrc']} naturalWidth={res['logo']} baseURI={res['base']}")
@@ -15751,7 +16653,7 @@ def _ux_urls(browser, base, eng, items):
     page.wait_for_timeout(900)
     s7 = page.evaluate(UX_SHEET_JS)
     toast_txt = page.evaluate("(document.getElementById('sg-toast')||{}).textContent")
-    check(f"{tag}_unknown_title_path_goes_home", not s7["open"] and s7["path"] == "/" and bool(toast_txt),
+    check(f"{tag}_unknown_title_path_goes_home", not s7["open"] and s7["path"] == "/home/" and bool(toast_txt),
           f"open={s7['open']} path={s7['path']} toast={toast_txt!r}")
     check(f"{tag}_no_js_errors", not errs and not errs2, f"errors={(errs + errs2)[:3]}")
     ctx.close()
@@ -15789,7 +16691,7 @@ def _ux_late(browser, base, eng):
     for mode, w, h, phone in [("theatre", 1280, 900, False), ("theatre", 390, 844, True), ("cinema", 1280, 900, False)]:
         tag = f"ux1_{eng}_late_{mode}_{'phone' if phone else 'desk'}"
         ctx = _ux_ctx(browser, base, w, h, phone=phone, mode=mode, clock=clock_2350)
-        page, errs = _ux_page(ctx, base + "/")
+        page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/"))
         pre = page.evaluate("""() => ({now: NOW_DATE + ' ' + NOW_TIME, today: TODAY, tomorrow: addDays(NOW_DATE, 1), last: LASTDAY,
             left: S.mode === 'theatre' ? upcomingPerfs(PERFORMANCES.filter(p => p[1] === NOW_DATE)).length
                                         : SHOWTIMES.filter(r => r[2] === TODAY && r[3].some(t => t >= NOW_TIME)).length})""")
@@ -15825,7 +16727,7 @@ def _ux_late(browser, base, eng):
         ctx.close()
     # earlier in the day the theatre's today view lists what is left, with no card
     ctx = _ux_ctx(browser, base, 1280, 900, mode="theatre")
-    page, errs = _ux_page(ctx, base + "/")
+    page, errs = _ux_page(ctx, base + "/home/theatre/")
     left = page.evaluate("upcomingPerfs(PERFORMANCES.filter(p => p[1] === NOW_DATE)).length")
     page.evaluate("() => { S.day = TODAY; render(); }")
     page.wait_for_timeout(600)
@@ -15834,6 +16736,194 @@ def _ux_late(browser, base, eng):
         check(f"ux1_{eng}_late_theatre_not_before_the_end", not st["card"] and st["cards"] > 0, f"{left} performances left today: card={st['card']} cards={st['cards']}")
     else:
         skip(f"ux1_{eng}_late_theatre_not_before_the_end", "no performance later today at 14:45")
+    ctx.close()
+
+
+UX_VIEW_JS = r"""() => ({path: location.pathname, search: location.search, mode: S.mode,
+    open: (typeof sheetOpen !== 'undefined') && sheetOpen, card: curSheet ? curSheet.kind + ':' + curSheet.id : null,
+    st: history.state, pressed: (document.querySelector('.seg [aria-pressed="true"]') || {dataset: {}}).dataset.switch})"""
+
+
+def _ux_routes(browser, base, eng, items):
+    """Owner request A: the listings' own addresses (/home/ cinema, /home/theatre/ theatre,
+    the bare domain leading to /home/), served as real pages (200, no redirect); the
+    toggle and the logo; Back and Forward through listings and cards; a reload keeps the
+    view (listing and card); a card closes onto the listing it was opened from."""
+    tag = f"ux1_{eng}_route"
+    ctx = _ux_ctx(browser, base, 1280, 800, mode="theatre")      # a saved preference must not win over the address
+    page, errs = _ux_page(ctx, base + "/")
+    v = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_bare_domain_is_home", v["path"] == "/home/" and v["mode"] == "cinema" and v["pressed"] == "cinema",
+          f"/ -> path={v['path']} mode={v['mode']} toggle={v['pressed']}")
+    st = page.evaluate("async () => { const a = await fetch('/home/'), b = await fetch('/home/theatre/'); return [a.status, a.redirected, b.status, b.redirected]; }")
+    check(f"{tag}_listing_pages_served_200", st == [200, False, 200, False], f"/home/ and /home/theatre/: {st}")
+    page.wait_for_timeout(400)
+    _ux_tap_sel(page, False, '[data-switch="theatre"]', scroll=False)
+    page.wait_for_timeout(700)
+    v1 = page.evaluate(UX_VIEW_JS)
+    page.go_back(); page.wait_for_timeout(700)
+    v2 = page.evaluate(UX_VIEW_JS)
+    page.go_forward(); page.wait_for_timeout(700)
+    v3 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_toggle_back_forward", v1["path"] == "/home/theatre/" and v1["mode"] == "theatre" and v2["path"] == "/home/"
+          and v2["mode"] == "cinema" and v3["path"] == "/home/theatre/" and v3["mode"] == "theatre" and v3["pressed"] == "theatre",
+          f"toggle: {v1['path']} {v1['mode']} | Back: {v2['path']} {v2['mode']} | Forward: {v3['path']} {v3['mode']}")
+    page.reload(); page.wait_for_selector(".bar"); page.wait_for_timeout(700)
+    v4 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_reload_keeps_theatre", v4["path"] == "/home/theatre/" and v4["mode"] == "theatre", f"after reload: {v4['path']} {v4['mode']}")
+    # a play opened on the theatre listing closes back onto it; Forward opens it again
+    sid = page.evaluate("(document.querySelector('#app .card[data-show]')||{dataset:{}}).dataset.show")
+    sq = _ux_up.quote(sid or "", safe="")
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, f'#app .card[data-show="{sid}"]')
+    page.wait_for_timeout(700)
+    v5 = page.evaluate(UX_VIEW_JS)
+    page.reload(); page.wait_for_selector(".bar"); page.wait_for_timeout(1000)
+    v6 = page.evaluate(UX_VIEW_JS)
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, "#scrim .sclose", scroll=False)
+    page.wait_for_timeout(800)
+    v7 = page.evaluate(UX_VIEW_JS)
+    page.go_forward(); page.wait_for_timeout(900)
+    v8 = page.evaluate(UX_VIEW_JS)
+    page.go_back(); page.wait_for_timeout(800)
+    v9 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_card_reload_close_forward_back", bool(sid) and v5["open"] and v5["path"] == f"/show/{sq}/"
+          and v6["open"] and v6["path"] == f"/show/{sq}/" and v6["mode"] == "theatre" and v6["card"] == f"show:{sid}"
+          and not v7["open"] and v7["path"] == "/home/theatre/" and v8["open"] and v8["path"] == f"/show/{sq}/" and v8["card"] == f"show:{sid}"
+          and not v9["open"] and v9["path"] == "/home/theatre/",
+          f"open {v5['path']} | reload: open={v6['open']} {v6['path']} {v6['mode']} | x: {v7['path']} open={v7['open']} | "
+          f"Forward: open={v8['open']} {v8['path']} | Back: open={v9['open']} {v9['path']}")
+    # the logo leads to /home/ (the cinema listing)
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, "[data-home]", scroll=False)
+    page.wait_for_timeout(700)
+    v10 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_logo_goes_home", v10["path"] == "/home/" and v10["mode"] == "cinema", f"logo: {v10['path']} {v10['mode']}")
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+    # a shared play's address, fresh (no history): its listing is the theatre one
+    ctx = _ux_ctx(browser, base, 1280, 800, mode="cinema")
+    page, errs = _ux_page(ctx, base + f"/show/{_ux_up.quote(items['show'])}/")
+    page.wait_for_timeout(900)
+    v = page.evaluate(UX_VIEW_JS)
+    page.go_back(); page.wait_for_timeout(800)
+    w_ = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_deep_link_show", v["open"] and v["mode"] == "theatre" and v["path"] == f"/show/{_ux_up.quote(items['show'], safe='')}/"
+          and not w_["open"] and w_["path"] == "/home/theatre/" and w_["mode"] == "theatre",
+          f"open={v['open']} mode={v['mode']} path={v['path']} | Back: open={w_['open']} {w_['path']} {w_['mode']}")
+    ctx.close()
+
+
+def _ux_focus(browser, base, eng):
+    """Owner request B: the hero card is "На фокус" / "In focus", with no personal wording;
+    cinema: the best-ranked film on TMDB's weekly trending list among those showing, else
+    the most screenings x venues, then the rating; theatre: a premiere in the week first,
+    else the most performances."""
+    tag = f"ux1_{eng}_focus"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    page, errs = _ux_page(ctx, base + "/home/")
+    hero_js = """() => { const h = document.querySelector('#app main .hero'); if (!h) return null;
+        return {eyebrow: h.querySelector('.eyebrow').textContent.trim(), text: h.textContent,
+                id: (h.querySelector('.acts .btn[data-film], .acts .btn[data-show]') || {dataset: {}}).dataset.film
+                    || (h.querySelector('.acts .btn[data-show]') || {dataset: {}}).dataset.show}; }"""
+    # the fallback ranking, computed here from the data (no film carries a rank in a build without TMDB)
+    exp = page.evaluate("""() => { const vis = visibleFilms(); if (!vis.length) return null;
+        const ranked = vis.filter(f => (TMDBART[f.id] || {}).tr > 0);
+        if (ranked.length) return {how: 'trending', id: ranked.sort((a, b) => TMDBART[a.id].tr - TMDBART[b.id].tr)[0].id};
+        const sc = f => { const rows = upcomingRows((SHOWTIMES.filter(r => r[0] === f.id)).filter(r => r[2] >= TODAY && r[2] <= WEEK_END));
+            return rows.reduce((n, r) => n + r[3].length, 0) * new Set(rows.map(r => r[1])).size; };
+        const best = vis.slice().sort((a, b) => sc(b) - sc(a) || (ratingOf(b) || 0) - (ratingOf(a) || 0) || a.id.localeCompare(b.id))[0];
+        return {how: 'screenings x venues', id: best.id, second: vis.find(f => f.id !== best.id && sc(f) > 0 && sc(f) < sc(best)) ? vis.filter(f => f.id !== best.id).sort((a, b) => sc(b) - sc(a))[0].id : null}; }""")
+    h = page.evaluate(hero_js)
+    check(f"{tag}_cinema_bg", bool(h) and h["eyebrow"].startswith("На фокус") and "за теб" not in h["text"].lower() and exp and h["id"] == exp["id"],
+          f"eyebrow={h and h['eyebrow']!r} hero={h and h['id']} expected={exp} ({exp and exp['how']})")
+    # a trending rank wins over the screenings count
+    if exp and exp.get("second"):
+        page.evaluate("(id) => { TMDBART[id] = Object.assign({}, TMDBART[id] || {}, {tr: 3}); render(); }", exp["second"])
+        page.wait_for_timeout(400)
+        h2 = page.evaluate(hero_js)
+        check(f"{tag}_trending_rank_first", h2 and h2["id"] == exp["second"], f"rank 3 given to {exp['second']}: hero={h2 and h2['id']}")
+    else:
+        skip(f"{tag}_trending_rank_first", "no second film with screenings this week")
+    page.wait_for_timeout(400)
+    _ux_tap_sel(page, False, "[data-lang]", scroll=False)
+    page.wait_for_timeout(600)
+    he = page.evaluate(hero_js)
+    check(f"{tag}_cinema_en", bool(he) and he["eyebrow"].lower().startswith("in focus") and "for you" not in he["text"].lower(),
+          f"EN eyebrow={he and he['eyebrow']!r}")
+    ctx.close()
+    # theatre: the most performances this week, and a premiere this week first
+    ctx = _ux_ctx(browser, base, 1280, 800, mode="theatre")
+    page, errs2 = _ux_page(ctx, base + "/home/theatre/")
+    pick = page.evaluate("""() => { const vis = visibleShows(); const n = s => showPerfs(s.id).length;
+        const prem = vis.filter(s => (PREMIERES['show:' + s.id] || []).some(d => d >= NOW_DATE && inRange(d)));
+        const byN = vis.slice().sort((a, b) => n(b) - n(a));
+        return {prem: prem.map(s => s.id), top: byN[0] && byN[0].id, topN: byN[0] && n(byN[0]), last: byN.length && byN[byN.length - 1].id,
+                lastDay: byN.length && (showPerfs(byN[byN.length - 1].id)[0] || [])[1]}; }""")
+    h = page.evaluate(hero_js)
+    want = pick["prem"][0] if pick["prem"] else pick["top"]
+    ok = bool(h) and h["eyebrow"].startswith("На фокус") and (h["id"] in pick["prem"] if pick["prem"] else
+                                                             page.evaluate("(id) => showPerfs(id).length", h["id"]) == pick["topN"])
+    check(f"{tag}_theatre_bg", ok, f"eyebrow={h and h['eyebrow']!r} hero={h and h['id']} premieres this week={pick['prem'][:3]} most performances={pick['top']} ({pick['topN']})")
+    if pick["last"] and pick["last"] != pick["top"]:
+        # the only premiere this week, on the play with the fewest performances
+        page.evaluate("([id, d, prem]) => { prem.forEach(p => { PREMIERES['show:' + p] = []; }); PREMIERES['show:' + id] = [d]; render(); }",
+                      [pick["last"], pick["lastDay"], pick["prem"]])
+        page.wait_for_timeout(400)
+        h3 = page.evaluate(hero_js)
+        check(f"{tag}_theatre_premiere_first", h3 and h3["id"] == pick["last"], f"premiere added for {pick['last']}: hero={h3 and h3['id']}")
+    check(f"{tag}_no_js_errors", not errs and not errs2, f"errors={(errs + errs2)[:3]}")
+    ctx.close()
+
+
+UX_LOCKUP_JS = r"""() => { const b = document.querySelector('.bar .brand'), l = b && b.querySelector('.brand-logo'),
+    s = b && b.querySelector('.brand-sub'), g = document.querySelector('.bar .seg');
+  if (!l || !s || !g) return null;
+  const lr = l.getBoundingClientRect(), sr = s.getBoundingClientRect(), gr = g.getBoundingClientRect(), cs = getComputedStyle(s);
+  return {lw: lr.width, sw: sr.width, vis: cs.display !== 'none' && cs.visibility !== 'hidden' && sr.width > 0 && sr.height > 0,
+          clear: gr.left - Math.max(lr.right, sr.right), font: parseFloat(cs.fontSize),
+          over: document.documentElement.scrollWidth - innerWidth, segq: g.classList.contains('seg-q')}; }"""
+
+
+def _ux_lockup(browser, base, eng):
+    """Owner item C: on desktop (761-1920 px, 20 px steps) the logo and its line are one
+    lockup: the line is always shown, 90-110% of the logo's width, at least 12 px clear
+    of the Кино/Театър toggle, nothing overflows; search closed and open, BG and EN."""
+    widths = list(range(761, 1921, 20)) + [1920]
+    for lang in ("bg", "en"):
+        ctx = _ux_ctx(browser, base, 761, 900, lang=lang)
+        page, errs = _ux_page(ctx, base + "/home/")
+        for search in (False, True):
+            if search:
+                page.set_viewport_size({"width": 1280, "height": 900})
+                page.wait_for_timeout(200)
+                _ux_tap_sel(page, False, "[data-search-open]", scroll=False)
+                page.wait_for_timeout(500)
+            bad, fonts, n = [], [], 0
+            for w in widths:
+                page.set_viewport_size({"width": w, "height": 900})
+                page.wait_for_timeout(70)
+                m = page.evaluate(UX_LOCKUP_JS)
+                n += 1
+                if not m:
+                    bad.append(f"{w}: no lockup")
+                    continue
+                fonts.append(m["font"])
+                ratio = m["sw"] / m["lw"] if m["lw"] else 0
+                if not (m["vis"] and 0.9 <= ratio <= 1.1 and m["clear"] >= 12 and m["over"] <= 0):
+                    bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']}")
+            state = "search_open" if search else "search_closed"
+            check(f"ux1_{eng}_lockup_{lang}_{state}", not bad and n == len(widths),
+                  f"{n} widths 761-1920; font {min(fonts or [0]):.1f}-{max(fonts or [0]):.1f}px; problems: {bad[:4]}")
+        check(f"ux1_{eng}_lockup_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    # phones keep the centred 12 px line
+    ctx = _ux_ctx(browser, base, 390, 844, phone=True)
+    page, errs = _ux_page(ctx, base + "/home/")
+    ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), r = s.getBoundingClientRect();
+        return [getComputedStyle(s).fontSize, Math.round(r.left + r.width / 2)]; }""")
+    check(f"ux1_{eng}_lockup_phone_unchanged", ph[0] == "12px" and abs(ph[1] - 195) <= 4, f"phone line {ph}")
     ctx.close()
 
 
@@ -15861,6 +16951,12 @@ def wave_ux1(browser):
         _ux_urls(browser, base, eng, items)
         print("\n=== UX1-5: the theatre late-day card ===")
         _ux_late(browser, base, eng)
+        print("\n=== UX1-6: the listings' own addresses (/home/, /home/theatre/) ===")
+        _ux_routes(browser, base, eng, items)
+        print("\n=== UX1-7: the In focus card ===")
+        _ux_focus(browser, base, eng)
+        print("\n=== UX1-8: the logo and its line, one lockup (761-1920 px) ===")
+        _ux_lockup(browser, base, eng)
     finally:
         srv.shutdown()
         if tmp:
@@ -15894,6 +16990,10 @@ WAVES = {
     "EV1": wave_ev1,
     "EV2": wave_ev2,
     "EV3": wave_ev3,
+    "EV4": wave_ev4,
+    "LG1": wave_lg1,
+    "LG2": wave_lg2,
+    "LG3": wave_lg3,
     "UX1": wave_ux1,
 }
 
@@ -15930,13 +17030,19 @@ def main():
         engine = os.environ.get("SOFIA_BROWSER", "chromium").strip().lower() or "chromium"
         if engine not in ("chromium", "webkit"):
             sys.exit(f"SOFIA_BROWSER must be chromium or webkit, not {engine!r}")
-        browser = getattr(pw, engine).launch(headless=True)
+        if engine == "webkit":
+            browser = _watch_csp(_Relaunching(lambda: pw.webkit.launch(headless=True)))
+        else:
+            browser = _watch_csp(getattr(pw, engine).launch(headless=True))
         print(f"Browser: {engine}")
+        # every wave but LG1-LG3 starts as a visitor who has answered the cookie notice
+        _seed = _consent_seed_js(_consent_version()) if _consent_version() else None
+        browser = _ConsentSeeded(browser, _seed)
 
         # Launch WebKit once for use by Wave J (J1 needs both engines)
         _webkit_browser = None
         try:
-            _webkit_browser = pw.webkit.launch(headless=True)
+            _webkit_browser = _ConsentSeeded(_watch_csp(_Relaunching(lambda: pw.webkit.launch(headless=True))), _seed)
         except Exception as _wk_err:
             print(f"  NOTE: WebKit launch failed ({_wk_err}); Wave J WebKit checks will be skipped")
 
@@ -15949,10 +17055,14 @@ def main():
             print(f"WAVE {wave_name}")
             print(f"{'='*70}")
             results.clear()
+            CSP_VIOLATIONS.clear()
             if wave_name in ("J", "P3B"):
                 WAVES[wave_name](browser, _webkit_browser)
             else:
                 WAVES[wave_name](browser)
+            _v = sorted(set(CSP_VIOLATIONS))
+            check(f"csp_no_violations_{wave_name}", not _v,
+                  f"{len(CSP_VIOLATIONS)} violation report(s): " + " | ".join(_v[:3]) if _v else "none")
             # Snapshot this wave's results before the next wave clears them
             wave_snapshot = list(results)
             all_wave_results.append((wave_name, wave_snapshot))

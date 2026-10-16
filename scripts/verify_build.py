@@ -965,6 +965,54 @@ except ImportError:
 except Exception as e:
     note(f"poster provenance check skipped: {e}")
 
+# ------------------------------------------- 5b2. EVENTART: event key art is ours
+# fetch_event_posters.py re-hosts each event's key art under posters/ev-<id> and
+# records where it came from in event_posters.json. Every EVENTART entry must
+# name an event the page has (EVENTS or EVENTS_AUTO), point at a posters/ev-*
+# file that exists and is a picture, and have a record whose source passes
+# fetch_event_posters.record_problem(): https, from programata.bg, from the seed
+# festival's own site (EVENT_SITES), or from the organiser site its programata
+# post links. A missing file is a failure: the card would show a broken image.
+_eart_m = re.search(r"^const EVENTART\s*=\s*(\{.*?\});\s*$", js, flags=re.M)
+if _eart_m is None:
+    note("EVENTART is not declared: no event key art in this build")
+else:
+    try:
+        _eventart = json.loads(_eart_m.group(1))
+    except Exception as _eae2:
+        fail(f"EVENTART is not valid JSON: {_eae2}")
+        _eventart = {}
+    if not isinstance(_eventart, dict):
+        fail("EVENTART is not an object")
+        _eventart = {}
+    if _eventart:
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            import fetch_event_posters as _EPV
+            try:
+                _ep_side = json.loads((_FILE_ROOT / "event_posters.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                _ep_side = {}
+            _ep_recs = (_ep_side.get("events") or {}) if isinstance(_ep_side, dict) else {}
+            _ev_ids_all = ({e.get("id") for e in (data.get("EVENTS") or []) if isinstance(e, dict)}
+                           | {e.get("id") for e in (_events_auto or []) if isinstance(e, dict)})
+            _ea_bad = []
+            for _eid, _path in _eventart.items():
+                if _eid not in _ev_ids_all:
+                    _ea_bad.append(f"{_eid!r}: no event in EVENTS or EVENTS_AUTO has this id")
+                    continue
+                _rec = _ep_recs.get(_eid)
+                if not isinstance(_rec, dict) or _rec.get("file") != _path:
+                    _ea_bad.append(f"{_eid!r}: event_posters.json has no record for {str(_path)[:40]!r}")
+                    continue
+                _why = _EPV.record_problem(_eid, _rec, _FILE_ROOT)
+                if _why:
+                    _ea_bad.append(f"{_eid!r}: {_why}")
+            if _ea_bad:
+                fail(f"EVENTART has {len(_ea_bad)} problem(s): " + "; ".join(_ea_bad[:4]))
+        except ImportError:
+            fail("EVENTART is set but fetch_event_posters.py (its provenance rule) cannot be imported")
+
 # --------------------------------- 5c. is the mirrored-event alias actually wired
 # inject_data.py computes SHOWALIAS (event id -> film id) for cinema events that
 # are screenings of a catalogued film. It only has an effect once realPoster()
@@ -1230,6 +1278,228 @@ try:
 except Exception as _mp_err:
     note(f"maps link check error: {_mp_err}")
 
+# ----------------------------------------- 6e. security: CSP, referrer, links, frames
+# The Content-Security-Policy meta must allow exactly the page's inline scripts (by
+# hash: it is computed by scripts/csp.py after the last edit), with the directives
+# csp.DIRECTIVES lists; a <script> the build does not make, or a data script cut
+# short by a value that closed it ("</script>" in a title), fails here. Every share
+# page carries its own policy too. A stale hash would block the whole app in the
+# browser, so this is a hard failure, not a note.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import csp as _csp                                              # noqa: E402
+    for _p in _csp.check(src, "page"):
+        fail(f"CSP: {_p}")
+    _share_bad, _share_n = [], 0
+    for _sp in _csp.share_pages(_FILE_ROOT):
+        _share_n += 1
+        _probs = _csp.check(_sp.read_text(encoding="utf-8"), "share")
+        if _probs:
+            _share_bad.append(f"{_sp.parent.parent.name}/{_sp.parent.name}: {_probs[0]}")
+    if _share_bad:
+        fail(f"CSP: {len(_share_bad)} of {_share_n} share page(s) fail: " + "; ".join(_share_bad[:3])
+             + " — run scripts/csp.py")
+    # The listings' own addresses, /home/ and /home/theatre/, are copies of index.html
+    # (gen_share_pages.py): each must be today's page, apart from its canonical address.
+    _canon = lambda t: re.sub(r'(rel="canonical" href|property="og:url" content)="[^"]*"', r'\1=""', t)
+    for _hp in _csp.home_pages(_FILE_ROOT):
+        _ht = _hp.read_text(encoding="utf-8")
+        _rel = _hp.parent.relative_to(_FILE_ROOT).as_posix() + "/"
+        for _p in _csp.check(_ht, "page"):
+            fail(f"CSP {_rel}: {_p}")
+        if HTML.resolve() == (_FILE_ROOT / "index.html").resolve() and _canon(_ht) != _canon(src):
+            fail(f"{_rel} is not this index.html (gen_share_pages.py copies it there after the last data edit)")
+except ImportError:
+    fail("scripts/csp.py not importable — the CSP cannot be checked")
+
+if '<meta name="referrer" content="strict-origin-when-cross-origin">' not in _head_src:
+    fail('referrer policy meta missing from <head> (strict-origin-when-cross-origin)')
+for _host in ("fonts.googleapis.com", "fonts.gstatic.com"):
+    if _host in src:
+        fail(f"the page still contacts {_host}: the webfonts are self-hosted (fonts/fonts.css)")
+if not (_FILE_ROOT / "fonts" / "fonts.css").exists():
+    fail("fonts/fonts.css missing: the page links it for its webfonts")
+# Every link that opens a new tab gives the other site no handle on this one
+# (noopener) and no referrer (noreferrer); window.open likewise.
+_blank_bad = re.findall(r'target="_blank"(?! rel="noopener noreferrer")[^>]{0,40}', src)
+if _blank_bad:
+    fail(f"{len(_blank_bad)} target=\"_blank\" link(s) without rel=\"noopener noreferrer\": {_blank_bad[0][:60]!r}")
+_wo_bad = [m for m in re.findall(r'window\.open\(([^)]*)\)', js) if "noopener,noreferrer" not in m]
+if _wo_bad:
+    fail(f"window.open without \"noopener,noreferrer\": {_wo_bad[0][:60]!r}")
+# no inline event handlers anywhere in what the app writes (the CSP blocks them)
+_inline_h = re.findall(r'<[a-z][^>]*\son(?:error|load|click|mouseover|focus|input|change)\s*=\s*["\']', src, re.I)
+if _inline_h:
+    fail(f"{len(_inline_h)} inline event handler(s) in the page (blocked by the CSP): {_inline_h[0][:60]!r}")
+if re.search(r"\beval\s*\(|new Function\s*\(", js):
+    fail("eval / new Function in the page JS (blocked by the CSP)")
+# Ids and times have one shape each. An id names a share page directory (film/<id>/)
+# and goes into attributes and URLs: letters (any script), digits, hyphens. A time
+# is HH:MM. Anything else is a scraper bug and never ships.
+_SAFE_ID = re.compile(r"[^\W_][\w-]{0,150}")
+_ea_ids = []
+try:
+    _ea_m2 = re.search(r"^const EVENTS_AUTO\s*=\s*(.*?);\s*$", js, flags=re.M)
+    _ea_ids = [e.get("id") for e in (json.loads(_ea_m2.group(1)) if _ea_m2 else []) if isinstance(e, dict)]
+except ValueError:
+    pass
+_bad_ids = [f"{k}:{o.get('id')!r}" for k in ("FILMS", "SHOWS", "EVENTS", "CINEMAS", "THEATRES")
+            for o in (data.get(k) or []) if isinstance(o, dict)
+            and not (isinstance(o.get("id"), str) and _SAFE_ID.fullmatch(o["id"]))]
+_bad_ids += [f"EVENTS_AUTO:{i!r}" for i in _ea_ids if not (isinstance(i, str) and _SAFE_ID.fullmatch(i))]
+if _bad_ids:
+    fail(f"{len(_bad_ids)} id(s) are not slugs (letters, digits, hyphens): {', '.join(_bad_ids[:4])}")
+_bad_times = [r for r in (data.get("SHOWTIMES") or [])
+              if not (isinstance(r, list) and len(r) >= 4 and isinstance(r[3], list)
+                      and all(isinstance(t, str) and re.fullmatch(r"\d\d:\d\d", t) for t in r[3]))]
+if _bad_times:
+    fail(f"{len(_bad_times)} SHOWTIMES row(s) whose times are not HH:MM, e.g. {str(_bad_times[0])[:80]}")
+
+
+# ----------------------------------------- 6f. legal pages and the cookie notice
+# The app links a terms page, a privacy policy and a cookie policy in BG and EN
+# (legal/, written by scripts/gen_legal_pages.py). They must match the page they
+# describe:
+#   - each exists, has its canonical URL under SITE_URL and carries no script;
+#   - no page holds a leftover placeholder ({CONTACT_…}, {OPERATOR_…}): the site names
+#     no person and gives no email, by the owner's decision of 2026-10-15;
+#   - the terms show TMDB's logo (TMDB API terms, section 3; owner input: the file);
+#   - the policies carry the page's CONSENT_VERSION as their date;
+#   - every localStorage key the page uses is listed in the cookie policy, the page
+#     sets no cookie, and the service worker's caches are listed too;
+#   - the privacy policy names Google Fonts exactly while a page loads them;
+#   - a Content-Security-Policy on the app means the same policy on every legal page
+#     (a page with no script may narrow script-src to 'none').
+# Owner input that is still missing fails the gate; test runs set
+# SOFIA_OWNER_PENDING_OK=1 to list it as a note instead. A page without the cookie
+# notice (CONSENT_VERSION) predates the legal pages and skips this section.
+LEGAL_DOCS = ("terms", "privacy", "cookies")
+LEGAL_PAGES = [f"legal/{d}/" for d in LEGAL_DOCS] + [f"legal/en/{d}/" for d in LEGAL_DOCS]
+_OWNER_OK = os.environ.get("SOFIA_OWNER_PENDING_OK") == "1"
+
+
+def owner_pending(msg):
+    (note if _OWNER_OK else fail)("owner input pending: " + msg)
+
+
+def _csp_of(text):
+    """The page's CSP meta as {directive: sources}, hashes and nonces left out; None without one."""
+    value = None
+    for tag in re.findall(r"<meta\b[^>]*>", text, re.I):
+        if re.search(r"""http-equiv\s*=\s*["']?Content-Security-Policy""", tag, re.I):
+            m = re.search(r'content\s*=\s*"([^"]*)"', tag) or re.search(r"content\s*=\s*'([^']*)'", tag)
+            value = m.group(1) if m else ""
+            break
+    if value is None:
+        return None
+    out = {}
+    for part in value.split(";"):
+        toks = part.split()
+        if toks:
+            srcs = {t for t in toks[1:] if not re.match(r"'(sha256|sha384|sha512|nonce)-", t)}
+            out[toks[0].lower()] = srcs or {"'none'"}
+    return out
+
+
+def legal_checks():
+    if not re.search(r'(?m)^const CONSENT_VERSION="', js):
+        note("no cookie notice (CONSENT_VERSION) in this page: legal page checks skipped")
+        return
+    version = re.search(r'(?m)^const CONSENT_VERSION="([^"]*)";', js).group(1)
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from site_config import SITE_URL as site
+    except ImportError:
+        site = None
+    pages = {}
+    for rel in LEGAL_PAGES:
+        p = _FILE_ROOT / rel / "index.html"
+        if not p.exists():
+            fail(f"legal page missing: {rel}index.html: run scripts/gen_legal_pages.py")
+            continue
+        pages[rel] = p.read_text(encoding="utf-8")
+    if 'href="legal/terms/"' not in src or "legal/en/" not in src:
+        fail("the page does not link the legal pages (footer / noscript)")
+
+    # no placeholder may ship; owner input: TMDB's logo
+    for r, t in list(pages.items()) + [("index.html", src)]:
+        left = sorted(set(re.findall(r"\{(?:CONTACT|OPERATOR)_[A-Z_]*\}", t)))
+        if left:
+            fail(f"{r}: placeholder(s) {', '.join(left)} left in the page")
+    if not (_FILE_ROOT / "icons" / "tmdb.svg").exists():
+        owner_pending("TMDB's logo is missing: TMDB's API terms (section 3) require it: add icons/tmdb.svg "
+                      "(themoviedb.org/about/logos-attribution) and run scripts/gen_legal_pages.py")
+    else:
+        for r in ("legal/terms/", "legal/en/terms/"):
+            if r in pages and "icons/tmdb.svg" not in pages[r]:
+                fail(f"{r}: icons/tmdb.svg exists but the page does not show it: run scripts/gen_legal_pages.py")
+
+    for r, t in pages.items():
+        if site and f'<link rel="canonical" href="{site}/{r}">' not in t:
+            fail(f"{r}: canonical URL is not {site}/{r}: run scripts/gen_legal_pages.py")
+        if re.search(r"<script\b", t, re.I) or re.search(r"<[a-z][^>]*\son[a-z]+\s*=", t, re.I):
+            fail(f"{r}: carries a script or an inline event handler (the legal pages must have none)")
+        if r.endswith(("privacy/", "cookies/")) and f'<time datetime="{version}">' not in t:
+            fail(f"{r}: its date is not the page's CONSENT_VERSION {version}: run scripts/gen_legal_pages.py")
+
+    # what the page keeps in the browser is what the cookie policy lists
+    names = dict(re.findall(r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"([^"]+)"', js))
+    keys = set()
+    for arg in re.findall(r"localStorage\.(?:setItem|getItem|removeItem)\(\s*([^,)]+)", js):
+        arg = arg.strip()
+        lit = re.fullmatch(r"""(["'])(.*)\1""", arg)
+        if lit:
+            keys.add(lit.group(2))
+        elif arg in names:
+            keys.add(names[arg])
+        else:
+            fail(f"localStorage key {arg!r} cannot be resolved: name it in a constant and list it in the cookie policy")
+    if re.search(r"document\.cookie\s*=", js):
+        fail("the page sets a cookie, but the cookie policy says it sets none")
+    sw = _FILE_ROOT / "sw.js"
+    cache = re.search(r'CACHE_VERSION\s*=\s*"([a-z-]+)v\d+"', sw.read_text(encoding="utf-8")) if sw.exists() else None
+    for r in ("legal/cookies/", "legal/en/cookies/"):
+        t = pages.get(r, "")
+        for k in sorted(keys):
+            if f"<code>{k}</code>" not in t:
+                fail(f"{r}: localStorage key {k!r} is used by the page but not listed: describe it in "
+                     "scripts/gen_legal_pages.py and run it")
+        for api in ("sessionStorage", "indexedDB"):
+            if api in js and api not in t:
+                fail(f"{r}: the page uses {api}, which the cookie policy does not list")
+        if cache and cache.group(1) + "v" not in t:
+            fail(f"{r}: the service worker's caches ({cache.group(1)}v…) are not listed")
+
+    # the privacy policy names Google Fonts exactly while a page loads them
+    google = any(re.search(r"fonts\.(googleapis|gstatic)\.com", t) for t in [src, *pages.values()])
+    for r in ("legal/privacy/", "legal/en/privacy/"):
+        if r in pages and ("Google Fonts" in pages[r]) != google:
+            fail(f"{r}: says {'nothing about' if google else 'that it uses'} Google Fonts, but the pages "
+                 f"{'load' if google else 'do not load'} them: run scripts/gen_legal_pages.py")
+
+    # the same Content-Security-Policy as the app
+    main_csp = _csp_of(src)
+    for r, t in pages.items():
+        csp = _csp_of(t)
+        if main_csp is None and csp is None:
+            continue
+        if (main_csp is None) != (csp is None):
+            fail(f"{r}: Content-Security-Policy {'missing' if csp is None else 'present'} while the app "
+                 f"{'has one' if csp is None else 'has none'}: the legal pages must carry the same policy")
+            continue
+        diff = sorted(d for d in set(main_csp) | set(csp)
+                      if main_csp.get(d) != csp.get(d)
+                      and not (d == "script-src" and csp.get(d) == {"'none'"}))
+        if diff:
+            fail(f"{r}: Content-Security-Policy differs from the app's in {', '.join(diff)}")
+
+
+try:
+    legal_checks()
+except Exception as _lg_err:
+    fail(f"legal page checks crashed: {_lg_err.__class__.__name__}: {_lg_err}")
+
+
 # ----------------------------------------------------- 7. a real click, live (gate)
 def smoke():
     try:
@@ -1256,6 +1526,11 @@ def smoke():
         for tz in ("Europe/Sofia", "UTC"):
             ctx = b.new_context(viewport={"width": 430, "height": 900},
                                 timezone_id=tz, locale="bg-BG")
+            # Any Content-Security-Policy violation during the journey fails the gate
+            # (a stale hash blocks a script; a poster host outside img-src, etc.).
+            ctx.add_init_script("window.__cspv=[];document.addEventListener("
+                                "'securitypolicyviolation',function(e){window.__cspv.push("
+                                "e.violatedDirective+' '+(e.blockedURI||'')+' '+(e.sample||''))},true);")
             page = ctx.new_page()
             errs = []
             page.on("pageerror", lambda e: errs.append(str(e)))
@@ -1267,6 +1542,16 @@ def smoke():
             if page.query_selector("[data-onb-skip]"):
                 page.click("[data-onb-skip]")
             page.wait_for_selector(".bar", timeout=20000)
+            # a first visit: the cookie notice is up, and "Разбрах" closes it and keeps the choice
+            if re.search(r'(?m)^const CONSENT_VERSION="', js):
+                if not page.is_visible("#sg-consent [data-consent-ok]"):
+                    fail(f"[{tz}] the cookie notice did not show on a first visit")
+                else:
+                    page.click("#sg-consent [data-consent-ok]")
+                    page.wait_for_timeout(200)
+                    if (page.is_visible("#sg-consent")
+                            or not page.evaluate("!!localStorage.getItem('sofia-consent')")):
+                        fail(f"[{tz}] the cookie notice's button did not close it and keep the choice")
             cards = page.query_selector_all("[data-film]")
             if not cards:
                 fail(f"[{tz}] no film cards rendered")
@@ -1302,6 +1587,9 @@ def smoke():
                              + (" — " + errs[0] if errs else ""))
             if errs:
                 fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
+            _v = page.evaluate("window.__cspv||[]")
+            if _v:
+                fail(f"[{tz}] {len(_v)} Content-Security-Policy violation(s): " + " | ".join(_v[:3]))
             ctx.close()
         b.close()
     except Exception as e:

@@ -189,6 +189,38 @@ def pick_bg(results, bg, year):
     return best if bestscore >= 60.0 else None
 
 
+TRENDING_PAGES = 5   # TMDB's weekly trending films, 20 a page: the first 100
+
+
+def trending_ranks():
+    """TMDB's weekly trending films as {tmdb_id: rank}, 1 = first (the home page's
+    "На фокус" card shows the highest-ranked film that is playing). None when TMDB does
+    not answer at all, so the caller keeps the last ranks."""
+    ranks = {}
+    for page in range(1, TRENDING_PAGES + 1):
+        d = api("trending/movie/week", {"language": "en-US", "page": page})
+        if not d or not isinstance(d.get("results"), list):
+            break
+        for r in d["results"]:
+            if isinstance(r, dict) and isinstance(r.get("id"), int) and r["id"] not in ranks:
+                ranks[r["id"]] = len(ranks) + 1
+    return ranks or None
+
+
+def apply_trending(out, prev, ranks):
+    """Write each matched film's weekly trending rank ("trend") into out. ranks None
+    (TMDB did not answer): keep-previous, a film keeps last run's rank if it is still
+    the same TMDB title."""
+    for fid, rec in out.items():
+        rec.pop("trend", None)
+        if ranks is None:
+            old = prev.get(fid) or {}
+            if old.get("trend") and old.get("tmdb_id") == rec.get("tmdb_id"):
+                rec["trend"] = old["trend"]
+        elif ranks.get(rec.get("tmdb_id")):
+            rec["trend"] = ranks[rec["tmdb_id"]]
+
+
 def strip_series_prefix(title):
     """The title without a festival / series prefix: _SERIES_PREFIX_RE (It's
     Alive!) and film_identity's festival list. A title with no such prefix is
@@ -699,6 +731,8 @@ def main():
         print(f"[{i+1}/{len(films)}] {fid:24s} -> {rec['en']} ({rec['tmdb_year']}) id={rec['tmdb_id']}{src_tag}{flag}")
         time.sleep(0.12)
 
+    apply_trending(out, prev, trending_ranks())
+    print(f"trending this week: {sum(1 for v in out.values() if v.get('trend'))} listed film(s) ranked")
     posters = sum(1 for v in out.values() if v.get("poster_path"))
     # keep-previous guard: never overwrite a good cache with an empty run
     if posters == 0 and OUT.exists():

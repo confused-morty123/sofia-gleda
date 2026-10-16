@@ -22,18 +22,21 @@ OUT  = ROOT / "index.html"
 import sys as _sys, pathlib as _pathlib
 _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
 from site_config import SITE_URL as _SITE_URL  # noqa: E402
+import csp  # noqa: E402
 
 HEAD = """<!doctype html>
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<!-- The site is at the domain root, and while a film, play or event is open the address
-     is /film/<id>/ (or /show/, /event/): relative URLs (posters/, icons/, sw.js, the
-     manifest) resolve from "/" whatever the path. A page opened from a file (a local
-     preview, the tests) resolves them from its own folder instead. -->
-<base href="/">
-<script>if(location.protocol==="file:")document.querySelectorAll("base").forEach(function(e){e.remove();});</script>
+<!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
+     and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
+     icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
+     which this script puts in before anything that uses it (a static one is refused under
+     base-uri 'self' on a page opened from a file, a local preview or the tests, which
+     resolve them from their own folder). -->
+<script>/* SOFIA-BASE */if(location.protocol!=="file:")document.head.appendChild(Object.assign(document.createElement("base"),{href:"/"}));</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#0C0A0F">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="Програмата на кината и театрите в София, обновявана всеки ден от сайтовете им.">
@@ -41,8 +44,8 @@ HEAD = """<!doctype html>
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Sofia Gleda">
-<link rel="canonical" href="{SITE_URL}/">
-<meta property="og:url" content="{SITE_URL}/">
+<link rel="canonical" href="{SITE_URL}/home/">
+<meta property="og:url" content="{SITE_URL}/home/">
 <meta property="og:title" content="Sofia Gleda">
 <meta property="og:description" content="Афишът на кината и театрите в София">
 <meta property="og:image" content="{SITE_URL}/share/share-preview.jpg">
@@ -64,8 +67,8 @@ HEAD = """<!doctype html>
 <meta name="apple-mobile-web-app-title" content="Sofia Gleda">
 """.replace("{SITE_URL}", _SITE_URL)
 
-SW_REG = """
-<script>
+SW_REG = r"""
+<script>/* SOFIA-SW */
 /* Register the service worker: instant repeat loads + offline. Non-fatal on
    failure — the app works without it. Registered after load so it never
    competes with first paint. Not on the old github.io address: there the
@@ -120,6 +123,9 @@ def main():
     body_part = frag[i:].rstrip()
 
     html = HEAD + head_part + "\n</head>\n<body>\n" + body_part + "\n" + SW_REG
+    # The Content-Security-Policy meta (script hashes): every later step that edits
+    # the page stamps it again, and refresh_all.py does it last (scripts/csp.py).
+    html = csp.stamp(html)
     out.write_text(html, encoding="utf-8")
     print(f"wrote {out} ({len(html):,} bytes)")
 

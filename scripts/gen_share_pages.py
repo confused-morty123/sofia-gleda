@@ -36,11 +36,18 @@ import pathlib
 import re
 import sys
 from urllib.parse import quote
+import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 from site_config import SITE_URL  # noqa: E402
+import csp  # noqa: E402
+
+# An id names a directory (film/<id>/) and goes into a URL: letters (any script),
+# digits and hyphens only, so no id can climb out of film/ or show/ ("../") or
+# carry markup. The scraper mints slugs; anything else is skipped, loudly.
+SAFE_ID = re.compile(r"[^\W_][\w-]{0,150}")
 
 HTML_PATH = pathlib.Path(__file__).resolve().parent.parent / "index.html"
 
@@ -63,11 +70,14 @@ BOT_UA = ("facebookexternalhit|facebot|facebookcatalog|twitterbot|whatsapp|teleg
           "|applebot|vkshare|line-poker|kakaotalk-scrap|cardyb|mastodon|bitlybot"
           "|xing-contenttabreceiver|snap url preview|yahoo link preview|quora link preview")
 
-# The redirect, identical on every page: /film/<id>/ -> /?film=<id> (the app opens
-# that sheet and puts /film/<id>/ back in the address bar); anything else -> /.
-REDIRECT_JS = ('(function(){if(/' + BOT_UA.replace("/", "\\/") + '/i.test(navigator.userAgent||""))return;'
-               'var m=/^\\/(film|show|event)\\/([^\\/?#]+)\\/(?:index\\.html)?$/.exec(location.pathname);'
-               'location.replace(m?"/?"+m[1]+"="+m[2]:"/");})();')
+# The page's one script (csp.py: first line SHARE_MARK), the same on every page: a
+# browser goes on to the app's listing with the title open, /film/<id>/ -> /home/?film=<id>
+# (the app opens the card and puts /film/<id>/ back in the address bar). A reload keeps
+# the entry's state, so the listing it was opened from comes back: /home/theatre/ when
+# the state says so. Link-preview fetchers stay.
+REDIRECT_JS = ('/* SOFIA-SHARE */\n(function(){if(/' + BOT_UA.replace("/", "\\/") + '/i.test(navigator.userAgent||""))return;'
+               'var m=/^\\/(film|show|event)\\/([^\\/?#]+)\\/(?:index\\.html)?$/.exec(location.pathname),s=history.state;'
+               'location.replace((s&&s.m==="theatre"?"/home/theatre/":"/home/")+(m?"?"+m[1]+"="+m[2]:""));})();')
 
 MONTHS_BG = ["януари", "февруари", "март", "април", "май", "юни", "юли", "август",
              "септември", "октомври", "ноември", "декември"]
@@ -247,9 +257,10 @@ def _share_page(
     og_title = _e(title_bg)
     og_desc = _e(_truncate(syn_bg, DESC_MAX)) if syn_bg else _e(display_title)
     og_image = _e(poster_url)
+    qid = urllib.parse.quote(item_id, safe="")
     canonical = _e(f"{site_url}/{kind}/{item_id}/")
     # root-relative: the visitor stays on the host that served this page
-    app_url = _e(f"/?{kind}={quote(item_id, safe='')}")
+    app_url = _e(f"{'/home/theatre/' if kind == 'show' else '/home/'}?{kind}={quote(item_id, safe='')}")
     page_title = _e(f"{title_bg} | Sofia Gleda")
     sub = line if line is not None else (title_en if title_en and title_en != title_bg else "")
     dims = ""
@@ -262,6 +273,7 @@ def _share_page(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>{page_title}</title>
 <meta name="description" content="{og_desc}">
 <link rel="canonical" href="{canonical}">
@@ -322,6 +334,8 @@ def _event_page(ev, eventart, venue_of, venue_names, poster_alias, poster_map, t
 
 
 def _write(path, content):
+    # The page's Content-Security-Policy meta: the hash of its one redirect script.
+    content = csp.stamp(content, kind="share")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
@@ -341,8 +355,12 @@ def main():
         return _image(item_id, poster_alias, poster_map, tmdbart, showart)
 
     # --- films ---
+    skipped = []
     for film in films:
         fid = film["id"]
+        if not isinstance(fid, str) or not SAFE_ID.fullmatch(fid):
+            skipped.append(f"film:{fid!r}")
+            continue
         url, w, h = _img(fid)
         content = _share_page(
             kind="film",
@@ -360,6 +378,9 @@ def main():
     # --- shows ---
     for show in shows:
         sid = show["id"]
+        if not isinstance(sid, str) or not SAFE_ID.fullmatch(sid):
+            skipped.append(f"show:{sid!r}")
+            continue
         url, w, h = _img(sid)
         content = _share_page(
             kind="show",
@@ -376,9 +397,22 @@ def main():
 
     # --- events ---
     for ev in events:
+        if not isinstance(ev.get("id"), str) or not SAFE_ID.fullmatch(ev["id"]):
+            skipped.append(f"event:{ev.get('id')!r}")
+            continue
         _write(ROOT / "event" / ev["id"] / "index.html",
                _event_page(ev, eventart, venue_of, venue_names, poster_alias, poster_map, tmdbart, showart))
         written += 1
+
+    # The listings' own addresses are the app itself (no redirect): /home/ (cinema) is
+    # index.html as it is, /home/theatre/ the same page with its own canonical address.
+    app = HTML_PATH.read_text(encoding="utf-8")
+    for rel, path in (("home", "/home/"), ("home/theatre", "/home/theatre/")):
+        page = app.replace(f'href="{SITE_URL}/home/"', f'href="{SITE_URL}{path}"', 1).replace(
+            f'property="og:url" content="{SITE_URL}/home/"', f'property="og:url" content="{SITE_URL}{path}"', 1)
+        d = ROOT / rel
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(page, encoding="utf-8")
 
     # Keep (do not delete) any existing pages for titles no longer in the data.
     for kind, ids in (("film", film_ids), ("show", show_ids), ("event", event_ids)):
@@ -388,6 +422,9 @@ def main():
 
     print(f"gen_share_pages: wrote {written} share pages ({len(films)} films, {len(shows)} shows, "
           f"{len(events)} events)" + (f", kept {kept} pages for unlisted titles" if kept else ""))
+    if skipped:
+        print(f"gen_share_pages: skipped {len(skipped)} id(s) that are not slugs: "
+              + ", ".join(skipped[:10]), file=sys.stderr)
 
 
 if __name__ == "__main__":

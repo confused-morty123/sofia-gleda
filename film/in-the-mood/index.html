@@ -2,7 +2,9 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-YAO5iFite0OoxLDmE2vTYBAI0kFZVVkHarhI2Oy+XOQ='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Любовно настроение | Sofia Gleda</title>
 <meta name="description" content="Двама съседи откриват, че съпрузите им имат връзка, и между тях се появява нещо, което и двамата отказват да назоват. Хонконг, 60-те.">
 <link rel="canonical" href="https://sofiagleda.com/film/in-the-mood/">
@@ -13,24 +15,36 @@
 <meta property="og:title" content="Любовно настроение">
 <meta property="og:description" content="Двама съседи откриват, че съпрузите им имат връзка, и между тях се появява нещо, което и двамата отказват да назоват. Хонконг, 60-те.">
 <meta property="og:image" content="https://image.tmdb.org/t/p/w500/8BgGbbWiLNhPtkMkN0gGTnbtvBv.jpg">
+<meta property="og:image:width" content="500">
+<meta property="og:image:height" content="750">
+<meta property="og:image:alt" content="Любовно настроение">
 <meta property="og:locale" content="bg_BG">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Любовно настроение">
 <meta name="twitter:description" content="Двама съседи откриват, че съпрузите им имат връзка, и между тях се появява нещо, което и двамата отказват да назоват. Хонконг, 60-те.">
 <meta name="twitter:image" content="https://image.tmdb.org/t/p/w500/8BgGbbWiLNhPtkMkN0gGTnbtvBv.jpg">
-<!-- Redirect to the app -->
-<meta http-equiv="refresh" content="0; url=https://sofiagleda.com/?film=in-the-mood">
-<script>location.replace("https://sofiagleda.com/?film=in-the-mood");</script>
+<!-- A browser goes on to the app; a link-preview fetcher stays and reads the tags above -->
+<script>/* SOFIA-SHARE */
+(function(){if(/facebookexternalhit|facebot|facebookcatalog|twitterbot|whatsapp|telegrambot|viberbot|slackbot|slack-imgproxy|discordbot|linkedinbot|pinterestbot|pinterest\/0\.|skypeuripreview|microsoftpreview|iframely|embedly|google-pagerenderer|redditbot|applebot|vkshare|line-poker|kakaotalk-scrap|cardyb|mastodon|bitlybot|xing-contenttabreceiver|snap url preview|yahoo link preview|quora link preview/i.test(navigator.userAgent||""))return;var m=/^\/(film|show|event)\/([^\/?#]+)\/(?:index\.html)?$/.exec(location.pathname),s=history.state;location.replace((s&&s.m==="theatre"?"/home/theatre/":"/home/")+(m?"?"+m[1]+"="+m[2]:""));})();</script>
 <style>
 body{font-family:system-ui,sans-serif;background:#0C0A0F;color:#F4EFF6;
      display:flex;flex-direction:column;align-items:center;justify-content:center;
-     min-height:100vh;margin:0;padding:1.5rem;text-align:center;}
-a{color:#E0163A;}
+     min-height:100vh;margin:0;padding:1.5rem;text-align:center;box-sizing:border-box}
+.brand{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#E0163A;margin:0 0 14px}
+h1{font-size:24px;line-height:1.25;margin:0 0 8px;font-weight:700}
+.sub{color:#B6ABBC;margin:0 0 22px}
+.open{display:inline-block;padding:11px 20px;border-radius:10px;background:#E0163A;color:#fff;
+      font-weight:600;text-decoration:none}
+.en{margin-top:12px;font-size:14px}
+.en a{color:#B6ABBC}
 </style>
 </head>
 <body>
-<p>Пренасочване към Sofia Gleda&hellip;</p>
-<p><a href="https://sofiagleda.com/?film=in-the-mood">Любовно настроение</a></p>
+<p class="brand">Sofia Gleda</p>
+<h1>Любовно настроение</h1>
+<p class="sub">In the Mood for Love</p>
+<p><a class="open" href="/home/?film=in-the-mood">Отвори в Sofia Gleda</a></p>
+<p class="en" lang="en"><a href="/home/?film=in-the-mood">Open in Sofia Gleda</a></p>
 </body>
 </html>

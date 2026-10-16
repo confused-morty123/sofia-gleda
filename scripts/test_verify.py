@@ -167,13 +167,31 @@ def _minimal_html(snapshot_extra: str = "", extra_js: str = "",
     """)
 
 
+sys.path.insert(0, str(ROOT / "scripts"))
+import csp as _csp  # noqa: E402
+
+
+def _finish(html: str) -> str:
+    """What build_index.py and csp.py give every real page: the referrer policy meta
+    and the Content-Security-Policy meta for its scripts (the gate requires both).
+    Pages for the other checks get them here; the CSP tests below pass finish=False."""
+    if 'name="referrer"' not in html:
+        html = html.replace("<head>", '<head><meta name="referrer" content="strict-origin-when-cross-origin">', 1)
+    try:
+        return _csp.stamp(html, strict=False)
+    except _csp.CSPError:
+        return html
+
+
 def _run(html_content: str, skip_smoke: bool = True,
          skip_freshness: bool = False,
-         extra_env: dict | None = None) -> int:
+         extra_env: dict | None = None, finish: bool = True) -> int:
     """Write HTML to a tmp file, run verify_build.py, return exit code.
 
     verify_build.py reads the HTML path from SOFIA_HTML env var (not argv).
     """
+    if finish:
+        html_content = _finish(html_content)
     env = dict(os.environ)
     env["SOFIA_SKIP_SMOKE"] = "1" if skip_smoke else "0"
     if skip_freshness:
@@ -196,9 +214,11 @@ def _run(html_content: str, skip_smoke: bool = True,
 
 
 def _run_out(html_content: str,
-             extra_env: dict | None = None) -> tuple[int, str]:
+             extra_env: dict | None = None, finish: bool = True) -> tuple[int, str]:
     """Like _run (smoke and freshness skipped), but also returns the gate's output,
     so a test can tell WHICH check failed."""
+    if finish:
+        html_content = _finish(html_content)
     env = dict(os.environ, SOFIA_SKIP_SMOKE="1", SOFIA_SKIP_FRESHNESS="1")
     if extra_env:
         env.update(extra_env)
@@ -730,6 +750,12 @@ def _make_file_root(with_icons: bool = True,
         p = root / "film" / fid
         p.mkdir(parents=True, exist_ok=True)
         (p / "index.html").write_text(page, encoding="utf-8")
+    # Like csp.py leaves them: the CSP meta over each share page's one script.
+    for _kind in ("film", "show", "event"):
+        for _pg in (root / _kind).glob("*/index.html") if (root / _kind).is_dir() else []:
+            _pg.write_text(_csp.stamp(_pg.read_text(encoding="utf-8"), kind="share", strict=False), encoding="utf-8")
+    (root / "fonts").mkdir(exist_ok=True)
+    (root / "fonts" / "fonts.css").write_text("/* test */\n", encoding="utf-8")
     return root
 
 print("\nP3C: OG/Twitter meta and share page checks")
@@ -833,12 +859,12 @@ _good = _share_html("film", "probe")
 _sp_cases = {
     "meta refresh": (_good.replace("<script>", '<meta http-equiv="refresh" content="0; url=/?film=probe">\n<script>', 1),
                      "meta refresh"),
-    "plain redirect": (_good.replace(_GSP.REDIRECT_JS, 'location.replace("/?film=probe");'),
+    "plain redirect": (_good.replace(_GSP.REDIRECT_JS, '/* SOFIA-SHARE */\nlocation.replace("/home/?film=probe");'),
                        "without skipping link-preview fetchers"),
     "no redirect": (_good.replace("<script>" + _GSP.REDIRECT_JS + "</script>", ""), "no redirect"),
     "no og:title": (_good.replace('property="og:title"', 'property="og:x"'), "og:title"),
     "no twitter:card": (_good.replace('content="summary_large_image"', 'content="summary"'), "twitter:card"),
-    "no fallback link": (_good.replace('href="/?film=probe"', 'href="/"'), "without JavaScript"),
+    "no fallback link": (_good.replace('href="/home/?film=probe"', 'href="/"'), "without JavaScript"),
     "relative twitter:image": (_good.replace('name="twitter:image" content="https://', 'name="twitter:image" content="//'),
                                "twitter:image"),
 }
@@ -854,9 +880,9 @@ for _label, (_page, _word) in _sp_cases.items():
 # an event page from the generator passes; the generator writes no meta refresh at all
 _root = _make_file_root(with_icons=True, film_ids_ok=["good-film"], show_ids_ok=["good-show"])
 (_root / "event" / "probe-fest").mkdir(parents=True)
-(_root / "event" / "probe-fest" / "index.html").write_text(_GSP._event_page(
+(_root / "event" / "probe-fest" / "index.html").write_text(_csp.stamp(_GSP._event_page(
     {"id": "probe-fest", "title": "Фестивал", "titleEn": "Festival", "from": "2026-10-17", "to": "2026-10-24",
-     "blurbBg": "Описание."}, {}, {}, {}, {}, {}, {}, {}), encoding="utf-8")
+     "blurbBg": "Описание."}, {}, {}, {}, {}, {}, {}, {}), kind="share"), encoding="utf-8")
 try:
     _rc = _run(_minimal_html(), skip_freshness=True, extra_env={"SOFIA_ROOT": str(_root)})
     check("a generated event share page passes", _rc == 0)
@@ -971,6 +997,227 @@ check("EVENT_MEMBERS naming no film or show fails",
 check("EVENT_MEMBERS for no such event fails",
       _ev_fails([_ev_auto()], {"no-such-event": ["show0"]}, word="EVENT_MEMBERS has"))
 check("no EVENTS_AUTO at all is a note, not a failure", _run_out(_minimal_html())[0] == 0)
+
+
+# ---------------------------------------------------------------------------
+# EVENTART (fetch_event_posters.py -> event_posters.json + posters/ev-*)
+# ---------------------------------------------------------------------------
+print("\nEVENTART: event key art is re-hosted, exists and has an allowed source")
+_ea_root = _make_file_root(with_icons=True, film_ids_ok=["test-film"], show_ids_ok=["test-show"])
+(_ea_root / "posters").mkdir()
+for _n in ("ev-act-festival-p187545.jpg", "ev-cinelibri.jpg"):
+    _PIL_Image_tv.new("RGB", (800, 450), color=(150, 30, 40)).save(str(_ea_root / "posters" / _n), "JPEG")
+_ea_rec = {"file": "posters/ev-act-festival-p187545.jpg", "via": "programata",
+           "src": "https://programata.bg/wp-content/uploads/2026/10/act_fest_cover-1024x576.png",
+           "page": "https://programata.bg/stsena/act/", "w": 1024, "h": 576, "to": _ev_to}
+_ea_seed = ('[{"id":"cinelibri","kind":"festival","scope":"cinema","title":"Синелибри","titleEn":"CineLibri",'
+            '"from":"2026-10-15","to":"2026-11-08","g":["#B3122D","#26040A"]}]')
+
+
+def _ea_run(art, recs, seed="[]"):
+    (_ea_root / "event_posters.json").write_text(_json.dumps({"events": recs}), encoding="utf-8")
+    js = ("const EVENTS_AUTO=" + _json.dumps([_ev_auto()], ensure_ascii=False) + ";"
+          + "\n        const EVENTART=" + _json.dumps(art) + ";")
+    html = _minimal_html(extra_js=js).replace("const EVENTS=[];", "const EVENTS=" + seed + ";", 1)
+    return _run_out(html, extra_env={"SOFIA_ROOT": str(_ea_root)})
+
+
+def _ea_fails(art, recs, seed="[]"):
+    rc, out = _ea_run(art, recs, seed)
+    return rc != 0 and "EVENTART has" in out
+
+
+try:
+    _ok_art = {"act-festival-p187545": "posters/ev-act-festival-p187545.jpg"}
+    _rc, _out = _ea_run(_ok_art, {"act-festival-p187545": _ea_rec})
+    check("an auto event's programata art, re-hosted, passes", _rc == 0)
+    if _rc != 0:
+        print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+    _site_rec = {"file": "posters/ev-cinelibri.jpg", "via": "site", "page": "https://www.cinelibri.com/",
+                 "src": "https://www.cinelibri.com/wp-content/uploads/2026/06/website-key-visual-2026.jpg"}
+    check("a seed festival's art from its own site passes",
+          _ea_run({"cinelibri": "posters/ev-cinelibri.jpg"}, {"cinelibri": _site_rec}, _ea_seed)[0] == 0)
+    check("a missing file fails",
+          _ea_fails({"act-festival-p187545": "posters/ev-gone.jpg"},
+                    {"act-festival-p187545": dict(_ea_rec, file="posters/ev-gone.jpg")}))
+    check("an entry for no event fails", _ea_fails({"no-such-event": _ok_art["act-festival-p187545"]},
+                                                     {"no-such-event": _ea_rec}))
+    check("an entry with no record in event_posters.json fails", _ea_fails(_ok_art, {}))
+    check("a source that is not programata.bg (via programata) fails",
+          _ea_fails(_ok_art, {"act-festival-p187545": dict(_ea_rec, src="https://example.com/act.jpg")}))
+    check("a seed festival's art from another site fails",
+          _ea_fails({"cinelibri": "posters/ev-cinelibri.jpg"},
+                    {"cinelibri": dict(_site_rec, src="https://www.kinomania.bg/x.jpg")}, _ea_seed))
+    check("a remote URL instead of a re-hosted file fails",
+          _ea_fails({"act-festival-p187545": "https://programata.bg/act.png"},
+                    {"act-festival-p187545": dict(_ea_rec, file="https://programata.bg/act.png")}))
+    check("a file that is not a picture fails",
+          (_ea_root / "posters" / "ev-text.jpg").write_text("<html>", encoding="utf-8") is not None
+          and _ea_fails({"act-festival-p187545": "posters/ev-text.jpg"},
+                        {"act-festival-p187545": dict(_ea_rec, file="posters/ev-text.jpg")}))
+finally:
+    _shutil.rmtree(str(_ea_root), ignore_errors=True)
+# Legal pages and the cookie notice (6e)
+# ---------------------------------------------------------------------------
+# A page with the cookie notice (CONSENT_VERSION) gets the legal checks; a temp
+# SOFIA_ROOT holds copies of this worktree's legal/ pages, edited per probe.
+print("\nLegal pages: placeholders, TMDB logo, storage list, scripts, CSP, fonts")
+import re
+_LG_VERSION = re.search(r'(?m)^const CONSENT_VERSION="([^"]+)";',
+                        (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")).group(1)
+_LG_JS = (f'const CONSENT_VERSION="{_LG_VERSION}"; const LS="sofia-screen-v2"; const CONSENT_KEY="sofia-consent"; '
+          'function _lgUse(){localStorage.getItem(LS);localStorage.setItem(CONSENT_KEY,"x");} '
+          '/* links: href="legal/terms/" legal/en/ */')
+_LG_CSP = ('<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; '
+           'script-src \'sha256-AAAA\'; img-src \'self\' https: data:; object-src \'none\'">')
+
+
+def _lg_root(logo=True, edit=None):
+    """A temp tree: icons, share pages, sw.js and this worktree's legal pages."""
+    root = _make_file_root(with_icons=True, film_ids_ok=["lg-film"], show_ids_ok=["lg-show"])
+    _shutil.copytree(ROOT / "legal", root / "legal")
+    _shutil.copy(ROOT / "sw.js", root / "sw.js")
+    if logo:
+        (root / "icons" / "tmdb.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+    for p in (root / "legal").rglob("index.html"):
+        t = p.read_text(encoding="utf-8")
+        if logo and "/terms/" in str(p):
+            t = t.replace('<div class="lg-attr">', '<div class="lg-attr"><img src="../../icons/tmdb.svg" alt="TMDB">', 1)
+        if edit:
+            t = edit(p.relative_to(root).as_posix(), t)
+        p.write_text(t, encoding="utf-8")
+    return root
+
+
+def _lg_run(html_text, root, owner_ok="0"):
+    try:
+        return _run_out(html_text, extra_env={"SOFIA_ROOT": str(root), "SOFIA_OWNER_PENDING_OK": owner_ok})
+    finally:
+        _shutil.rmtree(str(root), ignore_errors=True)
+
+
+_lg_page = _minimal_html(extra_js=_LG_JS)
+_rc, _out = _lg_run(_lg_page, _lg_root())
+check("complete legal pages pass", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+_ph = lambda r, t: t.replace("</main>", "<p>{CONTACT_EMAIL}</p></main>") if r == "legal/privacy/index.html" else t
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph))
+check("a leftover {CONTACT_EMAIL} placeholder fails the gate", _rc != 0 and "{CONTACT_EMAIL}" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph), owner_ok="1")
+check("a leftover placeholder fails even with SOFIA_OWNER_PENDING_OK=1", _rc != 0 and "{CONTACT_EMAIL}" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(logo=False))
+check("a missing TMDB logo fails the gate", _rc != 0 and "owner input pending" in _out and "TMDB's logo is missing" in _out)
+check("SOFIA_OWNER_PENDING_OK=1 turns the missing TMDB logo into a note",
+      _lg_run(_lg_page, _lg_root(logo=False), owner_ok="1")[0] == 0)
+_rc, _out = _lg_run(_lg_page.replace("</body>", "<p>{OPERATOR_NAME}</p></body>"), _lg_root())
+check("a dropped placeholder ({OPERATOR_NAME}) fails", _rc != 0 and "OPERATOR_NAME" in _out)
+_miss = _lg_root()
+_shutil.rmtree(str(_miss / "legal" / "en" / "privacy"))
+_rc, _out = _lg_run(_lg_page, _miss)
+check("a missing legal page fails", _rc != 0 and "legal page missing: legal/en/privacy/" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace("</body>", "<script>1</script></body>")
+                                       if r == "legal/terms/index.html" else t))
+check("a script in a legal page fails", _rc != 0 and "carries a script" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace("<main", '<main onclick="x()"')
+                                       if r == "legal/en/terms/index.html" else t))
+check("an inline event handler in a legal page fails", _rc != 0 and "inline event handler" in _out)
+_rc, _out = _lg_run(_lg_page.replace("function _lgUse(){", 'function _lgUse(){localStorage.setItem("sofia-new",1);'),
+                    _lg_root())
+check("a localStorage key the cookie policy does not list fails", _rc != 0 and "'sofia-new'" in _out)
+_rc, _out = _lg_run(_lg_page.replace("function _lgUse(){", 'function _lgUse(){document.cookie="a=1";'), _lg_root())
+check("a page that sets a cookie fails", _rc != 0 and "sets a cookie" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace(f'<time datetime="{_LG_VERSION}">',
+                                                                 '<time datetime="2000-01-01">')))
+check("policies dated other than CONSENT_VERSION fail", _rc != 0 and "CONSENT_VERSION" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace('rel="canonical" href="https://',
+                                                                 'rel="canonical" href="http://')))
+check("a canonical URL off SITE_URL fails", _rc != 0 and "canonical URL" in _out)
+_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP), _lg_root())
+check("a CSP on the app but not on the legal pages fails", _rc != 0 and "Content-Security-Policy missing" in _out)
+_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP),
+                    _lg_root(edit=lambda r, t: t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' +
+                                                         _LG_CSP.replace("'sha256-AAAA'", "'none'"))))
+check("the same CSP (script-src narrowed to 'none') passes", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-3:]))
+_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP),
+                    _lg_root(edit=lambda r, t: t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' +
+                                                         _LG_CSP.replace("img-src 'self' https: data:", "img-src *"))))
+check("a CSP that differs from the app's fails", _rc != 0 and "differs from the app's in img-src" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: re.sub(r"<!-- FONTS -->.*?<!-- /FONTS -->", "", t, flags=re.S)))
+check("a privacy policy naming Google Fonts the pages no longer load fails", _rc != 0 and "Google Fonts" in _out)
+check("a page without the cookie notice skips the legal checks", _run_out(_minimal_html())[0] == 0)
+
+
+# Security: the CSP meta, its hashes, the known scripts (scripts/csp.py)
+# ---------------------------------------------------------------------------
+print("\nsecurity: Content-Security-Policy and links")
+_sec_root = _make_file_root(with_icons=True, film_ids_ok=["test-film"], show_ids_ok=["test-show"])
+_sec_env = {"SOFIA_ROOT": str(_sec_root)}
+try:
+    _good = _finish(_minimal_html())
+    _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
+    check("a stamped page passes the CSP checks", _rc == 0)
+    if _rc:
+        print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+    _rc, _out = _run_out(_csp.META_RE.sub("", _good), extra_env=_sec_env, finish=False)
+    check("a page without the CSP meta fails", _rc != 0 and "Content-Security-Policy meta" in _out)
+    _rc, _out = _run_out(_good.replace("const LINKS=[];", "const LINKS=[];const X=1;", 1),
+                         extra_env=_sec_env, finish=False)
+    check("a data edit after stamping (stale hash) fails", _rc != 0 and "script-src does not match" in _out)
+    _inj = _minimal_html().replace("const LINKS=[];", 'const LINKS=[["x","</script><script>alert(1)//"]];', 1)
+    _rc, _out = _run_out(_inj, extra_env=_sec_env)              # stamped non-strictly, as an attacker would want
+    check("a value that closes the data script fails (data cut short + unknown script)",
+          _rc != 0 and "ends before /* SOFIA-DATA-END */" in _out and "unknown inline script" in _out)
+    _rc, _out = _run_out(_good.replace("</body>", "<script>alert(1)</script></body>", 1),
+                         extra_env=_sec_env)
+    check("an extra inline script (even with its hash allowed) fails", _rc != 0 and "unknown inline script" in _out)
+    _rc, _out = _run_out(_good.replace("'unsafe-inline';", "'unsafe-inline' https:;", 1)
+                         .replace("script-src ", "script-src 'unsafe-inline' ", 1), extra_env=_sec_env, finish=False)
+    check("script-src 'unsafe-inline' fails", _rc != 0 and "script-src allows 'unsafe-inline'" in _out)
+    _rc, _out = _run_out(_good.replace("object-src 'none'", "object-src *", 1), extra_env=_sec_env, finish=False)
+    check("a weakened directive fails", _rc != 0 and "object-src" in _out)
+    _rc, _out = _run_out(_good.replace('<meta name="referrer" content="strict-origin-when-cross-origin">', "", 1),
+                         extra_env=_sec_env, finish=False)
+    check("a page without the referrer policy fails", _rc != 0 and "referrer policy" in _out)
+    _rc, _out = _run_out(_minimal_html().replace("</head>", '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest"></head>', 1),
+                         extra_env=_sec_env)
+    check("a page that loads Google Fonts fails", _rc != 0 and "fonts.googleapis.com" in _out)
+    _rc, _out = _run_out(_minimal_html(extra_js='const A=`<a href="x" target="_blank" rel="noopener">`;'),
+                         extra_env=_sec_env)
+    check("a new-tab link without noreferrer fails", _rc != 0 and "noopener noreferrer" in _out)
+    _rc, _out = _run_out(_minimal_html(extra_js='const B=`<img src="x" onerror="this.remove()">`;'),
+                         extra_env=_sec_env)
+    check("an inline event handler fails", _rc != 0 and "inline event handler" in _out)
+    _rc, _out = _run_out(_minimal_html().replace('"id": "f0"', '"id": "f0\\"><img src=x>"', 1), extra_env=_sec_env)
+    check("an id that is not a slug fails", _rc != 0 and "not slugs" in _out)
+    _rc, _out = _run_out(_minimal_html().replace('["10:00"]', '["10:00<b>"]', 1), extra_env=_sec_env)
+    check("a showtime that is not HH:MM fails", _rc != 0 and "not HH:MM" in _out)
+    # a share page whose policy is missing or stale
+    _sp = _sec_root / "film" / "test-film" / "index.html"
+    _orig = _sp.read_text(encoding="utf-8")
+    _sp.write_text(_csp.META_RE.sub("", _orig), encoding="utf-8")
+    _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
+    check("a share page without its CSP meta fails", _rc != 0 and "share page(s) fail" in _out)
+    _sp.write_text(_orig.replace("?film=test-film", "?film=other"), encoding="utf-8")
+    _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
+    check("a share page with a stale hash fails", _rc != 0 and "share page(s) fail" in _out)
+    _sp.write_text(_orig, encoding="utf-8")
+finally:
+    _shutil.rmtree(str(_sec_root), ignore_errors=True)
+
+# csp.json_for_script keeps every value inside its script
+_v = {"t": "</script><script>alert(1)</script><!-- x", "u": "https://a/b?c=<d>"}
+_lit = _csp.json_for_script(_v)
+check("json_for_script: no '<' survives", "<" not in _lit)
+check("json_for_script: reads back identically", _json.loads(_lit) == _v)
+try:
+    _csp.stamp("<html><head><meta charset=\"utf-8\"></head><body><script>/* SOFIA-DATA-START */\n"
+               "const X=\"</script><script>alert(1)</script>\";\n/* SOFIA-DATA-END */</script></body></html>")
+    check("csp.stamp refuses a page whose data script was closed early", False)
+except _csp.CSPError:
+    check("csp.stamp refuses a page whose data script was closed early", True)
 
 
 # ---------------------------------------------------------------------------

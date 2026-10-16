@@ -50,8 +50,13 @@ Run in order by `scripts/refresh_all.py` (which the robot calls every 3 days):
    (its festival categories, only posts with dates and in Sofia) into `events.json`;
    keeps the previous events when the site is down. Shown in "Лимитирано и
    ексклузивно" with a link to the source page.
-7. **`inject_data.py`** — inlines the poster and details maps, and the auto events
-   (`EVENTS_AUTO`, `EVENT_MEMBERS`), into `index.html`.
+7. **`fetch_event_posters.py`** — key art for the events shown (the festival's own
+   site, else the programata post's featured image; logos, small images and strips
+   refused), re-hosted as `posters/ev-<id>.jpg`; sources in `event_posters.json`.
+8. **`inject_data.py`** — inlines the poster and details maps, and the auto events
+   (`EVENTS_AUTO`, `EVENT_MEMBERS`, `EVENTART`), into `index.html`.
+9. **`gen_share_pages.py`**, then **`csp.py`** — the share pages, then the
+   Content-Security-Policy hashes of every page, after the last edit.
 
 Every step is best-effort and isolated: one failure never empties the app, and
 the run is logged to `build_report.json`.
@@ -131,6 +136,19 @@ TMDB_TOKEN=your_token OMDB_TOKEN=your_key python3 scripts/refresh_all.py
   clicks a film card and a performance. If any of that fails the workflow stops
   before the commit, the rejected build is uploaded as an Action artifact, and the
   live site keeps its last good version.
+- **The page runs only its own scripts.** Each page carries a Content-Security-Policy
+  `<meta>` that allows its inline scripts by sha256 hash (no `'unsafe-inline'`, no
+  eval), images from any https host, and fonts, styles and the service worker from
+  the site only. The data script changes daily, so `scripts/csp.py` computes the
+  hashes after the last step that edits a page (the pipeline's `csp` step; every
+  writer stamps too), and the gate fails on a stale hash, a weakened directive or a
+  `<script>` the build does not make. Data goes into a script only through
+  `csp.json_for_script()`: a `</script>` in a scraped title or a TMDB overview
+  (community-edited) can no longer end the script and run code. The webfonts are
+  self-hosted (`fonts/`, SIL OFL), new-tab links are `noopener noreferrer`, and the
+  app refuses to render inside another site's frame. `scripts/test_security.py`
+  fuzzes every data field with hostile strings in every view (Chromium and WebKit);
+  `notes/qa/SECURITY_REPORT.md` (outside the repo) has the findings.
 - **All HTTP goes through `scripts/netfetch.py`.** Browser-shaped headers, retries
   with backoff, split connect/read timeouts, per-host politeness, a wall-clock
   budget, and a per-host report at the end of every run. One attempt per URL with

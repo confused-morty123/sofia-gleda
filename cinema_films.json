@@ -2605,5 +2605,88 @@
    "#5F4527"
   ],
   "source": "odeon"
+ },
+ "pochivkata-2": {
+  "id": "pochivkata-2",
+  "bg": "Почивката 2",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "arena-mega"
+ },
+ "pochivkata-1": {
+  "id": "pochivkata-1",
+  "bg": "Почивката 1",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "arena-mega"
+ },
+ "george-michael-the-faith-tour": {
+  "id": "george-michael-the-faith-tour",
+  "bg": "GEORGE MICHAEL: THE FAITH TOUR",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 113
+ },
+ "sitsilianska-roza": {
+  "id": "sitsilianska-roza",
+  "bg": "Сицилианска роза",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Музикален"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "g8",
+  "runtime": 120,
+  "country": "Италия"
+ },
+ "kinomaniya-2026-golishar": {
+  "id": "kinomaniya-2026-golishar",
+  "bg": "Киномания 2026: Голишар",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino"
+ },
+ "srednoshtno-slantse": {
+  "id": "srednoshtno-slantse",
+  "bg": "Среднощно слънце",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "cherni-pari-za-beli-noshti": {
+  "id": "cherni-pari-za-beli-noshti",
+  "bg": "Черни пари за бели нощи",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
  }
 }

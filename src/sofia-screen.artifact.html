@@ -1,12 +1,9 @@
 <title>Sofia Gleda</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- loaded non-blocking: a stalled font request must never hold up first paint.
-     Every rule declares a real fallback stack, so the page is fully usable
-     before (or without) the webfonts. -->
-<link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Onest:wght@400;500;600;700&display=swap">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Onest:wght@400;500;600;700&display=swap"></noscript>
+<!-- Webfonts are self-hosted (fonts/, SIL OFL): no request leaves the site for a
+     font. fonts.css only declares the faces (font-display:swap, per-script subsets),
+     so a font file never holds up first paint, and every rule declares a real
+     fallback stack, so the page is fully usable before (or without) the webfonts. -->
+<link rel="stylesheet" href="fonts/fonts.css">
 
 <style>
 :root{
@@ -174,7 +171,9 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 @media (prefers-reduced-motion:reduce){
   .desk-search-wrap,.bar-row-search{transition:none!important}
 }
-.desk-search-wrap .search{position:relative; width:420px; max-width:420px; min-width:0}
+/* 420 px, narrower below 1140 px: open beside the toggle, the field leaves the logo's
+   column its room, so nothing overflows from 761 px up */
+.desk-search-wrap .search{position:relative; width:min(420px,calc(50vw - 150px)); max-width:420px; min-width:0}
 .search input{width:100%; padding:11px 40px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg); font:inherit; font-size:15px}
 .search input::placeholder{color:var(--fg-3)}
@@ -291,10 +290,19 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   text-transform:none; letter-spacing:normal}
 @media(max-width:760px){
   .brand .brand-sub{font-size:12px; text-align:center} }
-/* Tablet widths: the logo column is too narrow for the line (it would run under
-   the centred toggle, and stop the logo from shrinking); the header stays as it
-   was there. Phones and desktops keep it. */
-@media(min-width:761px) and (max-width:1023px){ .brand .brand-sub{display:none} }
+/* Desktop (761 px and up): the logo and its line are one lockup that scales as the
+   window narrows (owner, 16 Oct 2026: the line used to vanish at 761-1023 px). The
+   brand is exactly as wide as the logo would be (its own clamp, 5.153 = logo.svg's
+   width/height), never wider than its column; the logo fills that width and the line's
+   font is set from it in container units, so the line is 98% of the logo's width in
+   either language (Onest: 18.42 font-sizes wide in BG, 15.87 in EN) and stays inside
+   the column, clear of the toggle. Phones keep the centred 12 px line above. */
+@media(min-width:761px){
+  .brand{width:min(100%,calc(clamp(32px,3.2vw,42px)*5.153)); container-type:inline-size}
+  .brand-logo{width:100%; height:auto; max-width:none}
+  .brand .brand-sub{font-size:calc(100cqi*.98/18.42)}
+  .brand .brand-sub:lang(en){font-size:calc(100cqi*.98/15.87)}
+}
 
 /* ---------- hero ---------- */
 .hero{position:relative; border-radius:var(--r-lg); overflow:hidden; margin-block:18px 30px;
@@ -897,10 +905,72 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-back-btn{left:18px;top:18px}
 .ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}
 </style>
+<style id="consent-css">
+/* ===================== cookie notice and the footer's legal lines ===================== */
+/* A soft card on its own fixed layer: it never moves the page (no layout shift). Wide
+   screens: a small card bottom-left, clear of the FAB on the right. Phones: a card along
+   the bottom, inside the safe areas. Above the header and the FAB, below the sheets, the
+   drawer and the time popup, which cover it while they are open. */
+.consent{position:fixed; z-index:80; left:max(24px,env(safe-area-inset-left,0px));
+  bottom:calc(24px + env(safe-area-inset-bottom,0px)); width:min(380px,calc(100vw - 48px));
+  max-height:calc(100vh - 96px); overflow-y:auto; overscroll-behavior:contain;
+  background:var(--ink-3); border:1px solid rgba(255,255,255,.12); border-radius:22px;
+  padding:18px 20px 16px; box-shadow:0 8px 40px rgba(0,0,0,.55);
+  color:var(--fg); font-size:14px; line-height:1.5}
+@supports (height:1dvh){ .consent{max-height:calc(100dvh - 96px)} }
+.consent[hidden]{display:none!important}
+.consent:focus{outline:none}
+.consent:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){
+  .consent:not([hidden]){animation:consentIn .28s var(--motion-ease-out) both} }
+@keyframes consentIn{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
+.consent-t{margin:0 0 6px; font-size:16px; font-weight:600; line-height:1.3; color:var(--fg); text-wrap:balance}
+.consent-d{margin:0; color:var(--fg-2)}
+.consent-btns{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-top:14px}
+.consent-btn{min-height:44px; padding:0 20px; border-radius:14px; font-size:15px; font-weight:500;
+  transition:filter .15s}
+.consent-btn:hover,.consent-btn:focus-visible{filter:brightness(1.08)}
+.consent-btn.pri{background:var(--fg); color:var(--ink)}
+.consent-btn.sec{background:var(--ink-4); color:var(--fg)}
+.consent-more{display:inline-flex; align-items:center; min-height:44px; color:var(--fg-2);
+  text-decoration:underline; text-underline-offset:3px}
+.consent-more:hover{color:var(--fg)}
+.consent-cats{list-style:none; margin:12px 0 0; padding:0; border-radius:14px; background:var(--ink-4); overflow:hidden}
+.consent-cats li{display:flex; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid rgba(255,255,255,.07)}
+.consent-cats li:first-child{border-top:0}
+.consent-cat{flex:1 1 auto; min-width:0}
+.consent-cat b{display:block; font-weight:500; color:var(--fg)}
+.consent-cat small{display:block; font-size:12.5px; color:var(--fg-3)}
+.consent-cats input{flex:0 0 auto; width:22px; height:22px; accent-color:var(--crimson); margin:0}
+@media (max-width:760px){
+  .consent{left:max(12px,env(safe-area-inset-left,0px)); right:max(12px,env(safe-area-inset-right,0px));
+    width:auto; bottom:calc(12px + env(safe-area-inset-bottom,0px)); padding:16px 18px 14px}
+  .consent-btns .consent-btn{flex:1 1 auto}
+}
+/* Safari's collapsed toolbar takes the first tap in the bottom strip (see the FAB): keep the
+   buttons above it in a browser tab; a home-screen app and a landscape phone have no strip. */
+@media (hover:none) and (pointer:coarse){
+  .consent{bottom:max(72px,calc(12px + env(safe-area-inset-bottom,0px)))} }
+@media (hover:none) and (pointer:coarse) and (display-mode:standalone){
+  .consent{bottom:calc(12px + env(safe-area-inset-bottom,0px))} }
+@media (max-height:520px){
+  .consent{bottom:calc(8px + env(safe-area-inset-bottom,0px)); max-height:calc(100vh - 16px)}
+  @supports (height:1dvh){ .consent{max-height:calc(100dvh - 16px)} } }
+footer .legal-line{margin:14px 0 0; max-width:78ch; color:var(--fg-2)}
+footer .legal-attr{margin:6px 0 0; max-width:78ch}
+footer .legal-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 18px; margin-top:10px}
+footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:center; min-height:32px; padding:0;
+  color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
+footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
+</style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
   <div style="font:600 13px/1.4 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#E0163A">Sofia Gleda</div>
   <div style="margin-top:10px">Зареждане на програмата…</div>
+  <noscript><p style="margin-top:22px">Програмата има нужда от JavaScript.
+    <a href="legal/terms/" style="color:#B6ABBC">Общи условия</a> ·
+    <a href="legal/privacy/" style="color:#B6ABBC">Поверителност</a> ·
+    <a href="legal/cookies/" style="color:#B6ABBC">Бисквитки</a></p></noscript>
 </div></div>
 <!-- @include data.html -->
 <script>/* SOFIA-PRICES — hand-maintained. Kept in its own script on purpose:
@@ -911,14 +981,43 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
    theatre prices are per-performance (PERFORMANCES p[4]) and come from the scraper. */
 const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","arena-mall":"9 €","cg-ring":"7,50 €","cg-park":"7,50 €","cineland":"8 €","dom-kino":"7,50 €","g8":"5 €","vlaikova":"7 €","odeon":"10 €"};
 </script>
-<script>
+<script>/* SOFIA-APP */
+/* ---- clickjacking guard: a meta CSP cannot send frame-ancestors, so a page that
+   finds itself inside another site's frame renders no app, only a link that opens
+   Sofia Gleda in its own tab; the throw stops this script before any of the app is
+   set up. A frame of the site's own origin is left alone. ---- */
+(function(){
+  var framed=false;
+  try{ framed=window.top!==window.self&&window.top.location.origin!==location.origin; }
+  catch(e){ framed=true; }                     /* a foreign top's location cannot be read */
+  if(!framed)return;
+  var app=document.getElementById("app");
+  if(app){
+    app.textContent="";
+    var box=document.createElement("div"),a=document.createElement("a");
+    box.setAttribute("style","max-width:560px;margin:56px auto;padding:0 20px;font:15px/1.6 system-ui;color:#B6ABBC;text-align:center");
+    a.href=location.href;a.target="_top";a.setAttribute("data-framed","");
+    a.setAttribute("style","color:#E0163A;font-weight:600");
+    a.textContent="Отвори Sofia Gleda · Open Sofia Gleda";
+    box.appendChild(a);app.appendChild(box);
+  }
+  throw new Error("Sofia Gleda: not rendered inside another site's frame");
+})();
 /* ---- failure trap: installed first, so a bad data.js still shows something ---- */
 (function(){
   var LSKEY="sofia-screen-v2";
+  /* A poster that fails to load is removed, so the generated artwork under it shows
+     again (and .p-title via :has). Was an inline onerror="this.remove()", which the
+     CSP does not allow; error events do not bubble, so this listens in the capture
+     phase. */
+  document.addEventListener("error",function(e){
+    var el=e.target;
+    if(el&&el.tagName==="IMG"&&el.classList.contains("p-real"))el.remove();
+  },true);
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
-  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS"].forEach(function(n){
+  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS","EVENTART"].forEach(function(n){
     try{ if(typeof window[n]==="undefined" && !(n in globalThis)) window[n]={}; }catch(e){ window[n]={}; }
   });
   function panel(msg){
@@ -940,11 +1039,19 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
     if(app&&app.innerHTML.indexOf("Зареждане на програмата")>-1)
       panel((e&&(e.message||e.error))||"script error");
   });
+  /* `typeof NAME` written out per name (no eval: the CSP forbids it). The constants
+     are global `const`s, not window properties: an undeclared one reads "undefined",
+     one whose data script threw before declaring it throws. */
   var missing=[];
-  ["FILMS","SHOWTIMES","CINEMAS","SHOWS","PERFORMANCES","THEATRES","EVENTS",
-   "BOOKING","TICKET_HUBS","TASTE_FILMS","TASTE_SHOWS","SNAPSHOT"].forEach(function(n){
-    try{ if(typeof window[n]==="undefined"&&typeof eval("typeof "+n)==="undefined")missing.push(n); }
-    catch(err){ missing.push(n); }
+  [["FILMS",function(){return typeof FILMS;}],["SHOWTIMES",function(){return typeof SHOWTIMES;}],
+   ["CINEMAS",function(){return typeof CINEMAS;}],["SHOWS",function(){return typeof SHOWS;}],
+   ["PERFORMANCES",function(){return typeof PERFORMANCES;}],["THEATRES",function(){return typeof THEATRES;}],
+   ["EVENTS",function(){return typeof EVENTS;}],["BOOKING",function(){return typeof BOOKING;}],
+   ["TICKET_HUBS",function(){return typeof TICKET_HUBS;}],["TASTE_FILMS",function(){return typeof TASTE_FILMS;}],
+   ["TASTE_SHOWS",function(){return typeof TASTE_SHOWS;}],["SNAPSHOT",function(){return typeof SNAPSHOT;}]
+  ].forEach(function(p){
+    try{ if(p[1]()==="undefined")missing.push(p[0]); }
+    catch(err){ missing.push(p[0]); }
   });
   if(missing.length){ panel("Данните не се заредиха: "+missing.join(", ")); throw new Error("data missing"); }
 })();
@@ -981,7 +1088,7 @@ bg:{tagline:"кино и театър в софия",
  railTonightT:"Тази вечер в София",railTonightB:"Утре в София",
  railRecommended:"Препоръчано",railWeekend:"Този уикенд",
  venueShowing:"Програмата на:",venueRemove:"Премахни",
- forYou:"Избрано за теб",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
+ forYou:"Избрано за теб",inFocus:"На фокус",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
  buy:"Купи билет",buyAt:"Билети от",buyHub:"Или през платформа",evSource:"Източник",
  buyNoteC:"Отваря програмата на киното за избраната дата. Часовете по-долу водят към същата каса.",
  buyNoteT:"Отваря официалната каса на самия театър.",
@@ -1048,7 +1155,18 @@ bg:{tagline:"кино и театър в софия",
  ssCalApple:"Apple Календар",
  ssCalAppleSub:"iPhone, iPad, Mac",
  ssCalGoogle:"Google Календар",
- ssCalOutlook:"Outlook"},
+ ssCalOutlook:"Outlook",
+ /* cookie notice and the footer's legal lines */
+ consentTitle:"Използваме само необходимото",
+ consentText:"Не поставяме бисквитки и не следим посещенията. В браузъра ти пазим само това, без което сайтът не може да работи, например езика и любимите ти места. Някои плакати се зареждат от сайтовете на кината, които могат да поставят свои бисквитки.",
+ consentTitleOpt:"Бисквитки и настройки",
+ consentTextOpt:"Необходимото за работата на сайта е винаги включено. Останалото се включва само ако искаш.",
+ consentNecessary:"Необходими",consentNecessaryNote:"винаги включени",
+ consentOk:"Разбрах",consentMore:"Научи повече",consentAll:"Приемам всички",consentNone:"Само необходимите",consentSave:"Запази избора",
+ consentSettings:"Настройки за бисквитки",
+ legalLine:"Sofia Gleda е агрегатор: събира програмите автоматично от сайтовете на кината, театрите и фестивалите и не е свързан с тях. Сайтът е създаден с помощта на изкуствен интелект и може да греши. Преди да купиш билет или да тръгнеш, провери часа при организатора.",
+ legalAttr:"Този сайт използва TMDB и TMDB API, но не е подкрепен, сертифициран или по друг начин одобрен от TMDB. Оценки: OMDb API (CC BY-NC 4.0). Машинен превод: DeepL (deepl.com).",
+ legalNav:"Правна информация",legalTerms:"Общи условия",legalPrivacy:"Поверителност",legalCookies:"Бисквитки"},
 en:{tagline:"cinema & theatre in sofia",
  siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
  listingLine:"Sofia's cinema and theatre listings",
@@ -1068,7 +1186,7 @@ en:{tagline:"cinema & theatre in sofia",
  railTonightT:"Tonight in Sofia",railTonightB:"Tomorrow in Sofia",
  railRecommended:"Recommended",railWeekend:"This weekend",
  venueShowing:"Showing:",venueRemove:"Remove",
- forYou:"Picked for you",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
+ forYou:"Picked for you",inFocus:"In focus",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
  buy:"Buy a ticket",buyAt:"Tickets from",buyHub:"Or via a platform",evSource:"Source",
  buyNoteC:"Opens the cinema's programme for the selected date. The times below go to the same box office.",
  buyNoteT:"Opens the theatre's own official box office.",
@@ -1136,7 +1254,18 @@ en:{tagline:"cinema & theatre in sofia",
  ssCalApple:"Apple Calendar",
  ssCalAppleSub:"iPhone, iPad, Mac",
  ssCalGoogle:"Google Calendar",
- ssCalOutlook:"Outlook"}};
+ ssCalOutlook:"Outlook",
+ /* cookie notice and the footer's legal lines */
+ consentTitle:"We only use what's needed",
+ consentText:"We set no cookies and do not track visits. Your browser keeps only what the site needs to work, such as your language and favourite venues. Some posters load from cinema websites, which may set their own cookies.",
+ consentTitleOpt:"Cookies and settings",
+ consentTextOpt:"What the site needs is always on. Everything else is switched on only if you want it.",
+ consentNecessary:"Necessary",consentNecessaryNote:"always on",
+ consentOk:"Got it",consentMore:"Learn more",consentAll:"Accept all",consentNone:"Necessary only",consentSave:"Save my choice",
+ consentSettings:"Cookie settings",
+ legalLine:"Sofia Gleda is an aggregator: it collects listings automatically from cinema, theatre and festival websites and is not affiliated with any of them. It is built with the help of AI and can make mistakes. Check the time with the venue before you buy a ticket or set off.",
+ legalAttr:"This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB. Ratings: OMDb API (CC BY-NC 4.0). Machine translation: DeepL (deepl.com).",
+ legalNav:"Legal",legalTerms:"Terms of use",legalPrivacy:"Privacy",legalCookies:"Cookies"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -1191,11 +1320,22 @@ let S={lang:"bg",mode:"cinema",day:"week",onb:false,step:0,q:"",drawer:false,sea
   fGenres:[],fVenues:[],rFrom:null,rTo:null,calMonth:null,secGenres:false,secVenues:false,secAll:false,
   fav:{venues:[]},onlyFav:false,
   prefs:{track:"both",genres:[],mood:[],with:"",when:"any",taste:[]}};
+/* The saved settings are read back field by field, in the shapes save() writes; any
+   other value keeps its default. A corrupt or hand-edited entry (on github.io every
+   project of the account shares this storage) can neither stop the start-up (a
+   "genres" that is not a list used to throw in the first render) nor smuggle other
+   keys into S.prefs. */
 try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
-  if(p&&p.prefs){S.prefs=Object.assign(S.prefs,p.prefs);S.onb=false;S.lang=p.lang||"bg";
-  S.mode=p.mode||(p.prefs.track==="theatre"?"theatre":"cinema");}
+  const ids=a=>Array.isArray(a)?a.filter(x=>typeof x==="string"&&x.length<=100).slice(0,300):[];
+  if(p&&typeof p==="object"&&p.prefs&&typeof p.prefs==="object"){const q=p.prefs,P=S.prefs;
+    if(["both","cinema","theatre"].includes(q.track))P.track=q.track;
+    if(typeof q.when==="string"&&/^[a-z]{1,20}$/.test(q.when))P.when=q.when;
+    if(typeof q.with==="string"&&/^[a-z]{0,20}$/.test(q.with))P.with=q.with;
+    P.genres=ids(q.genres);P.mood=ids(q.mood);P.taste=ids(q.taste);
+    S.onb=false;S.lang=p.lang==="en"?"en":"bg";
+    S.mode=p.mode==="cinema"||p.mode==="theatre"?p.mode:(P.track==="theatre"?"theatre":"cinema");}
   /* P3A item 7: restore favourites */
-  if(p&&p.fav&&Array.isArray(p.fav.venues))S.fav={venues:p.fav.venues};
+  if(p&&p.fav&&Array.isArray(p.fav.venues))S.fav={venues:ids(p.fav.venues)};
   if(p&&p.onlyFav)S.onlyFav=!!p.onlyFav;
 }}catch(e){}
 function save(){try{localStorage.setItem(LS,JSON.stringify({prefs:S.prefs,lang:S.lang,mode:S.mode,fav:S.fav,onlyFav:S.onlyFav}));}catch(e){}}
@@ -1488,9 +1628,22 @@ const filmTitle=f=>{
    so the line shows its official English title instead of repeating the prefix. */
 const filmSubtitle=f=>{const en=filmTitle(f);const bg=(cinelibriId(f.id)&&(FILMINFO[f.id]||{}).title_bg)||f.bg;return bg&&bg!==en?bg:(f.en&&f.en!==en?f.en:"");};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* a rating with one decimal; a value from the data that is not a number shows "—" */
+const fx1=v=>{const n=Number(v);return isFinite(n)?n.toFixed(1):"—";};
 /* safeUrl: accept only http(s) URLs in href/window.open sinks (CODE-12).
    Any other scheme (javascript:, data:, …) is dropped and returns null. */
 const safeUrl=u=>{if(!u)return null;try{const p=new URL(u);return(p.protocol==="https:"||p.protocol==="http:")?(u):null;}catch(e){return null;}};
+/* safeImg: an image URL from the data is used only when it is http(s), a raster or
+   SVG data:image/ (POSTERS overrides) or a plain path on this site (posters/x.jpg).
+   javascript:, vbscript:, any other data: or scheme gives null: the generated
+   artwork shows instead. */
+const safeImg=u=>{if(!u||typeof u!=="string")return null;const s=u.trim();
+  if(/^data:image\/(png|jpe?g|gif|webp|avif|svg\+xml)[;,]/i.test(s))return s;
+  if(/^[a-z][a-z0-9+.-]*:/i.test(s))return /^https?:\/\//i.test(s)?s:null;
+  return /^[\w\/.%-]+$/.test(s)&&!s.startsWith("//")?s:null;};
+/* own: an id from a link (?film=…, #show=…) is looked up as the map's own key only,
+   so "constructor" or "__proto__" never resolve to Object's built-ins */
+const own=(o,k)=>typeof k==="string"&&Object.prototype.hasOwnProperty.call(o,k);
 const filmById=Object.fromEntries(FILMS.map(f=>[f.id,f]));
 const showById=Object.fromEntries(SHOWS.map(s=>[s.id,s]));
 const cinById=Object.fromEntries(CINEMAS.map(c=>[c.id,c]));
@@ -1516,7 +1669,10 @@ function evBadge(ev){
   }
   return ev.from===ev.to?L.evToday:L.evUntil.replace("{d}",fmtDay(ev.to,true));
 }
-const grad=g=>`linear-gradient(152deg,${g[0]} 0%,${g[1]} 100%)`;
+/* grad: g comes from the data (g:["#hex","#hex"]) and lands in a style="" attribute,
+   so only a plain hex colour gets through; anything else falls back to the ink. */
+const _col=(c,d)=>typeof c==="string"&&/^#[0-9a-fA-F]{3,8}$/.test(c)?c:d;
+const grad=g=>{g=Array.isArray(g)?g:[];return`linear-gradient(152deg,${_col(g[0],"#28202F")} 0%,${_col(g[1],"#0C0A0F")} 100%)`;};
 const mins=hm=>{const[h,m]=hm.split(":").map(Number);return h*60+m;};
 function inWhen(hm){const m=mins(hm),w=S.prefs.when;
   if(!w||w==="any")return true;
@@ -1625,6 +1781,11 @@ const TMDB_IMG="https://image.tmdb.org/t/p/";
    film we already list), so a new limited screening is covered the day it
    appears rather than when someone remembers. */
 const POSTER_ALIAS=(typeof SHOWALIAS==="object"&&SHOWALIAS)||{};
+/* Event key art (scripts/fetch_event_posters.py -> EVENTART, inlined by inject_data.py):
+   the festival's own image, re-hosted under posters/ev-*. Keys are event ids only
+   (the gate checks), read before the theatre posters so the automated CineLibri
+   art replaces the hand-added SHOWART file, which stays as the fallback. */
+const EVENTIMG=(typeof EVENTART==="object"&&EVENTART)||{};
 function realPoster(id,size){
   /* ids are prefixed for the hero ("hero-x") and sheet ("sh-x") variants.
      Priority: alias -> embedded base64/override POSTERS -> TMDB film poster ->
@@ -1633,6 +1794,7 @@ function realPoster(id,size){
   const s=String(id);
   let base=s.replace(/^(hero|sh)-/,"");
   if(POSTER_ALIAS[base])base=POSTER_ALIAS[base];
+  if(EVENTIMG[base])return EVENTIMG[base];
   if(POSTER_MAP[base])return POSTER_MAP[base];
   const m=ART[base];
   if(m){
@@ -1656,7 +1818,10 @@ function posterArt(id,genres,g,altText){
      exists it is overlaid on top; onerror removes the <img> and the SVG
      beneath becomes visible again (and .p-title reappears via :has). */
   const svg=genPoster(id,genres,g);
-  if(real) return svg+`<img class="p-art p-real" src="${esc(real)}" alt="${esc(altText||"")}" loading="lazy" decoding="async" onerror="this.remove()">`;
+  /* a poster that fails to load is removed by the capture-phase "error" listener
+     in the failure trap (no inline onerror: the CSP allows no inline handlers) */
+  const src=safeImg(real);
+  if(src) return svg+`<img class="p-art p-real" src="${esc(src)}" alt="${esc(altText||"")}" loading="lazy" decoding="async">`;
   return svg;
 }
 function genPoster(id,genres,g){
@@ -2031,9 +2196,9 @@ const scoreCls=v=>v==null?"na":v>=7.5?"hi":"";
 /* scoreBadge: show IMDb when present; fall back to TMDB (labelled "TMDB", distinct style) when votes ≥ threshold; otherwise show empty dash */
 function scoreBadge(f){
   const im=imdbOf(f);
-  if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${im.toFixed(1)}</span>`;
+  if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${fx1(im)}</span>`;
   const tv=tmdbOf(f);
-  if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${tv.toFixed(1)}</span>`;
+  if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${fx1(tv)}</span>`;
   return`<span class="score na"><i>IMDb</i>—</span>`;}
 /* P3A item 1: badge for premiere rail — "Премиера"/"Premiere" within 7 days,
    "Премиера на DD мес"/"Premieres DD Mon" for upcoming. */
@@ -2079,7 +2244,7 @@ function filmCard(f,all,rowsOverride){
      rowsOverride for the today rail always comes from the caller with perVenue:true
      when it really is a single-venue context (per-cinema section). */
   const singleVenue=(rowsOverride&&rowsOverride._perVenue===true)||(S.fVenues.length===1);
-  const meta=[f.runtime?`${f.runtime} ${esc(t().min)}`:"",
+  const meta=[f.runtime?`${esc(f.runtime)} ${esc(t().min)}`:"",
               n?`${n} ${esc(t().screenings)}`:"",
               (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
   const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
@@ -2100,7 +2265,7 @@ function showCard(sh,all){
       <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
       <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${sh.duration} ${esc(t().min)}`:""}</span></div></button>`;}
+      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
@@ -2137,31 +2302,47 @@ function emptyState(){
   return `<div class="empty">${esc(L.noData)}</div>`;}
 
 /* ===================== hero ===================== */
+/* "На фокус" (16 Oct 2026; was "Избрано за теб": there are no profiles, so nothing
+   here speaks to the visitor). Among the titles of the shown period (the week by
+   default) and filters: a film by its rank on TMDB's weekly trending list
+   (TMDBART[id].tr, fetch_tmdb.py), else the most screenings × venues, then the
+   rating; a play with a premiere in the period first, else the most performances. */
+function focusFilms(){
+  const rank=f=>{const a=ART2(f.id).tr;return a>0?a:1e9;};
+  return visibleFilms().map(f=>{const rows=filmTimes(f.id);
+      return{f,tr:rank(f),sv:rows.reduce((n,r)=>n+r[3].length,0)*new Set(rows.map(r=>r[1])).size,r:ratingOf(f)||0};})
+    .sort((a,b)=>a.tr-b.tr||b.sv-a.sv||b.r-a.r||a.f.id.localeCompare(b.f.id));
+}
+function focusShows(){
+  const prem=s=>(PREMIERES["show:"+s.id]||[]).some(d=>d>=NOW_DATE&&inRange(d))?1:0;
+  return visibleShows().map(s=>({s,pr:prem(s),n:showPerfs(s.id).length,v:scoreShow(s,null)}))
+    .sort((a,b)=>b.pr-a.pr||b.n-a.n||b.v-a.v||a.s.id.localeCompare(b.s.id));
+}
 function hero(){
   const L=t(),day=dayOrAll();
   if(S.mode==="cinema"){
-    const rk=visibleFilms().map(f=>({f,s:scoreFilm(f,day)})).sort((a,b)=>b.s-a.s);
+    const rk=focusFilms();
     if(!rk.length)return"";
     const f=rk[0].f,n=filmCount(f.id,day);
     return`<div class="hero"><div class="hero-art" style="background:${grad(f.g)}">${posterArt("hero-"+f.id,f.genres,f.g,filmTitle(f))}</div>
       <div class="hero-scrim"></div><div class="hero-body">
-      <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
+      <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
       <h1>${esc(filmTitle(f))}</h1>
       <div class="hero-meta">${scoreBadge(f)}
-        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${f.runtime} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${f.year}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
+        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${esc(f.year)}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
       ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
       </div></div>`;}
-  const rk=visibleShows().map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v);
+  const rk=focusShows();
   if(!rk.length)return"";
   const sh=rk[0].s,th=thById[sh.theatre],p=showPerfs(sh.id,day);
   return`<div class="hero"><div class="hero-art" style="background:${grad(sh.g)}">${posterArt("hero-"+sh.id,sh.genres,sh.g,titleOf(sh))}</div>
     <div class="hero-scrim"></div><div class="hero-body">
-    <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
+    <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
     <h1>${esc(titleOf(sh))}</h1>
     <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
-      ${sh.duration?`<span>·</span><span>${sh.duration} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
+      ${sh.duration?`<span>·</span><span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
     ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
@@ -2435,10 +2616,10 @@ function body(){
           const times=p.slice(0,3).map(r=>r[2]).join(" · ");
           return`<button class="card" data-show="${esc(sh.id)}">
             <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
-              <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+              <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
               <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-              <span class="cf2">${th?esc(thName(th)):""}${times?" · "+times:""}</span></div></button>`;});
+              <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});
       } else {
         /* "Утре вечер" fallback */
         const TOMORROW=addDays(NOW_DATE,1);
@@ -2456,10 +2637,10 @@ function body(){
               const times=p.slice(0,3).map(r=>r[2]).join(" · ");
               return`<button class="card" data-show="${esc(sh.id)}">
                 <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
-                  <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+                  <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
                   <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-                  <span class="cf2">${th?esc(thName(th)):""}${times?" · "+times:""}</span></div></button>`;});}
+                  <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});}
         }
       }
     })();
@@ -2912,7 +3093,7 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
         const _su=safeUrl(specificUrl||bookUrl(vid,date));
         if(!_su)return"";
         const _lbl=_al||((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label);
-        return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener">${esc(L.buy)}: ${esc(_lbl)} ↗</a>`;
+        return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(_lbl)} ↗</a>`;
       })()}
     </div>
     <div class="buynote">${esc(_al?L.buyNoteAgg.replace("{agg}",_al):(isCinema?L.buyNoteC:L.buyNoteT))}</div></div>`;}
@@ -2945,7 +3126,7 @@ function filmBuyBox(f,rows){
     if(!u)return"";
     const _al=(typeof AGGLINKS==="object"&&AGGLINKS[f.id+"|"+vid])||null;
     const cname=_al||((S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label);
-    return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(cname)} ↗</a>`;
+    return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(cname)} ↗</a>`;
   }).filter(Boolean);
   if(!items.length)return"";
   const epayNote=hasEpay?`<div class="buynote">${esc(S.lang==="bg"?"Кино Люмиер: билети чрез epaygo.bg":"Lumière: tickets via epaygo.bg")}</div>`:"";
@@ -3213,10 +3394,10 @@ function sheetFilm(f){
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8;margin-bottom:10px">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
-  rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?imdbOf(f).toFixed(1)+"<small>/10</small>":"—"}</div></div>`);
-  {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${tv.toFixed(1)}<small>/10</small></div></div>`);}
-  {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${rv}<small>%</small></div></div>`);}
-  {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${mv}<small>/100</small></div></div>`);}
+  rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?fx1(imdbOf(f))+"<small>/10</small>":"—"}</div></div>`);
+  {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div></div>`);}
+  {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(rv)}<small>%</small></div></div>`);}
+  {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${esc(mv)}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   return`<div class="sheet"><div class="shero" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
@@ -3227,7 +3408,7 @@ function sheetFilm(f){
       <h2>${esc(filmTitle(f))}</h2></div></div>
    <div class="sbody">
     <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${f.runtime?`<span class="chip">${f.runtime} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
+      ${f.runtime?`<span class="chip">${esc(f.runtime)} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
@@ -3238,7 +3419,7 @@ function sheetFilm(f){
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
-      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year||""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
+      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year?esc(f.year):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
     <div class="sec"><h4>${esc(L.times)}</h4>
       ${selNote}
       ${timesHtml}</div>
@@ -3293,7 +3474,7 @@ function sheetShow(sh){
    <div class="sbody">
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${sh.duration?`<span class="chip">${sh.duration} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
+      ${sh.duration?`<span class="chip">${esc(sh.duration)} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
@@ -3331,13 +3512,13 @@ function sheetEvent(ev){
     <div class="sec">${synBlock(S.lang==="bg"?ev.blurbBg:ev.blurbEn)}</div>
     <div class="buybox evbox">
       ${u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
-        <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
+        <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
       ${(()=>{
         /* an event an aggregator listed (fetch_events.py, auto:true) links the page it
            came from and says plainly whose listing it is */
         const su=ev.auto?safeUrl(ev.url):null;
         if(!su)return`<div class="buynote">${esc(L.evSource)}: ${esc(ev.source)}</div>`;
-        return`<div class="buylinks"><a class="buylink evsrc" href="${esc(su)}" target="_blank" rel="noopener">${esc(L.evSource)}: ${esc(ev.source)} ↗</a></div>
+        return`<div class="buylinks"><a class="buylink evsrc" href="${esc(su)}" target="_blank" rel="noopener noreferrer">${esc(L.evSource)}: ${esc(ev.source)} ↗</a></div>
       <div class="buynote evagg">${esc(S.lang==="bg"?`Събитието е от афиша на ${ev.source}, не от сайта на организаторите.`:`From the ${ev.source} events guide, not the organisers' own site.`)}</div>`;})()}</div>
    </div></div>`;}
 
@@ -3520,7 +3701,7 @@ function render(){
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
@@ -3530,7 +3711,7 @@ function render(){
     ${searchMobileOpenHTML}`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
         ${deskSearchHTML}${searchIconBtn}
@@ -3558,7 +3739,7 @@ function render(){
     <span>vlaikovacinema.com</span><span>domnakinoto.com</span><span>toplocentrala.bg</span>
     <span>cinemacity.bg</span><span>kinoarena.com</span><span>cinegrand.bg</span>
     <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>
-  </div></footer>
+  </div>${legalFootHTML()}</footer>
   ${S.drawer&&!keptDr?drawerHTML():""}
   ${fabHTML()}`;
   const mainEl=app.querySelector(":scope > main");
@@ -3586,18 +3767,22 @@ function render(){
   /* P3A item 3: re-run the desktop geometry check after every render while the search is
      open, so language switches and other re-renders don't leave .seg-q stale. Phones never
      shrink the toggle: their search opens in its own row below it. */
-  if(S.searchOpen&&!isMob){
-    requestAnimationFrame(()=>{
-      const seg=document.querySelector(".seg");
-      const barIn=document.querySelector(".bar-in");
-      if(!seg||!barIn)return;
-      const segR=seg.getBoundingClientRect().right;
-      const barInR=barIn.getBoundingClientRect().right;
-      const crowded=barInR-segR-18<420;
-      document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
-    });
-  }
+  if(S.searchOpen&&!isMob)requestAnimationFrame(_segFit);
 }
+/* With the desktop search open, the toggle drops its labels when the field would run
+   into it; checked after every render and, since the logo and its line now scale with
+   the window, on every resize too. */
+function _segFit(){
+  const seg=document.querySelector(".seg");
+  const barIn=document.querySelector(".bar-in");
+  if(!seg||!barIn||!S.searchOpen)return;
+  const segR=seg.getBoundingClientRect().right;
+  const barInR=barIn.getBoundingClientRect().right;
+  const crowded=barInR-segR-18<420;
+  document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
+}
+let _segFitRaf=0;
+window.addEventListener("resize",()=>{if(S.searchOpen&&!_segFitRaf)_segFitRaf=requestAnimationFrame(()=>{_segFitRaf=0;if(window.innerWidth>760)_segFit();});});
 /* A selector for a drawer control, so the same control can take focus back after the
    drawer's content is refreshed (its data-* attribute and value identify it). */
 function _ctlKey(el,root){
@@ -3896,9 +4081,10 @@ function clearSearch(){
    dips out (SWITCH_OUT ms, the drawer's closing curve), the other programme is put in
    place with its posters decoded, and it comes back up (SWITCH_IN ms, the drawer's
    opening curve) at the top of the page. Reduced motion: an instant switch. */
-function switchMode(mode){
+function switchMode(mode,fromHistory){
   const changed=S.mode!==mode;
   S.mode=mode;S.fGenres=[];S.fVenues=[];S.fStrands=[];S.limit=30;save();
+  if(changed&&!fromHistory)_surfaceEntry(true);
   const app=document.getElementById("app");
   if(!app||!app.querySelector(":scope > main")||S.drawer||sheetOpen){render();window.scrollTo({top:0});return;}
   app.querySelectorAll(".seg [data-switch]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.switch===S.mode)));
@@ -3978,14 +4164,33 @@ function unlockScroll(){
 const _HK="k"+Math.random().toString(36).slice(2,10);
 let _histDepth=0,_histPending=0,_histTimer=null;
 function _histWant(){return sheetOpen?(_ss?2:1):0;}
-/* The address follows the open sheet (16 Oct 2026): /film/<id>/, /show/<id>/ or
-   /event/<id>/ while it is open, on the sheet's own entry (and its time popup's), so an
-   address copied from the bar is the title's share page, with its preview. Closing goes
-   back to the entry below, the page's own "/". Only over http(s): a file:// page may
-   change only its query and hash (the tests and local previews run from files). */
+/* Addresses (16 Oct 2026): the cinema listing is /home/, the theatre listing
+   /home/theatre/ (the bare domain becomes /home/), an open film, play or event
+   /film/<id>/, /show/<id>/, /event/<id>/: the title's share page, so an address copied
+   from the bar previews the title. Each view is an entry of its own: Back and Forward
+   step through them, a reload comes back to the same view, closing a card returns to
+   the listing it was opened from. A card's entries carry it ({kind,id}) and its
+   listing (m); the popup's entry its time too (p). Only over http(s): a file:// page
+   may change only its query and hash (the tests and local previews run from files). */
 const _PATH_URLS=/^https?:$/.test(location.protocol);
+const _surfacePath=m=>m==="theatre"?"/home/theatre/":"/home/";
 function _sheetPath(c){
   return _PATH_URLS&&c&&/^(film|show|event)$/.test(c.kind)&&c.id?"/"+c.kind+"/"+encodeURIComponent(c.id)+"/":null;
+}
+/* the listing a card belongs to when nothing says where it was opened */
+function _itemSurface(c){
+  if(c&&c.kind==="show")return"theatre";
+  if(c&&c.kind==="event"){const ev=EVENTS.find(x=>x.id===c.id);return ev&&ev.scope==="theatre"?"theatre":"cinema";}
+  return"cinema";
+}
+/* the listing's own entry: replaced, or pushed when the listing changes (the toggle, the logo) */
+function _surfaceEntry(push){
+  if(!_PATH_URLS)return;
+  const path=_surfacePath(S.mode),st={v:1,m:S.mode};
+  try{
+    if(push&&location.pathname!==path)history.pushState(st,"",path);
+    else history.replaceState(st,"",path+(/^#(film|show|event)=/.test(location.hash)?"":location.hash));   /* #cookies stays for the notice */
+  }catch(e){}
 }
 /* the open sheet's entry shows the open sheet's address (one sheet opened over another,
    or reached again after a popup's entry was left) */
@@ -4018,6 +4223,7 @@ function _syncHistory(){
     if(_histDepth<want)_scrollRestoreManual();
     while(_histDepth<want){
       const st={ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},path=_sheetPath(curSheet);
+      if(path){st.kind=curSheet.kind;st.id=curSheet.id;st.m=S.mode;if(_histDepth&&_ss)st.p=_ss.key;}
       if(path)history.pushState(st,"",path);else history.pushState(st,"");
       _histDepth++;
     }
@@ -4148,6 +4354,23 @@ window.addEventListener("popstate",()=>{
     _histPending--;
     if(!_histPending)clearTimeout(_histTimer);
     _syncHistory();
+  }else if(_PATH_URLS){
+    /* the entry's view: its listing, and its card if it has one (Forward onto a closed
+       card opens it again, here, on its own entry; an entry from an earlier page load
+       counts as the card's) */
+    const st=history.state,card=st&&st.kind&&st.id?{kind:st.kind,id:st.id}:null;
+    const m=(st&&st.m)||_surfaceOfPath()||S.mode;
+    _histDepth=card?((st.k===_HK&&st.d)||1):0;
+    if(m!==S.mode)switchMode(m,true);
+    if(card&&!(sheetOpen&&curSheet&&curSheet.kind===card.kind&&curSheet.id===card.id)){
+      const want=_histDepth,html=sheetHTMLFor(card);
+      if(html){_histDepth=1;curSheet=card;openSheet(html,null);
+        const pill=want===2&&st.p?_ssFindPill(st.p):null;
+        if(pill){_histDepth=2;const[k0,...r0]=st.p.split(":"),r1=r0.join(":").split("|");openScreeningSheet(k0,r1[0],r1[1],r1[2],r1[3],pill);}
+        else _histDepth=want;}
+    }else if(!card&&sheetOpen)closeSheet(true);
+    else if(_histDepth<2&&_ss)closeScreeningSheet({fromPop:true});
+    _syncHistory();
   }else{
     const st=history.state;
     _histDepth=(st&&st.k===_HK&&st.d)||0;
@@ -4157,37 +4380,43 @@ window.addEventListener("popstate",()=>{
   }
   if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
   _syncSheetUrl();
-  /* Back onto an entry an earlier page load gave to a sheet: the listing shows, so does
-     the address */
-  if(_PATH_URLS&&!sheetOpen&&!_histDepth&&!_histPending&&/^\/(film|show|event)\//.test(location.pathname)){
-    try{history.replaceState(null,"","/");}catch(e){}
-  }
 });
+/* the listing an address names: /home/theatre/ theatre, /home/ and / cinema */
+function _surfaceOfPath(){
+  const p=location.pathname;
+  if(/^\/home\/theatre\/(index\.html)?$/.test(p))return"theatre";
+  if(/^\/(home\/)?(index\.html)?$/.test(p))return"cinema";
+  return null;
+}
 /* deep links: /film/<id>/ (the page's own path), ?film=<id> and #film=<id>, and the same
    for show and event, open the matching detail sheet. The share pages (film/<id>/ and
    so on, with the preview tags) send a browser on to /?film=<id>; the path itself
    reaches the app when the service worker serves it, offline too. */
 const SITE_URL="__SITE_URL__";
-/* An app opened by a deep link: its entry becomes the plain "/" and the sheet opens on
-   an entry of its own, so Back closes the sheet onto the listing. After a reload of an
-   entry an earlier load gave to this very sheet (the service worker serves the app at
-   /film/<id>/), that entry is kept as the sheet's, so no extra Back is needed. */
+/* An app opened by a deep link (a share page's /home/?film=<id>, the path itself, an old
+   /?film= or #film= link): its entry becomes the card's listing and the card opens on an
+   entry of its own, so Back closes it onto that listing. A reload of an entry an earlier
+   page load gave to this very card (the service worker serves the app at /film/<id>/)
+   keeps that entry as the card's. */
 function _arrive(c){
   if(!_PATH_URLS)return;
+  if(!c){_surfaceEntry(false);return;}
   try{
     const st=history.state,path=_sheetPath(c);
-    if(path&&st&&st.ss==="sheet"&&st.d===1&&st.k!==_HK&&location.pathname===path){
-      history.replaceState({ss:"sheet",d:1,k:_HK},"",path);_histDepth=1;return;}
-    history.replaceState(null,"","/");
+    if(path&&st&&st.kind===c.kind&&st.id===c.id&&location.pathname===path){
+      history.replaceState(Object.assign({},st,{ss:"sheet",d:1,k:_HK,m:S.mode}),"",path);_histDepth=1;return;}
+    _surfaceEntry(false);
   }catch(e){}
 }
 function _openById(kind,id,arrive){
+  /* id comes from the address bar: it is only ever a key to look up (own keys,
+     so "constructor" finds nothing) and never written into the page itself */
   let html=null;
   if(kind==="film"){
-    if(filmById[id])html=sheetFilm(filmById[id]);
+    if(own(filmById,id))html=sheetFilm(filmById[id]);
     else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="show"){
-    if(showById[id])html=sheetShow(showById[id]);
+    if(own(showById,id))html=sheetShow(showById[id]);
     else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
   if(html){if(arrive)_arrive({kind,id});curSheet={kind,id};openSheet(html,null);return true;}
@@ -4197,7 +4426,7 @@ function _openById(kind,id,arrive){
 function openFromHash(){
   const m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
   if(!m)return false;
-  let id=m[2];try{id=decodeURIComponent(id);}catch(e){}
+  let id;try{id=decodeURIComponent(m[2]);}catch(e){return false;}   /* a malformed %-escape */
   return _openById(m[1],id,true);
 }
 /* Read ?film= / ?show= / ?event= (where the share pages send a browser). */
@@ -4213,8 +4442,31 @@ function openFromQuery(){
 function openFromPath(){
   const m=/^\/(film|show|event)\/([^\/]+)\/?(?:index\.html)?$/.exec(location.pathname||"");
   if(!m)return false;
-  let id=m[2];try{id=decodeURIComponent(id);}catch(e){}
+  let id;try{id=decodeURIComponent(m[2]);}catch(e){return false;}
   return _openById(m[1],id,true);
+}
+/* the card an address opens, without opening it: {kind,id} or null */
+function _cardOfAddress(){
+  let m=/^\/(film|show|event)\/([^\/]+)\/?(?:index\.html)?$/.exec(location.pathname||"");
+  if(m){try{return{kind:m[1],id:decodeURIComponent(m[2])};}catch(e){return null;}}
+  const sp=new URLSearchParams(location.search||"");
+  for(const kind of["film","show","event"]){const id=sp.get(kind);if(id)return{kind,id};}
+  m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
+  if(m){try{return{kind:m[1],id:decodeURIComponent(m[2])};}catch(e){return null;}}
+  return null;
+}
+/* Before the first render: the listing the address names (over http(s); a file:// page
+   keeps the one saved last). A card's address shows the listing it was opened from (its
+   entry's state), else the card's own. */
+function _routeSurface(){
+  if(!_PATH_URLS)return;
+  const st=history.state,c=_cardOfAddress();
+  const m=_surfaceOfPath()==="theatre"?"theatre":c?((st&&st.m)||_itemSurface(c)):(_surfaceOfPath()||(st&&st.m)||"cinema");
+  if(m!==S.mode){S.mode=m;save();}
+}
+/* After it: the card the address names, or the listing's own entry. */
+function _routeBoot(){
+  if(!openFromPath()&&!openFromQuery()&&!openFromHash())_surfaceEntry(false);
 }
 function shareItem(kind,id,title){
   /* every film, play and event has a static share page (film/<id>/, show/<id>/,
@@ -4778,10 +5030,10 @@ document.addEventListener("click",e=>{
   }
   /* Google Calendar button */
   const cg=q("[data-calg]");
-  if(cg){const u=safeUrl(cg.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
+  if(cg){const u=safeUrl(cg.dataset.calurl);if(u)window.open(u,"_blank","noopener,noreferrer");return;}
   /* Outlook button */
   const co=q("[data-calo]");
-  if(co){const u=safeUrl(co.dataset.calurl);if(u)window.open(u,"_blank","noopener");return;}
+  if(co){const u=safeUrl(co.dataset.calurl);if(u)window.open(u,"_blank","noopener,noreferrer");return;}
   /* Apple ICS download */
   const ci=q("[data-calics]");
   if(ci){
@@ -4836,9 +5088,10 @@ document.addEventListener("keydown",e=>{
 function venueMapUrl(venue){
   if(!venue)return"";
   if(venue.maps){
-    /* If the override is already a full URL, use it; otherwise treat as a query string */
-    if(venue.maps.startsWith("http"))return venue.maps;
-    return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(venue.maps);
+    /* If the override is already a full URL, use it (http(s) only); otherwise treat as
+       a query string. A URL safeUrl refuses falls back to the name + area search. */
+    if(venue.maps.startsWith("http")){const u=safeUrl(venue.maps);if(u)return u;}
+    else return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(venue.maps);
   }
   const name=venue.name||"";
   const area=venue.area||"";
@@ -4923,11 +5176,11 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     <div><span>${esc(L.ssCalApple)}</span><small>${esc(L.ssCalAppleSub)}</small></div>
     <span class="cv">›</span>
   </a>
-  <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener">
+  <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalGoogle)}</div>
     <span class="cv">›</span>
   </a>
-  <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener">
+  <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalOutlook)}</div>
     <span class="cv">›</span>
   </a>
@@ -4963,7 +5216,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   }
 
   /* Buttons */
-  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(L.ssShowMap)}</a>`;
+  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" target="_blank" rel="noopener noreferrer">${esc(L.ssShowMap)}</a>`;
   const calBtn=`<button class="ss-btn sec" data-sscal="${esc(kind+":"+id+"|"+venueId+"|"+dateStr+"|"+timeStr)}">${esc(L.ssAddCal)}</button>`;
 
   let buyBtnHtml="";
@@ -4981,7 +5234,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
       else{const th=thById[venueId]||thById[sh&&sh.theatre];opensName=S.lang==="bg"?(th&&th.name||""):(th&&(th.nameEn||th.name)||"");}
     }
     const helpLine=(L.ssBuyOpens||"").replace("{name}",opensName);
-    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener">${esc(L.ssBuyTicket)}</a>
+    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener noreferrer">${esc(L.ssBuyTicket)}</a>
 <p class="ss-help">${esc(helpLine)}</p>`;
   }
 
@@ -5370,7 +5623,8 @@ document.addEventListener("click",e=>{
 
   if(q("[data-home]")){S.q="";S.qFocus=false;S.searchOpen=false;S.fGenres=[];S.fVenues=[];S.fStrands=[];
     S.day="week";S.rFrom=S.rTo=null;S.calMonth=null;S.limit=30;S.drawer=false;
-    if(location.hash)history.replaceState(null,"",location.pathname+location.search);
+    if(_PATH_URLS){S.mode="cinema";_surfaceEntry(true);}   /* the logo leads to /home/ */
+    else if(location.hash)history.replaceState(null,"",location.pathname+location.search);
     save();render();window.scrollTo({top:0,behavior:"smooth"});return;}
 
   const sw=q("[data-switch]");
@@ -5550,6 +5804,146 @@ try{
   if(mqMob.addEventListener) mqMob.addEventListener("change",onMqChange);
   else if(mqMob.addListener) mqMob.addListener(onMqChange);
 }catch(e){}
+/* ===================== cookie notice (consent) =====================
+   Sofia Gleda sets no cookies. What it keeps in the browser is strictly necessary for what
+   the visitor asked for: localStorage "sofia-screen-v2" (language, mode, favourites), the
+   record below, and on sofiagleda.com the service worker's caches. So the notice only
+   informs: "Разбрах" and "Научи повече", no switches. legal/cookies/ lists every item, and
+   verify_build.py fails when a localStorage key the page uses is missing from that list.
+
+   The record: localStorage "sofia-consent" = {v, at, opt}: v is CONSENT_VERSION, at the time
+   of the choice (ISO), opt {category id: true|false}. A record with another v, or one that
+   does not parse, counts as none. Bump CONSENT_VERSION when the cookie or the privacy policy
+   changes (scripts/gen_legal_pages.py prints it as their date) and the notice shows again.
+   The footer's "Настройки за бисквитки" and the address #cookies (the legal pages link
+   there) open it again.
+
+   Optional scripts (visitor statistics; sign-in in phase 5) start through consentRun() and
+   nowhere else:
+     1. add the category to CONSENT_OPTIONAL: {id, bg:{name, desc}, en:{name, desc}};
+     2. describe it in the cookie policy and bump CONSENT_VERSION;
+     3. start the script with consentRun("<id>", () => { ...load it... }).
+   The notice then lists a switch per category, off until the visitor turns it on.
+   consentRun runs fn once: at once when the category is allowed, otherwise as soon as it
+   is. An id that is not in CONSENT_OPTIONAL never runs. Withdrawing a category that has run
+   reloads the page, so nothing it started keeps running. */
+const CONSENT_KEY="sofia-consent";
+const CONSENT_VERSION="2026-10-15";
+const CONSENT_OPTIONAL=[];
+let _cRec=null,_cWait={},_cRan={},_cBack=null,_cLang=null;
+function _consentLoad(){
+  try{
+    const r=JSON.parse(localStorage.getItem(CONSENT_KEY)||"null");
+    if(r&&typeof r==="object"&&r.v===CONSENT_VERSION&&r.opt&&typeof r.opt==="object"&&!Array.isArray(r.opt))return r;
+  }catch(e){}
+  return null;
+}
+function consentRun(id,fn){
+  if(typeof fn!=="function"||!CONSENT_OPTIONAL.some(c=>c.id===id))return false;
+  const rec=_cRec||(_cRec=_consentLoad());
+  if(rec&&rec.opt[id]===true){_cRan[id]=true;try{fn();}catch(e){}return true;}
+  (_cWait[id]=_cWait[id]||[]).push(fn);
+  return false;
+}
+/* store a choice; false when it withdrew a category that has already run (the page reloads) */
+function _consentSave(opt){
+  const clean={};
+  CONSENT_OPTIONAL.forEach(c=>{clean[c.id]=opt[c.id]===true;});
+  _cRec={v:CONSENT_VERSION,at:new Date().toISOString(),opt:clean};
+  try{localStorage.setItem(CONSENT_KEY,JSON.stringify(_cRec));}catch(e){}
+  if(Object.keys(_cRan).some(id=>!clean[id])){location.reload();return false;}
+  Object.keys(_cWait).forEach(id=>{
+    if(!clean[id])return;
+    const fns=_cWait[id];delete _cWait[id];_cRan[id]=true;
+    fns.forEach(f=>{try{f();}catch(e){}});
+  });
+  return true;
+}
+function _consentHTML(){
+  const L=t(),cats=CONSENT_OPTIONAL,cur=(_cRec&&_cRec.opt)||{};
+  const more=S.lang==="en"?"legal/en/cookies/":"legal/cookies/";
+  const list=cats.length?`<ul class="consent-cats">
+    <li><label class="consent-cat" for="sgc-necessary"><b>${esc(L.consentNecessary)}</b><small>${esc(L.consentNecessaryNote)}</small></label><input type="checkbox" id="sgc-necessary" checked disabled></li>
+    ${cats.map(c=>{const n=c[S.lang]||c.bg||{};return`<li><label class="consent-cat" for="sgc-${esc(c.id)}"><b>${esc(n.name)}</b><small>${esc(n.desc)}</small></label><input type="checkbox" id="sgc-${esc(c.id)}" data-consent-cat="${esc(c.id)}"${cur[c.id]===true?" checked":""}></li>`;}).join("")}
+  </ul>`:"";
+  const btns=cats.length
+    ?`<button type="button" class="consent-btn pri" data-consent-all>${esc(L.consentAll)}</button><button type="button" class="consent-btn sec" data-consent-none>${esc(L.consentNone)}</button><button type="button" class="consent-btn sec" data-consent-save>${esc(L.consentSave)}</button>`
+    :`<button type="button" class="consent-btn pri" data-consent-ok>${esc(L.consentOk)}</button>`;
+  return`<h2 class="consent-t" id="sgc-t">${esc(cats.length?L.consentTitleOpt:L.consentTitle)}</h2>
+  <p class="consent-d" id="sgc-d">${esc(cats.length?L.consentTextOpt:L.consentText)}</p>${list}
+  <div class="consent-btns">${btns}<a class="consent-more" href="${more}">${esc(L.consentMore)}</a></div>`;
+}
+/* The notice is the first thing in the page (first in reading and tab order), outside #app
+   so a re-render never drops it. It takes the focus only when the visitor asked for it. */
+function consentOpen(focus){
+  let el=document.getElementById("sg-consent");
+  if(!el){
+    el=document.createElement("section");
+    el.id="sg-consent";el.className="consent";el.tabIndex=-1;
+    el.setAttribute("role","region");
+    el.setAttribute("aria-labelledby","sgc-t");el.setAttribute("aria-describedby","sgc-d");
+    document.body.insertBefore(el,document.body.firstChild);
+  }
+  el.lang=S.lang;el.innerHTML=_consentHTML();_cLang=S.lang;el.hidden=false;
+  _consentPad();
+  if(focus){try{el.focus({preventScroll:true});}catch(e){}}
+}
+function consentClose(){
+  const el=document.getElementById("sg-consent");
+  if(!el||el.hidden)return;
+  const inside=el.contains(document.activeElement);
+  el.hidden=true;
+  document.documentElement.style.scrollPaddingBottom="";
+  if(inside){
+    const back=(_cBack&&document.querySelector(_cBack))||document.querySelector("#app [data-home]");
+    if(back){try{back.focus({preventScroll:true});}catch(e){}}
+  }
+  _cBack=null;
+}
+/* While the notice is up, keyboard focus and scrollIntoView stop above it (WCAG 2.4.11). */
+function _consentPad(){
+  const el=document.getElementById("sg-consent");
+  if(!el||el.hidden)return;
+  document.documentElement.style.scrollPaddingBottom=Math.max(0,Math.round(window.innerHeight-el.offsetTop+12))+"px";
+}
+function _consentSync(){
+  const el=document.getElementById("sg-consent");
+  if(el&&!el.hidden&&_cLang!==S.lang){el.lang=S.lang;el.innerHTML=_consentHTML();_cLang=S.lang;_consentPad();}
+}
+function _consentFromHash(){
+  if(location.hash!=="#cookies")return false;
+  try{history.replaceState(history.state,"",location.pathname+location.search);}catch(e){}
+  _cBack=null;consentOpen(true);
+  return true;
+}
+function consentBoot(){
+  _cRec=_consentLoad();
+  if(!_consentFromHash()&&!_cRec)consentOpen(false);
+}
+document.addEventListener("click",e=>{
+  const q=s=>e.target.closest&&e.target.closest(s);
+  if(q("[data-consent-open]")){e.preventDefault();_cBack="footer [data-consent-open]";consentOpen(true);return;}
+  if(!q("#sg-consent"))return;
+  let opt=null;
+  if(q("[data-consent-ok]"))opt=Object.assign({},(_cRec&&_cRec.opt)||{});
+  else if(q("[data-consent-all]")){opt={};CONSENT_OPTIONAL.forEach(c=>{opt[c.id]=true;});}
+  else if(q("[data-consent-none]"))opt={};
+  else if(q("[data-consent-save]")){
+    opt={};
+    document.querySelectorAll("#sg-consent [data-consent-cat]").forEach(i=>{opt[i.dataset.consentCat]=i.checked;});
+  }
+  if(opt&&_consentSave(opt))consentClose();
+});
+window.addEventListener("hashchange",_consentFromHash);
+window.addEventListener("resize",_consentPad);
+/* The footer's legal lines: what Sofia Gleda is, the attributions the data sources require,
+   the three policies and the cookie notice. */
+function legalFootHTML(){
+  const L=t(),p=S.lang==="en"?"legal/en/":"legal/";
+  return`<p class="legal-line">${esc(L.legalLine)}</p>
+  <p class="legal-attr">${esc(L.legalAttr)}</p>
+  <nav class="legal-nav" aria-label="${esc(L.legalNav)}"><a href="${p}terms/">${esc(L.legalTerms)}</a><a href="${p}privacy/">${esc(L.legalPrivacy)}</a><a href="${p}cookies/">${esc(L.legalCookies)}</a><button type="button" data-consent-open>${esc(L.consentSettings)}</button></nav>`;
+}
 function boot(){ render(); }
 const origRender=render;
 render=function(){
@@ -5559,6 +5953,7 @@ render=function(){
     const keepY=document.querySelector("#app > .drawer")?(window.scrollY||0):null;
     origRender();mountProgressive();
     if(keepY!==null)_keepPageY(keepY);
+    _consentSync();
   }
   catch(e){ fatal(e); }
 };
@@ -5576,7 +5971,8 @@ function _keepPageY(y){
   }
   if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
 }
-try{ boot(); if(!openFromPath()&&!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
+try{ _routeSurface(); boot(); _routeBoot(); }catch(e){ fatal(e); }
+try{ consentBoot(); }catch(e){}
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");
   if(app&&app.innerHTML.indexOf("Зареждане на програмата")>-1) fatal(e.error||e.message);

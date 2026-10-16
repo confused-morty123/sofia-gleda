@@ -1,0 +1,36 @@
+{
+ "events": {
+  "act-festival-za-svoboden-teatar-p187545": {
+   "at": "2026-10-15",
+   "file": "posters/ev-act-festival-za-svoboden-teatar-p187545.jpg",
+   "h": 576,
+   "page": "https://programata.bg/stsena/ne-se-prav%d1%9d-zapochva-16-izdanie-na-act/",
+   "src": "https://programata.bg/wp-content/uploads/2026/10/act_fest_digital_fb_cover_website-1-1024x576.png",
+   "to": "2026-10-24",
+   "via": "programata",
+   "w": 1024
+  },
+  "cinelibri": {
+   "at": "2026-10-15",
+   "file": "posters/ev-cinelibri.jpg",
+   "h": 400,
+   "page": "https://www.cinelibri.com/",
+   "src": "https://www.cinelibri.com/wp-content/uploads/2026/06/website-key-visual-2026.jpg",
+   "to": "2026-11-08",
+   "via": "site",
+   "w": 870
+  },
+  "kinomania": {
+   "at": "2026-10-15",
+   "file": "posters/ev-kinomania.jpg",
+   "h": 1080,
+   "page": "https://programata.bg/kino/40-izdanie-na-kinomaniya/",
+   "src": "https://programata.bg/wp-content/uploads/2026/09/kinomaniya_2026_poster_1920x1080px_landscape3.jpg",
+   "to": "2026-11-29",
+   "via": "programata",
+   "w": 1920
+  }
+ },
+ "generated": "2026-10-15T20:32:09+00:00",
+ "refused": {}
+}
