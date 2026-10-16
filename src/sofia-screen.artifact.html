@@ -883,10 +883,72 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-back-btn{left:18px;top:18px}
 .ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}
 </style>
+<style id="consent-css">
+/* ===================== cookie notice and the footer's legal lines ===================== */
+/* A soft card on its own fixed layer: it never moves the page (no layout shift). Wide
+   screens: a small card bottom-left, clear of the FAB on the right. Phones: a card along
+   the bottom, inside the safe areas. Above the header and the FAB, below the sheets, the
+   drawer and the time popup, which cover it while they are open. */
+.consent{position:fixed; z-index:80; left:max(24px,env(safe-area-inset-left,0px));
+  bottom:calc(24px + env(safe-area-inset-bottom,0px)); width:min(380px,calc(100vw - 48px));
+  max-height:calc(100vh - 96px); overflow-y:auto; overscroll-behavior:contain;
+  background:var(--ink-3); border:1px solid rgba(255,255,255,.12); border-radius:22px;
+  padding:18px 20px 16px; box-shadow:0 8px 40px rgba(0,0,0,.55);
+  color:var(--fg); font-size:14px; line-height:1.5}
+@supports (height:1dvh){ .consent{max-height:calc(100dvh - 96px)} }
+.consent[hidden]{display:none!important}
+.consent:focus{outline:none}
+.consent:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){
+  .consent:not([hidden]){animation:consentIn .28s var(--motion-ease-out) both} }
+@keyframes consentIn{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
+.consent-t{margin:0 0 6px; font-size:16px; font-weight:600; line-height:1.3; color:var(--fg); text-wrap:balance}
+.consent-d{margin:0; color:var(--fg-2)}
+.consent-btns{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-top:14px}
+.consent-btn{min-height:44px; padding:0 20px; border-radius:14px; font-size:15px; font-weight:500;
+  transition:filter .15s}
+.consent-btn:hover,.consent-btn:focus-visible{filter:brightness(1.08)}
+.consent-btn.pri{background:var(--fg); color:var(--ink)}
+.consent-btn.sec{background:var(--ink-4); color:var(--fg)}
+.consent-more{display:inline-flex; align-items:center; min-height:44px; color:var(--fg-2);
+  text-decoration:underline; text-underline-offset:3px}
+.consent-more:hover{color:var(--fg)}
+.consent-cats{list-style:none; margin:12px 0 0; padding:0; border-radius:14px; background:var(--ink-4); overflow:hidden}
+.consent-cats li{display:flex; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid rgba(255,255,255,.07)}
+.consent-cats li:first-child{border-top:0}
+.consent-cat{flex:1 1 auto; min-width:0}
+.consent-cat b{display:block; font-weight:500; color:var(--fg)}
+.consent-cat small{display:block; font-size:12.5px; color:var(--fg-3)}
+.consent-cats input{flex:0 0 auto; width:22px; height:22px; accent-color:var(--crimson); margin:0}
+@media (max-width:760px){
+  .consent{left:max(12px,env(safe-area-inset-left,0px)); right:max(12px,env(safe-area-inset-right,0px));
+    width:auto; bottom:calc(12px + env(safe-area-inset-bottom,0px)); padding:16px 18px 14px}
+  .consent-btns .consent-btn{flex:1 1 auto}
+}
+/* Safari's collapsed toolbar takes the first tap in the bottom strip (see the FAB): keep the
+   buttons above it in a browser tab; a home-screen app and a landscape phone have no strip. */
+@media (hover:none) and (pointer:coarse){
+  .consent{bottom:max(72px,calc(12px + env(safe-area-inset-bottom,0px)))} }
+@media (hover:none) and (pointer:coarse) and (display-mode:standalone){
+  .consent{bottom:calc(12px + env(safe-area-inset-bottom,0px))} }
+@media (max-height:520px){
+  .consent{bottom:calc(8px + env(safe-area-inset-bottom,0px)); max-height:calc(100vh - 16px)}
+  @supports (height:1dvh){ .consent{max-height:calc(100dvh - 16px)} } }
+footer .legal-line{margin:14px 0 0; max-width:78ch; color:var(--fg-2)}
+footer .legal-attr{margin:6px 0 0; max-width:78ch}
+footer .legal-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 18px; margin-top:10px}
+footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:center; min-height:32px; padding:0;
+  color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
+footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
+</style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
   <div style="font:600 13px/1.4 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#E0163A">Sofia Gleda</div>
   <div style="margin-top:10px">Зареждане на програмата…</div>
+  <noscript><p style="margin-top:22px">Програмата има нужда от JavaScript.
+    <a href="legal/terms/" style="color:#B6ABBC">Общи условия</a> ·
+    <a href="legal/privacy/" style="color:#B6ABBC">Поверителност</a> ·
+    <a href="legal/cookies/" style="color:#B6ABBC">Бисквитки</a></p></noscript>
 </div></div>
 <!-- @include data.html -->
 <script>/* SOFIA-PRICES — hand-maintained. Kept in its own script on purpose:
@@ -1034,7 +1096,18 @@ bg:{tagline:"кино и театър в софия",
  ssCalApple:"Apple Календар",
  ssCalAppleSub:"iPhone, iPad, Mac",
  ssCalGoogle:"Google Календар",
- ssCalOutlook:"Outlook"},
+ ssCalOutlook:"Outlook",
+ /* cookie notice and the footer's legal lines */
+ consentTitle:"Използваме само необходимото",
+ consentText:"Не поставяме бисквитки и не следим посещенията. В браузъра ти пазим само това, без което сайтът не може да работи, например езика и любимите ти места. Някои плакати се зареждат от сайтовете на кината, които могат да поставят свои бисквитки.",
+ consentTitleOpt:"Бисквитки и настройки",
+ consentTextOpt:"Необходимото за работата на сайта е винаги включено. Останалото се включва само ако искаш.",
+ consentNecessary:"Необходими",consentNecessaryNote:"винаги включени",
+ consentOk:"Разбрах",consentMore:"Научи повече",consentAll:"Приемам всички",consentNone:"Само необходимите",consentSave:"Запази избора",
+ consentSettings:"Настройки за бисквитки",
+ legalLine:"Sofia Gleda е агрегатор: събира програмите автоматично от сайтовете на кината, театрите и фестивалите и не е свързан с тях. Сайтът е създаден с помощта на изкуствен интелект и може да греши. Преди да купиш билет или да тръгнеш, провери часа при организатора.",
+ legalAttr:"Този сайт използва TMDB и TMDB API, но не е подкрепен, сертифициран или по друг начин одобрен от TMDB. Оценки: OMDb API (CC BY-NC 4.0). Машинен превод: DeepL (deepl.com).",
+ legalNav:"Правна информация",legalTerms:"Общи условия",legalPrivacy:"Поверителност",legalCookies:"Бисквитки"},
 en:{tagline:"cinema & theatre in sofia",
  siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
  listingLine:"Sofia's cinema and theatre listings",
@@ -1122,7 +1195,18 @@ en:{tagline:"cinema & theatre in sofia",
  ssCalApple:"Apple Calendar",
  ssCalAppleSub:"iPhone, iPad, Mac",
  ssCalGoogle:"Google Calendar",
- ssCalOutlook:"Outlook"}};
+ ssCalOutlook:"Outlook",
+ /* cookie notice and the footer's legal lines */
+ consentTitle:"We only use what's needed",
+ consentText:"We set no cookies and do not track visits. Your browser keeps only what the site needs to work, such as your language and favourite venues. Some posters load from cinema websites, which may set their own cookies.",
+ consentTitleOpt:"Cookies and settings",
+ consentTextOpt:"What the site needs is always on. Everything else is switched on only if you want it.",
+ consentNecessary:"Necessary",consentNecessaryNote:"always on",
+ consentOk:"Got it",consentMore:"Learn more",consentAll:"Accept all",consentNone:"Necessary only",consentSave:"Save my choice",
+ consentSettings:"Cookie settings",
+ legalLine:"Sofia Gleda is an aggregator: it collects listings automatically from cinema, theatre and festival websites and is not affiliated with any of them. It is built with the help of AI and can make mistakes. Check the time with the venue before you buy a ticket or set off.",
+ legalAttr:"This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB. Ratings: OMDb API (CC BY-NC 4.0). Machine translation: DeepL (deepl.com).",
+ legalNav:"Legal",legalTerms:"Terms of use",legalPrivacy:"Privacy",legalCookies:"Cookies"}};
 const t=()=>T[S.lang];
 
 /* ===================== state ===================== */
@@ -3525,7 +3609,7 @@ function render(){
     <span>vlaikovacinema.com</span><span>domnakinoto.com</span><span>toplocentrala.bg</span>
     <span>cinemacity.bg</span><span>kinoarena.com</span><span>cinegrand.bg</span>
     <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>
-  </div></footer>
+  </div>${legalFootHTML()}</footer>
   ${S.drawer&&!keptDr?drawerHTML():""}
   ${fabHTML()}`;
   const mainEl=app.querySelector(":scope > main");
@@ -5383,6 +5467,146 @@ try{
   if(mqMob.addEventListener) mqMob.addEventListener("change",onMqChange);
   else if(mqMob.addListener) mqMob.addListener(onMqChange);
 }catch(e){}
+/* ===================== cookie notice (consent) =====================
+   Sofia Gleda sets no cookies. What it keeps in the browser is strictly necessary for what
+   the visitor asked for: localStorage "sofia-screen-v2" (language, mode, favourites), the
+   record below, and on sofiagleda.com the service worker's caches. So the notice only
+   informs: "Разбрах" and "Научи повече", no switches. legal/cookies/ lists every item, and
+   verify_build.py fails when a localStorage key the page uses is missing from that list.
+
+   The record: localStorage "sofia-consent" = {v, at, opt}: v is CONSENT_VERSION, at the time
+   of the choice (ISO), opt {category id: true|false}. A record with another v, or one that
+   does not parse, counts as none. Bump CONSENT_VERSION when the cookie or the privacy policy
+   changes (scripts/gen_legal_pages.py prints it as their date) and the notice shows again.
+   The footer's "Настройки за бисквитки" and the address #cookies (the legal pages link
+   there) open it again.
+
+   Optional scripts (visitor statistics; sign-in in phase 5) start through consentRun() and
+   nowhere else:
+     1. add the category to CONSENT_OPTIONAL: {id, bg:{name, desc}, en:{name, desc}};
+     2. describe it in the cookie policy and bump CONSENT_VERSION;
+     3. start the script with consentRun("<id>", () => { ...load it... }).
+   The notice then lists a switch per category, off until the visitor turns it on.
+   consentRun runs fn once: at once when the category is allowed, otherwise as soon as it
+   is. An id that is not in CONSENT_OPTIONAL never runs. Withdrawing a category that has run
+   reloads the page, so nothing it started keeps running. */
+const CONSENT_KEY="sofia-consent";
+const CONSENT_VERSION="2026-10-15";
+const CONSENT_OPTIONAL=[];
+let _cRec=null,_cWait={},_cRan={},_cBack=null,_cLang=null;
+function _consentLoad(){
+  try{
+    const r=JSON.parse(localStorage.getItem(CONSENT_KEY)||"null");
+    if(r&&typeof r==="object"&&r.v===CONSENT_VERSION&&r.opt&&typeof r.opt==="object"&&!Array.isArray(r.opt))return r;
+  }catch(e){}
+  return null;
+}
+function consentRun(id,fn){
+  if(typeof fn!=="function"||!CONSENT_OPTIONAL.some(c=>c.id===id))return false;
+  const rec=_cRec||(_cRec=_consentLoad());
+  if(rec&&rec.opt[id]===true){_cRan[id]=true;try{fn();}catch(e){}return true;}
+  (_cWait[id]=_cWait[id]||[]).push(fn);
+  return false;
+}
+/* store a choice; false when it withdrew a category that has already run (the page reloads) */
+function _consentSave(opt){
+  const clean={};
+  CONSENT_OPTIONAL.forEach(c=>{clean[c.id]=opt[c.id]===true;});
+  _cRec={v:CONSENT_VERSION,at:new Date().toISOString(),opt:clean};
+  try{localStorage.setItem(CONSENT_KEY,JSON.stringify(_cRec));}catch(e){}
+  if(Object.keys(_cRan).some(id=>!clean[id])){location.reload();return false;}
+  Object.keys(_cWait).forEach(id=>{
+    if(!clean[id])return;
+    const fns=_cWait[id];delete _cWait[id];_cRan[id]=true;
+    fns.forEach(f=>{try{f();}catch(e){}});
+  });
+  return true;
+}
+function _consentHTML(){
+  const L=t(),cats=CONSENT_OPTIONAL,cur=(_cRec&&_cRec.opt)||{};
+  const more=S.lang==="en"?"legal/en/cookies/":"legal/cookies/";
+  const list=cats.length?`<ul class="consent-cats">
+    <li><label class="consent-cat" for="sgc-necessary"><b>${esc(L.consentNecessary)}</b><small>${esc(L.consentNecessaryNote)}</small></label><input type="checkbox" id="sgc-necessary" checked disabled></li>
+    ${cats.map(c=>{const n=c[S.lang]||c.bg||{};return`<li><label class="consent-cat" for="sgc-${esc(c.id)}"><b>${esc(n.name)}</b><small>${esc(n.desc)}</small></label><input type="checkbox" id="sgc-${esc(c.id)}" data-consent-cat="${esc(c.id)}"${cur[c.id]===true?" checked":""}></li>`;}).join("")}
+  </ul>`:"";
+  const btns=cats.length
+    ?`<button type="button" class="consent-btn pri" data-consent-all>${esc(L.consentAll)}</button><button type="button" class="consent-btn sec" data-consent-none>${esc(L.consentNone)}</button><button type="button" class="consent-btn sec" data-consent-save>${esc(L.consentSave)}</button>`
+    :`<button type="button" class="consent-btn pri" data-consent-ok>${esc(L.consentOk)}</button>`;
+  return`<h2 class="consent-t" id="sgc-t">${esc(cats.length?L.consentTitleOpt:L.consentTitle)}</h2>
+  <p class="consent-d" id="sgc-d">${esc(cats.length?L.consentTextOpt:L.consentText)}</p>${list}
+  <div class="consent-btns">${btns}<a class="consent-more" href="${more}">${esc(L.consentMore)}</a></div>`;
+}
+/* The notice is the first thing in the page (first in reading and tab order), outside #app
+   so a re-render never drops it. It takes the focus only when the visitor asked for it. */
+function consentOpen(focus){
+  let el=document.getElementById("sg-consent");
+  if(!el){
+    el=document.createElement("section");
+    el.id="sg-consent";el.className="consent";el.tabIndex=-1;
+    el.setAttribute("role","region");
+    el.setAttribute("aria-labelledby","sgc-t");el.setAttribute("aria-describedby","sgc-d");
+    document.body.insertBefore(el,document.body.firstChild);
+  }
+  el.lang=S.lang;el.innerHTML=_consentHTML();_cLang=S.lang;el.hidden=false;
+  _consentPad();
+  if(focus){try{el.focus({preventScroll:true});}catch(e){}}
+}
+function consentClose(){
+  const el=document.getElementById("sg-consent");
+  if(!el||el.hidden)return;
+  const inside=el.contains(document.activeElement);
+  el.hidden=true;
+  document.documentElement.style.scrollPaddingBottom="";
+  if(inside){
+    const back=(_cBack&&document.querySelector(_cBack))||document.querySelector("#app [data-home]");
+    if(back){try{back.focus({preventScroll:true});}catch(e){}}
+  }
+  _cBack=null;
+}
+/* While the notice is up, keyboard focus and scrollIntoView stop above it (WCAG 2.4.11). */
+function _consentPad(){
+  const el=document.getElementById("sg-consent");
+  if(!el||el.hidden)return;
+  document.documentElement.style.scrollPaddingBottom=Math.max(0,Math.round(window.innerHeight-el.offsetTop+12))+"px";
+}
+function _consentSync(){
+  const el=document.getElementById("sg-consent");
+  if(el&&!el.hidden&&_cLang!==S.lang){el.lang=S.lang;el.innerHTML=_consentHTML();_cLang=S.lang;_consentPad();}
+}
+function _consentFromHash(){
+  if(location.hash!=="#cookies")return false;
+  try{history.replaceState(history.state,"",location.pathname+location.search);}catch(e){}
+  _cBack=null;consentOpen(true);
+  return true;
+}
+function consentBoot(){
+  _cRec=_consentLoad();
+  if(!_consentFromHash()&&!_cRec)consentOpen(false);
+}
+document.addEventListener("click",e=>{
+  const q=s=>e.target.closest&&e.target.closest(s);
+  if(q("[data-consent-open]")){e.preventDefault();_cBack="footer [data-consent-open]";consentOpen(true);return;}
+  if(!q("#sg-consent"))return;
+  let opt=null;
+  if(q("[data-consent-ok]"))opt=Object.assign({},(_cRec&&_cRec.opt)||{});
+  else if(q("[data-consent-all]")){opt={};CONSENT_OPTIONAL.forEach(c=>{opt[c.id]=true;});}
+  else if(q("[data-consent-none]"))opt={};
+  else if(q("[data-consent-save]")){
+    opt={};
+    document.querySelectorAll("#sg-consent [data-consent-cat]").forEach(i=>{opt[i.dataset.consentCat]=i.checked;});
+  }
+  if(opt&&_consentSave(opt))consentClose();
+});
+window.addEventListener("hashchange",_consentFromHash);
+window.addEventListener("resize",_consentPad);
+/* The footer's legal lines: what Sofia Gleda is, the attributions the data sources require,
+   the three policies and the cookie notice. */
+function legalFootHTML(){
+  const L=t(),p=S.lang==="en"?"legal/en/":"legal/";
+  return`<p class="legal-line">${esc(L.legalLine)}</p>
+  <p class="legal-attr">${esc(L.legalAttr)}</p>
+  <nav class="legal-nav" aria-label="${esc(L.legalNav)}"><a href="${p}terms/">${esc(L.legalTerms)}</a><a href="${p}privacy/">${esc(L.legalPrivacy)}</a><a href="${p}cookies/">${esc(L.legalCookies)}</a><button type="button" data-consent-open>${esc(L.consentSettings)}</button></nav>`;
+}
 function boot(){ render(); }
 const origRender=render;
 render=function(){
@@ -5392,6 +5616,7 @@ render=function(){
     const keepY=document.querySelector("#app > .drawer")?(window.scrollY||0):null;
     origRender();mountProgressive();
     if(keepY!==null)_keepPageY(keepY);
+    _consentSync();
   }
   catch(e){ fatal(e); }
 };
@@ -5410,6 +5635,7 @@ function _keepPageY(y){
   if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
 }
 try{ boot(); if(!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
+try{ consentBoot(); }catch(e){}
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");
   if(app&&app.innerHTML.indexOf("Зареждане на програмата")>-1) fatal(e.error||e.message);

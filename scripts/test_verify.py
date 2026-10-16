@@ -939,6 +939,100 @@ check("no EVENTS_AUTO at all is a note, not a failure", _run_out(_minimal_html()
 
 
 # ---------------------------------------------------------------------------
+# Legal pages and the cookie notice (6e)
+# ---------------------------------------------------------------------------
+# A page with the cookie notice (CONSENT_VERSION) gets the legal checks; a temp
+# SOFIA_ROOT holds copies of this worktree's legal/ pages, edited per probe.
+print("\nLegal pages: placeholders, TMDB logo, storage list, scripts, CSP, fonts")
+import re
+_LG_VERSION = re.search(r'(?m)^const CONSENT_VERSION="([^"]+)";',
+                        (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")).group(1)
+_LG_JS = (f'const CONSENT_VERSION="{_LG_VERSION}"; const LS="sofia-screen-v2"; const CONSENT_KEY="sofia-consent"; '
+          'function _lgUse(){localStorage.getItem(LS);localStorage.setItem(CONSENT_KEY,"x");} '
+          '/* links: href="legal/terms/" legal/en/ */')
+_LG_CSP = ('<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; '
+           'script-src \'sha256-AAAA\'; img-src \'self\' https: data:; object-src \'none\'">')
+
+
+def _lg_root(logo=True, edit=None):
+    """A temp tree: icons, share pages, sw.js and this worktree's legal pages."""
+    root = _make_file_root(with_icons=True, film_ids_ok=["lg-film"], show_ids_ok=["lg-show"])
+    _shutil.copytree(ROOT / "legal", root / "legal")
+    _shutil.copy(ROOT / "sw.js", root / "sw.js")
+    if logo:
+        (root / "icons" / "tmdb.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+    for p in (root / "legal").rglob("index.html"):
+        t = p.read_text(encoding="utf-8")
+        if logo and "/terms/" in str(p):
+            t = t.replace('<div class="lg-attr">', '<div class="lg-attr"><img src="../../icons/tmdb.svg" alt="TMDB">', 1)
+        if edit:
+            t = edit(p.relative_to(root).as_posix(), t)
+        p.write_text(t, encoding="utf-8")
+    return root
+
+
+def _lg_run(html_text, root, owner_ok="0"):
+    try:
+        return _run_out(html_text, extra_env={"SOFIA_ROOT": str(root), "SOFIA_OWNER_PENDING_OK": owner_ok})
+    finally:
+        _shutil.rmtree(str(root), ignore_errors=True)
+
+
+_lg_page = _minimal_html(extra_js=_LG_JS)
+_rc, _out = _lg_run(_lg_page, _lg_root())
+check("complete legal pages pass", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+_ph = lambda r, t: t.replace("</main>", "<p>{CONTACT_EMAIL}</p></main>") if r == "legal/privacy/index.html" else t
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph))
+check("a leftover {CONTACT_EMAIL} placeholder fails the gate", _rc != 0 and "{CONTACT_EMAIL}" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph), owner_ok="1")
+check("a leftover placeholder fails even with SOFIA_OWNER_PENDING_OK=1", _rc != 0 and "{CONTACT_EMAIL}" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(logo=False))
+check("a missing TMDB logo fails the gate", _rc != 0 and "owner input pending" in _out and "TMDB's logo is missing" in _out)
+check("SOFIA_OWNER_PENDING_OK=1 turns the missing TMDB logo into a note",
+      _lg_run(_lg_page, _lg_root(logo=False), owner_ok="1")[0] == 0)
+_rc, _out = _lg_run(_lg_page.replace("</body>", "<p>{OPERATOR_NAME}</p></body>"), _lg_root())
+check("a dropped placeholder ({OPERATOR_NAME}) fails", _rc != 0 and "OPERATOR_NAME" in _out)
+_miss = _lg_root()
+_shutil.rmtree(str(_miss / "legal" / "en" / "privacy"))
+_rc, _out = _lg_run(_lg_page, _miss)
+check("a missing legal page fails", _rc != 0 and "legal page missing: legal/en/privacy/" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace("</body>", "<script>1</script></body>")
+                                       if r == "legal/terms/index.html" else t))
+check("a script in a legal page fails", _rc != 0 and "carries a script" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace("<main", '<main onclick="x()"')
+                                       if r == "legal/en/terms/index.html" else t))
+check("an inline event handler in a legal page fails", _rc != 0 and "inline event handler" in _out)
+_rc, _out = _lg_run(_lg_page.replace("function _lgUse(){", 'function _lgUse(){localStorage.setItem("sofia-new",1);'),
+                    _lg_root())
+check("a localStorage key the cookie policy does not list fails", _rc != 0 and "'sofia-new'" in _out)
+_rc, _out = _lg_run(_lg_page.replace("function _lgUse(){", 'function _lgUse(){document.cookie="a=1";'), _lg_root())
+check("a page that sets a cookie fails", _rc != 0 and "sets a cookie" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace(f'<time datetime="{_LG_VERSION}">',
+                                                                 '<time datetime="2000-01-01">')))
+check("policies dated other than CONSENT_VERSION fail", _rc != 0 and "CONSENT_VERSION" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace('rel="canonical" href="https://',
+                                                                 'rel="canonical" href="http://')))
+check("a canonical URL off SITE_URL fails", _rc != 0 and "canonical URL" in _out)
+_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP), _lg_root())
+check("a CSP on the app but not on the legal pages fails", _rc != 0 and "Content-Security-Policy missing" in _out)
+_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP),
+                    _lg_root(edit=lambda r, t: t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' +
+                                                         _LG_CSP.replace("'sha256-AAAA'", "'none'"))))
+check("the same CSP (script-src narrowed to 'none') passes", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-3:]))
+_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP),
+                    _lg_root(edit=lambda r, t: t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' +
+                                                         _LG_CSP.replace("img-src 'self' https: data:", "img-src *"))))
+check("a CSP that differs from the app's fails", _rc != 0 and "differs from the app's in img-src" in _out)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: re.sub(r"<!-- FONTS -->.*?<!-- /FONTS -->", "", t, flags=re.S)))
+check("a privacy policy naming Google Fonts the pages no longer load fails", _rc != 0 and "Google Fonts" in _out)
+check("a page without the cookie notice skips the legal checks", _run_out(_minimal_html())[0] == 0)
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()

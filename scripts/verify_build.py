@@ -1191,6 +1191,150 @@ try:
 except Exception as _mp_err:
     note(f"maps link check error: {_mp_err}")
 
+# ----------------------------------------- 6e. legal pages and the cookie notice
+# The app links a terms page, a privacy policy and a cookie policy in BG and EN
+# (legal/, written by scripts/gen_legal_pages.py). They must match the page they
+# describe:
+#   - each exists, has its canonical URL under SITE_URL and carries no script;
+#   - no page holds a leftover placeholder ({CONTACT_…}, {OPERATOR_…}): the site names
+#     no person and gives no email, by the owner's decision of 2026-10-15;
+#   - the terms show TMDB's logo (TMDB API terms, section 3; owner input: the file);
+#   - the policies carry the page's CONSENT_VERSION as their date;
+#   - every localStorage key the page uses is listed in the cookie policy, the page
+#     sets no cookie, and the service worker's caches are listed too;
+#   - the privacy policy names Google Fonts exactly while a page loads them;
+#   - a Content-Security-Policy on the app means the same policy on every legal page
+#     (a page with no script may narrow script-src to 'none').
+# Owner input that is still missing fails the gate; test runs set
+# SOFIA_OWNER_PENDING_OK=1 to list it as a note instead. A page without the cookie
+# notice (CONSENT_VERSION) predates the legal pages and skips this section.
+LEGAL_DOCS = ("terms", "privacy", "cookies")
+LEGAL_PAGES = [f"legal/{d}/" for d in LEGAL_DOCS] + [f"legal/en/{d}/" for d in LEGAL_DOCS]
+_OWNER_OK = os.environ.get("SOFIA_OWNER_PENDING_OK") == "1"
+
+
+def owner_pending(msg):
+    (note if _OWNER_OK else fail)("owner input pending: " + msg)
+
+
+def _csp_of(text):
+    """The page's CSP meta as {directive: sources}, hashes and nonces left out; None without one."""
+    value = None
+    for tag in re.findall(r"<meta\b[^>]*>", text, re.I):
+        if re.search(r"""http-equiv\s*=\s*["']?Content-Security-Policy""", tag, re.I):
+            m = re.search(r'content\s*=\s*"([^"]*)"', tag) or re.search(r"content\s*=\s*'([^']*)'", tag)
+            value = m.group(1) if m else ""
+            break
+    if value is None:
+        return None
+    out = {}
+    for part in value.split(";"):
+        toks = part.split()
+        if toks:
+            srcs = {t for t in toks[1:] if not re.match(r"'(sha256|sha384|sha512|nonce)-", t)}
+            out[toks[0].lower()] = srcs or {"'none'"}
+    return out
+
+
+def legal_checks():
+    if not re.search(r'(?m)^const CONSENT_VERSION="', js):
+        note("no cookie notice (CONSENT_VERSION) in this page: legal page checks skipped")
+        return
+    version = re.search(r'(?m)^const CONSENT_VERSION="([^"]*)";', js).group(1)
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from site_config import SITE_URL as site
+    except ImportError:
+        site = None
+    pages = {}
+    for rel in LEGAL_PAGES:
+        p = _FILE_ROOT / rel / "index.html"
+        if not p.exists():
+            fail(f"legal page missing: {rel}index.html: run scripts/gen_legal_pages.py")
+            continue
+        pages[rel] = p.read_text(encoding="utf-8")
+    if 'href="legal/terms/"' not in src or "legal/en/" not in src:
+        fail("the page does not link the legal pages (footer / noscript)")
+
+    # no placeholder may ship; owner input: TMDB's logo
+    for r, t in list(pages.items()) + [("index.html", src)]:
+        left = sorted(set(re.findall(r"\{(?:CONTACT|OPERATOR)_[A-Z_]*\}", t)))
+        if left:
+            fail(f"{r}: placeholder(s) {', '.join(left)} left in the page")
+    if not (_FILE_ROOT / "icons" / "tmdb.svg").exists():
+        owner_pending("TMDB's logo is missing: TMDB's API terms (section 3) require it: add icons/tmdb.svg "
+                      "(themoviedb.org/about/logos-attribution) and run scripts/gen_legal_pages.py")
+    else:
+        for r in ("legal/terms/", "legal/en/terms/"):
+            if r in pages and "icons/tmdb.svg" not in pages[r]:
+                fail(f"{r}: icons/tmdb.svg exists but the page does not show it: run scripts/gen_legal_pages.py")
+
+    for r, t in pages.items():
+        if site and f'<link rel="canonical" href="{site}/{r}">' not in t:
+            fail(f"{r}: canonical URL is not {site}/{r}: run scripts/gen_legal_pages.py")
+        if re.search(r"<script\b", t, re.I) or re.search(r"<[a-z][^>]*\son[a-z]+\s*=", t, re.I):
+            fail(f"{r}: carries a script or an inline event handler (the legal pages must have none)")
+        if r.endswith(("privacy/", "cookies/")) and f'<time datetime="{version}">' not in t:
+            fail(f"{r}: its date is not the page's CONSENT_VERSION {version}: run scripts/gen_legal_pages.py")
+
+    # what the page keeps in the browser is what the cookie policy lists
+    names = dict(re.findall(r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"([^"]+)"', js))
+    keys = set()
+    for arg in re.findall(r"localStorage\.(?:setItem|getItem|removeItem)\(\s*([^,)]+)", js):
+        arg = arg.strip()
+        lit = re.fullmatch(r"""(["'])(.*)\1""", arg)
+        if lit:
+            keys.add(lit.group(2))
+        elif arg in names:
+            keys.add(names[arg])
+        else:
+            fail(f"localStorage key {arg!r} cannot be resolved: name it in a constant and list it in the cookie policy")
+    if re.search(r"document\.cookie\s*=", js):
+        fail("the page sets a cookie, but the cookie policy says it sets none")
+    sw = _FILE_ROOT / "sw.js"
+    cache = re.search(r'CACHE_VERSION\s*=\s*"([a-z-]+)v\d+"', sw.read_text(encoding="utf-8")) if sw.exists() else None
+    for r in ("legal/cookies/", "legal/en/cookies/"):
+        t = pages.get(r, "")
+        for k in sorted(keys):
+            if f"<code>{k}</code>" not in t:
+                fail(f"{r}: localStorage key {k!r} is used by the page but not listed: describe it in "
+                     "scripts/gen_legal_pages.py and run it")
+        for api in ("sessionStorage", "indexedDB"):
+            if api in js and api not in t:
+                fail(f"{r}: the page uses {api}, which the cookie policy does not list")
+        if cache and cache.group(1) + "v" not in t:
+            fail(f"{r}: the service worker's caches ({cache.group(1)}v…) are not listed")
+
+    # the privacy policy names Google Fonts exactly while a page loads them
+    google = any(re.search(r"fonts\.(googleapis|gstatic)\.com", t) for t in [src, *pages.values()])
+    for r in ("legal/privacy/", "legal/en/privacy/"):
+        if r in pages and ("Google Fonts" in pages[r]) != google:
+            fail(f"{r}: says {'nothing about' if google else 'that it uses'} Google Fonts, but the pages "
+                 f"{'load' if google else 'do not load'} them: run scripts/gen_legal_pages.py")
+
+    # the same Content-Security-Policy as the app
+    main_csp = _csp_of(src)
+    for r, t in pages.items():
+        csp = _csp_of(t)
+        if main_csp is None and csp is None:
+            continue
+        if (main_csp is None) != (csp is None):
+            fail(f"{r}: Content-Security-Policy {'missing' if csp is None else 'present'} while the app "
+                 f"{'has one' if csp is None else 'has none'}: the legal pages must carry the same policy")
+            continue
+        diff = sorted(d for d in set(main_csp) | set(csp)
+                      if main_csp.get(d) != csp.get(d)
+                      and not (d == "script-src" and csp.get(d) == {"'none'"}))
+        if diff:
+            fail(f"{r}: Content-Security-Policy differs from the app's in {', '.join(diff)}")
+
+
+try:
+    legal_checks()
+except Exception as _lg_err:
+    fail(f"legal page checks crashed: {_lg_err.__class__.__name__}: {_lg_err}")
+
+
 # ----------------------------------------------------- 7. a real click, live (gate)
 def smoke():
     try:
@@ -1228,6 +1372,16 @@ def smoke():
             if page.query_selector("[data-onb-skip]"):
                 page.click("[data-onb-skip]")
             page.wait_for_selector(".bar", timeout=20000)
+            # a first visit: the cookie notice is up, and "Разбрах" closes it and keeps the choice
+            if re.search(r'(?m)^const CONSENT_VERSION="', js):
+                if not page.is_visible("#sg-consent [data-consent-ok]"):
+                    fail(f"[{tz}] the cookie notice did not show on a first visit")
+                else:
+                    page.click("#sg-consent [data-consent-ok]")
+                    page.wait_for_timeout(200)
+                    if (page.is_visible("#sg-consent")
+                            or not page.evaluate("!!localStorage.getItem('sofia-consent')")):
+                        fail(f"[{tz}] the cookie notice's button did not close it and keep the choice")
             cards = page.query_selector_all("[data-film]")
             if not cards:
                 fail(f"[{tz}] no film cards rendered")
