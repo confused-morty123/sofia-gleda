@@ -21,11 +21,12 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     7. fetch_theatre_posters.py     theatre posters              -> theatre_posters.json
     8. translate.py                 DeepL English for BG-only synopses/titles -> translations.json
     9. fetch_events.py              festivals / limited runs programata.bg announces -> events.json
-   10. inject_data.py               inline the poster maps, film details and auto events -> index.html
-   11. gen_share_pages.py           static /film/<id>/ and /show/<id>/ share pages -> film/, show/
-   12. verify_build.py              gate: is the result actually usable?
+   10. fetch_event_posters.py       those events' key art, re-hosted -> posters/ev-*, event_posters.json
+   11. inject_data.py               inline the poster maps, film details and auto events -> index.html
+   12. gen_share_pages.py           static /film/<id>/ and /show/<id>/ share pages -> film/, show/
+   13. verify_build.py              gate: is the result actually usable?
 
-Steps 1-11 are best-effort and never abort the run. Step 12 is not: if the rebuilt
+Steps 1-12 are best-effort and never abort the run. Step 13 is not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
 and the previous, working site stays up. That gate exists because the 2026-09-16
 refresh published a page that rendered perfectly and threw the moment you clicked
@@ -86,6 +87,7 @@ STEPS = [
     ("theatre posters", "fetch_theatre_posters.py",  []),
     ("translations",    "translate.py",              []),    # auto-translate BG-only syn/titles -> EN cache
     ("events",          "fetch_events.py",           []),    # programata.bg festivals -> events.json (keep-previous)
+    ("event posters",   "fetch_event_posters.py",    []),    # their key art -> posters/ev-*, event_posters.json
     ("inline posters",  "inject_data.py",            []),
     ("share pages",     "gen_share_pages.py",        []),
 ]

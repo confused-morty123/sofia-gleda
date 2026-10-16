@@ -8,6 +8,7 @@
   TITLE_EN: id -> English title   (from translations.json cache, for BG-only items)
   EVENTS_AUTO: festivals / limited runs programata.bg announces    (from events.json)
   EVENT_MEMBERS: event id -> [film/show ids] the event's page lists (from events.json)
+  EVENTART: event id -> "posters/ev-<id>.jpg", the event's re-hosted key art (from event_posters.json)
 
 Priority (highest first):
   1. TMDB poster (TMDBART[id].p)
@@ -212,6 +213,29 @@ if EVENTS_JSON.exists():
         print(f"  (could not read {EVENTS_JSON.name}: {e}; no auto events this build)")
         _events_auto, _event_members = [], {}
 
+# Key art for the events this page shows (fetch_event_posters.py ->
+# event_posters.json, files under posters/ev-*). Only records that pass the same
+# rule the gate applies (fetch_event_posters.record_problem: the file exists, the
+# image came from programata.bg, the seed festival's own site, or the organiser
+# site the event's programata post links). Always emitted (possibly empty).
+EVENT_POSTERS_JSON = ROOT / "event_posters.json"
+_eventart: dict = {}
+if EVENT_POSTERS_JSON.exists():
+    try:
+        import fetch_events as _FE2
+        import fetch_event_posters as _EP
+        _ep_doc = json.load(open(EVENT_POSTERS_JSON, encoding="utf-8"))
+        _ep_ids = ({e.get("id") for e in _FE2.catalogue(HTML.read_text(encoding="utf-8"))["EVENTS"]}
+                   | {e.get("id") for e in _events_auto})
+        _eventart = _EP.eventart(_ep_doc, _ep_ids, ROOT)
+        for _eid, _rec in sorted((_ep_doc.get("events") or {}).items()):
+            _why = _EP.record_problem(_eid, _rec, ROOT)
+            if _eid in _ep_ids and _why:
+                print(f"  EVENTART: {_eid!r} left out: {_why}")
+    except Exception as e:
+        print(f"  (could not read {EVENT_POSTERS_JSON.name}: {e}; no event art this build)")
+        _eventart = {}
+
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
     '   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"} from TMDB;\n'
@@ -234,6 +258,8 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
     '            EVENTS (the seed wins an id). Written by fetch_events.py. Always emitted.\n'
     '   EVENT_MEMBERS: event id -> [film/show ids] whose exact titles the event\'s page\n'
     '            lists with their venue and dates. Always emitted.\n'
+    '   EVENTART: event id -> "posters/ev-<id>.jpg", key art fetch_event_posters.py\n'
+    '            re-hosted; realPoster() reads it before SHOWART. Always emitted.\n'
     '   Missing ids keep the generated SVG artwork. */')
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
@@ -248,6 +274,7 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     # "</" escaped: these strings come from another site's headlines
     + "const EVENTS_AUTO = " + json.dumps(_events_auto, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";\n"
     + "const EVENT_MEMBERS = " + json.dumps(_event_members, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/") + ";\n"
+    + "const EVENTART = " + json.dumps(_eventart, ensure_ascii=False, separators=(",", ":")) + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -261,7 +288,7 @@ assert found, "marker block not found in " + str(HTML)
 # 2026-09-16 refresh and every film became unclickable. Refuse to run rather
 # than silently delete app code again.
 GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO", "SYN_EN", "TITLE_EN",
-             "EVENTS_AUTO", "EVENT_MEMBERS"}
+             "EVENTS_AUTO", "EVENT_MEMBERS", "EVENTART"}
 declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
 stray = declared - GENERATED
 if stray:
@@ -281,4 +308,6 @@ print(f"injected TMDBART: {len(art)} films ({sum(1 for r in art.values() if 'p' 
       + (" (" + ", ".join(f"{k}->{v}" for k, v in alias.items()) + ")" if alias else ""))
 print(f"  SYN_EN: {len(_syn_en)} ids, TITLE_EN: {len(_title_en)} ids (auto-translated)")
 print(f"  EVENTS_AUTO: {len(_events_auto)} event(s), EVENT_MEMBERS: "
-      f"{sum(len(v) for v in _event_members.values())} title(s) in {len(_event_members)} event(s)")
+      f"{sum(len(v) for v in _event_members.values())} title(s) in {len(_event_members)} event(s), "
+      f"EVENTART: {len(_eventart)} event(s) with key art"
+      + (" (" + ", ".join(sorted(_eventart)) + ")" if _eventart else ""))

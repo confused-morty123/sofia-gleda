@@ -965,6 +965,54 @@ except ImportError:
 except Exception as e:
     note(f"poster provenance check skipped: {e}")
 
+# ------------------------------------------- 5b2. EVENTART: event key art is ours
+# fetch_event_posters.py re-hosts each event's key art under posters/ev-<id> and
+# records where it came from in event_posters.json. Every EVENTART entry must
+# name an event the page has (EVENTS or EVENTS_AUTO), point at a posters/ev-*
+# file that exists and is a picture, and have a record whose source passes
+# fetch_event_posters.record_problem(): https, from programata.bg, from the seed
+# festival's own site (EVENT_SITES), or from the organiser site its programata
+# post links. A missing file is a failure: the card would show a broken image.
+_eart_m = re.search(r"^const EVENTART\s*=\s*(\{.*?\});\s*$", js, flags=re.M)
+if _eart_m is None:
+    note("EVENTART is not declared: no event key art in this build")
+else:
+    try:
+        _eventart = json.loads(_eart_m.group(1))
+    except Exception as _eae2:
+        fail(f"EVENTART is not valid JSON: {_eae2}")
+        _eventart = {}
+    if not isinstance(_eventart, dict):
+        fail("EVENTART is not an object")
+        _eventart = {}
+    if _eventart:
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            import fetch_event_posters as _EPV
+            try:
+                _ep_side = json.loads((_FILE_ROOT / "event_posters.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                _ep_side = {}
+            _ep_recs = (_ep_side.get("events") or {}) if isinstance(_ep_side, dict) else {}
+            _ev_ids_all = ({e.get("id") for e in (data.get("EVENTS") or []) if isinstance(e, dict)}
+                           | {e.get("id") for e in (_events_auto or []) if isinstance(e, dict)})
+            _ea_bad = []
+            for _eid, _path in _eventart.items():
+                if _eid not in _ev_ids_all:
+                    _ea_bad.append(f"{_eid!r}: no event in EVENTS or EVENTS_AUTO has this id")
+                    continue
+                _rec = _ep_recs.get(_eid)
+                if not isinstance(_rec, dict) or _rec.get("file") != _path:
+                    _ea_bad.append(f"{_eid!r}: event_posters.json has no record for {str(_path)[:40]!r}")
+                    continue
+                _why = _EPV.record_problem(_eid, _rec, _FILE_ROOT)
+                if _why:
+                    _ea_bad.append(f"{_eid!r}: {_why}")
+            if _ea_bad:
+                fail(f"EVENTART has {len(_ea_bad)} problem(s): " + "; ".join(_ea_bad[:4]))
+        except ImportError:
+            fail("EVENTART is set but fetch_event_posters.py (its provenance rule) cannot be imported")
+
 # --------------------------------- 5c. is the mirrored-event alias actually wired
 # inject_data.py computes SHOWALIAS (event id -> film id) for cinema events that
 # are screenings of a catalogued film. It only has an effect once realPoster()
