@@ -15165,6 +15165,708 @@ def wave_ev3(browser):
             pass
 
 
+# ============================================================================
+# WAVE UX1 (16 Oct 2026): the owner's five UX items
+#   1. the filter drawer closes with a swipe to the side, following the finger
+#   2. desktop performance budgets (and the measured causes stay fixed)
+#   3. share pages: link-preview fetchers stay and read the title's tags, browsers
+#      go on to the app (no meta refresh); event pages
+#   4. the address bar shows /film/<id>/ (/show/, /event/) while a sheet is open
+#   5. the theatre late-day card
+# Runs over a local HTTP server (paths, the service worker and <base href="/"> need
+# one): / and /index.html are the page under test, /film|show|event/<id>/ its share
+# pages (real build: the worktree's, written by gen_share_pages.py; fixture: written
+# from the fixture's data into a temp dir), everything else the webapp root, and a
+# missing path gets 404.html with status 404, as on GitHub Pages.
+# SOFIA_BROWSER=webkit runs it in WebKit; the CDP-only parts (real touch input, the
+# frame budget, the offline service worker) run in Chromium.
+# ============================================================================
+import http.server as _ux_http
+import io as _ux_io
+import shutil as _ux_shutil
+import tempfile as _ux_tempfile
+import threading as _ux_threading
+import time as _ux_time
+import urllib.parse as _ux_up
+import html as _ux_html_mod
+from site_config import SITE_URL as UX_SITE
+
+UX_APPLE_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) "
+               "Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0")
+UX_FB_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+
+# a synthetic touch drag on an element (plain Events carrying touches: WebKit has no
+# Touch constructor), with real time between the steps so a flick has a velocity;
+# returns, per move, whether it was prevented and the drawer's transform / scrim opacity
+UX_DRAG_JS = r"""async ({sel, pts, gap, hold}) => {
+  const el = document.querySelector(sel); if (!el) return null;
+  const fire = (type, x, y) => { const ev = new Event(type, {bubbles: true, cancelable: true});
+    const t = {clientX: x, clientY: y, identifier: 7, target: el};
+    Object.defineProperty(ev, 'touches', {value: (type === 'touchend' || type === 'touchcancel') ? [] : [t]});
+    Object.defineProperty(ev, 'changedTouches', {value: [t]}); el.dispatchEvent(ev); return ev; };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const log = [];
+  fire('touchstart', pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) {
+    await sleep(gap);
+    const ev = fire('touchmove', pts[i][0], pts[i][1]);
+    const ds = document.querySelector('#app > .drawer-scrim');
+    log.push({prevented: ev.defaultPrevented, tr: el.style.transform, op: ds ? ds.style.opacity : null});
+  }
+  if (hold) await sleep(hold);
+  fire('touchend', pts[pts.length - 1][0], pts[pts.length - 1][1]);
+  return log;
+}"""
+
+UX_DRAWER_JS = r"""() => { const d = document.querySelector('#app > .drawer'), s = document.querySelector('#app > .drawer-scrim');
+  if (!d) return {open: false, fab: !!document.querySelector('#app > .fab')};
+  const r = d.getBoundingClientRect();
+  return {open: true, left: Math.round(r.left), w: Math.round(r.width), tr: d.style.transform, top: d.scrollTop,
+          anims: d.getAnimations().length, op: s ? getComputedStyle(s).opacity : null, same: d === window.__ux_dr,
+          fab: !!document.querySelector('#app > .fab')}; }"""
+
+UX_SHEET_JS = r"""() => { const s = document.getElementById('scrim'), h = s && !s.hidden && s.querySelector('.sheet h2');
+  return {open: (typeof sheetOpen !== 'undefined') && sheetOpen, title: h ? h.textContent.trim() : null,
+          path: location.pathname, search: location.search, hash: location.hash,
+          depth: (typeof _histDepth !== 'undefined') ? _histDepth : -1, st: history.state}; }"""
+
+
+def _ux_share_root():
+    """The share pages to serve: the worktree's for a real build (gen_share_pages.py ran
+    against that index.html), else pages written from the fixture into a temp dir."""
+    if os.environ.get("SOFIA_HTML"):
+        return webapp_root, None
+    import gen_share_pages as GSP
+    tmp = Path(_ux_tempfile.mkdtemp(prefix="ux1_share_"))
+    saved = GSP.HTML_PATH
+    GSP.HTML_PATH = html_path
+    try:
+        films, shows, alias, pmap, tmdb, showart, _ = GSP._load_data()
+        events, eventart, venue_of, names = GSP._load_events()
+    finally:
+        GSP.HTML_PATH = saved
+
+    def put(kind, iid, page):
+        d = tmp / kind / iid
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(page, encoding="utf-8")
+    for f in films:
+        u, iw, ih = GSP._image(f["id"], alias, pmap, tmdb, showart)
+        put("film", f["id"], GSP._share_page("film", f["id"], f.get("bg", f["id"]), f.get("en", ""),
+                                             f.get("synBg", ""), u, GSP.SITE_URL, image_w=iw, image_h=ih))
+    for s in shows:
+        u, iw, ih = GSP._image(s["id"], alias, pmap, tmdb, showart)
+        put("show", s["id"], GSP._share_page("show", s["id"], s.get("title", s["id"]), s.get("titleEn", ""),
+                                             s.get("synBg", ""), u, GSP.SITE_URL, image_w=iw, image_h=ih))
+    for e in events:
+        put("event", e["id"], GSP._event_page(e, eventart, venue_of, names, alias, pmap, tmdb, showart))
+    return tmp, tmp
+
+
+def _ux_server(share_root):
+    class Hd(_ux_http.SimpleHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def translate_path(self, path):
+            p = _ux_up.unquote(_ux_up.urlsplit(path).path)
+            if p in ("/", "/index.html"):
+                return str(html_path)
+            m = re.match(r"^/(film|show|event)/([^/]+)/(?:index\.html)?$", p)
+            if m:
+                return str(Path(share_root) / m.group(1) / m.group(2) / "index.html")
+            return str(webapp_root / p.lstrip("/"))
+
+        def send_head(self):
+            path = self.translate_path(self.path)
+            if not os.path.exists(path):
+                body = (webapp_root / "404.html").read_bytes()
+                self.send_response(404)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                return _ux_io.BytesIO(body)
+            return super().send_head()
+    srv = _ux_http.ThreadingHTTPServer(("127.0.0.1", 0), Hd)
+    _ux_threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}"
+
+
+def _ux_clock(epoch_ms):
+    return """(() => { const _D = Date, F = %d;
+  class FakeDate extends _D { constructor(...a){ a.length? super(...a): super(F); } static now(){ return F; } }
+  window.Date = FakeDate; })();""" % epoch_ms
+
+
+def _ux_ctx(browser, base, w, h, phone=False, lang="bg", mode="cinema", ua=None, reduced=False, js=True,
+            clock=None, sw=False):
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
+              service_workers="allow" if sw else "block", java_script_enabled=js)
+    if phone:
+        kw.update(has_touch=True, is_mobile=True)
+    if ua:
+        kw["user_agent"] = ua
+    if reduced:
+        kw["reduced_motion"] = "reduce"
+    ctx = browser.new_context(**kw)
+    ctx.add_init_script(clock or CLOCK)
+    ctx.add_init_script(f"""try {{ localStorage.setItem('sofia-screen-v2', JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}})); }} catch(e) {{}}""")
+    if not sw:
+        def _route(route):
+            u = route.request.url
+            if u.startswith(base) or "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
+                return route.continue_()
+            if u.startswith(UX_SITE + "/"):
+                # the production origin is this server: an absolute redirect to the live
+                # site (the old share pages) lands on the app here, as it would there
+                try:
+                    return route.fulfill(response=route.fetch(url=base + u[len(UX_SITE):]))
+                except Exception:
+                    return route.abort()
+            return route.abort()
+        ctx.route("**/*", _route)
+    return ctx
+
+
+def _ux_page(ctx, url, wait_app=True):
+    page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(url)
+    if wait_app:
+        page.wait_for_selector(".bar", timeout=20000)
+        page.wait_for_timeout(500)
+    return page, errs
+
+
+def _ux_tap_sel(page, phone, sel, scroll=True):
+    """Tap/click the centre of the first element matching sel, as a user would."""
+    r = page.evaluate("""([sel, scroll]) => { const el = document.querySelector(sel); if (!el) return null;
+        if (scroll) { const r0 = el.getBoundingClientRect(); if (r0.top < 100 || r0.bottom > innerHeight - 120) window.scrollBy(0, r0.top - innerHeight / 3); }
+        const r = el.getBoundingClientRect(); return r.width ? {x: r.left + r.width / 2, y: r.top + Math.min(r.height / 2, 60)} : null; }""",
+                      [sel, scroll])
+    if not r:
+        return False
+    page.wait_for_timeout(120)
+    _hf_tap(page, phone, r["x"], r["y"])
+    return True
+
+
+def _ux_meta(page):
+    return page.evaluate("""() => { const g = (k) => { const m = document.querySelector('meta[property="' + k + '"],meta[name="' + k + '"]'); return m ? m.getAttribute('content') : null; };
+        return {title: g('og:title'), url: g('og:url'), image: g('og:image'), desc: g('og:description'), card: g('twitter:card'),
+                refresh: !!document.querySelector('meta[http-equiv="refresh" i]'),
+                link: (document.querySelector('a.open') || {}).getAttribute ? document.querySelector('a.open').getAttribute('href') : null}; }""")
+
+
+def _ux_items(page):
+    """A film, a show and an event with their titles, from the page's own data: ones that
+    have a card on the home page when possible."""
+    return page.evaluate("""() => {
+        const film = (document.querySelector('#app .card[data-film]') || {dataset: {}}).dataset.film || (FILMS[0] && FILMS[0].id);
+        const show = (SHOWS.find(s => showPerfsAll(s.id).length) || SHOWS[0]).id;
+        const ev = (EVENTS.find(e => e.to >= NOW_DATE) || EVENTS[0]);
+        return {film, filmTitle: filmById[film].bg, filmSheet: filmTitle(filmById[film]),
+                show, showTitle: showById[show].title, showSheet: titleOf(showById[show]),
+                event: ev && ev.id, eventTitle: ev && ev.title, eventSheet: ev && ev.title, eventFrom: ev && ev.from, eventTo: ev && ev.to};
+    }""")
+
+
+def _ux_drawer(browser, base, eng, phone_w=390, phone_h=844):
+    """Item 1: the drawer follows a sideways drag, closes past 30% or on a flick, springs
+    back otherwise, leaves vertical drags to its own scrolling, keeps its node across
+    filter taps; reduced motion closes without following."""
+    tag = f"ux1_{eng}_drawer"
+    ctx = _ux_ctx(browser, base, phone_w, phone_h, phone=True)
+    page, errs = _ux_page(ctx, base + "/")
+
+    def open_drawer():
+        page.evaluate("window.scrollTo(0, 0)")
+        page.wait_for_timeout(450)
+        ok = _ux_tap_sel(page, True, "#app > .fab", scroll=False)
+        page.wait_for_timeout(750)
+        page.evaluate("window.__ux_dr = document.querySelector('#app > .drawer')")
+        return ok and page.evaluate(UX_DRAWER_JS)["open"]
+
+    def drag(n, axis, step, gap, y0=520, hold=0):
+        """n moves of `step` px along x (sideways) or y, `gap` ms apart, with a 1-2 px wobble
+        on the other axis, as a finger has"""
+        st = page.evaluate(UX_DRAWER_JS)
+        x0 = st["left"] + 40
+        if axis == "x":
+            pts = [[x0, y0]] + [[x0 + step * (i + 1), y0 + (i % 2)] for i in range(n)]
+        else:
+            pts = [[x0, y0]] + [[x0 + 2 * (i % 2), y0 + step * (i + 1)] for i in range(n)]
+        return page.evaluate(UX_DRAG_JS, {"sel": "#app > .drawer", "pts": pts, "gap": gap, "hold": hold})
+
+    check(f"{tag}_opens", open_drawer(), "FAB tap opens the drawer")
+    w = page.evaluate(UX_DRAWER_JS).get("w") or 340
+    # the node survives a filter tap (renderKeepDrawer), and its swipe still works after it
+    page.wait_for_timeout(450)
+    tapped = _ux_tap_sel(page, True, "#app > .drawer [data-genre]:not([data-genre=''])", scroll=False)
+    page.wait_for_timeout(700)
+    s_keep = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_node_kept_across_filter_tap", tapped and s_keep["open"] and s_keep["same"],
+          f"tapped={tapped} open={s_keep['open']} same node={s_keep.get('same')}")
+    # follow: 72 px slowly (0.2 px/ms), then let go below 30%: springs back
+    log = drag(12, "x", 6, 30)
+    last = (log or [{}])[-1]
+    exp_op = 1 - 72 / w
+    try:
+        op_ok = abs(float(last.get("op") or 0) - exp_op) < 0.05
+    except ValueError:
+        op_ok = False
+    check(f"{tag}_follows_finger", bool(log) and last.get("tr") == "translateX(72px)" and op_ok and all(x["prevented"] for x in log[1:]),
+          f"last move transform={last.get('tr')!r} scrim opacity={last.get('op')} (want ~{exp_op:.2f}) prevented={[x['prevented'] for x in (log or [])][:4]}")
+    page.wait_for_timeout(60)
+    s1 = page.evaluate(UX_DRAWER_JS)
+    page.wait_for_timeout(500)
+    s2 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_springs_back_below_threshold", s1["open"] and s1["anims"] >= 1 and s2["open"] and s2["tr"] == "" and s2["left"] == s_keep["left"] and s2["op"] == "1",
+          f"just after release: open={s1['open']} animations={s1.get('anims')}; 500 ms later: open={s2['open']} transform={s2.get('tr')!r} left={s2.get('left')} (rest {s_keep.get('left')}) scrim={s2.get('op')}")
+    # past 30% slowly: closes and the FAB is back
+    page.wait_for_timeout(450)
+    drag(13, "x", 10, 35)
+    page.wait_for_timeout(650)
+    s3 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_closes_past_30pct", not s3["open"] and s3["fab"], f"after a 130 px drag of {w}: open={s3['open']} fab={s3['fab']}")
+    # a flick: 45 px (13%) in about 40 ms closes too
+    check(f"{tag}_reopens", open_drawer(), "")
+    drag(3, "x", 15, 12)
+    page.wait_for_timeout(650)
+    s4 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_closes_on_fling", not s4["open"] and s4["fab"], f"after a 45 px flick: open={s4['open']}")
+    # vertical and leftward drags are not taken: no transform, nothing prevented
+    check(f"{tag}_reopens_2", open_drawer(), "")
+    logv = drag(10, "y", -25, 16, y0=640)
+    logl = drag(8, "x", -8, 16)
+    page.wait_for_timeout(400)
+    s5 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_vertical_drag_left_to_scrolling", bool(logv) and not any(x["prevented"] for x in logv) and all(x["tr"] == "" for x in logv) and s5["open"],
+          f"vertical: prevented={[x['prevented'] for x in (logv or [])][:4]} transforms={[x['tr'] for x in (logv or [])][:3]} still open={s5['open']}")
+    check(f"{tag}_leftward_drag_ignored", bool(logl) and not any(x["prevented"] for x in logl) and all(x["tr"] == "" for x in logl) and s5["open"],
+          f"leftward: prevented={[x['prevented'] for x in (logl or [])][:4]} transforms={[x['tr'] for x in (logl or [])][:3]}")
+    if eng == "chromium":
+        # real touch input: a vertical swipe scrolls the drawer's list, a sideways one closes it
+        cdp = ctx.new_cdp_session(page)
+
+        def touch(kind, pts):
+            cdp.send("Input.dispatchTouchEvent", {"type": kind, "touchPoints": [{"x": x, "y": y} for (x, y) in pts]})
+        st = page.evaluate(UX_DRAWER_JS)
+        x0 = st["left"] + 60
+        touch("touchStart", [(x0, 700)])
+        for i in range(1, 12):
+            touch("touchMove", [(x0 + 2, 700 - i * 25)])
+            _ux_time.sleep(0.016)
+        touch("touchEnd", [])
+        page.wait_for_timeout(700)
+        s6 = page.evaluate(UX_DRAWER_JS)
+        check(f"{tag}_real_touch_vertical_scrolls", s6["open"] and s6["top"] > 40 and s6["tr"] == "",
+              f"scrollTop {st['top']} -> {s6.get('top')} transform={s6.get('tr')!r}")
+        page.wait_for_timeout(450)
+        touch("touchStart", [(x0, 420)])
+        for i in range(1, 15):
+            touch("touchMove", [(x0 + i * 10, 421)])
+            _ux_time.sleep(0.03)
+        touch("touchEnd", [])
+        page.wait_for_timeout(700)
+        s7 = page.evaluate(UX_DRAWER_JS)
+        check(f"{tag}_real_touch_swipe_closes", not s7["open"] and s7["fab"], f"open={s7['open']} fab={s7['fab']}")
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+    # reduced motion: the drawer does not follow; a swipe past 30% closes it at once
+    ctx = _ux_ctx(browser, base, phone_w, phone_h, phone=True, reduced=True)
+    page, errs = _ux_page(ctx, base + "/")
+    check(f"{tag}_reduced_opens", open_drawer(), "")
+    log = drag(12, "x", 6, 30)
+    page.wait_for_timeout(450)
+    s8 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_reduced_no_follow", bool(log) and all(x["tr"] == "" for x in log) and s8["open"],
+          f"transforms while dragging={[x['tr'] for x in (log or [])][:3]} still open={s8['open']}")
+    drag(13, "x", 10, 35)
+    page.wait_for_timeout(120)
+    s9 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_reduced_closes_at_once", not s9["open"], f"120 ms after a 130 px swipe: open={s9['open']}")
+    check(f"{tag}_reduced_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _ux_perf(browser, base):
+    """Item 2: desktop budgets at 1280x800 (Chromium): frame time and long tasks while the
+    wheel scrolls the home page with the pointer over the cards; the causes measured on
+    16 Oct 2026 stay fixed (no backdrop-filter on the cards or the pinned header; hover
+    effects held while the wheel scrolls, back right after)."""
+    tag = "ux1_perf"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    ctx.add_init_script("""window.__ux_lt=[];try{new PerformanceObserver(l=>{for(const e of l.getEntries())__ux_lt.push(e.duration);}).observe({type:'longtask',buffered:true});}catch(e){}""")
+    page, errs = _ux_page(ctx, base + "/")
+    page.wait_for_timeout(1500)
+    page.evaluate("""async () => { for (let i = 0; i < 30; i++) { window.scrollTo(0, document.documentElement.scrollHeight); await new Promise(r => setTimeout(r, 50)); } window.scrollTo(0, 0); }""")
+    page.wait_for_timeout(800)
+    page.mouse.move(640, 420)
+    for _ in range(12):                         # warm-up pass
+        page.mouse.wheel(0, 150)
+        page.wait_for_timeout(30)
+    page.evaluate("window.scrollTo(0, 0)")
+    page.wait_for_timeout(600)
+    page.evaluate("""() => { window.__ux_lt.length = 0; window.__ux_raf = []; let last = performance.now();
+        const f = t => { if (!window.__ux_raf) return; window.__ux_raf.push(t - last); last = t; requestAnimationFrame(f); };
+        requestAnimationFrame(f); }""")
+    during = []
+    for i in range(36):
+        page.mouse.wheel(0, 120)
+        page.wait_for_timeout(30)
+        if i == 18:
+            during.append(page.evaluate("document.documentElement.classList.contains('sg-wheel')"))
+    for _ in range(36):
+        page.mouse.wheel(0, -120)
+        page.wait_for_timeout(30)
+    deltas = page.evaluate("() => { const d = window.__ux_raf || []; window.__ux_raf = null; return d.slice(1); }")
+    page.wait_for_timeout(400)
+    after = page.evaluate("document.documentElement.classList.contains('sg-wheel')")
+    lt = page.evaluate("window.__ux_lt.slice()")
+    mx = max(deltas) if deltas else 0
+    check(f"{tag}_wheel_scroll_max_frame", bool(deltas) and mx < 250,
+          f"{len(deltas)} frames, max {mx:.0f} ms (budget 250), mean {sum(deltas) / max(1, len(deltas)):.1f} ms")
+    check(f"{tag}_wheel_scroll_long_tasks", sum(lt) < 400, f"{len(lt)} long tasks, {sum(lt):.0f} ms in total (budget 400)")
+    check(f"{tag}_hover_held_while_wheeling", during == [True] and after is False,
+          f"html.sg-wheel during the wheel={during} 400 ms after={after}")
+    # hover still lifts a card once the wheel has stopped
+    page.evaluate("()=>{const t=document.querySelector('#app .rtrack');const r=t.getBoundingClientRect();window.scrollBy(0,r.top-140);}")
+    page.wait_for_timeout(500)
+    box = page.evaluate("""() => { const c = document.querySelector('#app .rtrack .card'); const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 3]; }""")
+    page.mouse.move(box[0] - 30, box[1] + 5)
+    page.mouse.move(box[0], box[1], steps=4)
+    page.wait_for_timeout(400)
+    lift = page.evaluate("(() => { const c = document.querySelector('#app .rtrack .card'); return [c.matches(':hover'), getComputedStyle(c).transform]; })()")
+    check(f"{tag}_hover_lift_still_works", lift[0] and lift[1] not in ("none", ""), f"hovered={lift[0]} transform={lift[1]}")
+    blur = page.evaluate("""() => { const bf = e => { const s = getComputedStyle(e); return s.backdropFilter && s.backdropFilter !== 'none'; };
+        return {cards: [...document.querySelectorAll('#app main .card *, #app main .ecard *, #app main .rarrow')].filter(bf).length,
+                header: bf(document.querySelector('.bar')), scores: document.querySelectorAll('#app .score').length}; }""")
+    check(f"{tag}_no_backdrop_filter_in_rails", blur["cards"] == 0 and not blur["header"],
+          f"elements with backdrop-filter in the rails={blur['cards']} (of {blur['scores']} badges), header={blur['header']}")
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _ux_share(browser, base, eng, items):
+    """Item 3: share pages keep link-preview fetchers on the title's tags (Apple's runs in
+    WebKit with this user agent and follows redirects) and send a browser on to the app,
+    which opens the sheet at the title's own address."""
+    import gen_share_pages as GSP
+    site = GSP.SITE_URL
+    cases = [("film", items["film"], items["filmTitle"], items["filmSheet"]),
+             ("show", items["show"], items["showTitle"], items["showSheet"])]
+    if items.get("event"):
+        cases.append(("event", items["event"], items["eventTitle"], items["eventSheet"]))
+    for ua_tag, ua in [("apple", UX_APPLE_UA)] + ([("facebook", UX_FB_UA)] if eng == "chromium" else []):
+        ctx = _ux_ctx(browser, base, 1280, 800, ua=ua)
+        for kind, iid, title, _sheet in cases:
+            path = f"/{kind}/{_ux_up.quote(iid)}/"
+            page, errs = _ux_page(ctx, base + path, wait_app=False)
+            page.wait_for_timeout(1500)
+            m = _ux_meta(page)
+            stayed = page.url == base + path
+            ok = (stayed and m["title"] == title and m["url"] == f"{site}/{kind}/{iid}/" and (m["image"] or "").startswith("https://")
+                  and m["card"] == "summary_large_image" and not m["refresh"])
+            if kind == "event" and ok:
+                rng = GSP._bg_range(items["eventFrom"], items["eventTo"])
+                ok = rng in (m["desc"] or "")
+            check(f"ux1_{eng}_share_{kind}_bot_{ua_tag}_stays_on_tags", ok,
+                  f"url={page.url.replace(base, '')} og:title={m['title']!r} (want {title!r}) og:url={m['url']} og:image={(m['image'] or '')[:60]} "
+                  f"card={m['card']} meta refresh={m['refresh']}" + (f" desc={(m['desc'] or '')[:60]!r}" if kind == "event" else ""))
+            page.close()
+        ctx.close()
+    # a browser goes on to the app: the sheet opens at the title's address, Back lands on "/"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    for kind, iid, _og, title in cases:
+        page, errs = _ux_page(ctx, base + f"/{kind}/{_ux_up.quote(iid)}/")
+        page.wait_for_timeout(900)
+        s = page.evaluate(UX_SHEET_JS)
+        want_path = f"/{kind}/{_ux_up.quote(iid, safe='')}/"
+        ok1 = s["open"] and (s["title"] or "").lower() == title.lower() and s["path"] == want_path and s["search"] == "" and s["depth"] == 1
+        page.go_back()
+        page.wait_for_timeout(800)
+        s2 = page.evaluate(UX_SHEET_JS)
+        check(f"ux1_{eng}_share_{kind}_browser_opens_app", ok1 and not s2["open"] and s2["path"] == "/" and s2["search"] == "",
+              f"open={s['open']} title={s['title']!r} path={s['path']} search={s['search']!r} depth={s['depth']} | after Back: open={s2['open']} path={s2['path']} search={s2['search']!r} errors={errs[:2]}")
+        page.close()
+    ctx.close()
+    # without JavaScript the page stays, with a visible link to the app
+    ctx = _ux_ctx(browser, base, 1280, 800, js=False)
+    page, errs = _ux_page(ctx, base + f"/film/{_ux_up.quote(items['film'])}/", wait_app=False)
+    page.wait_for_timeout(500)
+    link = page.evaluate("""() => { const a = document.querySelector('a.open'); if (!a) return null; const r = a.getBoundingClientRect(); return {href: a.getAttribute('href'), w: r.width, h: r.height}; }""")
+    check(f"ux1_{eng}_share_nojs_fallback_link", page.url.endswith(f"/film/{_ux_up.quote(items['film'])}/") and bool(link) and link["w"] > 0
+          and link["href"] == f"/?film={_ux_up.quote(items['film'], safe='')}",
+          f"url={page.url.replace(base, '')} link={link}")
+    ctx.close()
+    # an address no share page covers still reaches the app (404.html)
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    page, errs = _ux_page(ctx, base + f"/film/{_ux_up.quote(items['film'])}")
+    page.wait_for_timeout(900)
+    s = page.evaluate(UX_SHEET_JS)
+    check(f"ux1_{eng}_share_no_trailing_slash_opens_app", s["open"] and s["path"] == f"/film/{_ux_up.quote(items['film'], safe='')}/",
+          f"open={s['open']} path={s['path']}")
+    page.close()
+    page, errs = _ux_page(ctx, base + "/no/such/page", wait_app=False)
+    page.wait_for_timeout(500)
+    nf = page.evaluate("(document.querySelector('h1')||{}).textContent")
+    check(f"ux1_{eng}_404_page", nf == "Страницата не е намерена" and page.url.endswith("/no/such/page"), f"h1={nf!r} url={page.url.replace(base, '')}")
+    ctx.close()
+
+
+def _ux_urls(browser, base, eng, items):
+    """Item 4: the address bar shows the open title's share address; closing (every route)
+    restores "/"; the popup keeps it; Back, reload, arrival by ?film=, the app served at
+    the path itself, an unknown id; the event share link; offline through the service worker."""
+    import gen_share_pages as GSP
+    site = GSP.SITE_URL
+    fid, fq = items["film"], _ux_up.quote(items["film"], safe="")
+    for phone in (False, True):
+        w, h = (390, 844) if phone else (1280, 800)
+        tag = f"ux1_{eng}_{'phone' if phone else 'desk'}_url"
+        ctx = _ux_ctx(browser, base, w, h, phone=phone)
+        page, errs = _ux_page(ctx, base + "/")
+        routes = ["x", "backbar", "esc", "back"] + (["drag"] if phone else ["backdrop"])
+        for route in routes:
+            page.wait_for_timeout(450)
+            opened = _ux_tap_sel(page, phone, f'#app .card[data-film="{fid}"]')
+            page.wait_for_timeout(700)
+            s1 = page.evaluate(UX_SHEET_JS)
+            _hf_close_sheet(page, phone, route)
+            s2 = page.evaluate(UX_SHEET_JS)
+            check(f"{tag}_open_then_close_{route}",
+                  opened and s1["open"] and s1["path"] == f"/film/{fq}/" and s1["depth"] == 1
+                  and not s2["open"] and s2["path"] == "/" and s2["depth"] == 0,
+                  f"open: sheet={s1['open']} path={s1['path']} depth={s1['depth']} | closed by {route}: sheet={s2['open']} path={s2['path']} depth={s2['depth']}")
+        # the time popup keeps the title's address on its own entry
+        page.wait_for_timeout(450)
+        _ux_tap_sel(page, phone, f'#app .card[data-film="{fid}"]')
+        page.wait_for_timeout(700)
+        p = _hf_tap_pill(page, phone, 0.5)
+        page.wait_for_timeout(600)
+        s3 = page.evaluate(UX_SHEET_JS)
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(600)
+        s4 = page.evaluate(UX_SHEET_JS)
+        # the address a user would copy is the share page, with this film's preview
+        copied = page.evaluate("location.href")
+        fetched = page.evaluate("async () => { const r = await fetch(location.pathname); return [r.status, await r.text()]; }")
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(700)
+        s5 = page.evaluate(UX_SHEET_JS)
+        if p:
+            check(f"{tag}_popup_keeps_address", s3["depth"] == 2 and s3["path"] == f"/film/{fq}/" and s4["depth"] == 1 and s4["path"] == f"/film/{fq}/"
+                  and s5["path"] == "/" and s5["depth"] == 0,
+                  f"popup: depth={s3['depth']} path={s3['path']} | Esc: depth={s4['depth']} path={s4['path']} | Esc: depth={s5['depth']} path={s5['path']}")
+        else:
+            skip(f"{tag}_popup_keeps_address", "no time pill in the sheet")
+        check(f"{tag}_copied_address_is_share_page", copied == f"{base}/film/{fq}/" and fetched[0] == 200
+              and f'property="og:title" content="{_ux_html_mod.escape(items["filmTitle"], quote=True)}"' in fetched[1]
+              and f'property="og:url" content="{site}/film/{fid}/"' in fetched[1],
+              f"copied={copied.replace(base, '')} fetch status={fetched[0]} has og:title={_ux_html_mod.escape(items['filmTitle'], quote=True) in fetched[1]}")
+        # a show and an event: their own addresses
+        page.evaluate("()=>{const b=document.querySelector('[data-switch=\"theatre\"]'); b && b.click();}")
+        page.wait_for_timeout(900)
+        sid = page.evaluate("(document.querySelector('#app .card[data-show]')||{dataset:{}}).dataset.show")
+        if sid:
+            _ux_tap_sel(page, phone, f'#app .card[data-show="{sid}"]')
+            page.wait_for_timeout(700)
+            s6 = page.evaluate(UX_SHEET_JS)
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(700)
+            s7 = page.evaluate(UX_SHEET_JS)
+            check(f"{tag}_show_address", s6["open"] and s6["path"] == f"/show/{_ux_up.quote(sid, safe='')}/" and s7["path"] == "/",
+                  f"open={s6['open']} path={s6['path']} | closed: path={s7['path']}")
+        else:
+            skip(f"{tag}_show_address", "no theatre card")
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+    tag = f"ux1_{eng}_url"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    # an event's sheet: its address, and the share button's link is the event's share page
+    if items.get("event"):
+        eq = _ux_up.quote(items["event"], safe="")
+        page, errs = _ux_page(ctx, base + f"/?event={eq}")
+        page.wait_for_timeout(700)
+        s = page.evaluate(UX_SHEET_JS)
+        page.evaluate("() => { window.__ux_shared = null; navigator.share = d => { window.__ux_shared = d; return Promise.resolve(); }; }")
+        page.evaluate("() => { const s = document.getElementById('scrim'); if (s) s.scrollTop = 0; const sh = s && s.querySelector('.sheet'); if (sh) sh.scrollTop = 0; }")
+        _ux_tap_sel(page, False, "#scrim [data-share]", scroll=False)
+        page.wait_for_timeout(400)
+        shared = page.evaluate("window.__ux_shared && window.__ux_shared.url")
+        check(f"{tag}_event_address_and_share_link", s["open"] and s["path"] == f"/event/{eq}/" and shared == f"{site}/event/{eq}/",
+              f"open={s['open']} path={s['path']} shared={shared}")
+        page.close()
+    # arriving from a share page (/?film=id): the entry becomes "/" and the sheet gets its own
+    page, errs = _ux_page(ctx, base + f"/?film={fq}")
+    page.wait_for_timeout(700)
+    s1 = page.evaluate(UX_SHEET_JS)
+    page.go_back()
+    page.wait_for_timeout(700)
+    s2 = page.evaluate(UX_SHEET_JS)
+    check(f"{tag}_arrival_by_query", s1["open"] and s1["path"] == f"/film/{fq}/" and s1["search"] == "" and s1["depth"] == 1
+          and not s2["open"] and s2["path"] == "/" and s2["search"] == "" and s2["st"] is None,
+          f"arrived: open={s1['open']} path={s1['path']} search={s1['search']!r} depth={s1['depth']} | Back: open={s2['open']} path={s2['path']} search={s2['search']!r} state={s2['st']}")
+    # reload with the sheet open: it opens again at the same address; Back closes it
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, f'#app .card[data-film="{fid}"]')
+    page.wait_for_timeout(700)
+    page.reload()
+    page.wait_for_selector(".bar")
+    page.wait_for_timeout(900)
+    s3 = page.evaluate(UX_SHEET_JS)
+    page.go_back()
+    page.wait_for_timeout(800)
+    s4 = page.evaluate(UX_SHEET_JS)
+    check(f"{tag}_reload_at_title_address", s3["open"] and s3["path"] == f"/film/{fq}/" and (s3["title"] or "").lower() == items["filmSheet"].lower()
+          and not s4["open"] and s4["path"] == "/",
+          f"after reload: open={s3['open']} path={s3['path']} title={s3['title']!r} | Back: open={s4['open']} path={s4['path']}")
+    page.close()
+    # the app served at the title's address itself (the service worker's copy, any uncovered path)
+    page = ctx.new_page()
+    errs2 = []
+    page.on("pageerror", lambda e: errs2.append(str(e)))
+    app_html = Path(html_path).read_text(encoding="utf-8")
+    page.route(f"{base}/film/{fq}/", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=app_html))
+    page.route(f"{base}/film/zz-no-such-film/", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=app_html))
+    page.goto(base + f"/film/{fq}/")
+    page.wait_for_selector(".bar")
+    page.wait_for_timeout(1200)
+    s5 = page.evaluate(UX_SHEET_JS)
+    res = page.evaluate("""() => { const logo = document.querySelector('.brand-logo'); return {logo: logo && logo.naturalWidth, logoSrc: logo && logo.currentSrc,
+        base: document.baseURI}; }""")
+    page.go_back()
+    page.wait_for_timeout(700)
+    s6 = page.evaluate(UX_SHEET_JS)
+    check(f"{tag}_app_at_title_path_opens_sheet", s5["open"] and s5["path"] == f"/film/{fq}/" and s5["depth"] == 1 and not s6["open"] and s6["path"] == "/",
+          f"open={s5['open']} path={s5['path']} depth={s5['depth']} | Back: open={s6['open']} path={s6['path']}")
+    check(f"{tag}_base_href_resolves_from_root", (res["logo"] or 0) > 0 and res["logoSrc"] == base + "/logo.svg" and res["base"] == base + "/",
+          f"logo {res['logoSrc']} naturalWidth={res['logo']} baseURI={res['base']}")
+    page.goto(base + "/film/zz-no-such-film/")
+    page.wait_for_selector(".bar")
+    page.wait_for_timeout(900)
+    s7 = page.evaluate(UX_SHEET_JS)
+    toast_txt = page.evaluate("(document.getElementById('sg-toast')||{}).textContent")
+    check(f"{tag}_unknown_title_path_goes_home", not s7["open"] and s7["path"] == "/" and bool(toast_txt),
+          f"open={s7['open']} path={s7['path']} toast={toast_txt!r}")
+    check(f"{tag}_no_js_errors", not errs and not errs2, f"errors={(errs + errs2)[:3]}")
+    ctx.close()
+
+    # offline: the service worker answers the title's address with the cached app (Chromium)
+    if eng == "chromium":
+        ctx = _ux_ctx(browser, base, 1280, 800, sw=True)
+        page, errs = _ux_page(ctx, base + "/")
+        ready = page.evaluate("""async () => { if (!('serviceWorker' in navigator)) return 'none';
+            const r = await Promise.race([navigator.serviceWorker.ready.then(() => 'ready'), new Promise(x => setTimeout(() => x('timeout'), 8000))]);
+            return r; }""")
+        page.reload()
+        page.wait_for_selector(".bar")
+        page.wait_for_timeout(800)
+        controlled = page.evaluate("!!(navigator.serviceWorker && navigator.serviceWorker.controller)")
+        ctx.set_offline(True)
+        try:
+            page.goto(base + f"/film/{fq}/")
+            page.wait_for_selector(".bar", timeout=10000)
+            page.wait_for_timeout(900)
+            s8 = page.evaluate(UX_SHEET_JS)
+        except Exception as e:
+            s8 = {"open": False, "path": f"error {e.__class__.__name__}", "title": None}
+        ctx.set_offline(False)
+        check(f"{tag}_offline_title_address_via_service_worker",
+              ready == "ready" and controlled and s8["open"] and s8["path"] == f"/film/{fq}/" and (s8["title"] or "").lower() == items["filmSheet"].lower(),
+              f"sw={ready} controlled={controlled} offline: open={s8['open']} path={s8['path']} title={s8.get('title')!r}")
+        ctx.close()
+
+
+def _ux_late(browser, base, eng):
+    """Item 5: at 23:50 with today selected and nothing left today, the theatre (like the
+    cinema) shows the late-day card instead of empty sections; its button selects tomorrow."""
+    clock_2350 = _ux_clock(FIXED_1445 + (9 * 60 + 5) * 60 * 1000)
+    for mode, w, h, phone in [("theatre", 1280, 900, False), ("theatre", 390, 844, True), ("cinema", 1280, 900, False)]:
+        tag = f"ux1_{eng}_late_{mode}_{'phone' if phone else 'desk'}"
+        ctx = _ux_ctx(browser, base, w, h, phone=phone, mode=mode, clock=clock_2350)
+        page, errs = _ux_page(ctx, base + "/")
+        pre = page.evaluate("""() => ({now: NOW_DATE + ' ' + NOW_TIME, today: TODAY, tomorrow: addDays(NOW_DATE, 1), last: LASTDAY,
+            left: S.mode === 'theatre' ? upcomingPerfs(PERFORMANCES.filter(p => p[1] === NOW_DATE)).length
+                                        : SHOWTIMES.filter(r => r[2] === TODAY && r[3].some(t => t >= NOW_TIME)).length})""")
+        if pre["left"]:
+            skip(f"{tag}_card", f"{pre['left']} listings still to come at {pre['now']}")
+            ctx.close()
+            continue
+        if not _ux_tap_sel(page, phone, f'.dspill[data-day="{pre["today"]}"]:not([disabled])'):
+            page.evaluate("(d) => { S.day = d; render(); }", pre["today"])
+        page.wait_for_timeout(700)
+        st = page.evaluate("""() => { const c = document.querySelector('#app main .late-day-card'); const b = c && c.querySelector('button');
+            return {day: S.day, card: !!c, msg: c && c.querySelector('p').textContent, btn: b && b.textContent, btnDay: b && b.dataset.day,
+                    sections: document.querySelectorAll('#app main [data-sectoggle]').length,
+                    first: (() => { const m = document.querySelector('#app main'); const kids = [...m.children].filter(k => !k.classList.contains('phead')); return kids[0] && kids[0].className; })()}; }""")
+        check(f"{tag}_card_bg", st["day"] == pre["today"] and st["card"] and st["msg"] == "Всичко за днес приключи."
+              and st["btn"] == "Виж програмата за утре ›" and st["btnDay"] == pre["tomorrow"] and st["sections"] == 0,
+              f"now={pre['now']} day={st['day']} card={st['card']} msg={st['msg']!r} button={st['btn']!r} -> {st['btnDay']} (tomorrow {pre['tomorrow']}) empty sections shown={st['sections']}")
+        # English
+        page.wait_for_timeout(400)
+        _ux_tap_sel(page, phone, "[data-lang]", scroll=False)
+        page.wait_for_timeout(600)
+        en = page.evaluate("""() => { const c = document.querySelector('#app main .late-day-card'); return c ? [c.querySelector('p').textContent, c.querySelector('button').textContent] : null; }""")
+        check(f"{tag}_card_en", en == ["Nothing more on today.", "See tomorrow's programme ›"], f"EN card={en}")
+        # its button selects tomorrow and the listings come back
+        page.wait_for_timeout(450)
+        _ux_tap_sel(page, phone, "#app main .late-day-card button")
+        page.wait_for_timeout(800)
+        st2 = page.evaluate("""() => ({day: S.day, card: !!document.querySelector('#app main .late-day-card'),
+            cards: document.querySelectorAll('#app main .card').length})""")
+        check(f"{tag}_button_selects_tomorrow", st2["day"] == pre["tomorrow"] and not st2["card"] and st2["cards"] > 0,
+              f"day={st2['day']} card={st2['card']} cards={st2['cards']}")
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    # earlier in the day the theatre's today view lists what is left, with no card
+    ctx = _ux_ctx(browser, base, 1280, 900, mode="theatre")
+    page, errs = _ux_page(ctx, base + "/")
+    left = page.evaluate("upcomingPerfs(PERFORMANCES.filter(p => p[1] === NOW_DATE)).length")
+    page.evaluate("() => { S.day = TODAY; render(); }")
+    page.wait_for_timeout(600)
+    st = page.evaluate("({card: !!document.querySelector('#app main .late-day-card'), cards: document.querySelectorAll('#app main .card').length})")
+    if left:
+        check(f"ux1_{eng}_late_theatre_not_before_the_end", not st["card"] and st["cards"] > 0, f"{left} performances left today: card={st['card']} cards={st['cards']}")
+    else:
+        skip(f"ux1_{eng}_late_theatre_not_before_the_end", "no performance later today at 14:45")
+    ctx.close()
+
+
+def wave_ux1(browser):
+    eng = _hf_engine(browser)
+    ensure_shot_dir("UX1")
+    share_root, tmp = _ux_share_root()
+    srv, base = _ux_server(share_root)
+    try:
+        ctx = _ux_ctx(browser, base, 1280, 800)
+        page, errs = _ux_page(ctx, base + "/")
+        items = _ux_items(page)
+        ctx.close()
+        print(f"  UX1 over {base} ({eng}); items: film={items['film']} show={items['show']} event={items.get('event')}")
+        print("\n=== UX1-1: the filter drawer swipe ===")
+        _ux_drawer(browser, base, eng)
+        print("\n=== UX1-2: desktop performance budgets ===")
+        if eng == "chromium":
+            _ux_perf(browser, base)
+        else:
+            skip("ux1_perf", "measured in Chromium (long tasks, CDP)")
+        print("\n=== UX1-3: share pages for link-preview fetchers and browsers ===")
+        _ux_share(browser, base, eng, items)
+        print("\n=== UX1-4: the address of an open sheet ===")
+        _ux_urls(browser, base, eng, items)
+        print("\n=== UX1-5: the theatre late-day card ===")
+        _ux_late(browser, base, eng)
+    finally:
+        srv.shutdown()
+        if tmp:
+            _ux_shutil.rmtree(tmp, ignore_errors=True)
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -15192,6 +15894,7 @@ WAVES = {
     "EV1": wave_ev1,
     "EV2": wave_ev2,
     "EV3": wave_ev3,
+    "UX1": wave_ux1,
 }
 
 def main():

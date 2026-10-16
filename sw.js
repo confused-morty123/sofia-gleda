@@ -15,7 +15,7 @@
  *
  * Bump CACHE_VERSION whenever this file changes so old caches are cleared.
  */
-const CACHE_VERSION = "sofia-gleda-v6";
+const CACHE_VERSION = "sofia-gleda-v7";
 
 // Domain move (2026-10): on the old github.io address this worker retires itself.
 // Once sofiagleda.com is the custom domain, GitHub redirects every request here,
@@ -26,6 +26,8 @@ const CACHE_VERSION = "sofia-gleda-v6";
 // registers it (scripts/build_index.py). On any other host it works as before.
 const RETIRED = /(^|\.)github\.io$/.test(self.location.hostname);
 const SHELL_CACHE = CACHE_VERSION + "-shell";
+// A title's own address, which the app shows while its sheet is open (v7, 16 Oct 2026).
+const ITEM_PATH = /^\/(film|show|event)\/[^\/]+\/?(?:index\.html)?$/;
 const ASSET_CACHE = CACHE_VERSION + "-assets";
 
 // Precache the app shell so a first offline load still works.
@@ -124,6 +126,16 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
+
+  // A title's own address (/film/<id>/, /show/<id>/, /event/<id>/; a reload, or a link
+  // opened in the browser) is answered with the app, network-first like "/": the app
+  // reads the path and opens that title. The share page at that path is there for
+  // link-preview fetchers and would only send a browser on to the app, so this saves
+  // the hop, and offline it is the cached app rather than a page that is not there.
+  if (req.mode === "navigate" && url.origin === self.location.origin && ITEM_PATH.test(url.pathname)) {
+    event.respondWith(networkFirst(new Request(new URL("./", self.location.href).href)));
+    return;
+  }
 
   // Navigations and the HTML document: network-first.
   if (req.mode === "navigate" ||

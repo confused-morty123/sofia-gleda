@@ -62,8 +62,12 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
    The logo row is allowed to scroll away; the controls row stays pinned via a
    negative top offset equal to the logo row height (28px logo + 14px padding-block + 10px gap = 52px).
    --logo-row-h is the single source of truth so the pinned offset cannot drift. */
+/* No backdrop-filter on the pinned header: blurring the page under it cost a render pass
+   every scroll frame (2.7 ms a frame at 1440 px where the GPU does not composite), for a
+   blur seen through 8% of the colour. Opaque instead: unblurred, even 3% let the titles
+   scrolling under it show. */
 .bar{position:sticky; top:0; z-index:60;
-  background:color-mix(in srgb,var(--ink) 92%,transparent); backdrop-filter:blur(14px);
+  background:var(--ink);
   border-bottom:1px solid var(--line); padding-block:calc(14px + env(safe-area-inset-top,0px)) 14px}
 /* three zones: brand left · toggle CENTRE · search+lang right
    P3A item 1: toggle moves to true centre column */
@@ -334,9 +338,15 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .rtrack::-webkit-scrollbar{height:5px}
 .rtrack::-webkit-scrollbar-thumb{background:var(--ink-4); border-radius:9px}
 .rarrow{position:absolute; top:34%; z-index:5; width:32px; height:62px; border-radius:10px;
-  background:color-mix(in srgb,var(--ink) 84%,transparent); border:1px solid var(--line-2);
-  display:none; place-items:center; font-size:17px; backdrop-filter:blur(6px)}
+  background:color-mix(in srgb,var(--ink) 92%,transparent); border:1px solid var(--line-2);
+  display:none; place-items:center; font-size:17px}
 @media(min-width:900px){ .rscroll:hover .rarrow{display:grid} }
+/* While the wheel or trackpad scrolls the page, the cards and rails passing under the
+   resting pointer neither lift nor show their arrows: each hover change repainted its
+   rail, about two paints and a style pass a frame (the wheel listener by the live search
+   sets .sg-wheel) */
+html.sg-wheel .card:hover{transform:none}
+html.sg-wheel .rscroll:hover .rarrow{display:none}
 .rarrow.prev{left:-8px} .rarrow.next{right:-8px}
 
 /* ---------- card + generated poster ---------- */
@@ -374,12 +384,16 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 [data-surface="theatre"] .p-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-weight:600; font-size:18px; line-height:1.12}
 .p-sub{position:relative; z-index:3; font-size:9.5px; letter-spacing:.11em; text-transform:uppercase; opacity:.8; margin-top:5px}
 .p-top{position:absolute; top:9px; left:9px; right:9px; z-index:4; display:flex; justify-content:space-between; align-items:flex-start; gap:6px}
+/* the rating badges carry no backdrop-filter: one on every card added a GPU render pass
+   per visible card to every scroll frame (12 a frame instead of 2); a darker ground keeps
+   the poster's own lettering from showing through, as the blur did */
 .score{font-family:Oswald,sans-serif; font-weight:600; font-size:12.5px; padding:2px 7px; border-radius:6px;
-  background:rgba(0,0,0,.6); backdrop-filter:blur(4px); font-variant-numeric:tabular-nums;
+  background:rgba(0,0,0,.78); font-variant-numeric:tabular-nums;
   border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; gap:4px; white-space:nowrap; color:#fff}
 .score i{font-style:normal; font-size:7.5px; letter-spacing:.1em; opacity:.72; font-family:Onest,sans-serif}
 .score.hi{color:#FFD84D} .score.na{color:#A99DAD; font-size:11px}
-.score.tmdb{background:rgba(1,180,228,.18); border-color:rgba(1,180,228,.42); color:#01B4E4}
+.score.tmdb{background:linear-gradient(rgba(1,180,228,.16),rgba(1,180,228,.16)),rgba(0,0,0,.8);
+  border-color:rgba(1,180,228,.42); color:#01B4E4}
 .fest-mark{font-family:Onest,sans-serif; font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
 /* a festival mark and a premiere badge stack in the poster's top-right corner */
 .p-tags{display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:0}
@@ -2213,6 +2227,14 @@ function venueModeBody(){
     <span style="font-size:13px;color:var(--fg-3)">${esc(L.venueShowing||"Програмата на:")}</span>
     <div class="venue-chips">${chips}</div></div>
   ${blocks}`;}
+/* The late-day card (P3A item 6), on both surfaces: today is selected and nothing is left
+   on it, so instead of an empty page it says so and offers tomorrow (the button selects
+   that day, as a day pill does). */
+function lateDayCard(L){
+  const TOMORROW=addDays(NOW_DATE,1);
+  const tmwBtn=TOMORROW<=LASTDAY?`<button class="btn" data-day="${esc(TOMORROW)}">${esc(L.lateDayBtn||"Виж програмата за утре ›")}</button>`:"";
+  return{html:()=>`<div class="late-day-card"><p>${esc(L.lateDayMsg||"Всичко за днес приключи.")}</p>${tmwBtn}</div>`};
+}
 function body(){
   const L=t(),day=dayOrAll(),out=[];
   /* VENUE MODE: S.fVenues non-empty → bypass all curated rails */
@@ -2264,9 +2286,7 @@ function body(){
     const isLateDayEmpty=isTodaySelected&&!todayItems.length&&
       !SHOWTIMES.some(r=>r[2]===TODAY&&r[3]&&r[3].some(tm=>tm>=NOW_TIME));
     if(isLateDayEmpty){
-      const TOMORROW=addDays(NOW_DATE,1);
-      const tmwBtn=TOMORROW<=LASTDAY?`<button class="btn" data-day="${esc(TOMORROW)}">${esc(L.lateDayBtn||"Виж програмата за утре ›")}</button>`:"";
-      out.push({html:()=>`<div class="late-day-card"><p>${esc(L.lateDayMsg||"Всичко за днес приключи.")}</p>${tmwBtn}</div>`});
+      out.push(lateDayCard(L));
     } else if(todayItems.length){
       pushRail(L.railFavToday||L.railToday,fmtDay(NOW_DATE,true),todayItems,x=>filmCard(x.f,false,x.rows));
     } else {
@@ -2327,6 +2347,9 @@ function body(){
       pushRail(L.railGems||"Нишово кино",L.railGemsSub||"силни оценки, малко прожекции",gemsItems,f=>filmCard(f,day));}
     if(!S.fGenres.length){
       pushRail(L.railSoon,soonSub,soon,eventCard);}
+    /* late in the day with only today selected the period holds nothing, so the
+       collapsible sections would all be empty ("По жанр 0"): the card stands alone */
+    if(isLateDayEmpty&&!vis.length)return finishBody(out);
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const visSet=new Set(vis.map(f=>f.id));
     const genreRails=[];
@@ -2370,6 +2393,11 @@ function body(){
   }else{
     /* ---- theatre mode ---- */
     const vis=visibleShows();
+    /* the late-day card, as on the cinema side: today is selected and no performance is
+       left on it (filters aside); the empty sections below are left out */
+    const isLateDayEmptyT=S.day===TODAY&&!vis.length&&
+      !upcomingPerfs(PERFORMANCES.filter(p=>p[1]===NOW_DATE)).length;
+    if(isLateDayEmptyT)out.push(lateDayCard(L));
     /* Item 4: "Препоръчани" — scored over the full period (not just today).
        scoreShow uses showPerfs(sid) which already respects inRange. */
     const rk=vis.map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v).slice(0,14);
@@ -2464,6 +2492,7 @@ function body(){
     })();
     if(!S.fGenres.length){
       pushRail(L.railSoon,soonSub,soon,eventCard);}
+    if(isLateDayEmptyT)return finishBody(out);
     const visSet=new Set(vis.map(s=>s.id));
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const genreRails=[];
@@ -2506,6 +2535,10 @@ function body(){
         +`<div id="sec-All-content" class="sec-body"${S.secAll?"":" hidden"}>${inner}</div></section>`;
     }});
   }
+  return finishBody(out);
+}
+/* Hand body()'s blocks to the progressive loader: the first few now, the rest on scroll. */
+function finishBody(out){
   RAILS=out; railIdx=Math.min(RAIL_FIRST,out.length);
   return out.slice(0,railIdx).map(matRail).join("")
     +(railIdx<out.length?`<div id="rail-sentinel" aria-hidden="true"></div>`:"");
@@ -3615,6 +3648,7 @@ function _drawerEnter(app){
      a tap on the dimmed area beside the drawer did nothing on an iPhone */
   const ds0=app.querySelector(":scope > .drawer-scrim");
   if(ds0)ds0.addEventListener("click",()=>{});
+  _drawerSwipe(app.querySelector(":scope > .drawer"));
   /* P3B: animate drawer entrance when newly opened, then move focus inside */
   requestAnimationFrame(()=>{
     const dr=document.querySelector(".drawer");
@@ -3944,6 +3978,22 @@ function unlockScroll(){
 const _HK="k"+Math.random().toString(36).slice(2,10);
 let _histDepth=0,_histPending=0,_histTimer=null;
 function _histWant(){return sheetOpen?(_ss?2:1):0;}
+/* The address follows the open sheet (16 Oct 2026): /film/<id>/, /show/<id>/ or
+   /event/<id>/ while it is open, on the sheet's own entry (and its time popup's), so an
+   address copied from the bar is the title's share page, with its preview. Closing goes
+   back to the entry below, the page's own "/". Only over http(s): a file:// page may
+   change only its query and hash (the tests and local previews run from files). */
+const _PATH_URLS=/^https?:$/.test(location.protocol);
+function _sheetPath(c){
+  return _PATH_URLS&&c&&/^(film|show|event)$/.test(c.kind)&&c.id?"/"+c.kind+"/"+encodeURIComponent(c.id)+"/":null;
+}
+/* the open sheet's entry shows the open sheet's address (one sheet opened over another,
+   or reached again after a popup's entry was left) */
+function _syncSheetUrl(){
+  if(!_PATH_URLS||_histPending||!sheetOpen||_histDepth<1)return;
+  const path=_sheetPath(curSheet);
+  if(path&&location.pathname!==path){try{history.replaceState(history.state,"",path);}catch(e){}}
+}
 /* The browser restores the page's saved scroll offset after every popstate. The page is
    pinned (scrollY 0) while a sheet is open, so with "auto" that restore could land after
    the unlock and throw the page to the top (it did with reduced motion, where the unlock
@@ -3967,7 +4017,8 @@ function _syncHistory(){
   try{
     if(_histDepth<want)_scrollRestoreManual();
     while(_histDepth<want){
-      history.pushState({ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},"");
+      const st={ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},path=_sheetPath(curSheet);
+      if(path)history.pushState(st,"",path);else history.pushState(st,"");
       _histDepth++;
     }
     if(_histDepth>want){
@@ -4008,6 +4059,7 @@ function openSheet(html,fromEl){
   sheetOpen=true;
   _scrollRestoreManual();
   _syncHistory();
+  _syncSheetUrl();
   lockScroll();
   s.classList.remove("closing");
   s.innerHTML=html;s.hidden=false;s.scrollTop=0;
@@ -4104,41 +4156,70 @@ window.addEventListener("popstate",()=>{
     _syncHistory();
   }
   if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
+  _syncSheetUrl();
+  /* Back onto an entry an earlier page load gave to a sheet: the listing shows, so does
+     the address */
+  if(_PATH_URLS&&!sheetOpen&&!_histDepth&&!_histPending&&/^\/(film|show|event)\//.test(location.pathname)){
+    try{history.replaceState(null,"","/");}catch(e){}
+  }
 });
-/* deep links: #film=id / ?film=id / #show=id / ?show=id open the matching detail
-   sheet. The ?param form is used by the static share pages so messaging-app
-   crawlers see a real URL path (film/<id>/) while the app still opens the sheet. */
+/* deep links: /film/<id>/ (the page's own path), ?film=<id> and #film=<id>, and the same
+   for show and event, open the matching detail sheet. The share pages (film/<id>/ and
+   so on, with the preview tags) send a browser on to /?film=<id>; the path itself
+   reaches the app when the service worker serves it, offline too. */
 const SITE_URL="__SITE_URL__";
-function _openById(kind,id){
+/* An app opened by a deep link: its entry becomes the plain "/" and the sheet opens on
+   an entry of its own, so Back closes the sheet onto the listing. After a reload of an
+   entry an earlier load gave to this very sheet (the service worker serves the app at
+   /film/<id>/), that entry is kept as the sheet's, so no extra Back is needed. */
+function _arrive(c){
+  if(!_PATH_URLS)return;
+  try{
+    const st=history.state,path=_sheetPath(c);
+    if(path&&st&&st.ss==="sheet"&&st.d===1&&st.k!==_HK&&location.pathname===path){
+      history.replaceState({ss:"sheet",d:1,k:_HK},"",path);_histDepth=1;return;}
+    history.replaceState(null,"","/");
+  }catch(e){}
+}
+function _openById(kind,id,arrive){
   let html=null;
   if(kind==="film"){
     if(filmById[id])html=sheetFilm(filmById[id]);
-    else if(id){toast(t().notInProgramme);return true;}
+    else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="show"){
     if(showById[id])html=sheetShow(showById[id]);
-    else if(id){toast(t().notInProgramme);return true;}
+    else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
-  if(html){curSheet={kind,id};openSheet(html,null);return true;}
+  if(html){if(arrive)_arrive({kind,id});curSheet={kind,id};openSheet(html,null);return true;}
+  if(arrive)_arrive(null);
   return false;
 }
 function openFromHash(){
   const m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
   if(!m)return false;
-  return _openById(m[1],decodeURIComponent(m[2]));
+  let id=m[2];try{id=decodeURIComponent(id);}catch(e){}
+  return _openById(m[1],id,true);
 }
-/* Read ?film= / ?show= (written by the static share pages) and ?event= (an event's share link). */
+/* Read ?film= / ?show= / ?event= (where the share pages send a browser). */
 function openFromQuery(){
   const sp=new URLSearchParams(location.search||"");
   for(const kind of["film","show","event"]){
     const id=sp.get(kind);
-    if(id)return _openById(kind,id);
+    if(id)return _openById(kind,id,true);
   }
   return false;
 }
+/* /film/<id>/, /show/<id>/, /event/<id>/ as the page's own address */
+function openFromPath(){
+  const m=/^\/(film|show|event)\/([^\/]+)\/?(?:index\.html)?$/.exec(location.pathname||"");
+  if(!m)return false;
+  let id=m[2];try{id=decodeURIComponent(id);}catch(e){}
+  return _openById(m[1],id,true);
+}
 function shareItem(kind,id,title){
-  /* films and plays have static share pages (film/<id>/, show/<id>/); events
-     have none, so their link opens the app at ?event=<id> */
-  const url=kind==="event"?SITE_URL+"/?event="+encodeURIComponent(id):SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
+  /* every film, play and event has a static share page (film/<id>/, show/<id>/,
+     event/<id>/) whose tags give the messenger its preview */
+  const url=SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
   const data={title:title||"Sofia Gleda",text:title||"",url:url};
   if(navigator.share){navigator.share(data).catch(()=>{});return;}
   const done=()=>toast(S.lang==="bg"?"Копиран линк":"Link copied");
@@ -4165,14 +4246,88 @@ let _lastDrawerOpener=null;
 
 /* Smoothly animate the drawer (translateX) out, then call cb when done.
    Falls back to instant if reduced-motion is set. */
-function animateDrawerClose(cb){
+function animateDrawerClose(cb,fromX){
   const dr=document.querySelector(".drawer");
   const ds=document.querySelector(".drawer-scrim");
   if(!dr||window.matchMedia("(prefers-reduced-motion: reduce)").matches){cb();return;}
-  const anim=dr.animate([{transform:"translateX(0)",opacity:1},{transform:"translateX(100%)",opacity:0}],
-    {duration:260,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
-  if(ds)ds.animate([{opacity:1},{opacity:0}],{duration:200,easing:"ease-in",fill:"forwards"});
+  /* from a swipe: on from where the finger left it, over the distance still to go, on a
+     curve that starts at speed (the plain close starts slowly) */
+  const x0=fromX||0,w=dr.getBoundingClientRect().width||1,rest=Math.max(0,1-x0/w);
+  const dsOp=ds?(parseFloat(getComputedStyle(ds).opacity)||0):0;
+  const anim=dr.animate([{transform:`translateX(${x0}px)`,opacity:1},{transform:"translateX(100%)",opacity:0}],
+    {duration:x0?Math.round(120+140*rest):260,easing:x0?"cubic-bezier(.25,.46,.45,.94)":"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  if(ds)ds.animate([{opacity:dsOp},{opacity:0}],{duration:x0?Math.round(100+100*rest):200,easing:"ease-in",fill:"forwards"});
   anim.onfinish=cb;
+}
+/* Close the drawer and give focus back to what opened it (the FAB or "Друг период"). */
+function _closeDrawerFrom(fromX){
+  const sel=_lastDrawerOpener;
+  animateDrawerClose(()=>{closeDrawerNow();
+    if(sel){const el=document.querySelector(sel);if(el&&typeof el.focus==="function"){try{el.focus({preventScroll:true});}catch(e){}}}},fromX);
+}
+/* Swipe the filter drawer away, as the film sheet and the time panel are pulled down
+   (swipeToClose, ssSwipeToClose): a drag to the right moves the drawer with the finger
+   and fades the dimmed page with it; let go past 30% of its width, or with a flick
+   (0.4 px/ms), and it slides on out, otherwise it springs back. Only a drag that is
+   clearly sideways is taken: one that starts up or down is the drawer's own scrolling
+   and is left alone. Reduced motion: the drawer does not follow the finger; a swipe
+   that would have closed it closes it at once. Bound once per drawer node: the node is
+   kept across filter taps (renderKeepDrawer), so the listeners stay with it. */
+function _drawerSwipe(dr){
+  if(!dr||dr._sgSwipe)return;
+  dr._sgSwipe=true;
+  const THRESHOLD=0.30,VEL_CLOSE=0.4,SLOP=8;
+  let x0=null,y0=0,t0=0,lastX=0,lastT=0,dir=0,w=0;   /* dir: 0 undecided, 1 ours, -1 not ours */
+  const scrimEl=()=>document.querySelector("#app > .drawer-scrim");
+  const reduced=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clear=()=>{dr.style.transform="";dr.style.willChange="";const s=scrimEl();if(s){s.style.opacity="";s.style.willChange="";}};
+  dr.addEventListener("touchstart",e=>{
+    if(e.touches.length!==1){x0=null;return;}
+    /* a spring-back (or the slide-in) still running would hold the drawer against the finger */
+    [dr,scrimEl()].forEach(n=>n&&n.getAnimations&&n.getAnimations().forEach(a=>{try{if(!a.effect||a.effect.getTiming().fill!=="forwards")a.finish();}catch(err){}}));
+    const t=e.touches[0];
+    x0=lastX=t.clientX;y0=t.clientY;t0=lastT=performance.now();dir=0;
+    w=dr.getBoundingClientRect().width||320;
+  },{passive:true});
+  dr.addEventListener("touchmove",e=>{
+    if(x0===null||dir<0)return;
+    /* a second finger: not a swipe; a drag already under way springs back */
+    if(e.touches.length!==1){if(dir===1)end(true);else dir=-1;return;}
+    const t=e.touches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+    if(!dir){
+      if(Math.abs(dx)<SLOP&&Math.abs(dy)<SLOP)return;
+      if(dx<=0||Math.abs(dx)<=Math.abs(dy)){dir=-1;return;}
+      dir=1;
+      if(!reduced()){dr.style.willChange="transform";const s=scrimEl();if(s)s.style.willChange="opacity";}
+    }
+    /* sideways and ours: the list must not scroll under the finger */
+    if(e.cancelable)e.preventDefault();
+    lastX=t.clientX;lastT=performance.now();
+    if(reduced())return;
+    const x=Math.max(0,dx);
+    dr.style.transform=`translateX(${x}px)`;
+    const s=scrimEl();if(s)s.style.opacity=String(Math.max(0,1-x/w).toFixed(3));
+  },{passive:false});
+  const end=cancelled=>{
+    if(x0===null)return;
+    const sx=x0,was=dir;x0=null;dir=0;
+    if(was!==1)return;
+    const dx=Math.max(0,lastX-sx),dt=lastT-t0,vel=dt>0?dx/dt:0;
+    if(!cancelled&&(dx>w*THRESHOLD||vel>VEL_CLOSE)){
+      if(reduced()){clear();_closeDrawerFrom(0);return;}
+      _closeDrawerFrom(dx);
+      return;
+    }
+    /* spring back, on the sheets' curve */
+    if(reduced()||!dx){clear();return;}
+    const s=scrimEl(),op=s?(parseFloat(s.style.opacity)||0):1;
+    clear();
+    dr.animate([{transform:`translateX(${dx}px)`},{transform:"translateX(0)"}],
+      {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)"});
+    if(s)s.animate([{opacity:op},{opacity:1}],{duration:260,easing:"ease-out"});
+  };
+  dr.addEventListener("touchend",()=>end(false),{passive:true});
+  dr.addEventListener("touchcancel",()=>end(true),{passive:true});
 }
 
 /* iPhone-style pull-to-close on phones.
@@ -5344,6 +5499,18 @@ document.addEventListener("keydown",e=>{
   if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{closeDrawerNow();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}
 });
+/* Wheel or trackpad scrolling: the page moves under a resting pointer, and every card it
+   passed lifted and dropped again, each change a repaint of its rail (two paints and a
+   style pass a frame, on desktop only). html.sg-wheel holds those hover effects (CSS by
+   .rarrow) until 160 ms after the last wheel event, or until the pointer itself moves.
+   Clicks are untouched. */
+let _wheelT=0;
+function _wheelEnd(){clearTimeout(_wheelT);_wheelT=0;document.documentElement.classList.remove("sg-wheel");}
+window.addEventListener("wheel",()=>{
+  if(!_wheelT)document.documentElement.classList.add("sg-wheel");
+  clearTimeout(_wheelT);_wheelT=setTimeout(_wheelEnd,160);
+},{passive:true});
+window.addEventListener("mousemove",e=>{if(_wheelT&&(e.movementX||e.movementY))_wheelEnd();},{passive:true});
 /* live search: only the results under the header follow the query (refreshPage); the
    field is never rebuilt, so it keeps its focus, caret and composition, and on a phone
    the keyboard stays up and the page stays where it is while the user types */
@@ -5409,7 +5576,7 @@ function _keepPageY(y){
   }
   if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
 }
-try{ boot(); if(!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
+try{ boot(); if(!openFromPath()&&!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");
   if(app&&app.innerHTML.indexOf("Зареждане на програмата")>-1) fatal(e.error||e.message);

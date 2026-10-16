@@ -2,27 +2,40 @@
 """Generate per-title share pages for Sofia Gleda.
 
 Creates or updates:
-    film/<id>/index.html   — one page per film
-    show/<id>/index.html   — one page per show
+    film/<id>/index.html    one page per film
+    show/<id>/index.html    one page per show
+    event/<id>/index.html   one page per event (the hand-curated EVENTS seed and the
+                            festivals fetch_events.py adds, EVENTS_AUTO)
 
-Each page carries OG / Twitter Card meta tags, a canonical <link>, a meta
-refresh + JS redirect back to the app (with ?film= or ?show= so messenger
-previews work while deep-linking still works), and a minimal no-JS fallback.
+Each page carries OG / Twitter Card meta tags, a canonical <link>, a small script
+that takes a real browser on to the app (/?film=<id>, /?show=<id>, /?event=<id>,
+which opens the title's sheet), and a visible link for a browser without
+JavaScript.
 
-Run this AFTER inject_data.py (step 9) so FILMS, SHOWS, and POSTERS are
-all inlined in index.html.
+There is deliberately NO meta refresh, and the script skips link-preview fetchers
+(BOT_UA below): Apple's (iMessage, Notes, Mail; its user agent is
+"... facebookexternalhit/1.1 Facebot Twitterbot/1.0") loads the page in WebKit
+and follows redirects, so with an instant redirect it read the home page's tags
+and every film was previewed as the generic site card (16 Oct 2026).
+
+The script is the same on every page (the target comes from location.pathname),
+so a Content-Security-Policy can allow it with one hash.
+
+Run this AFTER inject_data.py (step 10) so FILMS, SHOWS, EVENTS, EVENTS_AUTO and
+the poster maps are all inlined in index.html.
 
     python3 scripts/gen_share_pages.py
 
 Existing pages for titles no longer in index.html are kept so shared links
-keep working; they just show a "no longer in programme" note in the redirect
-target (the app handles this via the ?film= query parameter).
+keep working; the app shows a "no longer in programme" note for them.
 """
+import datetime
 import html as html_mod
 import json
 import pathlib
 import re
 import sys
+from urllib.parse import quote
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -32,13 +45,40 @@ from site_config import SITE_URL  # noqa: E402
 HTML_PATH = pathlib.Path(__file__).resolve().parent.parent / "index.html"
 
 FALLBACK_IMAGE = SITE_URL + "/share/share-preview.jpg"
+FALLBACK_FILE = ROOT / "share" / "share-preview.jpg"
 
 # Maximum length of og:description (characters)
 DESC_MAX = 200
 
+# Link-preview fetchers: they must stay on the page and read its tags. Matched
+# case-insensitively anywhere in the user agent. Only the fetchers' own tokens:
+# "Viber/<version>" is also in the user agent of Viber's in-app browser on
+# Android (a person, who must go on to the app), so Viber's bot is "ViberBot";
+# its other preview requests (CFNetwork, okhttp) run no script anyway. The same
+# goes for Pinterest's in-app browser ("[Pinterest/iOS]") against its crawler
+# ("Pinterestbot", "Pinterest/0.2").
+BOT_UA = ("facebookexternalhit|facebot|facebookcatalog|twitterbot|whatsapp|telegrambot|viberbot"
+          "|slackbot|slack-imgproxy|discordbot|linkedinbot|pinterestbot|pinterest/0\\."
+          "|skypeuripreview|microsoftpreview|iframely|embedly|google-pagerenderer|redditbot"
+          "|applebot|vkshare|line-poker|kakaotalk-scrap|cardyb|mastodon|bitlybot"
+          "|xing-contenttabreceiver|snap url preview|yahoo link preview|quora link preview")
+
+# The redirect, identical on every page: /film/<id>/ -> /?film=<id> (the app opens
+# that sheet and puts /film/<id>/ back in the address bar); anything else -> /.
+REDIRECT_JS = ('(function(){if(/' + BOT_UA.replace("/", "\\/") + '/i.test(navigator.userAgent||""))return;'
+               'var m=/^\\/(film|show|event)\\/([^\\/?#]+)\\/(?:index\\.html)?$/.exec(location.pathname);'
+               'location.replace(m?"/?"+m[1]+"="+m[2]:"/");})();')
+
+MONTHS_BG = ["януари", "февруари", "март", "април", "май", "юни", "юли", "август",
+             "септември", "октомври", "ноември", "декември"]
+
+TMDB_POSTER = "https://image.tmdb.org/t/p/w500"
+TMDB_BACKDROP = "https://image.tmdb.org/t/p/w780"
+
 
 def _load_data():
-    """Parse FILMS, SHOWS, and poster data from index.html without loading the full JS."""
+    """Parse FILMS, SHOWS, the events and the poster maps from index.html without
+    running its JS."""
     src = HTML_PATH.read_text(encoding="utf-8")
 
     def _const(name):
@@ -60,16 +100,53 @@ def _load_data():
 
     # Poster resolution mirrors the app's realPoster() priority chain:
     # POSTER_ALIAS (backed by SHOWALIAS) -> POSTER_MAP (backed by POSTERS)
-    # -> TMDBART (TMDB art) -> SHOWART (theatre posters).
+    # -> TMDBART (TMDB art) -> EVENTART (events' key art) -> SHOWART (theatre posters).
     # POSTER_ALIAS / POSTER_MAP are JS expressions, not JSON; read their
     # backing constants SHOWALIAS and POSTERS instead.
     poster_alias = _const("SHOWALIAS") or {}   # mirrors / redirects: {id: canonical_id}
     poster_map   = _const("POSTERS")   or {}   # direct URL overrides: {id: url}
     tmdbart      = _const("TMDBART")   or {}   # TMDB data: {id: {p, b, en, …}}
     showart      = _const("SHOWART")   or {}   # theatre poster URLs: {id: url}
-    tmdb_base = "https://image.tmdb.org/t/p/w500"
+    tmdb_base = TMDB_POSTER
 
     return films, shows, poster_alias, poster_map, tmdbart, showart, tmdb_base
+
+
+def _load_events():
+    """The events the app lists: the EVENTS seed, then EVENTS_AUTO entries whose id the
+    seed does not use (the app's own merge rule), plus EVENTART, EVENT_VENUE (event
+    -> host venue id) and the venues' names."""
+    src = HTML_PATH.read_text(encoding="utf-8")
+
+    def _const(name):
+        m = re.search(r"^const %s\s*=\s*([\[{].*?[}\]]);$" % re.escape(name), src, re.M)
+        try:
+            return json.loads(m.group(1)) if m else None
+        except Exception:
+            return None
+
+    seed = _const("EVENTS") or []
+    auto = _const("EVENTS_AUTO") or []
+    events, seen = [], set()
+    for e in seed:
+        if isinstance(e, dict) and e.get("id") and e["id"] not in seen:
+            seen.add(e["id"])
+            events.append(e)
+    for e in auto:
+        if (isinstance(e, dict) and e.get("id") and e["id"] not in seen and e.get("from") and e.get("to")
+                and isinstance(e.get("g"), list) and len(e["g"]) == 2):
+            seen.add(e["id"])
+            events.append(e)
+    # EVENT_VENUE is a small hand-written object in the app code, not a JSON line
+    venue_of = {}
+    m = re.search(r"^const EVENT_VENUE=\{(.*?)\};", src, re.M | re.S)
+    if m:
+        venue_of = dict(re.findall(r'"([^"]+)"\s*:\s*"([^"]+)"', m.group(1)))
+    names = {}
+    for v in (_const("CINEMAS") or []) + (_const("THEATRES") or []):
+        if isinstance(v, dict) and v.get("id"):
+            names[v["id"]] = v.get("name") or ""
+    return events, (_const("EVENTART") or {}), venue_of, names
 
 
 def _truncate(text, max_chars):
@@ -80,26 +157,66 @@ def _truncate(text, max_chars):
     return cut.rstrip(".,;:—–") + "…"
 
 
-def _poster_url(item_id, poster_alias, poster_map, tmdbart, showart, tmdb_base):
-    """Resolve the best poster URL for item_id, mirroring the app's realPoster() logic."""
+def _local_size(rel):
+    """(width, height) of a file the site serves, or None."""
+    path = ROOT / rel.lstrip("/")
+    if not path.is_file():
+        return None
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            return im.size
+    except Exception:
+        return None
+
+
+def _image(item_id, poster_alias, poster_map, tmdbart, showart, eventart=None):
+    """(url, width, height) of the share image, mirroring the app's realPoster();
+    width/height are None when not known. TMDB sizes are fixed by the URL: w500
+    posters are 2:3, w780 backdrops 16:9."""
     base = poster_alias.get(item_id, item_id)
     if poster_map.get(base):
         url = poster_map[base]
         if url.startswith("https://"):
-            return url
+            return url, None, None
     art = tmdbart.get(base, {})
     if art.get("p"):
-        return tmdb_base + art["p"]
+        return TMDB_POSTER + art["p"], 500, 750
     if art.get("b"):
-        return "https://image.tmdb.org/t/p/w780" + art["b"]
-    if showart.get(base):
-        val = showart[base]
+        return TMDB_BACKDROP + art["b"], 780, 439
+    for table in (eventart or {}), showart:
+        val = table.get(base) or table.get(item_id)
+        if not val:
+            continue
         if val.startswith("https://"):
-            return val
-        # Theatre posters are stored as relative paths like "posters/uroci.jpg";
-        # the site serves them from SITE_URL/posters/…
-        return SITE_URL + "/" + val.lstrip("/")
-    return FALLBACK_IMAGE
+            return val, None, None
+        # posters are stored as relative paths like "posters/uroci.jpg", served
+        # from SITE_URL/posters/…; a file that is not there would preview blank
+        size = _local_size(val)
+        if size:
+            return SITE_URL + "/" + val.lstrip("/"), size[0], size[1]
+    size = _local_size("share/share-preview.jpg")
+    return FALLBACK_IMAGE, (size[0] if size else None), (size[1] if size else None)
+
+
+def _poster_url(item_id, poster_alias, poster_map, tmdbart, showart, tmdb_base=TMDB_POSTER):
+    """Resolve the best poster URL for item_id, mirroring the app's realPoster() logic."""
+    return _image(item_id, poster_alias, poster_map, tmdbart, showart)[0]
+
+
+def _bg_range(a, b):
+    """'17–24 октомври 2026', '15 октомври – 8 ноември 2026', '17 септември 2026'."""
+    try:
+        da, db = datetime.date.fromisoformat(a), datetime.date.fromisoformat(b)
+    except (TypeError, ValueError):
+        return ""
+    if da == db:
+        return f"{da.day} {MONTHS_BG[da.month - 1]} {da.year}"
+    if (da.year, da.month) == (db.year, db.month):
+        return f"{da.day}–{db.day} {MONTHS_BG[db.month - 1]} {db.year}"
+    if da.year == db.year:
+        return f"{da.day} {MONTHS_BG[da.month - 1]} – {db.day} {MONTHS_BG[db.month - 1]} {db.year}"
+    return f"{da.day} {MONTHS_BG[da.month - 1]} {da.year} – {db.day} {MONTHS_BG[db.month - 1]} {db.year}"
 
 
 def _e(text):
@@ -108,17 +225,20 @@ def _e(text):
 
 
 def _share_page(
-    kind,           # "film" or "show"
+    kind,           # "film", "show" or "event"
     item_id,        # slug, e.g. "odiseya"
     title_bg,       # Bulgarian title
     title_en,       # English title (may be empty)
     syn_bg,         # Bulgarian synopsis (may be empty)
     poster_url,     # absolute https:// URL
     site_url,       # SITE_URL constant
+    image_w=None,   # the image's size, when known
+    image_h=None,
+    line=None,      # a line under the title on the visible page (an event's dates and venue)
 ):
     """Return the full HTML string for one share page."""
     display_title = title_bg
-    if title_en:
+    if title_en and title_en != title_bg:
         display_title = f"{title_bg} / {title_en}"
 
     # og:title / twitter:title carry the title alone; og:site_name already carries
@@ -128,10 +248,14 @@ def _share_page(
     og_desc = _e(_truncate(syn_bg, DESC_MAX)) if syn_bg else _e(display_title)
     og_image = _e(poster_url)
     canonical = _e(f"{site_url}/{kind}/{item_id}/")
-    redirect_url = _e(f"{site_url}/?{kind}={item_id}")
-    # Human-readable fallback link text uses the BG title only (safe for Cyrillic)
-    title_safe = _e(title_bg)
+    # root-relative: the visitor stays on the host that served this page
+    app_url = _e(f"/?{kind}={quote(item_id, safe='')}")
     page_title = _e(f"{title_bg} | Sofia Gleda")
+    sub = line if line is not None else (title_en if title_en and title_en != title_bg else "")
+    dims = ""
+    if image_w and image_h:
+        dims = (f'<meta property="og:image:width" content="{int(image_w)}">\n'
+                f'<meta property="og:image:height" content="{int(image_h)}">\n')
 
     return f"""<!doctype html>
 <html lang="bg">
@@ -148,28 +272,53 @@ def _share_page(
 <meta property="og:title" content="{og_title}">
 <meta property="og:description" content="{og_desc}">
 <meta property="og:image" content="{og_image}">
+{dims}<meta property="og:image:alt" content="{og_title}">
 <meta property="og:locale" content="bg_BG">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{og_title}">
 <meta name="twitter:description" content="{og_desc}">
 <meta name="twitter:image" content="{og_image}">
-<!-- Redirect to the app -->
-<meta http-equiv="refresh" content="0; url={redirect_url}">
-<script>location.replace({json.dumps(f"{site_url}/?{kind}={item_id}")});</script>
+<!-- A browser goes on to the app; a link-preview fetcher stays and reads the tags above -->
+<script>{REDIRECT_JS}</script>
 <style>
 body{{font-family:system-ui,sans-serif;background:#0C0A0F;color:#F4EFF6;
      display:flex;flex-direction:column;align-items:center;justify-content:center;
-     min-height:100vh;margin:0;padding:1.5rem;text-align:center;}}
-a{{color:#E0163A;}}
+     min-height:100vh;margin:0;padding:1.5rem;text-align:center;box-sizing:border-box}}
+.brand{{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#E0163A;margin:0 0 14px}}
+h1{{font-size:24px;line-height:1.25;margin:0 0 8px;font-weight:700}}
+.sub{{color:#B6ABBC;margin:0 0 22px}}
+.open{{display:inline-block;padding:11px 20px;border-radius:10px;background:#E0163A;color:#fff;
+      font-weight:600;text-decoration:none}}
+.en{{margin-top:12px;font-size:14px}}
+.en a{{color:#B6ABBC}}
 </style>
 </head>
 <body>
-<p>Пренасочване към Sofia Gleda&hellip;</p>
-<p><a href="{redirect_url}">{title_safe}</a></p>
+<p class="brand">Sofia Gleda</p>
+<h1>{_e(title_bg)}</h1>
+{f'<p class="sub">{_e(sub)}</p>' if sub else ''}
+<p><a class="open" href="{app_url}">Отвори в Sofia Gleda</a></p>
+<p class="en" lang="en"><a href="{app_url}">Open in Sofia Gleda</a></p>
 </body>
 </html>
 """
+
+
+def _event_page(ev, eventart, venue_of, venue_names, poster_alias, poster_map, tmdbart, showart):
+    """The share page of one event: its title, a dates-and-venue line, its key art
+    (or the site's preview image)."""
+    rng = _bg_range(ev.get("from"), ev.get("to"))
+    venue = venue_names.get(venue_of.get(ev["id"], ""), "")
+    line = " · ".join(x for x in (rng, venue) if x)
+    blurb = (ev.get("blurbBg") or "").strip()
+    if blurb and rng and rng in blurb:       # a programata blurb already gives the dates
+        desc = f"{venue}. {blurb}" if venue else blurb
+    else:
+        desc = ". ".join(x for x in (line, blurb) if x)
+    url, w, h = _image(ev["id"], poster_alias, poster_map, tmdbart, showart, eventart)
+    return _share_page("event", ev["id"], ev.get("title") or ev["id"], ev.get("titleEn") or "",
+                       desc, url, SITE_URL, image_w=w, image_h=h, line=line)
 
 
 def _write(path, content):
@@ -179,61 +328,66 @@ def _write(path, content):
 
 def main():
     films, shows, poster_alias, poster_map, tmdbart, showart, tmdb_base = _load_data()
+    events, eventart, venue_of, venue_names = _load_events()
 
     film_ids = {f["id"] for f in films}
     show_ids = {s["id"] for s in shows}
+    event_ids = {e["id"] for e in events}
 
     written = 0
     kept = 0
 
-    def _pu(item_id):
-        return _poster_url(item_id, poster_alias, poster_map, tmdbart, showart, tmdb_base)
+    def _img(item_id):
+        return _image(item_id, poster_alias, poster_map, tmdbart, showart)
 
     # --- films ---
     for film in films:
         fid = film["id"]
-        page = ROOT / "film" / fid / "index.html"
+        url, w, h = _img(fid)
         content = _share_page(
             kind="film",
             item_id=fid,
             title_bg=film.get("bg", fid),
             title_en=film.get("en", ""),
             syn_bg=film.get("synBg", ""),
-            poster_url=_pu(fid),
+            poster_url=url,
             site_url=SITE_URL,
+            image_w=w, image_h=h,
         )
-        _write(page, content)
+        _write(ROOT / "film" / fid / "index.html", content)
         written += 1
 
     # --- shows ---
     for show in shows:
         sid = show["id"]
-        page = ROOT / "show" / sid / "index.html"
+        url, w, h = _img(sid)
         content = _share_page(
             kind="show",
             item_id=sid,
             title_bg=show.get("title", sid),
             title_en=show.get("titleEn", ""),
             syn_bg=show.get("synBg", ""),
-            poster_url=_pu(sid),
+            poster_url=url,
             site_url=SITE_URL,
+            image_w=w, image_h=h,
         )
-        _write(page, content)
+        _write(ROOT / "show" / sid / "index.html", content)
+        written += 1
+
+    # --- events ---
+    for ev in events:
+        _write(ROOT / "event" / ev["id"] / "index.html",
+               _event_page(ev, eventart, venue_of, venue_names, poster_alias, poster_map, tmdbart, showart))
         written += 1
 
     # Keep (do not delete) any existing pages for titles no longer in the data.
-    # This is a no-op here: we simply never delete anything.
-    for existing in list((ROOT / "film").rglob("index.html")):
-        fid = existing.parent.name
-        if fid not in film_ids:
-            kept += 1
-    for existing in list((ROOT / "show").rglob("index.html")):
-        sid = existing.parent.name
-        if sid not in show_ids:
-            kept += 1
+    for kind, ids in (("film", film_ids), ("show", show_ids), ("event", event_ids)):
+        d = ROOT / kind
+        if d.is_dir():
+            kept += sum(1 for p in d.glob("*/index.html") if p.parent.name not in ids)
 
-    print(f"gen_share_pages: wrote {written} share pages"
-          + (f", kept {kept} pages for unlisted titles" if kept else ""))
+    print(f"gen_share_pages: wrote {written} share pages ({len(films)} films, {len(shows)} shows, "
+          f"{len(events)} events)" + (f", kept {kept} pages for unlisted titles" if kept else ""))
 
 
 if __name__ == "__main__":

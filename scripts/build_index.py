@@ -27,6 +27,12 @@ HEAD = """<!doctype html>
 <html lang="bg">
 <head>
 <meta charset="utf-8">
+<!-- The site is at the domain root, and while a film, play or event is open the address
+     is /film/<id>/ (or /show/, /event/): relative URLs (posters/, icons/, sw.js, the
+     manifest) resolve from "/" whatever the path. A page opened from a file (a local
+     preview, the tests) resolves them from its own folder instead. -->
+<base href="/">
+<script>if(location.protocol==="file:")document.querySelectorAll("base").forEach(function(e){e.remove();});</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C0A0F">
 <meta name="color-scheme" content="dark">

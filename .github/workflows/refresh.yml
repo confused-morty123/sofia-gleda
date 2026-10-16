@@ -153,6 +153,7 @@ jobs:
           # Stage per-title share pages and the site share-preview image.
           [ -d film ] && git add film/
           [ -d show ] && git add show/
+          [ -d event ] && git add event/
           [ -f share/share-preview.jpg ] && git add share/share-preview.jpg
           # Stage any new or updated poster images (re-hosted from venue websites).
           # This is safe: posters/ is append-only in practice, and the gitignore

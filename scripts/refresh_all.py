@@ -22,7 +22,7 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     8. translate.py                 DeepL English for BG-only synopses/titles -> translations.json
     9. fetch_events.py              festivals / limited runs programata.bg announces -> events.json
    10. inject_data.py               inline the poster maps, film details and auto events -> index.html
-   11. gen_share_pages.py           static /film/<id>/ and /show/<id>/ share pages -> film/, show/
+   11. gen_share_pages.py           static /film/<id>/, /show/<id>/, /event/<id>/ share pages -> film/, show/, event/
    12. verify_build.py              gate: is the result actually usable?
 
 Steps 1-11 are best-effort and never abort the run. Step 12 is not: if the rebuilt
