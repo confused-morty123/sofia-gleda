@@ -2688,5 +2688,19 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "vzvod": {
+  "id": "vzvod",
+  "bg": "Взвод",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
  }
 }

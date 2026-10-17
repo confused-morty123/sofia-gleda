@@ -931,7 +931,13 @@
   "pv": 5
  },
  "always-lalisa": {
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8494O2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8494O2R.jpg",
+  "synBg": "Always Lalisa е пълнометражен документален филм, който проследява световната суперзвезда LISA по време на една преобразяваща година извън BLACKPINK — K-pop феномена, който я превърна в една от най-разпознаваемите изпълнителки в света",
+  "genres": [
+   "Документален"
+  ],
+  "src": "https://programata.bg/kino/filmi/always-lalisa/",
+  "pv": 5
  },
  "hybe-cine-fest-2026-enhypen-world-tour-blood-saga": {
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8574O2R.jpg"
@@ -1637,10 +1643,23 @@
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/7879S2R.jpg"
  },
  "street-fighter": {
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8182S2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8182S2R.jpg",
+  "synBg": "Street Fighter ни среща с Рю и Кен – някога неразделни приятели и противници, поели по различни пътища, които отново се оказват изправени един срещу друг, след като мистериозната Чън-Ли ги въвлича в Световен турнир II – арена, събираща най-силните майстори на бойни изкуства от цял свят. Но това, което започва като сблъсък за определянето на най-добрия боец, постепенно се разкрива като мащабен заговор, който принуждава героите да влязат в битка не само със страховитите си противници, но и със сенките на собственото си минало.",
+  "dir": "Китао Сакурай",
+  "cast": "Андрю Коджи, Ноа Сентинео, Калина Лианг, Коди Роудс, Орвил Пек",
+  "genres": [
+   "Екшън"
+  ],
+  "src": "https://programata.bg/kino/filmi/street-fighter/",
+  "pv": 5
  },
  "v-dalbinite": {
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8333S2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8333S2R.jpg",
+  "synBg": "В дълбините проследява младия гмуркач Джей Гарднър, който след смъртта на баща си се отправя към водите край крайбрежието на Калифорния, за да потърси останките му. Това, което започва като лично пътешествие в търсене на последно сбогом, бързо се превръща в кошмар, когато Джей е погълнат от огромен кашалот. Оказал се в корема на величественото създание и разполагащ с кислород за по-малко от един час, той трябва да намери начин да се измъкне, преди времето му да изтече. В най-безнадеждния момент от живота си Джей трябва да се изправи не само пред физическата опасност, но и срещу демоните от миналото си.",
+  "dir": "Брайън Дъфийлд",
+  "cast": "Остин Ейбрамс, Джош Бролин, Елизабет Шу, Джон Ортис, Джейн Леви",
+  "src": "https://programata.bg/kino/filmi/v-dalbinite/",
+  "pv": 5
  },
  "dzhambo-magicheskoto-priklyuchenie": {
   "img": "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/ed6ef7335dafacbfa37ee374723733c83264b3d0.jpeg"
@@ -1714,5 +1733,13 @@
   "dir": "Венцислав Сариев",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/15/under-the-midnight-sun-screen-poster-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/srednoshtno-sluntze-3696.html"
+ },
+ "pochivkata-2": {
+  "src": "https://www.kinoarena.com/bg/movie/pocivkata-2",
+  "pv": 5
+ },
+ "pochivkata-1": {
+  "src": "https://www.kinoarena.com/bg/movie/pocivkata-re-release",
+  "pv": 5
  }
 }

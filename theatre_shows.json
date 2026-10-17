@@ -5182,5 +5182,95 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "sedem-noshti-na-viola-karavelova": {
+  "id": "sedem-noshti-na-viola-karavelova",
+  "title": "СЕДЕМ НОЩИ НА ВИОЛА КАРАВЕЛОВА",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "ivanovden": {
+  "id": "ivanovden",
+  "title": "Ивановден",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "razdelenoto-kralstvo": {
+  "id": "razdelenoto-kralstvo",
+  "title": "Разделеното кралство",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "gramofonat": {
+  "id": "gramofonat",
+  "title": "ГРАМОФОНЪТ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "muhi-bez-glavi": {
+  "id": "muhi-bez-glavi",
+  "title": "МУХИ БЕЗ ГЛАВИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }

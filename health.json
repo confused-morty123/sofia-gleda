@@ -21,16 +21,6 @@
  },
  {
   "level": "warning",
-  "venue": "cc-paradise",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cc-sofia",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
   "venue": "cg-park",
   "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
  },
@@ -42,7 +32,7 @@
  {
   "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 8 screenings are preliminary, from programata.bg"
+  "message": "no official programme: all 7 screenings are preliminary, from programata.bg"
  },
  {
   "level": "warning",
@@ -62,11 +52,11 @@
  {
   "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 21 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 20 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 166/216 ok, 50 missing IMDb ratings"
+  "message": "OMDb: 166/217 ok, 51 missing IMDb ratings"
  }
 ]

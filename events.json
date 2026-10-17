@@ -17,8 +17,8 @@
    "post": 187545,
    "scope": "theatre",
    "source": "programata.bg",
-   "status": "upcoming",
-   "tag": "СЛЕД 1 ДЕН",
+   "status": "active",
+   "tag": "СЛЕД 0 ДНИ",
    "title": "ACT Фестивал за свободен театър",
    "titleEn": "ACT Independent Theatre Festival",
    "titles": [
@@ -101,7 +101,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 27 ДНИ",
+   "tag": "СЛЕД 26 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -139,7 +139,7 @@
    ]
   }
  ],
- "generated": "2026-10-16T04:13:04+00:00",
+ "generated": "2026-10-17T04:09:49+00:00",
  "ok": true,
  "posts": {
   "179727": {
