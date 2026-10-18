@@ -2702,5 +2702,16 @@
   ],
   "source": "dom-kino",
   "runtime": 115
+ },
+ "sinelibri-2026-tseluvka-za-leka-nosht": {
+  "id": "sinelibri-2026-tseluvka-za-leka-nosht",
+  "bg": "СИНЕЛИБРИ 2026 – ЦЕЛУВКА ЗА ЛЕКА НОЩ І",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "vlaikova"
  }
 }

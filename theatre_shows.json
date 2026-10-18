@@ -5272,5 +5272,23 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "takav-e-zhivota": {
+  "id": "takav-e-zhivota",
+  "title": "ТАКЪВ Е ЖИВОТА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
