@@ -5290,5 +5290,59 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "chayka-sled-samoubiystvoto": {
+  "id": "chayka-sled-samoubiystvoto",
+  "title": "„ЧАЙКА“ СЛЕД САМОУБИЙСТВОТО",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "ne-se-oblichay-za-vecherya": {
+  "id": "ne-se-oblichay-za-vecherya",
+  "title": "Не се обличай за вечеря",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "takav-e-zhivotat": {
+  "id": "takav-e-zhivotat",
+  "title": "''ТАКЪВ Е ЖИВОТЪТ''",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
