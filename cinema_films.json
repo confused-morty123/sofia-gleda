@@ -2713,5 +2713,16 @@
    "#4A5F27"
   ],
   "source": "vlaikova"
+ },
+ "skoti": {
+  "id": "skoti",
+  "bg": "СКОТИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
  }
 }
