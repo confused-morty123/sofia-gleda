@@ -709,6 +709,21 @@ check("declutter: festival prefix stripped",
 check("declutter: festival prefix content kept",
       "Заглавие" in _t2, True)
 
+# Festival SUFFIX (Люмиер, 2026-10-21): the ALL-CAPS prefix rule used to eat the
+# title itself and search TMDB for "СИНЕЛИБРИ"; the identity key must equal the
+# prefixed spelling's, so the screening joins the catalogue film
+import film_identity as _FID
+check("declutter: festival suffix stripped, title kept",
+      _dc("КУКЛА - СИНЕЛИБРИ"), ("КУКЛА", None))
+check("declutter: Latin festival suffix stripped",
+      _dc("LES MISÉRABLES - CINELIBRI"), ("LES MISÉRABLES", None))
+check("film_identity: suffix and prefix spellings share a key",
+      _FID.key("ВСИЧКИ ВЛЮБЕНИ В НОЩТА - СИНЕЛИБРИ"), _FID.key("Синелибри 2026: ВСИЧКИ ВЛЮБЕНИ В НОЩТА"))
+check("film_identity: a hyphenated word is not a suffix",
+      _FID.strip_prefix("Филм-Синелибри"), "Филм-Синелибри")
+check("film_identity: display of a minted film keeps the venue's suffix",
+      _FID.clean_title("КУКЛА - СИНЕЛИБРИ", keep_prefix=True), "КУКЛА - СИНЕЛИБРИ")
+
 _t3, _y3 = _dc("ЕВРОПЕЙСКИ КИНОКЛАСИКИ: Някакъв филм")
 check("declutter: series prefix stripped",
       "ЕВРОПЕЙСКИ" not in _t3, True)

@@ -36,7 +36,7 @@ The normalised key: case, ё, quotes, dashes and punctuation folded; format and
 language tags dropped (2D/3D/IMAX/4DX/D-BOX/ScreenX, "бг аудио", "дублиран",
 "с бг субтитри", "(БГ)", "Premiere", "Предпремиера"…); a known festival or
 series prefix dropped (СИНЕЛИБРИ 2026 –, ЕВРОПЕЙСКИ КИНОКЛАСИКИ:, Sofia
-Documental:…); a "Name Surname:" director prefix dropped only when the title
+Documental:…), and the same names as a suffix (" - СИНЕЛИБРИ"); a "Name Surname:" director prefix dropped only when the title
 ends in a "(YYYY)" year; that trailing year dropped.
 
 Festival prefixes are an explicit list on purpose: a generic "ALL-CAPS words
@@ -80,6 +80,10 @@ _FESTIVALS = [
     r"софия\s+филм\s+фест(?:\s+\d{4})?", r"sofia\s+film\s+fest(?:\s+\d{4})?",
 ]
 _FESTIVAL_RE = re.compile(r"^\s*(?:" + "|".join(_FESTIVALS) + r")\s*[:\-–—|]\s*", re.I)
+# The same names written AFTER the title, behind a spaced dash or bar (Люмиер,
+# 2026-10-21: "КУКЛА - СИНЕЛИБРИ", "LES MISÉRABLES - CINELIBRI"). The space before
+# the separator keeps hyphenated words whole.
+_FESTIVAL_SUFFIX_RE = re.compile(r"\s+[\-–—|]\s*(?:" + "|".join(_FESTIVALS) + r")\s*$", re.I)
 _YEAR_PARENS_RE = re.compile(r"\s*[\(\[]\s*((?:18|19|20)\d{2})\s*[\)\]]\s*$")
 _YEAR_BARS_RE = re.compile(r"\s*\|\s*((?:18|19|20)\d{2})\s*\|?\s*$")
 # "Name Surname:" — 2 to 4 words of letters only (a person, not "Падане 2").
@@ -106,6 +110,7 @@ def clean_title(title, keep_prefix=False):
     t = re.sub(r"\s+", " ", t).strip()
     if not keep_prefix:
         t = _FESTIVAL_RE.sub("", t)
+        t = _FESTIVAL_SUFFIX_RE.sub("", t)
     t = _BRACKET_TAG_RE.sub(" ", t)
     t = _TAG_RE.sub(" ", t)
     t = _EMPTY_BRACKETS_RE.sub(" ", t)
@@ -116,9 +121,11 @@ def clean_title(title, keep_prefix=False):
 
 def strip_prefix(title):
     """The title without a known festival/series prefix ("СИНЕЛИБРИ 2026 – ПЕПЕЛ",
-    "Синелибри: Черното топче"); otherwise exactly as written."""
+    "Синелибри: Черното топче") or suffix ("КУКЛА - СИНЕЛИБРИ"); otherwise
+    exactly as written."""
     t = unicodedata.normalize("NFC", title or "").replace("\xa0", " ").strip()
-    return _FESTIVAL_RE.sub("", t, count=1).strip()
+    t = _FESTIVAL_RE.sub("", t, count=1).strip()
+    return _FESTIVAL_SUFFIX_RE.sub("", t, count=1).strip()
 
 
 def title_year(title):
