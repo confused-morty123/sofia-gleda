@@ -5398,5 +5398,149 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "istorii-stories": {
+  "id": "istorii-stories",
+  "title": "Истории/Stories",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
+ },
+ "wide-art-forum-2026": {
+  "id": "wide-art-forum-2026",
+  "title": "WIDE ART Forum 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "spontannost": {
+  "id": "spontannost",
+  "title": "СПОНТАННОСТ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "choveshka-greshka": {
+  "id": "choveshka-greshka",
+  "title": "ЧОВЕШКА ГРЕШКА",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "otnasya-se-do-vsichki": {
+  "id": "otnasya-se-do-vsichki",
+  "title": "Отнася се до всички",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "priklyucheniya-v-tarsene-na-vaobrazhenieto": {
+  "id": "priklyucheniya-v-tarsene-na-vaobrazhenieto",
+  "title": "Приключения в търсене на Въображението",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "marionetni-fantazii": {
+  "id": "marionetni-fantazii",
+  "title": "МАРИОНЕТНИ ФАНТАЗИИ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "kakvo-e-koleda": {
+  "id": "kakvo-e-koleda",
+  "title": "КАКВО Е КОЛЕДА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
  }
 }

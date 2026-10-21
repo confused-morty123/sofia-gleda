@@ -1753,5 +1753,20 @@
  "sinelibri-2026-tseluvka-za-leka-nosht": {
   "src": "https://vlaikovacinema.com/screening/%d1%81%d0%b8%d0%bd%d0%b5%d0%bb%d0%b8%d0%b1%d1%80%d0%b8-2026-%d1%86%d0%b5%d0%bb%d1%83%d0%b2%d0%ba%d0%b0-%d0%b7%d0%b0-%d0%bb%d0%b5%d0%ba%d0%b0-%d0%bd%d0%be%d1%89-%d1%96-%d0%bf%d1%80%d0%b5%d0%bc%d0%b8/",
   "pv": 5
+ },
+ "karay-kolata-mi": {
+  "synBg": "Юсуке Кафуку е успешен театрален актьор и режисьор, женен за Ото, красива драматуржка, която крие много тайни. С нея той споделя прекрасен живот, болезнено минало и ползотворно творческо сътрудничество. Когато Ото внезапно умира, тя оставя след себе си много въпроси без отговор, които връзката им винаги е поставяла.",
+  "dir": "Рюсуке Хамагучи",
+  "cast": "Нидетоши Нишиджима, Токо Миура, Масаки Окада, Рейка Киришима, Парк Юрим",
+  "genres": [
+   "Драма"
+  ],
+  "src": "https://programata.bg/kino/filmi/karaj-kolata-mi/",
+  "pv": 5
+ },
+ "skoti": {
+  "src": "https://vlaikovacinema.com/screening/%d1%81%d0%ba%d0%be%d1%82%d0%b8/",
+  "pv": 5,
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8579D2R.jpg"
  }
 }
