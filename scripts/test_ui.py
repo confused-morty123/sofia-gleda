@@ -14078,11 +14078,16 @@ HF2_POSTER_REC_JS = r"""(ms)=>{
     for(const p of m.querySelectorAll('.poster,.hero-art,.ebox')){
       const r=p.getBoundingClientRect();
       if(!(r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth))continue;
-      const tr=p.closest('.rtrack');if(tr){const t=tr.getBoundingClientRect();if(r.right<=t.left||r.left>=t.right)continue;}
+      const tr=p.closest('.rtrack'),t=tr&&tr.getBoundingClientRect();if(t&&(r.right<=t.left||r.left>=t.right))continue;
       let why=null;const im=p.querySelector('img.p-real');
+      // the picture's own pixels decide whether its load/decode state can show: an event
+      // card's .ebox has a 1 px border, so its frame can peek in (2026-10-21, WebKit 390 px:
+      // frame top 843.4, picture top 844.4 of 844) while the picture is wholly below the fold
+      const q=im&&im.getBoundingClientRect();
+      const shown=!!q&&q.width>0&&q.height>0&&q.bottom>0&&q.top<innerHeight&&q.right>0&&q.left<innerWidth&&(!t||(q.right>t.left&&q.left<t.right));
       if(!p.querySelector('.p-art'))why='blank';
-      else if(im&&!(im.complete&&im.naturalWidth>0))why='not loaded';
-      else if(im&&!(im.__hf2old||im.__hf2dec))why='not decoded';
+      else if(shown&&!(im.complete&&im.naturalWidth>0))why='not loaded';
+      else if(shown&&!(im.__hf2old||im.__hf2dec))why='not decoded';
       if(why){R.nbad++;if(R.bad.length<4)R.bad.push(why+': '+(im?im.getAttribute('src').split('/').pop():'-'));}}
     for(const a of document.getAnimations()){const t=a.effect&&a.effect.target;if(t&&m.contains(t)&&R.anims.length<4)R.anims.push(String(t.className||t.tagName).slice(0,30));}
     if(performance.now()<until)requestAnimationFrame(tick);};
