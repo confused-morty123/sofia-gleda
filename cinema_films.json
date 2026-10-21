@@ -2688,5 +2688,165 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "vzvod": {
+  "id": "vzvod",
+  "bg": "Взвод",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
+ },
+ "sinelibri-2026-tseluvka-za-leka-nosht": {
+  "id": "sinelibri-2026-tseluvka-za-leka-nosht",
+  "bg": "СИНЕЛИБРИ 2026 – ЦЕЛУВКА ЗА ЛЕКА НОЩ І",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "vlaikova"
+ },
+ "skoti": {
+  "id": "skoti",
+  "bg": "СКОТИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
+ },
+ "kleyfeys": {
+  "id": "kleyfeys",
+  "bg": "Клейфейс",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Хорър",
+   "Трилър",
+   "Приключенски"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 108,
+  "year": 2026
+ },
+ "chronicles-of-uncomfortable-truth-engl": {
+  "id": "chronicles-of-uncomfortable-truth-engl",
+  "bg": "Chronicles of uncomfortable truth - Engl",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 91,
+  "year": 2026
+ },
+ "razum-i-chuvstva-sinelibri": {
+  "id": "razum-i-chuvstva-sinelibri",
+  "bg": "РАЗУМ И ЧУВСТВА - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "haos-v-komedi-fransez-sinelibri": {
+  "id": "haos-v-komedi-fransez-sinelibri",
+  "bg": "ХАОС В КОМЕДИ ФРАНСЕЗ - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "taksi-za-raya-sinelibri": {
+  "id": "taksi-za-raya-sinelibri",
+  "bg": "ТАКСИ ЗА РАЯ - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "lumiere"
+ },
+ "kukla-sinelibri": {
+  "id": "kukla-sinelibri",
+  "bg": "КУКЛА - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
+ },
+ "edna-istoriya-sinelibri": {
+  "id": "edna-istoriya-sinelibri",
+  "bg": "ЕДНА ИСТОРИЯ - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "doors": {
+  "id": "doors",
+  "bg": "Доорс",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "lumiere",
+  "runtime": 141,
+  "year": 1991,
+  "originalTitle": "The Doors"
+ },
+ "vsichki-vlyubeni-v-noshtta-sinelibri": {
+  "id": "vsichki-vlyubeni-v-noshtta-sinelibri",
+  "bg": "ВСИЧКИ ВЛЮБЕНИ В НОЩТА - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
+ },
+ "les-mis-rables-cinelibri": {
+  "id": "les-mis-rables-cinelibri",
+  "bg": "LES MISÉRABLES - CINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere"
  }
 }

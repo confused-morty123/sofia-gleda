@@ -6,31 +6,6 @@
  },
  {
   "level": "warning",
-  "venue": "mladezhki",
-  "message": "ticket-list time(s) off the 5-minute grid, shown as preliminary; check by hand: 2026-11-21 12:13 Малката Баба Яга"
- },
- {
-  "level": "warning",
-  "venue": "arena-mall",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "arena-mega",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cc-paradise",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cc-sofia",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
   "venue": "cg-park",
   "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
  },
@@ -42,7 +17,7 @@
  {
   "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 8 screenings are preliminary, from programata.bg"
+  "message": "no official programme: all 72 screenings are preliminary, from programata.bg"
  },
  {
   "level": "warning",
@@ -57,16 +32,16 @@
  {
   "level": "warning",
   "venue": "derida",
-  "message": "no official programme: its one performance is preliminary, from theatre.art.bg"
+  "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
  {
   "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 21 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 30 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 166/216 ok, 50 missing IMDb ratings"
+  "message": "OMDb: 167/220 ok, 53 missing IMDb ratings"
  }
 ]
