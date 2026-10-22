@@ -16087,6 +16087,253 @@ def wave_lg3(browser):
             pass
 
 
+# ============================================================================
+# WAVE TR1: the film trailer (Option 1, "hero = trailer")
+# ============================================================================
+# Hosts that belong to YouTube or Google. None may be contacted before the visitor
+# presses play; after it, only www.youtube-nocookie.com (stubbed here: no network).
+_TR1_GOOGLE = re.compile(r"^https?://([^/]*\.)?(youtube-nocookie\.com|youtube\.com|youtu\.be|ytimg\.com|"
+                         r"googlevideo\.com|google\.com|google\.bg|gstatic\.com|googleapis\.com|"
+                         r"doubleclick\.net|googlesyndication\.com|googletagmanager\.com)(/|$)", re.I)
+_TR1_KEY = "jxU8FU3o75A"
+_TR1_STUB = ("<!doctype html><html><head><meta charset='utf-8'><title>stub</title></head>"
+             "<body style='margin:0;background:#111;color:#eee;font:14px sans-serif'>YouTube player stub (TR1)</body></html>")
+
+
+def _tr1_page(src):
+    """A copy of the page with TMDBART patched: film A gets a trailer whose TMDB year is the
+    film's, film B one whose TMDB year is 10 years off (a wrong match: no circle), film C
+    none. The build's own data has no trailers yet (the pipeline's keys are GitHub secrets),
+    so this is the fixture that exercises the UI."""
+    m = re.search(r"^const TMDBART\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    fm = re.search(r"^const FILMS=(\[.*?\]);\s*$", src, flags=re.M | re.S)
+    if not m or not fm:
+        return None, None
+    art = json.loads(m.group(1))
+    films = [f for f in json.loads(fm.group(1)) if isinstance(f, dict) and f.get("id") in art]
+    with_year = [f for f in films if isinstance(f.get("year"), int)]
+    order = sorted(with_year, key=lambda f: (f["id"] != "insidious", f["id"]))
+    if len(order) < 3:
+        return None, None
+    a, b, c = order[0], order[1], order[2]
+    for f in films:
+        art[f["id"]].pop("v", None)
+    art[a["id"]].update({"y": a["year"], "v": {"k": _TR1_KEY, "l": "en", "t": "Trailer"}})
+    art[b["id"]].update({"y": b["year"] - 10, "v": {"k": "abcdefghijk", "l": "en", "t": "Trailer"}})
+    art[c["id"]].pop("v", None)
+    t = src[:m.start(1)] + json.dumps(art, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + src[m.end(1):]
+    return _restamp(t), {"a": a["id"], "b": b["id"], "c": c["id"]}
+
+
+def _tr1_open(browser, url, lang, w, h, reduced=False):
+    kw = {"viewport": {"width": w, "height": h}, "timezone_id": "Europe/Sofia", "locale": "bg-BG"}
+    if reduced:
+        kw["reduced_motion"] = "reduce"
+    ctx = browser.new_context(**kw)
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',
+        genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'%s', mode:'cinema'})); } catch(e) {}""" % lang)
+    reqs = []
+
+    def _route(route):
+        u = route.request.url
+        if re.match(r"^https://www\.youtube-nocookie\.com/embed/", u):
+            route.fulfill(status=200, content_type="text/html; charset=utf-8", body=_TR1_STUB)
+        else:
+            route.abort()
+    ctx.route(_TR1_GOOGLE, _route)
+    page = ctx.new_page()
+    page.on("request", lambda r: reqs.append(r.url))
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(url)
+    page.wait_for_selector(".bar", timeout=20000)
+    page.wait_for_selector(".scrim .sheet .shero", timeout=10000)
+    page.wait_for_timeout(700)          # the opening animation, the poster load
+    return ctx, page, reqs, errs
+
+
+_TR1_STATE_JS = """() => { const h = document.querySelector('.scrim .sheet .shero'); if (!h) return null;
+  const r = el => { if (!el) return null; const b = el.getBoundingClientRect(); return {x: b.x, y: b.y, w: b.width, h: b.height}; };
+  const play = h.querySelector('.tr-play'), fr = h.querySelector('.tr-frame iframe'), stop = h.querySelector('[data-trailer-stop]');
+  const vis = el => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+  const art = h.querySelector('img.p-real') || h.querySelector('svg.p-art');
+  return {hasTr: h.classList.contains('has-tr'), playing: h.classList.contains('playing'),
+    play: vis(play) ? r(play) : null, hero: r(h), titles: r(h.querySelector('.sh-titles')),
+    close: r(h.querySelector('.sclose')), share: r(h.querySelector('.sshare')),
+    frame: fr ? Object.assign(r(fr), {src: fr.getAttribute('src'), title: fr.getAttribute('title'),
+      allow: fr.getAttribute('allow') || '', ref: fr.getAttribute('referrerpolicy') || ''}) : null,
+    iframes: document.querySelectorAll('iframe').length,
+    stop: vis(stop) ? r(stop) : null, artShown: vis(art),
+    note: (document.querySelector('.scrim .sheet .tr-note') || {}).textContent || '',
+    active: document.activeElement ? (document.activeElement.className || document.activeElement.tagName) : '',
+    sheetOpen: !!document.querySelector('.scrim:not([hidden]) .sheet') && sheetOpen}; }"""
+
+
+def wave_tr1(browser):
+    """TR1: the trailer on the film sheet's key art. Nothing from YouTube or Google before
+    the tap; the tap inserts one youtube-nocookie.com iframe in the header (nothing on top
+    of it), stop / Esc / closing the sheet remove it; keyboard and screen reader names in
+    BG and EN; reduced motion; films without a trailer, or whose TMDB year disagrees with
+    theirs, show no circle. TMDBART is patched (the build's data has no trailers yet)."""
+    wave = "TR1"
+    ensure_shot_dir(wave)
+    src = html_path.read_text(encoding="utf-8")
+    page_html, ids = _tr1_page(src)
+    check("tr1_fixture_built", page_html is not None, str(ids))
+    if not page_html:
+        return
+    test_file = webapp_root / "index.tr1.html"
+    test_file.write_text(page_html, encoding="utf-8")
+    base = test_file.as_uri()
+    try:
+        for lang, w, h, tag in (("bg", 402, 874, "phone"), ("bg", 1280, 900, "desktop"), ("en", 402, 874, "phone"),
+                                ("en", 1280, 900, "desktop")):
+            print(f"\n=== TR1: {lang} {tag} {w}x{h} ===")
+            sfx = f"{lang}_{tag}"
+            ctx, page, reqs, errs = _tr1_open(browser, base + "#film=" + ids["a"], lang, w, h)
+            try:
+                L = page.evaluate("T[S.lang]")
+                title = page.evaluate("(id) => filmTitle(filmById[id])", ids["a"])
+                st = page.evaluate(_TR1_STATE_JS)
+                pre = [u for u in reqs if _TR1_GOOGLE.match(u)]
+                check(f"tr1_no_google_request_before_tap_{sfx}", not pre, f"{len(reqs)} request(s); google: {pre[:2]}")
+                check(f"tr1_no_iframe_before_tap_{sfx}", st and st["iframes"] == 0 and st["frame"] is None,
+                      f"iframes={st and st['iframes']}")
+                p = st and st["play"]
+                hero = st and st["hero"]
+                check(f"tr1_circle_on_key_art_{sfx}", bool(p and st["hasTr"] and st["artShown"]),
+                      f"play={p} hasTr={st and st['hasTr']}")
+                if p:
+                    cx = p["x"] + p["w"] / 2
+                    check(f"tr1_circle_size_and_place_{sfx}",
+                          p["w"] >= 56 and abs(p["w"] - p["h"]) < 1 and abs(cx - (hero["x"] + hero["w"] / 2)) <= 2
+                          and p["y"] + p["h"] <= st["titles"]["y"] and p["y"] >= st["close"]["y"] + st["close"]["h"] - 1,
+                          f"circle {p['w']:.0f}x{p['h']:.0f} at x-centre {cx:.0f} (hero {hero['x'] + hero['w'] / 2:.0f}), "
+                          f"bottom {p['y'] + p['h']:.0f} vs titles {st['titles']['y']:.0f}")
+                    sty = page.evaluate("""() => { const c = getComputedStyle(document.querySelector('.tr-play'));
+                        return {bg: c.backgroundColor, border: c.borderTopColor, bw: c.borderTopWidth, color: c.color}; }""")
+                    check(f"tr1_circle_calm_legible_{sfx}",
+                          sty["color"] in ("rgb(255, 255, 255)",) and sty["border"].startswith("rgba(255, 255, 255")
+                          and re.match(r"rgba\(\d+, \d+, \d+, 0\.[3-8]\d*\)", sty["bg"]) is not None,
+                          f"{sty}")
+                # screen reader name and role, in this language
+                want = f"{L['trPlay']}: {title}"
+                n = page.get_by_role("button", name=want, exact=True).count()
+                check(f"tr1_play_button_name_{sfx}", n == 1, f"{want!r}: {n} button(s)")
+                note_ok = L["trNote"] in st["note"] and ((lang == "bg") == (L["trIn"]["en"] in st["note"]))
+                check(f"tr1_privacy_note_{sfx}", note_ok, repr(st["note"].strip()))
+                save_shot(page, wave, f"before_{sfx}")
+                # keyboard: Tab from close -> share -> play, then Enter
+                page.focus(".scrim .sheet .sclose")
+                page.keyboard.press("Tab")
+                page.keyboard.press("Tab")
+                foc = page.evaluate("document.activeElement && document.activeElement.matches('.tr-play')")
+                check(f"tr1_keyboard_reaches_play_{sfx}", foc, page.evaluate("document.activeElement.className"))
+                page.keyboard.press("Enter")
+                page.wait_for_selector(".scrim .shero .tr-frame iframe", timeout=5000)
+                page.wait_for_timeout(500)
+                st = page.evaluate(_TR1_STATE_JS)
+                f = st["frame"] or {}
+                check(f"tr1_iframe_on_tap_{sfx}",
+                      st["playing"] and st["iframes"] == 1
+                      and (f.get("src") or "").startswith(f"https://www.youtube-nocookie.com/embed/{_TR1_KEY}?")
+                      and "autoplay" in f.get("allow", "") and f.get("ref") == "strict-origin-when-cross-origin",
+                      f"src={f.get('src')!r} allow={f.get('allow')!r} ref={f.get('ref')!r}")
+                check(f"tr1_iframe_named_{sfx}", f.get("title") == f"{L['trTrailer']}: {title}", repr(f.get("title")))
+                check(f"tr1_player_min_size_{sfx}", f.get("w", 0) >= 200 and f.get("h", 0) >= 200 - 0.5,
+                      f"{f.get('w', 0):.0f}x{f.get('h', 0):.0f}")
+                over = page.evaluate("""() => { const f = document.querySelector('.tr-frame iframe').getBoundingClientRect();
+                    const pts = [[.5,.5],[.1,.1],[.9,.1],[.1,.9],[.9,.9]];
+                    return pts.map(([a,b]) => { const el = document.elementFromPoint(f.x + f.width*a, f.y + f.height*b);
+                      return el && el.tagName; }); }""")
+                cl, sh = st["close"], st["share"]
+                inter = lambda r1, r2: not (r1["x"] + r1["w"] <= r2["x"] or r2["x"] + r2["w"] <= r1["x"]
+                                            or r1["y"] + r1["h"] <= r2["y"] or r2["y"] + r2["h"] <= r1["y"])
+                check(f"tr1_nothing_over_player_{sfx}",
+                      all(t == "IFRAME" for t in over) and not inter(cl, f) and not inter(sh, f) and not st["artShown"]
+                      and st["play"] is None, f"elementFromPoint={over}")
+                check(f"tr1_title_and_stop_below_player_{sfx}",
+                      st["stop"] is not None and st["titles"]["y"] >= f["y"] + f["h"] - 1, f"stop={st['stop']}")
+                check(f"tr1_focus_moves_to_stop_{sfx}", "tr-stop" in str(st["active"]), str(st["active"]))
+                check(f"tr1_stop_button_name_{sfx}",
+                      page.get_by_role("button", name=L["trStop"], exact=True).count() == 1, L["trStop"])
+                post = [u for u in reqs if _TR1_GOOGLE.match(u)]
+                check(f"tr1_only_nocookie_after_tap_{sfx}",
+                      any(u.startswith(f"https://www.youtube-nocookie.com/embed/{_TR1_KEY}") for u in post)
+                      and all(u.startswith("https://www.youtube-nocookie.com/") for u in post), str(post[:3]))
+                save_shot(page, wave, f"playing_{sfx}")
+                # stop: back to the art, the iframe gone, focus on play
+                page.get_by_role("button", name=L["trStop"], exact=True).click()
+                page.wait_for_timeout(200)
+                st = page.evaluate(_TR1_STATE_JS)
+                check(f"tr1_stop_removes_iframe_{sfx}",
+                      st["iframes"] == 0 and not st["playing"] and st["play"] is not None and st["artShown"]
+                      and st["stop"] is None and "tr-play" in str(st["active"]), f"{st['iframes']} iframe(s), active={st['active']}")
+                # Esc stops a playing trailer first; the sheet stays open
+                page.click(".scrim .sheet .tr-play")
+                page.wait_for_selector(".scrim .shero .tr-frame iframe", timeout=5000)
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(200)
+                st = page.evaluate(_TR1_STATE_JS)
+                check(f"tr1_esc_stops_then_sheet_stays_{sfx}", st and st["iframes"] == 0 and st["sheetOpen"],
+                      f"iframes={st and st['iframes']} sheetOpen={st and st['sheetOpen']}")
+                # closing the sheet while playing removes the iframe at once
+                page.click(".scrim .sheet .tr-play")
+                page.wait_for_selector(".scrim .shero .tr-frame iframe", timeout=5000)
+                page.click(".scrim .sheet .sclose")
+                n_if = page.evaluate("document.querySelectorAll('iframe').length")
+                check(f"tr1_close_removes_iframe_{sfx}", n_if == 0, f"{n_if} iframe(s) right after ✕")
+                check(f"tr1_no_js_errors_{sfx}", not errs, "; ".join(errs[:3]))
+            finally:
+                ctx.close()
+
+        # films without a trailer, or with a wrong-year match, show no circle
+        for key, why in (("c", "no trailer"), ("b", "TMDB year 10 years off")):
+            for lang in ("bg", "en"):
+                ctx, page, reqs, errs = _tr1_open(browser, base + "#film=" + ids[key], lang, 402, 874)
+                try:
+                    st = page.evaluate(_TR1_STATE_JS)
+                    check(f"tr1_no_circle_{key}_{lang}",
+                          st is not None and not st["hasTr"] and st["play"] is None and not st["note"]
+                          and page.query_selector(".scrim .tr-play") is None,
+                          f"{ids[key]} ({why}): hasTr={st and st['hasTr']}")
+                    check(f"tr1_no_google_request_{key}_{lang}", not [u for u in reqs if _TR1_GOOGLE.match(u)], "")
+                    if key == "c" and lang == "bg":
+                        save_shot(page, wave, "no_trailer_bg")
+                finally:
+                    ctx.close()
+
+        # reduced motion: the circle has no transition and no hover zoom; with motion allowed it does
+        for reduced in (True, False):
+            ctx, page, reqs, errs = _tr1_open(browser, base + "#film=" + ids["a"], "bg", 1280, 900, reduced=reduced)
+            try:
+                page.hover(".scrim .sheet .tr-play")
+                page.wait_for_timeout(400)
+                mo = page.evaluate("""() => { const c = getComputedStyle(document.querySelector('.tr-play'));
+                    return {dur: c.transitionDuration, tf: c.transform}; }""")
+                durs = [float(x[:-1]) for x in mo["dur"].split(",") if x.strip().endswith("s")]
+                if reduced:
+                    # the page's global reduced-motion rule sets 0.01 ms; anything under 1 ms is no animation
+                    check("tr1_reduced_motion_no_animation", all(d < 0.001 for d in durs) and mo["tf"] in ("none", ""),
+                          str(mo))
+                    page.click(".scrim .sheet .tr-play")
+                    page.wait_for_selector(".scrim .shero .tr-frame iframe", timeout=5000)
+                    anims = page.evaluate("document.getAnimations().filter(a => a.playState === 'running' && "
+                                          "a.effect && a.effect.target && a.effect.target.closest && "
+                                          "a.effect.target.closest('.shero')).length")
+                    check("tr1_reduced_motion_player_appears_without_animation", anims == 0, f"{anims} running")
+                else:
+                    check("tr1_motion_allowed_has_transition", any(d >= 0.1 for d in durs), str(mo))
+            finally:
+                ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -16118,6 +16365,7 @@ WAVES = {
     "LG1": wave_lg1,
     "LG2": wave_lg2,
     "LG3": wave_lg3,
+    "TR1": wave_tr1,
 }
 
 def main():
