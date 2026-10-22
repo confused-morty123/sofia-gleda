@@ -1209,7 +1209,10 @@ try:
     _sp.write_text(_csp.META_RE.sub("", _orig), encoding="utf-8")
     _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
     check("a share page without its CSP meta fails", _rc != 0 and "share page(s) fail" in _out)
-    _sp.write_text(_orig.replace("?film=test-film", "?film=other"), encoding="utf-8")
+    # the script is the same on every page now (its target comes from the path, 16 Oct 2026),
+    # so the edit goes into the script itself: its hash no longer matches the policy
+    assert "location.replace(" in _orig
+    _sp.write_text(_orig.replace("location.replace(", "location.assign(", 1), encoding="utf-8")
     _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
     check("a share page with a stale hash fails", _rc != 0 and "share page(s) fail" in _out)
     _sp.write_text(_orig, encoding="utf-8")

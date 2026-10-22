@@ -616,28 +616,37 @@ def sw_test(browser, today):
 
 
 def share_page_test(browser, engine):
-    """A share page's redirect script runs under its CSP (it is the hash allowed)."""
+    """A share page's redirect script runs under its CSP (it is the hash allowed). The page is
+    served at its own address on the site (the script reads the path: /film/<id>/ ->
+    /home/?film=<id>, 16 Oct 2026); everything else on the site answers with a stub app."""
+    from site_config import SITE_URL
     pages = list(csp.share_pages(ROOT))
     if not pages:
         check(f"share_{engine}_redirect", False, "no share pages: run gen_share_pages.py")
         return
     sp = pages[0]
+    kind, iid = sp.parent.parent.name, sp.parent.name
+    own = f"{SITE_URL}/{kind}/{iid}/"
     ctx = browser.new_context()
     ctx.add_init_script(INIT_JS)
     hit = []
 
     def stub(route):
-        hit.append(route.request.url)
-        route.fulfill(status=200, content_type="text/html", body="<!doctype html><title>app</title>ok")
+        u = route.request.url
+        hit.append(u)
+        if u == own:
+            route.fulfill(status=200, content_type="text/html; charset=utf-8", body=sp.read_text(encoding="utf-8"))
+        else:
+            route.fulfill(status=200, content_type="text/html", body="<!doctype html><title>app</title>ok")
     ctx.route("https://**/*", stub)
     pg = ctx.new_page()
     v = []
     pg.on("console", lambda m: v.append(m.text) if "Content Security Policy" in m.text else None)
-    pg.goto(sp.as_uri())
+    pg.goto(own)
     pg.wait_for_timeout(1200)
-    want = f"?{sp.parent.parent.name}="
-    check(f"share_{engine}_redirect_runs_under_csp", any(want in u for u in hit) and not v,
-          f"{sp.parent.parent.name}/{sp.parent.name} -> {hit[:1]} violations={v[:1]}")
+    want = f"{SITE_URL}/home/?{kind}={iid}"
+    check(f"share_{engine}_redirect_runs_under_csp", want in hit and not v,
+          f"{kind}/{iid} -> {hit[1:2]} (want {want}) violations={v[:1]}")
     ctx.close()
 
 
