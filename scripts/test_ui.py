@@ -16099,13 +16099,18 @@ def wave_lg3(browser):
 
 
 # ============================================================================
-# WAVE UX1 (16 Oct 2026): the owner's five UX items
+# WAVE UX1 (16 and 22 Oct 2026): the owner's UX items
 #   1. the filter drawer closes with a swipe to the side, following the finger
 #   2. desktop performance budgets (and the measured causes stay fixed)
 #   3. share pages: link-preview fetchers stay and read the title's tags, browsers
 #      go on to the app (no meta refresh); event pages
 #   4. the address bar shows /film/<id>/ (/show/, /event/) while a sheet is open
 #   5. the theatre late-day card
+#   6. the listings' own addresses, /home/ and /home/theatre/ (reload, Back/Forward, logo)
+#   7. the "На фокус" card (TMDB weekly trending, else screenings x venues; theatre:
+#      a premiere this week, else the most performances)
+#   8. the desktop logo and its line as one lockup, 761-1920 px, at least 10 px
+#   9. the footer's blocks span the content width (app and legal pages)
 # Runs over a local HTTP server (paths, the service worker and <base href="/"> need
 # one): / and /index.html are the page under test, /film|show|event/<id>/ its share
 # pages (real build: the worktree's, written by gen_share_pages.py; fixture: written
@@ -16165,10 +16170,13 @@ UX_SHEET_JS = r"""() => { const s = document.getElementById('scrim'), h = s && !
 
 
 def _ux_share_root():
-    """The share pages to serve: the worktree's for a real build (gen_share_pages.py ran
-    against that index.html), else pages written from the fixture into a temp dir."""
+    """The share pages to serve: a real build's own (gen_share_pages.py ran against that
+    index.html: the film/ beside it, else the worktree's), else pages written from the
+    fixture into a temp dir. A checkout of the live site (git archive origin/main) serves
+    its own old share pages, so the share checks bite on it too."""
     if os.environ.get("SOFIA_HTML"):
-        return webapp_root, None
+        own = Path(html_path).resolve().parent
+        return (own if (own / "film").is_dir() else webapp_root), None
     import gen_share_pages as GSP
     tmp = Path(_ux_tempfile.mkdtemp(prefix="ux1_share_"))
     saved = GSP.HTML_PATH
@@ -16961,6 +16969,50 @@ def _ux_lockup(browser, base, eng):
     ctx.close()
 
 
+UX_FOOT_JS = r"""(sels) => { const f = document.querySelector(sels[0]); if (!f) return null;
+  const box = sels[1] ? f.querySelector(sels[1]) : f, cs = getComputedStyle(box), fr = box.getBoundingClientRect();
+  const left = fr.left + parseFloat(cs.paddingLeft), width = fr.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const blocks = sels.slice(2).map(s => { const e = f.querySelector(s); if (!e) return [s, null];
+    const r = e.getBoundingClientRect(); return [s, {l: r.left - left, w: r.width - width, sw: e.scrollWidth - e.clientWidth}]; });
+  const nav = f.querySelector(sels[sels.length - 1]);
+  const items = nav ? [...nav.children].map(c => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }) : [];
+  return {width, blocks, items, over: document.documentElement.scrollWidth - innerWidth}; }"""
+
+
+def _ux_footer(browser, base, eng):
+    """Owner item 8: the footer's disclaimer, attribution line and policy links fill the
+    content width (+-2 px) at 375, 768, 1280 and 1920 px and nothing overflows, BG and EN;
+    on a phone the links sit in even columns. The same for the legal pages' footers."""
+    for lang in ("bg", "en"):
+        for w in (375, 768, 1280, 1920):
+            phone = w < 761
+            ctx = _ux_ctx(browser, base, w, 900, phone=phone, lang=lang)
+            page, errs = _ux_page(ctx, base + "/home/")
+            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            page.wait_for_timeout(300)
+            m = page.evaluate(UX_FOOT_JS, ["footer", None, ".legal-line", ".legal-attr", ".legal-nav"])
+            bad = [f"{sel}: {b}" for sel, b in (m or {}).get("blocks", []) if not b or abs(b["l"]) > 2 or abs(b["w"]) > 2 or b["sw"] > 0]
+            ok = bool(m) and not bad and m["over"] <= 0
+            if ok and phone:
+                cols = sorted({x for x, _ in m["items"]})
+                rows = sorted({y for _, y in m["items"]})
+                ok = len(cols) == 2 and len(rows) == 2       # four links: two even columns, two rows
+                if not ok:
+                    bad.append(f"links at {m['items']}")
+            check(f"ux1_{eng}_footer_app_{lang}_{w}", ok, f"content {m and round(m['width'])} px; problems {bad[:3]}; overflow {m and m['over']}")
+            check(f"ux1_{eng}_footer_app_{lang}_{w}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+            rel = "/legal/privacy/" if lang == "bg" else "/legal/en/privacy/"
+            ctx = _ux_ctx(browser, base, w, 900, phone=phone, lang=lang)
+            page, errs = _ux_page(ctx, base + rel, wait_app=False)
+            page.wait_for_selector(".lg-foot", timeout=20000)
+            m = page.evaluate(UX_FOOT_JS, [".lg-foot", ".lg-wrap", ".lg-foot p", ".lg-foot-nav"])
+            bad = [f"{sel}: {b}" for sel, b in (m or {}).get("blocks", []) if not b or abs(b["l"]) > 2 or abs(b["w"]) > 2 or b["sw"] > 0]
+            check(f"ux1_{eng}_footer_legal_{lang}_{w}", bool(m) and not bad and m["over"] <= 0,
+                  f"column {m and round(m['width'])} px; problems {bad[:3]}; overflow {m and m['over']}")
+            ctx.close()
+
+
 def wave_ux1(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("UX1")
@@ -16991,6 +17043,8 @@ def wave_ux1(browser):
         _ux_focus(browser, base, eng)
         print("\n=== UX1-8: the logo and its line, one lockup (761-1920 px) ===")
         _ux_lockup(browser, base, eng)
+        print("\n=== UX1-9: the footer spans the content width (375-1920 px) ===")
+        _ux_footer(browser, base, eng)
     finally:
         srv.shutdown()
         if tmp:
