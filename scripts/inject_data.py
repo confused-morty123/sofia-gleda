@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Inline the poster maps into index.html between the SOFIA-POSTERS markers.
 
-  TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"}  (from tmdb_films.json)
+  TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title", …, v:{k,l,t} trailer}
+           (from tmdb_films.json via fetch_tmdb.art_record)
   SHOWART: theatre show id -> full poster URL                          (from theatre_posters.json)
   POSTERS: id -> full image URL (film_links_posters.json + film_info img fallback)
   SYN_EN:  id -> English synopsis (from translations.json cache, for BG-only items)
@@ -43,27 +44,28 @@ tmdb = json.load(open(TMDB_JSON, encoding="utf-8")) if TMDB_JSON.exists() else {
 shows = json.load(open(SHOW_JSON, encoding="utf-8")) if SHOW_JSON.exists() else {}
 film_links = json.load(open(LINKS_JSON, encoding="utf-8")) if LINKS_JSON.exists() else {}
 
+# TMDBART: one entry per matched film (fetch_tmdb.art_record, so the pipeline tests
+# exercise the same code). FILMS' own year feeds the trailer's year guard: a trailer
+# goes in only when TMDB's year agrees with the film's within 1.
+from fetch_tmdb import art_record  # noqa: E402
+_films_year = {}
+try:
+    _fm = re.search(r"^const FILMS=(\[.*?\]);\s*$", HTML.read_text(encoding="utf-8"), flags=re.M | re.S)
+    _films_year = {f.get("id"): f.get("year") for f in (json.loads(_fm.group(1)) if _fm else [])
+                   if isinstance(f, dict)}
+except (OSError, ValueError) as e:
+    print(f"  (could not read FILMS years: {e}; no trailers this build)")
 art = {}
+_tr_dropped = []
 for fid, v in tmdb.items():
-    if not v.get("matched"):
-        continue
-    rec = {}
-    if v.get("poster_path"):   rec["p"] = v["poster_path"]
-    if v.get("backdrop_path"): rec["b"] = v["backdrop_path"]
-    if v.get("en"):            rec["en"] = v["en"]
-    if v.get("ov"):            rec["ov"] = v["ov"]        # TMDB English synopsis
-    if v.get("country"):       rec["country"] = v["country"]  # TMDB English country
-    if v.get("imdb") is not None: rec["imdb"] = v["imdb"]  # genuine IMDb rating (OMDb)
-    if v.get("imdbVotes"):     rec["imdbVotes"] = v["imdbVotes"]  # IMDb vote count (OMDb)
-    if v.get("rt") is not None:  rec["rt"] = v["rt"]    # Rotten Tomatoes critics % (OMDb)
-    if v.get("mc") is not None:  rec["mc"] = v["mc"]    # Metacritic score /100 (OMDb)
-    if v.get("tmdb_vote") is not None: rec["tv"] = v["tmdb_vote"]  # TMDB vote_average
-    if v.get("vote_count") is not None: rec["tc"] = v["vote_count"]  # TMDB vote count
-    if v.get("dir"):           rec["dir"] = v["dir"]      # director(s) from TMDB credits
-    if v.get("cast"):          rec["cast"] = v["cast"]    # top-5 cast from TMDB credits
-    if v.get("ovBg"):          rec["ovBg"] = v["ovBg"]    # Bulgarian overview from TMDB
+    rec = art_record(v, _films_year.get(fid))
+    if v.get("trailer") and "v" not in rec and v.get("matched"):
+        _tr_dropped.append(fid)
     if rec:
         art[fid] = rec
+if _tr_dropped:
+    print(f"  TMDBART: trailer left out for {len(_tr_dropped)} film(s) whose TMDB year disagrees "
+          f"with theirs: {', '.join(sorted(_tr_dropped)[:8])}")
 
 showart = {k: v for k, v in shows.items() if v}
 

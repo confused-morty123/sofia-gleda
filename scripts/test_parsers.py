@@ -785,7 +785,9 @@ try:
     # pick() should still return the result (year scoring only, not hard reject)
     # The hard reject is in main() after declutter; test it inline here:
     _best_yr = _yr_mismatch_result
-    _reject = False
+    # pick() itself now drops a result whose title does not agree and whose year is
+    # more than 1 off (T3); a None here is the rejection too.
+    _reject = _best_yr is None
     if _best_yr:
         _tmdb_yr = (_best_yr.get("release_date") or "")[:4]
         if _tmdb_yr and abs(int(_tmdb_yr) - 1990) > 1:
@@ -840,6 +842,115 @@ check("og:image pages: non-ASCII characters in the URL are percent-encoded (До
        TMDB.ascii_url("https://x.bg/a%20b?c=1&d=ж"), TMDB.ascii_url("https://plain.bg/x?y=1")],
       ["https://domnakinoto.com/it%E2%80%99s-alive-x.html?a=", "https://x.bg/a%20b?c=1&d=%D0%B6",
        "https://plain.bg/x?y=1"])
+
+# ================================================= T3: trailers, extra fields, year guards
+print("TMDB T3: the trailer pick, the extra detail fields and the year guards (fixture tmdb_t3.json)")
+import json as _t3json, tempfile as _t3tmp
+_T3 = _t3json.load(open(FIXTURES / "tmdb_t3.json", encoding="utf-8"))
+_t3d = _T3["details"]
+
+# 1. the trailer pick: official YouTube only, Trailer before Teaser, bg before en, newest
+check("trailer pick: newest official English Trailer (a fan-made bg trailer, a Vimeo one, "
+      "teasers and featurettes are passed over)", TMDB.pick_trailer(_t3d["1000001"]),
+      {"k": "jxU8FU3o75A", "l": "en", "t": "Trailer"})
+check("trailer pick: a Bulgarian official Trailer wins over a newer English one",
+      TMDB.pick_trailer(_t3d["2000002"]), {"k": "ggggggggggg", "l": "bg", "t": "Trailer"})
+check("trailer pick: a Teaser when there is no Trailer (a key that is not a YouTube id is ignored)",
+      TMDB.pick_trailer(_t3d["3000003"]), {"k": "iiiiiiiiiii", "l": "en", "t": "Teaser"})
+check("trailer pick: a German-only trailer is not offered", TMDB.pick_trailer(_t3d["1054854"]), None)
+check("trailer pick: no videos, or no record, gives none",
+      [TMDB.pick_trailer(_t3d["70811"]), TMDB.pick_trailer(None), TMDB.pick_trailer({"videos": None})],
+      [None, None, None])
+
+# 2. the extra fields from the same detail record
+_x = TMDB.details_extra(_t3d["1000001"])
+check("details_extra: runtime, dataset genres (War has none), writer, composer, cinematographer",
+      (_x.get("runtime"), _x.get("genres"), _x.get("wr"), _x.get("mu"), _x.get("dop")),
+      (106, ["Хорър", "Мистерия", "Трилър"], "Scott Teems, Leigh Whannell", "Joseph Bishara", "Ben Kutchins"))
+check("details_extra: every production country, names and ISO codes",
+      (_x.get("countries"), _x.get("cc")), ("United States of America / Canada", ["US", "CA"]))
+check("details_extra: a runtime of 0 and empty lists leave their keys out",
+      sorted(TMDB.details_extra(_t3d["3000003"])), ["trailer"])
+check("details_extra: one call: the detail request appends credits and videos, bg and en videos",
+      (lambda seen: (TMDB.__dict__.__setitem__("api", lambda path, params: seen.append((path, params)) or {}),
+                     TMDB.details_raw(7), seen[0])[-1])([]),
+      ("movie/7", {"language": "en-US", "append_to_response": "credits,videos", "include_video_language": "bg,en"}))
+TMDB.api = _orig_api
+
+# 3. the trailer's year guard and the TMDBART record
+_rec = {"matched": True, "tmdb_year": "2021", "orig_lang": "fr", "runtime": 98, "genres": ["Драма"],
+        "countries": "France / Latvia / Germany", "country": "France", "cc": ["FR", "LV", "DE"],
+        "wr": "A B", "trailer": {"k": "ggggggggggg", "l": "bg", "t": "Trailer"}}
+check("year guard: a trailer only when the years agree within 1, or the film prints none",
+      [TMDB.trailer_year_ok(2021, "2021"), TMDB.trailer_year_ok(2022, "2021"), TMDB.trailer_year_ok(2020, "2021"),
+       TMDB.trailer_year_ok(2025, "2021"), TMDB.trailer_year_ok(None, "2021"), TMDB.trailer_year_ok(2021, "")],
+      [True, True, True, False, True, False])
+check("art_record: film year 2025 vs TMDB 2021 (Книжарница в Париж): no trailer, the rest stays",
+      TMDB.art_record(_rec, 2025),
+      {"country": "France / Latvia / Germany", "y": 2021, "rn": 98, "g": ["Драма"], "wr": "A B", "ol": "fr",
+       "cc": ["FR", "LV", "DE"]})
+check("art_record: years agree: the trailer goes in as v = {k, l, t}",
+      TMDB.art_record(_rec, 2022).get("v"), {"k": "ggggggggggg", "l": "bg", "t": "Trailer"})
+check("art_record: a key that is not an 11-character YouTube id never reaches the page",
+      "v" in TMDB.art_record(dict(_rec, trailer={"k": "x\"><script>", "l": "en", "t": "Trailer"}), 2021), False)
+check("art_record: an unmatched record gives nothing", TMDB.art_record({"matched": False, "en": "X"}, 2021), {})
+
+# 4. main() end to end on the fixture: the wrong matches fixed at the source,
+#    keep-previous on an API error, a trailer replaced when TMDB answers
+_t3dir = pathlib.Path(_t3tmp.mkdtemp(prefix="sg_t3_"))
+(_t3dir / "index.html").write_text(
+    "/* SOFIA-DATA-START */\nconst FILMS=" + _t3json.dumps(_T3["films"], ensure_ascii=False)
+    + ";\nconst LINKS=[];\n/* SOFIA-DATA-END */", encoding="utf-8")
+(_t3dir / "tmdb_films.json").write_text(_t3json.dumps(_T3["previous"], ensure_ascii=False), encoding="utf-8")
+_t3calls = []
+
+
+def _t3_api(path, params):
+    _t3calls.append(path)
+    if path == "search/movie":
+        return {"results": _T3["search"].get(params.get("query"), [])}
+    if params.get("language") == "bg-BG":
+        return None if path == "movie/4000004" else {"overview": ""}
+    return _t3d.get(path.split("/")[1])
+
+
+_t3_saved = {k: getattr(TMDB, k) for k in ("api", "TOKEN", "OMDB_TOKEN", "HTML", "OUT", "LINKS_OUT",
+                                           "FILM_INFO_PATH", "HEALTH", "ALIASES_PATH")}
+try:
+    TMDB.api, TMDB.TOKEN, TMDB.OMDB_TOKEN = _t3_api, "fixture", ""
+    TMDB.HTML, TMDB.OUT = _t3dir / "index.html", _t3dir / "tmdb_films.json"
+    TMDB.LINKS_OUT, TMDB.HEALTH = _t3dir / "film_links_posters.json", _t3dir / "health.json"
+    TMDB.FILM_INFO_PATH, TMDB.ALIASES_PATH = _t3dir / "none.json", _t3dir / "none.json"
+    import io as _t3io, contextlib as _t3cl
+    with _t3cl.redirect_stdout(_t3io.StringIO()), _t3cl.redirect_stderr(_t3io.StringIO()):
+        TMDB.main()
+    _out = _t3json.load(open(_t3dir / "tmdb_films.json", encoding="utf-8"))
+finally:
+    for _k, _v in _t3_saved.items():
+        setattr(TMDB, _k, _v)
+check("wrong match fixed: Паяци (2026) is no longer Spiders (2000)", _out["payatsi"].get("matched"), False)
+check("wrong match fixed: Минотавър (2026) is no longer a 1994 Hercules TV film",
+      _out["minotavar"].get("matched"), False)
+check("wrong match fixed: The Upstairs Neighbours (2026) is no longer Die Nachbarn von Oben (2023)",
+      _out["sasedite"].get("matched"), False)
+check("a right match 4 years from the Bulgarian release stays (A Bookshop in Paris 2021 / 2025)",
+      (_out["knizharnica"].get("tmdb_id"), _out["knizharnica"].get("countries")),
+      (2000002, "France / Latvia / Germany"))
+check("one detail call per matched film: credits and videos ride on it (no extra call)",
+      sum(1 for c in _t3calls if c == "movie/1000001"), 2)        # en-US details + the bg-BG overview
+check("TMDB answers: this run's trailer replaces last run's",
+      _out["insidious"].get("trailer"), {"k": "jxU8FU3o75A", "l": "en", "t": "Trailer"})
+check("TMDB answers: runtime and genres stored for the page's fallbacks",
+      (_out["insidious"].get("runtime"), _out["insidious"].get("genres")), (106, ["Хорър", "Мистерия", "Трилър"]))
+check("API error: last run's trailer, runtime and genres are kept",
+      (_out["api-down"].get("trailer"), _out["api-down"].get("runtime"), _out["api-down"].get("genres")),
+      ({"k": "jjjjjjjjjjj", "l": "en", "t": "Trailer"}, 88, ["Драма"]))
+check("a Teaser is offered when there is no Trailer", _out["teaser-only"].get("trailer"),
+      {"k": "iiiiiiiiiii", "l": "en", "t": "Teaser"})
+_t3films = {f["id"]: f.get("year") for f in _T3["films"]}
+_t3art = {k: TMDB.art_record(v, _t3films.get(k)) for k, v in _out.items()}
+check("TMDBART: trailers only for the films whose years agree",
+      sorted(k for k, r in _t3art.items() if "v" in r), ["api-down", "insidious", "teaser-only"])
 
 # ================================================= translate.py (mocked HTTP)
 print("translate.py — offline tests with mocked HTTP")

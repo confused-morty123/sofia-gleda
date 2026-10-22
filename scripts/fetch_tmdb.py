@@ -142,7 +142,56 @@ def _has_cyrillic(s: str) -> bool:
     return bool(_CYRILLIC_RE.search(s or ""))
 
 
+# A match whose release year is further than this from the year the venue prints is
+# another film, whatever its title: "Паяци" (2026) is not "Spiders" (2000), "Минотавър"
+# (2026) not "Hercules in the Maze of the Minotaur" (1994). A Bulgarian release lags the
+# premiere by up to about four years (Stories Not to Be Told: 2022, here 2025), so the
+# gap is wider than the ±1 a curated or title-embedded year gets.
+MAX_YEAR_GAP = 5
+
+
+def _release_year(r):
+    ry = ((r or {}).get("release_date") or "")[:4]
+    return int(ry) if ry.isdigit() else None
+
+
+def year_gap(year, r):
+    """|film year - the TMDB result's release year|, or None when either is unknown."""
+    try:
+        y = int(year) if year else None
+    except (TypeError, ValueError):
+        y = None
+    ry = _release_year(r)
+    return abs(ry - y) if (y and ry) else None
+
+
+def plausible_year(year, r):
+    """False when the venue's year and the match's release year are more than
+    MAX_YEAR_GAP apart (a different film); True when they agree or one is unknown."""
+    g = year_gap(year, r)
+    return g is None or g <= MAX_YEAR_GAP
+
+
+def title_agrees(r, en):
+    """The result's title or original title equals or contains ours (or ours contains it)."""
+    ten = norm(en)
+    if not ten:
+        return False
+    for t in (norm(r.get("title")), norm(r.get("original_title"))):
+        if t and (t == ten or ten in t or t in ten):
+            return True
+    return False
+
+
 def pick(results, en, year):
+    """The best search result for an English title. A result whose title does not agree
+    with ours (TMDB also searches alternative titles) is a candidate only when its year
+    is within ±1 of the film's: "The Upstairs Neighbours" (2026, Spain) must not become
+    "Die Nachbarn von Oben" (2023, Germany) just because nothing else came back."""
+    if not results: return None
+    results = [r for r in results
+               if title_agrees(r, en) or (year_gap(year, r) is not None and year_gap(year, r) <= 1)
+               or not year]
     if not results: return None
     ten = norm(en)
     def score(r):
@@ -299,16 +348,102 @@ def search_en(en, year):
     return pick(results, en, year)
 
 
-def details_en(tmdb_id):
+def details_raw(tmdb_id):
+    """The film's en-US detail record with its credits and videos appended: one call.
+    include_video_language widens `videos` (otherwise filtered to en-US) to Bulgarian
+    and English trailers. None on an API error."""
+    return api(f"movie/{tmdb_id}", {"language": "en-US",
+                                     "append_to_response": "credits,videos",
+                                     "include_video_language": "bg,en"})
+
+
+# A YouTube video id, as the page embeds it (youtube-nocookie.com/embed/<key>).
+YT_KEY_RE = re.compile(r"[A-Za-z0-9_-]{11}")
+
+
+def pick_trailer(d):
+    """The trailer to offer, from the detail record's appended `videos`: official and on
+    YouTube only; a Trailer before a Teaser; Bulgarian before English; the newest of the
+    best group. Returns {"k": key, "l": "bg"|"en", "t": "Trailer"|"Teaser"} or None."""
+    vids = [v for v in (((d or {}).get("videos") or {}).get("results") or []) if isinstance(v, dict)
+            and v.get("site") == "YouTube" and v.get("official") is True
+            and YT_KEY_RE.fullmatch(v.get("key") or "")]
+    for typ in ("Trailer", "Teaser"):
+        for lang in ("bg", "en"):
+            group = [v for v in vids if v.get("type") == typ and v.get("iso_639_1") == lang]
+            if group:
+                best = max(group, key=lambda v: v.get("published_at") or "")
+                return {"k": best["key"], "l": lang, "t": typ}
+    return None
+
+
+# TMDB genre id -> the dataset's own (Bulgarian) genre name, so a film the venues
+# give no genres can show TMDB's. Ids without a dataset genre (War, TV Movie) are left out.
+TMDB_GENRES = {28: "Екшън", 12: "Приключенски", 16: "Анимация", 35: "Комедия", 80: "Криминален",
+               99: "Документален", 18: "Драма", 10751: "Семеен", 14: "Фентъзи", 36: "Исторически",
+               27: "Хорър", 10402: "Музикален", 9648: "Мистерия", 10749: "Романтика",
+               878: "Фантастика", 53: "Трилър", 37: "Уестърн"}
+
+
+def _crew(crew, jobs, n=3):
+    out = []
+    for p in crew:
+        nm = (p.get("name") or "").strip()
+        if p.get("job") in jobs and nm and nm not in out:
+            out.append(nm)
+    return ", ".join(out[:n]) or None
+
+
+def details_extra(d):
+    """Fields from the same detail record that the pipeline used to drop: runtime,
+    genres (dataset names), writer, composer, cinematographer, every production
+    country (names and ISO codes) and the trailer. Keys absent when TMDB has nothing."""
+    out = {}
+    if not d:
+        return out
+    rt = d.get("runtime")
+    if isinstance(rt, int) and 20 <= rt <= 600:
+        out["runtime"] = rt
+    gs = []
+    for g in d.get("genres") or []:
+        name = TMDB_GENRES.get((g or {}).get("id"))
+        if name and name not in gs:
+            gs.append(name)
+    if gs:
+        out["genres"] = gs[:3]
+    crew = ((d.get("credits") or {}).get("crew")) or []
+    for key, jobs in (("wr", ("Screenplay", "Writer")), ("mu", ("Original Music Composer", "Music")),
+                      ("dop", ("Director of Photography",))):
+        v = _crew(crew, jobs)
+        if v:
+            out[key] = v
+    pcs = [c for c in d.get("production_countries") or [] if isinstance(c, dict)]
+    names = [(c.get("name") or "").strip() for c in pcs if (c.get("name") or "").strip()]
+    if names:
+        out["countries"] = " / ".join(names)
+    ccs = [c.get("iso_3166_1") for c in pcs if re.fullmatch(r"[A-Z]{2}", c.get("iso_3166_1") or "")]
+    if ccs:
+        out["cc"] = ccs
+    tr = pick_trailer(d)
+    if tr:
+        out["trailer"] = tr
+    return out
+
+
+# Extra detail fields carried from the previous run when this run's detail call fails.
+EXTRA_KEYS = ("runtime", "genres", "wr", "mu", "dop", "countries", "cc", "trailer")
+
+
+def details_en(tmdb_id, d=None):
     """English overview + production country + imdb_id + credits from the film's
-    detail record. Uses append_to_response=credits to fetch crew/cast in one call.
+    detail record (details_raw, or `d` when the caller already has it).
     Owner's choice is 'TMDB English where it exists, else Bulgarian' — no machine
     translation, so this authoritative English fills the detail card when the dataset
     has none. The imdb_id is used to look up the genuine IMDb rating via OMDb.
     Returns (ov, country, imdb_id, dir, cast) where dir and cast are comma-joined
     strings (or None if absent)."""
-    d = api(f"movie/{tmdb_id}", {"language": "en-US",
-                                  "append_to_response": "credits"})
+    if d is None:
+        d = details_raw(tmdb_id)
     if not d:
         return None, None, None, None, None
     ov = (d.get("overview") or "").strip() or None
@@ -334,6 +469,58 @@ def details_bg(tmdb_id):
     if not d:
         return None
     return (d.get("overview") or "").strip() or None
+
+
+def trailer_year_ok(film_year, tmdb_year):
+    """A trailer is offered only when the match's year agrees with the film's within 1
+    year (or the film prints no year, so the year shown is TMDB's own). A looser match
+    can be another film, and a wrong trailer is worse than none."""
+    try:
+        fy = int(film_year) if film_year else None
+    except (TypeError, ValueError):
+        fy = None
+    ty = str(tmdb_year or "")[:4]
+    if not ty.isdigit():
+        return False
+    return fy is None or abs(int(ty) - fy) <= 1
+
+
+def art_record(v, film_year=None):
+    """One film's TMDBART entry (the page's short keys) from its tmdb_films.json record.
+    inject_data.py writes these; film_year is the year FILMS prints, for the trailer's
+    year guard. Returns {} for an unmatched record."""
+    if not v or not v.get("matched"):
+        return {}
+    rec = {}
+    if v.get("poster_path"):   rec["p"] = v["poster_path"]
+    if v.get("backdrop_path"): rec["b"] = v["backdrop_path"]
+    if v.get("en"):            rec["en"] = v["en"]
+    if v.get("ov"):            rec["ov"] = v["ov"]                    # TMDB English synopsis
+    if v.get("countries") or v.get("country"):                       # TMDB English, every country
+        rec["country"] = v.get("countries") or v["country"]
+    if v.get("imdb") is not None: rec["imdb"] = v["imdb"]            # genuine IMDb rating (OMDb)
+    if v.get("imdbVotes"):     rec["imdbVotes"] = v["imdbVotes"]     # IMDb vote count (OMDb)
+    if v.get("rt") is not None:  rec["rt"] = v["rt"]                 # Rotten Tomatoes critics % (OMDb)
+    if v.get("mc") is not None:  rec["mc"] = v["mc"]                 # Metacritic score /100 (OMDb)
+    if v.get("tmdb_vote") is not None: rec["tv"] = v["tmdb_vote"]   # TMDB vote_average
+    if v.get("vote_count") is not None: rec["tc"] = v["vote_count"] # TMDB vote count
+    if v.get("dir"):           rec["dir"] = v["dir"]                 # director(s) from TMDB credits
+    if v.get("cast"):          rec["cast"] = v["cast"]               # top-5 cast from TMDB credits
+    if v.get("ovBg"):          rec["ovBg"] = v["ovBg"]               # Bulgarian overview from TMDB
+    ty = str(v.get("tmdb_year") or "")[:4]
+    if ty.isdigit():           rec["y"] = int(ty)                    # release year (fallback)
+    if isinstance(v.get("runtime"), int): rec["rn"] = v["runtime"]   # minutes (fallback)
+    if v.get("genres"):        rec["g"] = list(v["genres"])          # dataset genre names (fallback)
+    for k in ("wr", "mu", "dop"):                                    # writer, composer, cinematographer
+        if v.get(k):           rec[k] = v[k]
+    if v.get("orig_lang"):     rec["ol"] = v["orig_lang"]            # ISO 639-1 original language
+    if v.get("cc"):            rec["cc"] = list(v["cc"])             # ISO 3166-1 production countries
+    tr = v.get("trailer")
+    if (isinstance(tr, dict) and YT_KEY_RE.fullmatch(str(tr.get("k") or ""))
+            and tr.get("l") in ("bg", "en") and tr.get("t") in ("Trailer", "Teaser")
+            and trailer_year_ok(film_year, v.get("tmdb_year"))):
+        rec["v"] = {"k": tr["k"], "l": tr["l"], "t": tr["t"]}       # YouTube trailer (key, language, type)
+    return rec
 
 
 def _votes_compact(n):
@@ -603,6 +790,12 @@ def main():
             if tmdb_yr_str.isdigit() and abs(int(tmdb_yr_str) - int(year)) > 1:
                 print(f"      (fallback year {year} vs TMDB {tmdb_yr_str} — rejected)")
                 best = None
+        # Whatever path found it, a match far from the venue's own year is another film
+        # (Паяци 2026 -> Spiders 2000, Минотавър 2026 -> a 1994 TV film).
+        if best and not plausible_year(year, best):
+            print(f"      (year {year} vs TMDB {(best.get('release_date') or '')[:4]}: more than "
+                  f"{MAX_YEAR_GAP} years apart, another film — rejected)")
+            best = None
         if not best:
             print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
             out[fid] = {"matched": False, "en": en}
@@ -634,13 +827,21 @@ def main():
         # Owner's choice: fill English synopsis/country from TMDB where it exists,
         # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
         # Also fetch director/cast from credits (append_to_response=credits).
-        ov, country, imdb_id, dir_, cast_ = details_en(best["id"])
+        d = details_raw(best["id"])
+        ov, country, imdb_id, dir_, cast_ = details_en(best["id"], d)
         if ov:
             rec["ov"] = ov
         if country:
             rec["country"] = country
         # Keep-previous: inherit previous dir/cast/ovBg if this call returns nothing.
         pv = prev.get(fid, {})
+        # Runtime, genres, writer, composer, cinematographer, all countries, the trailer:
+        # from the same call. On an API error (d is None) last run's values stay, if it
+        # was the same TMDB film; when TMDB answers without a trailer, none is offered.
+        if d:
+            rec.update(details_extra(d))
+        elif pv.get("tmdb_id") == rec["tmdb_id"]:
+            rec.update({k: pv[k] for k in EXTRA_KEYS if pv.get(k)})
         if dir_:
             rec["dir"] = dir_
         elif pv.get("dir"):
