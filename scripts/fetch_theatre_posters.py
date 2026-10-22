@@ -790,35 +790,73 @@ def _salzaismyah_slugmap(net):
     return slug_map
 
 
-def _satira_slugmap(net):
-    """Read satirata.bg/program and return {norm_title: slug}.
-    The /program page carries __NEXT_DATA__ with 40+ show slugs;
-    the homepage does not reliably expose this."""
-    resp = net.get("https://satirata.bg/program", attempts=2)
-    if resp is None:
-        return {}
-    try:
-        html = resp.content.decode("utf-8", errors="replace")
-    except Exception:
-        return {}
-    nd = NEXT_DATA_RE.search(html)
+SATIRA_PROGRAM_URL = "https://satirata.bg/program"
+SATIRA_MONTH_URL = "https://satirata.bg/program?f%3Amonth={y}-{m:02d}"
+
+
+def satira_slugs_from(html):
+    """{norm(title): "show/<slug>"} from one satirata.bg programme page's
+    __NEXT_DATA__ (props.pageProps.prefetchedData.eventsData.events.list). The
+    published titles carry stray spaces ("Разгневените "); norm() drops them."""
+    nd = NEXT_DATA_RE.search(html or "")
     if not nd:
         return {}
     try:
-        data = json.loads(nd.group(1))
-    except Exception:
-        return {}
-    slug_map = {}
-    try:
-        events_list = (data["props"]["pageProps"]["prefetchedData"]
+        events_list = (json.loads(nd.group(1))["props"]["pageProps"]["prefetchedData"]
                        ["eventsData"]["events"]["list"])
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValueError):
         return {}
-    for ev in events_list:
-        slug = (ev.get("settings") or {}).get("eventPage", "")
-        title = ev.get("title", "")
-        if slug and title:
-            slug_map[norm(title)] = slug.lstrip("/")
+    out = {}
+    for ev in events_list or []:
+        slug = ((ev or {}).get("settings") or {}).get("eventPage", "")
+        title = (ev or {}).get("title", "")
+        if slug and title and norm(title):
+            out[norm(title)] = slug.lstrip("/")
+    return out
+
+
+def satira_month_urls(first, last):
+    """/program (the current month) plus one ?f:month= page per month to `last`."""
+    urls, (y, m) = [SATIRA_PROGRAM_URL], (first.year, first.month)
+    while (y, m) <= (last.year, last.month):
+        if (y, m) != (first.year, first.month):
+            urls.append(SATIRA_MONTH_URL.format(y=y, m=m))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return urls
+
+
+def satira_show_image(page_html):
+    """The poster on a satirata.bg show page: __NEXT_DATA__
+    props.pageProps.prefetchedData.data.settings.meta.image.image.urls.image, else
+    og:image — but never the generic premiere placeholder shared across shows (the
+    og:image is then the same placeholder, so it is not tried either)."""
+    nd = NEXT_DATA_RE.search(page_html or "")
+    if nd:
+        try:
+            img = (json.loads(nd.group(1))["props"]["pageProps"]["prefetchedData"]
+                   ["data"]["settings"]["meta"]["image"]["image"]["urls"]["image"])
+        except (KeyError, TypeError, ValueError):
+            img = None
+        if img and img.rsplit("/", 1)[-1] in ("Премиера.jpeg", "Premiere.jpeg", "premiere.jpeg"):
+            return None
+        if img:
+            return img
+    return _og_image(page_html or "")
+
+
+def _satira_slugmap(net):
+    """{norm_title: slug} from satirata.bg's programme: /program is the current
+    month only, so every month to the listing window's end is read too and the
+    maps are merged (a play first on next month's page was never found)."""
+    import listing_window
+    first, last = (dt.date.fromisoformat(d) for d in listing_window.listing_window())
+    slug_map = {}
+    for url in satira_month_urls(first, last):
+        resp = net.get(url, attempts=2)
+        if resp is None:
+            continue
+        for k, v in satira_slugs_from(resp.content.decode("utf-8", errors="replace")).items():
+            slug_map.setdefault(k, v)
     return slug_map
 
 
@@ -992,37 +1030,26 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
                     show_url = f"https://satirata.bg/{slug.lstrip('/')}"
                     resp = net.get(show_url, attempts=2)
                     if resp is not None:
-                        page_html = resp.content.decode("utf-8", errors="replace")
-                        # Extract poster from __NEXT_DATA__ show-page structure:
-                        # props.pageProps.prefetchedData.data.settings.meta.image.image.urls.image
-                        nd = NEXT_DATA_RE.search(page_html)
-                        _nd_blocked = False
-                        if nd:
-                            try:
-                                nd_data = json.loads(nd.group(1))
-                                img = (nd_data["props"]["pageProps"]["prefetchedData"]
-                                       ["data"]["settings"]["meta"]["image"]["image"]
-                                       ["urls"]["image"])
-                                # Verify the filename is show-specific (not a generic
-                                # premiere placeholder shared across shows)
-                                img_fname = img.rsplit("/", 1)[-1] if img else ""
-                                if img and img_fname in ("Премиера.jpeg", "Premiere.jpeg",
-                                                         "premiere.jpeg"):
-                                    # Generic premiere image — useless as a poster;
-                                    # the og:image is the same URL, so skip that too.
-                                    img = None
-                                    _nd_blocked = True
-                            except (KeyError, TypeError):
-                                img = None
-                        if not img and not _nd_blocked:
-                            # Fall back to og:image only when __NEXT_DATA__ didn't
-                            # yield a blocked result (og:image is the same placeholder)
-                            img = _og_image(page_html)
+                        img = satira_show_image(resp.content.decode("utf-8", errors="replace"))
 
         if img:
             found[sid] = img
             print(f"  [own]        {sid:24s} {img.rsplit('/', 1)[-1][:50]}")
     return found
+
+
+# -------------------------------------------------------------------- main
+def wanted_ids(shows, previous, seed, catalogue=None, perf_ids=None, log=None):
+    """(want, prev_ok, seed_ok). prev_ok / seed_ok are the previous file and SEED
+    filtered by posterpolicy; `want` is every show (or, given perf_ids, every show
+    with a performance in the listing window) that neither of them covers. An
+    entry the policy refuses therefore leaves its show in `want`."""
+    prev_ok, _ = filter_map(previous, catalogue, "the previous file", log)
+    seed_ok, _ = filter_map(seed, catalogue, "SEED", log)
+    ids = {s["id"] for s in shows}
+    if perf_ids is not None:
+        ids &= set(perf_ids)
+    return ids - set(prev_ok) - set(seed_ok), prev_ok, seed_ok
 
 
 # -------------------------------------------------------------------- main
@@ -1057,11 +1084,21 @@ def main():
         except Exception:
             previous = {}
 
-    want = {s["id"] for s in shows}
+    # Every tier passes posterpolicy BEFORE `want` is built: a previous or SEED
+    # entry the policy refuses must not keep its show out of the scrape (the satira
+    # SEED URLs with numeric filenames were refused, never scraped, never stored).
+    catalogue = None
+    try:
+        catalogue = Catalogue.from_html(HTML)
+    except Exception as e:
+        print(f"  (catalogue unreadable, provenance checks only: {e})")
+    policy_log = []
+    want, prev_ok, seed_ok = wanted_ids(shows, previous, SEED, catalogue, log=policy_log)
     if args.only:
-        want = {x.strip() for x in args.only.split(",") if x.strip()}
-    if not args.refresh:
-        want -= set(previous) | set(SEED)
+        only = {x.strip() for x in args.only.split(",") if x.strip()}
+        want = only if args.refresh else only - set(prev_ok) - set(seed_ok)
+    elif args.refresh:
+        want = {s["id"] for s in shows}
 
     print(f"{len(shows)} shows in the catalogue, {len(previous)} already have art, "
           f"{len(want)} to resolve")
@@ -1101,16 +1138,7 @@ def main():
 
     # previous file < this run's scrape < hand-verified SEED, and every tier
     # passes through posterpolicy before it is allowed in.
-    catalogue = None
-    try:
-        catalogue = Catalogue.from_html(HTML)
-    except Exception as e:
-        print(f"  (catalogue unreadable, provenance checks only: {e})")
-
-    policy_log = []
-    prev_ok, _ = filter_map(previous, catalogue, "the previous file", policy_log)
     new_ok, _ = filter_map(found, catalogue, "this run's scrape", policy_log)
-    seed_ok, _ = filter_map(SEED, catalogue, "SEED", policy_log)
 
     merged = {}
     merged.update(prev_ok)

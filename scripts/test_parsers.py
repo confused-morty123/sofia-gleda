@@ -3048,6 +3048,41 @@ check("art.bg prod 8076: the logo is refused (no poster stored)",
       (bool(FTP.ART_LOGO_RE.search(_og8076 or "")),
        PP.reject_reason("vik-ot-istoriyata-ekaterina-karavelova", _og8076, cat) is not None), (True, True))
 
+# ---- C3: Сатирата — month programme pages, its own bucket, the SEED deadlock ----
+print("satira: month pages, the is-satira bucket, SEED no longer blocks a scrape (C3)")
+_sat_map = FTP.satira_slugs_from((FIXTURES / "theatre_satira_program_2026-11.html").read_text(encoding="utf-8"))
+check("satira 2026-11: 'Разгневените ' (trailing space) maps to show/12-razgneveni",
+      _sat_map.get(FTP.norm("Разгневените")), "show/12-razgneveni")
+check("satira 2026-11: the kabare slug is in the month map",
+      _sat_map.get(FTP.norm("Политическо сатирично кабаре - Фокус, мокус, препаратус")),
+      "show/politic-satirichno-kabare-2026")
+check("satira: /program plus one ?f:month= page per month to the window's end",
+      FTP.satira_month_urls(dt.date(2026, 10, 22), dt.date(2026, 12, 27)),
+      ["https://satirata.bg/program", "https://satirata.bg/program?f%3Amonth=2026-11",
+       "https://satirata.bg/program?f%3Amonth=2026-12"])
+_sat_img = FTP.satira_show_image((FIXTURES / "theatre_satira_show_razgneveni.html").read_text(encoding="utf-8"))
+check("satira show page: __NEXT_DATA__ image is the is-satira 007/907 file",
+      bool(_sat_img) and _sat_img.startswith("https://storage.googleapis.com/is-satira/images/000/007/907/")
+      and _sat_img.endswith("_n.jpg"), True)
+check("satira show image passes the policy (path-scoped trust)",
+      PP.reject_reason("razgnevenite", _sat_img, cat), None)
+check("…and equals the SEED URL", _sat_img, FTP.SEED["razgnevenite"])
+check("another bucket on storage.googleapis.com is still refused (opaque name)",
+      PP.reject_reason("razgnevenite", "https://storage.googleapis.com/other-bucket/images/"
+                       "813757123_10235522229059900_454187274889936495_n.jpg", cat) is not None, True)
+check("a path that climbs out of the trusted prefix is not trusted",
+      PP.reject_reason("razgnevenite", "https://storage.googleapis.com/is-satira/../x/"
+                       "813757123_10235522229059900_454187274889936495_n.jpg", cat) is not None, True)
+_w_shows = [{"id": "a"}, {"id": "b"}, {"id": "c"}, {"id": "d"}]
+_w_seed = {"a": "https://storage.googleapis.com/other-bucket/813757123_10235522229059900_454187274889936495_n.jpg",
+           "b": "https://nationaltheatre.bg/storage/shows/310b6ce43729762add40dfcb142f9b42cc5.jpg"}
+_w_prev = {"c": "https://storage.googleapis.com/other-bucket/913757123_10235522229059900_454187274889936495_n.jpg"}
+_want, _pok, _sok = FTP.wanted_ids(_w_shows, _w_prev, _w_seed)
+check("wanted_ids: a SEED or previous entry the policy refuses leaves its id in want",
+      (sorted(_want), sorted(_pok), sorted(_sok)), (["a", "c", "d"], [], ["b"]))
+check("wanted_ids: perf_ids limits want to shows on stage in the window",
+      sorted(FTP.wanted_ids(_w_shows, _w_prev, _w_seed, perf_ids={"a", "b"})[0]), ["a"])
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",

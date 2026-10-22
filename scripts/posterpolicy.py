@@ -46,6 +46,14 @@ TRUSTED_HOSTS = {
     "kinomania.bg",
 }
 
+# A venue's own media store on a shared host: trusted by PATH prefix only, never the
+# whole host. storage.googleapis.com/is-satira/ is Театър Сатира's bucket — every
+# satirata.bg show page serves its poster from it, with numeric (Facebook-export)
+# filenames for the newest plays, which the opaque-stem rule would refuse.
+TRUSTED_PREFIXES = (
+    "https://storage.googleapis.com/is-satira/",
+)
+
 # Backends that serve whatever a cinema's ticketing system happened to upload.
 # Never production art we can attribute. Add to this list, never remove blindly.
 DISTRUSTED_HOSTS = {
@@ -169,7 +177,8 @@ def reject_reason(poster_id, url, catalogue=None):
             return (f"{host} is a ticketing backend, not production art — its images "
                     "cannot be attributed to a title")
         stem = urlsplit(url).path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
-        if not _trusted(host) and OPAQUE_STEM_RE.match(stem) and not WORDY_RE.search(stem):
+        trusted = _trusted(host) or (".." not in url and url.startswith(TRUSTED_PREFIXES))
+        if not trusted and OPAQUE_STEM_RE.match(stem) and not WORDY_RE.search(stem):
             return (f"opaque filename '{stem[:24]}' on untrusted host {host} — nothing "
                     "ties this image to the title")
         if LOGO_STEM_RE.search(stem):
