@@ -16945,6 +16945,11 @@ def _ux_lockup(browser, base, eng):
             for w in widths:
                 page.set_viewport_size({"width": w, "height": 900})
                 page.wait_for_timeout(70)
+                # the steady state: the toggle's label collapse (.seg-q) is a 220 ms width
+                # transition, and a jump from 1280 to 761 px measured it half way
+                page.wait_for_function("() => !document.getAnimations().some(a => a.playState === 'running' "
+                                       "&& a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.bar'))",
+                                       timeout=3000)
                 m = page.evaluate(UX_LOCKUP_JS)
                 n += 1
                 if not m:
