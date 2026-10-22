@@ -3153,6 +3153,9 @@ try:
     check("revalidate: the theatre.art.bg logo md5 is a known logo", bool(PP.LOGO_MD5), True)
 finally:
     _sh7.rmtree(_r7, ignore_errors=True)
+check("drop_dead_remote: a URL that keeps failing is not stored; a first failure is kept once",
+      sorted(FTP.drop_dead_remote({"x": "https://a.bg/x.jpg", "y": "https://a.bg/y.jpg", "z": "posters/z.jpg"},
+                                  {"x": {"remote_fail": 2}}, ["x", "y"])), ["y", "z"])
 _today7 = dt.date(2026, 10, 22)
 _st7 = {"new": {}, "old": {"first_missing": "2026-09-01", "last_try": "2026-10-20", "link": "u"},
         "old-due": {"first_missing": "2026-09-01", "last_try": "2026-10-15", "link": "u"},

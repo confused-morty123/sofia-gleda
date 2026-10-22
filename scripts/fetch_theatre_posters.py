@@ -1253,6 +1253,20 @@ def due_ids(want, state, links, today):
     return due
 
 
+def drop_dead_remote(merged, state, remote_failed):
+    """A remote URL rehost() could not fetch is kept once (a host can be briefly
+    down) but not when its show's image has now failed REMOTE_FAIL_DROP runs: a
+    source that keeps handing out the same dead URL (art.bg's og:image for
+    razdelenoto-kralstvo, HTTP 404) must not leave a broken image in the file."""
+    out = dict(merged)
+    for pid in remote_failed:
+        if int((state.get(pid) or {}).get("remote_fail") or 0) + 1 >= REMOTE_FAIL_DROP:
+            if out.pop(pid, None) is not None:
+                print(f"  dropped {pid}: its remote image failed to download "
+                      f"{REMOTE_FAIL_DROP}+ runs in a row — generated art instead")
+    return out
+
+
 def settle_state(state, tried, missing, upcoming, links, remote_failed, today):
     """The state after this run: try counters for the shows tried, the failure
     count for remote images rehost() could not fetch, and no entry for a show that
@@ -1469,6 +1483,7 @@ def main():
         print("dry run — theatre_posters.json not written")
         return 0
     merged = rehost(merged, net, refresh=args.refresh, failed=remote_failed)
+    merged = drop_dead_remote(merged, state, remote_failed)
     json.dump(merged, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1,
               sort_keys=True)
     print(f"wrote {OUT.name}")
