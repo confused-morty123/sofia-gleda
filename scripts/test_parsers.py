@@ -3098,6 +3098,18 @@ check("…and from the <img alt> alone (quote-matched)",
       (FTP.salz_slugs_from(_salz2_alt).get("такъв е животът") or "").endswith(
           "204b1a9ff4243980426b76e20005ce24.jpg"), True)
 
+# ---- C5: Възраждане — the theatre's own portfolio page ----
+print("vazrazhdane: own-page poster (C5)")
+_vz = (FIXTURES / "theatre_vazrazhdane_show_istorii.html").read_text(encoding="utf-8")
+_vz_img = FTP.vazr_image(_vz, "Истории/Stories")
+check("vazrazhdane: a theatrevazrajdane.bg upload named for the play ('istorii')",
+      bool(_vz_img) and _vz_img.startswith("https://theatrevazrajdane.bg/wp-content/uploads/")
+      and "istorii" in _vz_img, True)
+check("…its size variant folded into the original file", _vz_img,
+      "https://theatrevazrajdane.bg/wp-content/uploads/2026/10/tv-fb-cover-istorii-15.jpg")
+check("vazrazhdane: with no named file, the generic premiere banner is not taken",
+      FTP.vazr_image(_vz, "Друга пиеса"), None)
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",

@@ -795,6 +795,40 @@ def salz_slugs_from(html):
     return slug_map
 
 
+VAZR_UPLOAD_RE = re.compile(
+    r'https?://(?:www\.)?theatrevazrajdane\.bg/wp-content/uploads/\d{4}/\d\d/[^"\'\s<>()]+?\.(?:jpe?g|png|webp)',
+    re.I)
+VAZR_SIZE_RE = re.compile(r"-\d{2,5}x\d{2,5}(?=\.[a-z]+$)", re.I)
+VAZR_FEATURED_RE = re.compile(
+    r'class=["\'][^"\']*portfolio_page_featured[^"\']*["\'][^>]*>\s*<img[^>]+src=["\']([^"\']+)', re.I)
+VAZR_GENERIC_RE = re.compile(r"premiera-banner|banner-web|fb-cover-default", re.I)
+
+
+def vazr_image(html, title):
+    """The poster on a theatrevazrajdane.bg portfolio page. Every upload on the
+    page is collected with WordPress's -NNNxNNN size variants folded into the
+    original file, favicons dropped. First pick: a file whose name carries a word
+    of the play's slug (4+ letters: "istorii" -> tv-fb-cover-istorii-15.jpg).
+    Otherwise the featured image / og:image, unless its name is a generic season
+    banner (premiera-banner, banner-web, fb-cover-default)."""
+    from scrape_programs import slugify
+    files = []
+    for u in VAZR_UPLOAD_RE.findall(html or ""):
+        u = VAZR_SIZE_RE.sub("", u.replace("http://", "https://", 1))
+        if "favicon" not in u.lower() and u not in files:
+            files.append(u)
+    words = [w for w in slugify(title or "").split("-") if len(w) >= 4]
+    for u in files:
+        stem = u.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
+        if any(w in stem for w in words):
+            return u
+    m = VAZR_FEATURED_RE.search(html or "")
+    feat = m.group(1) if m else _og_image(html or "")
+    if feat and "theatrevazrajdane.bg" in feat and not VAZR_GENERIC_RE.search(feat.rsplit("/", 1)[-1]):
+        return feat
+    return None
+
+
 def _salzaismyah_slugmap(net):
     """Fetch stage programme pages 1–3 and return {norm_title: image_url}."""
     slug_map = {}
@@ -873,6 +907,13 @@ def _satira_slugmap(net):
         for k, v in satira_slugs_from(resp.content.decode("utf-8", errors="replace")).items():
             slug_map.setdefault(k, v)
     return slug_map
+
+
+def _title_of(matcher, sid):
+    for s in matcher.shows:
+        if s["id"] == sid:
+            return s.get("title") or s.get("titleEn")
+    return None
 
 
 def from_own_pages(net, html_src, matcher, wanted, verbose=False):
@@ -1009,6 +1050,12 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
                         img = "https://www.tba.art.bg/" + img.lstrip("/")
                     if img.startswith("http://"):
                         img = "https://" + img[7:]
+
+        # ---------- vazrazhdane (theatrevazrajdane.bg portfolio page) ----------
+        elif url and "theatrevazrajdane.bg" in url:
+            html = net.text(url, attempts=2)
+            if html:
+                img = vazr_image(html, _title_of(matcher, sid))
 
         # ---------- iam (iamstudio.bg) ----------
         elif url and "iamstudio.bg" in url:
