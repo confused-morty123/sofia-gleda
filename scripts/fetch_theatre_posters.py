@@ -33,7 +33,8 @@ import urllib.parse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from netfetch import Fetcher                                   # noqa: E402
-from posterpolicy import Catalogue, filter_map, is_local_poster  # noqa: E402
+from posterpolicy import (Catalogue, filter_map, is_local_poster,  # noqa: E402
+                         local_poster_problem)
 
 # Hand-verified posters, pulled directly from each theatre's own site and checked
 # by eye. More reliable than either aggregator, so they win the merge — but they
@@ -208,7 +209,7 @@ SEED = {
     "rozenkranc": "https://nationaltheatre.bg/storage/shows/2743f1aef51ccbe2343ab091a8a64446b58.jpg",
     "sazvezdiya": "https://nationaltheatre.bg/storage/shows/25283225c5692fd71d7bbd6af9fcc8521d4.jpg",
     "sequence": "https://toplocentrala.bg/attachments/Event/1161/main/772685810-1654273536698663-7681475029018765099-n_thumb-detail.jpg",
-    "skaperniкat": "https://nationaltheatre.bg/storage/shows/312798660a7f1f102cf325cafdc338e6995.jpg",
+    "skapernikat": "https://nationaltheatre.bg/storage/shows/312798660a7f1f102cf325cafdc338e6995.jpg",
     "slon-v-stayata": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_609/slon-1024x1024.jpg?f=48624",
     "sluchayat-dzhem": "https://zadkanala.bg/sites/default/files/styles/large750x/public/DSC09007_0_0.jpg?itok=PdIUm8t7",
     "sneakpeak": "https://toplocentrala.bg/attachments/Event/1165/main/viber-image-2026-09-01-14-25-35-586_thumb-detail.jpg",
@@ -501,7 +502,7 @@ def _store_poster(src, pid):
     return f"posters/{dest.name}"
 
 
-def rehost(merged, net, refresh=False):
+def rehost(merged, net, refresh=False, failed=None):
     """Download every remote poster once and serve it from webapp/posters/, so it
     loads same-origin over the app's own HTTPS. Cert-blocked (tba), mixed http://
     and hotlink-protected images all fail in-browser otherwise. The repo-relative
@@ -530,6 +531,8 @@ def rehost(merged, net, refresh=False):
             print(f"  ! could not re-encode {pid}: {e}", file=sys.stderr)
         finally:
             tmp.unlink(missing_ok=True)
+    if failed is not None:
+        failed.extend(kept_remote)
     local_n = sum(1 for v in out.values() if is_local_poster(v))
     print(f"re-hosted {local_n}/{len(out)} posters under {POSTERS_DIR.name}/")
     if kept_remote:
@@ -552,33 +555,89 @@ OG_RE2 = re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og
 TOPLO_ATT_RE = re.compile(r'(attachments/Event/\d+/main/[^"\'\s)]+?\.(?:jpe?g|png|webp))', re.I)
 
 
-def harvest_ids(net, days, matcher, wanted, verbose=False):
+# A listing row on a theatre.art.bg day page (markup since at least 2026-10-11):
+#   <h3><a href="/<slug>_<prod>_<theatre>_<city>" title="TITLE">TITLE</a></h3>
+# The kupi-bilet anchor's label is now the PRICE ("цени: от 8.00 до 11.00 €"), so
+# the old label match found nothing and this source produced no poster at all.
+ART_ROW_RE = re.compile(r'<h3>\s*<a\s+href="(/[^"]*?_(\d+)_(\d+)_(\d+))"([^>]*)>(.*?)</a>\s*</h3>',
+                        re.S | re.I)
+ART_TITLE_ATTR_RE = re.compile(r'\btitle="([^"]*)"', re.I)
+
+
+def parse_art_day(page):
+    """[(title, prod, theatre, city)] for every listing row of a theatre.art.bg day
+    page (text, already decoded). The title is the anchor's title attribute, or
+    its text, HTML-unescaped."""
+    import html as _html
+    rows = []
+    for m in ART_ROW_RE.finditer(page or ""):
+        t = ART_TITLE_ATTR_RE.search(m.group(5))
+        title = t.group(1) if t else re.sub(r"<[^>]+>", " ", m.group(6))
+        title = re.sub(r"\s+", " ", _html.unescape(title)).strip()
+        if title:
+            rows.append((title, m.group(2), m.group(3), m.group(4)))
+    return rows
+
+
+def _art_decode(content):
+    """theatre.art.bg serves windows-1251; official_theatres.decode tries UTF-8 first."""
+    try:
+        import official_theatres as O
+        return O.decode(content)
+    except ImportError:
+        return content.decode("windows-1251", "replace")
+
+
+def art_resolver(shows):
+    """resolve(title, art theatre id) -> show id or None. Matching stays INSIDE the
+    theatre the listing names: the art.bg theatre id maps to an app venue
+    (scrape_programs.THEATRE_ART_IDS) and show_identity resolves the title there
+    (it strips "– гостува …", quotes and case). An unmapped theatre id matches
+    nothing; a failed resolution falls back to the title Matcher only for a unique
+    hit at that same venue."""
+    from scrape_programs import THEATRE_ART_IDS
+    import show_identity as SI
+    index = SI.ShowIndex(shows)
+    matcher = Matcher(shows)
+    theatre_of = {s["id"]: s.get("theatre") for s in shows}
+
+    def resolve(title, art_theatre):
+        venue = THEATRE_ART_IDS.get(str(art_theatre))
+        if not venue:
+            return None
+        sid, _rule = index.resolve(title, venue)
+        if sid:
+            return sid
+        hit = matcher.find(title)
+        return hit if hit and theatre_of.get(hit) == venue else None
+    return resolve
+
+
+def harvest_ids(net, days, resolve, wanted, verbose=False):
     """(showId -> (productionId, theatreId, cityId)) from the day pages."""
     ids = {}
     for day in days:
         if not wanted - set(ids) or net.budget_spent():
             break
-        html = net.text(ART_DAY.format(date=day.isoformat()))
-        if not html:
+        resp = net.get(ART_DAY.format(date=day.isoformat()))
+        if resp is None:
             continue
-        # each listing row: <a href="…kupi-bilet.php?…id=X&theatre=Y…">TITLE</a>
-        for m in re.finditer(r'<a[^>]+href=["\']([^"\']*kupi-bilet\.php[^"\']*)["\'][^>]*>(.*?)</a>',
-                             html, re.S | re.I):
-            href, label = m.group(1), re.sub(r"<[^>]+>", " ", m.group(2))
-            got = ID_RE.search(href)
-            if not got:
-                continue
-            sid = matcher.find(label)
+        for title, prod, theatre, city in parse_art_day(_art_decode(resp.content)):
+            sid = resolve(title, theatre)
             if sid and sid in wanted and sid not in ids:
-                ids[sid] = (got.group(1), got.group(2), got.group(3) or "20")
+                ids[sid] = (prod, theatre, city or "20")
                 if verbose:
-                    print(f"  [art.bg] {sid:24s} id={got.group(1)} theatre={got.group(2)}")
+                    print(f"  [art.bg] {sid:24s} id={prod} theatre={theatre}")
     return ids
 
 
-def from_artbg(net, matcher, wanted, days, verbose=False):
+# theatre.art.bg's own default image: a production without a poster of its own
+ART_LOGO_RE = re.compile(r"/img/logo\.png$", re.I)
+
+
+def from_artbg(net, resolve, wanted, days, verbose=False):
     found = {}
-    ids = harvest_ids(net, days, matcher, wanted, verbose)
+    ids = harvest_ids(net, days, resolve, wanted, verbose)
     for sid, (prod, theatre, city) in ids.items():
         if net.budget_spent():
             print("  time budget reached — stopping", file=sys.stderr)
@@ -593,6 +652,9 @@ def from_artbg(net, matcher, wanted, days, verbose=False):
         url = m.group(1).strip()
         if url.startswith("//"):
             url = "https:" + url
+        if ART_LOGO_RE.search(url):
+            print(f"  [art.bg]     {sid:24s} art.bg has no poster for this production (site logo)")
+            continue
         if url.startswith("http") and re.search(r"\.(jpe?g|png|webp)$", url, re.I):
             found[sid] = url
             print(f"  [art.bg]     {sid:24s} {url.rsplit('/', 1)[-1][:50]}")
@@ -664,6 +726,10 @@ LARGE750_RE  = re.compile(
     r'["\']', re.I)
 MLT_IMG_RE   = re.compile(r'<img[^>]+src=["\']'
                           r'(/img/upl/4/images/[^"\']+\.(?:jpe?g|png|webp))["\']', re.I)
+# mlt.bg's newer show pages carry only a peakview gallery (ivanovden, 2026-10-22):
+# the first BIG photo stands in when no /img/upl/4/images/ poster is on the page.
+MLT_PEAKVIEW_RE = re.compile(
+    r'(?:https?:)?//theatre\.peakview\.bg/(?:theatre/)?img/photos/BIG[^"\'\s<>)]+?\.(?:jpe?g|png)', re.I)
 TBA_BIG_RE   = re.compile(r'<img[^>]+src=["\']'
                           r'((?:https?://(?:www\.)?tba\.art\.bg)?'
                           r'/?img/photos/BIG[^"\']+\.(?:jpe?g|png|webp))["\']', re.I)
@@ -703,64 +769,172 @@ def _og_image(html):
     return None
 
 
+SALZ_ALT_RE = re.compile(
+    r'<img[^>]+src=(["\'])(https://www\.salzaismyah\.bg/uploads/events_image/[^"\']+)\1'
+    r'[^>]*alt=(["\'])(.*?)\3', re.I | re.S)
+
+
+def salz_slugs_from(html):
+    """{norm(title): image URL} from one salzaismyah.bg stage programme page.
+    LD-JSON first; the site writes titles like ''ТАКЪВ Е ЖИВОТЪТ'' with \\'
+    escapes, which is not valid JSON, so a failed parse is retried without them.
+    Then <img alt="TITLE"> pairs, quote-matched so an apostrophe inside a
+    double-quoted alt no longer ends the title."""
+    import html as _html
+    slug_map = {}
+    for m in SALZAISMYAH_LD_RE.finditer(html or ""):
+        try:
+            obj = json.loads(m.group(1))
+        except ValueError:
+            try:
+                obj = json.loads(m.group(1).replace("\\'", "'"))
+            except ValueError:
+                continue
+        if not isinstance(obj, dict) or obj.get("@type") != "Event":
+            continue
+        img, name = obj.get("image", ""), obj.get("name", "")
+        if img and name and isinstance(img, str) and norm(name):
+            slug_map[norm(name)] = img
+    for m in SALZ_ALT_RE.finditer(html or ""):
+        alt = norm(_html.unescape(m.group(4)))
+        if alt:
+            slug_map.setdefault(alt, m.group(2))
+    return slug_map
+
+
+VAZR_UPLOAD_RE = re.compile(
+    r'https?://(?:www\.)?theatrevazrajdane\.bg/wp-content/uploads/\d{4}/\d\d/[^"\'\s<>()]+?\.(?:jpe?g|png|webp)',
+    re.I)
+VAZR_SIZE_RE = re.compile(r"-\d{2,5}x\d{2,5}(?=\.[a-z]+$)", re.I)
+VAZR_FEATURED_RE = re.compile(
+    r'class=["\'][^"\']*portfolio_page_featured[^"\']*["\'][^>]*>\s*<img[^>]+src=["\']([^"\']+)', re.I)
+VAZR_GENERIC_RE = re.compile(r"premiera-banner|banner-web|fb-cover-default", re.I)
+
+
+def vazr_image(html, title):
+    """The poster on a theatrevazrajdane.bg portfolio page. Every upload on the
+    page is collected with WordPress's -NNNxNNN size variants folded into the
+    original file, favicons dropped. First pick: a file whose name carries a word
+    of the play's slug (4+ letters: "istorii" -> tv-fb-cover-istorii-15.jpg).
+    Otherwise the featured image / og:image, unless its name is a generic season
+    banner (premiera-banner, banner-web, fb-cover-default)."""
+    from scrape_programs import slugify
+    files = []
+    for u in VAZR_UPLOAD_RE.findall(html or ""):
+        u = VAZR_SIZE_RE.sub("", u.replace("http://", "https://", 1))
+        if "favicon" not in u.lower() and u not in files:
+            files.append(u)
+    words = [w for w in slugify(title or "").split("-") if len(w) >= 4]
+    for u in files:
+        stem = u.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
+        if any(w in stem for w in words):
+            return u
+    m = VAZR_FEATURED_RE.search(html or "")
+    feat = m.group(1) if m else _og_image(html or "")
+    if feat and "theatrevazrajdane.bg" in feat and not VAZR_GENERIC_RE.search(feat.rsplit("/", 1)[-1]):
+        return feat
+    return None
+
+
 def _salzaismyah_slugmap(net):
     """Fetch stage programme pages 1–3 and return {norm_title: image_url}."""
     slug_map = {}
     for stage in (1, 2, 3):
         html = net.text(f"https://www.salzaismyah.bg/site/events/{stage}", attempts=2)
-        if not html:
-            continue
-        for m in SALZAISMYAH_LD_RE.finditer(html):
-            try:
-                obj = json.loads(m.group(1))
-            except Exception:
-                continue
-            if obj.get("@type") != "Event":
-                continue
-            img  = obj.get("image", "")
-            name = obj.get("name", "")
-            if img and name:
-                slug_map[norm(name)] = img
-        # Also read <img alt="TITLE"> pairs as fallback
-        for img_m, alt_m in re.findall(
-                r'<img[^>]+src=["\']'
-                r'(https://www\.salzaismyah\.bg/uploads/events_image/[^"\']+)["\']'
-                r'[^>]*alt=["\']([^"\']*)["\']',
-                html, re.I):
-            slug_map.setdefault(norm(alt_m), img_m)
+        for k, v in salz_slugs_from(html).items():
+            slug_map.setdefault(k, v)
     return slug_map
 
 
-def _satira_slugmap(net):
-    """Read satirata.bg/program and return {norm_title: slug}.
-    The /program page carries __NEXT_DATA__ with 40+ show slugs;
-    the homepage does not reliably expose this."""
-    resp = net.get("https://satirata.bg/program", attempts=2)
-    if resp is None:
-        return {}
-    try:
-        html = resp.content.decode("utf-8", errors="replace")
-    except Exception:
-        return {}
-    nd = NEXT_DATA_RE.search(html)
+SATIRA_PROGRAM_URL = "https://satirata.bg/program"
+SATIRA_MONTH_URL = "https://satirata.bg/program?f%3Amonth={y}-{m:02d}"
+
+
+def satira_slugs_from(html):
+    """{norm(title): "show/<slug>"} from one satirata.bg programme page's
+    __NEXT_DATA__ (props.pageProps.prefetchedData.eventsData.events.list). The
+    published titles carry stray spaces ("Разгневените "); norm() drops them."""
+    nd = NEXT_DATA_RE.search(html or "")
     if not nd:
         return {}
     try:
-        data = json.loads(nd.group(1))
-    except Exception:
-        return {}
-    slug_map = {}
-    try:
-        events_list = (data["props"]["pageProps"]["prefetchedData"]
+        events_list = (json.loads(nd.group(1))["props"]["pageProps"]["prefetchedData"]
                        ["eventsData"]["events"]["list"])
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValueError):
         return {}
-    for ev in events_list:
-        slug = (ev.get("settings") or {}).get("eventPage", "")
-        title = ev.get("title", "")
-        if slug and title:
-            slug_map[norm(title)] = slug.lstrip("/")
+    out = {}
+    for ev in events_list or []:
+        slug = ((ev or {}).get("settings") or {}).get("eventPage", "")
+        title = (ev or {}).get("title", "")
+        if slug and title and norm(title):
+            out[norm(title)] = slug.lstrip("/")
+    return out
+
+
+def satira_month_urls(first, last):
+    """/program (the current month) plus one ?f:month= page per month to `last`."""
+    urls, (y, m) = [SATIRA_PROGRAM_URL], (first.year, first.month)
+    while (y, m) <= (last.year, last.month):
+        if (y, m) != (first.year, first.month):
+            urls.append(SATIRA_MONTH_URL.format(y=y, m=m))
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    return urls
+
+
+def satira_show_image(page_html):
+    """The poster on a satirata.bg show page: __NEXT_DATA__
+    props.pageProps.prefetchedData.data.settings.meta.image.image.urls.image, else
+    og:image — but never the generic premiere placeholder shared across shows (the
+    og:image is then the same placeholder, so it is not tried either)."""
+    nd = NEXT_DATA_RE.search(page_html or "")
+    if nd:
+        try:
+            img = (json.loads(nd.group(1))["props"]["pageProps"]["prefetchedData"]
+                   ["data"]["settings"]["meta"]["image"]["image"]["urls"]["image"])
+        except (KeyError, TypeError, ValueError):
+            img = None
+        if img and img.rsplit("/", 1)[-1] in ("Премиера.jpeg", "Premiere.jpeg", "premiere.jpeg"):
+            return None
+        if img:
+            return img
+    return _og_image(page_html or "")
+
+
+def _satira_slugmap(net):
+    """{norm_title: slug} from satirata.bg's programme: /program is the current
+    month only, so every month to the listing window's end is read too and the
+    maps are merged (a play first on next month's page was never found)."""
+    import listing_window
+    first, last = (dt.date.fromisoformat(d) for d in listing_window.listing_window())
+    slug_map = {}
+    for url in satira_month_urls(first, last):
+        resp = net.get(url, attempts=2)
+        if resp is None:
+            continue
+        for k, v in satira_slugs_from(resp.content.decode("utf-8", errors="replace")).items():
+            slug_map.setdefault(k, v)
     return slug_map
+
+
+def mlt_image(html):
+    """mlt.bg show page: its /img/upl/4/images/ poster, else the first peakview
+    BIG gallery photo. mlt.bg sits behind a Cloudflare challenge from CI, so this
+    only helps a local run; art.bg (C2) reaches the same photo from CI."""
+    m = MLT_IMG_RE.search(html or "")
+    if m:
+        return "https://mlt.bg" + m.group(1)
+    m = MLT_PEAKVIEW_RE.search(html or "")
+    if m:
+        u = m.group(0)
+        return "https:" + u if u.startswith("//") else u.replace("http://", "https://", 1)
+    return None
+
+
+def _title_of(matcher, sid):
+    for s in matcher.shows:
+        if s["id"] == sid:
+            return s.get("title") or s.get("titleEn")
+    return None
 
 
 def from_own_pages(net, html_src, matcher, wanted, verbose=False):
@@ -866,10 +1040,7 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
         elif url and "mlt.bg" in url:
             resp = net.get(url, attempts=2)
             if resp is not None:
-                html = resp.content.decode("windows-1251", errors="replace")
-                m = MLT_IMG_RE.search(html)
-                if m:
-                    img = "https://mlt.bg" + m.group(1)
+                img = mlt_image(resp.content.decode("windows-1251", errors="replace"))
 
         # ---------- kuklen (sofiapuppet.com) ----------
         elif url and "sofiapuppet.com" in url:
@@ -897,6 +1068,12 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
                         img = "https://www.tba.art.bg/" + img.lstrip("/")
                     if img.startswith("http://"):
                         img = "https://" + img[7:]
+
+        # ---------- vazrazhdane (theatrevazrajdane.bg portfolio page) ----------
+        elif url and "theatrevazrajdane.bg" in url:
+            html = net.text(url, attempts=2)
+            if html:
+                img = vazr_image(html, _title_of(matcher, sid))
 
         # ---------- iam (iamstudio.bg) ----------
         elif url and "iamstudio.bg" in url:
@@ -933,32 +1110,7 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
                     show_url = f"https://satirata.bg/{slug.lstrip('/')}"
                     resp = net.get(show_url, attempts=2)
                     if resp is not None:
-                        page_html = resp.content.decode("utf-8", errors="replace")
-                        # Extract poster from __NEXT_DATA__ show-page structure:
-                        # props.pageProps.prefetchedData.data.settings.meta.image.image.urls.image
-                        nd = NEXT_DATA_RE.search(page_html)
-                        _nd_blocked = False
-                        if nd:
-                            try:
-                                nd_data = json.loads(nd.group(1))
-                                img = (nd_data["props"]["pageProps"]["prefetchedData"]
-                                       ["data"]["settings"]["meta"]["image"]["image"]
-                                       ["urls"]["image"])
-                                # Verify the filename is show-specific (not a generic
-                                # premiere placeholder shared across shows)
-                                img_fname = img.rsplit("/", 1)[-1] if img else ""
-                                if img and img_fname in ("Премиера.jpeg", "Premiere.jpeg",
-                                                         "premiere.jpeg"):
-                                    # Generic premiere image — useless as a poster;
-                                    # the og:image is the same URL, so skip that too.
-                                    img = None
-                                    _nd_blocked = True
-                            except (KeyError, TypeError):
-                                img = None
-                        if not img and not _nd_blocked:
-                            # Fall back to og:image only when __NEXT_DATA__ didn't
-                            # yield a blocked result (og:image is the same placeholder)
-                            img = _og_image(page_html)
+                        img = satira_show_image(resp.content.decode("utf-8", errors="replace"))
 
         if img:
             found[sid] = img
@@ -966,17 +1118,254 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
     return found
 
 
+# ------------------------------------------------------------ polite fetching
+class PoliteFetcher(Fetcher):
+    """Fetcher that obeys each host's robots.txt: read once per host (a missing or
+    unreadable robots.txt allows everything), a disallowed URL is not requested
+    (None, logged), and a Crawl-delay longer than the 2 s gap is honoured."""
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._robots = {}
+
+    def _robots_for(self, scheme, host):
+        if host not in self._robots:
+            import urllib.robotparser, netfetch
+            rp = urllib.robotparser.RobotFileParser()
+            resp = super().get(f"{scheme}://{host}/robots.txt", attempts=1)
+            body = resp.content.decode("utf-8", "replace") if resp is not None else ""
+            rp.parse(body.splitlines())
+            delay = rp.crawl_delay("*")
+            if delay and float(delay) > self.host_delay:
+                netfetch.CRAWL_DELAY[host] = float(delay)
+            self._robots[host] = rp
+        return self._robots[host]
+
+    def get(self, url, *a, **kw):
+        parts = urllib.parse.urlsplit(url)
+        if parts.hostname and parts.path != "/robots.txt":
+            rp = self._robots_for(parts.scheme or "https", parts.hostname)
+            if not rp.can_fetch("*", url):
+                print(f"  robots.txt disallows {url[:90]} — not fetched", file=sys.stderr)
+                return None
+        return super().get(url, *a, **kw)
+
+
+# ------------------------------------------------- re-validation and retries
+STATE = ROOT / "theatre_posters_state.json"
+RETRY_DAILY_DAYS = 21       # a missing poster is retried every run this long …
+RETRY_EVERY_DAYS = 7        # … then every 7th day, while the show is in the window
+REMOTE_FAIL_DROP = 2        # a kept remote URL that failed this many runs is dropped
+
+
+def load_state(path=None):
+    try:
+        st = json.loads((path or STATE).read_text(encoding="utf-8"))
+        return st if isinstance(st, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def upcoming_ids(body, first, last):
+    """Show ids with a PERFORMANCES row dated first..last (ISO strings)."""
+    return {r[0] for r in (grab(body, "PERFORMANCES") or [])
+            if isinstance(r, list) and len(r) > 1 and first <= str(r[1]) <= last}
+
+
+def links_of(body):
+    out = {}
+    for row in (grab(body, "LINKS") or []):
+        if isinstance(row, (list, tuple)) and len(row) >= 2 and row[0]:
+            out.setdefault(row[0], row[1])
+    return out
+
+
+def revalidate(prev_ok, seed_ok, state, try_remote, log=None, root=None):
+    """Re-check what keep-previous holds. Returns (prev_ok, seed_ok, dropped ids).
+      * a local poster whose file is missing, too small or a known logo is dropped
+        (and a junk file is deleted, so rehost() cannot reuse it);
+      * a previous entry that is still a remote URL failed its download on the
+        previous run (rehost() would have made it local); try_remote({id: url})
+        tries once more and returns the ids that failed again: those reach
+        REMOTE_FAIL_DROP failures and are dropped, the rest become local;
+      * a SEED entry whose download has failed REMOTE_FAIL_DROP runs and has no
+        local file no longer covers its show.
+    Dropped ids go back into `want`, so they are resolved again this run."""
+    prev_ok, seed_ok, dropped = dict(prev_ok), dict(seed_ok), set()
+    root = pathlib.Path(root or ROOT)
+    for pid, v in list(prev_ok.items()):
+        if not is_local_poster(v):
+            continue
+        why = local_poster_problem(v, root)
+        if why:
+            del prev_ok[pid]
+            dropped.add(pid)
+            if log is not None:
+                log.append(f"  dropped {pid!r} from the previous file: {v} — {why}")
+            f = root / v
+            if f.is_file() and "missing" not in why:
+                f.unlink()
+    remote = {k: v for k, v in prev_ok.items() if not is_local_poster(v)}
+    if remote:
+        now_local, failed = try_remote(remote)
+        for pid in remote:
+            st = state.setdefault(pid, {})
+            if pid in failed:
+                st["remote_fail"] = max(int(st.get("remote_fail") or 0), 1) + 1
+                if st["remote_fail"] >= REMOTE_FAIL_DROP:
+                    del prev_ok[pid]
+                    dropped.add(pid)
+                    if log is not None:
+                        log.append(f"  dropped {pid!r} from the previous file: its remote image "
+                                   f"failed to download {st['remote_fail']} runs in a row")
+            else:
+                st.pop("remote_fail", None)
+                prev_ok[pid] = now_local.get(pid, prev_ok[pid])
+    for pid in list(seed_ok):
+        st = state.get(pid) or {}
+        if (int(st.get("remote_fail") or 0) >= REMOTE_FAIL_DROP
+                and not sorted((root / "posters").glob(f"{pid}.*"))):
+            del seed_ok[pid]
+            dropped.add(pid)
+            if log is not None:
+                log.append(f"  dropped {pid!r} from SEED: its image failed to download "
+                           f"{st['remote_fail']} runs in a row")
+    return prev_ok, seed_ok, dropped
+
+
+def due_ids(want, state, links, today):
+    """The part of `want` to try this run. A missing poster is tried every run for
+    RETRY_DAILY_DAYS days after it was first missed, then every RETRY_EVERY_DAYS
+    days; a show whose LINKS URL changed is tried at once. Nothing is given up for
+    good: the show is tried until it leaves the window."""
+    due = set()
+    for sid in want:
+        st = state.setdefault(sid, {})
+        st.setdefault("first_missing", today.isoformat())
+        try:
+            age = (today - dt.date.fromisoformat(st["first_missing"])).days
+            since = (today - dt.date.fromisoformat(st["last_try"])).days if st.get("last_try") else None
+        except ValueError:
+            age, since = 0, None
+        if (age <= RETRY_DAILY_DAYS or since is None or since >= RETRY_EVERY_DAYS
+                or st.get("link") != links.get(sid)):
+            due.add(sid)
+    return due
+
+
+def drop_dead_remote(merged, state, remote_failed):
+    """A remote URL rehost() could not fetch is kept once (a host can be briefly
+    down) but not when its show's image has now failed REMOTE_FAIL_DROP runs: a
+    source that keeps handing out the same dead URL (art.bg's og:image for
+    razdelenoto-kralstvo, HTTP 404) must not leave a broken image in the file."""
+    out = dict(merged)
+    for pid in remote_failed:
+        if int((state.get(pid) or {}).get("remote_fail") or 0) + 1 >= REMOTE_FAIL_DROP:
+            if out.pop(pid, None) is not None:
+                print(f"  dropped {pid}: its remote image failed to download "
+                      f"{REMOTE_FAIL_DROP}+ runs in a row — generated art instead")
+    return out
+
+
+def settle_state(state, tried, missing, upcoming, links, remote_failed, today):
+    """The state after this run: try counters for the shows tried, the failure
+    count for remote images rehost() could not fetch, and no entry for a show that
+    now has a poster or has left the window."""
+    for sid in tried:
+        st = state.setdefault(sid, {})
+        st["tries"] = int(st.get("tries") or 0) + 1
+        st["last_try"] = today.isoformat()
+        st["link"] = links.get(sid)
+    for sid in remote_failed:
+        st = state.setdefault(sid, {})
+        st["remote_fail"] = int(st.get("remote_fail") or 0) + 1
+    out = {}
+    for sid, st in state.items():
+        st = dict(st)
+        if sid not in missing or sid not in upcoming:
+            for k in ("first_missing", "tries", "last_try", "link"):
+                st.pop(k, None)
+        if sid not in remote_failed and sid not in missing:
+            st.pop("remote_fail", None)
+        if st:
+            out[sid] = st
+    return dict(sorted(out.items()))
+
+
+HEALTH = ROOT / "health.json"
+MISSING_WARN_DAYS = 7
+
+
+def _page_const(src, name):
+    m = re.search(r"^const %s\s*=\s*(.*?);\s*$" % re.escape(name), src, re.M)
+    try:
+        return json.loads(m.group(1)) if m else {}
+    except ValueError:
+        return {}
+
+
+def report_coverage(src, shows, upcoming, showart, state, today, health_path=None):
+    """Print 'poster coverage: <with>/<upcoming> upcoming shows; missing: …' (as
+    the browser counts it, with this run's SHOWART) and replace this step's
+    health.json entry: a warning when a show on stage has gone without a poster
+    for more than MISSING_WARN_DAYS days (age from the state file)."""
+    from posterpolicy import poster_coverage
+    maps = {n: _page_const(src, n) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART")}
+    maps["SHOWART"] = showart
+    cov = poster_coverage(shows, upcoming, maps)
+    print(f"poster coverage: {cov['with']}/{cov['upcoming']} upcoming shows; missing: "
+          + (", ".join(cov["missing"]) or "none"))
+    old = []
+    for sid in cov["missing"]:
+        try:
+            age = (today - dt.date.fromisoformat((state.get(sid) or {}).get("first_missing", ""))).days
+        except ValueError:
+            age = 0
+        if age > MISSING_WARN_DAYS:
+            old.append(f"{sid} ({age} days)")
+    msg = f"theatre posters: {cov['with']}/{cov['upcoming']} upcoming shows have a poster"
+    if old:
+        msg += f"; missing for more than {MISSING_WARN_DAYS} days: " + ", ".join(old)
+    elif cov["missing"]:
+        msg += "; recently missing: " + ", ".join(cov["missing"])
+    path = health_path or HEALTH
+    try:
+        health = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        if not isinstance(health, list):
+            health = []
+        health = [e for e in health if not (isinstance(e, dict) and e.get("venue") == "theatre-posters")]
+        health.append({"level": "warning" if old else "ok", "venue": "theatre-posters", "message": msg})
+        path.write_text(json.dumps(health, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except (OSError, ValueError) as e:
+        print(f"  (could not update health.json: {e})", file=sys.stderr)
+    return cov
+
+
+def wanted_ids(shows, previous, seed, catalogue=None, perf_ids=None, log=None):
+    """(want, prev_ok, seed_ok). prev_ok / seed_ok are the previous file and SEED
+    filtered by posterpolicy; `want` is every show (or, given perf_ids, every show
+    with a performance in the listing window) that neither of them covers. An
+    entry the policy refuses therefore leaves its show in `want`."""
+    prev_ok, _ = filter_map(previous, catalogue, "the previous file", log)
+    seed_ok, _ = filter_map(seed, catalogue, "SEED", log)
+    ids = {s["id"] for s in shows}
+    if perf_ids is not None:
+        ids &= set(perf_ids)
+    return ids - set(prev_ok) - set(seed_ok), prev_ok, seed_ok
+
+
 # -------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--source", choices=["all", "programata", "artbg", "links", "own"],
+    ap.add_argument("--source", choices=["all", "programata", "artbg", "links", "own", "none"],
                     default="all")
     ap.add_argument("--only", help="comma-separated show ids, for debugging one match")
     ap.add_argument("--refresh", action="store_true",
                     help="re-resolve shows that already have a poster")
-    ap.add_argument("--days", type=int, default=45,
-                    help="how many days of theatre.art.bg listings to walk (default 45)")
+    ap.add_argument("--days", type=int, default=0,
+                    help="how many days of theatre.art.bg listings to walk "
+                         "(default: the whole listing window)")
     ap.add_argument("--dry-run", action="store_true", help="do not write the file")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--budget", type=int, default=900,
@@ -997,21 +1386,58 @@ def main():
         except Exception:
             previous = {}
 
-    want = {s["id"] for s in shows}
+    # Every tier passes posterpolicy BEFORE `want` is built: a previous or SEED
+    # entry the policy refuses must not keep its show out of the scrape (the satira
+    # SEED URLs with numeric filenames were refused, never scraped, never stored).
+    catalogue = None
+    try:
+        catalogue = Catalogue.from_html(HTML)
+    except Exception as e:
+        print(f"  (catalogue unreadable, provenance checks only: {e})")
+    import listing_window
+    first, last = (dt.date.fromisoformat(d) for d in listing_window.listing_window())
+    today = first
+    upcoming = upcoming_ids(body, first.isoformat(), last.isoformat())
+    links = links_of(body)
+    state = load_state()
+    # GET only, at least 2 s between two requests to one host
+    net = PoliteFetcher(verbose=True, budget_seconds=args.budget, host_delay=2.0)
+
+    policy_log = []
+    # Only shows on stage in the listing window are looked for: a show with no
+    # performance there is not shown, so a request for it is wasted.
+    want, prev_ok, seed_ok = wanted_ids(shows, previous, SEED, catalogue,
+                                        perf_ids=upcoming, log=policy_log)
+    remote_failed = []
+
+    def try_remote(remote):
+        if args.dry_run:
+            return {}, set()
+        failed = []
+        return rehost(remote, net, failed=failed), set(failed)
+
+    prev_ok, seed_ok, dropped = revalidate(prev_ok, seed_ok, state, try_remote, policy_log)
+    want |= dropped & upcoming
     if args.only:
-        want = {x.strip() for x in args.only.split(",") if x.strip()}
-    if not args.refresh:
-        want -= set(previous) | set(SEED)
+        only = {x.strip() for x in args.only.split(",") if x.strip()}
+        want = only if args.refresh else only - set(prev_ok) - set(seed_ok)
+    elif args.refresh:
+        want = {s["id"] for s in shows}
+    else:
+        missing_n = len(want)
+        want = due_ids(want, state, links, today)
+        if missing_n > len(want):
+            print(f"  {missing_n - len(want)} missing poster(s) not due for a retry today "
+                  f"(after {RETRY_DAILY_DAYS} days: every {RETRY_EVERY_DAYS}th day)")
 
-    print(f"{len(shows)} shows in the catalogue, {len(previous)} already have art, "
-          f"{len(want)} to resolve")
-    if not want:
-        print("nothing to do")
-        return 0
+    print(f"{len(shows)} shows in the catalogue, {len(upcoming)} on stage in the window, "
+          f"{len(prev_ok)} already have art, {len(want)} to resolve")
 
-    net = Fetcher(verbose=True, budget_seconds=args.budget)
     matcher = Matcher(shows)
     found = {}
+    if not want:
+        print("nothing to resolve")
+        args.source = "none"
 
     # Own-pages first: each theatre's own show page is the most authoritative source.
     if args.source in ("all", "own"):
@@ -1026,11 +1452,10 @@ def main():
     remaining = want - set(found)
     if remaining and args.source in ("all", "artbg"):
         print(f"\n--- theatre.art.bg ({len(remaining)} still missing) ---")
-        # today in Sofia, the listing window's first day (listing_window.py)
-        import listing_window
-        start = dt.date.fromisoformat(listing_window.listing_window()[0])
-        days = [start + dt.timedelta(days=i) for i in range(args.days)]
-        found.update(from_artbg(net, matcher, remaining, days, args.verbose))
+        # every day of the listing window (today in Sofia .. its last day), unless --days
+        n = args.days or (last - first).days + 1
+        days = [first + dt.timedelta(days=i) for i in range(n)]
+        found.update(from_artbg(net, art_resolver(shows), remaining, days, args.verbose))
 
     remaining = want - set(found)
     if remaining and args.source in ("all", "links"):
@@ -1039,16 +1464,7 @@ def main():
 
     # previous file < this run's scrape < hand-verified SEED, and every tier
     # passes through posterpolicy before it is allowed in.
-    catalogue = None
-    try:
-        catalogue = Catalogue.from_html(HTML)
-    except Exception as e:
-        print(f"  (catalogue unreadable, provenance checks only: {e})")
-
-    policy_log = []
-    prev_ok, _ = filter_map(previous, catalogue, "the previous file", policy_log)
     new_ok, _ = filter_map(found, catalogue, "this run's scrape", policy_log)
-    seed_ok, _ = filter_map(SEED, catalogue, "SEED", policy_log)
 
     merged = {}
     merged.update(prev_ok)
@@ -1066,10 +1482,17 @@ def main():
     if args.dry_run:
         print("dry run — theatre_posters.json not written")
         return 0
-    merged = rehost(merged, net, refresh=args.refresh)
+    merged = rehost(merged, net, refresh=args.refresh, failed=remote_failed)
+    merged = drop_dead_remote(merged, state, remote_failed)
     json.dump(merged, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1,
               sort_keys=True)
     print(f"wrote {OUT.name}")
+    missing = {sid for sid in upcoming if not is_local_poster(merged.get(sid))}
+    state = settle_state(state, want, missing, upcoming, links, set(remote_failed), today)
+    STATE.write_text(json.dumps(state, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
+                     encoding="utf-8")
+    print(f"wrote {STATE.name} ({len(state)} entries)")
+    report_coverage(src, shows, upcoming, merged, state, today)
     return 0
 
 

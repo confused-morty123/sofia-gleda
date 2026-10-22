@@ -884,6 +884,20 @@ def slugify(title):
     return s[:60]
 
 
+# Every minted id is a lower-case ASCII slug: the browser refuses a poster path with
+# any other letter (safeImg), so a look-alike Cyrillic letter in an id silently cost
+# a play its poster (skaperniкat, 2026-10-22). verify_build.py checks the same rule.
+SLUG_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
+
+
+def safe_base(base, prefix, title):
+    """`base` when it is a valid slug, else a stable hashed one (prefix-<md5>)."""
+    import hashlib
+    if base and SLUG_RE.fullmatch(base):
+        return base
+    return prefix + "-" + hashlib.md5(norm(title).encode()).hexdigest()[:8]
+
+
 # Dark two-colour gradients; genPoster() draws light shapes over g[0]->g[1]. Chosen
 # by hashing the id so each synthesised film gets a stable, distinct placeholder.
 _GRADS = [
@@ -2171,9 +2185,8 @@ def minted_film_record(title, venue, meta, taken):
     place: the title as published, the venue, a placeholder gradient and only what
     the source itself printed (runtime, year, original title, genres; a festival
     page's country). Nothing is invented. `taken` (a set of ids) gets the new id."""
-    import hashlib
     meta = meta or {}
-    base = slugify(title) or ("film-" + hashlib.md5(norm(title).encode()).hexdigest()[:8])
+    base = safe_base(slugify(title), "film", title)
     cand, i = base, 2
     while cand in taken:
         cand, i = f"{base}-{i}", i + 1
@@ -2599,8 +2612,7 @@ def main():
         and a stable placeholder gradient. No invented author, director, cast,
         genres, synopsis or duration — the UI guards for each being absent. The
         official page becomes its LINKS entry (set by the caller)."""
-        import hashlib
-        base = slugify(title) or ("show-" + hashlib.md5(norm(title).encode()).hexdigest()[:8])
+        base = safe_base(slugify(title), "show", title)
         cand, i = base, 2
         while cand in existing_show_ids:
             cand, i = f"{base}-{i}", i + 1

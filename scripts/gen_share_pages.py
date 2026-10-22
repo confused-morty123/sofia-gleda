@@ -44,10 +44,13 @@ sys.path.insert(0, str(SCRIPTS))
 from site_config import SITE_URL  # noqa: E402
 import csp  # noqa: E402
 
-# An id names a directory (film/<id>/) and goes into a URL: letters (any script),
-# digits and hyphens only, so no id can climb out of film/ or show/ ("../") or
-# carry markup. The scraper mints slugs; anything else is skipped, loudly.
-SAFE_ID = re.compile(r"[^\W_][\w-]{0,150}")
+# An id names a directory (film/<id>/) and goes into a URL: lower-case ASCII
+# letters, digits and hyphens only, so no id can climb out of film/ or show/
+# ("../") or carry markup, and none can carry a look-alike letter (a Cyrillic "к"
+# typed into "skapernikat" made its poster path one the browser refuses). The
+# scraper mints such slugs; anything else is skipped, loudly. The one exception is
+# a redirect page for a renamed id (show_aliases.json "renamed"), written below.
+SAFE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,150}")
 
 HTML_PATH = pathlib.Path(__file__).resolve().parent.parent / "index.html"
 
@@ -340,6 +343,33 @@ def _write(path, content):
     path.write_text(content, encoding="utf-8")
 
 
+def write_redirects(root, shows, renamed, poster_for):
+    """For each renamed show id (old -> new), write show/<old>/index.html as the
+    share page of the NEW record: canonical / og:url /show/<new>/. Its script (the
+    same REDIRECT_JS as every share page) takes a browser to /home/?show=<old>, and
+    the app maps <old> to <new> through ID_REDIRECT; the visible link goes to <new>.
+    Links shared before the rename keep working. This is the only
+    page written for an id SAFE_ID refuses; the directory name is the exact old id
+    from show_aliases.json, never page data. Returns (written paths, refused ids)."""
+    by_id = {s.get("id"): s for s in shows}
+    done, bad = [], []
+    for old, new in sorted(renamed.items()):
+        if new not in by_id or not SAFE_ID.fullmatch(new):
+            continue
+        if not old.strip() or "/" in old or "\\" in old or old in (".", ".."):
+            bad.append(old)
+            continue
+        rec = by_id[new]
+        page = pathlib.Path(root) / "show" / old / "index.html"
+        url, w, h = poster_for(new)
+        _write(page, _share_page(
+            kind="show", item_id=new, title_bg=rec.get("title", new),
+            title_en=rec.get("titleEn", ""), syn_bg=rec.get("synBg", ""),
+            poster_url=url, site_url=SITE_URL, image_w=w, image_h=h))
+        done.append(page)
+    return done, bad
+
+
 def main():
     films, shows, poster_alias, poster_map, tmdbart, showart, tmdb_base = _load_data()
     events, eventart, venue_of, venue_names = _load_events()
@@ -404,6 +434,17 @@ def main():
                _event_page(ev, eventart, venue_of, venue_names, poster_alias, poster_map, tmdbart, showart))
         written += 1
 
+    # --- renamed show ids: the old directory becomes a redirect to the new record.
+    try:
+        from show_identity import renamed_ids
+        renamed = renamed_ids()
+    except Exception as e:                      # a broken alias file
+        print(f"gen_share_pages: could not read renamed ids: {e}", file=sys.stderr)
+        renamed = {}
+    done, bad = write_redirects(ROOT, shows, renamed, _img)
+    written += len(done)
+    skipped += [f"redirect:{o!r}" for o in bad]
+
     # The listings' own addresses are the app itself (no redirect): /home/ (cinema) is
     # index.html as it is, /home/theatre/ the same page with its own canonical address.
     app = HTML_PATH.read_text(encoding="utf-8")
@@ -418,7 +459,8 @@ def main():
     for kind, ids in (("film", film_ids), ("show", show_ids), ("event", event_ids)):
         d = ROOT / kind
         if d.is_dir():
-            kept += sum(1 for p in d.glob("*/index.html") if p.parent.name not in ids)
+            kept += sum(1 for p in d.glob("*/index.html")
+                        if p.parent.name not in ids and not (kind == "show" and p.parent.name in renamed))
 
     print(f"gen_share_pages: wrote {written} share pages ({len(films)} films, {len(shows)} shows, "
           f"{len(events)} events)" + (f", kept {kept} pages for unlisted titles" if kept else ""))

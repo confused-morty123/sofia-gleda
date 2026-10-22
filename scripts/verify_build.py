@@ -937,6 +937,59 @@ for _map_name in ("SYN_EN", "TITLE_EN"):
         fail(f"{_map_name} contains Cyrillic (untranslated) values: "
              + ", ".join(_cyrillic_vals[:6]))
 
+# ------------------------------------------- 5a. ids are ASCII slugs; local poster paths load
+# Every id is a lower-case ASCII slug. A look-alike Cyrillic letter in an id
+# ("skaperniкat", 2026-10-22) passed every Python check (\w is Unicode there) while
+# the browser's safeImg (ASCII \w, no `u` flag) refused its poster path, so the
+# play silently showed generated art. Every local poster path must also pass the
+# JS rule itself and exist on disk.
+ID_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+# The browser's rule for a plain path in safeImg() (src/sofia-screen.artifact.html):
+# posterpolicy.JS_SAFEIMG_PATH is its exact source text (test_verify.py checks it),
+# compiled with re.ASCII because JS \w without the `u` flag is ASCII.
+sys.path.insert(0, str(ROOT / "scripts"))
+from posterpolicy import SAFEIMG_PATH_RE                     # noqa: E402
+
+
+def _const_any(name):
+    m = re.search(r"^const %s\s*=\s*(.*?);\s*$" % name, js, flags=re.M)
+    try:
+        return json.loads(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+_id_bad = []
+for _n in ("FILMS", "SHOWS", "EVENTS", "CINEMAS", "THEATRES"):
+    for _r in (data.get(_n) or []):
+        _i = _r.get("id") if isinstance(_r, dict) else None
+        if not (isinstance(_i, str) and ID_SLUG_RE.match(_i)):
+            _id_bad.append(f"{_n} id {_i!r}")
+_maps = {}
+for _n in ("SHOWART", "POSTERS", "TMDBART", "EVENTART"):
+    _maps[_n] = _const_any(_n)
+    _bad_keys = [k for k in (_maps[_n] or {}) if not ID_SLUG_RE.match(k)]
+    _id_bad += [f"{_n} key {k!r}" for k in _bad_keys]
+for _n in ("LINKS", "PERFORMANCES"):
+    _rows = data.get(_n) if _n in data else _const_any(_n)
+    _bad_keys = sorted({r[0] for r in (_rows or []) if isinstance(r, list) and r
+                        and not (isinstance(r[0], str) and ID_SLUG_RE.match(r[0]))}, key=str)
+    _id_bad += [f"{_n} row id {k!r}" for k in _bad_keys]
+if _id_bad:
+    fail(f"5a ids: {len(_id_bad)} id(s) are not lower-case ASCII slugs (the browser refuses "
+         "their poster paths): " + "; ".join(_id_bad[:6]))
+_path_bad = []
+for _n in ("SHOWART", "POSTERS", "EVENTART"):
+    for _k, _v in (_maps.get(_n) or {}).items():
+        if not isinstance(_v, str) or re.match(r"^(?:https?:|data:)", _v, re.I):
+            continue
+        if not SAFEIMG_PATH_RE.match(_v) or _v.startswith("//"):
+            _path_bad.append(f"{_n}[{_k!r}] = {_v[:40]!r} fails the browser's safeImg rule")
+        elif not (_FILE_ROOT / _v).is_file():
+            _path_bad.append(f"{_n}[{_k!r}] = {_v[:40]!r} is not on disk")
+if _path_bad:
+    fail(f"5a poster paths: {len(_path_bad)} problem(s): " + "; ".join(_path_bad[:6]))
+
 # ------------------------------------------- 5b. posters point at real artwork
 try:
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -1033,6 +1086,63 @@ try:
                "and rebuild with scripts/build_index.py.")
 except Exception as e:
     note(f"SHOWALIAS wiring check skipped: {e}")
+
+# --------------------------------------------- 5c2. poster coverage of upcoming shows
+# Counted exactly as the browser shows a poster (realPoster() + safeImg(), mirrored
+# by posterpolicy.browser_poster). A note, not a failure, on a normal day; a
+# failure when it falls below 90 % or by 3+ points against the previous
+# build_report.json — that is a poster source that died, not churn. The numbers go
+# out as one "POSTER_COVERAGE {json}" line, which refresh_all.py keeps in
+# build_report.json["posters"]. A page with fewer than COVERAGE_MIN_SHOWS upcoming
+# shows (a test fixture; a collapsed scrape is caught by the floors) is only noted.
+COVERAGE_MIN_SHOWS = 100
+try:
+    from posterpolicy import poster_coverage, LOGO_MD5                 # noqa: E402
+    import hashlib as _hl
+    _snap = data.get("SNAPSHOT") or {}
+    _to = ((_snap.get("window") or {}).get("to")) or "9999-12-31"
+    try:
+        import listing_window as _LW
+        _from = _LW.sofia_today().isoformat()
+    except Exception:
+        _from = datetime.date.today().isoformat()
+    _up = {r[0] for r in (data.get("PERFORMANCES") or [])
+           if isinstance(r, list) and len(r) > 1 and _from <= str(r[1]) <= _to}
+    _pmaps = {n: (_const_any(n) or {}) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART", "SHOWART")}
+    _cov = poster_coverage(data.get("SHOWS") or [], _up, _pmaps)
+    print("POSTER_COVERAGE " + json.dumps(_cov, ensure_ascii=False, sort_keys=True))
+    _pct = 100.0 * _cov["with"] / _cov["upcoming"] if _cov["upcoming"] else 100.0
+    _cov_msg = (f"poster coverage: {_cov['with']}/{_cov['upcoming']} upcoming shows ({_pct:.1f} %)"
+                + (f"; missing: {', '.join(_cov['missing'][:12])}" if _cov["missing"] else ""))
+    try:
+        _prev_cov = (json.loads((_FILE_ROOT / "build_report.json").read_text(encoding="utf-8"))
+                     .get("posters") or {})
+    except (OSError, ValueError, AttributeError):
+        _prev_cov = {}
+    _prev_pct = (100.0 * _prev_cov["with"] / _prev_cov["upcoming"]
+                 if isinstance(_prev_cov, dict) and _prev_cov.get("upcoming") else None)
+    if _cov["upcoming"] < COVERAGE_MIN_SHOWS:
+        note(_cov_msg + f" (fewer than {COVERAGE_MIN_SHOWS} upcoming shows: not judged)")
+    elif _pct < 90.0:
+        fail(f"5c2 {_cov_msg} — below 90 %: a poster source has probably stopped working")
+    elif _prev_pct is not None and _prev_pct - _pct >= 3.0:
+        fail(f"5c2 {_cov_msg} — down {_prev_pct - _pct:.1f} points since the last build "
+             f"({_prev_pct:.1f} %): a poster source has probably stopped working")
+    else:
+        note(_cov_msg + ("" if _prev_pct is not None else " (no previous coverage to compare)"))
+    # One logo file standing in as the "poster" of several plays (the theatre.art.bg
+    # logo on two Сфумато shows, 2026-10-08) is a scrape that went wrong.
+    _by_md5 = {}
+    for _n in ("SHOWART", "POSTERS", "EVENTART"):
+        for _k, _v in _pmaps[_n].items():
+            if isinstance(_v, str) and SAFEIMG_PATH_RE.match(_v) and (_FILE_ROOT / _v).is_file():
+                _by_md5.setdefault(_hl.md5((_FILE_ROOT / _v).read_bytes()).hexdigest(), set()).add(_k)
+    for _h, _ids in _by_md5.items():
+        if _h in LOGO_MD5 and len(_ids) >= 2:
+            fail(f"5c2 posters: {len(_ids)} ids share one known site-logo file as their poster: "
+                 + ", ".join(sorted(_ids)[:6]))
+except ImportError:
+    note("posterpolicy.py not found — skipped the poster coverage check")
 
 # ----------------------------------------- 5d. no non-http(s) URLs in data constants (CODE-12)
 # Every URL that ends up in an href or window.open must be http(s).

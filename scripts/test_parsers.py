@@ -3004,6 +3004,231 @@ if _nd_m:
     except (KeyError, ValueError) as _e:
         check(f"satira __NEXT_DATA__ parse: {_e}", True, True)
 
+# ---- C2: theatre.art.bg day pages (h3 rows) and production pages ----
+print("theatre.art.bg poster source: day-page rows and production og:image (C2)")
+_art_d1208 = FTP._art_decode((FIXTURES / "theatre_artbg_day_2026-12-08.html").read_bytes())
+_rows1208 = FTP.parse_art_day(_art_d1208)
+check("art.bg 12-08: 4 listing rows", len(_rows1208), 4)
+check("art.bg 12-08: the ИВАНОВДЕН row (title, prod, theatre, city)",
+      ("ИВАНОВДЕН – ГОСТУВА ДТ „РАЧО СТОЯНОВ‛, ГАБРОВО", "8089", "4", "20") in _rows1208, True)
+_art_shows = [{"id": "ivanovden", "title": "Ивановден", "theatre": "mladezhki"},
+              {"id": "vik-ot-istoriyata-ekaterina-karavelova",
+               "title": "Вик от историята. Екатерина Каравелова", "theatre": "tba"},
+              {"id": "ivanovden-other", "title": "Ивановден", "theatre": "national"}]
+_art_resolve = FTP.art_resolver(_art_shows)
+check("art.bg: the guest row resolves to the mladezhki show (art.bg theatre 4)",
+      _art_resolve("ИВАНОВДЕН – ГОСТУВА ДТ „РАЧО СТОЯНОВ‛, ГАБРОВО", "4"), "ivanovden")
+check("art.bg: the same title at an unmapped theatre id matches nothing",
+      _art_resolve("ИВАНОВДЕН", "999"), None)
+_rows1125 = FTP.parse_art_day(FTP._art_decode((FIXTURES / "theatre_artbg_day_2026-11-25.html").read_bytes()))
+check("art.bg 11-25: 9 listing rows", len(_rows1125), 9)
+check("art.bg 11-25: the ВИК ОТ ИСТОРИЯТА row is prod 8076 at theatre 6",
+      [(r[1], r[2]) for r in _rows1125 if "ВИК ОТ ИСТОРИЯТА" in r[0]], [("8076", "6")])
+check("art.bg 11-25: no row label is a price", any(r[0].lower().startswith("цени") for r in _rows1125), False)
+check("art.bg 11-25: the ВИК row resolves to the tba show",
+      _art_resolve([r[0] for r in _rows1125 if "ВИК ОТ ИСТОРИЯТА" in r[0]][0], "6"),
+      "vik-ot-istoriyata-ekaterina-karavelova")
+import re as _re_c2
+_old_day = FTP._art_decode((FIXTURES / "theatre_artbg_day.html").read_bytes())
+# the old harvester: the label of each kupi-bilet anchor was the title; now it is the price
+_old_label_rows = [m for m in _re_c2.finditer(
+    r'<a[^>]+href=["\']([^"\']*kupi-bilet\.php[^"\']*)["\'][^>]*>(.*?)</a>', _old_day, _re_c2.S | _re_c2.I)
+    if not _re_c2.sub(r"<[^>]+>", " ", m.group(2)).strip().lower().startswith("цени")]
+check("art.bg (repo fixture 10-11): parse_art_day finds rows", len(FTP.parse_art_day(_old_day)) > 0, True)
+check("art.bg (repo fixture 10-11): the old kupi-bilet label match found no title (regression guard)",
+      len(_old_label_rows), 0)
+_p8089 = FTP._art_decode((FIXTURES / "theatre_artbg_prod_8089.html").read_bytes())
+_og8089 = FTP._og_image(_p8089)
+check("art.bg prod 8089: og:image is the peakview BIG photo", _og8089,
+      "https://theatre.peakview.bg/theatre/photos/BIG1792145396120260416-A9304463_optimized_1000.jpg")
+check("art.bg prod 8089: the policy accepts it", PP.reject_reason("ivanovden", _og8089, cat), None)
+_og8076 = FTP._og_image(FTP._art_decode((FIXTURES / "theatre_artbg_prod_8076_logo.html").read_bytes()))
+check("art.bg prod 8076: og:image is the site logo", _og8076, "https://theatre.art.bg/img/logo.png")
+check("art.bg prod 8076: the logo is refused (no poster stored)",
+      (bool(FTP.ART_LOGO_RE.search(_og8076 or "")),
+       PP.reject_reason("vik-ot-istoriyata-ekaterina-karavelova", _og8076, cat) is not None), (True, True))
+
+# ---- C3: Сатирата — month programme pages, its own bucket, the SEED deadlock ----
+print("satira: month pages, the is-satira bucket, SEED no longer blocks a scrape (C3)")
+_sat_map = FTP.satira_slugs_from((FIXTURES / "theatre_satira_program_2026-11.html").read_text(encoding="utf-8"))
+check("satira 2026-11: 'Разгневените ' (trailing space) maps to show/12-razgneveni",
+      _sat_map.get(FTP.norm("Разгневените")), "show/12-razgneveni")
+check("satira 2026-11: the kabare slug is in the month map",
+      _sat_map.get(FTP.norm("Политическо сатирично кабаре - Фокус, мокус, препаратус")),
+      "show/politic-satirichno-kabare-2026")
+check("satira: /program plus one ?f:month= page per month to the window's end",
+      FTP.satira_month_urls(dt.date(2026, 10, 22), dt.date(2026, 12, 27)),
+      ["https://satirata.bg/program", "https://satirata.bg/program?f%3Amonth=2026-11",
+       "https://satirata.bg/program?f%3Amonth=2026-12"])
+_sat_img = FTP.satira_show_image((FIXTURES / "theatre_satira_show_razgneveni.html").read_text(encoding="utf-8"))
+check("satira show page: __NEXT_DATA__ image is the is-satira 007/907 file",
+      bool(_sat_img) and _sat_img.startswith("https://storage.googleapis.com/is-satira/images/000/007/907/")
+      and _sat_img.endswith("_n.jpg"), True)
+check("satira show image passes the policy (path-scoped trust)",
+      PP.reject_reason("razgnevenite", _sat_img, cat), None)
+check("…and equals the SEED URL", _sat_img, FTP.SEED["razgnevenite"])
+check("another bucket on storage.googleapis.com is still refused (opaque name)",
+      PP.reject_reason("razgnevenite", "https://storage.googleapis.com/other-bucket/images/"
+                       "813757123_10235522229059900_454187274889936495_n.jpg", cat) is not None, True)
+check("a path that climbs out of the trusted prefix is not trusted",
+      PP.reject_reason("razgnevenite", "https://storage.googleapis.com/is-satira/../x/"
+                       "813757123_10235522229059900_454187274889936495_n.jpg", cat) is not None, True)
+_w_shows = [{"id": "a"}, {"id": "b"}, {"id": "c"}, {"id": "d"}]
+_w_seed = {"a": "https://storage.googleapis.com/other-bucket/813757123_10235522229059900_454187274889936495_n.jpg",
+           "b": "https://nationaltheatre.bg/storage/shows/310b6ce43729762add40dfcb142f9b42cc5.jpg"}
+_w_prev = {"c": "https://storage.googleapis.com/other-bucket/913757123_10235522229059900_454187274889936495_n.jpg"}
+_want, _pok, _sok = FTP.wanted_ids(_w_shows, _w_prev, _w_seed)
+check("wanted_ids: a SEED or previous entry the policy refuses leaves its id in want",
+      (sorted(_want), sorted(_pok), sorted(_sok)), (["a", "c", "d"], [], ["b"]))
+check("wanted_ids: perf_ids limits want to shows on stage in the window",
+      sorted(FTP.wanted_ids(_w_shows, _w_prev, _w_seed, perf_ids={"a", "b"})[0]), ["a"])
+
+# ---- C4: Сълза и смях — titles with apostrophes ----
+print("salzaismyah: ''ТАКЪВ Е ЖИВОТЪТ'' (\\' escapes in LD-JSON, ' inside the alt) (C4)")
+_salz2 = (FIXTURES / "theatre_salzaismyah_stage2_1022.html").read_text(encoding="utf-8")
+_salz2_map = FTP.salz_slugs_from(_salz2)
+check("salzaismyah stage 2: ''ТАКЪВ Е ЖИВОТЪТ'' maps to its events_image",
+      (_salz2_map.get(FTP.norm("''ТАКЪВ Е ЖИВОТЪТ''")) or "").endswith("204b1a9ff4243980426b76e20005ce24.jpg"), True)
+_salz2_ld = [m.group(0) for m in FTP.SALZAISMYAH_LD_RE.finditer(_salz2) if "ТАКЪВ" in m.group(0)]
+check("…from the LD-JSON alone too (the \\' escape is retried)",
+      (FTP.salz_slugs_from("".join(_salz2_ld)).get("такъв е животът") or "").endswith(
+          "204b1a9ff4243980426b76e20005ce24.jpg"), True)
+_salz2_alt = FTP.SALZAISMYAH_LD_RE.sub("", _salz2)
+check("…and from the <img alt> alone (quote-matched)",
+      (FTP.salz_slugs_from(_salz2_alt).get("такъв е животът") or "").endswith(
+          "204b1a9ff4243980426b76e20005ce24.jpg"), True)
+
+# ---- C5: Възраждане — the theatre's own portfolio page ----
+print("vazrazhdane: own-page poster (C5)")
+_vz = (FIXTURES / "theatre_vazrazhdane_show_istorii.html").read_text(encoding="utf-8")
+_vz_img = FTP.vazr_image(_vz, "Истории/Stories")
+check("vazrazhdane: a theatrevazrajdane.bg upload named for the play ('istorii')",
+      bool(_vz_img) and _vz_img.startswith("https://theatrevazrajdane.bg/wp-content/uploads/")
+      and "istorii" in _vz_img, True)
+check("…its size variant folded into the original file", _vz_img,
+      "https://theatrevazrajdane.bg/wp-content/uploads/2026/10/tv-fb-cover-istorii-15.jpg")
+check("vazrazhdane: with no named file, the generic premiere banner is not taken",
+      FTP.vazr_image(_vz, "Друга пиеса"), None)
+
+# ---- C6: Младежки — peakview gallery fallback on mlt.bg's own page ----
+print("mladezhki: first peakview BIG photo when the page has no /img/upl/ poster (C6)")
+_mlt_iv = (FIXTURES / "theatre_mladezhki_show_ivanovden.html").read_bytes().decode("windows-1251", errors="replace")
+check("mladezhki ivanovden: the first peakview BIG photo",
+      FTP.mlt_image(_mlt_iv),
+      "https://theatre.peakview.bg/img/photos/BIG1792145396120260416-A9304463_optimized_1000.jpg")
+check("mladezhki: an /img/upl/4/images/ poster still wins",
+      (FTP.mlt_image(_mlt_html) or "").startswith("https://mlt.bg/img/upl/4/images/"), True)
+
+# ---- C7: re-validate what keep-previous holds; retry policy ----
+print("theatre posters: re-validation of kept entries and the retry schedule (C7)")
+import tempfile as _tf7, shutil as _sh7
+from PIL import Image as _Img7
+_r7 = pathlib.Path(_tf7.mkdtemp())
+try:
+    (_r7 / "posters").mkdir()
+    _Img7.new("RGB", (400, 600), (90, 20, 30)).save(_r7 / "posters/good.jpg")
+    _Img7.new("RGB", (176, 42), (255, 255, 255)).save(_r7 / "posters/tiny.png")
+    _prev7 = {"good": "posters/good.jpg", "tiny": "posters/tiny.png", "gone": "posters/gone.jpg",
+              "dead": "https://theatre.peakview.bg/theatre/photos/BIG1PLAKAT.jpg",
+              "alive": "https://theatre.peakview.bg/theatre/photos/BIG2PLAKAT.jpg"}
+    _seed7 = {"seeddead": "https://nationaltheatre.bg/storage/shows/abc.jpg",
+              "seedok": "https://nationaltheatre.bg/storage/shows/def.jpg"}
+    _st7 = {"seeddead": {"remote_fail": 2}}
+    _tried7 = []
+
+    def _try7(remote):
+        _tried7.append(sorted(remote))
+        return {"alive": "posters/alive.jpg"}, {"dead"}
+
+    _log7 = []
+    _p7, _s7, _d7 = FTP.revalidate(_prev7, _seed7, _st7, _try7, _log7, root=_r7)
+    check("revalidate: a missing file, a 176x42 image and a twice-failed remote URL are dropped",
+          sorted(_d7), ["dead", "gone", "seeddead", "tiny"])
+    check("revalidate: the good file stays, the remote that downloaded now is local",
+          sorted(_p7.items()), [("alive", "posters/alive.jpg"), ("good", "posters/good.jpg")])
+    check("revalidate: only remote previous entries are retried, once", _tried7, [["alive", "dead"]])
+    check("revalidate: the junk file is deleted (rehost cannot reuse it)", (_r7 / "posters/tiny.png").exists(), False)
+    check("revalidate: a SEED image that failed 2 runs with no local file no longer covers its show",
+          sorted(_s7), ["seedok"])
+    check("revalidate: the theatre.art.bg logo md5 is a known logo", bool(PP.LOGO_MD5), True)
+finally:
+    _sh7.rmtree(_r7, ignore_errors=True)
+check("drop_dead_remote: a URL that keeps failing is not stored; a first failure is kept once",
+      sorted(FTP.drop_dead_remote({"x": "https://a.bg/x.jpg", "y": "https://a.bg/y.jpg", "z": "posters/z.jpg"},
+                                  {"x": {"remote_fail": 2}}, ["x", "y"])), ["y", "z"])
+_today7 = dt.date(2026, 10, 22)
+_st7 = {"new": {}, "old": {"first_missing": "2026-09-01", "last_try": "2026-10-20", "link": "u"},
+        "old-due": {"first_missing": "2026-09-01", "last_try": "2026-10-15", "link": "u"},
+        "old-moved": {"first_missing": "2026-09-01", "last_try": "2026-10-21", "link": "u"}}
+check("due_ids: daily for 21 days, then every 7th day, at once when the link changed",
+      sorted(FTP.due_ids({"new", "old", "old-due", "old-moved"}, _st7,
+                         {"old": "u", "old-due": "u", "old-moved": "v"}, _today7)),
+      ["new", "old-due", "old-moved"])
+check("due_ids: a first miss is dated today", _st7["new"].get("first_missing"), "2026-10-22")
+_ss7 = FTP.settle_state({"a": {"first_missing": "2026-10-01"}, "b": {"first_missing": "2026-10-01"},
+                         "c": {"first_missing": "2026-10-01"}},
+                        tried={"a", "b"}, missing={"a", "c"}, upcoming={"a", "b"},
+                        links={"a": "la"}, remote_failed=set(), today=_today7)
+check("settle_state: a found poster and a show off stage leave the state; a miss is counted",
+      _ss7, {"a": {"first_missing": "2026-10-01", "tries": 1, "last_try": "2026-10-22", "link": "la"}})
+
+# ---- §4: Зад канала "Игра на котки" — the page has only the venue logo ----
+_zkl = (FIXTURES / "theatre_zad-kanala_show_logo.html").read_text(encoding="utf-8")
+_zkl_m = FTP.LARGE750_RE.search(_zkl)
+_zkl_img = _zkl_m.group(1).split("?")[0] if _zkl_m else None
+check("zad-kanala igra-na-kotki: the only large750x image is logo-mgt_1_1.jpg",
+      (_zkl_img or "").endswith("/logo-mgt_1_1.jpg"), True)
+check("…which the policy refuses, so no poster is stored (generated art is correct)",
+      PP.reject_reason("igra-na-kotki", _zkl_img, cat) is not None, True)
+
+# ---- the poster step obeys robots.txt ----
+import netfetch as _NF
+_rb_calls, _rb_orig = [], _NF.Fetcher.get
+
+
+def _rb_get(self, url, *a, **k):
+    _rb_calls.append(url)
+    if url.endswith("/robots.txt"):
+        return type("R", (), {"content": b"User-agent: *\nDisallow: /private\nCrawl-delay: 5\n"})()
+    return "PAGE"
+
+
+try:
+    _NF.Fetcher.get = _rb_get
+    _pf = FTP.PoliteFetcher(verbose=False)
+    check("robots.txt: a disallowed path is not requested, an allowed one is, robots.txt read once",
+          (_pf.get("https://robots-test.bg/private/a"), _pf.get("https://robots-test.bg/ok"), _rb_calls),
+          (None, "PAGE", ["https://robots-test.bg/robots.txt", "https://robots-test.bg/ok"]))
+    check("robots.txt: its Crawl-delay is honoured", _NF.CRAWL_DELAY.get("robots-test.bg"), 5.0)
+finally:
+    _NF.Fetcher.get = _rb_orig
+    _NF.CRAWL_DELAY.pop("robots-test.bg", None)
+
+# ---- C8: coverage counted as the browser does, and its health entry ----
+print("theatre posters: coverage as the browser counts it, health.json entry (C8)")
+_m8 = {"SHOWALIAS": {"ev": "film"}, "TMDBART": {"film": {"p": "/x.jpg"}, "nop": {"en": "X"}},
+       "POSTERS": {"bad": "javascript:alert(1)"}, "EVENTART": {},
+       "SHOWART": {"a": "posters/a.jpg", "b": "posters/b к.jpg", "nop": "https://x.bg/a.jpg"}}
+check("browser_poster: a safe local path, a non-ASCII path refused, TMDB via the alias, an unsafe override",
+      [bool(PP.browser_poster(i, _m8)) for i in ("a", "b", "ev", "bad", "nop", "none")],
+      [True, False, True, False, True, False])
+import tempfile as _tf8
+with _tf8.TemporaryDirectory() as _d8:
+    _h8 = pathlib.Path(_d8) / "health.json"
+    _h8.write_text('[{"level": "ok", "venue": "theatre-posters", "message": "old"},'
+                   ' {"level": "error", "venue": "mladezhki", "message": "x"}]', encoding="utf-8")
+    _shows8 = [{"id": "a", "theatre": "t1"}, {"id": "b", "theatre": "t1"}, {"id": "c", "theatre": "t2"}]
+    _cov8 = FTP.report_coverage("", _shows8, {"a", "b", "c"}, {"a": "posters/a.jpg"},
+                                {"b": {"first_missing": "2026-10-01"}, "c": {"first_missing": "2026-10-20"}},
+                                dt.date(2026, 10, 22), health_path=_h8)
+    _hj8 = __import__("json").loads(_h8.read_text(encoding="utf-8"))
+    check("report_coverage: 1/3, missing b and c, by theatre",
+          (_cov8["with"], _cov8["missing"], _cov8["by_theatre"]["t1"]["missing"]), (1, ["b", "c"], ["b"]))
+    check("report_coverage: one theatre-posters entry, a warning naming the show missing > 7 days",
+          [(e["venue"], e["level"]) for e in _hj8],
+          [("mladezhki", "error"), ("theatre-posters", "warning")])
+    check("…the message gives its age", "b (21 days)" in _hj8[-1]["message"] and "c (" not in _hj8[-1]["message"], True)
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",
@@ -3042,6 +3267,12 @@ check("normal production image still accepted",
       PP.reject_reason("bokluk",
                        "https://theatre199.org/data/kimo_images/DSC04799.jpg", cat),
       None)
+
+# ---- C1: a local poster path is ASCII, as the browser's safeImg requires ----
+print("posterpolicy: local poster paths are ASCII only (C1)")
+check("a Cyrillic letter in a local poster path is not a local poster",
+      PP.is_local_poster("posters/skaperniкat.jpg"), False)
+check("the ASCII path is", PP.is_local_poster("posters/skapernikat.jpg"), True)
 
 
 # ============================================ P2E: show-attribute label extraction

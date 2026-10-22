@@ -1,5 +1,5 @@
 {
- "_about": "Curated theatre-show identity, read by scripts/show_identity.py. Matching is ALWAYS inside one theatre. 'groups': titles verified to be ONE production at that theatre (direction-agnostic; 'show' pins the SHOWS id). 'merge': a duplicate catalogue record ('drop') that is the same production as 'keep' — every reference to 'drop' resolves to 'keep', the pipeline moves its performances and removes the record. Add an entry only after checking the theatre's own programme page; never group look-alikes that are different productions ('Отчаяни съпрузи' vs 'Отчаяни съпрузи 2: Бракувани', the same play at two theatres).",
+ "_about": "Curated theatre-show identity, read by scripts/show_identity.py. Matching is ALWAYS inside one theatre. 'groups': titles verified to be ONE production at that theatre (direction-agnostic; 'show' pins the SHOWS id). 'merge': a duplicate catalogue record ('drop') that is the same production as 'keep' — every reference to 'drop' resolves to 'keep', the pipeline moves its performances and removes the record. Add an entry only after checking the theatre's own programme page; never group look-alikes that are different productions ('Отчаяни съпрузи' vs 'Отчаяни съпрузи 2: Бракувани', the same play at two theatres). 'renamed': an id that was changed (old 'from' -> new 'to'); every reference to the old id resolves to the new one, the page redirects ?show=<from> and the old share page show/<from>/ stays as a redirect, so links already shared keep working.",
  "groups": [
   {
    "theatre": "vazrazhdane",
@@ -50,6 +50,13 @@
    "keep": "hitranka",
    "drop": "hitranka-lisanka-spektakal-po-narodni-prikazki",
    "reason": "A record minted earlier from theatre.art.bg's ALL-CAPS '\"ХИТРАНКА ЛИСАНКА\" СПЕКТАКЪЛ ПО НАРОДНИ ПРИКАЗКИ' — the same Сити Марк production as the catalogue's 'Хитранка Лисанка' (see the alias group). The kept record carries the synopsis and credits. Verified 2026-10-08."
+  }
+ ],
+ "renamed": [
+  {
+   "from": "skaperniкat",
+   "to": "skapernikat",
+   "reason": "Cyrillic к typed into a Latin id; browser refused its poster path. 2026-10-22"
   }
  ]
 }

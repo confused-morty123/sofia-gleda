@@ -84,10 +84,19 @@ def main():
     good = good.stdout
     page = OUT.read_text(encoding="utf-8")  # OUT is now defined in this scope
     moved = []
+    # A show id renamed since REF was built (show_aliases.json "renamed") is mapped
+    # in the transplanted rows, as the next scrape would (ShowIndex.canonical).
+    from show_identity import renamed_ids
+    renames = renamed_ids()
     for name in SCRAPED:
         src_m, dst_m = const_line(good, name), const_line(page, name)
         if src_m and dst_m:
-            page = page[:dst_m.start()] + src_m.group(0) + page[dst_m.end():]
+            line = src_m.group(0)
+            for old, new in renames.items():
+                for q in (json.dumps(old, ensure_ascii=False), json.dumps(old)):
+                    line = line.replace(q, json.dumps(new))
+                line = line.replace(f'"show:{old}"', f'"show:{new}"')
+            page = page[:dst_m.start()] + line + page[dst_m.end():]
             moved.append(name)
     if not const_line(good, "FESTMARK") and const_line(page, "FESTMARK"):
         fm = festmark_from_report(ref, page)          # a ref from before the scraper wrote it

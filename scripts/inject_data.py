@@ -238,6 +238,17 @@ if EVENT_POSTERS_JSON.exists():
         print(f"  (could not read {EVENT_POSTERS_JSON.name}: {e}; no event art this build)")
         _eventart = {}
 
+# Renamed show ids (scripts/show_aliases.json "renamed": old -> new). The app maps
+# an old id from a link (?show=, #show=) or from saved preferences through this
+# before it looks the show up, so a URL shared before the rename still opens the
+# play. Always emitted (possibly empty).
+try:
+    from show_identity import renamed_ids as _renamed_ids
+    _id_redirect = _renamed_ids()
+except Exception as e:
+    print(f"  (could not read the renamed ids: {e}; ID_REDIRECT is empty)")
+    _id_redirect = {}
+
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
     '   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title", tr:weekly trending rank} from TMDB;\n'
@@ -262,6 +273,8 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
     '            lists with their venue and dates. Always emitted.\n'
     '   EVENTART: event id -> "posters/ev-<id>.jpg", key art fetch_event_posters.py\n'
     '            re-hosted; realPoster() reads it before SHOWART. Always emitted.\n'
+    '   ID_REDIRECT: old show id -> new show id, for ids that were renamed\n'
+    '            (show_aliases.json "renamed"). Always emitted.\n'
     '   Missing ids keep the generated SVG artwork. */')
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
@@ -279,6 +292,7 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     + "const EVENTS_AUTO = " + json_for_script(_events_auto) + ";\n"
     + "const EVENT_MEMBERS = " + json_for_script(_event_members) + ";\n"
     + "const EVENTART = " + json_for_script(_eventart) + ";\n"
+    + "const ID_REDIRECT = " + json_for_script(_id_redirect) + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -292,7 +306,7 @@ assert found, "marker block not found in " + str(HTML)
 # 2026-09-16 refresh and every film became unclickable. Refuse to run rather
 # than silently delete app code again.
 GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO", "SYN_EN", "TITLE_EN",
-             "EVENTS_AUTO", "EVENT_MEMBERS", "EVENTART"}
+             "EVENTS_AUTO", "EVENT_MEMBERS", "EVENTART", "ID_REDIRECT"}
 declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
 stray = declared - GENERATED
 if stray:

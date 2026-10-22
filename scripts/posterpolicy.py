@@ -46,6 +46,14 @@ TRUSTED_HOSTS = {
     "kinomania.bg",
 }
 
+# A venue's own media store on a shared host: trusted by PATH prefix only, never the
+# whole host. storage.googleapis.com/is-satira/ is Театър Сатира's bucket — every
+# satirata.bg show page serves its poster from it, with numeric (Facebook-export)
+# filenames for the newest plays, which the opaque-stem rule would refuse.
+TRUSTED_PREFIXES = (
+    "https://storage.googleapis.com/is-satira/",
+)
+
 # Backends that serve whatever a cinema's ticketing system happened to upload.
 # Never production art we can attribute. Add to this list, never remove blindly.
 DISTRUSTED_HOSTS = {
@@ -72,12 +80,101 @@ LOGO_STEM_RE = re.compile(r"\blogo[_\-]|[_\-]logo\b|^logo$"
 # served over the app's own HTTPS, so there is no third-party host to trust or
 # distrust and no hotlink/cert risk — the provenance was checked once, when the
 # bytes were downloaded. Identity checks (mirror/knows) below still apply.
+# ASCII only (re.ASCII): the browser's safeImg reads \w without the `u` flag, so a
+# path with a look-alike Cyrillic letter ("posters/skaperniкat.jpg") never loads
+# there and must not count as a poster here either.
 LOCAL_POSTER_RE = re.compile(r"^posters/[A-Za-z0-9][\w.\-]*\.(?:jpe?g|png|webp|gif|avif)$",
-                             re.I)
+                             re.I | re.ASCII)
 
 
 def is_local_poster(url):
     return isinstance(url, str) and ".." not in url and bool(LOCAL_POSTER_RE.match(url))
+
+
+# md5 of image files known to be site chrome, not production art. A re-hosted
+# local file carries no URL to judge, so the bytes are checked instead.
+#   485b4f17…: theatre.art.bg's own logo (176x42), stored 2026-10-08 as the
+#              "poster" of two Сфумато plays (insomniya, poema-za-hlebarkite).
+LOGO_MD5 = {"485b4f17ce0ecfeeb4c9487fb3c750ff"}
+# A poster smaller than this (either orientation) is a logo or an icon.
+MIN_POSTER_PX = (200, 150)
+
+
+def local_poster_problem(path, root=None):
+    """None when the re-hosted file at `path` ("posters/<id>.<ext>") is a usable
+    poster; else why not: missing, unreadable, too small, or a known logo."""
+    import hashlib
+    f = pathlib.Path(root or pathlib.Path(__file__).resolve().parent.parent) / path
+    if not f.is_file():
+        return "the file is missing"
+    data = f.read_bytes()
+    if hashlib.md5(data).hexdigest() in LOGO_MD5:
+        return "the file is a known site logo, not a poster"
+    try:
+        from PIL import Image
+        import io
+        w, h = Image.open(io.BytesIO(data)).size
+    except ImportError:
+        return None
+    except Exception as e:
+        return f"the file is not a readable image ({e.__class__.__name__})"
+    if max(w, h) < MIN_POSTER_PX[0] or min(w, h) < MIN_POSTER_PX[1]:
+        return f"the image is only {w}x{h} px — a logo or an icon, not a poster"
+    return None
+
+# The browser's rule for a plain path in safeImg() (src/sofia-screen.artifact.html),
+# copied character for character (test_verify.py checks they are equal). Without
+# the `u` flag JS \w is ASCII, so Python must compile it with re.ASCII.
+JS_SAFEIMG_PATH = r"^[\w\/.%-]+$"
+SAFEIMG_PATH_RE = re.compile(JS_SAFEIMG_PATH, re.ASCII)
+_SAFEIMG_DATA_RE = re.compile(r"^data:image/(png|jpe?g|gif|webp|avif|svg\+xml)[;,]", re.I)
+
+
+def safe_img(u):
+    """Python twin of the browser's safeImg(): the value an <img> may load, or None."""
+    if not u or not isinstance(u, str):
+        return None
+    s = u.strip()
+    if _SAFEIMG_DATA_RE.match(s):
+        return s
+    if re.match(r"^[a-z][a-z0-9+.-]*:", s, re.I):
+        return s if re.match(r"^https?://", s, re.I) else None
+    return s if SAFEIMG_PATH_RE.match(s) and not s.startswith("//") else None
+
+
+def browser_poster(pid, maps):
+    """What the browser's realPoster() + safeImg() show for `pid`: a real image
+    (truthy) or None (generated art). maps: SHOWALIAS, EVENTART, POSTERS, TMDBART,
+    SHOWART dicts (a missing one counts as empty)."""
+    g = lambda n: maps.get(n) or {}                     # noqa: E731
+    base = g("SHOWALIAS").get(pid) or pid
+    for name in ("EVENTART", "POSTERS"):
+        if g(name).get(base):
+            return safe_img(g(name)[base])
+    art = g("TMDBART").get(base)
+    if isinstance(art, dict) and (art.get("p") or art.get("b")):
+        return "tmdb"
+    if g("SHOWART").get(base):
+        return safe_img(g("SHOWART")[base])
+    return None
+
+
+def poster_coverage(shows, upcoming, maps):
+    """{"upcoming": n, "with": n, "missing": [ids], "by_theatre": {theatre:
+    {"upcoming": n, "missing": [ids]}}} for the show ids in `upcoming`, counted
+    exactly as the browser shows them (browser_poster)."""
+    theatre = {s.get("id"): s.get("theatre") or "?" for s in shows}
+    ids = sorted(i for i in upcoming if i in theatre)
+    missing = [i for i in ids if not browser_poster(i, maps)]
+    by = {}
+    for i in ids:
+        t = by.setdefault(theatre[i], {"upcoming": 0, "missing": []})
+        t["upcoming"] += 1
+        if i in missing:
+            t["missing"].append(i)
+    return {"upcoming": len(ids), "with": len(ids) - len(missing), "missing": missing,
+            "by_theatre": dict(sorted(by.items()))}
+
 
 # Suffixes that mark "this event is a screening of a film we already list".
 MIRROR_SUFFIXES = ("-screening", "-prozhekciya", "-prem", "-premiere", "-gala",
@@ -166,7 +263,8 @@ def reject_reason(poster_id, url, catalogue=None):
             return (f"{host} is a ticketing backend, not production art — its images "
                     "cannot be attributed to a title")
         stem = urlsplit(url).path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
-        if not _trusted(host) and OPAQUE_STEM_RE.match(stem) and not WORDY_RE.search(stem):
+        trusted = _trusted(host) or (".." not in url and url.startswith(TRUSTED_PREFIXES))
+        if not trusted and OPAQUE_STEM_RE.match(stem) and not WORDY_RE.search(stem):
             return (f"opaque filename '{stem[:24]}' on untrusted host {host} — nothing "
                     "ties this image to the title")
         if LOGO_STEM_RE.search(stem):

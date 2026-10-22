@@ -36,6 +36,19 @@ import official_theatres as O
 
 ALIASES_PATH = pathlib.Path(__file__).resolve().parent / "show_aliases.json"
 
+
+def renamed_ids(aliases=None):
+    """{old id: new id} from show_aliases.json "renamed" (empty when there is none).
+    inject_data.py emits it as ID_REDIRECT, gen_share_pages.py keeps a redirect
+    share page under each old id, dev_build.py maps transplanted rows."""
+    if aliases is None:
+        try:
+            aliases = json.loads(ALIASES_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            aliases = {}
+    return {m["from"]: m["to"] for m in (aliases or {}).get("renamed", [])
+            if isinstance(m, dict) and m.get("from") and m.get("to") and m["from"] != m["to"]}
+
 # Latin letters that print exactly like a Cyrillic one. Lower-case b/h/k/m/t do
 # not look like в/н/к/м/т, so a display title only folds the true twins.
 _LAT2CYR = dict(zip("ABCEHKMOPTXYaceopxy", "АВСЕНКМОРТХУасеорху"))
@@ -132,6 +145,13 @@ class ShowIndex:
             if m.get("drop") and m.get("keep") and m["drop"] != m["keep"]:
                 self.merged[m["drop"]] = m["keep"]
                 self.merge_reason[m["drop"]] = m.get("reason", "")
+        # An id that was renamed (show_aliases.json "renamed"): the old id resolves
+        # to the new one exactly like a merged-away duplicate, so a row or a state
+        # entry still keyed by the old id lands on the record.
+        for m in (aliases or {}).get("renamed", []):
+            if m.get("from") and m.get("to") and m["from"] != m["to"]:
+                self.merged[m["from"]] = m["to"]
+                self.merge_reason[m["from"]] = m.get("reason", "renamed")
 
     # ------------------------------------------------------------- helpers
     def canonical(self, sid):
