@@ -5542,5 +5542,59 @@
   "synBg": "",
   "synEn": "",
   "source": "atelie313"
+ },
+ "nyama-da-platim-nyama-da-platim": {
+  "id": "nyama-da-platim-nyama-da-platim",
+  "title": "Няма да платим! Няма да платим!",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "tiramisu": {
+  "id": "tiramisu",
+  "title": "Тирамису",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "herkules-vs-avgiy": {
+  "id": "herkules-vs-avgiy",
+  "title": "Херкулес VS Авгий",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
  }
 }

@@ -1,5 +1,5 @@
 {
-  "ran": "2026-10-21T09:05:33+00:00",
+  "ran": "2026-10-22T09:05:33+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,16 +8,16 @@
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 970.8,
-      "tail": "wrote index.html, changes.json, cinema_films.json (206 arthouse films) and theatre_shows.json (308 theatre shows)\nfestival details -> film_info.json: title_bg 71, title_en 66\ncinema programmes: 11 official, 0 kept-previous, 1 aggregator-only (cineland)\ntheatre programmes: 15 official, 0 kept-previous, 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n10 film(s) and 8 show(s) minted (2 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 10 + 4 suspected duplicate(s)\nfestivals: cinelibri official (29 confirmed, 30 preliminary per row, 105 by date, 1 contradicted); kinomania official (4 confirmed, 2 preliminary per row, 0 by date, 0 contradicted); PRELIM_ROWS 32\nPRELIM_FROM {\"arena-mall\": \"2026-10-30\", \"arena-mega\": \"2026-10-30\", \"artvent\": \"2026-12-27\", \"atelie313\": \"2026-10-21\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-10-30\", \"cc-sofia\": \"2026-10-30\", \"cg-park\": \"2026-10-28\", \"cg-ring\": \"2026-10-28\", \"cineland\": \"2026-10-21\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-21\", \"dom-kino\": \"2026-10-30\", \"frenski-institut\": \"2026-11-28\", \"g8\": \"2026-10-23\", \"iam\": \"2026-10-28\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-16\", \"mladezhki\": \"2026-12-27\", \"natfiz\": \"2026-10-21\", \"national\": \"2026-12-27\", \"ndk1\": \"2026-11-28\", \"new-ndk\": \"2026-10-21\", \"odeon\": \"2026-10-23\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-11-30\", \"tba\": \"2026-12-24\", \"th199\": \"2026-11-01\", \"toplo\": \"2026-12-01\", \"toplo-film\": \"2026-11-28\", \"tsentralni-hali\": \"2026-11-28\", \"vazrazhdane\": \"2026-11-30\", \"vlaikova\": \"2026-11-02\", \"zad-kanala\": \"2026-12-27\"}\n  ! https://mlt.bg/programa.php?year=2026&month=10: challenge page (Cloudflare challenge, HTTP 403)"
+      "seconds": 835.3,
+      "tail": "theatre programmes: 12 official, 3 kept-previous (vazrazhdane, toplo, iam), 4 aggregator-only (natfiz, new-ndk, derida, atelie313)\n9 film(s) and 3 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 3 + 4 suspected duplicate(s)\nfestivals: cinelibri official (28 confirmed, 24 preliminary per row, 104 by date, 1 contradicted); kinomania official (4 confirmed, 2 preliminary per row, 0 by date, 0 contradicted); PRELIM_ROWS 26\nPRELIM_FROM {\"arena-mall\": \"2026-10-30\", \"arena-mega\": \"2026-10-30\", \"artvent\": \"2026-12-28\", \"atelie313\": \"2026-10-22\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-10-30\", \"cc-sofia\": \"2026-10-30\", \"cg-park\": \"2026-10-29\", \"cg-ring\": \"2026-10-29\", \"cineland\": \"2026-10-22\", \"citymark\": \"2026-11-01\", \"derida\": \"2026-10-22\", \"dom-kino\": \"2026-10-30\", \"frenski-institut\": \"2026-11-28\", \"g8\": \"2026-10-22\", \"iam\": \"2026-10-22\", \"kuklen\": \"2026-11-30\", \"lumiere\": \"2026-12-16\", \"mladezhki\": \"2026-12-28\", \"natfiz\": \"2026-10-22\", \"national\": \"2026-12-28\", \"ndk1\": \"2026-11-28\", \"new-ndk\": \"2026-10-22\", \"odeon\": \"2026-10-30\", \"salzaismyah\": \"2026-11-01\", \"satira\": \"2026-11-30\", \"sfumato\": \"2026-12-01\", \"sofia-th\": \"2026-12-28\", \"tba\": \"2026-12-24\", \"th199\": \"2026-11-01\", \"toplo\": \"2026-10-22\", \"toplo-film\": \"2026-11-28\", \"tsentralni-hali\": \"2026-11-28\", \"vazrazhdane\": \"2026-10-22\", \"vlaikova\": \"2026-10-22\", \"zad-kanala\": \"2026-12-28\"}\n  ! official vazrazhdane: no performances parsed (implausibly empty)\n  ! https://mlt.bg/programa.php?year=2026&month=10: challenge page (Cloudflare challenge, HTTP 403)\n  ! official toplo: no performances parsed (implausibly empty)\n  ! official iam: no performances parsed (implausibly empty)"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 44.8,
-      "tail": "  293 films needed details, fetched 43 pages\n  synopsis:  28 new\n  director:  22 new\n  cast:      7 new\n  genres:    21 new\n  img:       0 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  209 total entries in film_info.json"
+      "seconds": 49.1,
+      "tail": "  303 films needed details, fetched 49 pages\n  synopsis:  27 new\n  director:  16 new\n  cast:      3 new\n  genres:    20 new\n  img:       7 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  216 total entries in film_info.json"
     },
     {
       "step": "arthouse films",
@@ -25,7 +25,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 10 arthouse film(s) (303 total; 206 synthesised)"
+      "tail": "merged 9 arthouse film(s) (312 total; 215 synthesised)"
     },
     {
       "step": "theatre shows",
@@ -33,31 +33,31 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 8 theatre show(s) into SHOWS (576 total; 308 synthesised)"
+      "tail": "merged 3 theatre show(s) into SHOWS (579 total; 311 synthesised)"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 188.5,
-      "tail": "[299/303] kukla-sinelibri          NO MATCH (КУКЛА - СИНЕЛИБРИ None)\n[300/303] edna-istoriya-sinelibri  NO MATCH (ЕДНА ИСТОРИЯ - СИНЕЛИБРИ None)\n[301/303] doors                    -> The Doors (1991) id=10537  [original]\n[302/303] vsichki-vlyubeni-v-noshtta-sinelibri NO MATCH (ВСИЧКИ ВЛЮБЕНИ В НОЩТА - СИНЕЛИБРИ None)\n[303/303] les-mis-rables-cinelibri NO MATCH (LES MISÉRABLES - CINELIBRI None)\n\nDONE: 228/303 matched, 226 with posters, 36 og:image fallbacks, 167 with IMDb ratings, 124 with RT, 109 with MC (OMDb on, 167 ok / 53 missing) -> tmdb_films.json\n    ! omdb api error tt30632284: Error getting data."
+      "seconds": 195.9,
+      "tail": "[309/312] inspektorat-i-noshtta    ->  (1963) id=434959  [bg]\n[310/312] j-p-passi-please-remain-calm-y-p-pasi-v-razgovor-s-tonislav- NO MATCH (J-P Passi: Please remain calm - Й-П Паси в разговор с Тонислав Христов None)\n[311/312] harry-gruyaert-a-sense-of-place-prozhektsiya-i-sreshta-s-har NO MATCH (Harry Gruyaert: A Sense of Place - прожекция и среща с Хари Грюйерт None)\n[312/312] a-story-sinelibri        NO MATCH (A STORY - SINELIBRI None)\n\nDONE: 235/312 matched, 233 with posters, 37 og:image fallbacks, 173 with IMDb ratings, 128 with RT, 113 with MC (OMDb on, 173 ok / 54 missing) -> tmdb_films.json\n    ! omdb api error tt30632284: Error getting data.\n    ! omdb api error tt47819464: Error getting data."
     },
     {
       "step": "cinema posters",
       "script": "harvest_cinema_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 374.3,
-      "tail": "  it-s-alive-horar-film-fest-chast-iv-live-ekshan-dublazh-zhen | It’s Alive! Хорър Филм Фест Част IV: LIVE ЕКШЪН ДУБЛАЖ - Жен\n  it-s-alive-horar-film-fest-chast-iv-obicham-parizh | It’s Alive! Хорър Филм Фест Част IV: Обичам Париж\n  it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov | It’s Alive! Хорър Филм Фест Част IV: Опасният остров\n  it-s-alive-horar-film-fest-chast-iv-petak-69-i | It’s Alive! Хорър Филм Фест Част IV: Петък 69-и\n  it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp | It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Кам\n  kasometrazhen-konkurs | Късометражен конкурс\n  kasometrazhno-kino-izvan-konkurs | Късометражно кино извън конкурс\n  kukla-sinelibri | КУКЛА - СИНЕЛИБРИ"
+      "seconds": 374.0,
+      "tail": "  it-s-alive-horar-film-fest-chast-iv-live-ekshan-dublazh-zhen | It’s Alive! Хорър Филм Фест Част IV: LIVE ЕКШЪН ДУБЛАЖ - Жен\n  it-s-alive-horar-film-fest-chast-iv-obicham-parizh | It’s Alive! Хорър Филм Фест Част IV: Обичам Париж\n  it-s-alive-horar-film-fest-chast-iv-opasniyat-ostrov | It’s Alive! Хорър Филм Фест Част IV: Опасният остров\n  it-s-alive-horar-film-fest-chast-iv-petak-69-i | It’s Alive! Хорър Филм Фест Част IV: Петък 69-и\n  it-s-alive-horar-film-fest-chast-iv-tiyn-seks-i-smart-v-kamp | It’s Alive! Хорър Филм Фест Част IV: Тийн секс и смърт в Кам\n  j-p-passi-please-remain-calm-y-p-pasi-v-razgovor-s-tonislav- | J-P Passi: Please remain calm - Й-П Паси в разговор с Тонисл\n  kasometrazhen-konkurs | Късометражен конкурс\n  kasometrazhno-kino-izvan-konkurs | Късометражно кино извън конкурс"
     },
     {
       "step": "theatre posters",
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 122.8,
-      "tail": "  zadkanala.bg                          2     0     0      3.5  \n\nnew this run: 7   rejected by policy: 6   total: 563/576 shows with art\nre-hosted 562/563 posters under posters/\n  1 could not be fetched, kept remote: razdelenoto-kralstvo\nwrote theatre_posters.json\n  fetching salzaismyah stage programme pages …\n  ! https://theatre.peakview.bg/theatre/photos/BIG17921662761PLAKAT_RAZDELENOTOІKRALSTVOFIN1 (2).jpg: HTTP 404"
+      "seconds": 105.8,
+      "tail": "  zadkanala.bg                          2     0     0      3.6  \n\nnew this run: 3   rejected by policy: 4   total: 566/579 shows with art\nre-hosted 565/566 posters under posters/\n  1 could not be fetched, kept remote: razdelenoto-kralstvo\nwrote theatre_posters.json\n  fetching salzaismyah stage programme pages …\n  ! https://theatre.peakview.bg/theatre/photos/BIG17921662761PLAKAT_RAZDELENOTOІKRALSTVOFIN1 (2).jpg: HTTP 404"
     },
     {
       "step": "translations",
@@ -65,39 +65,55 @@
       "ok": true,
       "code": 0,
       "seconds": 1.6,
-      "tail": "texts needing translation: film syn 31, film title 88, show syn 60, show title 521\n  total characters to translate: 26780\n  cache now covers SYN_EN: 91 ids, TITLE_EN: 609 ids"
+      "tail": "texts needing translation: film syn 31, film title 93, show syn 60, show title 524\n  total characters to translate: 27102\n  cache now covers SYN_EN: 91 ids, TITLE_EN: 617 ids"
     },
     {
       "step": "events",
       "script": "fetch_events.py",
       "ok": true,
       "code": 0,
-      "seconds": 1.4,
-      "tail": "  - post 186299: skip: no dates (the post's date field is empty and the title has none)\n  - post 186342: skip: no dates (the post's date field is empty and the title has none)\n  - post 186736: skip: no dates (the post's date field is empty and the title has none)\n  - post 186957: skip: no dates (the post's date field is empty and the title has none)\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  programata.bg                         1     0     0      1.1"
+      "seconds": 5.6,
+      "tail": "  - post 186736: skip: no dates (the post's date field is empty and the title has none)\n  - post 186957: skip: no dates (the post's date field is empty and the title has none)\n  - post 188043: skip: no dates (the post's date field is empty and the title has none)\n  - post 187949: skip: not in Sofia (the headline names another town)\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  programata.bg                         3     0     0      5.3"
+    },
+    {
+      "step": "event posters",
+      "script": "fetch_event_posters.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 8.5,
+      "tail": "  act-festival-za-svoboden-teatar-p187545      programata 1024x576  https://programata.bg/wp-content/uploads/2026/10/act_fest_digital_fb_cover_website-1-1024x\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  actfest.org                           1     0     0      3.1  \n  programata.bg                         2     0     0      2.8  \n  www.cinelibri.com                     1     0     0      1.0  \n  www.kinomania.bg                      1     0     0      1.2"
     },
     {
       "step": "inline posters",
       "script": "inject_data.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  EVENTS_AUTO: kinomaniya-p186611 left out, the seed's kinomania lists it\ninjected TMDBART: 228 films (226 with posters), POSTERS: 44 entries (36 og:image + 8 film_info-img fallbacks), SHOWART: 563 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 91 ids, TITLE_EN: 609 ids (auto-translated)\n  EVENTS_AUTO: 1 event(s), EVENT_MEMBERS: 1 title(s) in 1 event(s)"
+      "seconds": 0.5,
+      "tail": "  FILMINFO: dropped 'alehandro-hodorovski-kartitsata-1970' — no film, show or event has this id\n  FILMINFO: dropped 'alehandro-hodorovski-sveshtenata-planina-1973' — no film, show or event has this id\n  FILMINFO: dropped 'kinoklasiki-kosa-1979' — no film, show or event has this id\n  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  EVENTS_AUTO: kinomaniya-p186611 left out, the seed's kinomania lists it\ninjected TMDBART: 235 films (233 with posters), POSTERS: 48 entries (37 og:image + 11 film_info-img fallbacks), SHOWART: 566 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 91 ids, TITLE_EN: 617 ids (auto-translated)\n  EVENTS_AUTO: 1 event(s), EVENT_MEMBERS: 1 title(s) in 1 event(s), EVENTART: 3 event(s) with key art (act-festival-za-svoboden-teatar-p187545, cinelibri, kinomania)"
     },
     {
       "step": "share pages",
       "script": "gen_share_pages.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.3,
-      "tail": "gen_share_pages: wrote 879 share pages"
+      "seconds": 0.4,
+      "tail": "gen_share_pages: wrote 891 share pages"
+    },
+    {
+      "step": "csp",
+      "script": "csp.py",
+      "ok": true,
+      "code": 0,
+      "seconds": 0.2,
+      "tail": "csp: stamped 7 page(s) and 891 share page(s), 0 changed"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 8.1,
-      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (1,630,243 bytes)\n  note: SHOWATTR: 201 film+venue key(s), 3498 timed entr(ies)\n  all checks passed — safe to publish"
+      "seconds": 9.3,
+      "tail": "verify_build: /home/runner/work/sofia-gleda/sofia-gleda/index.html (1,649,866 bytes)\n  note: SHOWATTR: 203 film+venue key(s), 3224 timed entr(ies)\n  all checks passed — safe to publish"
     }
   ],
   "official": {
@@ -106,18 +122,18 @@
       "status": "official",
       "source": "cinemacity.bg quickbook API",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-29"
       ],
-      "days": 9,
-      "screenings": 500,
-      "written_screenings": 660,
+      "days": 8,
+      "screenings": 451,
+      "written_screenings": 613,
       "prelim_from": "2026-10-30",
-      "prelim_screenings": 161,
-      "discarded_aggregator": 13,
+      "prelim_screenings": 163,
+      "discarded_aggregator": 8,
       "minted": [
-        "chronicles-of-uncomfortable-truth-engl",
-        "kleyfeys"
+        "hroniki-za-neudobnata-istina-s-angliyski-subtitri",
+        "mozhesh-da-vidish-vsichko"
       ],
       "error": null
     },
@@ -126,15 +142,15 @@
       "status": "official",
       "source": "cinemacity.bg quickbook API",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-29"
       ],
-      "days": 9,
-      "screenings": 565,
-      "written_screenings": 746,
+      "days": 8,
+      "screenings": 506,
+      "written_screenings": 689,
       "prelim_from": "2026-10-30",
-      "prelim_screenings": 182,
-      "discarded_aggregator": 2,
+      "prelim_screenings": 184,
+      "discarded_aggregator": 1,
       "minted": [],
       "error": null
     },
@@ -143,15 +159,15 @@
       "status": "official",
       "source": "kinoarena.com programme pages",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-29"
       ],
-      "days": 9,
-      "screenings": 435,
-      "written_screenings": 633,
+      "days": 8,
+      "screenings": 391,
+      "written_screenings": 589,
       "prelim_from": "2026-10-30",
       "prelim_screenings": 198,
-      "discarded_aggregator": 6,
+      "discarded_aggregator": 3,
       "minted": [],
       "error": null
     },
@@ -160,15 +176,15 @@
       "status": "official",
       "source": "kinoarena.com programme pages",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-29"
       ],
-      "days": 9,
-      "screenings": 432,
-      "written_screenings": 630,
+      "days": 8,
+      "screenings": 386,
+      "written_screenings": 584,
       "prelim_from": "2026-10-30",
       "prelim_screenings": 198,
-      "discarded_aggregator": 6,
+      "discarded_aggregator": 3,
       "minted": [],
       "error": null
     },
@@ -177,14 +193,14 @@
       "status": "official",
       "source": "cinegrand.bg schedule pages",
       "covered": [
-        "2026-10-21",
-        "2026-10-27"
+        "2026-10-22",
+        "2026-10-28"
       ],
       "days": 7,
-      "screenings": 363,
-      "written_screenings": 572,
-      "prelim_from": "2026-10-28",
-      "prelim_screenings": 209,
+      "screenings": 362,
+      "written_screenings": 522,
+      "prelim_from": "2026-10-29",
+      "prelim_screenings": 160,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -194,14 +210,14 @@
       "status": "official",
       "source": "cinegrand.bg schedule pages",
       "covered": [
-        "2026-10-21",
-        "2026-10-27"
+        "2026-10-22",
+        "2026-10-28"
       ],
       "days": 7,
-      "screenings": 222,
-      "written_screenings": 359,
-      "prelim_from": "2026-10-28",
-      "prelim_screenings": 137,
+      "screenings": 219,
+      "written_screenings": 325,
+      "prelim_from": "2026-10-29",
+      "prelim_screenings": 106,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
@@ -213,45 +229,48 @@
       "covered": null,
       "days": 0,
       "screenings": 0,
-      "written_screenings": 68,
-      "prelim_from": "2026-10-21",
-      "prelim_screenings": 68,
+      "written_screenings": 35,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 35,
       "discarded_aggregator": 0,
       "minted": [],
       "error": null
     },
     "vlaikova": {
       "kind": null,
-      "status": "official",
-      "source": "vlaikovacinema.com weekly grid",
-      "covered": [
-        "2026-10-21",
-        "2026-11-01"
-      ],
-      "days": 12,
-      "screenings": 34,
-      "written_screenings": 43,
-      "prelim_from": "2026-11-02",
-      "prelim_screenings": 9,
+      "status": "unreachable",
+      "source": "previous run kept as preliminary — official source failed",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 41,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 41,
       "discarded_aggregator": 0,
       "minted": [],
-      "error": null
+      "error": "Влайкова: no dated grid parsed"
     },
     "odeon": {
       "kind": null,
       "status": "official",
-      "source": "bnf.bg Одеон programme (917)",
+      "source": "bnf.bg Одеон programme (917, 918)",
       "covered": [
-        "2026-10-21",
-        "2026-10-22"
+        "2026-10-22",
+        "2026-10-29"
       ],
-      "days": 2,
-      "screenings": 9,
-      "written_screenings": 9,
-      "prelim_from": "2026-10-23",
+      "days": 8,
+      "screenings": 35,
+      "written_screenings": 35,
+      "prelim_from": "2026-10-30",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [],
+      "minted": [
+        "harry-gruyaert-a-sense-of-place-prozhektsiya-i-sreshta-s-har",
+        "inspektorat-i-noshtta",
+        "j-p-passi-please-remain-calm-y-p-pasi-v-razgovor-s-tonislav-",
+        "sreshta-razgovor-s-valeska-grizebah-rezhisyor-na-filma-mecht",
+        "yarostta-na-svobodata"
+      ],
       "error": null
     },
     "dom-kino": {
@@ -259,58 +278,50 @@
       "status": "official",
       "source": "domnakinoto.com day programme",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-29"
       ],
-      "days": 9,
-      "screenings": 36,
-      "written_screenings": 82,
+      "days": 8,
+      "screenings": 32,
+      "written_screenings": 79,
       "prelim_from": "2026-10-30",
-      "prelim_screenings": 46,
+      "prelim_screenings": 47,
       "discarded_aggregator": 3,
-      "minted": [],
+      "minted": [
+        "sinyoto-e-topal-tsvyat"
+      ],
       "error": null
     },
     "g8": {
       "kind": null,
-      "status": "official",
-      "source": "g8cinema.com weekly programme",
-      "covered": [
-        "2026-10-21",
-        "2026-10-22"
-      ],
-      "days": 2,
-      "screenings": 29,
-      "written_screenings": 29,
-      "prelim_from": "2026-10-23",
-      "prelim_screenings": 0,
-      "discarded_aggregator": 1,
+      "status": "unreachable",
+      "source": "previous run kept as preliminary — official source failed",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 78,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 78,
+      "discarded_aggregator": 0,
       "minted": [],
-      "error": null
+      "error": "G8: no 'Седмична програма' week range"
     },
     "lumiere": {
       "kind": null,
       "status": "official",
       "source": "ndk.bg programme + KinoCult (Sanity) API",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-12-15"
       ],
-      "days": 56,
-      "screenings": 14,
-      "written_screenings": 14,
+      "days": 55,
+      "screenings": 15,
+      "written_screenings": 15,
       "prelim_from": "2026-12-16",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [
-        "doors",
-        "edna-istoriya-sinelibri",
-        "haos-v-komedi-fransez-sinelibri",
-        "kukla-sinelibri",
-        "les-mis-rables-cinelibri",
-        "razum-i-chuvstva-sinelibri",
-        "taksi-za-raya-sinelibri",
-        "vsichki-vlyubeni-v-noshtta-sinelibri"
+        "a-story-sinelibri"
       ],
       "error": null
     },
@@ -319,7 +330,7 @@
       "status": "festival",
       "source": "festival programmes (cinelibri, kinomania)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-27"
       ],
       "days": 0,
@@ -336,12 +347,12 @@
       "status": "festival",
       "source": "festival programmes (cinelibri, kinomania)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-27"
       ],
       "days": 0,
-      "screenings": 23,
-      "written_screenings": 23,
+      "screenings": 22,
+      "written_screenings": 22,
       "prelim_from": "2026-11-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -353,7 +364,7 @@
       "status": "festival",
       "source": "festival programmes (cinelibri, kinomania)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-27"
       ],
       "days": 0,
@@ -370,7 +381,7 @@
       "status": "festival",
       "source": "festival programmes (cinelibri, kinomania)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-27"
       ],
       "days": 0,
@@ -387,13 +398,13 @@
       "status": "official",
       "source": "nationaltheatre.bg/bg/programa (month pages)",
       "covered": [
-        "2026-10-21",
-        "2026-12-26"
+        "2026-10-22",
+        "2026-12-27"
       ],
       "days": 67,
-      "screenings": 145,
-      "written_screenings": 145,
-      "prelim_from": "2026-12-27",
+      "screenings": 142,
+      "written_screenings": 142,
+      "prelim_from": "2026-12-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -404,16 +415,20 @@
       "status": "official",
       "source": "sofiatheatre.eu/program (month pages)",
       "covered": [
-        "2026-10-21",
-        "2026-11-29"
+        "2026-10-22",
+        "2026-12-27"
       ],
-      "days": 40,
-      "screenings": 17,
-      "written_screenings": 17,
-      "prelim_from": "2026-11-30",
+      "days": 67,
+      "screenings": 30,
+      "written_screenings": 30,
+      "prelim_from": "2026-12-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 6,
-      "minted": [],
+      "minted": [
+        "herkules-vs-avgiy",
+        "nyama-da-platim-nyama-da-platim",
+        "tiramisu"
+      ],
       "error": null
     },
     "th199": {
@@ -421,12 +436,12 @@
       "status": "official",
       "source": "theatre199.org/bg/schedule (GET window)",
       "covered": [
-        "2026-10-22",
+        "2026-10-23",
         "2026-10-31"
       ],
-      "days": 10,
-      "screenings": 14,
-      "written_screenings": 59,
+      "days": 9,
+      "screenings": 13,
+      "written_screenings": 58,
       "prelim_from": "2026-11-01",
       "prelim_screenings": 44,
       "discarded_aggregator": 1,
@@ -438,12 +453,12 @@
       "status": "official",
       "source": "sfumato.info (own programme, HTTP only)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-30"
       ],
-      "days": 41,
-      "screenings": 33,
-      "written_screenings": 33,
+      "days": 40,
+      "screenings": 32,
+      "written_screenings": 32,
       "prelim_from": "2026-12-01",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -455,12 +470,12 @@
       "status": "official",
       "source": "tba.art.bg/programabg.php + tickets.tba.bg public list",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-12-23"
       ],
-      "days": 64,
-      "screenings": 122,
-      "written_screenings": 122,
+      "days": 63,
+      "screenings": 121,
+      "written_screenings": 121,
       "prelim_from": "2026-12-24",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -472,13 +487,13 @@
       "status": "official",
       "source": "zadkanala.bg/programa/YYYY-MM",
       "covered": [
-        "2026-10-21",
-        "2026-12-26"
+        "2026-10-22",
+        "2026-12-27"
       ],
       "days": 67,
-      "screenings": 58,
-      "written_screenings": 58,
-      "prelim_from": "2026-12-27",
+      "screenings": 59,
+      "written_screenings": 59,
+      "prelim_from": "2026-12-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -486,35 +501,30 @@
     },
     "vazrazhdane": {
       "kind": "theatre",
-      "status": "official",
-      "source": "theatrevazrajdane.bg/programa/",
-      "covered": [
-        "2026-10-21",
-        "2026-11-29"
-      ],
-      "days": 40,
-      "screenings": 48,
+      "status": "unreachable",
+      "source": "previous run kept as preliminary — official source failed",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
       "written_screenings": 63,
-      "prelim_from": "2026-11-30",
-      "prelim_screenings": 15,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 63,
       "discarded_aggregator": 0,
-      "minted": [
-        "istorii-stories"
-      ],
-      "error": null
+      "minted": [],
+      "error": "no performances parsed (implausibly empty)"
     },
     "mladezhki": {
       "kind": "theatre",
       "status": "official",
       "source": "tickets.mlt.bg public list (the theatre's own ticket centre)",
       "covered": [
-        "2026-10-21",
-        "2026-12-26"
+        "2026-10-22",
+        "2026-12-27"
       ],
       "days": 67,
       "screenings": 132,
       "written_screenings": 132,
-      "prelim_from": "2026-12-27",
+      "prelim_from": "2026-12-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -525,12 +535,12 @@
       "status": "official",
       "source": "sofiapuppet.com/programa.php (month pages)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-29"
       ],
-      "days": 40,
-      "screenings": 45,
-      "written_screenings": 45,
+      "days": 39,
+      "screenings": 43,
+      "written_screenings": 43,
       "prelim_from": "2026-11-30",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -539,34 +549,27 @@
     },
     "toplo": {
       "kind": "theatre",
-      "status": "official",
-      "source": "toplocentrala.bg/program/performance (+ /YYYY/MM month pages, schema.org)",
-      "covered": [
-        "2026-10-21",
-        "2026-11-30"
-      ],
-      "days": 41,
-      "screenings": 63,
-      "written_screenings": 72,
-      "prelim_from": "2026-12-01",
-      "prelim_screenings": 9,
+      "status": "unreachable",
+      "source": "previous run kept as preliminary — official source failed",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
+      "written_screenings": 71,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 71,
       "discarded_aggregator": 0,
-      "minted": [
-        "choveshka-greshka",
-        "spontannost",
-        "wide-art-forum-2026"
-      ],
-      "error": null
+      "minted": [],
+      "error": "no performances parsed (implausibly empty)"
     },
     "citymark": {
       "kind": "theatre",
       "status": "official",
       "source": "theatre.art.bg (official channel)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-31"
       ],
-      "days": 11,
+      "days": 10,
       "screenings": 6,
       "written_screenings": 7,
       "prelim_from": "2026-11-01",
@@ -580,12 +583,12 @@
       "status": "official",
       "source": "satirata.bg/program (__NEXT_DATA__)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-29"
       ],
-      "days": 40,
-      "screenings": 84,
-      "written_screenings": 84,
+      "days": 39,
+      "screenings": 83,
+      "written_screenings": 83,
       "prelim_from": "2026-11-30",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -600,7 +603,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 0,
-      "prelim_from": "2026-10-21",
+      "prelim_from": "2026-10-22",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -614,7 +617,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 0,
-      "prelim_from": "2026-10-21",
+      "prelim_from": "2026-10-22",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -628,7 +631,7 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 0,
-      "prelim_from": "2026-10-21",
+      "prelim_from": "2026-10-22",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -636,20 +639,17 @@
     },
     "iam": {
       "kind": "theatre",
-      "status": "official",
-      "source": "iamstudio.bg/programa/",
-      "covered": [
-        "2026-10-21",
-        "2026-10-27"
-      ],
-      "days": 7,
-      "screenings": 3,
+      "status": "unreachable",
+      "source": "previous run kept as preliminary — official source failed",
+      "covered": null,
+      "days": 0,
+      "screenings": 0,
       "written_screenings": 8,
-      "prelim_from": "2026-10-28",
-      "prelim_screenings": 5,
+      "prelim_from": "2026-10-22",
+      "prelim_screenings": 8,
       "discarded_aggregator": 0,
       "minted": [],
-      "error": null
+      "error": "no performances parsed (implausibly empty)"
     },
     "atelie313": {
       "kind": "theatre",
@@ -659,13 +659,10 @@
       "days": 0,
       "screenings": 0,
       "written_screenings": 30,
-      "prelim_from": "2026-10-21",
+      "prelim_from": "2026-10-22",
       "prelim_screenings": 30,
       "discarded_aggregator": 0,
-      "minted": [
-        "kakvo-e-koleda",
-        "marionetni-fantazii"
-      ],
+      "minted": [],
       "error": "atelie313.com is a JavaScript-only super.website app (no programme in the HTML); theatre.art.bg lists it (theatre id 22) but that is an aggregator — its rows stay preliminary"
     },
     "artvent": {
@@ -673,13 +670,13 @@
       "status": "official",
       "source": "artvent.bg per-show pages (София, Театър ARTVENT only)",
       "covered": [
-        "2026-10-21",
-        "2026-12-26"
+        "2026-10-22",
+        "2026-12-27"
       ],
       "days": 67,
-      "screenings": 41,
-      "written_screenings": 41,
-      "prelim_from": "2026-12-27",
+      "screenings": 40,
+      "written_screenings": 40,
+      "prelim_from": "2026-12-28",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
@@ -690,19 +687,16 @@
       "status": "official",
       "source": "salzaismyah.bg/site/calendar (month grid) + /site/events/N (stages)",
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-10-31"
       ],
-      "days": 11,
-      "screenings": 19,
-      "written_screenings": 64,
+      "days": 10,
+      "screenings": 18,
+      "written_screenings": 63,
       "prelim_from": "2026-11-01",
       "prelim_screenings": 45,
       "discarded_aggregator": 0,
-      "minted": [
-        "otnasya-se-do-vsichki",
-        "priklyucheniya-v-tarsene-na-vaobrazhenieto"
-      ],
+      "minted": [],
       "error": null
     }
   },
@@ -712,8 +706,8 @@
       "source": "https://www.cinelibri.com/programa/",
       "error": null,
       "notes": [],
-      "films": 64,
-      "sofia_screenings": 227,
+      "films": 63,
+      "sofia_screenings": 215,
       "unknown_venues": {},
       "outside_sofia": {
         "Lucky - Дом на киното, Пловдив": 24,
@@ -723,29 +717,29 @@
         "Културен дом на Нефтохимика, Бургас": 10,
         "Зала „Възраждане“, Габрово": 8
       },
-      "requests": 23,
-      "seconds": 246.3,
+      "requests": 22,
+      "seconds": 232.2,
       "blocked": [],
-      "last_ok": "2026-10-21",
+      "last_ok": "2026-10-22",
       "failing_since": null,
       "covered": [
-        "2026-10-21",
+        "2026-10-22",
         "2026-11-08"
       ],
-      "films_at_app_venues": 64,
-      "matched": 64,
+      "films_at_app_venues": 63,
+      "matched": 63,
       "minted": [],
       "kept_tail": 0,
-      "confirmed": 29,
-      "prelim_row": 30,
-      "prelim_date": 105,
-      "listed": 60,
+      "confirmed": 28,
+      "prelim_row": 24,
+      "prelim_date": 104,
+      "listed": 56,
       "contradicted": [
         [
-          "sinelibri-2026-svetovno-neizvestna",
-          "g8",
-          "2026-10-21",
-          "18:45"
+          "sinelibri-2026-ehoto-mezhdu-nas",
+          "odeon",
+          "2026-10-29",
+          "20:30"
         ]
       ],
       "clash": [
@@ -755,7 +749,7 @@
           "2026-10-22",
           "19:00",
           [
-            "edna-istoriya-sinelibri"
+            "a-story-sinelibri"
           ]
         ],
         [
@@ -795,30 +789,12 @@
           ]
         ],
         [
-          "sinelibri-2026-pepel",
-          "g8",
-          "2026-10-21",
-          "18:30",
-          [
-            "prekrasno-lyato"
-          ]
-        ],
-        [
           "sinelibri-2026-vsichki-vlyubeni-v-noshtta",
           "lumiere",
           "2026-10-23",
           "19:00",
           [
             "vsichki-vlyubeni-v-noshtta-sinelibri"
-          ]
-        ],
-        [
-          "sinelibri-kletnitsite",
-          "lumiere",
-          "2026-10-21",
-          "19:00",
-          [
-            "les-mis-rables-cinelibri"
           ]
         ],
         [
@@ -829,15 +805,6 @@
           [
             "taksi-za-raya-sinelibri"
           ]
-        ],
-        [
-          "tseluvka-za-leka-nosht",
-          "vlaikova",
-          "2026-10-31",
-          "17:30",
-          [
-            "sinelibri-2026-tseluvka-za-leka-nosht"
-          ]
         ]
       ],
       "by_venue": {
@@ -845,7 +812,7 @@
           "listed": 8
         },
         "casa-libri": {
-          "prelim_date": 10
+          "prelim_date": 9
         },
         "cc-sofia": {
           "listed": 8
@@ -854,41 +821,37 @@
           "listed": 8
         },
         "cineland": {
-          "prelim_date": 4
+          "prelim_date": 1
         },
         "dom-kino": {
-          "listed": 20
+          "listed": 19
         },
         "frenski-institut": {
-          "confirmed": 23
+          "confirmed": 22
         },
         "g8": {
-          "prelim_row": 2,
-          "prelim_date": 62,
-          "listed": 1,
-          "contradicted": 1
+          "prelim_date": 64
         },
         "lumiere": {
-          "prelim_row": 27
+          "prelim_row": 24,
+          "listed": 2
         },
         "ndk1": {
           "confirmed": 1
         },
         "odeon": {
-          "prelim_date": 20,
-          "listed": 3
+          "prelim_date": 9,
+          "listed": 11,
+          "contradicted": 1
         },
         "toplo-film": {
           "confirmed": 5
         },
         "vlaikova": {
-          "prelim_row": 1,
-          "prelim_date": 9,
-          "listed": 12
+          "prelim_date": 21
         }
       },
       "rows": [
-        "brunelo-dzhentalmenat-vizioner|frenski-institut|2026-10-21|18:30",
         "brunelo-dzhentalmenat-vizioner|odeon|2026-10-30|17:45",
         "chilietsat|frenski-institut|2026-10-23|18:30",
         "chilietsat|lumiere|2026-11-05|19:00",
@@ -933,8 +896,6 @@
         "otechestvo|ndk1|2026-11-03|19:00",
         "otechestvo|vlaikova|2026-11-07|20:00",
         "pateshestviyata-na-dostoevski|lumiere|2026-11-02|18:00",
-        "petiyat-pechat|odeon|2026-10-21|18:00",
-        "petoknizhie-anzhelovo|casa-libri|2026-10-21|18:30",
         "petoknizhie-anzhelovo|g8|2026-10-22|18:15",
         "petoknizhie-anzhelovo|g8|2026-10-25|16:15",
         "petoknizhie-anzhelovo|vlaikova|2026-11-07|15:00",
@@ -996,7 +957,6 @@
         "sinelibri-2026-ludorii|g8|2026-10-29|20:15",
         "sinelibri-2026-ludorii|g8|2026-11-01|16:30",
         "sinelibri-2026-ludorii|lumiere|2026-10-28|18:15",
-        "sinelibri-2026-ludorii|odeon|2026-10-21|20:30",
         "sinelibri-2026-ludorii|vlaikova|2026-10-30|20:00",
         "sinelibri-2026-molier-sirano-i-mladiyat-kral|frenski-institut|2026-10-27|18:30",
         "sinelibri-2026-molier-sirano-i-mladiyat-kral|g8|2026-11-04|18:00",
@@ -1011,7 +971,6 @@
         "sinelibri-2026-nozh-razmisli-sled-opit-za-ubiystvo|g8|2026-11-07|15:30",
         "sinelibri-2026-paralelni-istorii|frenski-institut|2026-11-03|18:00",
         "sinelibri-2026-patyat-na-keruak-pulsat-na-edno-pokolenie|odeon|2026-10-27|18:15",
-        "sinelibri-2026-pepel|g8|2026-10-21|18:30",
         "sinelibri-2026-pepel|g8|2026-10-24|17:00",
         "sinelibri-2026-perfektni-nepoznati|g8|2026-10-24|14:15",
         "sinelibri-2026-perfektni-nepoznati|g8|2026-10-24|19:30",
@@ -1022,7 +981,6 @@
         "sinelibri-2026-shte-se-sluchi-tazi-vecher|casa-libri|2026-10-22|18:30",
         "sinelibri-2026-shte-se-sluchi-tazi-vecher|cc-sofia|2026-11-03|19:00",
         "sinelibri-2026-shte-se-sluchi-tazi-vecher|cg-park|2026-10-25|17:00",
-        "sinelibri-2026-shte-se-sluchi-tazi-vecher|dom-kino|2026-10-21|18:00",
         "sinelibri-2026-shte-se-sluchi-tazi-vecher|frenski-institut|2026-11-07|16:00",
         "sinelibri-2026-shte-se-sluchi-tazi-vecher|g8|2026-10-24|16:00",
         "sinelibri-2026-shte-se-sluchi-tazi-vecher|g8|2026-10-24|20:30",
@@ -1038,7 +996,6 @@
         "sinelibri-2026-svetovno-neizvestna|cg-park|2026-10-27|19:30",
         "sinelibri-2026-svetovno-neizvestna|dom-kino|2026-10-24|20:00",
         "sinelibri-2026-svetovno-neizvestna|frenski-institut|2026-10-28|18:30",
-        "sinelibri-2026-svetovno-neizvestna|g8|2026-10-21|18:45",
         "sinelibri-2026-svetovno-neizvestna|g8|2026-10-30|18:00",
         "sinelibri-2026-svetovno-neizvestna|g8|2026-11-03|18:15",
         "sinelibri-2026-tants-okolo-sebe-si-siri-hustvet|dom-kino|2026-10-24|17:30",
@@ -1049,9 +1006,6 @@
         "sinelibri-chernoto-topche|arena-mall|2026-10-27|19:15",
         "sinelibri-chernoto-topche|cc-sofia|2026-11-04|19:00",
         "sinelibri-chernoto-topche|cg-park|2026-10-25|19:30",
-        "sinelibri-chernoto-topche|cineland|2026-10-21|18:30",
-        "sinelibri-chernoto-topche|cineland|2026-10-21|19:00",
-        "sinelibri-chernoto-topche|cineland|2026-10-21|19:15",
         "sinelibri-chernoto-topche|dom-kino|2026-10-30|19:30",
         "sinelibri-chernoto-topche|frenski-institut|2026-11-05|18:00",
         "sinelibri-chernoto-topche|g8|2026-10-24|14:15",
@@ -1077,7 +1031,6 @@
         "sinelibri-kletnitsite|frenski-institut|2026-10-22|18:30",
         "sinelibri-kletnitsite|frenski-institut|2026-10-25|14:00",
         "sinelibri-kletnitsite|frenski-institut|2026-11-01|15:30",
-        "sinelibri-kletnitsite|lumiere|2026-10-21|19:00",
         "sinelibri-svatba-s-vkus-na-portokal|arena-mall|2026-10-28|19:00",
         "sinelibri-svatba-s-vkus-na-portokal|casa-libri|2026-10-27|18:30",
         "sinelibri-svatba-s-vkus-na-portokal|cc-sofia|2026-10-30|19:00",
@@ -1085,7 +1038,6 @@
         "sinelibri-svatba-s-vkus-na-portokal|g8|2026-10-23|19:45",
         "sinelibri-svatba-s-vkus-na-portokal|g8|2026-10-25|14:45",
         "sinelibri-svatba-s-vkus-na-portokal|toplo-film|2026-10-26|19:00",
-        "sinelibri-svatba-s-vkus-na-portokal|vlaikova|2026-10-21|19:30",
         "sinelibri-voda-za-tsvetyata|arena-mall|2026-10-25|19:00",
         "sinelibri-voda-za-tsvetyata|cc-sofia|2026-11-01|19:00",
         "sinelibri-voda-za-tsvetyata|cg-park|2026-10-26|19:30",
@@ -1116,8 +1068,8 @@
       ],
       "unsure": [],
       "gained": {
-        "title_bg": 64,
-        "title_en": 62
+        "title_bg": 63,
+        "title_en": 61
       }
     },
     "kinomania": {
@@ -1132,9 +1084,9 @@
       "unknown_venues": {},
       "outside_sofia": {},
       "requests": 8,
-      "seconds": 9.4,
+      "seconds": 9.5,
       "blocked": [],
-      "last_ok": "2026-10-21",
+      "last_ok": "2026-10-22",
       "failing_since": null,
       "covered": [
         "2026-11-12",
