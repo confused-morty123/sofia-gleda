@@ -3169,6 +3169,31 @@ _ss7 = FTP.settle_state({"a": {"first_missing": "2026-10-01"}, "b": {"first_miss
 check("settle_state: a found poster and a show off stage leave the state; a miss is counted",
       _ss7, {"a": {"first_missing": "2026-10-01", "tries": 1, "last_try": "2026-10-22", "link": "la"}})
 
+# ---- C8: coverage counted as the browser does, and its health entry ----
+print("theatre posters: coverage as the browser counts it, health.json entry (C8)")
+_m8 = {"SHOWALIAS": {"ev": "film"}, "TMDBART": {"film": {"p": "/x.jpg"}, "nop": {"en": "X"}},
+       "POSTERS": {"bad": "javascript:alert(1)"}, "EVENTART": {},
+       "SHOWART": {"a": "posters/a.jpg", "b": "posters/b к.jpg", "nop": "https://x.bg/a.jpg"}}
+check("browser_poster: a safe local path, a non-ASCII path refused, TMDB via the alias, an unsafe override",
+      [bool(PP.browser_poster(i, _m8)) for i in ("a", "b", "ev", "bad", "nop", "none")],
+      [True, False, True, False, True, False])
+import tempfile as _tf8
+with _tf8.TemporaryDirectory() as _d8:
+    _h8 = pathlib.Path(_d8) / "health.json"
+    _h8.write_text('[{"level": "ok", "venue": "theatre-posters", "message": "old"},'
+                   ' {"level": "error", "venue": "mladezhki", "message": "x"}]', encoding="utf-8")
+    _shows8 = [{"id": "a", "theatre": "t1"}, {"id": "b", "theatre": "t1"}, {"id": "c", "theatre": "t2"}]
+    _cov8 = FTP.report_coverage("", _shows8, {"a", "b", "c"}, {"a": "posters/a.jpg"},
+                                {"b": {"first_missing": "2026-10-01"}, "c": {"first_missing": "2026-10-20"}},
+                                dt.date(2026, 10, 22), health_path=_h8)
+    _hj8 = __import__("json").loads(_h8.read_text(encoding="utf-8"))
+    check("report_coverage: 1/3, missing b and c, by theatre",
+          (_cov8["with"], _cov8["missing"], _cov8["by_theatre"]["t1"]["missing"]), (1, ["b", "c"], ["b"]))
+    check("report_coverage: one theatre-posters entry, a warning naming the show missing > 7 days",
+          [(e["venue"], e["level"]) for e in _hj8],
+          [("mladezhki", "error"), ("theatre-posters", "warning")])
+    check("…the message gives its age", "b (21 days)" in _hj8[-1]["message"] and "c (" not in _hj8[-1]["message"], True)
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",

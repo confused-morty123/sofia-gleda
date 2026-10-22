@@ -1245,6 +1245,55 @@ def settle_state(state, tried, missing, upcoming, links, remote_failed, today):
     return dict(sorted(out.items()))
 
 
+HEALTH = ROOT / "health.json"
+MISSING_WARN_DAYS = 7
+
+
+def _page_const(src, name):
+    m = re.search(r"^const %s\s*=\s*(.*?);\s*$" % re.escape(name), src, re.M)
+    try:
+        return json.loads(m.group(1)) if m else {}
+    except ValueError:
+        return {}
+
+
+def report_coverage(src, shows, upcoming, showart, state, today, health_path=None):
+    """Print 'poster coverage: <with>/<upcoming> upcoming shows; missing: …' (as
+    the browser counts it, with this run's SHOWART) and replace this step's
+    health.json entry: a warning when a show on stage has gone without a poster
+    for more than MISSING_WARN_DAYS days (age from the state file)."""
+    from posterpolicy import poster_coverage
+    maps = {n: _page_const(src, n) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART")}
+    maps["SHOWART"] = showart
+    cov = poster_coverage(shows, upcoming, maps)
+    print(f"poster coverage: {cov['with']}/{cov['upcoming']} upcoming shows; missing: "
+          + (", ".join(cov["missing"]) or "none"))
+    old = []
+    for sid in cov["missing"]:
+        try:
+            age = (today - dt.date.fromisoformat((state.get(sid) or {}).get("first_missing", ""))).days
+        except ValueError:
+            age = 0
+        if age > MISSING_WARN_DAYS:
+            old.append(f"{sid} ({age} days)")
+    msg = f"theatre posters: {cov['with']}/{cov['upcoming']} upcoming shows have a poster"
+    if old:
+        msg += f"; missing for more than {MISSING_WARN_DAYS} days: " + ", ".join(old)
+    elif cov["missing"]:
+        msg += "; recently missing: " + ", ".join(cov["missing"])
+    path = health_path or HEALTH
+    try:
+        health = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        if not isinstance(health, list):
+            health = []
+        health = [e for e in health if not (isinstance(e, dict) and e.get("venue") == "theatre-posters")]
+        health.append({"level": "warning" if old else "ok", "venue": "theatre-posters", "message": msg})
+        path.write_text(json.dumps(health, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except (OSError, ValueError) as e:
+        print(f"  (could not update health.json: {e})", file=sys.stderr)
+    return cov
+
+
 def wanted_ids(shows, previous, seed, catalogue=None, perf_ids=None, log=None):
     """(want, prev_ok, seed_ok). prev_ok / seed_ok are the previous file and SEED
     filtered by posterpolicy; `want` is every show (or, given perf_ids, every show
@@ -1395,6 +1444,7 @@ def main():
     STATE.write_text(json.dumps(state, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
                      encoding="utf-8")
     print(f"wrote {STATE.name} ({len(state)} entries)")
+    report_coverage(src, shows, upcoming, merged, state, today)
     return 0
 
 

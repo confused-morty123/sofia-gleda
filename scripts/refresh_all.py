@@ -156,11 +156,23 @@ def run(name, script, extra):
         # the missing list: keep enough of it to read them in build_report.json
         tail = "\n".join(out.strip().splitlines()[-TAIL_LINES.get(name, 8):])
         return {"step": name, "script": script, "ok": ok, "code": proc.returncode,
-                "seconds": round(time.time() - start, 1), "tail": tail}
+                "seconds": round(time.time() - start, 1), "tail": tail, "_out": out}
     except Exception as e:
         print(f"  ! {script} crashed: {scrub(e)}", file=sys.stderr, flush=True)
         return {"step": name, "script": script, "ok": False, "code": -1,
                 "seconds": round(time.time() - start, 1), "tail": scrub(e)}
+
+
+def poster_coverage_of(out):
+    """The "POSTER_COVERAGE {json}" line verify_build.py prints (check 5c2)."""
+    for line in reversed(str(out or "").splitlines()):
+        if line.startswith("POSTER_COVERAGE "):
+            try:
+                cov = json.loads(line.split(" ", 1)[1])
+                return cov if isinstance(cov, dict) else None
+            except ValueError:
+                return None
+    return None
 
 
 def main(argv=None):
@@ -188,6 +200,9 @@ def main(argv=None):
     # The gate. Everything above may fail softly; this may not.
     verdict = run(*VERIFY)
     results.append(verdict)
+    posters = poster_coverage_of(verdict.get("_out", ""))
+    for r in results:
+        r.pop("_out", None)
 
     report = {
         "ran": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -197,6 +212,8 @@ def main(argv=None):
         "official": official,
         "festivals": festivals,
     }
+    if posters:
+        report["posters"] = posters               # verify_build 5c2 compares with it next run
     if aborted:
         report["official_aborted"] = aborted
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

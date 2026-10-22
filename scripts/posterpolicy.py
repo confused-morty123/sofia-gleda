@@ -122,6 +122,60 @@ def local_poster_problem(path, root=None):
         return f"the image is only {w}x{h} px — a logo or an icon, not a poster"
     return None
 
+# The browser's rule for a plain path in safeImg() (src/sofia-screen.artifact.html),
+# copied character for character (test_verify.py checks they are equal). Without
+# the `u` flag JS \w is ASCII, so Python must compile it with re.ASCII.
+JS_SAFEIMG_PATH = r"^[\w\/.%-]+$"
+SAFEIMG_PATH_RE = re.compile(JS_SAFEIMG_PATH, re.ASCII)
+_SAFEIMG_DATA_RE = re.compile(r"^data:image/(png|jpe?g|gif|webp|avif|svg\+xml)[;,]", re.I)
+
+
+def safe_img(u):
+    """Python twin of the browser's safeImg(): the value an <img> may load, or None."""
+    if not u or not isinstance(u, str):
+        return None
+    s = u.strip()
+    if _SAFEIMG_DATA_RE.match(s):
+        return s
+    if re.match(r"^[a-z][a-z0-9+.-]*:", s, re.I):
+        return s if re.match(r"^https?://", s, re.I) else None
+    return s if SAFEIMG_PATH_RE.match(s) and not s.startswith("//") else None
+
+
+def browser_poster(pid, maps):
+    """What the browser's realPoster() + safeImg() show for `pid`: a real image
+    (truthy) or None (generated art). maps: SHOWALIAS, EVENTART, POSTERS, TMDBART,
+    SHOWART dicts (a missing one counts as empty)."""
+    g = lambda n: maps.get(n) or {}                     # noqa: E731
+    base = g("SHOWALIAS").get(pid) or pid
+    for name in ("EVENTART", "POSTERS"):
+        if g(name).get(base):
+            return safe_img(g(name)[base])
+    art = g("TMDBART").get(base)
+    if isinstance(art, dict) and (art.get("p") or art.get("b")):
+        return "tmdb"
+    if g("SHOWART").get(base):
+        return safe_img(g("SHOWART")[base])
+    return None
+
+
+def poster_coverage(shows, upcoming, maps):
+    """{"upcoming": n, "with": n, "missing": [ids], "by_theatre": {theatre:
+    {"upcoming": n, "missing": [ids]}}} for the show ids in `upcoming`, counted
+    exactly as the browser shows them (browser_poster)."""
+    theatre = {s.get("id"): s.get("theatre") or "?" for s in shows}
+    ids = sorted(i for i in upcoming if i in theatre)
+    missing = [i for i in ids if not browser_poster(i, maps)]
+    by = {}
+    for i in ids:
+        t = by.setdefault(theatre[i], {"upcoming": 0, "missing": []})
+        t["upcoming"] += 1
+        if i in missing:
+            t["missing"].append(i)
+    return {"upcoming": len(ids), "with": len(ids) - len(missing), "missing": missing,
+            "by_theatre": dict(sorted(by.items()))}
+
+
 # Suffixes that mark "this event is a screening of a film we already list".
 MIRROR_SUFFIXES = ("-screening", "-prozhekciya", "-prem", "-premiere", "-gala",
                    "-retro-screening", "-show")

@@ -109,6 +109,21 @@ jobs:
               venue = item.get("venue", "")
               msg = item.get("message", "")
               print(f"::{level}::" + data((f"[{venue}] " if venue else "") + str(msg)), flush=True)
+          # Theatre posters: the shows on stage without one, per theatre (verify_build
+          # check 5c2, kept by refresh_all.py in build_report.json["posters"]). Ids are
+          # slugs, so the list cannot carry markup or a workflow command.
+          try:
+              cov = json.load(open("build_report.json", encoding="utf-8")).get("posters") or {}
+          except Exception:
+              cov = {}
+          if cov.get("upcoming"):
+              lines = [f"## Theatre posters\n{cov.get('with')}/{cov.get('upcoming')} upcoming shows have a poster\n"]
+              for th, t in sorted((cov.get("by_theatre") or {}).items()):
+                  miss = [m for m in t.get("missing") or [] if re.fullmatch(r"[a-z0-9-]+", str(m))]
+                  if miss:
+                      lines.append(f"- {th}: {', '.join(miss)}")
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+                  fh.write("\n".join(lines) + "\n")
           PYEOF
 
       - name: Keep the translation cache when the refresh is not published

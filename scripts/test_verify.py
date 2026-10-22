@@ -1208,10 +1208,31 @@ check("a SHOWART path that is not on disk fails 5a", _rc != 0 and "not on disk" 
 import re as _re5a
 _art = (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")
 _m5a = _re5a.search(r"const safeImg=.*?return /(\^\[[^\n]*?\]\+\$)/\.test\(s\)", _art, _re5a.S)
-_vb = (ROOT / "scripts" / "verify_build.py").read_text(encoding="utf-8")
+_vb = (ROOT / "scripts" / "posterpolicy.py").read_text(encoding="utf-8")
 _m5b = _re5a.search(r'^JS_SAFEIMG_PATH = r"(.*)"$', _vb, _re5a.M)
-check("verify_build's JS_SAFEIMG_PATH equals the regex in safeImg()",
+check("posterpolicy's JS_SAFEIMG_PATH (used by verify_build 5a/5c) equals the regex in safeImg()",
       bool(_m5a and _m5b) and _m5a.group(1) == _m5b.group(1))
+
+# ---------------------------------------------------------------------------
+# 5c2: poster coverage of the upcoming shows (counted as the browser does)
+# ---------------------------------------------------------------------------
+print("5c2: poster coverage")
+_cov_shows = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
+              for i in range(120)]
+_cov_perfs = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 4)).isoformat(),
+               ["10:00", "14:00", "18:00", "20:00"][i % 4], "Основна сцена", ""] for i in range(120)]
+_cov_base = (_minimal_html(performances_override=_json.dumps(_cov_perfs))
+             .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows) + ";"))
+_all_art = {f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}PLAKAT.jpg" for i in range(120)}
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"))
+check("every upcoming show with a poster passes and prints POSTER_COVERAGE 120/120",
+      _rc == 0 and '"upcoming": 120' in _out and '"with": 120' in _out)
+_some_art = dict(list(_all_art.items())[:100])
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_some_art) + ";"))
+check("coverage below 90 % (100/120) fails 5c2", _rc != 0 and "below 90 %" in _out)
+_bad_art = dict(_all_art, show5="posters/show5 x.jpg")
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_bad_art) + ";"))
+check("…a path the browser refuses counts as missing", '"with": 119' in _out)
 
 # ---------------------------------------------------------------------------
 # Summary
