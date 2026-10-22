@@ -483,6 +483,41 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .sshare{position:absolute; top:8px; right:56px; z-index:6; width:40px; height:40px; border-radius:50%;
   background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.24); color:#fff; display:grid; place-items:center; cursor:pointer}
 .sshare:hover{border-color:#fff; background:rgba(0,0,0,.72)}
+/* trailer (Option 1, "hero = trailer"): a calm play circle on the key art. A dark
+   translucent material with a white ring keeps it legible on light and dark art
+   (HIG media controls); 64 pt is well above the 44 pt minimum and the 120x70 px
+   YouTube facade minimum is the hero itself. Pressing it turns the header into the
+   player: share and close stay above it, the title and "Спри видеото" below it,
+   nothing on top of the video (YouTube's required minimum functionality). */
+.shero.has-tr{flex-direction:column; align-items:stretch; min-height:260px; padding-top:56px}
+@media(min-width:760px){ .shero.has-tr{min-height:300px} }
+.shero.has-tr .p-real{filter:brightness(.7)}
+.tr-play{position:relative; z-index:4; align-self:center; margin:auto 0; flex:none; width:64px; height:64px;
+  border-radius:50%; display:grid; place-items:center; color:#fff; cursor:pointer; padding:0;
+  background:rgba(18,14,20,.52); -webkit-backdrop-filter:blur(14px) saturate(1.3); backdrop-filter:blur(14px) saturate(1.3);
+  border:1.5px solid rgba(255,255,255,.9); box-shadow:0 2px 16px rgba(0,0,0,.35);
+  transition:transform var(--motion-dur-sm) var(--motion-ease-out), background var(--motion-dur-sm) var(--motion-ease-out)}
+.tr-play svg{width:26px; height:26px; margin-left:3px}
+.tr-play:hover{background:rgba(18,14,20,.7); transform:scale(1.05)}
+.tr-play:active{transform:scale(.96)}
+.tr-play:focus-visible{outline:2px solid #fff; outline-offset:4px}
+.shero.playing{min-height:0; padding:56px 0 18px; background:#000!important}
+.shero.playing>.p-art,.shero.playing>.hero-scrim,.shero.playing .tr-play{display:none}
+.tr-frame{position:relative; z-index:3; width:100%; aspect-ratio:16/9; min-height:200px; background:#000}
+.tr-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+.shero.playing .sh-titles{padding:14px 22px 0}
+.tr-meta{display:none; margin:6px 0 0; font-size:12px; color:rgba(255,255,255,.72)}
+.shero.playing .tr-meta{display:block}
+.tr-stop{margin-top:12px; display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 14px;
+  border-radius:999px; background:transparent; border:1px solid rgba(255,255,255,.4); color:#fff; font-size:13px; cursor:pointer}
+.tr-stop[hidden]{display:none}
+.tr-stop:hover{border-color:#fff}
+.tr-stop:focus-visible{outline:2px solid #fff; outline-offset:3px}
+.tr-note{margin:0; font-size:12.5px; color:var(--fg-2); line-height:1.45}
+@media (prefers-reduced-motion: reduce){
+  .tr-play{transition:none}
+  .tr-play:hover,.tr-play:active{transform:none}
+}
 .synwrap{position:relative}
 .synwrap.clamp .synbody{display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
 .synbody p{margin:0 0 8px; color:var(--fg-2); font-size:14px; max-width:68ch}
@@ -1072,6 +1107,9 @@ bg:{tagline:"кино и театър в софия",
  syn:"Резюме",about:"За филма",aboutT:"За спектакъла",credits:"Екип",press:"Какво пишат",
  times:"Прожекции",perfs:"Представления",dir:"Режисьор",cast:"В ролите",author:"Автор",
  country:"Държава",venue:"Място",fmt:"Формат",age:"Възраст",box:"Каса и прием",season:"Сезон",premiere:"Премиера",
+ wr:"Сценарий",mu:"Музика",dop:"Оператор",olang:"Оригинален език",
+ trTrailer:"Трейлър",trTeaser:"Тийзър",trPlay:"Пусни трейлъра",trPlayTeaser:"Пусни тийзъра",trStop:"Спри видеото",
+ trIn:{bg:"на български",en:"на английски"},trNote:"Зарежда се от YouTube едва когато го пуснеш.",
  votes:"гласа",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
  coverage:"Програмата не е публикувана за този прозорец.",
  notePre:"Програмата обхваща",noteMid:": театри и независими кина три месеца напред, мултиплексите две седмици (толкова обявяват). Проверява се наново всеки понеделник.",
@@ -1133,7 +1171,7 @@ bg:{tagline:"кино и театър в софия",
  ssCalOutlook:"Outlook",
  /* cookie notice and the footer's legal lines */
  consentTitle:"Използваме само необходимото",
- consentText:"Не поставяме бисквитки и не следим посещенията. В браузъра ти пазим само това, без което сайтът не може да работи, например езика и любимите ти места. Някои плакати се зареждат от сайтовете на кината, които могат да поставят свои бисквитки.",
+ consentText:"Не поставяме бисквитки и не следим посещенията. В браузъра ти пазим само това, без което сайтът не може да работи, например езика и любимите ти места. Някои плакати се зареждат от сайтовете на кината, които могат да поставят свои бисквитки. Трейлърите се зареждат от YouTube само ако ги пуснеш.",
  consentTitleOpt:"Бисквитки и настройки",
  consentTextOpt:"Необходимото за работата на сайта е винаги включено. Останалото се включва само ако искаш.",
  consentNecessary:"Необходими",consentNecessaryNote:"винаги включени",
@@ -1170,6 +1208,9 @@ en:{tagline:"cinema & theatre in sofia",
  syn:"Synopsis",about:"About the film",aboutT:"About the production",credits:"Credits",press:"What the press says",
  times:"Showtimes",perfs:"Performances",dir:"Director",cast:"Cast",author:"Author",
  country:"Country",venue:"Venue",fmt:"Format",age:"Age",box:"Box office & reception",season:"Season",premiere:"Premiere",
+ wr:"Screenplay",mu:"Music",dop:"Cinematography",olang:"Original language",
+ trTrailer:"Trailer",trTeaser:"Teaser",trPlay:"Play the trailer",trPlayTeaser:"Play the teaser",trStop:"Stop the video",
+ trIn:{bg:"in Bulgarian",en:"in English"},trNote:"Loads from YouTube only when you play it.",
  votes:"votes",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
  coverage:"No programme published for this window.",
  notePre:"Programme covers",noteMid:": theatres and independent cinemas three months out, multiplexes as far ahead as they announce. Rechecked every Monday.",
@@ -1232,7 +1273,7 @@ en:{tagline:"cinema & theatre in sofia",
  ssCalOutlook:"Outlook",
  /* cookie notice and the footer's legal lines */
  consentTitle:"We only use what's needed",
- consentText:"We set no cookies and do not track visits. Your browser keeps only what the site needs to work, such as your language and favourite venues. Some posters load from cinema websites, which may set their own cookies.",
+ consentText:"We set no cookies and do not track visits. Your browser keeps only what the site needs to work, such as your language and favourite venues. Some posters load from cinema websites, which may set their own cookies. Trailers load from YouTube only if you play them.",
  consentTitleOpt:"Cookies and settings",
  consentTextOpt:"What the site needs is always on. Everything else is switched on only if you want it.",
  consentNecessary:"Necessary",consentNecessaryNote:"always on",
@@ -1361,6 +1402,63 @@ const castOf=f=>{
   const raw=notEmpty(ar.cast)||notEmpty(f.cast)||notEmpty(fi.cast)||null;
   return raw&&_hasCyr(raw)?nameDisplay(raw):raw;
 };
+/* TMDB fallbacks for what the venues leave out (TMDBART y, rn, g, cc, ol; fetch_tmdb.art_record) */
+const yearOf=f=>f.year||ART2(f.id).y||"";
+const runtimeOf=f=>f.runtime||ART2(f.id).rn||"";
+const genresOf=f=>{const fg=(FI()[f.id]||{}).genres,ag=ART2(f.id).g;
+  return (f.genres&&f.genres.length)?f.genres:(Array.isArray(fg)&&fg.length)?fg:Array.isArray(ag)?ag:[];};
+const _dispNames=(lang,type)=>{try{return new Intl.DisplayNames([lang],{type});}catch(e){return null;}};
+const langName=code=>{if(!code||!/^[a-z]{2,3}$/.test(code))return"";
+  const dn=_dispNames(S.lang==="en"?"en":"bg","language");let n="";try{n=dn?dn.of(code):"";}catch(e){}
+  return n&&n!==code?n:"";};
+const ccNames=f=>{const cc=ART2(f.id).cc;if(!Array.isArray(cc)||!cc.length)return"";
+  const dn=_dispNames("bg","region");if(!dn)return"";
+  return cc.filter(c=>/^[A-Z]{2}$/.test(c)).map(c=>{try{return dn.of(c);}catch(e){return c;}}).join("/");};
+/* The film's trailer (Option 1, "hero = trailer"): TMDBART[id].v = {k: YouTube key,
+   l: "bg"|"en", t: "Trailer"|"Teaser"}. Offered only for an 11-character key and when
+   TMDB's year agrees with the film's within 1 (a looser match can be another film;
+   inject_data applies the same rule, this is the second lock). Nothing from YouTube
+   or Google loads until the visitor presses play: then one youtube-nocookie.com
+   iframe, removed again by stop, Esc or closing the sheet. */
+const trailerOf=f=>{
+  if(!f)return null;
+  const a=ART2(f.id),v=a.v;
+  if(!v||typeof v!=="object"||!/^[A-Za-z0-9_-]{11}$/.test(v.k||"")||!(v.l==="bg"||v.l==="en")||!(v.t==="Trailer"||v.t==="Teaser"))return null;
+  const ty=parseInt(a.y,10),fy=parseInt(f.year,10);
+  if(!ty)return null;
+  if(fy&&Math.abs(fy-ty)>1)return null;
+  return v;
+};
+/* "Трейлър · на английски": the trailer's kind, and its language when it is not the interface's */
+const trailerLabel=v=>{const L=t();return[v.t==="Teaser"?L.trTeaser:L.trTrailer,v.l!==S.lang?L.trIn[v.l]:""].filter(Boolean).join(" · ");};
+function playTrailer(btn){
+  const hero=btn&&btn.closest(".shero");
+  const f=filmById[btn&&btn.dataset.trailer],v=trailerOf(f);
+  if(!hero||!v||hero.classList.contains("playing"))return;
+  const L=t(),fr=document.createElement("div"),ifr=document.createElement("iframe");
+  fr.className="tr-frame";
+  ifr.src="https://www.youtube-nocookie.com/embed/"+v.k+"?autoplay=1&playsinline=1&rel=0";
+  ifr.title=(v.t==="Teaser"?L.trTeaser:L.trTrailer)+": "+filmTitle(f);
+  ifr.setAttribute("allow","autoplay; encrypted-media; picture-in-picture; fullscreen");
+  ifr.setAttribute("allowfullscreen","");
+  ifr.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
+  fr.appendChild(ifr);
+  hero.insertBefore(fr,hero.querySelector(".sh-titles"));
+  hero.classList.add("playing");
+  const stop=hero.querySelector("[data-trailer-stop]");
+  if(stop){stop.hidden=false;stop.focus({preventScroll:true});}
+}
+/* Back to the key art: the iframe goes, and with it the sound and the connection. */
+function stopTrailer(hero,noFocus){
+  hero=hero||document.querySelector(".scrim .shero.playing");
+  if(!hero||!hero.classList.contains("playing"))return false;
+  hero.querySelectorAll(".tr-frame").forEach(n=>n.remove());
+  hero.classList.remove("playing");
+  const stop=hero.querySelector("[data-trailer-stop]");if(stop)stop.hidden=true;
+  const play=hero.querySelector("[data-trailer]");
+  if(play&&!noFocus)play.focus({preventScroll:true});
+  return true;
+}
 /* Full Bulgarian synopses harvested from official theatre sites (programata /
    sofiatheatre.eu etc.). Keyed by show id; overrides the short blurb when present.
    Best-effort — venues without an entry fall back to the dataset synopsis. */
@@ -1480,7 +1578,7 @@ const titleOf=o=>S.lang==="bg"?o.title:(o.titleEn||(typeof TITLE_EN==="object"&&
 const COUNTRY_EN={"България":"Bulgaria","САЩ":"United States of America","Великобритания":"United Kingdom","Франция":"France","Германия":"Germany","Италия":"Italy","Испания":"Spain","Дания":"Denmark","Швеция":"Sweden","Норвегия":"Norway","Япония":"Japan","Русия":"Russia","Канада":"Canada","Ирландия":"Ireland","Латвия":"Latvia","Австрия":"Austria","Белгия":"Belgium","Холандия":"Netherlands","Полша":"Poland","Хърватия":"Croatia","Сърбия":"Serbia","Хонконг":"Hong Kong","Южна Корея":"South Korea","Мексико":"Mexico","Аржентина":"Argentina","Иран":"Iran","Турция":"Turkey","Ливан":"Lebanon","Палестина":"Palestine","Тунис":"Tunisia","Ирак":"Iraq"};
 const ctryTranslate=c=>c.split("/").map(p=>COUNTRY_EN[p.trim()]||p.trim()).join(" / ");
 const ctryOf=o=>{
-  if(S.lang==="bg")return o.country||"";
+  if(S.lang==="bg")return notEmpty(o.country)||(FILMS.includes(o)?ccNames(o):"")||o.country||"";
   const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
   const raw=art.country||o.country||"";
   return raw?ctryTranslate(raw):"";
@@ -3339,16 +3437,21 @@ function sheetFilm(f){
   {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(rv)}<small>%</small></div></div>`);}
   {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${esc(mv)}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
-  return`<div class="sheet"><div class="shero" style="background:${grad(f.g)}">
+  const tr=trailerOf(f);
+  return`<div class="sheet"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="close">✕</button>
     <button class="sshare" data-share="film:${esc(f.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
-    <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.82">${[S.lang==="en"?"":filmSubtitle(f),f.year,ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
-      <h2>${esc(filmTitle(f))}</h2></div></div>
-   <div class="sbody">
-    <div class="chips">${(f.genres.length?f.genres:(FILMINFO[f.id]||{}).genres||[]).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
-      ${f.runtime?`<span class="chip">${esc(f.runtime)} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
+    ${tr?`<button type="button" class="tr-play" data-trailer="${esc(f.id)}" aria-label="${esc((tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)+": "+filmTitle(f))}" title="${esc(tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.6v12.8a.9.9 0 0 0 1.37.77l10.2-6.4a.9.9 0 0 0 0-1.54L9.37 4.83A.9.9 0 0 0 8 5.6z" fill="currentColor"/></svg></button>`:""}
+    <div class="sh-titles" style="position:relative;z-index:3">
+      <div class="eyebrow" style="color:#fff;opacity:.82">${[S.lang==="en"?"":filmSubtitle(f),yearOf(f),ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
+      <h2>${esc(filmTitle(f))}</h2>${tr?`
+      <p class="tr-meta">${esc(trailerLabel(tr))}</p>
+      <button type="button" class="tr-stop" data-trailer-stop hidden><span aria-hidden="true">✕</span> ${esc(L.trStop)}</button>`:""}</div></div>
+   <div class="sbody">${tr?`
+    <p class="tr-note"><span aria-hidden="true">▶</span> ${esc(trailerLabel(tr))}. ${esc(L.trNote)}</p>`:""}
+    <div class="chips">${genresOf(f).map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
+      ${runtimeOf(f)?`<span class="chip">${esc(runtimeOf(f))} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
     <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
@@ -3357,9 +3460,11 @@ function sheetFilm(f){
     <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
       <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
+      ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(r[1])}</dd>`).join("");})()}
+      ${(()=>{const ln=langName(ART2(f.id).ol);return ln?`<dt>${esc(L.olang)}</dt><dd>${esc(ln)}</dd>`:"";})()}
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
-      ${(ctryOf(f)||f.year)?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",f.year?esc(f.year):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
+      ${(ctryOf(f)||yearOf(f))?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",yearOf(f)?esc(yearOf(f)):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
     <div class="sec"><h4>${esc(L.times)}</h4>
       ${selNote}
       ${timesHtml}</div>
@@ -4199,6 +4304,7 @@ function rerenderOpenSheet(){
 }
 function closeSheet(fromPop){
   if(!sheetOpen)return;
+  stopTrailer(null,true);   /* the player goes at once, not after the closing animation */
   const gen=_sheetGen;
   const c=curSheet;
   /* the time popup belongs to this sheet: it always goes first */
@@ -5331,6 +5437,8 @@ document.addEventListener("click",e=>{
     closeScreeningSheet({noFocus:!!q("a[href],button,input,select,textarea,[tabindex]")});
     if(e.target.id==="scrim"){if(e.detail)_shieldTaps();return;}
   }
+  {const tp=q("[data-trailer]");if(tp){playTrailer(tp);return;}}
+  if(q("[data-trailer-stop]")){stopTrailer(q(".shero"));return;}
   if(q("[data-close]")||e.target.id==="scrim"){_sheetShowAllCinemas=false;if(sheetOpen&&e.detail)_shieldTaps();closeSheet();return;}
   if(q(".time")||q(".buylink"))return;            /* let real links through */
 
@@ -5498,6 +5606,7 @@ document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
   /* Esc closes the top layer only: the time popup, then the sheet */
   if(_ss){closeScreeningSheet();e.preventDefault();return;}
+  if(sheetOpen&&stopTrailer()){e.preventDefault();return;}   /* a playing trailer first: back to the art */
   if(sheetOpen){closeSheet();e.preventDefault();return;}
   if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{closeDrawerNow();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}
@@ -5565,7 +5674,7 @@ try{
    is. An id that is not in CONSENT_OPTIONAL never runs. Withdrawing a category that has run
    reloads the page, so nothing it started keeps running. */
 const CONSENT_KEY="sofia-consent";
-const CONSENT_VERSION="2026-10-15";
+const CONSENT_VERSION="2026-10-23";
 const CONSENT_OPTIONAL=[];
 let _cRec=null,_cWait={},_cRan={},_cBack=null,_cLang=null;
 function _consentLoad(){

@@ -129,7 +129,7 @@ UI = {
         "nav": {"terms": "Общи условия", "privacy": "Поверителност", "cookies": "Бисквитки"},
         "desc": {
             "terms": "Общи условия за ползване на Sofia Gleda, афиша на кината и театрите в София.",
-            "privacy": "Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, "
+            "privacy": "Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, трейлъри от YouTube, "
                        "връзка с нас и правата ви.",
             "cookies": "Sofia Gleda не поставя бисквитки. Какво пази сайтът в браузъра ви и защо.",
         },
@@ -148,7 +148,7 @@ UI = {
         "nav": {"terms": "Terms of use", "privacy": "Privacy", "cookies": "Cookies"},
         "desc": {
             "terms": "Terms of use of Sofia Gleda, the listings of Sofia's cinemas and theatres.",
-            "privacy": "How Sofia Gleda handles personal data: hosting, images from other websites, "
+            "privacy": "How Sofia Gleda handles personal data: hosting, images from other websites, YouTube trailers, "
                        "contacting us and your rights.",
             "cookies": "Sofia Gleda sets no cookies. What the site keeps in your browser, and why.",
         },
@@ -301,12 +301,13 @@ PRIVACY_BG = """
 <li>Не поставяме бисквитки.</li>
 <li>При всяко посещение хостинг доставчикът GitHub записва IP адреса ви от съображения за сигурност.</li>
 <li>Плакатите се зареждат директно от TMDB и от сайтовете на кината и фестивалите, затова TMDB и тези сайтове също получават IP адреса ви.</li>
+<li>Трейлърите на филмите идват от YouTube и се зареждат едва когато натиснете бутона за пускане. Дотогава нищо не се изпраща към YouTube или Google.</li>
 <li>Връзка с нас: публичната страница на проекта в GitHub. Не публикувайте там лични данни.</li>
 </ul>
 </section>
 
 <h2 id="administrator">1. Администратор на личните данни</h2>
-<p>Администратор е физическото лице, което поддържа Sofia Gleda без търговска цел. Сайтът не посочва име или имейл адрес за връзка. Единственият начин да се свържете с нас е публичната страница на проекта в GitHub (вижте т. 7). Длъжностно лице по защита на данните не е определено, защото чл. 37 от ОРЗД не го изисква при обработване като това.</p>
+<p>Администратор е физическото лице, което поддържа Sofia Gleda без търговска цел. Сайтът не посочва име или имейл адрес за връзка. Единственият начин да се свържете с нас е публичната страница на проекта в GitHub (вижте т. 8). Длъжностно лице по защита на данните не е определено, защото чл. 37 от ОРЗД не го изисква при обработване като това.</p>
 
 <h2 id="ne">2. Какво не правим</h2>
 <p>Не изискваме регистрация и не събираме чрез сайта имена, имейл адреси или телефони. Нямаме база данни и не пазим лични данни на сървър, който управляваме. Не използваме инструменти за статистика, проследяване или реклама. Не профилираме посетителите и не вземаме автоматизирани решения по смисъла на чл. 22 от ОРЗД. Не продаваме данни и не ги предоставяме за маркетинг.</p>
@@ -322,31 +323,36 @@ PRIVACY_BG = """
 <p>Някои от тези сайтове поставят свои бисквитки. Подробности има в <a href="[[COOKIES]]">Политиката за бисквитките</a>.</p>
 <p>Основание: легитимният интерес към програмата да се показват оригиналните плакати (чл. 6, пар. 1, буква „е“ от ОРЗД). Ако не желаете това, можете да спрете изображенията от други сайтове в браузъра си, например с разширение за блокиране на съдържание. Сайтът продължава да работи и показва свои заместващи плакати.</p>
 
-<h2 id="vrazki">5. Връзки към други сайтове</h2>
+<h2 id="trailari">5. Трейлъри от YouTube</h2>
+<p>Някои филми имат трейлър в YouTube. Докато не натиснете бутона за пускане, сайтът не зарежда нищо от YouTube или Google: виждате само плаката, който идва от TMDB (т. 4). Когато натиснете бутона, сайтът вгражда плейъра на YouTube в режима му с подобрена поверителност (www.youtube-nocookie.com). Тогава браузърът ви се свързва с YouTube, а YouTube получава IP адреса ви, данни за браузъра и адреса на нашия сайт. Според Google в този режим YouTube не използва гледането, за да персонализира какво ви показва, но може да съхранява информация в браузъра ви и да показва реклами, които не са персонализирани. Когато спрете видеото или затворите филма, плейърът се премахва от страницата.</p>
+<p>Сайтът използва услугите на YouTube API. С пускането на трейлър се прилагат <a href="https://www.youtube.com/t/terms">Условията за ползване на YouTube</a> и <a href="https://policies.google.com/privacy">Политиката за поверителност на Google</a>. YouTube се управлява от Google Ireland Limited (Ирландия) и Google LLC (САЩ), която е сертифицирана по Рамката за защита на личните данни в отношенията между ЕС и САЩ.</p>
+<p>Основание: легитимният интерес да ви покажем трейлъра, който сами сте поискали с натискането на бутона (чл. 6, пар. 1, буква „е“ от ОРЗД). Ако не желаете връзка с YouTube, просто не пускайте трейлъра. Останалата част от сайта работи без него.</p>
+
+<h2 id="vrazki">6. Връзки към други сайтове</h2>
 <p>Когато отворите връзка към сайт за билети, карта (Google Maps) или календар (Google Calendar, Outlook), браузърът ви се свързва директно с него и оттам нататък се прилагат неговите правила. Файлът за Apple Календар (.ics) се създава в браузъра ви и не ни се изпраща.</p>
 
-<h2 id="brauzar">6. Какво остава в браузъра ви</h2>
+<h2 id="brauzar">7. Какво остава в браузъра ви</h2>
 <p>Сайтът пази в браузъра ви езика, режима (кино или театър), любимите ви кина и театри и избора ви от съобщението за бисквитките. На основния адрес на сайта (sofiagleda.com) браузърът пази и копие на сайта, за да се отваря бързо и без интернет. Тези данни не ни се изпращат и не можем да ги видим. Изтривате ги сами, като изчистите данните на сайта в настройките на браузъра. Подробности има в <a href="[[COOKIES]]">Политиката за бисквитките</a>.</p>
 
-<h2 id="github">7. Връзка с нас през GitHub</h2>
+<h2 id="github">8. Връзка с нас през GitHub</h2>
 <p>Въпроси и сигнали можете да оставите на публичната страница на проекта в GitHub: [[ISSUES]]. За това е нужен профил в GitHub. Съобщението ви се публикува под този профил и се вижда от всички. GitHub обработва профила и съобщенията по своите условия и <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларация за поверителност</a>. Когато отговаряме, ползваме само това, което сте публикували там (легитимен интерес да отговаряме на въпроси, чл. 6, пар. 1, буква „е“ от ОРЗД).</p>
 <p class="lg-warn">Не публикувайте там лични данни: имейл, телефон, адрес или друга информация за себе си или за други хора. Ако сте публикували такива по погрешка, можете сами да редактирате съобщението си, а ние ще изтрием цялото съобщение, ако ни помолите.</p>
 
-<h2 id="prava">8. Вашите права и как да ги упражните</h2>
+<h2 id="prava">9. Вашите права и как да ги упражните</h2>
 <p>Имате право да поискате достъп до личните си данни, коригирането или изтриването им и ограничаване на обработването им, както и да възразите срещу обработване, основано на легитимен интерес (чл. 15, 16, 17, 18 и 21 от ОРЗД). Право на преносимост (чл. 20 от ОРЗД) имате, когато обработването се основава на съгласие или на договор; в момента такова обработване няма. Ако в бъдеще поискаме съгласието ви за нещо, ще можете да го оттеглите по всяко време.</p>
 <p>Ето какво означава това на практика:</p>
 <ul>
 <li>Не пазим лични данни на сървър, който управляваме, затова при нас няма данни, до които да ви дадем достъп или които да изтрием.</li>
 <li>Настройките и любимите ви места са само в браузъра ви. Изтривате ги, като изчистите данните на сайта в настройките на браузъра (вижте <a href="[[COOKIES]]">Политиката за бисквитките</a>).</li>
 <li>Записите на GitHub за посещенията и данните в профила ви в GitHub се уреждат от <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларацията за поверителност на GitHub</a>; искания за тях отправяте към GitHub.</li>
-<li>Данните, които получават TMDB и сайтовете на кината и театрите при зареждане на изображения, се уреждат от техните политики; искания за тях отправяте към тях.</li>
+<li>Данните, които получават TMDB и сайтовете на кината и театрите при зареждане на изображения, както и YouTube (Google), когато пуснете трейлър, се уреждат от техните политики; искания за тях отправяте към тях.</li>
 <li>Ако смятате, че все пак обработваме ваши лични данни, опишете случая на [[ISSUES]], без да публикувате самите данни, и ще ви отговорим там. Тъй като не водим потребителски профили, може да не успеем да свържем искането ви с конкретни данни (чл. 11 от ОРЗД).</li>
 </ul>
 
-<h2 id="zhalba">9. Жалба</h2>
+<h2 id="zhalba">10. Жалба</h2>
 <p>Ако смятате, че правата ви са нарушени, можете да подадете жалба до Комисията за защита на личните данни: София 1592, бул. „Проф. Цветан Лазаров“ № 2, <a href="mailto:kzld@cpdp.bg">kzld@cpdp.bg</a>, <a href="https://www.cpdp.bg/">www.cpdp.bg</a>. Жалбата се подава в срок 6 месеца от узнаването на нарушението, но не по-късно от две години от извършването му (чл. 38 от Закона за защита на личните данни). Можете да се обърнете и към надзорния орган в държавата от ЕС, в която живеете или работите (чл. 77 от ОРЗД), или към съда (чл. 39 от Закона за защита на личните данни).</p>
 
-<h2 id="promeni">10. Промени</h2>
+<h2 id="promeni">11. Промени</h2>
 <p>При промяна публикуваме новата версия на тази страница с новата дата. При съществена промяна съобщението за бисквитките се показва отново.</p>
 """
 
@@ -360,12 +366,13 @@ PRIVACY_EN = """
 <li>We set no cookies.</li>
 <li>On every visit, the hosting provider GitHub logs your IP address for security purposes.</li>
 <li>Posters load directly from TMDB and from the websites of cinemas and festivals, so TMDB and those websites also receive your IP address.</li>
+<li>Film trailers come from YouTube and load only when you press the play button. Until then nothing is sent to YouTube or Google.</li>
 <li>To reach us, use the project's public GitHub page. Do not post personal data there.</li>
 </ul>
 </section>
 
 <h2 id="controller">1. Controller</h2>
-<p>The controller is the private individual who maintains Sofia Gleda on a non-commercial basis. The site gives no name or email address. The only way to reach us is the project's public GitHub page (see section 7). No data protection officer has been appointed, because Article 37 GDPR does not require one for processing like this.</p>
+<p>The controller is the private individual who maintains Sofia Gleda on a non-commercial basis. The site gives no name or email address. The only way to reach us is the project's public GitHub page (see section 8). No data protection officer has been appointed, because Article 37 GDPR does not require one for processing like this.</p>
 
 <h2 id="not">2. What we do not do</h2>
 <p>We do not require registration and do not collect names, email addresses or phone numbers through the site. We have no database and keep no personal data on any server we control. We use no analytics, tracking or advertising tools. We do not profile visitors or make automated decisions within the meaning of Article 22 GDPR. We do not sell data or share it for marketing.</p>
@@ -381,31 +388,36 @@ PRIVACY_EN = """
 <p>Some of these websites set their own cookies. See the <a href="[[COOKIES]]">Cookie policy</a> for details.</p>
 <p>Legal basis: our legitimate interest in showing the original posters with the listings (Article 6(1)(f) GDPR). If you prefer not to load them, you can block images from other websites in your browser, for example with a content-blocking extension. The site keeps working and shows its own stand-in posters.</p>
 
-<h2 id="links">5. Links to other websites</h2>
+<h2 id="trailers">5. Trailers from YouTube</h2>
+<p>Some films have a trailer on YouTube. Until you press the play button, the site loads nothing from YouTube or Google: you see only the poster, which comes from TMDB (section 4). When you press it, the site embeds YouTube's player in its privacy-enhanced mode (www.youtube-nocookie.com). Your browser then connects to YouTube, and YouTube receives your IP address, browser details and the address of our site. According to Google, in this mode YouTube does not use the viewing to personalise what it shows you, but it may store information in your browser and show non-personalised ads. When you stop the video or close the film, the player is removed from the page.</p>
+<p>This site uses YouTube API Services. When you play a trailer, the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a> and the <a href="https://policies.google.com/privacy">Google Privacy Policy</a> apply. YouTube is run by Google Ireland Limited (Ireland) and Google LLC (United States), which is certified under the EU-U.S. Data Privacy Framework.</p>
+<p>Legal basis: our legitimate interest in showing you the trailer you asked for by pressing the button (Article 6(1)(f) GDPR). If you prefer no connection to YouTube, simply do not play the trailer. The rest of the site works without it.</p>
+
+<h2 id="links">6. Links to other websites</h2>
 <p>When you open a link to a ticket website, a map (Google Maps) or a calendar (Google Calendar, Outlook), your browser connects to it directly and its own rules apply from then on. The Apple Calendar file (.ics) is created in your browser and is not sent to us.</p>
 
-<h2 id="browser">6. What stays in your browser</h2>
+<h2 id="browser">7. What stays in your browser</h2>
 <p>The site keeps your language, mode (cinema or theatre), favourite cinemas and theatres and your answer to the cookie notice in your browser. On the site's main address (sofiagleda.com), the browser also keeps a copy of the site so that it opens quickly and works offline. None of this is sent to us and we cannot see it. You delete it yourself by clearing the site's data in your browser settings. See the <a href="[[COOKIES]]">Cookie policy</a> for details.</p>
 
-<h2 id="github">7. Reaching us through GitHub</h2>
+<h2 id="github">8. Reaching us through GitHub</h2>
 <p>You can leave questions and reports on the project's public GitHub page: [[ISSUES]]. You need a GitHub account to post there. Your message is published under that account and anyone can read it. GitHub processes your account and messages under its own terms and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">privacy statement</a>. When we reply, we use only what you posted there (our legitimate interest in answering questions, Article 6(1)(f) GDPR).</p>
 <p class="lg-warn">Do not post personal data there: no email address, phone number, home address or other details about yourself or anyone else. If you posted some by mistake, you can edit your message yourself, and we will delete the whole message if you ask.</p>
 
-<h2 id="rights">8. Your rights and how to use them</h2>
+<h2 id="rights">9. Your rights and how to use them</h2>
 <p>You have the right to request access to your personal data, its rectification or erasure and the restriction of its processing, and to object to processing based on legitimate interest (Articles 15, 16, 17, 18 and 21 GDPR). You have the right to data portability (Article 20 GDPR) where processing is based on consent or a contract; there is no such processing at present. If we ever ask for your consent, you will be able to withdraw it at any time.</p>
 <p>In practice this means:</p>
 <ul>
 <li>We keep no personal data on any server we control, so there is nothing of yours with us to give you or to delete.</li>
 <li>Your settings and favourite venues are only in your browser. You delete them by clearing the site's data in your browser settings (see the <a href="[[COOKIES]]">Cookie policy</a>).</li>
 <li>GitHub's visit logs and your GitHub account data are covered by <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>; send requests about them to GitHub.</li>
-<li>The data that TMDB and the cinema and theatre websites receive when images load is covered by their own policies; send requests about it to them.</li>
+<li>The data that TMDB and the cinema and theatre websites receive when images load, and YouTube (Google) when you play a trailer, is covered by their own policies; send requests about it to them.</li>
 <li>If you believe we do process personal data of yours, describe the case at [[ISSUES]] without posting the data itself, and we will answer there. Because we keep no user accounts, we may be unable to link your request to any data (Article 11 GDPR).</li>
 </ul>
 
-<h2 id="complaint">9. Complaints</h2>
+<h2 id="complaint">10. Complaints</h2>
 <p>If you believe your rights have been infringed, you can lodge a complaint with the Bulgarian Commission for Personal Data Protection (Комисия за защита на личните данни): 2 Prof. Tsvetan Lazarov Blvd, 1592 Sofia, Bulgaria, <a href="mailto:kzld@cpdp.bg">kzld@cpdp.bg</a>, <a href="https://www.cpdp.bg/">www.cpdp.bg</a>. Under Bulgarian law the complaint must be filed within 6 months of learning of the infringement and no later than two years after it occurred (Article 38 of the Personal Data Protection Act). You can also turn to the supervisory authority of the EU country where you live or work (Article 77 GDPR), or to the courts.</p>
 
-<h2 id="changes">10. Changes</h2>
+<h2 id="changes">11. Changes</h2>
 <p>When this policy changes, we publish the new version on this page with its new date. After a significant change, the cookie notice is shown again.</p>
 """
 
@@ -416,6 +428,7 @@ COOKIES_BG = """
 <ul>
 <li>Sofia Gleda не поставя бисквитки.</li>
 <li>Не използваме статистика за посещенията, проследяване или реклама.</li>
+<li>Трейлърите на филмите се зареждат от YouTube само ако ги пуснете. Тогава YouTube може да запише свои данни в браузъра ви (вижте т. 3).</li>
 <li>В браузъра ви пазим само това, без което сайтът не може да работи така, както сте поискали: езика, режима, любимите ви места, избора ви от съобщението за бисквитките и на sofiagleda.com копие на сайта за работа без интернет.</li>
 <li>Затова съобщението за бисквитките само ви информира и няма какво да изключите.</li>
 </ul>
@@ -455,6 +468,7 @@ COOKIES_BG = """
 
 <h2 id="drugi">3. Бисквитки на други сайтове</h2>
 <p>Част от плакатите се зареждат директно от сайтовете на кината и фестивалите. Тези сайтове могат да поставят свои бисквитки, които ние не управляваме и не можем да прочетем. Към датата на тази политика сървърът за изображения на cinemacity.bg (Cloudflare) поставя бисквитката <code>__cf_bm</code>, която служи за защита от автоматизиран трафик и изтича след 30 минути. Повече информация има в политиките на тези сайтове. Можете да блокирате бисквитките на други сайтове в настройките на браузъра си, а Sofia Gleda ще продължи да работи.</p>
+<p>Трейлърите на филмите са от YouTube. Плейърът се зарежда от www.youtube-nocookie.com (режимът на YouTube с подобрена поверителност) само когато натиснете бутона за пускане, и се премахва, когато спрете видеото или затворите филма. Дотогава YouTube и Google не получават нищо и не поставят нищо в браузъра ви. След като пуснете трейлър, YouTube може да съхранява информация в браузъра ви (бисквитки или локално хранилище) по своите правила: <a href="https://www.youtube.com/t/terms">Условия за ползване на YouTube</a> и <a href="https://policies.google.com/privacy">Политика за поверителност на Google</a>. Ние не управляваме и не можем да прочетем тези данни. Не искаме отделно съгласие за това, защото плейърът се зарежда само по ваше изрично искане: натискането на бутона. Повече има в <a href="[[PRIVACY]]">Политиката за поверителност</a>.</p>
 
 <h2 id="iztrivane">4. Как да изтриете данните</h2>
 <p>Можете да изтриете данните на сайта от настройките на браузъра (например „Изчистване на данните за сайта“). Така ще изтриете и любимите си места и настройките, а съобщението за бисквитките ще се покаже отново.</p>
@@ -473,6 +487,7 @@ COOKIES_EN = """
 <ul>
 <li>Sofia Gleda sets no cookies.</li>
 <li>We use no visitor statistics, tracking or advertising.</li>
+<li>Film trailers load from YouTube only if you play them. YouTube may then store its own data in your browser (see section 3).</li>
 <li>Your browser keeps only what the site needs to work the way you asked: your language, mode, favourite venues, your answer to the cookie notice and, on sofiagleda.com, a copy of the site for offline use.</li>
 <li>That is why the cookie notice only informs you and has nothing to switch off.</li>
 </ul>
@@ -512,6 +527,7 @@ COOKIES_EN = """
 
 <h2 id="third-party">3. Cookies set by other websites</h2>
 <p>Some posters load directly from the websites of cinemas and festivals. Those websites may set their own cookies, which we do not control and cannot read. At the date of this policy, the image server of cinemacity.bg (Cloudflare) sets the <code>__cf_bm</code> cookie, which protects against automated traffic and expires after 30 minutes. Their own policies have more information. You can block cookies from other websites in your browser settings, and Sofia Gleda will keep working.</p>
+<p>Film trailers come from YouTube. The player loads from www.youtube-nocookie.com (YouTube's privacy-enhanced mode) only when you press the play button, and it is removed when you stop the video or close the film. Until then YouTube and Google receive nothing and store nothing in your browser. Once you play a trailer, YouTube may store information in your browser (cookies or local storage) under its own rules: the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a> and the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. We do not control and cannot read that data. We do not ask for separate consent for it, because the player loads only at your explicit request: pressing the button. The <a href="[[PRIVACY]]">Privacy policy</a> has more.</p>
 
 <h2 id="delete">4. How to delete the data</h2>
 <p>You can delete the site's data in your browser settings (for example “Clear site data”). This also deletes your favourite venues and settings, and the cookie notice will be shown again.</p>

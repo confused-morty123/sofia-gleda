@@ -937,6 +937,44 @@ for _map_name in ("SYN_EN", "TITLE_EN"):
         fail(f"{_map_name} contains Cyrillic (untranslated) values: "
              + ", ".join(_cyrillic_vals[:6]))
 
+# ------------------------------------------- 5a3. trailers (TMDBART[id].v)
+# A trailer is a YouTube key the page puts into a youtube-nocookie.com iframe URL when
+# the visitor presses play: it must be an 11-character YouTube id (nothing else can
+# reach that URL), its language bg or en, its type Trailer or Teaser, and the film's
+# year must agree with TMDB's within 1 (a looser match can be another film). The
+# iframe host must be the one frame-src allows, and nothing from YouTube or Google may
+# be in the page itself (no thumbnail, no script): it loads only on the tap.
+_tart = _const_obj_tr("TMDBART")
+if isinstance(_tart, dict):
+    _fy = {f.get("id"): f.get("year") for f in (data.get("FILMS") or []) if isinstance(f, dict)}
+    _tr_bad, _tr_n = [], 0
+    for _k, _r in _tart.items():
+        _v = (_r or {}).get("v") if isinstance(_r, dict) else None
+        if _v is None:
+            continue
+        _tr_n += 1
+        if not (isinstance(_v, dict) and isinstance(_v.get("k"), str) and re.fullmatch(r"[A-Za-z0-9_-]{11}", _v["k"])
+                and _v.get("l") in ("bg", "en") and _v.get("t") in ("Trailer", "Teaser")):
+            _tr_bad.append(f"{_k}: {str(_v)[:40]}")
+            continue
+        _ty = str(_r.get("y") or "")
+        try:
+            _fyv = int(_fy.get(_k)) if _fy.get(_k) else None
+        except (TypeError, ValueError):
+            _fyv = None
+        if not _ty.isdigit() or (_fyv and abs(int(_ty) - _fyv) > 1):
+            _tr_bad.append(f"{_k}: TMDB year {_ty or '?'} vs film year {_fy.get(_k)}")
+    if _tr_bad:
+        fail(f"TMDBART has {len(_tr_bad)} trailer(s) that must not ship: " + "; ".join(_tr_bad[:4]))
+    if _tr_n:
+        note(f"{_tr_n} film(s) carry a trailer (TMDBART v)")
+if "youtube-nocookie.com/embed/" in js:
+    if not re.search(r'"https://www\.youtube-nocookie\.com/embed/"', js):
+        fail("the trailer iframe must load from https://www.youtube-nocookie.com/embed/ (the CSP's frame-src)")
+for _yt in ("youtube.com/iframe_api", "ytimg.com", "img.youtube.com", "www.youtube.com/embed"):
+    if _yt in src:
+        fail(f"the page references {_yt}: nothing from YouTube or Google may load before the play button")
+
 # ------------------------------------------- 5b. posters point at real artwork
 try:
     sys.path.insert(0, str(ROOT / "scripts"))

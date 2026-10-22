@@ -36,6 +36,7 @@ DIRECTIVES = [
     ("img-src", "'self' https: data: blob:"),    # posters come from the venues' own hosts
     ("font-src", "'self'"),                      # fonts/ (self-hosted, SIL OFL)
     ("connect-src", "'self'"),
+    ("frame-src", "https://www.youtube-nocookie.com"),  # the film trailer, inserted only when play is pressed
     ("manifest-src", "'self'"),
     ("worker-src", "'self'"),                    # sw.js
     ("object-src", "'none'"),

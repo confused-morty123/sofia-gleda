@@ -138,8 +138,9 @@ TMDB_TOKEN=your_token OMDB_TOKEN=your_key python3 scripts/refresh_all.py
   live site keeps its last good version.
 - **The page runs only its own scripts.** Each page carries a Content-Security-Policy
   `<meta>` that allows its inline scripts by sha256 hash (no `'unsafe-inline'`, no
-  eval), images from any https host, and fonts, styles and the service worker from
-  the site only. The data script changes daily, so `scripts/csp.py` computes the
+  eval), images from any https host, one frame host (`www.youtube-nocookie.com`, the
+  film trailer, inserted only when the visitor presses play), and fonts, styles and
+  the service worker from the site only. The data script changes daily, so `scripts/csp.py` computes the
   hashes after the last step that edits a page (the pipeline's `csp` step; every
   writer stamps too), and the gate fails on a stale hash, a weakened directive or a
   `<script>` the build does not make. Data goes into a script only through

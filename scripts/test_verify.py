@@ -1193,6 +1193,47 @@ except _csp.CSPError:
 
 
 # ---------------------------------------------------------------------------
+# Trailers (5a3) and the CSP's frame-src (6e)
+# ---------------------------------------------------------------------------
+print("\nTrailers: TMDBART v, the year guard, nothing from YouTube before the tap, frame-src")
+
+
+def _tr_page(art, extra_js=""):
+    return _minimal_html(extra_js=extra_js).replace(
+        "const FILMINFO={};", "const FILMINFO={};\nconst TMDBART=" + _json.dumps(art) + ";", 1)
+
+
+_tr_ok = {"f0": {"y": 2026, "v": {"k": "jxU8FU3o75A", "l": "en", "t": "Trailer"}},
+          "f1": {"y": 2025, "v": {"k": "abc_DEF-123", "l": "bg", "t": "Teaser"}}}
+_rc, _out = _run_out(_tr_page(_tr_ok))
+check("the gate reads TMDBART and counts the trailers", "2 film(s) carry a trailer" in _out)
+check("a trailer with an 11-character key, bg/en, Trailer/Teaser and the film's year (±1) passes", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+for _name, _art in (("a key that is not a YouTube id fails", {"f0": {"y": 2026, "v": {"k": "jxU8FU3o75A/x", "l": "en", "t": "Trailer"}}}),
+                    ("a language other than bg/en fails", {"f0": {"y": 2026, "v": {"k": "jxU8FU3o75A", "l": "de", "t": "Trailer"}}}),
+                    ("a type other than Trailer/Teaser fails", {"f0": {"y": 2026, "v": {"k": "jxU8FU3o75A", "l": "en", "t": "Clip"}}}),
+                    ("a TMDB year 26 years from the film's (a wrong match) fails", {"f0": {"y": 2000, "v": {"k": "jxU8FU3o75A", "l": "en", "t": "Trailer"}}}),
+                    ("a trailer without TMDB's year fails", {"f0": {"v": {"k": "jxU8FU3o75A", "l": "en", "t": "Trailer"}}})):
+    _rc, _out = _run_out(_tr_page(_art))
+    check(_name, _rc != 0 and "trailer(s) that must not ship" in _out)
+_rc, _out = _run_out(_tr_page(_tr_ok, extra_js='const X="https://i.ytimg.com/vi/jxU8FU3o75A/hqdefault.jpg";'))
+check("a YouTube thumbnail in the page (a Google request before the tap) fails",
+      _rc != 0 and "nothing from YouTube or Google may load before the play button" in _out)
+_rc, _out = _run_out(_tr_page(_tr_ok, extra_js='const Y="https://www.youtube.com/embed/";'))
+check("the tracking embed host (www.youtube.com/embed) instead of youtube-nocookie fails",
+      _rc != 0 and "www.youtube.com/embed" in _out)
+_tr_stamped = _finish(_tr_page(_tr_ok))
+check("the page's CSP allows exactly one frame host, www.youtube-nocookie.com",
+      "frame-src https://www.youtube-nocookie.com;" in _tr_stamped)
+_rc, _out = _run_out(_tr_stamped.replace("; frame-src https://www.youtube-nocookie.com", ""), finish=False)
+check("a CSP without frame-src (the player would be blocked) fails", _rc != 0 and "frame-src" in _out)
+_rc, _out = _run_out(_tr_stamped.replace("frame-src https://www.youtube-nocookie.com",
+                                         "frame-src https://www.youtube-nocookie.com https://www.youtube.com"), finish=False)
+check("a CSP that also allows www.youtube.com frames fails", _rc != 0 and "frame-src" in _out)
+
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()
