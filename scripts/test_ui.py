@@ -17052,26 +17052,53 @@ def wave_ux1(browser):
         ctx.close()
         print(f"  UX1 over {base} ({eng}); items: film={items['film']} show={items['show']} event={items.get('event')}")
         print("\n=== UX1-1: the filter drawer swipe ===")
-        _ux_drawer(browser, base, eng)
+        try:
+            _ux_drawer(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_drawer_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-2: desktop performance budgets ===")
         if eng == "chromium":
-            _ux_perf(browser, base)
+            try:
+                _ux_perf(browser, base)
+            except Exception as _ex:      # one section crashing must not hide the rest
+                check(f"ux1_{eng}_perf_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         else:
             skip("ux1_perf", "measured in Chromium (long tasks, CDP)")
         print("\n=== UX1-3: share pages for link-preview fetchers and browsers ===")
-        _ux_share(browser, base, eng, items)
+        try:
+            _ux_share(browser, base, eng, items)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_share_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-4: the address of an open sheet ===")
-        _ux_urls(browser, base, eng, items)
+        try:
+            _ux_urls(browser, base, eng, items)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_urls_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-5: the theatre late-day card ===")
-        _ux_late(browser, base, eng)
+        try:
+            _ux_late(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_late_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-6: the listings' own addresses (/home/, /home/theatre/) ===")
-        _ux_routes(browser, base, eng, items)
+        try:
+            _ux_routes(browser, base, eng, items)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_routes_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-7: the In focus card ===")
-        _ux_focus(browser, base, eng)
+        try:
+            _ux_focus(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_focus_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-8: the logo and its line, one lockup (761-1920 px) ===")
-        _ux_lockup(browser, base, eng)
+        try:
+            _ux_lockup(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_lockup_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
         print("\n=== UX1-9: the footer spans the content width (375-1920 px) ===")
-        _ux_footer(browser, base, eng)
+        try:
+            _ux_footer(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_footer_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
     finally:
         srv.shutdown()
         if tmp:
