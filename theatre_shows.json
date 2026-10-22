@@ -5182,5 +5182,419 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "sedem-noshti-na-viola-karavelova": {
+  "id": "sedem-noshti-na-viola-karavelova",
+  "title": "СЕДЕМ НОЩИ НА ВИОЛА КАРАВЕЛОВА",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "ivanovden": {
+  "id": "ivanovden",
+  "title": "Ивановден",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "razdelenoto-kralstvo": {
+  "id": "razdelenoto-kralstvo",
+  "title": "Разделеното кралство",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "gramofonat": {
+  "id": "gramofonat",
+  "title": "ГРАМОФОНЪТ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "muhi-bez-glavi": {
+  "id": "muhi-bez-glavi",
+  "title": "МУХИ БЕЗ ГЛАВИ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "takav-e-zhivota": {
+  "id": "takav-e-zhivota",
+  "title": "ТАКЪВ Е ЖИВОТА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "chayka-sled-samoubiystvoto": {
+  "id": "chayka-sled-samoubiystvoto",
+  "title": "„ЧАЙКА“ СЛЕД САМОУБИЙСТВОТО",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "ne-se-oblichay-za-vecherya": {
+  "id": "ne-se-oblichay-za-vecherya",
+  "title": "Не се обличай за вечеря",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "takav-e-zhivotat": {
+  "id": "takav-e-zhivotat",
+  "title": "''ТАКЪВ Е ЖИВОТЪТ''",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "chayka-2": {
+  "id": "chayka-2",
+  "title": "Чайка",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "tya-spi-gola": {
+  "id": "tya-spi-gola",
+  "title": "Тя спи гола",
+  "titleEn": "",
+  "theatre": "artvent",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "artvent"
+ },
+ "mrasnoto-kopele": {
+  "id": "mrasnoto-kopele",
+  "title": "МРЪСНОТО КОПЕЛЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "istorii-stories": {
+  "id": "istorii-stories",
+  "title": "Истории/Stories",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
+ },
+ "wide-art-forum-2026": {
+  "id": "wide-art-forum-2026",
+  "title": "WIDE ART Forum 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "spontannost": {
+  "id": "spontannost",
+  "title": "СПОНТАННОСТ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "choveshka-greshka": {
+  "id": "choveshka-greshka",
+  "title": "ЧОВЕШКА ГРЕШКА",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "otnasya-se-do-vsichki": {
+  "id": "otnasya-se-do-vsichki",
+  "title": "Отнася се до всички",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "priklyucheniya-v-tarsene-na-vaobrazhenieto": {
+  "id": "priklyucheniya-v-tarsene-na-vaobrazhenieto",
+  "title": "Приключения в търсене на Въображението",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "marionetni-fantazii": {
+  "id": "marionetni-fantazii",
+  "title": "МАРИОНЕТНИ ФАНТАЗИИ",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "kakvo-e-koleda": {
+  "id": "kakvo-e-koleda",
+  "title": "КАКВО Е КОЛЕДА",
+  "titleEn": "",
+  "theatre": "atelie313",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "atelie313"
+ },
+ "nyama-da-platim-nyama-da-platim": {
+  "id": "nyama-da-platim-nyama-da-platim",
+  "title": "Няма да платим! Няма да платим!",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "tiramisu": {
+  "id": "tiramisu",
+  "title": "Тирамису",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "herkules-vs-avgiy": {
+  "id": "herkules-vs-avgiy",
+  "title": "Херкулес VS Авгий",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
  }
 }

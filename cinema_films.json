@@ -2688,5 +2688,273 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "vzvod": {
+  "id": "vzvod",
+  "bg": "Взвод",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
+ },
+ "sinelibri-2026-tseluvka-za-leka-nosht": {
+  "id": "sinelibri-2026-tseluvka-za-leka-nosht",
+  "bg": "СИНЕЛИБРИ 2026 – ЦЕЛУВКА ЗА ЛЕКА НОЩ І",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "vlaikova"
+ },
+ "skoti": {
+  "id": "skoti",
+  "bg": "СКОТИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
+ },
+ "kleyfeys": {
+  "id": "kleyfeys",
+  "bg": "Клейфейс",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Хорър",
+   "Трилър",
+   "Приключенски"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 108,
+  "year": 2026
+ },
+ "chronicles-of-uncomfortable-truth-engl": {
+  "id": "chronicles-of-uncomfortable-truth-engl",
+  "bg": "Chronicles of uncomfortable truth - Engl",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 91,
+  "year": 2026
+ },
+ "razum-i-chuvstva-sinelibri": {
+  "id": "razum-i-chuvstva-sinelibri",
+  "bg": "РАЗУМ И ЧУВСТВА - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "haos-v-komedi-fransez-sinelibri": {
+  "id": "haos-v-komedi-fransez-sinelibri",
+  "bg": "ХАОС В КОМЕДИ ФРАНСЕЗ - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "taksi-za-raya-sinelibri": {
+  "id": "taksi-za-raya-sinelibri",
+  "bg": "ТАКСИ ЗА РАЯ - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "lumiere"
+ },
+ "kukla-sinelibri": {
+  "id": "kukla-sinelibri",
+  "bg": "КУКЛА - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
+ },
+ "edna-istoriya-sinelibri": {
+  "id": "edna-istoriya-sinelibri",
+  "bg": "ЕДНА ИСТОРИЯ - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "doors": {
+  "id": "doors",
+  "bg": "Доорс",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "lumiere",
+  "runtime": 141,
+  "year": 1991,
+  "originalTitle": "The Doors"
+ },
+ "vsichki-vlyubeni-v-noshtta-sinelibri": {
+  "id": "vsichki-vlyubeni-v-noshtta-sinelibri",
+  "bg": "ВСИЧКИ ВЛЮБЕНИ В НОЩТА - СИНЕЛИБРИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
+ },
+ "les-mis-rables-cinelibri": {
+  "id": "les-mis-rables-cinelibri",
+  "bg": "LES MISÉRABLES - CINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere"
+ },
+ "hroniki-za-neudobnata-istina-s-angliyski-subtitri": {
+  "id": "hroniki-za-neudobnata-istina-s-angliyski-subtitri",
+  "bg": "Хроники за неудобната истина (с английски субтитри)",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 91,
+  "year": 2026
+ },
+ "mozhesh-da-vidish-vsichko": {
+  "id": "mozhesh-da-vidish-vsichko",
+  "bg": "Можеш да видиш всичко",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 174,
+  "year": 2026
+ },
+ "yarostta-na-svobodata": {
+  "id": "yarostta-na-svobodata",
+  "bg": "Яростта на свободата",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "odeon"
+ },
+ "sreshta-razgovor-s-valeska-grizebah-rezhisyor-na-filma-mecht": {
+  "id": "sreshta-razgovor-s-valeska-grizebah-rezhisyor-na-filma-mecht",
+  "bg": "Среща-разговор с Валеска Гризебах – режисьор на филма „Мечтаното приключение“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "odeon"
+ },
+ "sinyoto-e-topal-tsvyat": {
+  "id": "sinyoto-e-topal-tsvyat",
+  "bg": "Синьото е топъл цвят",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 180
+ },
+ "inspektorat-i-noshtta": {
+  "id": "inspektorat-i-noshtta",
+  "bg": "Инспекторът и нощта",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "j-p-passi-please-remain-calm-y-p-pasi-v-razgovor-s-tonislav-": {
+  "id": "j-p-passi-please-remain-calm-y-p-pasi-v-razgovor-s-tonislav-",
+  "bg": "J-P Passi: Please remain calm - Й-П Паси в разговор с Тонислав Христов",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "harry-gruyaert-a-sense-of-place-prozhektsiya-i-sreshta-s-har": {
+  "id": "harry-gruyaert-a-sense-of-place-prozhektsiya-i-sreshta-s-har",
+  "bg": "Harry Gruyaert: A Sense of Place - прожекция и среща с Хари Грюйерт",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "odeon"
+ },
+ "a-story-sinelibri": {
+  "id": "a-story-sinelibri",
+  "bg": "A STORY - SINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere"
  }
 }

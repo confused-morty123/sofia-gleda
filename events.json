@@ -17,8 +17,8 @@
    "post": 187545,
    "scope": "theatre",
    "source": "programata.bg",
-   "status": "upcoming",
-   "tag": "СЛЕД 1 ДЕН",
+   "status": "active",
+   "tag": "СЛЕД 0 ДНИ",
    "title": "ACT Фестивал за свободен театър",
    "titleEn": "ACT Independent Theatre Festival",
    "titles": [
@@ -101,7 +101,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 27 ДНИ",
+   "tag": "СЛЕД 21 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -139,19 +139,9 @@
    ]
   }
  ],
- "generated": "2026-10-16T04:13:04+00:00",
+ "generated": "2026-10-22T09:05:14+00:00",
  "ok": true,
  "posts": {
-  "179727": {
-   "date": "2026-04-24T11:42:15",
-   "modified": "2026-05-15T14:27:26",
-   "verdict": "skip: ended 2026-07-07"
-  },
-  "179778": {
-   "date": "2026-04-24T14:37:08",
-   "modified": "2026-04-24T14:37:25",
-   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
-  },
   "180082": {
    "date": "2026-05-04T20:36:56",
    "modified": "2026-05-04T20:36:56",
@@ -278,11 +268,21 @@
    "id": "act-festival-za-svoboden-teatar-p187545",
    "modified": "2026-10-09T16:21:24",
    "verdict": "event"
+  },
+  "187949": {
+   "date": "2026-10-21T13:47:54",
+   "modified": "2026-10-21T14:35:17",
+   "verdict": "skip: not in Sofia (the headline names another town)"
+  },
+  "188043": {
+   "date": "2026-10-21T16:31:37",
+   "modified": "2026-10-21T16:31:38",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
   }
  },
  "read": {
   "listed": 27,
-  "pages": 0,
+  "pages": 2,
   "unreadable": 0
  },
  "source": "programata.bg"

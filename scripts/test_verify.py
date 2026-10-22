@@ -1133,19 +1133,21 @@ check("policies dated other than CONSENT_VERSION fail", _rc != 0 and "CONSENT_VE
 _rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace('rel="canonical" href="https://',
                                                                  'rel="canonical" href="http://')))
 check("a canonical URL off SITE_URL fails", _rc != 0 and "canonical URL" in _out)
-_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP), _lg_root())
+# The app page and the built legal pages both carry csp.py's policy (the legal pages narrow
+# script-src to 'none'); each case below changes only the legal pages.
+_CSP_META = re.compile(r'<meta http-equiv="Content-Security-Policy"[^>]*>\n?')
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: _CSP_META.sub("", t)))
 check("a CSP on the app but not on the legal pages fails", _rc != 0 and "Content-Security-Policy missing" in _out)
-_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP),
-                    _lg_root(edit=lambda r, t: t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' +
-                                                         _LG_CSP.replace("'sha256-AAAA'", "'none'"))))
+_rc, _out = _lg_run(_lg_page, _lg_root())
 check("the same CSP (script-src narrowed to 'none') passes", _rc == 0)
 if _rc != 0:
     print("      " + "\n      ".join(_out.strip().splitlines()[-3:]))
-_rc, _out = _lg_run(_lg_page.replace('<meta charset="utf-8"/>', '<meta charset="utf-8"/>' + _LG_CSP),
-                    _lg_root(edit=lambda r, t: t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n' +
-                                                         _LG_CSP.replace("img-src 'self' https: data:", "img-src *"))))
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: _CSP_META.sub(
+    lambda m: re.sub(r"img-src [^;\"]*", "img-src *", m.group(0)), t)))
 check("a CSP that differs from the app's fails", _rc != 0 and "differs from the app's in img-src" in _out)
-_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: re.sub(r"<!-- FONTS -->.*?<!-- /FONTS -->", "", t, flags=re.S)))
+# the pages use the self-hosted fonts; a privacy policy that still names Google Fonts is out of step
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace("</main>", "<p>Шрифтовете се зареждат от Google Fonts.</p></main>", 1)
+                                       if "/privacy/" in r else t))
 check("a privacy policy naming Google Fonts the pages no longer load fails", _rc != 0 and "Google Fonts" in _out)
 check("a page without the cookie notice skips the legal checks", _run_out(_minimal_html())[0] == 0)
 
