@@ -28,6 +28,13 @@ HEAD = """<!doctype html>
 <html lang="bg">
 <head>
 <meta charset="utf-8">
+<!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
+     and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
+     icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
+     which this script puts in before anything that uses it (a static one is refused under
+     base-uri 'self' on a page opened from a file, a local preview or the tests, which
+     resolve them from their own folder). -->
+<script>/* SOFIA-BASE */if(location.protocol!=="file:")document.head.appendChild(Object.assign(document.createElement("base"),{href:"/"}));</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#0C0A0F">
@@ -37,8 +44,8 @@ HEAD = """<!doctype html>
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Sofia Gleda">
-<link rel="canonical" href="{SITE_URL}/">
-<meta property="og:url" content="{SITE_URL}/">
+<link rel="canonical" href="{SITE_URL}/home/">
+<meta property="og:url" content="{SITE_URL}/home/">
 <meta property="og:title" content="Sofia Gleda">
 <meta property="og:description" content="Афишът на кината и театрите в София">
 <meta property="og:image" content="{SITE_URL}/share/share-preview.jpg">

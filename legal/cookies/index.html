@@ -106,7 +106,8 @@ li{margin:6px 0}
   padding-block:20px calc(36px + env(safe-area-inset-bottom,0px))}
 .lg-foot-nav{display:flex; flex-wrap:wrap; gap:4px 18px}
 .lg-foot-nav a{display:inline-flex; align-items:center; min-height:36px; color:var(--fg-2)}
-.lg-foot p{margin:10px 0 0; max-width:62ch}
+/* the line and the links span the footer's column and reflow with it (owner, 22 Oct 2026) */
+.lg-foot p{margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -122,7 +123,7 @@ li{margin:6px 0}
 <a href="../cookies/" aria-current="page">Бисквитки</a>
 </nav>
 <h1>Политика за бисквитките</h1>
-<p class="lg-updated">Последна актуализация: <time datetime="2026-10-15">15 октомври 2026 г.</time></p>
+<p class="lg-updated">Последна актуализация: <time datetime="2026-10-22">22 октомври 2026 г.</time></p>
 <p class="lg-lead">Тази политика описва какво пази Sofia Gleda в браузъра ви и защо.</p>
 <section class="lg-key" aria-labelledby="nakratko">
 <h2 id="nakratko">Накратко</h2>
@@ -176,13 +177,12 @@ li{margin:6px 0}
 <p>Връзката „Настройки за бисквитки“ в долната част на сайта отваря отново съобщението. Ако някога добавим незадължителни инструменти, например статистика за посещенията или вход с профил, те ще се включват само след изричното ви съгласие, а съобщението ще ви попита отново.</p>
 
 <h2 id="lichni">6. Лични данни</h2>
-<p>Повече за личните данни има в <a href="../privacy/">Политиката за поверителност</a>. Въпроси можете да оставите на <a href="https://github.com/confused-morty123/sofia-gleda/issues">github.com/confused-morty123/sofia-gleda/issues</a>, без да публикувате лични данни.</p>
+<p>Повече за личните данни и за правата ви има в <a href="../privacy/">Политиката за поверителност</a>.</p>
 </main>
 <footer class="lg-foot"><div class="lg-wrap">
 <nav class="lg-foot-nav" aria-label="Връзки">
 <a href="../../">Към програмата</a>
 <a href="../../#cookies">Настройки за бисквитки</a>
-<a href="https://github.com/confused-morty123/sofia-gleda/issues">Проектът в GitHub</a>
 </nav>
 <p>Sofia Gleda е агрегатор и не е свързан с кината и театрите, чиито програми показва.</p>
 </div></footer>

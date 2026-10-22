@@ -23,7 +23,8 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     9. fetch_events.py              festivals / limited runs programata.bg announces -> events.json
    10. fetch_event_posters.py       those events' key art, re-hosted -> posters/ev-*, event_posters.json
    11. inject_data.py               inline the poster maps, film details and auto events -> index.html
-   12. gen_share_pages.py           static /film/<id>/ and /show/<id>/ share pages -> film/, show/
+   12. gen_share_pages.py           the app at /home/ and /home/theatre/, and static /film/<id>/,
+                                    /show/<id>/, /event/<id>/ share pages -> home/, film/, show/, event/
    13. csp.py                       the Content-Security-Policy meta (script hashes) of
                                     index.html and every share page, after the last edit
    14. verify_build.py              gate: is the result actually usable?

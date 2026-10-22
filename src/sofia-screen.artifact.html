@@ -59,8 +59,12 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
    The logo row is allowed to scroll away; the controls row stays pinned via a
    negative top offset equal to the logo row height (28px logo + 14px padding-block + 10px gap = 52px).
    --logo-row-h is the single source of truth so the pinned offset cannot drift. */
+/* No backdrop-filter on the pinned header: blurring the page under it cost a render pass
+   every scroll frame (2.7 ms a frame at 1440 px where the GPU does not composite), for a
+   blur seen through 8% of the colour. Opaque instead: unblurred, even 3% let the titles
+   scrolling under it show. */
 .bar{position:sticky; top:0; z-index:60;
-  background:color-mix(in srgb,var(--ink) 92%,transparent); backdrop-filter:blur(14px);
+  background:var(--ink);
   border-bottom:1px solid var(--line); padding-block:calc(14px + env(safe-area-inset-top,0px)) 14px}
 /* three zones: brand left · toggle CENTRE · search+lang right
    P3A item 1: toggle moves to true centre column */
@@ -167,7 +171,10 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 @media (prefers-reduced-motion:reduce){
   .desk-search-wrap,.bar-row-search{transition:none!important}
 }
-.desk-search-wrap .search{position:relative; width:420px; max-width:420px; min-width:0}
+/* 420 px, narrower below 1210 px: open beside the toggle, the field leaves the logo's
+   column its room (the lockup's 190 px floor and 12 px clear of the toggle), so nothing
+   overflows from 761 px up */
+.desk-search-wrap .search{position:relative; width:min(420px,calc(50vw - 185px)); max-width:420px; min-width:0}
 .search input{width:100%; padding:11px 40px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg); font:inherit; font-size:15px}
 .search input::placeholder{color:var(--fg-3)}
@@ -284,10 +291,22 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   text-transform:none; letter-spacing:normal}
 @media(max-width:760px){
   .brand .brand-sub{font-size:12px; text-align:center} }
-/* Tablet widths: the logo column is too narrow for the line (it would run under
-   the centred toggle, and stop the logo from shrinking); the header stays as it
-   was there. Phones and desktops keep it. */
-@media(min-width:761px) and (max-width:1023px){ .brand .brand-sub{display:none} }
+/* Desktop (761 px and up): the logo and its line are one lockup that scales as the
+   window narrows (owner, 16 Oct 2026: the line used to vanish at 761-1023 px). The
+   brand is exactly as wide as the logo would be (its own clamp, 5.153 = logo.svg's
+   width/height), never wider than its column; the logo fills that width and the line's
+   font is set from it in container units, so the line is 98% of the logo's width in
+   either language (Onest: 18.42 font-sizes wide in BG, 15.87 in EN) and stays inside
+   the column, clear of the toggle. Below about 1180 px the lockup stops shrinking at
+   190 px, where the line is 10.1 px in BG and 11.7 px in EN (the owner's 10 px floor);
+   the search field above narrows to leave it that room. Phones keep the centred 12 px
+   line above. */
+@media(min-width:761px){
+  .brand{width:min(100%,max(190px,calc(clamp(32px,3.2vw,42px)*5.153))); container-type:inline-size}
+  .brand-logo{width:100%; height:auto; max-width:none}
+  .brand .brand-sub{font-size:calc(100cqi*.98/18.42)}
+  .brand .brand-sub:lang(en){font-size:calc(100cqi*.98/15.87)}
+}
 
 /* ---------- hero ---------- */
 .hero{position:relative; border-radius:var(--r-lg); overflow:hidden; margin-block:18px 30px;
@@ -331,9 +350,15 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .rtrack::-webkit-scrollbar{height:5px}
 .rtrack::-webkit-scrollbar-thumb{background:var(--ink-4); border-radius:9px}
 .rarrow{position:absolute; top:34%; z-index:5; width:32px; height:62px; border-radius:10px;
-  background:color-mix(in srgb,var(--ink) 84%,transparent); border:1px solid var(--line-2);
-  display:none; place-items:center; font-size:17px; backdrop-filter:blur(6px)}
+  background:color-mix(in srgb,var(--ink) 92%,transparent); border:1px solid var(--line-2);
+  display:none; place-items:center; font-size:17px}
 @media(min-width:900px){ .rscroll:hover .rarrow{display:grid} }
+/* While the wheel or trackpad scrolls the page, the cards and rails passing under the
+   resting pointer neither lift nor show their arrows: each hover change repainted its
+   rail, about two paints and a style pass a frame (the wheel listener by the live search
+   sets .sg-wheel) */
+html.sg-wheel .card:hover{transform:none}
+html.sg-wheel .rscroll:hover .rarrow{display:none}
 .rarrow.prev{left:-8px} .rarrow.next{right:-8px}
 
 /* ---------- card + generated poster ---------- */
@@ -371,12 +396,16 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 [data-surface="theatre"] .p-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-weight:600; font-size:18px; line-height:1.12}
 .p-sub{position:relative; z-index:3; font-size:9.5px; letter-spacing:.11em; text-transform:uppercase; opacity:.8; margin-top:5px}
 .p-top{position:absolute; top:9px; left:9px; right:9px; z-index:4; display:flex; justify-content:space-between; align-items:flex-start; gap:6px}
+/* the rating badges carry no backdrop-filter: one on every card added a GPU render pass
+   per visible card to every scroll frame (12 a frame instead of 2); a darker ground keeps
+   the poster's own lettering from showing through, as the blur did */
 .score{font-family:Oswald,sans-serif; font-weight:600; font-size:12.5px; padding:2px 7px; border-radius:6px;
-  background:rgba(0,0,0,.6); backdrop-filter:blur(4px); font-variant-numeric:tabular-nums;
+  background:rgba(0,0,0,.78); font-variant-numeric:tabular-nums;
   border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; gap:4px; white-space:nowrap; color:#fff}
 .score i{font-style:normal; font-size:7.5px; letter-spacing:.1em; opacity:.72; font-family:Onest,sans-serif}
 .score.hi{color:#FFD84D} .score.na{color:#A99DAD; font-size:11px}
-.score.tmdb{background:rgba(1,180,228,.18); border-color:rgba(1,180,228,.42); color:#01B4E4}
+.score.tmdb{background:linear-gradient(rgba(1,180,228,.16),rgba(1,180,228,.16)),rgba(0,0,0,.8);
+  border-color:rgba(1,180,228,.42); color:#01B4E4}
 .fest-mark{font-family:Onest,sans-serif; font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
 /* a festival mark and a premiere badge stack in the poster's top-right corner */
 .p-tags{display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:0}
@@ -755,7 +784,9 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-gt th b{display:block;font-family:Oswald,sans-serif;font-weight:500;font-size:17px;color:var(--fg)}
   .p3e-gt td{padding:8px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:center;vertical-align:middle}
   .p3e-gt td.p3e-vcol{text-align:left;font-weight:500;width:170px;min-width:140px;
-    position:sticky;left:0;background:var(--ink-3);z-index:1}
+    position:sticky;left:0;background:var(--ink-3);z-index:1;overflow-wrap:anywhere}
+  /* (anywhere: a name with no break in it wraps inside the column instead of widening the
+     table until the times are off the sheet; test_security's hostile names found it) */
   .p3e-gt td.p3e-vcol small{display:block;font-weight:400;color:var(--fg-3);font-size:12px;margin-top:1px}
   .p3e-gt .p3e-pill{font-size:14px;padding:5px 10px;min-height:36px}
   .p3e-gt-fn{font-size:11.5px;color:var(--fg-3);margin:8px 4px 0;line-height:1.4}
@@ -931,9 +962,17 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 @media (max-height:520px){
   .consent{bottom:calc(8px + env(safe-area-inset-bottom,0px)); max-height:calc(100vh - 16px)}
   @supports (height:1dvh){ .consent{max-height:calc(100dvh - 16px)} } }
-footer .legal-line{margin:14px 0 0; max-width:78ch; color:var(--fg-2)}
-footer .legal-attr{margin:6px 0 0; max-width:78ch}
+/* The disclaimer, the attribution and the policy links span the footer, the page's own
+   content width (its padding aside), and reflow with the window: no narrow column (owner,
+   22 Oct 2026). Each is a sentence or two, so even at 1920 px it stays a line or two.
+   Phones: the links sit in two even columns instead of wrapping three and one. */
+footer .legal-line{margin:14px 0 0; color:var(--fg-2)}
+footer .legal-attr{margin:6px 0 0}
 footer .legal-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 18px; margin-top:10px}
+@media(max-width:760px){
+  footer .legal-nav{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 16px}
+  footer .legal-nav a, footer .legal-nav button{justify-self:start; text-align:start}
+}
 footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:center; min-height:32px; padding:0;
   color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
 footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
@@ -1063,7 +1102,7 @@ bg:{tagline:"кино и театър в софия",
  railTonightT:"Тази вечер в София",railTonightB:"Утре в София",
  railRecommended:"Препоръчано",railWeekend:"Този уикенд",
  venueShowing:"Програмата на:",venueRemove:"Премахни",
- forYou:"Избрано за теб",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
+ inFocus:"На фокус",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
  buy:"Купи билет",buyAt:"Билети от",buyHub:"Или през платформа",evSource:"Източник",
  buyNoteC:"Отваря програмата на киното за избраната дата. Часовете по-долу водят към същата каса.",
  buyNoteT:"Отваря официалната каса на самия театър.",
@@ -1161,7 +1200,7 @@ en:{tagline:"cinema & theatre in sofia",
  railTonightT:"Tonight in Sofia",railTonightB:"Tomorrow in Sofia",
  railRecommended:"Recommended",railWeekend:"This weekend",
  venueShowing:"Showing:",venueRemove:"Remove",
- forYou:"Picked for you",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
+ inFocus:"In focus",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
  buy:"Buy a ticket",buyAt:"Tickets from",buyHub:"Or via a platform",evSource:"Source",
  buyNoteC:"Opens the cinema's programme for the selected date. The times below go to the same box office.",
  buyNoteT:"Opens the theatre's own official box office.",
@@ -2277,15 +2316,31 @@ function emptyState(){
   return `<div class="empty">${esc(L.noData)}</div>`;}
 
 /* ===================== hero ===================== */
+/* "На фокус" (16 Oct 2026; was "Избрано за теб": there are no profiles, so nothing
+   here speaks to the visitor). Among the titles of the shown period (the week by
+   default) and filters: a film by its rank on TMDB's weekly trending list
+   (TMDBART[id].tr, fetch_tmdb.py), else the most screenings × venues, then the
+   rating; a play with a premiere in the period first, else the most performances. */
+function focusFilms(){
+  const rank=f=>{const a=ART2(f.id).tr;return a>0?a:1e9;};
+  return visibleFilms().map(f=>{const rows=filmTimes(f.id);
+      return{f,tr:rank(f),sv:rows.reduce((n,r)=>n+r[3].length,0)*new Set(rows.map(r=>r[1])).size,r:ratingOf(f)||0};})
+    .sort((a,b)=>a.tr-b.tr||b.sv-a.sv||b.r-a.r||a.f.id.localeCompare(b.f.id));
+}
+function focusShows(){
+  const prem=s=>(PREMIERES["show:"+s.id]||[]).some(d=>d>=NOW_DATE&&inRange(d))?1:0;
+  return visibleShows().map(s=>({s,pr:prem(s),n:showPerfs(s.id).length,v:scoreShow(s,null)}))
+    .sort((a,b)=>b.pr-a.pr||b.n-a.n||b.v-a.v||a.s.id.localeCompare(b.s.id));
+}
 function hero(){
   const L=t(),day=dayOrAll();
   if(S.mode==="cinema"){
-    const rk=visibleFilms().map(f=>({f,s:scoreFilm(f,day)})).sort((a,b)=>b.s-a.s);
+    const rk=focusFilms();
     if(!rk.length)return"";
     const f=rk[0].f,n=filmCount(f.id,day);
     return`<div class="hero"><div class="hero-art" style="background:${grad(f.g)}">${posterArt("hero-"+f.id,f.genres,f.g,filmTitle(f))}</div>
       <div class="hero-scrim"></div><div class="hero-body">
-      <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
+      <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
       <h1>${esc(filmTitle(f))}</h1>
       <div class="hero-meta">${scoreBadge(f)}
         <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${esc(f.year)}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
@@ -2293,12 +2348,12 @@ function hero(){
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
       </div></div>`;}
-  const rk=visibleShows().map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v);
+  const rk=focusShows();
   if(!rk.length)return"";
   const sh=rk[0].s,th=thById[sh.theatre],p=showPerfs(sh.id,day);
   return`<div class="hero"><div class="hero-art" style="background:${grad(sh.g)}">${posterArt("hero-"+sh.id,sh.genres,sh.g,titleOf(sh))}</div>
     <div class="hero-scrim"></div><div class="hero-body">
-    <div class="eyebrow"><span class="dot"></span>${esc(L.forYou)} · ${esc(periodLabel())}</div>
+    <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
     <h1>${esc(titleOf(sh))}</h1>
     <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
       ${sh.duration?`<span>·</span><span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
@@ -2367,6 +2422,14 @@ function venueModeBody(){
     <span style="font-size:13px;color:var(--fg-3)">${esc(L.venueShowing||"Програмата на:")}</span>
     <div class="venue-chips">${chips}</div></div>
   ${blocks}`;}
+/* The late-day card (P3A item 6), on both surfaces: today is selected and nothing is left
+   on it, so instead of an empty page it says so and offers tomorrow (the button selects
+   that day, as a day pill does). */
+function lateDayCard(L){
+  const TOMORROW=addDays(NOW_DATE,1);
+  const tmwBtn=TOMORROW<=LASTDAY?`<button class="btn" data-day="${esc(TOMORROW)}">${esc(L.lateDayBtn||"Виж програмата за утре ›")}</button>`:"";
+  return{html:()=>`<div class="late-day-card"><p>${esc(L.lateDayMsg||"Всичко за днес приключи.")}</p>${tmwBtn}</div>`};
+}
 function body(){
   const L=t(),day=dayOrAll(),out=[];
   /* VENUE MODE: S.fVenues non-empty → bypass all curated rails */
@@ -2418,9 +2481,7 @@ function body(){
     const isLateDayEmpty=isTodaySelected&&!todayItems.length&&
       !SHOWTIMES.some(r=>r[2]===TODAY&&r[3]&&r[3].some(tm=>tm>=NOW_TIME));
     if(isLateDayEmpty){
-      const TOMORROW=addDays(NOW_DATE,1);
-      const tmwBtn=TOMORROW<=LASTDAY?`<button class="btn" data-day="${esc(TOMORROW)}">${esc(L.lateDayBtn||"Виж програмата за утре ›")}</button>`:"";
-      out.push({html:()=>`<div class="late-day-card"><p>${esc(L.lateDayMsg||"Всичко за днес приключи.")}</p>${tmwBtn}</div>`});
+      out.push(lateDayCard(L));
     } else if(todayItems.length){
       pushRail(L.railFavToday||L.railToday,fmtDay(NOW_DATE,true),todayItems,x=>filmCard(x.f,false,x.rows));
     } else {
@@ -2481,6 +2542,9 @@ function body(){
       pushRail(L.railGems||"Нишово кино",L.railGemsSub||"силни оценки, малко прожекции",gemsItems,f=>filmCard(f,day));}
     if(!S.fGenres.length){
       pushRail(L.railSoon,soonSub,soon,eventCard);}
+    /* late in the day with only today selected the period holds nothing, so the
+       collapsible sections would all be empty ("По жанр 0"): the card stands alone */
+    if(isLateDayEmpty&&!vis.length)return finishBody(out);
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const visSet=new Set(vis.map(f=>f.id));
     const genreRails=[];
@@ -2524,6 +2588,11 @@ function body(){
   }else{
     /* ---- theatre mode ---- */
     const vis=visibleShows();
+    /* the late-day card, as on the cinema side: today is selected and no performance is
+       left on it (filters aside); the empty sections below are left out */
+    const isLateDayEmptyT=S.day===TODAY&&!vis.length&&
+      !upcomingPerfs(PERFORMANCES.filter(p=>p[1]===NOW_DATE)).length;
+    if(isLateDayEmptyT)out.push(lateDayCard(L));
     /* Item 4: "Препоръчани" — scored over the full period (not just today).
        scoreShow uses showPerfs(sid) which already respects inRange. */
     const rk=vis.map(s=>({s,v:scoreShow(s,day)})).sort((a,b)=>b.v-a.v).slice(0,14);
@@ -2561,7 +2630,7 @@ function body(){
           const times=p.slice(0,3).map(r=>r[2]).join(" · ");
           return`<button class="card" data-show="${esc(sh.id)}">
             <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
-              <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+              <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
               <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
               <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});
@@ -2582,7 +2651,7 @@ function body(){
               const times=p.slice(0,3).map(r=>r[2]).join(" · ");
               return`<button class="card" data-show="${esc(sh.id)}">
                 <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
-                  <div class="p-top"><span></span>${sh.badge?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
+                  <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
                   <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
                   <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});}
@@ -2618,6 +2687,7 @@ function body(){
     })();
     if(!S.fGenres.length){
       pushRail(L.railSoon,soonSub,soon,eventCard);}
+    if(isLateDayEmptyT)return finishBody(out);
     const visSet=new Set(vis.map(s=>s.id));
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const genreRails=[];
@@ -2660,6 +2730,10 @@ function body(){
         +`<div id="sec-All-content" class="sec-body"${S.secAll?"":" hidden"}>${inner}</div></section>`;
     }});
   }
+  return finishBody(out);
+}
+/* Hand body()'s blocks to the progressive loader: the first few now, the rest on scroll. */
+function finishBody(out){
   RAILS=out; railIdx=Math.min(RAIL_FIRST,out.length);
   return out.slice(0,railIdx).map(matRail).join("")
     +(railIdx<out.length?`<div id="rail-sentinel" aria-hidden="true"></div>`:"");
@@ -3641,7 +3715,7 @@ function render(){
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
@@ -3651,7 +3725,7 @@ function render(){
     ${searchMobileOpenHTML}`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
         ${deskSearchHTML}${searchIconBtn}
@@ -3707,18 +3781,22 @@ function render(){
   /* P3A item 3: re-run the desktop geometry check after every render while the search is
      open, so language switches and other re-renders don't leave .seg-q stale. Phones never
      shrink the toggle: their search opens in its own row below it. */
-  if(S.searchOpen&&!isMob){
-    requestAnimationFrame(()=>{
-      const seg=document.querySelector(".seg");
-      const barIn=document.querySelector(".bar-in");
-      if(!seg||!barIn)return;
-      const segR=seg.getBoundingClientRect().right;
-      const barInR=barIn.getBoundingClientRect().right;
-      const crowded=barInR-segR-18<420;
-      document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
-    });
-  }
+  if(S.searchOpen&&!isMob)requestAnimationFrame(_segFit);
 }
+/* With the desktop search open, the toggle drops its labels when the field would run
+   into it; checked after every render and, since the logo and its line now scale with
+   the window, on every resize too. */
+function _segFit(){
+  const seg=document.querySelector(".seg");
+  const barIn=document.querySelector(".bar-in");
+  if(!seg||!barIn||!S.searchOpen)return;
+  const segR=seg.getBoundingClientRect().right;
+  const barInR=barIn.getBoundingClientRect().right;
+  const crowded=barInR-segR-18<420;
+  document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
+}
+let _segFitRaf=0;
+window.addEventListener("resize",()=>{if(S.searchOpen&&!_segFitRaf)_segFitRaf=requestAnimationFrame(()=>{_segFitRaf=0;if(window.innerWidth>760)_segFit();});});
 /* A selector for a drawer control, so the same control can take focus back after the
    drawer's content is refreshed (its data-* attribute and value identify it). */
 function _ctlKey(el,root){
@@ -3769,6 +3847,7 @@ function _drawerEnter(app){
      a tap on the dimmed area beside the drawer did nothing on an iPhone */
   const ds0=app.querySelector(":scope > .drawer-scrim");
   if(ds0)ds0.addEventListener("click",()=>{});
+  _drawerSwipe(app.querySelector(":scope > .drawer"));
   /* P3B: animate drawer entrance when newly opened, then move focus inside */
   requestAnimationFrame(()=>{
     const dr=document.querySelector(".drawer");
@@ -4016,9 +4095,10 @@ function clearSearch(){
    dips out (SWITCH_OUT ms, the drawer's closing curve), the other programme is put in
    place with its posters decoded, and it comes back up (SWITCH_IN ms, the drawer's
    opening curve) at the top of the page. Reduced motion: an instant switch. */
-function switchMode(mode){
+function switchMode(mode,fromHistory){
   const changed=S.mode!==mode;
   S.mode=mode;S.fGenres=[];S.fVenues=[];S.fStrands=[];S.limit=30;save();
+  if(changed&&!fromHistory)_surfaceEntry(true);
   const app=document.getElementById("app");
   if(!app||!app.querySelector(":scope > main")||S.drawer||sheetOpen){render();window.scrollTo({top:0});return;}
   app.querySelectorAll(".seg [data-switch]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.switch===S.mode)));
@@ -4098,6 +4178,41 @@ function unlockScroll(){
 const _HK="k"+Math.random().toString(36).slice(2,10);
 let _histDepth=0,_histPending=0,_histTimer=null;
 function _histWant(){return sheetOpen?(_ss?2:1):0;}
+/* Addresses (16 Oct 2026): the cinema listing is /home/, the theatre listing
+   /home/theatre/ (the bare domain becomes /home/), an open film, play or event
+   /film/<id>/, /show/<id>/, /event/<id>/: the title's share page, so an address copied
+   from the bar previews the title. Each view is an entry of its own: Back and Forward
+   step through them, a reload comes back to the same view, closing a card returns to
+   the listing it was opened from. A card's entries carry it ({kind,id}) and its
+   listing (m); the popup's entry its time too (p). Only over http(s): a file:// page
+   may change only its query and hash (the tests and local previews run from files). */
+const _PATH_URLS=/^https?:$/.test(location.protocol);
+const _surfacePath=m=>m==="theatre"?"/home/theatre/":"/home/";
+function _sheetPath(c){
+  return _PATH_URLS&&c&&/^(film|show|event)$/.test(c.kind)&&c.id?"/"+c.kind+"/"+encodeURIComponent(c.id)+"/":null;
+}
+/* the listing a card belongs to when nothing says where it was opened */
+function _itemSurface(c){
+  if(c&&c.kind==="show")return"theatre";
+  if(c&&c.kind==="event"){const ev=EVENTS.find(x=>x.id===c.id);return ev&&ev.scope==="theatre"?"theatre":"cinema";}
+  return"cinema";
+}
+/* the listing's own entry: replaced, or pushed when the listing changes (the toggle, the logo) */
+function _surfaceEntry(push){
+  if(!_PATH_URLS)return;
+  const path=_surfacePath(S.mode),st={v:1,m:S.mode};
+  try{
+    if(push&&location.pathname!==path)history.pushState(st,"",path);
+    else history.replaceState(st,"",path+(/^#(film|show|event)=/.test(location.hash)?"":location.hash));   /* #cookies stays for the notice */
+  }catch(e){}
+}
+/* the open sheet's entry shows the open sheet's address (one sheet opened over another,
+   or reached again after a popup's entry was left) */
+function _syncSheetUrl(){
+  if(!_PATH_URLS||_histPending||!sheetOpen||_histDepth<1)return;
+  const path=_sheetPath(curSheet);
+  if(path&&location.pathname!==path){try{history.replaceState(history.state,"",path);}catch(e){}}
+}
 /* The browser restores the page's saved scroll offset after every popstate. The page is
    pinned (scrollY 0) while a sheet is open, so with "auto" that restore could land after
    the unlock and throw the page to the top (it did with reduced motion, where the unlock
@@ -4121,7 +4236,9 @@ function _syncHistory(){
   try{
     if(_histDepth<want)_scrollRestoreManual();
     while(_histDepth<want){
-      history.pushState({ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},"");
+      const st={ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},path=_sheetPath(curSheet);
+      if(path){st.kind=curSheet.kind;st.id=curSheet.id;st.m=S.mode;if(_histDepth&&_ss)st.p=_ss.key;}
+      if(path)history.pushState(st,"",path);else history.pushState(st,"");
       _histDepth++;
     }
     if(_histDepth>want){
@@ -4162,6 +4279,7 @@ function openSheet(html,fromEl){
   sheetOpen=true;
   _scrollRestoreManual();
   _syncHistory();
+  _syncSheetUrl();
   lockScroll();
   s.classList.remove("closing");
   s.innerHTML=html;s.hidden=false;s.scrollTop=0;
@@ -4250,6 +4368,23 @@ window.addEventListener("popstate",()=>{
     _histPending--;
     if(!_histPending)clearTimeout(_histTimer);
     _syncHistory();
+  }else if(_PATH_URLS){
+    /* the entry's view: its listing, and its card if it has one (Forward onto a closed
+       card opens it again, here, on its own entry; an entry from an earlier page load
+       counts as the card's) */
+    const st=history.state,card=st&&st.kind&&st.id?{kind:st.kind,id:st.id}:null;
+    const m=(st&&st.m)||_surfaceOfPath()||S.mode;
+    _histDepth=card?((st.k===_HK&&st.d)||1):0;
+    if(m!==S.mode)switchMode(m,true);
+    if(card&&!(sheetOpen&&curSheet&&curSheet.kind===card.kind&&curSheet.id===card.id)){
+      const want=_histDepth,html=sheetHTMLFor(card);
+      if(html){_histDepth=1;curSheet=card;openSheet(html,null);
+        const pill=want===2&&st.p?_ssFindPill(st.p):null;
+        if(pill){_histDepth=2;const[k0,...r0]=st.p.split(":"),r1=r0.join(":").split("|");openScreeningSheet(k0,r1[0],r1[1],r1[2],r1[3],pill);}
+        else _histDepth=want;}
+    }else if(!card&&sheetOpen)closeSheet(true);
+    else if(_histDepth<2&&_ss)closeScreeningSheet({fromPop:true});
+    _syncHistory();
   }else{
     const st=history.state;
     _histDepth=(st&&st.k===_HK&&st.d)||0;
@@ -4258,44 +4393,99 @@ window.addEventListener("popstate",()=>{
     _syncHistory();
   }
   if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
+  _syncSheetUrl();
 });
-/* deep links: #film=id / ?film=id / #show=id / ?show=id open the matching detail
-   sheet. The ?param form is used by the static share pages so messaging-app
-   crawlers see a real URL path (film/<id>/) while the app still opens the sheet. */
+/* the listing an address names: /home/theatre/ theatre, /home/ and / cinema */
+function _surfaceOfPath(){
+  const p=location.pathname;
+  if(/^\/home\/theatre\/(index\.html)?$/.test(p))return"theatre";
+  if(/^\/(home\/)?(index\.html)?$/.test(p))return"cinema";
+  return null;
+}
+/* deep links: /film/<id>/ (the page's own path), ?film=<id> and #film=<id>, and the same
+   for show and event, open the matching detail sheet. The share pages (film/<id>/ and
+   so on, with the preview tags) send a browser on to /?film=<id>; the path itself
+   reaches the app when the service worker serves it, offline too. */
 const SITE_URL="__SITE_URL__";
-function _openById(kind,id){
+/* An app opened by a deep link (a share page's /home/?film=<id>, the path itself, an old
+   /?film= or #film= link): its entry becomes the card's listing and the card opens on an
+   entry of its own, so Back closes it onto that listing. A reload of an entry an earlier
+   page load gave to this very card (the service worker serves the app at /film/<id>/)
+   keeps that entry as the card's. */
+function _arrive(c){
+  if(!_PATH_URLS)return;
+  if(!c){_surfaceEntry(false);return;}
+  try{
+    const st=history.state,path=_sheetPath(c);
+    if(path&&st&&st.kind===c.kind&&st.id===c.id&&location.pathname===path){
+      history.replaceState(Object.assign({},st,{ss:"sheet",d:1,k:_HK,m:S.mode}),"",path);_histDepth=1;return;}
+    _surfaceEntry(false);
+  }catch(e){}
+}
+function _openById(kind,id,arrive){
   /* id comes from the address bar: it is only ever a key to look up (own keys,
      so "constructor" finds nothing) and never written into the page itself */
   let html=null;
   if(kind==="film"){
     if(own(filmById,id))html=sheetFilm(filmById[id]);
-    else if(id){toast(t().notInProgramme);return true;}
+    else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="show"){
     if(own(showById,id))html=sheetShow(showById[id]);
-    else if(id){toast(t().notInProgramme);return true;}
+    else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
-  if(html){curSheet={kind,id};openSheet(html,null);return true;}
+  if(html){if(arrive)_arrive({kind,id});curSheet={kind,id};openSheet(html,null);return true;}
+  if(arrive)_arrive(null);
   return false;
 }
 function openFromHash(){
   const m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
   if(!m)return false;
   let id;try{id=decodeURIComponent(m[2]);}catch(e){return false;}   /* a malformed %-escape */
-  return _openById(m[1],id);
+  return _openById(m[1],id,true);
 }
-/* Read ?film= / ?show= (written by the static share pages) and ?event= (an event's share link). */
+/* Read ?film= / ?show= / ?event= (where the share pages send a browser). */
 function openFromQuery(){
   const sp=new URLSearchParams(location.search||"");
   for(const kind of["film","show","event"]){
     const id=sp.get(kind);
-    if(id)return _openById(kind,id);
+    if(id)return _openById(kind,id,true);
   }
   return false;
 }
+/* /film/<id>/, /show/<id>/, /event/<id>/ as the page's own address */
+function openFromPath(){
+  const m=/^\/(film|show|event)\/([^\/]+)\/?(?:index\.html)?$/.exec(location.pathname||"");
+  if(!m)return false;
+  let id;try{id=decodeURIComponent(m[2]);}catch(e){return false;}
+  return _openById(m[1],id,true);
+}
+/* the card an address opens, without opening it: {kind,id} or null */
+function _cardOfAddress(){
+  let m=/^\/(film|show|event)\/([^\/]+)\/?(?:index\.html)?$/.exec(location.pathname||"");
+  if(m){try{return{kind:m[1],id:decodeURIComponent(m[2])};}catch(e){return null;}}
+  const sp=new URLSearchParams(location.search||"");
+  for(const kind of["film","show","event"]){const id=sp.get(kind);if(id)return{kind,id};}
+  m=/^#(film|show|event)=(.+)$/.exec(location.hash||"");
+  if(m){try{return{kind:m[1],id:decodeURIComponent(m[2])};}catch(e){return null;}}
+  return null;
+}
+/* Before the first render: the listing the address names (over http(s); a file:// page
+   keeps the one saved last). A card's address shows the listing it was opened from (its
+   entry's state), else the card's own. */
+function _routeSurface(){
+  if(!_PATH_URLS)return;
+  const st=history.state,c=_cardOfAddress();
+  const m=_surfaceOfPath()==="theatre"?"theatre":c?((st&&st.m)||_itemSurface(c)):(_surfaceOfPath()||(st&&st.m)||"cinema");
+  if(m!==S.mode){S.mode=m;save();}
+}
+/* After it: the card the address names, or the listing's own entry. */
+function _routeBoot(){
+  if(!openFromPath()&&!openFromQuery()&&!openFromHash())_surfaceEntry(false);
+}
 function shareItem(kind,id,title){
-  /* films and plays have static share pages (film/<id>/, show/<id>/); events
-     have none, so their link opens the app at ?event=<id> */
-  const url=kind==="event"?SITE_URL+"/?event="+encodeURIComponent(id):SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
+  /* every film, play and event has a static share page (film/<id>/, show/<id>/,
+     event/<id>/) whose tags give the messenger its preview */
+  const url=SITE_URL+"/"+kind+"/"+encodeURIComponent(id)+"/";
   const data={title:title||"Sofia Gleda",text:title||"",url:url};
   if(navigator.share){navigator.share(data).catch(()=>{});return;}
   const done=()=>toast(S.lang==="bg"?"Копиран линк":"Link copied");
@@ -4322,14 +4512,88 @@ let _lastDrawerOpener=null;
 
 /* Smoothly animate the drawer (translateX) out, then call cb when done.
    Falls back to instant if reduced-motion is set. */
-function animateDrawerClose(cb){
+function animateDrawerClose(cb,fromX){
   const dr=document.querySelector(".drawer");
   const ds=document.querySelector(".drawer-scrim");
   if(!dr||window.matchMedia("(prefers-reduced-motion: reduce)").matches){cb();return;}
-  const anim=dr.animate([{transform:"translateX(0)",opacity:1},{transform:"translateX(100%)",opacity:0}],
-    {duration:260,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
-  if(ds)ds.animate([{opacity:1},{opacity:0}],{duration:200,easing:"ease-in",fill:"forwards"});
+  /* from a swipe: on from where the finger left it, over the distance still to go, on a
+     curve that starts at speed (the plain close starts slowly) */
+  const x0=fromX||0,w=dr.getBoundingClientRect().width||1,rest=Math.max(0,1-x0/w);
+  const dsOp=ds?(parseFloat(getComputedStyle(ds).opacity)||0):0;
+  const anim=dr.animate([{transform:`translateX(${x0}px)`,opacity:1},{transform:"translateX(100%)",opacity:0}],
+    {duration:x0?Math.round(120+140*rest):260,easing:x0?"cubic-bezier(.25,.46,.45,.94)":"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  if(ds)ds.animate([{opacity:dsOp},{opacity:0}],{duration:x0?Math.round(100+100*rest):200,easing:"ease-in",fill:"forwards"});
   anim.onfinish=cb;
+}
+/* Close the drawer and give focus back to what opened it (the FAB or "Друг период"). */
+function _closeDrawerFrom(fromX){
+  const sel=_lastDrawerOpener;
+  animateDrawerClose(()=>{closeDrawerNow();
+    if(sel){const el=document.querySelector(sel);if(el&&typeof el.focus==="function"){try{el.focus({preventScroll:true});}catch(e){}}}},fromX);
+}
+/* Swipe the filter drawer away, as the film sheet and the time panel are pulled down
+   (swipeToClose, ssSwipeToClose): a drag to the right moves the drawer with the finger
+   and fades the dimmed page with it; let go past 30% of its width, or with a flick
+   (0.4 px/ms), and it slides on out, otherwise it springs back. Only a drag that is
+   clearly sideways is taken: one that starts up or down is the drawer's own scrolling
+   and is left alone. Reduced motion: the drawer does not follow the finger; a swipe
+   that would have closed it closes it at once. Bound once per drawer node: the node is
+   kept across filter taps (renderKeepDrawer), so the listeners stay with it. */
+function _drawerSwipe(dr){
+  if(!dr||dr._sgSwipe)return;
+  dr._sgSwipe=true;
+  const THRESHOLD=0.30,VEL_CLOSE=0.4,SLOP=8;
+  let x0=null,y0=0,t0=0,lastX=0,lastT=0,dir=0,w=0;   /* dir: 0 undecided, 1 ours, -1 not ours */
+  const scrimEl=()=>document.querySelector("#app > .drawer-scrim");
+  const reduced=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clear=()=>{dr.style.transform="";dr.style.willChange="";const s=scrimEl();if(s){s.style.opacity="";s.style.willChange="";}};
+  dr.addEventListener("touchstart",e=>{
+    if(e.touches.length!==1){x0=null;return;}
+    /* a spring-back (or the slide-in) still running would hold the drawer against the finger */
+    [dr,scrimEl()].forEach(n=>n&&n.getAnimations&&n.getAnimations().forEach(a=>{try{if(!a.effect||a.effect.getTiming().fill!=="forwards")a.finish();}catch(err){}}));
+    const t=e.touches[0];
+    x0=lastX=t.clientX;y0=t.clientY;t0=lastT=performance.now();dir=0;
+    w=dr.getBoundingClientRect().width||320;
+  },{passive:true});
+  dr.addEventListener("touchmove",e=>{
+    if(x0===null||dir<0)return;
+    /* a second finger: not a swipe; a drag already under way springs back */
+    if(e.touches.length!==1){if(dir===1)end(true);else dir=-1;return;}
+    const t=e.touches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+    if(!dir){
+      if(Math.abs(dx)<SLOP&&Math.abs(dy)<SLOP)return;
+      if(dx<=0||Math.abs(dx)<=Math.abs(dy)){dir=-1;return;}
+      dir=1;
+      if(!reduced()){dr.style.willChange="transform";const s=scrimEl();if(s)s.style.willChange="opacity";}
+    }
+    /* sideways and ours: the list must not scroll under the finger */
+    if(e.cancelable)e.preventDefault();
+    lastX=t.clientX;lastT=performance.now();
+    if(reduced())return;
+    const x=Math.max(0,dx);
+    dr.style.transform=`translateX(${x}px)`;
+    const s=scrimEl();if(s)s.style.opacity=String(Math.max(0,1-x/w).toFixed(3));
+  },{passive:false});
+  const end=cancelled=>{
+    if(x0===null)return;
+    const sx=x0,was=dir;x0=null;dir=0;
+    if(was!==1)return;
+    const dx=Math.max(0,lastX-sx),dt=lastT-t0,vel=dt>0?dx/dt:0;
+    if(!cancelled&&(dx>w*THRESHOLD||vel>VEL_CLOSE)){
+      if(reduced()){clear();_closeDrawerFrom(0);return;}
+      _closeDrawerFrom(dx);
+      return;
+    }
+    /* spring back, on the sheets' curve */
+    if(reduced()||!dx){clear();return;}
+    const s=scrimEl(),op=s?(parseFloat(s.style.opacity)||0):1;
+    clear();
+    dr.animate([{transform:`translateX(${dx}px)`},{transform:"translateX(0)"}],
+      {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)"});
+    if(s)s.animate([{opacity:op},{opacity:1}],{duration:260,easing:"ease-out"});
+  };
+  dr.addEventListener("touchend",()=>end(false),{passive:true});
+  dr.addEventListener("touchcancel",()=>end(true),{passive:true});
 }
 
 /* iPhone-style pull-to-close on phones.
@@ -5373,7 +5637,8 @@ document.addEventListener("click",e=>{
 
   if(q("[data-home]")){S.q="";S.qFocus=false;S.searchOpen=false;S.fGenres=[];S.fVenues=[];S.fStrands=[];
     S.day="week";S.rFrom=S.rTo=null;S.calMonth=null;S.limit=30;S.drawer=false;
-    if(location.hash)history.replaceState(null,"",location.pathname+location.search);
+    if(_PATH_URLS){S.mode="cinema";_surfaceEntry(true);}   /* the logo leads to /home/ */
+    else if(location.hash)history.replaceState(null,"",location.pathname+location.search);
     save();render();window.scrollTo({top:0,behavior:"smooth"});return;}
 
   const sw=q("[data-switch]");
@@ -5502,6 +5767,18 @@ document.addEventListener("keydown",e=>{
   if(S.drawer){const _dsel2=_lastDrawerOpener;animateDrawerClose(()=>{closeDrawerNow();if(_dsel2){const _dret2=document.querySelector(_dsel2);if(_dret2&&typeof _dret2.focus==="function"){try{_dret2.focus({preventScroll:true});}catch(e){}}}});return;}
   if(S.searchOpen){searchToggleInPlace();}
 });
+/* Wheel or trackpad scrolling: the page moves under a resting pointer, and every card it
+   passed lifted and dropped again, each change a repaint of its rail (two paints and a
+   style pass a frame, on desktop only). html.sg-wheel holds those hover effects (CSS by
+   .rarrow) until 160 ms after the last wheel event, or until the pointer itself moves.
+   Clicks are untouched. */
+let _wheelT=0;
+function _wheelEnd(){clearTimeout(_wheelT);_wheelT=0;document.documentElement.classList.remove("sg-wheel");}
+window.addEventListener("wheel",()=>{
+  if(!_wheelT)document.documentElement.classList.add("sg-wheel");
+  clearTimeout(_wheelT);_wheelT=setTimeout(_wheelEnd,160);
+},{passive:true});
+window.addEventListener("mousemove",e=>{if(_wheelT&&(e.movementX||e.movementY))_wheelEnd();},{passive:true});
 /* live search: only the results under the header follow the query (refreshPage); the
    field is never rebuilt, so it keeps its focus, caret and composition, and on a phone
    the keyboard stays up and the page stays where it is while the user types */
@@ -5565,7 +5842,8 @@ try{
    is. An id that is not in CONSENT_OPTIONAL never runs. Withdrawing a category that has run
    reloads the page, so nothing it started keeps running. */
 const CONSENT_KEY="sofia-consent";
-const CONSENT_VERSION="2026-10-15";
+/* 2026-10-22: the policies name no contact channel any more (the GitHub page is gone) */
+const CONSENT_VERSION="2026-10-22";
 const CONSENT_OPTIONAL=[];
 let _cRec=null,_cWait={},_cRan={},_cBack=null,_cLang=null;
 function _consentLoad(){
@@ -5708,7 +5986,7 @@ function _keepPageY(y){
   }
   if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
 }
-try{ boot(); if(!openFromQuery())openFromHash(); }catch(e){ fatal(e); }
+try{ _routeSurface(); boot(); _routeBoot(); }catch(e){ fatal(e); }
 try{ consentBoot(); }catch(e){}
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");

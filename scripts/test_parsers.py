@@ -3527,9 +3527,28 @@ else:
     _after_ogimage = _sp.split("og:image")[1].split(">")[0] if "og:image" in _sp else ""
     check("share_page film og:image absolute https", True, 'content="https://' in _after_ogimage)
     check("share_page film canonical",          True, 'rel="canonical"' in _sp)
-    check("share_page film meta refresh",       True, 'http-equiv="refresh"' in _sp)
-    check("share_page film redirect ?film=",    True, "?film=odiseya" in _sp)
+    # no meta refresh (16 Oct 2026): Apple's link previewer runs in WebKit and followed
+    # it, so every shared film previewed as the home page; a script that skips
+    # link-preview fetchers takes a browser on instead, and a link serves one without JS
+    check("share_page film no meta refresh",    False, 'http-equiv="refresh"' in _sp.lower())
+    check("share_page film bot-aware redirect", True,
+          "<script>" + GSP.REDIRECT_JS + "</script>" in _sp)
+    check("share_page film fallback link ?film=", True, 'href="/home/?film=odiseya"' in _sp)
     check("share_page film no #hash fragment",  True, "#film=" not in _sp)
+    _bots = re.compile(GSP.BOT_UA, re.I)
+    for _ua in ["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) "
+                "Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0",
+                "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+                "WhatsApp/2.23.20.0 A", "TelegramBot (like TwitterBot)", "Mozilla/5.0 (compatible; ViberBot/1.0)",
+                "Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)", "Mozilla/5.0 (compatible; Discordbot/2.0)",
+                "LinkedInBot/1.0", "Pinterest/0.2 (+https://www.pinterest.com/bot.html)", "SkypeUriPreview Preview/0.5",
+                "Iframely/1.3.1", "Embedly/0.2", "Google-PageRenderer Google", "redditbot/1.0", "Applebot/0.1"]:
+        check(f"share_page bot UA stays: {_ua[:28]}", True, bool(_bots.search(_ua)))
+    for _ua in ["Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Mobile Safari/537.36 Viber/24.8.0.1",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [Pinterest/iOS]",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"]:
+        check(f"share_page browser UA redirected: {_ua[-30:]}", False, bool(_bots.search(_ua)))
 
 # Titles with special characters are HTML-escaped
 _sp2, _sperr2 = _make_sp(
@@ -3572,6 +3591,24 @@ else:
     else:
         fails.append("share_page truncation: og:description not found")
         print("  FAIL share_page truncation: og:description not found")
+
+# Event share pages: dates and venue in the description, the visible line, an image
+check("share_page bg_range one day", "17 септември 2026", GSP._bg_range("2026-09-17", "2026-09-17"))
+check("share_page bg_range one month", "17–24 октомври 2026", GSP._bg_range("2026-10-17", "2026-10-24"))
+check("share_page bg_range two months", "15 октомври – 8 ноември 2026", GSP._bg_range("2026-10-15", "2026-11-08"))
+_evp = GSP._event_page({"id": "probe-fest", "title": "Пробен фестивал", "titleEn": "Probe Festival",
+                        "from": "2026-10-06", "to": "2026-10-07", "blurbBg": "Премиера."},
+                       {}, {"probe-fest": "national"}, {"national": "Народен театър"}, {}, {}, {}, {})
+check("share_page event og:url", True, 'property="og:url" content="' + GSP.SITE_URL + '/event/probe-fest/"' in _evp)
+check("share_page event description has dates and venue", True,
+      'property="og:description" content="6–7 октомври 2026 · Народен театър. Премиера."' in _evp)
+check("share_page event visible line", True, '<p class="sub">6–7 октомври 2026 · Народен театър</p>' in _evp)
+check("share_page event fallback image with size", True,
+      GSP.FALLBACK_IMAGE in _evp and 'og:image:width" content="1200"' in _evp)
+check("share_page event link ?event=", True, 'href="/home/?event=probe-fest"' in _evp)
+check("share_page event no meta refresh", False, "refresh" in _evp.lower())
+_url, _w, _h = GSP._image("x", {}, {}, {"x": {"p": "/p.jpg"}}, {})
+check("share_page TMDB poster size", ("https://image.tmdb.org/t/p/w500/p.jpg", 500, 750), (_url, _w, _h))
 
 # SITE_URL from site_config is the single source of truth
 import site_config as _SC
@@ -3679,6 +3716,26 @@ else:
         else:
             fails.append(f"Spider-Man og:image not TMDB: {_spidey_poster!r}")
             print(f"  FAIL Spider-Man og:image not TMDB: {_spidey_poster!r}")
+
+# ------------------------------------------------- fetch_tmdb: the weekly trending list
+print("\nfetch_tmdb: TMDB weekly trending ranks for the In focus card (keep-previous)")
+_saved_api = TMDB.api
+try:
+    _pages = {1: {"results": [{"id": 11}, {"id": 22}, {"id": 11}]}, 2: {"results": [{"id": 33}]}}
+    TMDB.api = lambda path, params: _pages.get(params.get("page")) if path == "trending/movie/week" else None
+    check("trending ranks in list order, duplicates once", {11: 1, 22: 2, 33: 3}, TMDB.trending_ranks())
+    TMDB.api = lambda path, params: None
+    check("trending: TMDB silent -> None (keep the last ranks)", None, TMDB.trending_ranks())
+finally:
+    TMDB.api = _saved_api
+_out = {"a": {"tmdb_id": 22}, "b": {"tmdb_id": 99, "trend": 4}, "c": {"tmdb_id": 33}}
+TMDB.apply_trending(_out, {}, {22: 2, 33: 7})
+check("trending: ranks written, a film off the list has none", (2, None, 7),
+      (_out["a"].get("trend"), _out["b"].get("trend"), _out["c"].get("trend")))
+_out = {"a": {"tmdb_id": 22}, "c": {"tmdb_id": 34}}
+TMDB.apply_trending(_out, {"a": {"tmdb_id": 22, "trend": 5}, "c": {"tmdb_id": 33, "trend": 1}}, None)
+check("trending keep-previous: same TMDB title keeps its rank, a rematched one does not", (5, None),
+      (_out["a"].get("trend"), _out["c"].get("trend")))
 
 print()
 if fails:

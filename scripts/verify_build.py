@@ -1156,54 +1156,93 @@ for _icon_rel, _expected_size in [
         except Exception as _ie:
             note(f"icon check {_icon_rel}: {_ie}")
 
-# ----------------------------------------- 6c. per-title share page spot checks
-# Pick 3 film ids and 2 show ids from the data and verify each share page has the
-# correct og:url/canonical pointing to SITE_URL, and og:image is absolute HTTPS.
-# A missing share page is a hard failure once the film/ or show/ directory exists.
+# ----------------------------------------- 6c. share pages (film/, show/, event/)
+# Every share page gives a link-preview fetcher the title's own tags and does not send
+# it away: no meta refresh. Apple's previewer (iMessage, Notes; it runs in WebKit and
+# follows redirects) read the home page's card for every film shared from
+# sofiagleda.com (16 Oct 2026). A browser is sent on to the app by a script that
+# skips link-preview fetchers, and a browser without JavaScript gets a link.
+# Each page: canonical and og:url = SITE_URL/<kind>/<id>/, og:title, og:description,
+# og:image and twitter:image absolute https, twitter:card summary_large_image, that
+# script, the link. A listed film, show or event without a page is only noted: its
+# share link still reaches the app (404.html), and the listings must not wait for it.
 try:
     sys.path.insert(0, str(ROOT / "scripts"))
     from site_config import SITE_URL as _SITE_URL
 
+    _SP_TAGS = [
+        (r'<meta property="og:title" content="[^"]+"', "og:title"),
+        (r'<meta property="og:description" content="[^"]+"', "og:description"),
+        (r'<meta name="twitter:card" content="summary_large_image"', "twitter:card summary_large_image"),
+        (r'<meta name="twitter:title" content="[^"]+"', "twitter:title"),
+    ]
+    _sp_bad: list[str] = []
+    _sp_count = 0
+
     def _check_share_page_file(kind, item_id):
+        global _sp_count
         _page_path = _FILE_ROOT / kind / item_id / "index.html"
         if not _page_path.exists():
             fail(f"share page missing: {kind}/{item_id}/index.html")
             return
+        _sp_count += 1
         _page_src = _page_path.read_text(encoding="utf-8")
+        _where = f"share page {kind}/{item_id}"
         _expected_url = f"{_SITE_URL}/{kind}/{item_id}/"
-        if _expected_url not in _page_src:
-            fail(f"share page {kind}/{item_id}: og:url/canonical not {_expected_url!r}")
-        _img_m = re.search(r'og:image[^>]*content="([^"]*)"', _page_src)
-        if _img_m:
-            if not _img_m.group(1).startswith("https://"):
-                fail(f"share page {kind}/{item_id}: og:image not absolute HTTPS")
-        else:
-            fail(f"share page {kind}/{item_id}: og:image missing")
+        if (f'rel="canonical" href="{_expected_url}"' not in _page_src
+                or f'property="og:url" content="{_expected_url}"' not in _page_src):
+            _sp_bad.append(f"{_where}: og:url/canonical not {_expected_url!r}")
+        for _prop in ("og:image", "twitter:image"):
+            _img_m = re.search(r'(?:property|name)="%s"[^>]*content="([^"]*)"' % _prop, _page_src)
+            if not _img_m:
+                _sp_bad.append(f"{_where}: {_prop} missing")
+            elif not _img_m.group(1).startswith("https://"):
+                _sp_bad.append(f"{_where}: {_prop} not absolute HTTPS")
+        for _rx, _label in _SP_TAGS:
+            if not re.search(_rx, _page_src):
+                _sp_bad.append(f"{_where}: {_label} missing")
+        if re.search(r'http-equiv\s*=\s*["\']?refresh', _page_src, re.I):
+            _sp_bad.append(f"{_where}: meta refresh (link-preview fetchers follow it)")
+        _scripts = re.findall(r"<script[^>]*>(.*?)</script>", _page_src, flags=re.S)
+        _redir = [x for x in _scripts if re.search(r"location\.(replace|assign|href)", x)]
+        if not _redir:
+            _sp_bad.append(f"{_where}: no redirect to the app for a browser")
+        elif not all("facebookexternalhit" in x and "twitterbot" in x.lower() for x in _redir):
+            _sp_bad.append(f"{_where}: redirects without skipping link-preview fetchers")
+        if not re.search(r'<a [^>]*href="[^"]*\?%s=[^"]+"' % kind, _page_src):
+            _sp_bad.append(f"{_where}: no link to the app for a browser without JavaScript")
 
-    # Sample up to 3 films
-    _film_dir = _FILE_ROOT / "film"
-    if _film_dir.is_dir():
-        _film_ids = [d.name for d in sorted(_film_dir.iterdir())
-                     if d.is_dir()][:3]
-        for _fid in _film_ids:
-            _check_share_page_file("film", _fid)
-    else:
-        note("film/ directory not yet created — share page checks skipped")
-
-    # Sample up to 2 shows
-    _show_dir = _FILE_ROOT / "show"
-    if _show_dir.is_dir():
-        _show_ids = [d.name for d in sorted(_show_dir.iterdir())
-                     if d.is_dir()][:2]
-        for _sid in _show_ids:
-            _check_share_page_file("show", _sid)
-    else:
-        note("show/ directory not yet created — share page checks skipped")
+    _listed = {"film": {f.get("id") for f in (data.get("FILMS") or []) if isinstance(f, dict)},
+               "show": {x.get("id") for x in (data.get("SHOWS") or []) if isinstance(x, dict)},
+               "event": {e.get("id") for e in (data.get("EVENTS") or []) if isinstance(e, dict)}}
+    _ea_sp = re.search(r"^const EVENTS_AUTO\s*=\s*(.*?);\s*$", js, flags=re.M)
+    try:
+        _listed["event"] |= {e.get("id") for e in json.loads(_ea_sp.group(1)) if isinstance(e, dict)} if _ea_sp else set()
+    except Exception:
+        pass
+    for _kind in ("film", "show", "event"):
+        _kdir = _FILE_ROOT / _kind
+        if not _kdir.is_dir():
+            note(f"{_kind}/ directory not yet created: its share pages were not checked")
+            continue
+        _have = set()
+        for _d in sorted(_kdir.iterdir()):
+            if _d.is_dir():
+                _have.add(_d.name)
+                _check_share_page_file(_kind, _d.name)
+        _missing = sorted(i for i in _listed[_kind] if i and i not in _have)
+        if _missing:
+            note(f"{len(_missing)} listed {_kind}(s) have no share page yet: " + ", ".join(_missing[:5]))
+    if _sp_bad:
+        fail(f"{len(_sp_bad)} share page problem(s):\n  " + "\n  ".join(_sp_bad[:12])
+             + (f"\n  … and {len(_sp_bad) - 12} more" if len(_sp_bad) > 12 else ""))
+    elif _sp_count:
+        note(f"share pages: {_sp_count} checked, all carry their tags and no meta refresh")
 
 except ImportError:
     note("site_config.py not importable — share page URL checks skipped")
 except Exception as _sp_err:
-    note(f"share page spot-check error: {_sp_err}")
+    note(f"share page check error: {_sp_err}")
 
 # ----------------------------------------- 6d. Maps links — every venue resolves
 # venueMapUrl() falls back to name+area+", София" when no maps field is present.
@@ -1260,6 +1299,16 @@ try:
     if _share_bad:
         fail(f"CSP: {len(_share_bad)} of {_share_n} share page(s) fail: " + "; ".join(_share_bad[:3])
              + " — run scripts/csp.py")
+    # The listings' own addresses, /home/ and /home/theatre/, are copies of index.html
+    # (gen_share_pages.py): each must be today's page, apart from its canonical address.
+    _canon = lambda t: re.sub(r'(rel="canonical" href|property="og:url" content)="[^"]*"', r'\1=""', t)
+    for _hp in _csp.home_pages(_FILE_ROOT):
+        _ht = _hp.read_text(encoding="utf-8")
+        _rel = _hp.parent.relative_to(_FILE_ROOT).as_posix() + "/"
+        for _p in _csp.check(_ht, "page"):
+            fail(f"CSP {_rel}: {_p}")
+        if HTML.resolve() == (_FILE_ROOT / "index.html").resolve() and _canon(_ht) != _canon(src):
+            fail(f"{_rel} is not this index.html (gen_share_pages.py copies it there after the last data edit)")
 except ImportError:
     fail("scripts/csp.py not importable — the CSP cannot be checked")
 
@@ -1313,7 +1362,8 @@ if _bad_times:
 # describe:
 #   - each exists, has its canonical URL under SITE_URL and carries no script;
 #   - no page holds a leftover placeholder ({CONTACT_…}, {OPERATOR_…}): the site names
-#     no person and gives no email, by the owner's decision of 2026-10-15;
+#     no person and gives no email, by the owner's decision of 2026-10-15, and no page
+#     links a GitHub project or issues page: no contact channel at all (2026-10-22);
 #   - the terms show TMDB's logo (TMDB API terms, section 3; owner input: the file);
 #   - the policies carry the page's CONSENT_VERSION as their date;
 #   - every localStorage key the page uses is listed in the cookie policy, the page
@@ -1377,6 +1427,11 @@ def legal_checks():
         left = sorted(set(re.findall(r"\{(?:CONTACT|OPERATOR)_[A-Z_]*\}", t)))
         if left:
             fail(f"{r}: placeholder(s) {', '.join(left)} left in the page")
+        # no contact channel (owner, 2026-10-22): no link to a GitHub page (the project, its
+        # issues); GitHub's own privacy statement (docs.github.com, the host's policy) stays
+        gh = sorted(set(re.findall(r'href="(https?://(?:www\.)?github\.com(?:/[^"]*)?)"', t)))
+        if gh:
+            fail(f"{r}: links {gh[0]}: the site names no contact channel (no GitHub page or issues link)")
     if not (_FILE_ROOT / "icons" / "tmdb.svg").exists():
         owner_pending("TMDB's logo is missing: TMDB's API terms (section 3) require it: add icons/tmdb.svg "
                       "(themoviedb.org/about/logos-attribution) and run scripts/gen_legal_pages.py")

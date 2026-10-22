@@ -62,6 +62,7 @@ for fid, v in tmdb.items():
     if v.get("dir"):           rec["dir"] = v["dir"]      # director(s) from TMDB credits
     if v.get("cast"):          rec["cast"] = v["cast"]    # top-5 cast from TMDB credits
     if v.get("ovBg"):          rec["ovBg"] = v["ovBg"]    # Bulgarian overview from TMDB
+    if v.get("trend"):         rec["tr"] = v["trend"]     # rank on TMDB's weekly trending list (1 = first)
     if rec:
         art[fid] = rec
 
@@ -239,7 +240,7 @@ if EVENT_POSTERS_JSON.exists():
 
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
-    '   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title"} from TMDB;\n'
+    '   TMDBART: id -> {p:poster_path, b:backdrop_path, en:"English title", tr:weekly trending rank} from TMDB;\n'
     '            paths resolve to https://image.tmdb.org/t/p/<size><path> at render time,\n'
     '            so posters load on any hosted/live web-app or mobile webview.\n'
     '   SHOWART: theatre show id -> full poster URL (best-effort, theatre.art.bg).\n'
