@@ -3178,6 +3178,29 @@ check("zad-kanala igra-na-kotki: the only large750x image is logo-mgt_1_1.jpg",
 check("…which the policy refuses, so no poster is stored (generated art is correct)",
       PP.reject_reason("igra-na-kotki", _zkl_img, cat) is not None, True)
 
+# ---- the poster step obeys robots.txt ----
+import netfetch as _NF
+_rb_calls, _rb_orig = [], _NF.Fetcher.get
+
+
+def _rb_get(self, url, *a, **k):
+    _rb_calls.append(url)
+    if url.endswith("/robots.txt"):
+        return type("R", (), {"content": b"User-agent: *\nDisallow: /private\nCrawl-delay: 5\n"})()
+    return "PAGE"
+
+
+try:
+    _NF.Fetcher.get = _rb_get
+    _pf = FTP.PoliteFetcher(verbose=False)
+    check("robots.txt: a disallowed path is not requested, an allowed one is, robots.txt read once",
+          (_pf.get("https://robots-test.bg/private/a"), _pf.get("https://robots-test.bg/ok"), _rb_calls),
+          (None, "PAGE", ["https://robots-test.bg/robots.txt", "https://robots-test.bg/ok"]))
+    check("robots.txt: its Crawl-delay is honoured", _NF.CRAWL_DELAY.get("robots-test.bg"), 5.0)
+finally:
+    _NF.Fetcher.get = _rb_orig
+    _NF.CRAWL_DELAY.pop("robots-test.bg", None)
+
 # ---- C8: coverage counted as the browser does, and its health entry ----
 print("theatre posters: coverage as the browser counts it, health.json entry (C8)")
 _m8 = {"SHOWALIAS": {"ev": "film"}, "TMDBART": {"film": {"p": "/x.jpg"}, "nop": {"en": "X"}},

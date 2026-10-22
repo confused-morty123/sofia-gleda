@@ -1118,6 +1118,39 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
     return found
 
 
+# ------------------------------------------------------------ polite fetching
+class PoliteFetcher(Fetcher):
+    """Fetcher that obeys each host's robots.txt: read once per host (a missing or
+    unreadable robots.txt allows everything), a disallowed URL is not requested
+    (None, logged), and a Crawl-delay longer than the 2 s gap is honoured."""
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._robots = {}
+
+    def _robots_for(self, scheme, host):
+        if host not in self._robots:
+            import urllib.robotparser, netfetch
+            rp = urllib.robotparser.RobotFileParser()
+            resp = super().get(f"{scheme}://{host}/robots.txt", attempts=1)
+            body = resp.content.decode("utf-8", "replace") if resp is not None else ""
+            rp.parse(body.splitlines())
+            delay = rp.crawl_delay("*")
+            if delay and float(delay) > self.host_delay:
+                netfetch.CRAWL_DELAY[host] = float(delay)
+            self._robots[host] = rp
+        return self._robots[host]
+
+    def get(self, url, *a, **kw):
+        parts = urllib.parse.urlsplit(url)
+        if parts.hostname and parts.path != "/robots.txt":
+            rp = self._robots_for(parts.scheme or "https", parts.hostname)
+            if not rp.can_fetch("*", url):
+                print(f"  robots.txt disallows {url[:90]} — not fetched", file=sys.stderr)
+                return None
+        return super().get(url, *a, **kw)
+
+
 # ------------------------------------------------- re-validation and retries
 STATE = ROOT / "theatre_posters_state.json"
 RETRY_DAILY_DAYS = 21       # a missing poster is retried every run this long …
@@ -1354,7 +1387,7 @@ def main():
     links = links_of(body)
     state = load_state()
     # GET only, at least 2 s between two requests to one host
-    net = Fetcher(verbose=True, budget_seconds=args.budget, host_delay=2.0)
+    net = PoliteFetcher(verbose=True, budget_seconds=args.budget, host_delay=2.0)
 
     policy_log = []
     # Only shows on stage in the listing window are looked for: a show with no
