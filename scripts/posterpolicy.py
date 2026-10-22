@@ -90,6 +90,38 @@ LOCAL_POSTER_RE = re.compile(r"^posters/[A-Za-z0-9][\w.\-]*\.(?:jpe?g|png|webp|g
 def is_local_poster(url):
     return isinstance(url, str) and ".." not in url and bool(LOCAL_POSTER_RE.match(url))
 
+
+# md5 of image files known to be site chrome, not production art. A re-hosted
+# local file carries no URL to judge, so the bytes are checked instead.
+#   485b4f17…: theatre.art.bg's own logo (176x42), stored 2026-10-08 as the
+#              "poster" of two Сфумато plays (insomniya, poema-za-hlebarkite).
+LOGO_MD5 = {"485b4f17ce0ecfeeb4c9487fb3c750ff"}
+# A poster smaller than this (either orientation) is a logo or an icon.
+MIN_POSTER_PX = (200, 150)
+
+
+def local_poster_problem(path, root=None):
+    """None when the re-hosted file at `path` ("posters/<id>.<ext>") is a usable
+    poster; else why not: missing, unreadable, too small, or a known logo."""
+    import hashlib
+    f = pathlib.Path(root or pathlib.Path(__file__).resolve().parent.parent) / path
+    if not f.is_file():
+        return "the file is missing"
+    data = f.read_bytes()
+    if hashlib.md5(data).hexdigest() in LOGO_MD5:
+        return "the file is a known site logo, not a poster"
+    try:
+        from PIL import Image
+        import io
+        w, h = Image.open(io.BytesIO(data)).size
+    except ImportError:
+        return None
+    except Exception as e:
+        return f"the file is not a readable image ({e.__class__.__name__})"
+    if max(w, h) < MIN_POSTER_PX[0] or min(w, h) < MIN_POSTER_PX[1]:
+        return f"the image is only {w}x{h} px — a logo or an icon, not a poster"
+    return None
+
 # Suffixes that mark "this event is a screening of a film we already list".
 MIRROR_SUFFIXES = ("-screening", "-prozhekciya", "-prem", "-premiere", "-gala",
                    "-retro-screening", "-show")

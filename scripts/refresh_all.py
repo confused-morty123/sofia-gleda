@@ -99,6 +99,9 @@ STEPS = [
     ("csp",             "csp.py",                    []),    # LAST edit of the pages: their CSP script hashes
 ]
 
+# Lines of each step's output kept in build_report.json (default 8).
+TAIL_LINES = {"theatre posters": 25}
+
 # Run after the steps above, and treated as a gate rather than best-effort.
 VERIFY = ("verify",  "verify_build.py", [])
 
@@ -149,7 +152,9 @@ def run(name, script, extra):
         out = scrub((proc.stdout or "") + (proc.stderr or ""))
         print(out, flush=True)
         ok = proc.returncode == 0
-        tail = "\n".join(out.strip().splitlines()[-8:])
+        # the theatre-posters step ends with its policy log, the coverage line and
+        # the missing list: keep enough of it to read them in build_report.json
+        tail = "\n".join(out.strip().splitlines()[-TAIL_LINES.get(name, 8):])
         return {"step": name, "script": script, "ok": ok, "code": proc.returncode,
                 "seconds": round(time.time() - start, 1), "tail": tail}
     except Exception as e:

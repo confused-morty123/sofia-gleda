@@ -3119,6 +3119,56 @@ check("mladezhki ivanovden: the first peakview BIG photo",
 check("mladezhki: an /img/upl/4/images/ poster still wins",
       (FTP.mlt_image(_mlt_html) or "").startswith("https://mlt.bg/img/upl/4/images/"), True)
 
+# ---- C7: re-validate what keep-previous holds; retry policy ----
+print("theatre posters: re-validation of kept entries and the retry schedule (C7)")
+import tempfile as _tf7, shutil as _sh7
+from PIL import Image as _Img7
+_r7 = pathlib.Path(_tf7.mkdtemp())
+try:
+    (_r7 / "posters").mkdir()
+    _Img7.new("RGB", (400, 600), (90, 20, 30)).save(_r7 / "posters/good.jpg")
+    _Img7.new("RGB", (176, 42), (255, 255, 255)).save(_r7 / "posters/tiny.png")
+    _prev7 = {"good": "posters/good.jpg", "tiny": "posters/tiny.png", "gone": "posters/gone.jpg",
+              "dead": "https://theatre.peakview.bg/theatre/photos/BIG1PLAKAT.jpg",
+              "alive": "https://theatre.peakview.bg/theatre/photos/BIG2PLAKAT.jpg"}
+    _seed7 = {"seeddead": "https://nationaltheatre.bg/storage/shows/abc.jpg",
+              "seedok": "https://nationaltheatre.bg/storage/shows/def.jpg"}
+    _st7 = {"seeddead": {"remote_fail": 2}}
+    _tried7 = []
+
+    def _try7(remote):
+        _tried7.append(sorted(remote))
+        return {"alive": "posters/alive.jpg"}, {"dead"}
+
+    _log7 = []
+    _p7, _s7, _d7 = FTP.revalidate(_prev7, _seed7, _st7, _try7, _log7, root=_r7)
+    check("revalidate: a missing file, a 176x42 image and a twice-failed remote URL are dropped",
+          sorted(_d7), ["dead", "gone", "seeddead", "tiny"])
+    check("revalidate: the good file stays, the remote that downloaded now is local",
+          sorted(_p7.items()), [("alive", "posters/alive.jpg"), ("good", "posters/good.jpg")])
+    check("revalidate: only remote previous entries are retried, once", _tried7, [["alive", "dead"]])
+    check("revalidate: the junk file is deleted (rehost cannot reuse it)", (_r7 / "posters/tiny.png").exists(), False)
+    check("revalidate: a SEED image that failed 2 runs with no local file no longer covers its show",
+          sorted(_s7), ["seedok"])
+    check("revalidate: the theatre.art.bg logo md5 is a known logo", bool(PP.LOGO_MD5), True)
+finally:
+    _sh7.rmtree(_r7, ignore_errors=True)
+_today7 = dt.date(2026, 10, 22)
+_st7 = {"new": {}, "old": {"first_missing": "2026-09-01", "last_try": "2026-10-20", "link": "u"},
+        "old-due": {"first_missing": "2026-09-01", "last_try": "2026-10-15", "link": "u"},
+        "old-moved": {"first_missing": "2026-09-01", "last_try": "2026-10-21", "link": "u"}}
+check("due_ids: daily for 21 days, then every 7th day, at once when the link changed",
+      sorted(FTP.due_ids({"new", "old", "old-due", "old-moved"}, _st7,
+                         {"old": "u", "old-due": "u", "old-moved": "v"}, _today7)),
+      ["new", "old-due", "old-moved"])
+check("due_ids: a first miss is dated today", _st7["new"].get("first_missing"), "2026-10-22")
+_ss7 = FTP.settle_state({"a": {"first_missing": "2026-10-01"}, "b": {"first_missing": "2026-10-01"},
+                         "c": {"first_missing": "2026-10-01"}},
+                        tried={"a", "b"}, missing={"a", "c"}, upcoming={"a", "b"},
+                        links={"a": "la"}, remote_failed=set(), today=_today7)
+check("settle_state: a found poster and a show off stage leave the state; a miss is counted",
+      _ss7, {"a": {"first_missing": "2026-10-01", "tries": 1, "last_try": "2026-10-22", "link": "la"}})
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",

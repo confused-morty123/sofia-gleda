@@ -33,7 +33,8 @@ import urllib.parse
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from netfetch import Fetcher                                   # noqa: E402
-from posterpolicy import Catalogue, filter_map, is_local_poster  # noqa: E402
+from posterpolicy import (Catalogue, filter_map, is_local_poster,  # noqa: E402
+                         local_poster_problem)
 
 # Hand-verified posters, pulled directly from each theatre's own site and checked
 # by eye. More reliable than either aggregator, so they win the merge — but they
@@ -501,7 +502,7 @@ def _store_poster(src, pid):
     return f"posters/{dest.name}"
 
 
-def rehost(merged, net, refresh=False):
+def rehost(merged, net, refresh=False, failed=None):
     """Download every remote poster once and serve it from webapp/posters/, so it
     loads same-origin over the app's own HTTPS. Cert-blocked (tba), mixed http://
     and hotlink-protected images all fail in-browser otherwise. The repo-relative
@@ -530,6 +531,8 @@ def rehost(merged, net, refresh=False):
             print(f"  ! could not re-encode {pid}: {e}", file=sys.stderr)
         finally:
             tmp.unlink(missing_ok=True)
+    if failed is not None:
+        failed.extend(kept_remote)
     local_n = sum(1 for v in out.values() if is_local_poster(v))
     print(f"re-hosted {local_n}/{len(out)} posters under {POSTERS_DIR.name}/")
     if kept_remote:
@@ -1115,7 +1118,133 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
     return found
 
 
-# -------------------------------------------------------------------- main
+# ------------------------------------------------- re-validation and retries
+STATE = ROOT / "theatre_posters_state.json"
+RETRY_DAILY_DAYS = 21       # a missing poster is retried every run this long …
+RETRY_EVERY_DAYS = 7        # … then every 7th day, while the show is in the window
+REMOTE_FAIL_DROP = 2        # a kept remote URL that failed this many runs is dropped
+
+
+def load_state(path=None):
+    try:
+        st = json.loads((path or STATE).read_text(encoding="utf-8"))
+        return st if isinstance(st, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def upcoming_ids(body, first, last):
+    """Show ids with a PERFORMANCES row dated first..last (ISO strings)."""
+    return {r[0] for r in (grab(body, "PERFORMANCES") or [])
+            if isinstance(r, list) and len(r) > 1 and first <= str(r[1]) <= last}
+
+
+def links_of(body):
+    out = {}
+    for row in (grab(body, "LINKS") or []):
+        if isinstance(row, (list, tuple)) and len(row) >= 2 and row[0]:
+            out.setdefault(row[0], row[1])
+    return out
+
+
+def revalidate(prev_ok, seed_ok, state, try_remote, log=None, root=None):
+    """Re-check what keep-previous holds. Returns (prev_ok, seed_ok, dropped ids).
+      * a local poster whose file is missing, too small or a known logo is dropped
+        (and a junk file is deleted, so rehost() cannot reuse it);
+      * a previous entry that is still a remote URL failed its download on the
+        previous run (rehost() would have made it local); try_remote({id: url})
+        tries once more and returns the ids that failed again: those reach
+        REMOTE_FAIL_DROP failures and are dropped, the rest become local;
+      * a SEED entry whose download has failed REMOTE_FAIL_DROP runs and has no
+        local file no longer covers its show.
+    Dropped ids go back into `want`, so they are resolved again this run."""
+    prev_ok, seed_ok, dropped = dict(prev_ok), dict(seed_ok), set()
+    root = pathlib.Path(root or ROOT)
+    for pid, v in list(prev_ok.items()):
+        if not is_local_poster(v):
+            continue
+        why = local_poster_problem(v, root)
+        if why:
+            del prev_ok[pid]
+            dropped.add(pid)
+            if log is not None:
+                log.append(f"  dropped {pid!r} from the previous file: {v} — {why}")
+            f = root / v
+            if f.is_file() and "missing" not in why:
+                f.unlink()
+    remote = {k: v for k, v in prev_ok.items() if not is_local_poster(v)}
+    if remote:
+        now_local, failed = try_remote(remote)
+        for pid in remote:
+            st = state.setdefault(pid, {})
+            if pid in failed:
+                st["remote_fail"] = max(int(st.get("remote_fail") or 0), 1) + 1
+                if st["remote_fail"] >= REMOTE_FAIL_DROP:
+                    del prev_ok[pid]
+                    dropped.add(pid)
+                    if log is not None:
+                        log.append(f"  dropped {pid!r} from the previous file: its remote image "
+                                   f"failed to download {st['remote_fail']} runs in a row")
+            else:
+                st.pop("remote_fail", None)
+                prev_ok[pid] = now_local.get(pid, prev_ok[pid])
+    for pid in list(seed_ok):
+        st = state.get(pid) or {}
+        if (int(st.get("remote_fail") or 0) >= REMOTE_FAIL_DROP
+                and not sorted((root / "posters").glob(f"{pid}.*"))):
+            del seed_ok[pid]
+            dropped.add(pid)
+            if log is not None:
+                log.append(f"  dropped {pid!r} from SEED: its image failed to download "
+                           f"{st['remote_fail']} runs in a row")
+    return prev_ok, seed_ok, dropped
+
+
+def due_ids(want, state, links, today):
+    """The part of `want` to try this run. A missing poster is tried every run for
+    RETRY_DAILY_DAYS days after it was first missed, then every RETRY_EVERY_DAYS
+    days; a show whose LINKS URL changed is tried at once. Nothing is given up for
+    good: the show is tried until it leaves the window."""
+    due = set()
+    for sid in want:
+        st = state.setdefault(sid, {})
+        st.setdefault("first_missing", today.isoformat())
+        try:
+            age = (today - dt.date.fromisoformat(st["first_missing"])).days
+            since = (today - dt.date.fromisoformat(st["last_try"])).days if st.get("last_try") else None
+        except ValueError:
+            age, since = 0, None
+        if (age <= RETRY_DAILY_DAYS or since is None or since >= RETRY_EVERY_DAYS
+                or st.get("link") != links.get(sid)):
+            due.add(sid)
+    return due
+
+
+def settle_state(state, tried, missing, upcoming, links, remote_failed, today):
+    """The state after this run: try counters for the shows tried, the failure
+    count for remote images rehost() could not fetch, and no entry for a show that
+    now has a poster or has left the window."""
+    for sid in tried:
+        st = state.setdefault(sid, {})
+        st["tries"] = int(st.get("tries") or 0) + 1
+        st["last_try"] = today.isoformat()
+        st["link"] = links.get(sid)
+    for sid in remote_failed:
+        st = state.setdefault(sid, {})
+        st["remote_fail"] = int(st.get("remote_fail") or 0) + 1
+    out = {}
+    for sid, st in state.items():
+        st = dict(st)
+        if sid not in missing or sid not in upcoming:
+            for k in ("first_missing", "tries", "last_try", "link"):
+                st.pop(k, None)
+        if sid not in remote_failed and sid not in missing:
+            st.pop("remote_fail", None)
+        if st:
+            out[sid] = st
+    return dict(sorted(out.items()))
+
+
 def wanted_ids(shows, previous, seed, catalogue=None, perf_ids=None, log=None):
     """(want, prev_ok, seed_ok). prev_ok / seed_ok are the previous file and SEED
     filtered by posterpolicy; `want` is every show (or, given perf_ids, every show
@@ -1133,7 +1262,7 @@ def wanted_ids(shows, previous, seed, catalogue=None, perf_ids=None, log=None):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--source", choices=["all", "programata", "artbg", "links", "own"],
+    ap.add_argument("--source", choices=["all", "programata", "artbg", "links", "own", "none"],
                     default="all")
     ap.add_argument("--only", help="comma-separated show ids, for debugging one match")
     ap.add_argument("--refresh", action="store_true",
@@ -1169,23 +1298,50 @@ def main():
         catalogue = Catalogue.from_html(HTML)
     except Exception as e:
         print(f"  (catalogue unreadable, provenance checks only: {e})")
+    import listing_window
+    first, last = (dt.date.fromisoformat(d) for d in listing_window.listing_window())
+    today = first
+    upcoming = upcoming_ids(body, first.isoformat(), last.isoformat())
+    links = links_of(body)
+    state = load_state()
+    # GET only, at least 2 s between two requests to one host
+    net = Fetcher(verbose=True, budget_seconds=args.budget, host_delay=2.0)
+
     policy_log = []
-    want, prev_ok, seed_ok = wanted_ids(shows, previous, SEED, catalogue, log=policy_log)
+    # Only shows on stage in the listing window are looked for: a show with no
+    # performance there is not shown, so a request for it is wasted.
+    want, prev_ok, seed_ok = wanted_ids(shows, previous, SEED, catalogue,
+                                        perf_ids=upcoming, log=policy_log)
+    remote_failed = []
+
+    def try_remote(remote):
+        if args.dry_run:
+            return {}, set()
+        failed = []
+        return rehost(remote, net, failed=failed), set(failed)
+
+    prev_ok, seed_ok, dropped = revalidate(prev_ok, seed_ok, state, try_remote, policy_log)
+    want |= dropped & upcoming
     if args.only:
         only = {x.strip() for x in args.only.split(",") if x.strip()}
         want = only if args.refresh else only - set(prev_ok) - set(seed_ok)
     elif args.refresh:
         want = {s["id"] for s in shows}
+    else:
+        missing_n = len(want)
+        want = due_ids(want, state, links, today)
+        if missing_n > len(want):
+            print(f"  {missing_n - len(want)} missing poster(s) not due for a retry today "
+                  f"(after {RETRY_DAILY_DAYS} days: every {RETRY_EVERY_DAYS}th day)")
 
-    print(f"{len(shows)} shows in the catalogue, {len(previous)} already have art, "
-          f"{len(want)} to resolve")
-    if not want:
-        print("nothing to do")
-        return 0
+    print(f"{len(shows)} shows in the catalogue, {len(upcoming)} on stage in the window, "
+          f"{len(prev_ok)} already have art, {len(want)} to resolve")
 
-    net = Fetcher(verbose=True, budget_seconds=args.budget)
     matcher = Matcher(shows)
     found = {}
+    if not want:
+        print("nothing to resolve")
+        args.source = "none"
 
     # Own-pages first: each theatre's own show page is the most authoritative source.
     if args.source in ("all", "own"):
@@ -1200,10 +1356,7 @@ def main():
     remaining = want - set(found)
     if remaining and args.source in ("all", "artbg"):
         print(f"\n--- theatre.art.bg ({len(remaining)} still missing) ---")
-        # today in Sofia, the listing window's first day (listing_window.py)
-        # every day of the listing window (today .. its last day), unless --days
-        import listing_window
-        first, last = (dt.date.fromisoformat(d) for d in listing_window.listing_window())
+        # every day of the listing window (today in Sofia .. its last day), unless --days
         n = args.days or (last - first).days + 1
         days = [first + dt.timedelta(days=i) for i in range(n)]
         found.update(from_artbg(net, art_resolver(shows), remaining, days, args.verbose))
@@ -1233,10 +1386,15 @@ def main():
     if args.dry_run:
         print("dry run — theatre_posters.json not written")
         return 0
-    merged = rehost(merged, net, refresh=args.refresh)
+    merged = rehost(merged, net, refresh=args.refresh, failed=remote_failed)
     json.dump(merged, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1,
               sort_keys=True)
     print(f"wrote {OUT.name}")
+    missing = {sid for sid in upcoming if not is_local_poster(merged.get(sid))}
+    state = settle_state(state, want, missing, upcoming, links, set(remote_failed), today)
+    STATE.write_text(json.dumps(state, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
+                     encoding="utf-8")
+    print(f"wrote {STATE.name} ({len(state)} entries)")
     return 0
 
 
