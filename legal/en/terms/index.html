@@ -106,7 +106,8 @@ li{margin:6px 0}
   padding-block:20px calc(36px + env(safe-area-inset-bottom,0px))}
 .lg-foot-nav{display:flex; flex-wrap:wrap; gap:4px 18px}
 .lg-foot-nav a{display:inline-flex; align-items:center; min-height:36px; color:var(--fg-2)}
-.lg-foot p{margin:10px 0 0; max-width:62ch}
+/* the line and the links span the footer's column and reflow with it (owner, 22 Oct 2026) */
+.lg-foot p{margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -122,7 +123,7 @@ li{margin:6px 0}
 <a href="../cookies/">Cookies</a>
 </nav>
 <h1>Terms of use</h1>
-<p class="lg-updated">Last updated: <time datetime="2026-10-15">15 October 2026</time></p>
+<p class="lg-updated">Last updated: <time datetime="2026-10-22">22 October 2026</time></p>
 <p class="lg-lead">These terms govern the use of the Sofia Gleda website. By using the site, you accept them. If you do not agree with them, please do not use the site.</p>
 <section class="lg-key" aria-labelledby="in-short">
 <h2 id="in-short">In short</h2>
@@ -137,7 +138,7 @@ li{margin:6px 0}
 </section>
 
 <h2 id="who">1. Who runs the site</h2>
-<p>Sofia Gleda is run by a private individual, on a non-commercial basis. The site is free, carries no ads and takes no payments. In these terms, “we” means the person who runs the site. The site gives no name or email address; how to reach us is in section 14.</p>
+<p>Sofia Gleda is run by a private individual, on a non-commercial basis. The site is free, carries no ads and takes no payments. In these terms, “we” means the person who runs the site. The site gives no name, email address or other means of contact (see section 14).</p>
 
 <h2 id="what">2. What the site offers</h2>
 <p>Sofia Gleda shows what is on at Sofia's cinemas and theatres: titles, dates, times, halls, prices (where known), descriptions, posters and ratings. We do not sell tickets, take bookings or organise screenings or performances. No registration is needed.</p>
@@ -168,7 +169,7 @@ li{margin:6px 0}
 <div class="lg-attr"><img class="lg-tmdb" src="../../../icons/tmdb.svg" alt="TMDB" height="20"><p>Film data and images: TMDB (The Movie Database). This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</p></div>
 <p>IMDb and Rotten Tomatoes ratings: via the OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), whose content is licensed under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. IMDb and Rotten Tomatoes are trademarks of their owners.</p>
 <p>Machine translation into English: DeepL (<a href="https://www.deepl.com/">deepl.com</a>).</p>
-<p>Posters, photos and descriptions remain the property of their authors and rights holders. We show them only to present the listings. If you hold rights in material shown here and do not want it shown, tell us at <a href="https://github.com/confused-morty123/sofia-gleda/issues">github.com/confused-morty123/sofia-gleda/issues</a> and we will remove it without undue delay.</p>
+<p>Posters, photos and descriptions remain the property of their authors and rights holders. We show them only to present the listings.</p>
 
 <h2 id="data">10. Personal data and cookies</h2>
 <p>How personal data is handled and what is kept in your browser is described in the <a href="../privacy/">Privacy policy</a> and the <a href="../cookies/">Cookie policy</a>.</p>
@@ -182,15 +183,13 @@ li{margin:6px 0}
 <h2 id="law">13. Governing law and disputes</h2>
 <p>These terms are governed by Bulgarian law. Disputes are settled by the competent Bulgarian court. This does not affect the rights that mandatory rules of your country of residence give you, including the right to go to court there where the law allows it.</p>
 
-<h2 id="contact">14. Contact</h2>
-<p>Questions, reports of mistakes in the listings and removal requests can be left on the project's public GitHub page: <a href="https://github.com/confused-morty123/sofia-gleda/issues">github.com/confused-morty123/sofia-gleda/issues</a>. You need a GitHub account to post there.</p>
-<p class="lg-warn">Everything you write there is public. Do not post personal data: no email address, phone number, home address or other details about yourself or anyone else.</p>
+<h2 id="contact">14. No contact channel</h2>
+<p>Sofia Gleda has no contact channel: the site gives no email address, phone number, postal address or page for messages, and takes no questions, reports or requests. For dates, times, prices and tickets, contact the cinema, theatre or organiser (section 5). How to exercise your rights over personal data is described in the <a href="../privacy/">Privacy policy</a>.</p>
 </main>
 <footer class="lg-foot"><div class="lg-wrap">
 <nav class="lg-foot-nav" aria-label="Links">
 <a href="../../../">Back to the listings</a>
 <a href="../../../#cookies">Cookie settings</a>
-<a href="https://github.com/confused-morty123/sofia-gleda/issues">The project on GitHub</a>
 </nav>
 <p>Sofia Gleda is an aggregator and is not affiliated with the cinemas and theatres whose programmes it shows.</p>
 </div></footer>
