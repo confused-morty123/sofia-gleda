@@ -723,6 +723,10 @@ LARGE750_RE  = re.compile(
     r'["\']', re.I)
 MLT_IMG_RE   = re.compile(r'<img[^>]+src=["\']'
                           r'(/img/upl/4/images/[^"\']+\.(?:jpe?g|png|webp))["\']', re.I)
+# mlt.bg's newer show pages carry only a peakview gallery (ivanovden, 2026-10-22):
+# the first BIG photo stands in when no /img/upl/4/images/ poster is on the page.
+MLT_PEAKVIEW_RE = re.compile(
+    r'(?:https?:)?//theatre\.peakview\.bg/(?:theatre/)?img/photos/BIG[^"\'\s<>)]+?\.(?:jpe?g|png)', re.I)
 TBA_BIG_RE   = re.compile(r'<img[^>]+src=["\']'
                           r'((?:https?://(?:www\.)?tba\.art\.bg)?'
                           r'/?img/photos/BIG[^"\']+\.(?:jpe?g|png|webp))["\']', re.I)
@@ -909,6 +913,20 @@ def _satira_slugmap(net):
     return slug_map
 
 
+def mlt_image(html):
+    """mlt.bg show page: its /img/upl/4/images/ poster, else the first peakview
+    BIG gallery photo. mlt.bg sits behind a Cloudflare challenge from CI, so this
+    only helps a local run; art.bg (C2) reaches the same photo from CI."""
+    m = MLT_IMG_RE.search(html or "")
+    if m:
+        return "https://mlt.bg" + m.group(1)
+    m = MLT_PEAKVIEW_RE.search(html or "")
+    if m:
+        u = m.group(0)
+        return "https:" + u if u.startswith("//") else u.replace("http://", "https://", 1)
+    return None
+
+
 def _title_of(matcher, sid):
     for s in matcher.shows:
         if s["id"] == sid:
@@ -1019,10 +1037,7 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
         elif url and "mlt.bg" in url:
             resp = net.get(url, attempts=2)
             if resp is not None:
-                html = resp.content.decode("windows-1251", errors="replace")
-                m = MLT_IMG_RE.search(html)
-                if m:
-                    img = "https://mlt.bg" + m.group(1)
+                img = mlt_image(resp.content.decode("windows-1251", errors="replace"))
 
         # ---------- kuklen (sofiapuppet.com) ----------
         elif url and "sofiapuppet.com" in url:

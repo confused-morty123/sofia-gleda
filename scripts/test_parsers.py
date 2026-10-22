@@ -3110,6 +3110,15 @@ check("…its size variant folded into the original file", _vz_img,
 check("vazrazhdane: with no named file, the generic premiere banner is not taken",
       FTP.vazr_image(_vz, "Друга пиеса"), None)
 
+# ---- C6: Младежки — peakview gallery fallback on mlt.bg's own page ----
+print("mladezhki: first peakview BIG photo when the page has no /img/upl/ poster (C6)")
+_mlt_iv = (FIXTURES / "theatre_mladezhki_show_ivanovden.html").read_bytes().decode("windows-1251", errors="replace")
+check("mladezhki ivanovden: the first peakview BIG photo",
+      FTP.mlt_image(_mlt_iv),
+      "https://theatre.peakview.bg/img/photos/BIG1792145396120260416-A9304463_optimized_1000.jpg")
+check("mladezhki: an /img/upl/4/images/ poster still wins",
+      (FTP.mlt_image(_mlt_html) or "").startswith("https://mlt.bg/img/upl/4/images/"), True)
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",
