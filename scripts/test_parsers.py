@@ -3004,6 +3004,50 @@ if _nd_m:
     except (KeyError, ValueError) as _e:
         check(f"satira __NEXT_DATA__ parse: {_e}", True, True)
 
+# ---- C2: theatre.art.bg day pages (h3 rows) and production pages ----
+print("theatre.art.bg poster source: day-page rows and production og:image (C2)")
+_art_d1208 = FTP._art_decode((FIXTURES / "theatre_artbg_day_2026-12-08.html").read_bytes())
+_rows1208 = FTP.parse_art_day(_art_d1208)
+check("art.bg 12-08: 4 listing rows", len(_rows1208), 4)
+check("art.bg 12-08: the ИВАНОВДЕН row (title, prod, theatre, city)",
+      ("ИВАНОВДЕН – ГОСТУВА ДТ „РАЧО СТОЯНОВ‛, ГАБРОВО", "8089", "4", "20") in _rows1208, True)
+_art_shows = [{"id": "ivanovden", "title": "Ивановден", "theatre": "mladezhki"},
+              {"id": "vik-ot-istoriyata-ekaterina-karavelova",
+               "title": "Вик от историята. Екатерина Каравелова", "theatre": "tba"},
+              {"id": "ivanovden-other", "title": "Ивановден", "theatre": "national"}]
+_art_resolve = FTP.art_resolver(_art_shows)
+check("art.bg: the guest row resolves to the mladezhki show (art.bg theatre 4)",
+      _art_resolve("ИВАНОВДЕН – ГОСТУВА ДТ „РАЧО СТОЯНОВ‛, ГАБРОВО", "4"), "ivanovden")
+check("art.bg: the same title at an unmapped theatre id matches nothing",
+      _art_resolve("ИВАНОВДЕН", "999"), None)
+_rows1125 = FTP.parse_art_day(FTP._art_decode((FIXTURES / "theatre_artbg_day_2026-11-25.html").read_bytes()))
+check("art.bg 11-25: 9 listing rows", len(_rows1125), 9)
+check("art.bg 11-25: the ВИК ОТ ИСТОРИЯТА row is prod 8076 at theatre 6",
+      [(r[1], r[2]) for r in _rows1125 if "ВИК ОТ ИСТОРИЯТА" in r[0]], [("8076", "6")])
+check("art.bg 11-25: no row label is a price", any(r[0].lower().startswith("цени") for r in _rows1125), False)
+check("art.bg 11-25: the ВИК row resolves to the tba show",
+      _art_resolve([r[0] for r in _rows1125 if "ВИК ОТ ИСТОРИЯТА" in r[0]][0], "6"),
+      "vik-ot-istoriyata-ekaterina-karavelova")
+import re as _re_c2
+_old_day = FTP._art_decode((FIXTURES / "theatre_artbg_day.html").read_bytes())
+# the old harvester: the label of each kupi-bilet anchor was the title; now it is the price
+_old_label_rows = [m for m in _re_c2.finditer(
+    r'<a[^>]+href=["\']([^"\']*kupi-bilet\.php[^"\']*)["\'][^>]*>(.*?)</a>', _old_day, _re_c2.S | _re_c2.I)
+    if not _re_c2.sub(r"<[^>]+>", " ", m.group(2)).strip().lower().startswith("цени")]
+check("art.bg (repo fixture 10-11): parse_art_day finds rows", len(FTP.parse_art_day(_old_day)) > 0, True)
+check("art.bg (repo fixture 10-11): the old kupi-bilet label match found no title (regression guard)",
+      len(_old_label_rows), 0)
+_p8089 = FTP._art_decode((FIXTURES / "theatre_artbg_prod_8089.html").read_bytes())
+_og8089 = FTP._og_image(_p8089)
+check("art.bg prod 8089: og:image is the peakview BIG photo", _og8089,
+      "https://theatre.peakview.bg/theatre/photos/BIG1792145396120260416-A9304463_optimized_1000.jpg")
+check("art.bg prod 8089: the policy accepts it", PP.reject_reason("ivanovden", _og8089, cat), None)
+_og8076 = FTP._og_image(FTP._art_decode((FIXTURES / "theatre_artbg_prod_8076_logo.html").read_bytes()))
+check("art.bg prod 8076: og:image is the site logo", _og8076, "https://theatre.art.bg/img/logo.png")
+check("art.bg prod 8076: the logo is refused (no poster stored)",
+      (bool(FTP.ART_LOGO_RE.search(_og8076 or "")),
+       PP.reject_reason("vik-ot-istoriyata-ekaterina-karavelova", _og8076, cat) is not None), (True, True))
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",

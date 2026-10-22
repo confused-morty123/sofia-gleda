@@ -552,33 +552,89 @@ OG_RE2 = re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og
 TOPLO_ATT_RE = re.compile(r'(attachments/Event/\d+/main/[^"\'\s)]+?\.(?:jpe?g|png|webp))', re.I)
 
 
-def harvest_ids(net, days, matcher, wanted, verbose=False):
+# A listing row on a theatre.art.bg day page (markup since at least 2026-10-11):
+#   <h3><a href="/<slug>_<prod>_<theatre>_<city>" title="TITLE">TITLE</a></h3>
+# The kupi-bilet anchor's label is now the PRICE ("цени: от 8.00 до 11.00 €"), so
+# the old label match found nothing and this source produced no poster at all.
+ART_ROW_RE = re.compile(r'<h3>\s*<a\s+href="(/[^"]*?_(\d+)_(\d+)_(\d+))"([^>]*)>(.*?)</a>\s*</h3>',
+                        re.S | re.I)
+ART_TITLE_ATTR_RE = re.compile(r'\btitle="([^"]*)"', re.I)
+
+
+def parse_art_day(page):
+    """[(title, prod, theatre, city)] for every listing row of a theatre.art.bg day
+    page (text, already decoded). The title is the anchor's title attribute, or
+    its text, HTML-unescaped."""
+    import html as _html
+    rows = []
+    for m in ART_ROW_RE.finditer(page or ""):
+        t = ART_TITLE_ATTR_RE.search(m.group(5))
+        title = t.group(1) if t else re.sub(r"<[^>]+>", " ", m.group(6))
+        title = re.sub(r"\s+", " ", _html.unescape(title)).strip()
+        if title:
+            rows.append((title, m.group(2), m.group(3), m.group(4)))
+    return rows
+
+
+def _art_decode(content):
+    """theatre.art.bg serves windows-1251; official_theatres.decode tries UTF-8 first."""
+    try:
+        import official_theatres as O
+        return O.decode(content)
+    except ImportError:
+        return content.decode("windows-1251", "replace")
+
+
+def art_resolver(shows):
+    """resolve(title, art theatre id) -> show id or None. Matching stays INSIDE the
+    theatre the listing names: the art.bg theatre id maps to an app venue
+    (scrape_programs.THEATRE_ART_IDS) and show_identity resolves the title there
+    (it strips "– гостува …", quotes and case). An unmapped theatre id matches
+    nothing; a failed resolution falls back to the title Matcher only for a unique
+    hit at that same venue."""
+    from scrape_programs import THEATRE_ART_IDS
+    import show_identity as SI
+    index = SI.ShowIndex(shows)
+    matcher = Matcher(shows)
+    theatre_of = {s["id"]: s.get("theatre") for s in shows}
+
+    def resolve(title, art_theatre):
+        venue = THEATRE_ART_IDS.get(str(art_theatre))
+        if not venue:
+            return None
+        sid, _rule = index.resolve(title, venue)
+        if sid:
+            return sid
+        hit = matcher.find(title)
+        return hit if hit and theatre_of.get(hit) == venue else None
+    return resolve
+
+
+def harvest_ids(net, days, resolve, wanted, verbose=False):
     """(showId -> (productionId, theatreId, cityId)) from the day pages."""
     ids = {}
     for day in days:
         if not wanted - set(ids) or net.budget_spent():
             break
-        html = net.text(ART_DAY.format(date=day.isoformat()))
-        if not html:
+        resp = net.get(ART_DAY.format(date=day.isoformat()))
+        if resp is None:
             continue
-        # each listing row: <a href="…kupi-bilet.php?…id=X&theatre=Y…">TITLE</a>
-        for m in re.finditer(r'<a[^>]+href=["\']([^"\']*kupi-bilet\.php[^"\']*)["\'][^>]*>(.*?)</a>',
-                             html, re.S | re.I):
-            href, label = m.group(1), re.sub(r"<[^>]+>", " ", m.group(2))
-            got = ID_RE.search(href)
-            if not got:
-                continue
-            sid = matcher.find(label)
+        for title, prod, theatre, city in parse_art_day(_art_decode(resp.content)):
+            sid = resolve(title, theatre)
             if sid and sid in wanted and sid not in ids:
-                ids[sid] = (got.group(1), got.group(2), got.group(3) or "20")
+                ids[sid] = (prod, theatre, city or "20")
                 if verbose:
-                    print(f"  [art.bg] {sid:24s} id={got.group(1)} theatre={got.group(2)}")
+                    print(f"  [art.bg] {sid:24s} id={prod} theatre={theatre}")
     return ids
 
 
-def from_artbg(net, matcher, wanted, days, verbose=False):
+# theatre.art.bg's own default image: a production without a poster of its own
+ART_LOGO_RE = re.compile(r"/img/logo\.png$", re.I)
+
+
+def from_artbg(net, resolve, wanted, days, verbose=False):
     found = {}
-    ids = harvest_ids(net, days, matcher, wanted, verbose)
+    ids = harvest_ids(net, days, resolve, wanted, verbose)
     for sid, (prod, theatre, city) in ids.items():
         if net.budget_spent():
             print("  time budget reached — stopping", file=sys.stderr)
@@ -593,6 +649,9 @@ def from_artbg(net, matcher, wanted, days, verbose=False):
         url = m.group(1).strip()
         if url.startswith("//"):
             url = "https:" + url
+        if ART_LOGO_RE.search(url):
+            print(f"  [art.bg]     {sid:24s} art.bg has no poster for this production (site logo)")
+            continue
         if url.startswith("http") and re.search(r"\.(jpe?g|png|webp)$", url, re.I):
             found[sid] = url
             print(f"  [art.bg]     {sid:24s} {url.rsplit('/', 1)[-1][:50]}")
@@ -975,8 +1034,9 @@ def main():
     ap.add_argument("--only", help="comma-separated show ids, for debugging one match")
     ap.add_argument("--refresh", action="store_true",
                     help="re-resolve shows that already have a poster")
-    ap.add_argument("--days", type=int, default=45,
-                    help="how many days of theatre.art.bg listings to walk (default 45)")
+    ap.add_argument("--days", type=int, default=0,
+                    help="how many days of theatre.art.bg listings to walk "
+                         "(default: the whole listing window)")
     ap.add_argument("--dry-run", action="store_true", help="do not write the file")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--budget", type=int, default=900,
@@ -1027,10 +1087,12 @@ def main():
     if remaining and args.source in ("all", "artbg"):
         print(f"\n--- theatre.art.bg ({len(remaining)} still missing) ---")
         # today in Sofia, the listing window's first day (listing_window.py)
+        # every day of the listing window (today .. its last day), unless --days
         import listing_window
-        start = dt.date.fromisoformat(listing_window.listing_window()[0])
-        days = [start + dt.timedelta(days=i) for i in range(args.days)]
-        found.update(from_artbg(net, matcher, remaining, days, args.verbose))
+        first, last = (dt.date.fromisoformat(d) for d in listing_window.listing_window())
+        n = args.days or (last - first).days + 1
+        days = [first + dt.timedelta(days=i) for i in range(n)]
+        found.update(from_artbg(net, art_resolver(shows), remaining, days, args.verbose))
 
     remaining = want - set(found)
     if remaining and args.source in ("all", "links"):
