@@ -1288,6 +1288,13 @@ try:
     ]
     _sp_bad: list[str] = []
     _sp_count = 0
+    _idr_m = re.search(r"^const ID_REDIRECT\s*=\s*(.*?);\s*$", js, flags=re.M)
+    try:
+        _id_redirect = json.loads(_idr_m.group(1)) if _idr_m else {}
+    except ValueError:
+        _id_redirect = {}
+    if not isinstance(_id_redirect, dict):
+        _id_redirect = {}
 
     def _check_share_page_file(kind, item_id):
         global _sp_count
@@ -1298,7 +1305,10 @@ try:
         _sp_count += 1
         _page_src = _page_path.read_text(encoding="utf-8")
         _where = f"share page {kind}/{item_id}"
-        _expected_url = f"{_SITE_URL}/{kind}/{item_id}/"
+        # a renamed show id's old directory is the share page of the new record
+        # (ID_REDIRECT, gen_share_pages.write_redirects): its canonical is the new id
+        _target = _id_redirect.get(item_id, item_id) if kind == "show" else item_id
+        _expected_url = f"{_SITE_URL}/{kind}/{_target}/"
         if (f'rel="canonical" href="{_expected_url}"' not in _page_src
                 or f'property="og:url" content="{_expected_url}"' not in _page_src):
             _sp_bad.append(f"{_where}: og:url/canonical not {_expected_url!r}")
