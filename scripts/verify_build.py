@@ -937,6 +937,59 @@ for _map_name in ("SYN_EN", "TITLE_EN"):
         fail(f"{_map_name} contains Cyrillic (untranslated) values: "
              + ", ".join(_cyrillic_vals[:6]))
 
+# ------------------------------------------- 5a. ids are ASCII slugs; local poster paths load
+# Every id is a lower-case ASCII slug. A look-alike Cyrillic letter in an id
+# ("skaperniкat", 2026-10-22) passed every Python check (\w is Unicode there) while
+# the browser's safeImg (ASCII \w, no `u` flag) refused its poster path, so the
+# play silently showed generated art. Every local poster path must also pass the
+# JS rule itself and exist on disk.
+ID_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+# The browser's rule for a plain path in safeImg() (src/sofia-screen.artifact.html):
+# JS_SAFEIMG_PATH is the exact source text there (a test checks they are equal);
+# without the `u` flag JS \w is ASCII, so Python must compile it with re.ASCII.
+JS_SAFEIMG_PATH = r"^[\w\/.%-]+$"
+SAFEIMG_PATH_RE = re.compile(JS_SAFEIMG_PATH, re.ASCII)
+
+
+def _const_any(name):
+    m = re.search(r"^const %s\s*=\s*(.*?);\s*$" % name, js, flags=re.M)
+    try:
+        return json.loads(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+_id_bad = []
+for _n in ("FILMS", "SHOWS", "EVENTS", "CINEMAS", "THEATRES"):
+    for _r in (data.get(_n) or []):
+        _i = _r.get("id") if isinstance(_r, dict) else None
+        if not (isinstance(_i, str) and ID_SLUG_RE.match(_i)):
+            _id_bad.append(f"{_n} id {_i!r}")
+_maps = {}
+for _n in ("SHOWART", "POSTERS", "TMDBART", "EVENTART"):
+    _maps[_n] = _const_any(_n)
+    _bad_keys = [k for k in (_maps[_n] or {}) if not ID_SLUG_RE.match(k)]
+    _id_bad += [f"{_n} key {k!r}" for k in _bad_keys]
+for _n in ("LINKS", "PERFORMANCES"):
+    _rows = data.get(_n) if _n in data else _const_any(_n)
+    _bad_keys = sorted({r[0] for r in (_rows or []) if isinstance(r, list) and r
+                        and not (isinstance(r[0], str) and ID_SLUG_RE.match(r[0]))}, key=str)
+    _id_bad += [f"{_n} row id {k!r}" for k in _bad_keys]
+if _id_bad:
+    fail(f"5a ids: {len(_id_bad)} id(s) are not lower-case ASCII slugs (the browser refuses "
+         "their poster paths): " + "; ".join(_id_bad[:6]))
+_path_bad = []
+for _n in ("SHOWART", "POSTERS", "EVENTART"):
+    for _k, _v in (_maps.get(_n) or {}).items():
+        if not isinstance(_v, str) or re.match(r"^(?:https?:|data:)", _v, re.I):
+            continue
+        if not SAFEIMG_PATH_RE.match(_v) or _v.startswith("//"):
+            _path_bad.append(f"{_n}[{_k!r}] = {_v[:40]!r} fails the browser's safeImg rule")
+        elif not (_FILE_ROOT / _v).is_file():
+            _path_bad.append(f"{_n}[{_k!r}] = {_v[:40]!r} is not on disk")
+if _path_bad:
+    fail(f"5a poster paths: {len(_path_bad)} problem(s): " + "; ".join(_path_bad[:6]))
+
 # ------------------------------------------- 5b. posters point at real artwork
 try:
     sys.path.insert(0, str(ROOT / "scripts"))

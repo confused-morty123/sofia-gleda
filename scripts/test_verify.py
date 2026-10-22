@@ -1193,6 +1193,27 @@ except _csp.CSPError:
 
 
 # ---------------------------------------------------------------------------
+# 5a: ids are lower-case ASCII slugs; local poster paths pass the browser's rule
+# ---------------------------------------------------------------------------
+print("5a: ASCII ids and loadable poster paths")
+_base5a = _minimal_html()
+_rc, _out = _run_out(_base5a.replace('"id": "show3"', '"id": "showк3"', 1)
+                     .replace('["show3",', '["showк3",'))
+check("a non-ASCII SHOWS id fails 5a ids", _rc != 0 and "5a ids" in _out)
+_rc, _out = _run_out(_base5a.replace("const SHOWART={};", 'const SHOWART={"show1":"posters/show1 x.jpg"};'))
+check("a SHOWART path the JS safeImg rule refuses fails 5a", _rc != 0 and "safeImg" in _out)
+_rc, _out = _run_out(_base5a.replace("const SHOWART={};", 'const SHOWART={"show1":"posters/no-such-file-5a.jpg"};'))
+check("a SHOWART path that is not on disk fails 5a", _rc != 0 and "not on disk" in _out)
+# The gate's copy of the browser rule is the browser's rule, character for character.
+import re as _re5a
+_art = (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")
+_m5a = _re5a.search(r"const safeImg=.*?return /(\^\[[^\n]*?\]\+\$)/\.test\(s\)", _art, _re5a.S)
+_vb = (ROOT / "scripts" / "verify_build.py").read_text(encoding="utf-8")
+_m5b = _re5a.search(r'^JS_SAFEIMG_PATH = r"(.*)"$', _vb, _re5a.M)
+check("verify_build's JS_SAFEIMG_PATH equals the regex in safeImg()",
+      bool(_m5a and _m5b) and _m5a.group(1) == _m5b.group(1))
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()

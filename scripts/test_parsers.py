@@ -3043,6 +3043,12 @@ check("normal production image still accepted",
                        "https://theatre199.org/data/kimo_images/DSC04799.jpg", cat),
       None)
 
+# ---- C1: a local poster path is ASCII, as the browser's safeImg requires ----
+print("posterpolicy: local poster paths are ASCII only (C1)")
+check("a Cyrillic letter in a local poster path is not a local poster",
+      PP.is_local_poster("posters/skaperniкat.jpg"), False)
+check("the ASCII path is", PP.is_local_poster("posters/skapernikat.jpg"), True)
+
 
 # ============================================ P2E: show-attribute label extraction
 # Tests for per-screening language/format label extraction from Cinema City, Кино Арена

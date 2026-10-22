@@ -208,7 +208,7 @@ SEED = {
     "rozenkranc": "https://nationaltheatre.bg/storage/shows/2743f1aef51ccbe2343ab091a8a64446b58.jpg",
     "sazvezdiya": "https://nationaltheatre.bg/storage/shows/25283225c5692fd71d7bbd6af9fcc8521d4.jpg",
     "sequence": "https://toplocentrala.bg/attachments/Event/1161/main/772685810-1654273536698663-7681475029018765099-n_thumb-detail.jpg",
-    "skaperniкat": "https://nationaltheatre.bg/storage/shows/312798660a7f1f102cf325cafdc338e6995.jpg",
+    "skapernikat": "https://nationaltheatre.bg/storage/shows/312798660a7f1f102cf325cafdc338e6995.jpg",
     "slon-v-stayata": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_609/slon-1024x1024.jpg?f=48624",
     "sluchayat-dzhem": "https://zadkanala.bg/sites/default/files/styles/large750x/public/DSC09007_0_0.jpg?itok=PdIUm8t7",
     "sneakpeak": "https://toplocentrala.bg/attachments/Event/1165/main/viber-image-2026-09-01-14-25-35-586_thumb-detail.jpg",

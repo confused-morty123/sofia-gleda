@@ -27,6 +27,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
 THEATRE_SHOWS = ROOT / "theatre_shows.json"
 
+# A show id is a lower-case ASCII slug (scrape_programs.SLUG_RE, verify_build 5a).
+SLUG_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
+
 # Fields the SHOWS catalogue entries carry; a minted record is normalised to this
 # shape so a thin entry never trips a renderer that reads a field unguarded.
 SHOW_FIELDS = ("id", "title", "titleEn", "theatre", "author", "director", "cast",
@@ -90,6 +93,12 @@ def main():
     added = 0
     for sid, rec in minted.items():
         if sid in have:
+            continue
+        if not isinstance(rec.get("id"), str) or not SLUG_RE.fullmatch(rec["id"]) or rec["id"] != sid:
+            # an id the browser would refuse a poster path for (a look-alike
+            # Cyrillic letter, say): never let it into the catalogue
+            print(f"  skipped theatre show {sid!r}: its id is not a lower-case ASCII slug",
+                  file=sys.stderr)
             continue
         shows.append(normalise(rec))
         have.add(sid)

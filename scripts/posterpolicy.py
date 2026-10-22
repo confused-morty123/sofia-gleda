@@ -72,8 +72,11 @@ LOGO_STEM_RE = re.compile(r"\blogo[_\-]|[_\-]logo\b|^logo$"
 # served over the app's own HTTPS, so there is no third-party host to trust or
 # distrust and no hotlink/cert risk — the provenance was checked once, when the
 # bytes were downloaded. Identity checks (mirror/knows) below still apply.
+# ASCII only (re.ASCII): the browser's safeImg reads \w without the `u` flag, so a
+# path with a look-alike Cyrillic letter ("posters/skaperniкat.jpg") never loads
+# there and must not count as a poster here either.
 LOCAL_POSTER_RE = re.compile(r"^posters/[A-Za-z0-9][\w.\-]*\.(?:jpe?g|png|webp|gif|avif)$",
-                             re.I)
+                             re.I | re.ASCII)
 
 
 def is_local_poster(url):
