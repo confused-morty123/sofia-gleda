@@ -15471,7 +15471,9 @@ LEGAL_TITLES = {"terms": ("Общи условия", "Terms of use"),
                 "privacy": ("Политика за поверителност", "Privacy policy"),
                 "cookies": ("Политика за бисквитките", "Cookie policy")}
 LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg",
-                        "github.com"}
+                        "github.com",
+                        # the trailer (privacy and cookie policies): YouTube's terms, Google's privacy policy
+                        "www.youtube.com", "policies.google.com"}
 ISSUES_URL = "https://github.com/confused-morty123/sofia-gleda/issues"
 TMDB_NOTICE = "This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
 DASHES = ("\u2014", "\u2013")          # em dash, en dash: the copy rules allow neither
@@ -15933,7 +15935,7 @@ def wave_lg2(browser):
                   any(absu == ISSUES_URL for _, absu in d["links"]) and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"]),
                   "the GitHub issues link, and no email address but the supervisory authority's")
             if "/en/" in rel:
-                proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb"}
+                proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb", "YouTube"}
                 caps = [h for h in d["headings"] for wd in re.sub(r"^\d+\.\s*", "", h).split()[1:]
                         if wd[:1].isupper() and wd.strip("(),.") not in proper]
                 check(f"lg2_{tag}_sentence_case", not caps, str(caps[:3]))
@@ -16319,10 +16321,13 @@ def wave_tr1(browser):
                           str(mo))
                     page.click(".scrim .sheet .tr-play")
                     page.wait_for_selector(".scrim .shero .tr-frame iframe", timeout=5000)
-                    anims = page.evaluate("document.getAnimations().filter(a => a.playState === 'running' && "
-                                          "a.effect && a.effect.target && a.effect.target.closest && "
-                                          "a.effect.target.closest('.shero')).length")
-                    check("tr1_reduced_motion_player_appears_without_animation", anims == 0, f"{anims} running")
+                    # any animation in the header that lasts long enough to be seen (> 1 ms; the
+                    # page's reduced-motion rule leaves 0.01 ms ones, which may still read "running")
+                    anims = page.evaluate("""document.getAnimations().filter(a => a.effect && a.effect.target &&
+                        a.effect.target.closest && a.effect.target.closest('.shero') &&
+                        Number(a.effect.getComputedTiming().activeDuration) > 1).map(a =>
+                        (a.animationName || a.transitionProperty || '?') + ':' + a.effect.getComputedTiming().activeDuration)""")
+                    check("tr1_reduced_motion_player_appears_without_animation", not anims, f"{len(anims)}: {anims[:4]}")
                 else:
                     check("tr1_motion_allowed_has_transition", any(d >= 0.1 for d in durs), str(mo))
             finally:
