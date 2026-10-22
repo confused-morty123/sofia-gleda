@@ -3083,6 +3083,21 @@ check("wanted_ids: a SEED or previous entry the policy refuses leaves its id in 
 check("wanted_ids: perf_ids limits want to shows on stage in the window",
       sorted(FTP.wanted_ids(_w_shows, _w_prev, _w_seed, perf_ids={"a", "b"})[0]), ["a"])
 
+# ---- C4: Сълза и смях — titles with apostrophes ----
+print("salzaismyah: ''ТАКЪВ Е ЖИВОТЪТ'' (\\' escapes in LD-JSON, ' inside the alt) (C4)")
+_salz2 = (FIXTURES / "theatre_salzaismyah_stage2_1022.html").read_text(encoding="utf-8")
+_salz2_map = FTP.salz_slugs_from(_salz2)
+check("salzaismyah stage 2: ''ТАКЪВ Е ЖИВОТЪТ'' maps to its events_image",
+      (_salz2_map.get(FTP.norm("''ТАКЪВ Е ЖИВОТЪТ''")) or "").endswith("204b1a9ff4243980426b76e20005ce24.jpg"), True)
+_salz2_ld = [m.group(0) for m in FTP.SALZAISMYAH_LD_RE.finditer(_salz2) if "ТАКЪВ" in m.group(0)]
+check("…from the LD-JSON alone too (the \\' escape is retried)",
+      (FTP.salz_slugs_from("".join(_salz2_ld)).get("такъв е животът") or "").endswith(
+          "204b1a9ff4243980426b76e20005ce24.jpg"), True)
+_salz2_alt = FTP.SALZAISMYAH_LD_RE.sub("", _salz2)
+check("…and from the <img alt> alone (quote-matched)",
+      (FTP.salz_slugs_from(_salz2_alt).get("такъв е животът") or "").endswith(
+          "204b1a9ff4243980426b76e20005ce24.jpg"), True)
+
 # ---- posterpolicy: new theatre hostnames accepted ----
 print("posterpolicy: new theatre poster hosts are trusted")
 check("mlt.bg accepted",

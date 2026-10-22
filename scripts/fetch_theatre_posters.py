@@ -762,31 +762,46 @@ def _og_image(html):
     return None
 
 
+SALZ_ALT_RE = re.compile(
+    r'<img[^>]+src=(["\'])(https://www\.salzaismyah\.bg/uploads/events_image/[^"\']+)\1'
+    r'[^>]*alt=(["\'])(.*?)\3', re.I | re.S)
+
+
+def salz_slugs_from(html):
+    """{norm(title): image URL} from one salzaismyah.bg stage programme page.
+    LD-JSON first; the site writes titles like ''ТАКЪВ Е ЖИВОТЪТ'' with \\'
+    escapes, which is not valid JSON, so a failed parse is retried without them.
+    Then <img alt="TITLE"> pairs, quote-matched so an apostrophe inside a
+    double-quoted alt no longer ends the title."""
+    import html as _html
+    slug_map = {}
+    for m in SALZAISMYAH_LD_RE.finditer(html or ""):
+        try:
+            obj = json.loads(m.group(1))
+        except ValueError:
+            try:
+                obj = json.loads(m.group(1).replace("\\'", "'"))
+            except ValueError:
+                continue
+        if not isinstance(obj, dict) or obj.get("@type") != "Event":
+            continue
+        img, name = obj.get("image", ""), obj.get("name", "")
+        if img and name and isinstance(img, str) and norm(name):
+            slug_map[norm(name)] = img
+    for m in SALZ_ALT_RE.finditer(html or ""):
+        alt = norm(_html.unescape(m.group(4)))
+        if alt:
+            slug_map.setdefault(alt, m.group(2))
+    return slug_map
+
+
 def _salzaismyah_slugmap(net):
     """Fetch stage programme pages 1–3 and return {norm_title: image_url}."""
     slug_map = {}
     for stage in (1, 2, 3):
         html = net.text(f"https://www.salzaismyah.bg/site/events/{stage}", attempts=2)
-        if not html:
-            continue
-        for m in SALZAISMYAH_LD_RE.finditer(html):
-            try:
-                obj = json.loads(m.group(1))
-            except Exception:
-                continue
-            if obj.get("@type") != "Event":
-                continue
-            img  = obj.get("image", "")
-            name = obj.get("name", "")
-            if img and name:
-                slug_map[norm(name)] = img
-        # Also read <img alt="TITLE"> pairs as fallback
-        for img_m, alt_m in re.findall(
-                r'<img[^>]+src=["\']'
-                r'(https://www\.salzaismyah\.bg/uploads/events_image/[^"\']+)["\']'
-                r'[^>]*alt=["\']([^"\']*)["\']',
-                html, re.I):
-            slug_map.setdefault(norm(alt_m), img_m)
+        for k, v in salz_slugs_from(html).items():
+            slug_map.setdefault(k, v)
     return slug_map
 
 
