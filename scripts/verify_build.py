@@ -1295,6 +1295,11 @@ try:
         _id_redirect = {}
     if not isinstance(_id_redirect, dict):
         _id_redirect = {}
+    try:                       # the source gen_share_pages.write_redirects reads
+        from show_identity import renamed_ids as _renamed_ids
+        _id_redirect = {**_renamed_ids(), **_id_redirect}
+    except Exception:
+        pass
 
     def _check_share_page_file(kind, item_id):
         global _sp_count

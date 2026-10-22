@@ -689,14 +689,19 @@ import tempfile as _tf_r, gen_share_pages as _GSP                      # noqa: E
 with _tf_r.TemporaryDirectory() as _d:
     _done, _bad = _GSP.write_redirects(
         _d, [{"id": "skapernikat", "title": "Скъперникът"}], {"skaperniкat": "skapernikat"},
-        lambda i: f"https://sofiagleda.com/posters/{i}.jpg")
+        lambda i: (f"https://sofiagleda.com/posters/{i}.jpg", None, None))
     _pg = (pathlib.Path(_d) / "show" / "skaperniкat" / "index.html")
     _txt = _pg.read_text(encoding="utf-8") if _pg.exists() else ""
     check("gen_share_pages: the old id's page exists (and only it)", ([p.parent.name for p in _done], _bad),
           (["skaperniкat"], []))
     check("…its og:url is the NEW id's page",
           'property="og:url" content="https://sofiagleda.com/show/skapernikat/"' in _txt, True)
-    check("…and it redirects to ?show=<new id>", "url=https://sofiagleda.com/?show=skapernikat" in _txt, True)
+    # ux-sharing: no meta refresh (link-preview fetchers follow it); the page's one
+    # script is the shared REDIRECT_JS (to /home/?show=<old>, which the app maps
+    # through ID_REDIRECT), and its visible link opens the new id
+    check("…no meta refresh, the shared redirect script", ("http-equiv=\"refresh\"" in _txt,
+          _GSP.REDIRECT_JS in _txt), (False, True))
+    check("…and its link opens ?show=<new id>", 'href="/home/theatre/?show=skapernikat"' in _txt, True)
 check("gen_share_pages SAFE_ID refuses a non-ASCII id", bool(_GSP.SAFE_ID.fullmatch("skaperniкat")), False)
 check("the same title at ANOTHER theatre is not that show", ix.resolve("Трите прасенца", "mladezhki"), (None, "unmatched"))
 check("…but it is at its own theatre", ix.resolve("ТРИТЕ ПРАСЕНЦА", "vazrazhdane")[0], "prasenca-vaz")
