@@ -3169,6 +3169,15 @@ _ss7 = FTP.settle_state({"a": {"first_missing": "2026-10-01"}, "b": {"first_miss
 check("settle_state: a found poster and a show off stage leave the state; a miss is counted",
       _ss7, {"a": {"first_missing": "2026-10-01", "tries": 1, "last_try": "2026-10-22", "link": "la"}})
 
+# ---- §4: Зад канала "Игра на котки" — the page has only the venue logo ----
+_zkl = (FIXTURES / "theatre_zad-kanala_show_logo.html").read_text(encoding="utf-8")
+_zkl_m = FTP.LARGE750_RE.search(_zkl)
+_zkl_img = _zkl_m.group(1).split("?")[0] if _zkl_m else None
+check("zad-kanala igra-na-kotki: the only large750x image is logo-mgt_1_1.jpg",
+      (_zkl_img or "").endswith("/logo-mgt_1_1.jpg"), True)
+check("…which the policy refuses, so no poster is stored (generated art is correct)",
+      PP.reject_reason("igra-na-kotki", _zkl_img, cat) is not None, True)
+
 # ---- C8: coverage counted as the browser does, and its health entry ----
 print("theatre posters: coverage as the browser counts it, health.json entry (C8)")
 _m8 = {"SHOWALIAS": {"ev": "film"}, "TMDBART": {"film": {"p": "/x.jpg"}, "nop": {"en": "X"}},
