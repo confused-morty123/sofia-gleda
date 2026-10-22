@@ -16239,6 +16239,12 @@ def _ux_clock(epoch_ms):
   window.Date = FakeDate; })();""" % epoch_ms
 
 
+def _ux_no_uir(html):
+    """The page without the CSP's upgrade-insecure-requests: the test server is plain http,
+    and WebKit upgrades even 127.0.0.1 (see _ux_ctx)."""
+    return re.sub(r"upgrade-insecure-requests;?\s*", "", html)
+
+
 def _ux_ctx(browser, base, w, h, phone=False, lang="bg", mode="cinema", ua=None, reduced=False, js=True,
             clock=None, sw=False):
     kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
@@ -16255,6 +16261,15 @@ def _ux_ctx(browser, base, w, h, phone=False, lang="bg", mode="cinema", ua=None,
     if not sw:
         def _route(route):
             u = route.request.url
+            if u.startswith(base) and route.request.resource_type == "document":
+                # the test server is plain http: WebKit follows the CSP's
+                # upgrade-insecure-requests even on 127.0.0.1 (a reload, a share page's
+                # hand-on, posters, fonts all go to https and fail), so the directive is
+                # taken out of each page as it is served; the script hashes are untouched
+                r = route.fetch(max_redirects=0)
+                if r.status != 200 or "html" not in r.headers.get("content-type", ""):
+                    return route.continue_()        # a redirect (a folder without its slash) as served
+                return route.fulfill(response=r, body=_ux_no_uir(r.text()))
             if u.startswith(base) or "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
                 return route.continue_()
             if u.startswith(UX_SITE + "/"):
@@ -16595,7 +16610,10 @@ def _ux_urls(browser, base, eng, items):
         s4 = page.evaluate(UX_SHEET_JS)
         # the address a user would copy is the share page, with this film's preview
         copied = page.evaluate("location.href")
-        fetched = page.evaluate("async () => { const r = await fetch(location.pathname); return [r.status, await r.text()]; }")
+        # (fetched from here, not by the page: WebKit upgrades the page's own http fetch to
+        # https under the CSP's upgrade-insecure-requests, and the test server is plain http)
+        _r = ctx.request.get(copied)
+        fetched = [_r.status, _r.text()]
         page.keyboard.press("Escape")
         page.wait_for_timeout(700)
         s5 = page.evaluate(UX_SHEET_JS)
@@ -16657,8 +16675,10 @@ def _ux_urls(browser, base, eng, items):
     page.wait_for_timeout(450)
     _ux_tap_sel(page, False, f'#app .card[data-film="{fid}"]')
     page.wait_for_timeout(700)
-    page.reload()
-    page.wait_for_selector(".bar")
+    # (wait_until commit: with no service worker the share page at this address hands the
+    # browser on with location.replace, and WebKit never reports the reload's own load)
+    page.reload(wait_until="commit")
+    page.wait_for_selector(".bar", timeout=30000)
     page.wait_for_timeout(900)
     s3 = page.evaluate(UX_SHEET_JS)
     page.go_back()
@@ -16672,7 +16692,7 @@ def _ux_urls(browser, base, eng, items):
     page = ctx.new_page()
     errs2 = []
     page.on("pageerror", lambda e: errs2.append(str(e)))
-    app_html = Path(html_path).read_text(encoding="utf-8")
+    app_html = _ux_no_uir(Path(html_path).read_text(encoding="utf-8"))
     page.route(f"{base}/film/{fq}/", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=app_html))
     page.route(f"{base}/film/zz-no-such-film/", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=app_html))
     page.goto(base + f"/film/{fq}/")
@@ -16795,7 +16815,9 @@ def _ux_routes(browser, base, eng, items):
     v = page.evaluate(UX_VIEW_JS)
     check(f"{tag}_bare_domain_is_home", v["path"] == "/home/" and v["mode"] == "cinema" and v["pressed"] == "cinema",
           f"/ -> path={v['path']} mode={v['mode']} toggle={v['pressed']}")
-    st = page.evaluate("async () => { const a = await fetch('/home/'), b = await fetch('/home/theatre/'); return [a.status, a.redirected, b.status, b.redirected]; }")
+    # fetched from here: WebKit would upgrade the page's own http fetch (upgrade-insecure-requests)
+    _a, _b = (ctx.request.get(base + u, max_redirects=0) for u in ("/home/", "/home/theatre/"))
+    st = [_a.status, _a.status // 100 == 3, _b.status, _b.status // 100 == 3]
     check(f"{tag}_listing_pages_served_200", st == [200, False, 200, False], f"/home/ and /home/theatre/: {st}")
     page.wait_for_timeout(400)
     _ux_tap_sel(page, False, '[data-switch="theatre"]', scroll=False)
@@ -16818,7 +16840,7 @@ def _ux_routes(browser, base, eng, items):
     _ux_tap_sel(page, False, f'#app .card[data-show="{sid}"]')
     page.wait_for_timeout(700)
     v5 = page.evaluate(UX_VIEW_JS)
-    page.reload(); page.wait_for_selector(".bar"); page.wait_for_timeout(1000)
+    page.reload(wait_until="commit"); page.wait_for_selector(".bar", timeout=30000); page.wait_for_timeout(1000)
     v6 = page.evaluate(UX_VIEW_JS)
     page.wait_for_timeout(450)
     _ux_tap_sel(page, False, "#scrim .sclose", scroll=False)
