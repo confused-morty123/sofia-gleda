@@ -16218,15 +16218,25 @@ def _ux_server(share_root):
                 return str(Path(share_root) / m.group(1) / m.group(2) / "index.html")
             return str(webapp_root / p.lstrip("/"))
 
+        def _page(self, status, file):
+            # Every page goes out without the CSP's upgrade-insecure-requests, as _ux_ctx's
+            # route does: WebKit does not route the request a redirect leads to (a folder
+            # without its slash, /film/<id> -> /film/<id>/), so that share page kept the
+            # directive and its hand-on to /home/?film= went to https://127.0.0.1 and failed
+            # (UX1 WebKit share_ran, 30 s timeout, 2026-10-23). Script hashes are untouched.
+            body = _ux_no_uir(Path(file).read_text(encoding="utf-8")).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return _ux_io.BytesIO(body)
+
         def send_head(self):
             path = self.translate_path(self.path)
             if not os.path.exists(path):
-                body = (webapp_root / "404.html").read_bytes()
-                self.send_response(404)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                return _ux_io.BytesIO(body)
+                return self._page(404, webapp_root / "404.html")
+            if os.path.isfile(path) and path.endswith(".html"):
+                return self._page(200, path)
             return super().send_head()
     srv = _ux_http.ThreadingHTTPServer(("127.0.0.1", 0), Hd)
     _ux_threading.Thread(target=srv.serve_forever, daemon=True).start()
