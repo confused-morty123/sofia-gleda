@@ -171,9 +171,10 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 @media (prefers-reduced-motion:reduce){
   .desk-search-wrap,.bar-row-search{transition:none!important}
 }
-/* 420 px, narrower below 1140 px: open beside the toggle, the field leaves the logo's
-   column its room, so nothing overflows from 761 px up */
-.desk-search-wrap .search{position:relative; width:min(420px,calc(50vw - 150px)); max-width:420px; min-width:0}
+/* 420 px, narrower below 1210 px: open beside the toggle, the field leaves the logo's
+   column its room (the lockup's 190 px floor and 12 px clear of the toggle), so nothing
+   overflows from 761 px up */
+.desk-search-wrap .search{position:relative; width:min(420px,calc(50vw - 185px)); max-width:420px; min-width:0}
 .search input{width:100%; padding:11px 40px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg); font:inherit; font-size:15px}
 .search input::placeholder{color:var(--fg-3)}
@@ -296,9 +297,12 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
    width/height), never wider than its column; the logo fills that width and the line's
    font is set from it in container units, so the line is 98% of the logo's width in
    either language (Onest: 18.42 font-sizes wide in BG, 15.87 in EN) and stays inside
-   the column, clear of the toggle. Phones keep the centred 12 px line above. */
+   the column, clear of the toggle. Below about 1180 px the lockup stops shrinking at
+   190 px, where the line is 10.1 px in BG and 11.7 px in EN (the owner's 10 px floor);
+   the search field above narrows to leave it that room. Phones keep the centred 12 px
+   line above. */
 @media(min-width:761px){
-  .brand{width:min(100%,calc(clamp(32px,3.2vw,42px)*5.153)); container-type:inline-size}
+  .brand{width:min(100%,max(190px,calc(clamp(32px,3.2vw,42px)*5.153))); container-type:inline-size}
   .brand-logo{width:100%; height:auto; max-width:none}
   .brand .brand-sub{font-size:calc(100cqi*.98/18.42)}
   .brand .brand-sub:lang(en){font-size:calc(100cqi*.98/15.87)}
@@ -956,9 +960,17 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 @media (max-height:520px){
   .consent{bottom:calc(8px + env(safe-area-inset-bottom,0px)); max-height:calc(100vh - 16px)}
   @supports (height:1dvh){ .consent{max-height:calc(100dvh - 16px)} } }
-footer .legal-line{margin:14px 0 0; max-width:78ch; color:var(--fg-2)}
-footer .legal-attr{margin:6px 0 0; max-width:78ch}
+/* The disclaimer, the attribution and the policy links span the footer, the page's own
+   content width (its padding aside), and reflow with the window: no narrow column (owner,
+   22 Oct 2026). Each is a sentence or two, so even at 1920 px it stays a line or two.
+   Phones: the links sit in two even columns instead of wrapping three and one. */
+footer .legal-line{margin:14px 0 0; color:var(--fg-2)}
+footer .legal-attr{margin:6px 0 0}
 footer .legal-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 18px; margin-top:10px}
+@media(max-width:760px){
+  footer .legal-nav{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px 16px}
+  footer .legal-nav a, footer .legal-nav button{justify-self:start; text-align:start}
+}
 footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:center; min-height:32px; padding:0;
   color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
 footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
@@ -1088,7 +1100,7 @@ bg:{tagline:"кино и театър в софия",
  railTonightT:"Тази вечер в София",railTonightB:"Утре в София",
  railRecommended:"Препоръчано",railWeekend:"Този уикенд",
  venueShowing:"Програмата на:",venueRemove:"Премахни",
- forYou:"Избрано за теб",inFocus:"На фокус",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
+ inFocus:"На фокус",seeTimes:"Виж прожекциите и билети",seePerf:"Виж представленията и билети",
  buy:"Купи билет",buyAt:"Билети от",buyHub:"Или през платформа",evSource:"Източник",
  buyNoteC:"Отваря програмата на киното за избраната дата. Часовете по-долу водят към същата каса.",
  buyNoteT:"Отваря официалната каса на самия театър.",
@@ -1186,7 +1198,7 @@ en:{tagline:"cinema & theatre in sofia",
  railTonightT:"Tonight in Sofia",railTonightB:"Tomorrow in Sofia",
  railRecommended:"Recommended",railWeekend:"This weekend",
  venueShowing:"Showing:",venueRemove:"Remove",
- forYou:"Picked for you",inFocus:"In focus",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
+ inFocus:"In focus",seeTimes:"Showtimes & tickets",seePerf:"Performances & tickets",
  buy:"Buy a ticket",buyAt:"Tickets from",buyHub:"Or via a platform",evSource:"Source",
  buyNoteC:"Opens the cinema's programme for the selected date. The times below go to the same box office.",
  buyNoteT:"Opens the theatre's own official box office.",
@@ -5828,7 +5840,8 @@ try{
    is. An id that is not in CONSENT_OPTIONAL never runs. Withdrawing a category that has run
    reloads the page, so nothing it started keeps running. */
 const CONSENT_KEY="sofia-consent";
-const CONSENT_VERSION="2026-10-15";
+/* 2026-10-22: the policies name no contact channel any more (the GitHub page is gone) */
+const CONSENT_VERSION="2026-10-22";
 const CONSENT_OPTIONAL=[];
 let _cRec=null,_cWait={},_cRan={},_cBack=null,_cLang=null;
 function _consentLoad(){

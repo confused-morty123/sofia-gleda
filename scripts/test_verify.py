@@ -1106,6 +1106,13 @@ _rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph))
 check("a leftover {CONTACT_EMAIL} placeholder fails the gate", _rc != 0 and "{CONTACT_EMAIL}" in _out)
 _rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph), owner_ok="1")
 check("a leftover placeholder fails even with SOFIA_OWNER_PENDING_OK=1", _rc != 0 and "{CONTACT_EMAIL}" in _out)
+_gh = lambda r, t: (t.replace("</footer>", '<a href="https://github.com/someone/sofia-gleda/issues">GitHub</a></footer>')
+                    if r == "legal/en/cookies/index.html" else t)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=_gh))
+check("a GitHub issues link on a legal page fails (no contact channel)", _rc != 0 and "no contact channel" in _out)
+_rc, _out = _lg_run(_lg_page.replace("</body>", '<a href="https://github.com/someone/sofia-gleda">GitHub</a></body>'),
+                    _lg_root())
+check("a GitHub project link in the app fails", _rc != 0 and "no contact channel" in _out)
 _rc, _out = _lg_run(_lg_page, _lg_root(logo=False))
 check("a missing TMDB logo fails the gate", _rc != 0 and "owner input pending" in _out and "TMDB's logo is missing" in _out)
 check("SOFIA_OWNER_PENDING_OK=1 turns the missing TMDB logo into a note",

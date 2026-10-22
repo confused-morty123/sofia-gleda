@@ -15474,9 +15474,9 @@ LEGAL_PAGES = [f"legal/{d}/" for d in LEGAL_DOCS] + [f"legal/en/{d}/" for d in L
 LEGAL_TITLES = {"terms": ("Общи условия", "Terms of use"),
                 "privacy": ("Политика за поверителност", "Privacy policy"),
                 "cookies": ("Политика за бисквитките", "Cookie policy")}
-LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg",
-                        "github.com"}
-ISSUES_URL = "https://github.com/confused-morty123/sofia-gleda/issues"
+# docs.github.com: GitHub's privacy statement (the host's own policy). No github.com link: by the
+# owner's decision of 2026-10-22 the site names no contact channel, the project page included.
+LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg"}
 TMDB_NOTICE = "This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
 DASHES = ("\u2014", "\u2013")          # em dash, en dash: the copy rules allow neither
 AI_TELLS = ("delve", "seamless", "leverage", "robust", "comprehensive", "rest assured", "in today's",
@@ -15933,9 +15933,11 @@ def wave_lg2(browser):
             check(f"lg2_{tag}_no_stock_phrases", not tells, str(tells))
             leftover = sorted(set(re.findall(r"\{[A-Z_]+\}", d["html"])))
             check(f"lg2_{tag}_no_placeholders", not leftover, str(leftover))
-            check(f"lg2_{tag}_contact_is_github_issues",
-                  any(absu == ISSUES_URL for _, absu in d["links"]) and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"]),
-                  "the GitHub issues link, and no email address but the supervisory authority's")
+            gh = [absu for _, absu in d["links"] if re.match(r"https?://(www\.)?github\.com(/|$)", absu)]
+            check(f"lg2_{tag}_no_contact_channel",
+                  not gh and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"])
+                  and not re.search(r"Проектът в GitHub|project on GitHub|/issues", d["html"]),
+                  f"no GitHub page or issues link ({gh}), and no email address but the supervisory authority's")
             if "/en/" in rel:
                 proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb"}
                 caps = [h for h in d["headings"] for wd in re.sub(r"^\d+\.\s*", "", h).split()[1:]
@@ -15959,10 +15961,15 @@ def wave_lg2(browser):
             check(f"lg2_{rel.strip('/').replace('/', '_')}_lists_storage",
                   all(s in html_ for s in ("<code>sofia-screen-v2</code>", "<code>sofia-consent</code>", "sofia-gleda-v")),
                   "")
-        for rel, warn in (("legal/terms/", "Не публикувайте лични данни"), ("legal/en/terms/", "Do not post personal data"),
-                          ("legal/privacy/", "Не публикувайте там лични данни"),
-                          ("legal/en/privacy/", "Do not post personal data there")):
-            check(f"lg2_{rel.strip('/').replace('/', '_')}_warns_public_channel", warn in texts.get(rel, {}).get("text", ""), warn)
+        # 2026-10-22: no contact channel, said plainly; the privacy policy explains how to clear the
+        # site's data (the way to exercise the rights) and keeps the hosting disclosure
+        for rel, says in (("legal/terms/", ["няма канал за връзка"]), ("legal/en/terms/", ["has no contact channel"]),
+                          ("legal/privacy/", ["няма канал за връзка", "Как да изчистите данните на сайта",
+                                              "Safari", "Firefox", "Chrome", "GitHub Pages"]),
+                          ("legal/en/privacy/", ["has no contact channel", "How to clear the site's data",
+                                                 "Safari", "Firefox", "Chrome", "GitHub Pages"])):
+            missing = [w for w in says if w not in texts.get(rel, {}).get("text", "")]
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_states_no_contact_channel", not missing, str(missing))
         for rel, rights in (("legal/privacy/", ["Не пазим лични данни на сървър, който управляваме",
                                                  "декларацията за поверителност на GitHub", "техните политики",
                                                  "Комисията за защита на личните данни", "kzld@cpdp.bg"]),
@@ -16914,7 +16921,8 @@ UX_LOCKUP_JS = r"""() => { const b = document.querySelector('.bar .brand'), l = 
 def _ux_lockup(browser, base, eng):
     """Owner item C: on desktop (761-1920 px, 20 px steps) the logo and its line are one
     lockup: the line is always shown, 90-110% of the logo's width, at least 12 px clear
-    of the Кино/Театър toggle, nothing overflows; search closed and open, BG and EN."""
+    of the Кино/Театър toggle, at least 10 px, nothing overflows; search closed and open,
+    BG and EN."""
     widths = list(range(761, 1921, 20)) + [1920]
     for lang in ("bg", "en"):
         ctx = _ux_ctx(browser, base, 761, 900, lang=lang)
@@ -16936,8 +16944,9 @@ def _ux_lockup(browser, base, eng):
                     continue
                 fonts.append(m["font"])
                 ratio = m["sw"] / m["lw"] if m["lw"] else 0
-                if not (m["vis"] and 0.9 <= ratio <= 1.1 and m["clear"] >= 12 and m["over"] <= 0):
-                    bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']}")
+                if not (m["vis"] and 0.9 <= ratio <= 1.1 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
+                    bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']} "
+                               f"font={m['font']:.1f}")
             state = "search_open" if search else "search_closed"
             check(f"ux1_{eng}_lockup_{lang}_{state}", not bad and n == len(widths),
                   f"{n} widths 761-1920; font {min(fonts or [0]):.1f}-{max(fonts or [0]):.1f}px; problems: {bad[:4]}")

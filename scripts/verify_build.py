@@ -1362,7 +1362,8 @@ if _bad_times:
 # describe:
 #   - each exists, has its canonical URL under SITE_URL and carries no script;
 #   - no page holds a leftover placeholder ({CONTACT_…}, {OPERATOR_…}): the site names
-#     no person and gives no email, by the owner's decision of 2026-10-15;
+#     no person and gives no email, by the owner's decision of 2026-10-15, and no page
+#     links a GitHub project or issues page: no contact channel at all (2026-10-22);
 #   - the terms show TMDB's logo (TMDB API terms, section 3; owner input: the file);
 #   - the policies carry the page's CONSENT_VERSION as their date;
 #   - every localStorage key the page uses is listed in the cookie policy, the page
@@ -1426,6 +1427,11 @@ def legal_checks():
         left = sorted(set(re.findall(r"\{(?:CONTACT|OPERATOR)_[A-Z_]*\}", t)))
         if left:
             fail(f"{r}: placeholder(s) {', '.join(left)} left in the page")
+        # no contact channel (owner, 2026-10-22): no link to a GitHub page (the project, its
+        # issues); GitHub's own privacy statement (docs.github.com, the host's policy) stays
+        gh = sorted(set(re.findall(r'href="(https?://(?:www\.)?github\.com(?:/[^"]*)?)"', t)))
+        if gh:
+            fail(f"{r}: links {gh[0]}: the site names no contact channel (no GitHub page or issues link)")
     if not (_FILE_ROOT / "icons" / "tmdb.svg").exists():
         owner_pending("TMDB's logo is missing: TMDB's API terms (section 3) require it: add icons/tmdb.svg "
                       "(themoviedb.org/about/logos-attribution) and run scripts/gen_legal_pages.py")
