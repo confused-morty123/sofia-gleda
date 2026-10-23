@@ -84,11 +84,11 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 @media(max-width:760px){ .brand{align-items:center} }
 .brand-logo{height:clamp(32px,3.2vw,42px); width:auto; flex:0 1 auto; min-width:0; max-width:100%;
   object-fit:contain; display:block; transition:filter .15s}
-.brand:hover .brand-logo{filter:brightness(1.12)}
+@media (hover:hover){.brand:hover .brand-logo{filter:brightness(1.12)}}
 .brand b{font-family:Oswald,"Arial Narrow",sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,30px);
   letter-spacing:.15em; text-transform:uppercase; color:var(--accent); line-height:1; white-space:nowrap;
   transition:opacity .15s, filter .15s}
-.brand:hover b{filter:brightness(1.12)}
+@media (hover:hover){.brand:hover b{filter:brightness(1.12)}}
 .brand:active b{opacity:.7}
 .brand span{font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--fg-3); white-space:nowrap}
 .bar-controls{display:flex; align-items:center; gap:8px; justify-self:end}
@@ -155,7 +155,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   .seg.seg-q .seg-l{max-width:7em; opacity:1}}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
-.iconb:hover{border-color:var(--line-2); color:var(--fg)}
+@media (hover:hover){.iconb:hover{border-color:var(--line-2); color:var(--fg)}}
 .search-icon-btn.expanded{border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--ink-3))}
 
 /* ---------- controls ---------- */
@@ -211,7 +211,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
 .cal button{aspect-ratio:1; border-radius:8px; border:1px solid transparent; background:var(--ink-3);
   font-size:12px; font-variant-numeric:tabular-nums; color:var(--fg-2); display:grid; place-items:center; position:relative}
-.cal button:hover{border-color:var(--line-2)}
+@media (hover:hover){.cal button:hover{border-color:var(--line-2)}}
 .cal button[disabled]{opacity:.26; cursor:default; background:transparent}
 .cal button.has::after{content:""; position:absolute; bottom:4px; width:3px; height:3px; border-radius:50%; background:var(--accent)}
 .cal button[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
@@ -223,7 +223,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .calmon{font-size:13px; font-weight:600; color:var(--fg-1); text-align:center; flex:1}
 .calarrow{width:32px; height:32px; flex:none; border-radius:8px; border:1px solid var(--line-2);
   background:var(--ink-3); color:var(--fg-1); font-size:17px; line-height:1; cursor:pointer; display:grid; place-items:center}
-.calarrow:hover:not([disabled]){border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.calarrow:hover:not([disabled]){border-color:var(--accent); color:var(--accent)}}
 .calarrow[disabled]{opacity:.3; cursor:default}
 .calhint{margin-top:9px; font-size:11px; color:var(--fg-3); text-align:center; min-height:14px}
 .caldow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:5px}
@@ -236,7 +236,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .days::-webkit-scrollbar{display:none}
 .day{flex:0 0 auto; min-width:58px; padding:6px 12px; border-radius:10px; border:1px solid var(--line);
   background:var(--ink-2); text-align:center; line-height:1.2; transition:border-color .15s,background .15s}
-.day:hover{border-color:var(--line-2)}
+@media (hover:hover){.day:hover{border-color:var(--line-2)}}
 .day[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .day .dow{display:block; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.75}
 .day .dnum{display:block; font-family:Oswald,sans-serif; font-size:16px; font-weight:600}
@@ -248,7 +248,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   border-bottom:1px solid var(--line)}
 .sback{display:flex; align-items:center; gap:7px; padding:7px 13px 7px 9px; border-radius:999px;
   border:1px solid var(--line-2); font-size:13px; font-weight:600; color:var(--fg)}
-.sback:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.sback:hover{border-color:var(--accent); color:var(--accent)}}
 .sgrab{width:38px; height:4px; border-radius:99px; background:var(--line-2); margin:8px auto 0; display:none}
 @media(max-width:620px){ .sgrab{display:block} .scrim{padding:0; place-items:end center}
   /* Higher specificity (.scrim .sheet) so these win over the base `.sheet`
@@ -268,7 +268,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} }
 .fchip{padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--ink-2);
   font-size:12px; color:var(--fg-2); transition:border-color .15s,background .15s; white-space:nowrap}
-.fchip:hover{border-color:var(--line-2)}
+@media (hover:hover){.fchip:hover{border-color:var(--line-2)}}
 .fchip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
 .fchip.off,.fchip:disabled{opacity:.4; pointer-events:none; text-decoration:line-through; text-decoration-thickness:1px}
 .fclear{font-size:11.5px; color:var(--fg-3); text-decoration:underline; text-underline-offset:3px; padding:5px 4px}
@@ -276,13 +276,13 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 /* ---------- favourites (P3A item 7) ---------- */
 .fav-star{background:none; border:none; cursor:pointer; padding:4px 6px; color:var(--fg-3);
   font-size:15px; line-height:1; border-radius:6px; transition:color .15s, transform .15s}
-.fav-star:hover{color:var(--fg)}
+@media (hover:hover){.fav-star:hover{color:var(--fg)}}
 .fav-star.on{color:var(--accent)}
-.fav-star.on:hover{color:var(--accent); transform:scale(1.2)}
+@media (hover:hover){.fav-star.on:hover{color:var(--accent); transform:scale(1.2)}}
 .fav-toggle{display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:999px;
   border:1px solid var(--line); background:var(--ink-2); font-size:12px; font-weight:600;
   color:var(--fg-2); transition:border-color .15s, color .15s, background .15s}
-.fav-toggle:hover{border-color:var(--line-2); color:var(--fg)}
+@media (hover:hover){.fav-toggle:hover{border-color:var(--line-2); color:var(--fg)}}
 .fav-toggle.on{border-color:var(--accent); color:var(--accent);
   background:color-mix(in srgb,var(--accent) 10%,var(--ink-2))}
 .fav-toggle svg{width:14px; height:14px; flex:0 0 14px}
@@ -340,7 +340,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .acts{display:flex; gap:9px; flex-wrap:wrap}
 .btn{padding:10px 20px; border-radius:10px; font-weight:600; font-size:13.5px;
   background:var(--accent); color:var(--on-accent); border:1px solid var(--accent); transition:filter .16s}
-.btn:hover{filter:brightness(1.12)}
+@media (hover:hover){.btn:hover{filter:brightness(1.12)}}
 .btn.ghost{background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.26); color:#fff; backdrop-filter:blur(6px)}
 .btn.sm{padding:7px 14px; font-size:12.5px}
 
@@ -362,13 +362,13 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .rarrow{position:absolute; top:34%; z-index:5; width:32px; height:62px; border-radius:10px;
   background:color-mix(in srgb,var(--ink) 92%,transparent); border:1px solid var(--line-2);
   display:none; place-items:center; font-size:17px}
-@media(min-width:900px){ .rscroll:hover .rarrow{display:grid} }
+@media(min-width:900px){ @media (hover:hover){.rscroll:hover .rarrow{display:grid}} }
 /* While the wheel or trackpad scrolls the page, the cards and rails passing under the
    resting pointer neither lift nor show their arrows: each hover change repainted its
    rail, about two paints and a style pass a frame (the wheel listener by the live search
    sets .sg-wheel) */
-html.sg-wheel .card:hover{transform:none}
-html.sg-wheel .rscroll:hover .rarrow{display:none}
+@media (hover:hover){html.sg-wheel .card:hover{transform:none}}
+@media (hover:hover){html.sg-wheel .rscroll:hover .rarrow{display:none}}
 .rarrow.prev{left:-8px} .rarrow.next{right:-8px}
 
 /* ---------- card + generated poster ---------- */
@@ -378,7 +378,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
   transition:transform .22s cubic-bezier(.22,1,.36,1)}
 .grid .card{width:auto}
 @media(min-width:760px){ .card{width:180px} }
-.card:hover{transform:translateY(-5px)}
+@media (hover:hover){.card:hover{transform:translateY(-5px)}}
 .poster{position:relative; aspect-ratio:2/3; max-width:100%; border-radius:var(--r); overflow:hidden;
   border:1px solid var(--line); box-shadow:var(--shadow); display:flex; flex-direction:column; justify-content:flex-end;
   padding:11px; color:#fff; isolation:isolate}
@@ -487,7 +487,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .vloc{display:flex; flex-direction:column; gap:1px}
 .vloc em{font-style:normal; font-size:10.5px; color:var(--fg-3); font-weight:400}
 .time.tix{border-style:dashed; color:var(--fg-3); font-family:Onest,sans-serif; font-size:11px; font-weight:600}
-.time.tix:hover{border-style:solid; border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.time.tix:hover{border-style:solid; border-color:var(--accent); color:var(--accent)}}
 .tpick .tt em{display:block; font-style:normal; font-family:Onest,sans-serif; font-size:9px;
   letter-spacing:.04em; text-transform:none; opacity:.8; font-weight:400; margin-top:3px;
   -webkit-line-clamp:2; overflow:hidden}
@@ -496,7 +496,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .vtimes{display:flex; gap:6px; flex-wrap:wrap; flex:1; align-items:flex-start}
 .time{font-family:Oswald,sans-serif; font-size:12.5px; font-weight:500; font-variant-numeric:tabular-nums;
   padding:4px 10px; border-radius:7px; border:1px solid var(--line-2); background:var(--ink-3); color:var(--fg); text-decoration:none; display:inline-block}
-.time:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.time:hover{border-color:var(--accent); color:var(--accent)}}
 .time.fits{border-color:var(--accent); color:var(--accent)}
 .time .th{font-family:Onest,sans-serif; font-size:9px; letter-spacing:.07em; color:var(--fg-3); display:block; text-transform:uppercase}
 .dgroup{margin-bottom:13px}
@@ -507,11 +507,11 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .buylinks{display:flex; gap:7px; flex-wrap:wrap; align-items:center}
 .buylink{padding:7px 13px; min-height:40px; border-radius:20px; background:transparent; border:1px solid var(--accent);
   color:var(--accent); font-weight:600; font-size:12.5px; text-decoration:none; display:inline-flex; align-items:center; gap:5px; line-height:1.2}
-.buylink:hover{background:color-mix(in srgb,var(--accent) 14%,transparent); filter:none}
+@media (hover:hover){.buylink:hover{background:color-mix(in srgb,var(--accent) 14%,transparent); filter:none}}
 .buylink.alt{border-color:var(--line-2); color:var(--fg-2); font-weight:400; font-size:12px; background:transparent}
-.buylink.alt:hover{border-color:var(--fg-2); filter:none}
+@media (hover:hover){.buylink.alt:hover{border-color:var(--fg-2); filter:none}}
 .buylink.inperson{border:none; color:var(--fg-3); font-size:12px; font-weight:400; padding:4px 0; min-height:0; background:transparent}
-.buylink.inperson:hover{color:var(--fg-2); filter:none}
+@media (hover:hover){.buylink.inperson:hover{color:var(--fg-2); filter:none}}
 .buynote{font-size:11.5px; color:var(--fg-3)}
 .no-info-note{font-size:13px; color:var(--fg-3); font-style:italic; margin:0}
 
@@ -521,7 +521,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 /* share button + read-more + toast */
 .sshare{position:absolute; top:8px; right:56px; z-index:6; width:40px; height:40px; border-radius:50%;
   background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.24); color:#fff; display:grid; place-items:center; cursor:pointer}
-.sshare:hover{border-color:#fff; background:rgba(0,0,0,.72)}
+@media (hover:hover){.sshare:hover{border-color:#fff; background:rgba(0,0,0,.72)}}
 /* trailer (Option 1, "hero = trailer"): a calm play circle on the key art. A dark
    translucent material with a white ring keeps it legible on light and dark art
    (HIG media controls); 64 pt is well above the 44 pt minimum and the 120x70 px
@@ -537,7 +537,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
   border:1.5px solid rgba(255,255,255,.9); box-shadow:0 2px 16px rgba(0,0,0,.35);
   transition:transform var(--motion-dur-sm) var(--motion-ease-out), background var(--motion-dur-sm) var(--motion-ease-out)}
 .tr-play svg{width:26px; height:26px; margin-left:3px}
-.tr-play:hover{background:rgba(18,14,20,.7); transform:scale(1.05)}
+@media (hover:hover){.tr-play:hover{background:rgba(18,14,20,.7); transform:scale(1.05)}}
 .tr-play:active{transform:scale(.96)}
 .tr-play:focus-visible{outline:2px solid #fff; outline-offset:4px}
 .shero.playing{min-height:0; padding:56px 0 18px; background:#000!important}
@@ -550,12 +550,12 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .tr-stop{margin-top:12px; display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 14px;
   border-radius:999px; background:transparent; border:1px solid rgba(255,255,255,.4); color:#fff; font-size:13px; cursor:pointer}
 .tr-stop[hidden]{display:none}
-.tr-stop:hover{border-color:#fff}
+@media (hover:hover){.tr-stop:hover{border-color:#fff}}
 .tr-stop:focus-visible{outline:2px solid #fff; outline-offset:3px}
 .tr-note{margin:0; font-size:12.5px; color:var(--fg-2); line-height:1.45}
 @media (prefers-reduced-motion: reduce){
   .tr-play{transition:none}
-  .tr-play:hover,.tr-play:active{transform:none}
+  .tr-play:active{transform:none}@media (hover:hover){.tr-play:hover{transform:none}}
 }
 .synwrap{position:relative}
 .synwrap.clamp .synbody{display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
@@ -564,7 +564,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .readmore{margin-top:4px; background:none; border:0; padding:0; cursor:pointer;
   color:var(--accent); font:inherit; font-size:13px; font-weight:600; letter-spacing:.02em;
   transition:opacity var(--motion-dur-sm) var(--motion-ease-out)}
-.readmore:hover{text-decoration:underline}
+@media (hover:hover){.readmore:hover{text-decoration:underline}}
 .toast{position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,14px); z-index:300;
   background:var(--ink-2); border:1px solid var(--line-2); color:var(--fg); border-radius:10px;
   padding:11px 18px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
@@ -602,7 +602,7 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 /* P3A item 4: phead-dates on desktop is inline; mobile override makes it block (see below) */
 .phead-dates{font-size:clamp(18px,2.2vw,24px); color:var(--accent); font-family:inherit; font-weight:500; display:inline}
 .phead-other{display:inline-block; margin-top:8px; font-size:12px; color:var(--fg-3); text-decoration:none; cursor:pointer; border:0; background:none; padding:0; letter-spacing:.04em}
-.phead-other:hover{color:var(--fg)}
+@media (hover:hover){.phead-other:hover{color:var(--fg)}}
 /* Day strip */
 .daystrip{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-top:16px; margin-bottom:4px}
 .daystrip::-webkit-scrollbar{display:none}
@@ -611,7 +611,7 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
   background:var(--ink-2); font-size:12.5px; font-weight:600; color:var(--fg-2); white-space:nowrap; position:relative;
   transition:border-color .15s,background .15s,color .15s; line-height:1.3; min-height:40px; display:inline-flex; align-items:center; justify-content:center; flex-direction:column}
 .dspill-divider{flex:0 0 auto; width:1px; height:24px; background:var(--line-2); margin-inline:4px; align-self:center}
-.dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}
+@media (hover:hover){.dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}}
 .dspill[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .dspill[disabled]{opacity:.32; cursor:default}
 .dspill .ds-today{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; opacity:.8; line-height:1}
@@ -619,14 +619,14 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .pbanner-btn{flex:0 0 auto; padding:7px 14px; border-radius:999px; border:1px solid var(--line-2);
   background:transparent; color:var(--fg-2); font-size:12px; font-weight:600; letter-spacing:.04em;
   white-space:nowrap; transition:border-color .15s,color .15s}
-.pbanner-btn:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.pbanner-btn:hover{border-color:var(--accent); color:var(--accent)}}
 
 /* ---------- collapsible section headers ---------- */
 :root{ --theatre-group:#C3B1F5 }
 .sec-toggle{width:100%; display:flex; align-items:center; gap:10px;
   padding:12px 0 12px; border-top:2px solid var(--line-2); background:none;
   text-align:left; cursor:pointer; color:var(--fg); transition:color .15s}
-.sec-toggle:hover{color:var(--accent)}
+@media (hover:hover){.sec-toggle:hover{color:var(--accent)}}
 .sec-toggle-title{font-family:Oswald,sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,28px);
   letter-spacing:.05em; text-transform:uppercase; flex:1}
 /* P3A item 3: theatre section titles also use Oswald + uppercase */
@@ -656,7 +656,7 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .venue-chip-rm{display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:999px;
   border:1px solid var(--line-2); background:var(--ink-3); color:var(--fg); font-size:12.5px; font-weight:500;
   cursor:pointer; white-space:nowrap; transition:border-color .15s}
-.venue-chip-rm:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.venue-chip-rm:hover{border-color:var(--accent); color:var(--accent)}}
 .venue-chip-rm .rm-x{font-size:11px; opacity:.65; margin-left:2px}
 .venue-block{margin-bottom:36px}
 .venue-block-head{margin-bottom:14px}
@@ -725,7 +725,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   width:40px;height:40px;min-width:40px;border-radius:8px;border:1px solid var(--line-2);
   background:rgba(255,255,255,.05);color:var(--fg-2);cursor:pointer;
   flex-shrink:0;transition:background .15s,color .15s;vertical-align:middle;margin-left:6px}
-.cal-btn:hover,.cal-btn:focus-visible{background:rgba(255,255,255,.12);color:var(--fg)}
+.cal-btn:focus-visible{background:rgba(255,255,255,.12);color:var(--fg)}@media (hover:hover){.cal-btn:hover{background:rgba(255,255,255,.12);color:var(--fg)}}
 .cal-btn svg{pointer-events:none}
 .cal-panel{background:var(--ink-3);border:1px solid var(--line-2);border-radius:12px;
   padding:14px 16px 16px;margin:6px 0 2px;animation:calIn .15s ease-out both}
@@ -735,21 +735,23 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .cal-panel h5 button.cal-x{margin-left:auto;width:26px;height:26px;min-width:26px;border-radius:6px;
   border:none;background:transparent;color:var(--fg-2);font-size:16px;cursor:pointer;
   display:grid;place-items:center;padding:0;line-height:1;transition:background .12s,color .12s}
-.cal-panel h5 button.cal-x:hover{background:rgba(255,255,255,.1);color:var(--fg)}
+@media (hover:hover){.cal-panel h5 button.cal-x:hover{background:rgba(255,255,255,.1);color:var(--fg)}}
 .cal-times{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .cal-times button{padding:4px 10px;border-radius:8px;border:1px solid var(--line-2);
   background:transparent;color:var(--fg-2);font:500 13px/1.4 "Onest","Segoe UI",system-ui;
   cursor:pointer;min-height:34px;transition:background .12s,color .12s,border-color .12s}
-.cal-times button.sel,.cal-times button:hover{background:rgba(255,255,255,.1);
-  color:var(--fg);border-color:var(--line-2)}
+.cal-times button.sel{background:rgba(255,255,255,.1);
+  color:var(--fg);border-color:var(--line-2)}@media (hover:hover){.cal-times button:hover{background:rgba(255,255,255,.1);
+  color:var(--fg);border-color:var(--line-2)}}
 .cal-times button.sel{border-color:var(--accent);color:var(--fg)}
 .cal-apps{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .cal-apps button{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
   border-radius:10px;border:1px solid var(--line-2);background:rgba(255,255,255,.06);
   color:var(--fg);font:500 13px/1 "Onest","Segoe UI",system-ui;cursor:pointer;
   min-height:40px;transition:background .15s,border-color .15s}
-.cal-apps button:hover,.cal-apps button:focus-visible{background:rgba(255,255,255,.12);
-  border-color:var(--line-2)}
+.cal-apps button:focus-visible{background:rgba(255,255,255,.12);
+  border-color:var(--line-2)}@media (hover:hover){.cal-apps button:hover{background:rgba(255,255,255,.12);
+  border-color:var(--line-2)}}
 .cal-apps button svg{flex-shrink:0}
 </style>
 <style id="p3e-css">
@@ -803,9 +805,9 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   cursor:pointer;min-height:44px;min-width:44px;
   display:inline-flex;align-items:center;justify-content:center;
   transition:border-color .15s,color .15s;text-decoration:none;line-height:1}
-.p3e-pill:hover,.p3e-pill:focus-visible{border-color:var(--fg-2)}
+.p3e-pill:focus-visible{border-color:var(--fg-2)}@media (hover:hover){.p3e-pill:hover{border-color:var(--fg-2)}}
 .p3e-pill.prelim{background:transparent;border:1px dashed rgba(217,178,60,.65)}
-.p3e-pill.prelim:hover,.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}
+.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}@media (hover:hover){.p3e-pill.prelim:hover{border-style:solid;border-color:var(--gild)}}
 /* ===================== P3E: week grid (desktop) ===================== */
 @media(min-width:761px){
   /* Day picker hidden on desktop */
@@ -823,7 +825,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
   .p3e-gnav{width:44px;height:44px;border-radius:10px;border:1px solid var(--line-2);background:var(--ink-4);
     color:var(--fg);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
-  .p3e-gnav:hover:not([disabled]),.p3e-gnav:focus-visible{border-color:var(--fg-2)}
+  .p3e-gnav:focus-visible{border-color:var(--fg-2)}@media (hover:hover){.p3e-gnav:hover:not([disabled]){border-color:var(--fg-2)}}
   .p3e-gnav[disabled]{opacity:.35;cursor:default}
   .p3e-gt th small.p3e-gmon{display:block;font-size:11px;color:var(--fg-3);margin-top:1px}
   .p3e-gt th{font-weight:400;color:var(--fg-3);padding:0 0 10px;text-align:center;white-space:nowrap}
@@ -901,7 +903,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   width:100%;height:54px;border:0;border-radius:16px;
   font-family:Onest,"Segoe UI",system-ui,sans-serif;font-size:16px;font-weight:500;
   cursor:pointer;text-decoration:none;transition:filter .15s}
-.ss-btn:hover,.ss-btn:focus-visible{filter:brightness(1.08)}
+.ss-btn:focus-visible{filter:brightness(1.08)}@media (hover:hover){.ss-btn:hover{filter:brightness(1.08)}}
 .ss-btn.pri{background:var(--fg);color:var(--ink)}
 .ss-btn.sec{background:var(--ink-4);color:var(--fg)}
 .ss-help{font-size:12.5px;color:var(--fg-3);text-align:center;margin:8px 0 0}
@@ -917,7 +919,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-cal-li:first-child{border-top:0}
 .ss-cal-li small{display:block;font-size:12px;font-weight:400;color:var(--fg-3);margin-top:1px}
 .ss-cal-li .cv{margin-left:auto;color:var(--fg-3)}
-.ss-cal-li:hover,.ss-cal-li:focus-visible{background:rgba(255,255,255,.06)}
+.ss-cal-li:focus-visible{background:rgba(255,255,255,.06)}@media (hover:hover){.ss-cal-li:hover{background:rgba(255,255,255,.06)}}
 /* Wider screens: a popover card anchored to the clicked time (just above it, below it
    when there is no room above), on a fixed layer of its own so no scroll offset can move
    it away from the time. JS sets top/left, data-place and --ss-caret-x. */
@@ -955,7 +957,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   color:var(--fg-2);font-size:16px;cursor:pointer;transition:background .12s,color .12s;z-index:2}
 .ss-close-btn{right:18px;top:18px}
 .ss-back-btn{left:18px;top:18px}
-.ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}
+@media (hover:hover){.ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}}
 </style>
 <style id="consent-css">
 /* ===================== cookie notice and the footer's legal lines ===================== */
@@ -981,12 +983,12 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .consent-btns{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-top:14px}
 .consent-btn{min-height:44px; padding:0 20px; border-radius:14px; font-size:15px; font-weight:500;
   transition:filter .15s}
-.consent-btn:hover,.consent-btn:focus-visible{filter:brightness(1.08)}
+.consent-btn:focus-visible{filter:brightness(1.08)}@media (hover:hover){.consent-btn:hover{filter:brightness(1.08)}}
 .consent-btn.pri{background:var(--fg); color:var(--ink)}
 .consent-btn.sec{background:var(--ink-4); color:var(--fg)}
 .consent-more{display:inline-flex; align-items:center; min-height:44px; color:var(--fg-2);
   text-decoration:underline; text-underline-offset:3px}
-.consent-more:hover{color:var(--fg)}
+@media (hover:hover){.consent-more:hover{color:var(--fg)}}
 .consent-cats{list-style:none; margin:12px 0 0; padding:0; border-radius:14px; background:var(--ink-4); overflow:hidden}
 .consent-cats li{display:flex; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid rgba(255,255,255,.07)}
 .consent-cats li:first-child{border-top:0}
@@ -1021,7 +1023,7 @@ footer .legal-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 18px
 }
 footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:center; min-height:32px; padding:0;
   color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
-footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
+@media (hover:hover){footer .legal-nav a:hover,footer .legal-nav button:hover{color:var(--fg)}}
 </style>
 <style id="design-css">
 /* ===== Design phase (notes/qa/DESIGN_A11Y_REPORT.md, owner-approved 2026-10-23) =====
@@ -1032,12 +1034,29 @@ footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 11: press feedback (I3) ---- */
+/* every control answers a press (there was one :active rule on the whole page); hover styles
+   now live under (hover:hover) only, so a tap no longer leaves a card lifted or a time outlined */
+button,a{-webkit-tap-highlight-color:transparent}
+:where(.btn,.ss-btn,.fab,.iconb,.seg button,.dspill,.fchip,.p3e-pill,.p3e-day,.buylink:not(.inperson),.sback,.sclose,.sshare,
+  .dclose,.calarrow,.cal button,.fav-toggle,.fav-star,.p3e-gnav,.ss-close-btn,.ss-back-btn,.consent-btn,.venue-chip-rm,.clr,.rarrow,
+  .tr-play,.tr-stop):not([disabled]):active{transform:scale(.96); filter:brightness(.9);
+  transition:transform var(--dur-press) ease-out, filter var(--dur-press) ease-out}
+.card:active,.ecard:active{transform:scale(.98); transition:transform var(--dur-press) ease-out}
+.ss-cal-li:active{background:rgba(255,255,255,.09)}
+.sec-toggle:active,.phead-other:active,.readmore:active,.fclear:active,.consent-more:active{opacity:.6}
+@media (prefers-reduced-motion:reduce){
+  :where(.btn,.ss-btn,.fab,.iconb,.seg button,.dspill,.fchip,.p3e-pill,.p3e-day,.buylink,.sback,.sclose,.sshare,.dclose,.calarrow,
+    .cal button,.fav-toggle,.fav-star,.p3e-gnav,.ss-close-btn,.ss-back-btn,.consent-btn,.venue-chip-rm,.clr,.rarrow,.tr-play,.tr-stop):active,
+  .card:active,.ecard:active{transform:none}
+}
+
 /* ---- step 10: box-office-only venues (owner decision 2026-10-23) ---- */
 /* the online pills' shape and size (7px 13px, 40 px, radius 20), neutral grey, no arrow, inert */
 .buylink.inperson{display:inline-flex; align-items:center; gap:5px; padding:7px 13px; min-height:40px; border-radius:20px;
   border:1px solid color-mix(in srgb,var(--fg-2) 40%,transparent); background:transparent; color:var(--fg-2);
   font-size:12.5px; font-weight:600; line-height:1.2; cursor:default}
-.buylink.inperson:hover{color:var(--fg-2)}
+@media (hover:hover){.buylink.inperson:hover{color:var(--fg-2)}}
 
 /* ---- step 9: headings, meta lines (M1, M13) ---- */
 .sechead h1.sechead-h{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
