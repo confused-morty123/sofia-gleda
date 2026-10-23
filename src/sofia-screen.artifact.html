@@ -1034,6 +1034,45 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 13: sentence case and a type floor of 11 px (I13, M14) ----
+   Uppercase stays only on the Oswald display titles (page title, rail and section headings,
+   sheet and hero titles, the generated posters' lockup): the marquee voice. Every label is
+   sentence case, tracked at most .02em, and nothing on screen is smaller than 11 px. */
+.eyebrow{font-size:12px; letter-spacing:.01em; text-transform:none; font-weight:600}
+.phead-eyebrow{font-size:12px; letter-spacing:.01em; text-transform:none}
+.drawer h3{font-family:Onest,sans-serif; font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-2)}
+.drawer-top b,.drawer-top .drawer-title{font-family:Onest,sans-serif; font-size:17px; font-weight:600; letter-spacing:0; text-transform:none}
+.caldow span{font-size:11px; letter-spacing:0; text-transform:none}
+.day .dow{font-size:11px; letter-spacing:0; text-transform:none}
+.dspill .ds-today{font-size:11px; letter-spacing:0; text-transform:none; line-height:1.1}
+.lastcheck{font-size:12px; letter-spacing:0}
+.sec h3,.sec h4{font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-2)}
+.credits dt{font-size:12px; letter-spacing:0; text-transform:none}
+.quote cite{font-size:12px; letter-spacing:0; text-transform:none}
+.rtile .rl{font-size:11px; letter-spacing:0; text-transform:none}
+.buybox .bl{font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-2)}
+.dg-h{font-size:12px; letter-spacing:0; text-transform:none}
+.vkind,.prelim-tag{font-size:11px; letter-spacing:0; text-transform:none}
+.time .th,.tpick .tt em{font-size:11px; letter-spacing:0; text-transform:none}
+.vloc em,.venue-attr-line{font-size:12px}
+.attr-lbl{font-size:11px}
+.p-sub{font-size:11px; letter-spacing:.02em; text-transform:none}
+.score i{font-size:11px; letter-spacing:0; font-weight:500}
+.fest-mark{font-size:11px; letter-spacing:0}
+.fab-badge{font-size:11px; width:20px; height:20px; flex-basis:20px}
+/* data that arrives in capitals ("ЮБИЛЕЙ", "ОГРАНИЧЕНО") reads in sentence case */
+.badge,.chip.solid{text-transform:lowercase}
+.badge::first-letter,.chip.solid::first-letter{text-transform:uppercase}
+.badge{font-size:11px; letter-spacing:0; font-weight:600; padding:3px 7px}
+.chip{font-size:12px; letter-spacing:0; text-transform:none}
+/* the drawer's group labels ("Комерсиални кина") */
+.drawer .sec-subhead{font-family:Onest,sans-serif; font-size:12.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-3)}
+/* card captions: the title is the card's strongest text (it was 12 px grey) */
+.cf1{font-size:14px; font-weight:600; color:var(--fg); line-height:1.25; min-height:2.5em}
+.cf2{font-size:12px; line-height:1.35}
+/* reading text */
+.sec p,.synbody p{font-size:15px}
+
 /* ---- step 12: one accent element per view (owner decision: Option A, I1) ----
    The accent (crimson for cinema, gold for theatre) marks ONE thing: the selected day or
    period (home day strip, the sheet's day picker, the drawer's period chips and calendar).
