@@ -1,1 +1,3002 @@
-{}
+{
+"7": {
+"n": "Andrew Stanton",
+"bg": null,
+"t": "2026-10-23"
+},
+"19": {
+"n": "Allison Janney",
+"bg": null,
+"t": "2026-10-23"
+},
+"31": {
+"n": "Tom Hanks",
+"bg": "Том Ханкс",
+"t": "2026-10-23"
+},
+"37": {
+"n": "Alan Silvestri",
+"bg": "Алън Силвестри",
+"t": "2026-10-23"
+},
+"64": {
+"n": "Gary Oldman",
+"bg": "Гари Олдман",
+"t": "2026-10-23"
+},
+"65": {
+"n": "Ian Holm",
+"bg": "Иън Холм",
+"t": "2026-10-23"
+},
+"68": {
+"n": "Fritz Lang",
+"bg": null,
+"t": "2026-10-23"
+},
+"69": {
+"n": "Gottfried Huppertz",
+"bg": null,
+"t": "2026-10-23"
+},
+"70": {
+"n": "Karl Freund",
+"bg": null,
+"t": "2026-10-23"
+},
+"71": {
+"n": "Günther Rittau",
+"bg": null,
+"t": "2026-10-23"
+},
+"73": {
+"n": "Alfred Abel",
+"bg": null,
+"t": "2026-10-23"
+},
+"74": {
+"n": "Gustav Fröhlich",
+"bg": null,
+"t": "2026-10-23"
+},
+"75": {
+"n": "Brigitte Helm",
+"bg": null,
+"t": "2026-10-23"
+},
+"77": {
+"n": "Rudolf Klein-Rogge",
+"bg": null,
+"t": "2026-10-23"
+},
+"79": {
+"n": "Theodor Loos",
+"bg": null,
+"t": "2026-10-23"
+},
+"108": {
+"n": "Peter Jackson",
+"bg": "Питър Джаксън",
+"t": "2026-10-23"
+},
+"109": {
+"n": "Elijah Wood",
+"bg": "Илайджа Ууд",
+"t": "2026-10-23"
+},
+"110": {
+"n": "Viggo Mortensen",
+"bg": "Виго Мортенсен",
+"t": "2026-10-23"
+},
+"112": {
+"n": "Cate Blanchett",
+"bg": "Кейт Бланшет",
+"t": "2026-10-23"
+},
+"113": {
+"n": "Christopher Lee",
+"bg": "Кристофър Лий",
+"t": "2026-10-23"
+},
+"117": {
+"n": "Howard Shore",
+"bg": "Хауърд Шор",
+"t": "2026-10-23"
+},
+"120": {
+"n": "Dariusz Wolski",
+"bg": "Дариуш Волски",
+"t": "2026-10-23"
+},
+"126": {
+"n": "Fran Walsh",
+"bg": null,
+"t": "2026-10-23"
+},
+"128": {
+"n": "Philippa Boyens",
+"bg": null,
+"t": "2026-10-23"
+},
+"131": {
+"n": "Jake Gyllenhaal",
+"bg": "Джейк Джилънхол",
+"t": "2026-10-23"
+},
+"149": {
+"n": "Robert Richardson",
+"bg": "Робърт Ричардсън",
+"t": "2026-10-23"
+},
+"151": {
+"n": "Roger Deakins",
+"bg": "Роджър Дийкинс",
+"t": "2026-10-23"
+},
+"157": {
+"n": "Thea von Harbou",
+"bg": null,
+"t": "2026-10-23"
+},
+"169": {
+"n": "Hanns Zischler",
+"bg": null,
+"t": "2026-10-23"
+},
+"204": {
+"n": "Kate Winslet",
+"bg": "Кейт Уинслет",
+"t": "2026-10-23"
+},
+"223": {
+"n": "Alejandro G. Iñárritu",
+"bg": "Алехандро Гонсалес Иняриту",
+"t": "2026-10-23"
+},
+"240": {
+"n": "Stanley Kubrick",
+"bg": "Стенли Кубрик",
+"t": "2026-10-23"
+},
+"241": {
+"n": "Arthur C. Clarke",
+"bg": "Артър Кларк",
+"t": "2026-10-23"
+},
+"243": {
+"n": "Geoffrey Unsworth",
+"bg": null,
+"t": "2026-10-23"
+},
+"245": {
+"n": "Keir Dullea",
+"bg": null,
+"t": "2026-10-23"
+},
+"246": {
+"n": "Gary Lockwood",
+"bg": null,
+"t": "2026-10-23"
+},
+"247": {
+"n": "William Sylvester",
+"bg": null,
+"t": "2026-10-23"
+},
+"248": {
+"n": "Daniel Richter",
+"bg": null,
+"t": "2026-10-23"
+},
+"253": {
+"n": "Douglas Rain",
+"bg": null,
+"t": "2026-10-23"
+},
+"287": {
+"n": "Brad Pitt",
+"bg": "Брад Пит",
+"t": "2026-10-23"
+},
+"309": {
+"n": "Pedro Almodóvar",
+"bg": "Педро Алмодовар",
+"t": "2026-10-23"
+},
+"313": {
+"n": "Ellen Kuras",
+"bg": null,
+"t": "2026-10-23"
+},
+"405": {
+"n": "Alberto Iglesias",
+"bg": null,
+"t": "2026-10-23"
+},
+"418": {
+"n": "Robert Patrick",
+"bg": "Робърт Патрик",
+"t": "2026-10-23"
+},
+"500": {
+"n": "Tom Cruise",
+"bg": "Том Круз",
+"t": "2026-10-23"
+},
+"502": {
+"n": "Miranda Otto",
+"bg": null,
+"t": "2026-10-23"
+},
+"514": {
+"n": "Jack Nicholson",
+"bg": "Джак Никълсън",
+"t": "2026-10-23"
+},
+"525": {
+"n": "Christopher Nolan",
+"bg": "Кристофър Нолан",
+"t": "2026-10-23"
+},
+"529": {
+"n": "Guy Pearce",
+"bg": "Гай Пиърс",
+"t": "2026-10-23"
+},
+"531": {
+"n": "Danny Elfman",
+"bg": "Дани Елфман",
+"t": "2026-10-23"
+},
+"569": {
+"n": "Ethan Hawke",
+"bg": "Итън Хоук",
+"t": "2026-10-23"
+},
+"578": {
+"n": "Ridley Scott",
+"bg": "Ридли Скот",
+"t": "2026-10-23"
+},
+"608": {
+"n": "Hayao Miyazaki",
+"bg": "Хаяо Миядзаки",
+"t": "2026-10-23"
+},
+"647": {
+"n": "Dion Beebe",
+"bg": null,
+"t": "2026-10-23"
+},
+"650": {
+"n": "Karen Allen",
+"bg": null,
+"t": "2026-10-23"
+},
+"681": {
+"n": "Nina Hoss",
+"bg": null,
+"t": "2026-10-23"
+},
+"738": {
+"n": "Sean Connery",
+"bg": "Шон Конъри",
+"t": "2026-10-23"
+},
+"765": {
+"n": "Hiam Abbass",
+"bg": null,
+"t": "2026-10-23"
+},
+"776": {
+"n": "Eddie Murphy",
+"bg": "Еди Мърфи",
+"t": "2026-10-23"
+},
+"793": {
+"n": "Luis Buñuel",
+"bg": null,
+"t": "2026-10-23"
+},
+"820": {
+"n": "Edward Furlong",
+"bg": null,
+"t": "2026-10-23"
+},
+"821": {
+"n": "Beverly D'Angelo",
+"bg": null,
+"t": "2026-10-23"
+},
+"884": {
+"n": "Steve Buscemi",
+"bg": null,
+"t": "2026-10-23"
+},
+"887": {
+"n": "Owen Wilson",
+"bg": "Оуен Уилсън",
+"t": "2026-10-23"
+},
+"932": {
+"n": "John Logan",
+"bg": null,
+"t": "2026-10-23"
+},
+"933": {
+"n": "William Nicholson",
+"bg": null,
+"t": "2026-10-23"
+},
+"934": {
+"n": "Russell Crowe",
+"bg": "Ръсел Кроу",
+"t": "2026-10-23"
+},
+"947": {
+"n": "Hans Zimmer",
+"bg": "Ханс Цимер",
+"t": "2026-10-23"
+},
+"953": {
+"n": "Cecilia Roth",
+"bg": null,
+"t": "2026-10-23"
+},
+"954": {
+"n": "Marisa Paredes",
+"bg": null,
+"t": "2026-10-23"
+},
+"955": {
+"n": "Penélope Cruz",
+"bg": "Пенелопе Крус",
+"t": "2026-10-23"
+},
+"956": {
+"n": "Guy Ritchie",
+"bg": "Гай Ричи",
+"t": "2026-10-23"
+},
+"958": {
+"n": "Candela Peña",
+"bg": null,
+"t": "2026-10-23"
+},
+"960": {
+"n": "John Murphy",
+"bg": null,
+"t": "2026-10-23"
+},
+"961": {
+"n": "Antonia San Juan",
+"bg": null,
+"t": "2026-10-23"
+},
+"966": {
+"n": "Tim Maurice-Jones",
+"bg": null,
+"t": "2026-10-23"
+},
+"976": {
+"n": "Jason Statham",
+"bg": "Джейсън Стейтъм",
+"t": "2026-10-23"
+},
+"1011": {
+"n": "Susanne Bier",
+"bg": "Сузане Биър",
+"t": "2026-10-23"
+},
+"1012": {
+"n": "Anders Thomas Jensen",
+"bg": null,
+"t": "2026-10-23"
+},
+"1018": {
+"n": "Nikolaj Lie Kaas",
+"bg": null,
+"t": "2026-10-23"
+},
+"1019": {
+"n": "Mads Mikkelsen",
+"bg": "Мадс Микелсен",
+"t": "2026-10-23"
+},
+"1032": {
+"n": "Martin Scorsese",
+"bg": "Мартин Скорсезе",
+"t": "2026-10-23"
+},
+"1038": {
+"n": "Jodie Foster",
+"bg": "Джоди Фостър",
+"t": "2026-10-23"
+},
+"1060": {
+"n": "Dean Cundey",
+"bg": null,
+"t": "2026-10-23"
+},
+"1077": {
+"n": "Frank Griebe",
+"bg": null,
+"t": "2026-10-23"
+},
+"1100": {
+"n": "Arnold Schwarzenegger",
+"bg": "Арнолд Шварценегер",
+"t": "2026-10-23"
+},
+"1115": {
+"n": "Stephen Graham",
+"bg": "Стивън Грахам",
+"t": "2026-10-23"
+},
+"1116": {
+"n": "Alan Ford",
+"bg": null,
+"t": "2026-10-23"
+},
+"1117": {
+"n": "Dennis Farina",
+"bg": null,
+"t": "2026-10-23"
+},
+"1126": {
+"n": "Krzysztof Kieślowski",
+"bg": "Кшищоф Кешловски",
+"t": "2026-10-23"
+},
+"1128": {
+"n": "Agnieszka Holland",
+"bg": null,
+"t": "2026-10-23"
+},
+"1129": {
+"n": "Sławomir Idziak",
+"bg": "Славомир Идзяк",
+"t": "2026-10-23"
+},
+"1132": {
+"n": "Krzysztof Piesiewicz",
+"bg": null,
+"t": "2026-10-23"
+},
+"1135": {
+"n": "Zbigniew Preisner",
+"bg": null,
+"t": "2026-10-23"
+},
+"1137": {
+"n": "Juliette Binoche",
+"bg": null,
+"t": "2026-10-23"
+},
+"1138": {
+"n": "Benoît Régent",
+"bg": null,
+"t": "2026-10-23"
+},
+"1139": {
+"n": "Florence Pernel",
+"bg": null,
+"t": "2026-10-23"
+},
+"1140": {
+"n": "Charlotte Véry",
+"bg": null,
+"t": "2026-10-23"
+},
+"1141": {
+"n": "Hélène Vincent",
+"bg": null,
+"t": "2026-10-23"
+},
+"1143": {
+"n": "Edward Kłosiński",
+"bg": null,
+"t": "2026-10-23"
+},
+"1145": {
+"n": "Zbigniew Zamachowski",
+"bg": null,
+"t": "2026-10-23"
+},
+"1146": {
+"n": "Julie Delpy",
+"bg": null,
+"t": "2026-10-23"
+},
+"1147": {
+"n": "Janusz Gajos",
+"bg": null,
+"t": "2026-10-23"
+},
+"1148": {
+"n": "Jerzy Stuhr",
+"bg": null,
+"t": "2026-10-23"
+},
+"1152": {
+"n": "Oliver Stone",
+"bg": null,
+"t": "2026-10-23"
+},
+"1162": {
+"n": "Robert Loggia",
+"bg": null,
+"t": "2026-10-23"
+},
+"1223": {
+"n": "Joel Coen",
+"bg": "Джоуел Коен",
+"t": "2026-10-23"
+},
+"1224": {
+"n": "Ethan Coen",
+"bg": "Итън Коен",
+"t": "2026-10-23"
+},
+"1225": {
+"n": "Carter Burwell",
+"bg": null,
+"t": "2026-10-23"
+},
+"1230": {
+"n": "John Goodman",
+"bg": null,
+"t": "2026-10-23"
+},
+"1259": {
+"n": "Ennio Morricone",
+"bg": null,
+"t": "2026-10-23"
+},
+"1301": {
+"n": "Philippe Rousselot",
+"bg": null,
+"t": "2026-10-23"
+},
+"1313": {
+"n": "Andrew Lesnie",
+"bg": null,
+"t": "2026-10-23"
+},
+"1327": {
+"n": "Ian McKellen",
+"bg": null,
+"t": "2026-10-23"
+},
+"1328": {
+"n": "Sean Astin",
+"bg": "Шон Астин",
+"t": "2026-10-23"
+},
+"1337": {
+"n": "Tony Leung Chiu-wai",
+"bg": null,
+"t": "2026-10-23"
+},
+"1338": {
+"n": "Maggie Cheung Man-yuk",
+"bg": null,
+"t": "2026-10-23"
+},
+"1350": {
+"n": "Irène Jacob",
+"bg": null,
+"t": "2026-10-23"
+},
+"1352": {
+"n": "Jean-Louis Trintignant",
+"bg": null,
+"t": "2026-10-23"
+},
+"1354": {
+"n": "Frédérique Feder",
+"bg": null,
+"t": "2026-10-23"
+},
+"1356": {
+"n": "Jean-Pierre Lorit",
+"bg": null,
+"t": "2026-10-23"
+},
+"1357": {
+"n": "Christopher Doyle",
+"bg": null,
+"t": "2026-10-23"
+},
+"1384": {
+"n": "Grażyna Szapołowska",
+"bg": null,
+"t": "2026-10-23"
+},
+"1387": {
+"n": "Artur Barciś",
+"bg": null,
+"t": "2026-10-23"
+},
+"1405": {
+"n": "Zbigniew Zapasiewicz",
+"bg": null,
+"t": "2026-10-23"
+},
+"1416": {
+"n": "Keiko Niwa",
+"bg": "Кеико Нива",
+"t": "2026-10-23"
+},
+"1487": {
+"n": "Bob Dylan",
+"bg": "Боб Дилън",
+"t": "2026-10-23"
+},
+"1564": {
+"n": "Sofie Gråbøl",
+"bg": null,
+"t": "2026-10-23"
+},
+"1570": {
+"n": "Anthony Dod Mantle",
+"bg": "Антъни Дод Мантъл",
+"t": "2026-10-23"
+},
+"1577": {
+"n": "Richard Kelly",
+"bg": null,
+"t": "2026-10-23"
+},
+"1582": {
+"n": "James Duval",
+"bg": null,
+"t": "2026-10-23"
+},
+"1589": {
+"n": "Michael Andrews",
+"bg": null,
+"t": "2026-10-23"
+},
+"1590": {
+"n": "Steven Poster",
+"bg": null,
+"t": "2026-10-23"
+},
+"1614": {
+"n": "Ang Lee",
+"bg": null,
+"t": "2026-10-23"
+},
+"1632": {
+"n": "Robby Müller",
+"bg": null,
+"t": "2026-10-23"
+},
+"1640": {
+"n": "Stellan Skarsgård",
+"bg": "Стелан Скарсгорд",
+"t": "2026-10-23"
+},
+"1665": {
+"n": "Eddie Marsan",
+"bg": null,
+"t": "2026-10-23"
+},
+"1705": {
+"n": "Ted Elliott",
+"bg": null,
+"t": "2026-10-23"
+},
+"1724": {
+"n": "Roger Spottiswoode",
+"bg": null,
+"t": "2026-10-23"
+},
+"1729": {
+"n": "James Horner",
+"bg": null,
+"t": "2026-10-23"
+},
+"1772": {
+"n": "Anna Faris",
+"bg": null,
+"t": "2026-10-23"
+},
+"1813": {
+"n": "Anne Hathaway",
+"bg": "Ан Хатауей",
+"t": "2026-10-23"
+},
+"1859": {
+"n": "Christiane Paul",
+"bg": null,
+"t": "2026-10-23"
+},
+"1884": {
+"n": "Steven Soderbergh",
+"bg": "Стивън Содърбърг",
+"t": "2026-10-23"
+},
+"1889": {
+"n": "David Holmes",
+"bg": null,
+"t": "2026-10-23"
+},
+"1892": {
+"n": "Matt Damon",
+"bg": "Мат Деймън",
+"t": "2026-10-23"
+},
+"1925": {
+"n": "Vincent Cassel",
+"bg": "Венсан Касел",
+"t": "2026-10-23"
+},
+"1951": {
+"n": "Elisabeth Shue",
+"bg": "Елизабет Шу",
+"t": "2026-10-23"
+},
+"2034": {
+"n": "Danny Boyle",
+"bg": "Дани Бойл",
+"t": "2026-10-23"
+},
+"2039": {
+"n": "Brendan Gleeson",
+"bg": "Брендан Глийсън",
+"t": "2026-10-23"
+},
+"2130": {
+"n": "Cary Elwes",
+"bg": "Кери Елуес",
+"t": "2026-10-23"
+},
+"2157": {
+"n": "Robin Williams",
+"bg": "Робин Уилямс",
+"t": "2026-10-23"
+},
+"2166": {
+"n": "Sergio Castellitto",
+"bg": null,
+"t": "2026-10-23"
+},
+"2176": {
+"n": "Tommy Lee Jones",
+"bg": "Томи Лий Джоунс",
+"t": "2026-10-23"
+},
+"2178": {
+"n": "Forest Whitaker",
+"bg": "Форест Уитакър",
+"t": "2026-10-23"
+},
+"2192": {
+"n": "Lambert Wilson",
+"bg": "Ламбер Уилсън",
+"t": "2026-10-23"
+},
+"2227": {
+"n": "Nicole Kidman",
+"bg": "Никол Кидман",
+"t": "2026-10-23"
+},
+"2264": {
+"n": "Patrick Magee",
+"bg": "Патрик Магий",
+"t": "2026-10-23"
+},
+"2267": {
+"n": "Michael Bates",
+"bg": null,
+"t": "2026-10-23"
+},
+"2268": {
+"n": "Warren Clarke",
+"bg": "Уорън Кларк",
+"t": "2026-10-23"
+},
+"2272": {
+"n": "Carl Duering",
+"bg": "Карл Дюринг",
+"t": "2026-10-23"
+},
+"2283": {
+"n": "Stanley Tucci",
+"bg": "Стенли Тучи",
+"t": "2026-10-23"
+},
+"2284": {
+"n": "Wendy Carlos",
+"bg": null,
+"t": "2026-10-23"
+},
+"2285": {
+"n": "Rachel Elkind",
+"bg": null,
+"t": "2026-10-23"
+},
+"2286": {
+"n": "John Alcott",
+"bg": null,
+"t": "2026-10-23"
+},
+"2289": {
+"n": "John Barry",
+"bg": null,
+"t": "2026-10-23"
+},
+"2299": {
+"n": "Josh Hartnett",
+"bg": "Джош Хартнет",
+"t": "2026-10-23"
+},
+"2303": {
+"n": "Wim Wenders",
+"bg": "Вим Вендерс",
+"t": "2026-10-23"
+},
+"2419": {
+"n": "Jean-Pierre Jeunet",
+"bg": null,
+"t": "2026-10-23"
+},
+"2420": {
+"n": "Guillaume Laurant",
+"bg": null,
+"t": "2026-10-23"
+},
+"2483": {
+"n": "John Toll",
+"bg": "Джон Тол",
+"t": "2026-10-23"
+},
+"2522": {
+"n": "Ludwig van Beethoven",
+"bg": "Лудвиг ван Бетховен",
+"t": "2026-10-23"
+},
+"2589": {
+"n": "Terry George",
+"bg": null,
+"t": "2026-10-23"
+},
+"2593": {
+"n": "Rupert Gregson-Williams",
+"bg": null,
+"t": "2026-10-23"
+},
+"2690": {
+"n": "Peter Weir",
+"bg": null,
+"t": "2026-10-23"
+},
+"2691": {
+"n": "Tom Schulman",
+"bg": null,
+"t": "2026-10-23"
+},
+"2692": {
+"n": "Robert Sean Leonard",
+"bg": null,
+"t": "2026-10-23"
+},
+"2693": {
+"n": "Gale Hansen",
+"bg": null,
+"t": "2026-10-23"
+},
+"2694": {
+"n": "Josh Charles",
+"bg": null,
+"t": "2026-10-23"
+},
+"2702": {
+"n": "John Seale",
+"bg": null,
+"t": "2026-10-23"
+},
+"2704": {
+"n": "Maurice Jarre",
+"bg": null,
+"t": "2026-10-23"
+},
+"2710": {
+"n": "James Cameron",
+"bg": "Джеймс Камерън",
+"t": "2026-10-23"
+},
+"2711": {
+"n": "William Wisher",
+"bg": null,
+"t": "2026-10-23"
+},
+"2713": {
+"n": "Linda Hamilton",
+"bg": "Линда Хамилтън",
+"t": "2026-10-23"
+},
+"2716": {
+"n": "Earl Boen",
+"bg": null,
+"t": "2026-10-23"
+},
+"2722": {
+"n": "Brad Fiedel",
+"bg": null,
+"t": "2026-10-23"
+},
+"2723": {
+"n": "Adam Greenberg",
+"bg": null,
+"t": "2026-10-23"
+},
+"2759": {
+"n": "Lola Dueñas",
+"bg": null,
+"t": "2026-10-23"
+},
+"2798": {
+"n": "Walter Ruttmann",
+"bg": null,
+"t": "2026-10-23"
+},
+"2807": {
+"n": "Krystyna Janda",
+"bg": null,
+"t": "2026-10-23"
+},
+"2829": {
+"n": "Andrzej Seweryn",
+"bg": null,
+"t": "2026-10-23"
+},
+"2830": {
+"n": "Marek Kondrat",
+"bg": null,
+"t": "2026-10-23"
+},
+"2838": {
+"n": "Chloë Sevigny",
+"bg": "Клои Севини",
+"t": "2026-10-23"
+},
+"2876": {
+"n": "Matt Dillon",
+"bg": null,
+"t": "2026-10-23"
+},
+"2887": {
+"n": "Tom Waits",
+"bg": "Том Уейтс",
+"t": "2026-10-23"
+},
+"2954": {
+"n": "Jeffrey Wright",
+"bg": "Джефри Райт",
+"t": "2026-10-23"
+},
+"2978": {
+"n": "Max Minghella",
+"bg": null,
+"t": "2026-10-23"
+},
+"3061": {
+"n": "Ewan McGregor",
+"bg": "Юън Макгрегър",
+"t": "2026-10-23"
+},
+"3063": {
+"n": "Tilda Swinton",
+"bg": "Тилда Суинтън",
+"t": "2026-10-23"
+},
+"3223": {
+"n": "Robert Downey Jr.",
+"bg": "Робърт Дауни Джуниър",
+"t": "2026-10-23"
+},
+"3234": {
+"n": "Joan Cusack",
+"bg": null,
+"t": "2026-10-23"
+},
+"3291": {
+"n": "Hugh Grant",
+"bg": "Хю Грант",
+"t": "2026-10-23"
+},
+"3436": {
+"n": "Keiichi Suzuki",
+"bg": null,
+"t": "2026-10-23"
+},
+"3483": {
+"n": "Antonio de la Torre",
+"bg": null,
+"t": "2026-10-23"
+},
+"3508": {
+"n": "Delphine Seyrig",
+"bg": "Делфин Сериг",
+"t": "2026-10-23"
+},
+"3535": {
+"n": "Georges Delerue",
+"bg": null,
+"t": "2026-10-23"
+},
+"3562": {
+"n": "Rachel Portman",
+"bg": null,
+"t": "2026-10-23"
+},
+"3636": {
+"n": "Paul Newman",
+"bg": "Пол Нюман",
+"t": "2026-10-23"
+},
+"3656": {
+"n": "Affonso Beato",
+"bg": null,
+"t": "2026-10-23"
+},
+"3810": {
+"n": "Javier Bardem",
+"bg": "Хавиер Бардем",
+"t": "2026-10-23"
+},
+"3841": {
+"n": "Samuel Finzi",
+"bg": "Самуел Финци",
+"t": "2026-10-23"
+},
+"3872": {
+"n": "Daniel Brühl",
+"bg": "Даниел Брюл",
+"t": "2026-10-23"
+},
+"3974": {
+"n": "Miloš Forman",
+"bg": null,
+"t": "2026-10-23"
+},
+"4008": {
+"n": "Miroslav Ondříček",
+"bg": null,
+"t": "2026-10-23"
+},
+"4154": {
+"n": "Brenda Blethyn",
+"bg": null,
+"t": "2026-10-23"
+},
+"4173": {
+"n": "Anthony Hopkins",
+"bg": "Антъни Хопкинс",
+"t": "2026-10-23"
+},
+"4185": {
+"n": "Emmanuel Lubezki",
+"bg": null,
+"t": "2026-10-23"
+},
+"4275": {
+"n": "Alain Chabat",
+"bg": null,
+"t": "2026-10-23"
+},
+"4387": {
+"n": "François Ozon",
+"bg": "Франсоа Озон",
+"t": "2026-10-23"
+},
+"4404": {
+"n": "Yorick Le Saux",
+"bg": null,
+"t": "2026-10-23"
+},
+"4429": {
+"n": "Jim Jarmusch",
+"bg": "Джим Джармуш",
+"t": "2026-10-23"
+},
+"4434": {
+"n": "Frederick Elmes",
+"bg": null,
+"t": "2026-10-23"
+},
+"4453": {
+"n": "Thomas Vinterberg",
+"bg": null,
+"t": "2026-10-23"
+},
+"4454": {
+"n": "Mogens Rukov",
+"bg": null,
+"t": "2026-10-23"
+},
+"4455": {
+"n": "Ulrich Thomsen",
+"bg": null,
+"t": "2026-10-23"
+},
+"4456": {
+"n": "Henning Moritzen",
+"bg": null,
+"t": "2026-10-23"
+},
+"4457": {
+"n": "Thomas Bo Larsen",
+"bg": null,
+"t": "2026-10-23"
+},
+"4458": {
+"n": "Paprika Steen",
+"bg": null,
+"t": "2026-10-23"
+},
+"4459": {
+"n": "Birthe Neumann",
+"bg": null,
+"t": "2026-10-23"
+},
+"4460": {
+"n": "Trine Dyrholm",
+"bg": null,
+"t": "2026-10-23"
+},
+"4474": {
+"n": "Lars Bo Jensen",
+"bg": null,
+"t": "2026-10-23"
+},
+"4515": {
+"n": "Treat Williams",
+"bg": null,
+"t": "2026-10-23"
+},
+"4566": {
+"n": "Alan Rickman",
+"bg": "Алън Рикман",
+"t": "2026-10-23"
+},
+"4687": {
+"n": "Patricia Arquette",
+"bg": "Патриша Аркет",
+"t": "2026-10-23"
+},
+"4780": {
+"n": "Wolfgang Becker",
+"bg": null,
+"t": "2026-10-23"
+},
+"4935": {
+"n": "Pete Postlethwaite",
+"bg": null,
+"t": "2026-10-23"
+},
+"5004": {
+"n": "Omar Sharif",
+"bg": "Омар Шариф",
+"t": "2026-10-23"
+},
+"5026": {
+"n": "Akira Kurosawa",
+"bg": null,
+"t": "2026-10-23"
+},
+"5064": {
+"n": "Meryl Streep",
+"bg": null,
+"t": "2026-10-23"
+},
+"5065": {
+"n": "David Frankel",
+"bg": null,
+"t": "2026-10-23"
+},
+"5081": {
+"n": "Emily Blunt",
+"bg": "Емили Блънт",
+"t": "2026-10-23"
+},
+"5149": {
+"n": "Bonnie Hunt",
+"bg": null,
+"t": "2026-10-23"
+},
+"5151": {
+"n": "Beth Grant",
+"bg": null,
+"t": "2026-10-23"
+},
+"5216": {
+"n": "Gus Van Sant",
+"bg": "Гас Ван Сант",
+"t": "2026-10-23"
+},
+"5266": {
+"n": "Rüdiger Vogler",
+"bg": null,
+"t": "2026-10-23"
+},
+"5293": {
+"n": "Willem Dafoe",
+"bg": "Уилям Дефо",
+"t": "2026-10-23"
+},
+"5344": {
+"n": "Meg Ryan",
+"bg": "Мег Райън",
+"t": "2026-10-23"
+},
+"5401": {
+"n": "Anthony Quinn",
+"bg": "Антъни Куин",
+"t": "2026-10-23"
+},
+"5442": {
+"n": "Benoît Magimel",
+"bg": null,
+"t": "2026-10-23"
+},
+"5443": {
+"n": "Vincent Lindon",
+"bg": null,
+"t": "2026-10-23"
+},
+"5445": {
+"n": "Zinedine Soualem",
+"bg": null,
+"t": "2026-10-23"
+},
+"5469": {
+"n": "Ralph Fiennes",
+"bg": "Ралф Файнс",
+"t": "2026-10-23"
+},
+"5524": {
+"n": "Andrew Adamson",
+"bg": null,
+"t": "2026-10-23"
+},
+"5552": {
+"n": "Stephen McFeely",
+"bg": null,
+"t": "2026-10-23"
+},
+"5553": {
+"n": "Harry Gregson-Williams",
+"bg": "Хари Грегсън-Уилямс",
+"t": "2026-10-23"
+},
+"5575": {
+"n": "Akiva Goldsman",
+"bg": null,
+"t": "2026-10-23"
+},
+"5576": {
+"n": "Val Kilmer",
+"bg": "Вал Килмър",
+"t": "2026-10-23"
+},
+"5602": {
+"n": "David Lynch",
+"bg": "Дейвид Линч",
+"t": "2026-10-23"
+},
+"5628": {
+"n": "Angelo Badalamenti",
+"bg": null,
+"t": "2026-10-23"
+},
+"5644": {
+"n": "Alexandra Maria Lara",
+"bg": null,
+"t": "2026-10-23"
+},
+"5683": {
+"n": "Sandra Milo",
+"bg": null,
+"t": "2026-10-23"
+},
+"5725": {
+"n": "Goran Višnjić",
+"bg": "Горан Вишнич",
+"t": "2026-10-23"
+},
+"6012": {
+"n": "Daniel Auteuil",
+"bg": null,
+"t": "2026-10-23"
+},
+"6086": {
+"n": "Devid Striesow",
+"bg": null,
+"t": "2026-10-23"
+},
+"6091": {
+"n": "August Diehl",
+"bg": null,
+"t": "2026-10-23"
+},
+"6120": {
+"n": "Bodil Jørgensen",
+"bg": null,
+"t": "2026-10-23"
+},
+"6405": {
+"n": "Chiara Caselli",
+"bg": null,
+"t": "2026-10-23"
+},
+"6473": {
+"n": "Kelly Lynch",
+"bg": "Кели Линч",
+"t": "2026-10-23"
+},
+"6586": {
+"n": "Barry Gifford",
+"bg": null,
+"t": "2026-10-23"
+},
+"6648": {
+"n": "Ingmar Bergman",
+"bg": "Ингмар Бергман",
+"t": "2026-10-23"
+},
+"6649": {
+"n": "Gunnar Björnstrand",
+"bg": null,
+"t": "2026-10-23"
+},
+"6651": {
+"n": "Erik Nordgren",
+"bg": null,
+"t": "2026-10-23"
+},
+"6652": {
+"n": "Gunnar Fischer",
+"bg": null,
+"t": "2026-10-23"
+},
+"6657": {
+"n": "Bibi Andersson",
+"bg": null,
+"t": "2026-10-23"
+},
+"6677": {
+"n": "Kyle MacLachlan",
+"bg": "Кайл Маклоклан",
+"t": "2026-10-23"
+},
+"6807": {
+"n": "Sam Rockwell",
+"bg": "Сам Рокуел",
+"t": "2026-10-23"
+},
+"6856": {
+"n": "Kurt Russell",
+"bg": "Кърт Ръсел",
+"t": "2026-10-23"
+},
+"6863": {
+"n": "Kevin Dillon",
+"bg": "Кевин Дилън",
+"t": "2026-10-23"
+},
+"6941": {
+"n": "Cameron Diaz",
+"bg": "Камерън Диас",
+"t": "2026-10-23"
+},
+"6949": {
+"n": "John Malkovich",
+"bg": "Джон Малкович",
+"t": "2026-10-23"
+},
+"6952": {
+"n": "Charlie Sheen",
+"bg": "Чарли Шийн",
+"t": "2026-10-23"
+},
+"6968": {
+"n": "Hugh Jackman",
+"bg": "Хю Джакман",
+"t": "2026-10-23"
+},
+"7020": {
+"n": "Trevor Jones",
+"bg": null,
+"t": "2026-10-23"
+},
+"7021": {
+"n": "Michael Coulter",
+"bg": null,
+"t": "2026-10-23"
+},
+"7056": {
+"n": "Emma Thompson",
+"bg": "Ема Томпсън",
+"t": "2026-10-23"
+},
+"7059": {
+"n": "Heike Makatsch",
+"bg": null,
+"t": "2026-10-23"
+},
+"7077": {
+"n": "Scatman Crothers",
+"bg": null,
+"t": "2026-10-23"
+},
+"7152": {
+"n": "Sandra Hüller",
+"bg": null,
+"t": "2026-10-23"
+},
+"7182": {
+"n": "Elmer Bernstein",
+"bg": null,
+"t": "2026-10-23"
+},
+"7190": {
+"n": "Tom Mankiewicz",
+"bg": null,
+"t": "2026-10-23"
+},
+"7242": {
+"n": "Temuera Morrison",
+"bg": null,
+"t": "2026-10-23"
+},
+"7401": {
+"n": "Lin Shaye",
+"bg": null,
+"t": "2026-10-23"
+},
+"7449": {
+"n": "Shinobu Hashimoto",
+"bg": null,
+"t": "2026-10-23"
+},
+"7450": {
+"n": "Toshirō Mifune",
+"bg": null,
+"t": "2026-10-23"
+},
+"7451": {
+"n": "Machiko Kyō",
+"bg": null,
+"t": "2026-10-23"
+},
+"7452": {
+"n": "Masayuki Mori",
+"bg": null,
+"t": "2026-10-23"
+},
+"7453": {
+"n": "Takashi Shimura",
+"bg": null,
+"t": "2026-10-23"
+},
+"7454": {
+"n": "Minoru Chiaki",
+"bg": null,
+"t": "2026-10-23"
+},
+"7460": {
+"n": "Fumio Hayasaka",
+"bg": null,
+"t": "2026-10-23"
+},
+"7461": {
+"n": "Kazuo Miyagawa",
+"bg": null,
+"t": "2026-10-23"
+},
+"7750": {
+"n": "Anthony Shaffer",
+"bg": null,
+"t": "2026-10-23"
+},
+"7828": {
+"n": "André Jung",
+"bg": null,
+"t": "2026-10-23"
+},
+"7879": {
+"n": "John Lasseter",
+"bg": null,
+"t": "2026-10-23"
+},
+"7885": {
+"n": "Randy Newman",
+"bg": null,
+"t": "2026-10-23"
+},
+"7894": {
+"n": "Jean-Claude Kalache",
+"bg": null,
+"t": "2026-10-23"
+},
+"7988": {
+"n": "Jeremy Lasky",
+"bg": null,
+"t": "2026-10-23"
+},
+"8204": {
+"n": "Charly Hübner",
+"bg": null,
+"t": "2026-10-23"
+},
+"8293": {
+"n": "Marion Cotillard",
+"bg": "Марион Котияр",
+"t": "2026-10-23"
+},
+"8734": {
+"n": "Göte Lovén",
+"bg": null,
+"t": "2026-10-23"
+},
+"8741": {
+"n": "Victor Sjöström",
+"bg": null,
+"t": "2026-10-23"
+},
+"8742": {
+"n": "Ingrid Thulin",
+"bg": null,
+"t": "2026-10-23"
+},
+"8743": {
+"n": "Jullan Kindahl",
+"bg": null,
+"t": "2026-10-23"
+},
+"8789": {
+"n": "Mathieu Amalric",
+"bg": null,
+"t": "2026-10-23"
+},
+"8800": {
+"n": "Birgit Minichmayr",
+"bg": null,
+"t": "2026-10-23"
+},
+"8969": {
+"n": "Chris Menges",
+"bg": null,
+"t": "2026-10-23"
+},
+"8984": {
+"n": "Bill Pullman",
+"bg": "Бил Пулман",
+"t": "2026-10-23"
+},
+"9015": {
+"n": "Kelly Macdonald",
+"bg": null,
+"t": "2026-10-23"
+},
+"9040": {
+"n": "Newton Thomas Sigel",
+"bg": null,
+"t": "2026-10-23"
+},
+"9138": {
+"n": "Gemma Jones",
+"bg": null,
+"t": "2026-10-23"
+},
+"9147": {
+"n": "Salman Rushdie",
+"bg": null,
+"t": "2026-10-23"
+},
+"9152": {
+"n": "Patrick Doyle",
+"bg": null,
+"t": "2026-10-23"
+},
+"9181": {
+"n": "Edward Zwick",
+"bg": null,
+"t": "2026-10-23"
+},
+"9191": {
+"n": "Timothy Spall",
+"bg": null,
+"t": "2026-10-23"
+},
+"9213": {
+"n": "David Myers",
+"bg": null,
+"t": "2026-10-23"
+},
+"9245": {
+"n": "Nicola Piovani",
+"bg": null,
+"t": "2026-10-23"
+},
+"9273": {
+"n": "Amy Adams",
+"bg": "Ейми Адамс",
+"t": "2026-10-23"
+},
+"9287": {
+"n": "Robert Blake",
+"bg": null,
+"t": "2026-10-23"
+},
+"9296": {
+"n": "Balthazar Getty",
+"bg": null,
+"t": "2026-10-23"
+},
+"9573": {
+"n": "Peter Deming",
+"bg": null,
+"t": "2026-10-23"
+},
+"9612": {
+"n": "Ed Solomon",
+"bg": null,
+"t": "2026-10-23"
+},
+"9642": {
+"n": "Jude Law",
+"bg": "Джуд Лоу",
+"t": "2026-10-23"
+},
+"9656": {
+"n": "Johnny Knoxville",
+"bg": null,
+"t": "2026-10-23"
+},
+"9747": {
+"n": "Jean-Claude Carrière",
+"bg": null,
+"t": "2026-10-23"
+},
+"9781": {
+"n": "Nia Long",
+"bg": null,
+"t": "2026-10-23"
+},
+"9824": {
+"n": "Diane Kruger",
+"bg": "Диане Крюгер",
+"t": "2026-10-23"
+},
+"9858": {
+"n": "Richard Maibaum",
+"bg": null,
+"t": "2026-10-23"
+},
+"9867": {
+"n": "Ted Moore",
+"bg": null,
+"t": "2026-10-23"
+},
+"9915": {
+"n": "Guy Hamilton",
+"bg": null,
+"t": "2026-10-23"
+},
+"9976": {
+"n": "Henry Thomas",
+"bg": null,
+"t": "2026-10-23"
+},
+"9989": {
+"n": "Mark Mancina",
+"bg": null,
+"t": "2026-10-23"
+},
+"10018": {
+"n": "Jack Hawkins",
+"bg": null,
+"t": "2026-10-23"
+},
+"10074": {
+"n": "Charles Gray",
+"bg": null,
+"t": "2026-10-23"
+},
+"10079": {
+"n": "Freddie Young",
+"bg": null,
+"t": "2026-10-23"
+},
+"10099": {
+"n": "Park Chan-wook",
+"bg": "Пак Чхан Ук",
+"t": "2026-10-23"
+},
+"10102": {
+"n": "Hwang Jo-yoon",
+"bg": null,
+"t": "2026-10-23"
+},
+"10103": {
+"n": "Im Joon-hyung",
+"bg": null,
+"t": "2026-10-23"
+},
+"10107": {
+"n": "Chung Chung-hoon",
+"bg": null,
+"t": "2026-10-23"
+},
+"10112": {
+"n": "Yoo Ji-tae",
+"bg": null,
+"t": "2026-10-23"
+},
+"10190": {
+"n": "Jill St. John",
+"bg": null,
+"t": "2026-10-23"
+},
+"10191": {
+"n": "Lana Wood",
+"bg": null,
+"t": "2026-10-23"
+},
+"10192": {
+"n": "Jimmy Dean",
+"bg": null,
+"t": "2026-10-23"
+},
+"10341": {
+"n": "Britt Ekland",
+"bg": null,
+"t": "2026-10-23"
+},
+"10404": {
+"n": "Diane Johnson",
+"bg": null,
+"t": "2026-10-23"
+},
+"10409": {
+"n": "Shelley Duvall",
+"bg": "Шели Дювал",
+"t": "2026-10-23"
+},
+"10410": {
+"n": "Danny Lloyd",
+"bg": null,
+"t": "2026-10-23"
+},
+"10411": {
+"n": "Barry Nelson",
+"bg": null,
+"t": "2026-10-23"
+},
+"10567": {
+"n": "Aline Brosh McKenna",
+"bg": null,
+"t": "2026-10-23"
+},
+"10572": {
+"n": "Theodore Shapiro",
+"bg": "Тиъдор Шапиро",
+"t": "2026-10-23"
+},
+"10573": {
+"n": "Florian Ballhaus",
+"bg": null,
+"t": "2026-10-23"
+},
+"10717": {
+"n": "Peter Biziou",
+"bg": null,
+"t": "2026-10-23"
+},
+"10777": {
+"n": "Maria Grazia Cucinotta",
+"bg": null,
+"t": "2026-10-23"
+},
+"10871": {
+"n": "Natasha Lyonne",
+"bg": "Наташа Лион",
+"t": "2026-10-23"
+},
+"10981": {
+"n": "Fiona Shaw",
+"bg": "Фиона Шоу",
+"t": "2026-10-23"
+},
+"11065": {
+"n": "Wilford Brimley",
+"bg": null,
+"t": "2026-10-23"
+},
+"11098": {
+"n": "John Powell",
+"bg": null,
+"t": "2026-10-23"
+},
+"11159": {
+"n": "Cheech Marin",
+"bg": null,
+"t": "2026-10-23"
+},
+"11181": {
+"n": "Kenneth Branagh",
+"bg": "Кенет Брана",
+"t": "2026-10-23"
+},
+"11288": {
+"n": "Robert Pattinson",
+"bg": "Робърт Патинсън",
+"t": "2026-10-23"
+},
+"11291": {
+"n": "Clémence Poésy",
+"bg": null,
+"t": "2026-10-23"
+},
+"11390": {
+"n": "Peter O'Toole",
+"bg": "Питър О'Тул",
+"t": "2026-10-23"
+},
+"11486": {
+"n": "Michael Imperioli",
+"bg": null,
+"t": "2026-10-23"
+},
+"11770": {
+"n": "John Carpenter",
+"bg": null,
+"t": "2026-10-23"
+},
+"11805": {
+"n": "Frank Whaley",
+"bg": "Франк Уейли",
+"t": "2026-10-23"
+},
+"11856": {
+"n": "Daniel Day-Lewis",
+"bg": "Даниъл Дей-Люис",
+"t": "2026-10-23"
+},
+"11953": {
+"n": "Benno Fürmann",
+"bg": null,
+"t": "2026-10-23"
+},
+"12058": {
+"n": "Vicky Jenson",
+"bg": null,
+"t": "2026-10-23"
+},
+"12061": {
+"n": "Roger S.H. Schulman",
+"bg": null,
+"t": "2026-10-23"
+},
+"12073": {
+"n": "Mike Myers",
+"bg": "Майк Майърс",
+"t": "2026-10-23"
+},
+"12074": {
+"n": "John Lithgow",
+"bg": "Джон Литгоу",
+"t": "2026-10-23"
+},
+"12083": {
+"n": "Joe Stillman",
+"bg": null,
+"t": "2026-10-23"
+},
+"12110": {
+"n": "Amy Sedaris",
+"bg": null,
+"t": "2026-10-23"
+},
+"12238": {
+"n": "David Lean",
+"bg": null,
+"t": "2026-10-23"
+},
+"12248": {
+"n": "Alec Guinness",
+"bg": "Алек Гинес",
+"t": "2026-10-23"
+},
+"12382": {
+"n": "Simon Duggan",
+"bg": null,
+"t": "2026-10-23"
+},
+"12453": {
+"n": "Wong Kar-wai",
+"bg": null,
+"t": "2026-10-23"
+},
+"12454": {
+"n": "Michael Galasso",
+"bg": null,
+"t": "2026-10-23"
+},
+"12455": {
+"n": "Shigeru Umebayashi",
+"bg": null,
+"t": "2026-10-23"
+},
+"12462": {
+"n": "Rebecca Pan",
+"bg": null,
+"t": "2026-10-23"
+},
+"12463": {
+"n": "Kelly Lai Chen",
+"bg": null,
+"t": "2026-10-23"
+},
+"12671": {
+"n": "Faye Wong",
+"bg": null,
+"t": "2026-10-23"
+},
+"12674": {
+"n": "Siu Ping-Lam",
+"bg": null,
+"t": "2026-10-23"
+},
+"12898": {
+"n": "Tim Allen",
+"bg": null,
+"t": "2026-10-23"
+},
+"13022": {
+"n": "Tom Berenger",
+"bg": "Том Беринджър",
+"t": "2026-10-23"
+},
+"13250": {
+"n": "Hidetoshi Nishijima",
+"bg": null,
+"t": "2026-10-23"
+},
+"13267": {
+"n": "Michael Wilson",
+"bg": null,
+"t": "2026-10-23"
+},
+"13275": {
+"n": "Tadanobu Asano",
+"bg": null,
+"t": "2026-10-23"
+},
+"13317": {
+"n": "Robert Bolt",
+"bg": null,
+"t": "2026-10-23"
+},
+"13328": {
+"n": "Corin Redgrave",
+"bg": null,
+"t": "2026-10-23"
+},
+"14432": {
+"n": "Patrick Kennedy",
+"bg": null,
+"t": "2026-10-23"
+},
+"14468": {
+"n": "Brian Glover",
+"bg": null,
+"t": "2026-10-23"
+},
+"14808": {
+"n": "Edmond Richard",
+"bg": null,
+"t": "2026-10-23"
+},
+"14821": {
+"n": "Fernando Rey",
+"bg": null,
+"t": "2026-10-23"
+},
+"14893": {
+"n": "Linda Kash",
+"bg": null,
+"t": "2026-10-23"
+},
+"14957": {
+"n": "Colin Welland",
+"bg": null,
+"t": "2026-10-23"
+},
+"15082": {
+"n": "Jeppe Kaas",
+"bg": null,
+"t": "2026-10-23"
+},
+"15083": {
+"n": "Sebastian Blenkov",
+"bg": null,
+"t": "2026-10-23"
+},
+"15205": {
+"n": "Edward Bond",
+"bg": null,
+"t": "2026-10-23"
+},
+"15298": {
+"n": "Rachel House",
+"bg": null,
+"t": "2026-10-23"
+},
+"15347": {
+"n": "Michael Giacchino",
+"bg": "Майкъл Джакино",
+"t": "2026-10-23"
+},
+"15406": {
+"n": "Bill Lancaster",
+"bg": null,
+"t": "2026-10-23"
+},
+"15411": {
+"n": "T.K. Carter",
+"bg": null,
+"t": "2026-10-23"
+},
+"15412": {
+"n": "David Clennon",
+"bg": null,
+"t": "2026-10-23"
+},
+"15486": {
+"n": "Peter Kurth",
+"bg": null,
+"t": "2026-10-23"
+},
+"15488": {
+"n": "Ken Loach",
+"bg": null,
+"t": "2026-10-23"
+},
+"15810": {
+"n": "Ron Clements",
+"bg": null,
+"t": "2026-10-23"
+},
+"15811": {
+"n": "John Musker",
+"bg": "Джон Мъскър",
+"t": "2026-10-23"
+},
+"15887": {
+"n": "Julia Ormond",
+"bg": "Джулия Ормънд",
+"t": "2026-10-23"
+},
+"15892": {
+"n": "Dan Fogelman",
+"bg": null,
+"t": "2026-10-23"
+},
+"15897": {
+"n": "Larry the Cable Guy",
+"bg": null,
+"t": "2026-10-23"
+},
+"16269": {
+"n": "Louis Garrel",
+"bg": null,
+"t": "2026-10-23"
+},
+"16368": {
+"n": "Steven Price",
+"bg": null,
+"t": "2026-10-23"
+},
+"16778": {
+"n": "Ilkka Koivula",
+"bg": null,
+"t": "2026-10-23"
+},
+"16828": {
+"n": "Chris Evans",
+"bg": "Крис Евънс",
+"t": "2026-10-23"
+},
+"16851": {
+"n": "Josh Brolin",
+"bg": "Джош Бролин",
+"t": "2026-10-23"
+},
+"16972": {
+"n": "Sergi López",
+"bg": null,
+"t": "2026-10-23"
+},
+"17039": {
+"n": "Nick Offerman",
+"bg": null,
+"t": "2026-10-23"
+},
+"17142": {
+"n": "Paul Dano",
+"bg": "Пол Дейно",
+"t": "2026-10-23"
+},
+"17288": {
+"n": "Michael Fassbender",
+"bg": "Майкъл Фасбендър",
+"t": "2026-10-23"
+},
+"17289": {
+"n": "Rodrigo Santoro",
+"bg": null,
+"t": "2026-10-23"
+},
+"17352": {
+"n": "Marianne Jean-Baptiste",
+"bg": null,
+"t": "2026-10-23"
+},
+"17373": {
+"n": "Jürgen Vogel",
+"bg": null,
+"t": "2026-10-23"
+},
+"17497": {
+"n": "Romain Duris",
+"bg": null,
+"t": "2026-10-23"
+},
+"17520": {
+"n": "Cédric Klapisch",
+"bg": null,
+"t": "2026-10-23"
+},
+"17549": {
+"n": "Hendrik Handloegten",
+"bg": null,
+"t": "2026-10-23"
+},
+"17604": {
+"n": "Jeremy Renner",
+"bg": "Джереми Ренър",
+"t": "2026-10-23"
+},
+"17605": {
+"n": "Idris Elba",
+"bg": "Идрис Елба",
+"t": "2026-10-23"
+},
+"17882": {
+"n": "Isabelle Huppert",
+"bg": null,
+"t": "2026-10-23"
+},
+"18050": {
+"n": "Elle Fanning",
+"bg": null,
+"t": "2026-10-23"
+},
+"18265": {
+"n": "Mauro Fiore",
+"bg": null,
+"t": "2026-10-23"
+},
+"18277": {
+"n": "Sandra Bullock",
+"bg": "Сандра Бълок",
+"t": "2026-10-23"
+},
+"18345": {
+"n": "Brenda Fricker",
+"bg": null,
+"t": "2026-10-23"
+},
+"18354": {
+"n": "Bridget Moynahan",
+"bg": "Бриджит Мойнахан",
+"t": "2026-10-23"
+},
+"18478": {
+"n": "Rodrigo de la Serna",
+"bg": null,
+"t": "2026-10-23"
+},
+"18802": {
+"n": "Ronald Reagan",
+"bg": "Роналд Рейгън",
+"t": "2026-10-23"
+},
+"18918": {
+"n": "Dwayne Johnson",
+"bg": "Дуейн Джонсън",
+"t": "2026-10-23"
+},
+"18969": {
+"n": "Doris Dörrie",
+"bg": null,
+"t": "2026-10-23"
+},
+"18992": {
+"n": "Aidan Quinn",
+"bg": null,
+"t": "2026-10-23"
+},
+"18999": {
+"n": "J.K. Simmons",
+"bg": "Джей Кей Симънс",
+"t": "2026-10-23"
+},
+"19011": {
+"n": "George W. Bush",
+"bg": "Джордж Уокър Буш",
+"t": "2026-10-23"
+},
+"19012": {
+"n": "Davis Guggenheim",
+"bg": null,
+"t": "2026-10-23"
+},
+"19013": {
+"n": "Al Gore",
+"bg": "Ал Гор",
+"t": "2026-10-23"
+},
+"19016": {
+"n": "Michael Brook",
+"bg": null,
+"t": "2026-10-23"
+},
+"19043": {
+"n": "John Cameron",
+"bg": null,
+"t": "2026-10-23"
+},
+"19092": {
+"n": "Stéphane Audran",
+"bg": null,
+"t": "2026-10-23"
+},
+"19224": {
+"n": "Gregg Araki",
+"bg": null,
+"t": "2026-10-23"
+},
+"19271": {
+"n": "Anthony Russo",
+"bg": null,
+"t": "2026-10-23"
+},
+"19272": {
+"n": "Joe Russo",
+"bg": null,
+"t": "2026-10-23"
+},
+"19596": {
+"n": "Atsushi Okui",
+"bg": null,
+"t": "2026-10-23"
+},
+"19769": {
+"n": "David Ayer",
+"bg": null,
+"t": "2026-10-23"
+},
+"19803": {
+"n": "Leonardo Sbaraglia",
+"bg": null,
+"t": "2026-10-23"
+},
+"19986": {
+"n": "Christophe Beaucarne",
+"bg": null,
+"t": "2026-10-23"
+},
+"20089": {
+"n": "Jena Malone",
+"bg": "Джена Малоун",
+"t": "2026-10-23"
+},
+"20173": {
+"n": "Don McKellar",
+"bg": null,
+"t": "2026-10-23"
+},
+"20657": {
+"n": "Cristian Mungiu",
+"bg": null,
+"t": "2026-10-23"
+},
+"20701": {
+"n": "Oleg Mutu",
+"bg": null,
+"t": "2026-10-23"
+},
+"20907": {
+"n": "Antoine Fuqua",
+"bg": "Антоан Фукуа",
+"t": "2026-10-23"
+},
+"21028": {
+"n": "Anton Yelchin",
+"bg": "Антон Йелчин",
+"t": "2026-10-23"
+},
+"21678": {
+"n": "Olivier Assayas",
+"bg": null,
+"t": "2026-10-23"
+},
+"21841": {
+"n": "Tony Garnett",
+"bg": null,
+"t": "2026-10-23"
+},
+"21864": {
+"n": "William D. Wittliff",
+"bg": null,
+"t": "2026-10-23"
+},
+"22161": {
+"n": "Ben Davis",
+"bg": "Бен Дейвис",
+"t": "2026-10-23"
+},
+"22215": {
+"n": "Michael Showalter",
+"bg": null,
+"t": "2026-10-23"
+},
+"22226": {
+"n": "Paul Rudd",
+"bg": "Пол Ръд",
+"t": "2026-10-23"
+},
+"22607": {
+"n": "Veith von Fürstenberg",
+"bg": null,
+"t": "2026-10-23"
+},
+"22611": {
+"n": "Yella Rottländer",
+"bg": null,
+"t": "2026-10-23"
+},
+"22612": {
+"n": "Lisa Kreuzer",
+"bg": null,
+"t": "2026-10-23"
+},
+"22613": {
+"n": "Edda Köchl",
+"bg": null,
+"t": "2026-10-23"
+},
+"22614": {
+"n": "Ernest Boehm",
+"bg": null,
+"t": "2026-10-23"
+},
+"23227": {
+"n": "Steven Knight",
+"bg": "Стивън Найт",
+"t": "2026-10-23"
+},
+"23383": {
+"n": "Leïla Bekhti",
+"bg": null,
+"t": "2026-10-23"
+},
+"23506": {
+"n": "Jacques Fieschi",
+"bg": null,
+"t": "2026-10-23"
+},
+"23679": {
+"n": "Billy West",
+"bg": null,
+"t": "2026-10-23"
+},
+"24217": {
+"n": "Haris Zambarloukos",
+"bg": "Харис Замбарлукос",
+"t": "2026-10-23"
+},
+"24684": {
+"n": "Paul Frankeur",
+"bg": null,
+"t": "2026-10-23"
+},
+"24893": {
+"n": "Franck Dubosc",
+"bg": null,
+"t": "2026-10-23"
+},
+"25002": {
+"n": "Lee Byung-hun",
+"bg": null,
+"t": "2026-10-23"
+},
+"25009": {
+"n": "Raul Sanchez Inglis",
+"bg": null,
+"t": "2026-10-23"
+},
+"26097": {
+"n": "Jeanne Lapoirie",
+"bg": null,
+"t": "2026-10-23"
+},
+"26100": {
+"n": "Melvil Poupaud",
+"bg": null,
+"t": "2026-10-23"
+},
+"26101": {
+"n": "Marie Rivière",
+"bg": null,
+"t": "2026-10-23"
+},
+"26192": {
+"n": "Alwin H. Küchler",
+"bg": null,
+"t": "2026-10-23"
+},
+"27319": {
+"n": "Christoph Waltz",
+"bg": "Кристоф Валц",
+"t": "2026-10-23"
+},
+"27978": {
+"n": "Denis Lavant",
+"bg": null,
+"t": "2026-10-23"
+},
+"28379": {
+"n": "Olga Odanović",
+"bg": null,
+"t": "2026-10-23"
+},
+"28514": {
+"n": "Àlex Brendemühl",
+"bg": null,
+"t": "2026-10-23"
+},
+"28620": {
+"n": "Martin Gschlacht",
+"bg": null,
+"t": "2026-10-23"
+},
+"28675": {
+"n": "Laurent Stocker",
+"bg": null,
+"t": "2026-10-23"
+},
+"28743": {
+"n": "John Lynch",
+"bg": null,
+"t": "2026-10-23"
+},
+"28761": {
+"n": "Ivan Andonov",
+"bg": null,
+"t": "2026-10-23"
+},
+"28782": {
+"n": "Monica Bellucci",
+"bg": "Моника Белучи",
+"t": "2026-10-23"
+},
+"29231": {
+"n": "Eigil Bryld",
+"bg": null,
+"t": "2026-10-23"
+},
+"29294": {
+"n": "Lawrence Shragge",
+"bg": null,
+"t": "2026-10-23"
+},
+"29415": {
+"n": "Dominik Scherrer",
+"bg": null,
+"t": "2026-10-23"
+},
+"29864": {
+"n": "Jack Conroy",
+"bg": null,
+"t": "2026-10-23"
+},
+"32511": {
+"n": "Marina Hands",
+"bg": null,
+"t": "2026-10-23"
+},
+"33134": {
+"n": "Tomokazu Miura",
+"bg": null,
+"t": "2026-10-23"
+},
+"33238": {
+"n": "Piotr Sobociński",
+"bg": "Пиотр Собочински",
+"t": "2026-10-23"
+},
+"33388": {
+"n": "Shane Connaughton",
+"bg": null,
+"t": "2026-10-23"
+},
+"34027": {
+"n": "Stefania Sandrelli",
+"bg": null,
+"t": "2026-10-23"
+},
+"34517": {
+"n": "Trey Parker",
+"bg": null,
+"t": "2026-10-23"
+},
+"35102": {
+"n": "Donatella Finocchiaro",
+"bg": null,
+"t": "2026-10-23"
+},
+"35103": {
+"n": "Gaetano Bruno",
+"bg": null,
+"t": "2026-10-23"
+},
+"35894": {
+"n": "Julien Frison",
+"bg": null,
+"t": "2026-10-23"
+},
+"36632": {
+"n": "Juan Diego Botto",
+"bg": null,
+"t": "2026-10-23"
+},
+"37427": {
+"n": "Susan Shilliday",
+"bg": null,
+"t": "2026-10-23"
+},
+"37632": {
+"n": "Eddie Redmayne",
+"bg": "Еди Редмейн",
+"t": "2026-10-23"
+},
+"37928": {
+"n": "Chung Seo-kyung",
+"bg": null,
+"t": "2026-10-23"
+},
+"37929": {
+"n": "Choi Seung-hyun",
+"bg": null,
+"t": "2026-10-23"
+},
+"37930": {
+"n": "Cho Young-wuk",
+"bg": null,
+"t": "2026-10-23"
+},
+"37946": {
+"n": "Aitana Sánchez-Gijón",
+"bg": null,
+"t": "2026-10-23"
+},
+"38312": {
+"n": "Wolfram Koch",
+"bg": null,
+"t": "2026-10-23"
+},
+"38341": {
+"n": "Bulle Ogier",
+"bg": null,
+"t": "2026-10-23"
+},
+"39188": {
+"n": "Edward Woodward",
+"bg": null,
+"t": "2026-10-23"
+},
+"39827": {
+"n": "Lesley Barber",
+"bg": null,
+"t": "2026-10-23"
+},
+"40330": {
+"n": "Tohru Emori",
+"bg": null,
+"t": "2026-10-23"
+},
+"40333": {
+"n": "Satoshi Kon",
+"bg": null,
+"t": "2026-10-23"
+},
+"40449": {
+"n": "Mitsunori Isaki",
+"bg": null,
+"t": "2026-10-23"
+},
+"40543": {
+"n": "John Ortiz",
+"bg": null,
+"t": "2026-10-23"
+},
+"40883": {
+"n": "Anouk Grinberg",
+"bg": null,
+"t": "2026-10-23"
+},
+"41087": {
+"n": "Leslie Mann",
+"bg": "Лесли Ман",
+"t": "2026-10-23"
+},
+"41285": {
+"n": "Kirsten Sheridan",
+"bg": "Кирстен Шеридан",
+"t": "2026-10-23"
+},
+"41906": {
+"n": "Nicolaj Kopernikus",
+"bg": null,
+"t": "2026-10-23"
+},
+"41909": {
+"n": "Manuel Alberto Claro",
+"bg": null,
+"t": "2026-10-23"
+},
+"41968": {
+"n": "Santiago Amigorena",
+"bg": null,
+"t": "2026-10-23"
+},
+"43487": {
+"n": "Irmin Schmidt",
+"bg": null,
+"t": "2026-10-23"
+},
+"43661": {
+"n": "Takeshi Kaneshiro",
+"bg": null,
+"t": "2026-10-23"
+},
+"43663": {
+"n": "Kirin Kiki",
+"bg": null,
+"t": "2026-10-23"
+},
+"44079": {
+"n": "Charlotte Rampling",
+"bg": "Шарлот Рамплинг",
+"t": "2026-10-23"
+},
+"44735": {
+"n": "Jesse Eisenberg",
+"bg": "Джеси Айзенбърг",
+"t": "2026-10-23"
+},
+"45120": {
+"n": "Tim Fleming",
+"bg": null,
+"t": "2026-10-23"
+},
+"45405": {
+"n": "Jay Duplass",
+"bg": null,
+"t": "2026-10-23"
+},
+"45467": {
+"n": "Diane Cilento",
+"bg": null,
+"t": "2026-10-23"
+},
+"45749": {
+"n": "Thekla Reuten",
+"bg": null,
+"t": "2026-10-23"
+},
+"45754": {
+"n": "Fedja van Huêt",
+"bg": null,
+"t": "2026-10-23"
+},
+"45930": {
+"n": "Bart Gavigan",
+"bg": null,
+"t": "2026-10-23"
+},
+"46391": {
+"n": "Paul Auster",
+"bg": null,
+"t": "2026-10-23"
+},
+"46432": {
+"n": "George H. W. Bush",
+"bg": null,
+"t": "2026-10-23"
+},
+"47879": {
+"n": "John Savage",
+"bg": null,
+"t": "2026-10-23"
+},
+"49025": {
+"n": "Samuel Le Bihan",
+"bg": null,
+"t": "2026-10-23"
+},
+"49697": {
+"n": "Bernd Fischer",
+"bg": null,
+"t": "2026-10-23"
+},
+"51119": {
+"n": "Will Keen",
+"bg": null,
+"t": "2026-10-23"
+},
+"52114": {
+"n": "Jon Lucas",
+"bg": null,
+"t": "2026-10-23"
+},
+"52115": {
+"n": "Scott Moore",
+"bg": null,
+"t": "2026-10-23"
+},
+"52353": {
+"n": "Denis Rouden",
+"bg": null,
+"t": "2026-10-23"
+},
+"52737": {
+"n": "Aude Py",
+"bg": null,
+"t": "2026-10-23"
+},
+"52848": {
+"n": "Isla Fisher",
+"bg": "Айла Фишър",
+"t": "2026-10-23"
+},
+"53240": {
+"n": "Riz Ahmed",
+"bg": null,
+"t": "2026-10-23"
+},
+"53256": {
+"n": "Terry Crews",
+"bg": "Тери Крюз",
+"t": "2026-10-23"
+},
+"53334": {
+"n": "Jim Sheridan",
+"bg": "Джим Шеридан",
+"t": "2026-10-23"
+},
+"53841": {
+"n": "Brendan Galvin",
+"bg": null,
+"t": "2026-10-23"
+},
+"54168": {
+"n": "Anne Marivin",
+"bg": null,
+"t": "2026-10-23"
+},
+"54287": {
+"n": "Jérôme Alméras",
+"bg": null,
+"t": "2026-10-23"
+},
+"54293": {
+"n": "Xavier Robic",
+"bg": null,
+"t": "2026-10-23"
+},
+"54338": {
+"n": "Hafsia Herzi",
+"bg": null,
+"t": "2026-10-23"
+},
+"54472": {
+"n": "Martin McDonagh",
+"bg": "Мартин Макдона",
+"t": "2026-10-23"
+},
+"54676": {
+"n": "Jannis Niewöhner",
+"bg": null,
+"t": "2026-10-23"
+},
+"54697": {
+"n": "Dave Franco",
+"bg": "Дейв Франко",
+"t": "2026-10-23"
+},
+"55119": {
+"n": "Alejandro Jodorowsky",
+"bg": null,
+"t": "2026-10-23"
+},
+"55121": {
+"n": "Rafael Corkidi",
+"bg": null,
+"t": "2026-10-23"
+},
+"55123": {
+"n": "Horacio Salinas",
+"bg": null,
+"t": "2026-10-23"
+},
+"55124": {
+"n": "Zamira Saunders",
+"bg": null,
+"t": "2026-10-23"
+},
+"55125": {
+"n": "Juan Ferrara",
+"bg": null,
+"t": "2026-10-23"
+},
+"55126": {
+"n": "Adriana Page",
+"bg": null,
+"t": "2026-10-23"
+},
+"55466": {
+"n": "James Corden",
+"bg": "Джеймс Кордън",
+"t": "2026-10-23"
+},
+"55474": {
+"n": "John Collee",
+"bg": null,
+"t": "2026-10-23"
+},
+"55805": {
+"n": "André Marcon",
+"bg": null,
+"t": "2026-10-23"
+},
+"55934": {
+"n": "Taika Waititi",
+"bg": null,
+"t": "2026-10-23"
+},
+"55936": {
+"n": "Jemaine Clement",
+"bg": null,
+"t": "2026-10-23"
+},
+"55969": {
+"n": "Zoltán Fábri",
+"bg": null,
+"t": "2026-10-23"
+},
+"56021": {
+"n": "Danny Cohen",
+"bg": null,
+"t": "2026-10-23"
+},
+"56024": {
+"n": "Jean Dujardin",
+"bg": "Жан Дюжарден",
+"t": "2026-10-23"
+},
+"56194": {
+"n": "Paolo Sorrentino",
+"bg": "Паоло Сорентино",
+"t": "2026-10-23"
+},
+"56200": {
+"n": "Patti Smith",
+"bg": null,
+"t": "2026-10-23"
+},
+"56277": {
+"n": "Italo Petriccione",
+"bg": null,
+"t": "2026-10-23"
+},
+"56289": {
+"n": "Hélène Louvart",
+"bg": null,
+"t": "2026-10-23"
+},
+"56290": {
+"n": "György Illés",
+"bg": null,
+"t": "2026-10-23"
+},
+"56293": {
+"n": "István Dégi",
+"bg": null,
+"t": "2026-10-23"
+},
+"56304": {
+"n": "György Vukán",
+"bg": null,
+"t": "2026-10-23"
+},
+"56376": {
+"n": "Annemarie Jacir",
+"bg": null,
+"t": "2026-10-23"
+},
+"56446": {
+"n": "John Cena",
+"bg": "Джон Сина",
+"t": "2026-10-23"
+},
+"56501": {
+"n": "Michael Spierig",
+"bg": null,
+"t": "2026-10-23"
+},
+"56502": {
+"n": "Peter Spierig",
+"bg": null,
+"t": "2026-10-23"
+},
+"56503": {
+"n": "Andrew Strahorn",
+"bg": null,
+"t": "2026-10-23"
+},
+"56535": {
+"n": "Marcus Trumpp",
+"bg": null,
+"t": "2026-10-23"
+},
+"56536": {
+"n": "Peter Wunstorf",
+"bg": null,
+"t": "2026-10-23"
+},
+"56683": {
+"n": "Bryan Adams",
+"bg": null,
+"t": "2026-10-23"
+},
+"56816": {
+"n": "Michele Reis",
+"bg": null,
+"t": "2026-10-23"
+},
+"56830": {
+"n": "Brigitte Lin Ching-hsia",
+"bg": null,
+"t": "2026-10-23"
+},
+"56874": {
+"n": "Richard C. Kratina",
+"bg": null,
+"t": "2026-10-23"
+},
+"56883": {
+"n": "Patrick Godeau",
+"bg": null,
+"t": "2026-10-23"
+}
+}

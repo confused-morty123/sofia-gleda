@@ -1855,5 +1855,22 @@
   "src": "https://www.ndk.bg/en/event/edna-istoriia-sinelibri",
   "pv": 5,
   "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38477/9169-preview-20261021-072119_resize1000x1000.jpg?v=1792568736"
+ },
+ "zvyarat": {
+  "src": "https://www.kinoarena.com/bg/movie/zvyarut",
+  "pv": 5
+ },
+ "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": {
+  "src": "https://www.kinoarena.com/bg/movie/how-to-save-the-immortal-2-elixir-of-life",
+  "pv": 5
+ },
+ "topki": {
+  "src": "https://www.kinoarena.com/bg/movie/topki",
+  "pv": 5
+ },
+ "puk": {
+  "dir": "Анри Кулев",
+  "src": "https://vlaikovacinema.com/screening/%d0%bf%d1%83%d0%ba/",
+  "pv": 5
  }
 }

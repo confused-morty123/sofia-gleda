@@ -3014,5 +3014,16 @@
    "#5F4527"
   ],
   "source": "vlaikova"
+ },
+ "valshebnik-priyatel": {
+  "id": "valshebnik-priyatel",
+  "bg": "Вълшебник - Приятел",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
  }
 }
