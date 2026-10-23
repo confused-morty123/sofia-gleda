@@ -1189,7 +1189,8 @@ bg:{tagline:"кино и театър в софия",
  films20:"Филми",shows20:"Театър",selected:"избрани",
  bannerWeek:"Програма за тази седмица",bannerToday:"Програма за днес",bannerMonth:"Програма за този месец",
  bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
- fabFilters:"Филтри",clearAll:"Изчисти всички",
+ fabFilters:"Филтри",
+lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSearch:"Изчисти търсенето",prevMonth:"Предишен месец",nextMonth:"Следващ месец",railBack:"Назад в реда",railFwd:"Напред в реда",fabActive:"{n} активни",prelimShort:"предварителна програма",boxOnly:"само на касата",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
  railPopular:"Популярни тази седмица",railPopularPeriod:"Популярни за периода",
@@ -1290,7 +1291,8 @@ en:{tagline:"cinema & theatre in sofia",
  films20:"Films",shows20:"Theatre",selected:"selected",
  bannerWeek:"This week's programme",bannerToday:"Today's programme",bannerMonth:"This month's programme",
  bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
- fabFilters:"Filters",clearAll:"Clear all",
+ fabFilters:"Filters",
+lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMonth:"Previous month",nextMonth:"Next month",railBack:"Scroll back",railFwd:"Scroll forward",fabActive:"{n} active",prelimShort:"preliminary programme",boxOnly:"box office only",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
  railPopular:"Popular this week",railPopularPeriod:"Popular in this period",
@@ -2311,8 +2313,9 @@ function buildDayStrip(){
     const hasSc=hasData.has(d);
     const isToday=d===TODAY;
     const label=fmtDay(d,false); /* e.g. "ср 7" */
-    const todayMark=isToday?`<span class="ds-today">${esc(L.dsToday||"днес")}</span>`:"";
-    pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}">${esc(label)}${todayMark}</button>`);
+    const todayMark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:"";
+    const dsName=`${label}${isToday?" "+(L.dsToday||"днес"):""}, ${fmtDayDow(d)}`;
+    pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}" aria-label="${esc(dsName)}">${esc(label)}${todayMark}</button>`);
   }
   return`<div class="daystrip">${pills.join("")}</div>`;}
 
@@ -2439,7 +2442,7 @@ function filmCard(f,all,rowsOverride){
     <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
       <div class="p-top">${scoreBadge(f)}
         ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${_tags?`<span class="p-tags">${_tags}</span>`:""}</div>
-      <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+      <div class="p-title" aria-hidden="true">${esc(filmTitle(f))}</div><div class="p-sub" aria-hidden="true">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
 function showCard(sh,all){
@@ -2450,7 +2453,7 @@ function showCard(sh,all){
   return`<button class="card" data-show="${esc(sh.id)}">
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
       <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
-      <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+      <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
       <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
@@ -2464,9 +2467,9 @@ function eventCard(ev){
 function rail(title,sub,cards){
   if(!cards.length)return"";
   return`<section class="rail"><div class="rhead"><h2>${esc(title)}</h2>${sub?`<span class="sub">${esc(sub)}</span>`:""}</div>
-   <div class="rscroll"><button class="rarrow prev" data-scroll="-1" aria-label="←">‹</button>
+   <div class="rscroll"><button class="rarrow prev" data-scroll="-1" aria-label="${esc(t().railBack)}"><span aria-hidden="true">‹</span></button>
    <div class="rtrack">${cards.join("")}</div>
-   <button class="rarrow next" data-scroll="1" aria-label="→">›</button></div></section>`;}
+   <button class="rarrow next" data-scroll="1" aria-label="${esc(t().railFwd)}"><span aria-hidden="true">›</span></button></div></section>`;}
 
 /* ===================== (onboarding removed) ===================== */
 
@@ -2804,7 +2807,7 @@ function body(){
           return`<button class="card" data-show="${esc(sh.id)}">
             <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
               <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
-              <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+              <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
               <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});
       } else {
@@ -2825,7 +2828,7 @@ function body(){
               return`<button class="card" data-show="${esc(sh.id)}">
                 <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
                   <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
-                  <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+                  <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
                   <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});}
         }
@@ -3345,6 +3348,11 @@ const _p3DayRenderFns=new Map();
 /* One venue row of the phone day list, stacked: the name with the price on its right,
    then the stage (theatre), the address and the preliminary note, each on its own line,
    then the times. For a show the row's price slot carries the stage name. */
+/* A time's accessible name: the time first (what the pill shows), then where and when, and
+   whether it is from a preliminary programme, which the dashed outline shows by sight only. */
+function _pillName(tm,venue,dateStr,prelim){
+  return `${tm}, ${venue}, ${fmtDayDow(dateStr)}${prelim?", "+t().prelimShort:""}`;
+}
 function p3eRowHtml(itemKind,v,r,prelim,pills){
   const isShow=itemKind==="show";
   const price=isShow?"":(r.price||v.price||"");
@@ -3406,7 +3414,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const daysHtml=`<div class="p3e-days" role="group" aria-label="${esc(L.times)}" data-p3dayswrap>
     ${dates.map(d=>{
       const{abbr,num}=dayWod(d);
-      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}"><span>${esc(abbr)}</span><b>${esc(num)}</b></button>`;
+      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b></button>`;
     }).join("")}</div>`;
 
   /* build venue list for a given date */
@@ -3420,7 +3428,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim))}">${esc(tm)}</button>`;
       }).join("");
       return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
@@ -3486,7 +3494,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const prelim=isP(vid,d);
       const pillsD=rr.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${vid}|${d}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||vid,d,prelim))}">${esc(tm)}</button>`;
       }).join(" ");
       return`<td>${pillsD}</td>`;
     }).join("");
@@ -3531,7 +3539,7 @@ function p3eRegisterDayPicker(container, itemKind, itemId, normalizedRows, venue
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim))}">${esc(tm)}</button>`;
       }).join("");
       return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
@@ -3589,7 +3597,7 @@ function sheetFilm(f){
   const tr=trailerOf(f);
   return`<div class="sheet"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
-    <button class="sclose" data-close aria-label="close">✕</button>
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="film:${esc(f.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     ${tr?`<button type="button" class="tr-play" data-trailer="${esc(f.id)}" aria-label="${esc((tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)+": "+filmTitle(f))}" title="${esc(tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.6v12.8a.9.9 0 0 0 1.37.77l10.2-6.4a.9.9 0 0 0 0-1.54L9.37 4.83A.9.9 0 0 0 8 5.6z" fill="currentColor"/></svg></button>`:""}
     <div class="sh-titles" style="position:relative;z-index:3">
@@ -3661,7 +3669,7 @@ function sheetShow(sh){
   const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
   return`<div class="sheet"><div class="shero" style="background:${grad(sh.g)}">
     ${posterArt("sh-"+sh.id,sh.genres,sh.g,titleOf(sh))}<div class="hero-scrim"></div>
-    <button class="sclose" data-close aria-label="close">✕</button>
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
       <div class="eyebrow" style="color:#fff;opacity:.82">${esc(thName_)}</div><h2>${esc(titleOf(sh))}</h2></div></div>
@@ -3695,7 +3703,7 @@ function sheetEvent(ev){
   const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
   return`<div class="sheet"><div class="shero" style="background:${grad(ev.g)}">
     ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="hero-scrim"></div>
-    <button class="sclose" data-close aria-label="close">✕</button>
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
       <div class="eyebrow" style="color:#fff;opacity:.85">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
@@ -3739,7 +3747,7 @@ function calView(){
       if(iso===lo){pressed=true;cls+=" rstart";if(hi&&hi!==lo)cls+=" inrange";}
       if(iso===top&&top!==lo){pressed=true;cls+=" rend inrange";}
     }else{pressed=S.day===iso;}
-    cells+=`<button ${ok?"":"disabled"} class="${cls.trim()}" data-pick="${iso}" aria-pressed="${pressed}">${d}</button>`;
+    cells+=`<button ${ok?"":"disabled"} class="${cls.trim()}" data-pick="${iso}" aria-pressed="${pressed}" aria-label="${esc(d+" "+L.months[Number(m.slice(5,7))-1])}">${d}</button>`;
   }
   const dows=S.lang==="bg"?["пн","вт","ср","чт","пт","сб","нд"]:["Mo","Tu","We","Th","Fr","Sa","Su"];
   const hint=isRange
@@ -3748,9 +3756,9 @@ function calView(){
        : (S.lang==="bg"?"Изберете начална дата":"Pick a start date"))
     : (S.lang==="bg"?"Докоснете начало и край за период":"Tap a start and an end for a range");
   return `<div class="calnav">
-      <button class="calarrow" data-calstep="-1" ${idx>0?"":"disabled"} aria-label="prev">‹</button>
+      <button class="calarrow" data-calstep="-1" ${idx>0?"":"disabled"} aria-label="${esc(L.prevMonth)}">‹</button>
       <div class="calmon">${esc(L.months[Number(m.slice(5,7))-1])} ${m.slice(0,4)}</div>
-      <button class="calarrow" data-calstep="1" ${idx<MONTHS.length-1?"":"disabled"} aria-label="next">›</button></div>
+      <button class="calarrow" data-calstep="1" ${idx<MONTHS.length-1?"":"disabled"} aria-label="${esc(L.nextMonth)}">›</button></div>
     <div class="caldow">${dows.map(x=>`<span>${x}</span>`).join("")}</div>
     <div class="cal">${cells}</div>
     <div class="calhint">${esc(hint)}</div>`;
@@ -3815,7 +3823,7 @@ function drawerHTML(){
     <div class="drawer-top"><b>${esc(L.filters)}</b>
       <div style="display:flex;align-items:center;gap:8px">
         ${hasActive?`<button class="fclear" data-clearf style="font-size:11px">${esc(L.clearAll||L.clear)}</button>`:""}
-        <button class="dclose" data-dclose aria-label="close">✕</button>
+        <button class="dclose" data-dclose aria-label="${esc(L.closeFilters)}">✕</button>
       </div></div>
     <h3>${esc(L.period)}</h3>
     <div class="mrow">
@@ -3889,19 +3897,19 @@ function render(){
   const searchMobileOpenHTML=`<div class="bar-row-search${S.searchOpen?" sr-visible open":""}"><div class="search search-mob-open${S.q?" has":""}">
       <span class="mag">⌕</span>
       <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
-      <button class="clr" data-qclear-m aria-label="clear">✕</button>
+      <button class="clr" data-qclear-m aria-label="${esc(L.clearSearch)}">✕</button>
     </div></div>`;
   /* desktop: expandable search field — always in DOM so opacity/width transition fires */
   const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}">
     <div class="search${S.q?" has":""}">
       <span class="mag">⌕</span>
       <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
-      <button class="clr" data-qclear aria-label="clear">✕</button>
+      <button class="clr" data-qclear aria-label="${esc(L.clearSearch)}">✕</button>
     </div></div>`;
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
@@ -3911,7 +3919,7 @@ function render(){
     ${searchMobileOpenHTML}`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
         ${deskSearchHTML}${searchIconBtn}
@@ -4010,7 +4018,7 @@ function fabHTML(){
   if(S.drawer||S.q)return "";
   const L=t();
   const activeFilterCount=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
-  return `<button class="fab" data-drawer aria-label="${esc(L.fabFilters||L.filters)}">
+  return `<button class="fab" data-drawer aria-label="${esc((L.fabFilters||L.filters)+(activeFilterCount?", "+L.fabActive.replace("{n}",activeFilterCount):""))}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
     <span>${esc(L.fabFilters||L.filters)}</span>
     ${activeFilterCount?`<span class="fab-badge">${activeFilterCount}</span>`:""}</button>`;
@@ -5368,7 +5376,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     }
     return`<div class="ss-grab"></div>
 <button class="ss-back-btn" data-ssback aria-label="${esc(L.back||"Назад")}">‹</button>
-<button class="ss-close-btn" data-ssclose aria-label="close">✕</button>
+<button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
 <div class="ss-cal-title">${esc(L.ssCalTitle)}</div>
 <div class="ss-cal-ev">
   <div class="a">${esc(title)}</div>
@@ -5378,15 +5386,15 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
 <div class="ss-cal-lst">
   <a class="ss-cal-li"${ev?` href="${esc(_ssIcsUrl(ev))}"${_isAppleTouch()?"":` download="${esc(icsId+".ics")}"`}`:` aria-disabled="true"`} data-sscalics="${esc(icsData)}" data-ssicalid="${esc(icsId)}">
     <div><span>${esc(L.ssCalApple)}</span><small>${esc(L.ssCalAppleSub)}</small></div>
-    <span class="cv">›</span>
+    <span class="cv" aria-hidden="true">›</span>
   </a>
   <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalGoogle)}</div>
-    <span class="cv">›</span>
+    <span class="cv" aria-hidden="true">›</span>
   </a>
   <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalOutlook)}</div>
-    <span class="cv">›</span>
+    <span class="cv" aria-hidden="true">›</span>
   </a>
 </div>`;
   }
@@ -5443,7 +5451,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   }
 
   return`<div class="ss-grab"></div>
-<button class="ss-close-btn" data-ssclose aria-label="close">✕</button>
+<button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
 <div class="ss-time">${esc(timeStr)}</div>
 <div class="ss-date">${esc(dateDisplay)}</div>
 <div class="ss-venue">${esc(venueName)}${venueArea?", "+esc(venueArea):""}</div>
