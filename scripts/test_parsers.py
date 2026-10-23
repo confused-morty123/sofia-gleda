@@ -927,6 +927,8 @@ _t3calls = []
 
 def _t3_api(path, params):
     _t3calls.append(path)
+    if path.startswith("person/"):
+        return _T3["person_translations"].get(path.split("/")[1])      # 5005: None = an API error
     if path == "search/movie":
         return {"results": _T3["search"].get(params.get("query"), [])}
     if params.get("language") == "bg-BG":
@@ -935,12 +937,13 @@ def _t3_api(path, params):
 
 
 _t3_saved = {k: getattr(TMDB, k) for k in ("api", "TOKEN", "OMDB_TOKEN", "HTML", "OUT", "LINKS_OUT",
-                                           "FILM_INFO_PATH", "HEALTH", "ALIASES_PATH")}
+                                           "FILM_INFO_PATH", "HEALTH", "ALIASES_PATH", "PERSON_NAMES")}
 try:
     TMDB.api, TMDB.TOKEN, TMDB.OMDB_TOKEN = _t3_api, "fixture", ""
     TMDB.HTML, TMDB.OUT = _t3dir / "index.html", _t3dir / "tmdb_films.json"
     TMDB.LINKS_OUT, TMDB.HEALTH = _t3dir / "film_links_posters.json", _t3dir / "health.json"
     TMDB.FILM_INFO_PATH, TMDB.ALIASES_PATH = _t3dir / "none.json", _t3dir / "none.json"
+    TMDB.PERSON_NAMES = _t3dir / "person_names.json"
     import io as _t3io, contextlib as _t3cl
     with _t3cl.redirect_stdout(_t3io.StringIO()), _t3cl.redirect_stderr(_t3io.StringIO()):
         TMDB.main()
@@ -967,6 +970,60 @@ check("API error: last run's trailer, runtime and genres are kept",
       ({"k": "jjjjjjjjjjj", "l": "en", "t": "Trailer"}, 88, ["Драма"]))
 check("a Teaser is offered when there is no Trailer", _out["teaser-only"].get("trailer"),
       {"k": "iiiiiiiiiii", "l": "en", "t": "Teaser"})
+# Bulgarian names of the credited people: /person/{id}/translations, cached by id
+_pn = _t3json.load(open(_t3dir / "person_names.json", encoding="utf-8"))
+check("people: one translations call per credited person (director, cast, screenplay, music, camera; "
+      "not the producer)", sorted(c for c in _t3calls if c.startswith("person/")),
+      sorted(f"person/{i}/translations" for i in (5001, 5002, 5003, 5004, 5005, 5007, 5008)))
+check("people: TMDB's Bulgarian name is taken (spaces tidied)",
+      (_pn["5001"]["bg"], _pn["5007"]["bg"], _pn["5008"]["bg"]), ("Джейкъб Чейс", "Лин Шей", "Амелия Ийв"))
+check("people: a Russian form (ы, э) or a Latin name in the bg slot, or no bg translation, is no name",
+      (_pn["5002"]["bg"], _pn["5003"]["bg"], _pn["5004"]["bg"]), (None, None, None))
+check("people: an API error caches nothing (asked again next run)", "5005" in _pn, False)
+check("people: the cache records the Latin name and the day it was checked",
+      (_pn["5001"]["n"], len(_pn["5001"]["t"])), ("Jacob Chase", 10))
+check("people: the film carries its Bulgarian names (nb) and TMDBART gets them",
+      (_out["insidious"].get("nb"), TMDB.art_record(_out["insidious"], 2026).get("nb")),
+      ({"Jacob Chase": "Джейкъб Чейс", "Lin Shaye": "Лин Шей", "Amelia Eve": "Амелия Ийв"},) * 2)
+check("people: the fallback names (no bg name) are left to the page's transliteration",
+      "Scott Teems" in _out["insidious"]["nb"] or "Leigh Whannell" in _out["insidious"]["nb"], False)
+
+
+def _pn_run(cache, today="2026-10-23", lookups=600, answers=None):
+    seen = []
+    def _api(path, params):
+        seen.append(path)
+        return (answers or _T3["person_translations"]).get(path.split("/")[1])
+    saved = TMDB.api
+    TMDB.api = _api
+    try:
+        out = {"insidious": dict(_out["insidious"])}
+        cache, stats = TMDB.update_person_names(out, cache, today, lookups=lookups, sleep=0)
+    finally:
+        TMDB.api = saved
+    return out, cache, stats, seen
+
+
+_o2, _c2, _s2, _seen2 = _pn_run(dict(_pn))
+check("cache: the next run asks only for who is new or failed (5005), nobody else",
+      (_seen2, _s2["asked"]), (["person/5005/translations"], 1))
+_old = dict(_pn, **{"5002": dict(_pn["5002"], t="2026-09-01"), "5001": dict(_pn["5001"], t="2026-01-01")})
+_o3, _c3, _s3, _seen3 = _pn_run(_old)
+check("cache: a miss older than 30 days is asked again; a found name never is",
+      sorted(_seen3), ["person/5002/translations", "person/5005/translations"])
+_o4, _c4, _s4, _seen4 = _pn_run(dict(_pn, **{"5005": {"n": "Ben Kutchins", "bg": "Бен Кътчинс", "t": "2026-10-01"}}),
+                                 today="2026-12-01", answers={})
+check("cache: on an API error the previous value stays (name kept, film keeps it)",
+      (_c4["5005"]["bg"], _o4["insidious"]["nb"].get("Ben Kutchins")), ("Бен Кътчинс", "Бен Кътчинс"))
+_o5, _c5, _s5, _seen5 = _pn_run({}, lookups=3)
+check("budget: at most PERSON_LOOKUPS_PER_RUN calls a run, the rest left for the next",
+      (len(_seen5), _s5["left"]), (3, 4))
+check("budget: the daily cap and pace stay inside TMDB's ~40 requests a second",
+      (TMDB.PERSON_LOOKUPS_PER_RUN <= 1000, TMDB.PERSON_SLEEP >= 0.025), (True, True))
+check("bg_person_name: only the bg entry counts, never ru/uk",
+      [TMDB.bg_person_name(_T3["person_translations"]["5004"]), TMDB.bg_person_name(None),
+       TMDB.bg_person_name({"translations": [{"iso_639_1": "bg", "data": {"name": "Іван"}}]})], [None, None, None])
+
 _t3films = {f["id"]: f.get("year") for f in _T3["films"]}
 _t3art = {k: TMDB.art_record(v, _t3films.get(k)) for k, v in _out.items()}
 check("TMDBART: trailers only for the films whose years agree",

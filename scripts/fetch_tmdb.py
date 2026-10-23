@@ -459,11 +459,101 @@ def details_extra(d):
     tr = pick_trailer(d)
     if tr:
         out["trailer"] = tr
+    pid = credited_people(d)
+    if pid:
+        out["pid"] = pid
     return out
 
 
+def credited_people(d):
+    """{Latin name: TMDB person id} for everyone the page credits: the director(s), the
+    top-5 cast, and up to 3 each for screenplay, music and cinematography (the same
+    selection details_en and details_extra make). The ids key person_names.json."""
+    credits = (d or {}).get("credits") or {}
+    crew = [p for p in credits.get("crew") or [] if isinstance(p, dict)]
+    cast = sorted([p for p in credits.get("cast") or [] if isinstance(p, dict)], key=lambda p: p.get("order", 9999))[:5]
+    picked = [p for p in crew if p.get("job") == "Director"] + cast
+    for jobs in (("Screenplay", "Writer"), ("Original Music Composer", "Music"), ("Director of Photography",)):
+        seen = []
+        for p in crew:
+            nm = (p.get("name") or "").strip()
+            if p.get("job") in jobs and nm and nm not in seen:
+                seen.append(nm)
+                if len(seen) <= 3:
+                    picked.append(p)
+    out = {}
+    for p in picked:
+        nm, i = (p.get("name") or "").strip(), p.get("id")
+        if nm and isinstance(i, int) and nm not in out:
+            out[nm] = i
+    return out
+
+
+# ---------------------------------------------------------------- Bulgarian names of people
+# TMDB keeps a person's name per language in /person/{id}/translations: each translation's
+# data object has "name" (and "biography"). The Bulgarian entry (iso_639_1 "bg") is the
+# spelling TMDB's Bulgarian editors chose ("Роджър Дийкинс"). The person record's
+# also_known_as list is NOT used: it mixes scripts and languages with no language tag, so
+# a Cyrillic alias there is as likely Russian or Ukrainian as Bulgarian. A bg name is
+# accepted only when it is Cyrillic, has no Latin letter and no letter Bulgarian does not
+# use (ы э ё і ї є ґ: a Russian or Ukrainian form pasted into the bg slot).
+# Cached by person id in person_names.json (committed): {id: {"n": Latin name, "bg": name
+# or null, "t": date checked}}. Only people not in the cache, and misses older than
+# PERSON_RECHECK_DAYS, cost a call, at most PERSON_LOOKUPS_PER_RUN a run (the first runs
+# backfill over a few days); an API error keeps the cached entry as it was.
+PERSON_NAMES = None         # None: person_names.json next to OUT (tmdb_films.json), so a run on a temp OUT keeps its cache there
+PERSON_LOOKUPS_PER_RUN = 600
+PERSON_RECHECK_DAYS = 30
+PERSON_SLEEP = 0.03          # ~30 requests a second at most, under TMDB's ~40/s
+_NOT_BG_RE = re.compile(r"[ыэёіїєґЫЭЁІЇЄҐ]")
+
+
+def bg_person_name(tr):
+    """The Bulgarian name from a /person/{id}/translations response, or None."""
+    for t in ((tr or {}).get("translations") or []):
+        if not isinstance(t, dict) or t.get("iso_639_1") != "bg":
+            continue
+        nm = re.sub(r"\s+", " ", ((t.get("data") or {}).get("name") or "")).strip()
+        if nm and _CYRILLIC_RE.search(nm) and not re.search(r"[A-Za-z]", nm) and not _NOT_BG_RE.search(nm):
+            return nm
+    return None
+
+
+def update_person_names(out, cache, today, lookups=PERSON_LOOKUPS_PER_RUN, sleep=PERSON_SLEEP):
+    """Look up the Bulgarian names of people new to the cache (and stale misses), then
+    write each matched film's nb = {Latin name: Bulgarian name}. Returns (cache, stats)."""
+    import datetime as _dt
+    want = {}
+    for rec in out.values():
+        for nm, pid in ((rec or {}).get("pid") or {}).items():
+            want.setdefault(str(pid), nm)
+    stale = (_dt.date.fromisoformat(today) - _dt.timedelta(days=PERSON_RECHECK_DAYS)).isoformat()
+    todo = [k for k in sorted(want, key=int) if k not in cache
+            or (cache[k].get("bg") is None and (cache[k].get("t") or "") < stale)]
+    stats = {"people": len(want), "asked": 0, "found": 0, "errors": 0, "left": max(0, len(todo) - lookups)}
+    for k in todo[:lookups]:
+        tr = api(f"person/{k}/translations", {})
+        stats["asked"] += 1
+        if tr is None:
+            stats["errors"] += 1          # keep whatever the cache had
+        else:
+            bg = bg_person_name(tr)
+            cache[k] = {"n": want[k], "bg": bg, "t": today}
+            stats["found"] += bool(bg)
+        if sleep:
+            time.sleep(sleep)
+    for rec in out.values():
+        nb = {nm: cache[str(pid)]["bg"] for nm, pid in ((rec or {}).get("pid") or {}).items()
+              if (cache.get(str(pid)) or {}).get("bg")}
+        if nb:
+            rec["nb"] = nb
+        elif isinstance(rec, dict):
+            rec.pop("nb", None)
+    return cache, stats
+
+
 # Extra detail fields carried from the previous run when this run's detail call fails.
-EXTRA_KEYS = ("runtime", "genres", "wr", "mu", "dop", "countries", "cc", "trailer")
+EXTRA_KEYS = ("runtime", "genres", "wr", "mu", "dop", "countries", "cc", "trailer", "pid")
 
 
 def details_en(tmdb_id, d=None):
@@ -546,6 +636,8 @@ def art_record(v, film_year=None):
     if v.get("genres"):        rec["g"] = list(v["genres"])          # dataset genre names (fallback)
     for k in ("wr", "mu", "dop"):                                    # writer, composer, cinematographer
         if v.get(k):           rec[k] = v[k]
+    if isinstance(v.get("nb"), dict) and v["nb"]:                    # TMDB's Bulgarian names of the people
+        rec["nb"] = {k: n for k, n in v["nb"].items() if isinstance(k, str) and isinstance(n, str)}
     if v.get("orig_lang"):     rec["ol"] = v["orig_lang"]            # ISO 639-1 original language
     if v.get("cc"):            rec["cc"] = list(v["cc"])             # ISO 3166-1 production countries
     tr = v.get("trailer")
@@ -933,6 +1025,16 @@ def main():
         print(f"[{i+1}/{len(films)}] {fid:24s} -> {rec['en']} ({rec['tmdb_year']}) id={rec['tmdb_id']}{src_tag}{flag}")
         time.sleep(0.12)
 
+    # Bulgarian spellings of the credited people (person_names.json, keep-previous)
+    _pn_path = PERSON_NAMES or OUT.parent / "person_names.json"
+    try:
+        _pn = json.load(open(_pn_path, encoding="utf-8")) if _pn_path.exists() else {}
+    except (OSError, ValueError):
+        _pn = {}
+    import datetime as _dt
+    _pn, _ps = update_person_names(out, _pn, _dt.date.today().isoformat())
+    print(f"people: {_ps['people']} credited, {_ps['asked']} looked up ({_ps['found']} with a Bulgarian name, "
+          f"{_ps['errors']} errors kept), {_ps['left']} left for later runs")
     apply_trending(out, prev, trending_ranks())
     print(f"trending this week: {sum(1 for v in out.values() if v.get('trend'))} listed film(s) ranked")
     posters = sum(1 for v in out.values() if v.get("poster_path"))
@@ -941,6 +1043,8 @@ def main():
         print("0 posters this run — keeping previous tmdb_films.json", file=sys.stderr)
         return 0
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    json.dump(dict(sorted(_pn.items(), key=lambda kv: int(kv[0]))), open(_pn_path, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=0)
     # Only films without a TMDB poster appear here, so this override map stays a
     # pure fallback and never shadows a verified TMDB poster.
     film_links = {k: v for k, v in film_links.items() if v}

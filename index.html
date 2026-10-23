@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-CWksiz23g85bE+vtAuMP7LNaA+9w6Zd7MxW92dPdhiI=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-LhpIauBCltuCGhDipmHo2sOcXbaGp6XLiXFqUXVJO6A=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-yoxeAq8lqozve3Opoa6mU7bHTGWUi0q5+qbLf8vq+nk='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-CWksiz23g85bE+vtAuMP7LNaA+9w6Zd7MxW92dPdhiI=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-wP8o04JAicz0qtZC2uGcyT1EXpmQLcAQhv4bu9DGMIc=' 'sha256-yoxeAq8lqozve3Opoa6mU7bHTGWUi0q5+qbLf8vq+nk='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -1585,19 +1585,21 @@ const hasBGSynShow=sh=>!!(notEmpty(SHOWSYN[sh.id])||notEmpty(sh.synBg));
 const _hasCyr=s=>s&&/[Ѐ-ӿ]/.test(s);
 const dirOf=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
-  if(S.lang==="bg")return personName(notEmpty(f.director)||notEmpty(fi.dir)||notEmpty(ar.dir)||null);
+  if(S.lang==="bg")return personName(notEmpty(f.director)||notEmpty(fi.dir)||notEmpty(ar.dir)||null,f);
   const raw=notEmpty(ar.dir)||notEmpty(f.director)||notEmpty(fi.dir)||null;
-  return personName(raw);
+  return personName(raw,f);
 };
 const castOf=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
-  if(S.lang==="bg")return personName(notEmpty(f.cast)||notEmpty(fi.cast)||notEmpty(ar.cast)||null);
+  if(S.lang==="bg")return personName(notEmpty(f.cast)||notEmpty(fi.cast)||notEmpty(ar.cast)||null,f);
   const raw=notEmpty(ar.cast)||notEmpty(f.cast)||notEmpty(fi.cast)||null;
-  return personName(raw);
+  return personName(raw,f);
 };
 /* Film people's names in the interface's script (owner, 23 Oct 2026): in BG a name TMDB
-   gives in Latin letters ("Scott Teems") is written in Cyrillic, in EN a Cyrillic one
-   in Latin (translitBG). Used for the director, cast, screenplay, music and
+   gives in Latin letters is written in Cyrillic: TMDB's own Bulgarian spelling first
+   (TMDBART[id].nb, from /person/{id}/translations via person_names.json: "Roger
+   Deakins" -> "Роджър Дийкинс"), else latinToBG; in EN the original Latin name, and a
+   Cyrillic one in Latin (translitBG). Used for the director, cast, screenplay, music and
    cinematography of films. latinToBG is rule-based: English digraphs (sh, ch, th, ph,
    ck, ee, oo…), c before e/i/y, y as й or и, doubled consonants once, diacritics dropped;
    a Roman numeral or a token with digits stays as it is. */
@@ -1630,10 +1632,12 @@ function latinToBG(s){
   if(!s||typeof s!=="string")return s;
   return s.replace(/[A-Za-z\u00C0-\u024F]+/g,_ltWord);
 }
-const personName=n=>{
+const personName=(n,f)=>{
   if(!n)return n;
-  if(S.lang==="bg")return _hasCyr(n)?n:latinToBG(n);
-  return _hasCyr(n)?translitBG(n):n;
+  if(S.lang!=="bg")return _hasCyr(n)?translitBG(n):n;
+  if(_hasCyr(n))return n;
+  const nb=(f&&ART2(f.id).nb)||{};
+  return n.split(/,\s*/).map(p=>{const k=p.trim();return typeof nb[k]==="string"&&_hasCyr(nb[k])?nb[k]:latinToBG(k);}).join(", ");
 };
 /* TMDB fallbacks for what the venues leave out (TMDBART y, rn, g, cc, ol; fetch_tmdb.art_record) */
 const yearOf=f=>f.year||ART2(f.id).y||"";
@@ -3733,7 +3737,7 @@ function sheetFilm(f){
     <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
       <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
-      ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(personName(r[1]))}</dd>`).join("");})()}
+      ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(personName(r[1],f))}</dd>`).join("");})()}
       ${(()=>{const ln=langName(ART2(f.id).ol);return ln?`<dt>${esc(L.olang)}</dt><dd>${esc(ln)}</dd>`:"";})()}
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}

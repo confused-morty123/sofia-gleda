@@ -24,7 +24,7 @@ like an app and refreshes its own listings every three days.
 | `SETUP.md` | Step-by-step hosting guide for a non-technical user. |
 
 Generated data files that appear after the first refresh:
-`tmdb_films.json`, `film_info.json`, `theatre_posters.json`, `changes.json`, `build_report.json`.
+`tmdb_films.json`, `person_names.json` (TMDB's Bulgarian spellings of the credited people, by person id), `film_info.json`, `theatre_posters.json`, `changes.json`, `build_report.json`.
 
 ---
 

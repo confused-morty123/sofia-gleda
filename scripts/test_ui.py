@@ -16383,12 +16383,16 @@ def _tr2_page(src):
     for i in venue:
         art[i]["g"] = ["Комедия"]
     art[nodir[0]].update(_TR2_NAMES)
+    # TMDB's own Bulgarian spellings (person_names.json -> nb) for two of them; the rest
+    # have none and fall back to the transliteration
+    art[nodir[0]]["nb"] = {"Christopher Nolan": "Кристофър Нолан", "Roger Deakins": "Роджър Дийкинс"}
     t = src[:m.start(1)] + json.dumps(art, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + src[m.end(1):]
     return _restamp(t), {"bare": bare, "venue": venue, "nodir": nodir[0], "cyr": cyr[0]}
 
 
 def wave_tr2(browser):
-    """TR2: a film the venues give no genres takes TMDB's: it appears under the matching
+    """TR2 (names: TMDB's Bulgarian spelling first, transliteration as the fallback, EN Latin):
+    a film the venues give no genres takes TMDB's: it appears under the matching
     filter and "По жанр" rail and its sheet shows the genre; a film with venue genres keeps
     them (TMDB's never override). In BG, TMDB's Latin names (director, cast, screenplay,
     music, cinematography) are written in Cyrillic; in EN they stay Latin and a Cyrillic
@@ -16476,8 +16480,10 @@ def wave_tr2(browser):
                 cyr_ = lambda v: bool(v) and re.search(r"[Ѐ-ӿ]", v) is not None
                 if lang == "bg":
                     check("tr2_bg_tmdb_names_in_cyrillic", all(cyr_(v) and not lat(v) for v in got.values()), str(got))
-                    check("tr2_bg_transliteration_reads_right",
-                          got["dir"] == "Кристофер Нолан" and got["mu"] == "Ханс Зимер" and got["wr"] == "Скот Тимс, Лей Уанел"
+                    check("tr2_bg_tmdb_bulgarian_names_first",
+                          got["dir"] == "Кристофър Нолан" and got["dop"] == "Роджър Дийкинс", str(got))
+                    check("tr2_bg_transliteration_fallback",
+                          got["mu"] == "Ханс Зимер" and got["wr"] == "Скот Тимс, Лей Уанел"
                           and got["cast"] == "Лин Шейе, Амелия Еве", str(got))
                     check("tr2_bg_cyrillic_director_unchanged", nm["cyrDir"] == nm["cyrRaw"], f"{nm['cyrDir']!r}")
                 else:

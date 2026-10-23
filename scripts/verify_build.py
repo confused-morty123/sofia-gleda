@@ -966,6 +966,14 @@ if isinstance(_tart, dict):
             _tr_bad.append(f"{_k}: TMDB year {_ty or '?'} vs film year {_fy.get(_k)}")
     if _tr_bad:
         fail(f"TMDBART has {len(_tr_bad)} trailer(s) that must not ship: " + "; ".join(_tr_bad[:4]))
+    # TMDB's Bulgarian names of people (nb: Latin name -> Bulgarian): Cyrillic only, no
+    # Latin letter and no letter Bulgarian does not use (a Russian/Ukrainian form)
+    _nb_bad = [f"{_k}: {_n!r}->{_b!r}" for _k, _r in _tart.items() if isinstance(_r, dict) and "nb" in _r
+               for _n, _b in ((_r.get("nb") or {}).items() if isinstance(_r.get("nb"), dict) else [("nb", _r.get("nb"))])
+               if not (isinstance(_n, str) and isinstance(_b, str) and re.search(r"[Ѐ-ӿ]", _b)
+                       and not re.search(r"[A-Za-zыэёіїєґЫЭЁІЇЄҐ]", _b))]
+    if _nb_bad:
+        fail(f"TMDBART has {len(_nb_bad)} Bulgarian name(s) that are not Bulgarian Cyrillic: " + "; ".join(_nb_bad[:4]))
     if _tr_n:
         note(f"{_tr_n} film(s) carry a trailer (TMDBART v)")
 if "youtube-nocookie.com/embed/" in js:

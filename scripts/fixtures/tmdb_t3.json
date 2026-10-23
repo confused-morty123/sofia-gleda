@@ -1,62 +1,588 @@
 {
- "_note": "Offline fixture for the T3 pipeline tests (test_parsers.py): TMDB search and detail responses, trimmed to the fields fetch_tmdb.py reads. The three wrong matches the gap audit found on the live site (2026-10-22) are reproduced: Паяци 2026 -> Spiders 2000 (40039), Минотавър 2026 -> Hercules in the Maze of the Minotaur 1994 (70811), Съседите отгоре / The Upstairs Neighbours 2026 -> Die Nachbarn von Oben 2023 (1054854). Video keys other than jxU8FU3o75A are made up.",
+ "_note": "Offline fixture for the T3 pipeline tests (test_parsers.py): TMDB search and detail responses, trimmed to the fields fetch_tmdb.py reads. The three wrong matches the gap audit found on the live site (2026-10-22) are reproduced: Паяци 2026 -> Spiders 2000 (40039), Минотавър 2026 -> Hercules in the Maze of the Minotaur 1994 (70811), Съседите отгоре / The Upstairs Neighbours 2026 -> Die Nachbarn von Oben 2023 (1054854). Video keys other than jxU8FU3o75A are made up. Person ids 5001-5008 and person_translations (TMDB /person/{id}/translations, trimmed) are made up for the Bulgarian-name lookup: 5001 bg name, 5002 a Russian form in the bg slot (rejected), 5003 a Latin name in the bg slot (rejected), 5004 no bg translation, 5005 an API error, 5007 bg name, 5008 bg name with extra spaces.",
  "films": [
-  {"id": "insidious", "bg": "Коварен капан: Бягство от Отвъдното", "en": "Insidious: Out of the Further", "year": 2026},
-  {"id": "payatsi", "bg": "Паяци", "en": "", "year": 2026},
-  {"id": "minotavar", "bg": "Минотавър", "en": "", "year": 2026, "originalTitle": "Minotaur / Минотавр"},
-  {"id": "sasedite", "bg": "Съседите отгоре", "en": "The Upstairs Neighbours", "year": 2026},
-  {"id": "knizharnica", "bg": "Книжарница в Париж", "en": "A Bookshop in Paris", "year": 2025},
-  {"id": "teaser-only", "bg": "Само тийзър", "en": "Teaser Only", "year": 2026},
-  {"id": "api-down", "bg": "Без връзка", "en": "Api Down", "year": 2026}
+  {
+   "id": "insidious",
+   "bg": "Коварен капан: Бягство от Отвъдното",
+   "en": "Insidious: Out of the Further",
+   "year": 2026
+  },
+  {
+   "id": "payatsi",
+   "bg": "Паяци",
+   "en": "",
+   "year": 2026
+  },
+  {
+   "id": "minotavar",
+   "bg": "Минотавър",
+   "en": "",
+   "year": 2026,
+   "originalTitle": "Minotaur / Минотавр"
+  },
+  {
+   "id": "sasedite",
+   "bg": "Съседите отгоре",
+   "en": "The Upstairs Neighbours",
+   "year": 2026
+  },
+  {
+   "id": "knizharnica",
+   "bg": "Книжарница в Париж",
+   "en": "A Bookshop in Paris",
+   "year": 2025
+  },
+  {
+   "id": "teaser-only",
+   "bg": "Само тийзър",
+   "en": "Teaser Only",
+   "year": 2026
+  },
+  {
+   "id": "api-down",
+   "bg": "Без връзка",
+   "en": "Api Down",
+   "year": 2026
+  }
  ],
  "search": {
-  "Insidious: Out of the Further": [{"id": 1000001, "title": "Insidious: Out of the Further", "original_title": "Insidious: Out of the Further", "original_language": "en", "release_date": "2026-08-19", "vote_count": 120, "vote_average": 6.9, "poster_path": "/ins.jpg", "backdrop_path": "/insb.jpg"}],
-  "Паяци": [{"id": 40039, "title": "Паяци", "original_title": "Spiders", "original_language": "en", "release_date": "2000-11-14", "vote_count": 60, "vote_average": 4.2, "poster_path": "/spiders.jpg", "backdrop_path": null}],
-  "Минотавър": [{"id": 70811, "title": "Минотавър", "original_title": "Hercules in the Maze of the Minotaur", "original_language": "en", "release_date": "1994-11-12", "vote_count": 40, "vote_average": 5.6, "poster_path": "/herc.jpg", "backdrop_path": null}],
-  "The Upstairs Neighbours": [{"id": 1054854, "title": "The Neighbours From Upstairs", "original_title": "Die Nachbarn von Oben", "original_language": "de", "release_date": "2023-09-28", "vote_count": 12, "vote_average": 6.0, "poster_path": "/nachbarn.jpg", "backdrop_path": "/nachbarnb.jpg"}],
-  "A Bookshop in Paris": [{"id": 2000002, "title": "A Bookshop in Paris", "original_title": "A Bookshop in Paris", "original_language": "fr", "release_date": "2021-03-03", "vote_count": 30, "vote_average": 6.5, "poster_path": "/book.jpg", "backdrop_path": "/bookb.jpg"}],
-  "Teaser Only": [{"id": 3000003, "title": "Teaser Only", "original_title": "Teaser Only", "original_language": "en", "release_date": "2026-12-01", "vote_count": 0, "vote_average": 0, "poster_path": "/teaser.jpg", "backdrop_path": "/teaserb.jpg"}],
-  "Api Down": [{"id": 4000004, "title": "Api Down", "original_title": "Api Down", "original_language": "en", "release_date": "2026-05-01", "vote_count": 10, "vote_average": 6.1, "poster_path": "/down.jpg", "backdrop_path": "/downb.jpg"}]
+  "Insidious: Out of the Further": [
+   {
+    "id": 1000001,
+    "title": "Insidious: Out of the Further",
+    "original_title": "Insidious: Out of the Further",
+    "original_language": "en",
+    "release_date": "2026-08-19",
+    "vote_count": 120,
+    "vote_average": 6.9,
+    "poster_path": "/ins.jpg",
+    "backdrop_path": "/insb.jpg"
+   }
+  ],
+  "Паяци": [
+   {
+    "id": 40039,
+    "title": "Паяци",
+    "original_title": "Spiders",
+    "original_language": "en",
+    "release_date": "2000-11-14",
+    "vote_count": 60,
+    "vote_average": 4.2,
+    "poster_path": "/spiders.jpg",
+    "backdrop_path": null
+   }
+  ],
+  "Минотавър": [
+   {
+    "id": 70811,
+    "title": "Минотавър",
+    "original_title": "Hercules in the Maze of the Minotaur",
+    "original_language": "en",
+    "release_date": "1994-11-12",
+    "vote_count": 40,
+    "vote_average": 5.6,
+    "poster_path": "/herc.jpg",
+    "backdrop_path": null
+   }
+  ],
+  "The Upstairs Neighbours": [
+   {
+    "id": 1054854,
+    "title": "The Neighbours From Upstairs",
+    "original_title": "Die Nachbarn von Oben",
+    "original_language": "de",
+    "release_date": "2023-09-28",
+    "vote_count": 12,
+    "vote_average": 6.0,
+    "poster_path": "/nachbarn.jpg",
+    "backdrop_path": "/nachbarnb.jpg"
+   }
+  ],
+  "A Bookshop in Paris": [
+   {
+    "id": 2000002,
+    "title": "A Bookshop in Paris",
+    "original_title": "A Bookshop in Paris",
+    "original_language": "fr",
+    "release_date": "2021-03-03",
+    "vote_count": 30,
+    "vote_average": 6.5,
+    "poster_path": "/book.jpg",
+    "backdrop_path": "/bookb.jpg"
+   }
+  ],
+  "Teaser Only": [
+   {
+    "id": 3000003,
+    "title": "Teaser Only",
+    "original_title": "Teaser Only",
+    "original_language": "en",
+    "release_date": "2026-12-01",
+    "vote_count": 0,
+    "vote_average": 0,
+    "poster_path": "/teaser.jpg",
+    "backdrop_path": "/teaserb.jpg"
+   }
+  ],
+  "Api Down": [
+   {
+    "id": 4000004,
+    "title": "Api Down",
+    "original_title": "Api Down",
+    "original_language": "en",
+    "release_date": "2026-05-01",
+    "vote_count": 10,
+    "vote_average": 6.1,
+    "poster_path": "/down.jpg",
+    "backdrop_path": "/downb.jpg"
+   }
+  ]
  },
  "details": {
-  "1000001": {"id": 1000001, "overview": "A mother returns to the house where she grew up.", "imdb_id": "tt9000001", "runtime": 106,
-   "genres": [{"id": 27, "name": "Horror"}, {"id": 9648, "name": "Mystery"}, {"id": 53, "name": "Thriller"}, {"id": 10752, "name": "War"}],
-   "production_countries": [{"iso_3166_1": "US", "name": "United States of America"}, {"iso_3166_1": "CA", "name": "Canada"}],
-   "credits": {"crew": [{"job": "Director", "name": "Jacob Chase"}, {"job": "Screenplay", "name": "Scott Teems"}, {"job": "Writer", "name": "Leigh Whannell"}, {"job": "Screenplay", "name": "Scott Teems"}, {"job": "Original Music Composer", "name": "Joseph Bishara"}, {"job": "Director of Photography", "name": "Ben Kutchins"}, {"job": "Producer", "name": "Jason Blum"}],
-               "cast": [{"order": 0, "name": "Lin Shaye"}, {"order": 1, "name": "Amelia Eve"}]},
-   "videos": {"results": [
-     {"key": "aaaaaaaaaaa", "site": "YouTube", "type": "Trailer", "official": false, "iso_639_1": "bg", "published_at": "2026-08-01T10:00:00.000Z", "name": "Трейлър (фенско)"},
-     {"key": "jxU8FU3o75A", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en", "published_at": "2026-04-15T16:00:00.000Z", "name": "Official Trailer"},
-     {"key": "bbbbbbbbbbb", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en", "published_at": "2026-01-10T16:00:00.000Z", "name": "Teaser Trailer"},
-     {"key": "ccccccccccc", "site": "YouTube", "type": "Teaser", "official": true, "iso_639_1": "en", "published_at": "2026-06-01T16:00:00.000Z", "name": "Teaser"},
-     {"key": "ddddddddddd", "site": "YouTube", "type": "Featurette", "official": true, "iso_639_1": "en", "published_at": "2026-07-01T16:00:00.000Z", "name": "Featurette"},
-     {"key": "123456789", "site": "Vimeo", "type": "Trailer", "official": true, "iso_639_1": "bg", "published_at": "2026-07-01T16:00:00.000Z", "name": "Vimeo"}
-   ]}},
-  "40039": {"id": 40039, "overview": "Spiders.", "imdb_id": "tt0251000", "runtime": 90, "genres": [{"id": 27}],
-   "production_countries": [{"iso_3166_1": "US", "name": "United States of America"}],
-   "credits": {"crew": [{"job": "Director", "name": "Gary Jones"}], "cast": []},
-   "videos": {"results": [{"key": "eeeeeeeeeee", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en", "published_at": "2010-01-01T00:00:00.000Z"}]}},
-  "70811": {"id": 70811, "overview": "Hercules.", "imdb_id": "tt0110000", "runtime": 91, "genres": [{"id": 14}],
-   "production_countries": [{"iso_3166_1": "US", "name": "United States of America"}],
-   "credits": {"crew": [], "cast": []}, "videos": {"results": []}},
-  "1054854": {"id": 1054854, "overview": "Neighbours.", "imdb_id": "tt2000000", "runtime": 95, "genres": [{"id": 35}],
-   "production_countries": [{"iso_3166_1": "DE", "name": "Germany"}],
-   "credits": {"crew": [], "cast": []}, "videos": {"results": [{"key": "fffffffffff", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "de", "published_at": "2023-08-01T00:00:00.000Z"}]}},
-  "2000002": {"id": 2000002, "overview": "A bookshop.", "imdb_id": null, "runtime": 98, "genres": [{"id": 18}, {"id": 35}],
-   "production_countries": [{"iso_3166_1": "FR", "name": "France"}, {"iso_3166_1": "LV", "name": "Latvia"}, {"iso_3166_1": "DE", "name": "Germany"}],
-   "credits": {"crew": [{"job": "Director", "name": "Jane Doe"}], "cast": []},
-   "videos": {"results": [{"key": "ggggggggggg", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "bg", "published_at": "2025-02-01T00:00:00.000Z"},
-                          {"key": "hhhhhhhhhhh", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en", "published_at": "2025-03-01T00:00:00.000Z"}]}},
-  "3000003": {"id": 3000003, "overview": "Soon.", "imdb_id": null, "runtime": 0, "genres": [],
+  "1000001": {
+   "id": 1000001,
+   "overview": "A mother returns to the house where she grew up.",
+   "imdb_id": "tt9000001",
+   "runtime": 106,
+   "genres": [
+    {
+     "id": 27,
+     "name": "Horror"
+    },
+    {
+     "id": 9648,
+     "name": "Mystery"
+    },
+    {
+     "id": 53,
+     "name": "Thriller"
+    },
+    {
+     "id": 10752,
+     "name": "War"
+    }
+   ],
+   "production_countries": [
+    {
+     "iso_3166_1": "US",
+     "name": "United States of America"
+    },
+    {
+     "iso_3166_1": "CA",
+     "name": "Canada"
+    }
+   ],
+   "credits": {
+    "crew": [
+     {
+      "job": "Director",
+      "name": "Jacob Chase",
+      "id": 5001
+     },
+     {
+      "job": "Screenplay",
+      "name": "Scott Teems",
+      "id": 5002
+     },
+     {
+      "job": "Writer",
+      "name": "Leigh Whannell",
+      "id": 5003
+     },
+     {
+      "job": "Screenplay",
+      "name": "Scott Teems",
+      "id": 5002
+     },
+     {
+      "job": "Original Music Composer",
+      "name": "Joseph Bishara",
+      "id": 5004
+     },
+     {
+      "job": "Director of Photography",
+      "name": "Ben Kutchins",
+      "id": 5005
+     },
+     {
+      "job": "Producer",
+      "name": "Jason Blum",
+      "id": 5006
+     }
+    ],
+    "cast": [
+     {
+      "order": 0,
+      "name": "Lin Shaye",
+      "id": 5007
+     },
+     {
+      "order": 1,
+      "name": "Amelia Eve",
+      "id": 5008
+     }
+    ]
+   },
+   "videos": {
+    "results": [
+     {
+      "key": "aaaaaaaaaaa",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": false,
+      "iso_639_1": "bg",
+      "published_at": "2026-08-01T10:00:00.000Z",
+      "name": "Трейлър (фенско)"
+     },
+     {
+      "key": "jxU8FU3o75A",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2026-04-15T16:00:00.000Z",
+      "name": "Official Trailer"
+     },
+     {
+      "key": "bbbbbbbbbbb",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2026-01-10T16:00:00.000Z",
+      "name": "Teaser Trailer"
+     },
+     {
+      "key": "ccccccccccc",
+      "site": "YouTube",
+      "type": "Teaser",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2026-06-01T16:00:00.000Z",
+      "name": "Teaser"
+     },
+     {
+      "key": "ddddddddddd",
+      "site": "YouTube",
+      "type": "Featurette",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2026-07-01T16:00:00.000Z",
+      "name": "Featurette"
+     },
+     {
+      "key": "123456789",
+      "site": "Vimeo",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "bg",
+      "published_at": "2026-07-01T16:00:00.000Z",
+      "name": "Vimeo"
+     }
+    ]
+   }
+  },
+  "40039": {
+   "id": 40039,
+   "overview": "Spiders.",
+   "imdb_id": "tt0251000",
+   "runtime": 90,
+   "genres": [
+    {
+     "id": 27
+    }
+   ],
+   "production_countries": [
+    {
+     "iso_3166_1": "US",
+     "name": "United States of America"
+    }
+   ],
+   "credits": {
+    "crew": [
+     {
+      "job": "Director",
+      "name": "Gary Jones"
+     }
+    ],
+    "cast": []
+   },
+   "videos": {
+    "results": [
+     {
+      "key": "eeeeeeeeeee",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2010-01-01T00:00:00.000Z"
+     }
+    ]
+   }
+  },
+  "70811": {
+   "id": 70811,
+   "overview": "Hercules.",
+   "imdb_id": "tt0110000",
+   "runtime": 91,
+   "genres": [
+    {
+     "id": 14
+    }
+   ],
+   "production_countries": [
+    {
+     "iso_3166_1": "US",
+     "name": "United States of America"
+    }
+   ],
+   "credits": {
+    "crew": [],
+    "cast": []
+   },
+   "videos": {
+    "results": []
+   }
+  },
+  "1054854": {
+   "id": 1054854,
+   "overview": "Neighbours.",
+   "imdb_id": "tt2000000",
+   "runtime": 95,
+   "genres": [
+    {
+     "id": 35
+    }
+   ],
+   "production_countries": [
+    {
+     "iso_3166_1": "DE",
+     "name": "Germany"
+    }
+   ],
+   "credits": {
+    "crew": [],
+    "cast": []
+   },
+   "videos": {
+    "results": [
+     {
+      "key": "fffffffffff",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "de",
+      "published_at": "2023-08-01T00:00:00.000Z"
+     }
+    ]
+   }
+  },
+  "2000002": {
+   "id": 2000002,
+   "overview": "A bookshop.",
+   "imdb_id": null,
+   "runtime": 98,
+   "genres": [
+    {
+     "id": 18
+    },
+    {
+     "id": 35
+    }
+   ],
+   "production_countries": [
+    {
+     "iso_3166_1": "FR",
+     "name": "France"
+    },
+    {
+     "iso_3166_1": "LV",
+     "name": "Latvia"
+    },
+    {
+     "iso_3166_1": "DE",
+     "name": "Germany"
+    }
+   ],
+   "credits": {
+    "crew": [
+     {
+      "job": "Director",
+      "name": "Jane Doe"
+     }
+    ],
+    "cast": []
+   },
+   "videos": {
+    "results": [
+     {
+      "key": "ggggggggggg",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "bg",
+      "published_at": "2025-02-01T00:00:00.000Z"
+     },
+     {
+      "key": "hhhhhhhhhhh",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2025-03-01T00:00:00.000Z"
+     }
+    ]
+   }
+  },
+  "3000003": {
+   "id": 3000003,
+   "overview": "Soon.",
+   "imdb_id": null,
+   "runtime": 0,
+   "genres": [],
    "production_countries": [],
-   "credits": {"crew": [], "cast": []},
-   "videos": {"results": [{"key": "iiiiiiiiiii", "site": "YouTube", "type": "Teaser", "official": true, "iso_639_1": "en", "published_at": "2026-09-01T00:00:00.000Z"},
-                          {"key": "bad key!!!!", "site": "YouTube", "type": "Trailer", "official": true, "iso_639_1": "en", "published_at": "2026-10-01T00:00:00.000Z"}]}}
+   "credits": {
+    "crew": [],
+    "cast": []
+   },
+   "videos": {
+    "results": [
+     {
+      "key": "iiiiiiiiiii",
+      "site": "YouTube",
+      "type": "Teaser",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2026-09-01T00:00:00.000Z"
+     },
+     {
+      "key": "bad key!!!!",
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "iso_639_1": "en",
+      "published_at": "2026-10-01T00:00:00.000Z"
+     }
+    ]
+   }
+  }
  },
  "previous": {
-  "api-down": {"matched": true, "tmdb_id": 4000004, "en": "Api Down", "tmdb_year": "2026", "runtime": 88, "genres": ["Драма"],
-               "trailer": {"k": "jjjjjjjjjjj", "l": "en", "t": "Trailer"}},
-  "insidious": {"matched": true, "tmdb_id": 1000001, "en": "Insidious: Out of the Further", "tmdb_year": "2026",
-                "trailer": {"k": "kkkkkkkkkkk", "l": "en", "t": "Teaser"}}
+  "api-down": {
+   "matched": true,
+   "tmdb_id": 4000004,
+   "en": "Api Down",
+   "tmdb_year": "2026",
+   "runtime": 88,
+   "genres": [
+    "Драма"
+   ],
+   "trailer": {
+    "k": "jjjjjjjjjjj",
+    "l": "en",
+    "t": "Trailer"
+   }
+  },
+  "insidious": {
+   "matched": true,
+   "tmdb_id": 1000001,
+   "en": "Insidious: Out of the Further",
+   "tmdb_year": "2026",
+   "trailer": {
+    "k": "kkkkkkkkkkk",
+    "l": "en",
+    "t": "Teaser"
+   }
+  }
+ },
+ "person_translations": {
+  "5001": {
+   "id": 5001,
+   "translations": [
+    {
+     "iso_639_1": "en",
+     "iso_3166_1": "US",
+     "data": {
+      "name": "Jacob Chase",
+      "biography": ""
+     }
+    },
+    {
+     "iso_639_1": "bg",
+     "iso_3166_1": "BG",
+     "data": {
+      "name": "Джейкъб Чейс",
+      "biography": ""
+     }
+    }
+   ]
+  },
+  "5002": {
+   "id": 5002,
+   "translations": [
+    {
+     "iso_639_1": "ru",
+     "iso_3166_1": "RU",
+     "data": {
+      "name": "Скотт Тимс"
+     }
+    },
+    {
+     "iso_639_1": "bg",
+     "iso_3166_1": "BG",
+     "data": {
+      "name": "Скотт Тимс Мэйсон"
+     }
+    }
+   ]
+  },
+  "5003": {
+   "id": 5003,
+   "translations": [
+    {
+     "iso_639_1": "bg",
+     "iso_3166_1": "BG",
+     "data": {
+      "name": "Leigh Whannell"
+     }
+    }
+   ]
+  },
+  "5004": {
+   "id": 5004,
+   "translations": [
+    {
+     "iso_639_1": "uk",
+     "iso_3166_1": "UA",
+     "data": {
+      "name": "Джозеф Бішара"
+     }
+    }
+   ]
+  },
+  "5007": {
+   "id": 5007,
+   "translations": [
+    {
+     "iso_639_1": "bg",
+     "iso_3166_1": "BG",
+     "data": {
+      "name": "Лин Шей"
+     }
+    }
+   ]
+  },
+  "5008": {
+   "id": 5008,
+   "translations": [
+    {
+     "iso_639_1": "bg",
+     "iso_3166_1": "BG",
+     "data": {
+      "name": "  Амелия   Ийв "
+     }
+    }
+   ]
+  }
  }
 }

@@ -1263,6 +1263,12 @@ check("a YouTube thumbnail in the page (a Google request before the tap) fails",
 _rc, _out = _run_out(_tr_page(_tr_ok, extra_js='const Y="https://www.youtube.com/embed/";'))
 check("the tracking embed host (www.youtube.com/embed) instead of youtube-nocookie fails",
       _rc != 0 and "www.youtube.com/embed" in _out)
+_rc, _out = _run_out(_tr_page({"f0": {"y": 2026, "nb": {"Roger Deakins": "Роджър Дийкинс"}}}))
+check("TMDB's Bulgarian person names pass", _rc == 0)
+for _name, _nb in (("a Russian form (ы/э) as a Bulgarian name fails", {"Scott Teems": "Скотт Тимс Мэйсон"}),
+                   ("a Latin name as a Bulgarian name fails", {"Leigh Whannell": "Leigh Whannell"})):
+    _rc, _out = _run_out(_tr_page({"f0": {"y": 2026, "nb": _nb}}))
+    check(_name, _rc != 0 and "not Bulgarian Cyrillic" in _out)
 _tr_stamped = _finish(_tr_page(_tr_ok))
 check("the page's CSP allows exactly one frame host, www.youtube-nocookie.com",
       "frame-src https://www.youtube-nocookie.com;" in _tr_stamped)
