@@ -574,18 +574,18 @@ TEXTS = {("terms", "bg"): TERMS_BG, ("terms", "en"): TERMS_EN,
          ("cookies", "bg"): COOKIES_BG, ("cookies", "en"): COOKIES_EN}
 
 CSS = """/* Sofia Gleda: the legal pages (scripts/gen_legal_pages.py inlines this in each page).
-   The app's tokens: ink and fg, crimson accent, Onest for text, Oswald for the title. */
+   The app's tokens: ink and fg, crimson accent, Montserrat for text and titles (the cinema face). */
 :root{
   --ink:#0C0A0F; --ink-2:#141018; --ink-3:#1C1622; --ink-4:#28202F;
   --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.17);
-  --fg:#F4EFF6; --fg-2:#B6ABBC; --fg-3:#7E7386;
+  --fg:#F4EFF6; --fg-2:#B6ABBC; --fg-3:#958A9C;
   --crimson:#E0163A; --accent:var(--crimson);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{margin:0; background:var(--ink); color:var(--fg-2);
-  font-family:"Onest","Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.65;
+  font-family:"Montserrat","Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.65;
   -webkit-font-smoothing:antialiased}
 a{color:var(--fg); text-decoration:underline; text-decoration-color:rgba(224,22,58,.65);
   text-underline-offset:3px; overflow-wrap:anywhere}
@@ -619,8 +619,8 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size
 .lg-docs a[aria-current="page"]{background:var(--fg); border-color:var(--fg); color:var(--ink); font-weight:600}
 
 h1{display:flex; align-items:center; gap:12px; margin:0 0 6px; color:var(--fg);
-  font-family:Oswald,"Arial Narrow",sans-serif; font-weight:600; text-transform:uppercase;
-  letter-spacing:.05em; font-size:clamp(28px,6vw,40px); line-height:1.1; text-wrap:balance}
+  font-family:"Montserrat","Segoe UI",system-ui,sans-serif; font-weight:700;
+  letter-spacing:-.01em; font-size:clamp(26px,5.6vw,36px); line-height:1.15; text-wrap:balance}
 h1::before{content:""; flex:0 0 5px; width:5px; height:.9em; border-radius:2px; background:var(--accent)}
 .lg-updated{margin:0 0 24px; color:var(--fg-3); font-size:14px}
 .lg-lead{font-size:17px; color:var(--fg)}
@@ -632,8 +632,7 @@ li{margin:6px 0}
 
 .lg-key{margin:22px 0 8px; padding:18px 20px 12px; border-radius:18px; background:var(--ink-2);
   border:1px solid var(--line); border-left:3px solid var(--accent)}
-.lg-key h2{margin:0 0 4px; font-family:Oswald,"Arial Narrow",sans-serif; text-transform:uppercase;
-  letter-spacing:.06em; font-size:17px}
+.lg-key h2{margin:0 0 4px; font-weight:700; font-size:17px}
 .lg-key li{color:var(--fg)}
 .lg-warn{margin:12px 0; padding:12px 16px; border-radius:14px; color:var(--fg);
   background:rgba(217,178,60,.08); border:1px solid rgba(217,178,60,.3)}
