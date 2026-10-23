@@ -1034,6 +1034,14 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 16: the sheet's bar (I12) ---- */
+.sbar{justify-content:flex-end; background:var(--ink-2); -webkit-backdrop-filter:none; backdrop-filter:none; min-height:54px}
+.sbar-sp{flex:1}
+.sbar .sshare,.sbar .sclose{position:static; inset:auto; width:36px; height:36px; flex:0 0 36px; border-radius:50%;
+  background:var(--ink-4); border:1px solid var(--line-2); color:var(--fg); display:grid; place-items:center}
+@media (hover:hover){ .sbar .sshare:hover,.sbar .sclose:hover{border-color:var(--fg-2); background:var(--ink-4)} }
+@media (pointer:coarse){ .sbar .sshare,.sbar .sclose{position:relative} }
+
 /* ---- step 14: 44 pt touch targets (I4) ---- */
 @media (pointer:coarse){
   .iconb{width:44px; height:44px; flex-basis:44px}
@@ -4491,8 +4499,14 @@ function sheetHTMLFor(c){
 function decorateSheet(s){
   const sheet=s.querySelector(".sheet");
   if(sheet&&!sheet.querySelector(".sbar")){
+    /* One way out (I12): the sheet's sticky bar holds Share and Close on its trailing edge,
+       visible at every scroll position (the "‹ Назад" pill dismissed the sheet, which a Back
+       button should not, and the ✕ on the hero scrolled away with it). */
     const bar=document.createElement("div");bar.className="sbar";
-    bar.innerHTML=`<button class="sback" data-close>&#8249;&nbsp;${esc(t().back)}</button>`;
+    bar.innerHTML=`<span class="sbar-sp"></span>`;
+    const shareB=sheet.querySelector(".shero > .sshare"),closeB=sheet.querySelector(".shero > .sclose");
+    if(shareB)bar.appendChild(shareB);
+    if(closeB)bar.appendChild(closeB);
     const grab=document.createElement("div");grab.className="sgrab";
     sheet.insertBefore(bar,sheet.firstChild);
     sheet.insertBefore(grab,sheet.firstChild);
