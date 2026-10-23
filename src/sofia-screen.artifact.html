@@ -45,7 +45,7 @@ body{margin:0; background:var(--ink); color:var(--fg);
 h1,h2,h3,h4{margin:0; text-wrap:balance}
 button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
 a{color:inherit}
-:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important}}
 /* Safe areas: the page asks for the whole screen (viewport-fit=cover), so on a phone it
    is laid out under the rounded corners, the notch or Dynamic Island, the status bar of
@@ -769,8 +769,8 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-day b{display:block;font-family:Oswald,sans-serif;font-weight:500;
     font-size:17px;line-height:1.1;color:var(--fg)}
   .p3e-day span{font-size:11px;color:var(--fg-3)}
-  .p3e-day[aria-pressed="true"]{background:var(--crimson)}
-  .p3e-day[aria-pressed="true"] b,.p3e-day[aria-pressed="true"] span{color:#fff}
+  .p3e-day[aria-pressed="true"]{background:var(--accent)}
+  .p3e-day[aria-pressed="true"] b,.p3e-day[aria-pressed="true"] span{color:var(--on-accent)}
   /* Venue group list */
   .p3e-grp{background:var(--ink-3);border-radius:14px;overflow:hidden}
   /* A venue row stacks: the name (with the price on its right), the address, the
@@ -1033,6 +1033,45 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 /* visually hidden, read by screen readers */
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
+
+/* ---- step 12: one accent element per view (owner decision: Option A, I1) ----
+   The accent (crimson for cinema, gold for theatre) marks ONE thing: the selected day or
+   period (home day strip, the sheet's day picker, the drawer's period chips and calendar).
+   Every other selected state is a neutral white "thumb"; primary buttons are white like the
+   time sheet's "Купи билет"; headings, the FAB, badges and the buy box are neutral. */
+.seg button[aria-pressed="true"]{background:var(--fg); color:var(--ink)}
+.fchip[aria-pressed="true"]:not([data-range]){background:var(--fg); border-color:var(--fg); color:var(--ink)}
+.fav-toggle.on{background:var(--fg); border-color:var(--fg); color:var(--ink)}
+.fav-star.on{color:var(--fg)}
+@media (hover:hover){ .fav-star.on:hover{color:var(--fg)} }
+.btn{background:var(--fg); border-color:var(--fg); color:var(--ink)}
+.btn.ghost{background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.26); color:#fff}
+.phead-dates{color:var(--fg-2)}
+.eyebrow,[data-surface="theatre"] .eyebrow{color:var(--fg-2)}
+.readmore{color:var(--fg)}
+.dg-h{color:var(--fg-2)}
+.why{border-left-color:var(--line-2)}
+.note{border-left-color:var(--line-2)}
+.rhead h2::before,.sechead h2::before,.venue-block-head h2::before{display:none}
+.fab{background:rgba(40,32,47,.94); color:var(--fg); border:1px solid var(--line-2);
+  -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px)}
+.fab-badge{background:var(--fg); color:var(--ink)}
+.badge,.badge.lim,.badge.prem,.badge.free{background:rgba(12,10,15,.78); color:#fff; border:1px solid rgba(255,255,255,.2)}
+.chip.solid{background:var(--ink-4); border-color:var(--line-2); color:var(--fg)}
+.search-icon-btn.expanded{border-color:var(--fg-2); color:var(--fg); background:var(--ink-4)}
+.search input:focus{border-color:var(--fg-2)}
+.cal button.has::after{background:var(--fg-3)}
+.cal button[aria-pressed="true"].has::after{background:var(--on-accent)}
+.buybox{border-color:var(--line); background:var(--ink-3)}
+.buybox .buylink:not(.inperson):not(.alt){border-color:rgba(244,239,246,.5); color:var(--fg)}
+.vprice{color:var(--fg-2); background:transparent; border-color:var(--line-2)}
+.time.fits{border-color:var(--fg-2); color:var(--fg)}
+.cal-times button.sel{border-color:var(--fg)}
+@media (hover:hover){
+  .buybox .buylink:not(.inperson):not(.alt):hover{background:rgba(244,239,246,.08); border-color:var(--fg)}
+  .calarrow:hover:not([disabled]),.sback:hover,.pbanner-btn:hover,.venue-chip-rm:hover,.time:hover,.time.tix:hover{border-color:var(--fg-2); color:var(--fg)}
+  .sec-toggle:hover{color:var(--fg-2)}
+}
 
 /* ---- step 11: press feedback (I3) ---- */
 /* every control answers a press (there was one :active rule on the whole page); hover styles
