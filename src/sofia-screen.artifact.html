@@ -1027,6 +1027,14 @@ footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
    The last stylesheet on the page, so its rules win over the older blocks above without
    !important where specificity allows. Grouped by the report's implementation steps. */
 
+/* ---- step 5: search field (I6, I11) ---- */
+/* one clear button: the engine's own cancel glyph doubled the app's ✕ (WebKit and Chromium) */
+.search input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none; display:none}
+.search input[type=search]{-webkit-appearance:none; appearance:none}
+.search .mag{display:grid; place-items:center; width:16px; height:16px; line-height:0}
+.search .mag svg{display:block; width:16px; height:16px}
+.search input:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+
 /* ---- step 1: contrast (C4) ---- */
 /* "днес" on the selected (accent) day pill: at 80% opacity it was 3.5:1 on crimson */
 .dspill .ds-today{opacity:1}
@@ -3117,6 +3125,8 @@ function searchToggleInPlace(){
   const dw=document.querySelector(".desk-search-wrap");
   if(dw){
     dw.classList.toggle("open",willOpen);
+    /* closed, the field is invisible: keep it (and its clear button) out of the Tab order */
+    _setInert(dw,!willOpen);
     if(!willOpen){
       /* Closing: remove seg-q immediately — search is collapsing */
       document.querySelectorAll(".seg").forEach(sg=>sg.classList.remove("seg-q"));
@@ -3895,15 +3905,15 @@ function render(){
      Item 2: .open class added immediately after paint via requestAnimationFrame */
   /* .sr-visible keeps display:block so animation works when searchOpen=true after render() */
   const searchMobileOpenHTML=`<div class="bar-row-search${S.searchOpen?" sr-visible open":""}"><div class="search search-mob-open${S.q?" has":""}">
-      <span class="mag">⌕</span>
-      <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
-      <button class="clr" data-qclear-m aria-label="${esc(L.clearSearch)}">✕</button>
+      <span class="mag" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" focusable="false"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.searchOpen||"Търсене")}" autocomplete="off" spellcheck="false">
+      <button class="clr" data-qclear-m aria-label="${esc(L.searchClose||"Затвори търсенето")}">✕</button>
     </div></div>`;
   /* desktop: expandable search field — always in DOM so opacity/width transition fires */
-  const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}">
+  const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}"${S.searchOpen?"":" inert"}>
     <div class="search${S.q?" has":""}">
-      <span class="mag">⌕</span>
-      <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
+      <span class="mag" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" focusable="false"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.searchOpen||"Търсене")}" autocomplete="off" spellcheck="false">
       <button class="clr" data-qclear aria-label="${esc(L.clearSearch)}">✕</button>
     </div></div>`;
   const headerHTML=isMob
