@@ -204,7 +204,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   color:var(--fg-3); margin:20px 0 9px; padding-bottom:6px; border-bottom:1px solid var(--line)}
 .drawer h3:first-of-type{margin-top:6px}
 .drawer-top{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:4px}
-.drawer-top b{font-family:Oswald,sans-serif; font-size:13px; letter-spacing:.14em; text-transform:uppercase}
+.drawer-top b,.drawer-top .drawer-title{font-family:Oswald,sans-serif; font-size:13px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; margin:0}
 .dclose{width:30px; height:30px; border-radius:50%; border:1px solid var(--line); display:grid; place-items:center; font-size:14px; color:var(--fg-2)}
 .chipwrap{display:flex; gap:6px; flex-wrap:wrap}
 .mrow{display:flex; gap:6px; margin-bottom:9px}
@@ -470,7 +470,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .rtile .rv{font-family:Oswald,sans-serif; font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.15}
 .rtile .rv small{font-size:11px; color:var(--fg-3); font-weight:400}
 .rtile.imdb .rv{color:#F5C518}
-.sec h4{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3); margin-bottom:9px;
+.sec h3,.sec h4{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3); margin-bottom:9px;
   padding-bottom:6px; border-bottom:1px solid var(--line)}
 .sec p{margin:0 0 8px; color:var(--fg-2); font-size:14px; max-width:68ch}
 .facts{margin:0; padding-left:17px; color:var(--fg-2); font-size:13.5px; display:flex; flex-direction:column; gap:5px}
@@ -3595,14 +3595,14 @@ function sheetFilm(f){
   {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${esc(mv)}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   const tr=trailerOf(f);
-  return`<div class="sheet"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="film:${esc(f.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     ${tr?`<button type="button" class="tr-play" data-trailer="${esc(f.id)}" aria-label="${esc((tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)+": "+filmTitle(f))}" title="${esc(tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.6v12.8a.9.9 0 0 0 1.37.77l10.2-6.4a.9.9 0 0 0 0-1.54L9.37 4.83A.9.9 0 0 0 8 5.6z" fill="currentColor"/></svg></button>`:""}
     <div class="sh-titles" style="position:relative;z-index:3">
       <div class="eyebrow" style="color:#fff;opacity:.82">${[S.lang==="en"?"":filmSubtitle(f),yearOf(f),ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
-      <h2>${esc(filmTitle(f))}</h2>${tr?`
+      <h2 id="sg-sheet-title">${esc(filmTitle(f))}</h2>${tr?`
       <p class="tr-meta">${esc(trailerLabel(tr))}</p>
       <button type="button" class="tr-stop" data-trailer-stop hidden><span aria-hidden="true">✕</span> ${esc(L.trStop)}</button>`:""}</div></div>
    <div class="sbody">${tr?`
@@ -3611,10 +3611,10 @@ function sheetFilm(f){
       ${runtimeOf(f)?`<span class="chip">${esc(runtimeOf(f))} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
+    <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why,n=S.lang==="en"?f.noteEn:f.note;return w?`<div class="why">${esc(w)}</div>`:n?`<div class="why">${esc(n)}</div>`:""})()}</div>
-    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.about)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:"";})()}
-    <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
+    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h3>${esc(L.about)}</h3><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:"";})()}
+    <div class="sec"><h3>${esc(L.credits)}</h3><dl class="credits">
       <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
       ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(personName(r[1],f))}</dd>`).join("");})()}
@@ -3622,7 +3622,7 @@ function sheetFilm(f){
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
       ${(ctryOf(f)||yearOf(f))?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",yearOf(f)?esc(yearOf(f)):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
-    <div class="sec"><h4>${esc(L.times)}</h4>
+    <div class="sec"><h3>${esc(L.times)}</h3>
       ${selNote}
       ${timesHtml}</div>
    </div></div>`;}
@@ -3667,30 +3667,30 @@ function sheetShow(sh){
   /* venue display: use nameEn in EN mode */
   const thName_=S.lang==="bg"?th.name:(th.nameEn||th.name);
   const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
-  return`<div class="sheet"><div class="shero" style="background:${grad(sh.g)}">
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero" style="background:${grad(sh.g)}">
     ${posterArt("sh-"+sh.id,sh.genres,sh.g,titleOf(sh))}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.82">${esc(thName_)}</div><h2>${esc(titleOf(sh))}</h2></div></div>
+      <div class="eyebrow" style="color:#fff;opacity:.82">${esc(thName_)}</div><h2 id="sg-sheet-title">${esc(titleOf(sh))}</h2></div></div>
    <div class="sbody">
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
       ${sh.duration?`<span class="chip">${esc(sh.duration)} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
+    <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
-    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.aboutT)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
-    ${sh.reviews&&sh.reviews.length&&S.lang==="bg"?`<div class="sec"><h4>${esc(L.press)}</h4>
+    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h3>${esc(L.aboutT)}</h3><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
+    ${sh.reviews&&sh.reviews.length&&S.lang==="bg"?`<div class="sec"><h3>${esc(L.press)}</h3>
       ${sh.reviews.map(r=>`<div class="quote">${esc(r.text)}<cite>${esc(r.src)}</cite></div>`).join("")}</div>`:""}
-    <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
+    <div class="sec"><h3>${esc(L.credits)}</h3><dl class="credits">
       ${sh.author&&sh.author!=="—"?`<dt>${esc(L.author)}</dt><dd>${esc(nameDisplay(sh.author))}</dd>`:""}
       ${sh.director&&sh.director!=="—"?`<dt>${esc(L.dir)}</dt><dd>${esc(nameDisplay(sh.director))}</dd>`:""}
       ${sh.cast&&sh.cast!=="—"?`<dt>${esc(L.cast)}</dt><dd>${esc(nameDisplay(sh.cast))}</dd>`:""}
       ${(()=>{const pr=S.lang==="en"?x.premiereEn:x.premiere;return pr?`<dt>${esc(L.premiere)}</dt><dd>${esc(pr)}</dd>`:""})()}
       ${(()=>{const se=S.lang==="en"?x.seasonEn:x.season;return se?`<dt>${esc(L.season)}</dt><dd>${esc(se)}</dd>`:""})()}
       <dt>${esc(L.venue)}</dt><dd>${esc(thName_)}, ${esc(thArea_)}</dd></dl></div>
-    <div class="sec"><h4>${esc(L.perfs)}</h4>${perfsHtml}</div>
+    <div class="sec"><h3>${esc(L.perfs)}</h3>${perfsHtml}</div>
    </div></div>`;}
 
 function sheetEvent(ev){
@@ -3701,13 +3701,13 @@ function sheetEvent(ev){
      Never fall back to generic aggregators (the user's "Eventim on Физика на
      тъгата" complaint traced to exactly that blanket hub list). */
   const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
-  return`<div class="sheet"><div class="shero" style="background:${grad(ev.g)}">
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero" style="background:${grad(ev.g)}">
     ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="hero-scrim"></div>
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
       <div class="eyebrow" style="color:#fff;opacity:.85">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
-      <h2>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
+      <h2 id="sg-sheet-title">${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
    <div class="sbody">
     <div class="chips"><span class="chip solid">${esc(range)}</span>
       <span class="chip">${esc(ev.scope==="both"?(S.lang==="bg"?"кино и театър":"cinema & theatre"):ev.scope==="cinema"?L.cinema:L.theatre)}</span></div>
@@ -3735,7 +3735,7 @@ function calView(){
   const dim=new Date(Date.UTC(fd.getUTCFullYear(),fd.getUTCMonth()+1,0)).getUTCDate();
   const lo=S.rFrom, hi=S.rTo, isRange=S.day==="range";
   let cells="";
-  for(let i=0;i<offset;i++)cells+=`<button disabled></button>`;
+  for(let i=0;i<offset;i++)cells+=`<span class="cal-pad" aria-hidden="true"></span>`;
   for(let d=1;d<=dim;d++){
     const iso=`${m}-${String(d).padStart(2,"0")}`;
     const ok=iso>=TODAY&&iso<=LASTDAY;
@@ -3819,8 +3819,8 @@ function drawerHTML(){
   }
   const hasActive=S.fGenres.length||S.fVenues.length||S.fStrands.length||S.day!=="week";
   return `<div class="drawer-scrim" data-dclose></div>
-  <aside class="drawer" role="dialog" aria-label="${esc(L.filters)}">
-    <div class="drawer-top"><b>${esc(L.filters)}</b>
+  <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="sg-drawer-title">
+    <div class="drawer-top"><h2 class="drawer-title" id="sg-drawer-title">${esc(L.filters)}</h2>
       <div style="display:flex;align-items:center;gap:8px">
         ${hasActive?`<button class="fclear" data-clearf style="font-size:11px">${esc(L.clearAll||L.clear)}</button>`:""}
         <button class="dclose" data-dclose aria-label="${esc(L.closeFilters)}">✕</button>
@@ -3850,7 +3850,7 @@ function drawerHTML(){
     ${untilList.length?`<h3>${esc(L.untilNote)}</h3><div class="until">${untilList.map(esc).join("<br>")}</div>`:""}
     ${validatedOn()?`<div class="lastcheck">${esc(L.checked)} ${esc(validatedOn())}</div>`:""}
     <button class="btn applyb" data-dclose>${esc(L.apply)}</button>
-  </aside>`;
+  </div>`;
 }
 function searchView(sr){
   const L=t(),total=sr.films.length+sr.shows.length;
@@ -3963,6 +3963,7 @@ function render(){
       keptDr.innerHTML=fresh.innerHTML;
     }
     keptDr.scrollTop=drTop;
+    _drawerInert(true);
     if(drFocus){const el=keptDr.querySelector(drFocus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
   }else if(S.drawer){
     _drawerEnter(app);
@@ -4042,6 +4043,7 @@ function _drawerEnter(app){
   const ds0=app.querySelector(":scope > .drawer-scrim");
   if(ds0)ds0.addEventListener("click",()=>{});
   _drawerSwipe(app.querySelector(":scope > .drawer"));
+  _drawerInert(true);
   /* P3B: animate drawer entrance when newly opened, then move focus inside */
   requestAnimationFrame(()=>{
     const dr=document.querySelector(".drawer");
@@ -4078,6 +4080,7 @@ function closeDrawerNow(){
   const app=document.getElementById("app");
   if(!app||!app.querySelector(":scope > main")){render();return;}
   app.querySelectorAll(":scope > .drawer,:scope > .drawer-scrim").forEach(n=>n.remove());
+  _drawerInert(false);
   _syncFab();
 }
 /* A tap in the filter drawer: the drawer keeps its node, scroll position and focus (only
@@ -4463,6 +4466,14 @@ function _openerEl(c){
   const attr=c.kind==="film"?"data-film":c.kind==="show"?"data-show":"data-event";
   try{return document.querySelector("#app ["+attr+'="'+CSS.escape(c.id)+'"]');}catch(e){return null;}
 }
+/* inert: while a modal layer is up, what is behind it takes no focus, no clicks and no
+   screen-reader browsing (WCAG 2.4.3). The sheet layer makes #app inert; the phone time
+   panel makes the sheet (#scrim) inert; the filter drawer makes the page around it inert. */
+function _setInert(el,on){if(el&&("inert" in el))el.inert=!!on;}
+function _drawerInert(on){
+  const app=document.getElementById("app");if(!app)return;
+  for(const n of app.children){if(n.classList.contains("drawer")||n.classList.contains("drawer-scrim"))continue;_setInert(n,on);}
+}
 function openSheet(html,fromEl){
   if(!html)return;
   const gen=++_sheetGen;
@@ -4481,6 +4492,7 @@ function openSheet(html,fromEl){
      reliable one, history and swipe are conveniences on top of it */
   _lastOpenEl=fromEl||null;
   decorateSheet(s);
+  _setInert(document.getElementById("app"),true);
   animateOpen(s,fromEl);
   /* Move keyboard focus into the sheet after the opening animation. */
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -4532,6 +4544,7 @@ function closeSheet(fromPop){
     if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
     /* an animated close shields taps until it ends; an instant one keeps the short shield */
     if(animated)_tapShieldUntil=Math.min(_tapShieldUntil,performance.now());
+    _setInert(document.getElementById("app"),false);
     /* Return focus to the card that opened the sheet */
     if(returnEl&&returnEl.isConnected&&typeof returnEl.focus==="function"){
       try{returnEl.focus({preventScroll:true});}catch(e){}
@@ -5377,8 +5390,8 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     return`<div class="ss-grab"></div>
 <button class="ss-back-btn" data-ssback aria-label="${esc(L.back||"Назад")}">‹</button>
 <button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
-<div class="ss-cal-title">${esc(L.ssCalTitle)}</div>
-<div class="ss-cal-ev">
+<div class="ss-cal-title" id="ss-t">${esc(L.ssCalTitle)}</div>
+<div class="ss-cal-ev" id="ss-d">
   <div class="a">${esc(title)}</div>
   <div class="b">${esc(dateDisplay)}, ${esc(timeStr)}${esc(endStr)}</div>
   <div class="b">${esc(venueName)}</div>
@@ -5452,8 +5465,8 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
 
   return`<div class="ss-grab"></div>
 <button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
-<div class="ss-time">${esc(timeStr)}</div>
-<div class="ss-date">${esc(dateDisplay)}</div>
+<div class="ss-time" id="ss-t">${esc(timeStr)}</div>
+<div class="ss-date" id="ss-d">${esc(dateDisplay)}</div>
 <div class="ss-venue">${esc(venueName)}${venueArea?", "+esc(venueArea):""}</div>
 ${chipsHtml}
 ${statusHtml}
@@ -5567,7 +5580,7 @@ function _ssWrapEl(){
   if(!w){
     w=document.createElement("div");w.id="ss-wrap";w.className="ss-wrap";w.hidden=true;
     const inner=document.createElement("div");
-    inner.className="ss-sheet";inner.setAttribute("role","dialog");inner.setAttribute("aria-modal","true");
+    inner.className="ss-sheet";inner.setAttribute("role","dialog");inner.setAttribute("aria-modal","true");inner.setAttribute("aria-labelledby","ss-t ss-d");
     w.appendChild(inner);
     document.body.appendChild(w);
     /* a tap on the dimmed backdrop closes only the popup */
@@ -5657,6 +5670,7 @@ function _ssToSheet(){
   inner.innerHTML=screeningSheetHtml(st.kind,st.id,st.venueId,st.dateStr,st.timeStr,st.step);
   inner.scrollTop=0;inner.style.transform="";w.style.background="";
   w.hidden=false;
+  _setInert(document.getElementById("scrim"),true);
   st.mode="sheet";st.el=w;st.inner=inner;
   if(hadFocus)_ssFocusFirst(st,0);
 }
@@ -5673,6 +5687,17 @@ window.addEventListener("resize",()=>{
   if(_ssWantsSheet()){_ssToSheet();return;}
   _ssSchedule();
 });
+/* The desktop popover is not modal (a click outside closes it, another time switches it),
+   so the sheet stays live; but Tab must not walk out of it into the sheet behind: leaving it
+   either way closes it and puts focus back on its time, where the sheet's order goes on. */
+function _ssPopKeys(e){
+  if(e.key!=="Tab"||!_ss||_ss.mode!=="pop")return;
+  const f=[..._ss.el.querySelectorAll('button,a[href]')].filter(x=>x.getClientRects().length&&!x.disabled);
+  if(!f.length)return;
+  if((!e.shiftKey&&document.activeElement===f[f.length-1])||(e.shiftKey&&document.activeElement===f[0])){
+    e.preventDefault();closeScreeningSheet();
+  }
+}
 /* openScreeningSheet: open (or switch) the popup for a time pill of the open sheet. */
 function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
   if(!sheetOpen)return;
@@ -5693,6 +5718,7 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
     const inner=w.querySelector(".ss-sheet");
     inner.innerHTML=html;inner.scrollTop=0;inner.style.transform="";w.style.background="";
     w.hidden=false;
+    _setInert(document.getElementById("scrim"),true);
     st.el=w;st.inner=inner;
     _ss=st;
     slideUp(inner);
@@ -5700,7 +5726,8 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
     let pop=_ss&&_ss.el;
     if(!pop||!pop.isConnected){
       pop=document.createElement("div");pop.id="ss-pop";pop.className="ss-pop";
-      pop.setAttribute("role","dialog");
+      pop.setAttribute("role","dialog");pop.setAttribute("aria-labelledby","ss-t ss-d");
+      pop.addEventListener("keydown",_ssPopKeys);
       pop.innerHTML='<div class="ss-sheet"></div><span class="ss-caret" aria-hidden="true"></span>';
       document.body.appendChild(pop);
     }
@@ -5734,6 +5761,7 @@ function closeScreeningSheet(opts){
   const st=_ss;
   if(!st)return;
   _ss=null;
+  _setInert(document.getElementById("scrim"),false);
   if(_ssRaf){cancelAnimationFrame(_ssRaf);_ssRaf=0;}
   if(st.mode==="sheet"){
     /* the overlay is reused: drop what a drag or its spring-back left on it */
