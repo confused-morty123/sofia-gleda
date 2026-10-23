@@ -877,6 +877,26 @@ check("details_extra: one call: the detail request appends credits and videos, b
       ("movie/7", {"language": "en-US", "append_to_response": "credits,videos", "include_video_language": "bg,en"}))
 TMDB.api = _orig_api
 
+# 2b. TMDB genres land in the site's genre buckets (GENRES in the UI), so a film the
+#     venues give no genres appears under the right filter and rail (owner, 23 Oct 2026)
+import re as _t3re
+_ui_src = (pathlib.Path(__file__).resolve().parent.parent / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")
+_buckets = {}
+for _gm in _t3re.finditer(r'\{id:"(\w+)",\s*t:"(\w+)"[^}]*?m:\[([^\]]*)\]\}', _ui_src[_ui_src.index("const GENRES=["):]):
+    if _gm.group(2) in ("cinema", "both"):
+        for _name in _t3re.findall(r'"([^"]+)"', _gm.group(3)):
+            _buckets.setdefault(_name, set()).add(_gm.group(1))
+_tmdb_b = {tid: sorted(_buckets.get(name, ())) for tid, name in TMDB.TMDB_GENRES.items()}
+check("TMDB genres: every mapped TMDB genre falls into a cinema genre bucket, except Family and "
+      "Western (shown as chips; the site has no bucket for them)",
+      sorted(TMDB.TMDB_GENRES[t] for t, b in _tmdb_b.items() if not b), ["Семеен", "Уестърн"])
+check("TMDB genres: Horror -> horror, Science Fiction -> scifi, Crime -> action, Documentary -> doc, "
+      "Music -> music, History -> drama, Mystery -> horror",
+      [_tmdb_b[27], _tmdb_b[878], _tmdb_b[80], _tmdb_b[99], _tmdb_b[10402], _tmdb_b[36], _tmdb_b[9648]],
+      [["horror"], ["scifi"], ["action"], ["doc"], ["music"], ["drama"], ["horror"]])
+check("TMDB genres: every value is a genre name the UI knows (GENRE_EN)",
+      [n for n in TMDB.TMDB_GENRES.values() if '"%s":' % n not in _ui_src[_ui_src.index("const GENRE_EN={"):]], [])
+
 # 3. the trailer's year guard and the TMDBART record
 _rec = {"matched": True, "tmdb_year": "2021", "orig_lang": "fr", "runtime": 98, "genres": ["Драма"],
         "countries": "France / Latvia / Germany", "country": "France", "cc": ["FR", "LV", "DE"],

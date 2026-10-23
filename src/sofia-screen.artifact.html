@@ -1435,21 +1435,66 @@ const hasBGSynShow=sh=>!!(notEmpty(SHOWSYN[sh.id])||notEmpty(sh.synBg));
 const _hasCyr=s=>s&&/[Ѐ-ӿ]/.test(s);
 const dirOf=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
-  if(S.lang==="bg")return notEmpty(f.director)||notEmpty(fi.dir)||notEmpty(ar.dir)||null;
+  if(S.lang==="bg")return personName(notEmpty(f.director)||notEmpty(fi.dir)||notEmpty(ar.dir)||null);
   const raw=notEmpty(ar.dir)||notEmpty(f.director)||notEmpty(fi.dir)||null;
-  return raw&&_hasCyr(raw)?nameDisplay(raw):raw;
+  return personName(raw);
 };
 const castOf=f=>{
   const fi=FI()[f.id]||{},ar=ART2(f.id);
-  if(S.lang==="bg")return notEmpty(f.cast)||notEmpty(fi.cast)||notEmpty(ar.cast)||null;
+  if(S.lang==="bg")return personName(notEmpty(f.cast)||notEmpty(fi.cast)||notEmpty(ar.cast)||null);
   const raw=notEmpty(ar.cast)||notEmpty(f.cast)||notEmpty(fi.cast)||null;
-  return raw&&_hasCyr(raw)?nameDisplay(raw):raw;
+  return personName(raw);
+};
+/* Film people's names in the interface's script (owner, 23 Oct 2026): in BG a name TMDB
+   gives in Latin letters ("Scott Teems") is written in Cyrillic, in EN a Cyrillic one
+   in Latin (translitBG). Used for the director, cast, screenplay, music and
+   cinematography of films. latinToBG is rule-based: English digraphs (sh, ch, th, ph,
+   ck, ee, oo…), c before e/i/y, y as й or и, doubled consonants once, diacritics dropped;
+   a Roman numeral or a token with digits stays as it is. */
+const _LT_MULTI=[["shch","щ"],["chr","кр"],["wh","у"],["sch","ш"],["tch","ч"],["dzh","дж"],["sh","ш"],["ch","ч"],["zh","ж"],["kh","х"],
+  ["ph","ф"],["th","т"],["ck","к"],["ts","ц"],["tz","ц"],["qu","кв"],["ee","и"],["oo","у"],["ou","у"],
+  ["ay","ей"],["ey","ей"],["ei","ей"],["ya","я"],["yu","ю"],["yo","йо"],["ye","йе"],["ia","ия"],["io","йо"]];
+const _LT_ONE={a:"а",b:"б",d:"д",e:"е",f:"ф",g:"г",h:"х",i:"и",j:"дж",k:"к",l:"л",m:"м",n:"н",o:"о",p:"п",
+  q:"к",r:"р",s:"с",t:"т",u:"у",v:"в",w:"у",x:"кс",z:"з"};
+function _ltWord(w){
+  if(/^[IVXLCDM]+$/.test(w)||/\d/.test(w))return w;
+  if(w==="Jr")return"мл";if(w==="Sr")return"ст";
+  const cap=w[0]!==w[0].toLowerCase();
+  const x=w.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ß/g,"ss").replace(/[æ]/gi,"ae").replace(/[ø]/gi,"o")
+    .toLowerCase().replace(/([b-df-hj-np-tv-z])\1+/g,"$1");
+  let out="",i=0;
+  const vowel=ch=>"aeiouy".includes(ch||"");
+  while(i<x.length){
+    const m=_LT_MULTI.find(([k])=>x.startsWith(k,i));
+    if(m){out+=m[1];i+=m[0].length;continue;}
+    const c=x[i];
+    if(c==="g"&&x[i+1]==="h"){out+=(i===0?"г":"");i+=2;continue;}   /* Leigh, Hugh: silent; Ghana: г */
+    if(c==="c")out+=("eiy".includes(x[i+1]||"")?"с":"к");
+    else if(c==="y")out+=((i===0&&vowel(x[i+1]))||vowel(x[i-1])?"й":"и");
+    else out+=(_LT_ONE[c]!==undefined?_LT_ONE[c]:c);
+    i++;
+  }
+  return cap&&out?out[0].toUpperCase()+out.slice(1):out;
+}
+function latinToBG(s){
+  if(!s||typeof s!=="string")return s;
+  return s.replace(/[A-Za-z\u00C0-\u024F]+/g,_ltWord);
+}
+const personName=n=>{
+  if(!n)return n;
+  if(S.lang==="bg")return _hasCyr(n)?n:latinToBG(n);
+  return _hasCyr(n)?translitBG(n):n;
 };
 /* TMDB fallbacks for what the venues leave out (TMDBART y, rn, g, cc, ol; fetch_tmdb.art_record) */
 const yearOf=f=>f.year||ART2(f.id).y||"";
 const runtimeOf=f=>f.runtime||ART2(f.id).rn||"";
 const genresOf=f=>{const fg=(FI()[f.id]||{}).genres,ag=ART2(f.id).g;
-  return (f.genres&&f.genres.length)?f.genres:(Array.isArray(fg)&&fg.length)?fg:Array.isArray(ag)?ag:[];};
+  return (f.genres&&f.genres.length)?f.genres:(Array.isArray(fg)&&fg.length)?fg:Array.isArray(ag)?ag.filter(g=>typeof g==="string"):[];};
+/* Genres count wherever genres do: the filters, the "По жанр" rails, search, cards and
+   ranking (owner, 23 Oct 2026). The venue's genres win; a film the venues give none takes
+   its own programme page's, else TMDB's (TMDBART g: dataset names, so they fall into
+   GENRES' buckets as the venues' do). Done once, before anything reads f.genres. */
+FILMS.forEach(f=>{if(!(Array.isArray(f.genres)&&f.genres.length)){const g=genresOf(f);f.genres=g.slice();}});
 const _dispNames=(lang,type)=>{try{return new Intl.DisplayNames([lang],{type});}catch(e){return null;}};
 const langName=code=>{if(!code||!/^[a-z]{2,3}$/.test(code))return"";
   const dn=_dispNames(S.lang==="en"?"en":"bg","language");let n="";try{n=dn?dn.of(code):"";}catch(e){}
@@ -3538,7 +3583,7 @@ function sheetFilm(f){
     <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
       <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
-      ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(r[1])}</dd>`).join("");})()}
+      ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(personName(r[1]))}</dd>`).join("");})()}
       ${(()=>{const ln=langName(ART2(f.id).ol);return ln?`<dt>${esc(L.olang)}</dt><dd>${esc(ln)}</dd>`:"";})()}
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}

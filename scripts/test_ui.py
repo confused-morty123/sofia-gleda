@@ -16349,6 +16349,152 @@ def wave_tr1(browser):
         except OSError:
             pass
 # ============================================================================
+# WAVE TR2: TMDB genres count for the filters and rails; film people's names in
+# the interface's script (owner, 23 Oct 2026)
+# ============================================================================
+_TR2_NAMES = {"dir": "Christopher Nolan", "cast": "Lin Shaye, Amelia Eve", "wr": "Scott Teems, Leigh Whannell",
+              "mu": "Hans Zimmer", "dop": "Roger Deakins"}
+
+
+def _tr2_page(src):
+    """A copy of the page with TMDBART patched: every film the venues give no genres gets
+    TMDB genres ["Хорър"] (the horror bucket); a film WITH venue genres but no comedy gets
+    ["Комедия"] (the venue's must win); one film without a director or cast anywhere gets
+    TMDB's Latin crew names."""
+    m = re.search(r"^const TMDBART\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    fm = re.search(r"^const FILMS=(\[.*?\]);\s*$", src, flags=re.M | re.S)
+    fim = re.search(r"^const FILMINFO\s*=\s*(\{.*?\});\s*$", src, flags=re.M)
+    if not (m and fm):
+        return None, None
+    art, films = json.loads(m.group(1)), json.loads(fm.group(1))
+    finfo = json.loads(fim.group(1)) if fim else {}
+    comedy = {"Комедия"}
+    bare = [f["id"] for f in films if not f.get("genres") and f["id"] in art
+            and not (finfo.get(f["id"]) or {}).get("genres")]
+    venue = [f["id"] for f in films if f.get("genres") and f["id"] in art and not comedy & set(f["genres"])]
+    nodir = [f["id"] for f in films if f["id"] in art and not (f.get("director") or "").strip("— ")
+             and not (f.get("cast") or "").strip("— ") and not (finfo.get(f["id"]) or {}).get("dir")
+             and not (finfo.get(f["id"]) or {}).get("cast")]
+    cyr = [f["id"] for f in films if re.search(r"[Ѐ-ӿ]", f.get("director") or "")]
+    if not (bare and venue and nodir and cyr):
+        return None, {"bare": len(bare), "venue": len(venue), "nodir": len(nodir), "cyr": len(cyr)}
+    for i in bare:
+        art[i]["g"] = ["Хорър"]
+    for i in venue:
+        art[i]["g"] = ["Комедия"]
+    art[nodir[0]].update(_TR2_NAMES)
+    t = src[:m.start(1)] + json.dumps(art, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + src[m.end(1):]
+    return _restamp(t), {"bare": bare, "venue": venue, "nodir": nodir[0], "cyr": cyr[0]}
+
+
+def wave_tr2(browser):
+    """TR2: a film the venues give no genres takes TMDB's: it appears under the matching
+    filter and "По жанр" rail and its sheet shows the genre; a film with venue genres keeps
+    them (TMDB's never override). In BG, TMDB's Latin names (director, cast, screenplay,
+    music, cinematography) are written in Cyrillic; in EN they stay Latin and a Cyrillic
+    director is written in Latin."""
+    wave = "TR2"
+    ensure_shot_dir(wave)
+    page_html, ids = _tr2_page(html_path.read_text(encoding="utf-8"))
+    check("tr2_fixture_built", page_html is not None, str(ids if page_html is None else
+                                                         {k: (v if isinstance(v, str) else len(v)) for k, v in ids.items()}))
+    if not page_html:
+        return
+    test_file = webapp_root / "index.tr2.html"
+    test_file.write_text(page_html, encoding="utf-8")
+    try:
+        for lang in ("bg", "en"):
+            print(f"\n=== TR2 ({lang}) ===")
+            ctx = browser.new_context(viewport={"width": 1280, "height": 900}, timezone_id="Europe/Sofia", locale="bg-BG")
+            ctx.add_init_script(CLOCK)
+            ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',
+                genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'%s', mode:'cinema'})); } catch(e) {}""" % lang)
+            page = ctx.new_page()
+            errs = []
+            page.on("pageerror", lambda e: errs.append(str(e)))
+            page.goto(test_file.as_uri())
+            page.wait_for_selector(".bar", timeout=20000)
+            page.wait_for_timeout(300)
+            try:
+                r = page.evaluate("""(ids) => {
+                  const vis = () => visibleFilms().map(f => f.id);
+                  S.day = 'all'; S.fGenres = []; const all = new Set(vis());
+                  const pick = ids.bare.find(i => all.has(i)) || null;
+                  const ven = ids.venue.find(i => all.has(i)) || null;
+                  S.fGenres = ['horror']; const horror = new Set(vis());
+                  S.fGenres = ['comedy']; const comedy = new Set(vis());
+                  S.fGenres = ['horror']; render();
+                  const inGrid = !!(pick && document.querySelector('[data-film="' + pick + '"]'));
+                  S.fGenres = []; S.secGenres = true; render(); window.scrollTo(0, 0);
+                  const bucket = GENRES.find(g => g.id === 'horror');
+                  return {pick, ven, pickGenres: pick && filmById[pick].genres, venGenres: ven && filmById[ven].genres,
+                    inHorror: pick && horror.has(pick), venInComedy: ven && comedy.has(ven), inGrid,
+                    railTitle: S.lang === 'bg' ? bucket.bg : bucket.en}; }""", ids)
+                # the "По жанр" section streams in as the page scrolls: scroll until it is mounted
+                for _ in range(40):
+                    if page.query_selector("#sec-Genres-content"):
+                        break
+                    page.mouse.wheel(0, 1200)
+                    page.wait_for_timeout(120)
+                rail = page.evaluate("""([pick, title]) => { const sec = document.getElementById('sec-Genres-content');
+                    if (!sec) return {mounted: false};
+                    const rs = [...sec.querySelectorAll('section.rail')].filter(r => (r.querySelector('h2') || {}).textContent === title);
+                    return {mounted: true, rail: rs.length === 1, card: rs.length === 1 && !!rs[0].querySelector('[data-film="' + pick + '"]')}; }""",
+                    [r["pick"], r["railTitle"]])
+                r["inRail"], r["railShown"] = bool(rail.get("card")), bool(rail.get("rail"))
+                if not r["pick"]:
+                    skip(f"tr2_genres_{lang}", "no genre-less film with TMDB data is showing in this build")
+                else:
+                    check(f"tr2_tmdb_genres_fill_{lang}", r["pickGenres"] == ["Хорър"], f"{r['pick']}: {r['pickGenres']}")
+                    check(f"tr2_tmdb_genre_counts_for_filter_{lang}", r["inHorror"] and r["inGrid"], f"{r['pick']} grid={r['inGrid']}")
+                    check(f"tr2_tmdb_genre_in_genre_rail_{lang}", r["inRail"] and r["railShown"],
+                          f"{r['pick']} under {r['railTitle']!r}: rail shown={r['railShown']} card={r['inRail']}")
+                if not r["ven"]:
+                    skip(f"tr2_venue_genres_win_{lang}", "no film with venue genres is showing")
+                else:
+                    check(f"tr2_venue_genres_win_{lang}", not r["venInComedy"] and "Комедия" not in (r["venGenres"] or []),
+                          f"{r['ven']}: {r['venGenres']}")
+                save_shot(page, wave, f"genre_rail_{lang}")
+                # the sheet of the genre-less film shows TMDB's genre
+                if r["pick"]:
+                    page.evaluate("(id) => { S.fGenres = []; curSheet = {kind:'film', id}; openSheet(sheetFilm(filmById[id])); }", r["pick"])
+                    page.wait_for_selector(".scrim .sheet .chips", timeout=5000)
+                    chips = page.evaluate("[...document.querySelectorAll('.scrim .sheet .sbody .chips .chip')].map(c => c.textContent.trim())")
+                    want = "Хорър" if lang == "bg" else "Horror"
+                    check(f"tr2_sheet_shows_tmdb_genre_{lang}", any(c.lower() == want.lower() for c in chips), str(chips))
+                    page.evaluate("closeSheet()")
+                    page.wait_for_timeout(300)
+                # names
+                nm = page.evaluate("""(ids) => { const f = filmById[ids.nodir], c = filmById[ids.cyr];
+                    const html = sheetFilm(f), b = document.createElement('div'); b.innerHTML = html;
+                    const dl = [...b.querySelectorAll('dl.credits dt')].map(dt => [dt.textContent.trim(), dt.nextElementSibling.textContent.trim()]);
+                    return {dir: dirOf(f), cast: castOf(f), dl, cyrDir: dirOf(c), cyrRaw: c.director, L: T[S.lang]}; }""", ids)
+                dl = dict(nm["dl"])
+                L = nm["L"]
+                got = {"dir": nm["dir"], "cast": nm["cast"], "wr": dl.get(L["wr"]), "mu": dl.get(L["mu"]), "dop": dl.get(L["dop"])}
+                lat = lambda v: bool(v) and re.search(r"[A-Za-z]", v) is not None
+                cyr_ = lambda v: bool(v) and re.search(r"[Ѐ-ӿ]", v) is not None
+                if lang == "bg":
+                    check("tr2_bg_tmdb_names_in_cyrillic", all(cyr_(v) and not lat(v) for v in got.values()), str(got))
+                    check("tr2_bg_transliteration_reads_right",
+                          got["dir"] == "Кристофер Нолан" and got["mu"] == "Ханс Зимер" and got["wr"] == "Скот Тимс, Лей Уанел"
+                          and got["cast"] == "Лин Шейе, Амелия Еве", str(got))
+                    check("tr2_bg_cyrillic_director_unchanged", nm["cyrDir"] == nm["cyrRaw"], f"{nm['cyrDir']!r}")
+                else:
+                    check("tr2_en_tmdb_names_stay_latin", got == {k: _TR2_NAMES[k] for k in got}, str(got))
+                    check("tr2_en_cyrillic_director_in_latin", lat(nm["cyrDir"]) and not cyr_(nm["cyrDir"]),
+                          f"{nm['cyrRaw']!r} -> {nm['cyrDir']!r}")
+                check(f"tr2_no_js_errors_{lang}", not errs, "; ".join(errs[:3]))
+            finally:
+                ctx.close()
+    finally:
+        try:
+            test_file.unlink()
+        except OSError:
+            pass
+
+
+# ============================================================================
 # WAVE UX1 (16 and 22 Oct 2026): the owner's UX items
 #   1. the filter drawer closes with a swipe to the side, following the finger
 #   2. desktop performance budgets (and the measured causes stay fixed)
@@ -17397,6 +17543,7 @@ WAVES = {
     "LG2": wave_lg2,
     "LG3": wave_lg3,
     "TR1": wave_tr1,
+    "TR2": wave_tr2,
     "UX1": wave_ux1,
 }
 
