@@ -1034,6 +1034,11 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- cinema group headings in "По кино" (owner decision 2026-10-23) ----
+   the same heading level as the theatres' groups; Oswald on the cinema surface */
+:root:not([data-surface="theatre"]) main .sec-subhead{font-family:Oswald,sans-serif; font-size:clamp(17px,1.8vw,20px); font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--fg-2); padding:20px 0 8px; border-bottom:1px solid var(--line); margin-bottom:18px}
+
 /* ---- step 17: cards, score chips, event cards (I14, C4; owner decision: event cards A) ---- */
 /* one solid chip base, readable over any poster (the TMDB chip was 18% cyan: 2.1:1 on light art) */
 .score{background:rgba(12,10,15,.78); border-color:rgba(255,255,255,.18)}
@@ -1387,7 +1392,7 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  pheadThisWeek:"Тази седмица",pheadToday:"Днес",pheadThisMonth:"Този месец",
  pheadAll:"Цялата програма",pheadCustom:"Избран период",pheadDayFull:"",
  dsAllWeek:"Цялата седмица",dsToday:"днес",searchClose:"Затвори търсенето",
- subMultiplexes:"Мултиплекси",subIndepCinemas:"Независими кина",
+ subMultiplexes:"Комерсиални кина",subIndepCinemas:"Артхаус кина",subCommercial:"Комерсиални кина",subArthouse:"Артхаус кина",
  showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички",
  noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
  noInfoShort:"няма информация",boxOffice:"Билети на касата",viaEpay:"билети чрез epaygo.bg",
@@ -1490,7 +1495,7 @@ lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMon
  pheadThisWeek:"This week",pheadToday:"Today",pheadThisMonth:"This month",
  pheadAll:"Full programme",pheadCustom:"Selected period",pheadDayFull:"",
  dsAllWeek:"Whole week",dsToday:"today",searchClose:"Close search",
- subMultiplexes:"Multiplexes",subIndepCinemas:"Independent cinemas",
+ subMultiplexes:"Commercial cinemas",subIndepCinemas:"Arthouse cinemas",subCommercial:"Commercial cinemas",subArthouse:"Arthouse cinemas",
  showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all",
  noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
  noEnFilm:"No English description available yet.",noEnShow:"No English description available yet.",
@@ -2745,6 +2750,25 @@ function secToggleHTML(key,label,count,open){
     <span class="sec-toggle-title">${esc(label)}</span>
     ${count!=null?`<span class="sec-toggle-count">${count}</span>`:""}
     <span class="sec-toggle-chev">${chevSVG}</span></button>`;}
+/* "По кино": one rail per cinema, grouped like the theatres' "Държавни и общински /
+   Независими" (owner, 2026-10-23): "Комерсиални кина" (the chains: Cinema City, Кино Арена,
+   Cine Grand, Cineland; CINEMAS[].kind "multiplex") and "Артхаус кина" (the rest). */
+function _cinemaVenueRails(visSet,day){
+  const L=t(),groups={com:[],art:[]};
+  CINEMAS.forEach(c=>{
+    if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
+      if(arty&&!comm&&c.kind!=="independent")return;
+      if(comm&&!arty&&c.kind==="independent")return;}
+    const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
+    if(!fs.length)return;
+    groups[c.kind==="multiplex"?"com":"art"].push(rail(cinName(c),c.area,fs.map(f=>{
+      const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
+      if(!cRows.length)return filmCard(f,day,undefined);
+      const rv=cRows.slice();rv._perVenue=true;return filmCard(f,day,rv);})));
+  });
+  return (groups.com.length?`<div class="sec-subhead">${esc(L.subCommercial)}</div>`+groups.com.join(""):"")
+    +(groups.art.length?`<div class="sec-subhead">${esc(L.subArthouse)}</div>`+groups.art.join(""):"");
+}
 /* venueMode: return a venue-mode body (no hero, no curated rails) when
    S.fVenues is non-empty. Shows per-venue grids of films/shows. */
 function venueModeBody(){
@@ -2927,17 +2951,7 @@ function body(){
     out.push({html:()=>{
       let inner="";
       if(S.secVenues){
-        const cinsToShow=CINEMAS;
-        cinsToShow.forEach(c=>{
-          if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
-            if(arty&&!comm&&c.kind!=="independent")return;
-            if(comm&&!arty&&c.kind==="independent")return;}
-          const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-          if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
-            const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
-            if(!cRows.length)return filmCard(f,day,undefined);
-            const rv=cRows.slice(); rv._perVenue=true; return filmCard(f,day,rv);}));
-        });
+        inner=_cinemaVenueRails(visSet,day);
       }
       return secToggleHTML("Venues",L.secByCinema||"По кино",null,S.secVenues)
         +`<div id="sec-Venues-content" class="sec-body"${S.secVenues?"":" hidden"}>${inner}</div>`;
@@ -3194,18 +3208,7 @@ function secToggleInPlace(key){
       if(key==="Venues"){
         if(S.mode==="cinema"){
           const visSet=new Set(vis.map(f=>f.id));
-          let inner="";
-          CINEMAS.forEach(c=>{
-            if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
-              if(arty&&!comm&&c.kind!=="independent")return;
-              if(comm&&!arty&&c.kind==="independent")return;}
-            const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-            if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
-              const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
-              if(!cRows.length)return filmCard(f,day,undefined);
-              const rv=cRows.slice();rv._perVenue=true;return filmCard(f,day,rv);}));
-          });
-          body.innerHTML=inner;
+          body.innerHTML=_cinemaVenueRails(visSet,day);
         }else{
           const visSet=new Set(vis.map(s=>s.id));
           const STATE_KINDS=["national","state","municipal"];
