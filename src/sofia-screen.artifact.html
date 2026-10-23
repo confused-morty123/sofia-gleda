@@ -1034,6 +1034,21 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- steps 18-19: first viewport, moderate items (M2, M4, M10, M12, M17) ---- */
+/* phones: the hero's synopsis is three lines (the full text is in the sheet), so its buttons
+   are in the first screen instead of under the floating Filters button */
+@media (max-width:760px){ .hero-syn{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden} }
+.p3e-dmon{display:block; font-size:11px; line-height:1; color:var(--fg-3); margin-top:1px}
+.p3e-day[aria-pressed="true"] .p3e-dmon{color:inherit}
+.p3e-pill.ss-src{box-shadow:0 0 0 2px var(--fg)}
+/* venues without listings in the period: dimmed, not struck through (it read as an error) */
+.fchip.off,.fchip:disabled{text-decoration:none}
+/* Increase Contrast */
+@media (prefers-contrast:more){
+  :root{--fg-2:#D6CDDB; --fg-3:#B9AFC0; --line:rgba(255,255,255,.28); --line-2:rgba(255,255,255,.42)}
+  .drawer-scrim,.scrim{-webkit-backdrop-filter:none; backdrop-filter:none}
+}
+
 /* ---- cinema group headings in "По кино" (owner decision 2026-10-23) ----
    the same heading level as the theatres' groups; Oswald on the cinema surface */
 :root:not([data-surface="theatre"]) main .sec-subhead{font-family:Oswald,sans-serif; font-size:clamp(17px,1.8vw,20px); font-weight:600;
@@ -3614,10 +3629,12 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     }catch(e){return{abbr:"",num:iso.slice(8)};}
   };
 
+  const multiMon=new Set(dates.map(d=>d.slice(0,7))).size>1;
   const daysHtml=`<div class="p3e-days" role="group" aria-label="${esc(L.times)}" data-p3dayswrap>
-    ${dates.map(d=>{
+    ${dates.map((d,i)=>{
       const{abbr,num}=dayWod(d);
-      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b></button>`;
+      const mon=multiMon&&(i===0||d.slice(0,7)!==dates[i-1].slice(0,7))?`<small class="p3e-dmon" aria-hidden="true">${esc((L.monthsShort||[])[parseInt(d.slice(5,7),10)-1]||"")}</small>`:"";
+      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b>${mon}</button>`;
     }).join("")}</div>`;
 
   /* build venue list for a given date */
@@ -3641,7 +3658,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   _p3DayRenderFns.set("p3e-grp-"+itemId,(dateStr,grpEl)=>{grpEl.innerHTML=buildVenueList(dateStr);});
   const initialList=buildVenueList(selDate);
   const grpHtml=`<div class="p3e-grp p3e-grp-slot" id="p3e-grp-${esc(itemId)}" data-p3dates="${esc(dates.join(","))}">${initialList}</div>`;
-  const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(L.ssDashedFn)}</p>`:"";  /* cinema footnote */
+  const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(itemKind==="show"?L.ssDashedFnT:L.ssDashedFn)}</p>`:"";
 
   /* ---- DESKTOP: week grid, 7 dates a page ----
      Every page is rendered and only the current one is shown. A page lists only the
@@ -4944,7 +4961,7 @@ function toast(msg){
   if(!el){el=document.createElement("div");el.id="sg-toast";el.className="toast";document.body.appendChild(el);}
   el.textContent=msg;el.classList.add("show");
   announce(msg);
-  clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2200);
+  clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),4000);
 }
 window.addEventListener("hashchange",()=>{ if(!sheetOpen)openFromHash(); });
 
@@ -5960,6 +5977,8 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
       }
     }
   }
+  document.querySelectorAll("#scrim .ss-src").forEach(x=>{x.classList.remove("ss-src");x.removeAttribute("aria-expanded");});
+  if(fromEl&&fromEl.classList){fromEl.classList.add("ss-src");fromEl.setAttribute("aria-expanded","true");}
   _syncHistory();
   _ssFocusFirst(st,reduced?10:(st.mode==="sheet"?340:220));
 }
@@ -5972,6 +5991,7 @@ function closeScreeningSheet(opts){
   if(!st)return;
   _ss=null;
   _setInert(document.getElementById("scrim"),false);
+  document.querySelectorAll("#scrim .ss-src").forEach(x=>{x.classList.remove("ss-src");x.removeAttribute("aria-expanded");});
   if(_ssRaf){cancelAnimationFrame(_ssRaf);_ssRaf=0;}
   if(st.mode==="sheet"){
     /* the overlay is reused: drop what a drag or its spring-back left on it */
