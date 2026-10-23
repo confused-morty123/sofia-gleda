@@ -1312,6 +1312,29 @@ for _icon_rel, _expected_size in [
         except Exception as _ie:
             note(f"icon check {_icon_rel}: {_ie}")
 
+# ----------------------------------------- 6b2. merged film ids (FILM_REDIRECT)
+# A film record merged into the film it duplicated (film_merges.json) is gone from
+# FILMS and lists nothing; its old id opens the kept film. A merged-away id still in
+# FILMS or SHOWTIMES is the duplicate card the merge removed, come back.
+try:
+    _frm = re.search(r"^const FILM_REDIRECT\s*=\s*(.*?);\s*$", js, flags=re.M)
+    _fr = json.loads(_frm.group(1)) if _frm else {}
+    if not isinstance(_fr, dict):
+        fail("FILM_REDIRECT is not an object")
+        _fr = {}
+    _f_ids = {f.get("id") for f in (data.get("FILMS") or []) if isinstance(f, dict)}
+    _st_ids = {r[0] for r in (data.get("SHOWTIMES") or []) if isinstance(r, list) and r}
+    _back = sorted(k for k in _fr if k in _f_ids or k in _st_ids)
+    if _back:
+        fail(f"merged-away film id(s) still listed in FILMS/SHOWTIMES: {', '.join(_back[:5])}")
+    _dead = sorted(k for k, v in _fr.items() if v not in _f_ids)
+    if _dead:
+        note(f"FILM_REDIRECT: {len(_dead)} merged film(s) whose kept film is not listed now: {', '.join(_dead[:5])}")
+    if _fr:
+        note(f"FILM_REDIRECT: {len(_fr)} merged film id(s) open the film they were merged into")
+except Exception as _fr_err:
+    fail(f"FILM_REDIRECT check error: {_fr_err}")
+
 # ----------------------------------------- 6c. share pages (film/, show/, event/)
 # Every share page gives a link-preview fetcher the title's own tags and does not send
 # it away: no meta refresh. Apple's previewer (iMessage, Notes; it runs in WebKit and
@@ -1346,6 +1369,19 @@ try:
         _id_redirect = {**_renamed_ids(), **_id_redirect}
     except Exception:
         pass
+    # merged film ids (FILM_REDIRECT; film_merges.json): film/<old>/ is the kept film's page
+    _fr_m = re.search(r"^const FILM_REDIRECT\s*=\s*(.*?);\s*$", js, flags=re.M)
+    try:
+        _film_redirect = json.loads(_fr_m.group(1)) if _fr_m else {}
+    except ValueError:
+        _film_redirect = {}
+    if not isinstance(_film_redirect, dict):
+        _film_redirect = {}
+    try:
+        from film_identity import load_merges as _load_merges, film_redirects as _film_redirects
+        _film_redirect = {**_film_redirects(_load_merges()), **_film_redirect}
+    except Exception:
+        pass
 
     def _check_share_page_file(kind, item_id):
         global _sp_count
@@ -1358,7 +1394,8 @@ try:
         _where = f"share page {kind}/{item_id}"
         # a renamed show id's old directory is the share page of the new record
         # (ID_REDIRECT, gen_share_pages.write_redirects): its canonical is the new id
-        _target = _id_redirect.get(item_id, item_id) if kind == "show" else item_id
+        _target = (_id_redirect.get(item_id, item_id) if kind == "show"
+                   else _film_redirect.get(item_id, item_id) if kind == "film" else item_id)
         _expected_url = f"{_SITE_URL}/{kind}/{_target}/"
         if (f'rel="canonical" href="{_expected_url}"' not in _page_src
                 or f'property="og:url" content="{_expected_url}"' not in _page_src):

@@ -688,6 +688,17 @@ _fm4_rc, _fm4_out = _run_out(_minimal_html())
 check("a page without FESTMARK passes (marks from the listing titles alone)", _fm4_rc == 0)
 
 
+# merged film ids (film_merges.json -> FILM_REDIRECT): the old id opens the kept film,
+# and the duplicate card the merge removed must not come back
+print("merged film ids (FILM_REDIRECT)")
+_fr1_rc, _fr1_out = _run_out(_minimal_html(extra_js='const FILM_REDIRECT={"old-dup":"f0"};'))
+check("a merged-away id that is gone from FILMS and SHOWTIMES passes", _fr1_rc == 0 and "FILM_REDIRECT: 1" in _fr1_out)
+_fr2_rc, _fr2_out = _run_out(_minimal_html(extra_js='const FILM_REDIRECT={"f1":"f0"};'))
+check("a merged-away id still listed fails", _fr2_rc != 0 and "merged-away film id" in _fr2_out)
+_fr3_rc, _fr3_out = _run_out(_minimal_html(extra_js='const FILM_REDIRECT={"old-dup":"not-listed"};'))
+check("…a kept film not listed now is only noted", _fr3_rc == 0 and "kept film is not listed" in _fr3_out)
+
+
 # ---------------------------------------------------------------------------
 # P3C: OG/Twitter meta, icon files, and share page spot checks (6a/6b/6c)
 # ---------------------------------------------------------------------------

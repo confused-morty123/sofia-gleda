@@ -1742,6 +1742,222 @@ check("…and still applies with the right year, or none", (_R("Сънища", "
       ("akira-kurosava-sanishta-1990", "akira-kurosava-sanishta-1990"))
 check("…a vetoed alias is listed for a human", any(t == "Сънища" for t, _c in _idx.suspects), True)
 
+# Duplicate film RECORDS (2026-10-23): a title minted on the day no rule could
+# place it matched its own record from then on. Cine Grand's "НЕУДОБНАТА ИСТИНА"
+# stood beside "Хроники за неудобната истина – Истината за българският Чернобил"
+# (seven cinemas) with An Inconvenient Truth's poster; Люмиер's "КУКЛА - СИНЕЛИБРИ"
+# beside "Синелибри 2026: КУКЛА" after the suffix key fix. detect_duplicates merges
+# such records on evidence; these pin it on trimmed copies of that day's data.
+print("film identity: duplicate records are merged on evidence, never on a shared word")
+
+
+def _rows(fid, venue, dates, times=("18:00",)):
+    return [[fid, venue, d, list(times)] for d in dates]
+
+
+_W1 = ["2026-10-23", "2026-10-24", "2026-10-25"]
+_dup_films = {
+    "hroniki": {"id": "hroniki", "bg": "Хроники за неудобната истина – истината за Българският Чернобил",
+                "en": "", "source": "odeon"},
+    "neudobnata-istina": {"id": "neudobnata-istina", "bg": "НЕУДОБНАТА ИСТИНА", "en": "", "runtime": 91,
+                          "source": "cg-park"},
+    "hroniki-en": {"id": "hroniki-en", "bg": "Хроники за неудобната истина (с английски субтитри)", "en": "",
+                   "runtime": 91, "year": 2026, "source": "cc-sofia"},
+}
+_dup_rows = (_rows("hroniki", "cc-sofia", _W1, ["19:00"]) + _rows("hroniki", "arena-mega", _W1)
+             + _rows("hroniki", "odeon", _W1[1:]) + _rows("neudobnata-istina", "cg-park", _W1, ["18:15"])
+             + _rows("neudobnata-istina", "cg-ring", _W1, ["17:15"]) + _rows("hroniki-en", "cc-sofia", _W1, ["17:00"]))
+_dup_links = [("neudobnata-istina", "https://www.cinegrand.bg/m/neudobnata-istina-imdbtt47819464"),
+              ("hroniki", "https://www.kinoarena.com/bg/movie/khroniki-za-neudobnata-istina")]
+_dup_tmdb = {
+    "neudobnata-istina": {"matched": True, "tmdb_id": 1781, "tmdb_year": "2006", "runtime": 100,
+                          "imdb_id": "tt0497116", "en": "An Inconvenient Truth"},
+    "hroniki-en": {"matched": True, "tmdb_id": 1792123, "tmdb_year": "2026", "runtime": 91,
+                   "imdb_id": "tt47819464", "original_title": "Хроники за неудобната истина"},
+    "hroniki": {"matched": False},
+}
+
+
+def _DD(films, rows, minted=None, **kw):
+    got = FID.detect_duplicates(films, set(films) if minted is None else minted, rows, **kw)
+    return sorted((m["drop"], m["into"], m["rule"]) for m in got)
+
+
+check("Cine Grand's 'НЕУДОБНАТА ИСТИНА' is merged into the film seven cinemas list (its page names the "
+      "IMDb id the English-subtitled listing's confirmed TMDB match has)",
+      _DD(_dup_films, _dup_rows, links=_dup_links, tmdb=_dup_tmdb),
+      [("neudobnata-istina", "hroniki", "same-id")])
+check("…the English-subtitled listing stays its own card (no per-screening mark for it yet)",
+      [m["drop"] for m in FID.detect_duplicates(_dup_films, set(_dup_films), _dup_rows, _dup_links,
+                                                tmdb=_dup_tmdb)], ["neudobnata-istina"])
+check("…a TMDB match the venue's own runtime contradicts is no evidence (91 min vs An Inconvenient Truth's 100)",
+      _DD({k: _dup_films[k] for k in ("neudobnata-istina", "hroniki")},
+          [r for r in _dup_rows if r[0] != "hroniki-en"],
+          tmdb={"neudobnata-istina": _dup_tmdb["neudobnata-istina"],
+                "hroniki": {"matched": True, "tmdb_id": 1781, "tmdb_year": "2006", "runtime": 100}}), [])
+check("…without the venue's IMDb id there is nothing to merge on (a contained title alone is not enough)",
+      _DD(_dup_films, _dup_rows, tmdb=_dup_tmdb), [])
+check("…the short title is contained in the long one, not its beginning",
+      (FID._contained(*[FID._evidence(f, _dup_films[f], [], {}, {}, {}) for f in ("neudobnata-istina", "hroniki")])
+       or ("",))[0], "contained")
+check("…'contained' merges on the same runtime AND year, no venue listing both, the same weeks",
+      _DD({"a": {"id": "a", "bg": "Неудобната истина", "runtime": 91, "year": 2026},
+           "b": {"id": "b", "bg": "Хроники за неудобната истина: Чернобил", "runtime": 90, "year": 2026}},
+          _rows("a", "cg-park", _W1) + _rows("b", "cc-sofia", _W1)), [("a", "b", "contained")])
+check("…but not when one venue lists both titles",
+      _DD({"a": {"id": "a", "bg": "Неудобната истина", "runtime": 91, "year": 2026},
+           "b": {"id": "b", "bg": "Хроники за неудобната истина: Чернобил", "runtime": 90, "year": 2026}},
+          _rows("a", "cc-sofia", _W1, ["17:00"]) + _rows("b", "cc-sofia", _W1)), [])
+check("…nor on the runtime alone",
+      _DD({"a": {"id": "a", "bg": "Неудобната истина", "runtime": 91},
+           "b": {"id": "b", "bg": "Хроники за неудобната истина: Чернобил", "runtime": 90, "year": 2026}},
+          _rows("a", "cg-park", _W1) + _rows("b", "cc-sofia", _W1)), [])
+
+_kk = {"kukla-sinelibri": {"id": "kukla-sinelibri", "bg": "КУКЛА - СИНЕЛИБРИ", "source": "lumiere"},
+       "sinelibri-2026-kukla": {"id": "sinelibri-2026-kukla", "bg": "Синелибри 2026: КУКЛА", "runtime": 162,
+                                "year": 2026, "source": "dom-kino"}}
+_kr = _rows("kukla-sinelibri", "lumiere", _W1[:1], ["20:00"]) + _rows("sinelibri-2026-kukla", "lumiere", _W1[:1],
+                                                                      ["20:00"]) \
+    + _rows("sinelibri-2026-kukla", "dom-kino", _W1[1:])
+check("the same title once normalised: the festival-suffix record goes into the one with the facts",
+      _DD(_kk, _kr, tmdb={"kukla-sinelibri": {"matched": True, "tmdb_id": 771075, "tmdb_year": "2007",
+                                                "runtime": 32}}),
+      [("kukla-sinelibri", "sinelibri-2026-kukla", "same-key")])
+check("…a catalogue film is always the one kept, and two catalogue films are left to a human",
+      (_DD(_kk, _kr, minted={"sinelibri-2026-kukla"}), _DD(_kk, _kr, minted=set())),
+      ([("sinelibri-2026-kukla", "kukla-sinelibri", "same-key")], []))
+check("…a year conflict vetoes even the same title (a retro screening of an older film)",
+      _DD({"a": {"id": "a", "bg": "Сънища", "year": 1990}, "b": {"id": "b", "bg": "Сънища", "year": 2024}},
+          _rows("a", "lumiere", _W1) + _rows("b", "cc-sofia", _W1)), [])
+check("…and a pair listed under 'distinct' is never merged",
+      _DD(_kk, _kr, distinct={frozenset(("kukla-sinelibri", "sinelibri-2026-kukla"))}), [])
+check("the same TMDB id, confirmed by each record's own runtime",
+      _DD({"x": {"id": "x", "bg": "Целувка за лека нощ", "runtime": 90},
+           "y": {"id": "y", "bg": "Ирена", "runtime": 91}}, _rows("x", "g8", _W1) + _rows("y", "vlaikova", _W1),
+          tmdb={"x": {"matched": True, "tmdb_id": 1546852, "runtime": 90},
+                "y": {"matched": True, "tmdb_id": 1546852, "runtime": 92}}), [("y", "x", "same-id")])
+check("…not when neither record can confirm its match",
+      _DD({"x": {"id": "x", "bg": "Целувка за лека нощ"}, "y": {"id": "y", "bg": "Ирена"}},
+          _rows("x", "g8", _W1) + _rows("y", "vlaikova", _W1),
+          tmdb={"x": {"matched": True, "tmdb_id": 1546852, "runtime": 90},
+                "y": {"matched": True, "tmdb_id": 1546852, "runtime": 92}}), [])
+_tz = {"tseluvka-za-leka-nosht": {"id": "tseluvka-za-leka-nosht", "bg": "Целувка за лека нощ", "runtime": 90,
+                                  "year": 2026, "source": "g8"},
+       "sinelibri-2026-tseluvka-za-leka-nosht": {"id": "sinelibri-2026-tseluvka-za-leka-nosht",
+                                                 "bg": "СИНЕЛИБРИ 2026 – ЦЕЛУВКА ЗА ЛЕКА НОЩ І", "source": "vlaikova"}}
+check("a prefix with the very same screening listed under both titles",
+      _DD(_tz, _rows("tseluvka-za-leka-nosht", "vlaikova", ["2026-10-31"], ["17:30"])
+          + _rows("tseluvka-za-leka-nosht", "g8", ["2026-11-04"])
+          + _rows("sinelibri-2026-tseluvka-za-leka-nosht", "vlaikova", ["2026-10-31"], ["17:30"])),
+      [("sinelibri-2026-tseluvka-za-leka-nosht", "tseluvka-za-leka-nosht", "prefix")])
+check("…another time at that venue is not the same screening",
+      _DD(_tz, _rows("tseluvka-za-leka-nosht", "vlaikova", ["2026-10-31"], ["17:30"])
+          + _rows("sinelibri-2026-tseluvka-za-leka-nosht", "vlaikova", ["2026-10-31"], ["20:00"])), [])
+_pp = {"p1": {"id": "p1", "bg": "Пес патрул", "runtime": 86},
+       "p2": {"id": "p2", "bg": "Пес патрул: Мега филмът", "runtime": 88}}
+check("trap: a shared opening and a near runtime at different venues is not one film",
+      _DD(_pp, _rows("p1", "cineland", _W1) + _rows("p2", "cc-sofia", _W1)), [])
+check("trap: …nor at one multiplex in the same weeks (Пес патрул: Филмът 86 min / Мега филмът 88 min)",
+      _DD(_pp, _rows("p1", "cc-sofia", _W1, ["11:00"]) + _rows("p2", "cc-sofia", _W1)), [])
+check("trap: one start time in common at a multiplex is chance, not the same screening",
+      _DD(_pp, _rows("p1", "cc-sofia", _W1[:1], ["11:00"]) + _rows("p2", "cc-sofia", _W1[:1], ["11:00", "15:00"]),
+          multi_hall={"cc-sofia"}), [])
+check("…every screening of one listed under the other there, two or more, is the same screening",
+      _DD(_pp, _rows("p1", "cc-sofia", _W1[:2], ["11:00"]) + _rows("p2", "cc-sofia", _W1, ["11:00", "15:00"]),
+          multi_hall={"cc-sofia"}), [("p1", "p2", "prefix")])
+check("…a venue seen running unrelated films at once counts as several halls without being told",
+      _DD(dict(_pp, z1={"id": "z1", "bg": "Сират"}, z2={"id": "z2", "bg": "Диаманти"}),
+          _rows("p1", "g8", _W1[:1], ["11:00"]) + _rows("p2", "g8", _W1[:1], ["11:00"])
+          + _rows("z1", "g8", _W1[:2], ["18:00"]) + _rows("z2", "g8", _W1[:2], ["18:00"])), [])
+check("…but once is no proof of it (a one-hall venue with one clash in its listings)",
+      _DD(dict(_pp, z1={"id": "z1", "bg": "Сират"}, z2={"id": "z2", "bg": "Диаманти"}),
+          _rows("p1", "g8", _W1[:1], ["11:00"]) + _rows("p2", "g8", _W1[:1], ["11:00"])
+          + _rows("z1", "g8", _W1[:1], ["18:00"]) + _rows("z2", "g8", _W1[:1], ["18:00"])), [("p1", "p2", "prefix")])
+check("…a runtime conflict keeps them apart even with the same screening",
+      _DD({"p1": {"id": "p1", "bg": "Пес патрул", "runtime": 70}, "p2": _pp["p2"]},
+          _rows("p1", "odeon", _W1, ["11:00"]) + _rows("p2", "odeon", _W1, ["11:00"])), [])
+check("trap: one word in common is never enough ('Аватар' / 'Аватар: Огън и пепел', the same screening)",
+      _DD({"a": {"id": "a", "bg": "Аватар"}, "b": {"id": "b", "bg": "Аватар: Огън и пепел"}},
+          _rows("a", "odeon", _W1) + _rows("b", "odeon", _W1)), [])
+check("trap: a sequel number ('Падане' / 'Падане 2: Мъртва точка')",
+      _DD({"a": {"id": "a", "bg": "Падане на звездите", "runtime": 98, "year": 2026},
+           "b": {"id": "b", "bg": "Падане на звездите 2", "runtime": 98, "year": 2026}},
+          _rows("a", "cc-sofia", _W1) + _rows("b", "cc-sofia", _W1)), [])
+check("trap: a sequel word ('Кралят на лъвовете' / '… част трета')",
+      _DD({"a": {"id": "a", "bg": "Кралят на лъвовете", "runtime": 98, "year": 2026},
+           "b": {"id": "b", "bg": "Кралят на лъвовете: Част трета", "runtime": 98, "year": 2026}},
+          _rows("a", "cc-sofia", _W1) + _rows("b", "cc-sofia", _W1)), [])
+check("trap: films not on screen in the same weeks",
+      _DD({"a": {"id": "a", "bg": "Последният ден", "runtime": 95, "year": 2026},
+           "b": {"id": "b", "bg": "Последният ден на лятото", "runtime": 95, "year": 2026}},
+          _rows("a", "cc-sofia", _W1) + _rows("b", "cc-sofia", ["2026-12-01"])), [])
+check("trap: a short title that fits two films merges with neither",
+      _DD({"s": {"id": "s", "bg": "Пес патрул", "runtime": 88},
+           "m1": {"id": "m1", "bg": "Пес патрул: Мега филмът", "runtime": 88},
+           "m2": {"id": "m2", "bg": "Пес патрул: Филмът", "runtime": 87}},
+          _rows("s", "odeon", _W1, ["11:00"]) + _rows("m1", "odeon", _W1[:1], ["11:00"])
+          + _rows("m2", "odeon", _W1[1:2], ["11:00"])),
+      [])
+check("…while either one alone would be merged (the same screening at a one-hall venue)",
+      _DD({"s": {"id": "s", "bg": "Пес патрул", "runtime": 88},
+           "m1": {"id": "m1", "bg": "Пес патрул: Мега филмът", "runtime": 88}},
+          _rows("s", "odeon", _W1, ["11:00"]) + _rows("m1", "odeon", _W1[:1], ["11:00"])), [("m1", "s", "prefix")])
+check("version notes: the key of a listing without its note", FID.key_without_note(
+      "Хроники за неудобната истина (с английски субтитри)"), "хроники за неудобната истина")
+check("…'with English subtitles' is the same note", FID.version_note("Chronicles (with English subtitles)"), "en-sub")
+check("…a title without one has none", FID.version_note("Хроники за неудобната истина – истината за…"), "")
+
+print("film identity: a merged-away id keeps resolving, and the page's data follows it")
+_mix = FID.FilmIndex(list(_dup_films.values()), set(_dup_films), aliases={})
+_mix.apply_merges({"neudobnata-istina": {"into": "hroniki", "record": _dup_films["neudobnata-istina"]}})
+check("Cine Grand's title now resolves to the film kept", _R("НЕУДОБНАТА ИСТИНА", "cg-ring", index=_mix), "hroniki")
+_mx2 = FID.FilmIndex([dict(_dup_films["hroniki"], year=2026)], {"hroniki"}, aliases={})
+_mx2.apply_merges({"neudobnata-istina": {"into": "hroniki", "record": _dup_films["neudobnata-istina"]}})
+check("…after the merge, a 2006 'Неудобната истина' finds no film (not the 2026 one)",
+      _R("НЕУДОБНАТА ИСТИНА", "odeon", index=_mx2, year=2006), None)
+check("…the merged-away record is not listed as a suspected duplicate",
+      [d for d in _mix.suspected_duplicates(["hroniki"]) if d["film"] == "neudobnata-istina"], [])
+check("redirects follow a chain to the film finally kept",
+      FID.film_redirects({"a": {"into": "b"}, "b": {"into": "c"}, "x": {"into": "x"}}), {"a": "c", "b": "c"})
+_kept, _back = FID.undo_distinct({"a": {"into": "b", "record": {"id": "a", "bg": "А"}}, "c": {"into": "d"}},
+                                 {"distinct": [{"films": ["a", "b"], "reason": "test"}]})
+check("a merge a human lists as 'distinct' is undone and its record restored",
+      (sorted(_kept), _back), (["c"], [{"id": "a", "bg": "А"}]))
+_R2 = {"neudobnata-istina": "hroniki"}
+check("SHOWTIMES: rows of one film, venue and date are joined",
+      FID.remap_scraped("SHOWTIMES", [["neudobnata-istina", "cg-park", "2026-10-23", ["18:15"]],
+                                      ["hroniki", "cg-park", "2026-10-23", ["14:10", "18:15"]],
+                                      ["other", "cg-park", "2026-10-23", ["12:00"]]], _R2),
+      [["hroniki", "cg-park", "2026-10-23", ["14:10", "18:15"]], ["other", "cg-park", "2026-10-23", ["12:00"]]])
+check("VLINKS / LINKS: the kept film's own link wins",
+      (FID.remap_scraped("VLINKS", [["neudobnata-istina", "cg-park", "u1"], ["hroniki", "cg-park", "u2"],
+                                    ["neudobnata-istina", "cg-ring", "u3"]], _R2),
+       FID.remap_scraped("LINKS", [["neudobnata-istina", "u1"], ["hroniki", "u2"]], _R2)),
+      ([["hroniki", "cg-park", "u2"], ["hroniki", "cg-ring", "u3"]], [["hroniki", "u2"]]))
+check("SHOWATTR / AGGLINKS / PREMIERES / FESTMARK / SNAPSHOT follow the merge",
+      (FID.remap_scraped("SHOWATTR", {"neudobnata-istina|cg-park": {"2026-10-23 18:15": "sub"},
+                                      "hroniki|cg-park": {"2026-10-23 14:10": "dub"}}, _R2),
+       FID.remap_scraped("AGGLINKS", {"neudobnata-istina|cineland": "programata.bg"}, _R2),
+       FID.remap_scraped("PREMIERES", {"film:neudobnata-istina": ["2026-10-23"], "show:x": ["2026-10-24"]}, _R2),
+       FID.remap_scraped("FESTMARK", {"f": {"bg": "Ф", "films": ["neudobnata-istina", "hroniki"]}}, _R2),
+       FID.remap_scraped("SNAPSHOT", {"changelog": [{"type": "screening", "film": "neudobnata-istina"}]}, _R2)),
+      ({"hroniki|cg-park": {"2026-10-23 14:10": "dub", "2026-10-23 18:15": "sub"}},
+       {"hroniki|cineland": "programata.bg"},
+       {"film:hroniki": ["2026-10-23"], "show:x": ["2026-10-24"]},
+       {"f": {"bg": "Ф", "films": ["hroniki"]}},
+       {"changelog": [{"type": "screening", "film": "hroniki"}]}))
+_cfm = {"hroniki": {"id": "hroniki", "bg": "Х"}, "m": {"id": "m", "bg": "М", "runtime": 80}}
+check("a minted film learns an empty runtime / year from the venues' own rows, where they agree",
+      (S.fill_minted_facts(_cfm, {"cc-sofia": [("hroniki", "d", "t", {"runtime": 91, "year": 2026}, "Х"),
+                                               ("hroniki", "d", "t2", {"runtime": 92}, "Х"),
+                                               ("m", "d", "t", {"runtime": 120, "year": 2026}, "М")],
+                                  "arena-mega": [("hroniki", "d", "t", {"runtime": "91"}, "Х")]}),
+       _cfm["hroniki"].get("runtime"), _cfm["hroniki"].get("year"), _cfm["m"].get("runtime")),
+      (["hroniki", "m"], 91, 2026, 80))
+check("…not when they disagree",
+      S.fill_minted_facts({"z": {"id": "z"}}, {"v": [("z", "d", "t", {"runtime": 90, "year": 2025}, "Z"),
+                                                     ("z", "d", "t", {"runtime": 120, "year": 2026}, "Z")]}), [])
+
 # CODE-01: the listing window rolls with the date, from one shared rule.
 print("the rolling listing window (CODE-01), the year rollover included")
 import listing_window as LW                                      # noqa: E402

@@ -1398,7 +1398,7 @@ const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","a
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
-  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS","EVENTART","ID_REDIRECT"].forEach(function(n){
+  ["POSTERS","TMDBART","SHOWART","SHOWALIAS","FILMINFO","PRICES","SYN_EN","TITLE_EN","PRELIM_FROM","EVENTS_AUTO","EVENT_MEMBERS","EVENTART","ID_REDIRECT","FILM_REDIRECT"].forEach(function(n){
     try{ if(typeof window[n]==="undefined" && !(n in globalThis)) window[n]={}; }catch(e){ window[n]={}; }
   });
   function panel(msg){
@@ -1722,11 +1722,13 @@ try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
     if(["both","cinema","theatre"].includes(q.track))P.track=q.track;
     if(typeof q.when==="string"&&/^[a-z]{1,20}$/.test(q.when))P.when=q.when;
     if(typeof q.with==="string"&&/^[a-z]{0,20}$/.test(q.with))P.with=q.with;
-    /* a taste pick saved under a show id that was renamed since (ID_REDIRECT) is
-       read back under its new id */
-    const rd=(typeof ID_REDIRECT==="object"&&ID_REDIRECT)||{};
+    /* a taste pick saved under a show id that was renamed since (ID_REDIRECT), or
+       under a film id merged into another film since (FILM_REDIRECT), is read
+       back under its new id */
+    const rd=(typeof ID_REDIRECT==="object"&&ID_REDIRECT)||{},fr=(typeof FILM_REDIRECT==="object"&&FILM_REDIRECT)||{};
+    const hasS=(o,x)=>Object.prototype.hasOwnProperty.call(o,x)&&typeof o[x]==="string";
     P.genres=ids(q.genres);P.mood=ids(q.mood);
-    P.taste=ids(q.taste).map(x=>Object.prototype.hasOwnProperty.call(rd,x)&&typeof rd[x]==="string"?rd[x]:x);
+    P.taste=ids(q.taste).map(x=>hasS(rd,x)?rd[x]:hasS(fr,x)?fr[x]:x);
     S.onb=false;S.lang=p.lang==="en"?"en":"bg";
     S.mode=p.mode==="cinema"||p.mode==="theatre"?p.mode:(P.track==="theatre"?"theatre":"cinema");}
   /* P3A item 7: restore favourites */
@@ -4977,6 +4979,9 @@ function _openById(kind,id,arrive){
   /* a show id that was renamed (ID_REDIRECT: old -> new) opens the new record, so
      a link shared before the rename keeps working */
   if(kind==="show"&&own(ID_REDIRECT,id)&&typeof ID_REDIRECT[id]==="string")id=ID_REDIRECT[id];
+  /* a film id merged into the film it duplicated (FILM_REDIRECT: old -> kept) opens
+     the kept film, so a link shared before the merge keeps working */
+  if(kind==="film"&&own(FILM_REDIRECT,id)&&typeof FILM_REDIRECT[id]==="string")id=FILM_REDIRECT[id];
   if(kind==="film"){
     if(own(filmById,id))html=sheetFilm(filmById[id]);
     else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}

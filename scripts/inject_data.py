@@ -249,6 +249,15 @@ try:
 except Exception as e:
     print(f"  (could not read the renamed ids: {e}; ID_REDIRECT is empty)")
     _id_redirect = {}
+# Film ids merged into the film they duplicated (film_merges.json, written by
+# scrape_programs.py): the app opens the kept film for an old ?film= / #film= link
+# or a saved pick. Always emitted (possibly empty).
+try:
+    from film_identity import load_merges as _load_merges, film_redirects as _film_redirects
+    _film_redirect = _film_redirects(_load_merges())
+except Exception as e:
+    print(f"  (could not read the merged film ids: {e}; FILM_REDIRECT is empty)")
+    _film_redirect = {}
 
 header = ('/* Sofia Gleda — real poster artwork.\n'
     '   POSTERS: id -> data: URI override (base64, any web format). Highest priority.\n'
@@ -276,6 +285,8 @@ header = ('/* Sofia Gleda — real poster artwork.\n'
     '            re-hosted; realPoster() reads it before SHOWART. Always emitted.\n'
     '   ID_REDIRECT: old show id -> new show id, for ids that were renamed\n'
     '            (show_aliases.json "renamed"). Always emitted.\n'
+    '   FILM_REDIRECT: merged-away film id -> the film it was merged into\n'
+    '            (film_merges.json). Always emitted.\n'
     '   Missing ids keep the generated SVG artwork. */')
 
 block = ("<script>/* SOFIA-POSTERS-START */\n"
@@ -294,6 +305,7 @@ block = ("<script>/* SOFIA-POSTERS-START */\n"
     + "const EVENT_MEMBERS = " + json_for_script(_event_members) + ";\n"
     + "const EVENTART = " + json_for_script(_eventart) + ";\n"
     + "const ID_REDIRECT = " + json_for_script(_id_redirect) + ";\n"
+    + "const FILM_REDIRECT = " + json_for_script(_film_redirect) + ";\n"
     + "/* SOFIA-POSTERS-END */</script>")
 
 data = HTML.read_text(encoding="utf-8")
@@ -307,7 +319,7 @@ assert found, "marker block not found in " + str(HTML)
 # 2026-09-16 refresh and every film became unclickable. Refuse to run rather
 # than silently delete app code again.
 GENERATED = {"POSTERS", "TMDBART", "SHOWART", "SHOWALIAS", "FILMINFO", "SYN_EN", "TITLE_EN",
-             "EVENTS_AUTO", "EVENT_MEMBERS", "EVENTART", "ID_REDIRECT"}
+             "EVENTS_AUTO", "EVENT_MEMBERS", "EVENTART", "ID_REDIRECT", "FILM_REDIRECT"}
 declared = set(re.findall(r"^const\s+([A-Za-z_$][\w$]*)\s*=", found.group(0), flags=re.M))
 stray = declared - GENERATED
 if stray:
