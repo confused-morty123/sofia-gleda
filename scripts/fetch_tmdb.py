@@ -370,12 +370,26 @@ def declutter(title):
     return t, extracted_year
 
 
+# Searches that failed (an API error, not "no results") this run. A film whose search
+# failed keeps last run's match instead of dropping to NO MATCH (keep-previous).
+SEARCH_ERRORS = 0
+
+
+def search_api(params):
+    """TMDB search/movie, counting a failure in SEARCH_ERRORS."""
+    global SEARCH_ERRORS
+    res = api("search/movie", params)
+    if res is None:
+        SEARCH_ERRORS += 1
+    return res
+
+
 def search_en(en, year):
     """Query TMDB by English title (with, then without, the year) and pick best."""
-    res = api("search/movie", {"query": en, "year": year, "include_adult": "false"})
+    res = search_api({"query": en, "year": year, "include_adult": "false"})
     results = (res or {}).get("results", [])
     if not results:
-        res = api("search/movie", {"query": en, "include_adult": "false"})
+        res = search_api({"query": en, "include_adult": "false"})
         results = (res or {}).get("results", [])
     return pick(results, en, year)
 
@@ -836,6 +850,7 @@ def main():
         # has them, without ever accepting a loose, fabricated match.
         via_bg = False
         match_source = None   # for the log: bg / original / en
+        _search_err0 = SEARCH_ERRORS
         # A festival prefix is not part of the title: search without it from the
         # start ("Хорър Филм Фест: Сиянието" -> "Сиянието").
         en, bg = strip_series_prefix(en) or en, strip_series_prefix(bg) or bg
@@ -872,7 +887,7 @@ def main():
         elif bg:
             via_bg = True
             # Always search with the FULL Bulgarian title first.
-            res = api("search/movie", {"query": bg, "language": "bg",
+            res = search_api({"query": bg, "language": "bg",
                                        "include_adult": "false"})
             results = (res or {}).get("results", [])
             best = pick_bg(results, bg, year)
@@ -883,7 +898,7 @@ def main():
             clean_bg, extracted_yr_bg = declutter(bg)
             if not best and clean_bg and clean_bg.lower() != bg.lower():
                 use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else year
-                res2 = api("search/movie", {"query": clean_bg, "language": "bg",
+                res2 = search_api({"query": clean_bg, "language": "bg",
                                             "include_adult": "false"})
                 results2 = (res2 or {}).get("results", [])
                 best = pick_bg(results2, clean_bg, use_year_bg)
@@ -921,6 +936,14 @@ def main():
             print(f"      (year {year} vs TMDB {(best.get('release_date') or '')[:4]}: more than "
                   f"{MAX_YEAR_GAP} years apart, another film — rejected)")
             best = None
+        _pv = prev.get(fid) or {}
+        if (not best and SEARCH_ERRORS > _search_err0 and _pv.get("matched")
+                and plausible_year(year, {"release_date": str(_pv.get("tmdb_year") or "")})):
+            # The search itself failed (TMDB error, not "no results"): keep last run's
+            # record rather than blanking the film's poster and details until the next run.
+            print(f"[{i+1}/{len(films)}] {fid:24s} search failed — keeping last run's match")
+            out[fid] = _pv
+            continue
         if not best:
             print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
             out[fid] = {"matched": False, "en": en}

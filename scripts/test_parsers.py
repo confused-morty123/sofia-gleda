@@ -918,10 +918,15 @@ check("art_record: an unmatched record gives nothing", TMDB.art_record({"matched
 # 4. main() end to end on the fixture: the wrong matches fixed at the source,
 #    keep-previous on an API error, a trailer replaced when TMDB answers
 _t3dir = pathlib.Path(_t3tmp.mkdtemp(prefix="sg_t3_"))
+# A film whose TMDB search fails (an API error, not "no results") keeps last run's match.
+_T3_SEARCH_DOWN = {"id": "search-down", "bg": "Търсачката не отговаря", "en": "Search Down", "year": 2025}
+_T3_SEARCH_DOWN_PREV = {"matched": True, "tmdb_id": 4000009, "en": "Search Down", "tmdb_year": "2025",
+                        "poster_path": "/searchdown.jpg", "runtime": 101}
 (_t3dir / "index.html").write_text(
-    "/* SOFIA-DATA-START */\nconst FILMS=" + _t3json.dumps(_T3["films"], ensure_ascii=False)
+    "/* SOFIA-DATA-START */\nconst FILMS=" + _t3json.dumps(_T3["films"] + [_T3_SEARCH_DOWN], ensure_ascii=False)
     + ";\nconst LINKS=[];\n/* SOFIA-DATA-END */", encoding="utf-8")
-(_t3dir / "tmdb_films.json").write_text(_t3json.dumps(_T3["previous"], ensure_ascii=False), encoding="utf-8")
+(_t3dir / "tmdb_films.json").write_text(_t3json.dumps(dict(_T3["previous"], **{"search-down": _T3_SEARCH_DOWN_PREV}),
+                                                    ensure_ascii=False), encoding="utf-8")
 _t3calls = []
 
 
@@ -930,6 +935,8 @@ def _t3_api(path, params):
     if path.startswith("person/"):
         return _T3["person_translations"].get(path.split("/")[1])      # 5005: None = an API error
     if path == "search/movie":
+        if params.get("query") == "Search Down":
+            return None                                                 # an API error
         return {"results": _T3["search"].get(params.get("query"), [])}
     if params.get("language") == "bg-BG":
         return None if path == "movie/4000004" else {"overview": ""}
@@ -968,6 +975,10 @@ check("TMDB answers: runtime and genres stored for the page's fallbacks",
 check("API error: last run's trailer, runtime and genres are kept",
       (_out["api-down"].get("trailer"), _out["api-down"].get("runtime"), _out["api-down"].get("genres")),
       ({"k": "jjjjjjjjjjj", "l": "en", "t": "Trailer"}, 88, ["Драма"]))
+check("search API error: last run's match, poster and details are kept (not NO MATCH)",
+      _out["search-down"], _T3_SEARCH_DOWN_PREV)
+check("search with no results (not an error): a wrong match from last run is still dropped",
+      _out["payatsi"].get("matched"), False)
 check("a Teaser is offered when there is no Trailer", _out["teaser-only"].get("trailer"),
       {"k": "iiiiiiiiiii", "l": "en", "t": "Teaser"})
 # Bulgarian names of the credited people: /person/{id}/translations, cached by id
