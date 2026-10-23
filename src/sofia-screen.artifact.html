@@ -4220,8 +4220,8 @@ function _drawerEnter(app){
     const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const delay=reduced?10:340;
     if(!reduced){
-      dr.animate([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}],
-        {duration:320,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"backwards"});
+      dr.animate([{transform:"translateX(100%)"},{transform:"translateX(0)"}],
+        {duration:360,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
       if(ds)ds.animate([{opacity:0},{opacity:1}],{duration:200,easing:"ease-out",fill:"backwards"});
     }
     /* Move keyboard focus into the drawer after animation */
@@ -4923,8 +4923,8 @@ function animateDrawerClose(cb,fromX){
      curve that starts at speed (the plain close starts slowly) */
   const x0=fromX||0,w=dr.getBoundingClientRect().width||1,rest=Math.max(0,1-x0/w);
   const dsOp=ds?(parseFloat(getComputedStyle(ds).opacity)||0):0;
-  const anim=dr.animate([{transform:`translateX(${x0}px)`,opacity:1},{transform:"translateX(100%)",opacity:0}],
-    {duration:x0?Math.round(120+140*rest):260,easing:x0?"cubic-bezier(.25,.46,.45,.94)":"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  const anim=dr.animate([{transform:`translateX(${x0}px)`},{transform:"translateX(100%)"}],
+    {duration:x0?Math.round(120+140*rest):260,easing:"cubic-bezier(.32,.72,0,1)",fill:"forwards"});
   if(ds)ds.animate([{opacity:dsOp},{opacity:0}],{duration:x0?Math.round(100+100*rest):200,easing:"ease-in",fill:"forwards"});
   anim.onfinish=cb;
 }
@@ -4992,7 +4992,7 @@ function _drawerSwipe(dr){
     const s=scrimEl(),op=s?(parseFloat(s.style.opacity)||0):1;
     clear();
     dr.animate([{transform:`translateX(${dx}px)`},{transform:"translateX(0)"}],
-      {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)"});
+      {duration:300,easing:"cubic-bezier(.32,.72,0,1)"});
     if(s)s.animate([{opacity:op},{opacity:1}],{duration:260,easing:"ease-out"});
   };
   dr.addEventListener("touchend",()=>end(false),{passive:true});
@@ -5025,10 +5025,9 @@ function swipeToClose(sheet){
     /* Live transform: sheet follows finger, scrim opacity tracks */
     const h=sheet.getBoundingClientRect().height||600;
     const progress=Math.min(dy/h,1);
-    const scale=1-progress*0.1;        /* 1 → 0.9 at threshold */
     const opacity=Math.max(1-progress*1.4,0.15);
-    sheet.style.transform=`translateY(${dy}px) scale(${scale})`;
-    sheet.style.transformOrigin="center bottom";
+    /* the sheet follows the finger 1:1, undistorted */
+    sheet.style.transform=`translateY(${dy}px)`;
     if(scrim)scrim.style.background=`rgba(5,3,7,${(0.8*opacity).toFixed(3)})`;
   },{passive:true});
 
@@ -5046,15 +5045,16 @@ function swipeToClose(sheet){
     const vel=dt>0?dy/dt:0;
     const h=sheet.getBoundingClientRect().height||600;
     if(dy>h*THRESHOLD||vel>VEL_CLOSE){
-      /* commit close */
-      _reset();
+      /* commit close: the closing slide starts from the finger's offset (kept inline) */
+      if(scrim)scrim.style.background="";
+      y0=null;
       closeSheet();
     } else {
       /* spring back */
       if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){_reset();return;}
       sheet.animate(
-        [{transform:sheet.style.transform||"none"},{transform:"translateY(0) scale(1)"}],
-        {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"forwards"});
+        [{transform:sheet.style.transform||"none"},{transform:"translateY(0)"}],
+        {duration:300,easing:"cubic-bezier(.32,.72,0,1)"});
       if(scrim){
         const curAlpha=parseFloat((scrim.style.background||"").match(/[\d.]+\)$/)?
           (scrim.style.background||"").match(/([\d.]+)\)$/)[1]:0.8);
@@ -5074,39 +5074,26 @@ function animateOpen(scrim,fromEl){
   const sheet=scrim.querySelector(".sheet"); if(!sheet)return;
   const isMobile=innerWidth<=620;
 
-  /* Always fade the scrim backdrop */
+  /* Always fade the scrim backdrop. On phones only its dimming fades (the sheet is inside
+     the scrim, and fading the scrim's opacity made the rising panel see-through). */
   const bgDur=reduced?1:200;
-  scrim.animate([{opacity:0},{opacity:1}],{duration:bgDur,easing:"ease-out"});
+  if(isMobile&&!reduced)scrim.animate([{backgroundColor:"rgba(5,3,7,0)",backdropFilter:"blur(0px)"},{backgroundColor:"rgba(5,3,7,.8)",backdropFilter:"blur(8px)"}],{duration:260,easing:"ease-out"});
+  else scrim.animate([{opacity:0},{opacity:1}],{duration:bgDur,easing:"ease-out"});
 
   if(reduced){
     /* Instant: no transform animation */
     return;
   }
 
-  const rect=fromEl?fromEl.getBoundingClientRect():null;
-  if(rect&&isMobile&&rect.width>0&&rect.height>0){
-    /* FLIP: compute where to start so the sheet appears to grow from the card */
-    const sheetR=sheet.getBoundingClientRect();
-    const sheetH=sheetR.height||window.innerHeight*0.92;
-    const sheetW=sheetR.width||window.innerWidth;
-    /* origin: card centre relative to sheet centre */
-    const ox=(rect.left+rect.width/2)-(sheetR.left+sheetW/2);
-    const oy=(rect.top+rect.height/2)-(window.innerHeight*0.97); /* sheet anchors to bottom */
-    const sx=rect.width/sheetW;
-    const sy=rect.height/sheetH;
-    sheet.style.transformOrigin="center bottom";
-    sheet.animate([
-      {opacity:0,transform:`translate(${ox}px,${oy}px) scale(${sx},${sy})`},
-      {opacity:1,transform:"translate(0,0) scale(1)"}
-    ],{duration:400,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"backwards"});
-  } else if(isMobile){
-    /* fallback: slide up from the bottom */
-    sheet.animate([{opacity:0,transform:"translateY(40px)"},{opacity:1,transform:"translateY(0)"}],
-      {duration:380,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+  /* One sheet motion, iOS-like (I2): on phones the panel rises from the bottom edge on the
+     sheet curve, opaque and undistorted (the zoom out of the tapped card overshot and squashed
+     the text); on wider screens the card settles in from 98% with a short fade. */
+  if(isMobile){
+    sheet.animate([{transform:"translateY(100%)"},{transform:"translateY(0)"}],
+      {duration:420,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
   } else {
-    /* desktop: scale+fade from centre */
-    sheet.animate([{opacity:0,transform:"scale(.93) translateY(16px)"},{opacity:1,transform:"none"}],
-      {duration:340,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+    sheet.animate([{opacity:0,transform:"scale(.98)"},{opacity:1,transform:"none"}],
+      {duration:220,easing:"cubic-bezier(.2,0,0,1)",fill:"backwards"});
   }
 }
 
@@ -5118,33 +5105,21 @@ function animateClose(scrim,toEl,cb){
   if(reduced||!sheet){cb();return;}
 
   const isMobile=innerWidth<=620;
-  const rect=toEl?toEl.getBoundingClientRect():null;
 
   /* Fade the scrim first (kept in _closeAnims so a sheet opened meanwhile can cancel it) */
-  _closeAnims.push(scrim.animate([{opacity:1},{opacity:0}],{duration:260,easing:"ease-in",fill:"forwards"}));
+  _closeAnims.push(isMobile
+    ?scrim.animate([{backgroundColor:getComputedStyle(scrim).backgroundColor},{backgroundColor:"rgba(5,3,7,0)",backdropFilter:"blur(0px)"}],{duration:280,easing:"ease-in",fill:"forwards"})
+    :scrim.animate([{opacity:1},{opacity:0}],{duration:160,easing:"ease-in",fill:"forwards"}));
 
   let anim;
-  if(rect&&isMobile&&rect.width>0&&rect.height>0&&
-     rect.top>-rect.height&&rect.top<window.innerHeight){
-    /* Card is in viewport: shrink sheet back to card */
-    const sheetR=sheet.getBoundingClientRect();
-    const sheetH=sheetR.height||window.innerHeight*0.92;
-    const sheetW=sheetR.width||window.innerWidth;
-    const ox=(rect.left+rect.width/2)-(sheetR.left+sheetW/2);
-    const oy=(rect.top+rect.height/2)-(window.innerHeight*0.97);
-    const sx=rect.width/sheetW;
-    const sy=rect.height/sheetH;
-    sheet.style.transformOrigin="center bottom";
-    anim=sheet.animate([
-      {opacity:1,transform:"translate(0,0) scale(1)"},
-      {opacity:0,transform:`translate(${ox}px,${oy}px) scale(${sx},${sy})`}
-    ],{duration:300,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
-  } else if(isMobile){
-    anim=sheet.animate([{opacity:1,transform:"translateY(0)"},{opacity:0,transform:"translateY(50px)"}],
-      {duration:260,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  if(isMobile){
+    /* down and out from where it is (a drag hands over its offset in the inline transform) */
+    const from=sheet.style.transform||"translateY(0)";
+    anim=sheet.animate([{transform:from},{transform:"translateY(100%)"}],
+      {duration:280,easing:"cubic-bezier(.32,.72,0,1)",fill:"forwards"});
   } else {
-    anim=sheet.animate([{opacity:1,transform:"none"},{opacity:0,transform:"scale(.93) translateY(16px)"}],
-      {duration:220,easing:"ease-in",fill:"forwards"});
+    anim=sheet.animate([{opacity:1,transform:"none"},{opacity:0,transform:"scale(.98)"}],
+      {duration:160,easing:"cubic-bezier(.2,0,0,1)",fill:"forwards"});
   }
   if(anim){_closeAnims.push(anim);anim.onfinish=cb;}
   else cb();
@@ -5716,10 +5691,8 @@ function ssSwipeToClose(ssWrap,ssSheet){
     const now=Date.now(); lastY=e.touches[0].clientY; lastT=now;
     const h=ssSheet.getBoundingClientRect().height||400;
     const progress=Math.min(dy/h,1);
-    const scale=1-progress*0.1;
     const opacity=Math.max(1-progress*1.4,0.15);
-    ssSheet.style.transform=`translateY(${dy}px) scale(${scale})`;
-    ssSheet.style.transformOrigin="center bottom";
+    ssSheet.style.transform=`translateY(${dy}px)`;
     ssWrap.style.background=`rgba(0,0,0,${(0.55*opacity).toFixed(3)})`;
   },{passive:true});
 
@@ -5742,8 +5715,8 @@ function ssSwipeToClose(ssWrap,ssSheet){
     } else {
       if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){_ssReset();return;}
       ssSheet.animate(
-        [{transform:ssSheet.style.transform||"none"},{transform:"translateY(0) scale(1)"}],
-        {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"forwards"});
+        [{transform:ssSheet.style.transform||"none"},{transform:"translateY(0)"}],
+        {duration:300,easing:"cubic-bezier(.32,.72,0,1)"});
       const curBg=ssWrap.style.background||"";
       const curAlphaM=curBg.match(/([\d.]+)\)$/);
       const curAlpha=curAlphaM?parseFloat(curAlphaM[1]):0.55;
@@ -5902,8 +5875,8 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
   const st={kind,id,venueId,dateStr,timeStr,key,anchor:fromEl||null,mode,step:"main",placed:false};
   const reduced=_ssReduced();
   const slideUp=inner=>{
-    if(!wasOpen&&!reduced)inner.animate([{transform:"translateY(60px)",opacity:0},{transform:"none",opacity:1}],
-      {duration:320,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+    if(!wasOpen&&!reduced)inner.animate([{transform:"translateY(100%)"},{transform:"none"}],
+      {duration:420,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
   };
   if(mode==="sheet"){
     const w=_ssWrapEl();
