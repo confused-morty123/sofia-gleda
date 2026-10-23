@@ -5596,5 +5596,149 @@
   "synBg": "",
   "synEn": "",
   "source": "sofia-th"
+ },
+ "komediya-ot-greshki": {
+  "id": "komediya-ot-greshki",
+  "title": "Комедия от грешки",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "malkoto-slonche": {
+  "id": "malkoto-slonche",
+  "title": "Малкото слонче",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "sharenata-knizhka-kontsert-za-nay-malkite": {
+  "id": "sharenata-knizhka-kontsert-za-nay-malkite",
+  "title": "\"ШАРЕНАТА КНИЖКА\" - КОНЦЕРТ ЗА НАЙ-МАЛКИТЕ",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "momche-i-vyatar-2": {
+  "id": "momche-i-vyatar-2",
+  "title": "МОМЧЕ И ВЯТЪР",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "nyakoy-e-obarkal-adresa": {
+  "id": "nyakoy-e-obarkal-adresa",
+  "title": "НЯКОЙ Е ОБЪРКАЛ АДРЕСА",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "petyo-i-valkat": {
+  "id": "petyo-i-valkat",
+  "title": "ПЕТЬО И ВЪЛКЪТ",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "printsesite-i-zmeyat-2": {
+  "id": "printsesite-i-zmeyat-2",
+  "title": "ПРИНЦЕСИТЕ И ЗМЕЯТ",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "mazgala-musketar-v-labirinta-na-vremeto": {
+  "id": "mazgala-musketar-v-labirinta-na-vremeto",
+  "title": "МАЗГАЛА - мускетар в лабиринта на времето",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
