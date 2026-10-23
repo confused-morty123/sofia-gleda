@@ -557,9 +557,10 @@ def wave_a1(browser):
         height_ok = b0_height >= 40
         check("button_height_40", height_ok, f"height={b0_height:.1f}")
 
-        # Check pressed button background (cinema = rgb(224, 22, 58))
+        # Check pressed button background. Design phase (owner: Option A, 2026-10-23): the
+        # selected segment is a neutral white thumb (--fg); the accent marks the selected day only
         b0_bg = buttons[0].evaluate("el => window.getComputedStyle(el).backgroundColor", buttons[0])
-        check("cinema_button_color", b0_bg == "rgb(224, 22, 58)",
+        check("cinema_button_color", b0_bg == "rgb(244, 239, 246)",
               f"cinema button bg={b0_bg}")
 
         # Click the other button (theatre)
@@ -574,7 +575,7 @@ def wave_a1(browser):
         buttons_after = page.query_selector_all(".seg button")
         if len(buttons_after) >= 2:
             b1_bg = page.evaluate("el => window.getComputedStyle(el).backgroundColor", buttons_after[1])
-            check("theatre_button_color", b1_bg == "rgb(217, 178, 60)",
+            check("theatre_button_color", b1_bg == "rgb(244, 239, 246)",
                   f"theatre button bg={b1_bg}")
         else:
             check("theatre_button_color", False, "could not re-query buttons")
@@ -1223,7 +1224,10 @@ def wave_b1(browser):
         check("b1_fab_desktop_right_edge", False, "skipped")
         check("b1_fab_desktop_bottom_edge", False, "skipped")
 
-    # Type 2 characters into #q → FAB hidden
+    # Type 2 characters into #q → FAB hidden. Design phase: the closed desktop field is inert
+    # (it took focus while invisible), so open the search first, as a user would
+    page.click("[data-search-open]")
+    page.wait_for_timeout(350)
     q_field = page.query_selector("#q")
     if q_field:
         q_field.fill("ab")
@@ -1674,8 +1678,8 @@ def wave_c1(browser):
         // Check for chain-level chips like '2' or '· 2'
         const chainLike = names.filter(n => /·\\s*\\d/.test(n));
         const multiplexHead = !!document.querySelector('.drawer .sec-subhead, .drawer [data-subhead]') ||
-            document.querySelector('.drawer')?.textContent?.includes('Мултиплекси');
-        const indeHead = document.querySelector('.drawer')?.textContent?.includes('Независими кина');
+            document.querySelector('.drawer')?.textContent?.includes('Комерсиални кина');
+        const indeHead = document.querySelector('.drawer')?.textContent?.includes('Артхаус кина');
         return { ids, names, chainLike, multiplexHead, indeHead };
     }""")
 
@@ -1697,9 +1701,9 @@ def wave_c1(browser):
     check("c1_no_chain_level_chips", len(chain_like) == 0,
           f"chain-level chips found: {chain_like}")
     check("c1_multiplex_subhead", has_multiplex_head,
-          "Мултиплекси subheading not found in drawer")
+          "Комерсиални кина subheading not found in drawer")
     check("c1_indep_subhead", has_indep_head,
-          "Независими кина subheading not found in drawer")
+          "Артхаус кина subheading not found in drawer")
 
     save_shot(page, wave, "m-drawer-venues")
     # Close drawer
@@ -3864,9 +3868,10 @@ def wave_h(browser):
               ".phead-title not found")
         check("h8_phead_title_text", phead_struct["titleText"] != "",
               "phead-title text is empty")
+        # design phase (Option A): the dates line is neutral (--fg-2); one accent element per view
         check("h8_phead_dates_color",
-              phead_struct.get("datesColor") == "rgb(224, 22, 58)",
-              f".phead-dates color={phead_struct.get('datesColor')!r} (need rgb(224,22,58))")
+              phead_struct.get("datesColor") == "rgb(182, 171, 188)",
+              f".phead-dates color={phead_struct.get('datesColor')!r} (need --fg-2 rgb(182,171,188))")
         check("h8_phead_other_link", phead_struct["hasOther"],
               ".phead-other[data-drawer] not found")
         check("h8_phead_other_text", "период" in phead_struct["otherText"].lower() or
@@ -6046,13 +6051,13 @@ def wave_l(browser):
                     if (el.closest('.sheet')) return;
                     // Skip card title/subtitle elements when the film/show has no EN title
                     // Also skip hero h1 when the hero film has no EN title
-                    if (el.matches('.p-title,.p-sub,.cf1,.sname,.stitle,.card-title') || el.tagName === 'H1') {
+                    if (el.matches('.p-title,.p-sub,.cf1,.sname,.stitle,.card-title') || el.tagName === 'H1' || el.matches('.hero-title')) {
                         const card = el.closest('[data-film]') || el.closest('[data-show]');
                         if (card) {
                             const filmId = card.getAttribute('data-film');
                             const showId = card.getAttribute('data-show');
                             if ((filmId && noEnFilm.has(filmId)) || (showId && noEnShow.has(showId))) return;
-                        } else if (el.tagName === 'H1') {
+                        } else if (el.tagName === 'H1' || el.matches('.hero-title')) {
                             // h1 in hero: match by title text against films with no EN title
                             const heroEl = el.closest('.hero,.heroz,.hero-wrap');
                             if (heroEl) {
@@ -8238,9 +8243,9 @@ def wave_p2a(browser):
             check(f"p2a_tmdb_tile_present_{lang}",
                   result.get("tmdbTile") == "TMDB",
                   f"tiles: {result.get('tileLabels')}, film={fid}")
-            # IMDb tile still present (shows "—" for absent IMDb)
-            check(f"p2a_imdb_tile_present_{lang}",
-                  result.get("imdbTile") == "IMDb",
+            # design phase (M8): no empty IMDb tile when the film has no IMDb rating
+            check(f"p2a_imdb_tile_absent_{lang}",
+                  result.get("imdbTile") is None,
                   f"tiles: {result.get('tileLabels')}")
 
         # Check ranking fallback: ratingOf() should use TMDB rating (≥50 votes)
@@ -8613,12 +8618,10 @@ def wave_p2c(browser):
         check("p2c_badge_imdb_no_tmdb_class",
               badge_result.get("hasImdbTmdbClass") is False,
               f"hasImdbTmdbClass={badge_result.get('hasImdbTmdbClass')}")
-        check("p2c_badge_none_has_na_class",
-              badge_result.get("hasNaClass") is True,
+        # design phase (2026-10-23): no score, no chip (the 'IMDb —' placeholder was noise)
+        check("p2c_badge_none_no_chip",
+              badge_result.get("textNone") == "" and badge_result.get("hasNaClass") is False,
               f"hasNaClass={badge_result.get('hasNaClass')}, text='{badge_result.get('textNone')}'")
-        check("p2c_badge_none_no_number",
-              badge_result.get("textNone") == "IMDb—" or "—" in badge_result.get("textNone", "") or "—" in badge_result.get("textNone", ""),
-              f"textNone='{badge_result.get('textNone')}'")
 
     ctx.close()
 
@@ -12641,7 +12644,7 @@ def _hf_tap_backbar(page, phone):
     at the top of the sheet, so scroll the sheet up first, as a user would."""
     page.evaluate("()=>{const s=document.querySelector('#scrim .sheet'); if(s) s.scrollTop=0; document.getElementById('scrim').scrollTop=0;}")
     page.wait_for_timeout(80)
-    return _hf_tap_el(page, phone, "()=>document.querySelector('#scrim .sback')")
+    return _hf_tap_el(page, phone, "()=>document.querySelector('#scrim .sbar .sclose')")
 
 
 def _hf_close_sheet(page, phone, route):
@@ -12765,9 +12768,16 @@ def _hf_special_flows(browser, eng, phone):
             mid = page.evaluate(HF_STATE_JS)
             page.keyboard.press("Escape"); page.wait_for_timeout(800)
         else:
-            # a keyboard user can reach the sheet's back bar while the popup is open
+            # a keyboard user closes the sheet from its bar while the popup is open. Design phase
+            # (2026-10-23): the phone time panel is modal (the sheet behind it is inert), so there
+            # the panel's own ✕ goes first; the desktop popover is not modal
             mid = s0
-            page.evaluate("()=>{const b=document.querySelector('#scrim .sback'); b.focus(); }")
+            if phone:
+                inert_ok = page.evaluate("()=>{const b=document.querySelector('#scrim .sbar .sclose'); b.focus(); return document.activeElement!==b && document.getElementById('scrim').inert===true;}")
+                check(f"{tag}_sheet_inert_under_panel", inert_ok, "the sheet behind the phone time panel took focus")
+                page.evaluate("()=>{const b=document.querySelector('#ss-wrap [data-ssclose]'); b.focus(); }")
+                page.keyboard.press("Enter"); page.wait_for_timeout(450)
+            page.evaluate("()=>{const b=document.querySelector('#scrim .sbar .sclose'); b.focus(); }")
             page.keyboard.press("Enter"); page.wait_for_timeout(800)
         s1 = page.evaluate(HF_STATE_JS)
         mid_ok = (how == "backbar_key") or (not mid["pop"] and mid["film"])
@@ -13245,7 +13255,7 @@ def _hf_double_tap(browser, eng):
             # fast second tap can land anywhere on it, e.g. below the sticky header on a phone)
             spots = page.evaluate("""()=>{const c=sel=>{const r=document.querySelector(sel).getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,dx=r.width*.28,dy=r.height*.28;
                   return [[x,y],[x-dx,y],[x+dx,y],[x,y+dy],[x-dx*.7,y+dy*.7],[x+dx*.7,y+dy*.7]];};
-                return {x:c('#scrim .sclose'),backbar:c('#scrim .sback'),header:Math.round(document.querySelector('.bar').getBoundingClientRect().bottom)};}""")
+                return {x:c('#scrim .sclose'),backbar:c('#scrim .sbar .sclose'),header:Math.round(document.querySelector('.bar').getBoundingClientRect().bottom)};}""")
             page.keyboard.press("Escape"); page.wait_for_timeout(700)
             notes, all_ok, under_n = [], True, 0
             for target in ("x", "backbar"):
@@ -13394,7 +13404,7 @@ def _hf_grid_paging(browser, eng):
             shown_js = """()=>{const pages=[...document.querySelectorAll('#scrim .p3e-gpage')];
                 const vis=pages.filter(p=>getComputedStyle(p).display!=='none');
                 const pg=document.querySelector('#scrim .p3e-gpager');const [pv,nx]=pg?pg.querySelectorAll('[data-gnav]'):[null,null];
-                const vc=vis[0]&&vis[0].querySelector('td.p3e-vcol');
+                const vc=vis[0]&&vis[0].querySelector('.p3e-vcol');
                 return {nvis:vis.length,dates:vis.length?[...vis[0].querySelectorAll('th[data-date]')].map(t=>t.dataset.date):[],
                   prevDis:pv?pv.disabled:null,nextDis:nx?nx.disabled:null,prevLabel:pv?pv.getAttribute('aria-label'):null,nextLabel:nx?nx.getAttribute('aria-label'):null,
                   range:pg?pg.querySelector('.p3e-grange').textContent:null,h:Math.round(document.querySelector('#scrim .p3e-gpages').getBoundingClientRect().height),
@@ -13540,8 +13550,8 @@ def _hf_rows(browser, eng):
         page.evaluate("([id])=>{curSheet={kind:'film',id};openSheet(sheetFilm(filmById[id]),null);}", [best["id"]])
         page.wait_for_timeout(500)
         g = page.evaluate(r"""()=>{const t=document.querySelector('#scrim .p3e-gt'); if(!t)return {err:'no grid'};
-            const ws=[...t.querySelectorAll('td.p3e-vcol')].map(c=>c.getBoundingClientRect().width);
-            let ov=0; for(const tr of t.querySelectorAll('tbody tr')){const v=tr.querySelector('td.p3e-vcol').getBoundingClientRect();
+            const ws=[...t.querySelectorAll('.p3e-vcol')].map(c=>c.getBoundingClientRect().width);
+            let ov=0; for(const tr of t.querySelectorAll('tbody tr')){const v=tr.querySelector('.p3e-vcol').getBoundingClientRect();
               for(const p of tr.querySelectorAll('[data-sspill]')){const r=p.getBoundingClientRect(); if(r.left<v.right-0.5&&r.right>v.left)ov++;}}
             return {minW:Math.min(...ws), rows:ws.length, overlap:ov};}""")
         check(f"hf1_grid_venue_column_{w}", "err" not in g and g["minW"] >= 140 and g["overlap"] == 0, f"{g}")
@@ -15131,7 +15141,7 @@ _EV3_SOURCE_JS = """() => {
         const a = sh.querySelector('a.evsrc');
         out.push({id: ev.id, url: ev.url, inEvents: EVENTS.filter(e => e.id === ev.id).length,
                   merged: EVENTS.find(e => e.id === ev.id) || null,
-                  cardTitle: ((box.querySelector('h3') || {}).textContent || '').trim(),
+                  cardTitle: ((box.querySelector('.ecap-t,h3') || {}).textContent || '').trim(),
                   badge: ((box.querySelector('.badge') || {}).textContent || '').trim(),
                   title: S.lang === 'bg' ? ev.title : ev.titleEn,
                   href: a ? a.getAttribute('href') : null, target: a ? a.getAttribute('target') : null,
@@ -16173,7 +16183,8 @@ _TR1_STATE_JS = """() => { const h = document.querySelector('.scrim .sheet .sher
   const art = h.querySelector('img.p-real') || h.querySelector('svg.p-art');
   return {hasTr: h.classList.contains('has-tr'), playing: h.classList.contains('playing'),
     play: vis(play) ? r(play) : null, hero: r(h), titles: r(h.querySelector('.sh-titles')),
-    close: r(h.querySelector('.sclose')), share: r(h.querySelector('.sshare')),
+    /* design phase: Share and Close sit in the sheet's sticky bar, above the hero */
+    close: r(h.querySelector('.sclose') || document.querySelector('.scrim .sheet .sbar .sclose')), share: r(h.querySelector('.sshare') || document.querySelector('.scrim .sheet .sbar .sshare')),
     frame: fr ? Object.assign(r(fr), {src: fr.getAttribute('src'), title: fr.getAttribute('title'),
       allow: fr.getAttribute('allow') || '', ref: fr.getAttribute('referrerpolicy') || ''}) : null,
     iframes: document.querySelectorAll('iframe').length,
@@ -16237,11 +16248,16 @@ def wave_tr1(browser):
                 note_ok = L["trNote"] in st["note"] and ((lang == "bg") == (L["trIn"]["en"] in st["note"]))
                 check(f"tr1_privacy_note_{sfx}", note_ok, repr(st["note"].strip()))
                 save_shot(page, wave, f"before_{sfx}")
-                # keyboard: Tab from close -> share -> play, then Enter
+                # keyboard: Tab from the sheet's close reaches the play circle, then Enter. Design
+                # phase: Share and Close sit in the sticky bar above the hero, so the circle is the
+                # next stop after them (within a few Tabs, whatever the bar's order)
                 page.focus(".scrim .sheet .sclose")
-                page.keyboard.press("Tab")
-                page.keyboard.press("Tab")
-                foc = page.evaluate("document.activeElement && document.activeElement.matches('.tr-play')")
+                foc = False
+                for _ in range(3):
+                    page.keyboard.press("Tab")
+                    foc = page.evaluate("document.activeElement && document.activeElement.matches('.tr-play')")
+                    if foc:
+                        break
                 check(f"tr1_keyboard_reaches_play_{sfx}", foc, page.evaluate("document.activeElement.className"))
                 page.keyboard.press("Enter")
                 page.wait_for_selector(".scrim .shero .tr-frame iframe", timeout=5000)
