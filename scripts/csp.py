@@ -53,6 +53,7 @@ PAGE_SCRIPTS = [
     ("/* SOFIA-PRICES", None),
     ("/* SOFIA-APP */", None),
     ("/* SOFIA-SW */", None),
+    ("/* SOFIA-BASE */", None),                  # puts in <base href="/"> (not on a file:// preview)
 ]
 # A share page (film/<id>/, show/<id>/) has exactly one: the script gen_share_pages.py
 # writes, whatever it does (today a redirect into the app), marked by its first line.
@@ -109,7 +110,7 @@ def policy(hashes):
 
 def kind_of(path):
     p = pathlib.Path(path)
-    return "share" if p.parent.parent.name in ("film", "show") else "page"
+    return "share" if p.parent.parent.name in ("film", "show", "event") else "page"
 
 
 def _known_scripts(scripts, kind):
@@ -218,8 +219,16 @@ def check(html, kind="page"):
 
 
 def share_pages(root=ROOT):
-    for d in ("film", "show"):
+    for d in ("film", "show", "event"):
         yield from sorted((root / d).glob("*/index.html"))
+
+
+def home_pages(root=ROOT):
+    """The app at the listings' own addresses, /home/ and /home/theatre/ (gen_share_pages.py
+    copies index.html there): pages like index.html."""
+    for rel in ("home/index.html", "home/theatre/index.html"):
+        if (root / rel).exists():
+            yield root / rel
 
 
 def legal_pages(root=ROOT):
@@ -232,7 +241,8 @@ def main(argv):
     check_only = "--check" in argv
     files = [a for a in argv if not a.startswith("--")]
     if not files:
-        files = ([os.environ.get("SOFIA_HTML") or str(ROOT / "index.html")] + [str(p) for p in share_pages()]
+        files = ([os.environ.get("SOFIA_HTML") or str(ROOT / "index.html")] + [str(p) for p in home_pages()]
+                 + [str(p) for p in share_pages()]
                  + [str(p) for p in legal_pages()])
     bad = 0
     changed = 0

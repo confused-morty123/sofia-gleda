@@ -106,7 +106,8 @@ li{margin:6px 0}
   padding-block:20px calc(36px + env(safe-area-inset-bottom,0px))}
 .lg-foot-nav{display:flex; flex-wrap:wrap; gap:4px 18px}
 .lg-foot-nav a{display:inline-flex; align-items:center; min-height:36px; color:var(--fg-2)}
-.lg-foot p{margin:10px 0 0; max-width:62ch}
+/* the line and the links span the footer's column and reflow with it (owner, 22 Oct 2026) */
+.lg-foot p{margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -178,13 +179,12 @@ li{margin:6px 0}
 <p>The “Cookie settings” link at the bottom of the site opens the notice again. If we ever add optional tools, such as visitor statistics or signing in with an account, they will only run after you explicitly agree, and the notice will ask you again.</p>
 
 <h2 id="personal-data">6. Personal data</h2>
-<p>More about personal data is in the <a href="../privacy/">Privacy policy</a>. Questions can be left at <a href="https://github.com/confused-morty123/sofia-gleda/issues">github.com/confused-morty123/sofia-gleda/issues</a>; please do not post personal data there.</p>
+<p>More about personal data and your rights is in the <a href="../privacy/">Privacy policy</a>.</p>
 </main>
 <footer class="lg-foot"><div class="lg-wrap">
 <nav class="lg-foot-nav" aria-label="Links">
 <a href="../../../">Back to the listings</a>
 <a href="../../../#cookies">Cookie settings</a>
-<a href="https://github.com/confused-morty123/sofia-gleda/issues">The project on GitHub</a>
 </nav>
 <p>Sofia Gleda is an aggregator and is not affiliated with the cinemas and theatres whose programmes it shows.</p>
 </div></footer>

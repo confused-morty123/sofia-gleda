@@ -68,5 +68,10 @@
   "level": "warn",
   "venue": "omdb",
   "message": "OMDb: 173/227 ok, 54 missing IMDb ratings"
+ },
+ {
+  "level": "ok",
+  "venue": "theatre-posters",
+  "message": "theatre posters: 494/500 upcoming shows have a poster; recently missing: igra-na-kotki, insomniya, karnaval, poema-za-hlebarkite, razdelenoto-kralstvo, vik-ot-istoriyata-ekaterina-karavelova"
  }
 ]

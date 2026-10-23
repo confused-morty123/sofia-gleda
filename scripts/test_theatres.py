@@ -676,6 +676,33 @@ check("the Latin-'a' duplicate resolves to the record with data", ix.resolve("Б
 check("…so does the ticket centre's ALL CAPS", ix.resolve("БАЛДАХИНЪТ", "tba")[0], "baldahinat")
 check("a merged-away id maps to the kept record", (ix.canonical("baldahinat-2"), ix.theatre_of("baldahinat-2")),
       ("baldahinat", "tba"))
+REN = {"renamed": [{"from": "skaperniкat", "to": "skapernikat", "reason": "test"}]}
+_ixr = SI.ShowIndex([{"id": "skapernikat", "title": "Скъперникът", "theatre": "national"}], aliases=REN)
+check("a renamed id resolves to the new one (show_aliases.json 'renamed')",
+      (_ixr.canonical("skaperniкat"), _ixr.theatre_of("skaperniкat")), ("skapernikat", "national"))
+check("renamed_ids() reads the rename list", SI.renamed_ids(REN), {"skaperniкat": "skapernikat"})
+check("the repo's alias file renames skaperniкat", SI.renamed_ids().get("skaperniкat"), "skapernikat")
+check("a minted id with a non-slug base is re-slugged", S.safe_base("skaperniкat", "show", "Скъперникът")[:5],
+      "show-")
+check("a valid slug base is kept", S.safe_base("skapernikat", "show", "Скъперникът"), "skapernikat")
+import tempfile as _tf_r, gen_share_pages as _GSP                      # noqa: E402
+with _tf_r.TemporaryDirectory() as _d:
+    _done, _bad = _GSP.write_redirects(
+        _d, [{"id": "skapernikat", "title": "Скъперникът"}], {"skaperniкat": "skapernikat"},
+        lambda i: (f"https://sofiagleda.com/posters/{i}.jpg", None, None))
+    _pg = (pathlib.Path(_d) / "show" / "skaperniкat" / "index.html")
+    _txt = _pg.read_text(encoding="utf-8") if _pg.exists() else ""
+    check("gen_share_pages: the old id's page exists (and only it)", ([p.parent.name for p in _done], _bad),
+          (["skaperniкat"], []))
+    check("…its og:url is the NEW id's page",
+          'property="og:url" content="https://sofiagleda.com/show/skapernikat/"' in _txt, True)
+    # ux-sharing: no meta refresh (link-preview fetchers follow it); the page's one
+    # script is the shared REDIRECT_JS (to /home/?show=<old>, which the app maps
+    # through ID_REDIRECT), and its visible link opens the new id
+    check("…no meta refresh, the shared redirect script", ("http-equiv=\"refresh\"" in _txt,
+          _GSP.REDIRECT_JS in _txt), (False, True))
+    check("…and its link opens ?show=<new id>", 'href="/home/theatre/?show=skapernikat"' in _txt, True)
+check("gen_share_pages SAFE_ID refuses a non-ASCII id", bool(_GSP.SAFE_ID.fullmatch("skaperniкat")), False)
 check("the same title at ANOTHER theatre is not that show", ix.resolve("Трите прасенца", "mladezhki"), (None, "unmatched"))
 check("…but it is at its own theatre", ix.resolve("ТРИТЕ ПРАСЕНЦА", "vazrazhdane")[0], "prasenca-vaz")
 check("a sequel number keeps productions apart", ix.resolve("Отчаяни съпрузи", "satira")[0], "suprugi")

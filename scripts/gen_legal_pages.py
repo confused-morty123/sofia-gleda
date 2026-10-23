@@ -15,7 +15,7 @@ cache-first until its CACHE_VERSION changes, while pages are network-first, so a
 stylesheet could stay stale for returning visitors.
 
 Run it again after changing:
-  - the texts or ISSUES_URL below;
+  - the texts below;
   - SITE_URL in scripts/site_config.py (the domain move);
   - CONSENT_VERSION in src/sofia-screen.artifact.html (a policy change: the policies show it
     as their date and the banner asks again);
@@ -26,10 +26,13 @@ verify_build.py fails while a page holds a leftover placeholder ({CONTACT_…} o
 misses the TMDB logo, or is out of step with the app (version, links, CSP, documented storage).
 
 The site is maintained by a private individual, free and without ads or payments. By the
-owner's decision (2026-10-15) the texts name no person and give no email address: the only
-contact channel is the project's public GitHub issues page, with a warning not to post personal
-data there. They claim no duty that only a trader or company would have. A lawyer should
-review them.
+owner's decisions the texts name no person and give no email address (2026-10-15), and the site
+offers no contact channel at all (2026-10-22: the GitHub issues page is no longer named). The
+privacy policy says so plainly and explains how a visitor exercises their rights themselves
+(clearing the site's data in the browser), that GitHub (the host), TMDB and the venues' sites
+have their own policies, and that the right to complain to the КЗЛД stays. The GitHub Pages
+hosting disclosure stays: it is where the site runs and who logs visits, not a contact. They
+claim no duty that only a trader or company would have. A lawyer should review them.
 """
 import html
 import pathlib
@@ -40,14 +43,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from site_config import SITE_URL  # noqa: E402
 
-# The only contact channel (owner's decision 2026-10-15: no email, no name). It is public, so
-# the pages warn not to post personal data there.
-ISSUES_URL = "https://github.com/confused-morty123/sofia-gleda/issues"
-
 UI_SRC = ROOT / "src" / "sofia-screen.artifact.html"
 OUT = ROOT / "legal"
 TMDB_LOGO = ROOT / "icons" / "tmdb.svg"
-TERMS_UPDATED = "2026-10-15"
+TERMS_UPDATED = "2026-10-22"
 
 DOCS = ("terms", "privacy", "cookies")
 LANGS = ("bg", "en")
@@ -106,7 +105,6 @@ BODY = """<body>
 <nav class="lg-foot-nav" aria-label="[[FOOT_LABEL]]">
 <a href="[[ROOT]]">[[BACK]]</a>
 <a href="[[ROOT]]#cookies">[[COOKIE_SETTINGS]]</a>
-<a href="[[ISSUES_URL]]">[[ISSUES_LABEL]]</a>
 </nav>
 <p>[[FOOT_LINE]]</p>
 </div></footer>
@@ -119,7 +117,7 @@ UI = {
         "skip": "Към съдържанието", "home": "Sofia Gleda, към програмата",
         "other_name": "English", "docs_label": "Правна информация", "foot_label": "Връзки",
         "updated": "Последна актуализация:", "back": "Към програмата",
-        "cookie_settings": "Настройки за бисквитки", "issues": "Проектът в GitHub",
+        "cookie_settings": "Настройки за бисквитки",
         "foot_line": "Sofia Gleda е агрегатор и не е свързан с кината и театрите, чиито програми показва.",
         "months": ["януари", "февруари", "март", "април", "май", "юни", "юли", "август",
                    "септември", "октомври", "ноември", "декември"],
@@ -129,8 +127,8 @@ UI = {
         "nav": {"terms": "Общи условия", "privacy": "Поверителност", "cookies": "Бисквитки"},
         "desc": {
             "terms": "Общи условия за ползване на Sofia Gleda, афиша на кината и театрите в София.",
-            "privacy": "Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, трейлъри от YouTube, "
-                       "връзка с нас и правата ви.",
+            "privacy": "Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, трейлъри от YouTube "
+                       "и правата ви.",
             "cookies": "Sofia Gleda не поставя бисквитки. Какво пази сайтът в браузъра ви и защо.",
         },
     },
@@ -138,7 +136,7 @@ UI = {
         "skip": "Skip to content", "home": "Sofia Gleda, back to the listings",
         "other_name": "Български", "docs_label": "Legal", "foot_label": "Links",
         "updated": "Last updated:", "back": "Back to the listings",
-        "cookie_settings": "Cookie settings", "issues": "The project on GitHub",
+        "cookie_settings": "Cookie settings",
         "foot_line": "Sofia Gleda is an aggregator and is not affiliated with the cinemas and theatres "
                      "whose programmes it shows.",
         "months": ["January", "February", "March", "April", "May", "June", "July", "August",
@@ -148,16 +146,15 @@ UI = {
         "nav": {"terms": "Terms of use", "privacy": "Privacy", "cookies": "Cookies"},
         "desc": {
             "terms": "Terms of use of Sofia Gleda, the listings of Sofia's cinemas and theatres.",
-            "privacy": "How Sofia Gleda handles personal data: hosting, images from other websites, YouTube trailers, "
-                       "contacting us and your rights.",
+            "privacy": "How Sofia Gleda handles personal data: hosting, images from other websites, YouTube trailers "
+                       "and your rights.",
             "cookies": "Sofia Gleda sets no cookies. What the site keeps in your browser, and why.",
         },
     },
 }
 
 # ----------------------------------------------------------------------------------- texts
-# [[ISSUES]] is the contact link (the GitHub issues page), [[TERMS]] / [[PRIVACY]] / [[COOKIES]] the sibling pages in the
-# same language, [[TMDB_LOGO]] the logo (when icons/tmdb.svg exists), [[FONTS_NOTE]] the font
+# [[TERMS]] / [[PRIVACY]] / [[COOKIES]] are the sibling pages in the same language, [[TMDB_LOGO]] the logo (when icons/tmdb.svg exists), [[FONTS_NOTE]] the font
 # paragraph (Google Fonts or self-hosted, whichever the pages load).
 
 TERMS_BG = """
@@ -175,7 +172,7 @@ TERMS_BG = """
 </section>
 
 <h2 id="koy">1. Кой поддържа сайта</h2>
-<p>Sofia Gleda се поддържа от физическо лице, без търговска цел. Сайтът е безплатен, няма реклами и не приема плащания. В тези условия „ние“ означава лицето, което поддържа сайта. Сайтът не посочва име или имейл адрес; връзката с нас е описана в т. 14.</p>
+<p>Sofia Gleda се поддържа от физическо лице, без търговска цел. Сайтът е безплатен, няма реклами и не приема плащания. В тези условия „ние“ означава лицето, което поддържа сайта. Сайтът не посочва име, имейл адрес или друг начин за връзка (вижте т. 14).</p>
 
 <h2 id="kakvo">2. Какво предлага сайтът</h2>
 <p>Sofia Gleda показва програмата на кината и театрите в София: заглавия, дати, часове, зали, цени (когато са известни), описания, плакати и оценки. Не продаваме билети, не приемаме резервации и не организираме прожекции или представления. Не е нужна регистрация.</p>
@@ -207,7 +204,7 @@ TERMS_BG = """
 <p lang="en">This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</p></div>
 <p>Оценки от IMDb и Rotten Tomatoes: чрез OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), чието съдържание се разпространява под лиценз <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. IMDb и Rotten Tomatoes са марки на съответните им притежатели.</p>
 <p>Машинни преводи на английски: DeepL (<a href="https://www.deepl.com/">deepl.com</a>).</p>
-<p>Плакатите, снимките и описанията остават собственост на авторите и притежателите на правата. Показваме ги само за да представим програмата. Ако сте притежател на права и не желаете ваш материал да се показва тук, съобщете ни на [[ISSUES]] и ще го премахнем без ненужно забавяне.</p>
+<p>Плакатите, снимките и описанията остават собственост на авторите и притежателите на правата. Показваме ги само за да представим програмата.</p>
 
 <h2 id="danni">10. Лични данни и бисквитки</h2>
 <p>Как се обработват личните данни и какво се пази в браузъра ви, е описано в <a href="[[PRIVACY]]">Политиката за поверителност</a> и в <a href="[[COOKIES]]">Политиката за бисквитките</a>.</p>
@@ -221,9 +218,8 @@ TERMS_BG = """
 <h2 id="pravo">13. Приложимо право и спорове</h2>
 <p>За тези условия се прилага българското право. Споровете се решават от компетентния български съд. Това не засяга правата, които ви дават императивните разпоредби на държавата, в която живеете, включително правото да се обърнете към съд там, когато законът го допуска.</p>
 
-<h2 id="vrazka">14. Връзка</h2>
-<p>Въпроси, сигнали за грешки в програмата и искания за премахване на материали можете да оставите на публичната страница на проекта в GitHub: [[ISSUES]]. За това е нужен профил в GitHub.</p>
-<p class="lg-warn">Всичко, което пишете там, се вижда публично. Не публикувайте лични данни: имейл, телефон, адрес или друга информация за себе си или за други хора.</p>
+<h2 id="vrazka">14. Няма канал за връзка</h2>
+<p>Sofia Gleda няма канал за връзка: сайтът не посочва имейл адрес, телефон, пощенски адрес или страница за съобщения и не приема въпроси, сигнали или искания. За датата, часа, цената и билетите се обръщайте към съответното кино, театър или организатор (т. 5). Как да упражните правата си, свързани с личните данни, е описано в <a href="[[PRIVACY]]">Политиката за поверителност</a>.</p>
 """
 
 TERMS_EN = """
@@ -241,7 +237,7 @@ TERMS_EN = """
 </section>
 
 <h2 id="who">1. Who runs the site</h2>
-<p>Sofia Gleda is run by a private individual, on a non-commercial basis. The site is free, carries no ads and takes no payments. In these terms, “we” means the person who runs the site. The site gives no name or email address; how to reach us is in section 14.</p>
+<p>Sofia Gleda is run by a private individual, on a non-commercial basis. The site is free, carries no ads and takes no payments. In these terms, “we” means the person who runs the site. The site gives no name, email address or other means of contact (see section 14).</p>
 
 <h2 id="what">2. What the site offers</h2>
 <p>Sofia Gleda shows what is on at Sofia's cinemas and theatres: titles, dates, times, halls, prices (where known), descriptions, posters and ratings. We do not sell tickets, take bookings or organise screenings or performances. No registration is needed.</p>
@@ -272,7 +268,7 @@ TERMS_EN = """
 <div class="lg-attr">[[TMDB_LOGO]]<p>Film data and images: TMDB (The Movie Database). This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</p></div>
 <p>IMDb and Rotten Tomatoes ratings: via the OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), whose content is licensed under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. IMDb and Rotten Tomatoes are trademarks of their owners.</p>
 <p>Machine translation into English: DeepL (<a href="https://www.deepl.com/">deepl.com</a>).</p>
-<p>Posters, photos and descriptions remain the property of their authors and rights holders. We show them only to present the listings. If you hold rights in material shown here and do not want it shown, tell us at [[ISSUES]] and we will remove it without undue delay.</p>
+<p>Posters, photos and descriptions remain the property of their authors and rights holders. We show them only to present the listings.</p>
 
 <h2 id="data">10. Personal data and cookies</h2>
 <p>How personal data is handled and what is kept in your browser is described in the <a href="[[PRIVACY]]">Privacy policy</a> and the <a href="[[COOKIES]]">Cookie policy</a>.</p>
@@ -286,9 +282,8 @@ TERMS_EN = """
 <h2 id="law">13. Governing law and disputes</h2>
 <p>These terms are governed by Bulgarian law. Disputes are settled by the competent Bulgarian court. This does not affect the rights that mandatory rules of your country of residence give you, including the right to go to court there where the law allows it.</p>
 
-<h2 id="contact">14. Contact</h2>
-<p>Questions, reports of mistakes in the listings and removal requests can be left on the project's public GitHub page: [[ISSUES]]. You need a GitHub account to post there.</p>
-<p class="lg-warn">Everything you write there is public. Do not post personal data: no email address, phone number, home address or other details about yourself or anyone else.</p>
+<h2 id="contact">14. No contact channel</h2>
+<p>Sofia Gleda has no contact channel: the site gives no email address, phone number, postal address or page for messages, and takes no questions, reports or requests. For dates, times, prices and tickets, contact the cinema, theatre or organiser (section 5). How to exercise your rights over personal data is described in the <a href="[[PRIVACY]]">Privacy policy</a>.</p>
 """
 
 PRIVACY_BG = """
@@ -302,12 +297,12 @@ PRIVACY_BG = """
 <li>При всяко посещение хостинг доставчикът GitHub записва IP адреса ви от съображения за сигурност.</li>
 <li>Плакатите се зареждат директно от TMDB и от сайтовете на кината и фестивалите, затова TMDB и тези сайтове също получават IP адреса ви.</li>
 <li>Трейлърите на филмите идват от YouTube и се зареждат едва когато натиснете бутона за пускане. Дотогава нищо не се изпраща към YouTube или Google.</li>
-<li>Връзка с нас: публичната страница на проекта в GitHub. Не публикувайте там лични данни.</li>
+<li>Сайтът няма канал за връзка. Правата си упражнявате сами, като изчистите данните на сайта в браузъра си (т. 9).</li>
 </ul>
 </section>
 
 <h2 id="administrator">1. Администратор на личните данни</h2>
-<p>Администратор е физическото лице, което поддържа Sofia Gleda без търговска цел. Сайтът не посочва име или имейл адрес за връзка. Единственият начин да се свържете с нас е публичната страница на проекта в GitHub (вижте т. 8). Длъжностно лице по защита на данните не е определено, защото чл. 37 от ОРЗД не го изисква при обработване като това.</p>
+<p>Администратор е физическото лице, което поддържа Sofia Gleda без търговска цел. Сайтът не посочва име, имейл адрес или друг начин за връзка и не приема запитвания (вижте т. 8). Длъжностно лице по защита на данните не е определено, защото чл. 37 от ОРЗД не го изисква при обработване като това.</p>
 
 <h2 id="ne">2. Какво не правим</h2>
 <p>Не изискваме регистрация и не събираме чрез сайта имена, имейл адреси или телефони. Нямаме база данни и не пазим лични данни на сървър, който управляваме. Не използваме инструменти за статистика, проследяване или реклама. Не профилираме посетителите и не вземаме автоматизирани решения по смисъла на чл. 22 от ОРЗД. Не продаваме данни и не ги предоставяме за маркетинг.</p>
@@ -334,20 +329,28 @@ PRIVACY_BG = """
 <h2 id="brauzar">7. Какво остава в браузъра ви</h2>
 <p>Сайтът пази в браузъра ви езика, режима (кино или театър), любимите ви кина и театри и избора ви от съобщението за бисквитките. На основния адрес на сайта (sofiagleda.com) браузърът пази и копие на сайта, за да се отваря бързо и без интернет. Тези данни не ни се изпращат и не можем да ги видим. Изтривате ги сами, като изчистите данните на сайта в настройките на браузъра. Подробности има в <a href="[[COOKIES]]">Политиката за бисквитките</a>.</p>
 
-<h2 id="github">8. Връзка с нас през GitHub</h2>
-<p>Въпроси и сигнали можете да оставите на публичната страница на проекта в GitHub: [[ISSUES]]. За това е нужен профил в GitHub. Съобщението ви се публикува под този профил и се вижда от всички. GitHub обработва профила и съобщенията по своите условия и <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларация за поверителност</a>. Когато отговаряме, ползваме само това, което сте публикували там (легитимен интерес да отговаряме на въпроси, чл. 6, пар. 1, буква „е“ от ОРЗД).</p>
-<p class="lg-warn">Не публикувайте там лични данни: имейл, телефон, адрес или друга информация за себе си или за други хора. Ако сте публикували такива по погрешка, можете сами да редактирате съобщението си, а ние ще изтрием цялото съобщение, ако ни помолите.</p>
+<h2 id="vrazka">8. Няма канал за връзка</h2>
+<p>Sofia Gleda не предлага начин за връзка: няма имейл адрес, телефон, формуляр или страница за съобщения. Сайтът не събира лични данни и не ги пази на сървър, който управляваме (т. 2), затова при нас няма данни за вас, до които да ви дадем достъп или които да коригираме или изтрием. Това, което сайтът пази за вас, е само в браузъра ви и го управлявате сами (т. 9). Данните, които GitHub, TMDB и сайтовете на кината и театрите получават, се уреждат от техните политики.</p>
 
 <h2 id="prava">9. Вашите права и как да ги упражните</h2>
 <p>Имате право да поискате достъп до личните си данни, коригирането или изтриването им и ограничаване на обработването им, както и да възразите срещу обработване, основано на легитимен интерес (чл. 15, 16, 17, 18 и 21 от ОРЗД). Право на преносимост (чл. 20 от ОРЗД) имате, когато обработването се основава на съгласие или на договор; в момента такова обработване няма. Ако в бъдеще поискаме съгласието ви за нещо, ще можете да го оттеглите по всяко време.</p>
 <p>Ето какво означава това на практика:</p>
 <ul>
 <li>Не пазим лични данни на сървър, който управляваме, затова при нас няма данни, до които да ви дадем достъп или които да изтрием.</li>
-<li>Настройките и любимите ви места са само в браузъра ви. Изтривате ги, като изчистите данните на сайта в настройките на браузъра (вижте <a href="[[COOKIES]]">Политиката за бисквитките</a>).</li>
-<li>Записите на GitHub за посещенията и данните в профила ви в GitHub се уреждат от <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларацията за поверителност на GitHub</a>; искания за тях отправяте към GitHub.</li>
+<li>Настройките, любимите ви места и копието на сайта са само в браузъра ви. Изтривате ги сами, като изчистите данните на сайта (вижте по-долу и <a href="[[COOKIES]]">Политиката за бисквитките</a>). Това е изтриването по чл. 17 от ОРЗД: друго копие няма.</li>
+<li>Записите на GitHub, хостинг доставчика на сайта, за посещенията се уреждат от <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">декларацията за поверителност на GitHub</a>; искания за тях отправяте към GitHub.</li>
 <li>Данните, които получават TMDB и сайтовете на кината и театрите при зареждане на изображения, както и YouTube (Google), когато пуснете трейлър, се уреждат от техните политики; искания за тях отправяте към тях.</li>
-<li>Ако смятате, че все пак обработваме ваши лични данни, опишете случая на [[ISSUES]], без да публикувате самите данни, и ще ви отговорим там. Тъй като не водим потребителски профили, може да не успеем да свържем искането ви с конкретни данни (чл. 11 от ОРЗД).</li>
+<li>Тъй като сайтът няма канал за връзка и не води потребителски профили, той не приема искания. При нас няма данни, които да могат да бъдат свързани с вас (чл. 11 от ОРЗД).</li>
 </ul>
+<p>Как да изчистите данните на сайта:</p>
+<ul>
+<li>Chrome на компютър: щракнете иконата вляво от адреса, отворете настройките за сайта и изберете изтриване на данните.</li>
+<li>Firefox: щракнете катинара вляво от адреса и изберете изчистване на бисквитките и данните на сайта.</li>
+<li>Safari на Mac: в настройките на Safari отворете раздела за поверителност и управлението на данните на уебсайтовете, изберете sofiagleda.com и го премахнете.</li>
+<li>iPhone и iPad: в Настройки отворете Safari, после Разширени и Данни на уебсайтовете и изтрийте sofiagleda.com. Ако сте добавили сайта към началния екран, премахнете и иконата.</li>
+<li>Всеки браузър позволява и да изчистите данните на всички сайтове от настройките си.</li>
+</ul>
+<p>Така изтривате езика, режима, любимите места, записа за съобщението за бисквитките и копието на сайта. Сайтът продължава да работи, а съобщението за бисквитките се показва отново.</p>
 
 <h2 id="zhalba">10. Жалба</h2>
 <p>Ако смятате, че правата ви са нарушени, можете да подадете жалба до Комисията за защита на личните данни: София 1592, бул. „Проф. Цветан Лазаров“ № 2, <a href="mailto:kzld@cpdp.bg">kzld@cpdp.bg</a>, <a href="https://www.cpdp.bg/">www.cpdp.bg</a>. Жалбата се подава в срок 6 месеца от узнаването на нарушението, но не по-късно от две години от извършването му (чл. 38 от Закона за защита на личните данни). Можете да се обърнете и към надзорния орган в държавата от ЕС, в която живеете или работите (чл. 77 от ОРЗД), или към съда (чл. 39 от Закона за защита на личните данни).</p>
@@ -367,12 +370,12 @@ PRIVACY_EN = """
 <li>On every visit, the hosting provider GitHub logs your IP address for security purposes.</li>
 <li>Posters load directly from TMDB and from the websites of cinemas and festivals, so TMDB and those websites also receive your IP address.</li>
 <li>Film trailers come from YouTube and load only when you press the play button. Until then nothing is sent to YouTube or Google.</li>
-<li>To reach us, use the project's public GitHub page. Do not post personal data there.</li>
+<li>The site has no contact channel. You exercise your rights yourself by clearing the site's data in your browser (section 9).</li>
 </ul>
 </section>
 
 <h2 id="controller">1. Controller</h2>
-<p>The controller is the private individual who maintains Sofia Gleda on a non-commercial basis. The site gives no name or email address. The only way to reach us is the project's public GitHub page (see section 8). No data protection officer has been appointed, because Article 37 GDPR does not require one for processing like this.</p>
+<p>The controller is the private individual who maintains Sofia Gleda on a non-commercial basis. The site gives no name, email address or other means of contact and takes no enquiries (see section 8). No data protection officer has been appointed, because Article 37 GDPR does not require one for processing like this.</p>
 
 <h2 id="not">2. What we do not do</h2>
 <p>We do not require registration and do not collect names, email addresses or phone numbers through the site. We have no database and keep no personal data on any server we control. We use no analytics, tracking or advertising tools. We do not profile visitors or make automated decisions within the meaning of Article 22 GDPR. We do not sell data or share it for marketing.</p>
@@ -399,20 +402,28 @@ PRIVACY_EN = """
 <h2 id="browser">7. What stays in your browser</h2>
 <p>The site keeps your language, mode (cinema or theatre), favourite cinemas and theatres and your answer to the cookie notice in your browser. On the site's main address (sofiagleda.com), the browser also keeps a copy of the site so that it opens quickly and works offline. None of this is sent to us and we cannot see it. You delete it yourself by clearing the site's data in your browser settings. See the <a href="[[COOKIES]]">Cookie policy</a> for details.</p>
 
-<h2 id="github">8. Reaching us through GitHub</h2>
-<p>You can leave questions and reports on the project's public GitHub page: [[ISSUES]]. You need a GitHub account to post there. Your message is published under that account and anyone can read it. GitHub processes your account and messages under its own terms and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">privacy statement</a>. When we reply, we use only what you posted there (our legitimate interest in answering questions, Article 6(1)(f) GDPR).</p>
-<p class="lg-warn">Do not post personal data there: no email address, phone number, home address or other details about yourself or anyone else. If you posted some by mistake, you can edit your message yourself, and we will delete the whole message if you ask.</p>
+<h2 id="no-contact">8. No contact channel</h2>
+<p>Sofia Gleda offers no way to contact it: no email address, phone number, form or page for messages. The site collects no personal data and keeps none on any server we control (section 2), so there is no data about you with us to give you, correct or delete. What the site keeps for you is only in your browser, and you manage it yourself (section 9). The data that GitHub, TMDB and the cinema and theatre websites receive is covered by their own policies.</p>
 
 <h2 id="rights">9. Your rights and how to use them</h2>
 <p>You have the right to request access to your personal data, its rectification or erasure and the restriction of its processing, and to object to processing based on legitimate interest (Articles 15, 16, 17, 18 and 21 GDPR). You have the right to data portability (Article 20 GDPR) where processing is based on consent or a contract; there is no such processing at present. If we ever ask for your consent, you will be able to withdraw it at any time.</p>
 <p>In practice this means:</p>
 <ul>
 <li>We keep no personal data on any server we control, so there is nothing of yours with us to give you or to delete.</li>
-<li>Your settings and favourite venues are only in your browser. You delete them by clearing the site's data in your browser settings (see the <a href="[[COOKIES]]">Cookie policy</a>).</li>
-<li>GitHub's visit logs and your GitHub account data are covered by <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>; send requests about them to GitHub.</li>
+<li>Your settings, favourite venues and the copy of the site are only in your browser. You delete them yourself by clearing the site's data (see below and the <a href="[[COOKIES]]">Cookie policy</a>). That is the erasure under Article 17 GDPR: there is no other copy.</li>
+<li>The visit logs of GitHub, the site's host, are covered by <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>; send requests about them to GitHub.</li>
 <li>The data that TMDB and the cinema and theatre websites receive when images load, and YouTube (Google) when you play a trailer, is covered by their own policies; send requests about it to them.</li>
-<li>If you believe we do process personal data of yours, describe the case at [[ISSUES]] without posting the data itself, and we will answer there. Because we keep no user accounts, we may be unable to link your request to any data (Article 11 GDPR).</li>
+<li>Because the site has no contact channel and keeps no user accounts, it takes no requests. We hold no data that could be linked to you (Article 11 GDPR).</li>
 </ul>
+<p>How to clear the site's data:</p>
+<ul>
+<li>Chrome on a computer: click the icon to the left of the address, open the site settings and choose to delete the data.</li>
+<li>Firefox: click the padlock to the left of the address and choose to clear cookies and site data.</li>
+<li>Safari on a Mac: in Safari's settings, open the privacy section and manage website data, select sofiagleda.com and remove it.</li>
+<li>iPhone and iPad: in Settings, open Safari, then Advanced and Website Data, and delete sofiagleda.com. If you added the site to your Home Screen, remove its icon too.</li>
+<li>Every browser also lets you clear the data of all sites in its settings.</li>
+</ul>
+<p>This deletes the language, the mode, your favourite venues, the record of the cookie notice and the copy of the site. The site keeps working, and the cookie notice is shown again.</p>
 
 <h2 id="complaint">10. Complaints</h2>
 <p>If you believe your rights have been infringed, you can lodge a complaint with the Bulgarian Commission for Personal Data Protection (Комисия за защита на личните данни): 2 Prof. Tsvetan Lazarov Blvd, 1592 Sofia, Bulgaria, <a href="mailto:kzld@cpdp.bg">kzld@cpdp.bg</a>, <a href="https://www.cpdp.bg/">www.cpdp.bg</a>. Under Bulgarian law the complaint must be filed within 6 months of learning of the infringement and no later than two years after it occurred (Article 38 of the Personal Data Protection Act). You can also turn to the supervisory authority of the EU country where you live or work (Article 77 GDPR), or to the courts.</p>
@@ -477,7 +488,7 @@ COOKIES_BG = """
 <p>Връзката „Настройки за бисквитки“ в долната част на сайта отваря отново съобщението. Ако някога добавим незадължителни инструменти, например статистика за посещенията или вход с профил, те ще се включват само след изричното ви съгласие, а съобщението ще ви попита отново.</p>
 
 <h2 id="lichni">6. Лични данни</h2>
-<p>Повече за личните данни има в <a href="[[PRIVACY]]">Политиката за поверителност</a>. Въпроси можете да оставите на [[ISSUES]], без да публикувате лични данни.</p>
+<p>Повече за личните данни и за правата ви има в <a href="[[PRIVACY]]">Политиката за поверителност</a>.</p>
 """
 
 COOKIES_EN = """
@@ -536,7 +547,7 @@ COOKIES_EN = """
 <p>The “Cookie settings” link at the bottom of the site opens the notice again. If we ever add optional tools, such as visitor statistics or signing in with an account, they will only run after you explicitly agree, and the notice will ask you again.</p>
 
 <h2 id="personal-data">6. Personal data</h2>
-<p>More about personal data is in the <a href="[[PRIVACY]]">Privacy policy</a>. Questions can be left at [[ISSUES]]; please do not post personal data there.</p>
+<p>More about personal data and your rights is in the <a href="[[PRIVACY]]">Privacy policy</a>.</p>
 """
 
 FONTS_NOTE = {
@@ -642,7 +653,8 @@ li{margin:6px 0}
   padding-block:20px calc(36px + env(safe-area-inset-bottom,0px))}
 .lg-foot-nav{display:flex; flex-wrap:wrap; gap:4px 18px}
 .lg-foot-nav a{display:inline-flex; align-items:center; min-height:36px; color:var(--fg-2)}
-.lg-foot p{margin:10px 0 0; max-width:62ch}
+/* the line and the links span the footer's column and reflow with it (owner, 22 Oct 2026) */
+.lg-foot p{margin:10px 0 0}
 """
 
 
@@ -692,9 +704,7 @@ def page(doc, lang, updated, google):
     here = path_of(doc, lang)
     root = "../" * here.count("/")
     other = "en" if lang == "bg" else "bg"
-    issues = f'<a href="{ISSUES_URL}">{html.escape(ISSUES_URL.split("://", 1)[1])}</a>'
     content = tpl(TEXTS[(doc, lang)],
-                  ISSUES=issues,
                   TERMS="../terms/", PRIVACY="../privacy/", COOKIES="../cookies/",
                   TMDB_LOGO=tmdb_logo(root),
                   FONTS_NOTE=FONTS_NOTE["google" if google else "self"][lang])
@@ -712,8 +722,7 @@ def page(doc, lang, updated, google):
                UPDATED_LABEL=html.escape(u["updated"]), UPDATED_ISO=updated,
                UPDATED_TEXT=human_date(updated, lang), CONTENT=content.strip(),
                FOOT_LABEL=html.escape(u["foot_label"]), BACK=html.escape(u["back"]),
-               COOKIE_SETTINGS=html.escape(u["cookie_settings"]), ISSUES_URL=ISSUES_URL,
-               ISSUES_LABEL=html.escape(u["issues"]),
+               COOKIE_SETTINGS=html.escape(u["cookie_settings"]),
                FOOT_LINE=html.escape(u["foot_line"]))
     return here, head + body
 

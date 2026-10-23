@@ -9869,6 +9869,7 @@ def wave_p3a(browser):
                 topGap: topGap,
                 leftDiff: leftDiff,
                 fontSize: cs.fontSize,
+                ratio: logoRect ? subRect.width / logoRect.width : null,
                 noEllipsis: cs.textOverflow !== "ellipsis",
                 noClip: sub.scrollWidth <= sub.clientWidth + 2,
                 hookFound: !!hook,
@@ -9888,8 +9889,11 @@ def wave_p3a(browser):
         left_diff = result.get("leftDiff")
         check(f"p3a_2_sub_left_aligned_desktop_{lang}", left_diff is not None and abs(left_diff) <= 2,
               f"leftDiff={left_diff} (expected within 2px)")
-        check(f"p3a_2_sub_fontsize_desktop_{lang}", result.get("fontSize") == "12.5px",
-              f"fontSize={result.get('fontSize')!r} (expected 12.5px)")
+        # 16 Oct 2026: the line scales with the logo (one lockup), so its width, not a
+        # fixed 12.5 px, is the rule: 90-110% of the logo's
+        ratio = result.get("ratio")
+        check(f"p3a_2_sub_width_tracks_logo_desktop_{lang}", ratio is not None and 0.9 <= ratio <= 1.1,
+              f"line/logo width={ratio} fontSize={result.get('fontSize')!r}")
         check(f"p3a_2_no_tagline_block_{lang}", not result.get("blockFound", True),
               f"tagline-block still present")
         check(f"p3a_2_no_hook_{lang}", not result.get("hookFound", True),
@@ -15470,11 +15474,11 @@ LEGAL_PAGES = [f"legal/{d}/" for d in LEGAL_DOCS] + [f"legal/en/{d}/" for d in L
 LEGAL_TITLES = {"terms": ("Общи условия", "Terms of use"),
                 "privacy": ("Политика за поверителност", "Privacy policy"),
                 "cookies": ("Политика за бисквитките", "Cookie policy")}
+# docs.github.com: GitHub's privacy statement (the host's own policy). No github.com link: by the
+# owner's decision of 2026-10-22 the site names no contact channel, the project page included.
 LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg",
-                        "github.com",
                         # the trailer (privacy and cookie policies): YouTube's terms, Google's privacy policy
                         "www.youtube.com", "policies.google.com"}
-ISSUES_URL = "https://github.com/confused-morty123/sofia-gleda/issues"
 TMDB_NOTICE = "This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
 DASHES = ("\u2014", "\u2013")          # em dash, en dash: the copy rules allow neither
 AI_TELLS = ("delve", "seamless", "leverage", "robust", "comprehensive", "rest assured", "in today's",
@@ -15931,9 +15935,11 @@ def wave_lg2(browser):
             check(f"lg2_{tag}_no_stock_phrases", not tells, str(tells))
             leftover = sorted(set(re.findall(r"\{[A-Z_]+\}", d["html"])))
             check(f"lg2_{tag}_no_placeholders", not leftover, str(leftover))
-            check(f"lg2_{tag}_contact_is_github_issues",
-                  any(absu == ISSUES_URL for _, absu in d["links"]) and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"]),
-                  "the GitHub issues link, and no email address but the supervisory authority's")
+            gh = [absu for _, absu in d["links"] if re.match(r"https?://(www\.)?github\.com(/|$)", absu)]
+            check(f"lg2_{tag}_no_contact_channel",
+                  not gh and "@" not in re.sub(r"kzld@cpdp\.bg", "", d["text"])
+                  and not re.search(r"Проектът в GitHub|project on GitHub|/issues", d["html"]),
+                  f"no GitHub page or issues link ({gh}), and no email address but the supervisory authority's")
             if "/en/" in rel:
                 proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb", "YouTube"}
                 caps = [h for h in d["headings"] for wd in re.sub(r"^\d+\.\s*", "", h).split()[1:]
@@ -15957,10 +15963,15 @@ def wave_lg2(browser):
             check(f"lg2_{rel.strip('/').replace('/', '_')}_lists_storage",
                   all(s in html_ for s in ("<code>sofia-screen-v2</code>", "<code>sofia-consent</code>", "sofia-gleda-v")),
                   "")
-        for rel, warn in (("legal/terms/", "Не публикувайте лични данни"), ("legal/en/terms/", "Do not post personal data"),
-                          ("legal/privacy/", "Не публикувайте там лични данни"),
-                          ("legal/en/privacy/", "Do not post personal data there")):
-            check(f"lg2_{rel.strip('/').replace('/', '_')}_warns_public_channel", warn in texts.get(rel, {}).get("text", ""), warn)
+        # 2026-10-22: no contact channel, said plainly; the privacy policy explains how to clear the
+        # site's data (the way to exercise the rights) and keeps the hosting disclosure
+        for rel, says in (("legal/terms/", ["няма канал за връзка"]), ("legal/en/terms/", ["has no contact channel"]),
+                          ("legal/privacy/", ["няма канал за връзка", "Как да изчистите данните на сайта",
+                                              "Safari", "Firefox", "Chrome", "GitHub Pages"]),
+                          ("legal/en/privacy/", ["has no contact channel", "How to clear the site's data",
+                                                 "Safari", "Firefox", "Chrome", "GitHub Pages"])):
+            missing = [w for w in says if w not in texts.get(rel, {}).get("text", "")]
+            check(f"lg2_{rel.strip('/').replace('/', '_')}_states_no_contact_channel", not missing, str(missing))
         for rel, rights in (("legal/privacy/", ["Не пазим лични данни на сървър, който управляваме",
                                                  "декларацията за поверителност на GitHub", "техните политики",
                                                  "Комисията за защита на личните данни", "kzld@cpdp.bg"]),
@@ -15983,11 +15994,11 @@ def wave_lg2(browser):
         p = page.evaluate(_LG_PROBE)
         check("lg2_cookie_settings_link_opens_notice",
               p["shown"] and page.evaluate("document.activeElement.id") == "sg-consent"
-              and page.evaluate("location.hash") == "" and page.url == base, page.url)
+              and page.evaluate("location.hash") == "" and page.url == base + "home/", page.url)
         page.goto(base + "legal/en/terms/")
         page.click(".lg-brand")
         page.wait_for_selector(".bar", timeout=20000)
-        check("lg2_brand_links_back_to_listings", page.url == base, page.url)
+        check("lg2_brand_links_back_to_listings", page.url == base + "home/", page.url)
         check("lg2_no_js_errors_app", not errs, "; ".join(errs[:3]))
         ctx.close()
     finally:
@@ -16337,6 +16348,1021 @@ def wave_tr1(browser):
             test_file.unlink()
         except OSError:
             pass
+# ============================================================================
+# WAVE UX1 (16 and 22 Oct 2026): the owner's UX items
+#   1. the filter drawer closes with a swipe to the side, following the finger
+#   2. desktop performance budgets (and the measured causes stay fixed)
+#   3. share pages: link-preview fetchers stay and read the title's tags, browsers
+#      go on to the app (no meta refresh); event pages
+#   4. the address bar shows /film/<id>/ (/show/, /event/) while a sheet is open
+#   5. the theatre late-day card
+#   6. the listings' own addresses, /home/ and /home/theatre/ (reload, Back/Forward, logo)
+#   7. the "На фокус" card (TMDB weekly trending, else screenings x venues; theatre:
+#      a premiere this week, else the most performances)
+#   8. the desktop logo and its line as one lockup, 761-1920 px, at least 10 px
+#   9. the footer's blocks span the content width (app and legal pages)
+# Runs over a local HTTP server (paths, the service worker and <base href="/"> need
+# one): / and /index.html are the page under test, /film|show|event/<id>/ its share
+# pages (real build: the worktree's, written by gen_share_pages.py; fixture: written
+# from the fixture's data into a temp dir), everything else the webapp root, and a
+# missing path gets 404.html with status 404, as on GitHub Pages.
+# SOFIA_BROWSER=webkit runs it in WebKit; the CDP-only parts (real touch input, the
+# frame budget, the offline service worker) run in Chromium.
+# ============================================================================
+import http.server as _ux_http
+import io as _ux_io
+import shutil as _ux_shutil
+import tempfile as _ux_tempfile
+import threading as _ux_threading
+import time as _ux_time
+import urllib.parse as _ux_up
+import html as _ux_html_mod
+from site_config import SITE_URL as UX_SITE
+
+UX_APPLE_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) "
+               "Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0")
+UX_FB_UA = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+
+# a synthetic touch drag on an element (plain Events carrying touches: WebKit has no
+# Touch constructor), with real time between the steps so a flick has a velocity;
+# returns, per move, whether it was prevented and the drawer's transform / scrim opacity
+UX_DRAG_JS = r"""async ({sel, pts, gap, hold}) => {
+  const el = document.querySelector(sel); if (!el) return null;
+  const fire = (type, x, y) => { const ev = new Event(type, {bubbles: true, cancelable: true});
+    const t = {clientX: x, clientY: y, identifier: 7, target: el};
+    Object.defineProperty(ev, 'touches', {value: (type === 'touchend' || type === 'touchcancel') ? [] : [t]});
+    Object.defineProperty(ev, 'changedTouches', {value: [t]}); el.dispatchEvent(ev); return ev; };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const log = [];
+  fire('touchstart', pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) {
+    await sleep(gap);
+    const ev = fire('touchmove', pts[i][0], pts[i][1]);
+    const ds = document.querySelector('#app > .drawer-scrim');
+    log.push({prevented: ev.defaultPrevented, tr: el.style.transform, op: ds ? ds.style.opacity : null});
+  }
+  if (hold) await sleep(hold);
+  fire('touchend', pts[pts.length - 1][0], pts[pts.length - 1][1]);
+  return log;
+}"""
+
+UX_DRAWER_JS = r"""() => { const d = document.querySelector('#app > .drawer'), s = document.querySelector('#app > .drawer-scrim');
+  if (!d) return {open: false, fab: !!document.querySelector('#app > .fab')};
+  const r = d.getBoundingClientRect();
+  return {open: true, left: Math.round(r.left), w: Math.round(r.width), tr: d.style.transform, top: d.scrollTop,
+          anims: d.getAnimations().length, op: s ? getComputedStyle(s).opacity : null, same: d === window.__ux_dr,
+          fab: !!document.querySelector('#app > .fab')}; }"""
+
+UX_SHEET_JS = r"""() => { const s = document.getElementById('scrim'), h = s && !s.hidden && s.querySelector('.sheet h2');
+  return {open: (typeof sheetOpen !== 'undefined') && sheetOpen, title: h ? h.textContent.trim() : null,
+          path: location.pathname, search: location.search, hash: location.hash,
+          depth: (typeof _histDepth !== 'undefined') ? _histDepth : -1, st: history.state}; }"""
+
+
+def _ux_share_root():
+    """The share pages to serve: a real build's own (gen_share_pages.py ran against that
+    index.html: the film/ beside it, else the worktree's), else pages written from the
+    fixture into a temp dir. A checkout of the live site (git archive origin/main) serves
+    its own old share pages, so the share checks bite on it too."""
+    if os.environ.get("SOFIA_HTML"):
+        own = Path(html_path).resolve().parent
+        return (own if (own / "film").is_dir() else webapp_root), None
+    import gen_share_pages as GSP
+    tmp = Path(_ux_tempfile.mkdtemp(prefix="ux1_share_"))
+    saved = GSP.HTML_PATH
+    GSP.HTML_PATH = html_path
+    try:
+        films, shows, alias, pmap, tmdb, showart, _ = GSP._load_data()
+        events, eventart, venue_of, names = GSP._load_events()
+    finally:
+        GSP.HTML_PATH = saved
+
+    def put(kind, iid, page):
+        d = tmp / kind / iid
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(page, encoding="utf-8")
+    for f in films:
+        u, iw, ih = GSP._image(f["id"], alias, pmap, tmdb, showart)
+        put("film", f["id"], GSP._share_page("film", f["id"], f.get("bg", f["id"]), f.get("en", ""),
+                                             f.get("synBg", ""), u, GSP.SITE_URL, image_w=iw, image_h=ih))
+    for s in shows:
+        u, iw, ih = GSP._image(s["id"], alias, pmap, tmdb, showart)
+        put("show", s["id"], GSP._share_page("show", s["id"], s.get("title", s["id"]), s.get("titleEn", ""),
+                                             s.get("synBg", ""), u, GSP.SITE_URL, image_w=iw, image_h=ih))
+    for e in events:
+        put("event", e["id"], GSP._event_page(e, eventart, venue_of, names, alias, pmap, tmdb, showart))
+    return tmp, tmp
+
+
+def _ux_server(share_root):
+    class Hd(_ux_http.SimpleHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def translate_path(self, path):
+            p = _ux_up.unquote(_ux_up.urlsplit(path).path)
+            if p in ("/", "/index.html", "/home/", "/home/index.html", "/home/theatre/", "/home/theatre/index.html"):
+                return str(html_path)
+            m = re.match(r"^/(film|show|event)/([^/]+)/(?:index\.html)?$", p)
+            if m:
+                return str(Path(share_root) / m.group(1) / m.group(2) / "index.html")
+            return str(webapp_root / p.lstrip("/"))
+
+        def _page(self, status, file):
+            # Every page goes out without the CSP's upgrade-insecure-requests, as _ux_ctx's
+            # route does: WebKit does not route the request a redirect leads to (a folder
+            # without its slash, /film/<id> -> /film/<id>/), so that share page kept the
+            # directive and its hand-on to /home/?film= went to https://127.0.0.1 and failed
+            # (UX1 WebKit share_ran, 30 s timeout, 2026-10-23). Script hashes are untouched.
+            body = _ux_no_uir(Path(file).read_text(encoding="utf-8")).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return _ux_io.BytesIO(body)
+
+        def send_head(self):
+            path = self.translate_path(self.path)
+            if not os.path.exists(path):
+                return self._page(404, webapp_root / "404.html")
+            if os.path.isfile(path) and path.endswith(".html"):
+                return self._page(200, path)
+            return super().send_head()
+    srv = _ux_http.ThreadingHTTPServer(("127.0.0.1", 0), Hd)
+    _ux_threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"http://127.0.0.1:{srv.server_address[1]}"
+
+
+def _ux_clock(epoch_ms):
+    return """(() => { const _D = Date, F = %d;
+  class FakeDate extends _D { constructor(...a){ a.length? super(...a): super(F); } static now(){ return F; } }
+  window.Date = FakeDate; })();""" % epoch_ms
+
+
+def _ux_no_uir(html):
+    """The page without the CSP's upgrade-insecure-requests: the test server is plain http,
+    and WebKit upgrades even 127.0.0.1 (see _ux_ctx)."""
+    return re.sub(r"upgrade-insecure-requests;?\s*", "", html)
+
+
+def _ux_ctx(browser, base, w, h, phone=False, lang="bg", mode="cinema", ua=None, reduced=False, js=True,
+            clock=None, sw=False):
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
+              service_workers="allow" if sw else "block", java_script_enabled=js)
+    if phone:
+        kw.update(has_touch=True, is_mobile=True)
+    if ua:
+        kw["user_agent"] = ua
+    if reduced:
+        kw["reduced_motion"] = "reduce"
+    ctx = browser.new_context(**kw)
+    ctx.add_init_script(clock or CLOCK)
+    ctx.add_init_script(f"""try {{ localStorage.setItem('sofia-screen-v2', JSON.stringify({{prefs:{{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}}, lang:'{lang}', mode:'{mode}'}})); }} catch(e) {{}}""")
+    if not sw:
+        def _route(route):
+            u = route.request.url
+            if u.startswith(base) and route.request.resource_type == "document":
+                # the test server is plain http: WebKit follows the CSP's
+                # upgrade-insecure-requests even on 127.0.0.1 (a reload, a share page's
+                # hand-on, posters, fonts all go to https and fail), so the directive is
+                # taken out of each page as it is served; the script hashes are untouched
+                r = route.fetch(max_redirects=0)
+                if r.status != 200 or "html" not in r.headers.get("content-type", ""):
+                    return route.continue_()        # a redirect (a folder without its slash) as served
+                return route.fulfill(response=r, body=_ux_no_uir(r.text()))
+            if u.startswith(base) or "fonts.googleapis.com" in u or "fonts.gstatic.com" in u:
+                return route.continue_()
+            if u.startswith(UX_SITE + "/"):
+                # the production origin is this server: an absolute redirect to the live
+                # site (the old share pages) lands on the app here, as it would there
+                try:
+                    return route.fulfill(response=route.fetch(url=base + u[len(UX_SITE):]))
+                except Exception:
+                    return route.abort()
+            return route.abort()
+        ctx.route("**/*", _route)
+    return ctx
+
+
+def _ux_page(ctx, url, wait_app=True):
+    page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(url)
+    if wait_app:
+        page.wait_for_selector(".bar", timeout=20000)
+        page.wait_for_timeout(500)
+    return page, errs
+
+
+def _ux_tap_sel(page, phone, sel, scroll=True):
+    """Tap/click the centre of the first element matching sel, as a user would."""
+    r = page.evaluate("""([sel, scroll]) => { const el = document.querySelector(sel); if (!el) return null;
+        if (scroll) { const r0 = el.getBoundingClientRect(); if (r0.top < 100 || r0.bottom > innerHeight - 120) window.scrollBy(0, r0.top - innerHeight / 3); }
+        const r = el.getBoundingClientRect(); return r.width ? {x: r.left + r.width / 2, y: r.top + Math.min(r.height / 2, 60)} : null; }""",
+                      [sel, scroll])
+    if not r:
+        return False
+    page.wait_for_timeout(120)
+    _hf_tap(page, phone, r["x"], r["y"])
+    return True
+
+
+def _ux_meta(page):
+    return page.evaluate("""() => { const g = (k) => { const m = document.querySelector('meta[property="' + k + '"],meta[name="' + k + '"]'); return m ? m.getAttribute('content') : null; };
+        return {title: g('og:title'), url: g('og:url'), image: g('og:image'), desc: g('og:description'), card: g('twitter:card'),
+                refresh: !!document.querySelector('meta[http-equiv="refresh" i]'),
+                link: (document.querySelector('a.open') || {}).getAttribute ? document.querySelector('a.open').getAttribute('href') : null}; }""")
+
+
+def _ux_items(page):
+    """A film, a show and an event with their titles, from the page's own data: ones that
+    have a card on the home page when possible."""
+    return page.evaluate("""() => {
+        const film = (document.querySelector('#app .card[data-film]') || {dataset: {}}).dataset.film || (FILMS[0] && FILMS[0].id);
+        const show = (SHOWS.find(s => showPerfsAll(s.id).length) || SHOWS[0]).id;
+        const ev = (EVENTS.find(e => e.to >= NOW_DATE) || EVENTS[0]);
+        return {film, filmTitle: filmById[film].bg, filmSheet: filmTitle(filmById[film]),
+                show, showTitle: showById[show].title, showSheet: titleOf(showById[show]),
+                event: ev && ev.id, eventTitle: ev && ev.title, eventSheet: ev && ev.title, eventFrom: ev && ev.from, eventTo: ev && ev.to};
+    }""")
+
+
+def _ux_drawer(browser, base, eng, phone_w=390, phone_h=844):
+    """Item 1: the drawer follows a sideways drag, closes past 30% or on a flick, springs
+    back otherwise, leaves vertical drags to its own scrolling, keeps its node across
+    filter taps; reduced motion closes without following."""
+    tag = f"ux1_{eng}_drawer"
+    ctx = _ux_ctx(browser, base, phone_w, phone_h, phone=True)
+    page, errs = _ux_page(ctx, base + "/")
+
+    def open_drawer():
+        page.evaluate("window.scrollTo(0, 0)")
+        page.wait_for_timeout(450)
+        ok = _ux_tap_sel(page, True, "#app > .fab", scroll=False)
+        page.wait_for_timeout(750)
+        page.evaluate("window.__ux_dr = document.querySelector('#app > .drawer')")
+        return ok and page.evaluate(UX_DRAWER_JS)["open"]
+
+    def drag(n, axis, step, gap, y0=520, hold=0):
+        """n moves of `step` px along x (sideways) or y, `gap` ms apart, with a 1-2 px wobble
+        on the other axis, as a finger has"""
+        st = page.evaluate(UX_DRAWER_JS)
+        x0 = st["left"] + 40
+        if axis == "x":
+            pts = [[x0, y0]] + [[x0 + step * (i + 1), y0 + (i % 2)] for i in range(n)]
+        else:
+            pts = [[x0, y0]] + [[x0 + 2 * (i % 2), y0 + step * (i + 1)] for i in range(n)]
+        return page.evaluate(UX_DRAG_JS, {"sel": "#app > .drawer", "pts": pts, "gap": gap, "hold": hold})
+
+    check(f"{tag}_opens", open_drawer(), "FAB tap opens the drawer")
+    w = page.evaluate(UX_DRAWER_JS).get("w") or 340
+    # the node survives a filter tap (renderKeepDrawer), and its swipe still works after it
+    page.wait_for_timeout(450)
+    tapped = _ux_tap_sel(page, True, "#app > .drawer [data-genre]:not([data-genre=''])", scroll=False)
+    page.wait_for_timeout(700)
+    s_keep = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_node_kept_across_filter_tap", tapped and s_keep["open"] and s_keep["same"],
+          f"tapped={tapped} open={s_keep['open']} same node={s_keep.get('same')}")
+    # follow: 72 px slowly (0.2 px/ms), then let go below 30%: springs back
+    log = drag(12, "x", 6, 30)
+    last = (log or [{}])[-1]
+    exp_op = 1 - 72 / w
+    try:
+        op_ok = abs(float(last.get("op") or 0) - exp_op) < 0.05
+    except ValueError:
+        op_ok = False
+    check(f"{tag}_follows_finger", bool(log) and last.get("tr") == "translateX(72px)" and op_ok and all(x["prevented"] for x in log[1:]),
+          f"last move transform={last.get('tr')!r} scrim opacity={last.get('op')} (want ~{exp_op:.2f}) prevented={[x['prevented'] for x in (log or [])][:4]}")
+    page.wait_for_timeout(60)
+    s1 = page.evaluate(UX_DRAWER_JS)
+    page.wait_for_timeout(500)
+    s2 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_springs_back_below_threshold", s1["open"] and s1["anims"] >= 1 and s2["open"] and s2["tr"] == "" and s2["left"] == s_keep["left"] and s2["op"] == "1",
+          f"just after release: open={s1['open']} animations={s1.get('anims')}; 500 ms later: open={s2['open']} transform={s2.get('tr')!r} left={s2.get('left')} (rest {s_keep.get('left')}) scrim={s2.get('op')}")
+    # past 30% slowly: closes and the FAB is back
+    page.wait_for_timeout(450)
+    drag(13, "x", 10, 35)
+    page.wait_for_timeout(650)
+    s3 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_closes_past_30pct", not s3["open"] and s3["fab"], f"after a 130 px drag of {w}: open={s3['open']} fab={s3['fab']}")
+    # a flick: 45 px (13%) in about 40 ms closes too
+    check(f"{tag}_reopens", open_drawer(), "")
+    drag(3, "x", 15, 12)
+    page.wait_for_timeout(650)
+    s4 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_closes_on_fling", not s4["open"] and s4["fab"], f"after a 45 px flick: open={s4['open']}")
+    # vertical and leftward drags are not taken: no transform, nothing prevented
+    check(f"{tag}_reopens_2", open_drawer(), "")
+    logv = drag(10, "y", -25, 16, y0=640)
+    logl = drag(8, "x", -8, 16)
+    page.wait_for_timeout(400)
+    s5 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_vertical_drag_left_to_scrolling", bool(logv) and not any(x["prevented"] for x in logv) and all(x["tr"] == "" for x in logv) and s5["open"],
+          f"vertical: prevented={[x['prevented'] for x in (logv or [])][:4]} transforms={[x['tr'] for x in (logv or [])][:3]} still open={s5['open']}")
+    check(f"{tag}_leftward_drag_ignored", bool(logl) and not any(x["prevented"] for x in logl) and all(x["tr"] == "" for x in logl) and s5["open"],
+          f"leftward: prevented={[x['prevented'] for x in (logl or [])][:4]} transforms={[x['tr'] for x in (logl or [])][:3]}")
+    if eng == "chromium":
+        # real touch input: a vertical swipe scrolls the drawer's list, a sideways one closes it
+        cdp = ctx.new_cdp_session(page)
+
+        def touch(kind, pts):
+            cdp.send("Input.dispatchTouchEvent", {"type": kind, "touchPoints": [{"x": x, "y": y} for (x, y) in pts]})
+        st = page.evaluate(UX_DRAWER_JS)
+        x0 = st["left"] + 60
+        touch("touchStart", [(x0, 700)])
+        for i in range(1, 12):
+            touch("touchMove", [(x0 + 2, 700 - i * 25)])
+            _ux_time.sleep(0.016)
+        touch("touchEnd", [])
+        page.wait_for_timeout(700)
+        s6 = page.evaluate(UX_DRAWER_JS)
+        check(f"{tag}_real_touch_vertical_scrolls", s6["open"] and s6["top"] > 40 and s6["tr"] == "",
+              f"scrollTop {st['top']} -> {s6.get('top')} transform={s6.get('tr')!r}")
+        page.wait_for_timeout(450)
+        touch("touchStart", [(x0, 420)])
+        for i in range(1, 15):
+            touch("touchMove", [(x0 + i * 10, 421)])
+            _ux_time.sleep(0.03)
+        touch("touchEnd", [])
+        page.wait_for_timeout(700)
+        s7 = page.evaluate(UX_DRAWER_JS)
+        check(f"{tag}_real_touch_swipe_closes", not s7["open"] and s7["fab"], f"open={s7['open']} fab={s7['fab']}")
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+    # reduced motion: the drawer does not follow; a swipe past 30% closes it at once
+    ctx = _ux_ctx(browser, base, phone_w, phone_h, phone=True, reduced=True)
+    page, errs = _ux_page(ctx, base + "/")
+    check(f"{tag}_reduced_opens", open_drawer(), "")
+    log = drag(12, "x", 6, 30)
+    page.wait_for_timeout(450)
+    s8 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_reduced_no_follow", bool(log) and all(x["tr"] == "" for x in log) and s8["open"],
+          f"transforms while dragging={[x['tr'] for x in (log or [])][:3]} still open={s8['open']}")
+    drag(13, "x", 10, 35)
+    page.wait_for_timeout(120)
+    s9 = page.evaluate(UX_DRAWER_JS)
+    check(f"{tag}_reduced_closes_at_once", not s9["open"], f"120 ms after a 130 px swipe: open={s9['open']}")
+    check(f"{tag}_reduced_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _ux_perf(browser, base):
+    """Item 2: desktop budgets at 1280x800 (Chromium): frame time and long tasks while the
+    wheel scrolls the home page with the pointer over the cards; the causes measured on
+    16 Oct 2026 stay fixed (no backdrop-filter on the cards or the pinned header; hover
+    effects held while the wheel scrolls, back right after)."""
+    tag = "ux1_perf"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    ctx.add_init_script("""window.__ux_lt=[];try{new PerformanceObserver(l=>{for(const e of l.getEntries())__ux_lt.push(e.duration);}).observe({type:'longtask',buffered:true});}catch(e){}""")
+    page, errs = _ux_page(ctx, base + "/")
+    page.wait_for_timeout(1500)
+    page.evaluate("""async () => { for (let i = 0; i < 30; i++) { window.scrollTo(0, document.documentElement.scrollHeight); await new Promise(r => setTimeout(r, 50)); } window.scrollTo(0, 0); }""")
+    page.wait_for_timeout(800)
+    page.mouse.move(640, 420)
+    for _ in range(12):                         # warm-up pass
+        page.mouse.wheel(0, 150)
+        page.wait_for_timeout(30)
+    page.evaluate("window.scrollTo(0, 0)")
+    page.wait_for_timeout(600)
+    page.evaluate("""() => { window.__ux_lt.length = 0; window.__ux_raf = []; let last = performance.now();
+        const f = t => { if (!window.__ux_raf) return; window.__ux_raf.push(t - last); last = t; requestAnimationFrame(f); };
+        requestAnimationFrame(f); }""")
+    during = []
+    for i in range(36):
+        page.mouse.wheel(0, 120)
+        page.wait_for_timeout(30)
+        if i == 18:
+            during.append(page.evaluate("document.documentElement.classList.contains('sg-wheel')"))
+    for _ in range(36):
+        page.mouse.wheel(0, -120)
+        page.wait_for_timeout(30)
+    deltas = page.evaluate("() => { const d = window.__ux_raf || []; window.__ux_raf = null; return d.slice(1); }")
+    page.wait_for_timeout(400)
+    after = page.evaluate("document.documentElement.classList.contains('sg-wheel')")
+    lt = page.evaluate("window.__ux_lt.slice()")
+    mx = max(deltas) if deltas else 0
+    check(f"{tag}_wheel_scroll_max_frame", bool(deltas) and mx < 250,
+          f"{len(deltas)} frames, max {mx:.0f} ms (budget 250), mean {sum(deltas) / max(1, len(deltas)):.1f} ms")
+    check(f"{tag}_wheel_scroll_long_tasks", sum(lt) < 400, f"{len(lt)} long tasks, {sum(lt):.0f} ms in total (budget 400)")
+    check(f"{tag}_hover_held_while_wheeling", during == [True] and after is False,
+          f"html.sg-wheel during the wheel={during} 400 ms after={after}")
+    # hover still lifts a card once the wheel has stopped
+    page.evaluate("()=>{const t=document.querySelector('#app .rtrack');const r=t.getBoundingClientRect();window.scrollBy(0,r.top-140);}")
+    page.wait_for_timeout(500)
+    box = page.evaluate("""() => { const c = document.querySelector('#app .rtrack .card'); const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 3]; }""")
+    page.mouse.move(box[0] - 30, box[1] + 5)
+    page.mouse.move(box[0], box[1], steps=4)
+    page.wait_for_timeout(400)
+    lift = page.evaluate("(() => { const c = document.querySelector('#app .rtrack .card'); return [c.matches(':hover'), getComputedStyle(c).transform]; })()")
+    check(f"{tag}_hover_lift_still_works", lift[0] and lift[1] not in ("none", ""), f"hovered={lift[0]} transform={lift[1]}")
+    blur = page.evaluate("""() => { const bf = e => { const s = getComputedStyle(e); return s.backdropFilter && s.backdropFilter !== 'none'; };
+        return {cards: [...document.querySelectorAll('#app main .card *, #app main .ecard *, #app main .rarrow')].filter(bf).length,
+                header: bf(document.querySelector('.bar')), scores: document.querySelectorAll('#app .score').length}; }""")
+    check(f"{tag}_no_backdrop_filter_in_rails", blur["cards"] == 0 and not blur["header"],
+          f"elements with backdrop-filter in the rails={blur['cards']} (of {blur['scores']} badges), header={blur['header']}")
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _ux_share(browser, base, eng, items):
+    """Item 3: share pages keep link-preview fetchers on the title's tags (Apple's runs in
+    WebKit with this user agent and follows redirects) and send a browser on to the app,
+    which opens the sheet at the title's own address."""
+    import gen_share_pages as GSP
+    site = GSP.SITE_URL
+    cases = [("film", items["film"], items["filmTitle"], items["filmSheet"]),
+             ("show", items["show"], items["showTitle"], items["showSheet"])]
+    if items.get("event"):
+        cases.append(("event", items["event"], items["eventTitle"], items["eventSheet"]))
+    for ua_tag, ua in [("apple", UX_APPLE_UA)] + ([("facebook", UX_FB_UA)] if eng == "chromium" else []):
+        ctx = _ux_ctx(browser, base, 1280, 800, ua=ua)
+        for kind, iid, title, _sheet in cases:
+            path = f"/{kind}/{_ux_up.quote(iid)}/"
+            page, errs = _ux_page(ctx, base + path, wait_app=False)
+            page.wait_for_timeout(1500)
+            m = _ux_meta(page)
+            stayed = page.url == base + path
+            ok = (stayed and m["title"] == title and m["url"] == f"{site}/{kind}/{iid}/" and (m["image"] or "").startswith("https://")
+                  and m["card"] == "summary_large_image" and not m["refresh"])
+            if kind == "event" and ok:
+                rng = GSP._bg_range(items["eventFrom"], items["eventTo"])
+                ok = rng in (m["desc"] or "")
+            check(f"ux1_{eng}_share_{kind}_bot_{ua_tag}_stays_on_tags", ok,
+                  f"url={page.url.replace(base, '')} og:title={m['title']!r} (want {title!r}) og:url={m['url']} og:image={(m['image'] or '')[:60]} "
+                  f"card={m['card']} meta refresh={m['refresh']}" + (f" desc={(m['desc'] or '')[:60]!r}" if kind == "event" else ""))
+            page.close()
+        ctx.close()
+    # a browser goes on to the app: the sheet opens at the title's address, Back lands on "/"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    for kind, iid, _og, title in cases:
+        page, errs = _ux_page(ctx, base + f"/{kind}/{_ux_up.quote(iid)}/")
+        page.wait_for_timeout(900)
+        s = page.evaluate(UX_SHEET_JS)
+        want_path = f"/{kind}/{_ux_up.quote(iid, safe='')}/"
+        ok1 = s["open"] and (s["title"] or "").lower() == title.lower() and s["path"] == want_path and s["search"] == "" and s["depth"] == 1
+        page.go_back()
+        page.wait_for_timeout(800)
+        s2 = page.evaluate(UX_SHEET_JS)
+        home = "/home/theatre/" if kind == "show" else "/home/"
+        check(f"ux1_{eng}_share_{kind}_browser_opens_app", ok1 and not s2["open"] and s2["path"] == home and s2["search"] == "",
+              f"open={s['open']} title={s['title']!r} path={s['path']} search={s['search']!r} depth={s['depth']} | after Back: open={s2['open']} path={s2['path']} search={s2['search']!r} errors={errs[:2]}")
+        page.close()
+    ctx.close()
+    # without JavaScript the page stays, with a visible link to the app
+    ctx = _ux_ctx(browser, base, 1280, 800, js=False)
+    page, errs = _ux_page(ctx, base + f"/film/{_ux_up.quote(items['film'])}/", wait_app=False)
+    page.wait_for_timeout(500)
+    link = page.evaluate("""() => { const a = document.querySelector('a.open'); if (!a) return null; const r = a.getBoundingClientRect(); return {href: a.getAttribute('href'), w: r.width, h: r.height}; }""")
+    check(f"ux1_{eng}_share_nojs_fallback_link", page.url.endswith(f"/film/{_ux_up.quote(items['film'])}/") and bool(link) and link["w"] > 0
+          and link["href"] == f"/home/?film={_ux_up.quote(items['film'], safe='')}",
+          f"url={page.url.replace(base, '')} link={link}")
+    ctx.close()
+    # an address no share page covers still reaches the app (404.html)
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    page, errs = _ux_page(ctx, base + f"/film/{_ux_up.quote(items['film'])}")
+    page.wait_for_timeout(900)
+    s = page.evaluate(UX_SHEET_JS)
+    check(f"ux1_{eng}_share_no_trailing_slash_opens_app", s["open"] and s["path"] == f"/film/{_ux_up.quote(items['film'], safe='')}/",
+          f"open={s['open']} path={s['path']}")
+    page.close()
+    page, errs = _ux_page(ctx, base + "/no/such/page", wait_app=False)
+    page.wait_for_timeout(500)
+    nf = page.evaluate("(document.querySelector('h1')||{}).textContent")
+    check(f"ux1_{eng}_404_page", nf == "Страницата не е намерена" and page.url.endswith("/no/such/page"), f"h1={nf!r} url={page.url.replace(base, '')}")
+    ctx.close()
+
+
+def _ux_urls(browser, base, eng, items):
+    """Item 4: the address bar shows the open title's share address; closing (every route)
+    restores "/"; the popup keeps it; Back, reload, arrival by ?film=, the app served at
+    the path itself, an unknown id; the event share link; offline through the service worker."""
+    import gen_share_pages as GSP
+    site = GSP.SITE_URL
+    fid, fq = items["film"], _ux_up.quote(items["film"], safe="")
+    for phone in (False, True):
+        w, h = (390, 844) if phone else (1280, 800)
+        tag = f"ux1_{eng}_{'phone' if phone else 'desk'}_url"
+        ctx = _ux_ctx(browser, base, w, h, phone=phone)
+        page, errs = _ux_page(ctx, base + "/")
+        routes = ["x", "backbar", "esc", "back"] + (["drag"] if phone else ["backdrop"])
+        for route in routes:
+            page.wait_for_timeout(450)
+            opened = _ux_tap_sel(page, phone, f'#app .card[data-film="{fid}"]')
+            page.wait_for_timeout(700)
+            s1 = page.evaluate(UX_SHEET_JS)
+            _hf_close_sheet(page, phone, route)
+            s2 = page.evaluate(UX_SHEET_JS)
+            check(f"{tag}_open_then_close_{route}",
+                  opened and s1["open"] and s1["path"] == f"/film/{fq}/" and s1["depth"] == 1
+                  and not s2["open"] and s2["path"] == "/home/" and s2["depth"] == 0,
+                  f"open: sheet={s1['open']} path={s1['path']} depth={s1['depth']} | closed by {route}: sheet={s2['open']} path={s2['path']} depth={s2['depth']}")
+        # the time popup keeps the title's address on its own entry
+        page.wait_for_timeout(450)
+        _ux_tap_sel(page, phone, f'#app .card[data-film="{fid}"]')
+        page.wait_for_timeout(700)
+        p = _hf_tap_pill(page, phone, 0.5)
+        page.wait_for_timeout(600)
+        s3 = page.evaluate(UX_SHEET_JS)
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(600)
+        s4 = page.evaluate(UX_SHEET_JS)
+        # the address a user would copy is the share page, with this film's preview
+        copied = page.evaluate("location.href")
+        # (fetched from here, not by the page: WebKit upgrades the page's own http fetch to
+        # https under the CSP's upgrade-insecure-requests, and the test server is plain http)
+        _r = ctx.request.get(copied)
+        fetched = [_r.status, _r.text()]
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(700)
+        s5 = page.evaluate(UX_SHEET_JS)
+        if p:
+            check(f"{tag}_popup_keeps_address", s3["depth"] == 2 and s3["path"] == f"/film/{fq}/" and s4["depth"] == 1 and s4["path"] == f"/film/{fq}/"
+                  and s5["path"] == "/home/" and s5["depth"] == 0,
+                  f"popup: depth={s3['depth']} path={s3['path']} | Esc: depth={s4['depth']} path={s4['path']} | Esc: depth={s5['depth']} path={s5['path']}")
+        else:
+            skip(f"{tag}_popup_keeps_address", "no time pill in the sheet")
+        check(f"{tag}_copied_address_is_share_page", copied == f"{base}/film/{fq}/" and fetched[0] == 200
+              and f'property="og:title" content="{_ux_html_mod.escape(items["filmTitle"], quote=True)}"' in fetched[1]
+              and f'property="og:url" content="{site}/film/{fid}/"' in fetched[1],
+              f"copied={copied.replace(base, '')} fetch status={fetched[0]} has og:title={_ux_html_mod.escape(items['filmTitle'], quote=True) in fetched[1]}")
+        # a show and an event: their own addresses
+        page.evaluate("()=>{const b=document.querySelector('[data-switch=\"theatre\"]'); b && b.click();}")
+        page.wait_for_timeout(900)
+        sid = page.evaluate("(document.querySelector('#app .card[data-show]')||{dataset:{}}).dataset.show")
+        if sid:
+            _ux_tap_sel(page, phone, f'#app .card[data-show="{sid}"]')
+            page.wait_for_timeout(700)
+            s6 = page.evaluate(UX_SHEET_JS)
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(700)
+            s7 = page.evaluate(UX_SHEET_JS)
+            check(f"{tag}_show_address", s6["open"] and s6["path"] == f"/show/{_ux_up.quote(sid, safe='')}/" and s7["path"] == "/home/theatre/",
+                  f"open={s6['open']} path={s6['path']} | closed: path={s7['path']}")
+        else:
+            skip(f"{tag}_show_address", "no theatre card")
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+    tag = f"ux1_{eng}_url"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    # an event's sheet: its address, and the share button's link is the event's share page
+    if items.get("event"):
+        eq = _ux_up.quote(items["event"], safe="")
+        page, errs = _ux_page(ctx, base + f"/?event={eq}")
+        page.wait_for_timeout(700)
+        s = page.evaluate(UX_SHEET_JS)
+        page.evaluate("() => { window.__ux_shared = null; navigator.share = d => { window.__ux_shared = d; return Promise.resolve(); }; }")
+        page.evaluate("() => { const s = document.getElementById('scrim'); if (s) s.scrollTop = 0; const sh = s && s.querySelector('.sheet'); if (sh) sh.scrollTop = 0; }")
+        _ux_tap_sel(page, False, "#scrim [data-share]", scroll=False)
+        page.wait_for_timeout(400)
+        shared = page.evaluate("window.__ux_shared && window.__ux_shared.url")
+        check(f"{tag}_event_address_and_share_link", s["open"] and s["path"] == f"/event/{eq}/" and shared == f"{site}/event/{eq}/",
+              f"open={s['open']} path={s['path']} shared={shared}")
+        page.close()
+    # arriving from a share page (/?film=id): the entry becomes "/" and the sheet gets its own
+    page, errs = _ux_page(ctx, base + f"/?film={fq}")
+    page.wait_for_timeout(700)
+    s1 = page.evaluate(UX_SHEET_JS)
+    page.go_back()
+    page.wait_for_timeout(700)
+    s2 = page.evaluate(UX_SHEET_JS)
+    check(f"{tag}_arrival_by_query", s1["open"] and s1["path"] == f"/film/{fq}/" and s1["search"] == "" and s1["depth"] == 1
+          and not s2["open"] and s2["path"] == "/home/" and s2["search"] == "" and (s2["st"] or {}).get("m") == "cinema",
+          f"arrived: open={s1['open']} path={s1['path']} search={s1['search']!r} depth={s1['depth']} | Back: open={s2['open']} path={s2['path']} search={s2['search']!r} state={s2['st']}")
+    # reload with the sheet open: it opens again at the same address; Back closes it
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, f'#app .card[data-film="{fid}"]')
+    page.wait_for_timeout(700)
+    # (wait_until commit: with no service worker the share page at this address hands the
+    # browser on with location.replace, and WebKit never reports the reload's own load)
+    page.reload(wait_until="commit")
+    page.wait_for_selector(".bar", timeout=30000)
+    page.wait_for_timeout(900)
+    s3 = page.evaluate(UX_SHEET_JS)
+    page.go_back()
+    page.wait_for_timeout(800)
+    s4 = page.evaluate(UX_SHEET_JS)
+    check(f"{tag}_reload_at_title_address", s3["open"] and s3["path"] == f"/film/{fq}/" and (s3["title"] or "").lower() == items["filmSheet"].lower()
+          and not s4["open"] and s4["path"] == "/home/",
+          f"after reload: open={s3['open']} path={s3['path']} title={s3['title']!r} | Back: open={s4['open']} path={s4['path']}")
+    page.close()
+    # the app served at the title's address itself (the service worker's copy, any uncovered path)
+    page = ctx.new_page()
+    errs2 = []
+    page.on("pageerror", lambda e: errs2.append(str(e)))
+    app_html = _ux_no_uir(Path(html_path).read_text(encoding="utf-8"))
+    page.route(f"{base}/film/{fq}/", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=app_html))
+    page.route(f"{base}/film/zz-no-such-film/", lambda r: r.fulfill(status=200, content_type="text/html; charset=utf-8", body=app_html))
+    page.goto(base + f"/film/{fq}/")
+    page.wait_for_selector(".bar")
+    page.wait_for_timeout(1200)
+    s5 = page.evaluate(UX_SHEET_JS)
+    res = page.evaluate("""() => { const logo = document.querySelector('.brand-logo'); return {logo: logo && logo.naturalWidth, logoSrc: logo && logo.currentSrc,
+        base: document.baseURI}; }""")
+    page.go_back()
+    page.wait_for_timeout(700)
+    s6 = page.evaluate(UX_SHEET_JS)
+    check(f"{tag}_app_at_title_path_opens_sheet", s5["open"] and s5["path"] == f"/film/{fq}/" and s5["depth"] == 1 and not s6["open"] and s6["path"] == "/home/",
+          f"open={s5['open']} path={s5['path']} depth={s5['depth']} | Back: open={s6['open']} path={s6['path']}")
+    check(f"{tag}_base_href_resolves_from_root", (res["logo"] or 0) > 0 and res["logoSrc"] == base + "/logo.svg" and res["base"] == base + "/",
+          f"logo {res['logoSrc']} naturalWidth={res['logo']} baseURI={res['base']}")
+    page.goto(base + "/film/zz-no-such-film/")
+    page.wait_for_selector(".bar")
+    page.wait_for_timeout(900)
+    s7 = page.evaluate(UX_SHEET_JS)
+    toast_txt = page.evaluate("(document.getElementById('sg-toast')||{}).textContent")
+    check(f"{tag}_unknown_title_path_goes_home", not s7["open"] and s7["path"] == "/home/" and bool(toast_txt),
+          f"open={s7['open']} path={s7['path']} toast={toast_txt!r}")
+    check(f"{tag}_no_js_errors", not errs and not errs2, f"errors={(errs + errs2)[:3]}")
+    ctx.close()
+
+    # offline: the service worker answers the title's address with the cached app (Chromium)
+    if eng == "chromium":
+        ctx = _ux_ctx(browser, base, 1280, 800, sw=True)
+        page, errs = _ux_page(ctx, base + "/")
+        ready = page.evaluate("""async () => { if (!('serviceWorker' in navigator)) return 'none';
+            const r = await Promise.race([navigator.serviceWorker.ready.then(() => 'ready'), new Promise(x => setTimeout(() => x('timeout'), 8000))]);
+            return r; }""")
+        page.reload()
+        page.wait_for_selector(".bar")
+        page.wait_for_timeout(800)
+        controlled = page.evaluate("!!(navigator.serviceWorker && navigator.serviceWorker.controller)")
+        ctx.set_offline(True)
+        try:
+            page.goto(base + f"/film/{fq}/")
+            page.wait_for_selector(".bar", timeout=10000)
+            page.wait_for_timeout(900)
+            s8 = page.evaluate(UX_SHEET_JS)
+        except Exception as e:
+            s8 = {"open": False, "path": f"error {e.__class__.__name__}", "title": None}
+        ctx.set_offline(False)
+        check(f"{tag}_offline_title_address_via_service_worker",
+              ready == "ready" and controlled and s8["open"] and s8["path"] == f"/film/{fq}/" and (s8["title"] or "").lower() == items["filmSheet"].lower(),
+              f"sw={ready} controlled={controlled} offline: open={s8['open']} path={s8['path']} title={s8.get('title')!r}")
+        ctx.close()
+
+
+def _ux_late(browser, base, eng):
+    """Item 5: at 23:50 with today selected and nothing left today, the theatre (like the
+    cinema) shows the late-day card instead of empty sections; its button selects tomorrow."""
+    clock_2350 = _ux_clock(FIXED_1445 + (9 * 60 + 5) * 60 * 1000)
+    for mode, w, h, phone in [("theatre", 1280, 900, False), ("theatre", 390, 844, True), ("cinema", 1280, 900, False)]:
+        tag = f"ux1_{eng}_late_{mode}_{'phone' if phone else 'desk'}"
+        ctx = _ux_ctx(browser, base, w, h, phone=phone, mode=mode, clock=clock_2350)
+        page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/"))
+        pre = page.evaluate("""() => ({now: NOW_DATE + ' ' + NOW_TIME, today: TODAY, tomorrow: addDays(NOW_DATE, 1), last: LASTDAY,
+            left: S.mode === 'theatre' ? upcomingPerfs(PERFORMANCES.filter(p => p[1] === NOW_DATE)).length
+                                        : SHOWTIMES.filter(r => r[2] === TODAY && r[3].some(t => t >= NOW_TIME)).length})""")
+        if pre["left"]:
+            skip(f"{tag}_card", f"{pre['left']} listings still to come at {pre['now']}")
+            ctx.close()
+            continue
+        if not _ux_tap_sel(page, phone, f'.dspill[data-day="{pre["today"]}"]:not([disabled])'):
+            page.evaluate("(d) => { S.day = d; render(); }", pre["today"])
+        page.wait_for_timeout(700)
+        st = page.evaluate("""() => { const c = document.querySelector('#app main .late-day-card'); const b = c && c.querySelector('button');
+            return {day: S.day, card: !!c, msg: c && c.querySelector('p').textContent, btn: b && b.textContent, btnDay: b && b.dataset.day,
+                    sections: document.querySelectorAll('#app main [data-sectoggle]').length,
+                    first: (() => { const m = document.querySelector('#app main'); const kids = [...m.children].filter(k => !k.classList.contains('phead')); return kids[0] && kids[0].className; })()}; }""")
+        check(f"{tag}_card_bg", st["day"] == pre["today"] and st["card"] and st["msg"] == "Всичко за днес приключи."
+              and st["btn"] == "Виж програмата за утре ›" and st["btnDay"] == pre["tomorrow"] and st["sections"] == 0,
+              f"now={pre['now']} day={st['day']} card={st['card']} msg={st['msg']!r} button={st['btn']!r} -> {st['btnDay']} (tomorrow {pre['tomorrow']}) empty sections shown={st['sections']}")
+        # English
+        page.wait_for_timeout(400)
+        _ux_tap_sel(page, phone, "[data-lang]", scroll=False)
+        page.wait_for_timeout(600)
+        en = page.evaluate("""() => { const c = document.querySelector('#app main .late-day-card'); return c ? [c.querySelector('p').textContent, c.querySelector('button').textContent] : null; }""")
+        check(f"{tag}_card_en", en == ["Nothing more on today.", "See tomorrow's programme ›"], f"EN card={en}")
+        # its button selects tomorrow and the listings come back
+        page.wait_for_timeout(450)
+        _ux_tap_sel(page, phone, "#app main .late-day-card button")
+        page.wait_for_timeout(800)
+        st2 = page.evaluate("""() => ({day: S.day, card: !!document.querySelector('#app main .late-day-card'),
+            cards: document.querySelectorAll('#app main .card').length})""")
+        check(f"{tag}_button_selects_tomorrow", st2["day"] == pre["tomorrow"] and not st2["card"] and st2["cards"] > 0,
+              f"day={st2['day']} card={st2['card']} cards={st2['cards']}")
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    # earlier in the day the theatre's today view lists what is left, with no card
+    ctx = _ux_ctx(browser, base, 1280, 900, mode="theatre")
+    page, errs = _ux_page(ctx, base + "/home/theatre/")
+    left = page.evaluate("upcomingPerfs(PERFORMANCES.filter(p => p[1] === NOW_DATE)).length")
+    page.evaluate("() => { S.day = TODAY; render(); }")
+    page.wait_for_timeout(600)
+    st = page.evaluate("({card: !!document.querySelector('#app main .late-day-card'), cards: document.querySelectorAll('#app main .card').length})")
+    if left:
+        check(f"ux1_{eng}_late_theatre_not_before_the_end", not st["card"] and st["cards"] > 0, f"{left} performances left today: card={st['card']} cards={st['cards']}")
+    else:
+        skip(f"ux1_{eng}_late_theatre_not_before_the_end", "no performance later today at 14:45")
+    ctx.close()
+
+
+UX_VIEW_JS = r"""() => ({path: location.pathname, search: location.search, mode: S.mode,
+    open: (typeof sheetOpen !== 'undefined') && sheetOpen, card: curSheet ? curSheet.kind + ':' + curSheet.id : null,
+    st: history.state, pressed: (document.querySelector('.seg [aria-pressed="true"]') || {dataset: {}}).dataset.switch})"""
+
+
+def _ux_routes(browser, base, eng, items):
+    """Owner request A: the listings' own addresses (/home/ cinema, /home/theatre/ theatre,
+    the bare domain leading to /home/), served as real pages (200, no redirect); the
+    toggle and the logo; Back and Forward through listings and cards; a reload keeps the
+    view (listing and card); a card closes onto the listing it was opened from."""
+    tag = f"ux1_{eng}_route"
+    ctx = _ux_ctx(browser, base, 1280, 800, mode="theatre")      # a saved preference must not win over the address
+    page, errs = _ux_page(ctx, base + "/")
+    v = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_bare_domain_is_home", v["path"] == "/home/" and v["mode"] == "cinema" and v["pressed"] == "cinema",
+          f"/ -> path={v['path']} mode={v['mode']} toggle={v['pressed']}")
+    # fetched from here: WebKit would upgrade the page's own http fetch (upgrade-insecure-requests)
+    _a, _b = (ctx.request.get(base + u, max_redirects=0) for u in ("/home/", "/home/theatre/"))
+    st = [_a.status, _a.status // 100 == 3, _b.status, _b.status // 100 == 3]
+    check(f"{tag}_listing_pages_served_200", st == [200, False, 200, False], f"/home/ and /home/theatre/: {st}")
+    page.wait_for_timeout(400)
+    _ux_tap_sel(page, False, '[data-switch="theatre"]', scroll=False)
+    page.wait_for_timeout(700)
+    v1 = page.evaluate(UX_VIEW_JS)
+    page.go_back(); page.wait_for_timeout(700)
+    v2 = page.evaluate(UX_VIEW_JS)
+    page.go_forward(); page.wait_for_timeout(700)
+    v3 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_toggle_back_forward", v1["path"] == "/home/theatre/" and v1["mode"] == "theatre" and v2["path"] == "/home/"
+          and v2["mode"] == "cinema" and v3["path"] == "/home/theatre/" and v3["mode"] == "theatre" and v3["pressed"] == "theatre",
+          f"toggle: {v1['path']} {v1['mode']} | Back: {v2['path']} {v2['mode']} | Forward: {v3['path']} {v3['mode']}")
+    page.reload(); page.wait_for_selector(".bar"); page.wait_for_timeout(700)
+    v4 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_reload_keeps_theatre", v4["path"] == "/home/theatre/" and v4["mode"] == "theatre", f"after reload: {v4['path']} {v4['mode']}")
+    # a play opened on the theatre listing closes back onto it; Forward opens it again
+    sid = page.evaluate("(document.querySelector('#app .card[data-show]')||{dataset:{}}).dataset.show")
+    sq = _ux_up.quote(sid or "", safe="")
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, f'#app .card[data-show="{sid}"]')
+    page.wait_for_timeout(700)
+    v5 = page.evaluate(UX_VIEW_JS)
+    page.reload(wait_until="commit"); page.wait_for_selector(".bar", timeout=30000); page.wait_for_timeout(1000)
+    v6 = page.evaluate(UX_VIEW_JS)
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, "#scrim .sclose", scroll=False)
+    page.wait_for_timeout(800)
+    v7 = page.evaluate(UX_VIEW_JS)
+    page.go_forward(); page.wait_for_timeout(900)
+    v8 = page.evaluate(UX_VIEW_JS)
+    page.go_back(); page.wait_for_timeout(800)
+    v9 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_card_reload_close_forward_back", bool(sid) and v5["open"] and v5["path"] == f"/show/{sq}/"
+          and v6["open"] and v6["path"] == f"/show/{sq}/" and v6["mode"] == "theatre" and v6["card"] == f"show:{sid}"
+          and not v7["open"] and v7["path"] == "/home/theatre/" and v8["open"] and v8["path"] == f"/show/{sq}/" and v8["card"] == f"show:{sid}"
+          and not v9["open"] and v9["path"] == "/home/theatre/",
+          f"open {v5['path']} | reload: open={v6['open']} {v6['path']} {v6['mode']} | x: {v7['path']} open={v7['open']} | "
+          f"Forward: open={v8['open']} {v8['path']} | Back: open={v9['open']} {v9['path']}")
+    # the logo leads to /home/ (the cinema listing)
+    page.wait_for_timeout(450)
+    _ux_tap_sel(page, False, "[data-home]", scroll=False)
+    page.wait_for_timeout(700)
+    v10 = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_logo_goes_home", v10["path"] == "/home/" and v10["mode"] == "cinema", f"logo: {v10['path']} {v10['mode']}")
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+    # a shared play's address, fresh (no history): its listing is the theatre one
+    ctx = _ux_ctx(browser, base, 1280, 800, mode="cinema")
+    page, errs = _ux_page(ctx, base + f"/show/{_ux_up.quote(items['show'])}/")
+    page.wait_for_timeout(900)
+    v = page.evaluate(UX_VIEW_JS)
+    page.go_back(); page.wait_for_timeout(800)
+    w_ = page.evaluate(UX_VIEW_JS)
+    check(f"{tag}_deep_link_show", v["open"] and v["mode"] == "theatre" and v["path"] == f"/show/{_ux_up.quote(items['show'], safe='')}/"
+          and not w_["open"] and w_["path"] == "/home/theatre/" and w_["mode"] == "theatre",
+          f"open={v['open']} mode={v['mode']} path={v['path']} | Back: open={w_['open']} {w_['path']} {w_['mode']}")
+    ctx.close()
+
+
+def _ux_focus(browser, base, eng):
+    """Owner request B: the hero card is "На фокус" / "In focus", with no personal wording;
+    cinema: the best-ranked film on TMDB's weekly trending list among those showing, else
+    the most screenings x venues, then the rating; theatre: a premiere in the week first,
+    else the most performances."""
+    tag = f"ux1_{eng}_focus"
+    ctx = _ux_ctx(browser, base, 1280, 800)
+    page, errs = _ux_page(ctx, base + "/home/")
+    hero_js = """() => { const h = document.querySelector('#app main .hero'); if (!h) return null;
+        return {eyebrow: h.querySelector('.eyebrow').textContent.trim(), text: h.textContent,
+                id: (h.querySelector('.acts .btn[data-film], .acts .btn[data-show]') || {dataset: {}}).dataset.film
+                    || (h.querySelector('.acts .btn[data-show]') || {dataset: {}}).dataset.show}; }"""
+    # the fallback ranking, computed here from the data (no film carries a rank in a build without TMDB)
+    exp = page.evaluate("""() => { const vis = visibleFilms(); if (!vis.length) return null;
+        const ranked = vis.filter(f => (TMDBART[f.id] || {}).tr > 0);
+        if (ranked.length) return {how: 'trending', id: ranked.sort((a, b) => TMDBART[a.id].tr - TMDBART[b.id].tr)[0].id};
+        const sc = f => { const rows = upcomingRows((SHOWTIMES.filter(r => r[0] === f.id)).filter(r => r[2] >= TODAY && r[2] <= WEEK_END));
+            return rows.reduce((n, r) => n + r[3].length, 0) * new Set(rows.map(r => r[1])).size; };
+        const best = vis.slice().sort((a, b) => sc(b) - sc(a) || (ratingOf(b) || 0) - (ratingOf(a) || 0) || a.id.localeCompare(b.id))[0];
+        return {how: 'screenings x venues', id: best.id, second: vis.find(f => f.id !== best.id && sc(f) > 0 && sc(f) < sc(best)) ? vis.filter(f => f.id !== best.id).sort((a, b) => sc(b) - sc(a))[0].id : null}; }""")
+    h = page.evaluate(hero_js)
+    check(f"{tag}_cinema_bg", bool(h) and h["eyebrow"].startswith("На фокус") and "за теб" not in h["text"].lower() and exp and h["id"] == exp["id"],
+          f"eyebrow={h and h['eyebrow']!r} hero={h and h['id']} expected={exp} ({exp and exp['how']})")
+    # a trending rank wins over the screenings count
+    if exp and exp.get("second"):
+        page.evaluate("(id) => { TMDBART[id] = Object.assign({}, TMDBART[id] || {}, {tr: 3}); render(); }", exp["second"])
+        page.wait_for_timeout(400)
+        h2 = page.evaluate(hero_js)
+        check(f"{tag}_trending_rank_first", h2 and h2["id"] == exp["second"], f"rank 3 given to {exp['second']}: hero={h2 and h2['id']}")
+    else:
+        skip(f"{tag}_trending_rank_first", "no second film with screenings this week")
+    page.wait_for_timeout(400)
+    _ux_tap_sel(page, False, "[data-lang]", scroll=False)
+    page.wait_for_timeout(600)
+    he = page.evaluate(hero_js)
+    check(f"{tag}_cinema_en", bool(he) and he["eyebrow"].lower().startswith("in focus") and "for you" not in he["text"].lower(),
+          f"EN eyebrow={he and he['eyebrow']!r}")
+    ctx.close()
+    # theatre: the most performances this week, and a premiere this week first
+    ctx = _ux_ctx(browser, base, 1280, 800, mode="theatre")
+    page, errs2 = _ux_page(ctx, base + "/home/theatre/")
+    pick = page.evaluate("""() => { const vis = visibleShows(); const n = s => showPerfs(s.id).length;
+        const prem = vis.filter(s => (PREMIERES['show:' + s.id] || []).some(d => d >= NOW_DATE && inRange(d)));
+        const byN = vis.slice().sort((a, b) => n(b) - n(a));
+        return {prem: prem.map(s => s.id), top: byN[0] && byN[0].id, topN: byN[0] && n(byN[0]), last: byN.length && byN[byN.length - 1].id,
+                lastDay: byN.length && (showPerfs(byN[byN.length - 1].id)[0] || [])[1]}; }""")
+    h = page.evaluate(hero_js)
+    want = pick["prem"][0] if pick["prem"] else pick["top"]
+    ok = bool(h) and h["eyebrow"].startswith("На фокус") and (h["id"] in pick["prem"] if pick["prem"] else
+                                                             page.evaluate("(id) => showPerfs(id).length", h["id"]) == pick["topN"])
+    check(f"{tag}_theatre_bg", ok, f"eyebrow={h and h['eyebrow']!r} hero={h and h['id']} premieres this week={pick['prem'][:3]} most performances={pick['top']} ({pick['topN']})")
+    if pick["last"] and pick["last"] != pick["top"]:
+        # the only premiere this week, on the play with the fewest performances
+        page.evaluate("([id, d, prem]) => { prem.forEach(p => { PREMIERES['show:' + p] = []; }); PREMIERES['show:' + id] = [d]; render(); }",
+                      [pick["last"], pick["lastDay"], pick["prem"]])
+        page.wait_for_timeout(400)
+        h3 = page.evaluate(hero_js)
+        check(f"{tag}_theatre_premiere_first", h3 and h3["id"] == pick["last"], f"premiere added for {pick['last']}: hero={h3 and h3['id']}")
+    check(f"{tag}_no_js_errors", not errs and not errs2, f"errors={(errs + errs2)[:3]}")
+    ctx.close()
+
+
+UX_LOCKUP_JS = r"""() => { const b = document.querySelector('.bar .brand'), l = b && b.querySelector('.brand-logo'),
+    s = b && b.querySelector('.brand-sub'), g = document.querySelector('.bar .seg');
+  if (!l || !s || !g) return null;
+  const lr = l.getBoundingClientRect(), sr = s.getBoundingClientRect(), gr = g.getBoundingClientRect(), cs = getComputedStyle(s);
+  return {lw: lr.width, sw: sr.width, vis: cs.display !== 'none' && cs.visibility !== 'hidden' && sr.width > 0 && sr.height > 0,
+          clear: gr.left - Math.max(lr.right, sr.right), font: parseFloat(cs.fontSize),
+          over: document.documentElement.scrollWidth - innerWidth, segq: g.classList.contains('seg-q')}; }"""
+
+
+def _ux_lockup(browser, base, eng):
+    """Owner item C: on desktop (761-1920 px, 20 px steps) the logo and its line are one
+    lockup: the line is always shown, 90-110% of the logo's width, at least 12 px clear
+    of the Кино/Театър toggle, at least 10 px, nothing overflows; search closed and open,
+    BG and EN."""
+    widths = list(range(761, 1921, 20)) + [1920]
+    for lang in ("bg", "en"):
+        ctx = _ux_ctx(browser, base, 761, 900, lang=lang)
+        page, errs = _ux_page(ctx, base + "/home/")
+        for search in (False, True):
+            if search:
+                page.set_viewport_size({"width": 1280, "height": 900})
+                page.wait_for_timeout(200)
+                _ux_tap_sel(page, False, "[data-search-open]", scroll=False)
+                page.wait_for_timeout(500)
+            bad, fonts, n = [], [], 0
+            for w in widths:
+                page.set_viewport_size({"width": w, "height": 900})
+                page.wait_for_timeout(70)
+                # the steady state: the toggle's label collapse (.seg-q) is a 220 ms width
+                # transition, and a jump from 1280 to 761 px measured it half way
+                page.wait_for_function("() => !document.getAnimations().some(a => a.playState === 'running' "
+                                       "&& a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.bar'))",
+                                       timeout=3000)
+                m = page.evaluate(UX_LOCKUP_JS)
+                n += 1
+                if not m:
+                    bad.append(f"{w}: no lockup")
+                    continue
+                fonts.append(m["font"])
+                ratio = m["sw"] / m["lw"] if m["lw"] else 0
+                if not (m["vis"] and 0.9 <= ratio <= 1.1 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
+                    bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']} "
+                               f"font={m['font']:.1f}")
+            state = "search_open" if search else "search_closed"
+            check(f"ux1_{eng}_lockup_{lang}_{state}", not bad and n == len(widths),
+                  f"{n} widths 761-1920; font {min(fonts or [0]):.1f}-{max(fonts or [0]):.1f}px; problems: {bad[:4]}")
+        check(f"ux1_{eng}_lockup_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    # phones keep the centred 12 px line
+    ctx = _ux_ctx(browser, base, 390, 844, phone=True)
+    page, errs = _ux_page(ctx, base + "/home/")
+    ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), r = s.getBoundingClientRect();
+        return [getComputedStyle(s).fontSize, Math.round(r.left + r.width / 2)]; }""")
+    check(f"ux1_{eng}_lockup_phone_unchanged", ph[0] == "12px" and abs(ph[1] - 195) <= 4, f"phone line {ph}")
+    ctx.close()
+
+
+UX_FOOT_JS = r"""(sels) => { const f = document.querySelector(sels[0]); if (!f) return null;
+  const box = sels[1] ? f.querySelector(sels[1]) : f, cs = getComputedStyle(box), fr = box.getBoundingClientRect();
+  const left = fr.left + parseFloat(cs.paddingLeft), width = fr.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const blocks = sels.slice(2).map(s => { const e = f.querySelector(s); if (!e) return [s, null];
+    const r = e.getBoundingClientRect(); return [s, {l: r.left - left, w: r.width - width, sw: e.scrollWidth - e.clientWidth}]; });
+  const nav = f.querySelector(sels[sels.length - 1]);
+  const items = nav ? [...nav.children].map(c => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }) : [];
+  return {width, blocks, items, over: document.documentElement.scrollWidth - innerWidth}; }"""
+
+
+def _ux_footer(browser, base, eng):
+    """Owner item 8: the footer's disclaimer, attribution line and policy links fill the
+    content width (+-2 px) at 375, 768, 1280 and 1920 px and nothing overflows, BG and EN;
+    on a phone the links sit in even columns. The same for the legal pages' footers."""
+    for lang in ("bg", "en"):
+        for w in (375, 768, 1280, 1920):
+            phone = w < 761
+            ctx = _ux_ctx(browser, base, w, 900, phone=phone, lang=lang)
+            page, errs = _ux_page(ctx, base + "/home/")
+            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            page.wait_for_timeout(300)
+            m = page.evaluate(UX_FOOT_JS, ["footer", None, ".legal-line", ".legal-attr", ".legal-nav"])
+            bad = [f"{sel}: {b}" for sel, b in (m or {}).get("blocks", []) if not b or abs(b["l"]) > 2 or abs(b["w"]) > 2 or b["sw"] > 0]
+            ok = bool(m) and not bad and m["over"] <= 0
+            if ok and phone:
+                cols = sorted({x for x, _ in m["items"]})
+                rows = sorted({y for _, y in m["items"]})
+                ok = len(cols) == 2 and len(rows) == 2       # four links: two even columns, two rows
+                if not ok:
+                    bad.append(f"links at {m['items']}")
+            check(f"ux1_{eng}_footer_app_{lang}_{w}", ok, f"content {m and round(m['width'])} px; problems {bad[:3]}; overflow {m and m['over']}")
+            check(f"ux1_{eng}_footer_app_{lang}_{w}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+            rel = "/legal/privacy/" if lang == "bg" else "/legal/en/privacy/"
+            ctx = _ux_ctx(browser, base, w, 900, phone=phone, lang=lang)
+            page, errs = _ux_page(ctx, base + rel, wait_app=False)
+            page.wait_for_selector(".lg-foot", timeout=20000)
+            m = page.evaluate(UX_FOOT_JS, [".lg-foot", ".lg-wrap", ".lg-foot p", ".lg-foot-nav"])
+            bad = [f"{sel}: {b}" for sel, b in (m or {}).get("blocks", []) if not b or abs(b["l"]) > 2 or abs(b["w"]) > 2 or b["sw"] > 0]
+            check(f"ux1_{eng}_footer_legal_{lang}_{w}", bool(m) and not bad and m["over"] <= 0,
+                  f"column {m and round(m['width'])} px; problems {bad[:3]}; overflow {m and m['over']}")
+            ctx.close()
+
+
+def wave_ux1(browser):
+    eng = _hf_engine(browser)
+    ensure_shot_dir("UX1")
+    share_root, tmp = _ux_share_root()
+    srv, base = _ux_server(share_root)
+    try:
+        ctx = _ux_ctx(browser, base, 1280, 800)
+        page, errs = _ux_page(ctx, base + "/")
+        items = _ux_items(page)
+        ctx.close()
+        print(f"  UX1 over {base} ({eng}); items: film={items['film']} show={items['show']} event={items.get('event')}")
+        print("\n=== UX1-1: the filter drawer swipe ===")
+        try:
+            _ux_drawer(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_drawer_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-2: desktop performance budgets ===")
+        if eng == "chromium":
+            try:
+                _ux_perf(browser, base)
+            except Exception as _ex:      # one section crashing must not hide the rest
+                check(f"ux1_{eng}_perf_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        else:
+            skip("ux1_perf", "measured in Chromium (long tasks, CDP)")
+        print("\n=== UX1-3: share pages for link-preview fetchers and browsers ===")
+        try:
+            _ux_share(browser, base, eng, items)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_share_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-4: the address of an open sheet ===")
+        try:
+            _ux_urls(browser, base, eng, items)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_urls_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-5: the theatre late-day card ===")
+        try:
+            _ux_late(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_late_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-6: the listings' own addresses (/home/, /home/theatre/) ===")
+        try:
+            _ux_routes(browser, base, eng, items)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_routes_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-7: the In focus card ===")
+        try:
+            _ux_focus(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_focus_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-8: the logo and its line, one lockup (761-1920 px) ===")
+        try:
+            _ux_lockup(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_lockup_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-9: the footer spans the content width (375-1920 px) ===")
+        try:
+            _ux_footer(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_footer_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+    finally:
+        srv.shutdown()
+        if tmp:
+            _ux_shutil.rmtree(tmp, ignore_errors=True)
 
 
 WAVES = {
@@ -16371,6 +17397,7 @@ WAVES = {
     "LG2": wave_lg2,
     "LG3": wave_lg3,
     "TR1": wave_tr1,
+    "UX1": wave_ux1,
 }
 
 def main():

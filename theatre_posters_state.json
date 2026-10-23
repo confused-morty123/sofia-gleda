@@ -1,0 +1,39 @@
+{
+ "igra-na-kotki": {
+  "first_missing": "2026-10-22",
+  "last_try": "2026-10-22",
+  "link": "https://zadkanala.bg/spektakli/igra-na-kotki",
+  "tries": 1
+ },
+ "insomniya": {
+  "first_missing": "2026-10-22",
+  "last_try": "2026-10-22",
+  "link": "http://theatre.art.bg/kupi-bilet.php?p=85917&id=8018&theatre=14&city=20",
+  "tries": 1
+ },
+ "karnaval": {
+  "first_missing": "2026-10-22",
+  "last_try": "2026-10-22",
+  "link": null,
+  "tries": 1
+ },
+ "poema-za-hlebarkite": {
+  "first_missing": "2026-10-22",
+  "last_try": "2026-10-22",
+  "link": "http://theatre.art.bg/kupi-bilet.php?p=86092&id=8019&theatre=14&city=20",
+  "tries": 1
+ },
+ "razdelenoto-kralstvo": {
+  "first_missing": "2026-10-22",
+  "last_try": "2026-10-22",
+  "link": "https://theatre.art.bg/разделеното-кралство_8090_173_20",
+  "remote_fail": 3,
+  "tries": 1
+ },
+ "vik-ot-istoriyata-ekaterina-karavelova": {
+  "first_missing": "2026-10-22",
+  "last_try": "2026-10-22",
+  "link": "https://www.tba.art.bg/вик-от-историята-екатерина-каравелова___8076",
+  "tries": 1
+ }
+}

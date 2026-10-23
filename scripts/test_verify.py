@@ -698,13 +698,25 @@ check("a page without FESTMARK passes (marks from the listing titles alone)", _f
 import shutil as _shutil
 from PIL import Image as _PIL_Image_tv
 
+sys.path.insert(0, str(ROOT / "scripts"))
+import gen_share_pages as _GSP
+
+
+def _share_html(kind: str, item_id: str, og_image: str = "https://image.tmdb.org/t/p/w500/test.jpg") -> str:
+    """A share page as gen_share_pages.py writes it (the gate checks the real template)."""
+    return _GSP._share_page(kind, item_id, f"Заглавие {item_id}", "", "Описание.", og_image,
+                            _SITE_URL_FOR_TEST, image_w=500, image_h=750)
+
+
 def _make_file_root(with_icons: bool = True,
                     film_ids_ok: list[str] | None = None,
                     film_ids_relative_og: list[str] | None = None,
                     show_ids_ok: list[str] | None = None,
-                    film_dir_exists: bool = True) -> pathlib.Path:
+                    film_dir_exists: bool = True,
+                    film_pages: dict[str, str] | None = None) -> pathlib.Path:
     """Create a temp directory tree with icon and share-page fixtures.
 
+    film_pages: {id: html} written as film/<id>/index.html verbatim (broken pages).
     Returns the path; caller is responsible for cleanup with shutil.rmtree.
     """
     root = pathlib.Path(tempfile.mkdtemp(prefix="sv_test_root_"))
@@ -720,14 +732,7 @@ def _make_file_root(with_icons: bool = True,
         for fid in film_ids_ok:
             p = root / "film" / fid
             p.mkdir(parents=True)
-            _og = f"https://image.tmdb.org/t/p/w500/test.jpg"
-            _url = f"{_SITE_URL_FOR_TEST}/film/{fid}/"
-            (p / "index.html").write_text(
-                f'<html><head>'
-                f'<link rel="canonical" href="{_url}"/>'
-                f'<meta property="og:url" content="{_url}"/>'
-                f'<meta property="og:image" content="{_og}"/>'
-                f'</head></html>', encoding="utf-8")
+            (p / "index.html").write_text(_share_html("film", fid), encoding="utf-8")
     elif film_dir_exists:
         # Create an empty film/ dir so 6c's "directory exists" branch fires
         (root / "film").mkdir(parents=True)
@@ -735,33 +740,20 @@ def _make_file_root(with_icons: bool = True,
         for fid in film_ids_relative_og:
             p = root / "film" / fid
             p.mkdir(parents=True)
-            _url = f"{_SITE_URL_FOR_TEST}/film/{fid}/"
-            (p / "index.html").write_text(
-                f'<html><head>'
-                f'<link rel="canonical" href="{_url}"/>'
-                f'<meta property="og:url" content="{_url}"/>'
-                f'<meta property="og:image" content="/share/share-preview.jpg"/>'
-                f'</head></html>', encoding="utf-8")
+            (p / "index.html").write_text(_share_html("film", fid, "/share/share-preview.jpg"), encoding="utf-8")
     if show_ids_ok:
         for sid in show_ids_ok:
             p = root / "show" / sid
             p.mkdir(parents=True)
-            _og = f"https://image.tmdb.org/t/p/w500/test.jpg"
-            _url = f"{_SITE_URL_FOR_TEST}/show/{sid}/"
-            (p / "index.html").write_text(
-                f'<html><head>'
-                f'<link rel="canonical" href="{_url}"/>'
-                f'<meta property="og:url" content="{_url}"/>'
-                f'<meta property="og:image" content="{_og}"/>'
-                f'</head></html>', encoding="utf-8")
-    # Like gen_share_pages.py + csp.py make them: the redirect script and its CSP meta.
-    for _kind in ("film", "show"):
+            (p / "index.html").write_text(_share_html("show", sid), encoding="utf-8")
+    for fid, page in (film_pages or {}).items():
+        p = root / "film" / fid
+        p.mkdir(parents=True, exist_ok=True)
+        (p / "index.html").write_text(page, encoding="utf-8")
+    # Like csp.py leaves them: the CSP meta over each share page's one script.
+    for _kind in ("film", "show", "event"):
         for _pg in (root / _kind).glob("*/index.html") if (root / _kind).is_dir() else []:
-            _u = f"{_SITE_URL_FOR_TEST}/?{_kind}={_pg.parent.name}"
-            _h = _pg.read_text(encoding="utf-8").replace(
-                "</head>", f'<script>/* SOFIA-SHARE */location.replace("{_u}");</script></head>', 1)
-            _pg.write_text(_csp.stamp(_h.replace("<html><head>", '<html><head><meta charset="utf-8">', 1),
-                                      kind="share"), encoding="utf-8")
+            _pg.write_text(_csp.stamp(_pg.read_text(encoding="utf-8"), kind="share", strict=False), encoding="utf-8")
     (root / "fonts").mkdir(exist_ok=True)
     (root / "fonts" / "fonts.css").write_text("/* test */\n", encoding="utf-8")
     return root
@@ -860,6 +852,44 @@ _p3c_good_rc = _run(_minimal_html(), skip_freshness=True,
                      extra_env={"SOFIA_ROOT": str(_p3c_root_full)})
 _shutil.rmtree(str(_p3c_root_full), ignore_errors=True)
 check("good icons + good share pages passes", _p3c_good_rc == 0)
+
+# 6c (16 Oct 2026): every share page keeps link-preview fetchers on its own tags
+print("\nShare pages: no meta refresh, a bot-aware redirect, the tags, a link")
+_good = _share_html("film", "probe")
+_sp_cases = {
+    "meta refresh": (_good.replace("<script>", '<meta http-equiv="refresh" content="0; url=/?film=probe">\n<script>', 1),
+                     "meta refresh"),
+    "plain redirect": (_good.replace(_GSP.REDIRECT_JS, '/* SOFIA-SHARE */\nlocation.replace("/home/?film=probe");'),
+                       "without skipping link-preview fetchers"),
+    "no redirect": (_good.replace("<script>" + _GSP.REDIRECT_JS + "</script>", ""), "no redirect"),
+    "no og:title": (_good.replace('property="og:title"', 'property="og:x"'), "og:title"),
+    "no twitter:card": (_good.replace('content="summary_large_image"', 'content="summary"'), "twitter:card"),
+    "no fallback link": (_good.replace('href="/home/?film=probe"', 'href="/"'), "without JavaScript"),
+    "relative twitter:image": (_good.replace('name="twitter:image" content="https://', 'name="twitter:image" content="//'),
+                               "twitter:image"),
+}
+for _label, (_page, _word) in _sp_cases.items():
+    _root = _make_file_root(with_icons=True, film_ids_ok=["good-film"], show_ids_ok=["good-show"],
+                            film_pages={"probe": _page})
+    try:
+        _rc, _out = _run_out(_minimal_html(), extra_env={"SOFIA_ROOT": str(_root)})
+        check(f"share page with {_label} fails", _rc != 0 and _word in _out)
+    finally:
+        _shutil.rmtree(str(_root), ignore_errors=True)
+
+# an event page from the generator passes; the generator writes no meta refresh at all
+_root = _make_file_root(with_icons=True, film_ids_ok=["good-film"], show_ids_ok=["good-show"])
+(_root / "event" / "probe-fest").mkdir(parents=True)
+(_root / "event" / "probe-fest" / "index.html").write_text(_csp.stamp(_GSP._event_page(
+    {"id": "probe-fest", "title": "Фестивал", "titleEn": "Festival", "from": "2026-10-17", "to": "2026-10-24",
+     "blurbBg": "Описание."}, {}, {}, {}, {}, {}, {}, {}), kind="share"), encoding="utf-8")
+try:
+    _rc = _run(_minimal_html(), skip_freshness=True, extra_env={"SOFIA_ROOT": str(_root)})
+    check("a generated event share page passes", _rc == 0)
+finally:
+    _shutil.rmtree(str(_root), ignore_errors=True)
+check("the share page template has no meta refresh",
+      "refresh" not in _good.lower() and "facebookexternalhit" in _good and "/?film=probe" in _good)
 
 
 # ---------------------------------------------------------------------------
@@ -1076,6 +1106,13 @@ _rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph))
 check("a leftover {CONTACT_EMAIL} placeholder fails the gate", _rc != 0 and "{CONTACT_EMAIL}" in _out)
 _rc, _out = _lg_run(_lg_page, _lg_root(edit=_ph), owner_ok="1")
 check("a leftover placeholder fails even with SOFIA_OWNER_PENDING_OK=1", _rc != 0 and "{CONTACT_EMAIL}" in _out)
+_gh = lambda r, t: (t.replace("</footer>", '<a href="https://github.com/someone/sofia-gleda/issues">GitHub</a></footer>')
+                    if r == "legal/en/cookies/index.html" else t)
+_rc, _out = _lg_run(_lg_page, _lg_root(edit=_gh))
+check("a GitHub issues link on a legal page fails (no contact channel)", _rc != 0 and "no contact channel" in _out)
+_rc, _out = _lg_run(_lg_page.replace("</body>", '<a href="https://github.com/someone/sofia-gleda">GitHub</a></body>'),
+                    _lg_root())
+check("a GitHub project link in the app fails", _rc != 0 and "no contact channel" in _out)
 _rc, _out = _lg_run(_lg_page, _lg_root(logo=False))
 check("a missing TMDB logo fails the gate", _rc != 0 and "owner input pending" in _out and "TMDB's logo is missing" in _out)
 check("SOFIA_OWNER_PENDING_OK=1 turns the missing TMDB logo into a note",
@@ -1172,7 +1209,10 @@ try:
     _sp.write_text(_csp.META_RE.sub("", _orig), encoding="utf-8")
     _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
     check("a share page without its CSP meta fails", _rc != 0 and "share page(s) fail" in _out)
-    _sp.write_text(_orig.replace("?film=test-film", "?film=other"), encoding="utf-8")
+    # the script is the same on every page now (its target comes from the path, 16 Oct 2026),
+    # so the edit goes into the script itself: its hash no longer matches the policy
+    assert "location.replace(" in _orig
+    _sp.write_text(_orig.replace("location.replace(", "location.assign(", 1), encoding="utf-8")
     _rc, _out = _run_out(_good, extra_env=_sec_env, finish=False)
     check("a share page with a stale hash fails", _rc != 0 and "share page(s) fail" in _out)
     _sp.write_text(_orig, encoding="utf-8")
@@ -1232,6 +1272,47 @@ _rc, _out = _run_out(_tr_stamped.replace("frame-src https://www.youtube-nocookie
                                          "frame-src https://www.youtube-nocookie.com https://www.youtube.com"), finish=False)
 check("a CSP that also allows www.youtube.com frames fails", _rc != 0 and "frame-src" in _out)
 
+# ---------------------------------------------------------------------------
+# 5a: ids are lower-case ASCII slugs; local poster paths pass the browser's rule
+# ---------------------------------------------------------------------------
+print("5a: ASCII ids and loadable poster paths")
+_base5a = _minimal_html()
+_rc, _out = _run_out(_base5a.replace('"id": "show3"', '"id": "showк3"', 1)
+                     .replace('["show3",', '["showк3",'))
+check("a non-ASCII SHOWS id fails 5a ids", _rc != 0 and "5a ids" in _out)
+_rc, _out = _run_out(_base5a.replace("const SHOWART={};", 'const SHOWART={"show1":"posters/show1 x.jpg"};'))
+check("a SHOWART path the JS safeImg rule refuses fails 5a", _rc != 0 and "safeImg" in _out)
+_rc, _out = _run_out(_base5a.replace("const SHOWART={};", 'const SHOWART={"show1":"posters/no-such-file-5a.jpg"};'))
+check("a SHOWART path that is not on disk fails 5a", _rc != 0 and "not on disk" in _out)
+# The gate's copy of the browser rule is the browser's rule, character for character.
+import re as _re5a
+_art = (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")
+_m5a = _re5a.search(r"const safeImg=.*?return /(\^\[[^\n]*?\]\+\$)/\.test\(s\)", _art, _re5a.S)
+_vb = (ROOT / "scripts" / "posterpolicy.py").read_text(encoding="utf-8")
+_m5b = _re5a.search(r'^JS_SAFEIMG_PATH = r"(.*)"$', _vb, _re5a.M)
+check("posterpolicy's JS_SAFEIMG_PATH (used by verify_build 5a/5c) equals the regex in safeImg()",
+      bool(_m5a and _m5b) and _m5a.group(1) == _m5b.group(1))
+
+# ---------------------------------------------------------------------------
+# 5c2: poster coverage of the upcoming shows (counted as the browser does)
+# ---------------------------------------------------------------------------
+print("5c2: poster coverage")
+_cov_shows = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
+              for i in range(120)]
+_cov_perfs = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 4)).isoformat(),
+               ["10:00", "14:00", "18:00", "20:00"][i % 4], "Основна сцена", ""] for i in range(120)]
+_cov_base = (_minimal_html(performances_override=_json.dumps(_cov_perfs))
+             .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows) + ";"))
+_all_art = {f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}PLAKAT.jpg" for i in range(120)}
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"))
+check("every upcoming show with a poster passes and prints POSTER_COVERAGE 120/120",
+      _rc == 0 and '"upcoming": 120' in _out and '"with": 120' in _out)
+_some_art = dict(list(_all_art.items())[:100])
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_some_art) + ";"))
+check("coverage below 90 % (100/120) fails 5c2", _rc != 0 and "below 90 %" in _out)
+_bad_art = dict(_all_art, show5="posters/show5 x.jpg")
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_bad_art) + ";"))
+check("…a path the browser refuses counts as missing", '"with": 119' in _out)
 
 # ---------------------------------------------------------------------------
 # Summary
