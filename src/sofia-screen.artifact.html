@@ -1039,7 +1039,7 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
    are in the first screen instead of under the floating Filters button */
 @media (max-width:760px){ .hero-syn{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden} }
 .p3e-dmon{display:block; font-size:11px; line-height:1; color:var(--fg-3); margin-top:1px}
-.p3e-day[aria-pressed="true"] .p3e-dmon{color:inherit}
+.p3e-day[aria-pressed="true"] .p3e-dmon{color:var(--on-accent)}
 .p3e-pill.ss-src{box-shadow:0 0 0 2px var(--fg)}
 /* venues without listings in the period: dimmed, not struck through (it read as an error) */
 .fchip.off,.fchip:disabled{text-decoration:none}
@@ -3633,8 +3633,9 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const daysHtml=`<div class="p3e-days" role="group" aria-label="${esc(L.times)}" data-p3dayswrap>
     ${dates.map((d,i)=>{
       const{abbr,num}=dayWod(d);
-      const mon=multiMon&&(i===0||d.slice(0,7)!==dates[i-1].slice(0,7))?`<small class="p3e-dmon" aria-hidden="true">${esc((L.monthsShort||[])[parseInt(d.slice(5,7),10)-1]||"")}</small>`:"";
-      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b>${mon}</button>`;
+      const monTxt=multiMon&&(i===0||d.slice(0,7)!==dates[i-1].slice(0,7))?((L.monthsShort||[])[parseInt(d.slice(5,7),10)-1]||""):"";
+      const mon=monTxt?` <small class="p3e-dmon">${esc(monTxt)}</small>`:"";
+      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+(monTxt?" "+monTxt:"")+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b>${mon}</button>`;
     }).join("")}</div>`;
 
   /* build venue list for a given date */
@@ -4113,8 +4114,8 @@ function render(){
   /* lang button — always the rightmost element */
   /* named for the language it switches to, in that language: "English" / "Български" */
   const langBtn=S.lang==="bg"
-    ?`<button class="iconb" data-lang aria-label="English" lang="en">${esc(L.lang)}</button>`
-    :`<button class="iconb" data-lang aria-label="Български" lang="bg">${esc(L.lang)}</button>`;
+    ?`<button class="iconb" data-lang aria-label="EN, English" lang="en">${esc(L.lang)}</button>`
+    :`<button class="iconb" data-lang aria-label="БГ, Български" lang="bg">${esc(L.lang)}</button>`;
   /* mobile search open row — always rendered so the animation transition fires;
      Item 2: .open class added immediately after paint via requestAnimationFrame */
   /* .sr-visible keeps display:block so animation works when searchOpen=true after render() */
