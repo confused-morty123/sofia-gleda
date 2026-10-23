@@ -787,16 +787,6 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     background:var(--gild);margin-right:5px;vertical-align:1px}
   .p3e-prelim-line{color:#C9A54A}
   .p3e-pills{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;justify-content:flex-start;min-width:0}
-  /* Pill styling for P3E */
-  .p3e-pill{font-family:Oswald,sans-serif;font-weight:500;font-size:17px;
-    font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;
-    background:var(--ink-4);color:var(--fg);border:1px solid transparent;
-    cursor:pointer;display:inline-block;min-height:44px;min-width:44px;
-    display:inline-flex;align-items:center;justify-content:center;
-    transition:border-color .15s,color .15s;text-decoration:none;line-height:1}
-  .p3e-pill:hover,.p3e-pill:focus-visible{border-color:var(--fg-2)}
-  .p3e-pill.prelim{background:transparent;border:1px dashed rgba(217,178,60,.65)}
-  .p3e-pill.prelim:hover,.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}
   .p3e-prelim-fn{font-size:11.5px;color:var(--fg-3);margin:10px 4px 0;line-height:1.4}
   /* Desktop grid hidden on phone */
   .p3e-grid-wrap{display:none}
@@ -805,6 +795,17 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .buybox{display:none}
   .buybox.evbox{display:block}
 }
+/* The time pill on every width (C3): these rules sat inside the phone query, so the desktop
+   week grid showed bare text times and lost the preliminary (dashed) marking entirely. */
+.p3e-pill{font-family:Oswald,sans-serif;font-weight:500;font-size:17px;
+  font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;
+  background:var(--ink-4);color:var(--fg);border:1px solid transparent;
+  cursor:pointer;min-height:44px;min-width:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:border-color .15s,color .15s;text-decoration:none;line-height:1}
+.p3e-pill:hover,.p3e-pill:focus-visible{border-color:var(--fg-2)}
+.p3e-pill.prelim{background:transparent;border:1px dashed rgba(217,178,60,.65)}
+.p3e-pill.prelim:hover,.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}
 /* ===================== P3E: week grid (desktop) ===================== */
 @media(min-width:761px){
   /* Day picker hidden on desktop */
@@ -828,12 +829,12 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-gt th{font-weight:400;color:var(--fg-3);padding:0 0 10px;text-align:center;white-space:nowrap}
   .p3e-gt th b{display:block;font-family:Oswald,sans-serif;font-weight:500;font-size:17px;color:var(--fg)}
   .p3e-gt td{padding:8px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:center;vertical-align:middle}
-  .p3e-gt td.p3e-vcol{text-align:left;font-weight:500;width:170px;min-width:140px;
+  .p3e-gt td.p3e-vcol,.p3e-gt th.p3e-vcol{text-align:left;font-weight:500;width:170px;min-width:140px;
     position:sticky;left:0;background:var(--ink-3);z-index:1;overflow-wrap:anywhere}
   /* (anywhere: a name with no break in it wraps inside the column instead of widening the
      table until the times are off the sheet; test_security's hostile names found it) */
-  .p3e-gt td.p3e-vcol small{display:block;font-weight:400;color:var(--fg-3);font-size:12px;margin-top:1px}
-  .p3e-gt .p3e-pill{font-size:14px;padding:5px 10px;min-height:36px}
+  .p3e-gt td.p3e-vcol small,.p3e-gt th.p3e-vcol small{display:block;font-weight:400;color:var(--fg-3);font-size:12px;margin-top:1px}
+  .p3e-gt .p3e-pill{font-size:15px;padding:5px 10px;min-height:36px;margin:2px 0}
   .p3e-gt-fn{font-size:11.5px;color:var(--fg-3);margin:8px 4px 0;line-height:1.4}
 }
 /* ===================== P3E: screening sheet ===================== */
@@ -1026,6 +1027,16 @@ footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
 /* ===== Design phase (notes/qa/DESIGN_A11Y_REPORT.md, owner-approved 2026-10-23) =====
    The last stylesheet on the page, so its rules win over the older blocks above without
    !important where specificity allows. Grouped by the report's implementation steps. */
+
+/* visually hidden, read by screen readers */
+.sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
+  clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
+
+/* ---- step 6: week grid (C3, M15) ---- */
+.p3e-gt th.p3e-vcol{text-align:left; font-weight:500; color:var(--fg); white-space:normal; padding:8px 4px;
+  border-top:1px solid rgba(255,255,255,.07); vertical-align:middle}
+.p3e-gt th.p3e-vcol small{display:block; font-weight:400; color:var(--fg-3); font-size:12px; margin-top:1px}
+@media (pointer:coarse){ .p3e-gt .p3e-pill{min-height:44px} }
 
 /* ---- step 5: search field (I6, I11) ---- */
 /* one clear button: the engine's own cancel glyph doubled the app's ✕ (WebKit and Chromium) */
@@ -3492,12 +3503,12 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
 
   const headCell=d=>{
     const{abbr,num}=dayAbbrLong(d);
-    return`<th data-date="${esc(d)}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
+    return`<th scope="col" data-date="${esc(d)}" aria-label="${esc(fmtDayDow(d))}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
   };
   const rowFor=(vid,pd)=>{
     const v=venueMap(vid)||{};
     const price=v.price||"";
-    const vcell=`<td class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</td>`;
+    const vcell=`<th scope="row" class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</th>`;
     const dayCells=pd.map(d=>{
       const rr=gridMap[vid]&&gridMap[vid][d];
       if(!rr||!rr.times.length)return`<td></td>`;
@@ -3512,8 +3523,9 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   };
   /* the venues with at least one time on a page's dates */
   const venuesOn=pd=>venuesSorted.filter(vid=>pd.some(d=>{const rr=gridMap[vid]&&gridMap[vid][d];return rr&&rr.times.length;}));
-  const tables=pages.map((pd,i)=>`<table class="p3e-gt p3e-gpage" role="table" data-gpage="${i}" data-glabel="${esc(pageLabel(pd))}"${i===cur?"":` aria-hidden="true"`}>
-        <thead><tr><th></th>${pd.map(headCell).join("")}</tr></thead>
+  const pagePrelim=pd=>pd.some(d=>venuesSorted.some(vid=>{const rr=gridMap[vid]&&gridMap[vid][d];return rr&&rr.times.length&&isP(vid,d);}));
+  const tables=pages.map((pd,i)=>`<table class="p3e-gt p3e-gpage" role="table" data-gpage="${i}" data-glabel="${esc(pageLabel(pd))}"${pagePrelim(pd)?' data-gprelim="1"':""}${i===cur?"":` aria-hidden="true"`}>
+        <thead><tr><th scope="col"><span class="sg-sr">${esc(itemKind==="show"?L.venue:(L.cinemaW||(S.lang==="bg"?"Кино":"Cinema")))}</span></th>${pd.map(headCell).join("")}</tr></thead>
         <tbody>${venuesOn(pd).map(vid=>rowFor(vid,pd)).join("")}</tbody>
       </table>`).join("");
   const GT=GRID_T[S.lang]||GRID_T.bg;
@@ -3528,7 +3540,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       ${pager}
       <div class="p3e-gpages">${tables}</div>
     </div>
-    ${anyPrelim?`<p class="p3e-gt-fn">${esc(L.ssDashedFnT)}</p>`:""}
+    ${anyPrelim?`<p class="p3e-gt-fn"${pagePrelim(pages[cur])?"":" hidden"}>${esc(L.ssDashedFnT)}</p>`:""}
   </div>`;
 
   return daysHtml+grpHtml+fnHtml+gridHtml;
@@ -5961,6 +5973,8 @@ document.addEventListener("click",e=>{
       else tb.setAttribute("aria-hidden","true");
     });
     const rg=pager.querySelector(".p3e-grange");if(rg)rg.textContent=label;
+    const gfn=box.parentElement&&box.parentElement.querySelector(".p3e-gt-fn");
+    if(gfn){const ct=box.querySelector('.p3e-gpage[data-gpage="'+cur+'"]');gfn.hidden=!(ct&&ct.dataset.gprelim);}
     const [prev,next]=pager.querySelectorAll("[data-gnav]");
     prev.disabled=cur===0;next.disabled=cur===n-1;
     /* keyboard: keep focus on the pager when the pressed arrow turns disabled at an end */
