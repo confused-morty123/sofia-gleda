@@ -42,7 +42,7 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 175/229 ok, 54 missing IMDb ratings"
+  "message": "OMDb: 170/223 ok, 53 missing IMDb ratings"
  },
  {
   "level": "ok",

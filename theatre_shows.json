@@ -5740,5 +5740,23 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "poletat-na-kartitsata": {
+  "id": "poletat-na-kartitsata",
+  "title": "Полетът на къртицата",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
  }
 }
