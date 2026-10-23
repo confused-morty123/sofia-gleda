@@ -943,7 +943,10 @@
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8574O2R.jpg"
  },
  "bts-world-tour-arirang-in-buenos-aires-live-viewing": {
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8443O2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8443O2R.jpg",
+  "synBg": "Това е първият концерт на корейската група в Южна Америка, който ще бъде излъчен на живо в кината.",
+  "src": "https://programata.bg/kino/filmi/bts-world-tour-arirang-in-buenos-aires-live-viewing/",
+  "pv": 5
  },
  "hybe-cine-fest-2026-tomorrow-x-together-world-tour-act-tomor": {
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8573O2R.jpg"
@@ -952,7 +955,13 @@
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8575O2R.jpg"
  },
  "ozzy-black-sabbath-back-to-the-beginning": {
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8560O2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8560O2R.jpg",
+  "synBg": "OZZY & BLACK SABBATH: BACK TO THE BEGINNING документира исторически момент в музиката: последното прощално изпълнение на Ози Озбърн пред неговите фенове на стадион Villa Park в родния му град Бирмингам — заснето само 17 дни преди внезапната му кончина. Филмът представя този незабравим ден чрез изпълнения на Ози, Black Sabbath и някои от най-влиятелните имена в рок музиката, както и чрез личните спомени и размисли на звездните музиканти, които са били вдъхновени от тях. Зрителите ще видят и ексклузивни кадри зад кулисите, разкриващи как е протекъл самият ден. Това е историческо и интимно прощаване с Ози и с групата, която завинаги промени музиката.",
+  "genres": [
+   "Документален"
+  ],
+  "src": "https://programata.bg/kino/filmi/ozzy-black-sabbath-back-to-the-beginning/",
+  "pv": 5
  },
  "hybe-cine-fest-2026-seventeen-world-tour-new": {
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8572O2R.jpg"
@@ -1092,7 +1101,9 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/dnevnikat-na-edna-kamerierka5.jpg",
   "fsrc": "https://www.cinelibri.com/dnevnikyt-na-edna-kamerierka/",
   "title_bg": "Дневникът на една камериерка",
-  "title_en": "The Diary of a Chambermaid"
+  "title_en": "The Diary of a Chambermaid",
+  "src": "https://www.ndk.bg/en/event/dnevnikiet-na-edna-kamerierka-sinelibri",
+  "pv": 5
  },
  "edna-istoriya": {
   "synBg": "Привидно стабилната връзка на Ерика и Мауро се разпада, когато дъщеря им заминава за колеж. Изправени пред своите незараснали рани и забравени мечти, те се впускат в тиха борба да преоткрият себе си – като автономни личности и като двойка. Същинската тема на този универсален в посланията си филм е не толкова кризата на един брак, колкото кризата на личността. Въпросът „Какво остава от нас, когато престанем да живеем само за другите?“ може да бъде отнесен към всеки зрител над определена възраст. „Една история“ е режисьорски дебют на актрисата Анна Фолиета, известна с ролите си в „Перфектни непознати“ на Паоло Дженовезе и „Ако животът ти сервира лимони“ на Чиро Д‘Емилио.",
@@ -1166,7 +1177,9 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/kyrvavata-grafinya5.jpg",
   "fsrc": "https://www.cinelibri.com/kyrvavata-grafinya/",
   "title_bg": "Кървавата графиня",
-  "title_en": "The Blood Countess"
+  "title_en": "The Blood Countess",
+  "src": "https://www.ndk.bg/en/event/kiervavata-grafinia-sinelibri",
+  "pv": 5
  },
  "kasometrazhen-konkurs": {
   "synBg": "Официална церемония по награждаване на лауреатите от конкурса за късометражно кино. По традиция победителят ще получи диплом, статуетка и финансова награда от TatraTea. След церемонията ще бъдат излъчени всички селектирани и отличени филми.",
@@ -1765,9 +1778,14 @@
   "pv": 5
  },
  "skoti": {
-  "src": "https://vlaikovacinema.com/screening/%d1%81%d0%ba%d0%be%d1%82%d0%b8/",
+  "src": "https://programata.bg/kino/filmi/skoti/",
   "pv": 5,
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8579D2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8579D2R.jpg",
+  "synBg": "Скоти е уличен котарак, който е научил най-важното правило на улицата – да оцелява сам. След като губи майка си в пожар, той се страхува от огъня, от хората и от всичко, което може да му отнеме малкото, което му е останало – стария опожарен куфар, който нарича свой дом.",
+  "dir": "Мохамад Пирзади",
+  "genres": [
+   "Анимация"
+  ]
  },
  "razum-i-chuvstva-sinelibri": {
   "src": "https://www.ndk.bg/en/event/razum-i-cuvstva-sinelibri",
@@ -1803,5 +1821,39 @@
   "src": "https://www.ndk.bg/en/event/kletnicite-sinelibri",
   "pv": 5,
   "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38476/9155-preview-20261021-072041_resize1000x1000.jpg?v=1792568736"
+ },
+ "mozhesh-da-vidish-vsichko": {
+  "title_bg": "Можеш да видиш всичко",
+  "country": "САЩ",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/mozhesh-da-vidish-vsichko-3700.html"
+ },
+ "kleyfeys": {
+  "synBg": "Зашеметяващият успех на Мат Хейгън, който от обикновен хлапак от улиците на Готъм се превръща в холивудска звезда, е помрачен, след като местен криминален бос обезобразява жестоко лицето му. Изоставен от всички и останал без нищо, Мат открива експериментално лечение, чрез което да възвърне предишния си вид. То обаче най-неочаквано променя възприятията му за реалността около него и го изпраща на саморазрушителен път в търсене на отмъщение.",
+  "dir": "Джеймс Уоткинс",
+  "cast": "Том Рийс Харис, Наоми Aки, Дейвид Денчик, Макс Мингела и Еди Марсан",
+  "genres": [
+   "Екшън",
+   "Трилър",
+   "Хорър"
+  ],
+  "src": "https://programata.bg/kino/filmi/klejfejs/",
+  "pv": 5
+ },
+ "yarostta-na-svobodata": {
+  "synBg": "Докато в Унгария един малък народ, оставен сам на себе си, води борба за свободата си срещу могъщия Съветски съюз, на Олимпийските игри в Мелбърн през 1956 г. съветският и унгарският национален отбор по водна топка се изправят един срещу друг в басейна. Спортистите, които се намират там, макар и да са приблизително запознати със случващото се у дома, не знаят нищо за своите близки, приятели и хората, които са оставили в Унгария.",
+  "dir": "Колин К. Грей, Меган Рейни",
+  "cast": "Виктор Агеев, Янош Бюк, Джеймс Грийн, Дежьо Дярмати, Ищван Хевеши",
+  "src": "https://programata.bg/kino/filmi/yarostta-na-svobodata/",
+  "pv": 5
+ },
+ "inspektorat-i-noshtta": {
+  "synBg": "Криминален инспектор разследва случай на отравяне с цианкалий. Жертвата Маринов, човек с тъмно минало и съмнителен морал, е намерен мъртъв.",
+  "src": "https://programata.bg/kino/filmi/inspektort-i-noshta/",
+  "pv": 5
+ },
+ "a-story-sinelibri": {
+  "src": "https://www.ndk.bg/en/event/edna-istoriia-sinelibri",
+  "pv": 5,
+  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38477/9169-preview-20261021-072119_resize1000x1000.jpg?v=1792568736"
  }
 }

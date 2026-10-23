@@ -2956,5 +2956,63 @@
    "#5F2745"
   ],
   "source": "lumiere"
+ },
+ "zvyarat": {
+  "id": "zvyarat",
+  "bg": "Звярът",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "arena-mega"
+ },
+ "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": {
+  "id": "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota",
+  "bg": "Безсмъртният и красавицата 2: Еликсир на живота",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "arena-mega"
+ },
+ "topki": {
+  "id": "topki",
+  "bg": "Топки",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "arena-mega"
+ },
+ "everest-drugata-strana": {
+  "id": "everest-drugata-strana",
+  "bg": "Еверест: Другата страна",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 110
+ },
+ "puk": {
+  "id": "puk",
+  "bg": "ПУК",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "vlaikova"
  }
 }

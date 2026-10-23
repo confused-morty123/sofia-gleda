@@ -17,27 +17,7 @@
  {
   "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 36 screenings are preliminary, from programata.bg"
- },
- {
-  "level": "warning",
-  "venue": "vlaikova",
-  "message": "official source unreachable (Влайкова: no dated grid parsed); last read 2026-10-21, 1 day ago — 41 screenings kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
-  "venue": "g8",
-  "message": "official source unreachable (G8: no 'Седмична програма' week range); last read 2026-10-21, 1 day ago — 78 screenings kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
-  "venue": "vazrazhdane",
-  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-10-21, 1 day ago — 63 performances kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
-  "venue": "toplo",
-  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-10-21, 1 day ago — 71 performances kept and shown as preliminary (removed after 14 days)"
+  "message": "no official programme: all 259 screenings are preliminary, from programata.bg"
  },
  {
   "level": "warning",
@@ -56,22 +36,17 @@
  },
  {
   "level": "warning",
-  "venue": "iam",
-  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-10-21, 1 day ago — 8 performances kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 30 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 29 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 173/227 ok, 54 missing IMDb ratings"
+  "message": "OMDb: 175/229 ok, 54 missing IMDb ratings"
  },
  {
   "level": "ok",
   "venue": "theatre-posters",
-  "message": "theatre posters: 494/500 upcoming shows have a poster; recently missing: igra-na-kotki, insomniya, karnaval, poema-za-hlebarkite, razdelenoto-kralstvo, vik-ot-istoriyata-ekaterina-karavelova"
+  "message": "theatre posters: 496/502 upcoming shows have a poster; recently missing: igra-na-kotki, insomniya, karnaval, poema-za-hlebarkite, razdelenoto-kralstvo, vik-ot-istoriyata-ekaterina-karavelova"
  }
 ]
