@@ -3860,6 +3860,9 @@ function render(){
   _pageGen++;_refreshLater=null;
   document.querySelectorAll(".sg-probe").forEach(p=>p.remove());
   document.documentElement.setAttribute("data-surface",S.mode);
+  /* the page language follows the BG/EN switch (WCAG 3.1.1): screen readers pick their
+     voice and pronunciation from it, and hyphenation and translation read it too */
+  document.documentElement.lang=S.lang;
   const sr=S.q.trim().length>=2?searchAll(S.q):null;
   const isMob=window.innerWidth<=760;
   /* New SVG icons: Кино = classic movie camera; Театър = comedy/tragedy mask */
@@ -3876,7 +3879,10 @@ function render(){
   const magSVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
   const searchIconBtn=`<button class="iconb search-icon-btn${S.searchOpen?" expanded":""}" data-search-open aria-expanded="${S.searchOpen}" aria-label="${esc(searchAriaLabel)}">${magSVG}</button>`;
   /* lang button — always the rightmost element */
-  const langBtn=`<button class="iconb" data-lang>${esc(L.lang)}</button>`;
+  /* named for the language it switches to, in that language: "English" / "Български" */
+  const langBtn=S.lang==="bg"
+    ?`<button class="iconb" data-lang aria-label="English" lang="en">${esc(L.lang)}</button>`
+    :`<button class="iconb" data-lang aria-label="Български" lang="bg">${esc(L.lang)}</button>`;
   /* mobile search open row — always rendered so the animation transition fires;
      Item 2: .open class added immediately after paint via requestAnimationFrame */
   /* .sr-visible keeps display:block so animation works when searchOpen=true after render() */
@@ -5864,7 +5870,12 @@ document.addEventListener("click",e=>{
   const ofv=q("[data-only-fav]");
   if(ofv){S.onlyFav=!S.onlyFav;S.fVenues=[];save();(S.drawer?renderKeepDrawer():render());return;}
   if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];S.day="week";S.rFrom=S.rTo=null;(S.drawer?renderKeepDrawer():render());return;}
-  if(q("[data-lang]")){S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();return;}
+  if(q("[data-lang]")){
+    /* the header is rebuilt: focus goes back to the new language button, not to <body> */
+    const hadFocus=e.detail===0||document.activeElement===q("[data-lang]");
+    S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();
+    if(hadFocus){const nb=document.querySelector("header [data-lang]");if(nb){try{nb.focus({preventScroll:true});}catch(err){}}}
+    return;}
   /* collapsible section toggle — animate in-place (Item 1), fall back to render if section not in DOM */
   const st2=q("[data-sectoggle]");
   if(st2){
