@@ -9,17 +9,27 @@
 :root{
   --ink:#0C0A0F; --ink-2:#141018; --ink-3:#1C1622; --ink-4:#28202F;
   --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.17);
-  --fg:#F4EFF6; --fg-2:#B6ABBC; --fg-3:#7E7386;
+  /* --fg-3 was #7E7386 (3.5-4.4:1, below WCAG AA on every surface): #958A9C keeps the hue
+     and the step below --fg-2, at 6.0:1 on ink, 5.7 on ink-2, 5.4 on ink-3, 4.8 on ink-4 */
+  --fg:#F4EFF6; --fg-1:var(--fg); --fg-2:#B6ABBC; --fg-3:#958A9C;
   --crimson:#E0163A; --gild:#D9B23C;
   --accent:var(--crimson); --on-accent:#fff;
+  /* the accent as TEXT or a thin outline on ink: crimson #E0163A is only 3.7-4.1:1 there;
+     #FF3B5C is 5.1-5.7:1. Fills behind white text keep --accent (white on it 4.8:1). */
+  --accent-text:#FF3B5C;
   --shadow:0 20px 48px rgba(0,0,0,.55);
   --r:12px; --r-lg:20px;
   --motion-dur-sm:160ms; --motion-dur-md:380ms;
   --motion-ease-spring:cubic-bezier(.34,1.48,.64,1);
   --motion-ease-out:cubic-bezier(.25,.46,.45,.94);
+  /* design phase: one sheet curve (iOS-like, no overshoot), one standard curve */
+  --ease-sheet:cubic-bezier(.32,.72,0,1); --ease-std:cubic-bezier(.2,0,0,1);
+  --dur-press:90ms; --dur-fade:200ms; --dur-out:280ms; --dur-in:420ms;
+  /* type scale (phones; desktop body stays 15): nothing on screen below --t-min */
+  --t-xl:34px; --t-l:28px; --t-m:22px; --t-body:16px; --t-sub:15px; --t-fn:13px; --t-cap:12px; --t-min:11px;
   color-scheme:dark;
 }
-:root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; }
+:root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; --accent-text:var(--gild); }
 /* Dark mode is forced — there is no light theme. The former
    `@media (prefers-color-scheme: light)` and `:root[data-theme="light"]` blocks
    were removed so a device set to light does not recolour the app; `color-scheme:dark`
@@ -1012,8 +1022,20 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
   color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
 footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
 </style>
+<style id="design-css">
+/* ===== Design phase (notes/qa/DESIGN_A11Y_REPORT.md, owner-approved 2026-10-23) =====
+   The last stylesheet on the page, so its rules win over the older blocks above without
+   !important where specificity allows. Grouped by the report's implementation steps. */
 
-<div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
+/* ---- step 1: contrast (C4) ---- */
+/* "днес" on the selected (accent) day pill: at 80% opacity it was 3.5:1 on crimson */
+.dspill .ds-today{opacity:1}
+/* the next-week label in the day strip: a plain label (it was a dimmed, dashed fake pill at 3.4:1) */
+.ds-next{flex:0 0 auto; align-self:center; font-size:12px; color:var(--fg-3); white-space:nowrap; padding-inline:2px}
+.search input::placeholder{color:var(--fg-3)}
+</style>
+
+<div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">
   <div style="font:600 13px/1.4 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#E0163A">Sofia Gleda</div>
   <div style="margin-top:10px">Зареждане на програмата…</div>
   <noscript><p style="margin-top:22px">Програмата има нужда от JavaScript.
@@ -2283,7 +2305,7 @@ function buildDayStrip(){
       addedDivider=true;
       pills.push(`<span class="dspill-divider" aria-hidden="true"></span>`);
       const nextLabel=S.lang==="bg"?"Следващата седмица":"Next week";
-      pills.push(`<span class="dspill" style="opacity:.55;pointer-events:none;border-style:dashed;font-size:11px">${esc(nextLabel)}</span>`);
+      pills.push(`<span class="ds-next">${esc(nextLabel)}</span>`);
     }
     const active=S.day===d;
     const hasSc=hasData.has(d);
