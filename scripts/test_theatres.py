@@ -703,6 +703,20 @@ with _tf_r.TemporaryDirectory() as _d:
           _GSP.REDIRECT_JS in _txt), (False, True))
     check("…and its link opens ?show=<new id>", 'href="/home/theatre/?show=skapernikat"' in _txt, True)
 check("gen_share_pages SAFE_ID refuses a non-ASCII id", bool(_GSP.SAFE_ID.fullmatch("skaperniкat")), False)
+# a film merged into the film it duplicated (film_merges.json): film/<old>/ is the
+# kept film's share page, the app maps the old id through FILM_REDIRECT
+with _tf_r.TemporaryDirectory() as _d:
+    _done, _bad = _GSP.write_redirects(
+        _d, [{"id": "hroniki", "bg": "Хроники за неудобната истина", "en": ""}], {"neudobnata-istina": "hroniki"},
+        lambda i: (f"https://sofiagleda.com/posters/{i}.jpg", None, None), kind="film")
+    _pg = (pathlib.Path(_d) / "film" / "neudobnata-istina" / "index.html")
+    _txt = _pg.read_text(encoding="utf-8") if _pg.exists() else ""
+    check("gen_share_pages: a merged film's old page exists", ([p.parent.name for p in _done], _bad),
+          (["neudobnata-istina"], []))
+    check("…its og:url, title and link are the kept film's",
+          ('property="og:url" content="https://sofiagleda.com/film/hroniki/"' in _txt,
+           "<title>Хроники за неудобната истина | Sofia Gleda</title>" in _txt,
+           'href="/home/?film=hroniki"' in _txt, _GSP.REDIRECT_JS in _txt), (True, True, True, True))
 check("the same title at ANOTHER theatre is not that show", ix.resolve("Трите прасенца", "mladezhki"), (None, "unmatched"))
 check("…but it is at its own theatre", ix.resolve("ТРИТЕ ПРАСЕНЦА", "vazrazhdane")[0], "prasenca-vaz")
 check("a sequel number keeps productions apart", ix.resolve("Отчаяни съпрузи", "satira")[0], "suprugi")

@@ -10586,6 +10586,46 @@ def wave_p3c(browser):
     save_shot(page4, wave, "p3c_4_unlisted_toast")
     ctx4.close()
 
+    # ── P3C-5: ?film=<merged-away id> opens the film it was merged into ──────
+    # film_merges.json -> FILM_REDIRECT: a link shared before the merge (Cine
+    # Grand's /film/neudobnata-istina/) reaches the one card of that film.
+    print("\n=== P3C-5: ?film=<merged-away id> opens the kept film ===")
+    ctx5, page5, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    page5.wait_for_timeout(300)
+    pair = page5.evaluate("""() => {
+        const r = (typeof FILM_REDIRECT === "object" && FILM_REDIRECT) || {};
+        for (const k of Object.keys(r)) if (filmById[r[k]] && !filmById[k]) return [k, r[k]];
+        return null;
+    }""")
+    ctx5.close()
+    if not pair:
+        skip("p3c_5_merged_film_opens_kept", "no merged film id in this data (FILM_REDIRECT empty)")
+    else:
+        ctx5 = browser.new_context(viewport={"width": 390, "height": 844},
+                                   timezone_id="Europe/Sofia", locale="bg-BG")
+        ctx5.add_init_script(CLOCK)
+        ctx5.add_init_script("""
+        try {
+          localStorage.setItem('sofia-screen-v2',
+            JSON.stringify({prefs:{track:'both',genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'}));
+        } catch(e) {}
+        """)
+        page5 = ctx5.new_page()
+        page5.on("pageerror", lambda e: None)
+        page5.goto(HTML + f"?film={pair[0]}")
+        page5.wait_for_selector(".bar", timeout=20000)
+        page5.wait_for_timeout(800)
+        got = page5.evaluate("""() => {
+            const s = document.querySelector(".sheet");
+            const vis = !!s && getComputedStyle(s).display !== "none"
+                        && getComputedStyle(s).visibility !== "hidden";
+            return {vis, id: (typeof curSheet === "object" && curSheet) ? curSheet.id : null};
+        }""")
+        check("p3c_5_merged_film_opens_kept", got.get("vis") and got.get("id") == pair[1],
+              f"?film={pair[0]} -> sheet visible={got.get('vis')} id={got.get('id')} (want {pair[1]})")
+        save_shot(page5, wave, "p3c_5_merged_film")
+        ctx5.close()
+
 
 # Registry and main
 # ============================================================================

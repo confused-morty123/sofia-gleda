@@ -80,6 +80,15 @@ def main():
     src = HTML.read_text(encoding="utf-8")
     start, end, literal = extract_array(src, "FILMS")
     films = json.loads(literal)                      # FILMS is strict JSON
+    # A minted film merged into the film it duplicated (film_merges.json) is never
+    # listed again: its showtimes are the kept film's, its id a FILM_REDIRECT.
+    try:
+        from film_identity import load_merges
+        merged = set(load_merges())
+    except Exception:
+        merged = set()
+    dropped = [f.get("id") for f in films if f.get("id") in merged and f.get("id") in cinema]
+    films = [f for f in films if not (f.get("id") in merged and f.get("id") in cinema)]
     have = {f.get("id") for f in films}
 
     # Build a lookup of synthesised film ids for the genre-patch pass.
@@ -87,7 +96,7 @@ def main():
 
     added = 0
     for fid, rec in cinema.items():
-        if fid in have:
+        if fid in have or fid in merged:
             continue
         # Fill empty genres from film_info.json when inserting a new film.
         if not rec.get("genres") and fid in filminfo:
@@ -133,7 +142,9 @@ def main():
                 entry["en"] = fen.strip()
                 details += 1
 
-    if not added and not patched and not details:
+    if dropped:
+        print(f"left out {len(dropped)} merged-away film(s): {', '.join(dropped)}")
+    if not added and not patched and not details and not dropped:
         print(f"FILMS already carries all {len(cinema)} arthouse films — no change")
         return
 

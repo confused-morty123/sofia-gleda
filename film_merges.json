@@ -1,0 +1,110 @@
+{
+ "_about": "Minted film records merged into the film they duplicate, written by scripts/scrape_programs.py (film_identity.detect_duplicates). 'merged': dropped id -> {into: kept id, rule, reason, since, record: the dropped record}. The dropped record's titles keep resolving to the kept film, the page maps the old id through FILM_REDIRECT and film/<old id>/ stays a share page of the kept film, so links already shared keep working. To undo a wrong merge, list the pair under 'distinct' in scripts/film_aliases.json: the next run restores the record and never merges the pair again.",
+ "merged": {
+  "haos-v-komedi-fransez-sinelibri": {
+   "into": "haos-v-komedi-fransez",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('хаос в комеди франсез')",
+   "since": "2026-10-23",
+   "record": {
+    "id": "haos-v-komedi-fransez-sinelibri",
+    "bg": "ХАОС В КОМЕДИ ФРАНСЕЗ - СИНЕЛИБРИ",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#1B3330",
+     "#275F57"
+    ],
+    "source": "lumiere"
+   }
+  },
+  "kukla-sinelibri": {
+   "into": "sinelibri-2026-kukla",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('кукла')",
+   "since": "2026-10-23",
+   "record": {
+    "id": "kukla-sinelibri",
+    "bg": "КУКЛА - СИНЕЛИБРИ",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "lumiere"
+   }
+  },
+  "neudobnata-istina": {
+   "into": "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno",
+   "rule": "same-id",
+   "reason": "the same IMDb id tt47819464",
+   "since": "2026-10-23",
+   "record": {
+    "id": "neudobnata-istina",
+    "bg": "НЕУДОБНАТА ИСТИНА",
+    "en": "",
+    "genres": [
+     "Документален"
+    ],
+    "g": [
+     "#2B1B33",
+     "#50275F"
+    ],
+    "source": "cg-park",
+    "runtime": 91
+   }
+  },
+  "razum-i-chuvstva-sinelibri": {
+   "into": "razum-i-chuvstva",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('разум и чувства')",
+   "since": "2026-10-23",
+   "record": {
+    "id": "razum-i-chuvstva-sinelibri",
+    "bg": "РАЗУМ И ЧУВСТВА - СИНЕЛИБРИ",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "lumiere"
+   }
+  },
+  "sinelibri-2026-tseluvka-za-leka-nosht": {
+   "into": "tseluvka-za-leka-nosht",
+   "rule": "prefix",
+   "reason": "'целувка за лека нощ' begins 'целувка за лека нощ і'; the same screening is listed under both",
+   "since": "2026-10-23",
+   "record": {
+    "id": "sinelibri-2026-tseluvka-za-leka-nosht",
+    "bg": "СИНЕЛИБРИ 2026 – ЦЕЛУВКА ЗА ЛЕКА НОЩ І",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#2A331B",
+     "#4A5F27"
+    ],
+    "source": "vlaikova"
+   }
+  },
+  "taksi-za-raya-sinelibri": {
+   "into": "taksi-za-raya",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('такси за рая')",
+   "since": "2026-10-23",
+   "record": {
+    "id": "taksi-za-raya-sinelibri",
+    "bg": "ТАКСИ ЗА РАЯ - СИНЕЛИБРИ",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#2A331B",
+     "#4A5F27"
+    ],
+    "source": "lumiere"
+   }
+  }
+ }
+}

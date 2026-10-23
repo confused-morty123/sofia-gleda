@@ -88,6 +88,10 @@ def main():
     # in the transplanted rows, as the next scrape would (ShowIndex.canonical).
     from show_identity import renamed_ids
     renames = renamed_ids()
+    # A film id merged into the film it duplicated (film_merges.json) is mapped the
+    # same way, rows of one film, venue and date joined (FilmIndex.canonical).
+    from film_identity import load_merges, film_redirects, remap_scraped
+    film_redirect = film_redirects(load_merges())
     for name in SCRAPED:
         src_m, dst_m = const_line(good, name), const_line(page, name)
         if src_m and dst_m:
@@ -96,6 +100,17 @@ def main():
                 for q in (json.dumps(old, ensure_ascii=False), json.dumps(old)):
                     line = line.replace(q, json.dumps(new))
                 line = line.replace(f'"show:{old}"', f'"show:{new}"')
+            if film_redirect and any(o in line for o in film_redirect):
+                head, _, lit = line.partition("=")
+                lit = lit.strip()
+                if lit.endswith(";"):
+                    lit = lit[:-1]
+                try:
+                    val = remap_scraped(name, json.loads(lit), film_redirect)
+                    line = f"{head.rstrip()}={json_for_script(val)};"
+                    moved.append(f"{name} (merged films mapped)")
+                except ValueError:
+                    pass
             page = page[:dst_m.start()] + line + page[dst_m.end():]
             moved.append(name)
     if not const_line(good, "FESTMARK") and const_line(page, "FESTMARK"):

@@ -343,14 +343,16 @@ def _write(path, content):
     path.write_text(content, encoding="utf-8")
 
 
-def write_redirects(root, shows, renamed, poster_for):
+def write_redirects(root, shows, renamed, poster_for, kind="show"):
     """For each renamed show id (old -> new), write show/<old>/index.html as the
     share page of the NEW record: canonical / og:url /show/<new>/. Its script (the
     same REDIRECT_JS as every share page) takes a browser to /home/?show=<old>, and
     the app maps <old> to <new> through ID_REDIRECT; the visible link goes to <new>.
     Links shared before the rename keep working. This is the only
     page written for an id SAFE_ID refuses; the directory name is the exact old id
-    from show_aliases.json, never page data. Returns (written paths, refused ids)."""
+    from show_aliases.json, never page data. Returns (written paths, refused ids).
+    kind="film": the same for a film id merged into another film (film_merges.json;
+    shows = FILMS, the app maps the old id through FILM_REDIRECT)."""
     by_id = {s.get("id"): s for s in shows}
     done, bad = [], []
     for old, new in sorted(renamed.items()):
@@ -360,11 +362,12 @@ def write_redirects(root, shows, renamed, poster_for):
             bad.append(old)
             continue
         rec = by_id[new]
-        page = pathlib.Path(root) / "show" / old / "index.html"
+        page = pathlib.Path(root) / kind / old / "index.html"
         url, w, h = poster_for(new)
+        film = kind == "film"
         _write(page, _share_page(
-            kind="show", item_id=new, title_bg=rec.get("title", new),
-            title_en=rec.get("titleEn", ""), syn_bg=rec.get("synBg", ""),
+            kind=kind, item_id=new, title_bg=rec.get("bg" if film else "title", new),
+            title_en=rec.get("en" if film else "titleEn", ""), syn_bg=rec.get("synBg", ""),
             poster_url=url, site_url=SITE_URL, image_w=w, image_h=h))
         done.append(page)
     return done, bad
@@ -444,6 +447,16 @@ def main():
     done, bad = write_redirects(ROOT, shows, renamed, _img)
     written += len(done)
     skipped += [f"redirect:{o!r}" for o in bad]
+    # --- merged film ids: film/<old>/ becomes the share page of the film kept.
+    try:
+        from film_identity import load_merges, film_redirects
+        merged_films = film_redirects(load_merges())
+    except Exception as e:                      # a broken merges file
+        print(f"gen_share_pages: could not read merged film ids: {e}", file=sys.stderr)
+        merged_films = {}
+    done, bad = write_redirects(ROOT, films, merged_films, _img, kind="film")
+    written += len(done)
+    skipped += [f"film redirect:{o!r}" for o in bad]
 
     # The listings' own addresses are the app itself (no redirect): /home/ (cinema) is
     # index.html as it is, /home/theatre/ the same page with its own canonical address.
@@ -460,7 +473,8 @@ def main():
         d = ROOT / kind
         if d.is_dir():
             kept += sum(1 for p in d.glob("*/index.html")
-                        if p.parent.name not in ids and not (kind == "show" and p.parent.name in renamed))
+                        if p.parent.name not in ids and not (kind == "show" and p.parent.name in renamed)
+                        and not (kind == "film" and p.parent.name in merged_films))
 
     print(f"gen_share_pages: wrote {written} share pages ({len(films)} films, {len(shows)} shows, "
           f"{len(events)} events)" + (f", kept {kept} pages for unlisted titles" if kept else ""))

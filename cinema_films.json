@@ -2506,20 +2506,6 @@
   "source": "arena-mega",
   "runtime": 102
  },
- "neudobnata-istina": {
-  "id": "neudobnata-istina",
-  "bg": "НЕУДОБНАТА ИСТИНА",
-  "en": "",
-  "genres": [
-   "Документален"
-  ],
-  "g": [
-   "#2B1B33",
-   "#50275F"
-  ],
-  "source": "cg-park",
-  "runtime": 91
- },
  "koleden-kontsert-na-andre-riyo-2026-let-it-snow": {
   "id": "koleden-kontsert-na-andre-riyo-2026-let-it-snow",
   "bg": "КОЛЕДЕН КОНЦЕРТ НА АНДРЕ РИЙО 2026: LET IT SNOW",
@@ -2703,17 +2689,6 @@
   "source": "dom-kino",
   "runtime": 115
  },
- "sinelibri-2026-tseluvka-za-leka-nosht": {
-  "id": "sinelibri-2026-tseluvka-za-leka-nosht",
-  "bg": "СИНЕЛИБРИ 2026 – ЦЕЛУВКА ЗА ЛЕКА НОЩ І",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#2A331B",
-   "#4A5F27"
-  ],
-  "source": "vlaikova"
- },
  "skoti": {
   "id": "skoti",
   "bg": "СКОТИ",
@@ -2757,50 +2732,6 @@
   "source": "cc-sofia",
   "runtime": 91,
   "year": 2026
- },
- "razum-i-chuvstva-sinelibri": {
-  "id": "razum-i-chuvstva-sinelibri",
-  "bg": "РАЗУМ И ЧУВСТВА - СИНЕЛИБРИ",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "lumiere"
- },
- "haos-v-komedi-fransez-sinelibri": {
-  "id": "haos-v-komedi-fransez-sinelibri",
-  "bg": "ХАОС В КОМЕДИ ФРАНСЕЗ - СИНЕЛИБРИ",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B3330",
-   "#275F57"
-  ],
-  "source": "lumiere"
- },
- "taksi-za-raya-sinelibri": {
-  "id": "taksi-za-raya-sinelibri",
-  "bg": "ТАКСИ ЗА РАЯ - СИНЕЛИБРИ",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#2A331B",
-   "#4A5F27"
-  ],
-  "source": "lumiere"
- },
- "kukla-sinelibri": {
-  "id": "kukla-sinelibri",
-  "bg": "КУКЛА - СИНЕЛИБРИ",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B2733",
-   "#27485F"
-  ],
-  "source": "lumiere"
  },
  "edna-istoriya-sinelibri": {
   "id": "edna-istoriya-sinelibri",

@@ -1907,6 +1907,44 @@ def superseded_films(cinema_films, index, showtimes):
     return out
 
 
+def _read_json(path):
+    """A JSON object file, or {} when it is missing or unreadable."""
+    try:
+        v = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def fill_minted_facts(cinema_films, resolved):
+    """Empty runtime / year of a minted film from its rows on the venues' own
+    programmes this run, where they all agree (runtimes within 3 min, one year).
+    A record minted from a page without them (Одеон) learns them from Cinema
+    City's, so the next run's duplicate check has them. Returns the ids filled."""
+    seen = {}
+    for rows in resolved.values():
+        for fid, _d, _t, meta, _title in rows:
+            if fid in cinema_films:
+                for k in ("runtime", "year"):
+                    try:
+                        v = int(str((meta or {}).get(k) or "").strip()[:4])
+                    except ValueError:
+                        continue
+                    seen.setdefault((fid, k), []).append(v)
+    filled = []
+    for (fid, k), vals in sorted(seen.items()):
+        rec = cinema_films[fid]
+        if rec.get(k) or not vals:
+            continue
+        ok = (max(vals) - min(vals) <= 3 and 20 <= min(vals) <= 400) if k == "runtime" \
+            else (len(vals) == 1 and 1890 <= min(vals) <= 2100)
+        if ok:
+            from collections import Counter
+            rec[k] = sorted(Counter(vals).items(), key=lambda kv: (-kv[1], kv[0]))[0][0]  # most rows say it
+            filled.append(fid)
+    return sorted(set(filled))
+
+
 def read_const_obj(page, name):
     """A `const NAME = {...};` object on one line of the data block, or {}."""
     m = re.search(r"^const %s\s*=\s*(\{.*?\});\s*$" % name, page, re.M)
@@ -2649,6 +2687,15 @@ def main():
             cinema_films = json.loads(CINEMA_FILMS.read_text(encoding="utf-8"))
         except Exception:
             cinema_films = {}
+    # Minted records merged into the film they duplicate (film_merges.json). A
+    # merge a human vetoed (film_aliases.json "distinct") is undone: the record
+    # comes back. A merged-away id stays spoken for, so it is never minted again.
+    film_merges, _restored = FI.undo_distinct(FI.load_merges())
+    for rec in _restored:
+        cinema_films.setdefault(rec["id"], rec)
+        print(f"film merge undone (film_aliases.json 'distinct'): {rec['id']} is its own film again")
+    for fid in film_merges:
+        cinema_films.pop(fid, None)
     for fid, rec in cinema_films.items():
         if rec.get("bg"):
             title_to_id.setdefault(norm(rec["bg"]), fid)
@@ -2656,7 +2703,7 @@ def main():
             title_to_id.setdefault(norm(rec["en"]), fid)
 
     # Every id already spoken for (catalogue + minted), so a new id never collides.
-    existing_film_ids = set(title_to_id.values()) | set(cinema_films.keys())
+    existing_film_ids = set(title_to_id.values()) | set(cinema_films.keys()) | set(film_merges)
     try:
         _, _, films_lit = extract_array(src, "FILMS")
         existing_film_ids.update(re.findall(r'"id"\s*:\s*"([^"]+)"', films_lit))
@@ -2673,6 +2720,7 @@ def main():
     _have = {f.get("id") for f in catalogue}
     index = FI.FilmIndex(catalogue + [r for k, r in cinema_films.items() if k not in _have],
                          minted_ids=set(cinema_films))
+    index.apply_merges(film_merges)
     minted_log = []                          # [fid, venue, title, how]
 
     def mint_film(title, venue, meta=None):
@@ -2712,6 +2760,32 @@ def main():
     # Seeded from previous SHOWATTR so an unreachable venue keeps its labels.
     # Key: "fid|vid"; value: {"YYYY-MM-DD HH:MM": "dub,3d"}.
     old_showattr = read_const_obj(src, "SHOWATTR")
+
+    # Duplicate film records (film_identity.detect_duplicates): a minted record
+    # that is a film the app already lists under another title — Cine Grand's
+    # "НЕУДОБНАТА ИСТИНА" beside the "Хроники за неудобната истина – …" seven
+    # other cinemas list — is merged into it before any title is resolved, so
+    # this run files every row under the film kept. Evidence: last run's rows,
+    # the venues' film pages (LINKS / VLINKS), film_info.json, tmdb_films.json.
+    new_merges = FI.detect_duplicates(
+        index.films, index.minted, old_showtimes,
+        list(links.items()) + [(f, u) for (f, _v), u in vlinks.items()],
+        _read_json(FILM_INFO), _read_json(TMDB_FILMS), index.distinct, merged=index.merged)
+    for m in new_merges:
+        rec = dict(cinema_films.get(m["drop"]) or index.films.get(m["drop"]) or {"id": m["drop"]})
+        film_merges[m["drop"]] = {"into": m["into"], "rule": m["rule"], "reason": m["reason"],
+                                  "since": today_iso, "record": rec}
+        cinema_films.pop(m["drop"], None)
+        print(f"film merged: {m['drop']} -> {m['into']} ({m['rule']}: {m['reason']})")
+    index.apply_merges(film_merges)
+    film_redirect = FI.film_redirects(film_merges)
+    # last run's rows, links and labels of a merged-away film belong to the film kept
+    if film_redirect:
+        old_showtimes = FI.remap_scraped("SHOWTIMES", old_showtimes, film_redirect)
+        old_showattr = FI.remap_scraped("SHOWATTR", old_showattr, film_redirect)
+        links = dict(FI.remap_scraped("LINKS", [[k, v] for k, v in links.items()], film_redirect))
+        vlinks = {(f, v): u for f, v, u in
+                  FI.remap_scraped("VLINKS", [[f, v, u] for (f, v), u in vlinks.items()], film_redirect)}
     fresh_showattr = {}   # collected this run: {(fid, vid): {datetime_key: attr_str}}
     # Track which (fid, venue) pairs were seen on programata pages so we can
     # prefer a programata link for LINKS (richest film-info page) while still
@@ -2794,6 +2868,11 @@ def main():
             except Exception as e2:
                 official_errors[vid] = f"title resolution crashed: {type(e2).__name__}: {e2}"
                 official.pop(vid)
+
+    filled = fill_minted_facts(cinema_films, resolved)
+    if filled:
+        print(f"minted films given their runtime/year from the venues' programmes: {', '.join(filled[:8])}"
+              + (" …" if len(filled) > 8 else ""))
 
     # official film pages: the info link (LINKS fallback) and the per-venue link
     fresh_vlinks = {}
@@ -2904,6 +2983,9 @@ def main():
     #     festival state comes from build_report.json (refresh_all.py carries it),
     #     so a festival whose site is down keeps its rows.
     prev_prelim_rows = read_prelim_rows(src)
+    if film_redirect:
+        prev_prelim_rows = [tuple(r) for r in FI.remap_scraped("PRELIM_ROWS", [list(r) for r in prev_prelim_rows],
+                                                              film_redirect)]
     prev_fest = {} if args.no_festivals else previous_festivals()
     # What each cinema's OWN programme lists this run. A cinema whose source
     # failed (venue_state: all its previous rows kept, preliminary from today) has
@@ -3398,6 +3480,9 @@ def main():
     orphan = sorted({r[0] for r in new_showtimes} - set(index.films))
     if orphan:
         problems.append(f"showtimes for unknown film ids: {', '.join(orphan[:5])}")
+    unmerged_f = sorted({r[0] for r in new_showtimes} & set(film_merges))
+    if unmerged_f:
+        problems.append(f"showtimes still filed under a merged-away film: {', '.join(unmerged_f[:5])}")
     retired_on_screen = sorted({r[0] for r in new_showtimes} & set(retired_films))
     if retired_on_screen:
         problems.append(f"a film about to be retired still has showtimes: {', '.join(retired_on_screen[:5])}")
@@ -3431,6 +3516,7 @@ def main():
     show_suspects = show_index.suspected_duplicates({r[0] for r in new_performances}
                                                     | {m[0] for m in minted_show_log})
     identity_report = {"decisions": index.log, "minted": minted_log,
+                       "merged_films": {m["drop"]: [m["into"], m["rule"], m["reason"]] for m in new_merges},
                        "suspected_duplicates": suspects,
                        "retired_films": {k: list(v) for k, v in retired_films.items()},
                        "theatre": {"decisions": show_index.log, "minted": minted_show_log,
@@ -3579,7 +3665,8 @@ def main():
     for sid in retired_shows:
         theatre_shows.pop(sid, None)
         links.pop(sid, None)
-    for name, gone, retitle in (("FILMS", set(retired_films), {}), ("SHOWS", set(retired_shows), retitled)):
+    for name, gone, retitle in (("FILMS", set(retired_films) | set(film_merges), {}),
+                                ("SHOWS", set(retired_shows), retitled)):
         if not gone and not retitle:
             continue
         a_s, a_e, a_lit = extract_array(out, name)
@@ -3742,6 +3829,9 @@ def main():
     # inject_films.py merges it into FILMS before the build gate.
     CINEMA_FILMS.write_text(json.dumps(cinema_films, ensure_ascii=False, indent=1),
                             encoding="utf-8")
+    # Merged-away film records and where they went (FILM_REDIRECT, share pages).
+    if film_merges or FI.MERGES_PATH.exists():
+        FI.save_merges(film_merges)
     # Same for synthesised theatre shows; inject_shows.py merges into SHOWS.
     THEATRE_SHOWS.write_text(json.dumps(theatre_shows, ensure_ascii=False, indent=1),
                              encoding="utf-8")

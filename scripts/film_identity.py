@@ -25,6 +25,12 @@ A year conflict (both known, more than a year apart) vetoes any candidate, of
 every rule, curated aliases included ("Сънища" at Люмиер is Kurosawa's 1990
 film, not a 2024 "Сънища" the same hall might show).
 
+Duplicate RECORDS — a title minted on a day no rule could place it, which from
+then on matched its own record — are merged by detect_duplicates() (below) at the
+start of every scrape: the same normalised title, the same IMDb / confirmed TMDB
+id, or a title extension corroborated by facts; the merged-away id becomes a
+redirect (film_merges.json, FILM_REDIRECT) and its titles resolve to the kept film.
+
 Every resolution stands on its own evidence. There is no run-wide memory of a
 fuzzy decision (2026-10-09 audit, CODE-07: Cinema City's "Аватар", corroborated
 as "Аватар: Огън и пепел", was reused for Одеон's retro "Аватар (2009)" with no
@@ -229,6 +235,8 @@ class FilmIndex:
         self.groups = []                     # alias groups
         self.log = []                        # every non-trivial decision, with its reason
         self.suspects = {}                   # (title, fid) -> reason
+        self.merged = {}                     # merged-away duplicate id -> the id kept
+        self.merge_reason = {}
         for rec in films:
             self.add(rec, minted=rec.get("id") in self.minted)
         self.load_aliases(aliases)
@@ -267,6 +275,32 @@ class FilmIndex:
                 self.groups.append({"keys": keys, "film": g.get("film"),
                                     "venues": set(g.get("venues") or []),
                                     "reason": g.get("reason", "")})
+        self.distinct = distinct_pairs(aliases)
+
+    def apply_merges(self, merges):
+        """Merged-away duplicates (film_merges.json, written by the pipeline):
+        each dropped record joins the index again so its titles keep resolving,
+        and every rule answers with the id it was merged into (canonical())."""
+        for drop, m in (merges or {}).items():
+            keep = (m or {}).get("into")
+            if not drop or not keep or drop == keep:
+                continue
+            rec = dict((m or {}).get("record") or {"id": drop})
+            rec["id"] = drop
+            if drop not in self.films:
+                self.add(rec, minted=True)
+            self.minted.add(drop)            # a merged-away record is never a catalogue film
+            self.merged[drop] = keep
+            self.merge_reason[drop] = (m or {}).get("reason", "")
+
+    def canonical(self, fid):
+        """The id a film is known by after merges (a merged-away duplicate -> the
+        record it was merged into)."""
+        seen = set()
+        while fid in self.merged and fid not in seen:
+            seen.add(fid)
+            fid = self.merged[fid]
+        return fid
 
     # ------------------------------------------------------------- helpers
     def film_year(self, fid):
@@ -277,13 +311,16 @@ class FilmIndex:
         return _int((self.films.get(fid) or {}).get("runtime"))
 
     def _veto(self, fid, year, runtime=None, runtime_tol=None):
-        fy = self.film_year(fid)
-        if year and fy and abs(fy - year) > 1:
-            return f"year {year} vs {fy}"
-        if runtime_tol is not None:
-            fr = self.film_runtime(fid)
-            if runtime and fr and abs(fr - runtime) > runtime_tol:
-                return f"runtime {runtime} vs {fr} min"
+        # a merged-away record answers for the film it was merged into, so that
+        # film's own year / runtime vetoes too
+        for f in dict.fromkeys((fid, self.canonical(fid))):
+            fy = self.film_year(f)
+            if year and fy and abs(fy - year) > 1:
+                return f"year {year} vs {fy}"
+            if runtime_tol is not None:
+                fr = self.film_runtime(f)
+                if runtime and fr and abs(fr - runtime) > runtime_tol:
+                    return f"runtime {runtime} vs {fr} min"
         return None
 
     def _choose(self, cands, title, year):
@@ -311,8 +348,8 @@ class FilmIndex:
             if why:
                 self.suspects[(title, c)] = f"{rule} candidate vetoed ({why})"
             else:
-                keep.append(c)
-        return keep
+                keep.append(self.canonical(c))
+        return sorted(set(keep))
 
     def _record(self, title, venue, fid, rule, detail):
         self.log.append({"title": title, "venue": venue, "film": fid, "rule": rule,
@@ -320,6 +357,14 @@ class FilmIndex:
 
     # ------------------------------------------------------------- resolve
     def resolve(self, title, venue=None, meta=None, corroborate=None, fuzzy=True):
+        """(film id or None, rule) — see _resolve. A title that resolves to a
+        merged-away duplicate answers with the film it was merged into."""
+        fid, rule = self._resolve(title, venue, meta, corroborate, fuzzy)
+        if fid and fid in self.merged:
+            fid = self.canonical(fid)
+        return fid, rule
+
+    def _resolve(self, title, venue=None, meta=None, corroborate=None, fuzzy=True):
         """Return (film_id or None, rule). `corroborate(fid)` answers whether
         another source lists THIS venue/date/time under that film. With
         fuzzy=False only alias / exact / original / translit apply (used for
@@ -336,7 +381,7 @@ class FilmIndex:
         for g in self.groups:
             if k in g["keys"] and (not g["venues"] or venue in g["venues"]):
                 if g["film"] and g["film"] in self.films:
-                    cands = [g["film"]] if not self._veto(g["film"], year) else []
+                    cands = [self.canonical(g["film"])] if not self._veto(g["film"], year) else []
                 else:
                     cands = set()
                     for gk in g["keys"]:
@@ -392,7 +437,7 @@ class FilmIndex:
         bk = base_key(title)
         if bk:
             sub |= self.by_key.get(bk, set())               # we are "X: Y", film is "X"
-        for c in sorted(sub):
+        for c in sorted({self.canonical(x) for x in sub}):
             why = self._veto(c, year, runtime, runtime_tol=10)
             if why:
                 self.suspects[(title, c)] = f"subtitle variant, vetoed ({why})"
@@ -444,9 +489,9 @@ class FilmIndex:
         for fid, rec in self.films.items():
             t = rec.get("bg") or ""
             k = key(t)
-            if k:
+            if k and fid not in self.merged:
                 items.append((fid, t, k, base_key(t)))
-        wanted = set(fids)
+        wanted = {self.canonical(f) for f in fids}
         for fid, t, k, kb in items:
             if fid not in wanted:
                 continue
@@ -477,3 +522,443 @@ def _edit_distance(a, b):
             cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
         prev = cur
     return prev[-1]
+
+
+# ======================================================== duplicate records
+# The resolver above places a TITLE. A wrong second card can still exist: when no
+# rule could place a venue's title on the day it first appeared, a film was minted
+# for it, and from then on that title matches its own record exactly and never
+# reaches the film it belongs to (Cine Grand's "НЕУДОБНАТА ИСТИНА" beside
+# "Хроники за неудобната истина – Истината за българският Чернобил", which seven
+# other cinemas list; Люмиер's "КУКЛА - СИНЕЛИБРИ" beside "Синелибри 2026: КУКЛА"
+# after the 2026-10-21 key fix). detect_duplicates() compares the RECORDS that are
+# on screen, with the evidence the run already holds, and merges a minted record
+# into the film it duplicates. A merge is permanent and reversible only by a human
+# (film_aliases.json "distinct"); the dropped id keeps working as a redirect.
+
+MERGES_PATH = pathlib.Path(__file__).resolve().parent.parent / "film_merges.json"
+_MERGES_ABOUT = (
+    "Minted film records merged into the film they duplicate, written by "
+    "scripts/scrape_programs.py (film_identity.detect_duplicates). 'merged': dropped id -> "
+    "{into: kept id, rule, reason, since, record: the dropped record}. The dropped record's "
+    "titles keep resolving to the kept film, the page maps the old id through FILM_REDIRECT and "
+    "film/<old id>/ stays a share page of the kept film, so links already shared keep working. "
+    "To undo a wrong merge, list the pair under 'distinct' in scripts/film_aliases.json: the "
+    "next run restores the record and never merges the pair again.")
+
+# A language version a venue lists as a film of its own ("… (с английски
+# субтитри)"). The page has no per-screening mark for it yet, so such a listing is
+# never merged with one that lacks the same note — it only lends its evidence
+# (runtime, year, IMDb id) to the film it is a version of.
+_VERSION_NOTES = [
+    ("en-sub", r"(?:с\s+)?(?:английски|англ\.?)\s+субтитри|(?:with\s+)?english\s+subtitles?"
+               r"|eng(?:lish)?\.?\s+subs?"),
+]
+_VERSION_RES = [(n, re.compile(r"[\(\[]?\s*(?<!\w)(?:" + rx + r")(?!\w)\s*[\)\]]?", re.I))
+                for n, rx in _VERSION_NOTES]
+# Words after a shared title that make it ANOTHER film: a sequel, a part, a season.
+_SEQUEL_WORDS = {"ii", "iii", "iv", "vi", "vii", "viii", "ix", "іі", "ііі", "іv", "част", "part",
+                 "chapter", "глава", "епизод", "episode", "сезон", "season", "vol", "том",
+                 "завръщане", "завръщането", "returns", "reloaded", "продължение"}
+_IMDB_IN_URL = re.compile(r"(?:imdb\.com/title/|imdb[\-_/]?)(tt\d{7,9})(?!\d)", re.I)
+
+
+def version_note(title):
+    """'en-sub' for a listing of the English-subtitled version, else ''."""
+    t = clean_title(title)
+    for name, rx in _VERSION_RES:
+        if rx.search(t):
+            return name
+    return ""
+
+
+def key_without_note(title):
+    """key() of the title with a version note removed."""
+    t = clean_title(title)
+    for _n, rx in _VERSION_RES:
+        t = rx.sub(" ", t)
+    return key(t)
+
+
+def main_key(title):
+    """The key of the title before a subtitle ("Хроники за неудобната истина" of
+    "Хроники за неудобната истина – Истината за…"), or the whole key."""
+    return base_key(title) or key(title)
+
+
+def distinct_pairs(aliases):
+    """film_aliases.json "distinct": pairs of film ids a human checked are two
+    different films — never merged, and an earlier merge of them is undone."""
+    out = set()
+    for d in (aliases or {}).get("distinct", []) or []:
+        ids = [i for i in (d or {}).get("films", []) if isinstance(i, str) and i]
+        for a in ids:
+            for b in ids:
+                if a != b:
+                    out.add(frozenset((a, b)))
+    return out
+
+
+def load_merges(path=None):
+    """{dropped id: {into, rule, reason, since, record}} from film_merges.json."""
+    try:
+        d = json.loads(pathlib.Path(path or MERGES_PATH).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    m = (d or {}).get("merged") if isinstance(d, dict) else None
+    return {k: v for k, v in (m or {}).items()
+            if isinstance(k, str) and isinstance(v, dict) and isinstance(v.get("into"), str)}
+
+
+def save_merges(merges, path=None):
+    body = {"_about": _MERGES_ABOUT, "merged": {k: merges[k] for k in sorted(merges)}}
+    pathlib.Path(path or MERGES_PATH).write_text(
+        json.dumps(body, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+
+def film_redirects(merges):
+    """{dropped id: the id it finally resolves to} — the page's FILM_REDIRECT."""
+    nxt = {k: v["into"] for k, v in (merges or {}).items()}
+    out = {}
+    for k in nxt:
+        seen, f = {k}, nxt[k]
+        while f in nxt and f not in seen:
+            seen.add(f)
+            f = nxt[f]
+        if f != k:
+            out[k] = f
+    return out
+
+
+def undo_distinct(merges, aliases=None):
+    """Split merges a human vetoed (film_aliases.json "distinct"). Returns
+    (merges kept, [dropped records to restore])."""
+    if aliases is None:
+        try:
+            aliases = json.loads(ALIASES_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            aliases = {}
+    pairs = distinct_pairs(aliases)
+    red = film_redirects(merges)
+    kept, restore = {}, []
+    for drop, m in merges.items():
+        if frozenset((drop, m["into"])) in pairs or frozenset((drop, red.get(drop, ""))) in pairs:
+            if m.get("record"):
+                restore.append(dict(m["record"], id=drop))
+        else:
+            kept[drop] = m
+    return kept, restore
+
+
+def _ints(*vals):
+    out = set()
+    for v in vals:
+        i = _int(v)
+        if i:
+            out.add(i)
+    return out
+
+
+def _near(a, b, tol):
+    return any(abs(x - y) <= tol for x in a for y in b)
+
+
+def _overlap_dates(da, db):
+    return bool(da and db and min(da) <= max(db) and min(db) <= max(da))
+
+
+def _evidence(fid, rec, rows, link_imdb, film_info, tmdb):
+    """What the run knows about one film: its keys, the source facts (year,
+    runtime — the venues' and festivals' own, never TMDB's), the external ids it
+    can be trusted for, and where and when it is on screen."""
+    t = rec.get("bg") or ""
+    fi = (film_info or {}).get(fid) or {}
+    ev = {
+        "keys": {key(x) for x in (t, rec.get("en"), rec.get("originalTitle")) if x and key(x)},
+        "key": key(t), "main": main_key(t), "note": version_note(t),
+        "bare": key_without_note(t),
+        "years": _ints(rec.get("year"), fi.get("year"), title_year(t)),
+        "runtimes": _ints(rec.get("runtime"), fi.get("runtime")),
+        "ids": set(link_imdb.get(fid, ())),
+        "venues": {}, "slots": set(), "minted": False,
+    }
+    for _f, v, d, times in rows:
+        ev["venues"].setdefault(v, set()).add(d)
+        for tm in times or ():
+            ev["slots"].add((v, d, tm))
+    ev["dates"] = set().union(*ev["venues"].values()) if ev["venues"] else set()
+    # A TMDB match counts only where the source's own facts confirm it: Cine
+    # Grand's "НЕУДОБНАТА ИСТИНА" (91 min) was matched to An Inconvenient Truth
+    # (2006, 100 min) — that match proves nothing.
+    tm = (tmdb or {}).get(fid) or {}
+    if tm.get("matched") and tm.get("tmdb_id"):
+        ty, tr, ok = _int(tm.get("tmdb_year")), _int(tm.get("runtime")), True
+        confirmed = False
+        if ev["runtimes"] and tr:
+            ok &= _near(ev["runtimes"], {tr}, 5)
+            confirmed = True
+        if ev["years"] and ty:
+            ok &= _near(ev["years"], {ty}, 1)
+            confirmed = True
+        imdb = (tm.get("imdb_id") or "").lower()
+        if ev["ids"] and imdb:
+            ok &= imdb in ev["ids"]
+            confirmed = True
+        if ok and confirmed:
+            ev["ids"].add(f"tmdb:{tm['tmdb_id']}")
+            if imdb:
+                ev["ids"].add(imdb)
+    return ev
+
+
+def _conflict(a, b):
+    if a["years"] and b["years"] and not _near(a["years"], b["years"], 1):
+        return f"year {sorted(a['years'])} vs {sorted(b['years'])}"
+    if a["runtimes"] and b["runtimes"] and not _near(a["runtimes"], b["runtimes"], 10):
+        return f"runtime {sorted(a['runtimes'])} vs {sorted(b['runtimes'])} min"
+    return None
+
+
+def _title_guard(short, long_, ext_tokens):
+    """The shorter title can stand for the longer one: two words or more, eight
+    letters or more, the same numbers, and nothing after it that makes a sequel."""
+    return (len(short.split()) >= 2 and _letters(short) >= 8 and _digits(short) == _digits(long_)
+            and not (set(ext_tokens) & _SEQUEL_WORDS))
+
+
+def _contained(a, b):
+    """('prefix' | 'contained' | None): a's key at the start of b's key, or as a
+    run of whole words inside b's main title."""
+    for ka in a["keys"]:
+        for kb in b["keys"] | {b["main"]}:
+            if kb.startswith(ka + " ") and _title_guard(ka, kb, kb[len(ka) + 1:].split()):
+                return "prefix", ka, kb
+    ka, mb = a["key"], b["main"]
+    if ka and mb and ka != mb and (" " + ka + " ") in (" " + mb + " ") and not mb.startswith(ka + " "):
+        rest = (" " + mb + " ").replace(" " + ka + " ", " ", 1).split()
+        if _title_guard(ka, mb, rest) and _letters(ka) >= 10:
+            return "contained", ka, mb
+    return None
+
+
+def _shared_venue_dates(a, b):
+    return any(_overlap_dates(a["venues"][v], b["venues"][v]) for v in set(a["venues"]) & set(b["venues"]))
+
+
+def _edge(a, b):
+    """(rule, reason) when records a and b are one film, else None. Every rule
+    needs a positive fact besides the titles; a year or runtime conflict vetoes all."""
+    why = _conflict(a, b)
+    if why:
+        return None
+    if a["keys"] & b["keys"]:
+        k = sorted(a["keys"] & b["keys"])[0]
+        return "same-key", f"the same title once normalised ({k!r})"
+    shared = sorted(a["ids"] & b["ids"])
+    if shared:
+        return "same-id", f"the same {'TMDB' if shared[0].startswith('tmdb:') else 'IMDb'} id {shared[0]}"
+    for s, l in ((a, b), (b, a)):
+        c = _contained(s, l)
+        if not c:
+            continue
+        kind, ks, kl = c
+        rt = s["runtimes"] and l["runtimes"] and _near(s["runtimes"], l["runtimes"], 3)
+        yr = s["years"] & l["years"]
+        slot = s["slots"] & l["slots"]
+        if not _overlap_dates(s["dates"], l["dates"]):
+            continue
+        # A shared opening ("Последният ден" / "Последният ден на лятото") is not
+        # enough, nor is one coincidence of runtime: two facts, or the very same
+        # screening under both titles.
+        both = rt and yr
+        if kind == "prefix":
+            if slot:
+                return "prefix", f"{ks!r} begins {kl!r}; the same screening is listed under both"
+            if both:
+                return "prefix", (f"{ks!r} begins {kl!r}; runtime {sorted(s['runtimes'])}≈"
+                                  f"{sorted(l['runtimes'])} min and year {sorted(yr)[0]}")
+            if rt and _shared_venue_dates(s, l):
+                return "prefix", (f"{ks!r} begins {kl!r}; runtime {sorted(s['runtimes'])}≈"
+                                  f"{sorted(l['runtimes'])} min at the same venue in the same weeks")
+        elif both and not (set(s["venues"]) & set(l["venues"])):
+            # a title inside another one: the same runtime and year, the same
+            # weeks, and no venue lists both
+            return "contained", (f"{ks!r} is part of {kl!r}; runtime {sorted(s['runtimes'])}≈"
+                                 f"{sorted(l['runtimes'])} min, year {sorted(yr)[0]}, no venue lists both")
+    return None
+
+
+def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, distinct=(),
+                      merged=()):
+    """Records that are one film, among the films on screen. films: {id: record};
+    minted: ids the pipeline minted (only those are ever dropped); rows: SHOWTIMES
+    rows [id, venue, date, [times]]; links: (id, url) pairs from LINKS / VLINKS (a
+    venue page that names an IMDb id, Cine Grand's /m/<slug>-imdbtt…, identifies
+    the film); film_info, tmdb: the sidecar files; distinct: pairs never merged;
+    merged: ids already merged away (skipped). Returns
+    [{"drop", "into", "rule", "reason"}], each drop a minted record.
+
+    Rules (a year or runtime conflict vetoes every one):
+      same-key   the same normalised title;
+      same-id    the same IMDb id (a venue's own film page) or a TMDB match the
+                 source's own runtime / year confirms;
+      prefix     "X Y" vs "X" (two words or more, the same numbers, no sequel
+                 word after it), in the same weeks, with the same screening under
+                 both, or the same runtime (±3) and year, or the same runtime at
+                 one venue;
+      contained  "X" as whole words inside the main title "Z X: Y" (ten letters
+                 or more): the same runtime (±3) and year, the same weeks, and no
+                 venue lists both.
+    A shorter title that fits two different films merges with neither. A listing
+    of a language version ("(с английски субтитри)") is never merged with one
+    without it; when its title is another film's main title at the same venue in
+    the same weeks, its runtime, year and ids count for that film."""
+    by_film = {}
+    for r in rows:
+        if r and r[0] in films and r[0] not in merged:
+            by_film.setdefault(r[0], []).append(r)
+    link_imdb = {}
+    for fid, url in links:
+        for m in _IMDB_IN_URL.finditer(url or ""):
+            link_imdb.setdefault(fid, set()).add(m.group(1).lower())
+    ev = {f: _evidence(f, films[f], rs, link_imdb, film_info, tmdb) for f, rs in by_film.items()}
+    for f in ev:
+        ev[f]["minted"] = f in minted
+    distinct = set(distinct or ())
+
+    # a version listing lends its facts to the film it is a version of
+    for v, e in ev.items():
+        if not e["note"] or not e["bare"]:
+            continue
+        hosts = [b for b, eb in ev.items() if not eb["note"] and eb["main"] == e["bare"]
+                 and _title_guard(e["bare"], eb["main"], []) and _shared_venue_dates(e, eb)
+                 and not _conflict(e, eb) and frozenset((v, b)) not in distinct]
+        if len(hosts) == 1:
+            h = ev[hosts[0]]
+            h["years"] |= e["years"]
+            h["runtimes"] |= e["runtimes"]
+            h["ids"] |= e["ids"]
+
+    ids = sorted(ev)
+    edges = {}
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            if frozenset((a, b)) in distinct or ev[a]["note"] != ev[b]["note"]:
+                continue
+            if not (ev[a]["minted"] or ev[b]["minted"]):
+                continue                       # two catalogue films: for a human
+            e = _edge(ev[a], ev[b])
+            if e:
+                edges[(a, b)] = e
+    # a shorter title that fits two films that are not otherwise one: neither
+    fuzzy = {"prefix", "contained"}
+    partners = {}
+    for (a, b), (rule, _r) in edges.items():
+        if rule in fuzzy:
+            short = a if len(ev[a]["key"]) <= len(ev[b]["key"]) else b
+            partners.setdefault(short, set()).add(b if short == a else a)
+    for short, ps in partners.items():
+        if len(ps) > 1:
+            for (a, b) in list(edges):
+                if edges[(a, b)][0] in fuzzy and short in (a, b):
+                    del edges[(a, b)]
+    # components; each must be free of conflicts and hold at most one catalogue film
+    parent = {f: f for f in ids}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+    for a, b in edges:
+        parent[find(a)] = find(b)
+    comps = {}
+    for f in ids:
+        comps.setdefault(find(f), []).append(f)
+    out = []
+    for members in comps.values():
+        if len(members) < 2:
+            continue
+        if sum(1 for f in members if not ev[f]["minted"]) > 1:
+            continue
+        if any(_conflict(ev[x], ev[y]) or frozenset((x, y)) in distinct
+               for i, x in enumerate(members) for y in members[i + 1:]):
+            continue
+        keep = sorted(members, key=lambda f: (ev[f]["minted"], -len(ev[f]["venues"]), -len(ev[f]["slots"]),
+                                              -(bool(ev[f]["years"]) + bool(ev[f]["runtimes"])),
+                                              -len(films[f].get("bg") or ""), f))[0]
+        for f in sorted(members):
+            if f == keep:
+                continue
+            why = [r for (a, b), r in edges.items() if f in (a, b)]
+            rule = why[0][0] if why else "via"
+            reason = "; ".join(r for _x, r in why) or "through another record of the same film"
+            out.append({"drop": f, "into": keep, "rule": rule, "reason": reason})
+    return out
+
+
+def remap_scraped(name, value, redirect):
+    """A scraped page constant with every merged-away film id replaced by the
+    film it was merged into (rows of one film, venue and date joined). Used for
+    the previous run's rows (keep-previous) and by dev_build.py's transplant."""
+    if not redirect:
+        return value
+    R = lambda f: redirect.get(f, f)                         # noqa: E731
+    if name == "SHOWTIMES":
+        joined, order = {}, []
+        for r in value:
+            k = (R(r[0]), r[1], r[2])
+            if k not in joined:
+                joined[k] = [k[0], k[1], k[2], list(r[3])] + list(r[4:])
+                order.append(k)
+            else:
+                joined[k][3] = sorted(set(joined[k][3]) | set(r[3]))
+        return [joined[k] for k in order]
+    if name in ("LINKS", "VLINKS"):
+        own = {tuple(r[:-1]) for r in value}
+        out, seen = [], set()
+        for r in value:
+            k = (R(r[0]),) + tuple(r[1:-1])
+            if k in seen or (r[0] != k[0] and k in own):     # the kept film's own link wins
+                continue
+            seen.add(k)
+            out.append(list(k) + [r[-1]])
+        return out
+    if name == "PRELIM_ROWS":
+        out = []
+        for r in value:
+            x = [R(r[0])] + list(r[1:]) if isinstance(r, list) and r else r
+            if x not in out:
+                out.append(x)
+        return out
+    if name in ("SHOWATTR", "AGGLINKS"):
+        out = {}
+        for k in sorted(value, key=lambda k: k.split("|", 1)[0] in redirect):  # own keys first
+            f, _, rest = k.partition("|")
+            nk = R(f) + ("|" + rest if _ else "")
+            if name == "SHOWATTR" and isinstance(value[k], dict):
+                out[nk] = {**value[k], **out.get(nk, {})}
+            else:
+                out.setdefault(nk, value[k])
+        return out
+    if name == "PREMIERES":
+        out = {}
+        for k, v in value.items():
+            nk = "film:" + R(k[5:]) if k.startswith("film:") else k
+            out[nk] = sorted(set(out.get(nk, [])) | set(v)) if isinstance(v, list) else v
+        return out
+    if name == "FESTMARK":
+        out = {}
+        for fest, v in value.items():
+            v = dict(v)
+            if isinstance(v.get("films"), list):
+                v["films"] = sorted({R(f) for f in v["films"]})
+            out[fest] = v
+        return out
+    if name == "SNAPSHOT" and isinstance(value, dict):
+        v = dict(value)
+        if isinstance(v.get("changelog"), list):
+            v["changelog"] = [dict(c, film=R(c["film"])) if isinstance(c, dict) and c.get("film") else c
+                              for c in v["changelog"]]
+        return v
+    return value
