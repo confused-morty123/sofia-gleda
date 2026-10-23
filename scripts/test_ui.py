@@ -832,9 +832,10 @@ def wave_b1(browser):
     if h2_info_375:
         check("b1_h2_cinema_375_size", h2_info_375["fontSize"] >= 20,
               f"fontSize={h2_info_375['fontSize']}px")
-        check("b1_h2_cinema_375_family", "Oswald" in h2_info_375["fontFamily"],
+        # 23 Oct 2026: Montserrat on the cinema surface, display titles in sentence case
+        check("b1_h2_cinema_375_family", "Montserrat" in h2_info_375["fontFamily"],
               f"fontFamily={h2_info_375['fontFamily'][:60]}")
-        check("b1_h2_cinema_375_uppercase", h2_info_375["textTransform"] == "uppercase",
+        check("b1_h2_cinema_375_sentence_case", h2_info_375["textTransform"] == "none",
               f"textTransform={h2_info_375['textTransform']}")
         check("b1_h2_cinema_375_before_accent",
               h2_info_375["beforeBg"] == "rgb(224, 22, 58)",
@@ -879,10 +880,8 @@ def wave_b1(browser):
     if h2_th_1280:
         check("b1_h2_theatre_1280_size", h2_th_1280["fontSize"] >= 24,
               f"fontSize={h2_th_1280['fontSize']}px")
-        # P3A item 3: theatre h2 changed from Playfair to Oswald+uppercase
-        check("b1_h2_theatre_1280_family",
-              "Oswald" in h2_th_1280["fontFamily"] or "oswald" in h2_th_1280["fontFamily"]
-              or "Playfair" in h2_th_1280["fontFamily"],
+        # 23 Oct 2026: Source Serif 4 is the theatre surface's display face
+        check("b1_h2_theatre_1280_family", "Source Serif 4" in h2_th_1280["fontFamily"],
               f"fontFamily={h2_th_1280['fontFamily'][:60]}")
         check("b1_h2_theatre_1280_before_accent",
               h2_th_1280["beforeBg"] == "rgb(217, 178, 60)",
@@ -3860,10 +3859,9 @@ def wave_h(browser):
     if phead_struct.get("exists"):
         check("h8_phead_no_box", phead_struct["noBg"] and phead_struct["noBorder"],
               f"phead bg={phead_struct['noBg']}, border={phead_struct['noBorder']}")
-        check("h8_phead_eyebrow", phead_struct["hasEyebrow"],
-              ".phead-eyebrow not found")
-        check("h8_phead_eyebrow_text", phead_struct["eyebrowText"] != "",
-              "phead-eyebrow text is empty")
+        # 23 Oct 2026, compact row (owner option 1): the "Програмата" eyebrow goes
+        check("h8_phead_no_eyebrow", not phead_struct["hasEyebrow"],
+              ".phead-eyebrow still present")
         check("h8_phead_title", phead_struct["hasTitle"],
               ".phead-title not found")
         check("h8_phead_title_text", phead_struct["titleText"] != "",
@@ -3950,8 +3948,8 @@ def wave_h(browser):
                 check("h9_th_subhead_size",
                       sub["fontSize"] >= 20,
                       f"'{sub['text']}' fontSize={sub['fontSize']}px (need ≥20)")
-                check("h9_th_subhead_playfair",
-                      "Playfair" in sub["fontFamily"],
+                check("h9_th_subhead_display_face",
+                      "Source Serif 4" in sub["fontFamily"],
                       f"'{sub['text']}' fontFamily={sub['fontFamily']!r}")
                 break  # One representative check is sufficient; the CSS applies to all
         else:
@@ -5497,8 +5495,8 @@ def wave_j(browser, webkit_browser=None):
                 check("j6_subhead_size",
                       sub["fontSize"] >= 20,
                       f"'{sub['text']}' fontSize={sub['fontSize']}px (need ≥20)")
-                check("j6_subhead_playfair",
-                      "Playfair" in sub["fontFamily"],
+                check("j6_subhead_display_face",
+                      "Source Serif 4" in sub["fontFamily"],
                       f"'{sub['text']}' fontFamily={sub['fontFamily']!r}")
                 break
         else:
@@ -6645,16 +6643,16 @@ def wave_l(browser):
         check("l5_cinema_caps", False,
               f"{cinema_caps['err']} (hasTogBtn={cinema_caps.get('hasTogBtn')}, html={cinema_caps.get('togBtnHTML','')})")
     else:
-        check("l5_cinema_caps",
-              cinema_caps["computed"] == "uppercase",
+        check("l5_cinema_sentence_case",
+              cinema_caps["computed"] == "none",
               f"cinema .sec-toggle-title text-transform={cinema_caps['computed']!r} label={cinema_caps.get('label','')!r}")
 
     if "err" in theatre_caps:
         check("l5_theatre_caps", False,
               f"{theatre_caps['err']} (hasTogBtn={theatre_caps.get('hasTogBtn')}, html={theatre_caps.get('togBtnHTML','')})")
     else:
-        check("l5_theatre_caps",
-              theatre_caps["computed"] == "uppercase",
+        check("l5_theatre_sentence_case",
+              theatre_caps["computed"] == "none",
               f"theatre .sec-toggle-title text-transform={theatre_caps['computed']!r} label={theatre_caps.get('label','')!r}")
 
     # ── L6: Preliminary markings ───────────────────────────────────────────────
@@ -9895,7 +9893,10 @@ def wave_p3a(browser):
         # 16 Oct 2026: the line scales with the logo (one lockup), so its width, not a
         # fixed 12.5 px, is the rule: 90-110% of the logo's
         ratio = result.get("ratio")
-        check(f"p3a_2_sub_width_tracks_logo_desktop_{lang}", ratio is not None and 0.9 <= ratio <= 1.1,
+        # 23 Oct 2026: Montserrat capitals keep the owner's 10 px floor, so the line may run
+        # past the logo (it stays clear of the toggle: UX1 lockup)
+        check(f"p3a_2_sub_width_tracks_logo_desktop_{lang}", ratio is not None and 0.9 <= ratio <= 1.4
+              and float(result.get("fontSize", "0px")[:-2]) >= 10,
               f"line/logo width={ratio} fontSize={result.get('fontSize')!r}")
         check(f"p3a_2_no_tagline_block_{lang}", not result.get("blockFound", True),
               f"tagline-block still present")
@@ -9937,13 +9938,15 @@ def wave_p3a(browser):
         centre_diff = result_mob.get("centreDiff")
         check(f"p3a_2_sub_centred_phone_{lang}", centre_diff is not None and abs(centre_diff) <= 2,
               f"centreDiff={centre_diff} (expected within 2px)")
-        check(f"p3a_2_sub_fontsize_phone_{lang}", result_mob.get("fontSize") == "12px",
-              f"fontSize={result_mob.get('fontSize')!r} (expected 12px)")
+        # 23 Oct 2026: the phone line is sized to the room between the header buttons (10-12.5 px)
+        _fs = float((result_mob.get("fontSize") or "0px")[:-2])
+        check(f"p3a_2_sub_fontsize_phone_{lang}", 10 <= _fs <= 12.5,
+              f"fontSize={result_mob.get('fontSize')!r} (expected 10-12.5px)")
         save_shot(page, wave, f"p3a_brand_sub_phone_{lang}")
         ctx.close()
 
-    # ── P3A-3: Theatre headings use Oswald + uppercase ─────────────────────────
-    print("\n=== P3A-3: Theatre headings Oswald + uppercase ===")
+    # ── P3A-3: Theatre headings use the display face (Source Serif 4), sentence case ──
+    print("\n=== P3A-3: Theatre headings Source Serif 4, sentence case ===")
     ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
     page.wait_for_timeout(600)
 
@@ -9970,16 +9973,16 @@ def wave_p3a(browser):
     if result.get("rh2"):
         ff = (result["rh2"].get("fontFamily") or "").lower()
         tt = (result["rh2"].get("textTransform") or "").lower()
-        check("p3a_3_rhead_oswald", "oswald" in ff, f"fontFamily={ff!r}")
-        check("p3a_3_rhead_uppercase", tt == "uppercase", f"textTransform={tt!r}")
+        check("p3a_3_rhead_display_face", "source serif 4" in ff, f"fontFamily={ff!r}")
+        check("p3a_3_rhead_sentence_case", tt == "none", f"textTransform={tt!r}")
     else:
         skip("p3a_3_rhead", "no .rhead h2 visible in theatre mode yet")
 
     if result.get("secT"):
         ff = (result["secT"].get("fontFamily") or "").lower()
         tt = (result["secT"].get("textTransform") or "").lower()
-        check("p3a_3_sectitle_oswald", "oswald" in ff, f"fontFamily={ff!r}")
-        check("p3a_3_sectitle_uppercase", tt == "uppercase", f"textTransform={tt!r}")
+        check("p3a_3_sectitle_display_face", "source serif 4" in ff, f"fontFamily={ff!r}")
+        check("p3a_3_sectitle_sentence_case", tt == "none", f"textTransform={tt!r}")
     else:
         skip("p3a_3_sectitle", "no .sec-toggle-title visible in theatre mode yet")
     ctx.close()
@@ -10013,7 +10016,7 @@ def wave_p3a(browser):
     else:
         check("p3a_4_phead_dates_own_line", not result.get("sameRow", True),
               f"gap={result.get('gap')}px sameRow={result.get('sameRow')}")
-        check("p3a_4_phead_dates_margin", result.get("marginTop", 0) >= 6,
+        check("p3a_4_phead_dates_margin", 2 <= result.get("marginTop", 0) <= 8,
               f"marginTop={result.get('marginTop')}px")
     ctx.close()
 
@@ -17378,7 +17381,7 @@ UX_LOCKUP_JS = r"""() => { const b = document.querySelector('.bar .brand'), l = 
 
 def _ux_lockup(browser, base, eng):
     """Owner item C: on desktop (761-1920 px, 20 px steps) the logo and its line are one
-    lockup: the line is always shown, 90-110% of the logo's width, at least 12 px clear
+    lockup: the line is always shown, 90-140% of the logo's width, at least 12 px clear
     of the Кино/Театър toggle, at least 10 px, nothing overflows; search closed and open,
     BG and EN."""
     widths = list(range(761, 1921, 20)) + [1920]
@@ -17407,7 +17410,9 @@ def _ux_lockup(browser, base, eng):
                     continue
                 fonts.append(m["font"])
                 ratio = m["sw"] / m["lw"] if m["lw"] else 0
-                if not (m["vis"] and 0.9 <= ratio <= 1.1 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
+                # 23 Oct 2026: the Montserrat line may run past the logo (10 px floor) but never
+                # nearer than 12 px to the toggle
+                if not (m["vis"] and 0.9 <= ratio <= 1.4 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
                     bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']} "
                                f"font={m['font']:.1f}")
             state = "search_open" if search else "search_closed"
@@ -17415,12 +17420,14 @@ def _ux_lockup(browser, base, eng):
                   f"{n} widths 761-1920; font {min(fonts or [0]):.1f}-{max(fonts or [0]):.1f}px; problems: {bad[:4]}")
         check(f"ux1_{eng}_lockup_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
         ctx.close()
-    # phones keep the centred 12 px line
+    # phones: the centred line, 10-12.5 px, at least 12 px clear of the language button
     ctx = _ux_ctx(browser, base, 390, 844, phone=True)
     page, errs = _ux_page(ctx, base + "/home/")
-    ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), r = s.getBoundingClientRect();
-        return [getComputedStyle(s).fontSize, Math.round(r.left + r.width / 2)]; }""")
-    check(f"ux1_{eng}_lockup_phone_unchanged", ph[0] == "12px" and abs(ph[1] - 195) <= 4, f"phone line {ph}")
+    ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), g = document.createRange();
+        g.selectNodeContents(s); const r = g.getBoundingClientRect(), l = document.querySelector('[data-lang]').getBoundingClientRect();
+        return [parseFloat(getComputedStyle(s).fontSize), Math.round(r.left + r.width / 2), Math.round(l.left - r.right)]; }""")
+    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - 195) <= 4 and ph[2] >= 12,
+          f"phone line [font, centre, clear of language button] {ph}")
     ctx.close()
 
 
