@@ -1034,6 +1034,30 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 17: cards, score chips, event cards (I14, C4; owner decision: event cards A) ---- */
+/* one solid chip base, readable over any poster (the TMDB chip was 18% cyan: 2.1:1 on light art) */
+.score{background:rgba(12,10,15,.78); border-color:rgba(255,255,255,.18)}
+.score.tmdb{background:rgba(12,10,15,.78); border-color:rgba(92,211,245,.45); color:#5CD3F5}
+/* narrow cards: the tags stack under the score instead of sliding over it */
+@media (max-width:760px){ .card .p-top{flex-direction:column; align-items:flex-start; gap:4px} .card .p-tags{align-items:flex-start} }
+/* event cards, variant A */
+.ecard{display:flex; flex-direction:column; gap:0}
+.ecard .ebox{height:auto; aspect-ratio:16/9; padding:0; display:block; background:#000}
+.ecard .ebox .p-real{object-fit:contain; object-position:center; background:#000}
+.ecard .ebox:has(.p-real) .p-grain{display:none}
+.ecap{display:flex; flex-direction:column; gap:6px; padding:10px 2px 0; text-align:left}
+.ecap-t{font:600 15px/1.25 Onest,"Segoe UI",system-ui,sans-serif; color:var(--fg);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.ecap-m{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.ecard .edate{margin:0; font-size:12.5px; letter-spacing:0; text-transform:none; opacity:1; color:var(--fg-2)}
+.ecard .badge.echip{background:var(--ink-3); border:1px solid var(--line-2); color:var(--fg-2); border-radius:999px; padding:2px 8px; font-weight:600}
+/* the event sheet: the clean art on top (fitted, at most 360 px tall), the title below it */
+.shero.shero-ev{display:block; min-height:0; padding:0; aspect-ratio:16/9; max-height:360px; width:100%}
+.shero.shero-ev .p-real{filter:none; object-fit:contain; background:#000}
+.sh-evhead{padding:18px 22px 0}
+.sh-evhead .eyebrow{color:var(--fg-2)}
+.sh-evhead h2{color:var(--fg)}
+
 /* ---- step 16: the sheet's bar (I12) ---- */
 .sbar{justify-content:flex-end; background:var(--ink-2); -webkit-backdrop-filter:none; backdrop-filter:none; min-height:54px}
 .sbar-sp{flex:1}
@@ -2552,7 +2576,7 @@ function scoreBadge(f){
   if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${fx1(im)}</span>`;
   const tv=tmdbOf(f);
   if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${fx1(tv)}</span>`;
-  return`<span class="score na"><i>IMDb</i>—</span>`;}
+  return"";}
 /* P3A item 1: badge for premiere rail — "Премиера"/"Premiere" within 7 days,
    "Премиера на DD мес"/"Premieres DD Mon" for upcoming. */
 function premBadgeFor(fid){
@@ -2603,7 +2627,7 @@ function filmCard(f,all,rowsOverride){
   const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
-      <div class="p-top">${scoreBadge(f)}
+      <div class="p-top">${scoreBadge(f)||"<span></span>"}
         ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${_tags?`<span class="p-tags">${_tags}</span>`:""}</div>
       <div class="p-title" aria-hidden="true">${esc(filmTitle(f))}</div><div class="p-sub" aria-hidden="true">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
@@ -2622,11 +2646,14 @@ function showCard(sh,all){
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
+  /* Owner decision (variant A): the festival's key art carries its own text, so nothing is
+     printed over it; the name, dates and status sit below it like a film card's caption,
+     the date badge a small neutral chip. The art is fitted (16:9, never cropped). */
+  const title=S.lang==="bg"?ev.title:ev.titleEn;
   return`<button class="ecard" data-event="${esc(ev.id)}"><div class="ebox">
-    ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="p-grain"></div>
-    <span class="badge ${evState(ev)==="active"?"lim":""}">${esc(evBadge(ev))}</span>
-    <div><h3>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h3>
-      <div class="edate">${esc(range)} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
+    ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,title)}<div class="p-grain"></div></div>
+    <span class="ecap"><span class="ecap-t">${esc(title)}</span>
+      <span class="ecap-m"><span class="badge echip">${esc(evBadge(ev))}</span><span class="edate">${esc(range)} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</span></span></span></button>`;}
 function rail(title,sub,cards){
   if(!cards.length)return"";
   return`<section class="rail"><div class="rhead"><h2>${esc(title)}</h2>${sub?`<span class="sub">${esc(sub)}</span>`:""}</div>
@@ -3875,13 +3902,14 @@ function sheetEvent(ev){
      Never fall back to generic aggregators (the user's "Eventim on Физика на
      тъгата" complaint traced to exactly that blanket hub list). */
   const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
-  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero" style="background:${grad(ev.g)}">
-    ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="hero-scrim"></div>
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-ev" style="background:${grad(ev.g)}">
+    ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
-    <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
-      <h2 id="sg-sheet-title">${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
+    </div>
+    <div class="sh-evhead">
+      <div class="eyebrow">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
+      <h2 id="sg-sheet-title">${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div>
    <div class="sbody">
     <div class="chips"><span class="chip solid">${esc(range)}</span>
       <span class="chip">${esc(ev.scope==="both"?(S.lang==="bg"?"кино и театър":"cinema & theatre"):ev.scope==="cinema"?L.cinema:L.theatre)}</span></div>
