@@ -1039,6 +1039,43 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:0!important; padding:0!important; border:0!important}
 
+/* ---- spacing above the hero: the compact row (owner, 23 Oct 2026, option 1) ----
+   Title over its date range on the left; "other dates ›" right-aligned on the title's line; the
+   period pills under it on phones, on the title's line (before "other dates") on desktop. About
+   133 px from the header to the hero on a phone, about 98 px on desktop. */
+.phead{display:flex; flex-wrap:wrap; align-items:center; column-gap:24px; row-gap:12px;
+  padding-block:16px 8px; margin-bottom:0}
+.phead .phead-title{flex:1 1 auto; margin:0; min-width:0; font-size:clamp(26px,2.6vw,32px); line-height:1.1}
+[data-surface="theatre"] .phead .phead-title{font-size:clamp(28px,2.8vw,34px)}
+.phead .phead-dates{display:block; margin-top:4px; font-family:var(--f-ui); font-size:14px; font-weight:500;
+  letter-spacing:0; line-height:1.3; color:var(--fg-2); white-space:nowrap}
+.phead-tools{display:flex; align-items:center; gap:8px; flex:0 1 auto; flex-wrap:wrap; justify-content:flex-end}
+.phead-tools .daystrip{margin:0; padding:0; overflow:visible; flex-wrap:nowrap}
+.phead .phead-other{margin:0; min-height:40px; display:inline-flex; align-items:center; padding:0 4px 0 10px;
+  font-size:14px; font-weight:600; letter-spacing:0; color:var(--fg-2); white-space:nowrap}
+.phead-fav{flex:1 0 100%; display:flex}
+.phead-fav .fav-toggle{margin:0}
+@media(min-width:761px) and (max-width:1279px){
+  .phead-long{display:grid; grid-template-columns:minmax(0,1fr) auto}
+  .phead-long .phead-tools{display:contents}
+  .phead-long .phead-title{grid-column:1; grid-row:1}
+  .phead-long .phead-other{grid-column:2; grid-row:1}
+  .phead-long .phead-tools .daystrip{grid-column:1 / -1; grid-row:2; flex-wrap:wrap; row-gap:8px}
+  .phead-long .phead-fav{grid-column:1 / -1}
+}
+@media(max-width:760px){
+  .phead{display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:12px; row-gap:12px; padding-block:14px 0}
+  .phead + .hero{margin-top:8px}
+  .phead .phead-title{font-size:clamp(26px,7vw,30px); grid-column:1; grid-row:1}
+  [data-surface="theatre"] .phead .phead-title{font-size:clamp(28px,7.4vw,32px)}
+  .phead .phead-dates{font-size:15px; margin-top:4px}
+  .phead-tools{display:contents}
+  .phead-tools .daystrip{grid-column:1 / -1; grid-row:2; overflow-x:auto; margin-inline:-16px; padding-inline:16px;
+    scroll-padding-inline:16px}
+  .phead .phead-other{grid-column:2; grid-row:1; align-self:start; min-height:44px; padding:0 0 0 8px; margin-top:-4px}
+  .phead-fav{grid-column:1 / -1}
+}
+
 /* ---- type families (owner decision 2026-10-23): Montserrat for cinema, Source Serif 4 for theatre ----
    --f-display follows the surface; menus, chips and text stay Montserrat on both. Display titles
    are sentence case now (the uppercase belonged to Oswald), tracked a touch tight; times and
@@ -2591,7 +2628,7 @@ function buildDayStrip(){
 function periodBanner(){
   const L=t();
   /* Build title and date range */
-  let mainTitle="",dateStr="",eyebrow=L.pheadEyebrow||"Програмата",showStrip=false;
+  let mainTitle="",dateStr="",showStrip=false;
   if(S.day==="week"){
     mainTitle=L.pheadThisWeek||(S.lang==="bg"?"Тази седмица":"This week");
     dateStr=fmtRange(TODAY,WEEK_END);
@@ -2631,16 +2668,17 @@ function periodBanner(){
   /* P3A item 7: "Only my favourites" toggle near period header, shown when fav venues exist */
   const starSVGsm=`<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
   const favToggleBtn=S.fav.venues.length>0
-    ?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav style="margin-top:8px">${starSVGsm} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`
+    ?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav>${starSVGsm} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`
     :"";
-  return`<div class="phead">
-    <div class="phead-eyebrow">${esc(eyebrow)}</div>
+  /* the compact row (owner, 23 Oct 2026): title with its dates under it on the left, "other
+     dates" on the title's line at the right; the period pills sit under it on phones and on the
+     title's line on desktop (CSS). No eyebrow. */
+  /* a long strip (a full week, or the roll into next week) gets its own row below 1280 px (CSS) */
+  const longStrip=(strip.match(/class="dspill"/g)||[]).length>5;
+  return`<div class="phead${longStrip?" phead-long":""}">
     <h1 class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></h1>
-    ${strip}
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button>
-      ${favToggleBtn}
-    </div>
+    <div class="phead-tools">${strip}<button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button></div>
+    ${favToggleBtn?`<div class="phead-fav">${favToggleBtn}</div>`:""}
   </div>`;}
 /* dates that actually have something, for the calendar dots */
 function datesWith(){
