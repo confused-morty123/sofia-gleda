@@ -1032,6 +1032,14 @@ footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 7: favourite stars, drawer reflow (I5, I10) ---- */
+/* the star's SVG had no size, so it drew at 0x0 inside a 12x23 button */
+.fav-star{display:inline-grid; place-items:center; min-width:32px; min-height:32px; padding:4px}
+.fav-star svg{display:block; width:18px; height:18px}
+@media (pointer:coarse){ .fav-star{min-width:44px; min-height:44px} }
+/* the period chips wrap instead of running out of the drawer on iPhone widths */
+.mrow{flex-wrap:wrap}
+
 /* ---- step 6: week grid (C3, M15) ---- */
 .p3e-gt th.p3e-vcol{text-align:left; font-weight:500; color:var(--fg); white-space:normal; padding:8px 4px;
   border-top:1px solid rgba(255,255,255,.07); vertical-align:middle}
@@ -3809,7 +3817,7 @@ function drawerHTML(){
     const mkChip=c=>{const on=cinemaHasListings(c);const isFav=S.fav.venues.includes(c.id);
       return`<div style="display:flex;align-items:center;gap:2px">
         <button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(cinName(c))}</button>
-        ${on?`<button class="fav-star${isFav?" on":""}" data-fav-venue="${esc(c.id)}" title="${esc(isFav?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-pressed="${isFav}">${starSVG}</button>`:""}
+        ${on?`<button class="fav-star${isFav?" on":""}" data-fav-venue="${esc(c.id)}" title="${esc(isFav?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-label="${esc((L.favStar||"Запази")+": "+cinName(c))}" aria-pressed="${isFav}">${starSVG}</button>`:""}
       </div>`;};
     const multiplexes=CINEMAS.filter(c=>c.kind==="multiplex");
     const independents=CINEMAS.filter(c=>c.kind==="independent");
@@ -3835,7 +3843,7 @@ function drawerHTML(){
       ${theatres.map(v=>{const on=theatreHasListings(v.id);const isFavT=S.fav.venues.includes(v.id);
         return`<div style="display:flex;align-items:center;gap:2px">
           <button class="fchip${on?"":" off"}" data-venue="${esc(v.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(v.id)}">${esc(v.name)}</button>
-          ${on?`<button class="fav-star${isFavT?" on":""}" data-fav-venue="${esc(v.id)}" title="${esc(isFavT?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-pressed="${isFavT}">${starSVG}</button>`:""}
+          ${on?`<button class="fav-star${isFavT?" on":""}" data-fav-venue="${esc(v.id)}" title="${esc(isFavT?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-label="${esc((L.favStar||"Запази")+": "+v.name)}" aria-pressed="${isFavT}">${starSVG}</button>`:""}
         </div>`;}).join("")}
     </div>`;
   }
