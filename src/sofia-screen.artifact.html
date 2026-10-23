@@ -1217,6 +1217,7 @@ bg:{tagline:"кино и театър в софия",
  bannerWeek:"Програма за тази седмица",bannerToday:"Програма за днес",bannerMonth:"Програма за този месец",
  bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
  fabFilters:"Филтри",
+plFilm:["филм","филма"],plShow:["представление","представления"],plScreening:["прожекция","прожекции"],plPerf:["представление","представления"],plCinema:["кино","кина"],plResult:["резултат","резултата"],srFor:"за „{q}“",srNoHits:"Няма съвпадения за „{q}“",
 lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSearch:"Изчисти търсенето",prevMonth:"Предишен месец",nextMonth:"Следващ месец",railBack:"Назад в реда",railFwd:"Напред в реда",fabActive:"{n} активни",prelimShort:"предварителна програма",boxOnly:"само на касата",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
@@ -1319,6 +1320,7 @@ en:{tagline:"cinema & theatre in sofia",
  bannerWeek:"This week's programme",bannerToday:"Today's programme",bannerMonth:"This month's programme",
  bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
  fabFilters:"Filters",
+plFilm:["film","films"],plShow:["production","productions"],plScreening:["screening","screenings"],plPerf:["performance","performances"],plCinema:["cinema","cinemas"],plResult:["result","results"],srFor:"for “{q}”",srNoHits:"No matches for “{q}”",
 lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMonth:"Previous month",nextMonth:"Next month",railBack:"Scroll back",railFwd:"Scroll forward",fabActive:"{n} active",prelimShort:"preliminary programme",boxOnly:"box office only",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
@@ -4131,6 +4133,9 @@ function renderKeepDrawer(){
   dr.scrollTop=top;
   if(focus){const el=dr.querySelector(focus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
   refreshPage();
+  /* a range half-picked in the calendar: say what to do next; otherwise what the page holds */
+  const dr2=document.querySelector("#app > .drawer .calhint");
+  announce(S.day==="range"&&S.rFrom&&!S.rTo&&dr2?dr2.textContent:_listingSummary());
 }
 
 /* ===================== in-place page updates =====================
@@ -4733,10 +4738,31 @@ function shareItem(kind,id,title){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,()=>toast(url));}
   else toast(url);
 }
+/* "1 прожекция", "5 прожекции": a count with the right form ([one, many] from the T table) */
+function plural(n,forms){return `${n} ${n===1?forms[0]:forms[1]}`;}
+/* One polite live region for status changes a screen reader would otherwise miss (WCAG
+   4.1.3): search results, filter changes, the sheet's day picker, the toast. It lives
+   outside #app (never rebuilt, never inert); emptied first so a repeat is read again. */
+let _liveT=0;
+function announce(msg){
+  let el=document.getElementById("sg-live");
+  if(!el){el=document.createElement("div");el.id="sg-live";el.className="sg-sr";
+    el.setAttribute("role","status");el.setAttribute("aria-live","polite");el.setAttribute("aria-atomic","true");
+    document.body.appendChild(el);}
+  el.textContent="";clearTimeout(_liveT);
+  _liveT=setTimeout(()=>{el.textContent=msg||"";},80);
+}
+/* what the listing holds now, said after a filter change */
+function _listingSummary(){
+  const L=t();
+  const n=S.mode==="cinema"?visibleFilms().length:visibleShows().length;
+  return `${periodLabel()}: ${plural(n,S.mode==="cinema"?L.plFilm:L.plShow)}`;
+}
 function toast(msg){
   let el=document.getElementById("sg-toast");
   if(!el){el=document.createElement("div");el.id="sg-toast";el.className="toast";document.body.appendChild(el);}
   el.textContent=msg;el.classList.add("show");
+  announce(msg);
   clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2200);
 }
 window.addEventListener("hashchange",()=>{ if(!sheetOpen)openFromHash(); });
@@ -6011,6 +6037,9 @@ document.addEventListener("click",e=>{
       if(grpSlot){
         const fn=_p3DayRenderFns.get(grpSlot.id);
         if(fn)try{fn(p3day.dataset.p3day,grpSlot);}catch(e){}
+        const L=t(),nv=grpSlot.querySelectorAll(".p3e-row").length,np=grpSlot.querySelectorAll(".p3e-pill").length;
+        const isShow=/^show:/.test((grpSlot.querySelector("[data-sspill]")||{dataset:{}}).dataset.sspill||"");
+        announce(`${fmtDayDow(p3day.dataset.p3day)}: ${isShow?plural(np,L.plPerf):plural(nv,L.plCinema)+", "+plural(np,L.plScreening)}`);
       }
     }
     return;
@@ -6054,7 +6083,11 @@ document.addEventListener("input",e=>{
   S.q=e.target.value; S.qFocus=true;
   _syncSearchField();
   clearTimeout(qTimer);
-  qTimer=setTimeout(()=>{qTimer=null;refreshPage({search:true});},160);
+  qTimer=setTimeout(()=>{qTimer=null;refreshPage({search:true});
+    const q=S.q.trim();
+    if(q.length>=2){const sr=searchAll(S.q),n=sr.films.length+sr.shows.length,L=t();
+      announce(n?`${plural(n,L.plResult)} ${L.srFor.replace("{q}",q)}`:L.srNoHits.replace("{q}",q));}
+  },160);
 });
 
 function fatal(e){
