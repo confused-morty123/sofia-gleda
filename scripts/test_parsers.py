@@ -1857,11 +1857,25 @@ _pp = {"p1": {"id": "p1", "bg": "Пес патрул", "runtime": 86},
        "p2": {"id": "p2", "bg": "Пес патрул: Мега филмът", "runtime": 88}}
 check("trap: a shared opening and a near runtime at different venues is not one film",
       _DD(_pp, _rows("p1", "cineland", _W1) + _rows("p2", "cc-sofia", _W1)), [])
-check("…at one venue in the same weeks, the same runtime makes it one",
-      _DD(_pp, _rows("p1", "cc-sofia", _W1, ["11:00"]) + _rows("p2", "cc-sofia", _W1)), [("p1", "p2", "prefix")])
-check("…a runtime conflict keeps them apart even then",
+check("trap: …nor at one multiplex in the same weeks (Пес патрул: Филмът 86 min / Мега филмът 88 min)",
+      _DD(_pp, _rows("p1", "cc-sofia", _W1, ["11:00"]) + _rows("p2", "cc-sofia", _W1)), [])
+check("trap: one start time in common at a multiplex is chance, not the same screening",
+      _DD(_pp, _rows("p1", "cc-sofia", _W1[:1], ["11:00"]) + _rows("p2", "cc-sofia", _W1[:1], ["11:00", "15:00"]),
+          multi_hall={"cc-sofia"}), [])
+check("…every screening of one listed under the other there, two or more, is the same screening",
+      _DD(_pp, _rows("p1", "cc-sofia", _W1[:2], ["11:00"]) + _rows("p2", "cc-sofia", _W1, ["11:00", "15:00"]),
+          multi_hall={"cc-sofia"}), [("p1", "p2", "prefix")])
+check("…a venue seen running unrelated films at once counts as several halls without being told",
+      _DD(dict(_pp, z1={"id": "z1", "bg": "Сират"}, z2={"id": "z2", "bg": "Диаманти"}),
+          _rows("p1", "g8", _W1[:1], ["11:00"]) + _rows("p2", "g8", _W1[:1], ["11:00"])
+          + _rows("z1", "g8", _W1[:2], ["18:00"]) + _rows("z2", "g8", _W1[:2], ["18:00"])), [])
+check("…but once is no proof of it (a one-hall venue with one clash in its listings)",
+      _DD(dict(_pp, z1={"id": "z1", "bg": "Сират"}, z2={"id": "z2", "bg": "Диаманти"}),
+          _rows("p1", "g8", _W1[:1], ["11:00"]) + _rows("p2", "g8", _W1[:1], ["11:00"])
+          + _rows("z1", "g8", _W1[:1], ["18:00"]) + _rows("z2", "g8", _W1[:1], ["18:00"])), [("p1", "p2", "prefix")])
+check("…a runtime conflict keeps them apart even with the same screening",
       _DD({"p1": {"id": "p1", "bg": "Пес патрул", "runtime": 70}, "p2": _pp["p2"]},
-          _rows("p1", "cc-sofia", _W1, ["11:00"]) + _rows("p2", "cc-sofia", _W1, ["11:00"])), [])
+          _rows("p1", "odeon", _W1, ["11:00"]) + _rows("p2", "odeon", _W1, ["11:00"])), [])
 check("trap: one word in common is never enough ('Аватар' / 'Аватар: Огън и пепел', the same screening)",
       _DD({"a": {"id": "a", "bg": "Аватар"}, "b": {"id": "b", "bg": "Аватар: Огън и пепел"}},
           _rows("a", "odeon", _W1) + _rows("b", "odeon", _W1)), [])
@@ -1881,8 +1895,13 @@ check("trap: a short title that fits two films merges with neither",
       _DD({"s": {"id": "s", "bg": "Пес патрул", "runtime": 88},
            "m1": {"id": "m1", "bg": "Пес патрул: Мега филмът", "runtime": 88},
            "m2": {"id": "m2", "bg": "Пес патрул: Филмът", "runtime": 87}},
-          _rows("s", "cc-sofia", _W1, ["11:00"]) + _rows("m1", "cc-sofia", _W1) + _rows("m2", "cc-sofia", _W1, ["15:00"])),
+          _rows("s", "odeon", _W1, ["11:00"]) + _rows("m1", "odeon", _W1[:1], ["11:00"])
+          + _rows("m2", "odeon", _W1[1:2], ["11:00"])),
       [])
+check("…while either one alone would be merged (the same screening at a one-hall venue)",
+      _DD({"s": {"id": "s", "bg": "Пес патрул", "runtime": 88},
+           "m1": {"id": "m1", "bg": "Пес патрул: Мега филмът", "runtime": 88}},
+          _rows("s", "odeon", _W1, ["11:00"]) + _rows("m1", "odeon", _W1[:1], ["11:00"])), [("m1", "s", "prefix")])
 check("version notes: the key of a listing without its note", FID.key_without_note(
       "Хроники за неудобната истина (с английски субтитри)"), "хроники за неудобната истина")
 check("…'with English subtitles' is the same note", FID.version_note("Chronicles (with English subtitles)"), "en-sub")

@@ -745,7 +745,33 @@ def _shared_venue_dates(a, b):
     return any(_overlap_dates(a["venues"][v], b["venues"][v]) for v in set(a["venues"]) & set(b["venues"]))
 
 
-def _edge(a, b):
+def _same_screening(a, b, multi_hall=()):
+    """The very same screening is listed under both records. At a venue with one
+    hall, one shared venue / date / time is that. At a venue that runs several
+    halls at once (a multiplex, G8) two films starting together is everyday
+    chance: there it takes two shared screenings or more, and at those venues
+    every screening of one record must be the other's too."""
+    shared = a["slots"] & b["slots"]
+    if not shared:
+        return False
+    if any(v not in multi_hall for v, _d, _t in shared):
+        return True
+    vs = {v for v, _d, _t in shared}
+    mine_a = {x for x in a["slots"] if x[0] in vs}
+    mine_b = {x for x in b["slots"] if x[0] in vs}
+    return len(shared) >= 2 and (mine_a <= b["slots"] or mine_b <= a["slots"])
+
+
+def _films_at(rows):
+    """{(venue, date, time): the films listed then}."""
+    at = {}
+    for r in rows:
+        for tm in r[3] or ():
+            at.setdefault((r[1], r[2], tm), set()).add(r[0])
+    return at
+
+
+def _edge(a, b, multi_hall=()):
     """(rule, reason) when records a and b are one film, else None. Every rule
     needs a positive fact besides the titles; a year or runtime conflict vetoes all."""
     why = _conflict(a, b)
@@ -764,11 +790,13 @@ def _edge(a, b):
         kind, ks, kl = c
         rt = s["runtimes"] and l["runtimes"] and _near(s["runtimes"], l["runtimes"], 3)
         yr = s["years"] & l["years"]
-        slot = s["slots"] & l["slots"]
+        slot = _same_screening(s, l, multi_hall)
         if not _overlap_dates(s["dates"], l["dates"]):
             continue
         # A shared opening ("Последният ден" / "Последният ден на лятото") is not
-        # enough, nor is one coincidence of runtime: two facts, or the very same
+        # enough, nor is one coincidence of runtime — not even at one venue: a
+        # multiplex shows "Пес патрул: Филмът" (86 min) and "Пес патрул: Мега
+        # филмът" (88 min) in the same weeks. Two facts, or the very same
         # screening under both titles.
         both = rt and yr
         if kind == "prefix":
@@ -777,9 +805,6 @@ def _edge(a, b):
             if both:
                 return "prefix", (f"{ks!r} begins {kl!r}; runtime {sorted(s['runtimes'])}≈"
                                   f"{sorted(l['runtimes'])} min and year {sorted(yr)[0]}")
-            if rt and _shared_venue_dates(s, l):
-                return "prefix", (f"{ks!r} begins {kl!r}; runtime {sorted(s['runtimes'])}≈"
-                                  f"{sorted(l['runtimes'])} min at the same venue in the same weeks")
         elif both and not (set(s["venues"]) & set(l["venues"])):
             # a title inside another one: the same runtime and year, the same
             # weeks, and no venue lists both
@@ -789,13 +814,14 @@ def _edge(a, b):
 
 
 def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, distinct=(),
-                      merged=()):
+                      merged=(), multi_hall=()):
     """Records that are one film, among the films on screen. films: {id: record};
     minted: ids the pipeline minted (only those are ever dropped); rows: SHOWTIMES
     rows [id, venue, date, [times]]; links: (id, url) pairs from LINKS / VLINKS (a
     venue page that names an IMDb id, Cine Grand's /m/<slug>-imdbtt…, identifies
     the film); film_info, tmdb: the sidecar files; distinct: pairs never merged;
-    merged: ids already merged away (skipped). Returns
+    merged: ids already merged away (skipped); multi_hall: venues that run several
+    halls at once (the multiplexes; venues seen doing it in rows are added). Returns
     [{"drop", "into", "rule", "reason"}], each drop a minted record.
 
     Rules (a year or runtime conflict vetoes every one):
@@ -804,8 +830,8 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
                  source's own runtime / year confirms;
       prefix     "X Y" vs "X" (two words or more, the same numbers, no sequel
                  word after it), in the same weeks, with the same screening under
-                 both, or the same runtime (±3) and year, or the same runtime at
-                 one venue;
+                 both (at a several-hall venue: two or more, all of one record's
+                 there), or the same runtime (±3) and year;
       contained  "X" as whole words inside the main title "Z X: Y" (ten letters
                  or more): the same runtime (±3) and year, the same weeks, and no
                  venue lists both.
@@ -822,6 +848,16 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
         for m in _IMDB_IN_URL.finditer(url or ""):
             link_imdb.setdefault(fid, set()).add(m.group(1).lower())
     ev = {f: _evidence(f, films[f], rs, link_imdb, film_info, tmdb) for f, rs in by_film.items()}
+    multi_hall = set(multi_hall or ())
+    # a venue seen running two unrelated films at once (no word of their titles in
+    # common) at two moments or more has several halls (G8), whatever it is called
+    unrelated = {}
+    for (v, _d, _t), fs in _films_at([r for rs in by_film.values() for r in rs]).items():
+        fs = sorted(fs)
+        if any(not (set(ev[x]["key"].split()) & set(ev[y]["key"].split()))
+               for i, x in enumerate(fs) for y in fs[i + 1:]):
+            unrelated[v] = unrelated.get(v, 0) + 1
+    multi_hall |= {v for v, n in unrelated.items() if n >= 2}
     for f in ev:
         ev[f]["minted"] = f in minted
     distinct = set(distinct or ())
@@ -847,7 +883,7 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
                 continue
             if not (ev[a]["minted"] or ev[b]["minted"]):
                 continue                       # two catalogue films: for a human
-            e = _edge(ev[a], ev[b])
+            e = _edge(ev[a], ev[b], multi_hall)
             if e:
                 edges[(a, b)] = e
     # a shorter title that fits two films that are not otherwise one: neither

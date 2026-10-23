@@ -2770,7 +2770,8 @@ def main():
     new_merges = FI.detect_duplicates(
         index.films, index.minted, old_showtimes,
         list(links.items()) + [(f, u) for (f, _v), u in vlinks.items()],
-        _read_json(FILM_INFO), _read_json(TMDB_FILMS), index.distinct, merged=index.merged)
+        _read_json(FILM_INFO), _read_json(TMDB_FILMS), index.distinct, merged=index.merged,
+        multi_hall={v for v, k in cinema_kind.items() if k == "multiplex"})
     for m in new_merges:
         rec = dict(cinema_films.get(m["drop"]) or index.films.get(m["drop"]) or {"id": m["drop"]})
         film_merges[m["drop"]] = {"into": m["into"], "rule": m["rule"], "reason": m["reason"],
