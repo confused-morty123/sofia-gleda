@@ -331,9 +331,9 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 [data-surface="theatre"] .eyebrow{color:var(--gild)}
 .eyebrow .dot{width:5px; height:5px; border-radius:50%; background:currentColor}
-.hero h1{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
+.hero h1,.hero .hero-title{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
   font-size:clamp(28px,5.6vw,52px); line-height:1; margin-bottom:11px}
-[data-surface="theatre"] .hero h1{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+[data-surface="theatre"] .hero h1,[data-surface="theatre"] .hero .hero-title{font-family:"Playfair Display",Georgia,serif; text-transform:none;
   font-weight:800; letter-spacing:-.015em; font-size:clamp(26px,5vw,46px); line-height:1.04}
 .hero-meta{display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-bottom:11px; font-size:12.5px; color:#CCC2D0}
 .hero-syn{font-size:14px; color:#DBD2DE; margin-bottom:17px; max-width:54ch}
@@ -1032,6 +1032,12 @@ footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 9: headings, meta lines (M1, M13) ---- */
+.sechead h1.sechead-h{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
+  letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
+/* the hero's meta separators end an item, so a wrapped line never starts with "·" */
+.hero-meta > span:not(.score):not(:last-child)::after{content:"·"; margin-left:9px; color:currentColor}
+
 /* ---- step 7: favourite stars, drawer reflow (I5, I10) ---- */
 /* the star's SVG had no size, so it drew at 0x0 inside a 12x23 button */
 .fav-star{display:inline-grid; place-items:center; min-width:32px; min-height:32px; padding:4px}
@@ -1217,7 +1223,7 @@ bg:{tagline:"кино и театър в софия",
  bannerWeek:"Програма за тази седмица",bannerToday:"Програма за днес",bannerMonth:"Програма за този месец",
  bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
  fabFilters:"Филтри",
-plFilm:["филм","филма"],plShow:["представление","представления"],plScreening:["прожекция","прожекции"],plPerf:["представление","представления"],plCinema:["кино","кина"],plResult:["резултат","резултата"],srFor:"за „{q}“",srNoHits:"Няма съвпадения за „{q}“",
+plFilm:["филм","филма"],plShow:["представление","представления"],plScreening:["прожекция","прожекции"],plPerf:["представление","представления"],plCinema:["кино","кина"],plResult:["резултат","резултата"],srFor:"за „{q}“",srNoHits:"Няма съвпадения за „{q}“",noHitsHelp:"Провери изписването или изчисти търсенето.",yearL:"Година",
 lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSearch:"Изчисти търсенето",prevMonth:"Предишен месец",nextMonth:"Следващ месец",railBack:"Назад в реда",railFwd:"Напред в реда",fabActive:"{n} активни",prelimShort:"предварителна програма",boxOnly:"само на касата",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
@@ -1320,7 +1326,7 @@ en:{tagline:"cinema & theatre in sofia",
  bannerWeek:"This week's programme",bannerToday:"Today's programme",bannerMonth:"This month's programme",
  bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
  fabFilters:"Filters",
-plFilm:["film","films"],plShow:["production","productions"],plScreening:["screening","screenings"],plPerf:["performance","performances"],plCinema:["cinema","cinemas"],plResult:["result","results"],srFor:"for “{q}”",srNoHits:"No matches for “{q}”",
+plFilm:["film","films"],plShow:["production","productions"],plScreening:["screening","screenings"],plPerf:["performance","performances"],plCinema:["cinema","cinemas"],plResult:["result","results"],srFor:"for “{q}”",srNoHits:"No matches for “{q}”",noHitsHelp:"Check the spelling or clear the search.",yearL:"Year",
 lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMonth:"Previous month",nextMonth:"Next month",railBack:"Scroll back",railFwd:"Scroll forward",fabActive:"{n} active",prelimShort:"preliminary programme",boxOnly:"box office only",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
@@ -2395,7 +2401,7 @@ function periodBanner(){
     :"";
   return`<div class="phead">
     <div class="phead-eyebrow">${esc(eyebrow)}</div>
-    <div class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></div>
+    <h1 class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></h1>
     ${strip}
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button>
@@ -2464,8 +2470,8 @@ function filmCard(f,all,rowsOverride){
      when it really is a single-venue context (per-cinema section). */
   const singleVenue=(rowsOverride&&rowsOverride._perVenue===true)||(S.fVenues.length===1);
   const meta=[f.runtime?`${esc(f.runtime)} ${esc(t().min)}`:"",
-              n?`${n} ${esc(t().screenings)}`:"",
-              (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
+              n?esc(plural(n,t().plScreening)):"",
+              (!singleVenue&&n)?esc(plural(v,t().plCinema)):""].filter(Boolean).join(" · ");
   const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
@@ -2484,7 +2490,7 @@ function showCard(sh,all){
       <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
       <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
+      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?esc(plural(p.length,t().plPerf)):sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
@@ -2546,9 +2552,9 @@ function hero(){
     return`<div class="hero"><div class="hero-art" style="background:${grad(f.g)}">${posterArt("hero-"+f.id,f.genres,f.g,filmTitle(f))}</div>
       <div class="hero-scrim"></div><div class="hero-body">
       <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
-      <h1>${esc(filmTitle(f))}</h1>
+      <h2 class="hero-title">${esc(filmTitle(f))}</h2>
       <div class="hero-meta">${scoreBadge(f)}
-        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${esc(f.year)}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
+        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>${esc(f.year)}</span>`:""}${n?`<span>${esc(plural(n,L.plScreening))}</span>`:""}</div>
       ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
@@ -2559,9 +2565,9 @@ function hero(){
   return`<div class="hero"><div class="hero-art" style="background:${grad(sh.g)}">${posterArt("hero-"+sh.id,sh.genres,sh.g,titleOf(sh))}</div>
     <div class="hero-scrim"></div><div class="hero-body">
     <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
-    <h1>${esc(titleOf(sh))}</h1>
-    <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
-      ${sh.duration?`<span>·</span><span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
+    <h2 class="hero-title">${esc(titleOf(sh))}</h2>
+    <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
+      ${sh.duration?`<span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>${esc(plural(p.length,L.plPerf))}</span>`:""}</div>
     ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
@@ -3621,7 +3627,7 @@ function sheetFilm(f){
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8;margin-bottom:10px">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
-  rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?fx1(imdbOf(f))+"<small>/10</small>":"—"}</div></div>`);
+  if(imdbOf(f)!=null)rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${fx1(imdbOf(f))+"<small>/10</small>"}</div></div>`);
   {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div></div>`);}
   {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(rv)}<small>%</small></div></div>`);}
   {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${esc(mv)}<small>/100</small></div></div>`);}
@@ -3653,7 +3659,7 @@ function sheetFilm(f){
       ${(()=>{const ln=langName(ART2(f.id).ol);return ln?`<dt>${esc(L.olang)}</dt><dd>${esc(ln)}</dd>`:"";})()}
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
-      ${(ctryOf(f)||yearOf(f))?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",yearOf(f)?esc(yearOf(f)):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
+      ${(ctryOf(f)||yearOf(f))?`<dt>${esc(ctryOf(f)?L.country:L.yearL)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",yearOf(f)?esc(yearOf(f)):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
     <div class="sec"><h3>${esc(L.times)}</h3>
       ${selNote}
       ${timesHtml}</div>
@@ -3886,13 +3892,15 @@ function drawerHTML(){
 }
 function searchView(sr){
   const L=t(),total=sr.films.length+sr.shows.length;
-  return `<div class="sechead" style="padding-top:20px"><h2>${esc(L.results)} „${esc(S.q)}“</h2><span class="n">${total}</span></div>
+  const qq=S.lang==="bg"?`„${S.q}“`:`“${S.q}”`;
+  return `<div class="sechead" style="padding-top:20px"><h1 class="sechead-h">${esc(L.results)} ${esc(qq)}</h1><span class="n">${total}</span></div>
    <div class="note">${esc(L.searchHint)}</div>
    ${sr.films.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inFilms)}</h2><span class="sub">${sr.films.length}</span></div>
      <div class="grid">${sr.films.map(f=>filmCard(f,true)).join("")}</div></section>`:""}
    ${sr.shows.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inShows)}</h2><span class="sub">${sr.shows.length}</span></div>
      <div class="grid">${sr.shows.map(x=>showCard(x,true)).join("")}</div></section>`:""}
-   ${total?"":`<div class="empty">${esc(L.noHits)}</div>`}`;
+   ${total?"":`<div class="empty">${esc(L.srNoHits.replace("{q}",S.q.trim()))}. ${esc(L.noHitsHelp)}
+      <div style="margin-top:12px"><button class="btn sm" data-qclear>${esc(L.clearSearch)}</button></div></div>`}`;
 }
 function render(){
   const L=t();
