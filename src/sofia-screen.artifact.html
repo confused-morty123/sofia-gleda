@@ -1032,6 +1032,13 @@ footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
 .sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
   clip-path:inset(50%)!important; white-space:nowrap!important; margin:-1px!important; padding:0!important; border:0!important}
 
+/* ---- step 10: box-office-only venues (owner decision 2026-10-23) ---- */
+/* the online pills' shape and size (7px 13px, 40 px, radius 20), neutral grey, no arrow, inert */
+.buylink.inperson{display:inline-flex; align-items:center; gap:5px; padding:7px 13px; min-height:40px; border-radius:20px;
+  border:1px solid color-mix(in srgb,var(--fg-2) 40%,transparent); background:transparent; color:var(--fg-2);
+  font-size:12.5px; font-weight:600; line-height:1.2; cursor:default}
+.buylink.inperson:hover{color:var(--fg-2)}
+
 /* ---- step 9: headings, meta lines (M1, M13) ---- */
 .sechead h1.sechead-h{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
   letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
@@ -3313,6 +3320,12 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
   /* a link chosen from an aggregator (AGGLINKS) is labelled with its name, and the note
      says so: "the theatre's own official box office" would not be true */
   const _al=(showId&&typeof AGGLINKS==="object"&&AGGLINKS[showId])||null;
+  /* a theatre that sells only at its box office: the same grey pill as on the film sheet */
+  if(b.inPerson){
+    const nm=(S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label;
+    return`<div class="buybox"><div class="bl">${esc(L.buyAt)}</div>
+    <div class="buylinks"><span class="buylink inperson">${esc(nm)}, ${esc(L.boxOnly)}</span></div></div>`;
+  }
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
@@ -3347,7 +3360,9 @@ function filmBuyBox(f,rows){
     if(viaEpay)hasEpay=true;
     if(b.inPerson){
       const cname=(S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label;
-      return`<span class="buylink inperson">${esc(cname)}, ${esc(S.lang==="bg"?"на касата":"box office")}</span>`;
+      /* owner, 2026-10-23: a box-office-only venue is a grey pill in the same shape as the
+         online-ticket pills, with no arrow; its text says so ("само на касата") */
+      return`<span class="buylink inperson">${esc(cname)}, ${esc(L.boxOnly)}</span>`;
     }
     const u=safeUrl(filmTixUrl(f.id,vid,null)||b.url);
     if(!u)return"";
