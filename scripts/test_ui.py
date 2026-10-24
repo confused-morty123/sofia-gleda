@@ -832,8 +832,8 @@ def wave_b1(browser):
     if h2_info_375:
         check("b1_h2_cinema_375_size", h2_info_375["fontSize"] >= 20,
               f"fontSize={h2_info_375['fontSize']}px")
-        # 23 Oct 2026: Montserrat on the cinema surface, display titles in sentence case
-        check("b1_h2_cinema_375_family", "Montserrat" in h2_info_375["fontFamily"],
+        # 24 Oct 2026: Geologica on the cinema surface (was Montserrat), display titles in sentence case
+        check("b1_h2_cinema_375_family", h2_info_375["fontFamily"].startswith("Geologica"),
               f"fontFamily={h2_info_375['fontFamily'][:60]}")
         check("b1_h2_cinema_375_sentence_case", h2_info_375["textTransform"] == "none",
               f"textTransform={h2_info_375['textTransform']}")
@@ -9893,8 +9893,8 @@ def wave_p3a(browser):
         # 16 Oct 2026: the line scales with the logo (one lockup), so its width, not a
         # fixed 12.5 px, is the rule: 90-110% of the logo's
         ratio = result.get("ratio")
-        # 23 Oct 2026: Montserrat capitals keep the owner's 10 px floor, so the line may run
-        # past the logo (it stays clear of the toggle: UX1 lockup)
+        # 24 Oct 2026: plain Geologica in sentence case keeps the owner's 10 px floor, so the
+        # Bulgarian line may run a little past the logo (it stays clear of the toggle: UX1 lockup)
         check(f"p3a_2_sub_width_tracks_logo_desktop_{lang}", ratio is not None and 0.9 <= ratio <= 1.4
               and float(result.get("fontSize", "0px")[:-2]) >= 10,
               f"line/logo width={ratio} fontSize={result.get('fontSize')!r}")
@@ -17450,8 +17450,8 @@ def _ux_lockup(browser, base, eng):
                     continue
                 fonts.append(m["font"])
                 ratio = m["sw"] / m["lw"] if m["lw"] else 0
-                # 23 Oct 2026: the Montserrat line may run past the logo (10 px floor) but never
-                # nearer than 12 px to the toggle
+                # the line may run past the logo (10 px floor; Geologica since 24 Oct 2026) but
+                # never nearer than 12 px to the toggle
                 if not (m["vis"] and 0.9 <= ratio <= 1.4 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
                     bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']} "
                                f"font={m['font']:.1f}")
@@ -17580,6 +17580,169 @@ def wave_ux1(browser):
             _ux_shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+# ============================================================================
+# WAVE B24: the owner's batch of 2026-10-24
+#   1 Geologica for the cinema surface (its sharp-corner axis, SHRP 100, on headings, the hero
+#     and the times; plain Geologica for the motto, menus and text), Source Serif 4 for the
+#     theatre's titles; Montserrat gone; the Bulgarian letterforms (locl BGR) in this engine
+#   2 the Кино/Театър toggle: a crimson ring on Кино, a gold ring on Театър (the active one)
+#   3 the motto: one face, size and tracking on the cinema and the theatre screens
+#   4 a next-week day of the period strip keeps the strip and its listing
+#   5 the desktop week grid: paging never moves the table or the pager
+#   7 the focused search field: one ring inside the pill, nothing outside its rounded edge
+# (6, HF1's "buy then drag" with a film that has a buy link, lives in HF1.)
+# Runs over http (the self-hosted fonts load in both engines); SOFIA_BROWSER=webkit runs it
+# in WebKit.
+# ============================================================================
+B24_CRIMSON = "rgb(224, 22, 58)"
+B24_GOLD = "rgb(217, 178, 60)"
+B24_FG = "rgb(244, 239, 246)"
+
+
+def _b24_open(browser, base, w, h, phone=False, lang="bg", mode="cinema", clock=None):
+    ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock)
+    page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/"))
+    page.evaluate("async () => { await document.fonts.ready; }")
+    return ctx, page, errs
+
+
+B24_FONT_JS = r"""async () => {
+  await document.fonts.ready;
+  const one = s => { const e = document.querySelector(s); if (!e) return null; const c = getComputedStyle(e);
+    return {fam: c.fontFamily, fvs: c.fontVariationSettings}; };
+  return {surface: document.documentElement.dataset.surface, lang: document.documentElement.lang,
+    title: one('.phead-title'), titleDates: one('.phead-title .phead-dates'), hero: one('.hero h1, .hero .hero-title'),
+    rail: one('main .rhead h2'), motto: one('.brand-sub'), body: one('body'), card: one('#app .card .cf1'),
+    pill: one('.dspill'), seg: one('.seg button'),
+    loaded: [...new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '')))]};
+}"""
+
+# a probe line drawn in Geologica: the same letters with SHRP 0 and 100, and as Bulgarian and
+# as Russian (lang), each as an element screenshot
+B24_PROBE_JS = r"""async ([txt, lang, fvs]) => {
+  await document.fonts.load('700 44px Geologica', txt);
+  let d = document.getElementById('b24-probe');
+  if (!d) { d = document.createElement('div'); d.id = 'b24-probe'; document.body.appendChild(d); }
+  d.setAttribute('style', 'position:fixed;left:0;top:0;z-index:2147483647;background:#000;color:#fff;padding:6px 10px;'
+    + 'font:700 44px Geologica;white-space:nowrap;font-variation-settings:' + fvs);
+  d.lang = lang; d.textContent = txt;
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  return document.fonts.check('700 44px Geologica', txt);
+}"""
+
+
+def _b24_probe(page, txt, lang, fvs):
+    ok = page.evaluate(B24_PROBE_JS, [txt, lang, fvs])
+    return ok, page.locator("#b24-probe").screenshot()
+
+
+def _b24_fonts(browser, base, eng):
+    sharp = lambda v: bool(v) and '"SHRP" 100' in v["fvs"]
+    plain = lambda v: bool(v) and v["fvs"] == "normal"
+    geo = lambda v: bool(v) and v["fam"].startswith("Geologica")
+    for lang in ("bg", "en"):
+        ctx, page, errs = _b24_open(browser, base, 1280, 800, lang=lang)
+        c = page.evaluate(B24_FONT_JS)
+        check(f"b24_{eng}_font_cinema_sharp_{lang}",
+              all(geo(c[k]) and sharp(c[k]) for k in ("title", "hero", "rail")),
+              f"title={c['title']} hero={c['hero']} rail h2={c['rail']}")
+        check(f"b24_{eng}_font_cinema_plain_{lang}",
+              all(geo(c[k]) and plain(c[k]) for k in ("motto", "body", "card", "pill", "seg", "titleDates")),
+              f"motto={c['motto']} body={c['body']} card={c['card']} pill={c['pill']} seg={c['seg']} dates={c['titleDates']}")
+        check(f"b24_{eng}_font_loaded_{lang}", "Geologica" in c["loaded"] and "Montserrat" not in c["loaded"],
+              f"loaded faces {c['loaded']}")
+        # the times in a film's sheet (week grid on desktop) carry the sharp corners too
+        fid = page.evaluate("() => (document.querySelector('#app .card[data-film]') || {dataset: {}}).dataset.film || null")
+        if fid:
+            page.evaluate("(id) => { curSheet = {kind: 'film', id}; openSheet(sheetFilm(filmById[id]), null); }", fid)
+            page.wait_for_timeout(500)
+            t = page.evaluate("() => { const p = document.querySelector('#scrim .p3e-pill'), h = document.querySelector('#scrim .sheet h2');"
+                              " return {pill: p && getComputedStyle(p).fontVariationSettings, h2: h && getComputedStyle(h).fontVariationSettings}; }")
+            check(f"b24_{eng}_font_cinema_times_sharp_{lang}",
+                  '"SHRP" 100' in (t["pill"] or "") and '"SHRP" 100' in (t["h2"] or ""), f"{fid}: {t}")
+        # in English a Cyrillic title is marked Bulgarian, so it draws the Bulgarian forms
+        if lang == "en":
+            m = page.evaluate(r"""() => { const els = [...document.querySelectorAll('#app *')].filter(e => e.children.length === 0
+                && /[Ѐ-ӿ]/.test(e.textContent)); return {n: els.length,
+                notBg: els.filter(e => (e.closest('[lang]') || document.documentElement).lang !== 'bg').map(e => e.textContent.trim().slice(0, 30)).slice(0, 4)}; }""")
+            check(f"b24_{eng}_font_cyrillic_marked_bg_en", not m["notBg"], f"{m['n']} Cyrillic text element(s); not lang=bg: {m['notBg']}")
+        ctx.close()
+        ctx, page, errs = _b24_open(browser, base, 1280, 800, lang=lang, mode="theatre")
+        t = page.evaluate(B24_FONT_JS)
+        check(f"b24_{eng}_font_theatre_{lang}",
+              t["surface"] == "theatre" and t["title"] and t["title"]["fam"].startswith('"Source Serif 4"')
+              and plain(t["title"]) and t["hero"] and t["hero"]["fam"].startswith('"Source Serif 4"')
+              and all(geo(t[k]) and plain(t[k]) for k in ("motto", "body", "pill", "seg")),
+              f"surface={t['surface']} title={t['title']} hero={t['hero']} motto={t['motto']} body={t['body']} pill={t['pill']}")
+        check(f"b24_{eng}_font_no_js_errors_{lang}", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    # the shipped files: the axis works, and the Bulgarian forms differ from the Russian ones
+    ctx, page, errs = _b24_open(browser, base, 1280, 800)
+    ok0, s0 = _b24_probe(page, "Гледай 18:30 Sofia", "bg", "normal")
+    ok1, s1 = _b24_probe(page, "Гледай 18:30 Sofia", "bg", '"SHRP" 100')
+    check(f"b24_{eng}_font_sharp_axis_draws", ok0 and ok1 and s0 != s1,
+          f"loaded={ok0 and ok1}; SHRP 0 and SHRP 100 render {'differently' if s0 != s1 else 'the same'}")
+    word = "вгджзийклптцшщъю"
+    okb, sb = _b24_probe(page, word, "bg", "normal")
+    okr, sr = _b24_probe(page, word, "ru", "normal")
+    check(f"b24_{eng}_font_bulgarian_forms", okb and okr and sb != sr,
+          f"loaded={okb and okr}; lang=bg and lang=ru render {'differently (locl BGR)' if sb != sr else 'the same'}")
+    okb2, sb2 = _b24_probe(page, word, "bg", '"SHRP" 100')
+    okr2, sr2 = _b24_probe(page, word, "ru", '"SHRP" 100')
+    check(f"b24_{eng}_font_bulgarian_forms_sharp", okb2 and okr2 and sb2 != sr2,
+          f"loaded={okb2 and okr2}; with SHRP 100: lang=bg and lang=ru render {'differently' if sb2 != sr2 else 'the same'}")
+    page.evaluate("() => document.getElementById('b24-probe').remove()")
+    ctx.close()
+    # the files: Montserrat removed everywhere, Geologica self-hosted with its licence
+    fonts = webapp_root / "fonts"
+    css = (fonts / "fonts.css").read_text(encoding="utf-8")
+    urls = re.findall(r"url\(([^)]+)\)", css)
+    left = sorted(p.name for p in fonts.iterdir() if "montserrat" in p.name.lower())
+    html_text = html_path.read_text(encoding="utf-8", errors="replace")
+    check(f"b24_{eng}_font_files",
+          not left and not re.search(r"font-family:\s*'Montserrat'", css) and (fonts / "OFL-Geologica.txt").is_file()
+          and all((fonts / u.strip("'\"")).is_file() for u in urls)
+          and sum(1 for u in urls if "geologica" in u) == 4 and "Montserrat" not in html_text,
+          f"montserrat files left={left}; css urls={len(urls)} all present={all((fonts / u.strip(chr(39) + chr(34))).is_file() for u in urls)}; "
+          f"Montserrat in page={'Montserrat' in html_text}")
+    lg = (webapp_root / "scripts" / "gen_legal_pages.py").read_text(encoding="utf-8")
+    m = re.search(r'CSS = """(.*?)"""', lg, re.S)
+    lcss = m.group(1) if m else ""
+    check(f"b24_{eng}_font_legal_css", '"Geologica"' in lcss and '"SHRP" 100' in lcss and "Montserrat" not in lg,
+          "the legal pages' font block names Geologica (titles SHRP 100), no Montserrat")
+    if os.environ.get("SOFIA_HTML"):
+        for path in ("/legal/terms/", "/legal/en/privacy/"):
+            ctx = _ux_ctx(browser, base, 1280, 800)
+            page, errs = _ux_page(ctx, base + path, wait_app=False)
+            page.wait_for_selector("h1", timeout=15000)
+            r = page.evaluate("""async () => { await document.fonts.ready; const b = getComputedStyle(document.body), h = getComputedStyle(document.querySelector('h1'));
+                return {body: b.fontFamily, h1: h.fontFamily, fvs: h.fontVariationSettings,
+                  loaded: [...document.fonts].some(f => f.family.replace(/["']/g, '') === 'Geologica' && f.status === 'loaded')}; }""")
+            check(f"b24_{eng}_font_legal_page_{path.strip('/').replace('/', '_')}",
+                  r["body"].startswith("Geologica") and r["h1"].startswith("Geologica") and '"SHRP" 100' in r["fvs"] and r["loaded"],
+                  f"{r}")
+            ctx.close()
+
+
+def wave_b24(browser):
+    eng = _hf_engine(browser)
+    ensure_shot_dir("B24")
+    share_root, tmp = _ux_share_root()
+    srv, base = _ux_server(share_root)
+    try:
+        for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),):
+            print(f"\n=== B24-{title} ===")
+            try:
+                fn(browser, base, eng)
+            except Exception as _ex:      # one section crashing must not hide the rest
+                check(f"b24_{eng}_{fn.__name__.strip('_')}_ran", False, f"{type(_ex).__name__}: {str(_ex)[:200]}")
+    finally:
+        srv.shutdown()
+        if tmp:
+            _ux_shutil.rmtree(tmp, ignore_errors=True)
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -17614,6 +17777,7 @@ WAVES = {
     "TR1": wave_tr1,
     "TR2": wave_tr2,
     "UX1": wave_ux1,
+    "B24": wave_b24,
 }
 
 def main():

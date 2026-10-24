@@ -17,10 +17,12 @@
   /* the accent as TEXT or a thin outline on ink: crimson #E0163A is only 3.7-4.1:1 there;
      #FF3B5C is 5.1-5.7:1. Fills behind white text keep --accent (white on it 4.8:1). */
   --accent-text:#FF3B5C;
-  /* type families (owner, 2026-10-23): the cinema surface speaks Montserrat, the theatre
-     surface Source Serif 4 (its italic for the motto); --f-ui carries menus, chips and text */
-  --f-ui:"Montserrat","Segoe UI",system-ui,sans-serif;
-  --f-display:"Montserrat","Segoe UI",system-ui,sans-serif;
+  /* type families (owner, 2026-10-24): the cinema surface speaks Geologica, its sharp-corner
+     axis (SHRP 100, --f-sharp) on headings, the hero and the times; the theatre surface Source
+     Serif 4. --f-ui (plain Geologica) carries the motto, menus, chips and text on both */
+  --f-ui:"Geologica","Segoe UI",system-ui,sans-serif;
+  --f-display:"Geologica","Segoe UI",system-ui,sans-serif;
+  --f-sharp:"SHRP" 100;
   --shadow:0 20px 48px rgba(0,0,0,.55);
   --r:12px; --r-lg:20px;
   --motion-dur-sm:160ms; --motion-dur-md:380ms;
@@ -34,7 +36,7 @@
   color-scheme:dark;
 }
 :root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; --accent-text:var(--gild);
-  --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; }
+  --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; --f-sharp:normal; }
 /* Dark mode is forced — there is no light theme. The former
    `@media (prefers-color-scheme: light)` and `:root[data-theme="light"]` blocks
    were removed so a device set to light does not recolour the app; `color-scheme:dark`
@@ -1076,10 +1078,19 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
   .phead-fav{grid-column:1 / -1}
 }
 
-/* ---- type families (owner decision 2026-10-23): Montserrat for cinema, Source Serif 4 for theatre ----
-   --f-display follows the surface; menus, chips and text stay Montserrat on both. Display titles
+/* ---- type families (owner decisions 2026-10-23 and 2026-10-24): Geologica for cinema, Source Serif 4
+   for theatre ----
+   --f-display follows the surface; menus, chips and text stay plain Geologica on both. Display titles
    are sentence case now (the uppercase belonged to Oswald), tracked a touch tight; times and
    counts use tabular figures. */
+/* Geologica's sharp-corner axis (SHRP 100) on the cinema surface: headings, the hero, the sheet's
+   title, the times and the day numbers. Card titles, chips, menus, the motto and text stay plain.
+   --f-sharp is normal on the theatre surface (Source Serif 4 has no such axis). Every element below
+   holds its own text, so the setting does not leak into plain Geologica inside it. */
+.phead-title,.rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title,
+main .sec-subhead,.hero h1,.hero .hero-title,.sheet h2,.time,.p3e-pill,.ss-time,.p3e-day b,
+.p3e-gt th b,.rtile .rv,.day .dnum{font-variation-settings:var(--f-sharp)}
+.phead-title .phead-dates{font-variation-settings:normal}
 .phead-title,.rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title,
 .hero h1,.hero .hero-title,.sheet h2,.p-title,.ebox h3,.drawer-top .drawer-title{text-transform:none}
 .rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title{font-weight:700; letter-spacing:-.01em}
@@ -1154,7 +1165,7 @@ body{font-size:15px}
 }
 
 /* ---- cinema group headings in "По кино" (owner decision 2026-10-23) ----
-   the same heading level as the theatres' groups; Montserrat on the cinema surface */
+   the same heading level as the theatres' groups; Geologica on the cinema surface */
 :root:not([data-surface="theatre"]) main .sec-subhead{font-family:var(--f-display); font-size:clamp(17px,1.8vw,20px); font-weight:600;
   letter-spacing:.04em; text-transform:uppercase; color:var(--fg-2); padding:20px 0 8px; border-bottom:1px solid var(--line); margin-bottom:18px}
 
@@ -1207,7 +1218,7 @@ body{font-size:15px}
 }
 
 /* ---- step 13: sentence case and a type floor of 11 px (I13, M14) ----
-   Display titles are sentence case since the type change (Montserrat and Source Serif 4, see the
+   Display titles are sentence case since the type change (Geologica and Source Serif 4, see the
    type families below); only the generated posters' lockup keeps capitals. Every label is
    sentence case, tracked at most .02em, and nothing on screen is smaller than 11 px. */
 .eyebrow{font-size:12px; letter-spacing:.01em; text-transform:none; font-weight:600}
@@ -5048,7 +5059,7 @@ function shareItem(kind,id,title){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,()=>toast(url));}
   else toast(url);
 }
-/* Bulgarian letterforms (Montserrat and Source Serif 4 both carry them, locl BGR): in English the
+/* Bulgarian letterforms (Geologica and Source Serif 4 both carry them, locl BGR): in English the
    page is lang="en", so any Cyrillic text left in it (titles, venues and names with no English
    form) would draw the Russian shapes. Its element is marked lang="bg", after every change. */
 const _CYR=/[\u0400-\u04FF]/;
