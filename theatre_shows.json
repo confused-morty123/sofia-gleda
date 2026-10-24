@@ -5758,5 +5758,77 @@
   "synBg": "",
   "synEn": "",
   "source": "kuklen"
+ },
+ "5-godini-toplotsentrala-daniel-avery-dj-set": {
+  "id": "5-godini-toplotsentrala-daniel-avery-dj-set",
+  "title": "5 ГОДИНИ ТОПЛОЦЕНТРАЛА! Daniel Avery DJ SET",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "ayvar-ili-lyutenitsa": {
+  "id": "ayvar-ili-lyutenitsa",
+  "title": "Айвар или лютеница",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "vzeto-ot-internet-ili-kratko-rakovodstvo-za-upotrebata-na-ta-2": {
+  "id": "vzeto-ot-internet-ili-kratko-rakovodstvo-za-upotrebata-na-ta-2",
+  "title": "Взето от интернет или кратко ръководство за употребата на танца I ВХОД СВОБОДЕН",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "tela-na-vlastta-ikar-2026-za-savremenen-tants-i-parformans": {
+  "id": "tela-na-vlastta-ikar-2026-za-savremenen-tants-i-parformans",
+  "title": "Тела на властта|ИКАР 2026 за СЪВРЕМЕНЕН ТАНЦ И ПЪРФОРМАНС",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }
