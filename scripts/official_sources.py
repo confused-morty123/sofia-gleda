@@ -982,12 +982,139 @@ def fetch_lumiere(session, venue, today, last_day):
                           notes=[f"NDK {len(ndk)} + KinoCult {len(kc)} rows, {len(rows)} distinct"])
 
 
-# ------------------------------------------------------------- Cineland
+# ------------------------------------------------------------- Cineland (JSON)
+# cineland.bg is a WordPress site whose programme widgets (Positive Cinema, an
+# Angular web component) read a public REST API, restapi.cineland.bg — the same
+# GET requests the site's own pages make, no login (checked 2026-10-24; neither
+# host's robots.txt disallows them). The cinema's id is on its own page
+# (cineland.bg/bg/bulgariamall/, pc-page-settings). The film pages
+# (cineland.bg/bg/movie/<slug>/) come from the site's WordPress API, keyed by
+# the programme's movie id.
+CL_API = "https://restapi.cineland.bg/api"
+CL_CINEMAS = {"cineland": "7868d5c1-3941-46c3-8b7f-e8de72bc37aa"}       # Bulgaria Mall
+CL_WP_MOVIES = ("https://cineland.bg/bg/wp-json/wp/v2/movie"
+                "?_fields=link,custom_fields.movie_id&per_page=100&page={page}")
+# "Film of your choice — VIP hall" is a private-hall booking slot, not a screening.
+_CL_NOT_A_SCREENING = re.compile(r"филм\s+по\s+избор|film\s+of\s+your\s+choice", re.I)
+_CL_EVENT_GENRES = {"концерт", "concert", "опера", "opera", "балет", "ballet", "спорт", "sport"}
+
+
+def _cl_attrs(screening, movie):
+    """(lang_ver, fmt_std) from a Cineland screening's printType / release
+    ("СУБТ.", "ДУБЛ. - CC", "Screen X 2D", "LASER 4K СУБТ.", "БЕЗ СУБТИТРИ …")."""
+    pt = f"{screening.get('printType') or ''} {screening.get('release') or ''}".upper()
+    if "БЕЗ " in pt or (movie.get("originalLanguage") or "").upper() == "BG":
+        lv = ""                     # no translation stated / a Bulgarian film in Bulgarian
+    elif "ДУБЛ" in pt:
+        lv = "dub"
+    elif "СУБТ" in pt:
+        lv = "sub"
+    else:
+        lv = ""
+    flat = pt.replace(" ", "")
+    fs = [tok for tok, key in (("3d", "3D"), ("imax", "IMAX"), ("4dx", "4DX"), ("screenx", "SCREENX"))
+          if key in flat]
+    return lv, fs
+
+
+def parse_cineland(screenings, movies, cinema, today, last_day, pages=None):
+    """The programme API's screenings (+ its movie list) -> rows
+    [(title, date, "HH:MM", meta)] for one cinema, dated by the screening's own
+    local start time. pages: {movie id: cineland.bg film page}."""
+    if not isinstance(screenings, list) or not isinstance(movies, list):
+        raise SourceBroken("Cineland API answered without a screening/movie list")
+    by_id = {m.get("id"): m for m in movies if isinstance(m, dict) and m.get("id")}
+    pages = pages or {}
+    rows, unknown = [], 0
+    for s in screenings:
+        if not isinstance(s, dict) or s.get("cinemaId") != cinema:
+            continue
+        m = re.match(r"(\d{4}-\d\d-\d\d)T(\d\d):(\d\d)", str(s.get("screeningTimeFrom") or ""))
+        if not m or not (today <= m.group(1) <= last_day):
+            continue
+        mv = by_id.get(s.get("movieId"))
+        if mv is None:
+            unknown += 1
+            continue
+        title = (mv.get("title") or mv.get("onlineTitle") or "").strip()
+        if not title or _CL_NOT_A_SCREENING.search(f"{title} {mv.get('originalTitle') or ''}"):
+            continue
+        lv, fs = _cl_attrs(s, mv)
+        page = pages.get(mv.get("id"))
+        meta = {"url": page, "vlink": page,
+                "runtime": mv.get("duration") or None,
+                "year": _int(mv.get("yearOfProduction")),
+                "genres_text": [g.get("name") for g in (mv.get("genres") or [])
+                                if isinstance(g, dict) and g.get("name")],
+                "format": list(dict.fromkeys(x.strip() for x in (s.get("printType"), s.get("release"))
+                                             if x and x.strip())),
+                "imdb": mv.get("imdbId") or None}
+        orig = (mv.get("originalTitle") or "").strip()
+        if orig and orig.upper() != title.upper():
+            meta["original_title"] = orig
+        prem = re.match(r"\d{4}-\d\d-\d\d", str(mv.get("premiereDate") or ""))
+        if prem:
+            meta["releaseDate"] = prem.group(0)
+        if ({(g or "").lower() for g in meta["genres_text"]} & _CL_EVENT_GENRES
+                or re.search(r"(?<!\w)(?:маратон|marathon)(?!\w)", title, re.I)):
+            meta["event"] = True
+        if lv:
+            meta["lang_ver"] = lv
+        if fs:
+            meta["fmt_std"] = fs
+        rows.append((title, m.group(1), f"{m.group(2)}:{m.group(3)}", meta))
+    if unknown and not rows:
+        raise SourceBroken(f"Cineland: {unknown} screening(s) of films the movie list does not name")
+    return rows
+
+
+def cineland_pages(wp_movies):
+    """{programme movie id: film page} from the site's WordPress movie list;
+    only cineland.bg links."""
+    out = {}
+    for w in wp_movies or []:
+        if not isinstance(w, dict):
+            continue
+        mid = (w.get("custom_fields") or {}).get("movie_id") if isinstance(w.get("custom_fields"), dict) else None
+        link = w.get("link") or ""
+        host = (urllib.parse.urlsplit(link).hostname or "").lower()
+        if mid and (host == "cineland.bg" or host.endswith(".cineland.bg")):
+            out[mid] = link
+    return out
+
+
 def fetch_cineland(session, venue, today, last_day):
-    """cineland.bg is an Angular app over a private API; there is no public
-    official programme to read. Its listings stay aggregator-only and are
-    marked preliminary from today."""
-    return None
+    """Every screening from today to the window end in one API call. Coverage
+    is the normal programme (published_through: the week runs to Thursday;
+    the thin pre-sale days after it are official rows the merge shows as
+    preliminary)."""
+    cinema = CL_CINEMAS[venue]
+    span = f"dateTimeFrom={today}T00:00:00&dateTimeTo={_next(last_day)}T00:00:00"
+    screenings = session.json(f"{CL_API}/cinema/{cinema}/screening?{span}")
+    if screenings is None:
+        raise SourceBroken("Cineland API unreachable")
+    movies = session.json(f"{CL_API}/movie?{span}&cinemaId={cinema}")
+    if movies is None:
+        raise SourceBroken("Cineland movie list unreachable")
+    notes, wp = [], session.json(CL_WP_MOVIES.format(page=1))
+    if wp is None:
+        notes.append("cineland.bg film pages not read — no per-film links this run")
+    rows = parse_cineland(screenings, movies, cinema, today, last_day, cineland_pages(wp))
+    per_day = {}
+    for _t, d, _h, _m in rows:
+        per_day[d] = per_day.get(d, 0) + 1
+    counts, d = [], today
+    while d <= last_day:
+        counts.append((d, per_day.get(d, 0)))
+        d = _next(d)
+    end = published_through(counts, 0.2)
+    if end is None:
+        raise SourceBroken("Cineland API returned no programme")
+    nolink = sorted({r[0] for r in rows if not r[3].get("url")})
+    if wp is not None and nolink:
+        notes.append("no cineland.bg film page for: " + ", ".join(nolink[:6]))
+    return OfficialResult(venue, "cineland.bg programme API (restapi.cineland.bg)", rows, today, end,
+                          notes=notes, days=dict(counts))
 
 
 OFFICIAL = {
@@ -996,8 +1123,9 @@ OFFICIAL = {
     "cg-ring": fetch_cinegrand, "cg-park": fetch_cinegrand,
     "g8": fetch_g8, "odeon": fetch_odeon, "dom-kino": fetch_domkino,
     "vlaikova": fetch_vlaikova, "lumiere": fetch_lumiere,
+    "cineland": fetch_cineland,
 }
-NO_OFFICIAL = {"cineland": "cineland.bg is an Angular app on a private API — no public programme"}
+NO_OFFICIAL = {}        # every cinema with an aggregator feed now has its own programme
 
 
 def fetch_official(venue, session, today, last_day, errors=None):

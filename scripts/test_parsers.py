@@ -1652,7 +1652,42 @@ check("other venues and dates past the window are not Люмиер rows",
 check("coverage ends at the last date either source lists", _res.covered_to, "2026-11-30")
 check("one half unreachable -> keep previous",
       _raises(OS.fetch_lumiere, _Pages({"ndk.bg": "<html></html>"}), "lumiere", "2026-10-08", "2026-12-14"), True)
-check("cineland has no official source", OS.fetch_official("cineland", None, "2026-10-08", "2026-12-14", {}), None)
+
+print("official: Cineland (cineland.bg programme API, 2026-10-24, trimmed)")
+# The site's own programme widget reads restapi.cineland.bg; the film pages come
+# from its WordPress API. One week Sat 24 - Thu 29 Oct, then only the VIP hall's
+# "film of your choice" slots on 30-31 Oct.
+_clp = _Pages({"/screening?": (FIXTURES / "cineland_screenings.json").read_text(encoding="utf-8"),
+               "/api/movie?": (FIXTURES / "cineland_movies.json").read_text(encoding="utf-8"),
+               "wp-json": (FIXTURES / "cineland_wp_movies.json").read_text(encoding="utf-8")})
+_res = OS.fetch_cineland(_clp, "cineland", "2026-10-24", "2026-12-14")
+check("coverage is the week the cinema published", (_res.covered_from, _res.covered_to), ("2026-10-24", "2026-10-29"))
+check("…read in one programme call for the whole window",
+      [u.split("?")[0] for u in _clp.asked if "/screening" in u], [OS.CL_API + "/cinema/" + OS.CL_CINEMAS["cineland"] + "/screening"])
+check("rows per day", [(d, _res.days[d]) for d in sorted(_res.days)[:7]],
+      [("2026-10-24", 39), ("2026-10-25", 39), ("2026-10-26", 42), ("2026-10-27", 39),
+       ("2026-10-28", 39), ("2026-10-29", 39), ("2026-10-30", 0)])
+check("the VIP hall's 'film of your choice' slot is not a screening",
+      any("ИЗБОР" in x[0] for x in _res.rows), False)
+_cl = {(x[0], x[1], x[2]): x[3] for x in _res.rows}
+check("a screening: title, local date and time, the cinema's own film page",
+      {k: _cl[("ДРУГАТА МАМА", "2026-10-27", "19:10")].get(k) for k in ("url", "vlink", "runtime", "lang_ver", "format")},
+      {"url": "https://cineland.bg/bg/movie/other-mommy/", "vlink": "https://cineland.bg/bg/movie/other-mommy/",
+       "runtime": 93, "lang_ver": "sub", "format": ["СУБТ."]})
+check("every row links a cineland.bg film page", all(S.allowed_vlink("cineland", m.get("vlink")) for m in _cl.values()), True)
+check("dubbed and subtitled prints told apart",
+      sorted({m.get("lang_ver", "") for m in _cl.values()}), ["", "dub", "sub"])
+check("a concert broadcast is an event",
+      sorted({k[0] for k, m in _cl.items() if m.get("event")}), ["OZZY & BLACK SABBATH: BACK TO THE BEGINNING"])
+check("other cinemas' screenings are not Cineland's",
+      OS.parse_cineland([{"cinemaId": "x", "movieId": "y", "screeningTimeFrom": "2026-10-24T20:00:00+03:00"}],
+                        [{"id": "y", "title": "Т"}], OS.CL_CINEMAS["cineland"], "2026-10-24", "2026-10-30"), [])
+check("API unreachable -> keep previous", _raises(OS.fetch_cineland, _Pages({}), "cineland", "2026-10-24", "2026-12-14"), True)
+check("film pages unreachable: rows kept without a link, noted",
+      (lambda r: (len(r.rows), any(m[3].get("url") for m in r.rows), any("film pages not read" in n for n in r.notes)))(
+          OS.fetch_cineland(_Pages({k: v for k, v in _clp.pages.items() if k != "wp-json"}),
+                            "cineland", "2026-10-24", "2026-12-14")), (237, False, True))
+check("cineland now has an official source", "cineland" in OS.OFFICIAL and "cineland" not in OS.NO_OFFICIAL, True)
 
 print("film identity: normalisation")
 for a, b in [("ПАДАНЕ 2: МЪРТВА ТОЧКА", "Падане 2: Мъртва точка"),

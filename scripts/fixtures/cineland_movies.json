@@ -1,0 +1,419 @@
+[
+{
+"id": "7d2ce90d-7db1-4bb0-b607-01f28b7e069d",
+"title": "КЛЕЙФЕЙС",
+"onlineTitle": "КЛЕЙФЕЙС",
+"originalTitle": "CLAYFACE",
+"duration": 108,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-23T00:00:00+03:00",
+"imdbId": "tt34890576",
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ТРИЛЪР"
+},
+{
+"name": "УЖАСИ"
+},
+{
+"name": "ЕКШЪН"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "8a277f98-00ce-44e9-902b-1ba0241d774b",
+"title": "ЗООЕКСПРЕС",
+"onlineTitle": "ЗООЕКСПРЕС",
+"originalTitle": "PETS ON A TRAIN",
+"duration": 90,
+"yearOfProduction": "2025",
+"premiereDate": "2026-10-02T00:00:00+03:00",
+"imdbId": "tt36424914",
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "КОМЕДИЯ"
+},
+{
+"name": "ПРИКЛЮЧЕНСКИ"
+},
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "7b5a2912-4086-42ff-8947-223331fd6eac",
+"title": "КОЙОТА СРЕЩУ АКМЕ",
+"onlineTitle": "КОЙОТА СРЕЩУ АКМЕ",
+"originalTitle": "COYOTE VS. AKME",
+"duration": 104,
+"yearOfProduction": "2026",
+"premiereDate": "2026-09-04T00:00:00+03:00",
+"imdbId": "tt1756855",
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ПРИКЛЮЧЕНСКИ"
+},
+{
+"name": "АНИМАЦИЯ"
+},
+{
+"name": "СЕМЕЕН"
+},
+{
+"name": "КОМЕДИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "7fb0252d-7632-4dea-b125-236e20fa397d",
+"title": "ЗАРАЗНО ЗЛО",
+"onlineTitle": "ЗАРАЗНО ЗЛО",
+"originalTitle": "RESIDENT EVIL",
+"duration": 95,
+"yearOfProduction": "2026",
+"premiereDate": "2026-09-18T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "УЖАСИ"
+},
+{
+"name": "ТРИЛЪР"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "77541371-a4ac-4a3d-b2c1-2fb2c4bbd16b",
+"title": "ОДИСЕЯ",
+"onlineTitle": "ОДИСЕЯ",
+"originalTitle": "THE ODYSSEY",
+"duration": 173,
+"yearOfProduction": "2026",
+"premiereDate": "2026-07-17T00:00:00+03:00",
+"imdbId": "tt33764258",
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ЕКШЪН"
+},
+{
+"name": "ДРАМА"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "52b12732-a1d0-4c5c-abf9-4ef45d1e1d70",
+"title": "ДРУГАТА МАМА",
+"onlineTitle": "ДРУГАТА МАМА",
+"originalTitle": "OTHER MOMMY",
+"duration": 93,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-09T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "УЖАСИ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "ddd03b09-de6e-488f-b59e-5c18b7b6e68d",
+"title": "ДЖЪМБО: МАГИЧЕСКОТО ПРИКЛЮЧЕНИЕ",
+"onlineTitle": "ДЖЪМБО: МАГИЧЕСКОТО ПРИКЛЮЧЕНИЕ",
+"originalTitle": "JUMBO",
+"duration": 100,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-16T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "f44f2431-a7d5-4bef-876e-6d70fa3e1a47",
+"title": "РАЗУМ И ЧУВСТВА",
+"onlineTitle": "РАЗУМ И ЧУВСТВА",
+"originalTitle": "SENSE AND SENSIBILITY",
+"duration": 131,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-23T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "РОМАНТИЧЕН"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "86472119-e5dd-4254-9f00-718cfd518ab0",
+"title": "СРЪДЛЬО",
+"onlineTitle": "СРЪДЛЬО",
+"originalTitle": "THE POUT POUT FISH",
+"duration": 92,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-09T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "b63dab9a-a467-428d-ba52-8bcfd7b31432",
+"title": "СЪРЦЕТО НА ЗВЯРА",
+"onlineTitle": "СЪРЦЕТО НА ЗВЯРА",
+"originalTitle": "HEART OF THE BEAST",
+"duration": 102,
+"yearOfProduction": "2026",
+"premiereDate": "2026-09-25T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ЕКШЪН"
+},
+{
+"name": "ДРАМА"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "f809315b-5131-4254-858e-a31508ba4ed3",
+"title": "СКОТИ",
+"onlineTitle": "СКОТИ",
+"originalTitle": "SCOTTY",
+"duration": 81,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-23T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ПРИКЛЮЧЕНСКИ"
+},
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "d1ab8c9b-f5ec-408b-8455-aac1dc4ab4ef",
+"title": "МИНЬОНИ & ЧУДОВИЩА",
+"onlineTitle": "МИНЬОНИ & ЧУДОВИЩА",
+"originalTitle": "MINIONS & MONSTERS",
+"duration": 90,
+"yearOfProduction": "2026",
+"premiereDate": "2026-07-03T00:00:00+03:00",
+"imdbId": "tt32890033",
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ПРИКЛЮЧЕНСКИ"
+},
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "0faaa1b1-5552-4fbb-a86b-b0e2b1d6d685",
+"title": "ВЕРИТИ",
+"onlineTitle": "ВЕРИТИ",
+"originalTitle": "VERITY",
+"duration": 114,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-02T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ДРАМА"
+},
+{
+"name": "МИСТЕРИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "93106f2c-71a3-446b-b7ca-c4129d00453c",
+"title": "В ДЪЛБИНИТЕ",
+"onlineTitle": "В ДЪЛБИНИТЕ",
+"originalTitle": "WHALEFALL",
+"duration": 106,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-16T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ТРИЛЪР"
+},
+{
+"name": "ДРАМА"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "52d0dab3-3bae-48b3-b01d-c829bbc7e0d4",
+"title": "ХРОНИКИ ЗА НЕУДОБНАТА ИСТИНА",
+"onlineTitle": "ХРОНИКИ ЗА НЕУДОБНАТА ИСТИНА",
+"originalTitle": "CHRONICLES OF UNCOMFORTABLE TRUTH",
+"duration": 90,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-16T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "BG",
+"genres": [
+{
+"name": "ДОКУМЕНТАЛЕН"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "af86d366-9cc8-4464-9a02-cf7dca3e1280",
+"title": "ПЕС ПАТРУЛ: ДИНО ФИЛМЪТ",
+"onlineTitle": "ПЕС ПАТРУЛ: ДИНО ФИЛМЪТ",
+"originalTitle": "PAW PATROL: THE DINO MOVIE",
+"duration": 90,
+"yearOfProduction": "2026",
+"premiereDate": "2026-08-14T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ПРИКЛЮЧЕНСКИ"
+},
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "8d8fbee6-7210-49de-ac5e-d621a6a1e0a7",
+"title": "OZZY & BLACK SABBATH: BACK TO THE BEGINNING",
+"onlineTitle": "OZZY & BLACK SABBATH: BACK TO THE BEGINNING",
+"originalTitle": "OZZY & BLACK SABBATH: BACK TO THE BEGINNING",
+"duration": 147,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-28T00:00:00+02:00",
+"imdbId": "tt37533340",
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ДОКУМЕНТАЛЕН"
+},
+{
+"name": "КОНЦЕРТ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "84858bf9-8e15-4a0b-aadd-f2f08e45e690",
+"title": "STREET FIGHTER",
+"onlineTitle": "STREET FIGHTER",
+"originalTitle": "STREET FIGHTER",
+"duration": 119,
+"yearOfProduction": "2026",
+"premiereDate": "2026-10-16T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ЕКШЪН"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "fee86b05-c3eb-41df-9cc4-f57f1d0f314d",
+"title": "ФИЛМ ПО ИЗБОР VIP ЗАЛА",
+"onlineTitle": "ФИЛМ ПО ИЗБОР VIP ЗАЛА",
+"originalTitle": "VIP ЗАЛА - ФИЛМ ПО ИЗБОР (A)",
+"duration": 115,
+"yearOfProduction": "",
+"premiereDate": "2024-01-23T00:00:00+02:00",
+"imdbId": null,
+"originalLanguage": null,
+"genres": [
+{
+"name": "АНИМАЦИЯ"
+},
+{
+"name": "ФАНТАСТИКА"
+},
+{
+"name": "ЕКШЪН-КОМЕДИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+},
+{
+"id": "2e1165cf-95c8-40f1-8806-ff9466e349cb",
+"title": "ОСТРОВЪТ НА ЗАБРАВАТА",
+"onlineTitle": "ОСТРОВЪТ НА ЗАБРАВАТА",
+"originalTitle": "FORGOTTEN ISLAND",
+"duration": 110,
+"yearOfProduction": "2026",
+"premiereDate": "2026-09-25T00:00:00+03:00",
+"imdbId": null,
+"originalLanguage": "EN",
+"genres": [
+{
+"name": "ПРИКЛЮЧЕНСКИ"
+},
+{
+"name": "АНИМАЦИЯ"
+}
+],
+"type": null,
+"isForChildren": false
+}
+]
