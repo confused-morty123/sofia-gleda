@@ -17781,6 +17781,56 @@ def _b24_motto(browser, base, eng):
                   f"cinema={c} theatre={t}")
 
 
+def _b24_saturday():
+    d = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    if d.weekday() == 6:
+        return d.isoformat()
+    return (d + datetime.timedelta(days=(5 - d.weekday()) % 7)).isoformat()
+
+
+B24_STRIP_JS = r"""() => { const s = document.querySelector('.phead .daystrip');
+  return {strip: !!s, day: S.day, next: !!(s && s.querySelector('.ds-next')),
+    pills: s ? [...s.querySelectorAll('[data-day]')].map(b => ({d: b.dataset.day, on: b.getAttribute('aria-pressed') === 'true', dis: b.disabled, t: b.textContent.trim()})) : [],
+    title: (document.querySelector('.phead-title') || {}).textContent || '',
+    cards: document.querySelectorAll('#app main .card').length, vis: S.mode === 'cinema' ? visibleFilms().length : visibleShows().length,
+    empty: !!document.querySelector('#app main .empty'), weekEnd: WEEK_END}; }"""
+
+
+def _b24_days(browser, base, eng):
+    sat = _b24_saturday()
+    clock = _ux_clock(_sofia_1445_epoch_ms(sat))
+    for phone, (w, h), lang, mode in ((False, (1440, 900), "en", "cinema"), (False, (1440, 900), "bg", "cinema"),
+                                       (True, (390, 844), "bg", "cinema"), (False, (1440, 900), "en", "theatre")):
+        dev = "phone" if phone else "desktop"
+        tag = f"b24_{eng}_days_{dev}_{mode}_{lang}"
+        ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock)
+        s0 = page.evaluate(B24_STRIP_JS)
+        nxt = [p["d"] for p in s0["pills"] if p["d"] != "week" and p["d"] > s0["weekEnd"] and not p["dis"]]
+        cur = [p["d"] for p in s0["pills"] if p["d"] != "week" and p["d"] <= s0["weekEnd"] and not p["dis"]]
+        if not s0["next"] or not nxt:
+            skip(tag, f"clock {sat}: no next-week day in the strip ({[p['t'] for p in s0['pills']]})")
+            ctx.close()
+            continue
+        bad = []
+        for d in nxt + cur[:1] + ["week"]:
+            # the strip scrolls sideways on a phone: bring the pill into view first, as a thumb would
+            page.evaluate("(d)=>{const b=document.querySelector('.phead .daystrip [data-day=\"'+d+'\"]');if(b)b.scrollIntoView({inline:'center',block:'nearest'});}", d)
+            page.wait_for_timeout(150)
+            _ux_tap_sel(page, phone, f'.phead .daystrip [data-day="{d}"]', scroll=False)
+            page.wait_for_timeout(450)
+            s = page.evaluate(B24_STRIP_JS)
+            pressed = [p["d"] for p in s["pills"] if p["on"]]
+            ok = s["day"] == d and s["strip"] and pressed == [d] and s["vis"] > 0 and s["cards"] > 0 and not s["empty"] \
+                and [p["d"] for p in s["pills"]] == [p["d"] for p in s0["pills"]]
+            if not ok:
+                bad.append(f"{d}: day={s['day']} strip={s['strip']} pressed={pressed} listed={s['vis']} cards={s['cards']} empty={s['empty']} title={s['title']!r}")
+            if d == nxt[0] and lang == "en" and mode == "cinema":
+                save_shot(page, "B24", f"days_next_week_{dev}_{eng}")
+        check(tag, not bad, f"clock {sat}; strip {[p['t'] for p in s0['pills']]}; tried {nxt + cur[:1] + ['week']}; problems: {bad[:3]}")
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
 def wave_b24(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("B24")
@@ -17789,7 +17839,8 @@ def wave_b24(browser):
     try:
         for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),
                           ("2: the Кино/Театър rings", _b24_toggle),
-                          ("3: one motto on both screens", _b24_motto)):
+                          ("3: one motto on both screens", _b24_motto),
+                          ("4: next-week days of the period strip", _b24_days)):
             print(f"\n=== B24-{title} ===")
             try:
                 fn(browser, base, eng)

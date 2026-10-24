@@ -2601,35 +2601,36 @@ function periodBannerText(){
   if(/^\d{4}-\d{2}-\d{2}$/.test(S.day)){
     const dD=dUTC(S.day);return{title:L.bannerToday,dates:`${L.dows[dD.getUTCDay()]} ${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`};}
   return{title:L.bannerWeek,dates:fmtRange(TODAY,WEEK_END)};}
-/* Build the day-strip for the typographic header.
-   Shows "Цялата седмица" + each day from TODAY to the coming Sunday.
-   Only shown for S.day==="week" and for a single specific day within the current week. */
-function buildDayStrip(){
-  const L=t();
-  /* Determine the current week: Mon–Sun containing TODAY */
+/* The days the period strip offers: TODAY to the coming Sunday; when fewer than 3 days are
+   left (P3A item 5) it rolls over into next week, up to 7 days in all (or LASTDAY). Returns
+   {days, weekEnd, rollover}. One source for the strip's pills AND for whether the strip shows
+   (2026-10-24 fix: the strip used to show only for a day inside the current Mon-Sun week, so
+   picking one of its own next-week days, e.g. Mon 26 on Sat 24, removed the whole strip). */
+function stripDays(){
   const dow=dUTC(TODAY).getUTCDay(); /* 0=Sun … 6=Sat */
   const weekStart=addDays(TODAY,-(dow===0?6:dow-1)); /* Monday */
   const weekEnd=addDays(weekStart,6);                 /* Sunday */
-  /* Only show the strip when in week or single-day-within-week mode */
-  const inWeekDay=S.day!=="week"&&/^\d{4}-\d{2}-\d{2}$/.test(S.day)&&S.day>=weekStart&&S.day<=weekEnd;
-  if(S.day!=="week"&&!inWeekDay)return"";
+  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0;
+  const nextWeekStart=addDays(weekEnd,1);
+  const rollover=daysLeft<3&&nextWeekStart<=LASTDAY;
+  const total=rollover?Math.min(7,Math.round((dUTC(LASTDAY)-dUTC(TODAY))/864e5)+1):daysLeft;
+  const days=[];
+  for(let i=0;i<total;i++){const d=addDays(TODAY,i);if(d>LASTDAY)break;days.push(d);}
+  return{days,weekEnd,rollover};}
+/* Build the day-strip for the typographic header: "Цялата седмица" + each day of stripDays().
+   Shown for S.day==="week" and for any single day the strip itself offers. */
+function buildDayStrip(){
+  const L=t();
+  const {days,weekEnd,rollover:needRollover}=stripDays();
+  if(S.day!=="week"&&!days.includes(S.day))return"";
   /* Gather which days have screenings/performances */
   const hasData=datesWith();
   const pills=[];
   /* "Whole week" pill */
   const allPill=`<button class="dspill" data-day="week" aria-pressed="${S.day==="week"}">${esc(L.dsAllWeek||"Цялата седмица")}</button>`;
   pills.push(allPill);
-  /* P3A item 5: build day list, rolling over into next week when <3 days remain.
-     Rule: show days from TODAY to weekEnd; if that gives <3 days, continue into
-     next week until we have 7 day-buttons total (or reach LASTDAY). */
-  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0;
-  const nextWeekStart=addDays(weekEnd,1);
-  const needRollover=daysLeft<3&&nextWeekStart<=LASTDAY;
-  const totalDays=needRollover?Math.min(7,Math.round((dUTC(LASTDAY)-dUTC(TODAY))/864e5)+1):daysLeft;
   let addedDivider=false;
-  for(let i=0;i<totalDays;i++){
-    const d=addDays(TODAY,i);
-    if(d>LASTDAY)break;
+  for(const d of days){
     /* Add divider + "Следващата седмица" pill before first next-week day */
     if(needRollover&&d>weekEnd&&!addedDivider){
       addedDivider=true;
@@ -2676,11 +2677,8 @@ function periodBanner(){
     const cap=dowFull.charAt(0).toUpperCase()+dowFull.slice(1);
     mainTitle=`${cap}`;
     dateStr=`${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`;
-    /* show strip only if day is within current week */
-    const dow=dUTC(TODAY).getUTCDay();
-    const weekStart=addDays(TODAY,-(dow===0?6:dow-1));
-    const weekEnd=addDays(weekStart,6);
-    if(S.day>=weekStart&&S.day<=weekEnd)showStrip=true;
+    /* the strip stays whenever the day is one of its own pills, next week's included */
+    if(stripDays().days.includes(S.day))showStrip=true;
   } else {
     mainTitle=L.pheadThisWeek||(S.lang==="bg"?"Тази седмица":"This week");
     dateStr=fmtRange(TODAY,WEEK_END);
