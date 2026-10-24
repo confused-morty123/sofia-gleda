@@ -1547,6 +1547,31 @@ check("a day page showing another day ends coverage",
       (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
 check("…and then no advance sale is read", [u for u in _cgp.asked if "calendar" in u], [])
 
+print("official: Cine Grand film pages open for THEIR cinema (cinema_slug)")
+# cinegrand.bg/m/<film> without cinema_slug shows its default cinema (Парк Център
+# София) for both Sofia cinemas; the site's own Ring Mall links add
+# ?ignoreMissing=1&cinema_slug=софия-ринг-мол (checked live 2026-10-24).
+_ring_q = "ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB"
+_park_q = "ignoreMissing=1&cinema_slug=%D0%BF%D0%B0%D1%80%D0%BA-%D1%86%D0%B5%D0%BD%D1%82%D1%8A%D1%80-%D1%81%D0%BE%D1%84%D0%B8%D1%8F"
+check("a Ring Mall row's film page carries Ring Mall's cinema_slug",
+      [x[3]["vlink"] for x in _r if x[0] == "КОЛИТЕ"][0],
+      "https://www.cinegrand.bg/m/kolite-imdbtt0317219?" + _ring_q)
+check("…while its info url stays the plain film page",
+      [x[3]["url"] for x in _r if x[0] == "КОЛИТЕ"][0], "https://www.cinegrand.bg/m/kolite-imdbtt0317219")
+check("Park Center gets its own slug; an existing slug is replaced, not doubled",
+      (OS.cinegrand_film_url("https://www.cinegrand.bg/m/veriti-imdbtt32261958", "cg-park"),
+       OS.cinegrand_film_url("https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _ring_q, "cg-park")),
+      ("https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _park_q,
+       "https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _park_q))
+check("other hosts and non-film pages are unchanged",
+      (OS.cinegrand_film_url("https://www.kinoarena.com/m/x", "cg-ring"),
+       OS.cinegrand_film_url("https://cinegrand.bg/софия-ринг-мол/schedule", "cg-ring"), OS.cinegrand_film_url(None, "cg-ring")),
+      ("https://www.kinoarena.com/m/x", "https://cinegrand.bg/софия-ринг-мол/schedule", None))
+check("VLINKS kept from an earlier run are rewritten for the venue (Cine Grand only)",
+      (S.venue_vlink("cg-ring", "https://www.cinegrand.bg/m/veriti-imdbtt32261958"),
+       S.venue_vlink("arena-mall", "https://www.kinoarena.com/bg/movie/x")),
+      ("https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _ring_q, "https://www.kinoarena.com/bg/movie/x"))
+
 print("official: Cine Grand advance sales — the per-cinema calendar (София Ринг Мол, 2026-10-09, trimmed)")
 _cal = (FIXTURES / "cinegrand_calendar.html").read_text(encoding="utf-8")
 _adv = (FIXTURES / "cinegrand_advance.html").read_text(encoding="utf-8")

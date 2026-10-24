@@ -448,6 +448,26 @@ CG_CINEMAS = {"cg-ring": ("софия-ринг-мол", "BGSOFCG2"),
               "cg-park": ("парк-център-софия", "BGSOFCG1")}
 CG_SELECT = CG_BASE + "/site/default/select-cinema"
 
+def cinegrand_film_url(url, venue_or_slug):
+    """A Cine Grand film page (/m/<film>) opened for ONE cinema. Without
+    cinema_slug the page shows its default cinema (Парк Център София) for both
+    Sofia cinemas; with it, that cinema's own screenings (the site's own links:
+    /m/veriti-imdbtt32261958?ignoreMissing=1&cinema_slug=софия-ринг-мол).
+    Any other URL is returned unchanged."""
+    slug = CG_CINEMAS[venue_or_slug][0] if venue_or_slug in CG_CINEMAS else venue_or_slug
+    if not url or not slug:
+        return url
+    parts = urllib.parse.urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if not (host == "cinegrand.bg" or host.endswith(".cinegrand.bg")) or not parts.path.startswith("/m/"):
+        return url
+    q = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+         if k not in ("ignoreMissing", "cinema_slug")]
+    q = [("ignoreMissing", "1"), ("cinema_slug", slug)] + q
+    return urllib.parse.urlunsplit((parts.scheme or "https", parts.netloc, parts.path,
+                                    urllib.parse.urlencode(q, quote_via=urllib.parse.quote), ""))
+
+
 # Cine Grand: parse <span class="info"> text like "2d, Дуб" / "3d, Суб"
 _CG_DUB_RE  = re.compile(r"\bдуб\b", re.IGNORECASE)
 _CG_SUB_RE  = re.compile(r"\bсуб\b", re.IGNORECASE)
@@ -519,7 +539,8 @@ def parse_cinegrand_page(html, slug, code, today):
             fmt_span = st.select_one("span.info")
             fmt_text = fmt_span.get_text(" ", strip=True) if fmt_span else ""
             lv_cg, fs_cg = _cg_attrs(fmt_text)
-            meta_cg = {"url": url, "runtime": int(rt.group(1)) if rt else None,
+            meta_cg = {"url": url, "vlink": cinegrand_film_url(url, slug),
+                       "runtime": int(rt.group(1)) if rt else None,
                        "genres_text": genres,
                        "hall": hall.get_text(" ", strip=True) if hall else None,
                        "format": [fmt_text] if fmt_text else []}

@@ -943,6 +943,15 @@ def allowed_vlink(venue, url):
     return bool(url and allowed and "programata.bg" not in h and any(a in h for a in allowed))
 
 
+def venue_vlink(venue, url):
+    """A VLINKS url as it must be stored for that venue: a Cine Grand film page
+    carries the venue's own cinema_slug (otherwise cinegrand.bg shows Парк
+    Център's screenings for a Ring Mall row). Other urls are unchanged."""
+    if venue in OS.CG_CINEMAS:
+        return OS.cinegrand_film_url(url, venue)
+    return url
+
+
 def _day_after(iso):
     return (dt.date.fromisoformat(iso) + dt.timedelta(days=1)).isoformat()
 
@@ -2882,7 +2891,9 @@ def main():
             url = meta.get("url")
             if url and "programata.bg" not in _host(url):
                 links.setdefault(fid, url)
-            tick = meta.get("booking") if vid == "lumiere" else None
+            # the per-venue page: Lumière's ticket shop, Cine Grand's film page for
+            # THAT cinema (cinema_slug); else the info page
+            tick = meta.get("booking") if vid == "lumiere" else meta.get("vlink")
             cand = tick if allowed_vlink(vid, tick) else url
             if allowed_vlink(vid, cand) and (fid, vid) not in fresh_vlinks:
                 fresh_vlinks[(fid, vid)] = cand
@@ -3711,7 +3722,8 @@ def main():
     # its film pages are chain-wide; the UI opens the cinema's page for the date).
     active_pairs = {(r[0], r[1]) for r in new_showtimes}
     vlinks_pruned, deep_venues = drop_deep_vlinks(
-        {k: v for k, v in vlinks.items() if k in active_pairs}, read_const_obj(src, "BOOKING"))
+        {k: venue_vlink(k[1], v) for k, v in vlinks.items() if k in active_pairs},
+        read_const_obj(src, "BOOKING"))
     if deep_venues:
         print(f"VLINKS: none for {', '.join(sorted(deep_venues))} (BOOKING.deep is the per-date page)")
     try:
