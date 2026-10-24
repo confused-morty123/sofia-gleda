@@ -17725,13 +17725,48 @@ def _b24_fonts(browser, base, eng):
             ctx.close()
 
 
+B24_SEG_JS = r"""() => { const seg = document.querySelector('.bar .seg'); if (!seg) return null; const sr = seg.getBoundingClientRect();
+  return [...seg.querySelectorAll('button')].map(b => { const r = b.getBoundingClientRect(), c = getComputedStyle(b);
+    return {sw: b.dataset.switch, on: b.getAttribute('aria-pressed') === 'true', shadow: c.boxShadow,
+      inside: r.left - 2 >= sr.left - 0.5 && r.right + 2 <= sr.right + 0.5 && r.top - 2 >= sr.top - 0.5 && r.bottom + 2 <= sr.bottom + 0.5,
+      clip: getComputedStyle(seg).overflow}; }); }"""
+
+
+def _b24_toggle(browser, base, eng):
+    def ring_ok(btns, mode):
+        on = [b for b in btns if b["on"]]
+        off = [b for b in btns if not b["on"]]
+        colour = B24_CRIMSON if mode == "cinema" else B24_GOLD
+        return (len(on) == 1 and on[0]["sw"] == mode and colour in on[0]["shadow"] and "0px 0px 0px 2px" in on[0]["shadow"]
+                and on[0]["inside"] and all(b["shadow"] == "none" for b in off))
+    for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900))):
+        dev = "phone" if phone else "desktop"
+        for mode in ("cinema", "theatre"):
+            ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, mode=mode)
+            btns = page.evaluate(B24_SEG_JS)
+            check(f"b24_{eng}_toggle_{dev}_{mode}_ring", bool(btns) and ring_ok(btns, mode),
+                  f"{[(b['sw'], b['on'], b['shadow'], b['inside']) for b in (btns or [])]}")
+            # switching moves the ring with the surface
+            other = "theatre" if mode == "cinema" else "cinema"
+            _ux_tap_sel(page, phone, f'.bar [data-switch="{other}"]', scroll=False)
+            page.wait_for_timeout(900)
+            btns2 = page.evaluate(B24_SEG_JS)
+            check(f"b24_{eng}_toggle_{dev}_{mode}_to_{other}", bool(btns2) and ring_ok(btns2, other),
+                  f"{[(b['sw'], b['on'], b['shadow']) for b in (btns2 or [])]}")
+            if mode == "cinema":
+                save_shot(page, "B24", f"toggle_{dev}_{eng}")
+            check(f"b24_{eng}_toggle_{dev}_{mode}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+
+
 def wave_b24(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("B24")
     share_root, tmp = _ux_share_root()
     srv, base = _ux_server(share_root)
     try:
-        for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),):
+        for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),
+                          ("2: the Кино/Театър rings", _b24_toggle)):
             print(f"\n=== B24-{title} ===")
             try:
                 fn(browser, base, eng)
