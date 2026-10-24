@@ -6286,8 +6286,15 @@ document.addEventListener("click",e=>{
     return;}
 
   const sc=q("[data-scroll]");
-  if(sc){const tr=sc.parentElement.querySelector(".rtrack");
-    tr.scrollBy({left:Number(sc.dataset.scroll)*tr.clientWidth*.82,behavior:"smooth"});return;}
+  if(sc){const tr=sc.parentElement.querySelector(".rtrack"),dir=Number(sc.dataset.scroll);
+    /* Land on a card's snap position (the one nearest 82% of the rail on; the rail's end
+       counts as one). Safari leaves a smooth scroll where it stops and snaps the rail at
+       its next layout, so a rail moved by the arrows jumped behind the sheet a card opened. */
+    const x0=tr.scrollLeft,max=tr.scrollWidth-tr.clientWidth,goal=x0+dir*tr.clientWidth*.82,l0=tr.getBoundingClientRect().left;
+    let to=null;
+    for(const c of tr.children){const p=Math.min(max,Math.max(0,Math.round(c.getBoundingClientRect().left-l0+x0)));
+      if(dir*(p-x0)>1&&(to===null||Math.abs(p-goal)<Math.abs(to-goal)))to=p;}
+    if(to!==null)tr.scrollTo({left:to,behavior:"smooth"});return;}
 
   if(q("[data-sheetshowallcin]")){_sheetShowAllCinemas=true;
     const shBody=document.querySelector(".sheet .sbody");

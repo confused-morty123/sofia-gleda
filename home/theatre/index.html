@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-T4uRLsRNBm9OMPW9SQbYzZsHMCeaKv6r4Rx1cYlg2gU=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-jg15eCtCwvLhax/DxfFImRte2bwKw2pJYXTSNGPBh4k=' 'sha256-tGGOWFuNJO2KaJ79N0Z10X6lNJObf+kT1QYeS/GV2oo='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-H27rHlIhFY4dLFDldQljjLXocFs9V/lrAtEc8fQqOjQ=' 'sha256-T4uRLsRNBm9OMPW9SQbYzZsHMCeaKv6r4Rx1cYlg2gU=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-tGGOWFuNJO2KaJ79N0Z10X6lNJObf+kT1QYeS/GV2oo='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -6439,8 +6439,15 @@ document.addEventListener("click",e=>{
     return;}
 
   const sc=q("[data-scroll]");
-  if(sc){const tr=sc.parentElement.querySelector(".rtrack");
-    tr.scrollBy({left:Number(sc.dataset.scroll)*tr.clientWidth*.82,behavior:"smooth"});return;}
+  if(sc){const tr=sc.parentElement.querySelector(".rtrack"),dir=Number(sc.dataset.scroll);
+    /* Land on a card's snap position (the one nearest 82% of the rail on; the rail's end
+       counts as one). Safari leaves a smooth scroll where it stops and snaps the rail at
+       its next layout, so a rail moved by the arrows jumped behind the sheet a card opened. */
+    const x0=tr.scrollLeft,max=tr.scrollWidth-tr.clientWidth,goal=x0+dir*tr.clientWidth*.82,l0=tr.getBoundingClientRect().left;
+    let to=null;
+    for(const c of tr.children){const p=Math.min(max,Math.max(0,Math.round(c.getBoundingClientRect().left-l0+x0)));
+      if(dir*(p-x0)>1&&(to===null||Math.abs(p-goal)<Math.abs(to-goal)))to=p;}
+    if(to!==null)tr.scrollTo({left:to,behavior:"smooth"});return;}
 
   if(q("[data-sheetshowallcin]")){_sheetShowAllCinemas=true;
     const shBody=document.querySelector(".sheet .sbody");
