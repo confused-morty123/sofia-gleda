@@ -1354,7 +1354,13 @@ button,a{-webkit-tap-highlight-color:transparent}
 .search input[type=search]{-webkit-appearance:none; appearance:none}
 .search .mag{display:grid; place-items:center; width:16px; height:16px; line-height:0}
 .search .mag svg{display:block; width:16px; height:16px}
-.search input:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+/* the focused field's one ring (owner, 2026-10-24): drawn INSIDE the pill, over its 1 px border
+   (outline-offset -2 px), so it follows the 999 px radius and nothing clips it. With the ring
+   outside (offset +2 px) the field's row (.bar-row-search on phones, .desk-search-wrap on
+   desktop, both overflow:hidden for their open/close animation) cut its left and right ends
+   off, which left white wedges at the pill's corners. An outline (not a box-shadow) so the
+   ring survives forced-colours modes; a text field shows it on any focus (WCAG 2.4.7). */
+.search input:focus-visible{outline:2px solid var(--fg); outline-offset:-2px}
 
 /* ---- step 1: contrast (C4) ---- */
 /* "днес" on the selected (accent) day pill: at 80% opacity it was 3.5:1 on crimson */

@@ -17936,6 +17936,65 @@ def _b24_grid(browser, base, eng):
             ctx.close()
 
 
+def _b24_ring_pixels(png, rect, clip, margin):
+    """Bright pixels outside the field's rounded shape (a stadium: radius = height / 2), more
+    than 1.5 px from its edge, at its two rounded ends (where the clipped ring left its white
+    wedges; above and below the straight middle a phone has the toggle's thumb)."""
+    from PIL import Image
+    im = Image.open(_ux_io.BytesIO(png)).convert("RGB")
+    sx = im.width / clip["width"]
+    x0, y0, w, h = rect["x"] - clip["x"], rect["y"] - clip["y"], rect["w"], rect["h"]
+    rad = h / 2
+    out = 0
+    for py in range(im.height):
+        for px in range(im.width):
+            x, y = (px + .5) / sx, (py + .5) / sx
+            if x0 + rad <= x <= x0 + w - rad:
+                continue
+            cx = min(max(x, x0 + rad), x0 + w - rad)
+            cy = y0 + rad
+            dist = ((x - cx) ** 2 + (y - cy) ** 2) ** .5 - rad
+            if dist > 1.5:
+                r, g, b = im.getpixel((px, py))
+                if min(r, g, b) > 170:
+                    out += 1
+    return out
+
+
+def _b24_search(browser, base, eng):
+    for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900)), (False, (1024, 768))):
+        dev = f"{'phone' if phone else 'desktop'}_{w}"
+        ctx, page, errs = _b24_open(browser, base, w, h, phone=phone)
+        _ux_tap_sel(page, phone, "[data-search-open]", scroll=False)
+        page.wait_for_timeout(700)
+        sel = "#q-m" if phone else "#q"
+        page.focus(sel)
+        page.keyboard.type("ко")
+        page.wait_for_timeout(500)
+        r = page.evaluate("""(sel) => { const e = document.querySelector(sel); const q = e.getBoundingClientRect(), c = getComputedStyle(e);
+            const ow = parseFloat(c.outlineWidth) || 0, oo = parseFloat(c.outlineOffset) || 0, reach = Math.max(0, ow + oo);
+            const clips = []; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
+              const s = getComputedStyle(a); if (/(hidden|clip|auto|scroll)/.test(s.overflowX + s.overflowY)) { const ar = a.getBoundingClientRect();
+                if (q.left - reach < ar.left - .5 || q.right + reach > ar.right + .5 || q.top - reach < ar.top - .5 || q.bottom + reach > ar.bottom + .5)
+                  clips.push(a.className); } }
+            return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
+              radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'), active: document.activeElement === e, clips}; }""", sel)
+        margin = 6
+        clip = {"x": max(0, r["x"] - margin), "y": max(0, r["y"] - margin)}
+        clip["width"] = min(r["w"] + 2 * margin, w - clip["x"])
+        clip["height"] = r["h"] + 2 * margin
+        png = page.screenshot(clip=clip)
+        outside = _b24_ring_pixels(png, r, clip, margin)
+        ok = (r["active"] and r["fv"] and r["style"] == "solid" and r["ow"] >= 2 and r["oo"] + r["ow"] <= 0
+              and r["color"] == B24_FG and r["shadow"] == "none" and not r["clips"] and outside == 0)
+        check(f"b24_{eng}_search_ring_{dev}", ok,
+              f"focus-visible={r['fv']} outline {r['style']} {r['ow']}px offset {r['oo']}px {r['color']} box-shadow={r['shadow']} "
+              f"radius={r['radius']} clipped by={r['clips']} bright pixels outside the pill={outside}")
+        save_shot(page, "B24", f"search_focus_{dev}_{eng}")
+        check(f"b24_{eng}_search_{dev}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
 def wave_b24(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("B24")
@@ -17946,7 +18005,8 @@ def wave_b24(browser):
                           ("2: the Кино/Театър rings", _b24_toggle),
                           ("3: one motto on both screens", _b24_motto),
                           ("4: next-week days of the period strip", _b24_days),
-                          ("5: the week grid's paging stays put", _b24_grid)):
+                          ("5: the week grid's paging stays put", _b24_grid),
+                          ("7: the focused search field", _b24_search)):
             print(f"\n=== B24-{title} ===")
             try:
                 fn(browser, base, eng)
