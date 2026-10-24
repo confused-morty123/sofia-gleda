@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-G9pkHchq9yilEAHM0htDYrAuhYQ/lt4DZ1bmSVAkMIE=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-jCogPay2uXtH3qYoEwDzbkU2h/afst1rH3SNpT/QCss=' 'sha256-jkfMZUYGgKuP6HdzC11ytnkjzYTl5gDUBNrhY1BQUsk='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-G9pkHchq9yilEAHM0htDYrAuhYQ/lt4DZ1bmSVAkMIE=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-jCogPay2uXtH3qYoEwDzbkU2h/afst1rH3SNpT/QCss=' 'sha256-jg15eCtCwvLhax/DxfFImRte2bwKw2pJYXTSNGPBh4k='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -51,17 +51,32 @@
 :root{
   --ink:#0C0A0F; --ink-2:#141018; --ink-3:#1C1622; --ink-4:#28202F;
   --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.17);
-  --fg:#F4EFF6; --fg-2:#B6ABBC; --fg-3:#7E7386;
+  /* --fg-3 was #7E7386 (3.5-4.4:1, below WCAG AA on every surface): #958A9C keeps the hue
+     and the step below --fg-2, at 6.0:1 on ink, 5.7 on ink-2, 5.4 on ink-3, 4.8 on ink-4 */
+  --fg:#F4EFF6; --fg-1:var(--fg); --fg-2:#B6ABBC; --fg-3:#958A9C;
   --crimson:#E0163A; --gild:#D9B23C;
   --accent:var(--crimson); --on-accent:#fff;
+  /* the accent as TEXT or a thin outline on ink: crimson #E0163A is only 3.7-4.1:1 there;
+     #FF3B5C is 5.1-5.7:1. Fills behind white text keep --accent (white on it 4.8:1). */
+  --accent-text:#FF3B5C;
+  /* type families (owner, 2026-10-23): the cinema surface speaks Montserrat, the theatre
+     surface Source Serif 4 (its italic for the motto); --f-ui carries menus, chips and text */
+  --f-ui:"Montserrat","Segoe UI",system-ui,sans-serif;
+  --f-display:"Montserrat","Segoe UI",system-ui,sans-serif;
   --shadow:0 20px 48px rgba(0,0,0,.55);
   --r:12px; --r-lg:20px;
   --motion-dur-sm:160ms; --motion-dur-md:380ms;
   --motion-ease-spring:cubic-bezier(.34,1.48,.64,1);
   --motion-ease-out:cubic-bezier(.25,.46,.45,.94);
+  /* design phase: one sheet curve (iOS-like, no overshoot), one standard curve */
+  --ease-sheet:cubic-bezier(.32,.72,0,1); --ease-std:cubic-bezier(.2,0,0,1);
+  --dur-press:90ms; --dur-fade:200ms; --dur-out:280ms; --dur-in:420ms;
+  /* type scale (phones; desktop body stays 15): nothing on screen below --t-min */
+  --t-xl:34px; --t-l:28px; --t-m:22px; --t-body:16px; --t-sub:15px; --t-fn:13px; --t-cap:12px; --t-min:11px;
   color-scheme:dark;
 }
-:root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; }
+:root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; --accent-text:var(--gild);
+  --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; }
 /* Dark mode is forced — there is no light theme. The former
    `@media (prefers-color-scheme: light)` and `:root[data-theme="light"]` blocks
    were removed so a device set to light does not recolour the app; `color-scheme:dark`
@@ -73,11 +88,11 @@ html,body{min-height:100%}
    from reflowing sideways where scrollbars take up space */
 html{scrollbar-gutter:stable; -webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{margin:0; background:var(--ink); color:var(--fg);
-  font-family:"Onest","Segoe UI",system-ui,sans-serif; font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
+  font-family:var(--f-ui); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{margin:0; text-wrap:balance}
 button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
 a{color:inherit}
-:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important}}
 /* Safe areas: the page asks for the whole screen (viewport-fit=cover), so on a phone it
    is laid out under the rounded corners, the notch or Dynamic Island, the status bar of
@@ -116,11 +131,11 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 @media(max-width:760px){ .brand{align-items:center} }
 .brand-logo{height:clamp(32px,3.2vw,42px); width:auto; flex:0 1 auto; min-width:0; max-width:100%;
   object-fit:contain; display:block; transition:filter .15s}
-.brand:hover .brand-logo{filter:brightness(1.12)}
-.brand b{font-family:Oswald,"Arial Narrow",sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,30px);
+@media (hover:hover){.brand:hover .brand-logo{filter:brightness(1.12)}}
+.brand b{font-family:var(--f-display); font-weight:700; font-size:clamp(22px,2.4vw,30px);
   letter-spacing:.15em; text-transform:uppercase; color:var(--accent); line-height:1; white-space:nowrap;
   transition:opacity .15s, filter .15s}
-.brand:hover b{filter:brightness(1.12)}
+@media (hover:hover){.brand:hover b{filter:brightness(1.12)}}
 .brand:active b{opacity:.7}
 .brand span{font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--fg-3); white-space:nowrap}
 .bar-controls{display:flex; align-items:center; gap:8px; justify-self:end}
@@ -187,7 +202,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   .seg.seg-q .seg-l{max-width:7em; opacity:1}}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
-.iconb:hover{border-color:var(--line-2); color:var(--fg)}
+@media (hover:hover){.iconb:hover{border-color:var(--line-2); color:var(--fg)}}
 .search-icon-btn.expanded{border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--ink-3))}
 
 /* ---------- controls ---------- */
@@ -232,18 +247,18 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   background:var(--ink-2); border-left:1px solid var(--line); overflow-y:auto;
   padding:calc(18px + env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px))
     calc(28px + env(safe-area-inset-bottom,0px)) 18px; box-shadow:-20px 0 50px rgba(0,0,0,.4)}
-.drawer h3{font-family:Oswald,sans-serif; font-size:11px; letter-spacing:.17em; text-transform:uppercase;
+.drawer h3{font-family:var(--f-display); font-size:11px; letter-spacing:.17em; text-transform:uppercase;
   color:var(--fg-3); margin:20px 0 9px; padding-bottom:6px; border-bottom:1px solid var(--line)}
 .drawer h3:first-of-type{margin-top:6px}
 .drawer-top{display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:4px}
-.drawer-top b{font-family:Oswald,sans-serif; font-size:13px; letter-spacing:.14em; text-transform:uppercase}
+.drawer-top b,.drawer-top .drawer-title{font-family:var(--f-display); font-size:13px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; margin:0}
 .dclose{width:30px; height:30px; border-radius:50%; border:1px solid var(--line); display:grid; place-items:center; font-size:14px; color:var(--fg-2)}
 .chipwrap{display:flex; gap:6px; flex-wrap:wrap}
 .mrow{display:flex; gap:6px; margin-bottom:9px}
 .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
 .cal button{aspect-ratio:1; border-radius:8px; border:1px solid transparent; background:var(--ink-3);
   font-size:12px; font-variant-numeric:tabular-nums; color:var(--fg-2); display:grid; place-items:center; position:relative}
-.cal button:hover{border-color:var(--line-2)}
+@media (hover:hover){.cal button:hover{border-color:var(--line-2)}}
 .cal button[disabled]{opacity:.26; cursor:default; background:transparent}
 .cal button.has::after{content:""; position:absolute; bottom:4px; width:3px; height:3px; border-radius:50%; background:var(--accent)}
 .cal button[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
@@ -255,7 +270,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .calmon{font-size:13px; font-weight:600; color:var(--fg-1); text-align:center; flex:1}
 .calarrow{width:32px; height:32px; flex:none; border-radius:8px; border:1px solid var(--line-2);
   background:var(--ink-3); color:var(--fg-1); font-size:17px; line-height:1; cursor:pointer; display:grid; place-items:center}
-.calarrow:hover:not([disabled]){border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.calarrow:hover:not([disabled]){border-color:var(--accent); color:var(--accent)}}
 .calarrow[disabled]{opacity:.3; cursor:default}
 .calhint{margin-top:9px; font-size:11px; color:var(--fg-3); text-align:center; min-height:14px}
 .caldow{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:5px}
@@ -268,11 +283,11 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .days::-webkit-scrollbar{display:none}
 .day{flex:0 0 auto; min-width:58px; padding:6px 12px; border-radius:10px; border:1px solid var(--line);
   background:var(--ink-2); text-align:center; line-height:1.2; transition:border-color .15s,background .15s}
-.day:hover{border-color:var(--line-2)}
+@media (hover:hover){.day:hover{border-color:var(--line-2)}}
 .day[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .day .dow{display:block; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.75}
-.day .dnum{display:block; font-family:Oswald,sans-serif; font-size:16px; font-weight:600}
-.day .dall{font-family:Oswald,sans-serif; font-size:12.5px; font-weight:600; letter-spacing:.06em}
+.day .dnum{display:block; font-family:var(--f-display); font-size:16px; font-weight:600}
+.day .dall{font-family:var(--f-display); font-size:12.5px; font-weight:600; letter-spacing:.06em}
 .fbar{display:flex; gap:6px; align-items:center; overflow-x:auto; scrollbar-width:none; padding-bottom:1px}
 .fbar::-webkit-scrollbar{display:none}
 .sbar{position:sticky; top:0; z-index:8; display:flex; align-items:center; gap:10px;
@@ -280,7 +295,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   border-bottom:1px solid var(--line)}
 .sback{display:flex; align-items:center; gap:7px; padding:7px 13px 7px 9px; border-radius:999px;
   border:1px solid var(--line-2); font-size:13px; font-weight:600; color:var(--fg)}
-.sback:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.sback:hover{border-color:var(--accent); color:var(--accent)}}
 .sgrab{width:38px; height:4px; border-radius:99px; background:var(--line-2); margin:8px auto 0; display:none}
 @media(max-width:620px){ .sgrab{display:block} .scrim{padding:0; place-items:end center}
   /* Higher specificity (.scrim .sheet) so these win over the base `.sheet`
@@ -300,7 +315,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} }
 .fchip{padding:5px 12px; border-radius:999px; border:1px solid var(--line); background:var(--ink-2);
   font-size:12px; color:var(--fg-2); transition:border-color .15s,background .15s; white-space:nowrap}
-.fchip:hover{border-color:var(--line-2)}
+@media (hover:hover){.fchip:hover{border-color:var(--line-2)}}
 .fchip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600}
 .fchip.off,.fchip:disabled{opacity:.4; pointer-events:none; text-decoration:line-through; text-decoration-thickness:1px}
 .fclear{font-size:11.5px; color:var(--fg-3); text-decoration:underline; text-underline-offset:3px; padding:5px 4px}
@@ -308,13 +323,13 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 /* ---------- favourites (P3A item 7) ---------- */
 .fav-star{background:none; border:none; cursor:pointer; padding:4px 6px; color:var(--fg-3);
   font-size:15px; line-height:1; border-radius:6px; transition:color .15s, transform .15s}
-.fav-star:hover{color:var(--fg)}
+@media (hover:hover){.fav-star:hover{color:var(--fg)}}
 .fav-star.on{color:var(--accent)}
-.fav-star.on:hover{color:var(--accent); transform:scale(1.2)}
+@media (hover:hover){.fav-star.on:hover{color:var(--accent); transform:scale(1.2)}}
 .fav-toggle{display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:999px;
   border:1px solid var(--line); background:var(--ink-2); font-size:12px; font-weight:600;
   color:var(--fg-2); transition:border-color .15s, color .15s, background .15s}
-.fav-toggle:hover{border-color:var(--line-2); color:var(--fg)}
+@media (hover:hover){.fav-toggle:hover{border-color:var(--line-2); color:var(--fg)}}
 .fav-toggle.on{border-color:var(--accent); color:var(--accent);
   background:color-mix(in srgb,var(--accent) 10%,var(--ink-2))}
 .fav-toggle svg{width:14px; height:14px; flex:0 0 14px}
@@ -327,7 +342,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .late-day-card .btn{margin-top:4px}
 
 /* ---------- brand subtext (option A: under logo in header) ---------- */
-.brand .brand-sub{display:block; font-family:Onest,sans-serif; font-weight:400;
+.brand .brand-sub{display:block; font-family:var(--f-ui); font-weight:400;
   font-size:12.5px; color:var(--fg-2); white-space:nowrap; overflow:visible;
   line-height:1; margin-top:5px; text-align:left;
   text-transform:none; letter-spacing:normal}
@@ -338,7 +353,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
    brand is exactly as wide as the logo would be (its own clamp, 5.153 = logo.svg's
    width/height), never wider than its column; the logo fills that width and the line's
    font is set from it in container units, so the line is 98% of the logo's width in
-   either language (Onest: 18.42 font-sizes wide in BG, 15.87 in EN) and stays inside
+   either language (the widths per face are set with the type families below) and stays inside
    the column, clear of the toggle. Below about 1180 px the lockup stops shrinking at
    190 px, where the line is 10.1 px in BG and 11.7 px in EN (the owner's 10 px floor);
    the search field above narrows to leave it that room. Phones keep the centred 12 px
@@ -363,28 +378,28 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   color:var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 [data-surface="theatre"] .eyebrow{color:var(--gild)}
 .eyebrow .dot{width:5px; height:5px; border-radius:50%; background:currentColor}
-.hero h1{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
+.hero h1,.hero .hero-title{font-family:var(--f-display); font-weight:700; text-transform:uppercase;
   font-size:clamp(28px,5.6vw,52px); line-height:1; margin-bottom:11px}
-[data-surface="theatre"] .hero h1{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+[data-surface="theatre"] .hero h1,[data-surface="theatre"] .hero .hero-title{font-family:var(--f-display); text-transform:none;
   font-weight:800; letter-spacing:-.015em; font-size:clamp(26px,5vw,46px); line-height:1.04}
 .hero-meta{display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin-bottom:11px; font-size:12.5px; color:#CCC2D0}
 .hero-syn{font-size:14px; color:#DBD2DE; margin-bottom:17px; max-width:54ch}
 .acts{display:flex; gap:9px; flex-wrap:wrap}
 .btn{padding:10px 20px; border-radius:10px; font-weight:600; font-size:13.5px;
   background:var(--accent); color:var(--on-accent); border:1px solid var(--accent); transition:filter .16s}
-.btn:hover{filter:brightness(1.12)}
+@media (hover:hover){.btn:hover{filter:brightness(1.12)}}
 .btn.ghost{background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.26); color:#fff; backdrop-filter:blur(6px)}
 .btn.sm{padding:7px 14px; font-size:12.5px}
 
 /* ---------- rails ---------- */
 .rail{margin-bottom:44px}
 .rhead{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap}
-.rhead h2{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
+.rhead h2{font-family:var(--f-display); font-weight:600; font-size:clamp(20px,2.2vw,26px);
   letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
 .rhead h2::before{content:""; display:inline-block; width:4px; height:.9em; border-radius:2px;
   background:var(--accent); flex:0 0 4px}
-/* P3A item 3: theatre rails use same Oswald + uppercase rule as cinema (one rule across both surfaces) */
-[data-surface="theatre"] .rhead h2{font-family:Oswald,sans-serif; text-transform:uppercase;
+/* P3A item 3: theatre rails take the surface's display face (restyled with the type families below) */
+[data-surface="theatre"] .rhead h2{font-family:var(--f-display); text-transform:uppercase;
   letter-spacing:.06em; font-size:clamp(20px,2.2vw,26px)}
 .rhead .sub{font-size:11.5px; color:var(--fg-3)}
 .rscroll{position:relative}
@@ -394,13 +409,13 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .rarrow{position:absolute; top:34%; z-index:5; width:32px; height:62px; border-radius:10px;
   background:color-mix(in srgb,var(--ink) 92%,transparent); border:1px solid var(--line-2);
   display:none; place-items:center; font-size:17px}
-@media(min-width:900px){ .rscroll:hover .rarrow{display:grid} }
+@media(min-width:900px){ @media (hover:hover){.rscroll:hover .rarrow{display:grid}} }
 /* While the wheel or trackpad scrolls the page, the cards and rails passing under the
    resting pointer neither lift nor show their arrows: each hover change repainted its
    rail, about two paints and a style pass a frame (the wheel listener by the live search
    sets .sg-wheel) */
-html.sg-wheel .card:hover{transform:none}
-html.sg-wheel .rscroll:hover .rarrow{display:none}
+@media (hover:hover){html.sg-wheel .card:hover{transform:none}}
+@media (hover:hover){html.sg-wheel .rscroll:hover .rarrow{display:none}}
 .rarrow.prev{left:-8px} .rarrow.next{right:-8px}
 
 /* ---------- card + generated poster ---------- */
@@ -410,7 +425,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
   transition:transform .22s cubic-bezier(.22,1,.36,1)}
 .grid .card{width:auto}
 @media(min-width:760px){ .card{width:180px} }
-.card:hover{transform:translateY(-5px)}
+@media (hover:hover){.card:hover{transform:translateY(-5px)}}
 .poster{position:relative; aspect-ratio:2/3; max-width:100%; border-radius:var(--r); overflow:hidden;
   border:1px solid var(--line); box-shadow:var(--shadow); display:flex; flex-direction:column; justify-content:flex-end;
   padding:11px; color:#fff; isolation:isolate}
@@ -432,23 +447,23 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .p-grain{position:absolute; inset:0; z-index:1; pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px),
              radial-gradient(130% 80% at 50% 105%,rgba(0,0,0,.72),transparent 62%)}
-.p-title{position:relative; z-index:3; font-family:Oswald,sans-serif; font-weight:600; text-transform:uppercase;
+.p-title{position:relative; z-index:3; font-family:var(--f-display); font-weight:600; text-transform:uppercase;
   font-size:16px; line-height:1.04; text-shadow:0 2px 14px rgba(0,0,0,.7);
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
-[data-surface="theatre"] .p-title{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-weight:600; font-size:18px; line-height:1.12}
+[data-surface="theatre"] .p-title{font-family:var(--f-display); text-transform:none; font-weight:600; font-size:18px; line-height:1.12}
 .p-sub{position:relative; z-index:3; font-size:9.5px; letter-spacing:.11em; text-transform:uppercase; opacity:.8; margin-top:5px}
 .p-top{position:absolute; top:9px; left:9px; right:9px; z-index:4; display:flex; justify-content:space-between; align-items:flex-start; gap:6px}
 /* the rating badges carry no backdrop-filter: one on every card added a GPU render pass
    per visible card to every scroll frame (12 a frame instead of 2); a darker ground keeps
    the poster's own lettering from showing through, as the blur did */
-.score{font-family:Oswald,sans-serif; font-weight:600; font-size:12.5px; padding:2px 7px; border-radius:6px;
+.score{font-family:var(--f-display); font-weight:600; font-size:12.5px; padding:2px 7px; border-radius:6px;
   background:rgba(0,0,0,.78); font-variant-numeric:tabular-nums;
   border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; gap:4px; white-space:nowrap; color:#fff}
-.score i{font-style:normal; font-size:7.5px; letter-spacing:.1em; opacity:.72; font-family:Onest,sans-serif}
+.score i{font-style:normal; font-size:7.5px; letter-spacing:.1em; opacity:.72; font-family:var(--f-ui)}
 .score.hi{color:#FFD84D} .score.na{color:#A99DAD; font-size:11px}
 .score.tmdb{background:linear-gradient(rgba(1,180,228,.16),rgba(1,180,228,.16)),rgba(0,0,0,.8);
   border-color:rgba(1,180,228,.42); color:#01B4E4}
-.fest-mark{font-family:Onest,sans-serif; font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
+.fest-mark{font-family:var(--f-ui); font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
 /* a festival mark and a premiere badge stack in the poster's top-right corner */
 .p-tags{display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:0}
 .badge{font-size:8px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; padding:3px 7px;
@@ -468,9 +483,9 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .ebox{position:relative; border-radius:var(--r); overflow:hidden; border:1px solid var(--line); padding:18px;
   height:184px; display:flex; flex-direction:column; justify-content:space-between; color:#fff; box-shadow:var(--shadow)}
 .ebox .p-art{z-index:0} .ebox > :not(.p-art):not(.p-grain){position:relative; z-index:2}
-.ebox h3{font-family:Oswald,sans-serif; font-size:18px; font-weight:600; line-height:1.14; text-transform:uppercase;
+.ebox h3{font-family:var(--f-display); font-size:18px; font-weight:600; line-height:1.14; text-transform:uppercase;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
-[data-surface="theatre"] .ebox h3{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-size:21px}
+[data-surface="theatre"] .ebox h3{font-family:var(--f-display); text-transform:none; font-size:21px}
 .edate{font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.86; margin-top:7px; font-variant-numeric:tabular-nums}
 
 /* ---------- sheet ---------- */
@@ -485,9 +500,9 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .shero .hero-scrim{background:linear-gradient(to top,rgba(0,0,0,.93),rgba(0,0,0,.3))}
 .sclose{position:absolute; top:8px; right:8px; z-index:6; width:40px; height:40px; border-radius:50%;
   background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.24); color:#fff; display:grid; place-items:center; font-size:15px}
-.sheet h2{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
+.sheet h2{font-family:var(--f-display); font-weight:700; text-transform:uppercase;
   font-size:clamp(23px,4.2vw,34px); line-height:1.02; position:relative; z-index:3}
-[data-surface="theatre"] .sheet h2{font-family:"Playfair Display",Georgia,serif; text-transform:none; font-weight:800; letter-spacing:-.015em}
+[data-surface="theatre"] .sheet h2{font-family:var(--f-display); text-transform:none; font-weight:800; letter-spacing:-.015em}
 .sbody{padding:22px; display:flex; flex-direction:column; gap:19px}
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:3px 9px; border-radius:999px;
@@ -499,10 +514,10 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .ratings{display:flex; gap:9px; flex-wrap:wrap}
 .rtile{border:1px solid var(--line); border-radius:10px; padding:8px 13px; min-width:82px; background:var(--ink-3)}
 .rtile .rl{font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--fg-3)}
-.rtile .rv{font-family:Oswald,sans-serif; font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.15}
+.rtile .rv{font-family:var(--f-display); font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.15}
 .rtile .rv small{font-size:11px; color:var(--fg-3); font-weight:400}
 .rtile.imdb .rv{color:#F5C518}
-.sec h4{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3); margin-bottom:9px;
+.sec h3,.sec h4{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3); margin-bottom:9px;
   padding-bottom:6px; border-bottom:1px solid var(--line)}
 .sec p{margin:0 0 8px; color:var(--fg-2); font-size:14px; max-width:68ch}
 .facts{margin:0; padding-left:17px; color:var(--fg-2); font-size:13.5px; display:flex; flex-direction:column; gap:5px}
@@ -518,19 +533,19 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 @media(min-width:640px){ .vname{flex:0 0 210px} }
 .vloc{display:flex; flex-direction:column; gap:1px}
 .vloc em{font-style:normal; font-size:10.5px; color:var(--fg-3); font-weight:400}
-.time.tix{border-style:dashed; color:var(--fg-3); font-family:Onest,sans-serif; font-size:11px; font-weight:600}
-.time.tix:hover{border-style:solid; border-color:var(--accent); color:var(--accent)}
-.tpick .tt em{display:block; font-style:normal; font-family:Onest,sans-serif; font-size:9px;
+.time.tix{border-style:dashed; color:var(--fg-3); font-family:var(--f-ui); font-size:11px; font-weight:600}
+@media (hover:hover){.time.tix:hover{border-style:solid; border-color:var(--accent); color:var(--accent)}}
+.tpick .tt em{display:block; font-style:normal; font-family:var(--f-ui); font-size:9px;
   letter-spacing:.04em; text-transform:none; opacity:.8; font-weight:400; margin-top:3px;
   -webkit-line-clamp:2; overflow:hidden}
 .vkind{font-size:8.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); border:1px solid var(--line); border-radius:4px; padding:1px 5px}
-.vprice{font-family:Onest,sans-serif; font-size:11px; font-weight:600; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line)); border-radius:6px; padding:2px 7px; white-space:nowrap}
+.vprice{font-family:var(--f-ui); font-size:11px; font-weight:600; color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line)); border-radius:6px; padding:2px 7px; white-space:nowrap}
 .vtimes{display:flex; gap:6px; flex-wrap:wrap; flex:1; align-items:flex-start}
-.time{font-family:Oswald,sans-serif; font-size:12.5px; font-weight:500; font-variant-numeric:tabular-nums;
+.time{font-family:var(--f-display); font-size:12.5px; font-weight:500; font-variant-numeric:tabular-nums;
   padding:4px 10px; border-radius:7px; border:1px solid var(--line-2); background:var(--ink-3); color:var(--fg); text-decoration:none; display:inline-block}
-.time:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.time:hover{border-color:var(--accent); color:var(--accent)}}
 .time.fits{border-color:var(--accent); color:var(--accent)}
-.time .th{font-family:Onest,sans-serif; font-size:9px; letter-spacing:.07em; color:var(--fg-3); display:block; text-transform:uppercase}
+.time .th{font-family:var(--f-ui); font-size:9px; letter-spacing:.07em; color:var(--fg-3); display:block; text-transform:uppercase}
 .dgroup{margin-bottom:13px}
 .dg-h{font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700; margin-bottom:8px}
 .buybox{border:1px solid var(--accent); border-radius:var(--r); padding:15px 17px; background:color-mix(in srgb,var(--accent) 9%,var(--ink-2));
@@ -539,11 +554,11 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .buylinks{display:flex; gap:7px; flex-wrap:wrap; align-items:center}
 .buylink{padding:7px 13px; min-height:40px; border-radius:20px; background:transparent; border:1px solid var(--accent);
   color:var(--accent); font-weight:600; font-size:12.5px; text-decoration:none; display:inline-flex; align-items:center; gap:5px; line-height:1.2}
-.buylink:hover{background:color-mix(in srgb,var(--accent) 14%,transparent); filter:none}
+@media (hover:hover){.buylink:hover{background:color-mix(in srgb,var(--accent) 14%,transparent); filter:none}}
 .buylink.alt{border-color:var(--line-2); color:var(--fg-2); font-weight:400; font-size:12px; background:transparent}
-.buylink.alt:hover{border-color:var(--fg-2); filter:none}
+@media (hover:hover){.buylink.alt:hover{border-color:var(--fg-2); filter:none}}
 .buylink.inperson{border:none; color:var(--fg-3); font-size:12px; font-weight:400; padding:4px 0; min-height:0; background:transparent}
-.buylink.inperson:hover{color:var(--fg-2); filter:none}
+@media (hover:hover){.buylink.inperson:hover{color:var(--fg-2); filter:none}}
 .buynote{font-size:11.5px; color:var(--fg-3)}
 .no-info-note{font-size:13px; color:var(--fg-3); font-style:italic; margin:0}
 
@@ -553,7 +568,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 /* share button + read-more + toast */
 .sshare{position:absolute; top:8px; right:56px; z-index:6; width:40px; height:40px; border-radius:50%;
   background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.24); color:#fff; display:grid; place-items:center; cursor:pointer}
-.sshare:hover{border-color:#fff; background:rgba(0,0,0,.72)}
+@media (hover:hover){.sshare:hover{border-color:#fff; background:rgba(0,0,0,.72)}}
 /* trailer (Option 1, "hero = trailer"): a calm play circle on the key art. A dark
    translucent material with a white ring keeps it legible on light and dark art
    (HIG media controls); 64 pt is well above the 44 pt minimum and the 120x70 px
@@ -569,7 +584,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
   border:1.5px solid rgba(255,255,255,.9); box-shadow:0 2px 16px rgba(0,0,0,.35);
   transition:transform var(--motion-dur-sm) var(--motion-ease-out), background var(--motion-dur-sm) var(--motion-ease-out)}
 .tr-play svg{width:26px; height:26px; margin-left:3px}
-.tr-play:hover{background:rgba(18,14,20,.7); transform:scale(1.05)}
+@media (hover:hover){.tr-play:hover{background:rgba(18,14,20,.7); transform:scale(1.05)}}
 .tr-play:active{transform:scale(.96)}
 .tr-play:focus-visible{outline:2px solid #fff; outline-offset:4px}
 .shero.playing{min-height:0; padding:56px 0 18px; background:#000!important}
@@ -582,12 +597,12 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .tr-stop{margin-top:12px; display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 14px;
   border-radius:999px; background:transparent; border:1px solid rgba(255,255,255,.4); color:#fff; font-size:13px; cursor:pointer}
 .tr-stop[hidden]{display:none}
-.tr-stop:hover{border-color:#fff}
+@media (hover:hover){.tr-stop:hover{border-color:#fff}}
 .tr-stop:focus-visible{outline:2px solid #fff; outline-offset:3px}
 .tr-note{margin:0; font-size:12.5px; color:var(--fg-2); line-height:1.45}
 @media (prefers-reduced-motion: reduce){
   .tr-play{transition:none}
-  .tr-play:hover,.tr-play:active{transform:none}
+  .tr-play:active{transform:none}@media (hover:hover){.tr-play:hover{transform:none}}
 }
 .synwrap{position:relative}
 .synwrap.clamp .synbody{display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
@@ -596,7 +611,7 @@ html.sg-wheel .rscroll:hover .rarrow{display:none}
 .readmore{margin-top:4px; background:none; border:0; padding:0; cursor:pointer;
   color:var(--accent); font:inherit; font-size:13px; font-weight:600; letter-spacing:.02em;
   transition:opacity var(--motion-dur-sm) var(--motion-ease-out)}
-.readmore:hover{text-decoration:underline}
+@media (hover:hover){.readmore:hover{text-decoration:underline}}
 .toast{position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,14px); z-index:300;
   background:var(--ink-2); border:1px solid var(--line-2); color:var(--fg); border-radius:10px;
   padding:11px 18px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
@@ -611,11 +626,11 @@ button[disabled]{opacity:.4; cursor:not-allowed}
   background:var(--ink-2); padding:11px 15px; font-size:12px; color:var(--fg-2); margin-bottom:24px}
 .note b{color:var(--fg)}
 .sechead{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; padding-top:8px}
-.sechead h2{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
+.sechead h2{font-family:var(--f-display); font-weight:600; font-size:clamp(20px,2.2vw,26px);
   letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
 .sechead h2::before{content:""; display:inline-block; width:4px; height:.9em; border-radius:2px;
   background:var(--accent); flex:0 0 4px}
-[data-surface="theatre"] .sechead h2{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+[data-surface="theatre"] .sechead h2{font-family:var(--f-display); text-transform:none;
   letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
 .sechead .n{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3); border:1px solid var(--line);
   border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums}
@@ -627,14 +642,14 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 /* ---------- typographic period header (replaces the old .pbanner box) ---------- */
 .phead{padding-block:20px 10px; margin-bottom:6px}
 .phead-eyebrow{font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--fg-3); margin-bottom:6px; font-weight:600}
-.phead-title{font-family:Oswald,sans-serif; font-weight:700; text-transform:uppercase;
+.phead-title{font-family:var(--f-display); font-weight:700; text-transform:uppercase;
   font-size:clamp(34px,4vw,44px); letter-spacing:.04em; line-height:1.04; color:var(--fg); margin-bottom:2px}
-[data-surface="theatre"] .phead-title{font-family:"Playfair Display",Georgia,serif; text-transform:none;
+[data-surface="theatre"] .phead-title{font-family:var(--f-display); text-transform:none;
   letter-spacing:-.01em; font-size:clamp(36px,4.2vw,46px)}
 /* P3A item 4: phead-dates on desktop is inline; mobile override makes it block (see below) */
 .phead-dates{font-size:clamp(18px,2.2vw,24px); color:var(--accent); font-family:inherit; font-weight:500; display:inline}
 .phead-other{display:inline-block; margin-top:8px; font-size:12px; color:var(--fg-3); text-decoration:none; cursor:pointer; border:0; background:none; padding:0; letter-spacing:.04em}
-.phead-other:hover{color:var(--fg)}
+@media (hover:hover){.phead-other:hover{color:var(--fg)}}
 /* Day strip */
 .daystrip{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-top:16px; margin-bottom:4px}
 .daystrip::-webkit-scrollbar{display:none}
@@ -643,7 +658,7 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
   background:var(--ink-2); font-size:12.5px; font-weight:600; color:var(--fg-2); white-space:nowrap; position:relative;
   transition:border-color .15s,background .15s,color .15s; line-height:1.3; min-height:40px; display:inline-flex; align-items:center; justify-content:center; flex-direction:column}
 .dspill-divider{flex:0 0 auto; width:1px; height:24px; background:var(--line-2); margin-inline:4px; align-self:center}
-.dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}
+@media (hover:hover){.dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}}
 .dspill[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .dspill[disabled]{opacity:.32; cursor:default}
 .dspill .ds-today{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; opacity:.8; line-height:1}
@@ -651,18 +666,18 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .pbanner-btn{flex:0 0 auto; padding:7px 14px; border-radius:999px; border:1px solid var(--line-2);
   background:transparent; color:var(--fg-2); font-size:12px; font-weight:600; letter-spacing:.04em;
   white-space:nowrap; transition:border-color .15s,color .15s}
-.pbanner-btn:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.pbanner-btn:hover{border-color:var(--accent); color:var(--accent)}}
 
 /* ---------- collapsible section headers ---------- */
 :root{ --theatre-group:#C3B1F5 }
 .sec-toggle{width:100%; display:flex; align-items:center; gap:10px;
   padding:12px 0 12px; border-top:2px solid var(--line-2); background:none;
   text-align:left; cursor:pointer; color:var(--fg); transition:color .15s}
-.sec-toggle:hover{color:var(--accent)}
-.sec-toggle-title{font-family:Oswald,sans-serif; font-weight:700; font-size:clamp(22px,2.4vw,28px);
+@media (hover:hover){.sec-toggle:hover{color:var(--accent)}}
+.sec-toggle-title{font-family:var(--f-display); font-weight:700; font-size:clamp(22px,2.4vw,28px);
   letter-spacing:.05em; text-transform:uppercase; flex:1}
-/* P3A item 3: theatre section titles also use Oswald + uppercase */
-[data-surface="theatre"] .sec-toggle-title{font-family:Oswald,sans-serif; text-transform:uppercase; letter-spacing:.05em}
+/* P3A item 3: theatre section titles take the display face too */
+[data-surface="theatre"] .sec-toggle-title{font-family:var(--f-display); text-transform:uppercase; letter-spacing:.05em}
 .sec-toggle-count{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-3);
   border:1px solid var(--line); border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums; flex:0 0 auto}
 .sec-toggle-chev{flex:0 0 20px; width:20px; height:20px; color:var(--fg-3); display:flex; align-items:center; justify-content:center;
@@ -677,10 +692,10 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 /* old selector kept for any code paths that still use the id-based content divs */
 .sec-content{overflow:hidden}
 .sec-content[hidden]{display:none!important}
-.sec-subhead{font-family:Oswald,sans-serif; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+.sec-subhead{font-family:var(--f-display); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
   color:var(--fg-3); padding:12px 0 8px; border-bottom:1px solid var(--line); margin-bottom:20px}
-/* theatre sub-headings: Playfair, lavender (--theatre-group) — item 3 */
-[data-surface="theatre"] .sec-subhead{font-family:"Playfair Display",Georgia,serif; letter-spacing:0;
+/* theatre sub-headings: the display face (Source Serif 4), lavender (--theatre-group), item 3 */
+[data-surface="theatre"] .sec-subhead{font-family:var(--f-display); letter-spacing:0;
   font-size:clamp(20px,2vw,22px); font-weight:700; color:var(--theatre-group); padding-top:20px}
 /* venue-mode summary row */
 .venue-mode-head{padding-bottom:18px; margin-bottom:4px}
@@ -688,15 +703,15 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .venue-chip-rm{display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:999px;
   border:1px solid var(--line-2); background:var(--ink-3); color:var(--fg); font-size:12.5px; font-weight:500;
   cursor:pointer; white-space:nowrap; transition:border-color .15s}
-.venue-chip-rm:hover{border-color:var(--accent); color:var(--accent)}
+@media (hover:hover){.venue-chip-rm:hover{border-color:var(--accent); color:var(--accent)}}
 .venue-chip-rm .rm-x{font-size:11px; opacity:.65; margin-left:2px}
 .venue-block{margin-bottom:36px}
 .venue-block-head{margin-bottom:14px}
-.venue-block-head h2{font-family:Oswald,sans-serif; font-weight:600; font-size:clamp(20px,2.2vw,26px);
+.venue-block-head h2{font-family:var(--f-display); font-weight:600; font-size:clamp(20px,2.2vw,26px);
   letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
 .venue-block-head h2::before{content:""; display:inline-block; width:4px; height:.9em; border-radius:2px;
   background:var(--accent); flex:0 0 4px}
-[data-surface="theatre"] .venue-block-head h2{font-family:"Playfair Display",Georgia,serif; text-transform:none; letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
+[data-surface="theatre"] .venue-block-head h2{font-family:var(--f-display); text-transform:none; letter-spacing:0; font-size:clamp(24px,2.6vw,30px)}
 .venue-block-head .sub{font-size:11.5px; color:var(--fg-3); margin-top:2px}
 
 /* ---------- show-attribute labels (lang / format) ---------- */
@@ -721,7 +736,7 @@ a.prelim-time,span.prelim-time{border:1px dashed var(--line-2)!important;backgro
   z-index:55; display:flex; align-items:center; gap:8px;
   min-height:48px; padding:0 18px 0 14px; border-radius:999px;
   background:var(--accent); color:var(--on-accent); border:none;
-  font:600 13px/1 "Onest","Segoe UI",system-ui,sans-serif; letter-spacing:.03em;
+  font:600 13px/1 var(--f-ui); letter-spacing:.03em;
   box-shadow:0 4px 20px rgba(0,0,0,.45); cursor:pointer;
   transition:filter .15s, transform .15s}
 @media (hover:hover){ .fab:hover{filter:brightness(1.1); transform:translateY(-2px)} }
@@ -757,31 +772,33 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   width:40px;height:40px;min-width:40px;border-radius:8px;border:1px solid var(--line-2);
   background:rgba(255,255,255,.05);color:var(--fg-2);cursor:pointer;
   flex-shrink:0;transition:background .15s,color .15s;vertical-align:middle;margin-left:6px}
-.cal-btn:hover,.cal-btn:focus-visible{background:rgba(255,255,255,.12);color:var(--fg)}
+.cal-btn:focus-visible{background:rgba(255,255,255,.12);color:var(--fg)}@media (hover:hover){.cal-btn:hover{background:rgba(255,255,255,.12);color:var(--fg)}}
 .cal-btn svg{pointer-events:none}
 .cal-panel{background:var(--ink-3);border:1px solid var(--line-2);border-radius:12px;
   padding:14px 16px 16px;margin:6px 0 2px;animation:calIn .15s ease-out both}
 @keyframes calIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.cal-panel h5{margin:0 0 10px;font:600 13px/1.4 "Onest","Segoe UI",system-ui;
+.cal-panel h5{margin:0 0 10px;font:600 13px/1.4 var(--f-ui);
   color:var(--fg);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
 .cal-panel h5 button.cal-x{margin-left:auto;width:26px;height:26px;min-width:26px;border-radius:6px;
   border:none;background:transparent;color:var(--fg-2);font-size:16px;cursor:pointer;
   display:grid;place-items:center;padding:0;line-height:1;transition:background .12s,color .12s}
-.cal-panel h5 button.cal-x:hover{background:rgba(255,255,255,.1);color:var(--fg)}
+@media (hover:hover){.cal-panel h5 button.cal-x:hover{background:rgba(255,255,255,.1);color:var(--fg)}}
 .cal-times{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .cal-times button{padding:4px 10px;border-radius:8px;border:1px solid var(--line-2);
-  background:transparent;color:var(--fg-2);font:500 13px/1.4 "Onest","Segoe UI",system-ui;
+  background:transparent;color:var(--fg-2);font:500 13px/1.4 var(--f-ui);
   cursor:pointer;min-height:34px;transition:background .12s,color .12s,border-color .12s}
-.cal-times button.sel,.cal-times button:hover{background:rgba(255,255,255,.1);
-  color:var(--fg);border-color:var(--line-2)}
+.cal-times button.sel{background:rgba(255,255,255,.1);
+  color:var(--fg);border-color:var(--line-2)}@media (hover:hover){.cal-times button:hover{background:rgba(255,255,255,.1);
+  color:var(--fg);border-color:var(--line-2)}}
 .cal-times button.sel{border-color:var(--accent);color:var(--fg)}
 .cal-apps{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .cal-apps button{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
   border-radius:10px;border:1px solid var(--line-2);background:rgba(255,255,255,.06);
-  color:var(--fg);font:500 13px/1 "Onest","Segoe UI",system-ui;cursor:pointer;
+  color:var(--fg);font:500 13px/1 var(--f-ui);cursor:pointer;
   min-height:40px;transition:background .15s,border-color .15s}
-.cal-apps button:hover,.cal-apps button:focus-visible{background:rgba(255,255,255,.12);
-  border-color:var(--line-2)}
+.cal-apps button:focus-visible{background:rgba(255,255,255,.12);
+  border-color:var(--line-2)}@media (hover:hover){.cal-apps button:hover{background:rgba(255,255,255,.12);
+  border-color:var(--line-2)}}
 .cal-apps button svg{flex-shrink:0}
 </style>
 <style id="p3e-css">
@@ -796,11 +813,11 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     text-align:center;background:var(--ink-2);border:none;cursor:pointer;
     transition:background .15s,color .15s;min-height:44px;display:flex;
     flex-direction:column;align-items:center;justify-content:center;gap:1px}
-  .p3e-day b{display:block;font-family:Oswald,sans-serif;font-weight:500;
+  .p3e-day b{display:block;font-family:var(--f-display);font-weight:500;
     font-size:17px;line-height:1.1;color:var(--fg)}
   .p3e-day span{font-size:11px;color:var(--fg-3)}
-  .p3e-day[aria-pressed="true"]{background:var(--crimson)}
-  .p3e-day[aria-pressed="true"] b,.p3e-day[aria-pressed="true"] span{color:#fff}
+  .p3e-day[aria-pressed="true"]{background:var(--accent)}
+  .p3e-day[aria-pressed="true"] b,.p3e-day[aria-pressed="true"] span{color:var(--on-accent)}
   /* Venue group list */
   .p3e-grp{background:var(--ink-3);border-radius:14px;overflow:hidden}
   /* A venue row stacks: the name (with the price on its right), the address, the
@@ -819,16 +836,6 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     background:var(--gild);margin-right:5px;vertical-align:1px}
   .p3e-prelim-line{color:#C9A54A}
   .p3e-pills{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;justify-content:flex-start;min-width:0}
-  /* Pill styling for P3E */
-  .p3e-pill{font-family:Oswald,sans-serif;font-weight:500;font-size:17px;
-    font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;
-    background:var(--ink-4);color:var(--fg);border:1px solid transparent;
-    cursor:pointer;display:inline-block;min-height:44px;min-width:44px;
-    display:inline-flex;align-items:center;justify-content:center;
-    transition:border-color .15s,color .15s;text-decoration:none;line-height:1}
-  .p3e-pill:hover,.p3e-pill:focus-visible{border-color:var(--fg-2)}
-  .p3e-pill.prelim{background:transparent;border:1px dashed rgba(217,178,60,.65)}
-  .p3e-pill.prelim:hover,.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}
   .p3e-prelim-fn{font-size:11.5px;color:var(--fg-3);margin:10px 4px 0;line-height:1.4}
   /* Desktop grid hidden on phone */
   .p3e-grid-wrap{display:none}
@@ -837,6 +844,17 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .buybox{display:none}
   .buybox.evbox{display:block}
 }
+/* The time pill on every width (C3): these rules sat inside the phone query, so the desktop
+   week grid showed bare text times and lost the preliminary (dashed) marking entirely. */
+.p3e-pill{font-family:var(--f-display);font-weight:500;font-size:17px;
+  font-variant-numeric:tabular-nums;padding:6px 12px;border-radius:10px;
+  background:var(--ink-4);color:var(--fg);border:1px solid transparent;
+  cursor:pointer;min-height:44px;min-width:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:border-color .15s,color .15s;text-decoration:none;line-height:1}
+.p3e-pill:focus-visible{border-color:var(--fg-2)}@media (hover:hover){.p3e-pill:hover{border-color:var(--fg-2)}}
+.p3e-pill.prelim{background:transparent;border:1px dashed rgba(217,178,60,.65)}
+.p3e-pill.prelim:focus-visible{border-style:solid;border-color:var(--gild)}@media (hover:hover){.p3e-pill.prelim:hover{border-style:solid;border-color:var(--gild)}}
 /* ===================== P3E: week grid (desktop) ===================== */
 @media(min-width:761px){
   /* Day picker hidden on desktop */
@@ -854,18 +872,18 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
   .p3e-gnav{width:44px;height:44px;border-radius:10px;border:1px solid var(--line-2);background:var(--ink-4);
     color:var(--fg);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
-  .p3e-gnav:hover:not([disabled]),.p3e-gnav:focus-visible{border-color:var(--fg-2)}
+  .p3e-gnav:focus-visible{border-color:var(--fg-2)}@media (hover:hover){.p3e-gnav:hover:not([disabled]){border-color:var(--fg-2)}}
   .p3e-gnav[disabled]{opacity:.35;cursor:default}
   .p3e-gt th small.p3e-gmon{display:block;font-size:11px;color:var(--fg-3);margin-top:1px}
   .p3e-gt th{font-weight:400;color:var(--fg-3);padding:0 0 10px;text-align:center;white-space:nowrap}
-  .p3e-gt th b{display:block;font-family:Oswald,sans-serif;font-weight:500;font-size:17px;color:var(--fg)}
+  .p3e-gt th b{display:block;font-family:var(--f-display);font-weight:500;font-size:17px;color:var(--fg)}
   .p3e-gt td{padding:8px 4px;border-top:1px solid rgba(255,255,255,.07);text-align:center;vertical-align:middle}
-  .p3e-gt td.p3e-vcol{text-align:left;font-weight:500;width:170px;min-width:140px;
+  .p3e-gt td.p3e-vcol,.p3e-gt th.p3e-vcol{text-align:left;font-weight:500;width:170px;min-width:140px;
     position:sticky;left:0;background:var(--ink-3);z-index:1;overflow-wrap:anywhere}
   /* (anywhere: a name with no break in it wraps inside the column instead of widening the
      table until the times are off the sheet; test_security's hostile names found it) */
-  .p3e-gt td.p3e-vcol small{display:block;font-weight:400;color:var(--fg-3);font-size:12px;margin-top:1px}
-  .p3e-gt .p3e-pill{font-size:14px;padding:5px 10px;min-height:36px}
+  .p3e-gt td.p3e-vcol small,.p3e-gt th.p3e-vcol small{display:block;font-weight:400;color:var(--fg-3);font-size:12px;margin-top:1px}
+  .p3e-gt .p3e-pill{font-size:15px;padding:5px 10px;min-height:36px;margin:2px 0}
   .p3e-gt-fn{font-size:11.5px;color:var(--fg-3);margin:8px 4px 0;line-height:1.4}
 }
 /* ===================== P3E: screening sheet ===================== */
@@ -916,7 +934,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     align-self:start;margin-top:44px}
 }
 .ss-grab{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);margin:0 auto 18px;flex-shrink:0}
-.ss-time{font-family:Oswald,sans-serif;font-weight:500;line-height:1;
+.ss-time{font-family:var(--f-display);font-weight:500;line-height:1;
   font-variant-numeric:tabular-nums;font-size:52px;color:var(--fg)}
 .ss-date{font-size:16px;font-weight:500;margin:12px 0 2px;color:var(--fg)}
 .ss-venue{font-size:14px;color:var(--fg-2);margin-bottom:0}
@@ -930,9 +948,9 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-btns{display:flex;flex-direction:column;gap:12px;flex-shrink:0}
 .ss-btn{display:flex;align-items:center;justify-content:center;gap:10px;
   width:100%;height:54px;border:0;border-radius:16px;
-  font-family:Onest,"Segoe UI",system-ui,sans-serif;font-size:16px;font-weight:500;
+  font-family:var(--f-ui);font-size:16px;font-weight:500;
   cursor:pointer;text-decoration:none;transition:filter .15s}
-.ss-btn:hover,.ss-btn:focus-visible{filter:brightness(1.08)}
+.ss-btn:focus-visible{filter:brightness(1.08)}@media (hover:hover){.ss-btn:hover{filter:brightness(1.08)}}
 .ss-btn.pri{background:var(--fg);color:var(--ink)}
 .ss-btn.sec{background:var(--ink-4);color:var(--fg)}
 .ss-help{font-size:12.5px;color:var(--fg-3);text-align:center;margin:8px 0 0}
@@ -948,7 +966,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-cal-li:first-child{border-top:0}
 .ss-cal-li small{display:block;font-size:12px;font-weight:400;color:var(--fg-3);margin-top:1px}
 .ss-cal-li .cv{margin-left:auto;color:var(--fg-3)}
-.ss-cal-li:hover,.ss-cal-li:focus-visible{background:rgba(255,255,255,.06)}
+.ss-cal-li:focus-visible{background:rgba(255,255,255,.06)}@media (hover:hover){.ss-cal-li:hover{background:rgba(255,255,255,.06)}}
 /* Wider screens: a popover card anchored to the clicked time (just above it, below it
    when there is no room above), on a fixed layer of its own so no scroll offset can move
    it away from the time. JS sets top/left, data-place and --ss-caret-x. */
@@ -986,7 +1004,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   color:var(--fg-2);font-size:16px;cursor:pointer;transition:background .12s,color .12s;z-index:2}
 .ss-close-btn{right:18px;top:18px}
 .ss-back-btn{left:18px;top:18px}
-.ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}
+@media (hover:hover){.ss-close-btn:hover,.ss-back-btn:hover{background:rgba(255,255,255,.14);color:var(--fg)}}
 </style>
 <style id="consent-css">
 /* ===================== cookie notice and the footer's legal lines ===================== */
@@ -1012,12 +1030,12 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .consent-btns{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-top:14px}
 .consent-btn{min-height:44px; padding:0 20px; border-radius:14px; font-size:15px; font-weight:500;
   transition:filter .15s}
-.consent-btn:hover,.consent-btn:focus-visible{filter:brightness(1.08)}
+.consent-btn:focus-visible{filter:brightness(1.08)}@media (hover:hover){.consent-btn:hover{filter:brightness(1.08)}}
 .consent-btn.pri{background:var(--fg); color:var(--ink)}
 .consent-btn.sec{background:var(--ink-4); color:var(--fg)}
 .consent-more{display:inline-flex; align-items:center; min-height:44px; color:var(--fg-2);
   text-decoration:underline; text-underline-offset:3px}
-.consent-more:hover{color:var(--fg)}
+@media (hover:hover){.consent-more:hover{color:var(--fg)}}
 .consent-cats{list-style:none; margin:12px 0 0; padding:0; border-radius:14px; background:var(--ink-4); overflow:hidden}
 .consent-cats li{display:flex; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid rgba(255,255,255,.07)}
 .consent-cats li:first-child{border-top:0}
@@ -1052,11 +1070,325 @@ footer .legal-nav{display:flex; flex-wrap:wrap; align-items:center; gap:2px 18px
 }
 footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:center; min-height:32px; padding:0;
   color:var(--fg-2); font-size:12px; text-decoration:underline; text-underline-offset:3px}
-footer .legal-nav a:hover, footer .legal-nav button:hover{color:var(--fg)}
+@media (hover:hover){footer .legal-nav a:hover,footer .legal-nav button:hover{color:var(--fg)}}
+</style>
+<style id="design-css">
+/* ===== Design phase (notes/qa/DESIGN_A11Y_REPORT.md, owner-approved 2026-10-23) =====
+   The last stylesheet on the page, so its rules win over the older blocks above without
+   !important where specificity allows. Grouped by the report's implementation steps. */
+
+/* visually hidden, read by screen readers */
+.sg-sr{position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; clip:rect(0 0 0 0)!important;
+  clip-path:inset(50%)!important; white-space:nowrap!important; margin:0!important; padding:0!important; border:0!important}
+
+/* ---- spacing above the hero: the compact row (owner, 23 Oct 2026, option 1) ----
+   Title over its date range on the left; "other dates ›" right-aligned on the title's line; the
+   period pills under it on phones, on the title's line (before "other dates") on desktop. About
+   133 px from the header to the hero on a phone, about 98 px on desktop. */
+.phead{display:flex; flex-wrap:wrap; align-items:center; column-gap:24px; row-gap:12px;
+  padding-block:16px 8px; margin-bottom:0}
+.phead .phead-title{flex:1 1 auto; margin:0; min-width:0; font-size:clamp(26px,2.6vw,32px); line-height:1.1}
+[data-surface="theatre"] .phead .phead-title{font-size:clamp(28px,2.8vw,34px)}
+.phead .phead-dates{display:block; margin-top:4px; font-family:var(--f-ui); font-size:14px; font-weight:500;
+  letter-spacing:0; line-height:1.3; color:var(--fg-2); white-space:nowrap}
+.phead-tools{display:flex; align-items:center; gap:8px; flex:0 1 auto; flex-wrap:wrap; justify-content:flex-end}
+.phead-tools .daystrip{margin:0; padding:0; overflow:visible; flex-wrap:nowrap}
+.phead .phead-other{margin:0; min-height:40px; display:inline-flex; align-items:center; padding:0 4px 0 10px;
+  font-size:14px; font-weight:600; letter-spacing:0; color:var(--fg-2); white-space:nowrap}
+.phead-fav{flex:1 0 100%; display:flex}
+.phead-fav .fav-toggle{margin:0}
+@media(min-width:761px) and (max-width:1279px){
+  .phead-long{display:grid; grid-template-columns:minmax(0,1fr) auto}
+  .phead-long .phead-tools{display:contents}
+  .phead-long .phead-title{grid-column:1; grid-row:1}
+  .phead-long .phead-other{grid-column:2; grid-row:1}
+  .phead-long .phead-tools .daystrip{grid-column:1 / -1; grid-row:2; flex-wrap:wrap; row-gap:8px}
+  .phead-long .phead-fav{grid-column:1 / -1}
+}
+@media(max-width:760px){
+  .phead{display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:12px; row-gap:12px; padding-block:14px 0}
+  .phead + .hero{margin-top:8px}
+  .phead .phead-title{font-size:clamp(26px,7vw,30px); grid-column:1; grid-row:1}
+  [data-surface="theatre"] .phead .phead-title{font-size:clamp(28px,7.4vw,32px)}
+  .phead .phead-dates{font-size:15px; margin-top:4px}
+  .phead-tools{display:contents}
+  .phead-tools .daystrip{grid-column:1 / -1; grid-row:2; overflow-x:auto; margin-inline:-16px; padding-inline:16px;
+    scroll-padding-inline:16px}
+  .phead .phead-other{grid-column:2; grid-row:1; align-self:start; min-height:44px; padding:0 0 0 8px; margin-top:-4px}
+  .phead-fav{grid-column:1 / -1}
+}
+
+/* ---- type families (owner decision 2026-10-23): Montserrat for cinema, Source Serif 4 for theatre ----
+   --f-display follows the surface; menus, chips and text stay Montserrat on both. Display titles
+   are sentence case now (the uppercase belonged to Oswald), tracked a touch tight; times and
+   counts use tabular figures. */
+.phead-title,.rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title,
+.hero h1,.hero .hero-title,.sheet h2,.p-title,.ebox h3,.drawer-top .drawer-title{text-transform:none}
+.rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title{font-weight:700; letter-spacing:-.01em}
+.hero h1,.hero .hero-title{font-weight:800; letter-spacing:-.02em; font-size:clamp(28px,4.8vw,46px); line-height:1.05}
+.sheet h2{font-weight:800; letter-spacing:-.015em; font-size:clamp(22px,3.6vw,30px); line-height:1.1}
+.p-title{font-weight:700; letter-spacing:-.01em; font-size:15px; line-height:1.1}
+.p3e-pill,.ss-time,.p3e-day b,.p3e-gt th b,.rtile .rv,.score,.time,.fab-badge,.sechead .n,.sec-toggle-count{font-variant-numeric:tabular-nums}
+.p3e-pill,.p3e-day b,.p3e-gt th b,.rtile .rv,.score{font-weight:600}
+.ss-time{font-weight:600; letter-spacing:-.02em}
+.p3e-pill{font-size:16px}
+.p3e-gt .p3e-pill{font-size:14px}
+body{font-size:15px}
+[data-surface="theatre"] .rhead h2,[data-surface="theatre"] .sechead h2,[data-surface="theatre"] .sechead h1.sechead-h,
+[data-surface="theatre"] .venue-block-head h2,[data-surface="theatre"] .sec-toggle-title{font-weight:600; letter-spacing:0; text-transform:none}
+:root:not([data-surface="theatre"]) main .sec-subhead{text-transform:none; letter-spacing:-.005em; font-weight:700}
+[data-surface="theatre"] .hero h1,[data-surface="theatre"] .hero .hero-title{font-weight:700; letter-spacing:-.005em; line-height:1.08}
+[data-surface="theatre"] .sheet h2{font-weight:700; letter-spacing:0}
+[data-surface="theatre"] .p-title{font-weight:600; letter-spacing:0; font-size:17px}
+[data-surface="theatre"] .sec-subhead{font-weight:600}
+/* the motto: Montserrat 500 in tracked capitals on the cinema surface, Source Serif 4 italic on the
+   theatre surface. Desktop keeps the logo lockup (the line starts under the logo and is sized from
+   its width; --motto-em is the line's width in font-sizes, measured at size per face, case and language; Source Serif 4 has optical sizes, so its width is not linear in size),
+   but never below the owner's 10 px floor: Montserrat capitals are wide, so in Bulgarian the line
+   runs past the logo's right edge rather than shrinking to 8 px. Phones drop the capitals and size
+   the line to the space between the two header buttons (100vw - 140 px keeps 12 px clear of the
+   language button), 10 px at the least. */
+.brand .brand-sub{font-family:var(--f-ui); font-weight:500; text-transform:uppercase; letter-spacing:.06em; --motto-em:25.6;
+  line-height:14px}  /* a fixed line box: the header's height stays the same in BG and EN, whose sizes differ */
+.brand .brand-sub:lang(en){--motto-em:23.05}
+[data-surface="theatre"] .brand .brand-sub{font-family:"Source Serif 4",Georgia,serif; font-style:italic; font-weight:400;
+  text-transform:none; letter-spacing:0; --motto-em:19.8}
+[data-surface="theatre"] .brand .brand-sub:lang(en){--motto-em:14.8}
+@media(min-width:761px){
+  .brand .brand-sub,.brand .brand-sub:lang(en){font-size:max(10px,calc(100cqi*.98/var(--motto-em)))}
+  [data-surface="theatre"] .brand .brand-sub,[data-surface="theatre"] .brand .brand-sub:lang(en){
+    font-size:min(15px,max(10px,calc(100cqi*.98/var(--motto-em))))}
+}
+/* 761-900 px: the toggle sits close to the lockup, so the cinema line (longer than the logo in
+   both languages) wraps to its width (two short lines) instead of running into the toggle; the
+   theatre line is at most 8 px longer than the logo and stays on one line */
+@media(min-width:761px) and (max-width:900px){
+  :root:not([data-surface="theatre"]) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
+}
+/* the same while the search field is open (the toggle moves left to make room for it) up to 1120 px */
+@media(min-width:761px) and (max-width:1120px){
+  :root:not([data-surface="theatre"]) .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
+}
+@media(max-width:760px){
+  .brand .brand-sub{text-transform:none; letter-spacing:0; --motto-ph:23.12; font-size:min(12.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
+  .brand .brand-sub:lang(en){--motto-ph:17.36}
+  [data-surface="theatre"] .brand .brand-sub{--motto-ph:19.8; font-size:min(13.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
+  [data-surface="theatre"] .brand .brand-sub:lang(en){--motto-ph:14.8}
+}
+
+/* footer links: Montserrat is wider, so a long label ("Настройки за бисквитки") may wrap in its
+   phone column; the items of a row share its top edge */
+@media(max-width:760px){ footer .legal-nav{align-items:start} }
+
+/* ---- steps 18-19: first viewport, moderate items (M2, M4, M10, M12, M17) ---- */
+/* phones: the hero's synopsis is three lines (the full text is in the sheet), so its buttons
+   are in the first screen instead of under the floating Filters button */
+@media (max-width:760px){ .hero-syn{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden} }
+.p3e-dmon{display:block; font-size:11px; line-height:1; color:var(--fg-3); margin-top:1px}
+.p3e-day[aria-pressed="true"] .p3e-dmon{color:var(--on-accent)}
+.p3e-pill.ss-src{box-shadow:0 0 0 2px var(--fg)}
+/* venues without listings in the period: dimmed, not struck through (it read as an error) */
+.fchip.off,.fchip:disabled{text-decoration:none}
+/* Increase Contrast */
+@media (prefers-contrast:more){
+  :root{--fg-2:#D6CDDB; --fg-3:#B9AFC0; --line:rgba(255,255,255,.28); --line-2:rgba(255,255,255,.42)}
+  .drawer-scrim,.scrim{-webkit-backdrop-filter:none; backdrop-filter:none}
+}
+
+/* ---- cinema group headings in "По кино" (owner decision 2026-10-23) ----
+   the same heading level as the theatres' groups; Montserrat on the cinema surface */
+:root:not([data-surface="theatre"]) main .sec-subhead{font-family:var(--f-display); font-size:clamp(17px,1.8vw,20px); font-weight:600;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--fg-2); padding:20px 0 8px; border-bottom:1px solid var(--line); margin-bottom:18px}
+
+/* ---- step 17: cards, score chips, event cards (I14, C4; owner decision: event cards A) ---- */
+/* one solid chip base, readable over any poster (the TMDB chip was 18% cyan: 2.1:1 on light art) */
+.score{background:rgba(12,10,15,.78); border-color:rgba(255,255,255,.18)}
+.score.tmdb{background:rgba(12,10,15,.78); border-color:rgba(92,211,245,.45); color:#5CD3F5}
+/* narrow cards: the tags stack under the score instead of sliding over it */
+@media (max-width:760px){ .card .p-top{flex-direction:column; align-items:flex-start; gap:4px} .card .p-tags{align-items:flex-start} }
+/* event cards, variant A */
+.ecard{display:flex; flex-direction:column; gap:0}
+.ecard .ebox{height:auto; aspect-ratio:16/9; padding:0; display:block; background:#000}
+.ecard .ebox .p-real{object-fit:contain; object-position:center; background:#000}
+.ecard .ebox:has(.p-real) .p-grain{display:none}
+.ecap{display:flex; flex-direction:column; gap:6px; padding:10px 2px 0; text-align:left}
+.ecap-t{font:600 15px/1.25 var(--f-ui); color:var(--fg);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.ecap-m{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.ecard .edate{margin:0; font-size:12.5px; letter-spacing:0; text-transform:none; opacity:1; color:var(--fg-2)}
+.ecard .badge.echip{background:var(--ink-3); border:1px solid var(--line-2); color:var(--fg-2); border-radius:999px; padding:2px 8px; font-weight:600}
+/* the event sheet: the clean art on top (fitted, at most 360 px tall), the title below it */
+.shero.shero-ev{display:block; min-height:0; padding:0; aspect-ratio:16/9; max-height:360px; width:100%}
+.shero.shero-ev .p-real{filter:none; object-fit:contain; background:#000}
+.sh-evhead{padding:18px 22px 0}
+.sh-evhead .eyebrow{color:var(--fg-2)}
+.sh-evhead h2{color:var(--fg)}
+
+/* ---- step 16: the sheet's bar (I12) ---- */
+.sbar{justify-content:flex-end; background:var(--ink-2); -webkit-backdrop-filter:none; backdrop-filter:none; min-height:54px}
+.sbar-sp{flex:1}
+.sbar .sshare,.sbar .sclose{position:static; inset:auto; width:40px; height:40px; flex:0 0 40px; border-radius:50%;
+  background:var(--ink-4); border:1px solid var(--line-2); color:var(--fg); display:grid; place-items:center}
+@media (hover:hover){ .sbar .sshare:hover,.sbar .sclose:hover{border-color:var(--fg-2); background:var(--ink-4)} }
+@media (pointer:coarse){ .sbar .sshare,.sbar .sclose{position:relative} }
+
+/* ---- step 14: 44 pt touch targets (I4) ---- */
+@media (pointer:coarse){
+  .iconb{width:44px; height:44px; flex-basis:44px}
+  .seg button{height:44px}
+  .dspill{min-height:44px}
+  .drawer .fchip{padding:9px 14px; min-height:40px}
+  .p3e-day{flex-basis:44px; width:44px; min-height:52px}
+  .sback{min-height:44px}
+  .p3e-gnav{width:44px; height:44px}
+  /* small round buttons keep their look and get a 44 px hit area */
+  .dclose,.calarrow{position:relative}
+  .dclose::before,.calarrow::before,.ss-close-btn::before,.ss-back-btn::before{content:""; position:absolute; inset:-7px}
+  .sclose::before,.sshare::before{content:""; position:absolute; inset:-2px}
+  .search .clr::before{content:""; position:absolute; inset:-10px}
+}
+
+/* ---- step 13: sentence case and a type floor of 11 px (I13, M14) ----
+   Display titles are sentence case since the type change (Montserrat and Source Serif 4, see the
+   type families below); only the generated posters' lockup keeps capitals. Every label is
+   sentence case, tracked at most .02em, and nothing on screen is smaller than 11 px. */
+.eyebrow{font-size:12px; letter-spacing:.01em; text-transform:none; font-weight:600}
+.phead-eyebrow{font-size:12px; letter-spacing:.01em; text-transform:none}
+.drawer h3{font-family:var(--f-ui); font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-2)}
+.drawer-top b,.drawer-top .drawer-title{font-family:var(--f-ui); font-size:17px; font-weight:600; letter-spacing:0; text-transform:none}
+.caldow span{font-size:11px; letter-spacing:0; text-transform:none}
+.day .dow{font-size:11px; letter-spacing:0; text-transform:none}
+.dspill .ds-today{font-size:11px; letter-spacing:0; text-transform:none; line-height:1.1}
+.lastcheck{font-size:12px; letter-spacing:0}
+.sec h3,.sec h4{font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-2)}
+.credits dt{font-size:12px; letter-spacing:0; text-transform:none}
+.quote cite{font-size:12px; letter-spacing:0; text-transform:none}
+.rtile .rl{font-size:11px; letter-spacing:0; text-transform:none}
+.buybox .bl{font-size:13px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-2)}
+.dg-h{font-size:12px; letter-spacing:0; text-transform:none}
+.vkind,.prelim-tag{font-size:11px; letter-spacing:0; text-transform:none}
+.time .th,.tpick .tt em{font-size:11px; letter-spacing:0; text-transform:none}
+.vloc em,.venue-attr-line{font-size:12px}
+.attr-lbl{font-size:11px}
+.p-sub{font-size:11px; letter-spacing:.02em; text-transform:none}
+.score i{font-size:11px; letter-spacing:0; font-weight:500}
+.fest-mark{font-size:11px; letter-spacing:0}
+.fab-badge{font-size:11px; width:20px; height:20px; flex-basis:20px}
+/* data that arrives in capitals ("ЮБИЛЕЙ", "ОГРАНИЧЕНО") reads in sentence case */
+.badge,.chip.solid{text-transform:lowercase}
+.badge::first-letter,.chip.solid::first-letter{text-transform:uppercase}
+.badge{font-size:11px; letter-spacing:0; font-weight:600; padding:3px 7px}
+.chip{font-size:12px; letter-spacing:0; text-transform:none}
+/* the drawer's group labels ("Комерсиални кина") */
+.drawer .sec-subhead{font-family:var(--f-ui); font-size:12.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--fg-3)}
+/* card captions: the title is the card's strongest text (it was 12 px grey) */
+.cf1{font-size:14px; font-weight:600; color:var(--fg); line-height:1.25; min-height:2.5em}
+.cf2{font-size:12px; line-height:1.35}
+/* reading text */
+.sec p,.synbody p{font-size:15px}
+
+/* ---- step 12: one accent element per view (owner decision: Option A, I1) ----
+   The accent (crimson for cinema, gold for theatre) marks ONE thing: the selected day or
+   period (home day strip, the sheet's day picker, the drawer's period chips and calendar).
+   Every other selected state is a neutral white "thumb"; primary buttons are white like the
+   time sheet's "Купи билет"; headings, the FAB, badges and the buy box are neutral. */
+.seg button[aria-pressed="true"]{background:var(--fg); color:var(--ink)}
+.fchip[aria-pressed="true"]:not([data-range]){background:var(--fg); border-color:var(--fg); color:var(--ink)}
+.fav-toggle.on{background:var(--fg); border-color:var(--fg); color:var(--ink)}
+.fav-star.on{color:var(--fg)}
+@media (hover:hover){ .fav-star.on:hover{color:var(--fg)} }
+.btn{background:var(--fg); border-color:var(--fg); color:var(--ink)}
+.btn.ghost{background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.26); color:#fff}
+.phead-dates{color:var(--fg-2)}
+.eyebrow,[data-surface="theatre"] .eyebrow{color:var(--fg-2)}
+.readmore{color:var(--fg)}
+.dg-h{color:var(--fg-2)}
+.why{border-left-color:var(--line-2)}
+.note{border-left-color:var(--line-2)}
+.rhead h2::before,.sechead h2::before,.venue-block-head h2::before{display:none}
+.fab{background:rgba(40,32,47,.94); color:var(--fg); border:1px solid var(--line-2);
+  -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px)}
+.fab-badge{background:var(--fg); color:var(--ink)}
+.badge,.badge.lim,.badge.prem,.badge.free{background:rgba(12,10,15,.78); color:#fff; border:1px solid rgba(255,255,255,.2)}
+.chip.solid{background:var(--ink-4); border-color:var(--line-2); color:var(--fg)}
+.search-icon-btn.expanded{border-color:var(--fg-2); color:var(--fg); background:var(--ink-4)}
+.search input:focus{border-color:var(--fg-2)}
+.cal button.has::after{background:var(--fg-3)}
+.cal button[aria-pressed="true"].has::after{background:var(--on-accent)}
+.buybox{border-color:var(--line); background:var(--ink-3)}
+.buybox .buylink:not(.inperson):not(.alt){border-color:rgba(244,239,246,.5); color:var(--fg)}
+.vprice{color:var(--fg-2); background:transparent; border-color:var(--line-2)}
+.time.fits{border-color:var(--fg-2); color:var(--fg)}
+.cal-times button.sel{border-color:var(--fg)}
+@media (hover:hover){
+  .buybox .buylink:not(.inperson):not(.alt):hover{background:rgba(244,239,246,.08); border-color:var(--fg)}
+  .calarrow:hover:not([disabled]),.sback:hover,.pbanner-btn:hover,.venue-chip-rm:hover,.time:hover,.time.tix:hover{border-color:var(--fg-2); color:var(--fg)}
+  .sec-toggle:hover{color:var(--fg-2)}
+}
+
+/* ---- step 11: press feedback (I3) ---- */
+/* every control answers a press (there was one :active rule on the whole page); hover styles
+   now live under (hover:hover) only, so a tap no longer leaves a card lifted or a time outlined */
+button,a{-webkit-tap-highlight-color:transparent}
+:where(.btn,.ss-btn,.fab,.iconb,.seg button,.dspill,.fchip,.p3e-pill,.p3e-day,.buylink:not(.inperson),.sback,.sclose,.sshare,
+  .dclose,.calarrow,.cal button,.fav-toggle,.fav-star,.p3e-gnav,.ss-close-btn,.ss-back-btn,.consent-btn,.venue-chip-rm,.clr,.rarrow,
+  .tr-play,.tr-stop):not([disabled]):active{transform:scale(.96); filter:brightness(.9);
+  transition:transform var(--dur-press) ease-out, filter var(--dur-press) ease-out}
+.card:active,.ecard:active{transform:scale(.98); transition:transform var(--dur-press) ease-out}
+.ss-cal-li:active{background:rgba(255,255,255,.09)}
+.sec-toggle:active,.phead-other:active,.readmore:active,.fclear:active,.consent-more:active{opacity:.6}
+@media (prefers-reduced-motion:reduce){
+  :where(.btn,.ss-btn,.fab,.iconb,.seg button,.dspill,.fchip,.p3e-pill,.p3e-day,.buylink,.sback,.sclose,.sshare,.dclose,.calarrow,
+    .cal button,.fav-toggle,.fav-star,.p3e-gnav,.ss-close-btn,.ss-back-btn,.consent-btn,.venue-chip-rm,.clr,.rarrow,.tr-play,.tr-stop):active,
+  .card:active,.ecard:active{transform:none}
+}
+
+/* ---- step 10: box-office-only venues (owner decision 2026-10-23) ---- */
+/* the online pills' shape and size (7px 13px, 40 px, radius 20), neutral grey, no arrow, inert */
+.buylink.inperson{display:inline-flex; align-items:center; gap:5px; padding:7px 13px; min-height:40px; border-radius:20px;
+  border:1px solid color-mix(in srgb,var(--fg-2) 40%,transparent); background:transparent; color:var(--fg-2);
+  font-size:12.5px; font-weight:600; line-height:1.2; cursor:default}
+@media (hover:hover){.buylink.inperson:hover{color:var(--fg-2)}}
+
+/* ---- step 9: headings, meta lines (M1, M13) ---- */
+.sechead h1.sechead-h{font-family:var(--f-display); font-weight:600; font-size:clamp(20px,2.2vw,26px);
+  letter-spacing:.06em; text-transform:uppercase; color:var(--fg); display:flex; align-items:center; gap:10px}
+/* the hero's meta separators end an item, so a wrapped line never starts with "·" */
+.hero-meta > span:not(.score):not(:last-child):not(:empty)::after{content:"·"; margin-left:9px; color:currentColor}
+.hero-meta > span:empty{display:none}
+
+/* ---- step 7: favourite stars, drawer reflow (I5, I10) ---- */
+/* the star's SVG had no size, so it drew at 0x0 inside a 12x23 button */
+.fav-star{display:inline-grid; place-items:center; min-width:32px; min-height:32px; padding:4px}
+.fav-star svg{display:block; width:18px; height:18px}
+@media (pointer:coarse){ .fav-star{min-width:44px; min-height:44px} }
+/* the period chips wrap instead of running out of the drawer on iPhone widths */
+.mrow{flex-wrap:wrap}
+
+/* ---- step 6: week grid (C3, M15) ---- */
+.p3e-gt th.p3e-vcol{text-align:left; font-weight:500; color:var(--fg); white-space:normal; padding:8px 4px;
+  border-top:1px solid rgba(255,255,255,.07); vertical-align:middle}
+.p3e-gt th.p3e-vcol small{display:block; font-weight:400; color:var(--fg-3); font-size:12px; margin-top:1px}
+@media (pointer:coarse){ .p3e-gt .p3e-pill{min-height:44px} }
+
+/* ---- step 5: search field (I6, I11) ---- */
+/* one clear button: the engine's own cancel glyph doubled the app's ✕ (WebKit and Chromium) */
+.search input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none; display:none}
+.search input[type=search]{-webkit-appearance:none; appearance:none}
+.search .mag{display:grid; place-items:center; width:16px; height:16px; line-height:0}
+.search .mag svg{display:block; width:16px; height:16px}
+.search input:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+
+/* ---- step 1: contrast (C4) ---- */
+/* "днес" on the selected (accent) day pill: at 80% opacity it was 3.5:1 on crimson */
+.dspill .ds-today{opacity:1}
+/* the next-week label in the day strip: a plain label (it was a dimmed, dashed fake pill at 3.4:1) */
+.ds-next{flex:0 0 auto; align-self:center; font-size:12px; color:var(--fg-3); white-space:nowrap; padding-inline:2px}
+.search input::placeholder{color:var(--fg-3)}
 </style>
 </head>
 <body>
-<div id="app"><div style="padding:64px 20px;text-align:center;color:#7E7386;font:14px system-ui">
+<div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">
   <div style="font:600 13px/1.4 system-ui;letter-spacing:.18em;text-transform:uppercase;color:#E0163A">Sofia Gleda</div>
   <div style="margin-top:10px">Зареждане на програмата…</div>
   <noscript><p style="margin-top:22px">Програмата има нужда от JavaScript.
@@ -1320,7 +1652,9 @@ bg:{tagline:"кино и театър в софия",
  films20:"Филми",shows20:"Театър",selected:"избрани",
  bannerWeek:"Програма за тази седмица",bannerToday:"Програма за днес",bannerMonth:"Програма за този месец",
  bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
- fabFilters:"Филтри",clearAll:"Изчисти всички",
+ fabFilters:"Филтри",
+plFilm:["филм","филма"],plShow:["представление","представления"],plScreening:["прожекция","прожекции"],plPerf:["представление","представления"],plCinema:["кино","кина"],plResult:["резултат","резултата"],srFor:"за „{q}“",srNoHits:"Няма съвпадения за „{q}“",noHitsHelp:"Провери изписването или изчисти търсенето.",yearL:"Година",
+lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSearch:"Изчисти търсенето",prevMonth:"Предишен месец",nextMonth:"Следващ месец",railBack:"Назад в реда",railFwd:"Напред в реда",fabActive:"{n} активни",prelimShort:"предварителна програма",boxOnly:"само на касата",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
  railPopular:"Популярни тази седмица",railPopularPeriod:"Популярни за периода",
@@ -1331,7 +1665,7 @@ bg:{tagline:"кино и театър в софия",
  pheadThisWeek:"Тази седмица",pheadToday:"Днес",pheadThisMonth:"Този месец",
  pheadAll:"Цялата програма",pheadCustom:"Избран период",pheadDayFull:"",
  dsAllWeek:"Цялата седмица",dsToday:"днес",searchClose:"Затвори търсенето",
- subMultiplexes:"Мултиплекси",subIndepCinemas:"Независими кина",
+ subMultiplexes:"Комерсиални кина",subIndepCinemas:"Артхаус кина",subCommercial:"Комерсиални кина",subArthouse:"Артхаус кина",
  showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички",
  noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
  noInfoShort:"няма информация",boxOffice:"Билети на касата",viaEpay:"билети чрез epaygo.bg",
@@ -1421,7 +1755,9 @@ en:{tagline:"cinema & theatre in sofia",
  films20:"Films",shows20:"Theatre",selected:"selected",
  bannerWeek:"This week's programme",bannerToday:"Today's programme",bannerMonth:"This month's programme",
  bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
- fabFilters:"Filters",clearAll:"Clear all",
+ fabFilters:"Filters",
+plFilm:["film","films"],plShow:["production","productions"],plScreening:["screening","screenings"],plPerf:["performance","performances"],plCinema:["cinema","cinemas"],plResult:["result","results"],srFor:"for “{q}”",srNoHits:"No matches for “{q}”",noHitsHelp:"Check the spelling or clear the search.",yearL:"Year",
+lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMonth:"Previous month",nextMonth:"Next month",railBack:"Scroll back",railFwd:"Scroll forward",fabActive:"{n} active",prelimShort:"preliminary programme",boxOnly:"box office only",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
  railPopular:"Popular this week",railPopularPeriod:"Popular in this period",
@@ -1432,7 +1768,7 @@ en:{tagline:"cinema & theatre in sofia",
  pheadThisWeek:"This week",pheadToday:"Today",pheadThisMonth:"This month",
  pheadAll:"Full programme",pheadCustom:"Selected period",pheadDayFull:"",
  dsAllWeek:"Whole week",dsToday:"today",searchClose:"Close search",
- subMultiplexes:"Multiplexes",subIndepCinemas:"Independent cinemas",
+ subMultiplexes:"Commercial cinemas",subIndepCinemas:"Arthouse cinemas",subCommercial:"Commercial cinemas",subArthouse:"Arthouse cinemas",
  showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all",
  noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
  noEnFilm:"No English description available yet.",noEnShow:"No English description available yet.",
@@ -2438,21 +2774,22 @@ function buildDayStrip(){
       addedDivider=true;
       pills.push(`<span class="dspill-divider" aria-hidden="true"></span>`);
       const nextLabel=S.lang==="bg"?"Следващата седмица":"Next week";
-      pills.push(`<span class="dspill" style="opacity:.55;pointer-events:none;border-style:dashed;font-size:11px">${esc(nextLabel)}</span>`);
+      pills.push(`<span class="ds-next">${esc(nextLabel)}</span>`);
     }
     const active=S.day===d;
     const hasSc=hasData.has(d);
     const isToday=d===TODAY;
     const label=fmtDay(d,false); /* e.g. "ср 7" */
-    const todayMark=isToday?`<span class="ds-today">${esc(L.dsToday||"днес")}</span>`:"";
-    pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}">${esc(label)}${todayMark}</button>`);
+    const todayMark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:"";
+    const dsName=`${label}${isToday?" "+(L.dsToday||"днес"):""}, ${fmtDayDow(d)}`;
+    pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}" aria-label="${esc(dsName)}">${esc(label)}${todayMark}</button>`);
   }
   return`<div class="daystrip">${pills.join("")}</div>`;}
 
 function periodBanner(){
   const L=t();
   /* Build title and date range */
-  let mainTitle="",dateStr="",eyebrow=L.pheadEyebrow||"Програмата",showStrip=false;
+  let mainTitle="",dateStr="",showStrip=false;
   if(S.day==="week"){
     mainTitle=L.pheadThisWeek||(S.lang==="bg"?"Тази седмица":"This week");
     dateStr=fmtRange(TODAY,WEEK_END);
@@ -2492,16 +2829,17 @@ function periodBanner(){
   /* P3A item 7: "Only my favourites" toggle near period header, shown when fav venues exist */
   const starSVGsm=`<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
   const favToggleBtn=S.fav.venues.length>0
-    ?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav style="margin-top:8px">${starSVGsm} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`
+    ?`<button class="fav-toggle${S.onlyFav?" on":""}" data-only-fav>${starSVGsm} ${esc(S.onlyFav?(L.favOnlyFavOff||"Всички"):(L.favOnlyFav||"Само любимите"))}</button>`
     :"";
-  return`<div class="phead">
-    <div class="phead-eyebrow">${esc(eyebrow)}</div>
-    <div class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></div>
-    ${strip}
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button>
-      ${favToggleBtn}
-    </div>
+  /* the compact row (owner, 23 Oct 2026): title with its dates under it on the left, "other
+     dates" on the title's line at the right; the period pills sit under it on phones and on the
+     title's line on desktop (CSS). No eyebrow. */
+  /* a long strip (a full week, or the roll into next week) gets its own row below 1280 px (CSS) */
+  const longStrip=(strip.match(/class="dspill"/g)||[]).length>5;
+  return`<div class="phead${longStrip?" phead-long":""}">
+    <h1 class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></h1>
+    <div class="phead-tools">${strip}<button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button></div>
+    ${favToggleBtn?`<div class="phead-fav">${favToggleBtn}</div>`:""}
   </div>`;}
 /* dates that actually have something, for the calendar dots */
 function datesWith(){
@@ -2519,7 +2857,7 @@ function scoreBadge(f){
   if(im!=null)return`<span class="score ${scoreCls(im)}"><i>IMDb</i>${fx1(im)}</span>`;
   const tv=tmdbOf(f);
   if(tv!=null&&tmdbVotesOf(f)>=TMDB_VOTE_MIN)return`<span class="score tmdb ${scoreCls(tv)}"><i>TMDB</i>${fx1(tv)}</span>`;
-  return`<span class="score na"><i>IMDb</i>—</span>`;}
+  return"";}
 /* P3A item 1: badge for premiere rail — "Премиера"/"Premiere" within 7 days,
    "Премиера на DD мес"/"Premieres DD Mon" for upcoming. */
 function premBadgeFor(fid){
@@ -2565,14 +2903,14 @@ function filmCard(f,all,rowsOverride){
      when it really is a single-venue context (per-cinema section). */
   const singleVenue=(rowsOverride&&rowsOverride._perVenue===true)||(S.fVenues.length===1);
   const meta=[f.runtime?`${esc(f.runtime)} ${esc(t().min)}`:"",
-              n?`${n} ${esc(t().screenings)}`:"",
-              (!singleVenue&&n)?`${v} ${esc(t().cinemasW)}`:""].filter(Boolean).join(" · ");
+              n?esc(plural(n,t().plScreening)):"",
+              (!singleVenue&&n)?esc(plural(v,t().plCinema)):""].filter(Boolean).join(" · ");
   const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
-      <div class="p-top">${scoreBadge(f)}
+      <div class="p-top">${scoreBadge(f)||"<span></span>"}
         ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${_tags?`<span class="p-tags">${_tags}</span>`:""}</div>
-      <div class="p-title">${esc(filmTitle(f))}</div><div class="p-sub">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+      <div class="p-title" aria-hidden="true">${esc(filmTitle(f))}</div><div class="p-sub" aria-hidden="true">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
 function showCard(sh,all){
@@ -2583,23 +2921,26 @@ function showCard(sh,all){
   return`<button class="card" data-show="${esc(sh.id)}">
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
       <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
-      <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+      <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
-      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?`${p.length} ${esc(t().performances)}`:sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
+      <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?esc(plural(p.length,t().plPerf)):sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
   const L=t(),range=ev.from===ev.to?fmtDay(ev.from,true):`${fmtDay(ev.from,true)} – ${fmtDay(ev.to,true)}`;
+  /* Owner decision (variant A): the festival's key art carries its own text, so nothing is
+     printed over it; the name, dates and status sit below it like a film card's caption,
+     the date badge a small neutral chip. The art is fitted (16:9, never cropped). */
+  const title=S.lang==="bg"?ev.title:ev.titleEn;
   return`<button class="ecard" data-event="${esc(ev.id)}"><div class="ebox">
-    ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="p-grain"></div>
-    <span class="badge ${evState(ev)==="active"?"lim":""}">${esc(evBadge(ev))}</span>
-    <div><h3>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h3>
-      <div class="edate">${esc(range)} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div></div></div></button>`;}
+    ${posterArt(ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,title)}<div class="p-grain"></div></div>
+    <span class="ecap"><span class="ecap-t">${esc(title)}</span>
+      <span class="ecap-m"><span class="badge echip">${esc(evBadge(ev))}</span><span class="edate">${esc(range)} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</span></span></span></button>`;}
 function rail(title,sub,cards){
   if(!cards.length)return"";
   return`<section class="rail"><div class="rhead"><h2>${esc(title)}</h2>${sub?`<span class="sub">${esc(sub)}</span>`:""}</div>
-   <div class="rscroll"><button class="rarrow prev" data-scroll="-1" aria-label="←">‹</button>
+   <div class="rscroll"><button class="rarrow prev" data-scroll="-1" aria-label="${esc(t().railBack)}"><span aria-hidden="true">‹</span></button>
    <div class="rtrack">${cards.join("")}</div>
-   <button class="rarrow next" data-scroll="1" aria-label="→">›</button></div></section>`;}
+   <button class="rarrow next" data-scroll="1" aria-label="${esc(t().railFwd)}"><span aria-hidden="true">›</span></button></div></section>`;}
 
 /* ===================== (onboarding removed) ===================== */
 
@@ -2647,9 +2988,9 @@ function hero(){
     return`<div class="hero"><div class="hero-art" style="background:${grad(f.g)}">${posterArt("hero-"+f.id,f.genres,f.g,filmTitle(f))}</div>
       <div class="hero-scrim"></div><div class="hero-body">
       <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
-      <h1>${esc(filmTitle(f))}</h1>
+      <h2 class="hero-title">${esc(filmTitle(f))}</h2>
       <div class="hero-meta">${scoreBadge(f)}
-        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>·</span><span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>·</span><span>${esc(f.year)}</span>`:""}${n?`<span>·</span><span>${n} ${esc(L.screenings)}</span>`:""}</div>
+        <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>${esc(f.year)}</span>`:""}${n?`<span>${esc(plural(n,L.plScreening))}</span>`:""}</div>
       ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
@@ -2660,9 +3001,9 @@ function hero(){
   return`<div class="hero"><div class="hero-art" style="background:${grad(sh.g)}">${posterArt("hero-"+sh.id,sh.genres,sh.g,titleOf(sh))}</div>
     <div class="hero-scrim"></div><div class="hero-body">
     <div class="eyebrow"><span class="dot"></span>${esc(L.inFocus)} · ${esc(periodLabel())}</div>
-    <h1>${esc(titleOf(sh))}</h1>
-    <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>·</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
-      ${sh.duration?`<span>·</span><span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>·</span><span>${p.length} ${esc(L.performances)}</span>`:""}</div>
+    <h2 class="hero-title">${esc(titleOf(sh))}</h2>
+    <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
+      ${sh.duration?`<span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>${esc(plural(p.length,L.plPerf))}</span>`:""}</div>
     ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
@@ -2685,6 +3026,25 @@ function secToggleHTML(key,label,count,open){
     <span class="sec-toggle-title">${esc(label)}</span>
     ${count!=null?`<span class="sec-toggle-count">${count}</span>`:""}
     <span class="sec-toggle-chev">${chevSVG}</span></button>`;}
+/* "По кино": one rail per cinema, grouped like the theatres' "Държавни и общински /
+   Независими" (owner, 2026-10-23): "Комерсиални кина" (the chains: Cinema City, Кино Арена,
+   Cine Grand, Cineland; CINEMAS[].kind "multiplex") and "Артхаус кина" (the rest). */
+function _cinemaVenueRails(visSet,day){
+  const L=t(),groups={com:[],art:[]};
+  CINEMAS.forEach(c=>{
+    if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
+      if(arty&&!comm&&c.kind!=="independent")return;
+      if(comm&&!arty&&c.kind==="independent")return;}
+    const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
+    if(!fs.length)return;
+    groups[c.kind==="multiplex"?"com":"art"].push(rail(cinName(c),c.area,fs.map(f=>{
+      const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
+      if(!cRows.length)return filmCard(f,day,undefined);
+      const rv=cRows.slice();rv._perVenue=true;return filmCard(f,day,rv);})));
+  });
+  return (groups.com.length?`<div class="sec-subhead">${esc(L.subCommercial)}</div>`+groups.com.join(""):"")
+    +(groups.art.length?`<div class="sec-subhead">${esc(L.subArthouse)}</div>`+groups.art.join(""):"");
+}
 /* venueMode: return a venue-mode body (no hero, no curated rails) when
    S.fVenues is non-empty. Shows per-venue grids of films/shows. */
 function venueModeBody(){
@@ -2867,17 +3227,7 @@ function body(){
     out.push({html:()=>{
       let inner="";
       if(S.secVenues){
-        const cinsToShow=CINEMAS;
-        cinsToShow.forEach(c=>{
-          if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
-            if(arty&&!comm&&c.kind!=="independent")return;
-            if(comm&&!arty&&c.kind==="independent")return;}
-          const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-          if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
-            const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
-            if(!cRows.length)return filmCard(f,day,undefined);
-            const rv=cRows.slice(); rv._perVenue=true; return filmCard(f,day,rv);}));
-        });
+        inner=_cinemaVenueRails(visSet,day);
       }
       return secToggleHTML("Venues",L.secByCinema||"По кино",null,S.secVenues)
         +`<div id="sec-Venues-content" class="sec-body"${S.secVenues?"":" hidden"}>${inner}</div>`;
@@ -2937,7 +3287,7 @@ function body(){
           return`<button class="card" data-show="${esc(sh.id)}">
             <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
               <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
-              <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+              <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
             <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
               <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});
       } else {
@@ -2958,7 +3308,7 @@ function body(){
               return`<button class="card" data-show="${esc(sh.id)}">
                 <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
                   <div class="p-top"><span></span>${sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:""}</div>
-                  <div class="p-title">${esc(titleOf(sh))}</div><div class="p-sub">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
+                  <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
                 <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
                   <span class="cf2">${th?esc(thName(th)):""}${times?" · "+esc(times):""}</span></div></button>`;});}
         }
@@ -3134,18 +3484,7 @@ function secToggleInPlace(key){
       if(key==="Venues"){
         if(S.mode==="cinema"){
           const visSet=new Set(vis.map(f=>f.id));
-          let inner="";
-          CINEMAS.forEach(c=>{
-            if(S.fStrands.length){const arty=S.fStrands.includes("arthouse"),comm=S.fStrands.includes("commercial");
-              if(arty&&!comm&&c.kind!=="independent")return;
-              if(comm&&!arty&&c.kind==="independent")return;}
-            const fs=filmsAtCinema(c.id).filter(f=>visSet.has(f.id));
-            if(fs.length)inner+=rail(cinName(c),c.area,fs.map(f=>{
-              const cRows=filmTimes(f.id,day).filter(r=>r[1]===c.id);
-              if(!cRows.length)return filmCard(f,day,undefined);
-              const rv=cRows.slice();rv._perVenue=true;return filmCard(f,day,rv);}));
-          });
-          body.innerHTML=inner;
+          body.innerHTML=_cinemaVenueRails(visSet,day);
         }else{
           const visSet=new Set(vis.map(s=>s.id));
           const STATE_KINDS=["national","state","municipal"];
@@ -3247,6 +3586,8 @@ function searchToggleInPlace(){
   const dw=document.querySelector(".desk-search-wrap");
   if(dw){
     dw.classList.toggle("open",willOpen);
+    /* closed, the field is invisible: keep it (and its clear button) out of the Tab order */
+    _setInert(dw,!willOpen);
     if(!willOpen){
       /* Closing: remove seg-q immediately — search is collapsing */
       document.querySelectorAll(".seg").forEach(sg=>sg.classList.remove("seg-q"));
@@ -3406,6 +3747,12 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
   /* a link chosen from an aggregator (AGGLINKS) is labelled with its name, and the note
      says so: "the theatre's own official box office" would not be true */
   const _al=(showId&&typeof AGGLINKS==="object"&&AGGLINKS[showId])||null;
+  /* a theatre that sells only at its box office: the same grey pill as on the film sheet */
+  if(b.inPerson){
+    const nm=(S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label;
+    return`<div class="buybox"><div class="bl">${esc(L.buyAt)}</div>
+    <div class="buylinks"><span class="buylink inperson">${esc(nm)}, ${esc(L.boxOnly)}</span></div></div>`;
+  }
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
     <div class="buylinks">
@@ -3440,7 +3787,9 @@ function filmBuyBox(f,rows){
     if(viaEpay)hasEpay=true;
     if(b.inPerson){
       const cname=(S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label;
-      return`<span class="buylink inperson">${esc(cname)}, ${esc(S.lang==="bg"?"на касата":"box office")}</span>`;
+      /* owner, 2026-10-23: a box-office-only venue is a grey pill in the same shape as the
+         online-ticket pills, with no arrow; its text says so ("само на касата") */
+      return`<span class="buylink inperson">${esc(cname)}, ${esc(L.boxOnly)}</span>`;
     }
     const u=safeUrl(filmTixUrl(f.id,vid,null)||b.url);
     if(!u)return"";
@@ -3478,6 +3827,11 @@ const _p3DayRenderFns=new Map();
 /* One venue row of the phone day list, stacked: the name with the price on its right,
    then the stage (theatre), the address and the preliminary note, each on its own line,
    then the times. For a show the row's price slot carries the stage name. */
+/* A time's accessible name: the time first (what the pill shows), then where and when, and
+   whether it is from a preliminary programme, which the dashed outline shows by sight only. */
+function _pillName(tm,venue,dateStr,prelim){
+  return `${tm}, ${venue}, ${fmtDayDow(dateStr)}${prelim?", "+t().prelimShort:""}`;
+}
 function p3eRowHtml(itemKind,v,r,prelim,pills){
   const isShow=itemKind==="show";
   const price=isShow?"":(r.price||v.price||"");
@@ -3536,10 +3890,13 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     }catch(e){return{abbr:"",num:iso.slice(8)};}
   };
 
+  const multiMon=new Set(dates.map(d=>d.slice(0,7))).size>1;
   const daysHtml=`<div class="p3e-days" role="group" aria-label="${esc(L.times)}" data-p3dayswrap>
-    ${dates.map(d=>{
+    ${dates.map((d,i)=>{
       const{abbr,num}=dayWod(d);
-      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}"><span>${esc(abbr)}</span><b>${esc(num)}</b></button>`;
+      const monTxt=multiMon&&(i===0||d.slice(0,7)!==dates[i-1].slice(0,7))?((L.monthsShort||[])[parseInt(d.slice(5,7),10)-1]||""):"";
+      const mon=monTxt?` <small class="p3e-dmon">${esc(monTxt)}</small>`:"";
+      return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+(monTxt?" "+monTxt:"")+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b>${mon}</button>`;
     }).join("")}</div>`;
 
   /* build venue list for a given date */
@@ -3553,7 +3910,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim))}">${esc(tm)}</button>`;
       }).join("");
       return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
@@ -3563,7 +3920,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   _p3DayRenderFns.set("p3e-grp-"+itemId,(dateStr,grpEl)=>{grpEl.innerHTML=buildVenueList(dateStr);});
   const initialList=buildVenueList(selDate);
   const grpHtml=`<div class="p3e-grp p3e-grp-slot" id="p3e-grp-${esc(itemId)}" data-p3dates="${esc(dates.join(","))}">${initialList}</div>`;
-  const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(L.ssDashedFn)}</p>`:"";  /* cinema footnote */
+  const fnHtml=anyPrelim?`<p class="p3e-prelim-fn">${esc(itemKind==="show"?L.ssDashedFnT:L.ssDashedFn)}</p>`:"";
 
   /* ---- DESKTOP: week grid, 7 dates a page ----
      Every page is rendered and only the current one is shown. A page lists only the
@@ -3607,19 +3964,19 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
 
   const headCell=d=>{
     const{abbr,num}=dayAbbrLong(d);
-    return`<th data-date="${esc(d)}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
+    return`<th scope="col" data-date="${esc(d)}" aria-label="${esc(fmtDayDow(d))}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
   };
   const rowFor=(vid,pd)=>{
     const v=venueMap(vid)||{};
     const price=v.price||"";
-    const vcell=`<td class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</td>`;
+    const vcell=`<th scope="row" class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</th>`;
     const dayCells=pd.map(d=>{
       const rr=gridMap[vid]&&gridMap[vid][d];
       if(!rr||!rr.times.length)return`<td></td>`;
       const prelim=isP(vid,d);
       const pillsD=rr.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${vid}|${d}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||vid,d,prelim))}">${esc(tm)}</button>`;
       }).join(" ");
       return`<td>${pillsD}</td>`;
     }).join("");
@@ -3627,8 +3984,9 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   };
   /* the venues with at least one time on a page's dates */
   const venuesOn=pd=>venuesSorted.filter(vid=>pd.some(d=>{const rr=gridMap[vid]&&gridMap[vid][d];return rr&&rr.times.length;}));
-  const tables=pages.map((pd,i)=>`<table class="p3e-gt p3e-gpage" role="table" data-gpage="${i}" data-glabel="${esc(pageLabel(pd))}"${i===cur?"":` aria-hidden="true"`}>
-        <thead><tr><th></th>${pd.map(headCell).join("")}</tr></thead>
+  const pagePrelim=pd=>pd.some(d=>venuesSorted.some(vid=>{const rr=gridMap[vid]&&gridMap[vid][d];return rr&&rr.times.length&&isP(vid,d);}));
+  const tables=pages.map((pd,i)=>`<table class="p3e-gt p3e-gpage" role="table" data-gpage="${i}" data-glabel="${esc(pageLabel(pd))}"${pagePrelim(pd)?' data-gprelim="1"':""}${i===cur?"":` aria-hidden="true"`}>
+        <thead><tr><th scope="col"><span class="sg-sr">${esc(itemKind==="show"?L.venue:(L.cinemaW||(S.lang==="bg"?"Кино":"Cinema")))}</span></th>${pd.map(headCell).join("")}</tr></thead>
         <tbody>${venuesOn(pd).map(vid=>rowFor(vid,pd)).join("")}</tbody>
       </table>`).join("");
   const GT=GRID_T[S.lang]||GRID_T.bg;
@@ -3643,7 +4001,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       ${pager}
       <div class="p3e-gpages">${tables}</div>
     </div>
-    ${anyPrelim?`<p class="p3e-gt-fn">${esc(L.ssDashedFnT)}</p>`:""}
+    ${anyPrelim?`<p class="p3e-gt-fn"${pagePrelim(pages[cur])?"":" hidden"}>${esc(L.ssDashedFnT)}</p>`:""}
   </div>`;
 
   return daysHtml+grpHtml+fnHtml+gridHtml;
@@ -3664,7 +4022,7 @@ function p3eRegisterDayPicker(container, itemKind, itemId, normalizedRows, venue
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(tm)}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim))}">${esc(tm)}</button>`;
       }).join("");
       return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
@@ -3714,20 +4072,20 @@ function sheetFilm(f){
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8;margin-bottom:10px">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
-  rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${imdbOf(f)!=null?fx1(imdbOf(f))+"<small>/10</small>":"—"}</div></div>`);
+  if(imdbOf(f)!=null)rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${fx1(imdbOf(f))+"<small>/10</small>"}</div></div>`);
   {const tv=tmdbOf(f);if(tv!=null)rt.push(`<div class="rtile"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div></div>`);}
   {const rv=rtOf(f);if(rv!=null)rt.push(`<div class="rtile"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(rv)}<small>%</small></div></div>`);}
   {const mv=mcOf(f);if(mv!=null)rt.push(`<div class="rtile"><div class="rl">Metacritic</div><div class="rv">${esc(mv)}<small>/100</small></div></div>`);}
   if(votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   const tr=trailerOf(f);
-  return`<div class="sheet"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>
-    <button class="sclose" data-close aria-label="close">✕</button>
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="film:${esc(f.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     ${tr?`<button type="button" class="tr-play" data-trailer="${esc(f.id)}" aria-label="${esc((tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)+": "+filmTitle(f))}" title="${esc(tr.t==="Teaser"?L.trPlayTeaser:L.trPlay)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.6v12.8a.9.9 0 0 0 1.37.77l10.2-6.4a.9.9 0 0 0 0-1.54L9.37 4.83A.9.9 0 0 0 8 5.6z" fill="currentColor"/></svg></button>`:""}
     <div class="sh-titles" style="position:relative;z-index:3">
       <div class="eyebrow" style="color:#fff;opacity:.82">${[S.lang==="en"?"":filmSubtitle(f),yearOf(f),ctryOf(f)].filter(Boolean).map(esc).join(" · ")}</div>
-      <h2>${esc(filmTitle(f))}</h2>${tr?`
+      <h2 id="sg-sheet-title">${esc(filmTitle(f))}</h2>${tr?`
       <p class="tr-meta">${esc(trailerLabel(tr))}</p>
       <button type="button" class="tr-stop" data-trailer-stop hidden><span aria-hidden="true">✕</span> ${esc(L.trStop)}</button>`:""}</div></div>
    <div class="sbody">${tr?`
@@ -3736,18 +4094,18 @@ function sheetFilm(f){
       ${runtimeOf(f)?`<span class="chip">${esc(runtimeOf(f))} ${esc(L.min)}</span>`:""}${x.age?`<span class="chip">${esc(x.ageEn&&S.lang==="en"?x.ageEn:x.age)}</span>`:""}${festChips("film",f.id)}</div>
     <div class="ratings">${rt.join("")}</div>
     ${venues.length?filmBuyBox(f,rows):""}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
+    <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synFilm(f);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynFilm(f)?L.noEnFilm:L.noInfoFilm)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why,n=S.lang==="en"?f.noteEn:f.note;return w?`<div class="why">${esc(w)}</div>`:n?`<div class="why">${esc(n)}</div>`:""})()}</div>
-    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.about)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:"";})()}
-    <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
+    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h3>${esc(L.about)}</h3><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:"";})()}
+    <div class="sec"><h3>${esc(L.credits)}</h3><dl class="credits">
       <dt>${esc(L.dir)}</dt><dd>${esc(dirOf(f)||L.noInfoShort)}</dd>
       <dt>${esc(L.cast)}</dt><dd>${esc(castOf(f)||L.noInfoShort)}</dd>
       ${(()=>{const a=ART2(f.id);return[["wr",a.wr],["mu",a.mu],["dop",a.dop]].filter(r=>notEmpty(r[1])).map(r=>`<dt>${esc(L[r[0]])}</dt><dd>${esc(personName(r[1],f))}</dd>`).join("");})()}
       ${(()=>{const ln=langName(ART2(f.id).ol);return ln?`<dt>${esc(L.olang)}</dt><dd>${esc(ln)}</dd>`:"";})()}
       ${(()=>{const fm=S.lang==="en"?x.fmtEn:x.fmt;return fm?`<dt>${esc(L.fmt)}</dt><dd>${esc(fm)}</dd>`:""})()}
       ${(()=>{const bx=S.lang==="en"?x.boxEn:x.box;return bx?`<dt>${esc(L.box)}</dt><dd>${esc(bx)}</dd>`:""})()}
-      ${(ctryOf(f)||yearOf(f))?`<dt>${esc(L.country)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",yearOf(f)?esc(yearOf(f)):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
-    <div class="sec"><h4>${esc(L.times)}</h4>
+      ${(ctryOf(f)||yearOf(f))?`<dt>${esc(ctryOf(f)?L.country:L.yearL)}</dt><dd>${[ctryOf(f)?esc(ctryOf(f)):"",yearOf(f)?esc(yearOf(f)):""].filter(Boolean).join(" · ")}</dd>`:""}</dl></div>
+    <div class="sec"><h3>${esc(L.times)}</h3>
       ${selNote}
       ${timesHtml}</div>
    </div></div>`;}
@@ -3792,30 +4150,30 @@ function sheetShow(sh){
   /* venue display: use nameEn in EN mode */
   const thName_=S.lang==="bg"?th.name:(th.nameEn||th.name);
   const thArea_=S.lang==="bg"?th.area:(th.areaEn||th.area);
-  return`<div class="sheet"><div class="shero" style="background:${grad(sh.g)}">
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero" style="background:${grad(sh.g)}">
     ${posterArt("sh-"+sh.id,sh.genres,sh.g,titleOf(sh))}<div class="hero-scrim"></div>
-    <button class="sclose" data-close aria-label="close">✕</button>
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
     <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.82">${esc(thName_)}</div><h2>${esc(titleOf(sh))}</h2></div></div>
+      <div class="eyebrow" style="color:#fff;opacity:.82">${esc(thName_)}</div><h2 id="sg-sheet-title">${esc(titleOf(sh))}</h2></div></div>
    <div class="sbody">
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
       ${sh.duration?`<span class="chip">${esc(sh.duration)} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
     ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
-    <div class="sec"><h4>${esc(L.syn)}</h4>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
+    <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
-    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h4>${esc(L.aboutT)}</h4><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
-    ${sh.reviews&&sh.reviews.length&&S.lang==="bg"?`<div class="sec"><h4>${esc(L.press)}</h4>
+    ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h3>${esc(L.aboutT)}</h3><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
+    ${sh.reviews&&sh.reviews.length&&S.lang==="bg"?`<div class="sec"><h3>${esc(L.press)}</h3>
       ${sh.reviews.map(r=>`<div class="quote">${esc(r.text)}<cite>${esc(r.src)}</cite></div>`).join("")}</div>`:""}
-    <div class="sec"><h4>${esc(L.credits)}</h4><dl class="credits">
+    <div class="sec"><h3>${esc(L.credits)}</h3><dl class="credits">
       ${sh.author&&sh.author!=="—"?`<dt>${esc(L.author)}</dt><dd>${esc(nameDisplay(sh.author))}</dd>`:""}
       ${sh.director&&sh.director!=="—"?`<dt>${esc(L.dir)}</dt><dd>${esc(nameDisplay(sh.director))}</dd>`:""}
       ${sh.cast&&sh.cast!=="—"?`<dt>${esc(L.cast)}</dt><dd>${esc(nameDisplay(sh.cast))}</dd>`:""}
       ${(()=>{const pr=S.lang==="en"?x.premiereEn:x.premiere;return pr?`<dt>${esc(L.premiere)}</dt><dd>${esc(pr)}</dd>`:""})()}
       ${(()=>{const se=S.lang==="en"?x.seasonEn:x.season;return se?`<dt>${esc(L.season)}</dt><dd>${esc(se)}</dd>`:""})()}
       <dt>${esc(L.venue)}</dt><dd>${esc(thName_)}, ${esc(thArea_)}</dd></dl></div>
-    <div class="sec"><h4>${esc(L.perfs)}</h4>${perfsHtml}</div>
+    <div class="sec"><h3>${esc(L.perfs)}</h3>${perfsHtml}</div>
    </div></div>`;}
 
 function sheetEvent(ev){
@@ -3826,13 +4184,14 @@ function sheetEvent(ev){
      Never fall back to generic aggregators (the user's "Eventim on Физика на
      тъгата" complaint traced to exactly that blanket hub list). */
   const vb=EVENT_VENUE[ev.id],b=vb?BOOKING[vb]:null,u=safeUrl(b?bookUrl(vb,null):null);
-  return`<div class="sheet"><div class="shero" style="background:${grad(ev.g)}">
-    ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}<div class="hero-scrim"></div>
-    <button class="sclose" data-close aria-label="close">✕</button>
+  return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-ev" style="background:${grad(ev.g)}">
+    ${posterArt("sh-"+ev.id,EV_MOTIF[ev.kind]||["Комедия"],ev.g,S.lang==="bg"?ev.title:ev.titleEn)}
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="event:${esc(ev.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button>
-    <div style="position:relative;z-index:3">
-      <div class="eyebrow" style="color:#fff;opacity:.85">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
-      <h2>${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div></div>
+    </div>
+    <div class="sh-evhead">
+      <div class="eyebrow">${esc(evBadge(ev))} · ${esc(evState(ev)==="active"?L.active:L.upcoming)}</div>
+      <h2 id="sg-sheet-title">${esc(S.lang==="bg"?ev.title:ev.titleEn)}</h2></div>
    <div class="sbody">
     <div class="chips"><span class="chip solid">${esc(range)}</span>
       <span class="chip">${esc(ev.scope==="both"?(S.lang==="bg"?"кино и театър":"cinema & theatre"):ev.scope==="cinema"?L.cinema:L.theatre)}</span></div>
@@ -3860,7 +4219,7 @@ function calView(){
   const dim=new Date(Date.UTC(fd.getUTCFullYear(),fd.getUTCMonth()+1,0)).getUTCDate();
   const lo=S.rFrom, hi=S.rTo, isRange=S.day==="range";
   let cells="";
-  for(let i=0;i<offset;i++)cells+=`<button disabled></button>`;
+  for(let i=0;i<offset;i++)cells+=`<span class="cal-pad" aria-hidden="true"></span>`;
   for(let d=1;d<=dim;d++){
     const iso=`${m}-${String(d).padStart(2,"0")}`;
     const ok=iso>=TODAY&&iso<=LASTDAY;
@@ -3872,7 +4231,7 @@ function calView(){
       if(iso===lo){pressed=true;cls+=" rstart";if(hi&&hi!==lo)cls+=" inrange";}
       if(iso===top&&top!==lo){pressed=true;cls+=" rend inrange";}
     }else{pressed=S.day===iso;}
-    cells+=`<button ${ok?"":"disabled"} class="${cls.trim()}" data-pick="${iso}" aria-pressed="${pressed}">${d}</button>`;
+    cells+=`<button ${ok?"":"disabled"} class="${cls.trim()}" data-pick="${iso}" aria-pressed="${pressed}" aria-label="${esc(d+" "+L.months[Number(m.slice(5,7))-1])}">${d}</button>`;
   }
   const dows=S.lang==="bg"?["пн","вт","ср","чт","пт","сб","нд"]:["Mo","Tu","We","Th","Fr","Sa","Su"];
   const hint=isRange
@@ -3881,9 +4240,9 @@ function calView(){
        : (S.lang==="bg"?"Изберете начална дата":"Pick a start date"))
     : (S.lang==="bg"?"Докоснете начало и край за период":"Tap a start and an end for a range");
   return `<div class="calnav">
-      <button class="calarrow" data-calstep="-1" ${idx>0?"":"disabled"} aria-label="prev">‹</button>
+      <button class="calarrow" data-calstep="-1" ${idx>0?"":"disabled"} aria-label="${esc(L.prevMonth)}">‹</button>
       <div class="calmon">${esc(L.months[Number(m.slice(5,7))-1])} ${m.slice(0,4)}</div>
-      <button class="calarrow" data-calstep="1" ${idx<MONTHS.length-1?"":"disabled"} aria-label="next">›</button></div>
+      <button class="calarrow" data-calstep="1" ${idx<MONTHS.length-1?"":"disabled"} aria-label="${esc(L.nextMonth)}">›</button></div>
     <div class="caldow">${dows.map(x=>`<span>${x}</span>`).join("")}</div>
     <div class="cal">${cells}</div>
     <div class="calhint">${esc(hint)}</div>`;
@@ -3912,7 +4271,7 @@ function drawerHTML(){
     const mkChip=c=>{const on=cinemaHasListings(c);const isFav=S.fav.venues.includes(c.id);
       return`<div style="display:flex;align-items:center;gap:2px">
         <button class="fchip${on?"":" off"}" data-venue="${esc(c.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(c.id)}">${esc(cinName(c))}</button>
-        ${on?`<button class="fav-star${isFav?" on":""}" data-fav-venue="${esc(c.id)}" title="${esc(isFav?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-pressed="${isFav}">${starSVG}</button>`:""}
+        ${on?`<button class="fav-star${isFav?" on":""}" data-fav-venue="${esc(c.id)}" title="${esc(isFav?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-label="${esc((L.favStar||"Запази")+": "+cinName(c))}" aria-pressed="${isFav}">${starSVG}</button>`:""}
       </div>`;};
     const multiplexes=CINEMAS.filter(c=>c.kind==="multiplex");
     const independents=CINEMAS.filter(c=>c.kind==="independent");
@@ -3938,17 +4297,17 @@ function drawerHTML(){
       ${theatres.map(v=>{const on=theatreHasListings(v.id);const isFavT=S.fav.venues.includes(v.id);
         return`<div style="display:flex;align-items:center;gap:2px">
           <button class="fchip${on?"":" off"}" data-venue="${esc(v.id)}"${on?"":" disabled"} aria-pressed="${S.fVenues.includes(v.id)}">${esc(v.name)}</button>
-          ${on?`<button class="fav-star${isFavT?" on":""}" data-fav-venue="${esc(v.id)}" title="${esc(isFavT?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-pressed="${isFavT}">${starSVG}</button>`:""}
+          ${on?`<button class="fav-star${isFavT?" on":""}" data-fav-venue="${esc(v.id)}" title="${esc(isFavT?(L.favStarOn||"Запазено"):(L.favStar||"Запази"))}" aria-label="${esc((L.favStar||"Запази")+": "+v.name)}" aria-pressed="${isFavT}">${starSVG}</button>`:""}
         </div>`;}).join("")}
     </div>`;
   }
   const hasActive=S.fGenres.length||S.fVenues.length||S.fStrands.length||S.day!=="week";
   return `<div class="drawer-scrim" data-dclose></div>
-  <aside class="drawer" role="dialog" aria-label="${esc(L.filters)}">
-    <div class="drawer-top"><b>${esc(L.filters)}</b>
+  <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="sg-drawer-title">
+    <div class="drawer-top"><h2 class="drawer-title" id="sg-drawer-title">${esc(L.filters)}</h2>
       <div style="display:flex;align-items:center;gap:8px">
         ${hasActive?`<button class="fclear" data-clearf style="font-size:11px">${esc(L.clearAll||L.clear)}</button>`:""}
-        <button class="dclose" data-dclose aria-label="close">✕</button>
+        <button class="dclose" data-dclose aria-label="${esc(L.closeFilters)}">✕</button>
       </div></div>
     <h3>${esc(L.period)}</h3>
     <div class="mrow">
@@ -3975,17 +4334,19 @@ function drawerHTML(){
     ${untilList.length?`<h3>${esc(L.untilNote)}</h3><div class="until">${untilList.map(esc).join("<br>")}</div>`:""}
     ${validatedOn()?`<div class="lastcheck">${esc(L.checked)} ${esc(validatedOn())}</div>`:""}
     <button class="btn applyb" data-dclose>${esc(L.apply)}</button>
-  </aside>`;
+  </div>`;
 }
 function searchView(sr){
   const L=t(),total=sr.films.length+sr.shows.length;
-  return `<div class="sechead" style="padding-top:20px"><h2>${esc(L.results)} „${esc(S.q)}“</h2><span class="n">${total}</span></div>
+  const qq=S.lang==="bg"?`„${S.q}“`:`“${S.q}”`;
+  return `<div class="sechead" style="padding-top:20px"><h1 class="sechead-h">${esc(L.results)} ${esc(qq)}</h1><span class="n">${total}</span></div>
    <div class="note">${esc(L.searchHint)}</div>
    ${sr.films.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inFilms)}</h2><span class="sub">${sr.films.length}</span></div>
      <div class="grid">${sr.films.map(f=>filmCard(f,true)).join("")}</div></section>`:""}
    ${sr.shows.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inShows)}</h2><span class="sub">${sr.shows.length}</span></div>
      <div class="grid">${sr.shows.map(x=>showCard(x,true)).join("")}</div></section>`:""}
-   ${total?"":`<div class="empty">${esc(L.noHits)}</div>`}`;
+   ${total?"":`<div class="empty">${esc(L.srNoHits.replace("{q}",S.q.trim()))}. ${esc(L.noHitsHelp)}
+      <div style="margin-top:12px"><button class="btn sm" data-qclear>${esc(L.clearSearch)}</button></div></div>`}`;
 }
 function render(){
   const L=t();
@@ -3993,6 +4354,9 @@ function render(){
   _pageGen++;_refreshLater=null;
   document.querySelectorAll(".sg-probe").forEach(p=>p.remove());
   document.documentElement.setAttribute("data-surface",S.mode);
+  /* the page language follows the BG/EN switch (WCAG 3.1.1): screen readers pick their
+     voice and pronunciation from it, and hyphenation and translation read it too */
+  document.documentElement.lang=S.lang;
   const sr=S.q.trim().length>=2?searchAll(S.q):null;
   const isMob=window.innerWidth<=760;
   /* New SVG icons: Кино = classic movie camera; Театър = comedy/tragedy mask */
@@ -4009,26 +4373,29 @@ function render(){
   const magSVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
   const searchIconBtn=`<button class="iconb search-icon-btn${S.searchOpen?" expanded":""}" data-search-open aria-expanded="${S.searchOpen}" aria-label="${esc(searchAriaLabel)}">${magSVG}</button>`;
   /* lang button — always the rightmost element */
-  const langBtn=`<button class="iconb" data-lang>${esc(L.lang)}</button>`;
+  /* named for the language it switches to, in that language: "English" / "Български" */
+  const langBtn=S.lang==="bg"
+    ?`<button class="iconb" data-lang aria-label="EN, English" lang="en">${esc(L.lang)}</button>`
+    :`<button class="iconb" data-lang aria-label="БГ, Български" lang="bg">${esc(L.lang)}</button>`;
   /* mobile search open row — always rendered so the animation transition fires;
      Item 2: .open class added immediately after paint via requestAnimationFrame */
   /* .sr-visible keeps display:block so animation works when searchOpen=true after render() */
   const searchMobileOpenHTML=`<div class="bar-row-search${S.searchOpen?" sr-visible open":""}"><div class="search search-mob-open${S.q?" has":""}">
-      <span class="mag">⌕</span>
-      <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
-      <button class="clr" data-qclear-m aria-label="clear">✕</button>
+      <span class="mag" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" focusable="false"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.searchOpen||"Търсене")}" autocomplete="off" spellcheck="false">
+      <button class="clr" data-qclear-m aria-label="${esc(L.searchClose||"Затвори търсенето")}">✕</button>
     </div></div>`;
   /* desktop: expandable search field — always in DOM so opacity/width transition fires */
-  const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}">
+  const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}"${S.searchOpen?"":" inert"}>
     <div class="search${S.q?" has":""}">
-      <span class="mag">⌕</span>
-      <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" autocomplete="off" spellcheck="false">
-      <button class="clr" data-qclear aria-label="clear">✕</button>
+      <span class="mag" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" focusable="false"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input id="q" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.searchOpen||"Търсене")}" autocomplete="off" spellcheck="false">
+      <button class="clr" data-qclear aria-label="${esc(L.clearSearch)}">✕</button>
     </div></div>`;
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
@@ -4038,7 +4405,7 @@ function render(){
     ${searchMobileOpenHTML}`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
-      <button class="brand" data-home aria-label="Sofia Gleda, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
         ${deskSearchHTML}${searchIconBtn}
@@ -4082,6 +4449,7 @@ function render(){
       keptDr.innerHTML=fresh.innerHTML;
     }
     keptDr.scrollTop=drTop;
+    _drawerInert(true);
     if(drFocus){const el=keptDr.querySelector(drFocus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
   }else if(S.drawer){
     _drawerEnter(app);
@@ -4137,7 +4505,7 @@ function fabHTML(){
   if(S.drawer||S.q)return "";
   const L=t();
   const activeFilterCount=S.fGenres.length+S.fVenues.length+S.fStrands.length+(S.day!=="week"?1:0);
-  return `<button class="fab" data-drawer aria-label="${esc(L.fabFilters||L.filters)}">
+  return `<button class="fab" data-drawer aria-label="${esc((L.fabFilters||L.filters)+(activeFilterCount?", "+L.fabActive.replace("{n}",activeFilterCount):""))}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
     <span>${esc(L.fabFilters||L.filters)}</span>
     ${activeFilterCount?`<span class="fab-badge">${activeFilterCount}</span>`:""}</button>`;
@@ -4161,6 +4529,7 @@ function _drawerEnter(app){
   const ds0=app.querySelector(":scope > .drawer-scrim");
   if(ds0)ds0.addEventListener("click",()=>{});
   _drawerSwipe(app.querySelector(":scope > .drawer"));
+  _drawerInert(true);
   /* P3B: animate drawer entrance when newly opened, then move focus inside */
   requestAnimationFrame(()=>{
     const dr=document.querySelector(".drawer");
@@ -4169,8 +4538,8 @@ function _drawerEnter(app){
     const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const delay=reduced?10:340;
     if(!reduced){
-      dr.animate([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}],
-        {duration:320,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"backwards"});
+      dr.animate([{transform:"translateX(100%)"},{transform:"translateX(0)"}],
+        {duration:360,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
       if(ds)ds.animate([{opacity:0},{opacity:1}],{duration:200,easing:"ease-out",fill:"backwards"});
     }
     /* Move keyboard focus into the drawer after animation */
@@ -4197,6 +4566,7 @@ function closeDrawerNow(){
   const app=document.getElementById("app");
   if(!app||!app.querySelector(":scope > main")){render();return;}
   app.querySelectorAll(":scope > .drawer,:scope > .drawer-scrim").forEach(n=>n.remove());
+  _drawerInert(false);
   _syncFab();
 }
 /* A tap in the filter drawer: the drawer keeps its node, scroll position and focus (only
@@ -4217,6 +4587,9 @@ function renderKeepDrawer(){
   dr.scrollTop=top;
   if(focus){const el=dr.querySelector(focus);if(el){try{el.focus({preventScroll:true});}catch(e){}}}
   refreshPage();
+  /* a range half-picked in the calendar: say what to do next; otherwise what the page holds */
+  const dr2=document.querySelector("#app > .drawer .calhint");
+  announce(S.day==="range"&&S.rFrom&&!S.rTo&&dr2?dr2.textContent:_listingSummary());
 }
 
 /* ===================== in-place page updates =====================
@@ -4436,8 +4809,14 @@ function sheetHTMLFor(c){
 function decorateSheet(s){
   const sheet=s.querySelector(".sheet");
   if(sheet&&!sheet.querySelector(".sbar")){
+    /* One way out (I12): the sheet's sticky bar holds Share and Close on its trailing edge,
+       visible at every scroll position (the "‹ Назад" pill dismissed the sheet, which a Back
+       button should not, and the ✕ on the hero scrolled away with it). */
     const bar=document.createElement("div");bar.className="sbar";
-    bar.innerHTML=`<button class="sback" data-close>&#8249;&nbsp;${esc(t().back)}</button>`;
+    bar.innerHTML=`<span class="sbar-sp"></span>`;
+    const shareB=sheet.querySelector(".shero > .sshare"),closeB=sheet.querySelector(".shero > .sclose");
+    if(shareB)bar.appendChild(shareB);
+    if(closeB)bar.appendChild(closeB);
     const grab=document.createElement("div");grab.className="sgrab";
     sheet.insertBefore(bar,sheet.firstChild);
     sheet.insertBefore(grab,sheet.firstChild);
@@ -4582,6 +4961,14 @@ function _openerEl(c){
   const attr=c.kind==="film"?"data-film":c.kind==="show"?"data-show":"data-event";
   try{return document.querySelector("#app ["+attr+'="'+CSS.escape(c.id)+'"]');}catch(e){return null;}
 }
+/* inert: while a modal layer is up, what is behind it takes no focus, no clicks and no
+   screen-reader browsing (WCAG 2.4.3). The sheet layer makes #app inert; the phone time
+   panel makes the sheet (#scrim) inert; the filter drawer makes the page around it inert. */
+function _setInert(el,on){if(el&&("inert" in el))el.inert=!!on;}
+function _drawerInert(on){
+  const app=document.getElementById("app");if(!app)return;
+  for(const n of app.children){if(n.classList.contains("drawer")||n.classList.contains("drawer-scrim"))continue;_setInert(n,on);}
+}
 function openSheet(html,fromEl){
   if(!html)return;
   const gen=++_sheetGen;
@@ -4600,6 +4987,7 @@ function openSheet(html,fromEl){
      reliable one, history and swipe are conveniences on top of it */
   _lastOpenEl=fromEl||null;
   decorateSheet(s);
+  _setInert(document.getElementById("app"),true);
   animateOpen(s,fromEl);
   /* Move keyboard focus into the sheet after the opening animation. */
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -4651,6 +5039,7 @@ function closeSheet(fromPop){
     if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
     /* an animated close shields taps until it ends; an instant one keeps the short shield */
     if(animated)_tapShieldUntil=Math.min(_tapShieldUntil,performance.now());
+    _setInert(document.getElementById("app"),false);
     /* Return focus to the card that opened the sheet */
     if(returnEl&&returnEl.isConnected&&typeof returnEl.focus==="function"){
       try{returnEl.focus({preventScroll:true});}catch(e){}
@@ -4812,11 +5201,50 @@ function shareItem(kind,id,title){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,()=>toast(url));}
   else toast(url);
 }
+/* Bulgarian letterforms (Montserrat and Source Serif 4 both carry them, locl BGR): in English the
+   page is lang="en", so any Cyrillic text left in it (titles, venues and names with no English
+   form) would draw the Russian shapes. Its element is marked lang="bg", after every change. */
+const _CYR=/[\u0400-\u04FF]/;
+let _mbRaf=0;
+function _markBg(){
+  _mbRaf=0;
+  if(S.lang!=="en")return;
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  let n;
+  while((n=w.nextNode())){
+    if(!_CYR.test(n.nodeValue))continue;
+    const p=n.parentElement;
+    if(p&&p.lang!=="bg"&&!p.closest('[lang="bg"]'))p.setAttribute("lang","bg");
+  }
+}
+try{new MutationObserver(()=>{if(S.lang==="en"&&!_mbRaf)_mbRaf=requestAnimationFrame(_markBg);})
+  .observe(document.documentElement,{childList:true,subtree:true,characterData:true});}catch(e){}
+/* "1 прожекция", "5 прожекции": a count with the right form ([one, many] from the T table) */
+function plural(n,forms){return `${n} ${n===1?forms[0]:forms[1]}`;}
+/* One polite live region for status changes a screen reader would otherwise miss (WCAG
+   4.1.3): search results, filter changes, the sheet's day picker, the toast. It lives
+   outside #app (never rebuilt, never inert); emptied first so a repeat is read again. */
+let _liveT=0;
+function announce(msg){
+  let el=document.getElementById("sg-live");
+  if(!el){el=document.createElement("div");el.id="sg-live";el.className="sg-sr";
+    el.setAttribute("role","status");el.setAttribute("aria-live","polite");el.setAttribute("aria-atomic","true");
+    document.body.appendChild(el);}
+  el.textContent="";clearTimeout(_liveT);
+  _liveT=setTimeout(()=>{el.textContent=msg||"";},80);
+}
+/* what the listing holds now, said after a filter change */
+function _listingSummary(){
+  const L=t();
+  const n=S.mode==="cinema"?visibleFilms().length:visibleShows().length;
+  return `${periodLabel()}: ${plural(n,S.mode==="cinema"?L.plFilm:L.plShow)}`;
+}
 function toast(msg){
   let el=document.getElementById("sg-toast");
   if(!el){el=document.createElement("div");el.id="sg-toast";el.className="toast";document.body.appendChild(el);}
   el.textContent=msg;el.classList.add("show");
-  clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2200);
+  announce(msg);
+  clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),4000);
 }
 window.addEventListener("hashchange",()=>{ if(!sheetOpen)openFromHash(); });
 
@@ -4840,8 +5268,8 @@ function animateDrawerClose(cb,fromX){
      curve that starts at speed (the plain close starts slowly) */
   const x0=fromX||0,w=dr.getBoundingClientRect().width||1,rest=Math.max(0,1-x0/w);
   const dsOp=ds?(parseFloat(getComputedStyle(ds).opacity)||0):0;
-  const anim=dr.animate([{transform:`translateX(${x0}px)`,opacity:1},{transform:"translateX(100%)",opacity:0}],
-    {duration:x0?Math.round(120+140*rest):260,easing:x0?"cubic-bezier(.25,.46,.45,.94)":"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  const anim=dr.animate([{transform:`translateX(${x0}px)`},{transform:"translateX(100%)"}],
+    {duration:x0?Math.round(120+140*rest):260,easing:"cubic-bezier(.32,.72,0,1)",fill:"forwards"});
   if(ds)ds.animate([{opacity:dsOp},{opacity:0}],{duration:x0?Math.round(100+100*rest):200,easing:"ease-in",fill:"forwards"});
   anim.onfinish=cb;
 }
@@ -4909,7 +5337,7 @@ function _drawerSwipe(dr){
     const s=scrimEl(),op=s?(parseFloat(s.style.opacity)||0):1;
     clear();
     dr.animate([{transform:`translateX(${dx}px)`},{transform:"translateX(0)"}],
-      {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)"});
+      {duration:300,easing:"cubic-bezier(.32,.72,0,1)"});
     if(s)s.animate([{opacity:op},{opacity:1}],{duration:260,easing:"ease-out"});
   };
   dr.addEventListener("touchend",()=>end(false),{passive:true});
@@ -4942,10 +5370,9 @@ function swipeToClose(sheet){
     /* Live transform: sheet follows finger, scrim opacity tracks */
     const h=sheet.getBoundingClientRect().height||600;
     const progress=Math.min(dy/h,1);
-    const scale=1-progress*0.1;        /* 1 → 0.9 at threshold */
     const opacity=Math.max(1-progress*1.4,0.15);
-    sheet.style.transform=`translateY(${dy}px) scale(${scale})`;
-    sheet.style.transformOrigin="center bottom";
+    /* the sheet follows the finger 1:1, undistorted */
+    sheet.style.transform=`translateY(${dy}px)`;
     if(scrim)scrim.style.background=`rgba(5,3,7,${(0.8*opacity).toFixed(3)})`;
   },{passive:true});
 
@@ -4963,15 +5390,16 @@ function swipeToClose(sheet){
     const vel=dt>0?dy/dt:0;
     const h=sheet.getBoundingClientRect().height||600;
     if(dy>h*THRESHOLD||vel>VEL_CLOSE){
-      /* commit close */
-      _reset();
+      /* commit close: the closing slide starts from the finger's offset (kept inline) */
+      if(scrim)scrim.style.background="";
+      y0=null;
       closeSheet();
     } else {
       /* spring back */
       if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){_reset();return;}
       sheet.animate(
-        [{transform:sheet.style.transform||"none"},{transform:"translateY(0) scale(1)"}],
-        {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"forwards"});
+        [{transform:sheet.style.transform||"none"},{transform:"translateY(0)"}],
+        {duration:300,easing:"cubic-bezier(.32,.72,0,1)"});
       if(scrim){
         const curAlpha=parseFloat((scrim.style.background||"").match(/[\d.]+\)$/)?
           (scrim.style.background||"").match(/([\d.]+)\)$/)[1]:0.8);
@@ -4991,39 +5419,26 @@ function animateOpen(scrim,fromEl){
   const sheet=scrim.querySelector(".sheet"); if(!sheet)return;
   const isMobile=innerWidth<=620;
 
-  /* Always fade the scrim backdrop */
+  /* Always fade the scrim backdrop. On phones only its dimming fades (the sheet is inside
+     the scrim, and fading the scrim's opacity made the rising panel see-through). */
   const bgDur=reduced?1:200;
-  scrim.animate([{opacity:0},{opacity:1}],{duration:bgDur,easing:"ease-out"});
+  if(isMobile&&!reduced)scrim.animate([{backgroundColor:"rgba(5,3,7,0)",backdropFilter:"blur(0px)"},{backgroundColor:"rgba(5,3,7,.8)",backdropFilter:"blur(8px)"}],{duration:260,easing:"ease-out"});
+  else scrim.animate([{opacity:0},{opacity:1}],{duration:bgDur,easing:"ease-out"});
 
   if(reduced){
     /* Instant: no transform animation */
     return;
   }
 
-  const rect=fromEl?fromEl.getBoundingClientRect():null;
-  if(rect&&isMobile&&rect.width>0&&rect.height>0){
-    /* FLIP: compute where to start so the sheet appears to grow from the card */
-    const sheetR=sheet.getBoundingClientRect();
-    const sheetH=sheetR.height||window.innerHeight*0.92;
-    const sheetW=sheetR.width||window.innerWidth;
-    /* origin: card centre relative to sheet centre */
-    const ox=(rect.left+rect.width/2)-(sheetR.left+sheetW/2);
-    const oy=(rect.top+rect.height/2)-(window.innerHeight*0.97); /* sheet anchors to bottom */
-    const sx=rect.width/sheetW;
-    const sy=rect.height/sheetH;
-    sheet.style.transformOrigin="center bottom";
-    sheet.animate([
-      {opacity:0,transform:`translate(${ox}px,${oy}px) scale(${sx},${sy})`},
-      {opacity:1,transform:"translate(0,0) scale(1)"}
-    ],{duration:400,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"backwards"});
-  } else if(isMobile){
-    /* fallback: slide up from the bottom */
-    sheet.animate([{opacity:0,transform:"translateY(40px)"},{opacity:1,transform:"translateY(0)"}],
-      {duration:380,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+  /* One sheet motion, iOS-like (I2): on phones the panel rises from the bottom edge on the
+     sheet curve, opaque and undistorted (the zoom out of the tapped card overshot and squashed
+     the text); on wider screens the card settles in from 98% with a short fade. */
+  if(isMobile){
+    sheet.animate([{transform:"translateY(100%)"},{transform:"translateY(0)"}],
+      {duration:420,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
   } else {
-    /* desktop: scale+fade from centre */
-    sheet.animate([{opacity:0,transform:"scale(.93) translateY(16px)"},{opacity:1,transform:"none"}],
-      {duration:340,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+    sheet.animate([{opacity:0,transform:"scale(.98)"},{opacity:1,transform:"none"}],
+      {duration:220,easing:"cubic-bezier(.2,0,0,1)",fill:"backwards"});
   }
 }
 
@@ -5035,33 +5450,21 @@ function animateClose(scrim,toEl,cb){
   if(reduced||!sheet){cb();return;}
 
   const isMobile=innerWidth<=620;
-  const rect=toEl?toEl.getBoundingClientRect():null;
 
   /* Fade the scrim first (kept in _closeAnims so a sheet opened meanwhile can cancel it) */
-  _closeAnims.push(scrim.animate([{opacity:1},{opacity:0}],{duration:260,easing:"ease-in",fill:"forwards"}));
+  _closeAnims.push(isMobile
+    ?scrim.animate([{backgroundColor:getComputedStyle(scrim).backgroundColor},{backgroundColor:"rgba(5,3,7,0)",backdropFilter:"blur(0px)"}],{duration:280,easing:"ease-in",fill:"forwards"})
+    :scrim.animate([{opacity:1},{opacity:0}],{duration:160,easing:"ease-in",fill:"forwards"}));
 
   let anim;
-  if(rect&&isMobile&&rect.width>0&&rect.height>0&&
-     rect.top>-rect.height&&rect.top<window.innerHeight){
-    /* Card is in viewport: shrink sheet back to card */
-    const sheetR=sheet.getBoundingClientRect();
-    const sheetH=sheetR.height||window.innerHeight*0.92;
-    const sheetW=sheetR.width||window.innerWidth;
-    const ox=(rect.left+rect.width/2)-(sheetR.left+sheetW/2);
-    const oy=(rect.top+rect.height/2)-(window.innerHeight*0.97);
-    const sx=rect.width/sheetW;
-    const sy=rect.height/sheetH;
-    sheet.style.transformOrigin="center bottom";
-    anim=sheet.animate([
-      {opacity:1,transform:"translate(0,0) scale(1)"},
-      {opacity:0,transform:`translate(${ox}px,${oy}px) scale(${sx},${sy})`}
-    ],{duration:300,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
-  } else if(isMobile){
-    anim=sheet.animate([{opacity:1,transform:"translateY(0)"},{opacity:0,transform:"translateY(50px)"}],
-      {duration:260,easing:"cubic-bezier(.55,.0,.1,1)",fill:"forwards"});
+  if(isMobile){
+    /* down and out from where it is (a drag hands over its offset in the inline transform) */
+    const from=sheet.style.transform||"translateY(0)";
+    anim=sheet.animate([{transform:from},{transform:"translateY(100%)"}],
+      {duration:280,easing:"cubic-bezier(.32,.72,0,1)",fill:"forwards"});
   } else {
-    anim=sheet.animate([{opacity:1,transform:"none"},{opacity:0,transform:"scale(.93) translateY(16px)"}],
-      {duration:220,easing:"ease-in",fill:"forwards"});
+    anim=sheet.animate([{opacity:1,transform:"none"},{opacity:0,transform:"scale(.98)"}],
+      {duration:160,easing:"cubic-bezier(.2,0,0,1)",fill:"forwards"});
   }
   if(anim){_closeAnims.push(anim);anim.onfinish=cb;}
   else cb();
@@ -5498,9 +5901,9 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     }
     return`<div class="ss-grab"></div>
 <button class="ss-back-btn" data-ssback aria-label="${esc(L.back||"Назад")}">‹</button>
-<button class="ss-close-btn" data-ssclose aria-label="close">✕</button>
-<div class="ss-cal-title">${esc(L.ssCalTitle)}</div>
-<div class="ss-cal-ev">
+<button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
+<div class="ss-cal-title" id="ss-t">${esc(L.ssCalTitle)}</div>
+<div class="ss-cal-ev" id="ss-d">
   <div class="a">${esc(title)}</div>
   <div class="b">${esc(dateDisplay)}, ${esc(timeStr)}${esc(endStr)}</div>
   <div class="b">${esc(venueName)}</div>
@@ -5508,15 +5911,15 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
 <div class="ss-cal-lst">
   <a class="ss-cal-li"${ev?` href="${esc(_ssIcsUrl(ev))}"${_isAppleTouch()?"":` download="${esc(icsId+".ics")}"`}`:` aria-disabled="true"`} data-sscalics="${esc(icsData)}" data-ssicalid="${esc(icsId)}">
     <div><span>${esc(L.ssCalApple)}</span><small>${esc(L.ssCalAppleSub)}</small></div>
-    <span class="cv">›</span>
+    <span class="cv" aria-hidden="true">›</span>
   </a>
   <a class="ss-cal-li" href="${esc(gUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalGoogle)}</div>
-    <span class="cv">›</span>
+    <span class="cv" aria-hidden="true">›</span>
   </a>
   <a class="ss-cal-li" href="${esc(oUrl)}" target="_blank" rel="noopener noreferrer">
     <div>${esc(L.ssCalOutlook)}</div>
-    <span class="cv">›</span>
+    <span class="cv" aria-hidden="true">›</span>
   </a>
 </div>`;
   }
@@ -5573,9 +5976,9 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   }
 
   return`<div class="ss-grab"></div>
-<button class="ss-close-btn" data-ssclose aria-label="close">✕</button>
-<div class="ss-time">${esc(timeStr)}</div>
-<div class="ss-date">${esc(dateDisplay)}</div>
+<button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
+<div class="ss-time" id="ss-t">${esc(timeStr)}</div>
+<div class="ss-date" id="ss-d">${esc(dateDisplay)}</div>
 <div class="ss-venue">${esc(venueName)}${venueArea?", "+esc(venueArea):""}</div>
 ${chipsHtml}
 ${statusHtml}
@@ -5633,10 +6036,8 @@ function ssSwipeToClose(ssWrap,ssSheet){
     const now=Date.now(); lastY=e.touches[0].clientY; lastT=now;
     const h=ssSheet.getBoundingClientRect().height||400;
     const progress=Math.min(dy/h,1);
-    const scale=1-progress*0.1;
     const opacity=Math.max(1-progress*1.4,0.15);
-    ssSheet.style.transform=`translateY(${dy}px) scale(${scale})`;
-    ssSheet.style.transformOrigin="center bottom";
+    ssSheet.style.transform=`translateY(${dy}px)`;
     ssWrap.style.background=`rgba(0,0,0,${(0.55*opacity).toFixed(3)})`;
   },{passive:true});
 
@@ -5659,8 +6060,8 @@ function ssSwipeToClose(ssWrap,ssSheet){
     } else {
       if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){_ssReset();return;}
       ssSheet.animate(
-        [{transform:ssSheet.style.transform||"none"},{transform:"translateY(0) scale(1)"}],
-        {duration:320,easing:"cubic-bezier(.34,1.48,.64,1)",fill:"forwards"});
+        [{transform:ssSheet.style.transform||"none"},{transform:"translateY(0)"}],
+        {duration:300,easing:"cubic-bezier(.32,.72,0,1)"});
       const curBg=ssWrap.style.background||"";
       const curAlphaM=curBg.match(/([\d.]+)\)$/);
       const curAlpha=curAlphaM?parseFloat(curAlphaM[1]):0.55;
@@ -5689,7 +6090,7 @@ function _ssWrapEl(){
   if(!w){
     w=document.createElement("div");w.id="ss-wrap";w.className="ss-wrap";w.hidden=true;
     const inner=document.createElement("div");
-    inner.className="ss-sheet";inner.setAttribute("role","dialog");inner.setAttribute("aria-modal","true");
+    inner.className="ss-sheet";inner.setAttribute("role","dialog");inner.setAttribute("aria-modal","true");inner.setAttribute("aria-labelledby","ss-t ss-d");
     w.appendChild(inner);
     document.body.appendChild(w);
     /* a tap on the dimmed backdrop closes only the popup */
@@ -5779,6 +6180,7 @@ function _ssToSheet(){
   inner.innerHTML=screeningSheetHtml(st.kind,st.id,st.venueId,st.dateStr,st.timeStr,st.step);
   inner.scrollTop=0;inner.style.transform="";w.style.background="";
   w.hidden=false;
+  _setInert(document.getElementById("scrim"),true);
   st.mode="sheet";st.el=w;st.inner=inner;
   if(hadFocus)_ssFocusFirst(st,0);
 }
@@ -5795,6 +6197,17 @@ window.addEventListener("resize",()=>{
   if(_ssWantsSheet()){_ssToSheet();return;}
   _ssSchedule();
 });
+/* The desktop popover is not modal (a click outside closes it, another time switches it),
+   so the sheet stays live; but Tab must not walk out of it into the sheet behind: leaving it
+   either way closes it and puts focus back on its time, where the sheet's order goes on. */
+function _ssPopKeys(e){
+  if(e.key!=="Tab"||!_ss||_ss.mode!=="pop")return;
+  const f=[..._ss.el.querySelectorAll('button,a[href]')].filter(x=>x.getClientRects().length&&!x.disabled);
+  if(!f.length)return;
+  if((!e.shiftKey&&document.activeElement===f[f.length-1])||(e.shiftKey&&document.activeElement===f[0])){
+    e.preventDefault();closeScreeningSheet();
+  }
+}
 /* openScreeningSheet: open (or switch) the popup for a time pill of the open sheet. */
 function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
   if(!sheetOpen)return;
@@ -5807,14 +6220,15 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
   const st={kind,id,venueId,dateStr,timeStr,key,anchor:fromEl||null,mode,step:"main",placed:false};
   const reduced=_ssReduced();
   const slideUp=inner=>{
-    if(!wasOpen&&!reduced)inner.animate([{transform:"translateY(60px)",opacity:0},{transform:"none",opacity:1}],
-      {duration:320,easing:"cubic-bezier(.34,1.28,.64,1)",fill:"backwards"});
+    if(!wasOpen&&!reduced)inner.animate([{transform:"translateY(100%)"},{transform:"none"}],
+      {duration:420,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
   };
   if(mode==="sheet"){
     const w=_ssWrapEl();
     const inner=w.querySelector(".ss-sheet");
     inner.innerHTML=html;inner.scrollTop=0;inner.style.transform="";w.style.background="";
     w.hidden=false;
+    _setInert(document.getElementById("scrim"),true);
     st.el=w;st.inner=inner;
     _ss=st;
     slideUp(inner);
@@ -5822,7 +6236,8 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
     let pop=_ss&&_ss.el;
     if(!pop||!pop.isConnected){
       pop=document.createElement("div");pop.id="ss-pop";pop.className="ss-pop";
-      pop.setAttribute("role","dialog");
+      pop.setAttribute("role","dialog");pop.setAttribute("aria-labelledby","ss-t ss-d");
+      pop.addEventListener("keydown",_ssPopKeys);
       pop.innerHTML='<div class="ss-sheet"></div><span class="ss-caret" aria-hidden="true"></span>';
       document.body.appendChild(pop);
     }
@@ -5845,6 +6260,8 @@ function openScreeningSheet(kind,id,venueId,dateStr,timeStr,fromEl){
       }
     }
   }
+  document.querySelectorAll("#scrim .ss-src").forEach(x=>{x.classList.remove("ss-src");x.removeAttribute("aria-expanded");});
+  if(fromEl&&fromEl.classList){fromEl.classList.add("ss-src");fromEl.setAttribute("aria-expanded","true");}
   _syncHistory();
   _ssFocusFirst(st,reduced?10:(st.mode==="sheet"?340:220));
 }
@@ -5856,6 +6273,8 @@ function closeScreeningSheet(opts){
   const st=_ss;
   if(!st)return;
   _ss=null;
+  _setInert(document.getElementById("scrim"),false);
+  document.querySelectorAll("#scrim .ss-src").forEach(x=>{x.classList.remove("ss-src");x.removeAttribute("aria-expanded");});
   if(_ssRaf){cancelAnimationFrame(_ssRaf);_ssRaf=0;}
   if(st.mode==="sheet"){
     /* the overlay is reused: drop what a drag or its spring-back left on it */
@@ -6000,7 +6419,12 @@ document.addEventListener("click",e=>{
   const ofv=q("[data-only-fav]");
   if(ofv){S.onlyFav=!S.onlyFav;S.fVenues=[];save();(S.drawer?renderKeepDrawer():render());return;}
   if(q("[data-clearf]")){S.fGenres=[];S.fVenues=[];S.fStrands=[];S.day="week";S.rFrom=S.rTo=null;(S.drawer?renderKeepDrawer():render());return;}
-  if(q("[data-lang]")){S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();return;}
+  if(q("[data-lang]")){
+    /* the header is rebuilt: focus goes back to the new language button, not to <body> */
+    const hadFocus=e.detail===0||document.activeElement===q("[data-lang]");
+    S.lang=S.lang==="bg"?"en":"bg";save();render();rerenderOpenSheet();
+    if(hadFocus){const nb=document.querySelector("header [data-lang]");if(nb){try{nb.focus({preventScroll:true});}catch(err){}}}
+    return;}
   /* collapsible section toggle — animate in-place (Item 1), fall back to render if section not in DOM */
   const st2=q("[data-sectoggle]");
   if(st2){
@@ -6040,6 +6464,8 @@ document.addEventListener("click",e=>{
       else tb.setAttribute("aria-hidden","true");
     });
     const rg=pager.querySelector(".p3e-grange");if(rg)rg.textContent=label;
+    const gfn=box.parentElement&&box.parentElement.querySelector(".p3e-gt-fn");
+    if(gfn){const ct=box.querySelector('.p3e-gpage[data-gpage="'+cur+'"]');gfn.hidden=!(ct&&ct.dataset.gprelim);}
     const [prev,next]=pager.querySelectorAll("[data-gnav]");
     prev.disabled=cur===0;next.disabled=cur===n-1;
     /* keyboard: keep focus on the pager when the pressed arrow turns disabled at an end */
@@ -6068,6 +6494,9 @@ document.addEventListener("click",e=>{
       if(grpSlot){
         const fn=_p3DayRenderFns.get(grpSlot.id);
         if(fn)try{fn(p3day.dataset.p3day,grpSlot);}catch(e){}
+        const L=t(),nv=grpSlot.querySelectorAll(".p3e-row").length,np=grpSlot.querySelectorAll(".p3e-pill").length;
+        const isShow=/^show:/.test((grpSlot.querySelector("[data-sspill]")||{dataset:{}}).dataset.sspill||"");
+        announce(`${fmtDayDow(p3day.dataset.p3day)}: ${isShow?plural(np,L.plPerf):plural(nv,L.plCinema)+", "+plural(np,L.plScreening)}`);
       }
     }
     return;
@@ -6111,7 +6540,11 @@ document.addEventListener("input",e=>{
   S.q=e.target.value; S.qFocus=true;
   _syncSearchField();
   clearTimeout(qTimer);
-  qTimer=setTimeout(()=>{qTimer=null;refreshPage({search:true});},160);
+  qTimer=setTimeout(()=>{qTimer=null;refreshPage({search:true});
+    const q=S.q.trim();
+    if(q.length>=2){const sr=searchAll(S.q),n=sr.films.length+sr.shows.length,L=t();
+      announce(n?`${plural(n,L.plResult)} ${L.srFor.replace("{q}",q)}`:L.srNoHits.replace("{q}",q));}
+  },160);
 });
 
 function fatal(e){
