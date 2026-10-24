@@ -27,7 +27,8 @@
 <!-- /FONTS -->
 <style>
 /* Sofia Gleda: the legal pages (scripts/gen_legal_pages.py inlines this in each page).
-   The app's tokens: ink and fg, crimson accent, Montserrat for text and titles (the cinema face). */
+   The app's tokens: ink and fg, crimson accent, Geologica for text and titles (the cinema face; the title
+   with its sharp-corner axis, SHRP 100, as the app's cinema headings). */
 :root{
   --ink:#0C0A0F; --ink-2:#141018; --ink-3:#1C1622; --ink-4:#28202F;
   --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.17);
@@ -38,7 +39,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{margin:0; background:var(--ink); color:var(--fg-2);
-  font-family:"Montserrat","Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.65;
+  font-family:"Geologica","Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.65;
   -webkit-font-smoothing:antialiased}
 a{color:var(--fg); text-decoration:underline; text-decoration-color:rgba(224,22,58,.65);
   text-underline-offset:3px; overflow-wrap:anywhere}
@@ -72,7 +73,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size
 .lg-docs a[aria-current="page"]{background:var(--fg); border-color:var(--fg); color:var(--ink); font-weight:600}
 
 h1{display:flex; align-items:center; gap:12px; margin:0 0 6px; color:var(--fg);
-  font-family:"Montserrat","Segoe UI",system-ui,sans-serif; font-weight:700;
+  font-family:"Geologica","Segoe UI",system-ui,sans-serif; font-weight:700; font-variation-settings:"SHRP" 100;
   letter-spacing:-.01em; font-size:clamp(26px,5.6vw,36px); line-height:1.15; text-wrap:balance}
 h1::before{content:""; flex:0 0 5px; width:5px; height:.9em; border-radius:2px; background:var(--accent)}
 .lg-updated{margin:0 0 24px; color:var(--fg-3); font-size:14px}
