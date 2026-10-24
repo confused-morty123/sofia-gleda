@@ -17756,6 +17756,24 @@ def _b24_fonts(browser, base, eng):
     lcss = m.group(1) if m else ""
     check(f"b24_{eng}_font_legal_css", '"Geologica"' in lcss and '"SHRP" 100' in lcss and "Montserrat" not in lg,
           "the legal pages' font block names Geologica (titles SHRP 100), no Montserrat")
+    # the service worker precaches the shell (fonts/fonts.css among it) and serves same-origin
+    # static files cache-first: a shell file that differs from the released one (origin/main)
+    # needs a new CACHE_VERSION, or returning visitors keep the old file for good
+    def _released(rel):
+        r = subprocess.run(["git", "-C", str(webapp_root), "show", f"origin/main:{rel}"], capture_output=True)
+        return r.stdout if r.returncode == 0 else None
+    sw_now = (webapp_root / "sw.js").read_text(encoding="utf-8")
+    sw_old = _released("sw.js")
+    if sw_old is None:
+        skip(f"b24_{eng}_font_sw_cache_version", "origin/main is not available here")
+    else:
+        ver = lambda t: (re.search(r'CACHE_VERSION\s*=\s*"([^"]+)"', t) or [None, None])[1]
+        shell = re.findall(r'"([^"]+)"', (re.search(r"const SHELL = \[(.*?)\];", sw_now, re.S) or [None, ""])[1])
+        changed = [f for f in shell if f not in ("./", "index.html") and (webapp_root / f).is_file()
+                   and _released(f) != (webapp_root / f).read_bytes()]
+        v_old, v_new = ver(sw_old.decode("utf-8")), ver(sw_now)
+        check(f"b24_{eng}_font_sw_cache_version", "fonts/fonts.css" in shell and (not changed or v_new != v_old),
+              f"shell files changed since the release: {changed}; CACHE_VERSION {v_old} -> {v_new}")
     if os.environ.get("SOFIA_HTML"):
         for path in ("/legal/terms/", "/legal/en/privacy/"):
             ctx = _ux_ctx(browser, base, 1280, 800)
