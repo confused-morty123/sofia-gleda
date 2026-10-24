@@ -17895,73 +17895,134 @@ def _b24_days(browser, base, eng):
 
 
 B24_GRID_JS = r"""() => { const g = document.querySelector('#scrim .p3e-gpages'), pg = document.querySelector('#scrim .p3e-gpager');
-  if (!g || !pg) return null; const sc = document.getElementById('scrim');
+  if (!g || !pg) return null; const sc = document.getElementById('scrim'), sh = sc.querySelector('.sheet'), body = sh.querySelector('.sbody');
   const pages = [...g.querySelectorAll('.p3e-gpage')];
   const shown = pages.filter(p => !p.hasAttribute('aria-hidden'));
   const hidPills = pages.filter(p => p.hasAttribute('aria-hidden')).flatMap(p => [...p.querySelectorAll('[data-sspill]')]);
-  return {top: Math.round(g.getBoundingClientRect().top * 10) / 10, pager: Math.round(pg.getBoundingClientRect().top * 10) / 10,
-    h: Math.round(g.getBoundingClientRect().height), st: Math.round(sc.scrollTop), range: pg.querySelector('.p3e-grange').textContent,
-    nShown: shown.length, shownVisible: shown.every(p => getComputedStyle(p).visibility === 'visible'),
-    hiddenOk: hidPills.every(b => getComputedStyle(b).visibility === 'hidden'),
-    next: pg.querySelector('[data-gnav="1"]').disabled, prev: pg.querySelector('[data-gnav="-1"]').disabled,
+  const r1 = n => Math.round(n * 10) / 10, prev = pg.querySelector('[data-gnav="-1"]'), lab = pg.querySelector('.p3e-grange');
+  /* the sheet's own blank under its last content (its padding is 22 px) */
+  /* (the grid counts by its shown page and footnote, not its box: a box kept as tall as the
+     tallest page was the blank under a short one) */
+  const fn = sh.querySelector('.p3e-gt-fn'), wrap = g.closest('.p3e-grid-wrap');
+  const gridBottom = Math.max(...shown.map(p => p.getBoundingClientRect().bottom), fn && !fn.hidden ? fn.getBoundingClientRect().bottom : 0);
+  /* what follows the grid: the next shown element after it, else the sheet's bottom */
+  let nextTop = sh.getBoundingClientRect().bottom;
+  for (let n = wrap; n && n !== sh; n = n.parentElement) {
+    let x = n.nextElementSibling; while (x && !x.getClientRects().length) x = x.nextElementSibling;
+    if (x) { nextTop = x.getBoundingClientRect().top; break; } }
+  /* the room that holds a scrolled sheet: a marker at the scroll end it keeps (none: 0) */
+  const pad = sc.classList.contains('sg-gend') ? (parseFloat(sc.style.getPropertyValue('--sg-gend')) || 0) + 1 : 0;
+  return {top: r1(g.getBoundingClientRect().top), pager: r1(pg.getBoundingClientRect().top),
+    prevX: r1(prev.getBoundingClientRect().left), labX: r1(lab.getBoundingClientRect().left), labW: r1(lab.getBoundingClientRect().width),
+    h: Math.round(g.getBoundingClientRect().height), st: Math.round(sc.scrollTop), range: lab.textContent,
+    nShown: shown.length, shownVisible: shown.every(p => getComputedStyle(p).visibility === 'visible' && p.getClientRects().length > 0),
+    hiddenOk: hidPills.every(b => b.getClientRects().length === 0),
+    blank: Math.round(nextTop - gridBottom), pad: Math.round(pad),
+    spare: pad ? Math.round(pad - sc.scrollTop - sc.clientHeight) : 0,
+    next: pg.querySelector('[data-gnav="1"]').disabled, prev: prev.disabled,
     focus: !!(document.activeElement && document.activeElement.closest('.p3e-gpager'))}; }"""
+
+B24_GRID_ITEMS_JS = r"""(kind)=>{const out=[];
+  if(kind==='film'){for(const f of FILMS){const n=new Set(upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id)).map(r=>r[2])).size;if(n>7)out.push({id:f.id,n});}}
+  else{for(const s of SHOWS){if(!thById[s.theatre])continue;const n=new Set(upcomingPerfs(PERFORMANCES.filter(p=>p[0]===s.id)).map(p=>p[1])).size;if(n>7)out.push({id:s.id,n});}}
+  return out.sort((a,b)=>b.n-a.n);}"""
+
+# where the sheet sits before paging: scrolled to its very end (where a shorter page used to
+# pull it up, or a page without the footnote), the grid's bottom at the window's bottom, its
+# pager near the top, and the sheet at its top (a sheet shorter than the window is centred)
+B24_GRID_SCROLL = {
+    "end": "()=>{const s=document.getElementById('scrim');s.scrollTop=s.scrollHeight;}",
+    "grid": "()=>{const s=document.getElementById('scrim'),g=document.querySelector('#scrim .p3e-grp-desk').getBoundingClientRect(),"
+            "p=document.querySelector('#scrim .p3e-gpager').getBoundingClientRect();"
+            "s.scrollTop+=g.height<innerHeight-40?g.bottom-innerHeight+16:p.top-60;}",
+    "top": "()=>{document.getElementById('scrim').scrollTop=0;}",
+}
 
 
 def _b24_grid(browser, base, eng):
+    """Item 5 over every title whose grid has more than one page (2026-10-24): from every
+    starting scroll, over every page and back, the table, the pager, its arrows and its label
+    stay put (vertically and sideways) and the scroll is kept; the sheet has no blank of its
+    own under a short page (the room that holds the pager is backdrop below the sheet, never
+    more than the window needs, and scrolling back up gives it back)."""
     for kind, mode in (("show", "theatre"), ("film", "cinema")):
-        for lang in ("bg", "en"):
-            tag = f"b24_{eng}_grid_{kind}_{lang}"
-            ctx, page, errs = _b24_open(browser, base, 1280, 800, lang=lang, mode=mode)
-            best = page.evaluate("""(kind)=>{let best=null;
-                if(kind==='film'){for(const f of FILMS){const n=new Set(upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id)).map(r=>r[2])).size;if(!best||n>best.n)best={id:f.id,n};}}
-                else{for(const s of SHOWS){if(!thById[s.theatre])continue;const n=new Set(upcomingPerfs(PERFORMANCES.filter(p=>p[0]===s.id)).map(p=>p[1])).size;if(!best||n>best.n)best={id:s.id,n};}}
-                return best;}""", kind)
-            if not best or best["n"] <= 7:
+        for lang, (w, h) in (("bg", (1280, 800)), ("en", (1280, 800)), ("bg", (1920, 1080))):
+            tag = f"b24_{eng}_grid_{kind}_{lang}" + ("" if w == 1280 else f"_{w}")
+            ctx, page, errs = _b24_open(browser, base, w, h, lang=lang, mode=mode)
+            items = page.evaluate(B24_GRID_ITEMS_JS, kind)
+            if not items:
                 skip(tag, f"no {kind} with more than 7 dates")
                 ctx.close()
                 continue
-            page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, best["id"]])
-            page.wait_for_timeout(600)
-            # the worst case: the grid's bottom at the window's bottom, or the sheet scrolled to its
-            # very end before that (where a shorter page used to pull the sheet up); a grid taller
-            # than the window: its pager near the top. The pager stays in view for the clicks.
-            page.evaluate("()=>{const s=document.getElementById('scrim'),g=document.querySelector('#scrim .p3e-grp-desk').getBoundingClientRect(),"
-                          "p=document.querySelector('#scrim .p3e-gpager').getBoundingClientRect();"
-                          "s.scrollTop+=g.height<innerHeight-40?g.bottom-innerHeight+16:p.top-60;}")
-            page.wait_for_timeout(250)
-            s0 = page.evaluate(B24_GRID_JS)
-            states, bad = [s0], []
+            bad, tried, nstates = [], [], 0
+            for it in items:
+                for where, js in B24_GRID_SCROLL.items():
+                    page.evaluate("()=>{if(sheetOpen)closeSheet();}")
+                    page.wait_for_timeout(500)
+                    page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, it["id"]])
+                    page.wait_for_timeout(600)
+                    page.evaluate(js)
+                    page.wait_for_timeout(200)
+                    s0 = page.evaluate(B24_GRID_JS)
+                    if not s0:
+                        bad.append(f"{it['id']}: no pager")
+                        continue
+                    states = [s0]
 
-            def turn(step):
-                r = page.evaluate("(s)=>{const b=document.querySelector('#scrim .p3e-gpager [data-gnav=\"'+s+'\"]');const q=b.getBoundingClientRect();return [q.left+q.width/2,q.top+q.height/2]}", step)
-                page.mouse.click(*r)
-                page.wait_for_timeout(220)
-                return page.evaluate(B24_GRID_JS)
-            guard = 0
-            while not states[-1]["next"] and guard < 15:
-                states.append(turn("1")); guard += 1
-            while not states[-1]["prev"] and guard < 30:
-                states.append(turn("-1")); guard += 1
-            for s in states:
-                if abs(s["top"] - s0["top"]) > 1 or abs(s["pager"] - s0["pager"]) > 1 or s["st"] != s0["st"] \
-                        or s["nShown"] != 1 or not s["shownVisible"] or not s["hiddenOk"]:
-                    bad.append(f"{s['range']}: top {s['top']} (was {s0['top']}) pager {s['pager']} (was {s0['pager']}) scrollTop {s['st']} (was {s0['st']}) "
-                               f"shown={s['nShown']} hidden pills hidden={s['hiddenOk']}")
-            check(tag, len(states) > 2 and len({s["range"] for s in states}) > 1 and not bad,
-                  f"{best['id']}: {best['n']} dates, {len(states)} states {[s['range'] for s in states]}; heights {[s['h'] for s in states]}; problems: {bad[:3]}")
-            # the keyboard: Enter on the focused arrow pages and the focus stays on the pager
-            page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.focus({preventScroll:true});}")
-            k0 = page.evaluate(B24_GRID_JS)
-            kb = []
-            for _ in range(3):
-                page.keyboard.press("Enter")
-                page.wait_for_timeout(180)
-                kb.append(page.evaluate(B24_GRID_JS))
-            check(f"{tag}_keyboard", all(k["focus"] and abs(k["top"] - k0["top"]) <= 1 for k in kb)
-                  and len({k["range"] for k in [k0] + kb}) > 1,
-                  f"before {(k0['range'], k0['top'])}; after each Enter {[(k['range'], k['focus'], k['top']) for k in kb]}")
-            if kind == "show" and lang == "bg":
-                save_shot(page, "B24", f"grid_paging_{eng}")
+                    def turn(step):
+                        # a click where the arrow is; one scrolled out of the window is clicked from script
+                        r = page.evaluate("(s)=>{const b=document.querySelector('#scrim .p3e-gpager [data-gnav=\"'+s+'\"]');const q=b.getBoundingClientRect();"
+                                          "const x=q.left+q.width/2,y=q.top+q.height/2;if(y<4||y>innerHeight-4){b.click();return null;}return [x,y]}", step)
+                        if r:
+                            page.mouse.click(*r)
+                        page.wait_for_timeout(200)
+                        return page.evaluate(B24_GRID_JS)
+                    guard = 0
+                    while not states[-1]["next"] and guard < 15:
+                        states.append(turn("1")); guard += 1
+                    while not states[-1]["prev"] and guard < 30:
+                        states.append(turn("-1")); guard += 1
+                    nstates += len(states)
+                    if len({st["range"] for st in states}) < 2:
+                        bad.append(f"{it['id']} from {where}: the pages did not turn {[st['range'] for st in states][:4]}")
+                    for st in states:
+                        moved = [k for k in ("top", "pager", "prevX", "labX") if abs(st[k] - s0[k]) > 1]
+                        if moved or st["st"] != s0["st"] or st["nShown"] != 1 or not st["shownVisible"] or not st["hiddenOk"] \
+                                or st["blank"] > 40 or st["spare"] > 1:
+                            bad.append(f"{it['id']} from {where}, {st['range']}: moved {[(k, s0[k], st[k]) for k in moved]} "
+                                       f"scrollTop {s0['st']}->{st['st']} shown={st['nShown']} hidden pills unrendered={st['hiddenOk']} "
+                                       f"blank in sheet={st['blank']} room beyond need={st['spare']}")
+                    # scrolling back up gives the room below the sheet back
+                    page.evaluate("()=>{document.getElementById('scrim').scrollTop=0;}")
+                    page.wait_for_timeout(150)
+                    page.evaluate("()=>{document.getElementById('scrim').dispatchEvent(new Event('scroll'));}")
+                    page.wait_for_timeout(100)
+                    up = page.evaluate(B24_GRID_JS)
+                    if up["spare"] > 1:
+                        bad.append(f"{it['id']} from {where}: at the top the scroll end kept is {up['pad']} px, {up['spare']} more than needed")
+                tried.append(f"{it['id'][:24]}({it['n']})")
+            check(tag, nstates > 2 and not bad,
+                  f"{len(items)} titles {tried}; {nstates} states; problems ({len(bad)}): {bad[:3]}")
+            if w == 1280:
+                # the keyboard: Enter on the focused arrow pages and the focus stays on the pager
+                page.evaluate("()=>{if(sheetOpen)closeSheet();}")
+                page.wait_for_timeout(500)
+                page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, items[0]["id"]])
+                page.wait_for_timeout(600)
+                page.evaluate(B24_GRID_SCROLL["grid"])
+                page.wait_for_timeout(200)
+                page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.focus({preventScroll:true});}")
+                k0 = page.evaluate(B24_GRID_JS)
+                kb = []
+                for _ in range(3):
+                    page.keyboard.press("Enter")
+                    page.wait_for_timeout(180)
+                    kb.append(page.evaluate(B24_GRID_JS))
+                check(f"{tag}_keyboard", all(k["focus"] and abs(k["top"] - k0["top"]) <= 1 for k in kb)
+                      and len({k["range"] for k in [k0] + kb}) > 1,
+                      f"before {(k0['range'], k0['top'])}; after each Enter {[(k['range'], k['focus'], k['top']) for k in kb]}")
+                if kind == "show" and lang == "bg":
+                    save_shot(page, "B24", f"grid_paging_{eng}")
             check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
             ctx.close()
 

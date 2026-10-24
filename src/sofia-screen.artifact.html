@@ -454,6 +454,11 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   display:grid; place-items:start center; overflow-y:auto; overscroll-behavior:contain;
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px))
     max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+/* _gridHold (desktop week grid paging): room above or below a centred sheet, and a marker
+   that keeps a scrolled sheet's scroll room; nothing otherwise */
+@media(min-width:761px){ .scrim{padding-top:calc(max(16px,env(safe-area-inset-top,0px)) + var(--sg-gpadt,0px));
+  padding-bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--sg-gpadb,0px))}
+  .scrim.sg-gend::after{content:"";position:absolute;left:0;top:var(--sg-gend,0px);width:1px;height:1px;pointer-events:none} }
 .sheet{width:min(860px,100%); background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-lg);
   overflow:hidden; box-shadow:var(--shadow); margin-block:auto}
 .shero{position:relative; min-height:210px; display:flex; align-items:flex-end; padding:22px; color:#fff; overflow:hidden}
@@ -823,18 +828,20 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grid-wrap{margin:0 0 4px}
   .p3e-grp-desk{background:var(--ink-3);border-radius:14px;padding:14px 14px 8px;overflow-x:auto}
   .p3e-gt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-  /* paging: only the current page is shown; each lists only its own venues. The pages share
-     one grid cell and the hidden ones keep their place (visibility, not display:none), so the
-     cell is always as tall as the tallest page: turning to a page with fewer rows (or fewer
-     times per cell) never shrinks the sheet, which used to pull a sheet scrolled to its end
-     up by the difference and made the table and the pager jump (HF1 konrad paging,
-     2026-10-24). A hidden page is out of the accessibility tree and its pills take no focus. */
-  .p3e-gpages{display:grid}
-  .p3e-gpages>.p3e-gpage{grid-area:1 / 1;align-self:start}
-  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{visibility:hidden}
+  /* paging: only the current page is shown, at its own height; each lists only its own
+     venues. What keeps the table and the pager still while paging is _gridHold (below the
+     sheet, in the scrim's padding), not the hidden pages' space: a busy film's tallest page
+     would leave a screen of empty sheet under a short one. */
+  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{display:none}
   .p3e-gpager{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px;
     position:sticky;left:0}
-  .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
+  /* the dates' label is as wide as the widest of its pages' labels (each one is laid, unseen,
+     in the same cell), so the arrows never slide sideways from page to page: "25 окт – 20 дек"
+     is wider than 7.5em in Geologica (2026-10-24) */
+  .p3e-grange-w{display:grid;min-width:7.5em;font-size:13px;color:var(--fg-2);white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .p3e-grange-w>*{grid-area:1 / 1;text-align:center}
+  .p3e-grange-sz{visibility:hidden}
   .p3e-gnav{width:44px;height:44px;border-radius:10px;border:1px solid var(--line-2);background:var(--ink-4);
     color:var(--fg);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
   .p3e-gnav:focus-visible{border-color:var(--fg-2)}@media (hover:hover){.p3e-gnav:hover:not([disabled]){border-color:var(--fg-2)}}
@@ -3862,7 +3869,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const GT=GRID_T[S.lang]||GRID_T.bg;
   const pager=pages.length>1?`<div class="p3e-gpager" data-gpager="${esc(gkey)}" data-gcur="${cur}" data-gn="${pages.length}">
         <button type="button" class="p3e-gnav" data-gnav="-1" aria-label="${esc(GT.prev)}" title="${esc(GT.prev)}"${cur===0?" disabled":""}>‹</button>
-        <span class="p3e-grange" aria-live="polite">${esc(pageLabel(pages[cur]))}</span>
+        <span class="p3e-grange-w"><span class="p3e-grange" aria-live="polite">${esc(pageLabel(pages[cur]))}</span>${pages.map(pd=>`<span class="p3e-grange-sz" aria-hidden="true">${esc(pageLabel(pd))}</span>`).join("")}</span>
         <button type="button" class="p3e-gnav" data-gnav="1" aria-label="${esc(GT.next)}" title="${esc(GT.next)}"${cur===pages.length-1?" disabled":""}>›</button>
       </div>`:"";
 
@@ -4820,8 +4827,78 @@ function _scrimEl(){
     /* iOS sends a click for a tap only to an element that listens for one; the delegated
        document handler does the actual closing */
     s.addEventListener("click",()=>{});
+    s.addEventListener("scroll",()=>_gridHoldRelease(s),{passive:true});
   }
   return s;
+}
+/* Desktop week grid paging keeps the pager, and the table under it, where they were on the
+   screen. A page with fewer rows, or one without the dashed-times footnote, makes the sheet
+   shorter: a sheet scrolled to its end would have its scroll clamped and everything pulled
+   down, and a sheet shorter than the window, centred in it, would move by half the
+   difference (a taller page moves it the other way). What holds it is outside the sheet
+   (backdrop, never empty sheet), and only as much as holds the pager:
+   - a scrolled sheet: an invisible marker at the scrim's old scroll end (.sg-gend; the scrim
+     scrolls a grid whose row is as tall as the window, so neither its bottom padding nor
+     the sheet's margin adds scroll room in Chromium, an absolutely placed box does);
+     scrolling back up lowers it, down to nothing;
+   - a centred sheet: room above (--sg-gpadt) or below (--sg-gpadb) it. */
+function _gridHoldClear(s){
+  if(!s)return;
+  s.style.removeProperty("--sg-gpadt");s.style.removeProperty("--sg-gpadb");s.style.removeProperty("--sg-gend");
+  s.classList.remove("sg-gend");
+}
+function _gridPx(s,k){return parseFloat(s.style.getPropertyValue(k))||0;}
+function _gridHoldStart(el){
+  const s=el.closest(".scrim");
+  return s?{s,el,y0:el.getBoundingClientRect().top,st0:s.scrollTop,t0:_gridPx(s,"--sg-gpadt")}:null;
+}
+function _gridHoldEnd(h){
+  if(!h||!h.el.isConnected)return;
+  const{s,el,y0,st0,t0}=h;
+  /* t, b: room above and below; e: the scroll end to keep (0: none); d: a scroll offset */
+  const at=(t,b,e,d)=>{
+    _gridHoldClear(s);
+    if(t>0)s.style.setProperty("--sg-gpadt",t+"px");
+    if(b>0)s.style.setProperty("--sg-gpadb",b+"px");
+    if(e>0){s.style.setProperty("--sg-gend",(e-1)+"px");s.classList.add("sg-gend");}
+    s.scrollTop=st0-t0+t+(d||0);
+    return el.getBoundingClientRect().top-y0;
+  };
+  const dy0=at(0,0,0);
+  if(Math.abs(dy0)<.5)return;
+  let best=[0,0,0,0,Math.abs(dy0)];
+  const tryAt=(...k)=>{const d=Math.abs(at(...k));if(d<best[4])best=[...k,d];return d<.5;};
+  /* one knob, from 0 up: the move is piecewise linear in it (a centred sheet moves by half
+     the room, one that fills the window by all of it), so a few secant steps land on it */
+  const solve=(f,base)=>{
+    let x0=0,f0=base,x1=Math.abs(base),f1=at(...f(x1));
+    for(let i=0;i<5;i++){
+      const d=Math.abs(f1);if(d<best[4])best=[...f(x1),d];
+      if(d<.5||f1===f0)return d<.5;
+      const x2=x1-f1*(x1-x0)/(f1-f0);
+      if(!(x2>0))return false;
+      x0=x1;f0=f1;x1=x2;f1=at(...f(x1));
+    }
+    return false;
+  };
+  const end=Math.ceil(st0-t0+s.clientHeight);
+  if(dy0>0){
+    /* shorter: a scrolled sheet keeps its scroll end; one that now fits the window would
+       be centred in it, room below keeps it up */
+    if(tryAt(0,0,end,0))return;
+    const dyE=at(0,0,end,0);
+    if(solve(x=>[0,x,end,0],dyE))return;
+  }else if(solve(x=>[x,0,0,0],dy0))return;   /* taller, centred: room above */
+  /* else the scroll itself, where there is room for it */
+  if(tryAt(0,0,dy0>0?end+Math.ceil(dy0):0,dy0))return;
+  at(...best.slice(0,4));
+}
+function _gridHoldRelease(s){
+  if(!s.classList.contains("sg-gend"))return;
+  const e=_gridPx(s,"--sg-gend")+1,keep=Math.ceil(s.scrollTop+s.clientHeight);
+  const sh=s.querySelector(".sheet"),natural=sh?sh.offsetTop+sh.offsetHeight:0;
+  if(keep<=natural){s.style.removeProperty("--sg-gend");s.classList.remove("sg-gend");}
+  else if(keep<e)s.style.setProperty("--sg-gend",(keep-1)+"px");
 }
 /* The card that opened the sheet; after a re-render (language toggle) the stored node is
    gone, so look the card up again by the sheet's id. */
@@ -4852,6 +4929,7 @@ function openSheet(html,fromEl){
   _syncSheetUrl();
   lockScroll();
   s.classList.remove("closing");
+  _gridHoldClear(s);
   s.innerHTML=html;s.hidden=false;s.scrollTop=0;
   /* a detail view must always have a visible way out: the back bar is the
      reliable one, history and swipe are conveniences on top of it */
@@ -4903,7 +4981,7 @@ function closeSheet(fromPop){
   const animated=!!(s&&!s.hidden&&s.querySelector(".sheet")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   function _finalise(){
     if(gen!==_sheetGen||sheetOpen)return;
-    if(s){s.hidden=true;s.innerHTML="";s.classList.remove("closing");}
+    if(s){s.hidden=true;s.innerHTML="";s.classList.remove("closing");_gridHoldClear(s);}
     _cancelCloseAnims(s);
     unlockScroll();
     if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
@@ -6324,6 +6402,7 @@ document.addEventListener("click",e=>{
   if(gnav){
     const pager=gnav.closest("[data-gpager]"),box=pager&&pager.closest(".p3e-grp-desk");
     if(!pager||!box||gnav.disabled)return;
+    const hold=_gridHoldStart(pager);
     const n=parseInt(pager.dataset.gn,10)||1;
     const cur=Math.max(0,Math.min(n-1,(parseInt(pager.dataset.gcur,10)||0)+parseInt(gnav.dataset.gnav,10)));
     pager.dataset.gcur=String(cur);
@@ -6338,6 +6417,7 @@ document.addEventListener("click",e=>{
     if(gfn){const ct=box.querySelector('.p3e-gpage[data-gpage="'+cur+'"]');gfn.hidden=!(ct&&ct.dataset.gprelim);}
     const [prev,next]=pager.querySelectorAll("[data-gnav]");
     prev.disabled=cur===0;next.disabled=cur===n-1;
+    _gridHoldEnd(hold);
     /* keyboard: keep focus on the pager when the pressed arrow turns disabled at an end */
     if(gnav.disabled){const other=gnav===prev?next:prev;if(!other.disabled)other.focus({preventScroll:true});}
     return;
