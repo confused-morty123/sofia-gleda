@@ -17617,6 +17617,127 @@ def _ux_rails(browser, base, eng):
         ctx.close()
 
 
+# the rail's distance from its nearest snap position (a card's start, clamped to the rail's
+# scroll range), its scrollLeft, and whether its snapping is switched off inline
+UX_RAIL_SNAP_JS = r"""(i) => { const t = document.querySelectorAll('#app .rtrack')[i], l0 = t.getBoundingClientRect().left,
+  max = t.scrollWidth - t.clientWidth, x = t.scrollLeft;
+  const d = Math.min(...[...t.children].map(c => Math.abs(Math.min(max, Math.max(0, c.getBoundingClientRect().left - l0 + x)) - x)));
+  return {x: Math.round(x), dist: Math.round(d), held: t.style.scrollSnapType === 'none'}; }"""
+
+
+def _ux_rails_offsnap(browser, base, eng):
+    """Owner bug 24 Oct 2026, the iPhone case: a rail SWIPED by finger can rest between two
+    cards (Safari does not snap it), and Safari snapped it to a card at its next style or
+    layout change: the tapped card's :active/:hover, the sheet's scroll lock, the unlock, the
+    focus. Turning snapping back on snaps such a rail at once in both engines, so it is left
+    off a card the way Safari leaves it: (a) a smooth scroll that stops between two cards
+    (WebKit rests there, Chromium snaps; WebKit must rest off a card for the check to count),
+    then a real tap (phone 402 touch) or pointer + click (desktop 1440) on a card; (b) a
+    smooth scroll still in flight when a card opens (its click once the scroll is 40% of the
+    way; off a card in both engines). Every frame from then on, open and after close, the
+    rail's scrollLeft and box stay within 1 px. Then the rail scrolled again (desktop: the
+    arrow; phone: Chromium a touch swipe; WebKit, which has no touch scrolling or wheel here, a
+    smooth scroll onto a card) is let go: it snaps again, and rests on a card."""
+    for dev, (w, h, phone) in (("desktop", (1440, 900, False)), ("phone", (402, 874, True))):
+        ctx = _ux_ctx(browser, base, w, h, phone=phone)
+        page, errs = _ux_page(ctx, base + "/home/")
+        _force_mount(page)
+        rails = page.evaluate("""() => [...document.querySelectorAll('#app .rtrack')].map((t, i) => [i, t.scrollWidth - t.clientWidth])
+            .filter(([i, m]) => m > 600).map(([i]) => i).slice(0, 3)""")
+        check(f"ux1_{eng}_rail_offsnap_{dev}_three_rails", len(rails) == 3, f"scrollable rails {rails}")
+        for k, i in enumerate(rails):
+            for how in ("rest", "flight"):
+                page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i]; t.style.scrollBehavior = 'auto';"
+                              " t.scrollLeft = 0; t.style.removeProperty('scroll-behavior');"
+                              " window.scrollTo(0, t.getBoundingClientRect().top + scrollY - 160); }", i)
+                page.wait_for_timeout(300)
+                if not phone:
+                    rr = page.evaluate("(i) => { const r = document.querySelectorAll('#app .rtrack')[i].getBoundingClientRect();"
+                                       " return [r.left + 40, r.top - 40]; }", i)
+                    page.mouse.move(*rr)       # off the rail: no hover yet
+                # a mid-card distance: 1.45, 2.45, 3.45 cards
+                dx = page.evaluate("([i, k]) => { const c = document.querySelectorAll('#app .rtrack')[i].children;"
+                                   " return Math.round((c[1].getBoundingClientRect().left - c[0].getBoundingClientRect().left) * (1.45 + k)); }", [i, k])
+                c = None
+                if how == "rest":
+                    page.evaluate("([i, dx]) => document.querySelectorAll('#app .rtrack')[i].scrollBy({left: dx, behavior: 'smooth'})", [i, dx])
+                    _ux_rail_settle(page, i)
+                    page.wait_for_timeout(200)
+                    st = page.evaluate(UX_RAIL_SNAP_JS, i)
+                    base_ = page.evaluate(UX_RAIL_WATCH_JS, i)
+                    c = page.evaluate("""(i) => { const t = document.querySelectorAll('#app .rtrack')[i], tr = t.getBoundingClientRect();
+                        const c = [...t.children].find(c => { const r = c.getBoundingClientRect(); return r.left >= tr.left + 20 && r.right <= tr.right - 20; });
+                        if (!c) return null; const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + Math.min(60, r.height / 2)]; }""", i)
+                    if c:
+                        if not phone:
+                            page.evaluate("() => { window.__uxRail.ph = 'pointer to card'; }")
+                            page.mouse.move(*c)
+                            page.wait_for_timeout(250)
+                        page.evaluate("() => { window.__uxRail.ph = 'tap/opening'; }")
+                        _hf_tap(page, phone, *c)
+                else:
+                    st = page.evaluate("""async ([i, dx]) => { const t = document.querySelectorAll('#app .rtrack')[i];
+                        const raf = () => new Promise(r => requestAnimationFrame(r));
+                        t.scrollBy({left: dx, behavior: 'smooth'}); for (let n = 0; n < 40 && t.scrollLeft < dx * .4; n++) await raf();
+                        const tr = t.getBoundingClientRect(), c = [...t.children].find(c => { const r = c.getBoundingClientRect(); return r.left >= tr.left + 20 && r.right <= tr.right - 20; });
+                        if (!c) return null; c.click(); return true; }""", [i, dx])
+                    if st:
+                        c = True
+                        st = page.evaluate(UX_RAIL_SNAP_JS, i)
+                        base_ = page.evaluate(UX_RAIL_WATCH_JS, i)
+                        page.evaluate("() => { window.__uxRail.ph = 'opening'; }")
+                opened = closed = None
+                if c:
+                    page.wait_for_timeout(500)
+                    page.evaluate("() => { window.__uxRail.ph = 'open'; }")
+                    page.wait_for_timeout(400)
+                    opened = page.evaluate(UX_SHEET_JS)["open"]
+                    page.evaluate("() => { window.__uxRail.ph = 'closing'; }")
+                    _hf_close_sheet(page, phone, "x" if phone else "esc")
+                    page.evaluate("() => { window.__uxRail.ph = 'closed'; }")
+                    page.wait_for_timeout(500)
+                    closed = not page.evaluate(UX_SHEET_JS)["open"]
+                res = page.evaluate("() => { const w = window.__uxRail; w.on = false; const r = w.tr.getBoundingClientRect();"
+                                    " return {bad: w.bad, n: w.n, conn: w.tr.isConnected,"
+                                    " end: [Math.round(w.tr.scrollLeft), Math.round(r.left), Math.round(r.top)]}; }") if c else {}
+                off = bool(st) and st["dist"] > 1
+                need_off = how == "flight" or eng == "webkit"
+                ok = (bool(c) and (off or not need_off) and opened is True and closed is True and res["conn"]
+                      and not res["bad"] and all(abs(a - b) <= 1 for a, b in zip(res["end"], base_)))
+                check(f"ux1_{eng}_rail_offsnap_{dev}_{how}_{k + 1}", ok,
+                      f"rail {i} smooth scroll {dx}px ({how}): {st}{'' if off or not need_off else ' NOT off a card'};"
+                      f" box {base_ if c else None}; sheet opened={opened} closed={closed};"
+                      f" after close {res.get('end')}; {res.get('n')} frames, moved: {(res.get('bad') or [])[:3]}")
+            # scrolled again, the rail snaps to a card as before (its hold, if any, is let go)
+            if not phone:
+                page.mouse.move(*page.evaluate("(i) => { const r = document.querySelectorAll('#app .rtrack')[i].getBoundingClientRect();"
+                                               " return [r.left + r.width / 2, r.top + r.height / 3]; }", i))
+                page.wait_for_timeout(150)
+                a = page.evaluate("(i) => { const a = document.querySelectorAll('#app .rtrack')[i].parentElement"
+                                  ".querySelector('.rarrow.next').getBoundingClientRect(); return a.width ? [a.left + a.width / 2, a.top + a.height / 2] : null; }", i)
+                if a:
+                    page.mouse.move(*a)
+                    page.mouse.click(*a)
+                again = "the arrow" if a else "no arrow"
+            elif eng == "chromium":
+                rr = page.evaluate("(i) => { const r = document.querySelectorAll('#app .rtrack')[i].getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }", i)
+                cdp = ctx.new_cdp_session(page)
+                cdp.send("Input.synthesizeScrollGesture", {"x": int(rr[0] + rr[2] / 2), "y": int(rr[1] + rr[3] / 3),
+                                                            "xDistance": -230, "gestureSourceType": "touch", "speed": 900})
+                again = "a touch swipe"
+            else:       # mobile WebKit here has neither touch scrolling nor a wheel: a smooth scroll onto a card
+                page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i], c = t.children[6];"
+                              " t.scrollTo({left: c.getBoundingClientRect().left - t.getBoundingClientRect().left + t.scrollLeft, behavior: 'smooth'}); }", i)
+                again = "a smooth scroll onto a card"
+            _ux_rail_settle(page, i)
+            page.wait_for_timeout(200)
+            st2 = page.evaluate(UX_RAIL_SNAP_JS, i)
+            check(f"ux1_{eng}_rail_offsnap_{dev}_snaps_again_{k + 1}", st2["dist"] <= 1 and not st2["held"],
+                  f"rail {i} scrolled again by {again}: {st2}")
+        check(f"ux1_{eng}_rail_offsnap_{dev}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
 def wave_ux1(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("UX1")
@@ -17681,6 +17802,11 @@ def wave_ux1(browser):
             _ux_rails(browser, base, eng)
         except Exception as _ex:      # one section crashing must not hide the rest
             check(f"ux1_{eng}_rails_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
+        print("\n=== UX1-11: a rail left off a card stays put behind a card's sheet ===")
+        try:
+            _ux_rails_offsnap(browser, base, eng)
+        except Exception as _ex:      # one section crashing must not hide the rest
+            check(f"ux1_{eng}_rails_offsnap_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
     finally:
         srv.shutdown()
         if tmp:

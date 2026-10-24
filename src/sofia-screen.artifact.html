@@ -4709,6 +4709,57 @@ function unlockScroll(){
   if(!document.body.getAttribute("style"))document.body.removeAttribute("style");
   window.scrollTo(0,y);
 }
+/* ---- rails stay where they are (24 Oct 2026) ----
+   Safari leaves a rail where a swipe or a smooth scroll stopped, between two cards too, and
+   snaps it to a card at the next style or layout change in it: the tapped card's :active or
+   :hover (before any tap event reaches the page), its focus, the sheet's scroll lock, the
+   unlock. So a rail moved by finger jumped as a card in it opened, behind the sheet, and the
+   tap could miss the card. Switching snapping off (inline scroll-snap-type:none) never moves
+   a rail; switching it back on snaps it. So a rail that comes to rest off a card position
+   keeps snapping off until it is scrolled again, and an open sheet holds every rail (snapping
+   off, a smooth scroll in flight stopped where it is) until the sheet has closed and the page
+   is unpinned; then each is put back at the same scrollLeft and snaps again only where that
+   cannot move it. */
+const _railHold=new WeakMap();   /* rail -> the scrollLeft it is held at */
+function _railOnSnap(t){
+  const x=t.scrollLeft,max=t.scrollWidth-t.clientWidth,l0=t.getBoundingClientRect().left;
+  if(max<=1)return true;
+  for(const c of t.children){
+    const p=Math.min(max,Math.max(0,c.getBoundingClientRect().left-l0+x));
+    if(Math.abs(p-x)<=1&&getComputedStyle(c).scrollSnapAlign!=="none")return true;}
+  return false;
+}
+function _railHoldHere(t){
+  const x=t.scrollLeft,s=t.style;
+  s.scrollSnapType="none";
+  s.scrollBehavior="auto";t.scrollLeft=x;s.removeProperty("scroll-behavior");   /* stops a smooth scroll */
+  _railHold.set(t,x);
+}
+function _railLetGo(t){
+  _railHold.delete(t);
+  t.style.removeProperty("scroll-snap-type");
+  if(!t.getAttribute("style"))t.removeAttribute("style");
+}
+function holdRails(){document.querySelectorAll("#app .rtrack").forEach(_railHoldHere);}
+function releaseRails(){
+  document.querySelectorAll("#app .rtrack").forEach(t=>{
+    if(!_railHold.has(t))return;
+    const x=_railHold.get(t),s=t.style;
+    if(Math.abs(t.scrollLeft-x)>.5){s.scrollBehavior="auto";t.scrollLeft=x;s.removeProperty("scroll-behavior");}
+    if(_railOnSnap(t))_railLetGo(t);
+  });
+}
+/* scrolled again (by finger, wheel or arrow, never while a sheet holds it): it snaps as usual */
+document.addEventListener("scroll",e=>{
+  const t=e.target;
+  if(sheetOpen||_lockY!==null||!_railHold.has(t))return;
+  if(Math.abs(t.scrollLeft-_railHold.get(t))>1)_railLetGo(t);
+},true);
+document.addEventListener("scrollend",e=>{
+  const t=e.target;
+  if(sheetOpen||_lockY!==null||!t.classList||!t.classList.contains("rtrack")||_railHold.has(t))return;
+  if(!_railOnSnap(t))_railHoldHere(t);
+},true);
 /* ---- history: one entry per open layer ----
    Depth 1 is a film/show sheet, depth 2 its time popup. Entries carry this page load's
    key, so entries left from an earlier load never count. A traversal started here
@@ -4818,6 +4869,7 @@ function _drawerInert(on){
 }
 function openSheet(html,fromEl){
   if(!html)return;
+  holdRails();   /* before anything can lay the page out again */
   const gen=++_sheetGen;
   if(_ss)closeScreeningSheet({silent:true,noHist:true});
   const s=_scrimEl();
@@ -4883,6 +4935,7 @@ function closeSheet(fromPop){
     if(s){s.hidden=true;s.innerHTML="";s.classList.remove("closing");}
     _cancelCloseAnims(s);
     unlockScroll();
+    releaseRails();
     if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
     /* an animated close shields taps until it ends; an instant one keeps the short shield */
     if(animated)_tapShieldUntil=Math.min(_tapShieldUntil,performance.now());
