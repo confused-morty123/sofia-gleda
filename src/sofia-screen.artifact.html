@@ -1110,42 +1110,35 @@ body{font-size:15px}
 [data-surface="theatre"] .sheet h2{font-weight:700; letter-spacing:0}
 [data-surface="theatre"] .p-title{font-weight:600; letter-spacing:0; font-size:17px}
 [data-surface="theatre"] .sec-subhead{font-weight:600}
-/* the motto: Montserrat 500 in tracked capitals on the cinema surface, Source Serif 4 italic on the
-   theatre surface. Desktop keeps the logo lockup (the line starts under the logo and is sized from
-   its width; --motto-em is the line's width in font-sizes, measured at size per face, case and language; Source Serif 4 has optical sizes, so its width is not linear in size),
-   but never below the owner's 10 px floor: Montserrat capitals are wide, so in Bulgarian the line
-   runs past the logo's right edge rather than shrinking to 8 px. Phones drop the capitals and size
-   the line to the space between the two header buttons (100vw - 140 px keeps 12 px clear of the
-   language button), 10 px at the least. */
-.brand .brand-sub{font-family:var(--f-ui); font-weight:500; text-transform:uppercase; letter-spacing:.06em; --motto-em:25.6;
+/* the motto (owner, 2026-10-24): ONE face, size and tracking on both surfaces, plain Geologica 400 in
+   sentence case, so switching Кино/Театър never changes it. Desktop keeps the logo lockup (the line
+   starts under the logo and is sized from its width; --motto-em is the line's width in font-sizes,
+   measured per language: 21.29 in BG, 16.37 in EN), at most 15 px and never below the owner's 10 px
+   floor: in Bulgarian the line is a little longer than the logo at 10 px and runs past its right
+   edge rather than shrinking. Phones size the line to the space between the two header buttons
+   (100vw - 140 px keeps 12 px clear of the language button), 10-12.5 px. */
+.brand .brand-sub{font-family:var(--f-ui); font-style:normal; font-weight:400; text-transform:none; letter-spacing:0;
+  font-variation-settings:normal; --motto-em:21.29;
   line-height:14px}  /* a fixed line box: the header's height stays the same in BG and EN, whose sizes differ */
-.brand .brand-sub:lang(en){--motto-em:23.05}
-[data-surface="theatre"] .brand .brand-sub{font-family:"Source Serif 4",Georgia,serif; font-style:italic; font-weight:400;
-  text-transform:none; letter-spacing:0; --motto-em:19.8}
-[data-surface="theatre"] .brand .brand-sub:lang(en){--motto-em:14.8}
+.brand .brand-sub:lang(en){--motto-em:16.37}
 @media(min-width:761px){
-  .brand .brand-sub,.brand .brand-sub:lang(en){font-size:max(10px,calc(100cqi*.98/var(--motto-em)))}
-  [data-surface="theatre"] .brand .brand-sub,[data-surface="theatre"] .brand .brand-sub:lang(en){
-    font-size:min(15px,max(10px,calc(100cqi*.98/var(--motto-em))))}
+  .brand .brand-sub,.brand .brand-sub:lang(en){font-size:min(15px,max(10px,calc(100cqi*.98/var(--motto-em))))}
 }
-/* 761-900 px: the toggle sits close to the lockup, so the cinema line (longer than the logo in
-   both languages) wraps to its width (two short lines) instead of running into the toggle; the
-   theatre line is at most 8 px longer than the logo and stays on one line */
+/* 761-900 px: the toggle sits close to the lockup, so the Bulgarian line (longer than the logo at
+   the 10 px floor) wraps to its width (two short lines) instead of running into the toggle */
 @media(min-width:761px) and (max-width:900px){
-  :root:not([data-surface="theatre"]) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
+  .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
 /* the same while the search field is open (the toggle moves left to make room for it) up to 1120 px */
 @media(min-width:761px) and (max-width:1120px){
-  :root:not([data-surface="theatre"]) .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
+  .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
 @media(max-width:760px){
-  .brand .brand-sub{text-transform:none; letter-spacing:0; --motto-ph:23.12; font-size:min(12.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
-  .brand .brand-sub:lang(en){--motto-ph:17.36}
-  [data-surface="theatre"] .brand .brand-sub{--motto-ph:19.8; font-size:min(13.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
-  [data-surface="theatre"] .brand .brand-sub:lang(en){--motto-ph:14.8}
+  .brand .brand-sub{--motto-ph:21.29; font-size:min(12.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
+  .brand .brand-sub:lang(en){--motto-ph:16.37}
 }
 
-/* footer links: Montserrat is wider, so a long label ("Настройки за бисквитки") may wrap in its
+/* footer links: the UI face is wide, so a long label ("Настройки за бисквитки") may wrap in its
    phone column; the items of a row share its top edge */
 @media(max-width:760px){ footer .legal-nav{align-items:start} }
 

@@ -17759,6 +17759,28 @@ def _b24_toggle(browser, base, eng):
             ctx.close()
 
 
+B24_MOTTO_JS = r"""() => { const s = document.querySelector('.brand-sub'); if (!s) return null; const c = getComputedStyle(s);
+  const g = document.createRange(); g.selectNodeContents(s); const r = g.getBoundingClientRect();
+  return {text: s.textContent.trim(), fam: c.fontFamily, size: c.fontSize, track: c.letterSpacing, weight: c.fontWeight,
+    style: c.fontStyle, transform: c.textTransform, fvs: c.fontVariationSettings, lh: c.lineHeight, w: Math.round(r.width * 10) / 10}; }"""
+
+
+def _b24_motto(browser, base, eng):
+    exp = {"bg": "Афишът на кината и театрите в София", "en": "Sofia's cinema and theatre listings"}
+    for phone, (w, h) in ((True, (390, 844)), (True, (375, 812)), (False, (1024, 768)), (False, (1440, 900)), (False, (1920, 1080))):
+        for lang in ("bg", "en"):
+            got = {}
+            for mode in ("cinema", "theatre"):
+                ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, lang=lang, mode=mode)
+                got[mode] = page.evaluate(B24_MOTTO_JS)
+                ctx.close()
+            c, t = got["cinema"], got["theatre"]
+            same = bool(c and t) and all(c[k] == t[k] for k in ("text", "fam", "size", "track", "weight", "style", "transform", "fvs", "lh")) \
+                and abs(c["w"] - t["w"]) <= 0.5
+            check(f"b24_{eng}_motto_same_{w}_{lang}", same and c["text"] == exp[lang] and c["fam"].startswith("Geologica"),
+                  f"cinema={c} theatre={t}")
+
+
 def wave_b24(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("B24")
@@ -17766,7 +17788,8 @@ def wave_b24(browser):
     srv, base = _ux_server(share_root)
     try:
         for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),
-                          ("2: the Кино/Театър rings", _b24_toggle)):
+                          ("2: the Кино/Театър rings", _b24_toggle),
+                          ("3: one motto on both screens", _b24_motto)):
             print(f"\n=== B24-{title} ===")
             try:
                 fn(browser, base, eng)
