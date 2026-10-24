@@ -8,7 +8,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 129
  },
  "tigrite": {
   "id": "tigrite",
@@ -19,7 +20,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 100
  },
  "milen-filmat": {
   "id": "milen-filmat",
@@ -74,7 +76,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 110
  },
  "ulitsa-malaga": {
   "id": "ulitsa-malaga",
@@ -140,7 +143,8 @@
    "#2A331B",
    "#4A5F27"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 110
  },
  "veriti": {
   "id": "veriti",
@@ -151,7 +155,8 @@
    "#331B1B",
    "#5F2727"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 114
  },
  "zooekspres": {
   "id": "zooekspres",
@@ -162,7 +167,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 90
  },
  "sradlyo": {
   "id": "sradlyo",
@@ -173,7 +179,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 92
  },
  "nina-roza": {
   "id": "nina-roza",
@@ -184,7 +191,8 @@
    "#2B1B33",
    "#50275F"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 103
  },
  "evropeyski-kinoklasiki-alis-v-gradovete-1974": {
   "id": "evropeyski-kinoklasiki-alis-v-gradovete-1974",
@@ -217,7 +225,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 80
  },
  "sinelibri-2026-nozh-razmisli-sled-opit-za-ubiystvo": {
   "id": "sinelibri-2026-nozh-razmisli-sled-opit-za-ubiystvo",
@@ -228,7 +237,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 107
  },
  "sinelibri-2026-shte-se-sluchi-tazi-vecher": {
   "id": "sinelibri-2026-shte-se-sluchi-tazi-vecher",
@@ -239,7 +249,9 @@
    "#331B1B",
    "#5F2727"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 100,
+  "year": 2026
  },
  "sinelibri-2026-metropolis": {
   "id": "sinelibri-2026-metropolis",
@@ -272,7 +284,8 @@
    "#2A331B",
    "#4A5F27"
   ],
-  "source": "dom-kino"
+  "source": "dom-kino",
+  "runtime": 113
  },
  "naza": {
   "id": "naza",
@@ -283,7 +296,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "dom-kino"
+  "source": "dom-kino",
+  "runtime": 80
  },
  "tayni-i-lazhi": {
   "id": "tayni-i-lazhi",
@@ -426,7 +440,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 91
  },
  "bez-konkurentsiya": {
   "id": "bez-konkurentsiya",
@@ -437,7 +452,8 @@
    "#2B1B33",
    "#50275F"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 130
  },
  "kitovete-paziteli-na-planetata": {
   "id": "kitovete-paziteli-na-planetata",
@@ -448,7 +464,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 70
  },
  "kotki-v-muzeya-2-sakrovishtata-na-egipet": {
   "id": "kotki-v-muzeya-2-sakrovishtata-na-egipet",
@@ -459,7 +476,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 80
  },
  "kina-i-yuk-lisitsite-ot-dalechniya-sever": {
   "id": "kina-i-yuk-lisitsite-ot-dalechniya-sever",
@@ -470,7 +488,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 80
  },
  "diamanti": {
   "id": "diamanti",
@@ -481,7 +500,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 120
  },
  "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever": {
   "id": "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever",
@@ -686,7 +706,8 @@
    "#275F57"
   ],
   "source": "dom-kino",
-  "runtime": 115
+  "runtime": 115,
+  "year": 2026
  },
  "samo-lyubovnitsite-ostavat-zhivi": {
   "id": "samo-lyubovnitsite-ostavat-zhivi",
@@ -908,7 +929,8 @@
    "#275F3A"
   ],
   "source": "dom-kino",
-  "runtime": 112
+  "runtime": 112,
+  "year": 2025
  },
  "sinelibri-2026-allegro-pastell": {
   "id": "sinelibri-2026-allegro-pastell",
@@ -1229,7 +1251,8 @@
    "#331B1B",
    "#5F2727"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 107
  },
  "sinelibri-2026-kokuho-zhivo-sakrovishte": {
   "id": "sinelibri-2026-kokuho-zhivo-sakrovishte",
@@ -2698,7 +2721,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 80
  },
  "kleyfeys": {
   "id": "kleyfeys",
@@ -2949,6 +2973,17 @@
  "valshebnik-priyatel": {
   "id": "valshebnik-priyatel",
   "bg": "Вълшебник - Приятел",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
+ },
+ "taxi-to-heaven-cinelibri": {
+  "id": "taxi-to-heaven-cinelibri",
+  "bg": "TAXI TO HEAVEN - CINELIBRI",
   "en": "",
   "genres": [],
   "g": [

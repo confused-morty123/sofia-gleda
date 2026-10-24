@@ -6,18 +6,8 @@
  },
  {
   "level": "warning",
-  "venue": "cg-park",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cg-ring",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
   "venue": "cineland",
-  "message": "no official programme: all 259 screenings are preliminary, from programata.bg"
+  "message": "no official programme: all 224 screenings are preliminary, from programata.bg"
  },
  {
   "level": "warning",
@@ -37,16 +27,16 @@
  {
   "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 29 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 28 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 170/223 ok, 53 missing IMDb ratings"
+  "message": "OMDb: 167/220 ok, 53 missing IMDb ratings"
  },
  {
   "level": "ok",
   "venue": "theatre-posters",
-  "message": "theatre posters: 496/502 upcoming shows have a poster; recently missing: igra-na-kotki, insomniya, karnaval, poema-za-hlebarkite, razdelenoto-kralstvo, vik-ot-istoriyata-ekaterina-karavelova"
+  "message": "theatre posters: 498/504 upcoming shows have a poster; recently missing: igra-na-kotki, insomniya, karnaval, poema-za-hlebarkite, razdelenoto-kralstvo, vik-ot-istoriyata-ekaterina-karavelova"
  }
 ]
