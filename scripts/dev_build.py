@@ -113,6 +113,54 @@ def main():
                     pass
             page = page[:dst_m.start()] + line + page[dst_m.end():]
             moved.append(name)
+    # A VLINKS link kept from REF is stored the way the next scrape stores it for
+    # its venue (scrape_programs.venue_vlink): a Cine Grand film page carries the
+    # row's own cinema_slug — without it cinegrand.bg opens Парк Център for both.
+    vl = const_line(page, "VLINKS")
+    if vl:
+        from official_sources import CG_CINEMAS, cinegrand_film_url
+        try:
+            rows = json.loads(vl.group(0).split("=", 1)[1].strip().rstrip(";"))
+        except ValueError:
+            rows = None
+        # A venue REF still read from the aggregator alone (official_state.json
+        # source "programata.bg") that now has its own programme (Cineland since
+        # 2026-10-24): the next scrape confirms its rows and drops their programata
+        # links (scrape_programs: confirmed_pairs), so they are dropped here too and
+        # the row opens the venue's own BOOKING page.
+        from official_sources import OFFICIAL
+        st = subprocess.run(["git", "show", f"{ref}:official_state.json"], cwd=ROOT,
+                            capture_output=True, text=True)
+        try:
+            agg_only = {v for v, x in (json.loads(st.stdout).get("venues") or {}).items()
+                        if isinstance(x, dict) and "programata.bg" in str(x.get("source"))
+                        and v in OFFICIAL} if st.returncode == 0 else set()
+        except ValueError:
+            agg_only = set()
+        if isinstance(rows, list):
+            fixed = [[r[0], r[1], cinegrand_film_url(r[2], r[1])]
+                     if isinstance(r, list) and len(r) == 3 and r[1] in CG_CINEMAS else r for r in rows]
+            n = sum(a != b for a, b in zip(rows, fixed))
+            kept = [r for r in fixed if not (isinstance(r, list) and len(r) == 3 and r[1] in agg_only
+                                             and "programata.bg" in str(r[2]))]
+            dropped = len(fixed) - len(kept)
+            if n or dropped:
+                page = page[:vl.start()] + f"const VLINKS={json_for_script(kept)};" + page[vl.end():]
+                if n:
+                    moved.append(f"VLINKS ({n} Cine Grand film pages given their cinema)")
+                if dropped:
+                    moved.append(f"VLINKS ({dropped} programata links of {', '.join(sorted(agg_only))} "
+                                 "dropped: its own programme is read now)")
+            gone = {f"{r[0]}|{r[1]}" for r in fixed if r not in kept}
+            al = const_line(page, "AGGLINKS") if gone else None
+            if al:                              # their aggregator marks go with them
+                try:
+                    agg = json.loads(al.group(0).split("=", 1)[1].strip().rstrip(";"))
+                except ValueError:
+                    agg = None
+                if isinstance(agg, dict):
+                    agg = {k: v for k, v in agg.items() if k not in gone}
+                    page = page[:al.start()] + f"const AGGLINKS={json_for_script(agg)};" + page[al.end():]
     if not const_line(good, "FESTMARK") and const_line(page, "FESTMARK"):
         fm = festmark_from_report(ref, page)          # a ref from before the scraper wrote it
         if fm:
