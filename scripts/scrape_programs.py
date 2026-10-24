@@ -179,7 +179,7 @@ VENUE_LINK_ALLOWLIST = {
 # confirmed — НДК Зала 1, Френски институт, Топлоцентрала's film screenings
 # (toplo-film; `toplo` is the theatre) and Сцена „Централни хали“.
 # Every other cinema publishes its own programme (or the app reads none of it, as
-# for Casa Libri and Cineland): a festival screening there is preliminary until
+# for Casa Libri): a festival screening there is preliminary until
 # the venue lists it. See merge_festival_rows().
 FESTIVAL_VENUES = ("ndk1", "frenski-institut", "toplo-film", "tsentralni-hali")
 
@@ -919,8 +919,9 @@ def grad_for(fid):
 # published; programata rows inside that range are discarded (each disagreement
 # logged); programata rows after it are kept as PRELIMINARY — PRELIM_FROM marks
 # the first such date per venue for the UI. A venue whose official source is
-# unreachable keeps last run's rows and PRELIM_FROM; Cineland has no public
-# official programme, so all of its (aggregator) rows are preliminary.
+# unreachable keeps last run's rows and PRELIM_FROM. (Cineland's own programme
+# is read from its site's API since 2026-10-24; before that all of its
+# aggregator rows were preliminary.)
 
 # programata pages per venue: the aggregator, used only where the venue is silent.
 AGGREGATOR_VENUES = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "cg-ring",
@@ -941,6 +942,15 @@ def allowed_vlink(venue, url):
     allowed = VENUE_LINK_ALLOWLIST.get(venue, [])
     h = _host(url)
     return bool(url and allowed and "programata.bg" not in h and any(a in h for a in allowed))
+
+
+def venue_vlink(venue, url):
+    """A VLINKS url as it must be stored for that venue: a Cine Grand film page
+    carries the venue's own cinema_slug (otherwise cinegrand.bg shows Парк
+    Център's screenings for a Ring Mall row). Other urls are unchanged."""
+    if venue in OS.CG_CINEMAS:
+        return OS.cinegrand_film_url(url, venue)
+    return url
 
 
 def _day_after(iso):
@@ -1259,7 +1269,7 @@ def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest
                      lists: this run's official rows on every date (advance sales
                      included); for a venue whose source failed, the kept rows dated
                      before its PRELIM_FROM. Empty for a venue whose programme the
-                     app does not read (Casa Libri, Cineland).
+                     app does not read (Casa Libri).
     fest_rows        {festival: [(fid, venue, date, time)]} — each festival's
                      screenings at app venues this run (last run's, for a festival
                      that could not be read: keep-previous)
@@ -2814,8 +2824,8 @@ def main():
         return policy[v]
 
     # 1) the aggregator. Read for every venue it carries: its rows feed the
-    #    preliminary days after a venue's own programme ends, Cineland (no
-    #    official source), and the disagreement log inside official coverage.
+    #    preliminary days after a venue's own programme ends, a venue whose own
+    #    source fails, and the disagreement log inside official coverage.
     agg, n_agg0 = {}, len(session.log)
     for vid in AGGREGATOR_VENUES:
         url = CINEMA_SOURCES.get(vid)
@@ -2882,7 +2892,9 @@ def main():
             url = meta.get("url")
             if url and "programata.bg" not in _host(url):
                 links.setdefault(fid, url)
-            tick = meta.get("booking") if vid == "lumiere" else None
+            # the per-venue page: Lumière's ticket shop, Cine Grand's film page for
+            # THAT cinema (cinema_slug), Cineland's film page; else the info page
+            tick = meta.get("booking") if vid == "lumiere" else meta.get("vlink")
             cand = tick if allowed_vlink(vid, tick) else url
             if allowed_vlink(vid, cand) and (fid, vid) not in fresh_vlinks:
                 fresh_vlinks[(fid, vid)] = cand
@@ -3710,8 +3722,15 @@ def main():
     # and none for a venue whose BOOKING carries a dated `deep` page (Cinema City:
     # its film pages are chain-wide; the UI opens the cinema's page for the date).
     active_pairs = {(r[0], r[1]) for r in new_showtimes}
+    # A programata link kept from an earlier run never serves a pair the venue's
+    # own programme now lists (Cineland, aggregator-only until 2026-10-24): the
+    # UI then opens the venue's BOOKING page instead.
+    confirmed_pairs = {(r[0], r[1]) for r in new_showtimes
+                       if prelim.get(r[1]) and r[2] < prelim[r[1]]}
     vlinks_pruned, deep_venues = drop_deep_vlinks(
-        {k: v for k, v in vlinks.items() if k in active_pairs}, read_const_obj(src, "BOOKING"))
+        {k: venue_vlink(k[1], v) for k, v in vlinks.items() if k in active_pairs
+         and not (k in confirmed_pairs and "programata.bg" in _host(v))},
+        read_const_obj(src, "BOOKING"))
     if deep_venues:
         print(f"VLINKS: none for {', '.join(sorted(deep_venues))} (BOOKING.deep is the per-date page)")
     try:

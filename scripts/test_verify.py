@@ -334,6 +334,18 @@ subdomain_vlinks_html = _good_html.replace("const VLINKS=[];", f"const VLINKS={s
 check("legitimate subdomain (sub.cinemacity.bg) exits 0",
       _run(subdomain_vlinks_html, skip_freshness=True) == 0)
 
+# Cine Grand: a film page must open for the row's own cinema (cinema_slug)
+print("\nCine Grand film pages: the venue's own cinema_slug")
+_cg_ring = "https://www.cinegrand.bg/m/veriti-imdbtt32261958?ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB"
+_cg_plain = "https://www.cinegrand.bg/m/veriti-imdbtt32261958"
+check("Ring Mall film page with Ring Mall's cinema_slug exits 0",
+      _run(_good_html.replace("const VLINKS=[];", "const VLINKS=" + _json.dumps([["f0", "cg-ring", _cg_ring]]) + ";"),
+           skip_freshness=True) == 0)
+_rc, _out = _run_out(_good_html.replace("const VLINKS=[];", "const VLINKS=" + _json.dumps([["f0", "cg-park", _cg_ring]]) + ";"))
+check("Park Center row linking Ring Mall's film page exits non-zero", _rc != 0 and "other cinema" in _out)
+_rc, _out = _run_out(_good_html.replace("const VLINKS=[];", "const VLINKS=" + _json.dumps([["f0", "cg-ring", _cg_plain]]) + ";"))
+check("a film page without cinema_slug (older runs) is noted, not failed", _rc == 0 and "without cinema_slug" in _out)
+
 
 # ---------------------------------------------------------------------------
 # Test 6 (F3): festival rows — festival hosts, PRELIM_ROWS, a BOOKING per cinema

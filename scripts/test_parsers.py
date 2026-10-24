@@ -1547,6 +1547,31 @@ check("a day page showing another day ends coverage",
       (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
 check("…and then no advance sale is read", [u for u in _cgp.asked if "calendar" in u], [])
 
+print("official: Cine Grand film pages open for THEIR cinema (cinema_slug)")
+# cinegrand.bg/m/<film> without cinema_slug shows its default cinema (Парк Център
+# София) for both Sofia cinemas; the site's own Ring Mall links add
+# ?ignoreMissing=1&cinema_slug=софия-ринг-мол (checked live 2026-10-24).
+_ring_q = "ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB"
+_park_q = "ignoreMissing=1&cinema_slug=%D0%BF%D0%B0%D1%80%D0%BA-%D1%86%D0%B5%D0%BD%D1%82%D1%8A%D1%80-%D1%81%D0%BE%D1%84%D0%B8%D1%8F"
+check("a Ring Mall row's film page carries Ring Mall's cinema_slug",
+      [x[3]["vlink"] for x in _r if x[0] == "КОЛИТЕ"][0],
+      "https://www.cinegrand.bg/m/kolite-imdbtt0317219?" + _ring_q)
+check("…while its info url stays the plain film page",
+      [x[3]["url"] for x in _r if x[0] == "КОЛИТЕ"][0], "https://www.cinegrand.bg/m/kolite-imdbtt0317219")
+check("Park Center gets its own slug; an existing slug is replaced, not doubled",
+      (OS.cinegrand_film_url("https://www.cinegrand.bg/m/veriti-imdbtt32261958", "cg-park"),
+       OS.cinegrand_film_url("https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _ring_q, "cg-park")),
+      ("https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _park_q,
+       "https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _park_q))
+check("other hosts and non-film pages are unchanged",
+      (OS.cinegrand_film_url("https://www.kinoarena.com/m/x", "cg-ring"),
+       OS.cinegrand_film_url("https://cinegrand.bg/софия-ринг-мол/schedule", "cg-ring"), OS.cinegrand_film_url(None, "cg-ring")),
+      ("https://www.kinoarena.com/m/x", "https://cinegrand.bg/софия-ринг-мол/schedule", None))
+check("VLINKS kept from an earlier run are rewritten for the venue (Cine Grand only)",
+      (S.venue_vlink("cg-ring", "https://www.cinegrand.bg/m/veriti-imdbtt32261958"),
+       S.venue_vlink("arena-mall", "https://www.kinoarena.com/bg/movie/x")),
+      ("https://www.cinegrand.bg/m/veriti-imdbtt32261958?" + _ring_q, "https://www.kinoarena.com/bg/movie/x"))
+
 print("official: Cine Grand advance sales — the per-cinema calendar (София Ринг Мол, 2026-10-09, trimmed)")
 _cal = (FIXTURES / "cinegrand_calendar.html").read_text(encoding="utf-8")
 _adv = (FIXTURES / "cinegrand_advance.html").read_text(encoding="utf-8")
@@ -1627,7 +1652,42 @@ check("other venues and dates past the window are not Люмиер rows",
 check("coverage ends at the last date either source lists", _res.covered_to, "2026-11-30")
 check("one half unreachable -> keep previous",
       _raises(OS.fetch_lumiere, _Pages({"ndk.bg": "<html></html>"}), "lumiere", "2026-10-08", "2026-12-14"), True)
-check("cineland has no official source", OS.fetch_official("cineland", None, "2026-10-08", "2026-12-14", {}), None)
+
+print("official: Cineland (cineland.bg programme API, 2026-10-24, trimmed)")
+# The site's own programme widget reads restapi.cineland.bg; the film pages come
+# from its WordPress API. One week Sat 24 - Thu 29 Oct, then only the VIP hall's
+# "film of your choice" slots on 30-31 Oct.
+_clp = _Pages({"/screening?": (FIXTURES / "cineland_screenings.json").read_text(encoding="utf-8"),
+               "/api/movie?": (FIXTURES / "cineland_movies.json").read_text(encoding="utf-8"),
+               "wp-json": (FIXTURES / "cineland_wp_movies.json").read_text(encoding="utf-8")})
+_res = OS.fetch_cineland(_clp, "cineland", "2026-10-24", "2026-12-14")
+check("coverage is the week the cinema published", (_res.covered_from, _res.covered_to), ("2026-10-24", "2026-10-29"))
+check("…read in one programme call for the whole window",
+      [u.split("?")[0] for u in _clp.asked if "/screening" in u], [OS.CL_API + "/cinema/" + OS.CL_CINEMAS["cineland"] + "/screening"])
+check("rows per day", [(d, _res.days[d]) for d in sorted(_res.days)[:7]],
+      [("2026-10-24", 39), ("2026-10-25", 39), ("2026-10-26", 42), ("2026-10-27", 39),
+       ("2026-10-28", 39), ("2026-10-29", 39), ("2026-10-30", 0)])
+check("the VIP hall's 'film of your choice' slot is not a screening",
+      any("ИЗБОР" in x[0] for x in _res.rows), False)
+_cl = {(x[0], x[1], x[2]): x[3] for x in _res.rows}
+check("a screening: title, local date and time, the cinema's own film page",
+      {k: _cl[("ДРУГАТА МАМА", "2026-10-27", "19:10")].get(k) for k in ("url", "vlink", "runtime", "lang_ver", "format")},
+      {"url": "https://cineland.bg/bg/movie/other-mommy/", "vlink": "https://cineland.bg/bg/movie/other-mommy/",
+       "runtime": 93, "lang_ver": "sub", "format": ["СУБТ."]})
+check("every row links a cineland.bg film page", all(S.allowed_vlink("cineland", m.get("vlink")) for m in _cl.values()), True)
+check("dubbed and subtitled prints told apart",
+      sorted({m.get("lang_ver", "") for m in _cl.values()}), ["", "dub", "sub"])
+check("a concert broadcast is an event",
+      sorted({k[0] for k, m in _cl.items() if m.get("event")}), ["OZZY & BLACK SABBATH: BACK TO THE BEGINNING"])
+check("other cinemas' screenings are not Cineland's",
+      OS.parse_cineland([{"cinemaId": "x", "movieId": "y", "screeningTimeFrom": "2026-10-24T20:00:00+03:00"}],
+                        [{"id": "y", "title": "Т"}], OS.CL_CINEMAS["cineland"], "2026-10-24", "2026-10-30"), [])
+check("API unreachable -> keep previous", _raises(OS.fetch_cineland, _Pages({}), "cineland", "2026-10-24", "2026-12-14"), True)
+check("film pages unreachable: rows kept without a link, noted",
+      (lambda r: (len(r.rows), any(m[3].get("url") for m in r.rows), any("film pages not read" in n for n in r.notes)))(
+          OS.fetch_cineland(_Pages({k: v for k, v in _clp.pages.items() if k != "wp-json"}),
+                            "cineland", "2026-10-24", "2026-12-14")), (237, False, True))
+check("cineland now has an official source", "cineland" in OS.OFFICIAL and "cineland" not in OS.NO_OFFICIAL, True)
 
 print("film identity: normalisation")
 for a, b in [("ПАДАНЕ 2: МЪРТВА ТОЧКА", "Падане 2: Мъртва точка"),
@@ -2346,6 +2406,12 @@ for fest, name, want in [
     ("kinomania", "НДК – Зала 1", ("app", "ndk1")),
     ("kinomania", "Синема Сити Парадайс Център", ("app", "cc-paradise")),
     ("kinomania", "Арена", ("unknown", None)),
+    # Кино Арена Mega Mall is "West Mall" since the mall's rename (kinoarena.com,
+    # 2026-10-24): both names are arena-mega
+    ("cinelibri", "Кино Арена West Mall", ("app", "arena-mega")),
+    ("cinelibri", "Кино Арена Mega Mall", ("app", "arena-mega")),
+    ("kinomania", "Кино Арена West Mall", ("app", "arena-mega")),
+    ("kinomania", "Кино Арена Mega Mall", ("app", "arena-mega")),
     ("kinomania", "Euro Cinema", ("app", "g8")),
     ("kinomania", "Lucky Пловдив", ("outside", None)),
     ("kinomania", "Стара Загора - Регионална библиотека", ("outside", None)),

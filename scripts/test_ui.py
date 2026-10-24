@@ -2960,11 +2960,16 @@ def wave_d1(browser):
         const lumiereFilms = [...new Set(SHOWTIMES.filter(r => r[2] >= today && r[1] === "lumiere").map(r => r[0]))];
         const noVlink = lumiereFilms.filter(fid => !VLINK_MAP[fid + "|lumiere"]);
         const withVlink = lumiereFilms.filter(fid => !!VLINK_MAP[fid + "|lumiere"]);
-        // epaygo.bg, or — for a festival film shown on several dates — the
-        // festival's film page, whose buy buttons lead to each date's epaygo page
+        // epaygo.bg; NDK's own event page (ndk.bg — Люмиер has no ticket link of
+        // its own, so NDK's page is its official one, owner 2026-10-24); or — for a
+        // festival film shown on several dates — the festival's film page, whose buy
+        // buttons lead to each date's epaygo page
         const epayVlinkOk = withVlink.every(fid => {{
             const url = filmTixUrl(fid, "lumiere", today);
-            return url && (url.includes("epaygo.bg") || ["https://www.cinelibri.com/", "https://cinelibri.com/", "https://www.kinomania.bg/", "https://kinomania.bg/"].some(p => url.startsWith(p)));
+            let host = "";
+            try {{ host = new URL(url).hostname; }} catch (e) {{ return false; }}
+            const on = d => host === d || host.endsWith("." + d);
+            return on("epaygo.bg") || on("ndk.bg") || on("cinelibri.com") || on("kinomania.bg");
         }});
         const sampleVlinkUrls = withVlink.map(fid => filmTixUrl(fid, "lumiere", today)).slice(0,3);
         // For no-vlink films, open the sheet and check for epaygo note
@@ -2996,10 +3001,10 @@ def wave_d1(browser):
               lumiere_result["epayNoteShown"] is True,
               f"no-vlink lumiere film without epaygo note; no-vlink: {lumiere_result['noVlink']}")
     else:
-        # All lumiere films have VLINKS — assert epaygo.bg links used
+        # All lumiere films have VLINKS — epaygo.bg, NDK event pages or festival pages
         check("d1_lumiere_epay_vlinks_used",
               lumiere_result["epayVlinkOk"],
-              f"not all lumiere VLINKS use epaygo.bg: {lumiere_result['sampleVlinkUrls']}")
+              f"a lumiere VLINK is neither epaygo.bg, ndk.bg nor a festival page: {lumiere_result['sampleVlinkUrls']}")
     print(f"  Lumiere films total: {len(lumiere_result['lumiereFilms'])}, "
           f"no-vlink: {no_vlink_count}, with-vlink: {lumiere_result['withVlinkCount']}")
     print(f"  Sample vlink URLs: {lumiere_result['sampleVlinkUrls']}")

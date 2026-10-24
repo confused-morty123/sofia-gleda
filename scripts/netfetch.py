@@ -137,6 +137,10 @@ def challenge_signature(resp):
 CRAWL_DELAY = {
     "www.cinelibri.com": 10.0,
     "cinelibri.com": 10.0,
+    # Cineland's programme API and site (official_sources.fetch_cineland): no
+    # Crawl-delay asked; 2 s is our own floor for a newly read host (2026-10-24)
+    "restapi.cineland.bg": 2.0,
+    "cineland.bg": 2.0,
 }
 
 

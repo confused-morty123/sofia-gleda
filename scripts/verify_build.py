@@ -159,6 +159,9 @@ VENUE_LINK_ALLOWLIST = {
     "ndk1":         ["ndk.bg"],
     "frenski-institut": ["institutfrancais.bg"],
 }
+# Cine Grand's per-cinema slug (official_sources.CG_CINEMAS): a film page in VLINKS
+# must carry its own venue's cinema_slug.
+CG_SLUGS = {"cg-ring": "софия-ринг-мол", "cg-park": "парк-център-софия"}
 # A festival row (official_festivals.py) links the festival's own film page or
 # its ticket shop, at any venue: cinelibri.com and kinomania.bg, epaygo.bg (both
 # festivals) and embed.urboapp.com (CineLibri at Френски институт) — checked live
@@ -185,7 +188,7 @@ def const_arr_raw(name):
 
 vlinks_data = const_arr_raw("VLINKS")
 if vlinks_data is not None:
-    from urllib.parse import urlparse as _urlparse
+    from urllib.parse import urlparse as _urlparse, parse_qs
     if not isinstance(vlinks_data, list):
         fail("VLINKS is not an array")
     else:
@@ -206,6 +209,8 @@ if vlinks_data is not None:
         bad_aggregator_confirmed = []
         bad_allowlist = []
         bad_agg_homepage = []    # aggregator homepage: empty/root path or query-only
+        bad_cg_cinema = []       # a Cine Grand film page opened for the OTHER cinema
+        cg_no_slug = []          # …or for none (the site then shows Парк Център)
 
         def _is_agg_homepage(parsed_url):
             """Return True when the URL is an aggregator's homepage (no meaningful path)."""
@@ -246,6 +251,16 @@ if vlinks_data is not None:
                     bad_programata.append(f"{fid}/{vid}")
             if _is_agg_domain and (fid, vid) in _confirmed_pairs:
                 bad_aggregator_confirmed.append(f"{fid}/{vid} -> {url[:60]}")
+            # Cine Grand: cinegrand.bg/m/<film> without cinema_slug shows Парк Център
+            # София for both Sofia cinemas; a row's film page must name ITS cinema
+            # (?cinema_slug=софия-ринг-мол / парк-център-софия, the site's own links).
+            if vid in CG_SLUGS and (host == "cinegrand.bg" or host.endswith(".cinegrand.bg")) \
+                    and parsed.path.startswith("/m/"):
+                _slug = parse_qs(parsed.query).get("cinema_slug", [""])[0]
+                if not _slug:
+                    cg_no_slug.append(f"{fid}/{vid}")
+                elif _slug != CG_SLUGS[vid]:
+                    bad_cg_cinema.append(f"{fid}/{vid} -> cinema_slug={_slug}")
             allowed = VENUE_LINK_ALLOWLIST.get(vid, [])
             # Exact match or subdomain suffix — never substring (CODE-12). A festival
             # row may also link the festival's own page or ticket shop (festival_host,
@@ -266,6 +281,13 @@ if vlinks_data is not None:
         if bad_allowlist:
             fail(f"VLINKS contains {len(bad_allowlist)} URL(s) not on the venue's allowlist: "
                  + "; ".join(bad_allowlist[:3]))
+        if bad_cg_cinema:
+            fail(f"VLINKS has {len(bad_cg_cinema)} Cine Grand film page(s) opened for the other "
+                 "cinema: " + "; ".join(bad_cg_cinema[:3]))
+        if cg_no_slug:
+            note(f"VLINKS: {len(cg_no_slug)} Cine Grand film page(s) without cinema_slug (they open "
+                 "Парк Център's screenings; the next refresh adds the venue's slug): "
+                 + ", ".join(cg_no_slug[:5]))
         if bad_agg_homepage:
             fail(f"VLINKS contains {len(bad_agg_homepage)} aggregator homepage URL(s) "
                  "(empty/root path or query-only — likely a scraper bug; use a specific listing URL): "
