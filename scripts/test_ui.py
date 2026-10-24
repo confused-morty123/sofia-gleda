@@ -13445,7 +13445,7 @@ def _hf_grid_paging(browser, eng):
             page.wait_for_timeout(600)
             exp = page.evaluate("""([k,id])=>[...new Set(k==='film'?upcomingRows(SHOWTIMES.filter(r=>r[0]===id)).map(r=>r[2]):upcomingPerfs(PERFORMANCES.filter(p=>p[0]===id)).map(p=>p[1]))].sort()""", [kind, best["id"]])
             shown_js = """()=>{const pages=[...document.querySelectorAll('#scrim .p3e-gpage')];
-                const vis=pages.filter(p=>getComputedStyle(p).display!=='none');
+                const vis=pages.filter(p=>getComputedStyle(p).display!=='none'&&getComputedStyle(p).visibility!=='hidden');
                 const pg=document.querySelector('#scrim .p3e-gpager');const [pv,nx]=pg?pg.querySelectorAll('[data-gnav]'):[null,null];
                 const vc=vis[0]&&vis[0].querySelector('.p3e-vcol');
                 return {nvis:vis.length,dates:vis.length?[...vis[0].querySelectorAll('th[data-date]')].map(t=>t.dataset.date):[],
@@ -13475,7 +13475,8 @@ def _hf_grid_paging(browser, eng):
                 cur = page.evaluate(shown_js)
                 if cur["dates"] and cur["dates"] != prev["dates"]:
                     seen += cur["dates"]
-                # the height follows each page's rows now (no empty rows); the table's top stays put
+                # each page lists only its own rows (no empty rows); the pages share one grid cell,
+                # as tall as the tallest page (2026-10-24), so the table's top stays put
                 ok_step = cur["nvis"] == 1 and cur["sticky"] == "sticky" and abs(cur["top"] - prev["top"]) <= 1
                 ok_steps = ok_steps and ok_step
                 steps.append(f"{cur['range']}{'' if ok_step else ' BAD'}")
@@ -17831,6 +17832,72 @@ def _b24_days(browser, base, eng):
         ctx.close()
 
 
+B24_GRID_JS = r"""() => { const g = document.querySelector('#scrim .p3e-gpages'), pg = document.querySelector('#scrim .p3e-gpager');
+  if (!g || !pg) return null; const sc = document.getElementById('scrim');
+  const pages = [...g.querySelectorAll('.p3e-gpage')];
+  const shown = pages.filter(p => !p.hasAttribute('aria-hidden'));
+  const hidPills = pages.filter(p => p.hasAttribute('aria-hidden')).flatMap(p => [...p.querySelectorAll('[data-sspill]')]);
+  return {top: Math.round(g.getBoundingClientRect().top * 10) / 10, pager: Math.round(pg.getBoundingClientRect().top * 10) / 10,
+    h: Math.round(g.getBoundingClientRect().height), st: Math.round(sc.scrollTop), range: pg.querySelector('.p3e-grange').textContent,
+    nShown: shown.length, shownVisible: shown.every(p => getComputedStyle(p).visibility === 'visible'),
+    hiddenOk: hidPills.every(b => getComputedStyle(b).visibility === 'hidden'),
+    next: pg.querySelector('[data-gnav="1"]').disabled, prev: pg.querySelector('[data-gnav="-1"]').disabled,
+    focus: !!(document.activeElement && document.activeElement.closest('.p3e-gpager'))}; }"""
+
+
+def _b24_grid(browser, base, eng):
+    for kind, mode in (("show", "theatre"), ("film", "cinema")):
+        for lang in ("bg", "en"):
+            tag = f"b24_{eng}_grid_{kind}_{lang}"
+            ctx, page, errs = _b24_open(browser, base, 1280, 800, lang=lang, mode=mode)
+            best = page.evaluate("""(kind)=>{let best=null;
+                if(kind==='film'){for(const f of FILMS){const n=new Set(upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id)).map(r=>r[2])).size;if(!best||n>best.n)best={id:f.id,n};}}
+                else{for(const s of SHOWS){if(!thById[s.theatre])continue;const n=new Set(upcomingPerfs(PERFORMANCES.filter(p=>p[0]===s.id)).map(p=>p[1])).size;if(!best||n>best.n)best={id:s.id,n};}}
+                return best;}""", kind)
+            if not best or best["n"] <= 7:
+                skip(tag, f"no {kind} with more than 7 dates")
+                ctx.close()
+                continue
+            page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, best["id"]])
+            page.wait_for_timeout(600)
+            # the worst case: the sheet scrolled to its very end, where a shorter page used to pull it up
+            page.evaluate("()=>{const s=document.getElementById('scrim');s.scrollTop=s.scrollHeight;}")
+            page.wait_for_timeout(250)
+            s0 = page.evaluate(B24_GRID_JS)
+            states, bad = [s0], []
+
+            def turn(step):
+                r = page.evaluate("(s)=>{const b=document.querySelector('#scrim .p3e-gpager [data-gnav=\"'+s+'\"]');const q=b.getBoundingClientRect();return [q.left+q.width/2,q.top+q.height/2]}", step)
+                page.mouse.click(*r)
+                page.wait_for_timeout(220)
+                return page.evaluate(B24_GRID_JS)
+            guard = 0
+            while not states[-1]["next"] and guard < 15:
+                states.append(turn("1")); guard += 1
+            while not states[-1]["prev"] and guard < 30:
+                states.append(turn("-1")); guard += 1
+            for s in states:
+                if abs(s["top"] - s0["top"]) > 1 or abs(s["pager"] - s0["pager"]) > 1 or s["st"] != s0["st"] \
+                        or s["nShown"] != 1 or not s["shownVisible"] or not s["hiddenOk"]:
+                    bad.append(f"{s['range']}: top {s['top']} (was {s0['top']}) pager {s['pager']} (was {s0['pager']}) scrollTop {s['st']} (was {s0['st']}) "
+                               f"shown={s['nShown']} hidden pills hidden={s['hiddenOk']}")
+            check(tag, len(states) > 2 and not bad,
+                  f"{best['id']}: {best['n']} dates, {len(states)} states {[s['range'] for s in states]}; heights {[s['h'] for s in states]}; problems: {bad[:3]}")
+            # the keyboard: Enter on the focused arrow pages and the focus stays on the pager
+            page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.focus({preventScroll:true});}")
+            kb = []
+            for _ in range(3):
+                page.keyboard.press("Enter")
+                page.wait_for_timeout(180)
+                kb.append(page.evaluate(B24_GRID_JS))
+            check(f"{tag}_keyboard", all(k["focus"] and abs(k["top"] - s0["top"]) <= 1 for k in kb),
+                  f"{[(k['range'], k['focus'], k['top']) for k in kb]}")
+            if kind == "show" and lang == "bg":
+                save_shot(page, "B24", f"grid_paging_{eng}")
+            check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+
+
 def wave_b24(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("B24")
@@ -17840,7 +17907,8 @@ def wave_b24(browser):
         for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),
                           ("2: the Кино/Театър rings", _b24_toggle),
                           ("3: one motto on both screens", _b24_motto),
-                          ("4: next-week days of the period strip", _b24_days)):
+                          ("4: next-week days of the period strip", _b24_days),
+                          ("5: the week grid's paging stays put", _b24_grid)):
             print(f"\n=== B24-{title} ===")
             try:
                 fn(browser, base, eng)

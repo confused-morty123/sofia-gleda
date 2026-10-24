@@ -823,10 +823,15 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grid-wrap{margin:0 0 4px}
   .p3e-grp-desk{background:var(--ink-3);border-radius:14px;padding:14px 14px 8px;overflow-x:auto}
   .p3e-gt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-  /* paging: only the current page is shown; each lists only its own venues */
+  /* paging: only the current page is shown; each lists only its own venues. The pages share
+     one grid cell and the hidden ones keep their place (visibility, not display:none), so the
+     cell is always as tall as the tallest page: turning to a page with fewer rows (or fewer
+     times per cell) never shrinks the sheet, which used to pull a sheet scrolled to its end
+     up by the difference and made the table and the pager jump (HF1 konrad paging,
+     2026-10-24). A hidden page is out of the accessibility tree and its pills take no focus. */
   .p3e-gpages{display:grid}
   .p3e-gpages>.p3e-gpage{grid-area:1 / 1;align-self:start}
-  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{display:none}
+  .p3e-gpages>.p3e-gpage[aria-hidden="true"]{visibility:hidden}
   .p3e-gpager{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px;
     position:sticky;left:0}
   .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
