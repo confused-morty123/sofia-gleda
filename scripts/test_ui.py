@@ -17898,8 +17898,12 @@ def _b24_grid(browser, base, eng):
                 continue
             page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, best["id"]])
             page.wait_for_timeout(600)
-            # the worst case: the sheet scrolled to its very end, where a shorter page used to pull it up
-            page.evaluate("()=>{const s=document.getElementById('scrim');s.scrollTop=s.scrollHeight;}")
+            # the worst case: the grid's bottom at the window's bottom, or the sheet scrolled to its
+            # very end before that (where a shorter page used to pull the sheet up); a grid taller
+            # than the window: its pager near the top. The pager stays in view for the clicks.
+            page.evaluate("()=>{const s=document.getElementById('scrim'),g=document.querySelector('#scrim .p3e-grp-desk').getBoundingClientRect(),"
+                          "p=document.querySelector('#scrim .p3e-gpager').getBoundingClientRect();"
+                          "s.scrollTop+=g.height<innerHeight-40?g.bottom-innerHeight+16:p.top-60;}")
             page.wait_for_timeout(250)
             s0 = page.evaluate(B24_GRID_JS)
             states, bad = [s0], []
@@ -17919,17 +17923,19 @@ def _b24_grid(browser, base, eng):
                         or s["nShown"] != 1 or not s["shownVisible"] or not s["hiddenOk"]:
                     bad.append(f"{s['range']}: top {s['top']} (was {s0['top']}) pager {s['pager']} (was {s0['pager']}) scrollTop {s['st']} (was {s0['st']}) "
                                f"shown={s['nShown']} hidden pills hidden={s['hiddenOk']}")
-            check(tag, len(states) > 2 and not bad,
+            check(tag, len(states) > 2 and len({s["range"] for s in states}) > 1 and not bad,
                   f"{best['id']}: {best['n']} dates, {len(states)} states {[s['range'] for s in states]}; heights {[s['h'] for s in states]}; problems: {bad[:3]}")
             # the keyboard: Enter on the focused arrow pages and the focus stays on the pager
             page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.focus({preventScroll:true});}")
+            k0 = page.evaluate(B24_GRID_JS)
             kb = []
             for _ in range(3):
                 page.keyboard.press("Enter")
                 page.wait_for_timeout(180)
                 kb.append(page.evaluate(B24_GRID_JS))
-            check(f"{tag}_keyboard", all(k["focus"] and abs(k["top"] - s0["top"]) <= 1 for k in kb),
-                  f"{[(k['range'], k['focus'], k['top']) for k in kb]}")
+            check(f"{tag}_keyboard", all(k["focus"] and abs(k["top"] - k0["top"]) <= 1 for k in kb)
+                  and len({k["range"] for k in [k0] + kb}) > 1,
+                  f"before {(k0['range'], k0['top'])}; after each Enter {[(k['range'], k['focus'], k['top']) for k in kb]}")
             if kind == "show" and lang == "bg":
                 save_shot(page, "B24", f"grid_paging_{eng}")
             check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
