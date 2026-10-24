@@ -1375,6 +1375,23 @@ button,a{-webkit-tap-highlight-color:transparent}
 /* the next-week label in the day strip: a plain label (it was a dimmed, dashed fake pill at 3.4:1) */
 .ds-next{flex:0 0 auto; align-self:center; font-size:12px; color:var(--fg-3); white-space:nowrap; padding-inline:2px}
 .search input::placeholder{color:var(--fg-3)}
+/* ---- no ACCIDENTAL zoom on phones (owner, 2026-10-24) ----
+   Phones only: the phone layout (up to 760 px) and a phone on its side (a coarse pointer on a
+   screen at most 520 px tall). Pinch-zoom stays: the viewport meta has no maximum-scale and no
+   user-scalable=no (WCAG 1.4.4), and touch-action:manipulation keeps pinch-zoom and panning.
+   1. iOS zooms in on a focused text field whose font is under 16 px: the fields get 16 px
+      there, with the line box held at the 15 px field's (15 x 1.55) so the pill keeps its size.
+   2. A double tap on a control zoomed the page: tap targets get touch-action:manipulation
+      (pan-x pan-y pinch-zoom, no double-tap zoom). Set on the controls themselves, not on
+      <html>: a scroll container (rail, sheet, drawer) restarts the touch-action chain, so a
+      button inside it would not inherit it. :where() keeps it overridable. */
+@media (max-width:760px), (hover:none) and (pointer:coarse) and (max-height:520px){
+  .search input{font-size:16px; line-height:23.25px}
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:max(16px,1em)}
+  :where(a[href],button,input,select,textarea,label,summary,[role=button],[role=link],[role=tab],[role=switch],
+    [role=checkbox],[role=radio],[role=option],[role=menuitem],[tabindex]:not([tabindex="-1"]),
+    .scrim,.drawer-scrim,.card,.rtrack){touch-action:manipulation}
+}
 </style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">

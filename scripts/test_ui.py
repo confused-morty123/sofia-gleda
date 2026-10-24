@@ -17874,6 +17874,7 @@ def wave_ux1(browser):
 #   4 a next-week day of the period strip keeps the strip and its listing
 #   5 the desktop week grid: paging never moves the table or the pager
 #   7 the focused search field: one ring inside the pill, nothing outside its rounded edge
+#   8 no accidental zoom on phones: 16 px fields, touch-action:manipulation on controls, pinch kept
 # (6, HF1's "buy then drag" with a film that has a buy link, lives in HF1.)
 # Runs over http (the self-hosted fonts load in both engines); SOFIA_BROWSER=webkit runs it
 # in WebKit.
@@ -18325,6 +18326,73 @@ def _b24_search(browser, base, eng):
         ctx.close()
 
 
+B24_ZOOM_JS = r"""(where) => { const root = document.querySelector(where); if (!root) return null;
+  const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+  const els = [...root.querySelectorAll('button, a[href], input:not([type=checkbox]), [role=button]')].filter(vis);
+  const off = els.filter(e => getComputedStyle(e).touchAction !== 'manipulation')
+    .map(e => e.tagName.toLowerCase() + (e.className ? '.' + String(e.className).split(' ')[0] : '') + ':' + getComputedStyle(e).touchAction);
+  return {n: els.length, off, scrim: root.id === 'scrim' ? getComputedStyle(root).touchAction : null}; }"""
+
+B24_FIELD_JS = r"""(sel) => { const e = document.querySelector(sel); if (!e) return null; const c = getComputedStyle(e), r = e.getBoundingClientRect();
+  return {fs: parseFloat(c.fontSize), h: r.height, ta: c.touchAction, scale: visualViewport ? visualViewport.scale : 1,
+    meta: (document.querySelector('meta[name=viewport]') || {}).content || ''}; }"""
+
+
+def _b24_zoom(browser, base, eng):
+    """8: no ACCIDENTAL zoom on phones (owner, 2026-10-24): the search fields are 16 px on a
+    phone (iOS zooms on focusing a smaller field) at the 15 px field's height; every visible
+    control, on the page and in an open sheet, has touch-action:manipulation (no double-tap
+    zoom); pinch-zoom stays (no maximum-scale, no user-scalable=no in any page's viewport);
+    the desktop keeps its 15 px field and default touch-action."""
+    bad_meta = lambda m: bool(re.search(r"maximum-scale|user-scalable\s*=\s*(no|0)", m or "", re.I))
+    # every page the site serves: the app, 404, the share and legal page templates' output
+    metas = {}
+    for f in [html_path, webapp_root / "404.html"] + sorted((webapp_root / "legal").glob("**/index.html"))[:6] \
+            + sorted((webapp_root / "film").glob("*/index.html"))[:3]:
+        m = re.search(r'<meta name="viewport" content="([^"]*)"', Path(f).read_text(encoding="utf-8"))
+        metas[str(f.relative_to(webapp_root)) if str(f).startswith(str(webapp_root)) else f.name] = m.group(1) if m else None
+    check(f"b24_{eng}_zoom_pinch_allowed_in_every_viewport",
+          all(v and "width=device-width" in v and not bad_meta(v) for v in metas.values()),
+          f"{len(metas)} pages: {sorted(set(metas.values()))}")
+    # the desktop: 15 px field, controls untouched
+    ctx, page, errs = _b24_open(browser, base, 1440, 900)
+    _ux_tap_sel(page, False, "[data-search-open]", scroll=False)
+    page.wait_for_timeout(600)
+    desk = page.evaluate(B24_FIELD_JS, "#q")
+    seg = page.evaluate("()=>getComputedStyle(document.querySelector('.seg button')).touchAction")
+    check(f"b24_{eng}_zoom_desktop_unchanged", desk and desk["fs"] == 15 and seg == "auto",
+          f"#q {desk and desk['fs']}px h={desk and round(desk['h'], 2)}; toggle touch-action {seg}")
+    ctx.close()
+    for (w, h), sel in (((402, 874), "#q-m"), ((874, 402), "#q")):
+        dev = f"phone_{w}x{h}"
+        ctx, page, errs = _b24_open(browser, base, w, h, phone=True)
+        _ux_tap_sel(page, True, "[data-search-open]", scroll=False)
+        page.wait_for_timeout(700)
+        _ux_tap_sel(page, True, sel, scroll=False)
+        page.wait_for_timeout(400)
+        f = page.evaluate(B24_FIELD_JS, sel)
+        focused = page.evaluate("(s)=>document.activeElement===document.querySelector(s)", sel)
+        check(f"b24_{eng}_zoom_{dev}_search_16px", f and f["fs"] >= 16 and focused and f["scale"] == 1
+              and abs(f["h"] - desk["h"]) <= .5 and f["ta"] == "manipulation" and not bad_meta(f["meta"]),
+              f"{sel} {f and f['fs']}px focused={focused} h={f and round(f['h'], 2)} (desktop {round(desk['h'], 2)}) "
+              f"touch-action={f and f['ta']} scale={f and f['scale']} viewport='{f and f['meta']}'")
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(300)
+        a = page.evaluate(B24_ZOOM_JS, "#app")
+        check(f"b24_{eng}_zoom_{dev}_page_controls", a and a["n"] > 10 and not a["off"],
+              f"{a and a['n']} visible controls; without manipulation: {a and a['off'][:5]}")
+        if w < h:
+            opened = _ux_tap_sel(page, True, "#app [data-film]")
+            page.wait_for_timeout(900)
+            s = page.evaluate(B24_ZOOM_JS, "#scrim")
+            check(f"b24_{eng}_zoom_{dev}_sheet_controls", opened and s and s["n"] > 3 and not s["off"]
+                  and s["scrim"] == "manipulation",
+                  f"opened={opened}; {s and s['n']} visible controls in the sheet; without: {s and s['off'][:5]}; scrim {s and s['scrim']}")
+            save_shot(page, "B24", f"zoom_sheet_{dev}_{eng}")
+        check(f"b24_{eng}_zoom_{dev}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
 def wave_b24(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("B24")
@@ -18336,7 +18404,8 @@ def wave_b24(browser):
                           ("3: one motto on both screens", _b24_motto),
                           ("4: next-week days of the period strip", _b24_days),
                           ("5: the week grid's paging stays put", _b24_grid),
-                          ("7: the focused search field", _b24_search)):
+                          ("7: the focused search field", _b24_search),
+                          ("8: no accidental zoom on phones", _b24_zoom)):
             print(f"\n=== B24-{title} ===")
             try:
                 fn(browser, base, eng)
