@@ -3886,12 +3886,18 @@ def wave_h(browser):
         const pills = Array.from(document.querySelectorAll('[data-day]'));
         return pills.map(p => ({day: p.dataset.day, text: p.textContent.trim()}));
     }""")
-    # "Whole week" + one pill per day from today to Sunday: 8 on a Monday, 2 on a Sunday
-    expected_pills = 1 + (datetime.date.fromisoformat(CLOCK_WEEK_END)
-                          - datetime.date.fromisoformat(CLOCK_TODAY_ISO)).days + 1
+    # "Whole week" + one pill per day from today to Sunday: 8 on a Monday; with fewer than 3
+    # days left (Saturday, Sunday) the strip rolls into next week, 7 days in all up to the
+    # listings' last day (P3A item 5)
+    _today = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    _left = (datetime.date.fromisoformat(CLOCK_WEEK_END) - _today).days + 1
+    if _left < 3:
+        _last = datetime.date.fromisoformat(page.evaluate("LASTDAY"))
+        _left = min(7, (_last - _today).days + 1) if _last > datetime.date.fromisoformat(CLOCK_WEEK_END) else _left
+    expected_pills = 1 + _left
     check("h8_day_strip_has_pills", len(day_strip) == expected_pills,
           f"{len(day_strip)} [data-day] pills, expected {expected_pills} "
-          f"(today {CLOCK_TODAY_ISO} → Sunday {CLOCK_WEEK_END}, plus 'week')")
+          f"(today {CLOCK_TODAY_ISO} → Sunday {CLOCK_WEEK_END}, rolling into next week with fewer than 3 days left, plus 'week')")
     if len(day_strip) >= 1:
         has_week = any(p["day"] == "week" for p in day_strip)
         check("h8_day_strip_has_week_pill", has_week,
