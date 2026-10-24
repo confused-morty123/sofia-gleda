@@ -12726,6 +12726,35 @@ def _hf_check_stays_open(page, phone, kind, cid, label, wave_tag):
     return ok
 
 
+# the index (among the open sheet's visible time pills) of the first time whose popup has a
+# buy link (.ss-btn.pri), from the app's own popup markup; -1 when none has one
+HF_BUY_PILL_JS = r"""() => {
+  const pills=[...document.querySelectorAll('#scrim [data-sspill]')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
+  for(let i=0;i<pills.length;i++){
+    const k=pills[i].dataset.sspill, kind=k.split(':')[0], r=k.slice(kind.length+1).split('|');
+    const html=screeningSheetHtml(kind,r[0],r[1],r[2],r[3]);
+    if(html&&html.includes('class="ss-btn pri"'))return i;
+  }
+  return -1;
+}"""
+
+
+def _hf_buy_pick(page, phone, films):
+    """The first film (of `films`) whose sheet shows a time with a buy link, and that pill's
+    index: (film id, index), or (None, None). Each sheet is opened and closed (‹ Назад) as a
+    user would."""
+    for fid in films:
+        if not _hf_open_card(page, phone, "film", fid):
+            continue
+        page.wait_for_timeout(650)
+        idx = page.evaluate(HF_BUY_PILL_JS)
+        _hf_close_sheet(page, phone, "backbar")
+        page.wait_for_timeout(400)
+        if idx >= 0:
+            return fid, idx
+    return None, None
+
+
 def _hf_flows(browser, eng, phone):
     """Every way of closing the time popup, each followed by a different way of closing
     the film sheet, on one page (state accumulates as it would for a user); then another
@@ -12740,15 +12769,24 @@ def _hf_flows(browser, eng, phone):
         return
     pop_routes = ["x", "backdrop", "esc", "back", "calback", "buy", "map", "google", "outlook", "ics"] + (["drag"] if phone else ["dim"])
     film_routes = ["backbar", "x", "backdrop", "esc", "back"] + (["drag"] if phone else [])
+    # the "buy" route needs a time with a buy link: a box-office-only venue has none, and the
+    # film and time the other routes use (films[1], the middle pill) may be one (2026-10-24,
+    # "buy then drag" failed on the data, not on the site): pick a film and a pill that has one
+    buy_fid, buy_idx = _hf_buy_pick(page, phone, page.evaluate(HF_CANDIDATES_JS.replace("out.length>=6", "out.length>=16"), "film"))
     for i, pr in enumerate(pop_routes):
         fr = film_routes[i % len(film_routes)]
         fid = films[i % 2]
+        if pr == "buy":
+            if buy_fid is None:
+                skip(f"{tag}_popup_{pr}_then_sheet_{fr}", "no film on the page has a time with a buy link")
+                continue
+            fid = buy_fid
         exp = page.evaluate(HF_TITLE_JS, ["film", fid])
         _hf_open_card(page, phone, "film", fid)
         page.wait_for_timeout(650)
         y_before = page.evaluate("(typeof _lockY!=='undefined'&&_lockY!==null)?Math.round(_lockY):Math.round(scrollY)")
         s0 = page.evaluate(HF_STATE_JS)
-        p = _hf_tap_pill(page, phone, 0.5)
+        p = _hf_tap_pill(page, phone, 0.5, buy_idx if pr == "buy" else 0)
         page.wait_for_timeout(550)
         s1 = page.evaluate(HF_STATE_JS)
         note = _hf_close_popup(page, phone, pr, ctx)
