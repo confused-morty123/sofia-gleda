@@ -17991,10 +17991,11 @@ def _b24_search(browser, base, eng):
                   clips.push(a.className); } }
             return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
               radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'), active: document.activeElement === e, clips}; }""", sel)
-        margin = 6
-        clip = {"x": max(0, r["x"] - margin), "y": max(0, r["y"] - margin)}
+        # 6 px beside the field, 3 px above and below it (a phone's toggle ends 5 px above it)
+        margin, my = 6, 3
+        clip = {"x": max(0, r["x"] - margin), "y": max(0, r["y"] - my)}
         clip["width"] = min(r["w"] + 2 * margin, w - clip["x"])
-        clip["height"] = r["h"] + 2 * margin
+        clip["height"] = r["h"] + 2 * my
         png = page.screenshot(clip=clip)
         outside = _b24_ring_pixels(png, r, clip, margin)
         ok = (r["active"] and r["fv"] and r["style"] == "solid" and r["ow"] >= 2 and r["oo"] + r["ow"] <= 0
