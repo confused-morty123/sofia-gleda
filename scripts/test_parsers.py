@@ -2346,6 +2346,12 @@ for fest, name, want in [
     ("kinomania", "НДК – Зала 1", ("app", "ndk1")),
     ("kinomania", "Синема Сити Парадайс Център", ("app", "cc-paradise")),
     ("kinomania", "Арена", ("unknown", None)),
+    # Кино Арена Mega Mall is "West Mall" since the mall's rename (kinoarena.com,
+    # 2026-10-24): both names are arena-mega
+    ("cinelibri", "Кино Арена West Mall", ("app", "arena-mega")),
+    ("cinelibri", "Кино Арена Mega Mall", ("app", "arena-mega")),
+    ("kinomania", "Кино Арена West Mall", ("app", "arena-mega")),
+    ("kinomania", "Кино Арена Mega Mall", ("app", "arena-mega")),
     ("kinomania", "Euro Cinema", ("app", "g8")),
     ("kinomania", "Lucky Пловдив", ("outside", None)),
     ("kinomania", "Стара Загора - Регионална библиотека", ("outside", None)),

@@ -118,6 +118,10 @@ VENUES = {
         "Cinema City Mall of Sofia": "cc-sofia",
         "Cine Grand Park center": "cg-park",
         "Кино Арена The Mall": "arena-mall",
+        # arena-mega: Кино Арена's own name since the mall's rename (kinoarena.com,
+        # 2026-10-24), and the old one a programme may still print
+        "Кино Арена West Mall": "arena-mega",
+        "Кино Арена Mega Mall": "arena-mega",
         "Cineland Bulgaria Mall": "cineland",
         "Casa Libri": "casa-libri",
         "Евросинема": "g8",
@@ -136,6 +140,8 @@ VENUES = {
         "Влайкова": "vlaikova",
         "Сине Гранд Парк Център": "cg-park",
         "Синема Сити Парадайс Център": "cc-paradise",
+        "Кино Арена West Mall": "arena-mega",
+        "Кино Арена Mega Mall": "arena-mega",
         "Euro Cinema": "g8",
     },
 }
