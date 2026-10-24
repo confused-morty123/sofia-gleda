@@ -832,8 +832,8 @@ def wave_b1(browser):
     if h2_info_375:
         check("b1_h2_cinema_375_size", h2_info_375["fontSize"] >= 20,
               f"fontSize={h2_info_375['fontSize']}px")
-        # 23 Oct 2026: Montserrat on the cinema surface, display titles in sentence case
-        check("b1_h2_cinema_375_family", "Montserrat" in h2_info_375["fontFamily"],
+        # 24 Oct 2026: Geologica on the cinema surface (was Montserrat), display titles in sentence case
+        check("b1_h2_cinema_375_family", h2_info_375["fontFamily"].startswith("Geologica"),
               f"fontFamily={h2_info_375['fontFamily'][:60]}")
         check("b1_h2_cinema_375_sentence_case", h2_info_375["textTransform"] == "none",
               f"textTransform={h2_info_375['textTransform']}")
@@ -3886,12 +3886,18 @@ def wave_h(browser):
         const pills = Array.from(document.querySelectorAll('[data-day]'));
         return pills.map(p => ({day: p.dataset.day, text: p.textContent.trim()}));
     }""")
-    # "Whole week" + one pill per day from today to Sunday: 8 on a Monday, 2 on a Sunday
-    expected_pills = 1 + (datetime.date.fromisoformat(CLOCK_WEEK_END)
-                          - datetime.date.fromisoformat(CLOCK_TODAY_ISO)).days + 1
+    # "Whole week" + one pill per day from today to Sunday: 8 on a Monday; with fewer than 3
+    # days left (Saturday, Sunday) the strip rolls into next week, 7 days in all up to the
+    # listings' last day (P3A item 5)
+    _today = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    _left = (datetime.date.fromisoformat(CLOCK_WEEK_END) - _today).days + 1
+    if _left < 3:
+        _last = datetime.date.fromisoformat(page.evaluate("LASTDAY"))
+        _left = min(7, (_last - _today).days + 1) if _last > datetime.date.fromisoformat(CLOCK_WEEK_END) else _left
+    expected_pills = 1 + _left
     check("h8_day_strip_has_pills", len(day_strip) == expected_pills,
           f"{len(day_strip)} [data-day] pills, expected {expected_pills} "
-          f"(today {CLOCK_TODAY_ISO} → Sunday {CLOCK_WEEK_END}, plus 'week')")
+          f"(today {CLOCK_TODAY_ISO} → Sunday {CLOCK_WEEK_END}, rolling into next week with fewer than 3 days left, plus 'week')")
     if len(day_strip) >= 1:
         has_week = any(p["day"] == "week" for p in day_strip)
         check("h8_day_strip_has_week_pill", has_week,
@@ -9893,8 +9899,8 @@ def wave_p3a(browser):
         # 16 Oct 2026: the line scales with the logo (one lockup), so its width, not a
         # fixed 12.5 px, is the rule: 90-110% of the logo's
         ratio = result.get("ratio")
-        # 23 Oct 2026: Montserrat capitals keep the owner's 10 px floor, so the line may run
-        # past the logo (it stays clear of the toggle: UX1 lockup)
+        # 24 Oct 2026: plain Geologica in sentence case keeps the owner's 10 px floor, so the
+        # Bulgarian line may run a little past the logo (it stays clear of the toggle: UX1 lockup)
         check(f"p3a_2_sub_width_tracks_logo_desktop_{lang}", ratio is not None and 0.9 <= ratio <= 1.4
               and float(result.get("fontSize", "0px")[:-2]) >= 10,
               f"line/logo width={ratio} fontSize={result.get('fontSize')!r}")
@@ -12726,6 +12732,35 @@ def _hf_check_stays_open(page, phone, kind, cid, label, wave_tag):
     return ok
 
 
+# the index (among the open sheet's visible time pills) of the first time whose popup has a
+# buy link (.ss-btn.pri), from the app's own popup markup; -1 when none has one
+HF_BUY_PILL_JS = r"""() => {
+  const pills=[...document.querySelectorAll('#scrim [data-sspill]')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');
+  for(let i=0;i<pills.length;i++){
+    const k=pills[i].dataset.sspill, kind=k.split(':')[0], r=k.slice(kind.length+1).split('|');
+    const html=screeningSheetHtml(kind,r[0],r[1],r[2],r[3]);
+    if(html&&html.includes('class="ss-btn pri"'))return i;
+  }
+  return -1;
+}"""
+
+
+def _hf_buy_pick(page, phone, films):
+    """The first film (of `films`) whose sheet shows a time with a buy link, and that pill's
+    index: (film id, index), or (None, None). Each sheet is opened and closed (‹ Назад) as a
+    user would."""
+    for fid in films:
+        if not _hf_open_card(page, phone, "film", fid):
+            continue
+        page.wait_for_timeout(650)
+        idx = page.evaluate(HF_BUY_PILL_JS)
+        _hf_close_sheet(page, phone, "backbar")
+        page.wait_for_timeout(400)
+        if idx >= 0:
+            return fid, idx
+    return None, None
+
+
 def _hf_flows(browser, eng, phone):
     """Every way of closing the time popup, each followed by a different way of closing
     the film sheet, on one page (state accumulates as it would for a user); then another
@@ -12740,15 +12775,24 @@ def _hf_flows(browser, eng, phone):
         return
     pop_routes = ["x", "backdrop", "esc", "back", "calback", "buy", "map", "google", "outlook", "ics"] + (["drag"] if phone else ["dim"])
     film_routes = ["backbar", "x", "backdrop", "esc", "back"] + (["drag"] if phone else [])
+    # the "buy" route needs a time with a buy link: a box-office-only venue has none, and the
+    # film and time the other routes use (films[1], the middle pill) may be one (2026-10-24,
+    # "buy then drag" failed on the data, not on the site): pick a film and a pill that has one
+    buy_fid, buy_idx = _hf_buy_pick(page, phone, page.evaluate(HF_CANDIDATES_JS.replace("out.length>=6", "out.length>=16"), "film"))
     for i, pr in enumerate(pop_routes):
         fr = film_routes[i % len(film_routes)]
         fid = films[i % 2]
+        if pr == "buy":
+            if buy_fid is None:
+                skip(f"{tag}_popup_{pr}_then_sheet_{fr}", "no film on the page has a time with a buy link")
+                continue
+            fid = buy_fid
         exp = page.evaluate(HF_TITLE_JS, ["film", fid])
         _hf_open_card(page, phone, "film", fid)
         page.wait_for_timeout(650)
         y_before = page.evaluate("(typeof _lockY!=='undefined'&&_lockY!==null)?Math.round(_lockY):Math.round(scrollY)")
         s0 = page.evaluate(HF_STATE_JS)
-        p = _hf_tap_pill(page, phone, 0.5)
+        p = _hf_tap_pill(page, phone, 0.5, buy_idx if pr == "buy" else 0)
         page.wait_for_timeout(550)
         s1 = page.evaluate(HF_STATE_JS)
         note = _hf_close_popup(page, phone, pr, ctx)
@@ -13445,7 +13489,7 @@ def _hf_grid_paging(browser, eng):
             page.wait_for_timeout(600)
             exp = page.evaluate("""([k,id])=>[...new Set(k==='film'?upcomingRows(SHOWTIMES.filter(r=>r[0]===id)).map(r=>r[2]):upcomingPerfs(PERFORMANCES.filter(p=>p[0]===id)).map(p=>p[1]))].sort()""", [kind, best["id"]])
             shown_js = """()=>{const pages=[...document.querySelectorAll('#scrim .p3e-gpage')];
-                const vis=pages.filter(p=>getComputedStyle(p).display!=='none');
+                const vis=pages.filter(p=>getComputedStyle(p).display!=='none'&&getComputedStyle(p).visibility!=='hidden');
                 const pg=document.querySelector('#scrim .p3e-gpager');const [pv,nx]=pg?pg.querySelectorAll('[data-gnav]'):[null,null];
                 const vc=vis[0]&&vis[0].querySelector('.p3e-vcol');
                 return {nvis:vis.length,dates:vis.length?[...vis[0].querySelectorAll('th[data-date]')].map(t=>t.dataset.date):[],
@@ -13475,7 +13519,8 @@ def _hf_grid_paging(browser, eng):
                 cur = page.evaluate(shown_js)
                 if cur["dates"] and cur["dates"] != prev["dates"]:
                     seen += cur["dates"]
-                # the height follows each page's rows now (no empty rows); the table's top stays put
+                # each page lists only its own rows (no empty rows); the pages share one grid cell,
+                # as tall as the tallest page (2026-10-24), so the table's top stays put
                 ok_step = cur["nvis"] == 1 and cur["sticky"] == "sticky" and abs(cur["top"] - prev["top"]) <= 1
                 ok_steps = ok_steps and ok_step
                 steps.append(f"{cur['range']}{'' if ok_step else ' BAD'}")
@@ -17450,8 +17495,8 @@ def _ux_lockup(browser, base, eng):
                     continue
                 fonts.append(m["font"])
                 ratio = m["sw"] / m["lw"] if m["lw"] else 0
-                # 23 Oct 2026: the Montserrat line may run past the logo (10 px floor) but never
-                # nearer than 12 px to the toggle
+                # the line may run past the logo (10 px floor; Geologica since 24 Oct 2026) but
+                # never nearer than 12 px to the toggle
                 if not (m["vis"] and 0.9 <= ratio <= 1.4 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
                     bad.append(f"{w}: shown={m['vis']} ratio={ratio:.2f} clear={m['clear']:.0f} overflow={m['over']} "
                                f"font={m['font']:.1f}")
@@ -17580,6 +17625,491 @@ def wave_ux1(browser):
             _ux_shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+# ============================================================================
+# WAVE B24: the owner's batch of 2026-10-24
+#   1 Geologica for the cinema surface (its sharp-corner axis, SHRP 100, on headings, the hero
+#     and the times; plain Geologica for the motto, menus and text), Source Serif 4 for the
+#     theatre's titles; Montserrat gone; the Bulgarian letterforms (locl BGR) in this engine
+#   2 the Кино/Театър toggle: a crimson ring on Кино, a gold ring on Театър (the active one)
+#   3 the motto: one face, size and tracking on the cinema and the theatre screens
+#   4 a next-week day of the period strip keeps the strip and its listing
+#   5 the desktop week grid: paging never moves the table or the pager
+#   7 the focused search field: one ring inside the pill, nothing outside its rounded edge
+# (6, HF1's "buy then drag" with a film that has a buy link, lives in HF1.)
+# Runs over http (the self-hosted fonts load in both engines); SOFIA_BROWSER=webkit runs it
+# in WebKit.
+# ============================================================================
+B24_CRIMSON = "rgb(224, 22, 58)"
+B24_GOLD = "rgb(217, 178, 60)"
+B24_FG = "rgb(244, 239, 246)"
+
+
+def _b24_open(browser, base, w, h, phone=False, lang="bg", mode="cinema", clock=None):
+    ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock)
+    page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/"))
+    page.evaluate("async () => { await document.fonts.ready; }")
+    return ctx, page, errs
+
+
+B24_FONT_JS = r"""async () => {
+  await document.fonts.ready;
+  const one = s => { const e = document.querySelector(s); if (!e) return null; const c = getComputedStyle(e);
+    return {fam: c.fontFamily, fvs: c.fontVariationSettings}; };
+  return {surface: document.documentElement.dataset.surface, lang: document.documentElement.lang,
+    title: one('.phead-title'), titleDates: one('.phead-title .phead-dates'), hero: one('.hero h1, .hero .hero-title'),
+    rail: one('main .rhead h2'), motto: one('.brand-sub'), body: one('body'), card: one('#app .card .cf1'),
+    pill: one('.dspill'), seg: one('.seg button'),
+    loaded: [...new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '')))]};
+}"""
+
+# a probe line drawn in Geologica: the same letters with SHRP 0 and 100, and as Bulgarian and
+# as Russian (lang), each as an element screenshot
+B24_PROBE_JS = r"""async ([txt, lang, fvs]) => {
+  await document.fonts.load('700 44px Geologica', txt);
+  let d = document.getElementById('b24-probe');
+  if (!d) { d = document.createElement('div'); d.id = 'b24-probe'; document.body.appendChild(d); }
+  d.setAttribute('style', 'position:fixed;left:0;top:0;z-index:2147483647;background:#000;color:#fff;padding:6px 10px;'
+    + 'font:700 44px Geologica;white-space:nowrap;font-variation-settings:' + fvs);
+  d.lang = lang; d.textContent = txt;
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  return document.fonts.check('700 44px Geologica', txt);
+}"""
+
+
+def _b24_probe(page, txt, lang, fvs):
+    ok = page.evaluate(B24_PROBE_JS, [txt, lang, fvs])
+    return ok, page.locator("#b24-probe").screenshot()
+
+
+def _b24_fonts(browser, base, eng):
+    sharp = lambda v: bool(v) and '"SHRP" 100' in v["fvs"]
+    plain = lambda v: bool(v) and v["fvs"] == "normal"
+    geo = lambda v: bool(v) and v["fam"].startswith("Geologica")
+    for lang in ("bg", "en"):
+        ctx, page, errs = _b24_open(browser, base, 1280, 800, lang=lang)
+        c = page.evaluate(B24_FONT_JS)
+        check(f"b24_{eng}_font_cinema_sharp_{lang}",
+              all(geo(c[k]) and sharp(c[k]) for k in ("title", "hero", "rail")),
+              f"title={c['title']} hero={c['hero']} rail h2={c['rail']}")
+        check(f"b24_{eng}_font_cinema_plain_{lang}",
+              all(geo(c[k]) and plain(c[k]) for k in ("motto", "body", "card", "pill", "seg", "titleDates")),
+              f"motto={c['motto']} body={c['body']} card={c['card']} pill={c['pill']} seg={c['seg']} dates={c['titleDates']}")
+        check(f"b24_{eng}_font_loaded_{lang}", "Geologica" in c["loaded"] and "Montserrat" not in c["loaded"],
+              f"loaded faces {c['loaded']}")
+        # the times in a film's sheet (week grid on desktop) carry the sharp corners too
+        fid = page.evaluate("() => (document.querySelector('#app .card[data-film]') || {dataset: {}}).dataset.film || null")
+        if fid:
+            page.evaluate("(id) => { curSheet = {kind: 'film', id}; openSheet(sheetFilm(filmById[id]), null); }", fid)
+            page.wait_for_timeout(500)
+            t = page.evaluate("() => { const p = document.querySelector('#scrim .p3e-pill'), h = document.querySelector('#scrim .sheet h2');"
+                              " return {pill: p && getComputedStyle(p).fontVariationSettings, h2: h && getComputedStyle(h).fontVariationSettings}; }")
+            check(f"b24_{eng}_font_cinema_times_sharp_{lang}",
+                  '"SHRP" 100' in (t["pill"] or "") and '"SHRP" 100' in (t["h2"] or ""), f"{fid}: {t}")
+        # in English a Cyrillic title is marked Bulgarian, so it draws the Bulgarian forms
+        if lang == "en":
+            m = page.evaluate(r"""() => { const els = [...document.querySelectorAll('#app *')].filter(e => e.children.length === 0
+                && /[Ѐ-ӿ]/.test(e.textContent)); return {n: els.length,
+                notBg: els.filter(e => (e.closest('[lang]') || document.documentElement).lang !== 'bg').map(e => e.textContent.trim().slice(0, 30)).slice(0, 4)}; }""")
+            check(f"b24_{eng}_font_cyrillic_marked_bg_en", not m["notBg"], f"{m['n']} Cyrillic text element(s); not lang=bg: {m['notBg']}")
+        ctx.close()
+        ctx, page, errs = _b24_open(browser, base, 1280, 800, lang=lang, mode="theatre")
+        t = page.evaluate(B24_FONT_JS)
+        check(f"b24_{eng}_font_theatre_{lang}",
+              t["surface"] == "theatre" and t["title"] and t["title"]["fam"].startswith('"Source Serif 4"')
+              and plain(t["title"]) and t["hero"] and t["hero"]["fam"].startswith('"Source Serif 4"')
+              and all(geo(t[k]) and plain(t[k]) for k in ("motto", "body", "pill", "seg")),
+              f"surface={t['surface']} title={t['title']} hero={t['hero']} motto={t['motto']} body={t['body']} pill={t['pill']}")
+        check(f"b24_{eng}_font_no_js_errors_{lang}", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    # the shipped files: the axis works, and the Bulgarian forms differ from the Russian ones
+    ctx, page, errs = _b24_open(browser, base, 1280, 800)
+    ok0, s0 = _b24_probe(page, "Гледай 18:30 Sofia", "bg", "normal")
+    ok1, s1 = _b24_probe(page, "Гледай 18:30 Sofia", "bg", '"SHRP" 100')
+    check(f"b24_{eng}_font_sharp_axis_draws", ok0 and ok1 and s0 != s1,
+          f"loaded={ok0 and ok1}; SHRP 0 and SHRP 100 render {'differently' if s0 != s1 else 'the same'}")
+    word = "вгджзийклптцшщъю"
+    okb, sb = _b24_probe(page, word, "bg", "normal")
+    okr, sr = _b24_probe(page, word, "ru", "normal")
+    check(f"b24_{eng}_font_bulgarian_forms", okb and okr and sb != sr,
+          f"loaded={okb and okr}; lang=bg and lang=ru render {'differently (locl BGR)' if sb != sr else 'the same'}")
+    okb2, sb2 = _b24_probe(page, word, "bg", '"SHRP" 100')
+    okr2, sr2 = _b24_probe(page, word, "ru", '"SHRP" 100')
+    check(f"b24_{eng}_font_bulgarian_forms_sharp", okb2 and okr2 and sb2 != sr2,
+          f"loaded={okb2 and okr2}; with SHRP 100: lang=bg and lang=ru render {'differently' if sb2 != sr2 else 'the same'}")
+    page.evaluate("() => document.getElementById('b24-probe').remove()")
+    ctx.close()
+    # the files: Montserrat removed everywhere, Geologica self-hosted with its licence
+    fonts = webapp_root / "fonts"
+    css = (fonts / "fonts.css").read_text(encoding="utf-8")
+    urls = re.findall(r"url\(([^)]+)\)", css)
+    left = sorted(p.name for p in fonts.iterdir() if "montserrat" in p.name.lower())
+    html_text = html_path.read_text(encoding="utf-8", errors="replace")
+    check(f"b24_{eng}_font_files",
+          not left and not re.search(r"font-family:\s*'Montserrat'", css) and (fonts / "OFL-Geologica.txt").is_file()
+          and all((fonts / u.strip("'\"")).is_file() for u in urls)
+          and sum(1 for u in urls if "geologica" in u) == 4 and "Montserrat" not in html_text,
+          f"montserrat files left={left}; css urls={len(urls)} all present={all((fonts / u.strip(chr(39) + chr(34))).is_file() for u in urls)}; "
+          f"Montserrat in page={'Montserrat' in html_text}")
+    lg = (webapp_root / "scripts" / "gen_legal_pages.py").read_text(encoding="utf-8")
+    m = re.search(r'CSS = """(.*?)"""', lg, re.S)
+    lcss = m.group(1) if m else ""
+    check(f"b24_{eng}_font_legal_css", '"Geologica"' in lcss and '"SHRP" 100' in lcss and "Montserrat" not in lg,
+          "the legal pages' font block names Geologica (titles SHRP 100), no Montserrat")
+    # the service worker precaches the shell (fonts/fonts.css among it) and serves same-origin
+    # static files cache-first: a shell file that differs from the released one (origin/main)
+    # needs a new CACHE_VERSION, or returning visitors keep the old file for good
+    def _released(rel):
+        r = subprocess.run(["git", "-C", str(webapp_root), "show", f"origin/main:{rel}"], capture_output=True)
+        return r.stdout if r.returncode == 0 else None
+    sw_now = (webapp_root / "sw.js").read_text(encoding="utf-8")
+    sw_old = _released("sw.js")
+    if sw_old is None:
+        skip(f"b24_{eng}_font_sw_cache_version", "origin/main is not available here")
+    else:
+        ver = lambda t: (re.search(r'CACHE_VERSION\s*=\s*"([^"]+)"', t) or [None, None])[1]
+        shell = re.findall(r'"([^"]+)"', (re.search(r"const SHELL = \[(.*?)\];", sw_now, re.S) or [None, ""])[1])
+        changed = [f for f in shell if f not in ("./", "index.html") and (webapp_root / f).is_file()
+                   and _released(f) != (webapp_root / f).read_bytes()]
+        v_old, v_new = ver(sw_old.decode("utf-8")), ver(sw_now)
+        check(f"b24_{eng}_font_sw_cache_version", "fonts/fonts.css" in shell and (not changed or v_new != v_old),
+              f"shell files changed since the release: {changed}; CACHE_VERSION {v_old} -> {v_new}")
+    if os.environ.get("SOFIA_HTML"):
+        for path in ("/legal/terms/", "/legal/en/privacy/"):
+            ctx = _ux_ctx(browser, base, 1280, 800)
+            page, errs = _ux_page(ctx, base + path, wait_app=False)
+            page.wait_for_selector("h1", timeout=15000)
+            r = page.evaluate("""async () => { await document.fonts.ready; const b = getComputedStyle(document.body), h = getComputedStyle(document.querySelector('h1'));
+                return {body: b.fontFamily, h1: h.fontFamily, fvs: h.fontVariationSettings,
+                  loaded: [...document.fonts].some(f => f.family.replace(/["']/g, '') === 'Geologica' && f.status === 'loaded')}; }""")
+            check(f"b24_{eng}_font_legal_page_{path.strip('/').replace('/', '_')}",
+                  r["body"].startswith("Geologica") and r["h1"].startswith("Geologica") and '"SHRP" 100' in r["fvs"] and r["loaded"],
+                  f"{r}")
+            ctx.close()
+
+
+B24_SEG_JS = r"""() => { const seg = document.querySelector('.bar .seg'); if (!seg) return null; const sr = seg.getBoundingClientRect();
+  return [...seg.querySelectorAll('button')].map(b => { const r = b.getBoundingClientRect(), c = getComputedStyle(b);
+    return {sw: b.dataset.switch, on: b.getAttribute('aria-pressed') === 'true', shadow: c.boxShadow,
+      inside: r.left - 2 >= sr.left - 0.5 && r.right + 2 <= sr.right + 0.5 && r.top - 2 >= sr.top - 0.5 && r.bottom + 2 <= sr.bottom + 0.5,
+      clip: getComputedStyle(seg).overflow}; }); }"""
+
+
+def _b24_toggle(browser, base, eng):
+    def ring_ok(btns, mode):
+        on = [b for b in btns if b["on"]]
+        off = [b for b in btns if not b["on"]]
+        colour = B24_CRIMSON if mode == "cinema" else B24_GOLD
+        return (len(on) == 1 and on[0]["sw"] == mode and colour in on[0]["shadow"] and "0px 0px 0px 2px" in on[0]["shadow"]
+                and on[0]["inside"] and all(b["shadow"] == "none" for b in off))
+    for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900))):
+        dev = "phone" if phone else "desktop"
+        for mode in ("cinema", "theatre"):
+            ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, mode=mode)
+            btns = page.evaluate(B24_SEG_JS)
+            check(f"b24_{eng}_toggle_{dev}_{mode}_ring", bool(btns) and ring_ok(btns, mode),
+                  f"{[(b['sw'], b['on'], b['shadow'], b['inside']) for b in (btns or [])]}")
+            # switching moves the ring with the surface
+            other = "theatre" if mode == "cinema" else "cinema"
+            _ux_tap_sel(page, phone, f'.bar [data-switch="{other}"]', scroll=False)
+            page.wait_for_timeout(900)
+            btns2 = page.evaluate(B24_SEG_JS)
+            check(f"b24_{eng}_toggle_{dev}_{mode}_to_{other}", bool(btns2) and ring_ok(btns2, other),
+                  f"{[(b['sw'], b['on'], b['shadow']) for b in (btns2 or [])]}")
+            if mode == "cinema":
+                save_shot(page, "B24", f"toggle_{dev}_{eng}")
+            check(f"b24_{eng}_toggle_{dev}_{mode}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+
+
+B24_MOTTO_JS = r"""() => { const s = document.querySelector('.brand-sub'); if (!s) return null; const c = getComputedStyle(s);
+  const g = document.createRange(); g.selectNodeContents(s); const r = g.getBoundingClientRect();
+  return {text: s.textContent.trim(), fam: c.fontFamily, size: c.fontSize, track: c.letterSpacing, weight: c.fontWeight,
+    style: c.fontStyle, transform: c.textTransform, fvs: c.fontVariationSettings, lh: c.lineHeight, w: Math.round(r.width * 10) / 10}; }"""
+
+
+def _b24_motto(browser, base, eng):
+    exp = {"bg": "Афишът на кината и театрите в София", "en": "Sofia's cinema and theatre listings"}
+    for phone, (w, h) in ((True, (390, 844)), (True, (375, 812)), (False, (1024, 768)), (False, (1440, 900)), (False, (1920, 1080))):
+        for lang in ("bg", "en"):
+            got = {}
+            for mode in ("cinema", "theatre"):
+                ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, lang=lang, mode=mode)
+                got[mode] = page.evaluate(B24_MOTTO_JS)
+                ctx.close()
+            c, t = got["cinema"], got["theatre"]
+            same = bool(c and t) and all(c[k] == t[k] for k in ("text", "fam", "size", "track", "weight", "style", "transform", "fvs", "lh")) \
+                and abs(c["w"] - t["w"]) <= 0.5
+            check(f"b24_{eng}_motto_same_{w}_{lang}", same and c["text"] == exp[lang] and c["fam"].startswith("Geologica"),
+                  f"cinema={c} theatre={t}")
+
+
+def _b24_saturday():
+    d = datetime.date.fromisoformat(CLOCK_TODAY_ISO)
+    if d.weekday() == 6:
+        return d.isoformat()
+    return (d + datetime.timedelta(days=(5 - d.weekday()) % 7)).isoformat()
+
+
+B24_STRIP_JS = r"""() => { const s = document.querySelector('.phead .daystrip');
+  return {strip: !!s, day: S.day, next: !!(s && s.querySelector('.ds-next')),
+    pills: s ? [...s.querySelectorAll('[data-day]')].map(b => ({d: b.dataset.day, on: b.getAttribute('aria-pressed') === 'true', dis: b.disabled, t: b.textContent.trim()})) : [],
+    title: (document.querySelector('.phead-title') || {}).textContent || '',
+    cards: document.querySelectorAll('#app main .card').length, vis: S.mode === 'cinema' ? visibleFilms().length : visibleShows().length,
+    empty: !!document.querySelector('#app main .empty'), weekEnd: WEEK_END}; }"""
+
+
+def _b24_days(browser, base, eng):
+    sat = _b24_saturday()
+    clock = _ux_clock(_sofia_1445_epoch_ms(sat))
+    for phone, (w, h), lang, mode in ((False, (1440, 900), "en", "cinema"), (False, (1440, 900), "bg", "cinema"),
+                                       (True, (390, 844), "bg", "cinema"), (False, (1440, 900), "en", "theatre")):
+        dev = "phone" if phone else "desktop"
+        tag = f"b24_{eng}_days_{dev}_{mode}_{lang}"
+        ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock)
+        s0 = page.evaluate(B24_STRIP_JS)
+        nxt = [p["d"] for p in s0["pills"] if p["d"] != "week" and p["d"] > s0["weekEnd"] and not p["dis"]]
+        cur = [p["d"] for p in s0["pills"] if p["d"] != "week" and p["d"] <= s0["weekEnd"] and not p["dis"]]
+        if not s0["next"] or not nxt:
+            skip(tag, f"clock {sat}: no next-week day in the strip ({[p['t'] for p in s0['pills']]})")
+            ctx.close()
+            continue
+        bad = []
+        for d in nxt + cur[:1] + ["week"]:
+            # the strip scrolls sideways on a phone: bring the pill into view first, as a thumb would
+            page.evaluate("(d)=>{const b=document.querySelector('.phead .daystrip [data-day=\"'+d+'\"]');if(b)b.scrollIntoView({inline:'center',block:'nearest'});}", d)
+            page.wait_for_timeout(150)
+            _ux_tap_sel(page, phone, f'.phead .daystrip [data-day="{d}"]', scroll=False)
+            page.wait_for_timeout(450)
+            s = page.evaluate(B24_STRIP_JS)
+            pressed = [p["d"] for p in s["pills"] if p["on"]]
+            ok = s["day"] == d and s["strip"] and pressed == [d] and s["vis"] > 0 and s["cards"] > 0 and not s["empty"] \
+                and [p["d"] for p in s["pills"]] == [p["d"] for p in s0["pills"]]
+            if not ok:
+                bad.append(f"{d}: day={s['day']} strip={s['strip']} pressed={pressed} listed={s['vis']} cards={s['cards']} empty={s['empty']} title={s['title']!r}")
+            if d == nxt[0] and lang == "en" and mode == "cinema":
+                save_shot(page, "B24", f"days_next_week_{dev}_{eng}")
+        check(tag, not bad, f"clock {sat}; strip {[p['t'] for p in s0['pills']]}; tried {nxt + cur[:1] + ['week']}; problems: {bad[:3]}")
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+B24_GRID_JS = r"""() => { const g = document.querySelector('#scrim .p3e-gpages'), pg = document.querySelector('#scrim .p3e-gpager');
+  if (!g || !pg) return null; const sc = document.getElementById('scrim'), sh = sc.querySelector('.sheet'), body = sh.querySelector('.sbody');
+  const pages = [...g.querySelectorAll('.p3e-gpage')];
+  const shown = pages.filter(p => !p.hasAttribute('aria-hidden'));
+  const hidPills = pages.filter(p => p.hasAttribute('aria-hidden')).flatMap(p => [...p.querySelectorAll('[data-sspill]')]);
+  const r1 = n => Math.round(n * 10) / 10, prev = pg.querySelector('[data-gnav="-1"]'), lab = pg.querySelector('.p3e-grange');
+  /* the sheet's own blank under its last content (its padding is 22 px) */
+  /* (the grid counts by its shown page and footnote, not its box: a box kept as tall as the
+     tallest page was the blank under a short one) */
+  const fn = sh.querySelector('.p3e-gt-fn'), wrap = g.closest('.p3e-grid-wrap');
+  const gridBottom = Math.max(...shown.map(p => p.getBoundingClientRect().bottom), fn && !fn.hidden ? fn.getBoundingClientRect().bottom : 0);
+  /* what follows the grid: the next shown element after it, else the sheet's bottom */
+  let nextTop = sh.getBoundingClientRect().bottom;
+  for (let n = wrap; n && n !== sh; n = n.parentElement) {
+    let x = n.nextElementSibling; while (x && !x.getClientRects().length) x = x.nextElementSibling;
+    if (x) { nextTop = x.getBoundingClientRect().top; break; } }
+  /* the room that holds a scrolled sheet: a marker at the scroll end it keeps (none: 0) */
+  const pad = sc.classList.contains('sg-gend') ? (parseFloat(sc.style.getPropertyValue('--sg-gend')) || 0) + 1 : 0;
+  return {top: r1(g.getBoundingClientRect().top), pager: r1(pg.getBoundingClientRect().top),
+    prevX: r1(prev.getBoundingClientRect().left), labX: r1(lab.getBoundingClientRect().left), labW: r1(lab.getBoundingClientRect().width),
+    h: Math.round(g.getBoundingClientRect().height), st: Math.round(sc.scrollTop), range: lab.textContent,
+    nShown: shown.length, shownVisible: shown.every(p => getComputedStyle(p).visibility === 'visible' && p.getClientRects().length > 0),
+    hiddenOk: hidPills.every(b => b.getClientRects().length === 0),
+    blank: Math.round(nextTop - gridBottom), pad: Math.round(pad),
+    spare: pad ? Math.round(pad - sc.scrollTop - sc.clientHeight) : 0,
+    next: pg.querySelector('[data-gnav="1"]').disabled, prev: prev.disabled,
+    focus: !!(document.activeElement && document.activeElement.closest('.p3e-gpager'))}; }"""
+
+B24_GRID_ITEMS_JS = r"""(kind)=>{const out=[];
+  if(kind==='film'){for(const f of FILMS){const n=new Set(upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id)).map(r=>r[2])).size;if(n>7)out.push({id:f.id,n});}}
+  else{for(const s of SHOWS){if(!thById[s.theatre])continue;const n=new Set(upcomingPerfs(PERFORMANCES.filter(p=>p[0]===s.id)).map(p=>p[1])).size;if(n>7)out.push({id:s.id,n});}}
+  return out.sort((a,b)=>b.n-a.n);}"""
+
+# where the sheet sits before paging: scrolled to its very end (where a shorter page used to
+# pull it up, or a page without the footnote), the grid's bottom at the window's bottom, its
+# pager near the top, and the sheet at its top (a sheet shorter than the window is centred)
+B24_GRID_SCROLL = {
+    "end": "()=>{const s=document.getElementById('scrim');s.scrollTop=s.scrollHeight;}",
+    "grid": "()=>{const s=document.getElementById('scrim'),g=document.querySelector('#scrim .p3e-grp-desk').getBoundingClientRect(),"
+            "p=document.querySelector('#scrim .p3e-gpager').getBoundingClientRect();"
+            "s.scrollTop+=g.height<innerHeight-40?g.bottom-innerHeight+16:p.top-60;}",
+    "top": "()=>{document.getElementById('scrim').scrollTop=0;}",
+}
+
+
+def _b24_grid(browser, base, eng):
+    """Item 5 over every title whose grid has more than one page (2026-10-24): from every
+    starting scroll, over every page and back, the table, the pager, its arrows and its label
+    stay put (vertically and sideways) and the scroll is kept; the sheet has no blank of its
+    own under a short page (the room that holds the pager is backdrop below the sheet, never
+    more than the window needs, and scrolling back up gives it back)."""
+    for kind, mode in (("show", "theatre"), ("film", "cinema")):
+        for lang, (w, h) in (("bg", (1280, 800)), ("en", (1280, 800)), ("bg", (1920, 1080))):
+            tag = f"b24_{eng}_grid_{kind}_{lang}" + ("" if w == 1280 else f"_{w}")
+            ctx, page, errs = _b24_open(browser, base, w, h, lang=lang, mode=mode)
+            items = page.evaluate(B24_GRID_ITEMS_JS, kind)
+            if not items:
+                skip(tag, f"no {kind} with more than 7 dates")
+                ctx.close()
+                continue
+            bad, tried, nstates = [], [], 0
+            for it in items:
+                for where, js in B24_GRID_SCROLL.items():
+                    page.evaluate("()=>{if(sheetOpen)closeSheet();}")
+                    page.wait_for_timeout(500)
+                    page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, it["id"]])
+                    page.wait_for_timeout(600)
+                    page.evaluate(js)
+                    page.wait_for_timeout(200)
+                    s0 = page.evaluate(B24_GRID_JS)
+                    if not s0:
+                        bad.append(f"{it['id']}: no pager")
+                        continue
+                    states = [s0]
+
+                    def turn(step):
+                        # a click where the arrow is; one scrolled out of the window is clicked from script
+                        r = page.evaluate("(s)=>{const b=document.querySelector('#scrim .p3e-gpager [data-gnav=\"'+s+'\"]');const q=b.getBoundingClientRect();"
+                                          "const x=q.left+q.width/2,y=q.top+q.height/2;if(y<4||y>innerHeight-4){b.click();return null;}return [x,y]}", step)
+                        if r:
+                            page.mouse.click(*r)
+                        page.wait_for_timeout(200)
+                        return page.evaluate(B24_GRID_JS)
+                    guard = 0
+                    while not states[-1]["next"] and guard < 15:
+                        states.append(turn("1")); guard += 1
+                    while not states[-1]["prev"] and guard < 30:
+                        states.append(turn("-1")); guard += 1
+                    nstates += len(states)
+                    if len({st["range"] for st in states}) < 2:
+                        bad.append(f"{it['id']} from {where}: the pages did not turn {[st['range'] for st in states][:4]}")
+                    for st in states:
+                        moved = [k for k in ("top", "pager", "prevX", "labX") if abs(st[k] - s0[k]) > 1]
+                        if moved or st["st"] != s0["st"] or st["nShown"] != 1 or not st["shownVisible"] or not st["hiddenOk"] \
+                                or st["blank"] > 40 or st["spare"] > 1:
+                            bad.append(f"{it['id']} from {where}, {st['range']}: moved {[(k, s0[k], st[k]) for k in moved]} "
+                                       f"scrollTop {s0['st']}->{st['st']} shown={st['nShown']} hidden pills unrendered={st['hiddenOk']} "
+                                       f"blank in sheet={st['blank']} room beyond need={st['spare']}")
+                    # scrolling back up gives the room below the sheet back
+                    page.evaluate("()=>{document.getElementById('scrim').scrollTop=0;}")
+                    page.wait_for_timeout(150)
+                    page.evaluate("()=>{document.getElementById('scrim').dispatchEvent(new Event('scroll'));}")
+                    page.wait_for_timeout(100)
+                    up = page.evaluate(B24_GRID_JS)
+                    if up["spare"] > 1:
+                        bad.append(f"{it['id']} from {where}: at the top the scroll end kept is {up['pad']} px, {up['spare']} more than needed")
+                tried.append(f"{it['id'][:24]}({it['n']})")
+            check(tag, nstates > 2 and not bad,
+                  f"{len(items)} titles {tried}; {nstates} states; problems ({len(bad)}): {bad[:3]}")
+            if w == 1280:
+                # the keyboard: Enter on the focused arrow pages and the focus stays on the pager
+                page.evaluate("()=>{if(sheetOpen)closeSheet();}")
+                page.wait_for_timeout(500)
+                page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, items[0]["id"]])
+                page.wait_for_timeout(600)
+                page.evaluate(B24_GRID_SCROLL["grid"])
+                page.wait_for_timeout(200)
+                page.evaluate("()=>{const n=document.querySelector('#scrim .p3e-gpager [data-gnav=\"1\"]');n.focus({preventScroll:true});}")
+                k0 = page.evaluate(B24_GRID_JS)
+                kb = []
+                for _ in range(3):
+                    page.keyboard.press("Enter")
+                    page.wait_for_timeout(180)
+                    kb.append(page.evaluate(B24_GRID_JS))
+                check(f"{tag}_keyboard", all(k["focus"] and abs(k["top"] - k0["top"]) <= 1 for k in kb)
+                      and len({k["range"] for k in [k0] + kb}) > 1,
+                      f"before {(k0['range'], k0['top'])}; after each Enter {[(k['range'], k['focus'], k['top']) for k in kb]}")
+                if kind == "show" and lang == "bg":
+                    save_shot(page, "B24", f"grid_paging_{eng}")
+            check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+
+
+def _b24_ring_pixels(png, rect, clip, margin):
+    """Bright pixels outside the field's rounded shape (a stadium: radius = height / 2), more
+    than 1.5 px from its edge, at its two rounded ends (where the clipped ring left its white
+    wedges; above and below the straight middle a phone has the toggle's thumb)."""
+    from PIL import Image
+    im = Image.open(_ux_io.BytesIO(png)).convert("RGB")
+    sx = im.width / clip["width"]
+    x0, y0, w, h = rect["x"] - clip["x"], rect["y"] - clip["y"], rect["w"], rect["h"]
+    rad = h / 2
+    out = 0
+    for py in range(im.height):
+        for px in range(im.width):
+            x, y = (px + .5) / sx, (py + .5) / sx
+            if x0 + rad <= x <= x0 + w - rad:
+                continue
+            cx = min(max(x, x0 + rad), x0 + w - rad)
+            cy = y0 + rad
+            dist = ((x - cx) ** 2 + (y - cy) ** 2) ** .5 - rad
+            if dist > 1.5:
+                r, g, b = im.getpixel((px, py))
+                if min(r, g, b) > 170:
+                    out += 1
+    return out
+
+
+def _b24_search(browser, base, eng):
+    for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900)), (False, (1024, 768))):
+        dev = f"{'phone' if phone else 'desktop'}_{w}"
+        ctx, page, errs = _b24_open(browser, base, w, h, phone=phone)
+        _ux_tap_sel(page, phone, "[data-search-open]", scroll=False)
+        page.wait_for_timeout(700)
+        sel = "#q-m" if phone else "#q"
+        page.focus(sel)
+        page.keyboard.type("ко")
+        page.wait_for_timeout(500)
+        r = page.evaluate("""(sel) => { const e = document.querySelector(sel); const q = e.getBoundingClientRect(), c = getComputedStyle(e);
+            const ow = parseFloat(c.outlineWidth) || 0, oo = parseFloat(c.outlineOffset) || 0, reach = Math.max(0, ow + oo);
+            const clips = []; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
+              const s = getComputedStyle(a); if (/(hidden|clip|auto|scroll)/.test(s.overflowX + s.overflowY)) { const ar = a.getBoundingClientRect();
+                if (q.left - reach < ar.left - .5 || q.right + reach > ar.right + .5 || q.top - reach < ar.top - .5 || q.bottom + reach > ar.bottom + .5)
+                  clips.push(a.className); } }
+            return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
+              radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'), active: document.activeElement === e, clips}; }""", sel)
+        # 6 px beside the field, 3 px above and below it (a phone's toggle ends 5 px above it)
+        margin, my = 6, 3
+        clip = {"x": max(0, r["x"] - margin), "y": max(0, r["y"] - my)}
+        clip["width"] = min(r["w"] + 2 * margin, w - clip["x"])
+        clip["height"] = r["h"] + 2 * my
+        png = page.screenshot(clip=clip)
+        outside = _b24_ring_pixels(png, r, clip, margin)
+        ok = (r["active"] and r["fv"] and r["style"] == "solid" and r["ow"] >= 2 and r["oo"] + r["ow"] <= 0
+              and r["color"] == B24_FG and r["shadow"] == "none" and not r["clips"] and outside == 0)
+        check(f"b24_{eng}_search_ring_{dev}", ok,
+              f"focus-visible={r['fv']} outline {r['style']} {r['ow']}px offset {r['oo']}px {r['color']} box-shadow={r['shadow']} "
+              f"radius={r['radius']} clipped by={r['clips']} bright pixels outside the pill={outside}")
+        save_shot(page, "B24", f"search_focus_{dev}_{eng}")
+        check(f"b24_{eng}_search_{dev}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def wave_b24(browser):
+    eng = _hf_engine(browser)
+    ensure_shot_dir("B24")
+    share_root, tmp = _ux_share_root()
+    srv, base = _ux_server(share_root)
+    try:
+        for title, fn in (("1: Geologica and Source Serif 4", _b24_fonts),
+                          ("2: the Кино/Театър rings", _b24_toggle),
+                          ("3: one motto on both screens", _b24_motto),
+                          ("4: next-week days of the period strip", _b24_days),
+                          ("5: the week grid's paging stays put", _b24_grid),
+                          ("7: the focused search field", _b24_search)):
+            print(f"\n=== B24-{title} ===")
+            try:
+                fn(browser, base, eng)
+            except Exception as _ex:      # one section crashing must not hide the rest
+                check(f"b24_{eng}_{fn.__name__.strip('_')}_ran", False, f"{type(_ex).__name__}: {str(_ex)[:200]}")
+    finally:
+        srv.shutdown()
+        if tmp:
+            _ux_shutil.rmtree(tmp, ignore_errors=True)
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -17614,6 +18144,7 @@ WAVES = {
     "TR1": wave_tr1,
     "TR2": wave_tr2,
     "UX1": wave_ux1,
+    "B24": wave_b24,
 }
 
 def main():

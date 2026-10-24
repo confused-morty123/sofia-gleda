@@ -17,10 +17,12 @@
   /* the accent as TEXT or a thin outline on ink: crimson #E0163A is only 3.7-4.1:1 there;
      #FF3B5C is 5.1-5.7:1. Fills behind white text keep --accent (white on it 4.8:1). */
   --accent-text:#FF3B5C;
-  /* type families (owner, 2026-10-23): the cinema surface speaks Montserrat, the theatre
-     surface Source Serif 4 (its italic for the motto); --f-ui carries menus, chips and text */
-  --f-ui:"Montserrat","Segoe UI",system-ui,sans-serif;
-  --f-display:"Montserrat","Segoe UI",system-ui,sans-serif;
+  /* type families (owner, 2026-10-24): the cinema surface speaks Geologica, its sharp-corner
+     axis (SHRP 100, --f-sharp) on headings, the hero and the times; the theatre surface Source
+     Serif 4. --f-ui (plain Geologica) carries the motto, menus, chips and text on both */
+  --f-ui:"Geologica","Segoe UI",system-ui,sans-serif;
+  --f-display:"Geologica","Segoe UI",system-ui,sans-serif;
+  --f-sharp:"SHRP" 100;
   --shadow:0 20px 48px rgba(0,0,0,.55);
   --r:12px; --r-lg:20px;
   --motion-dur-sm:160ms; --motion-dur-md:380ms;
@@ -34,7 +36,7 @@
   color-scheme:dark;
 }
 :root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; --accent-text:var(--gild);
-  --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; }
+  --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; --f-sharp:normal; }
 /* Dark mode is forced — there is no light theme. The former
    `@media (prefers-color-scheme: light)` and `:root[data-theme="light"]` blocks
    were removed so a device set to light does not recolour the app; `color-scheme:dark`
@@ -452,6 +454,11 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
   display:grid; place-items:start center; overflow-y:auto; overscroll-behavior:contain;
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px))
     max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+/* _gridHold (desktop week grid paging): room above or below a centred sheet, and a marker
+   that keeps a scrolled sheet's scroll room; nothing otherwise */
+@media(min-width:761px){ .scrim{padding-top:calc(max(16px,env(safe-area-inset-top,0px)) + var(--sg-gpadt,0px));
+  padding-bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--sg-gpadb,0px))}
+  .scrim.sg-gend::after{content:"";position:absolute;left:0;top:var(--sg-gend,0px);width:1px;height:1px;pointer-events:none} }
 .sheet{width:min(860px,100%); background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-lg);
   overflow:hidden; box-shadow:var(--shadow); margin-block:auto}
 .shero{position:relative; min-height:210px; display:flex; align-items:flex-end; padding:22px; color:#fff; overflow:hidden}
@@ -821,13 +828,20 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .p3e-grid-wrap{margin:0 0 4px}
   .p3e-grp-desk{background:var(--ink-3);border-radius:14px;padding:14px 14px 8px;overflow-x:auto}
   .p3e-gt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-  /* paging: only the current page is shown; each lists only its own venues */
-  .p3e-gpages{display:grid}
-  .p3e-gpages>.p3e-gpage{grid-area:1 / 1;align-self:start}
+  /* paging: only the current page is shown, at its own height; each lists only its own
+     venues. What keeps the table and the pager still while paging is _gridHold (below the
+     sheet, in the scrim's padding), not the hidden pages' space: a busy film's tallest page
+     would leave a screen of empty sheet under a short one. */
   .p3e-gpages>.p3e-gpage[aria-hidden="true"]{display:none}
   .p3e-gpager{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px;
     position:sticky;left:0}
-  .p3e-grange{font-size:13px;color:var(--fg-2);min-width:7.5em;text-align:center;font-variant-numeric:tabular-nums}
+  /* the dates' label is as wide as the widest of its pages' labels (each one is laid, unseen,
+     in the same cell), so the arrows never slide sideways from page to page: "25 окт – 20 дек"
+     is wider than 7.5em in Geologica (2026-10-24) */
+  .p3e-grange-w{display:grid;min-width:7.5em;font-size:13px;color:var(--fg-2);white-space:nowrap;
+    font-variant-numeric:tabular-nums}
+  .p3e-grange-w>*{grid-area:1 / 1;text-align:center}
+  .p3e-grange-sz{visibility:hidden}
   .p3e-gnav{width:44px;height:44px;border-radius:10px;border:1px solid var(--line-2);background:var(--ink-4);
     color:var(--fg);font-size:18px;line-height:1;display:grid;place-items:center;cursor:pointer}
   .p3e-gnav:focus-visible{border-color:var(--fg-2)}@media (hover:hover){.p3e-gnav:hover:not([disabled]){border-color:var(--fg-2)}}
@@ -1076,10 +1090,19 @@ footer .legal-nav a, footer .legal-nav button{display:inline-flex; align-items:c
   .phead-fav{grid-column:1 / -1}
 }
 
-/* ---- type families (owner decision 2026-10-23): Montserrat for cinema, Source Serif 4 for theatre ----
-   --f-display follows the surface; menus, chips and text stay Montserrat on both. Display titles
+/* ---- type families (owner decisions 2026-10-23 and 2026-10-24): Geologica for cinema, Source Serif 4
+   for theatre ----
+   --f-display follows the surface; menus, chips and text stay plain Geologica on both. Display titles
    are sentence case now (the uppercase belonged to Oswald), tracked a touch tight; times and
    counts use tabular figures. */
+/* Geologica's sharp-corner axis (SHRP 100) on the cinema surface: headings, the hero, the sheet's
+   title, the times and the day numbers. Card titles, chips, menus, the motto and text stay plain.
+   --f-sharp is normal on the theatre surface (Source Serif 4 has no such axis). Every element below
+   holds its own text, so the setting does not leak into plain Geologica inside it. */
+.phead-title,.rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title,
+main .sec-subhead,.hero h1,.hero .hero-title,.sheet h2,.time,.p3e-pill,.ss-time,.p3e-day b,
+.p3e-gt th b,.rtile .rv,.day .dnum{font-variation-settings:var(--f-sharp)}
+.phead-title .phead-dates{font-variation-settings:normal}
 .phead-title,.rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title,
 .hero h1,.hero .hero-title,.sheet h2,.p-title,.ebox h3,.drawer-top .drawer-title{text-transform:none}
 .rhead h2,.sechead h2,.sechead h1.sechead-h,.venue-block-head h2,.sec-toggle-title{font-weight:700; letter-spacing:-.01em}
@@ -1099,42 +1122,35 @@ body{font-size:15px}
 [data-surface="theatre"] .sheet h2{font-weight:700; letter-spacing:0}
 [data-surface="theatre"] .p-title{font-weight:600; letter-spacing:0; font-size:17px}
 [data-surface="theatre"] .sec-subhead{font-weight:600}
-/* the motto: Montserrat 500 in tracked capitals on the cinema surface, Source Serif 4 italic on the
-   theatre surface. Desktop keeps the logo lockup (the line starts under the logo and is sized from
-   its width; --motto-em is the line's width in font-sizes, measured at size per face, case and language; Source Serif 4 has optical sizes, so its width is not linear in size),
-   but never below the owner's 10 px floor: Montserrat capitals are wide, so in Bulgarian the line
-   runs past the logo's right edge rather than shrinking to 8 px. Phones drop the capitals and size
-   the line to the space between the two header buttons (100vw - 140 px keeps 12 px clear of the
-   language button), 10 px at the least. */
-.brand .brand-sub{font-family:var(--f-ui); font-weight:500; text-transform:uppercase; letter-spacing:.06em; --motto-em:25.6;
+/* the motto (owner, 2026-10-24): ONE face, size and tracking on both surfaces, plain Geologica 400 in
+   sentence case, so switching Кино/Театър never changes it. Desktop keeps the logo lockup (the line
+   starts under the logo and is sized from its width; --motto-em is the line's width in font-sizes,
+   measured per language: 21.29 in BG, 16.37 in EN), at most 15 px and never below the owner's 10 px
+   floor: in Bulgarian the line is a little longer than the logo at 10 px and runs past its right
+   edge rather than shrinking. Phones size the line to the space between the two header buttons
+   (100vw - 140 px keeps 12 px clear of the language button), 10-12.5 px. */
+.brand .brand-sub{font-family:var(--f-ui); font-style:normal; font-weight:400; text-transform:none; letter-spacing:0;
+  font-variation-settings:normal; --motto-em:21.29;
   line-height:14px}  /* a fixed line box: the header's height stays the same in BG and EN, whose sizes differ */
-.brand .brand-sub:lang(en){--motto-em:23.05}
-[data-surface="theatre"] .brand .brand-sub{font-family:"Source Serif 4",Georgia,serif; font-style:italic; font-weight:400;
-  text-transform:none; letter-spacing:0; --motto-em:19.8}
-[data-surface="theatre"] .brand .brand-sub:lang(en){--motto-em:14.8}
+.brand .brand-sub:lang(en){--motto-em:16.37}
 @media(min-width:761px){
-  .brand .brand-sub,.brand .brand-sub:lang(en){font-size:max(10px,calc(100cqi*.98/var(--motto-em)))}
-  [data-surface="theatre"] .brand .brand-sub,[data-surface="theatre"] .brand .brand-sub:lang(en){
-    font-size:min(15px,max(10px,calc(100cqi*.98/var(--motto-em))))}
+  .brand .brand-sub,.brand .brand-sub:lang(en){font-size:min(15px,max(10px,calc(100cqi*.98/var(--motto-em))))}
 }
-/* 761-900 px: the toggle sits close to the lockup, so the cinema line (longer than the logo in
-   both languages) wraps to its width (two short lines) instead of running into the toggle; the
-   theatre line is at most 8 px longer than the logo and stays on one line */
+/* 761-900 px: the toggle sits close to the lockup, so the Bulgarian line (longer than the logo at
+   the 10 px floor) wraps to its width (two short lines) instead of running into the toggle */
 @media(min-width:761px) and (max-width:900px){
-  :root:not([data-surface="theatre"]) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
+  .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
 /* the same while the search field is open (the toggle moves left to make room for it) up to 1120 px */
 @media(min-width:761px) and (max-width:1120px){
-  :root:not([data-surface="theatre"]) .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
+  .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
 @media(max-width:760px){
-  .brand .brand-sub{text-transform:none; letter-spacing:0; --motto-ph:23.12; font-size:min(12.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
-  .brand .brand-sub:lang(en){--motto-ph:17.36}
-  [data-surface="theatre"] .brand .brand-sub{--motto-ph:19.8; font-size:min(13.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
-  [data-surface="theatre"] .brand .brand-sub:lang(en){--motto-ph:14.8}
+  .brand .brand-sub{--motto-ph:21.29; font-size:min(12.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
+  .brand .brand-sub:lang(en){--motto-ph:16.37}
 }
 
-/* footer links: Montserrat is wider, so a long label ("Настройки за бисквитки") may wrap in its
+/* footer links: the UI face is wide, so a long label ("Настройки за бисквитки") may wrap in its
    phone column; the items of a row share its top edge */
 @media(max-width:760px){ footer .legal-nav{align-items:start} }
 
@@ -1154,7 +1170,7 @@ body{font-size:15px}
 }
 
 /* ---- cinema group headings in "По кино" (owner decision 2026-10-23) ----
-   the same heading level as the theatres' groups; Montserrat on the cinema surface */
+   the same heading level as the theatres' groups; Geologica on the cinema surface */
 :root:not([data-surface="theatre"]) main .sec-subhead{font-family:var(--f-display); font-size:clamp(17px,1.8vw,20px); font-weight:600;
   letter-spacing:.04em; text-transform:uppercase; color:var(--fg-2); padding:20px 0 8px; border-bottom:1px solid var(--line); margin-bottom:18px}
 
@@ -1207,7 +1223,7 @@ body{font-size:15px}
 }
 
 /* ---- step 13: sentence case and a type floor of 11 px (I13, M14) ----
-   Display titles are sentence case since the type change (Montserrat and Source Serif 4, see the
+   Display titles are sentence case since the type change (Geologica and Source Serif 4, see the
    type families below); only the generated posters' lockup keeps capitals. Every label is
    sentence case, tracked at most .02em, and nothing on screen is smaller than 11 px. */
 .eyebrow{font-size:12px; letter-spacing:.01em; text-transform:none; font-weight:600}
@@ -1251,6 +1267,16 @@ body{font-size:15px}
    Every other selected state is a neutral white "thumb"; primary buttons are white like the
    time sheet's "Купи билет"; headings, the FAB, badges and the buy box are neutral. */
 .seg button[aria-pressed="true"]{background:var(--fg); color:var(--ink)}
+/* the Кино/Театър toggle's signature outlines (owner, 2026-10-24): Кино carries the cinema crimson,
+   Театър the theatre gold, as a 2 px ring around the white thumb of the ACTIVE segment only. Both
+   rings at once would put the other surface's colour on every screen (gold on the cinema listings,
+   crimson on the theatre's); with the active ring only, each view shows nothing but its own
+   accent, and as a ring (not a fill) it stays out of the way of the one filled accent above, the
+   selected day or period. The same rule on phones and desktop (the ring sits in the toggle's
+   4 px padding, so nothing is clipped). */
+.seg button{transition:background .18s,color .18s,gap .22s ease-out,box-shadow .18s}
+.seg button[data-switch="cinema"][aria-pressed="true"]{box-shadow:0 0 0 2px var(--crimson)}
+.seg button[data-switch="theatre"][aria-pressed="true"]{box-shadow:0 0 0 2px var(--gild)}
 .fchip[aria-pressed="true"]:not([data-range]){background:var(--fg); border-color:var(--fg); color:var(--ink)}
 .fav-toggle.on{background:var(--fg); border-color:var(--fg); color:var(--ink)}
 .fav-star.on{color:var(--fg)}
@@ -1335,7 +1361,13 @@ button,a{-webkit-tap-highlight-color:transparent}
 .search input[type=search]{-webkit-appearance:none; appearance:none}
 .search .mag{display:grid; place-items:center; width:16px; height:16px; line-height:0}
 .search .mag svg{display:block; width:16px; height:16px}
-.search input:focus-visible{outline:2px solid var(--fg); outline-offset:2px}
+/* the focused field's one ring (owner, 2026-10-24): drawn INSIDE the pill, over its 1 px border
+   (outline-offset -2 px), so it follows the 999 px radius and nothing clips it. With the ring
+   outside (offset +2 px) the field's row (.bar-row-search on phones, .desk-search-wrap on
+   desktop, both overflow:hidden for their open/close animation) cut its left and right ends
+   off, which left white wedges at the pill's corners. An outline (not a box-shadow) so the
+   ring survives forced-colours modes; a text field shows it on any focus (WCAG 2.4.7). */
+.search input:focus-visible{outline:2px solid var(--fg); outline-offset:-2px}
 
 /* ---- step 1: contrast (C4) ---- */
 /* "днес" on the selected (accent) day pill: at 80% opacity it was 3.5:1 on crimson */
@@ -2587,35 +2619,36 @@ function periodBannerText(){
   if(/^\d{4}-\d{2}-\d{2}$/.test(S.day)){
     const dD=dUTC(S.day);return{title:L.bannerToday,dates:`${L.dows[dD.getUTCDay()]} ${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`};}
   return{title:L.bannerWeek,dates:fmtRange(TODAY,WEEK_END)};}
-/* Build the day-strip for the typographic header.
-   Shows "Цялата седмица" + each day from TODAY to the coming Sunday.
-   Only shown for S.day==="week" and for a single specific day within the current week. */
-function buildDayStrip(){
-  const L=t();
-  /* Determine the current week: Mon–Sun containing TODAY */
+/* The days the period strip offers: TODAY to the coming Sunday; when fewer than 3 days are
+   left (P3A item 5) it rolls over into next week, up to 7 days in all (or LASTDAY). Returns
+   {days, weekEnd, rollover}. One source for the strip's pills AND for whether the strip shows
+   (2026-10-24 fix: the strip used to show only for a day inside the current Mon-Sun week, so
+   picking one of its own next-week days, e.g. Mon 26 on Sat 24, removed the whole strip). */
+function stripDays(){
   const dow=dUTC(TODAY).getUTCDay(); /* 0=Sun … 6=Sat */
   const weekStart=addDays(TODAY,-(dow===0?6:dow-1)); /* Monday */
   const weekEnd=addDays(weekStart,6);                 /* Sunday */
-  /* Only show the strip when in week or single-day-within-week mode */
-  const inWeekDay=S.day!=="week"&&/^\d{4}-\d{2}-\d{2}$/.test(S.day)&&S.day>=weekStart&&S.day<=weekEnd;
-  if(S.day!=="week"&&!inWeekDay)return"";
+  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0;
+  const nextWeekStart=addDays(weekEnd,1);
+  const rollover=daysLeft<3&&nextWeekStart<=LASTDAY;
+  const total=rollover?Math.min(7,Math.round((dUTC(LASTDAY)-dUTC(TODAY))/864e5)+1):daysLeft;
+  const days=[];
+  for(let i=0;i<total;i++){const d=addDays(TODAY,i);if(d>LASTDAY)break;days.push(d);}
+  return{days,weekEnd,rollover};}
+/* Build the day-strip for the typographic header: "Цялата седмица" + each day of stripDays().
+   Shown for S.day==="week" and for any single day the strip itself offers. */
+function buildDayStrip(){
+  const L=t();
+  const {days,weekEnd,rollover:needRollover}=stripDays();
+  if(S.day!=="week"&&!days.includes(S.day))return"";
   /* Gather which days have screenings/performances */
   const hasData=datesWith();
   const pills=[];
   /* "Whole week" pill */
   const allPill=`<button class="dspill" data-day="week" aria-pressed="${S.day==="week"}">${esc(L.dsAllWeek||"Цялата седмица")}</button>`;
   pills.push(allPill);
-  /* P3A item 5: build day list, rolling over into next week when <3 days remain.
-     Rule: show days from TODAY to weekEnd; if that gives <3 days, continue into
-     next week until we have 7 day-buttons total (or reach LASTDAY). */
-  const daysLeft=weekEnd>=TODAY?Math.round((dUTC(weekEnd)-dUTC(TODAY))/864e5)+1:0;
-  const nextWeekStart=addDays(weekEnd,1);
-  const needRollover=daysLeft<3&&nextWeekStart<=LASTDAY;
-  const totalDays=needRollover?Math.min(7,Math.round((dUTC(LASTDAY)-dUTC(TODAY))/864e5)+1):daysLeft;
   let addedDivider=false;
-  for(let i=0;i<totalDays;i++){
-    const d=addDays(TODAY,i);
-    if(d>LASTDAY)break;
+  for(const d of days){
     /* Add divider + "Следващата седмица" pill before first next-week day */
     if(needRollover&&d>weekEnd&&!addedDivider){
       addedDivider=true;
@@ -2662,11 +2695,8 @@ function periodBanner(){
     const cap=dowFull.charAt(0).toUpperCase()+dowFull.slice(1);
     mainTitle=`${cap}`;
     dateStr=`${dD.getUTCDate()} ${L.months[dD.getUTCMonth()]}`;
-    /* show strip only if day is within current week */
-    const dow=dUTC(TODAY).getUTCDay();
-    const weekStart=addDays(TODAY,-(dow===0?6:dow-1));
-    const weekEnd=addDays(weekStart,6);
-    if(S.day>=weekStart&&S.day<=weekEnd)showStrip=true;
+    /* the strip stays whenever the day is one of its own pills, next week's included */
+    if(stripDays().days.includes(S.day))showStrip=true;
   } else {
     mainTitle=L.pheadThisWeek||(S.lang==="bg"?"Тази седмица":"This week");
     dateStr=fmtRange(TODAY,WEEK_END);
@@ -3839,7 +3869,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const GT=GRID_T[S.lang]||GRID_T.bg;
   const pager=pages.length>1?`<div class="p3e-gpager" data-gpager="${esc(gkey)}" data-gcur="${cur}" data-gn="${pages.length}">
         <button type="button" class="p3e-gnav" data-gnav="-1" aria-label="${esc(GT.prev)}" title="${esc(GT.prev)}"${cur===0?" disabled":""}>‹</button>
-        <span class="p3e-grange" aria-live="polite">${esc(pageLabel(pages[cur]))}</span>
+        <span class="p3e-grange-w"><span class="p3e-grange" aria-live="polite">${esc(pageLabel(pages[cur]))}</span>${pages.map(pd=>`<span class="p3e-grange-sz" aria-hidden="true">${esc(pageLabel(pd))}</span>`).join("")}</span>
         <button type="button" class="p3e-gnav" data-gnav="1" aria-label="${esc(GT.next)}" title="${esc(GT.next)}"${cur===pages.length-1?" disabled":""}>›</button>
       </div>`:"";
 
@@ -4797,8 +4827,78 @@ function _scrimEl(){
     /* iOS sends a click for a tap only to an element that listens for one; the delegated
        document handler does the actual closing */
     s.addEventListener("click",()=>{});
+    s.addEventListener("scroll",()=>_gridHoldRelease(s),{passive:true});
   }
   return s;
+}
+/* Desktop week grid paging keeps the pager, and the table under it, where they were on the
+   screen. A page with fewer rows, or one without the dashed-times footnote, makes the sheet
+   shorter: a sheet scrolled to its end would have its scroll clamped and everything pulled
+   down, and a sheet shorter than the window, centred in it, would move by half the
+   difference (a taller page moves it the other way). What holds it is outside the sheet
+   (backdrop, never empty sheet), and only as much as holds the pager:
+   - a scrolled sheet: an invisible marker at the scrim's old scroll end (.sg-gend; the scrim
+     scrolls a grid whose row is as tall as the window, so neither its bottom padding nor
+     the sheet's margin adds scroll room in Chromium, an absolutely placed box does);
+     scrolling back up lowers it, down to nothing;
+   - a centred sheet: room above (--sg-gpadt) or below (--sg-gpadb) it. */
+function _gridHoldClear(s){
+  if(!s)return;
+  s.style.removeProperty("--sg-gpadt");s.style.removeProperty("--sg-gpadb");s.style.removeProperty("--sg-gend");
+  s.classList.remove("sg-gend");
+}
+function _gridPx(s,k){return parseFloat(s.style.getPropertyValue(k))||0;}
+function _gridHoldStart(el){
+  const s=el.closest(".scrim");
+  return s?{s,el,y0:el.getBoundingClientRect().top,st0:s.scrollTop,t0:_gridPx(s,"--sg-gpadt")}:null;
+}
+function _gridHoldEnd(h){
+  if(!h||!h.el.isConnected)return;
+  const{s,el,y0,st0,t0}=h;
+  /* t, b: room above and below; e: the scroll end to keep (0: none); d: a scroll offset */
+  const at=(t,b,e,d)=>{
+    _gridHoldClear(s);
+    if(t>0)s.style.setProperty("--sg-gpadt",t+"px");
+    if(b>0)s.style.setProperty("--sg-gpadb",b+"px");
+    if(e>0){s.style.setProperty("--sg-gend",(e-1)+"px");s.classList.add("sg-gend");}
+    s.scrollTop=st0-t0+t+(d||0);
+    return el.getBoundingClientRect().top-y0;
+  };
+  const dy0=at(0,0,0);
+  if(Math.abs(dy0)<.5)return;
+  let best=[0,0,0,0,Math.abs(dy0)];
+  const tryAt=(...k)=>{const d=Math.abs(at(...k));if(d<best[4])best=[...k,d];return d<.5;};
+  /* one knob, from 0 up: the move is piecewise linear in it (a centred sheet moves by half
+     the room, one that fills the window by all of it), so a few secant steps land on it */
+  const solve=(f,base)=>{
+    let x0=0,f0=base,x1=Math.abs(base),f1=at(...f(x1));
+    for(let i=0;i<5;i++){
+      const d=Math.abs(f1);if(d<best[4])best=[...f(x1),d];
+      if(d<.5||f1===f0)return d<.5;
+      const x2=x1-f1*(x1-x0)/(f1-f0);
+      if(!(x2>0))return false;
+      x0=x1;f0=f1;x1=x2;f1=at(...f(x1));
+    }
+    return false;
+  };
+  const end=Math.ceil(st0-t0+s.clientHeight);
+  if(dy0>0){
+    /* shorter: a scrolled sheet keeps its scroll end; one that now fits the window would
+       be centred in it, room below keeps it up */
+    if(tryAt(0,0,end,0))return;
+    const dyE=at(0,0,end,0);
+    if(solve(x=>[0,x,end,0],dyE))return;
+  }else if(solve(x=>[x,0,0,0],dy0))return;   /* taller, centred: room above */
+  /* else the scroll itself, where there is room for it */
+  if(tryAt(0,0,dy0>0?end+Math.ceil(dy0):0,dy0))return;
+  at(...best.slice(0,4));
+}
+function _gridHoldRelease(s){
+  if(!s.classList.contains("sg-gend"))return;
+  const e=_gridPx(s,"--sg-gend")+1,keep=Math.ceil(s.scrollTop+s.clientHeight);
+  const sh=s.querySelector(".sheet"),natural=sh?sh.offsetTop+sh.offsetHeight:0;
+  if(keep<=natural){s.style.removeProperty("--sg-gend");s.classList.remove("sg-gend");}
+  else if(keep<e)s.style.setProperty("--sg-gend",(keep-1)+"px");
 }
 /* The card that opened the sheet; after a re-render (language toggle) the stored node is
    gone, so look the card up again by the sheet's id. */
@@ -4829,6 +4929,7 @@ function openSheet(html,fromEl){
   _syncSheetUrl();
   lockScroll();
   s.classList.remove("closing");
+  _gridHoldClear(s);
   s.innerHTML=html;s.hidden=false;s.scrollTop=0;
   /* a detail view must always have a visible way out: the back bar is the
      reliable one, history and swipe are conveniences on top of it */
@@ -4880,7 +4981,7 @@ function closeSheet(fromPop){
   const animated=!!(s&&!s.hidden&&s.querySelector(".sheet")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   function _finalise(){
     if(gen!==_sheetGen||sheetOpen)return;
-    if(s){s.hidden=true;s.innerHTML="";s.classList.remove("closing");}
+    if(s){s.hidden=true;s.innerHTML="";s.classList.remove("closing");_gridHoldClear(s);}
     _cancelCloseAnims(s);
     unlockScroll();
     if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
@@ -5048,7 +5149,7 @@ function shareItem(kind,id,title){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,()=>toast(url));}
   else toast(url);
 }
-/* Bulgarian letterforms (Montserrat and Source Serif 4 both carry them, locl BGR): in English the
+/* Bulgarian letterforms (Geologica and Source Serif 4 both carry them, locl BGR): in English the
    page is lang="en", so any Cyrillic text left in it (titles, venues and names with no English
    form) would draw the Russian shapes. Its element is marked lang="bg", after every change. */
 const _CYR=/[\u0400-\u04FF]/;
@@ -6301,6 +6402,7 @@ document.addEventListener("click",e=>{
   if(gnav){
     const pager=gnav.closest("[data-gpager]"),box=pager&&pager.closest(".p3e-grp-desk");
     if(!pager||!box||gnav.disabled)return;
+    const hold=_gridHoldStart(pager);
     const n=parseInt(pager.dataset.gn,10)||1;
     const cur=Math.max(0,Math.min(n-1,(parseInt(pager.dataset.gcur,10)||0)+parseInt(gnav.dataset.gnav,10)));
     pager.dataset.gcur=String(cur);
@@ -6315,6 +6417,7 @@ document.addEventListener("click",e=>{
     if(gfn){const ct=box.querySelector('.p3e-gpage[data-gpage="'+cur+'"]');gfn.hidden=!(ct&&ct.dataset.gprelim);}
     const [prev,next]=pager.querySelectorAll("[data-gnav]");
     prev.disabled=cur===0;next.disabled=cur===n-1;
+    _gridHoldEnd(hold);
     /* keyboard: keep focus on the pager when the pressed arrow turns disabled at an end */
     if(gnav.disabled){const other=gnav===prev?next:prev;if(!other.disabled)other.focus({preventScroll:true});}
     return;

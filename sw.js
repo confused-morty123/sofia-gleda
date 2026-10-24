@@ -15,7 +15,10 @@
  *
  * Bump CACHE_VERSION whenever this file changes so old caches are cleared.
  */
-const CACHE_VERSION = "sofia-gleda-v8";
+// v9 (24 Oct 2026): fonts/fonts.css declares Geologica instead of Montserrat. It is in the
+// shell below and same-origin static files are served cache-first, so without the bump a
+// returning visitor kept the old @font-face rules (and their deleted files) for good.
+const CACHE_VERSION = "sofia-gleda-v9";
 
 // Domain move (2026-10): on the old github.io address this worker retires itself.
 // Once sofiagleda.com is the custom domain, GitHub redirects every request here,
