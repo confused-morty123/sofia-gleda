@@ -96,11 +96,11 @@ _DASH = r"\s*(?:-|–|—|до)\s*"
 # ------------------------------------------------------------------ helpers
 
 def sofia_today():
-    try:
-        from zoneinfo import ZoneInfo
-        return dt.datetime.now(ZoneInfo("Europe/Sofia")).date()
-    except Exception:
-        return (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=3)).date()
+    # listing_window knows Sofia's summer/winter offset even without a tz database
+    # (the old fallback here added a fixed +3 h, a day off late on winter evenings).
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import listing_window
+    return listing_window.sofia_today()
 
 
 def ws(text):
