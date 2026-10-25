@@ -14,9 +14,18 @@ name: Daily refresh
 
 on:
   schedule:
-    # 03:17 UTC daily  ==  06:17 in Sofia (summer EEST +03:00) / 05:17 (winter EET +02:00).
-    # GitHub may start scheduled runs a few minutes late under load — that is fine.
-    - cron: "17 3 * * *"
+    # 03:05 every day, Sofia time, summer and winter alike. The cron is read in the
+    # time zone below (GitHub added `timezone` on 2026-03-19; without it a cron is
+    # UTC and the run would drift an hour when the clocks change).
+    # - The data and the commit message use the UTC date. At 03:05 in Sofia it is
+    #   00:05 (summer) or 01:05 (winter) UTC, so that is the same calendar day.
+    # - On the last Sunday of October the clocks go back from 04:00 to 03:00, so
+    #   03:05 happens twice. GitHub does not document whether it then starts one
+    #   run or two; a second run is harmless: the concurrency group below makes it
+    #   wait for the first, and it commits nothing unless the data changed.
+    # - GitHub may start scheduled runs a few minutes late under load — that is fine.
+    - cron: "5 3 * * *"
+      timezone: "Europe/Sofia"
   workflow_dispatch: {}          # adds a "Run workflow" button on the Actions tab
 
 # Least privilege: the workflow token can only read by default; the one job that

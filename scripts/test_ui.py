@@ -11,7 +11,7 @@ Default mode: builds index.test.html from FIXTURE_REF (commit whose listings sta
 2026-10-07) and tests against it with the frozen 2026-10-07 14:45 Europe/Sofia clock.
 
 SOFIA_HTML mode: reads SNAPSHOT.window.from from the given file and pins the clock
-to that date at 14:45 Europe/Sofia (EEST UTC+3 until 2026-10-25, EET UTC+2 after).
+to that date at 14:45 Europe/Sofia (offset from the tz database: EEST UTC+3 in summer, EET UTC+2 in winter).
 Date-dependent checks compute today/WEEK_END from the clock date instead of literals.
 
 Playwright sync API, headless Chromium, timezone Europe/Sofia, locale bg-BG.
@@ -22,6 +22,7 @@ import os
 import re
 import json
 import datetime
+from zoneinfo import ZoneInfo
 import subprocess
 import pathlib
 from pathlib import Path
@@ -44,20 +45,24 @@ webapp_root = pathlib.Path(__file__).parent.parent.resolve()
 os.environ["SOFIA_OWNER_PENDING_OK"] = "1"
 
 # ── Clock derivation ───────────────────────────────────────────────────────────
-def _sofia_1445_epoch_ms(date_str: str) -> int:
-    """Return epoch ms for 14:45 Europe/Sofia on the given YYYY-MM-DD date.
+SOFIA_TZ = ZoneInfo("Europe/Sofia")
 
-    Sofia is EEST (UTC+3) until the last Sunday of October (2026-10-25 at 03:00),
-    EET (UTC+2) afterwards.  This covers 2026 only; extend the DST table as needed.
+
+def _sofia_epoch_ms(date_str: str, hour: int, minute: int) -> int:
+    """Epoch ms for hour:minute Sofia wall-clock time on the YYYY-MM-DD date.
+
+    The offset comes from the tz database (EEST UTC+3 in summer, EET UTC+2 in
+    winter, switching at 04:00 -> 03:00 on the last Sunday of October), so the
+    clock is right on any date, the change day included.
     """
-    year, month, day = int(date_str[:4]), int(date_str[5:7]), int(date_str[8:10])
-    # Last Sunday of October 2026 is Oct 25.
-    dst_end = datetime.date(2026, 10, 25)
-    d = datetime.date(year, month, day)
-    utc_offset = 3 if d <= dst_end else 2  # EEST / EET
-    utc_dt = datetime.datetime(year, month, day, 14 - utc_offset, 45, 0,
-                               tzinfo=datetime.timezone.utc)
-    return int(utc_dt.timestamp() * 1000)
+    d = datetime.date.fromisoformat(date_str)
+    return int(datetime.datetime(d.year, d.month, d.day, hour, minute,
+                                 tzinfo=SOFIA_TZ).timestamp() * 1000)
+
+
+def _sofia_1445_epoch_ms(date_str: str) -> int:
+    """Return epoch ms for 14:45 Europe/Sofia on the given YYYY-MM-DD date."""
+    return _sofia_epoch_ms(date_str, 14, 45)
 
 
 def _next_sunday(date_str: str) -> str:
@@ -106,7 +111,7 @@ def _derive_clock_globals(date_str: str):
     week_fri = (
         d + datetime.timedelta(days=(4 - d.weekday()) if d.weekday() <= 4 else -(d.weekday() - 4))
     ).strftime("%Y-%m-%d")
-    tomorrow_2350 = fixed + 9 * 3600 * 1000
+    tomorrow_2350 = _sofia_epoch_ms(date_str, 23, 45)   # same day, 23:45 Sofia
     clock_js = """
 (() => { const _D = Date, F = %d;
   class FakeDate extends _D { constructor(...a){ a.length? super(...a): super(F); } static now(){ return F; } }
@@ -8187,6 +8192,28 @@ def wave_n(browser):
               f"post 2026-10-25 04:30 offset={post_off!r}  (expect +02:00)")
 
     ctx3.close()
+
+    # ── N-5: the frozen test clock is 14:45 Sofia in summer, winter and on the change day ──
+    # The suite's clock (_sofia_1445_epoch_ms) once used a fixed +03:00 up to and including
+    # 2026-10-25, so on the change day (clocks back at 04:00 EEST -> 03:00 EET) and on any
+    # date in another year it ran an hour off. Expected instants are written out in UTC.
+    print("\n=== N-5: frozen test clock across the summer/winter change ===")
+    for day, want_utc in (("2026-10-24", "2026-10-24T11:45:00+00:00"),   # last summer day, +03:00
+                          ("2026-10-25", "2026-10-25T12:45:00+00:00"),   # change day, +02:00 by 14:45
+                          ("2026-12-15", "2026-12-15T12:45:00+00:00"),   # winter, +02:00
+                          ("2027-03-28", "2027-03-28T11:45:00+00:00")):  # spring change day, +03:00 by 14:45
+        ms = _sofia_1445_epoch_ms(day)
+        got = datetime.datetime.fromtimestamp(ms / 1000, datetime.timezone.utc).isoformat()
+        check(f"n5_clock_utc_{day}", got == want_utc, f"14:45 Sofia on {day} = {got} (expect {want_utc})")
+        ctx5 = browser.new_context(timezone_id="Europe/Sofia", locale="bg-BG")
+        ctx5.add_init_script(_ux_clock(ms))
+        page5 = ctx5.new_page()
+        page5.goto("about:blank")
+        seen = page5.evaluate("""() => new Intl.DateTimeFormat('sv', {timeZone: 'Europe/Sofia',
+            year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+            hourCycle: 'h23'}).format(new Date())""")
+        check(f"n5_clock_browser_{day}", seen == f"{day} 14:45", f"page reads {seen!r} (expect '{day} 14:45')")
+        ctx5.close()
 # ============================================================================
 # WAVE P2A: ratings and hidden-screenings fixes
 # ============================================================================

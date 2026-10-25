@@ -20,7 +20,7 @@ like an app and refreshes its own listings every three days.
 | `icons/` | App icons (the red projector-flare mark). |
 | `scripts/` | The data pipeline (Python). See below. |
 | `requirements.txt` | Python packages the robot installs automatically. |
-| `.github/workflows/refresh.yml` | The refresh robot (GitHub Actions, every 3 days). |
+| `.github/workflows/refresh.yml` | The refresh robot (GitHub Actions, every day at 03:05 Sofia time). |
 | `SETUP.md` | Step-by-step hosting guide for a non-technical user. |
 
 Generated data files that appear after the first refresh:
