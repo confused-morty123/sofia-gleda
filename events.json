@@ -2,89 +2,6 @@
  "events": [
   {
    "auto": true,
-   "blurbBg": "Фестивал, 17–24 октомври 2026. Сред местата: Сцена „Дерида“, I AM Studio, Топлоцентрала.",
-   "blurbEn": "Festival, 17–24 October 2026. Venues include Derida Stage, I AM Studio, Toplocentrala.",
-   "dates_from": "date field",
-   "from": "2026-10-17",
-   "g": [
-    "#952343",
-    "#23060E"
-   ],
-   "id": "act-festival-za-svoboden-teatar-p187545",
-   "kind": "festival",
-   "missed": 0,
-   "modified": "2026-10-09T16:21:24",
-   "post": 187545,
-   "scope": "theatre",
-   "source": "programata.bg",
-   "status": "active",
-   "tag": "СЛЕД 0 ДНИ",
-   "title": "ACT Фестивал за свободен театър",
-   "titleEn": "ACT Independent Theatre Festival",
-   "titles": [
-    {
-     "t": "Такъв е животът",
-     "v": []
-    },
-    {
-     "t": "Лимони х5",
-     "v": [
-      "derida"
-     ]
-    },
-    {
-     "t": "Докато чакаме Годо",
-     "v": [
-      "iam"
-     ]
-    },
-    {
-     "t": "Камшичен вятър",
-     "v": []
-    },
-    {
-     "t": "[EOL]. End of Life",
-     "v": []
-    },
-    {
-     "t": "Theatertreffen",
-     "v": []
-    },
-    {
-     "t": "In Between #2",
-     "v": []
-    },
-    {
-     "t": "Вакханки",
-     "v": []
-    },
-    {
-     "t": "Спирален ефект",
-     "v": []
-    },
-    {
-     "t": "Seems Familiar",
-     "v": []
-    },
-    {
-     "t": "със и през другия",
-     "v": []
-    },
-    {
-     "t": "Шампионът и комарът",
-     "v": []
-    }
-   ],
-   "to": "2026-10-24",
-   "url": "https://programata.bg/stsena/ne-se-prav%d1%9d-zapochva-16-izdanie-na-act/",
-   "venues": [
-    "derida",
-    "iam",
-    "toplo"
-   ]
-  },
-  {
-   "auto": true,
    "blurbBg": "Фестивал, 12–29 ноември 2026. Сред местата: НДК (Зала 1).",
    "blurbEn": "Festival, 12–29 November 2026. Venues include NDK (Hall 1).",
    "dates_from": "date field",
@@ -101,7 +18,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 19 ДНИ",
+   "tag": "СЛЕД 18 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -139,7 +56,7 @@
    ]
   }
  ],
- "generated": "2026-10-24T08:38:17+00:00",
+ "generated": "2026-10-25T05:29:50+00:00",
  "ok": true,
  "posts": {
   "180082": {
