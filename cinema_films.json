@@ -2991,5 +2991,36 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "maraton-godzilla-minus-one-i-godzilla-minus-zero": {
+  "id": "maraton-godzilla-minus-one-i-godzilla-minus-zero",
+  "bg": "МАРАТОН: GODZILLA MINUS ONE И GODZILLA MINUS ZERO",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cineland",
+  "runtime": 290,
+  "year": 2026,
+  "originalTitle": "MARATHON: GODZILLA MINUS ONE И GODZILLA MINUS ZERO БЕЗ ПРЕВОД НА БЪЛГАРСКИ"
+ },
+ "george-michael-the-faith-tour-bez-prevod": {
+  "id": "george-michael-the-faith-tour-bez-prevod",
+  "bg": "GEORGE MICHAEL - THE FAITH TOUR - БЕЗ ПРЕВОД",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cineland",
+  "runtime": 113,
+  "year": 2026
  }
 }
