@@ -505,11 +505,28 @@ def wave_a1(browser):
         # Save screenshot with search open and results showing
         save_shot(page, wave, "m-search-open")
 
-        # Click clear
+        # The phone header (owner's option 1, 2026-10-25): the search row REPLACES the toggle
+        # row; x (inside the field) clears and keeps typing, "Отказ" closes the search.
+        row = page.evaluate("""() => { const t = document.querySelector('.bar-row-toggle'), s = document.querySelector('.bar-row-search');
+            const vis = e => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+            return {toggleShown: vis(t), toggleInert: !!(t && t.inert), searchShown: vis(s),
+                    cancel: (document.querySelector('[data-search-cancel]') || {}).textContent || null}; }""")
+        check("search_replaces_toggle_row", not row["toggleShown"] and row["toggleInert"] and row["searchShown"]
+              and row["cancel"] == "Отказ", f"{row}")
         clear_btn = page.query_selector("[data-qclear-m]")
+        check("clear_x_shown_with_query", bool(clear_btn and clear_btn.is_visible()), "")
         if clear_btn and clear_btn.is_visible():
             clear_btn.click()
             page.wait_for_timeout(300)
+            st = page.evaluate("({q: S.q, open: S.searchOpen, act: document.activeElement && document.activeElement.id})")
+            check("clear_x_clears_and_keeps_typing", st["q"] == "" and st["open"] and st["act"] == "q-m", f"{st}")
+            page.keyboard.type("од")
+            page.wait_for_timeout(400)
+
+        cancel_btn = page.query_selector("[data-search-cancel]")
+        if cancel_btn and cancel_btn.is_visible():
+            cancel_btn.click()
+            page.wait_for_timeout(600)
 
             qm_gone = page.query_selector("#q-m") is None or not page.query_selector("#q-m").is_visible()
             check("qm_cleared", qm_gone, "")
@@ -519,6 +536,11 @@ def wave_a1(browser):
 
             search_open = page.evaluate("S.searchOpen")
             check("searchOpen_false", not search_open, f"S.searchOpen={search_open}")
+            back = page.evaluate("""() => { const t = document.querySelector('.bar-row-toggle');
+                return {shown: !!t && getComputedStyle(t).visibility !== 'hidden' && getComputedStyle(t).opacity === '1', inert: !!(t && t.inert)}; }""")
+            check("cancel_restores_toggle_row", back["shown"] and not back["inert"], f"{back}")
+        else:
+            check("qm_cleared", False, "no visible [data-search-cancel]")
 
         # Open again and press Escape
         btn_again = page.query_selector("[data-search-open]")
@@ -553,9 +575,15 @@ def wave_a1(browser):
         width_match = abs(b0_width - b1_width) <= 1
         check("button_widths_equal", width_match, f"widths={b0_width:.1f}, {b1_width:.1f}")
 
-        b0_height = buttons[0].bounding_box()["height"] if buttons[0].bounding_box() else 0
-        height_ok = b0_height >= 40
-        check("button_height_40", height_ok, f"height={b0_height:.1f}")
+        # the phone toggle (owner's option 1, 2026-10-25) is 44 px tall in all; its buttons are
+        # 36 px with a hit area over the toggle's padding: a tap anywhere in its 44 px hits them
+        hit = page.evaluate("""() => { const seg = document.querySelector('.seg'), b = seg.querySelector('button');
+            const s = seg.getBoundingClientRect(), r = b.getBoundingClientRect(), cx = r.left + r.width / 2;
+            const at = y => { const e = document.elementFromPoint(cx, y); return !!e && e.closest('button') === b; };
+            return {segH: s.height, top: at(s.top + 0.5), bottom: at(s.bottom - 0.5), mid: at(s.top + s.height / 2)}; }""")
+        height_ok = hit["segH"] >= 44 and hit["top"] and hit["bottom"] and hit["mid"]
+        check("button_height_40", height_ok, f"toggle {hit['segH']:.1f}px tall; its top, middle and bottom edge hit the button: "
+              f"{hit['top']}, {hit['mid']}, {hit['bottom']}")
 
         # Check pressed button background. Design phase (owner: Option A, 2026-10-23): the
         # selected segment is a neutral white thumb (--fg); the accent marks the selected day only
@@ -3519,8 +3547,8 @@ def wave_h(browser):
                 check(f"h2_{size_tag}_wrap_open", wrap_w > 100,
                       f".desk-search-wrap maxWidth={wrap_w}px after open (need >100)")
 
-            # Click again to close
-            btn2 = page.query_selector("[data-search-open]")
+            # Click again to close (phones: the magnifier is hidden with the toggle row; "Отказ" closes)
+            btn2 = page.query_selector("[data-search-open]" if w > 760 else "[data-search-cancel]")
             if btn2:
                 btn2.click()
                 page.wait_for_timeout(300)
@@ -3547,6 +3575,7 @@ def wave_h(browser):
         }
         return {
             brand: bb('.brand'),
+            logo: bb('.brand-logo'),
             lang: bb('[data-lang]'),
             seg: bb('.seg'),
             search: bb('[data-search-open]'),
@@ -3558,15 +3587,16 @@ def wave_h(browser):
         check("h3_mobile_logo_centred", abs(cx - lw / 2) <= 4,
               f"brand centre_x={cx:.1f}, expected {lw / 2:.1f}±4 (layout viewport {lw:.0f}px)")
 
-    # lang should be on same row as brand (logo row) — not on same row as seg
-    if mobile_geo["lang"] and mobile_geo["brand"] and mobile_geo["seg"]:
+    # lang should be on same row as brand (logo row) — not on same row as seg; the phone
+    # header (owner's option 1, 2026-10-25) centres it on the logo itself, above the motto
+    if mobile_geo["lang"] and mobile_geo["logo"] and mobile_geo["seg"]:
         lang_cy = mobile_geo["lang"]["y"] + mobile_geo["lang"]["h"] / 2
-        brand_cy = mobile_geo["brand"]["y"] + mobile_geo["brand"]["h"] / 2
+        brand_cy = mobile_geo["logo"]["y"] + mobile_geo["logo"]["h"] / 2
         seg_cy = mobile_geo["seg"]["y"] + mobile_geo["seg"]["h"] / 2
-        lang_on_logo_row = abs(lang_cy - brand_cy) <= 8
+        lang_on_logo_row = abs(lang_cy - brand_cy) <= 1
         lang_not_on_seg_row = abs(lang_cy - seg_cy) > 8
         check("h3_mobile_lang_on_logo_row", lang_on_logo_row,
-              f"lang_cy={lang_cy:.1f}, brand_cy={brand_cy:.1f} (diff={abs(lang_cy-brand_cy):.1f})")
+              f"lang_cy={lang_cy:.1f}, logo_cy={brand_cy:.1f} (diff={abs(lang_cy-brand_cy):.1f})")
         check("h3_mobile_lang_separate_from_controls", lang_not_on_seg_row,
               f"lang_cy={lang_cy:.1f} same row as seg_cy={seg_cy:.1f}")
 
@@ -5188,10 +5218,13 @@ def wave_j(browser, webkit_browser=None):
                     return parseFloat(window.getComputedStyle(wrap).maxWidth) || 0;
                 }"""
             else:
+                # phones (owner's option 1, 2026-10-25): the search row fades in over the
+                # toggle row in place; its opacity in hundredths (0 while not displayed)
                 measure_js = """() => {
                     const row = document.querySelector('.bar-row-search');
                     if (!row) return null;
-                    return row.getBoundingClientRect().height;
+                    const c = getComputedStyle(row);
+                    return c.display === 'none' ? 0 : Math.round(parseFloat(c.opacity) * 100);
                 }"""
 
             # Click to open and sample dimension over ~450ms
@@ -5213,8 +5246,8 @@ def wave_j(browser, webkit_browser=None):
             still_open = page.evaluate("S.searchOpen")
             q_val = page.evaluate("S.q")
 
-            # Click magnifier to close
-            page.evaluate("document.querySelector('[data-search-open]').click()")
+            # Click magnifier to close (phones: "Отказ", the magnifier is hidden with the toggle row)
+            page.evaluate("document.querySelector('%s').click()" % ("[data-search-open]" if is_desktop else "[data-search-cancel]"))
             close_samples = []
             for _ in range(12):
                 val = page.evaluate(measure_js)
@@ -7573,8 +7606,8 @@ def wave_m(browser):
     }""")
 
     if "err" not in state_375:
-        # phones: the search opens in its own row below the toggle, so the toggle is left
-        # exactly as it is (owner's report of 2026-10-15; HF2-A checks it frame by frame)
+        # phones: the search replaces the toggle row and never shrinks the toggle itself
+        # (owner's option 1, 2026-10-25; HF2-A checks it frame by frame)
         check("m1_seg_q_at_375", not state_375["segQ"],
               f"seg-q present on mobile: the toggle must not change while searching on a phone")
         # On mobile the CSS overrides the width to flex, so just confirm no overflow
@@ -13973,9 +14006,17 @@ HF2_SEG_REC_JS = r"""(ms)=>{const s=document.querySelector('.seg');const R=windo
   requestAnimationFrame(tick);}"""
 
 
+HF2_ROWS_JS = r"""()=>{const t=document.querySelector('.bar-row-toggle'),s=document.querySelector('.bar-row-search'),
+  c=document.querySelector('[data-search-cancel]');const vis=e=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';
+  return {toggle:vis(t),inert:!!(t&&t.inert),op:t?getComputedStyle(t).opacity:null,search:vis(s),cancel:vis(c)?c.textContent:null};}"""
+
+
 def _hf2_toggle(browser, eng):
-    """Bug 1: on phones opening and closing the search never touches the toggle; desktops
-    keep the collision-based shrink (P3A): icons only when the field would crowd it."""
+    """Bug 1, redone for the owner's option 1 (2026-10-25): on phones the open search REPLACES the
+    toggle row in place (the row hidden and inert, "Отказ" shown) without touching the toggle
+    itself, and "Отказ" brings the row back exactly as it was; desktops keep the collision-based
+    shrink (P3A): icons only when the field would crowd it."""
+    cancel = {"bg": "Отказ", "en": "Cancel"}
     for w, h in ((390, 844), (375, 812)):
         for lang in ("bg", "en"):
             ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang)
@@ -13983,15 +14024,23 @@ def _hf2_toggle(browser, eng):
             s0 = page.evaluate(HF2_SEG_JS)
             for step in ("open", "close"):
                 page.evaluate(HF2_SEG_REC_JS, 650)
-                _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+                _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')" if step == "open"
+                           else "()=>document.querySelector('[data-search-cancel]')")
                 page.wait_for_timeout(750)
                 s1 = page.evaluate(HF2_SEG_JS)
+                rows = page.evaluate(HF2_ROWS_JS)
                 rec = page.evaluate("window.__hf2seg")
                 is_open = page.evaluate("S.searchOpen")
                 labels_ok = all(l["op"] > 0.99 and l["w"] > 10 for l in s1["labels"])
-                ok = s1 == s0 and labels_ok and rec["anims"] == 0 and rec["events"] == 0 and is_open == (step == "open")
+                if step == "open":
+                    rows_ok = not rows["toggle"] and rows["inert"] and rows["search"] and rows["cancel"] == cancel[lang]
+                    seg_ok = s1["cls"] == s0["cls"] and s1["btns"] and len(s1["labels"]) == 2
+                else:
+                    rows_ok = rows["toggle"] and not rows["inert"] and rows["op"] == "1" and not rows["search"] and rows["cancel"] is None
+                    seg_ok = s1 == s0 and labels_ok
+                ok = seg_ok and rows_ok and rec["anims"] == 0 and rec["events"] == 0 and is_open == (step == "open")
                 check(f"{tag}_search_{step}", ok,
-                      f"searchOpen={is_open} class {s0['cls']!r}->{s1['cls']!r} rect {s0['rect']}->{s1['rect']} "
+                      f"searchOpen={is_open} rows {rows} class {s0['cls']!r}->{s1['cls']!r} rect {s0['rect']}->{s1['rect']} "
                       f"buttons {s0['btns']}->{s1['btns']} labels {[(l['txt'], l['op'], l['w']) for l in s1['labels']]} "
                       f"animations sampled={rec['anims']} transition events={rec['events']} ({rec['frames']} frames)")
                 if step == "open" and w == 390 and lang == "bg":
@@ -14119,16 +14168,24 @@ def _hf2_search(browser, eng):
                   f"{len(fr)} frames: scrollY spread {_hf2_spread(fr, 'y')}, header top spread {_hf2_spread(fr, 'h')}, "
                   f"results top spread {_hf2_spread(fr, 'm')}, field replaced in {sum(1 for f in fr if not f['same'])}, "
                   f"header re-created in {sum(1 for f in fr if not f['hdr'])}")
-            # x clears and closes in place: same field and header, the page and the FAB back
-            y_before = page.evaluate("Math.round(scrollY)")
+            # x (inside the field) clears and keeps typing: same field, focused, still open
             _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+            page.wait_for_timeout(400)
+            xs = page.evaluate("""()=>{const qi=document.getElementById('q-m');return {q:S.q,open:S.searchOpen,same:qi===window.__hf2qi,
+              act:document.activeElement===qi,page:!!document.querySelector('#app > main .phead')};}""")
+            check(f"{tag}_x_clears_and_keeps_typing", xs["q"] == "" and xs["open"] and xs["same"] and xs["act"] and xs["page"], f"{xs}")
+            page.keyboard.type(word[:2])
+            page.wait_for_timeout(600)
+            # "Отказ" closes in place: same field and header, the page and the FAB back, the toggle row as it was
+            y_before = page.evaluate("Math.round(scrollY)")
+            _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
             page.wait_for_timeout(700)
             st = page.evaluate("""()=>{const qi=document.getElementById('q-m');const m=document.querySelector('#app > main');
               return {q:S.q,open:S.searchOpen,same:qi===window.__hf2qi,val:qi?qi.value:null,hdr:!!(document.querySelector('#app > header.bar')||{}).__hf2,
                 rowShown:!!qi&&qi.getClientRects().length>0,page:!!m.querySelector('.phead'),fab:!!document.querySelector('.fab'),
                 act:document.activeElement===qi,y:Math.round(scrollY),minH:m.style.minHeight};}""")
             seg1 = page.evaluate(HF2_SEG_JS)
-            check(f"{tag}_clear_restores_page_in_place",
+            check(f"{tag}_cancel_restores_page_in_place",
                   st["q"] == "" and not st["open"] and st["same"] and st["val"] == "" and st["hdr"] and not st["rowShown"]
                   and st["page"] and st["fab"] and not st["act"] and st["minH"] == "" and seg1 == seg0 and abs(st["y"] - y_before) <= 2,
                   f"{st} toggle unchanged={seg1 == seg0}")
@@ -14166,12 +14223,12 @@ def _hf2_search(browser, eng):
         check(f"{tag}_results_still_while_they_change", still and _hf2_spread(fr, "h") <= 0.5 and all(f["same"] and f["act"] and f["hdr"] for f in fr),
               f"cards per letter {seq}; after the first results: scrollY spread {_hf2_spread(after, 'y') if after else None}, "
               f"results top spread {_hf2_spread(after, 'm') if after else None}; header top spread {_hf2_spread(fr, 'h')}")
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
         page.wait_for_timeout(800)
         y1, c1 = page.evaluate("()=>{const m=document.querySelector('#app > main').getBoundingClientRect().top+scrollY;return [Math.round(scrollY),Math.round(scrollY-m)];}")
         hdr = page.evaluate("!!(document.querySelector('#app > header.bar')||{}).__hf2")
-        check(f"{tag}_clear_returns_to_the_page_position", abs(c1 - c0) <= 2 and hdr,
-              f"the screen {c0}px into the listing before the results (page at y={y0}), {c1}px after x (y={y1}); header kept={hdr}")
+        check(f"{tag}_cancel_returns_to_the_page_position", abs(c1 - c0) <= 2 and hdr,
+              f"the screen {c0}px into the listing before the results (page at y={y0}), {c1}px after Отказ (y={y1}); header kept={hdr}")
         check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
         ctx.close()
 
@@ -14383,8 +14440,8 @@ def _hf2_result_sheets(browser, eng):
                       f"y {y_open}->{s3['y']} depth={s3['depth']} field focused={u3['fieldFocused']} results {res['got']}/{res['exp']} for {res['q']!r}")
                 page.wait_for_timeout(450)
         page.evaluate(HF2_KB_DOWN_JS)
-        # then out of the search: a card of the page opens and stays open
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+        # then out of the search ("Отказ"): a card of the page opens and stays open
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
         page.wait_for_timeout(800)
         films = page.evaluate(HF_CANDIDATES_JS, "film")
         if films:
@@ -14501,14 +14558,25 @@ def _hf2_fit(browser, eng):
         found = {}
         found["header_at_top"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > header.bar"])
         found["content_at_top"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > main .phead"])
+        if w <= 760:
+            # the phone header (option 1): the logo row starts 20 px below the inset, the language
+            # button (centred on the logo, 7 px above its top) clear of it too
+            lg = page.evaluate("""()=>{const b=s=>{const e=document.querySelector(s);return e?e.getBoundingClientRect().top:null;};
+                return {logo:b('#app > header.bar .brand-logo'),lang:b('#app > header.bar [data-lang]'),bar:b('#app > header.bar')};}""")
+            check(f"hf2_logo_clears_inset_{name}", lg["logo"] is not None and abs(lg["logo"] - (t + 20)) <= 1
+                  and lg["lang"] is not None and lg["lang"] >= t + 12, f"inset {t}px: {lg} (logo top should be inset + 20)")
         page.evaluate("window.scrollTo(0,1200)")
         page.wait_for_timeout(300)
         found["pinned_controls"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > header.bar .bar-row-controls, #app > header.bar .bar-in"])
         found["fab"] = page.evaluate(HF2_UNSAFE_JS, [0, r, b, 0, "#app > .fab"])
         # the pinned header's logo row sits in the status-bar band: an opaque layer above it covers the band
-        band = page.evaluate("""(t)=>{const s=getComputedStyle(document.body,'::before'),h=document.querySelector('#app > header.bar');
-            return {pos:s.position,h:parseFloat(s.height)||0,z:parseInt(s.zIndex)||0,hz:parseInt(getComputedStyle(h).zIndex)||0,bg:s.backgroundColor};}""", t)
-        band_ok = t == 0 or (band["pos"] == "fixed" and abs(band["h"] - t) <= 0.5 and band["z"] > band["hz"] and band["bg"].startswith("rgb(") )
+        # a REAL element (iOS Safari 26 tints its status bar from it, not from a pseudo-element), opaque
+        band = page.evaluate("""(t)=>{const e=document.querySelector('body > .sb-band'),h=document.querySelector('#app > header.bar');
+            if(!e)return {el:false};const s=getComputedStyle(e),r=e.getBoundingClientRect();
+            return {el:true,pos:s.position,top:r.top,w:r.width,h:r.height,z:parseInt(s.zIndex)||0,hz:parseInt(getComputedStyle(h).zIndex)||0,bg:s.backgroundColor,
+              pseudo:getComputedStyle(document.body,'::before').content};}""", t)
+        band_ok = band["el"] and band["pos"] == "fixed" and band["top"] == 0 and band["w"] == w and abs(band["h"] - t) <= 0.5 \
+            and band["z"] > band["hz"] and band["bg"] == "rgb(12, 10, 15)" and band["pseudo"] in ("none", "normal")
         if w > 760:
             found["content_sides"] = page.evaluate(HF2_UNSAFE_JS, [0, r, 0, l, "#app > main .rail .rhead, #app > main .card"])
         _hf_tap_el(page, True, "()=>document.querySelector('.fab')")
@@ -14532,31 +14600,34 @@ def _hf2_fit(browser, eng):
         ctx.close()
 
 
-# ── 6: the search row closes as it opens ──────────────────────────────────────
-HF2_ROW_REC_JS = r"""(ms)=>{const row=document.querySelector('.bar-row-search');const R=window.__hf2row=[];const t0=performance.now();
-  const tick=()=>{const t=performance.now()-t0;R.push([Math.round(t),getComputedStyle(row).display==='none'?0:Math.round(row.getBoundingClientRect().height*10)/10]);
+# ── 6: the search row replaces the toggle row and gives it back ────────────────
+# every frame for ms: the search row's and the toggle row's opacity (0 = not displayed / hidden)
+HF2_ROW_REC_JS = r"""(ms)=>{const row=document.querySelector('.bar-row-search'),tg=document.querySelector('.bar-row-toggle');
+  const R=window.__hf2row=[];const t0=performance.now();
+  const op=e=>{const c=getComputedStyle(e);return c.display==='none'||c.visibility==='hidden'?0:Math.round(parseFloat(c.opacity)*100)/100;};
+  const tick=()=>{const t=performance.now()-t0;R.push([Math.round(t),op(row),op(tg)]);
     if(t<ms)requestAnimationFrame(tick);};requestAnimationFrame(tick);}"""
 
 
-def _hf2_span(samples, full, rising):
-    """(half, end) of a height animation, in ms from its start (the last frame before the
-    height moved), or (None, None)."""
-    moved = (lambda v: v > 0.05) if rising else (lambda v: v < full - 0.05)
-    i = next((k for k, (_, v) in enumerate(samples) if moved(v)), None)
+def _hf2_span(samples, full, rising, k=1):
+    """(half, end) of a fade (value k of each sample, 0..full), in ms from its start (the
+    last frame before it moved), or (None, None)."""
+    moved = (lambda v: v > 0.02) if rising else (lambda v: v < full - 0.02)
+    i = next((n for n, x in enumerate(samples) if moved(x[k])), None)
     if i is None:
         return None, None
     t0 = samples[max(0, i - 1)][0]
-    half = next((t for t, v in samples[i:] if (v >= 0.5 * full if rising else v <= 0.5 * full)), None)
-    # within half a pixel of the end state, both ways (an exact 0 only shows once the row
-    # is display:none again, a frame or two after the transition)
-    end = next((t for t, v in samples[i:] if (v >= full - 0.5 if rising else v <= 0.5)), None)
+    half = next((x[0] for x in samples[i:] if (x[k] >= 0.5 * full if rising else x[k] <= 0.5 * full)), None)
+    end = next((x[0] for x in samples[i:] if (x[k] >= full - 0.02 if rising else x[k] <= 0.02)), None)
     return (half - t0 if half is not None else None), (end - t0 if end is not None else None)
 
 
 def _hf2_search_close(browser, eng):
-    """Item 6: closing mirrors opening (same length, reversed curve), with and without a
-    query, by the magnifier and by x; the header is never rebuilt; reduced motion: instant."""
-    for w, h, how in ((390, 844, "magnifier"), (375, 812, "x")):
+    """Item 6, redone for the owner's option 1 (2026-10-25): the search row fades in over the
+    toggle row as that fades out, and "Отказ" (or Escape) runs the same fade the other way
+    (about the same length); the query is cleared and the page comes back in place, the
+    header never rebuilt; reduced motion: an instant swap both ways."""
+    for w, h, how in ((390, 844, "cancel"), (375, 812, "escape")):
         tag = f"hf2_search_close_{w}_{how}"
         ctx, page, errs = _hf2_open(browser, w, h, True)
         page.evaluate(HF2_ROW_REC_JS, 420)
@@ -14567,41 +14638,46 @@ def _hf2_search_close(browser, eng):
         page.wait_for_timeout(700)
         page.evaluate("()=>{document.querySelector('#app > header.bar').__hf2=1;}")
         page.evaluate(HF2_ROW_REC_JS, 480)
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')" if how == "magnifier" else "()=>document.querySelector('[data-qclear-m]')")
+        if how == "cancel":
+            _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
+        else:
+            page.keyboard.press("Escape")
         page.wait_for_timeout(650)
         closing = page.evaluate("window.__hf2row")
         st = page.evaluate("""()=>({q:S.q,open:S.searchOpen,hdr:!!document.querySelector('#app > header.bar').__hf2,
-            page:!!document.querySelector('#app > main .phead'),field:document.activeElement===document.getElementById('q-m')})""")
-        full = max(v for _, v in opening) if opening else 0
-        mid = sorted({v for _, v in closing if 0 < v < full - 0.5})
-        mono = all(closing[i][1] >= closing[i + 1][1] - 0.5 for i in range(len(closing) - 1))
-        t50o, end_open = _hf2_span(opening, full, True)
-        t50c, end_close = _hf2_span(closing, full, False)
-        # the same length (frame timing allows some slack: the ratio, not a fixed margin)
-        # and mirrored curves (the half-way times of the two add up to that length)
-        mirrored = (None not in (end_close, end_open, t50o, t50c) and end_open > 0
-                    and 0.75 <= end_close / end_open <= 1.35
-                    and abs((t50o + t50c) - end_open) <= 0.25 * end_open + 20)
-        check(f"{tag}_animates", full > 30 and mono and len(mid) >= 4 and end_close is not None and end_close <= 300,
-              f"field row {full}px; closing heights {[v for _, v in closing][:16]} ({len(mid)} in between, shut {end_close} ms after it started)")
-        check(f"{tag}_mirrors_opening", mirrored,
-              f"open: half {t50o} ms, full {end_open} ms after it started; close: half {t50c} ms, shut {end_close} ms "
-              f"(a mirror: the same length, and the half-way times add up to it)")
-        check(f"{tag}_query_cleared_in_place", st["q"] == "" and not st["open"] and st["hdr"] and st["page"] and not st["field"], f"{st}")
+            page:!!document.querySelector('#app > main .phead'),field:document.activeElement===document.getElementById('q-m'),
+            toggleInert:document.querySelector('.bar-row-toggle').inert})""")
+        mid_o = [x for x in opening if 0.02 < x[1] < 0.98]
+        mid_c = [x for x in closing if 0.02 < x[1] < 0.98]
+        _, end_open = _hf2_span(opening, 1, True)
+        _, end_close = _hf2_span(closing, 1, False)
+        _, tog_back = _hf2_span(closing, 1, True, k=2)
+        swapped = opening and opening[-1][1:] == [1, 0] and closing and closing[-1][1:] == [0, 1]
+        check(f"{tag}_animates", swapped and len(mid_o) >= 3 and len(mid_c) >= 3 and end_close is not None and end_close <= 300
+              and tog_back is not None and tog_back <= 300,
+              f"opening (search, toggle) {[x[1:] for x in opening][:12]}; closing {[x[1:] for x in closing][:12]}; "
+              f"search row out in {end_close} ms, toggle row back in {tog_back} ms")
+        check(f"{tag}_mirrors_opening", None not in (end_open, end_close) and end_open > 0 and 0.6 <= end_close / end_open <= 1.5,
+              f"search row in {end_open} ms, out {end_close} ms")
+        check(f"{tag}_query_cleared_in_place", st["q"] == "" and not st["open"] and st["hdr"] and st["page"] and not st["field"]
+              and not st["toggleInert"], f"{st}")
         check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
         ctx.close()
     ctx, page, errs = _hf2_open(browser, 390, 844, True, reduced=True)
+    page.evaluate(HF2_ROW_REC_JS, 300)
     _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
     page.wait_for_timeout(400)
+    opening = page.evaluate("window.__hf2row")
     page.keyboard.type("сп", delay=50)
     page.wait_for_timeout(600)
     page.evaluate(HF2_ROW_REC_JS, 300)
-    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
     page.wait_for_timeout(450)
     closing = page.evaluate("window.__hf2row")
-    full = max(v for _, v in closing) if closing else 0
-    check("hf2_search_close_reduced_motion_instant", not [v for _, v in closing if 0 < v < full - 0.5] and closing and closing[-1][1] == 0,
-          f"heights {[v for _, v in closing][:10]}")
+    between = [x[1:] for x in opening + closing if 0.02 < x[1] < 0.98 or 0.02 < x[2] < 0.98]
+    check("hf2_search_close_reduced_motion_instant", not between and opening and opening[-1][1:] == [1, 0]
+          and closing and closing[-1][1:] == [0, 1],
+          f"frames between states {between[:6]}; open end {opening[-1:] if opening else None}, closed end {closing[-1:] if closing else None}")
     ctx.close()
 
 
@@ -14652,11 +14728,13 @@ def _hf2_switch(browser, eng):
 def wave_hf2(browser):
     """
     Wave HF2: the owner's phone reports of 2026-10-15, round 2.
-    HF2-A toggle: phone 390/375 BG/EN, search open and close leave it exactly as it was;
+    HF2-A toggle: phone 390/375 BG/EN, the open search replaces the toggle row (hidden, inert,
+          the toggle itself untouched) and "Отказ" gives it back exactly as it was;
           desktop 1024/1280 shrink only when crowded (P3A), also while typing
     HF2-B live search: "спайдър"/"spider" letter by letter (120 ms and 600 ms apart),
           every frame: same focused field, header and results top still, scrollY still;
-          results follow every letter; x restores the page in place; from a scrolled page
+          results follow every letter; x clears and keeps typing; "Отказ" restores the page
+          in place; from a scrolled page
           the results open under the header and stay put
     HF2-C filter taps with the drawer open (5 options and Изчисти), 390/375 BG/EN, both
           programmes: every frame for 500 ms no blank or undecoded poster in view, no
@@ -14664,8 +14742,10 @@ def wave_hf2(browser):
     HF2-D a search result's sheet: every close route, keyboard up (with a letter pending)
           and down, 390 and 440, then the next result
     HF2-E fit: 440/402/393/375/360 BG/EN on home, sheets, drawer, search, time panel;
-          safe areas (Chromium): portrait status bar and home indicator, landscape notch
-    HF2-F the search row closes as it opens (also with a query and by x); reduced motion
+          safe areas (Chromium): portrait status bar and home indicator, landscape notch; the
+          status-bar band is a real opaque element; the phone logo row clears the inset
+    HF2-F the search row and the toggle row swap in place, both ways ("Отказ", Escape), with a
+          query; reduced motion: instant
     HF2-G Кино/Театър transition, never blank, nothing left behind; reduced motion
     """
     eng = _hf_engine(browser)
@@ -18291,7 +18371,21 @@ def _b24_ring_pixels(png, rect, clip, margin):
     return out
 
 
+B24_RING_JS = r"""(sel) => { const e = document.querySelector(sel); const q = e.getBoundingClientRect(), c = getComputedStyle(e);
+  const ow = parseFloat(c.outlineWidth) || 0, oo = parseFloat(c.outlineOffset) || 0, reach = Math.max(0, ow + oo);
+  const clips = []; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
+    const s = getComputedStyle(a); if (/(hidden|clip|auto|scroll)/.test(s.overflowX + s.overflowY)) { const ar = a.getBoundingClientRect();
+      if (q.left - reach < ar.left - .5 || q.right + reach > ar.right + .5 || q.top - reach < ar.top - .5 || q.bottom + reach > ar.bottom + .5)
+        clips.push(a.className); } }
+  return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
+    bg: c.backgroundColor, border: c.borderTopWidth, radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'),
+    kbd: document.documentElement.classList.contains('sg-kbd'), active: document.activeElement === e, clips}; }"""
+
+
 def _b24_search(browser, base, eng):
+    """7: the focused search field. Desktop: one 2 px ring inside the pill, never clipped.
+    Phone (the owner's option 1, 2026-10-25): a filled field with no heavy white outline when
+    tapped (the caret shows the focus); a keyboard user (Tab) gets the same 2 px ring inside it."""
     for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900)), (False, (1024, 768))):
         dev = f"{'phone' if phone else 'desktop'}_{w}"
         ctx, page, errs = _b24_open(browser, base, w, h, phone=phone)
@@ -18301,15 +18395,18 @@ def _b24_search(browser, base, eng):
         page.focus(sel)
         page.keyboard.type("ко")
         page.wait_for_timeout(500)
-        r = page.evaluate("""(sel) => { const e = document.querySelector(sel); const q = e.getBoundingClientRect(), c = getComputedStyle(e);
-            const ow = parseFloat(c.outlineWidth) || 0, oo = parseFloat(c.outlineOffset) || 0, reach = Math.max(0, ow + oo);
-            const clips = []; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
-              const s = getComputedStyle(a); if (/(hidden|clip|auto|scroll)/.test(s.overflowX + s.overflowY)) { const ar = a.getBoundingClientRect();
-                if (q.left - reach < ar.left - .5 || q.right + reach > ar.right + .5 || q.top - reach < ar.top - .5 || q.bottom + reach > ar.bottom + .5)
-                  clips.push(a.className); } }
-            return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
-              radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'), active: document.activeElement === e, clips}; }""", sel)
-        # 6 px beside the field, 3 px above and below it (a phone's toggle ends 5 px above it)
+        if phone:
+            t = page.evaluate(B24_RING_JS, sel)
+            check(f"b24_{eng}_search_filled_no_outline_{dev}",
+                  t["active"] and not t["kbd"] and t["style"] == "none" and t["shadow"] == "none" and t["border"] == "0px"
+                  and t["bg"] == "rgba(255, 255, 255, 0.11)" and t["h"] >= 44,
+                  f"tapped: outline {t['style']} box-shadow={t['shadow']} border {t['border']} background {t['bg']} height {t['h']}")
+            # keyboard: Tab to the clear x, Shift+Tab back to the field
+            page.keyboard.press("Tab")
+            page.keyboard.press("Shift+Tab")
+            page.wait_for_timeout(200)
+        r = page.evaluate(B24_RING_JS, sel)
+        # 6 px beside the field, 3 px above and below it
         margin, my = 6, 3
         clip = {"x": max(0, r["x"] - margin), "y": max(0, r["y"] - my)}
         clip["width"] = min(r["w"] + 2 * margin, w - clip["x"])
@@ -18318,8 +18415,8 @@ def _b24_search(browser, base, eng):
         outside = _b24_ring_pixels(png, r, clip, margin)
         ok = (r["active"] and r["fv"] and r["style"] == "solid" and r["ow"] >= 2 and r["oo"] + r["ow"] <= 0
               and r["color"] == B24_FG and r["shadow"] == "none" and not r["clips"] and outside == 0)
-        check(f"b24_{eng}_search_ring_{dev}", ok,
-              f"focus-visible={r['fv']} outline {r['style']} {r['ow']}px offset {r['oo']}px {r['color']} box-shadow={r['shadow']} "
+        check(f"b24_{eng}_search_ring_{dev}{'_keyboard' if phone else ''}", ok,
+              f"focus-visible={r['fv']} keyboard={r['kbd']} outline {r['style']} {r['ow']}px offset {r['oo']}px {r['color']} box-shadow={r['shadow']} "
               f"radius={r['radius']} clipped by={r['clips']} bright pixels outside the pill={outside}")
         save_shot(page, "B24", f"search_focus_{dev}_{eng}")
         check(f"b24_{eng}_search_{dev}_no_js_errors", not errs, f"errors={errs[:3]}")
@@ -18373,8 +18470,10 @@ def _b24_zoom(browser, base, eng):
         f = page.evaluate(B24_FIELD_JS, sel)
         focused = page.evaluate("(s)=>document.activeElement===document.querySelector(s)", sel)
         check(f"b24_{eng}_zoom_{dev}_search_16px", f and f["fs"] >= 16 and focused and f["scale"] == 1
-              and abs(f["h"] - desk["h"]) <= .5 and f["ta"] == "manipulation" and not bad_meta(f["meta"]),
-              f"{sel} {f and f['fs']}px focused={focused} h={f and round(f['h'], 2)} (desktop {round(desk['h'], 2)}) "
+              # the phone header's field (owner's option 1, 2026-10-25) is the 44 px row's own height;
+              # a phone on its side has the desktop header and keeps the 15 px field's height
+              and abs(f["h"] - (44 if sel == "#q-m" else desk["h"])) <= .5 and f["ta"] == "manipulation" and not bad_meta(f["meta"]),
+              f"{sel} {f and f['fs']}px focused={focused} h={f and round(f['h'], 2)} (phone row 44, desktop {round(desk['h'], 2)}) "
               f"touch-action={f and f['ta']} scale={f and f['scale']} viewport='{f and f['meta']}'")
         page.keyboard.press("Escape")
         page.wait_for_timeout(300)

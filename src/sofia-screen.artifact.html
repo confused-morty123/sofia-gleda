@@ -67,14 +67,17 @@ a{color:inherit}
 @media(min-width:900px){ .bar .wrap{padding-inline:max(28px,env(safe-area-inset-left,0px)) max(28px,env(safe-area-inset-right,0px))} }
 @media(min-width:1440px){ .bar .wrap{padding-inline:max(40px,env(safe-area-inset-left,0px)) max(40px,env(safe-area-inset-right,0px))} }
 /* the status-bar band of an edge-to-edge screen keeps the page colour: neither the pinned
-   header's logo row nor the listing shows behind the clock and the Dynamic Island */
-body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top,0px);
+   header's logo row nor the listing shows behind the clock and the Dynamic Island. A REAL
+   element (div.sb-band after #app), opaque and fixed at the top edge: iOS Safari 26 takes the
+   status bar's tint from such an element (it ignored the former body::before), and the content
+   scrolling under it never reaches Safari's fade at the screen's top edge. */
+.sb-band{position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top,0px);
   background:var(--ink); z-index:61; pointer-events:none}
 
 /* ---------- header ---------- */
 /* Desktop: position:sticky, single row. Mobile: two rows (logo centred + controls).
    The logo row is allowed to scroll away; the controls row stays pinned via a
-   negative top offset equal to the logo row height (28px logo + 14px padding-block + 10px gap = 52px).
+   negative top offset equal to the logo row's height (--logo-row-h, set with the phone layout below).
    --logo-row-h is the single source of truth so the pinned offset cannot drift. */
 /* No backdrop-filter on the pinned header: blurring the page under it cost a render pass
    every scroll frame (2.7 ms a frame at 1440 px where the GPU does not composite), for a
@@ -100,32 +103,25 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .brand span{font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--fg-3); white-space:nowrap}
 .bar-controls{display:flex; align-items:center; gap:8px; justify-self:end}
 @media(max-width:820px){ .brand span{display:none} }
-/* ── Mobile layout (≤760px) ──
-   Row 1: logo centred (scrolls away).
-   Row 2: [seg toggle expands] [lang 42px] [search icon 42px] [burger 42px] — one line, never wraps.
-   Row 3: full-width search field (only when S.searchOpen).
-   --logo-row-h = 28px logo + 14px padding-block-top + 10px gap between rows = 52px.
-   The negative top hides the logo row; the controls row is then 8px below safe-area-inset-top. */
-/* ── Mobile layout (≤760px) — JS also detects this and renders mobile HTML ── */
-/* Row 1: 3-column grid — left placeholder | logo centred | lang button right.
-   Row 2: seg toggle (fills width) + search icon.
-   Row 3 (optional): full-width open search field when S.searchOpen.
-   --logo-row-h = 45px row (logo 28px + 5px gap + 12px subtext, taller than the 42px language button) + 14px padding-block-top + 10px gap = 69px. */
+/* ── Mobile layout (≤760px; the owner's option 1, 2026-10-25) — JS renders the phone markup ──
+   Row 1 (.bar-row-logo, scrolls away): placeholder | logo + motto centred | language button.
+   Row 2 (.bar-row-controls, pinned): the toggle row (.bar-row-toggle: toggle + magnifier); an
+   open search REPLACES it in place (.bar-row-search: field + "Отказ"), see "phone header" at
+   the end of this sheet.
+   --logo-row-h = 20px top padding (below the safe-area inset) + 49px logo row (30px logo + 5px
+   gap + 14px motto line; the 44px language button is centred on the logo, inside that row)
+   + 18px gap = 87px. The negative top hides the logo row; pinned, the controls row sits 8px
+   below safe-area-inset-top. */
 @media(max-width:760px){
-  :root{ --logo-row-h:69px } /* 45px row (logo + subtext) + 14px top padding + 10px gap */
+  :root{ --logo-row-h:87px }
   /* the header's top padding holds the safe-area inset, so pinned, its controls row
      sits 8px below that inset whatever its size */
-  .bar{top:calc(8px - var(--logo-row-h))}
-  .bar-row-logo{display:grid; grid-template-columns:42px 1fr 42px; align-items:center; margin-bottom:10px; gap:0}
+  .bar{top:calc(8px - var(--logo-row-h)); padding-block:calc(20px + env(safe-area-inset-top,0px)) 12px}
+  .bar-row-logo{display:grid; grid-template-columns:44px 1fr 44px; align-items:start; margin-bottom:18px; gap:0}
   .bar-row-logo .brand{justify-self:center; grid-column:2}
-  .bar-row-logo .lang-right{grid-column:3; justify-self:end}
-  .bar-row-controls{display:flex; align-items:center; gap:8px; flex-wrap:nowrap; overflow:hidden}
-  .bar-row-search{width:100%}
+  .bar-row-logo .lang-right{grid-column:3; justify-self:end; margin-top:-7px} /* centred on the 30px logo */
   .brand b{font-size:19px; letter-spacing:.08em}
-  .brand-logo{height:28px}
-  /* mobile search icon button — inherits .iconb; only expanded override needed here */
-  /* mobile open search field */
-  .bar-row-search .search{position:relative; width:100%; max-width:none}
+  .brand-logo{height:30px}
   /* P3A item 4: phone period header — title on one line, dates on own line with spacing */
   .phead-title{font-size:clamp(28px,7vw,36px); display:block}
   .phead-dates{display:block!important; white-space:nowrap; font-size:clamp(15px,4.5vw,20px);
@@ -176,18 +172,7 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .desk-search-wrap{display:flex; align-items:center; gap:0; overflow:hidden; max-width:0; opacity:0;
   transition:max-width .22s ease-in, opacity .22s ease-in}
 .desk-search-wrap.open{max-width:420px; opacity:1; transition-timing-function:ease-out}
-/* mobile search row: animated height. Default display:none keeps #q-m out of
-   layout (bounding_box()===null for tests). JS sets display:block before adding
-   .open to trigger the CSS transition, then restores display:none after close.
-   The row opens to its own height (--sr-h, measured by JS) rather than a cap above
-   it, so no part of either animation is spent where nothing moves. */
-.bar-row-search{display:none; overflow:hidden; max-height:0; opacity:0;
-  transition:max-height .22s ease-in, opacity .22s ease-in}
-.bar-row-search.sr-visible{display:block} /* JS adds this before animating open */
-.bar-row-search.open{max-height:var(--sr-h,64px); opacity:1; transition-timing-function:ease-out}
-@media (prefers-reduced-motion:reduce){
-  .desk-search-wrap,.bar-row-search{transition:none!important}
-}
+@media (prefers-reduced-motion:reduce){ .desk-search-wrap{transition:none!important} }
 /* 420 px, narrower below 1210 px: open beside the toggle, the field leaves the logo's
    column its room (the lockup's 190 px floor and 12 px clear of the toggle), so nothing
    overflows from 761 px up */
@@ -200,7 +185,6 @@ body::before{content:""; position:fixed; top:0; left:0; right:0; height:env(safe
 .search .clr{position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--fg-3); font-size:16px;
   width:24px; height:24px; border-radius:50%; display:none; place-items:center}
 .search.has .clr{display:grid}
-.search.search-mob-open .clr{display:grid}
 /* .burger removed — drawer is opened by .fab and period-banner link only */
 .drawer-scrim{position:fixed; inset:0; z-index:100; background:rgba(5,3,7,.6); backdrop-filter:blur(3px)}
 .drawer{position:fixed; top:0; right:0; bottom:0; z-index:101; width:min(380px,88vw);
@@ -1128,7 +1112,7 @@ body{font-size:15px}
    measured per language: 21.29 in BG, 16.37 in EN), at most 15 px and never below the owner's 10 px
    floor: in Bulgarian the line is a little longer than the logo at 10 px and runs past its right
    edge rather than shrinking. Phones size the line to the space between the two header buttons
-   (100vw - 140 px keeps 12 px clear of the language button), 10-12.5 px. */
+   (100vw - 144 px keeps 12 px clear of the 44 px language button), 10-12.5 px. */
 .brand .brand-sub{font-family:var(--f-ui); font-style:normal; font-weight:400; text-transform:none; letter-spacing:0;
   font-variation-settings:normal; --motto-em:21.29;
   line-height:14px}  /* a fixed line box: the header's height stays the same in BG and EN, whose sizes differ */
@@ -1146,7 +1130,7 @@ body{font-size:15px}
   .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
 @media(max-width:760px){
-  .brand .brand-sub{--motto-ph:21.29; font-size:min(12.5px,max(10px,calc((100vw - 140px)/var(--motto-ph))))}
+  .brand .brand-sub{--motto-ph:21.29; font-size:min(12.5px,max(10px,calc((100vw - 144px)/var(--motto-ph))))}
   .brand .brand-sub:lang(en){--motto-ph:16.37}
 }
 
@@ -1392,6 +1376,52 @@ button,a{-webkit-tap-highlight-color:transparent}
     [role=checkbox],[role=radio],[role=option],[role=menuitem],[tabindex]:not([tabindex="-1"]),
     .scrim,.drawer-scrim,.card,.rtrack){touch-action:manipulation}
 }
+/* ---- phone header (owner's option 1, 2026-10-25) ----
+   Phones (up to 760 px). The logo row scrolls away; the pinned row below it holds the toggle row
+   (Кино/Театър + the magnifier). Opening the search REPLACES the toggle row in place, iOS-style:
+   a filled field (magnifier, the query, a clear x inside) and a text button "Отказ"/"Cancel"
+   that closes the search and brings the toggle row back. Both rows share one 44 px grid cell,
+   so nothing below moves when one replaces the other. The toggle row fades out while the field
+   fades in and "Отказ" slides in from the right (--dur-fade / --dur-out, --ease-std); with
+   reduced motion the swap is instant. The hidden row is inert (out of the Tab order and the
+   accessibility tree); JS sets that. Every control is 44 px tall or has a 44 px hit area. */
+@media(max-width:760px){
+  .bar-row-controls{display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:44px; align-items:center}
+  .bar-row-toggle,.bar-row-search{grid-area:1/1; min-width:0}
+  .bar-row-toggle{display:flex; align-items:center; gap:12px;
+    transition:opacity var(--dur-fade) var(--ease-std), transform var(--dur-out) var(--ease-std), visibility 0s}
+  .bar-row-toggle.sr-hide{opacity:0; transform:scale(.97); visibility:hidden; pointer-events:none;
+    transition:opacity var(--dur-fade) var(--ease-std), transform var(--dur-out) var(--ease-std), visibility 0s linear var(--dur-fade)}
+  /* the toggle: 44 px tall in all (the mockup); its 2 px ring stays inside its 3 px padding. The
+     buttons are 36 px tall, their hit area (::after) runs over the padding and the border: 44 px */
+  .seg{height:44px; padding:3px; gap:3px}
+  .seg button{height:36px; font-size:14.5px; position:relative; overflow:visible}
+  .seg button::after{content:""; position:absolute; inset:-4px -1.5px}
+  .iconb{width:44px; height:44px; flex:0 0 44px}
+  /* the search row: shown (display:flex) only while open or closing; #q-m is out of layout when shut */
+  .bar-row-search{display:none; align-items:center; gap:12px; opacity:0; transition:opacity var(--dur-fade) var(--ease-std)}
+  .bar-row-search.sr-visible{display:flex}
+  .bar-row-search.open{opacity:1}
+  .bar-row-search .search{position:relative; flex:1 1 auto; min-width:0; width:auto; max-width:none}
+  .bar-row-search .search input{display:block; height:44px; padding:0 44px 0 40px; border:0; border-radius:999px;
+    background:rgba(255,255,255,.11); color:var(--fg)}
+  .bar-row-search .search .mag{left:14px}
+  /* the clear x: iOS's filled circle, inside the field, only with a query; 44 px hit area */
+  .bar-row-search .search .clr{right:0; width:44px; height:44px; border-radius:999px; color:var(--fg-3)}
+  .bar-row-search .search .clr::before{content:none}
+  .bar-row-search .search .clr svg{display:block; width:18px; height:18px}
+  .sr-cancel{flex:0 0 auto; height:44px; padding:0 2px 0 4px; font:500 17px/44px var(--f-ui); color:var(--fg);
+    background:none; border:0; white-space:nowrap; transform:translateX(16px);
+    transition:transform var(--dur-out) var(--ease-std)}
+  .bar-row-search.open .sr-cancel{transform:none}
+  /* focus: no heavy white outline on a tapped field (the caret shows it); a keyboard user (html.sg-kbd,
+     set by Tab, cleared by the next pointer) gets the full 2 px ring, drawn inside the pill */
+  .bar-row-search .search input:focus,.bar-row-search .search input:focus-visible{outline:none}
+  html.sg-kbd .bar-row-search .search input:focus-visible{outline:2px solid var(--fg); outline-offset:-2px}
+}
+@media(max-width:760px) and (prefers-reduced-motion:reduce){
+  .bar-row-toggle,.bar-row-toggle.sr-hide,.bar-row-search,.sr-cancel{transition:none!important}
+}
 </style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">
@@ -1402,6 +1432,8 @@ button,a{-webkit-tap-highlight-color:transparent}
     <a href="legal/privacy/" style="color:#B6ABBC">Поверителност</a> ·
     <a href="legal/cookies/" style="color:#B6ABBC">Бисквитки</a></p></noscript>
 </div></div>
+<!-- the status-bar band (CSS .sb-band): outside #app, which render() rebuilds -->
+<div class="sb-band" aria-hidden="true"></div>
 <!-- @include data.html -->
 <script>/* SOFIA-PRICES — hand-maintained. Kept in its own script on purpose:
    inject_data.py regenerates everything between the SOFIA-POSTERS markers,
@@ -1560,7 +1592,7 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  pheadEyebrow:"Програмата",pheadOtherDates:"Друг период ›",
  pheadThisWeek:"Тази седмица",pheadToday:"Днес",pheadThisMonth:"Този месец",
  pheadAll:"Цялата програма",pheadCustom:"Избран период",pheadDayFull:"",
- dsAllWeek:"Цялата седмица",dsToday:"днес",searchClose:"Затвори търсенето",
+ dsAllWeek:"Цялата седмица",dsToday:"днес",searchClose:"Затвори търсенето",searchCancel:"Отказ",
  subMultiplexes:"Комерсиални кина",subIndepCinemas:"Артхаус кина",subCommercial:"Комерсиални кина",subArthouse:"Артхаус кина",
  showSelCinemasOnly:"Показани са само избраните кина",showAllCinemas:"Покажи всички",
  noInfoFilm:"Няма налична информация за този филм.",noInfoShow:"Няма налична информация за този спектакъл.",
@@ -1663,7 +1695,7 @@ lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMon
  pheadEyebrow:"The programme",pheadOtherDates:"Other dates ›",
  pheadThisWeek:"This week",pheadToday:"Today",pheadThisMonth:"This month",
  pheadAll:"Full programme",pheadCustom:"Selected period",pheadDayFull:"",
- dsAllWeek:"Whole week",dsToday:"today",searchClose:"Close search",
+ dsAllWeek:"Whole week",dsToday:"today",searchClose:"Close search",searchCancel:"Cancel",
  subMultiplexes:"Commercial cinemas",subIndepCinemas:"Arthouse cinemas",subCommercial:"Commercial cinemas",subArthouse:"Arthouse cinemas",
  showSelCinemasOnly:"Showing selected cinemas only",showAllCinemas:"Show all",
  noInfoFilm:"No information available for this film.",noInfoShow:"No information available for this production.",
@@ -3451,13 +3483,6 @@ function _afterTransition(el,maxMs,cb){
   el.addEventListener("transitionend",fin);el.addEventListener("transitioncancel",fin);
   timer=setTimeout(fin,maxMs);
 }
-/* The phone search row opens to exactly its field's height (--sr-h): with a taller cap
-   the start of the close and the end of the open moved nothing. */
-function _srFit(mr){
-  const c=mr&&mr.firstElementChild;
-  const h=c?c.offsetHeight:0;
-  if(h)mr.style.setProperty("--sr-h",h+"px");
-}
 /* ---- Search animation (Item 2) ----
    Toggle search open/close WITHOUT a full render(). Animate width (desk) or
    height (mobile). On close with a query: animate closed, then clear the query and
@@ -3503,30 +3528,42 @@ function searchToggleInPlace(){
       });
     }
   }
-  /* Phones (.desk-search-wrap not in the DOM): the toggle is not touched. */
-  /* Mobile: bar-row-search starts display:none (so #q-m bounding_box()===null).
-     Opening: add .sr-visible (display:block) first, then .open for the CSS transition.
-     Closing: remove .open; after animation ends remove .sr-visible (display:none again),
-     unless the search was opened again meanwhile. */
+  /* Phones (.desk-search-wrap not in the DOM): the search row REPLACES the toggle row in place.
+     Opening: the search row is displayed (.sr-visible), then .open fades it in while the toggle
+     row fades out (.sr-hide) and goes inert. The field takes focus at once, inside the tap, so
+     iOS raises the keyboard. Closing ("Отказ", Escape): the toggle row comes back (no longer
+     inert) and the search row fades out, then leaves the layout (display:none) unless the
+     search was opened again meanwhile; a keyboard user's focus (html.sg-kbd) that was in the
+     search row goes to the magnifier, so they carry on from the restored row (on a tap the
+     field just lets go, and no ring appears on the magnifier). */
   const mr=document.querySelector(".bar-row-search");
+  const tr=document.querySelector(".bar-row-toggle");
   if(mr){
     if(willOpen){
-      mr.classList.add("sr-visible"); /* display:block — make animatable */
+      mr.classList.add("sr-visible"); /* displayed, so the fade can run */
       void mr.offsetHeight; /* force reflow so transition sees start state */
-      _srFit(mr);
       mr.classList.add("open");
+      const qm=document.getElementById("q-m");
+      if(qm){try{qm.focus({preventScroll:true});qm.setSelectionRange(qm.value.length,qm.value.length);}catch(e){}}
+      if(tr){tr.classList.add("sr-hide");_setInert(tr,true);}
     }else{
+      const hadFocus=mr.contains(document.activeElement);
       mr.classList.remove("open");
-      /* display:none again once the row is shut: on its transitionend, not on a timer
+      if(tr){tr.classList.remove("sr-hide");_setInert(tr,false);}
+      if(hadFocus&&document.documentElement.classList.contains("sg-kbd")){
+        const mag=tr&&tr.querySelector("[data-search-open]");
+        if(mag){try{mag.focus({preventScroll:true});}catch(e){}}
+      }
+      /* display:none again once the row has faded: on its transitionend, not on a timer
          that could cut the end of the closing animation short */
       _afterTransition(mr,reducedMotion?0:320,()=>{if(!S.searchOpen)mr.classList.remove("sr-visible");});
     }
   }
   if(willOpen){
-    /* focus the visible input */
+    /* focus the visible input (desktop; a phone's field took it above) */
     const isMob=window.innerWidth<=760;
     const qi=isMob?document.getElementById("q-m"):document.getElementById("q");
-    if(qi)setTimeout(()=>{qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}},50);
+    if(qi)setTimeout(()=>{if(!S.searchOpen)return;qi.focus();try{qi.setSelectionRange(qi.value.length,qi.value.length);}catch(e){}},50);
   }else{
     /* the field stays in the page (hidden): let go of it, so the phone keyboard closes */
     const ae=document.activeElement;
@@ -4271,14 +4308,15 @@ function render(){
   const langBtn=S.lang==="bg"
     ?`<button class="iconb" data-lang aria-label="EN, English" lang="en">${esc(L.lang)}</button>`
     :`<button class="iconb" data-lang aria-label="БГ, Български" lang="bg">${esc(L.lang)}</button>`;
-  /* mobile search open row — always rendered so the animation transition fires;
-     Item 2: .open class added immediately after paint via requestAnimationFrame */
-  /* .sr-visible keeps display:block so animation works when searchOpen=true after render() */
+  /* phone search row: it REPLACES the toggle row in place while the search is open (the owner's
+     option 1): the filled field with the clear x inside (shown with a query) and "Отказ"/"Cancel",
+     which closes the search. Always rendered, so the swap animates; .sr-visible = displayed. */
+  const clrSVG=`<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" fill="currentColor"/><path d="M6.8 6.8l6.4 6.4M13.2 6.8l-6.4 6.4" stroke="var(--ink-2)" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   const searchMobileOpenHTML=`<div class="bar-row-search${S.searchOpen?" sr-visible open":""}"><div class="search search-mob-open${S.q?" has":""}">
       <span class="mag" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" focusable="false"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input id="q-m" type="search" value="${esc(S.q)}" placeholder="${esc(L.search)}" aria-label="${esc(L.searchOpen||"Търсене")}" autocomplete="off" spellcheck="false">
-      <button class="clr" data-qclear-m aria-label="${esc(L.searchClose||"Затвори търсенето")}">✕</button>
-    </div></div>`;
+      <button class="clr" data-qclear-m aria-label="${esc(L.clearSearch)}">${clrSVG}</button>
+    </div><button class="sr-cancel" data-search-cancel>${esc(L.searchCancel)}</button></div>`;
   /* desktop: expandable search field — always in DOM so opacity/width transition fires */
   const deskSearchHTML=`<div class="desk-search-wrap${S.searchOpen?" open":""}"${S.searchOpen?"":" inert"}>
     <div class="search${S.q?" has":""}">
@@ -4293,10 +4331,12 @@ function render(){
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
-      ${segHTML}
-      ${searchIconBtn}
-    </div>
-    ${searchMobileOpenHTML}`
+      <div class="bar-row-toggle${S.searchOpen?" sr-hide":""}"${S.searchOpen?" inert":""}>
+        ${segHTML}
+        ${searchIconBtn}
+      </div>
+      ${searchMobileOpenHTML}
+    </div>`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
       <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
@@ -4332,7 +4372,6 @@ function render(){
   ${fabHTML()}`;
   const mainEl=app.querySelector(":scope > main");
   if(mainEl)mainEl.__sgView=sr?"search":"page";
-  if(isMob&&S.searchOpen)_srFit(app.querySelector(".bar-row-search"));
   if(keptDr){
     const tmp=document.createElement("div");tmp.innerHTML=drawerHTML();
     const fresh=tmp.querySelector(".drawer");
@@ -6423,9 +6462,12 @@ document.addEventListener("click",e=>{
   const st=q("[data-strand]"); if(st){const v=st.dataset.strand;S.fStrands=v?toggleArr(S.fStrands,v):[];S.qFocus=false;S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   /* search icon button is a TOGGLE: animate in-place (Item 2) */
   if(q("[data-search-open]")){S.qFocus=false;searchToggleInPlace();return;}
-  /* phone x: clears and closes, the same way the magnifier closes (row animates shut,
-     then the page comes back in place); desktop x: clears and keeps typing */
-  if(q("[data-qclear-m]")){S.qFocus=false;if(S.searchOpen)searchToggleInPlace();else clearSearch();return;}
+  /* phone "Отказ": closes the search, the toggle row comes back (the query is cleared once the
+     row has faded, and the page comes back in place) */
+  if(q("[data-search-cancel]")){S.qFocus=false;if(S.searchOpen)searchToggleInPlace();return;}
+  /* the x inside the field (phone and desktop): clears and keeps typing */
+  if(q("[data-qclear-m]")){S.qFocus=false;clearSearch();
+    const qm=document.getElementById("q-m");if(qm&&S.searchOpen){try{qm.focus({preventScroll:true});}catch(e){}}return;}
   if(q("[data-qclear]")){S.qFocus=false;clearSearch();
     const qd=document.getElementById("q");if(qd&&S.searchOpen){try{qd.focus({preventScroll:true});}catch(e){}}return;}
   const d=q("[data-day]"); if(d){S.day=d.dataset.day;(S.drawer?renderKeepDrawer():render());return;}
@@ -6537,6 +6579,10 @@ document.addEventListener("click",e=>{
   const shc=q("[data-show]"); if(shc){curSheet={kind:"show",id:shc.dataset.show};openSheet(sheetShow(showById[shc.dataset.show]),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
 });
+/* html.sg-kbd: the visitor is on the keyboard (Tab or Escape pressed) until the next pointer
+   down; the phone search field shows its focus ring only then (CSS "phone header") */
+document.addEventListener("keydown",e=>{if(e.key==="Tab"||e.key==="Escape")document.documentElement.classList.add("sg-kbd");},true);
+document.addEventListener("pointerdown",()=>document.documentElement.classList.remove("sg-kbd"),true);
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
   /* Esc closes the top layer only: the time popup, then the sheet */
