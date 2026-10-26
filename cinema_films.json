@@ -3022,5 +3022,244 @@
   "source": "cineland",
   "runtime": 113,
   "year": 2026
+ },
+ "helouin-selektsiya-kleyfeys": {
+  "id": "helouin-selektsiya-kleyfeys",
+  "bg": "Хелоуин Селекция: Клейфейс",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 108,
+  "year": 2026
+ },
+ "helouin-selektsiya-drugata-mama": {
+  "id": "helouin-selektsiya-drugata-mama",
+  "bg": "Хелоуин Селекция: Другата мама",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2026
+ },
+ "helouin-selektsiya-sradlyo": {
+  "id": "helouin-selektsiya-sradlyo",
+  "bg": "Хелоуин Селекция: Сръдльо",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Комедия",
+   "Семеен"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 92,
+  "year": 2026
+ },
+ "helouin-selektsiya-skoti": {
+  "id": "helouin-selektsiya-skoti",
+  "bg": "Хелоуин Селекция: Скоти",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 80,
+  "year": 2026
+ },
+ "helouin-selektsiya-zarazno-zlo": {
+  "id": "helouin-selektsiya-zarazno-zlo",
+  "bg": "Хелоуин Селекция Заразно зло",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2026
+ },
+ "helouin-selektsiya-ostrovat-na-zabravata": {
+  "id": "helouin-selektsiya-ostrovat-na-zabravata",
+  "bg": "Хелоуин Селекция: Островът на забравата",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 110,
+  "year": 2026
+ },
+ "helouin-selektsiya-payatsi": {
+  "id": "helouin-selektsiya-payatsi",
+  "bg": "Хелоуин Селекция: Паяци",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 86,
+  "year": 2026
+ },
+ "helouin-selektsiya-obsebvane": {
+  "id": "helouin-selektsiya-obsebvane",
+  "bg": "Хелоуин Селекция: Обсебване",
+  "en": "",
+  "genres": [
+   "Хорър",
+   "Романтика"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 108,
+  "year": 2026
+ },
+ "helouin-selektsiya-naslednikat": {
+  "id": "helouin-selektsiya-naslednikat",
+  "bg": "Хелоуин Селекция: Наследникът",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Фентъзи"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 115,
+  "year": 2026
+ },
+ "helouin-selektsiya-kovaren-kapan-byagstvo": {
+  "id": "helouin-selektsiya-kovaren-kapan-byagstvo",
+  "bg": "Хелоуин Селекция Коварен капан: Бягство",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 106,
+  "year": 2026
+ },
+ "helouin-selektsiya-spider-island": {
+  "id": "helouin-selektsiya-spider-island",
+  "bg": "Хелоуин Селекция: Spider Island",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 95,
+  "year": 2026
+ },
+ "helouin-selektsiya-backrooms": {
+  "id": "helouin-selektsiya-backrooms",
+  "bg": "Хелоуин Селекция: Backrooms",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 110,
+  "year": 2026
+ },
+ "rozhden-den": {
+  "id": "rozhden-den",
+  "bg": "Рожден ден",
+  "en": "",
+  "genres": [
+   "Семеен"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 105
+ },
+ "wizard-friend": {
+  "id": "wizard-friend",
+  "bg": "Wizard - Friend",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
+ },
+ "40-kinomaniya-tatko-sled-polunosht": {
+  "id": "40-kinomaniya-tatko-sled-polunosht",
+  "bg": "40.Киномания: Татко след полунощ",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 126
+ },
+ "40-kinomaniya-golishar": {
+  "id": "40-kinomaniya-golishar",
+  "bg": "40.Киномания: Голишар",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino"
  }
 }
