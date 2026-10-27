@@ -209,6 +209,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"335": {
+"n": "Michael Shannon",
+"bg": "Майкъл Шанън",
+"t": "2026-10-27"
+},
 "405": {
 "n": "Alberto Iglesias",
 "bg": null,
@@ -248,6 +253,11 @@
 "n": "Danny Elfman",
 "bg": "Дани Елфман",
 "t": "2026-10-23"
+},
+"559": {
+"n": "Wally Pfister",
+"bg": null,
+"t": "2026-10-27"
 },
 "569": {
 "n": "Ethan Hawke",
@@ -529,6 +539,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"1213": {
+"n": "James Newton Howard",
+"bg": null,
+"t": "2026-10-27"
+},
 "1223": {
 "n": "Joel Coen",
 "bg": "Джоуел Коен",
@@ -548,6 +563,11 @@
 "n": "John Goodman",
 "bg": null,
 "t": "2026-10-23"
+},
+"1245": {
+"n": "Scarlett Johansson",
+"bg": "Скарлет Йохансон",
+"t": "2026-10-27"
 },
 "1259": {
 "n": "Ennio Morricone",
@@ -688,6 +708,11 @@
 "n": "Ted Elliott",
 "bg": null,
 "t": "2026-10-23"
+},
+"1706": {
+"n": "Terry Rossio",
+"bg": null,
+"t": "2026-10-27"
 },
 "1724": {
 "n": "Roger Spottiswoode",
@@ -1044,6 +1069,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"3769": {
+"n": "Michael Ballhaus",
+"bg": null,
+"t": "2026-10-27"
+},
 "3810": {
 "n": "Javier Bardem",
 "bg": "Хавиер Бардем",
@@ -1058,6 +1088,31 @@
 "n": "Daniel Brühl",
 "bg": "Даниел Брюл",
 "t": "2026-10-23"
+},
+"3893": {
+"n": "David S. Goyer",
+"bg": null,
+"t": "2026-10-27"
+},
+"3894": {
+"n": "Christian Bale",
+"bg": "Крисчън Бейл",
+"t": "2026-10-27"
+},
+"3895": {
+"n": "Michael Caine",
+"bg": "Майкъл Кейн",
+"t": "2026-10-27"
+},
+"3896": {
+"n": "Liam Neeson",
+"bg": "Лиъм Нийсън",
+"t": "2026-10-27"
+},
+"3897": {
+"n": "Katie Holmes",
+"bg": null,
+"t": "2026-10-27"
 },
 "3974": {
 "n": "Miloš Forman",
@@ -1329,6 +1384,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"6193": {
+"n": "Leonardo DiCaprio",
+"bg": "Леонардо ди Каприо",
+"t": "2026-10-27"
+},
 "6405": {
 "n": "Chiara Caselli",
 "bg": null,
@@ -1543,6 +1603,11 @@
 "n": "Marion Cotillard",
 "bg": "Марион Котияр",
 "t": "2026-10-23"
+},
+"8349": {
+"n": "Martin Sheen",
+"bg": "Мартин Шийн",
+"t": "2026-10-27"
 },
 "8734": {
 "n": "Göte Lovén",
@@ -1969,6 +2034,11 @@
 "bg": "Том Беринджър",
 "t": "2026-10-23"
 },
+"13240": {
+"n": "Mark Wahlberg",
+"bg": "Марк Уолбърг",
+"t": "2026-10-27"
+},
 "13250": {
 "n": "Hidetoshi Nishijima",
 "bg": null,
@@ -2129,6 +2199,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"17018": {
+"n": "Ruth Negga",
+"bg": null,
+"t": "2026-10-27"
+},
 "17039": {
 "n": "Nick Offerman",
 "bg": null,
@@ -2158,6 +2233,11 @@
 "n": "Jürgen Vogel",
 "bg": null,
 "t": "2026-10-23"
+},
+"17453": {
+"n": "Joaquín Baca-Asay",
+"bg": null,
+"t": "2026-10-27"
 },
 "17497": {
 "n": "Romain Duris",
@@ -2319,6 +2399,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"20561": {
+"n": "James Gray",
+"bg": null,
+"t": "2026-10-27"
+},
 "20657": {
 "n": "Cristian Mungiu",
 "bg": null,
@@ -2333,6 +2418,11 @@
 "n": "Antoine Fuqua",
 "bg": "Антоан Фукуа",
 "t": "2026-10-23"
+},
+"20982": {
+"n": "Marton Csokas",
+"bg": null,
+"t": "2026-10-27"
 },
 "21028": {
 "n": "Anton Yelchin",
@@ -2524,6 +2614,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"30082": {
+"n": "Benedict Wong",
+"bg": "Бенедикт Уонг",
+"t": "2026-10-27"
+},
 "32511": {
 "n": "Marina Hands",
 "bg": null,
@@ -2533,6 +2628,11 @@
 "n": "Tomokazu Miura",
 "bg": null,
 "t": "2026-10-23"
+},
+"33192": {
+"n": "Joel Edgerton",
+"bg": "Джоел Едгертън",
+"t": "2026-10-27"
 },
 "33238": {
 "n": "Piotr Sobociński",
@@ -2548,6 +2648,11 @@
 "n": "Stefania Sandrelli",
 "bg": null,
 "t": "2026-10-23"
+},
+"34510": {
+"n": "William Monahan",
+"bg": null,
+"t": "2026-10-27"
 },
 "34517": {
 "n": "Trey Parker",
@@ -3368,6 +3473,16 @@
 "n": "Alex Gibney",
 "bg": null,
 "t": "2026-10-24"
+},
+"71872": {
+"n": "Jeff Nichols",
+"bg": null,
+"t": "2026-10-27"
+},
+"71880": {
+"n": "Adam Stone",
+"bg": null,
+"t": "2026-10-27"
 },
 "72319": {
 "n": "Cédric Anger",
@@ -4329,6 +4444,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"208519": {
+"n": "Nick Kroll",
+"bg": null,
+"t": "2026-10-27"
+},
 "209343": {
 "n": "Brian K. Vaughan",
 "bg": null,
@@ -4869,6 +4989,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"937895": {
+"n": "David Wingo",
+"bg": null,
+"t": "2026-10-27"
+},
 "939147": {
 "n": "Yeon Sang-ho",
 "bg": null,
@@ -4893,6 +5018,11 @@
 "n": "Nicolas Bolduc",
 "bg": null,
 "t": "2026-10-24"
+},
+"964834": {
+"n": "Frank Dillane",
+"bg": null,
+"t": "2026-10-27"
 },
 "966481": {
 "n": "Ben Frost",
@@ -4938,6 +5068,11 @@
 "n": "Yana Titova",
 "bg": null,
 "t": "2026-10-24"
+},
+"996701": {
+"n": "Miles Teller",
+"bg": "Майлс Телър",
+"t": "2026-10-27"
 },
 "1002482": {
 "n": "Sofian El Fani",
@@ -6864,6 +6999,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"1760460": {
+"n": "Christopher Spelman",
+"bg": null,
+"t": "2026-10-27"
+},
 "1761126": {
 "n": "Michael Abels",
 "bg": null,
@@ -8019,6 +8159,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"3248827": {
+"n": "Roman Engel",
+"bg": null,
+"t": "2026-10-27"
+},
 "3281935": {
 "n": "Osama Abou El Khair",
 "bg": null,
@@ -8443,6 +8588,11 @@
 "n": "Dimitar Stafidov",
 "bg": null,
 "t": "2026-10-25"
+},
+"5267696": {
+"n": "Gavin Goudey",
+"bg": null,
+"t": "2026-10-27"
 },
 "5269231": {
 "n": "Brady Wagner",

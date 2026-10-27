@@ -18,7 +18,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 17 ДНИ",
+   "tag": "СЛЕД 16 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -56,7 +56,7 @@
    ]
   }
  ],
- "generated": "2026-10-26T06:31:04+00:00",
+ "generated": "2026-10-27T06:40:49+00:00",
  "ok": true,
  "posts": {
   "180082": {
@@ -198,7 +198,7 @@
  },
  "read": {
   "listed": 27,
-  "pages": 1,
+  "pages": 0,
   "unreadable": 0
  },
  "source": "programata.bg"
