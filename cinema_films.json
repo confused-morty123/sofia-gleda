@@ -2943,7 +2943,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "arena-mega"
+  "source": "arena-mega",
+  "runtime": 102
  },
  "everest-drugata-strana": {
   "id": "everest-drugata-strana",
@@ -3022,5 +3023,710 @@
   "source": "cineland",
   "runtime": 113,
   "year": 2026
+ },
+ "helouin-selektsiya-kleyfeys": {
+  "id": "helouin-selektsiya-kleyfeys",
+  "bg": "Хелоуин Селекция: Клейфейс",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 108,
+  "year": 2026
+ },
+ "helouin-selektsiya-drugata-mama": {
+  "id": "helouin-selektsiya-drugata-mama",
+  "bg": "Хелоуин Селекция: Другата мама",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2026
+ },
+ "helouin-selektsiya-sradlyo": {
+  "id": "helouin-selektsiya-sradlyo",
+  "bg": "Хелоуин Селекция: Сръдльо",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Комедия",
+   "Семеен"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 92,
+  "year": 2026
+ },
+ "helouin-selektsiya-skoti": {
+  "id": "helouin-selektsiya-skoti",
+  "bg": "Хелоуин Селекция: Скоти",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 80,
+  "year": 2026
+ },
+ "helouin-selektsiya-zarazno-zlo": {
+  "id": "helouin-selektsiya-zarazno-zlo",
+  "bg": "Хелоуин Селекция Заразно зло",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 93,
+  "year": 2026
+ },
+ "helouin-selektsiya-ostrovat-na-zabravata": {
+  "id": "helouin-selektsiya-ostrovat-na-zabravata",
+  "bg": "Хелоуин Селекция: Островът на забравата",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 110,
+  "year": 2026
+ },
+ "helouin-selektsiya-payatsi": {
+  "id": "helouin-selektsiya-payatsi",
+  "bg": "Хелоуин Селекция: Паяци",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 86,
+  "year": 2026
+ },
+ "helouin-selektsiya-obsebvane": {
+  "id": "helouin-selektsiya-obsebvane",
+  "bg": "Хелоуин Селекция: Обсебване",
+  "en": "",
+  "genres": [
+   "Хорър",
+   "Романтика"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 108,
+  "year": 2026
+ },
+ "helouin-selektsiya-naslednikat": {
+  "id": "helouin-selektsiya-naslednikat",
+  "bg": "Хелоуин Селекция: Наследникът",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Фентъзи"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 115,
+  "year": 2026
+ },
+ "helouin-selektsiya-kovaren-kapan-byagstvo": {
+  "id": "helouin-selektsiya-kovaren-kapan-byagstvo",
+  "bg": "Хелоуин Селекция Коварен капан: Бягство",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 106,
+  "year": 2026
+ },
+ "helouin-selektsiya-spider-island": {
+  "id": "helouin-selektsiya-spider-island",
+  "bg": "Хелоуин Селекция: Spider Island",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 95,
+  "year": 2026
+ },
+ "helouin-selektsiya-backrooms": {
+  "id": "helouin-selektsiya-backrooms",
+  "bg": "Хелоуин Селекция: Backrooms",
+  "en": "",
+  "genres": [
+   "Хорър"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 110,
+  "year": 2026
+ },
+ "rozhden-den": {
+  "id": "rozhden-den",
+  "bg": "Рожден ден",
+  "en": "",
+  "genres": [
+   "Семеен"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 105
+ },
+ "wizard-friend": {
+  "id": "wizard-friend",
+  "bg": "Wizard - Friend",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
+ },
+ "40-kinomaniya-tatko-sled-polunosht": {
+  "id": "40-kinomaniya-tatko-sled-polunosht",
+  "bg": "40.Киномания: Татко след полунощ",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 126
+ },
+ "40-kinomaniya-golishar": {
+  "id": "40-kinomaniya-golishar",
+  "bg": "40.Киномания: Голишар",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino"
+ },
+ "helouin-selektsiya-bezsmartniyat-i-krasavi": {
+  "id": "helouin-selektsiya-bezsmartniyat-i-krasavi",
+  "bg": "Хелоуин Селекция: Безсмъртният и красави",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 80,
+  "year": 2026
+ },
+ "everest-ot-drugata-strana": {
+  "id": "everest-ot-drugata-strana",
+  "bg": "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
+ },
+ "40-kinomaniya-mazhat-kogoto-obicham": {
+  "id": "40-kinomaniya-mazhat-kogoto-obicham",
+  "bg": "40.Киномания: Мъжът, когото обичам",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 96
+ },
+ "teatralno-studio-iuvenes-predstavya-lyubov-po-chehov-s-minia": {
+  "id": "teatralno-studio-iuvenes-predstavya-lyubov-po-chehov-s-minia",
+  "bg": "Театрално студио IUVENES представя „Любов по ЧЕХОВ“ с миниатюрите „МЕЧКА“ и „ПРЕДЛОЖЕНИЕ“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "vlaikova"
+ },
+ "rays-and-shadows-sinelibri": {
+  "id": "rays-and-shadows-sinelibri",
+  "bg": "RAYS AND SHADOWS - SINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "40-kinomaniya-hartien-tigar": {
+  "id": "40-kinomaniya-hartien-tigar",
+  "bg": "40.Киномания: Хартиен тигър",
+  "en": "",
+  "genres": [
+   "Криминален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
+ },
+ "40-kinomaniya-fotochuvstvitelna": {
+  "id": "40-kinomaniya-fotochuvstvitelna",
+  "bg": "40.Киномания: Фоточувствителна",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 92
+ },
+ "40-kinomaniya-stakleno-more": {
+  "id": "40-kinomaniya-stakleno-more",
+  "bg": "40.Киномания: Стъклено море",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 130
+ },
+ "40-kinomaniya-strahlivets": {
+  "id": "40-kinomaniya-strahlivets",
+  "bg": "40.Киномания: Страхливец",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 127
+ },
+ "40-kinomaniya-sladko-ot-peperudi": {
+  "id": "40-kinomaniya-sladko-ot-peperudi",
+  "bg": "40.Киномания: Сладко от пеперуди",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 97
+ },
+ "40-kinomaniya-pogledni-nazad": {
+  "id": "40-kinomaniya-pogledni-nazad",
+  "bg": "40.Киномания: Погледни назад",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
+ },
+ "40-kinomaniya-ostatachni-obrazi": {
+  "id": "40-kinomaniya-ostatachni-obrazi",
+  "bg": "40.Киномания: Остатъчни образи",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
+ },
+ "40-kinomaniya-obich": {
+  "id": "40-kinomaniya-obich",
+  "bg": "40.Киномания: Обич",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 135
+ },
+ "40-kinomaniya-obetovanata-zemya": {
+  "id": "40-kinomaniya-obetovanata-zemya",
+  "bg": "40.Киномания: Обетованата земя",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 179
+ },
+ "40-kinomaniya-nyama-duhove-v-zhilishteto-na-ul-dobra": {
+  "id": "40-kinomaniya-nyama-duhove-v-zhilishteto-na-ul-dobra",
+  "bg": "40.Киномания: Няма духове в жилището на ул. „Добра“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 90
+ },
+ "40-kinomaniya-nevidimo-v-kutiya": {
+  "id": "40-kinomaniya-nevidimo-v-kutiya",
+  "bg": "40.Киномания: Невидимо в кутия",
+  "en": "",
+  "genres": [
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 127
+ },
+ "40-kinomaniya-katin": {
+  "id": "40-kinomaniya-katin",
+  "bg": "40.Киномания: Катин",
+  "en": "",
+  "genres": [
+   "Исторически"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 117
+ },
+ "40-kinomaniya-karma": {
+  "id": "40-kinomaniya-karma",
+  "bg": "40.Киномания: Карма",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 140
+ },
+ "40-kinomaniya-zhozefin": {
+  "id": "40-kinomaniya-zhozefin",
+  "bg": "40.Киномания: Жозефин",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 121
+ },
+ "40-kinomaniya-elektricheskata-tseluvka": {
+  "id": "40-kinomaniya-elektricheskata-tseluvka",
+  "bg": "40.Киномания: Електрическата целувка",
+  "en": "",
+  "genres": [
+   "Романтика"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 122
+ },
+ "40-kinomaniya-dom-dobar": {
+  "id": "40-kinomaniya-dom-dobar",
+  "bg": "40.Киномания: Дом добър",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 107
+ },
+ "40-kinomaniya-golemite-maystori-na-kinoto": {
+  "id": "40-kinomaniya-golemite-maystori-na-kinoto",
+  "bg": "40.Киномания: Големите майстори на киното",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 73
+ },
+ "40-kinomaniya-vsichki-obichat-bil-evans": {
+  "id": "40-kinomaniya-vsichki-obichat-bil-evans",
+  "bg": "40.Киномания: Всички обичат Бил Евънс",
+  "en": "",
+  "genres": [
+   "Биографичен"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 102
+ },
+ "40-kinomaniya-bog-se-smee": {
+  "id": "40-kinomaniya-bog-se-smee",
+  "bg": "40.Киномания: Бог се смее",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 110
+ },
+ "40-kinomaniya-aferata-boyarski": {
+  "id": "40-kinomaniya-aferata-boyarski",
+  "bg": "40.Киномания: Аферата Боярски",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 128
+ },
+ "40-kinomaniya-atlas-na-vselenata": {
+  "id": "40-kinomaniya-atlas-na-vselenata",
+  "bg": "40.Киномания: АТЛАС НА ВСЕЛЕНАТА",
+  "en": "",
+  "genres": [
+   "Семеен"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 86
+ },
+ "40-kinomaniya-ana-manyani": {
+  "id": "40-kinomaniya-ana-manyani",
+  "bg": "40.Киномания: Ана Маняни",
+  "en": "",
+  "genres": [
+   "Биографичен"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 112
+ },
+ "bog-se-smee": {
+  "id": "bog-se-smee",
+  "bg": "Бог се смее",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "odeon"
+ },
+ "ana-manyani": {
+  "id": "ana-manyani",
+  "bg": "Ана Маняни",
+  "en": "",
+  "genres": [
+   "Биографичен",
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8"
+ },
+ "vsichki-obichat-bil-evans": {
+  "id": "vsichki-obichat-bil-evans",
+  "bg": "Всички обичат Бил Евънс",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Музикален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino"
+ },
+ "kinomaniya-nachaloto": {
+  "id": "kinomaniya-nachaloto",
+  "bg": "Киномания: Началото",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "ndk1"
+ },
+ "obich": {
+  "id": "obich",
+  "bg": "Обич",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino"
+ },
+ "tatko-sled-polunosht": {
+  "id": "tatko-sled-polunosht",
+  "bg": "Татко след полунощ",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Комедия"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere",
+  "year": 2026,
+  "country": "САЩ"
+ },
+ "film-kontsert-s-bratya-vladigerovi-trio": {
+  "id": "film-kontsert-s-bratya-vladigerovi-trio",
+  "bg": "Филм-концерт с Братя Владигерови Трио",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "hartien-tigar": {
+  "id": "hartien-tigar",
+  "bg": "Хартиен тигър",
+  "en": "",
+  "genres": [
+   "Криминален",
+   "Трилър"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
  }
 }

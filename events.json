@@ -18,7 +18,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 18 ДНИ",
+   "tag": "СЛЕД 16 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -56,7 +56,7 @@
    ]
   }
  ],
- "generated": "2026-10-25T05:29:50+00:00",
+ "generated": "2026-10-27T06:40:49+00:00",
  "ok": true,
  "posts": {
   "180082": {
@@ -182,9 +182,8 @@
   },
   "187545": {
    "date": "2026-10-09T16:21:23",
-   "id": "act-festival-za-svoboden-teatar-p187545",
    "modified": "2026-10-09T16:21:24",
-   "verdict": "event"
+   "verdict": "skip: ended 2026-10-24"
   },
   "187949": {
    "date": "2026-10-21T13:47:54",
