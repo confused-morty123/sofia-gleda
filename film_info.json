@@ -1092,7 +1092,10 @@
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/digital-poster-1080-x-1920-px--wild-horse-nine-september-2026_2-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/div-kon-devet-3672.html",
   "title_bg": "Див кон девет",
-  "title_en": "Wild Horse Nine"
+  "title_en": "Wild Horse Nine",
+  "genres": [
+   "Комедия"
+  ]
  },
  "dnevnikat-na-edna-kamerierka": {
   "synBg": "Млада румънка, мигрирала във Франция, работи като икономка при заможно семейство в Бордо. Вечер тя се присъединява към любителска театрална трупа, където репетира ролята на прислужница в сценична адаптация на „Дневникът на една камериерка“ от Октав Мирбо. Напрежението във филма произтича от пропастта между либералния образ на Франция и ежедневната експлоатация, която го поддържа. Джанина полага грижи за детето на работодателите си, докато собствената ѝ дъщеря расте далеч от нея в Румъния. Резултатът е остра сатира за класовите различия, миграцията, привилегиите и западното самодоволство.",
@@ -1293,7 +1296,9 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/pateshestviyata-na-dostoevski1.jpg",
   "fsrc": "https://www.cinelibri.com/puteshestviyata-na-dostoevski/",
   "title_bg": "Пътешествията на Достоевски",
-  "title_en": "Dostoevsky’s Travels"
+  "title_en": "Dostoevsky’s Travels",
+  "src": "https://www.ndk.bg/en/event/pietesestviiata-na-dostoevski-sinelibri",
+  "pv": 5
  },
  "petiyat-pechat": {
   "synBg": "Часовникар, продавач на книги и дърводелец се събират в бар. Подхвърляйки шеги и размишления, започват разговор за съдбата, която биха избрали, ако след смъртта си можеха да се преродят. Да бъдат ли богати и властни тирани или бедни, потиснати, но достойни хора?",
@@ -1962,5 +1967,39 @@
   "src": "https://www.ndk.bg/en/event/vielsebnik-priiatel",
   "pv": 5,
   "img": "https://ndk.bg/storage/thumbnails/2026/10/23/38511/received-2549887118852234-milena-vasileva-20261023-083839_resize1000x1000.jpeg?v=1792745137"
+ },
+ "atlas-na-vselenata": {
+  "title_bg": "Атлас на вселената",
+  "dir": "Пол Негоеску",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-atlas-of-the-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/atlas-na-vselenata-3743.html"
+ },
+ "nevidimo-v-kutiya": {
+  "title_bg": "Невидимо в кутия",
+  "dir": "Хирокадзу Корееда",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-sheep_in_the_b-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/nevidimo-v-kytiya-s-bulgarski-i-angliiiski-sybtitri-3750.html"
+ },
+ "pogledni-nazad": {
+  "title_bg": "Погледни назад",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-look-back-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/pogledni-nazad-3745.html"
+ },
+ "zhozefin": {
+  "title_bg": "Жозефин",
+  "dir": "Бет де Араужо",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-josephine-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/zhozefin-3748.html"
+ },
+ "everest-ot-drugata-strana": {
+  "src": "https://vlaikovacinema.com/screening/%d0%b5%d0%b2%d0%b5%d1%80%d0%b5%d1%81%d1%82-%d0%be%d1%82-%d0%b4%d1%80%d1%83%d0%b3%d0%b0%d1%82%d0%b0-%d1%81%d1%82%d1%80%d0%b0%d0%bd%d0%b0/",
+  "pv": 5
+ },
+ "teatralno-studio-iuvenes-predstavya-lyubov-po-chehov-s-minia": {
+  "src": "https://vlaikovacinema.com/events/iuvenes-%d0%bf%d1%80%d0%b5%d0%b4%d1%81%d1%82%d0%b0%d0%b2%d1%8f-%d0%bb%d1%8e%d0%b1%d0%be%d0%b2-%d0%bf%d0%be-%d1%87%d0%b5%d1%85%d0%be%d0%b2-%d1%81-%d0%bc%d0%b8%d0%bd%d0%b8%d0%b0%d1%82/",
+  "pv": 5
+ },
+ "everest-drugata-strana": {
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8617S2R.jpg"
  }
 }

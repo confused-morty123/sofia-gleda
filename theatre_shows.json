@@ -5938,5 +5938,167 @@
   "synBg": "",
   "synEn": "",
   "source": "citymark"
+ },
+ "fani-i-aleksandar": {
+  "id": "fani-i-aleksandar",
+  "title": "Фани и Александър",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "dnevnikat-na-edin-lud-2": {
+  "id": "dnevnikat-na-edin-lud-2",
+  "title": "Дневникът на един луд",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "clean-girl-fat-festival": {
+  "id": "clean-girl-fat-festival",
+  "title": "Clean girl – FAT FESTIVAL",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "noti-rumaniya-fat-festival-2026": {
+  "id": "noti-rumaniya-fat-festival-2026",
+  "title": "#NotI| Румъния | ФАТ Фестивал 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "2-sqm-ungariya-fat-festival-2026": {
+  "id": "2-sqm-ungariya-fat-festival-2026",
+  "title": "2 sqm | Унгария | ФАТ - Фестивал 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "teeth-show-ok-germaniya-harvatiya-fat-festival-2026": {
+  "id": "teeth-show-ok-germaniya-harvatiya-fat-festival-2026",
+  "title": "Teeth Show | ОК, Германия, Хърватия | ФАТ Фестивал 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "this-is-my-truth-tell-me-yours-harvatiya-fat-festival-2026": {
+  "id": "this-is-my-truth-tell-me-yours-harvatiya-fat-festival-2026",
+  "title": "This is my truth, tell me yours | Хърватия | ФАТ Фестивал 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "neponosimo-dalgi-pregradki-ot-ivan-viripaev": {
+  "id": "neponosimo-dalgi-pregradki-ot-ivan-viripaev",
+  "title": "Непоносимо дълги прегръдки от Иван Вирипаев",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "tyaloto-kato-dramaturgiya-s-rita-gobi-ungariya-fat-festival-": {
+  "id": "tyaloto-kato-dramaturgiya-s-rita-gobi-ungariya-fat-festival-",
+  "title": "Тялото като драматургия | с Рита Гоби (Унгария) | ФАТ Фестивал 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }
