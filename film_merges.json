@@ -55,6 +55,23 @@
     "runtime": 91
    }
   },
+  "rays-and-shadows-sinelibri": {
+   "into": "lachi-i-senki",
+   "rule": "prefix",
+   "reason": "'rays and shadows' begins 'rays and shadows sinelibri'; the same screening is listed under both",
+   "since": "2026-10-28",
+   "record": {
+    "id": "rays-and-shadows-sinelibri",
+    "bg": "RAYS AND SHADOWS - SINELIBRI",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "lumiere"
+   }
+  },
   "razum-i-chuvstva-sinelibri": {
    "into": "razum-i-chuvstva",
    "rule": "same-key",

@@ -54,7 +54,8 @@
    "#331B1B",
    "#5F2727"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 82
  },
  "shibil": {
   "id": "shibil",
@@ -2921,7 +2922,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "arena-mega"
+  "source": "arena-mega",
+  "runtime": 99
  },
  "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": {
   "id": "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota",
@@ -2932,7 +2934,8 @@
    "#2A331B",
    "#4A5F27"
   ],
-  "source": "arena-mega"
+  "source": "arena-mega",
+  "runtime": 80
  },
  "topki": {
   "id": "topki",
@@ -3315,17 +3318,6 @@
    "#275F57"
   ],
   "source": "vlaikova"
- },
- "rays-and-shadows-sinelibri": {
-  "id": "rays-and-shadows-sinelibri",
-  "bg": "RAYS AND SHADOWS - SINELIBRI",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "lumiere"
  },
  "40-kinomaniya-hartien-tigar": {
   "id": "40-kinomaniya-hartien-tigar",
@@ -3726,6 +3718,141 @@
   "g": [
    "#1B3330",
    "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "bezsmartniyat-i-krasavitsata-2": {
+  "id": "bezsmartniyat-i-krasavitsata-2",
+  "bg": "Безсмъртният и красавицата 2",
+  "en": "",
+  "genres": [
+   "Анимация",
+   "Семеен"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 80,
+  "year": 2026
+ },
+ "helouin-selektsiya-zooekspres": {
+  "id": "helouin-selektsiya-zooekspres",
+  "bg": "Хелоуин Селекция: Зооекспрес",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Комедия",
+   "Семеен"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 90,
+  "year": 2025
+ },
+ "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-1-sab": {
+  "id": "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-1-sab",
+  "bg": "„СОФИЙСКИТЕ КВАРТАЛИ” И ПРОЖЕКЦИЯ НА “НАШИЯТ КВАРТАЛ” – 1 събитие от поредицата „СОФИЯ РАЗКАЗВА – ХОРА И УЛИЦИ, ЧИТАЛИЩЕ И КИНО“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "the-bloody-countess-sinelebri": {
+  "id": "the-bloody-countess-sinelebri",
+  "bg": "THE BLOODY COUNTESS - SINELEBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "ludorii-sinelibri": {
+  "id": "ludorii-sinelibri",
+  "bg": "LUDORII - SINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere"
+ },
+ "40-kinomaniya-zhivot-za-nachinaeshti": {
+  "id": "40-kinomaniya-zhivot-za-nachinaeshti",
+  "bg": "40.Киномания: Живот за начинаещи",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 80
+ },
+ "atlas-na-vselenata": {
+  "id": "atlas-na-vselenata",
+  "bg": "Атлас на вселената",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Семеен"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
+ },
+ "zhozefin": {
+  "id": "zhozefin",
+  "bg": "Жозефин",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "nevidimo-v-kutiya": {
+  "id": "nevidimo-v-kutiya",
+  "bg": "Невидимо в кутия",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Фантастика"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
+ },
+ "pogledni-nazad": {
+  "id": "pogledni-nazad",
+  "bg": "Погледни назад",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
   ],
   "source": "lumiere"
  }
