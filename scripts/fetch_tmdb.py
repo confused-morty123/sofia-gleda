@@ -255,8 +255,12 @@ def contradiction(facts, cand):
     if vg and tg and ((DOC_GENRE in vg) != (DOC_GENRE in tg)) and not (vg & tg):
         return (f"venue {'a documentary' if DOC_GENRE in vg else ', '.join(sorted(vg))} vs "
                 f"TMDB {', '.join(sorted(tg))}")
+    # nb holds the Bulgarian names of all TMDB's people (cast too): it helps the
+    # director's own name match across scripts, but with no TMDB director there is
+    # nothing to compare (2026-10-29: Топки, TMDB lists its cast and no director, was
+    # failed for "Любомир Печев vs the cast")
     nb = (cand.get("nb") or {}).values() if isinstance(cand.get("nb"), dict) else ()
-    if names_agree(facts.get("director"), cand.get("dir"), list(nb)) is False:
+    if cand.get("dir") and names_agree(facts.get("director"), cand.get("dir"), list(nb)) is False:
         return f"director {facts.get('director')} vs TMDB {cand.get('dir')}"
     return None
 

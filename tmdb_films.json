@@ -11418,44 +11418,8 @@
   "en": ""
  },
  "karma": {
-  "matched": true,
-  "tmdb_id": 396876,
-  "poster_path": "/4lI0DBqsdao4KiGt96ZGkDLcxgK.jpg",
-  "backdrop_path": null,
-  "en": "",
-  "original_title": "Карма",
-  "orig_lang": "mk",
-  "tmdb_year": "2015",
-  "tmdb_vote": 6.0,
-  "vote_count": 1,
-  "ov": "KARMA is a short story about the faith of several people, mixed up in a chain of events.",
-  "country": "Macedonia",
-  "genres": [
-   "Екшън",
-   "Криминален",
-   "Драма"
-  ],
-  "wr": "Vladimir Mitrevski",
-  "dop": "Naum Doksevski",
-  "countries": "Macedonia / Serbia",
-  "cc": [
-   "MK",
-   "RS"
-  ],
-  "pid": {
-   "Vladimir Mitrevski": 1617808,
-   "Dimitrija Doksevski": 1525507,
-   "Aksel Mehmet": 1525503,
-   "Milan Tocinovski": 1314434,
-   "Simona Spirovska": 1464231,
-   "Aleksandar Mihajlovski": 1617809,
-   "Naum Doksevski": 1749338
-  },
-  "dir": "Vladimir Mitrevski",
-  "cast": "Dimitrija Doksevski, Aksel Mehmet, Milan Tocinovski, Simona Spirovska, Aleksandar Mihajlovski",
-  "imdb_id": "tt4155146",
-  "imdb": 7.3,
-  "imdbVotes": "7"
+  "matched": false,
+  "en": ""
  },
  "sladko-ot-peperudi": {
   "matched": false,
@@ -11490,61 +11454,8 @@
   "en": ""
  },
  "krasavitsata-i-zvyara": {
-  "matched": true,
-  "tmdb_id": 321612,
-  "poster_path": "/5AVawzecyoHg0SxALhFnriWdKQC.jpg",
-  "backdrop_path": "/uU1Mt4JWhDvl4vKb3AfxNsorkoM.jpg",
-  "en": "Beauty and the Beast",
-  "original_title": "Beauty and the Beast",
-  "orig_lang": "en",
-  "tmdb_year": "2017",
-  "tmdb_vote": 6.972,
-  "vote_count": 16261,
-  "ov": "A live-action adaptation of Disney's version of the classic tale of a cursed prince and a beautiful young woman who helps him break the spell.",
-  "country": "United States of America",
-  "runtime": 129,
-  "genres": [
-   "Семеен",
-   "Фентъзи",
-   "Романтика"
-  ],
-  "wr": "Stephen Chbosky, Evan Spiliotopoulos",
-  "mu": "Alan Menken",
-  "dop": "Tobias A. Schliessler",
-  "countries": "United States of America",
-  "cc": [
-   "US"
-  ],
-  "trailer": {
-   "k": "gyCD66meRD8",
-   "l": "bg",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Bill Condon": 15557,
-   "Emma Watson": 10990,
-   "Dan Stevens": 221018,
-   "Luke Evans": 114019,
-   "Josh Gad": 54415,
-   "Kevin Kline": 8945,
-   "Stephen Chbosky": 19311,
-   "Evan Spiliotopoulos": 80675,
-   "Alan Menken": 15813,
-   "Tobias A. Schliessler": 15559
-  },
-  "dir": "Bill Condon",
-  "cast": "Emma Watson, Dan Stevens, Luke Evans, Josh Gad, Kevin Kline",
-  "ovBg": "Съпреживейте удивителната история на Бел – умна, красива и независима млада жена, която става пленница на Звяра и е затворена в неговия замък. Въпреки че се страхува, Бел се сприятелява с омагьосаните обитатели на замъка, научава се да вижда отвъд ужасяващия външен вид на Звяра и открива доброто сърце на истинския принц, който се крие зад страшната външност.",
-  "imdb_id": "tt2771200",
-  "imdb": 7.1,
-  "imdbVotes": "363.4K",
-  "rt": 71,
-  "mc": 65,
-  "nb": {
-   "Emma Watson": "Ема Уотсън",
-   "Josh Gad": "Джош Гад",
-   "Kevin Kline": "Кевин Клайн"
-  }
+  "matched": false,
+  "en": ""
  },
  "nepoznata-zhena": {
   "matched": false,
@@ -11609,40 +11520,8 @@
   "en": ""
  },
  "eva": {
-  "matched": true,
-  "tmdb_id": 1026099,
-  "poster_path": "/fkjjtcyYYtqkWXYffQNnUK9i9xc.jpg",
-  "backdrop_path": "/slOchKkEHWksXAjozSUVpIRxE8l.jpg",
-  "en": "",
-  "original_title": "Ева",
-  "orig_lang": "ru",
-  "tmdb_year": "2022",
-  "tmdb_vote": 3.0,
-  "vote_count": 2,
-  "ov": "Seaside town, month of May. Alexander goes to boring lectures on economics and does not lose hope of getting a diploma to please his girlfriend Anya. Although in fact he likes to play football with friends and ride a car more. And when he picks up another girlfriend on the street, he does not suspect that this is his true love.",
-  "country": "Russia",
-  "runtime": 91,
-  "genres": [
-   "Драма",
-   "Романтика"
-  ],
-  "wr": "Andrey Burmistrov",
-  "countries": "Russia",
-  "cc": [
-   "RU"
-  ],
-  "pid": {
-   "Andrey Burmistrov": 2545680,
-   "Valeria Kot": 3706565,
-   "Alexandr Mizev": 2018475,
-   "Anna Rykova": 4487029,
-   "Gennadiy Kotov": 4487030,
-   "Kaisa Biryulina": 4487032
-  },
-  "dir": "Andrey Burmistrov",
-  "cast": "Valeria Kot, Alexandr Mizev, Anna Rykova, Gennadiy Kotov, Kaisa Biryulina",
-  "imdb_id": "tt23805688",
-  "imdbVotes": "15"
+  "matched": false,
+  "en": ""
  },
  "edin-osoben-den": {
   "matched": true,
@@ -11699,96 +11578,15 @@
   "en": ""
  },
  "nevidimo": {
-  "matched": true,
-  "tmdb_id": 69117,
-  "poster_path": "/p13XVpFphqj2Dc92ZRUeYdKBWAf.jpg",
-  "backdrop_path": null,
-  "en": "Unseen Evil 2",
-  "original_title": "Unseen Evil 2",
-  "orig_lang": "en",
-  "tmdb_year": "2004",
-  "tmdb_vote": 2.6,
-  "vote_count": 10,
-  "ov": "After a series of brutal, unexplained murders in a remote forest, a rogue military unit is recruited to hunt for whoever - or whatever - has rendered the attacks. In order to carry out the investigation, they need the help of the only survivor, Kate. But first they have to get her released from the mental institution she's been confined to since the horrific attack.",
-  "country": "United States of America",
-  "runtime": 81,
-  "genres": [
-   "Хорър",
-   "Фантастика"
-  ],
-  "wr": "Garrett Clancy",
-  "mu": "Collin Simon",
-  "dop": "Rachel Wyn Dunn",
-  "countries": "United States of America",
-  "cc": [
-   "US"
-  ],
-  "pid": {
-   "Jeff Leroy": 98680,
-   "Lorenzo Lamas": 11366,
-   "Priscilla Barnes": 23648,
-   "Corbin Timbrook": 99684,
-   "Scott Schwartz": 12710,
-   "Megan Molloy": 1709729,
-   "Garrett Clancy": 98851,
-   "Collin Simon": 1677645,
-   "Rachel Wyn Dunn": 1447557
-  },
-  "dir": "Jeff Leroy",
-  "cast": "Lorenzo Lamas, Priscilla Barnes, Corbin Timbrook, Scott Schwartz, Megan Molloy",
-  "ovBg": "След серия от брутални и необясними убийства в отдалечена гориста местност, елитен военен отряд воден от Бигс (Лоренцо Ламас) и Шийла (Присила Барнс) е изпратен да залови това или този, които е виновен за нападенията. Но за да могат да се справят със задачата си, войниците ще трябва да разчитат на помощта на единствената оцеляла от предишна серия подобни атаки, Кейт (Меган Малой). Но първо те трябва да я освободят от психиатричната клиника, в която е била затворена след ужасяващите събития от предишните нападения...",
-  "imdb_id": "tt0431447",
-  "imdb": 2.5,
-  "imdbVotes": "624"
+  "matched": false,
+  "en": ""
  },
  "stakleno-more": {
   "matched": false,
   "en": ""
  },
  "tishina": {
-  "matched": true,
-  "tmdb_id": 124555,
-  "poster_path": "/qBM5WaXiPTQ37PP6hq91Xjeq8kA.jpg",
-  "backdrop_path": "/f9OyrauOYj5QD3cu7SuqINOTc0s.jpg",
-  "en": "Silence",
-  "original_title": "Silence",
-  "orig_lang": "en",
-  "tmdb_year": "2012",
-  "tmdb_vote": 6.4,
-  "vote_count": 6,
-  "ov": "Eoghan is a sound recordist who is returning to Ireland for the first time in 15 years. He has been given an unusual task: to find and record places without man-made sound. His journey takes him away from towns and villages, into remote terrain, to places free from the thumb-print of man.",
-  "country": "Germany",
-  "runtime": 87,
-  "genres": [
-   "Драма"
-  ],
-  "wr": "Pat Collins",
-  "dop": "Richard Kendrick",
-  "countries": "Germany / Ireland",
-  "cc": [
-   "DE",
-   "IE"
-  ],
-  "trailer": {
-   "k": "_ezydfR4JM0",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Pat Collins": 1080230,
-   "Eoghan Mac Giolla Bhride": 1080229,
-   "Hilary O'Shaughnessy": 4284037,
-   "Andrew Bennett": 995518,
-   "Jens K. Müller": 4284038,
-   "Patrick O'Connor": 4284039,
-   "Richard Kendrick": 1690745
-  },
-  "dir": "Pat Collins",
-  "cast": "Eoghan Mac Giolla Bhride, Hilary O'Shaughnessy, Andrew Bennett, Jens K. Müller, Patrick O'Connor",
-  "ovBg": "Еган е звукооператор, който се връща в Ирландия след 15 години отсъствие. Командирован е там със задача да намери места, на които няма звуци от хора и човешка дейност. Пътуването му го отвежда към отдалечени места и странни срещи като постепенно го насочва към една по-особена тишина - тази на живота, който е оставил зад себе си.",
-  "imdb_id": "tt2275949",
-  "imdb": 6.7,
-  "imdbVotes": "224",
-  "rt": 91
+  "matched": false,
+  "en": ""
  }
 }

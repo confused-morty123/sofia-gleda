@@ -19,6 +19,15 @@
    "evidence": "https://www.cinelibri.com/edna-istoriya/",
    "checked": "2026-10-28"
   },
+  "eva": {
+   "tmdb_ids": [
+    1026099
+   ],
+   "was": "Ева (RU 2022, dir. Andrey Burmistrov)",
+   "is": "ЕВА (BG, dir. Мартин Геновски), Киномания 2026 screening with the crew",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/evanbsp-sreshta-s-ekipa-3747.html",
+   "checked": "2026-10-29"
+  },
   "everest-ot-drugata-strana": {
    "tmdb_ids": [
     1422
@@ -37,6 +46,15 @@
    "evidence": "https://programata.bg/kino/filmi/goli/",
    "checked": "2026-10-28"
   },
+  "karma": {
+   "tmdb_ids": [
+    396876
+   ],
+   "was": "Карма (MK 2015, dir. Vladimir Mitrevski)",
+   "is": "Карма (dir. Гийом Кане), Киномания 2026",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/karma-3720.html",
+   "checked": "2026-10-29"
+  },
   "kinomaniya-2026-golishar": {
    "tmdb_ids": [
     1626594
@@ -54,6 +72,15 @@
    "is": "Киномания: Началото (BG 2026, 22-min documentary, dir. Борис Мисирков, Георги Богданов)",
    "evidence": "https://www.kinomania.bg/bg_BG/film/kinomaniya-nachaloto-3706.html",
    "checked": "2026-10-28"
+  },
+  "krasavitsata-i-zvyara": {
+   "tmdb_ids": [
+    321612
+   ],
+   "was": "Beauty and the Beast (US 2017, dir. Bill Condon)",
+   "is": "La Belle et la Bête (FR 1946, dir. Жан Кокто), Киномания 2026",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/krasavitzata-i-zvyara-3730.html",
+   "checked": "2026-10-29"
   },
   "krastnicata": {
    "tmdb_ids": [
@@ -100,6 +127,15 @@
    "evidence": "https://domnakinoto.com/nebesa-movie7142.html",
    "checked": "2026-10-28"
   },
+  "nevidimo": {
+   "tmdb_ids": [
+    69117
+   ],
+   "was": "Unseen Evil 2 (US 2004, horror)",
+   "is": "НевиДимо (BG documentary, dir. Лиляна Бързева), Киномания 2026",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/nevidimo-3714.html",
+   "checked": "2026-10-29"
+  },
   "obich": {
    "tmdb_ids": [
     339419
@@ -135,6 +171,15 @@
    "is": "Under the Midnight Sun (BG 2026, 40 min, dir. Венцислав Сариев)",
    "evidence": "https://www.kinomania.bg/bg_BG/film/srednoshtno-sluntze-3696.html",
    "checked": "2026-10-28"
+  },
+  "tishina": {
+   "tmdb_ids": [
+    124555
+   ],
+   "was": "Silence (DE/IE 2012, dir. Pat Collins)",
+   "is": "Тишина (BG, dir. Димитър Петков), Киномания 2026 evening for Галин Малакчиев",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/tishina-vecher-za-galin-malakchiev-3733.html",
+   "checked": "2026-10-29"
   },
   "yuli": {
    "tmdb_ids": [

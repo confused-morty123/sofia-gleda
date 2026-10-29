@@ -4467,6 +4467,8 @@ check("director: the same people in two scripts agree (Ферзан Йозпет
                                                     ("Том Тиквер", "Tom Tykwer"))], [None] * 4)
 check("director: TMDB's Bulgarian name (nb) counts too",
       _C({"director": "Кристофър Нолан"}, {"dir": "Christopher Nolan", "nb": {"Christopher Nolan": "Кристофър Нолан"}}), None)
+check("director: no TMDB director is no contradiction, whatever cast names nb carries (Топки, 2026-10-29)",
+      _C({"director": "Любомир Печев"}, {"dir": None, "nb": {"Ivan Savov": "Иван Савов"}}), None)
 check("documentary vs fiction: Киномания: Началото (Документален) is not Batman Begins",
       bool(_C({"genres": ["Документален"]}, {"genres": ["Драма", "Екшън"]})), True)
 check("…a concert film that TMDB files as documentary AND music is not a contradiction",
