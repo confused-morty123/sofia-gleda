@@ -2541,51 +2541,12 @@
   "en": "The Hen"
  },
  "krastnicata": {
-  "matched": true,
-  "tmdb_id": 1336521,
-  "poster_path": "/4c2jUEl4Av8GzmsOAVKLHM5vK13.jpg",
-  "backdrop_path": "/r15dDSHKuctv7F7AJFDco0Xegor.jpg",
-  "en": "The Godmother",
-  "original_title": "The Godmother",
-  "orig_lang": "fr",
-  "tmdb_year": "2025",
-  "tmdb_vote": 0.0,
-  "vote_count": 0,
-  "ov": "Marzena Sowa is a quintessential contemporary European: independent, aware of how the world works—or should work—and single. After her mother’s death, she is consumed by longing and sets off for her distant homeland, a Polish village where her beloved aunt Niuszka—an embodiment of joie de vivre and peace with herself—lived her entire life under the heavy weight of patriarchy. The film becomes a collision of social models, resolved with an open ending.",
-  "country": "Belgium",
-  "runtime": 56,
-  "genres": [
-   "Документален"
-  ],
-  "countries": "Belgium / France",
-  "cc": [
-   "BE",
-   "FR"
-  ],
-  "pid": {
-   "Marzena Sowa": 3632584
-  },
-  "dir": "Marzena Sowa",
-  "cast": "Marzena Sowa"
+  "matched": false,
+  "en": ""
  },
  "lyubovta-e-ludost": {
-  "matched": true,
-  "tmdb_id": 1471382,
-  "poster_path": "/1J5eewUMIO3RSSiTipkL2Eg5ZtS.jpg",
-  "backdrop_path": null,
-  "en": "Love Is Merely a Madness",
-  "original_title": "Love Is Merely a Madness",
-  "orig_lang": "en",
-  "tmdb_year": "2025",
-  "tmdb_vote": 0.0,
-  "vote_count": 0,
-  "ov": "Unique dance-documentary hybrid explores the challenges of finding romantic connections among the gay community in the digital age.",
-  "pid": {
-   "Ian Hopkins": 5398976,
-   "Timothy Friend": 5398977
-  },
-  "dir": "Ian Hopkins, Timothy Friend",
-  "imdb_id": "tt36350799"
+  "matched": false,
+  "en": ""
  },
  "posledniyat-viking": {
   "matched": true,
@@ -3403,55 +3364,8 @@
   }
  },
  "potop": {
-  "matched": true,
-  "tmdb_id": 1567441,
-  "poster_path": "/qtom3MULMUp4vFA3rEkTwEIfWVe.jpg",
-  "backdrop_path": "/juGU6Im5v4L8tpuqPVEDatwwfio.jpg",
-  "en": "Flood",
-  "original_title": "Potopa",
-  "orig_lang": "sk",
-  "tmdb_year": "2025",
-  "tmdb_vote": 8.2,
-  "vote_count": 13,
-  "ov": "In communist Czechoslovakia in 1980, 15-year-old Mara dreams of leaving her village to study in the city and become a pilot. But her father, a widowed Ruthenian farmer, insists she stay and work the land. When her village faces destruction due to a new dam, their generational conflict intensifies, revealing the struggle between tradition, identity, and the desire for freedom in a context of historical change.",
-  "country": "Belgium",
-  "runtime": 102,
-  "genres": [
-   "Драма",
-   "Исторически"
-  ],
-  "wr": "Martin Šuster, Martin Gonda, Dominika Udvorková",
-  "mu": "Théophile Moussouni",
-  "dop": "Oliver Záhlava",
-  "countries": "Belgium / Slovakia / Poland / Czech Republic",
-  "cc": [
-   "BE",
-   "SK",
-   "PL",
-   "CZ"
-  ],
-  "trailer": {
-   "k": "owbuJoOTGcY",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Martin Gonda": 2292775,
-   "Sara Chripáková": 5767700,
-   "Jozef Pantlikáš": 2312496,
-   "Katarína Babejová": 5767702,
-   "Vladimíra Štefániková": 3949563,
-   "Michal Soltész": 1515984,
-   "Martin Šuster": 2312500,
-   "Dominika Udvorková": 2312499,
-   "Théophile Moussouni": 2555247,
-   "Oliver Záhlava": 2312501
-  },
-  "dir": "Martin Gonda",
-  "cast": "Sara Chripáková, Jozef Pantlikáš, Katarína Babejová, Vladimíra Štefániková, Michal Soltész",
-  "imdb_id": "tt38629827",
-  "imdb": 8.0,
-  "imdbVotes": "47"
+  "matched": false,
+  "en": ""
  },
  "chist-kasmet": {
   "matched": false,
@@ -5063,44 +4977,8 @@
   "mc": 92
  },
  "goli": {
-  "matched": true,
-  "tmdb_id": 1740,
-  "poster_path": "/vRwzOjTdjxO49HVHSsOZESZ5bOp.jpg",
-  "backdrop_path": "/qldSMzF8Sel8DztoaiYKqOkXbed.jpg",
-  "en": "",
-  "original_title": "Nackt",
-  "orig_lang": "de",
-  "tmdb_year": "2002",
-  "tmdb_vote": 5.4,
-  "vote_count": 44,
-  "ov": "The story of three couples, one of which just broke up, one that seems to be about to, and one perfectly okay. They are all friends, and from time to time, they gather to talk about everything. One time, they gather for dinner at the second couple's \"mansion“— the husband became rich with his business. We see each couple as they prepare themselves for the party and learn a lot about their relationships. At the dinner, they get to talking about recognizing each other's peer with closed eyes and decide to try it, naked.",
-  "country": "Germany",
-  "runtime": 100,
-  "genres": [
-   "Комедия",
-   "Драма"
-  ],
-  "wr": "Doris Dörrie",
-  "dop": "Frank Griebe",
-  "countries": "Germany",
-  "cc": [
-   "DE"
-  ],
-  "pid": {
-   "Doris Dörrie": 18969,
-   "Heike Makatsch": 7059,
-   "Benno Fürmann": 11953,
-   "Alexandra Maria Lara": 5644,
-   "Jürgen Vogel": 17373,
-   "Nina Hoss": 681,
-   "Frank Griebe": 1077
-  },
-  "dir": "Doris Dörrie",
-  "cast": "Heike Makatsch, Benno Fürmann, Alexandra Maria Lara, Jürgen Vogel, Nina Hoss",
-  "ovBg": "Доброто старо време си отиде. Емилия и Феликс, Анет и Борис, Шарлоте и Дилан – всички са били приятели преди години. Но сега Емилия и Феликс са се разделили със злоба и скандали, а той е финансово притеснен. Дилан е забогатял, но не се разбира с красивата си съпруга Шарлоте. Анет и Борис изглеждат щастливи, но кого се опитват да заблудят? И какво изобщо означава щастие и любов?",
-  "imdb_id": "tt0300237",
-  "imdb": 6.0,
-  "imdbVotes": "2.4K"
+  "matched": false,
+  "en": ""
  },
  "houp": {
   "matched": true,
@@ -5447,53 +5325,8 @@
   "en": ""
  },
  "diamanti": {
-  "matched": true,
-  "tmdb_id": 681,
-  "poster_path": "/ooDT0eKrWCxJCsn9JehPkD0QYNj.jpg",
-  "backdrop_path": "/pyTDtQCn5sG8gi2zkM5ZylSNmtJ.jpg",
-  "en": "Diamonds Are Forever",
-  "original_title": "Diamonds Are Forever",
-  "orig_lang": "en",
-  "tmdb_year": "1971",
-  "tmdb_vote": 6.397,
-  "vote_count": 2477,
-  "ov": "Diamonds are stolen only to be sold again in the international market. James Bond infiltrates a smuggling mission to find out who's guilty. The mission takes him to Las Vegas where Bond meets his archenemy Blofeld.",
-  "country": "United Kingdom",
-  "runtime": 120,
-  "genres": [
-   "Екшън",
-   "Трилър"
-  ],
-  "wr": "Richard Maibaum, Tom Mankiewicz",
-  "mu": "John Barry",
-  "dop": "Ted Moore",
-  "countries": "United Kingdom",
-  "cc": [
-   "GB"
-  ],
-  "pid": {
-   "Guy Hamilton": 9915,
-   "Sean Connery": 738,
-   "Jill St. John": 10190,
-   "Charles Gray": 10074,
-   "Lana Wood": 10191,
-   "Jimmy Dean": 10192,
-   "Richard Maibaum": 9858,
-   "Tom Mankiewicz": 7190,
-   "John Barry": 2289,
-   "Ted Moore": 9867
-  },
-  "dir": "Guy Hamilton",
-  "cast": "Sean Connery, Jill St. John, Charles Gray, Lana Wood, Jimmy Dean",
-  "ovBg": "Шон Конъри е изкушен да изиграе още веднъж ролята на изискания британски агент 007. Остроумният стил на ДИАМАНТИТЕ СА ВЕЧНИ се налага в много от следващите епизоди с участието на Роджър Мур.",
-  "imdb_id": "tt0066995",
-  "imdb": 6.5,
-  "imdbVotes": "124.8K",
-  "rt": 64,
-  "mc": 59,
-  "nb": {
-   "Sean Connery": "Шон Конъри"
-  }
+  "matched": false,
+  "en": ""
  },
  "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever": {
   "matched": false,
@@ -6341,45 +6174,8 @@
   "imdbVotes": "3.8K"
  },
  "muha": {
-  "matched": true,
-  "tmdb_id": 106080,
-  "poster_path": "/3uV9eLPrUt06O6Qv3pn2bvVTvPc.jpg",
-  "backdrop_path": "/gNr7XehVLVCUCuW1jkWTqZDfmQB.jpg",
-  "en": "",
-  "original_title": "Муха",
-  "orig_lang": "ru",
-  "tmdb_year": "2008",
-  "tmdb_vote": 5.5,
-  "vote_count": 2,
-  "ov": "The trucker Fyodor Mukhin is an inveterate bachelor. Women love him, and he does not even remember everyone with whom fate brought him together. He also does not remember the teacher Masha from a small Ural town, from whom one day he receives a telegram asking him to come urgently. Something makes Fedor respond.",
-  "country": "Russia",
-  "runtime": 90,
-  "genres": [
-   "Драма"
-  ],
-  "wr": "Vladimir Kott",
-  "mu": "Anton Silaev",
-  "dop": "Evgeny Privin",
-  "countries": "Russia",
-  "cc": [
-   "RU"
-  ],
-  "pid": {
-   "Vladimir Kott": 548712,
-   "Aleksei Kravchenko": 93407,
-   "Sergei Selin": 223527,
-   "Evgeniya Dobrovolskaya": 143692,
-   "Aleksandr Golubkov": 119825,
-   "Sergei Serov": 1369358,
-   "Anton Silaev": 1369354,
-   "Evgeny Privin": 1386454
-  },
-  "dir": "Vladimir Kott",
-  "cast": "Aleksei Kravchenko, Sergei Selin, Evgeniya Dobrovolskaya, Aleksandr Golubkov, Sergei Serov",
-  "ovBg": "Муха е прякорът на Вера Мухина, 16-годишна ученичка от малко руско градче. Муха тренира бокс и сама решава проблемите си, като не прощава грешките нито на връстници, нито на възрастни. След смъртта на майка й в живота на Муха внезапно нахлува нейният баща. Фьодор Мухин, шофьор, отключва вратата със свой ключ, слага си четката за зъби в чаша и заживява в нейната къща. Значи баща й не е изгорял жив в танка, както мама й е разказвала. Той просто все не се е появявал по-рано. И това е достатъчен повод за Муха да му обяви война. Филмът е разказ за избора, пред който всеки се изправя в даден момент от живота си: избора между свободата и отговорността за друго човешко същество. Бащата трябва да докаже, че дъщеря му има нужда от него; и да намери ключа към жестокия свят на тийнейджърите, в който чуждите не се приемат, а своите не са пощадени...",
-  "imdb_id": "tt1267179",
-  "imdb": 6.4,
-  "imdbVotes": "139"
+  "matched": false,
+  "en": ""
  },
  "sinelibri-2026-molier-sirano-i-mladiyat-kral": {
   "matched": true,
@@ -7989,44 +7785,8 @@
   }
  },
  "nebesa": {
-  "matched": true,
-  "tmdb_id": 882294,
-  "poster_path": "/gO0tAmjfzA3vvrU0eh9eNKC9iO0.jpg",
-  "backdrop_path": null,
-  "en": "",
-  "original_title": "Небеса",
-  "orig_lang": "ru",
-  "tmdb_year": "1940",
-  "tmdb_vote": 0.0,
-  "vote_count": 0,
-  "ov": "Osoaviahimovets (volounteer military trainee) Andron organizes an aviation circle on his Volna collective farm and plans to build a parachute tower. Pilot Oreshkin, in love with Varenka, the daughter of the collective farm chairman, who is categorically opposed to aviation in the village, promises the guys to bring a parachute soon. And no matter how cunning the chairman is, young people still manage to convince him.",
-  "country": "Soviet Union",
-  "runtime": 70,
-  "genres": [
-   "Комедия"
-  ],
-  "wr": "Viktor Vitkovich, Sofya Tade",
-  "mu": "Vasiliy Solovev-Sedoy",
-  "dop": "Nikolai Bolshakov",
-  "countries": "Soviet Union",
-  "cc": [
-   "SU"
-  ],
-  "pid": {
-   "Yuri Tarich": 557271,
-   "Anatoliy Alekseev": 2515652,
-   "Nikolay Makarenko": 5046655,
-   "Nina Nikitina": 1185407,
-   "Lidia Kartashova": 2072257,
-   "Ivan Chuvelyov": 1294745,
-   "Viktor Vitkovich": 1118237,
-   "Sofya Tade": 5753914,
-   "Vasiliy Solovev-Sedoy": 1460261,
-   "Nikolai Bolshakov": 2304906
-  },
-  "dir": "Yuri Tarich",
-  "cast": "Anatoliy Alekseev, Nikolay Makarenko, Nina Nikitina, Lidia Kartashova, Ivan Chuvelyov",
-  "imdb_id": "tt12104418"
+  "matched": false,
+  "en": ""
  },
  "legendi-za-strastta": {
   "matched": true,
@@ -9305,50 +9065,8 @@
   "imdbVotes": "36"
  },
  "yuli": {
-  "matched": true,
-  "tmdb_id": 1573688,
-  "poster_path": "/cnJeI6TqrIzMKt9r5VXxaj1YJqR.jpg",
-  "backdrop_path": "/yPdJQsvLhnHZ65LSjo3o43Z8ogi.jpg",
-  "en": "Color Theories by Julio Torres. A Guide to Seeing the World",
-  "original_title": "Color Theories by Julio Torres. A Guide to Seeing the World",
-  "orig_lang": "en",
-  "tmdb_year": "2026",
-  "tmdb_vote": 7.6,
-  "vote_count": 7,
-  "ov": "Julio Torres takes the stage in NYC and invites the audience to see the people, places, and things around us through his kaleidoscopic lens. Blending stand-up, an interactive set, and live drawings, Julio explores the inherent traits, personalities, and emotions of particular colors.",
-  "country": "United States of America",
-  "runtime": 72,
-  "genres": [
-   "Комедия"
-  ],
-  "wr": "Julio Torres",
-  "mu": "Lia Ouyang Rusli",
-  "dop": "Sam Levy",
-  "countries": "United States of America",
-  "cc": [
-   "US"
-  ],
-  "trailer": {
-   "k": "9OOIiJRPIcU",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Julio Torres": 1659144,
-   "Drew Rollins": 6102239,
-   "Nick Meyers": 6102240,
-   "Joe Rumrill": 2184976,
-   "Ian Edlund": 1515335,
-   "Lia Ouyang Rusli": 1304184,
-   "Sam Levy": 1075441
-  },
-  "dir": "Julio Torres",
-  "cast": "Julio Torres, Drew Rollins, Nick Meyers, Joe Rumrill, Ian Edlund",
-  "ovBg": "Юли е името, с което се обръща към малкия Карлос Акоста баща му Педро. От детските си години Юли се съпротивлява на каквато и да е дисциплина или образование, растейки из улиците на бедния си хавански квартал. Но Педро знае, че синът му има природна дарба и го принуждава да се запише в Националното балетно училище на Куба. Въпреки волята му и при тоталната му непокорност, Юли се оказва запленен от танца.",
-  "imdb_id": "tt38641367",
-  "imdb": 7.4,
-  "imdbVotes": "300",
-  "rt": 100
+  "matched": false,
+  "en": ""
  },
  "ida-peeshe-tolkova-zle-che-dori-martvite-priglasyaha": {
   "matched": true,
@@ -9493,41 +9211,8 @@
   "imdbVotes": "68"
  },
  "sentient": {
-  "matched": true,
-  "tmdb_id": 1595215,
-  "poster_path": "/aqDW5vIDE3SDU2mzohuY3xiTkPL.jpg",
-  "backdrop_path": null,
-  "en": "Sentient",
-  "original_title": "Sentient",
-  "orig_lang": "en",
-  "tmdb_year": "2026",
-  "tmdb_vote": 0.0,
-  "vote_count": 0,
-  "ov": "An investigation into laboratory research on animals exposes a hidden world in which it’s not just the animals getting hurt. The story of Dr. Lisa Jones Engel, a primatologist turned animal welfare advocate, asks whether harming animals and ourselves in science’s name is justified",
-  "country": "Australia",
-  "runtime": 105,
-  "genres": [
-   "Документален"
-  ],
-  "wr": "Rachel Grierson-Johns, Tony Jones",
-  "countries": "Australia",
-  "cc": [
-   "AU"
-  ],
-  "trailer": {
-   "k": "0dmV6RGp-tE",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Tony Jones": 5865118,
-   "Rachel Grierson-Johns": 2015747
-  },
-  "dir": "Tony Jones",
-  "imdb_id": "tt39149925",
-  "imdb": 7.1,
-  "imdbVotes": "10",
-  "rt": 70
+  "matched": false,
+  "en": ""
  },
  "shvedskoto-torpedo": {
   "matched": true,
@@ -10558,83 +10243,12 @@
   "en": ""
  },
  "kinomaniya-2026-golishar": {
-  "matched": true,
-  "tmdb_id": 1626594,
-  "poster_path": "/2fv2biXfnjgHQL8nPCWqOvsRdbn.jpg",
-  "backdrop_path": null,
-  "en": "Nestling",
-  "original_title": "Nestling",
-  "orig_lang": "en",
-  "tmdb_year": "2025",
-  "tmdb_vote": 0.0,
-  "vote_count": 0,
-  "ov": "In a stylized tailor’s workshop, we observe the relationship between a young woman and an aging man. The space, which initially seems like a shared sanctuary, gradually unravels under the weight of his desire for the ideal Madonna.",
-  "genres": [
-   "Драма",
-   "Романтика",
-   "Трилър"
-  ],
-  "wr": "Yana Kadurina, Jonas Kucera",
-  "dop": "Filip Kovář",
-  "pid": {
-   "Yana Kadurina": 5977165,
-   "Jan Bidlas": 1075601,
-   "Aneta Kalertová": 5455625,
-   "Jonas Kucera": 5977166,
-   "Filip Kovář": 5040157
-  },
-  "dir": "Yana Kadurina",
-  "cast": "Jan Bidlas, Aneta Kalertová"
+  "matched": false,
+  "en": ""
  },
  "srednoshtno-slantse": {
-  "matched": true,
-  "tmdb_id": 287935,
-  "poster_path": "/p2HD1Kg8TCKfA3ve7L7CtM260k.jpg",
-  "backdrop_path": "/5QBFjXS6seSPTfNqYYi78KT579U.jpg",
-  "en": "Midnight Sun",
-  "original_title": "Midnight Sun",
-  "orig_lang": "en",
-  "tmdb_year": "2014",
-  "tmdb_vote": 5.8,
-  "vote_count": 93,
-  "ov": "In northern Canada, a young boy sets a goal for himself to to reunite an abandoned polar bear cub with its mother. Goran Visnjic joins the cast as Muktuk, a half Inuit and half Canadian, who knows the terrain where the polar bears live and who agrees to help the boy.",
-  "country": "Italy",
-  "runtime": 98,
-  "genres": [
-   "Семеен",
-   "Приключенски"
-  ],
-  "wr": "Bart Gavigan, Hugh Hudson",
-  "mu": "Lawrence Shragge",
-  "dop": "Peter Wunstorf",
-  "countries": "Italy / Canada",
-  "cc": [
-   "IT",
-   "CA"
-  ],
-  "pid": {
-   "Brando Quilici": 1279381,
-   "Roger Spottiswoode": 1724,
-   "Dakota Goyo": 234479,
-   "Goran Višnjić": 5725,
-   "Bridget Moynahan": 18354,
-   "Linda Kash": 14893,
-   "Kendra Leigh Timmins": 1499543,
-   "Bart Gavigan": 45930,
-   "Hugh Hudson": 58220,
-   "Lawrence Shragge": 29294,
-   "Peter Wunstorf": 56536
-  },
-  "dir": "Brando Quilici, Roger Spottiswoode",
-  "cast": "Dakota Goyo, Goran Višnjić, Bridget Moynahan, Linda Kash, Kendra Leigh Timmins",
-  "ovBg": "Действието в семейния екшън-приключенски филм \"Среднощно слънце\" се разиграва в ледените полета на западна Канада. Когато Люк открива, че малко полярно мече е било разделено от майка си, той решава да ги събере отново.",
-  "imdb_id": "tt2390283",
-  "imdb": 6.0,
-  "imdbVotes": "1.1K",
-  "nb": {
-   "Goran Višnjić": "Горан Вишнич",
-   "Bridget Moynahan": "Бриджит Мойнахан"
-  }
+  "matched": false,
+  "en": ""
  },
  "cherni-pari-za-beli-noshti": {
   "matched": true,
@@ -10798,55 +10412,8 @@
   "en": ""
  },
  "edna-istoriya-sinelibri": {
-  "matched": true,
-  "tmdb_id": 574638,
-  "poster_path": "/ixxELBgYj9OH8hz0XCrcZOJpIx9.jpg",
-  "backdrop_path": "/4MYtYsSGzQUUYQqHGWBNeEkT91s.jpg",
-  "en": "Rolling Thunder Revue: A Bob Dylan Story by Martin Scorsese",
-  "original_title": "Rolling Thunder Revue: A Bob Dylan Story by Martin Scorsese",
-  "orig_lang": "en",
-  "tmdb_year": "2019",
-  "tmdb_vote": 7.0,
-  "vote_count": 152,
-  "ov": "Part documentary, part concert film, part fever dream, this film captures the troubled spirit of America in 1975 and the joyous music that Dylan performed during the fall of that year.",
-  "country": "United States of America",
-  "runtime": 142,
-  "genres": [
-   "Документален",
-   "Музикален"
-  ],
-  "dop": "Ellen Kuras, Paul Goldsmith, David Myers",
-  "countries": "United States of America",
-  "cc": [
-   "US"
-  ],
-  "trailer": {
-   "k": "PS4gsWDSn68",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Martin Scorsese": 1032,
-   "Bob Dylan": 1487,
-   "Allen Ginsberg": 110589,
-   "Patti Smith": 56200,
-   "Martin von Haselberg": 1228680,
-   "Scarlet Rivera": 2335057,
-   "Ellen Kuras": 313,
-   "Paul Goldsmith": 2335047,
-   "David Myers": 9213
-  },
-  "dir": "Martin Scorsese",
-  "cast": "Bob Dylan, Allen Ginsberg, Patti Smith, Martin von Haselberg, Scarlet Rivera",
-  "imdb_id": "tt9577852",
-  "imdb": 7.5,
-  "imdbVotes": "8.8K",
-  "rt": 92,
-  "mc": 87,
-  "nb": {
-   "Martin Scorsese": "Мартин Скорсезе",
-   "Bob Dylan": "Боб Дилън"
-  }
+  "matched": false,
+  "en": ""
  },
  "doors": {
   "matched": true,
@@ -10912,64 +10479,8 @@
   "en": ""
  },
  "les-mis-rables-cinelibri": {
-  "matched": true,
-  "tmdb_id": 82695,
-  "poster_path": "/tGHNr2vWJUYF0MtBYCWJ5n7Kg07.jpg",
-  "backdrop_path": "/bsG8LkZx1ijrcf3fP6AvBlGTxkX.jpg",
-  "en": "Les Misérables",
-  "original_title": "Les Misérables",
-  "orig_lang": "en",
-  "tmdb_year": "2012",
-  "tmdb_vote": 7.29,
-  "vote_count": 5732,
-  "ov": "An adaptation of the successful stage musical based on Victor Hugo's classic novel set in 19th-century France. Jean Valjean, a man imprisoned for stealing bread, must flee a relentless policeman named Javert. The pursuit consumes both men's lives, and soon Valjean finds himself in the midst of the student revolutions in France.",
-  "country": "United Kingdom",
-  "runtime": 158,
-  "genres": [
-   "Исторически",
-   "Драма"
-  ],
-  "wr": "William Nicholson, Herbert Kretzmer, Alain Boublil",
-  "mu": "Claude-Michel Schönberg",
-  "dop": "Danny Cohen",
-  "countries": "United Kingdom / United States of America",
-  "cc": [
-   "GB",
-   "US"
-  ],
-  "trailer": {
-   "k": "qixEy-cJzks",
-   "l": "bg",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Tom Hooper": 70500,
-   "Hugh Jackman": 6968,
-   "Russell Crowe": 934,
-   "Amanda Seyfried": 71070,
-   "Anne Hathaway": 1813,
-   "Eddie Redmayne": 37632,
-   "William Nicholson": 933,
-   "Herbert Kretzmer": 231710,
-   "Alain Boublil": 231709,
-   "Claude-Michel Schönberg": 231716,
-   "Danny Cohen": 56021
-  },
-  "dir": "Tom Hooper",
-  "cast": "Hugh Jackman, Russell Crowe, Amanda Seyfried, Anne Hathaway, Eddie Redmayne",
-  "ovBg": "На фона на събитията във Франция през XIX век, Клетниците разказва една завладяваща история за несбъднати мечти, несподелена любов, страст, саможертва и изкупление – неподвластно на времето свидетелство за оцеляването на човешкия дух. Джакман изпълнява ролята на бившия затворник Жан Валжан, преследван в продължение на десетилетия от безпощадния полицай Жавер. Когато Валжан се съгласява да се грижи за Козет - дъщеря на болната работничка във фабрика Фантин, животът на всички се променя завинаги.",
-  "imdb_id": "tt1707386",
-  "imdb": 7.5,
-  "imdbVotes": "365.4K",
-  "rt": 70,
-  "mc": 63,
-  "nb": {
-   "Hugh Jackman": "Хю Джакман",
-   "Russell Crowe": "Ръсел Кроу",
-   "Amanda Seyfried": "Аманда Сайфред",
-   "Anne Hathaway": "Ан Хатауей",
-   "Eddie Redmayne": "Еди Редмейн"
-  }
+  "matched": false,
+  "en": ""
  },
  "hroniki-za-neudobnata-istina-s-angliyski-subtitri": {
   "matched": true,
@@ -11139,61 +10650,8 @@
   "en": ""
  },
  "zvyarat": {
-  "matched": true,
-  "tmdb_id": 760741,
-  "poster_path": "/uTGD4ohzjPqiqdVsohY8QUU5oNy.jpg",
-  "backdrop_path": "/pz7bGOUNJXyPKJ2GcJN6nhwBnCs.jpg",
-  "en": "Beast",
-  "original_title": "Beast",
-  "orig_lang": "en",
-  "tmdb_year": "2022",
-  "tmdb_vote": 6.535,
-  "vote_count": 1828,
-  "ov": "A recently widowed man and his two teenage daughters travel to a game reserve in South Africa. However, their journey of healing soon turns into a fight for survival when a bloodthirsty lion starts to stalk them.",
-  "country": "Iceland",
-  "runtime": 93,
-  "genres": [
-   "Екшън",
-   "Приключенски",
-   "Хорър"
-  ],
-  "wr": "Ryan Engle",
-  "mu": "Steven Price",
-  "dop": "Philippe Rousselot",
-  "countries": "Iceland / United States of America / Japan / South Africa",
-  "cc": [
-   "IS",
-   "US",
-   "JP",
-   "ZA"
-  ],
-  "trailer": {
-   "k": "oQMc7Sq36mI",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Baltasar Kormákur": 67813,
-   "Idris Elba": 17605,
-   "Leah Sava Jeffries": 1438277,
-   "Iyana Halley": 1877835,
-   "Sharlto Copley": 82191,
-   "Martin Munro": 2073065,
-   "Ryan Engle": 1325800,
-   "Steven Price": 16368,
-   "Philippe Rousselot": 1301
-  },
-  "dir": "Baltasar Kormákur",
-  "cast": "Idris Elba, Leah Sava Jeffries, Iyana Halley, Sharlto Copley, Martin Munro",
-  "ovBg": "Наскоро овдовелият лекар Нейт Даниелс (Идрис Елба) решава да осъществи отдавна планирано завръщане в Южна Африка, където за първи път е срещнал жена си, с надеждата отново да се сближи с двете си отчуждени дъщери. Тримата се отправят към резерват за диви животни, поддържан от техния дългогодишен семеен приятел и биолог Мартин Батълс (Шарлто Копли). Не след дълго обаче това, което започва като спокойно пътешествие в търсене на душевен покой и семейно разбирателство, се превръща в кошмарна борба за оцеляване. По петите им е огромен кръвожаден лъв, който, след сблъсък с бракониери, вижда всички хора като плячка. Ще успее ли Нейт да спаси семейството си? На какво е способен човек, за да оцелее и възможно ли е да спечели в неравностойна битка с дивата природа?",
-  "imdb_id": "tt13223398",
-  "imdb": 5.6,
-  "imdbVotes": "49.4K",
-  "rt": 69,
-  "mc": 54,
-  "nb": {
-   "Idris Elba": "Идрис Елба"
-  }
+  "matched": false,
+  "en": ""
  },
  "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": {
   "matched": false,
@@ -11383,65 +10841,8 @@
   "en": ""
  },
  "everest-ot-drugata-strana": {
-  "matched": true,
-  "tmdb_id": 1422,
-  "poster_path": "/jdfq5gxLxkq6CDMeFjMq0yCQ51b.jpg",
-  "backdrop_path": "/6WRrGYalXXveItfpnipYdayFkQB.jpg",
-  "en": "The Departed",
-  "original_title": "The Departed",
-  "orig_lang": "en",
-  "tmdb_year": "2006",
-  "tmdb_vote": 8.16,
-  "vote_count": 16846,
-  "ov": "To take down South Boston's Irish Mafia, the police send in one of their own to infiltrate the underworld, not realizing the syndicate has done likewise. While an undercover cop curries favor with the mob kingpin, a career criminal rises through the police ranks. But both sides soon discover there's a mole among them.",
-  "country": "Hong Kong",
-  "runtime": 151,
-  "genres": [
-   "Драма",
-   "Трилър",
-   "Криминален"
-  ],
-  "wr": "William Monahan",
-  "mu": "Howard Shore",
-  "dop": "Michael Ballhaus",
-  "countries": "Hong Kong / United States of America",
-  "cc": [
-   "HK",
-   "US"
-  ],
-  "trailer": {
-   "k": "r-MiSNsCdQ4",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Martin Scorsese": 1032,
-   "Leonardo DiCaprio": 6193,
-   "Matt Damon": 1892,
-   "Jack Nicholson": 514,
-   "Mark Wahlberg": 13240,
-   "Martin Sheen": 8349,
-   "William Monahan": 34510,
-   "Howard Shore": 117,
-   "Michael Ballhaus": 3769
-  },
-  "dir": "Martin Scorsese",
-  "cast": "Leonardo DiCaprio, Matt Damon, Jack Nicholson, Mark Wahlberg, Martin Sheen",
-  "ovBg": "Ченгето-новобранец Били Костиган е отраснал сред престъпници. Това го прави съвършената къртица, внедрения човек в бандата, ръководена от боса Франк Костело. Неговата работа е да спечели доверието на Костело и да помогне на старшите детективи да се справят с него. Междувременно Колин Съливан от „Специални разследвания” се радва на всеобщо доверие. Никой не подозира, че той е къртицата на Костело.",
-  "imdb_id": "tt0407887",
-  "imdb": 8.5,
-  "imdbVotes": "1.6M",
-  "rt": 91,
-  "mc": 85,
-  "nb": {
-   "Martin Scorsese": "Мартин Скорсезе",
-   "Leonardo DiCaprio": "Леонардо ди Каприо",
-   "Matt Damon": "Мат Деймън",
-   "Jack Nicholson": "Джак Никълсън",
-   "Mark Wahlberg": "Марк Уолбърг",
-   "Martin Sheen": "Мартин Шийн",
-   "Howard Shore": "Хауърд Шор"
-  }
+  "matched": false,
+  "en": ""
  },
  "40-kinomaniya-mazhat-kogoto-obicham": {
   "matched": false,
@@ -11552,119 +10953,12 @@
   "en": ""
  },
  "kinomaniya-nachaloto": {
-  "matched": true,
-  "tmdb_id": 272,
-  "poster_path": "/A5zTY0UJg0UcuzuXE51Lc21OhUI.jpg",
-  "backdrop_path": "/9IIBboV7MCT0bTxzXHmWK1Hq558.jpg",
-  "en": "Batman Begins",
-  "original_title": "Batman Begins",
-  "orig_lang": "en",
-  "tmdb_year": "2005",
-  "tmdb_vote": 7.7,
-  "vote_count": 23437,
-  "ov": "Driven by tragedy, billionaire Bruce Wayne dedicates his life to uncovering and defeating the corruption that plagues his home, Gotham City.  Unable to work within the system, he instead creates a new identity, a symbol of fear for the criminal underworld - The Batman.",
-  "country": "United Kingdom",
-  "runtime": 140,
-  "genres": [
-   "Драма",
-   "Криминален",
-   "Екшън"
-  ],
-  "wr": "David S. Goyer, Christopher Nolan",
-  "mu": "James Newton Howard, Hans Zimmer",
-  "dop": "Wally Pfister",
-  "countries": "United Kingdom / United States of America",
-  "cc": [
-   "GB",
-   "US"
-  ],
-  "trailer": {
-   "k": "lirBhHXvDSg",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Christopher Nolan": 525,
-   "Christian Bale": 3894,
-   "Michael Caine": 3895,
-   "Liam Neeson": 3896,
-   "Katie Holmes": 3897,
-   "Gary Oldman": 64,
-   "David S. Goyer": 3893,
-   "James Newton Howard": 1213,
-   "Hans Zimmer": 947,
-   "Wally Pfister": 559
-  },
-  "dir": "Christopher Nolan",
-  "cast": "Christian Bale, Michael Caine, Liam Neeson, Katie Holmes, Gary Oldman",
-  "ovBg": "На 8 години, Брус Уейн пропада в кладенец, където е нападнат от ято прилепи. Брус е спасен от баща си, Томас, но е останал със страх от тях. Когато той и родителите му посещават оператата „Мефистофел“, Брус се уплашва от прилепо-подобните демони в изпълнението. Той и родителите му излизат в алея, където се сблъскват с въоръжен обирджия, Джо Чил, който застрелва и убива майката и бащата на момчето. Чил е арестуван и осъден за двойно убийство, но Брус остава травмиран от инцидента. Икономът на семейството, Алфред Пениуърт, отглежда Брус в отсъствието на родителите му.",
-  "imdb_id": "tt0372784",
-  "imdb": 8.2,
-  "imdbVotes": "1.7M",
-  "rt": 85,
-  "mc": 70,
-  "nb": {
-   "Christopher Nolan": "Кристофър Нолан",
-   "Christian Bale": "Крисчън Бейл",
-   "Michael Caine": "Майкъл Кейн",
-   "Liam Neeson": "Лиъм Нийсън",
-   "Gary Oldman": "Гари Олдман",
-   "Hans Zimmer": "Ханс Цимер"
-  }
+  "matched": false,
+  "en": ""
  },
  "obich": {
-  "matched": true,
-  "tmdb_id": 339419,
-  "poster_path": "/2NXZ8IzwxyYwxgZcAPRku7Pdyzd.jpg",
-  "backdrop_path": "/zjvX2vJmm3f25JujVEp5DEu2eKi.jpg",
-  "en": "Loving",
-  "original_title": "Loving",
-  "orig_lang": "en",
-  "tmdb_year": "2016",
-  "tmdb_vote": 6.695,
-  "vote_count": 986,
-  "ov": "In 1958, in the state of Virginia, the idea of interracial marriage was not only considered to be immoral to many, it was also illegal. When Richard and Mildred fall in love, they are aware of the eyes staring at them and the words said behind their backs. It's when they get married, however, that words and looks become actions, and the two are arrested. The couple decide to take their case all of the way to the Supreme Court in order to fight for their love. Based on a true story.",
-  "country": "United Kingdom",
-  "runtime": 123,
-  "genres": [
-   "Драма",
-   "Романтика"
-  ],
-  "wr": "Jeff Nichols",
-  "mu": "David Wingo",
-  "dop": "Adam Stone",
-  "countries": "United Kingdom / United States of America",
-  "cc": [
-   "GB",
-   "US"
-  ],
-  "trailer": {
-   "k": "33g-ZHBQdNU",
-   "l": "en",
-   "t": "Trailer"
-  },
-  "pid": {
-   "Jeff Nichols": 71872,
-   "Joel Edgerton": 33192,
-   "Ruth Negga": 17018,
-   "Michael Shannon": 335,
-   "Marton Csokas": 20982,
-   "Nick Kroll": 208519,
-   "David Wingo": 937895,
-   "Adam Stone": 71880
-  },
-  "dir": "Jeff Nichols",
-  "cast": "Joel Edgerton, Ruth Negga, Michael Shannon, Marton Csokas, Nick Kroll",
-  "ovBg": "През 1958 г. в щата Вирджиния междурасовите бракове не само се считат за неморални, но са и незаконни. Когато Ричард и Милдред се влюбват, те си дават сметка, че са се превърнали в център на внимание и обект на тайно обсъждане. След сватбата им, скритото неодобрение се превръща в явно и двамата са арестувани. За да запази любовта си, младото семейство се обръща към Върховния съд в тази емоционална и напрегната драма.",
-  "imdb_id": "tt4669986",
-  "imdb": 7.0,
-  "imdbVotes": "38.8K",
-  "rt": 88,
-  "mc": 79,
-  "nb": {
-   "Joel Edgerton": "Джоел Едгертън",
-   "Michael Shannon": "Майкъл Шанън"
-  }
+  "matched": false,
+  "en": ""
  },
  "tatko-sled-polunosht": {
   "matched": false,
@@ -11764,47 +11058,8 @@
   "en": ""
  },
  "zhozefin": {
-  "matched": true,
-  "tmdb_id": 199661,
-  "poster_path": "/iXu2U7KUdMwahA0Wwuk83cbHZCs.jpg",
-  "backdrop_path": "/k9AUmz39HUiwrLcRrUQkq5a8tIe.jpg",
-  "en": "",
-  "original_title": "Joséphine",
-  "orig_lang": "fr",
-  "tmdb_year": "2013",
-  "tmdb_vote": 5.9,
-  "vote_count": 298,
-  "ov": "Josephine doesn't like her job and keeps on having relationships without a future. Her sister and parents keep pushing her to find a good husband. To shut them up, she creates a handsome Brazilian millionaire but her little white lie has a flip side - she loses everything to find the love of her life.",
-  "country": "France",
-  "runtime": 88,
-  "genres": [
-   "Романтика",
-   "Комедия"
-  ],
-  "wr": "Agnès Obadia, Samantha Mazéras",
-  "mu": "Marc Chouarain",
-  "dop": "Romain Winding",
-  "countries": "France",
-  "cc": [
-   "FR"
-  ],
-  "pid": {
-   "Agnès Obadia": 81818,
-   "Marilou Berry": 69221,
-   "Mehdi Nebbou": 43436,
-   "Bérengère Krief": 1179907,
-   "Charlie Dupont": 97086,
-   "Amelle Chahbi": 100745,
-   "Samantha Mazéras": 1545581,
-   "Marc Chouarain": 1033665,
-   "Romain Winding": 22153
-  },
-  "dir": "Agnès Obadia",
-  "cast": "Marilou Berry, Mehdi Nebbou, Bérengère Krief, Charlie Dupont, Amelle Chahbi",
-  "ovBg": "30-годишната Жозефин, която живее с котката си \"Брад Пит\", не харесва особено работата си и продължава да има връзки без бъдеще. Семейството й не спира да й натяква да си намери добър съпруг. Чашата прелива, когато на събиране перфектната й във всяко едно отношение сестра Даян обявява, че се е сгодила. За да им затвори устата, Жозефин също обявява, че й предстои да се омъжи – за привлекателен бразилски хирург на име Марсело, с когото планират да заживеят щастливо в неговата страна. Но малката й бяла лъжа скоро излиза извън контрол и тя губи всичко… За да срещне любовта на живота си. Но ще успее ли да я задържи?",
-  "imdb_id": "tt2430044",
-  "imdb": 5.8,
-  "imdbVotes": "1.6K"
+  "matched": false,
+  "en": ""
  },
  "nevidimo-v-kutiya": {
   "matched": false,

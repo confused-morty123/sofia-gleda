@@ -1,6 +1,238 @@
 {
  "_about": "Minted film records merged into the film they duplicate, written by scripts/scrape_programs.py (film_identity.detect_duplicates). 'merged': dropped id -> {into: kept id, rule, reason, since, record: the dropped record}. The dropped record's titles keep resolving to the kept film, the page maps the old id through FILM_REDIRECT and film/<old id>/ stays a share page of the kept film, so links already shared keep working. To undo a wrong merge, list the pair under 'distinct' in scripts/film_aliases.json: the next run restores the record and never merges the pair again.",
  "merged": {
+  "40-kinomaniya-ana-manyani": {
+   "into": "ana-manyani",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('ана маняни')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-ana-manyani",
+    "bg": "40.Киномания: Ана Маняни",
+    "en": "",
+    "genres": [
+     "Биографичен"
+    ],
+    "g": [
+     "#331B1B",
+     "#5F2727"
+    ],
+    "source": "dom-kino",
+    "runtime": 112
+   }
+  },
+  "40-kinomaniya-atlas-na-vselenata": {
+   "into": "atlas-na-vselenata",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('атлас на вселената')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-atlas-na-vselenata",
+    "bg": "40.Киномания: АТЛАС НА ВСЕЛЕНАТА",
+    "en": "",
+    "genres": [
+     "Семеен"
+    ],
+    "g": [
+     "#332A1B",
+     "#5F4527"
+    ],
+    "source": "dom-kino",
+    "runtime": 86
+   }
+  },
+  "40-kinomaniya-bog-se-smee": {
+   "into": "bog-se-smee",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('бог се смее')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-bog-se-smee",
+    "bg": "40.Киномания: Бог се смее",
+    "en": "",
+    "genres": [
+     "Драма"
+    ],
+    "g": [
+     "#1B331F",
+     "#275F3A"
+    ],
+    "source": "dom-kino",
+    "runtime": 110
+   }
+  },
+  "40-kinomaniya-golishar": {
+   "into": "kinomaniya-2026-golishar",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('голишар')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-golishar",
+    "bg": "40.Киномания: Голишар",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#2B1B33",
+     "#50275F"
+    ],
+    "source": "dom-kino"
+   }
+  },
+  "40-kinomaniya-hartien-tigar": {
+   "into": "hartien-tigar",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('хартиен тигър')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-hartien-tigar",
+    "bg": "40.Киномания: Хартиен тигър",
+    "en": "",
+    "genres": [
+     "Криминален"
+    ],
+    "g": [
+     "#331B1B",
+     "#5F2727"
+    ],
+    "source": "dom-kino",
+    "runtime": 115
+   }
+  },
+  "40-kinomaniya-nevidimo-v-kutiya": {
+   "into": "nevidimo-v-kutiya",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('невидимо в кутия')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-nevidimo-v-kutiya",
+    "bg": "40.Киномания: Невидимо в кутия",
+    "en": "",
+    "genres": [
+     "Фантастика"
+    ],
+    "g": [
+     "#331B24",
+     "#5F2745"
+    ],
+    "source": "dom-kino",
+    "runtime": 127
+   }
+  },
+  "40-kinomaniya-obich": {
+   "into": "obich",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('обич')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-obich",
+    "bg": "40.Киномания: Обич",
+    "en": "",
+    "genres": [
+     "Драма"
+    ],
+    "g": [
+     "#1B3330",
+     "#275F57"
+    ],
+    "source": "dom-kino",
+    "runtime": 135
+   }
+  },
+  "40-kinomaniya-pogledni-nazad": {
+   "into": "pogledni-nazad",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('погледни назад')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-pogledni-nazad",
+    "bg": "40.Киномания: Погледни назад",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#332A1B",
+     "#5F4527"
+    ],
+    "source": "dom-kino",
+    "runtime": 100
+   }
+  },
+  "40-kinomaniya-tatko-sled-polunosht": {
+   "into": "tatko-sled-polunosht",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('татко след полунощ')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-tatko-sled-polunosht",
+    "bg": "40.Киномания: Татко след полунощ",
+    "en": "",
+    "genres": [
+     "Комедия"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "dom-kino",
+    "runtime": 126
+   }
+  },
+  "40-kinomaniya-vsichki-obichat-bil-evans": {
+   "into": "vsichki-obichat-bil-evans",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('всички обичат бил евънс')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-vsichki-obichat-bil-evans",
+    "bg": "40.Киномания: Всички обичат Бил Евънс",
+    "en": "",
+    "genres": [
+     "Биографичен"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "dom-kino",
+    "runtime": 102
+   }
+  },
+  "40-kinomaniya-zhozefin": {
+   "into": "zhozefin",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('жозефин')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "40-kinomaniya-zhozefin",
+    "bg": "40.Киномания: Жозефин",
+    "en": "",
+    "genres": [
+     "Трилър"
+    ],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "dom-kino",
+    "runtime": 121
+   }
+  },
+  "everest-ot-drugata-strana": {
+   "into": "everest-drugata-strana",
+   "rule": "function-word",
+   "reason": "'еверест от другата страна' is 'еверест другата страна' with one short word more; the same weeks, no venue lists both",
+   "since": "2026-10-28",
+   "record": {
+    "id": "everest-ot-drugata-strana",
+    "bg": "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#1B331F",
+     "#275F3A"
+    ],
+    "source": "vlaikova"
+   }
+  },
   "haos-v-komedi-fransez-sinelibri": {
    "into": "haos-v-komedi-fransez",
    "rule": "same-key",
@@ -16,6 +248,206 @@
      "#275F57"
     ],
     "source": "lumiere"
+   }
+  },
+  "helouin-selektsiya-drugata-mama": {
+   "into": "drugata-mama",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('другата мама')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-drugata-mama",
+    "bg": "Хелоуин Селекция: Другата мама",
+    "en": "",
+    "genres": [
+     "Хорър"
+    ],
+    "g": [
+     "#1B331F",
+     "#275F3A"
+    ],
+    "source": "cc-sofia",
+    "runtime": 93,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-kleyfeys": {
+   "into": "kleyfeys",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('клейфейс')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-kleyfeys",
+    "bg": "Хелоуин Селекция: Клейфейс",
+    "en": "",
+    "genres": [
+     "Хорър"
+    ],
+    "g": [
+     "#332A1B",
+     "#5F4527"
+    ],
+    "source": "cc-sofia",
+    "runtime": 108,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-kovaren-kapan-byagstvo": {
+   "into": "insidious",
+   "rule": "prefix",
+   "reason": "'коварен капан бягство' begins 'коварен капан бягство от отвъдното'; runtime [106]≈[106] min and year 2026",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-kovaren-kapan-byagstvo",
+    "bg": "Хелоуин Селекция Коварен капан: Бягство",
+    "en": "",
+    "genres": [
+     "Хорър"
+    ],
+    "g": [
+     "#331B24",
+     "#5F2745"
+    ],
+    "source": "cc-sofia",
+    "runtime": 106,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-naslednikat": {
+   "into": "naslednikat",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('наследникът')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-naslednikat",
+    "bg": "Хелоуин Селекция: Наследникът",
+    "en": "",
+    "genres": [
+     "Драма",
+     "Фентъзи"
+    ],
+    "g": [
+     "#2A331B",
+     "#4A5F27"
+    ],
+    "source": "cc-sofia",
+    "runtime": 115,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-ostrovat-na-zabravata": {
+   "into": "ostrovat-na-zabravata",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('островът на забравата')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-ostrovat-na-zabravata",
+    "bg": "Хелоуин Селекция: Островът на забравата",
+    "en": "",
+    "genres": [
+     "Приключенски",
+     "Анимация",
+     "Семеен"
+    ],
+    "g": [
+     "#1B3330",
+     "#275F57"
+    ],
+    "source": "cc-sofia",
+    "runtime": 110,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-skoti": {
+   "into": "skoti",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('скоти')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-skoti",
+    "bg": "Хелоуин Селекция: Скоти",
+    "en": "",
+    "genres": [
+     "Приключенски",
+     "Анимация",
+     "Семеен"
+    ],
+    "g": [
+     "#331B24",
+     "#5F2745"
+    ],
+    "source": "cc-sofia",
+    "runtime": 80,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-sradlyo": {
+   "into": "sradlyo",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('сръдльо')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-sradlyo",
+    "bg": "Хелоуин Селекция: Сръдльо",
+    "en": "",
+    "genres": [
+     "Приключенски",
+     "Анимация",
+     "Комедия",
+     "Семеен"
+    ],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "cc-sofia",
+    "runtime": 92,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-zarazno-zlo": {
+   "into": "zarazno-zlo",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('заразно зло')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-zarazno-zlo",
+    "bg": "Хелоуин Селекция Заразно зло",
+    "en": "",
+    "genres": [
+     "Хорър"
+    ],
+    "g": [
+     "#331B1B",
+     "#5F2727"
+    ],
+    "source": "cc-sofia",
+    "runtime": 93,
+    "year": 2026
+   }
+  },
+  "helouin-selektsiya-zooekspres": {
+   "into": "zooekspres",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('зооекспрес')",
+   "since": "2026-10-28",
+   "record": {
+    "id": "helouin-selektsiya-zooekspres",
+    "bg": "Хелоуин Селекция: Зооекспрес",
+    "en": "",
+    "genres": [
+     "Приключенски",
+     "Анимация",
+     "Комедия",
+     "Семеен"
+    ],
+    "g": [
+     "#2B1B33",
+     "#50275F"
+    ],
+    "source": "cc-sofia",
+    "runtime": 90,
+    "year": 2025
    }
   },
   "kukla-sinelibri": {
