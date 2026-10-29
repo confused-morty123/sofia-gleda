@@ -13617,7 +13617,8 @@ def _hf_grid_paging(browser, eng):
 
 def _hf_grid_months(browser, eng):
     """G2: when a grid's dates span more than one month, every column header carries the
-    short month (BG "ное", EN "Nov"); a single-month grid shows none."""
+    short month (BG "ное", EN "Nov"); a single-month grid shows it only on the columns
+    outside the current week (DM1, 28 Oct 2026: it used to show none at all)."""
     for lang in ("bg", "en"):
         ctx, page, errs = _hf_open(browser, 1280, 800, False, lang=lang)
         r = page.evaluate("""()=>{const L=T[S.lang];let multi=0,single=0;const bad=[];
@@ -13626,7 +13627,9 @@ def _hf_grid_months(browser, eng):
               const many=new Set(dates.map(x=>x.slice(0,7))).size>1;
               if(many){multi++;for(const th of ths){const m=th.querySelector('small.p3e-gmon');const want=L.monthsShort[parseInt(th.dataset.date.slice(5,7),10)-1];
                 if(!m||m.textContent.trim()!==want){bad.push(kind+':'+id+' '+th.dataset.date+' month='+(m?m.textContent:'none'));break;}}}
-              else{single++;if(ths.some(th=>th.querySelector('small.p3e-gmon')))bad.push(kind+':'+id+' single month shows a month');}};
+              else{single++;for(const th of ths){const m=th.querySelector('small.p3e-gmon'),out=!inThisWeek(th.dataset.date);
+                const want=L.monthsShort[parseInt(th.dataset.date.slice(5,7),10)-1];
+                if(out?(!m||m.textContent.trim()!==want):!!m){bad.push(kind+':'+id+' single month '+th.dataset.date+' month='+(m?m.textContent:'none'));break;}}}};
             for(const f of FILMS){const rows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));if(rows.length)each('film',f.id,sheetFilm(f),rows.map(r=>r[2]));}
             for(const sh of SHOWS){const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));if(ps.length&&thById[sh.theatre])each('show',sh.id,sheetShow(sh),ps.map(p=>p[1]));}
             return {multi,single,bad:bad.slice(0,6),nbad:bad.length,sample:(()=>{for(const sh of SHOWS){const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));
@@ -16874,8 +16877,8 @@ def _ux_no_uir(html):
 
 
 def _ux_ctx(browser, base, w, h, phone=False, lang="bg", mode="cinema", ua=None, reduced=False, js=True,
-            clock=None, sw=False):
-    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
+            clock=None, sw=False, tz="Europe/Sofia"):
+    kw = dict(viewport={"width": w, "height": h}, timezone_id=tz, locale="bg-BG",
               service_workers="allow" if sw else "block", java_script_enabled=js)
     if phone:
         kw.update(has_touch=True, is_mobile=True)
@@ -18543,6 +18546,477 @@ def wave_b24(browser):
             _ux_shutil.rmtree(tmp, ignore_errors=True)
 
 
+# ============================================================================
+# WAVE DM1: day pills name their month outside the current week (owner, 28 Oct 2026)
+# The owner's iPhone screenshot of "Avengers: Doomsday" showed "ср 16 ... вт 22" with no month
+# for December screenings. Rule: a day pill whose date is outside the current calendar week
+# (WEEK_START..WEEK_END, Mon-Sun around TODAY) carries its short month (BG "дек", EN "Dec"):
+# the phone day picker of film and show sheets (.p3e-dmon), the desktop week grid's column
+# headers (.p3e-gmon) and the next-week days of the period strip (.ds-mon). This week's pills
+# keep their old look (a month only where this week's days cross into a new month). Checks:
+# a film starting in a later month (phone 393 BG/EN, desktop 1280 BG/EN), a show with dates
+# next month, a title whose later dates span two months, a current-week film, sizes and
+# overflow at 375, the selected pill's month contrast, the strip's scrolling, accessible names.
+# Over http in either engine (SOFIA_BROWSER=webkit). Shots: /tmp/sg-shots/DM1.
+# ============================================================================
+DM1_PICK_JS = r"""() => {
+  const we = WEEK_END, tm = TODAY.slice(0, 7);
+  const d0 = dUTC(TODAY), nextMon = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1)).toISOString().slice(0, 7);
+  const films = [], shows = [];
+  for (const f of FILMS) { const ds = [...new Set(upcomingRows(SHOWTIMES.filter(r => r[0] === f.id)).map(r => r[2]))].sort();
+    if (ds.length) films.push({kind: 'film', id: f.id, ds, name: [f.id, f.bg, f.en].join(' ')}); }
+  for (const s of SHOWS) { if (!thById[s.theatre]) continue;
+    const ds = [...new Set(upcomingPerfs(PERFORMANCES.filter(p => p[0] === s.id)).map(p => p[1]))].sort();
+    if (ds.length) shows.push({kind: 'show', id: s.id, ds, name: s.titleEn || s.title}); }
+  const far = L => L.filter(x => x.ds[0] > we && x.ds[0].slice(0, 7) > tm)
+    .sort((a, b) => ((a.ds[0].slice(0, 7) !== nextMon) - (b.ds[0].slice(0, 7) !== nextMon)) || (b.ds.length - a.ds.length));
+  /* the film of the owner's report ("Avengers: Doomsday", BG "Отмъстителите: Възходът на Доктор Дуум") */
+  const doom = far(films).find(x => /doomsday|duum|дуум/i.test(x.name));
+  const nextShow = shows.filter(x => x.ds.some(d => d > we && d.slice(0, 7) === nextMon))
+    .sort((a, b) => b.ds.filter(d => d.slice(0, 7) === nextMon).length - a.ds.filter(d => d.slice(0, 7) === nextMon).length);
+  const twoMon = films.concat(shows).filter(x => new Set(x.ds.filter(d => d > we).map(d => d.slice(0, 7))).size > 1)
+    .sort((a, b) => (a.ds.length - b.ds.length));
+  /* a current-week film: the most of its dates in this week, all of them in one month, today among them */
+  const cur = films.filter(x => x.ds[0] === TODAY && x.ds.filter(inThisWeek).length >= 2)
+    .sort((a, b) => (x => x.ds.every(inThisWeek) ? 0 : 1)(a) - (x => x.ds.every(inThisWeek) ? 0 : 1)(b) || b.ds.filter(inThisWeek).length - a.ds.filter(inThisWeek).length);
+  const pick = x => x ? {kind: x.kind, id: x.id, n: x.ds.length, first: x.ds[0], last: x.ds[x.ds.length - 1], name: x.name} : null;
+  return {far: pick(far(films)[0]), doom: pick(doom), farShow: pick(nextShow[0]), two: pick(twoMon[0]), cur: pick(cur[0]),
+    today: TODAY, ws: WEEK_START, we, nextMon};
+}"""
+
+DM1_SHEET_JS = r"""() => {
+  const sc = document.getElementById('scrim'), L = T[S.lang];
+  const lum = c => { const m = c.match(/[\d.]+/g).map(Number).slice(0, 3).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+    return .2126 * m[0] + .7152 * m[1] + .0722 * m[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const bgOf = el => { for (let e = el; e; e = e.parentElement) { const c = getComputedStyle(e).backgroundColor; if (c && !/rgba\(.*, 0\)$/.test(c) && c !== 'transparent') return c; } return 'rgb(0,0,0)'; };
+  const strip = sc.querySelector('[data-p3dayswrap]'), sr = strip ? strip.getBoundingClientRect() : null;
+  const pills = [...sc.querySelectorAll('[data-p3day]')].map((b, i, all) => { const r = b.getBoundingClientRect(), m = b.querySelector('.p3e-dmon');
+    const mr = m ? m.getBoundingClientRect() : null;
+    return {d: b.dataset.p3day, mon: m ? m.textContent.trim() : null, label: b.getAttribute('aria-label') || '', text: b.textContent.replace(/\s+/g, ' ').trim(),
+      on: b.getAttribute('aria-pressed') === 'true', w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10,
+      clip: b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1,
+      monIn: mr ? (mr.left >= r.left - .5 && mr.right <= r.right + .5 && mr.top >= r.top - .5 && mr.bottom <= r.bottom + .5) : true,
+      cr: m ? Math.round(cr(getComputedStyle(m).color, bgOf(b)) * 100) / 100 : null}; });
+  const ths = [...sc.querySelectorAll('.p3e-gpage th[data-date]')].map(th => { const m = th.querySelector('small.p3e-gmon');
+    return {d: th.dataset.date, mon: m ? m.textContent.trim() : null, label: th.getAttribute('aria-label') || '', shown: !th.closest('[aria-hidden]')}; });
+  return {pills, ths, ws: WEEK_START, we: WEEK_END, months: L.months, ms: L.monthsShort, stripShown: !!(strip && strip.getClientRects().length),
+    stripSW: strip ? strip.scrollWidth : 0, stripCW: strip ? strip.clientWidth : 0, docOver: document.documentElement.scrollWidth - innerWidth,
+    sheetOver: (() => { const s = sc.querySelector('.sheet'); return s ? s.scrollWidth - s.clientWidth : 0; })(),
+    font: (() => { const b = sc.querySelector('[data-p3day] b'); return b ? getComputedStyle(b).fontFamily : ''; })()};
+}"""
+
+DM1_STRIP_JS = r"""() => { const s = document.querySelector('.phead .daystrip'), L = T[S.lang];
+  return {strip: !!s, ws: WEEK_START, we: WEEK_END, today: TODAY, last: LASTDAY, dows: L.dows, months: L.months, ms: L.monthsShort,
+    docOver: document.documentElement.scrollWidth - innerWidth,
+    pills: s ? [...s.querySelectorAll('[data-day]')].filter(b => b.dataset.day !== 'week').map(b => { const r = b.getBoundingClientRect(), m = b.querySelector('.ds-mon');
+      return {d: b.dataset.day, mon: m ? m.textContent.trim() : null, label: b.getAttribute('aria-label') || '', text: b.textContent.replace(/\s+/g, ' ').trim(),
+        h: Math.round(r.height * 10) / 10, clip: b.scrollWidth > b.clientWidth + 1}; }) : []}; }"""
+
+
+def _dm1_inweek(d, info):
+    return info["ws"] <= d <= info["we"]
+
+
+def _dm1_open(browser, base, w, h, phone, lang, item, clock=None, tz="Europe/Sofia"):
+    mode = "theatre" if item["kind"] == "show" else "cinema"
+    ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock, tz=tz)
+    page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/") + f"?{item['kind']}={item['id']}")
+    try:
+        page.wait_for_selector("#scrim .sheet", timeout=10000)
+    except Exception:
+        pass
+    page.evaluate("async () => { await document.fonts.ready; }")
+    page.wait_for_timeout(400)
+    return ctx, page, errs
+
+
+def _dm1_month_problems(info, rows, want_all_out):
+    """Each pill/header outside this week shows the short month of its own date and its
+    accessible name the full month; returns a list of problems."""
+    bad = []
+    for p in rows:
+        mi = int(p["d"][5:7]) - 1
+        if not _dm1_inweek(p["d"], info):
+            if p["mon"] != info["ms"][mi]:
+                bad.append(f"{p['d']} month={p['mon']!r} want {info['ms'][mi]!r}")
+            if info["months"][mi] not in p["label"] or (p.get("mon") and p["mon"] not in p["label"]):
+                bad.append(f"{p['d']} name {p['label']!r} lacks the month")
+        elif want_all_out:
+            bad.append(f"{p['d']} is in this week")
+    return bad
+
+
+def _dm1_shot(page, name):
+    save_shot(page, "DM1", name)
+
+
+DM1_INTO_VIEW_JS = r"""([sel, gap]) => { const el = document.querySelector(sel); if (!el) return false;
+  /* scroll whichever box holds the sheet (the scrim, or the sheet itself on phones) */
+  for (let n = el.parentElement; n; n = n.parentElement) { const o = getComputedStyle(n).overflowY;
+    if ((o === 'auto' || o === 'scroll') && n.scrollHeight > n.clientHeight + 1) {
+      n.scrollTop += el.getBoundingClientRect().top - n.getBoundingClientRect().top - gap; } }
+  return true; }"""
+
+
+def _dm1_strip_into_view(page):
+    page.evaluate(DM1_INTO_VIEW_JS, ["#scrim [data-p3dayswrap]", 120])
+    page.wait_for_timeout(250)
+
+
+def _dm1_grid_into_view(page):
+    page.evaluate(DM1_INTO_VIEW_JS, ["#scrim .p3e-grp-desk", 140])
+    page.wait_for_timeout(250)
+
+
+def _dm1_phone(browser, base, eng, item, tag, w, lang, shot=None):
+    ctx, page, errs = _dm1_open(browser, base, w, 852, True, lang, item)
+    s = page.evaluate(DM1_SHEET_JS)
+    if not s["pills"] or not s["stripShown"]:
+        check(f"{tag}_strip", False, f"{item['kind']} {item['id']}: no day picker (pills={len(s['pills'])})")
+        ctx.close()
+        return None
+    bad = _dm1_month_problems(s, s["pills"], False)
+    out = [p for p in s["pills"] if not _dm1_inweek(p["d"], s)]
+    check(f"{tag}_months", not bad and out,
+          f"{item['kind']} {item['id']} ({item['first']}..{item['last']}, week {s['ws']}..{s['we']}): {len(out)} pills outside this week, "
+          f"sample {[p['text'] for p in s['pills'][:3]]}; problems {bad[:4]}")
+    small = [f"{p['d']} {p['w']}x{p['h']}" for p in s["pills"] if p["w"] < 44 or p["h"] < 44]
+    clip = [p["d"] for p in s["pills"] if p["clip"] or not p["monIn"]]
+    check(f"{tag}_size_{w}", not small and not clip and s["docOver"] <= 0 and s["sheetOver"] <= 0,
+          f"pills < 44 px: {small[:3]}; month outside/clipped: {clip[:3]}; page overflow {s['docOver']} px, sheet {s['sheetOver']} px")
+    sel = [p for p in s["pills"] if p["on"] and p["mon"]]
+    low = [p for p in s["pills"] if p["mon"] and p["cr"] is not None and p["cr"] < 4.5]
+    check(f"{tag}_month_contrast", sel and not low,
+          f"selected {[(p['d'], p['cr']) for p in sel][:1]}; under 4.5:1 {[(p['d'], p['cr'], p['on']) for p in low][:3]}")
+    # the strip still scrolls to its last day, and that day can be tapped
+    if s["stripSW"] > s["stripCW"] + 1:
+        page.evaluate("()=>{const s=document.querySelector('#scrim [data-p3dayswrap]');s.scrollIntoView({block:'center'});s.scrollLeft=s.scrollWidth;}")
+        page.wait_for_timeout(300)
+        last = s["pills"][-1]["d"]
+        vis = page.evaluate("(d)=>{const s=document.querySelector('#scrim [data-p3dayswrap]').getBoundingClientRect(),b=document.querySelector('#scrim [data-p3day=\"'+d+'\"]').getBoundingClientRect();"
+                            "return b.left>=s.left-1&&b.right<=s.right+1;}", last)
+        _hf_tap_el(page, True, "(d)=>document.querySelector('#scrim [data-p3day=\"'+d+'\"]')", last)
+        page.wait_for_timeout(300)
+        st = page.evaluate("(d)=>({on:document.querySelector('#scrim [data-p3day=\"'+d+'\"]').getAttribute('aria-pressed'),"
+                           "rows:document.querySelectorAll('#scrim .p3e-grp-slot [data-sspill]').length})", last)
+        check(f"{tag}_strip_scrolls", vis and st["on"] == "true" and st["rows"] > 0,
+              f"{len(s['pills'])} pills, strip {s['stripSW']}/{s['stripCW']} px; last day {last} in view={vis}, pressed={st['on']}, times={st['rows']}")
+        page.evaluate("()=>{const s=document.querySelector('#scrim [data-p3dayswrap]');s.scrollLeft=0;}")
+        _hf_tap_el(page, True, "(d)=>document.querySelector('#scrim [data-p3day=\"'+d+'\"]')", s["pills"][0]["d"])
+        page.wait_for_timeout(250)
+    if shot:
+        _dm1_strip_into_view(page)
+        _dm1_shot(page, shot + ("" if eng == "chromium" else "_" + eng))
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+    return s
+
+
+def _dm1_desktop(browser, base, eng, item, tag, lang, shot=None):
+    ctx, page, errs = _dm1_open(browser, base, 1280, 800, False, lang, item)
+    s = page.evaluate(DM1_SHEET_JS)
+    ths = s["ths"]
+    multi = len({p["d"][:7] for p in ths}) > 1
+    bad = _dm1_month_problems(s, ths, False)
+    # a column of this week shows a month only when the dates span months (the earlier rule)
+    bad += [f"{p['d']} in this week shows {p['mon']!r}" for p in ths if _dm1_inweek(p["d"], s) and bool(p["mon"]) != multi]
+    out = [p for p in ths if not _dm1_inweek(p["d"], s)]
+    check(f"{tag}_grid_months", ths and out and not bad,
+          f"{item['kind']} {item['id']}: {len(ths)} column headers, {len(out)} outside this week; first {[p['mon'] for p in ths[:3]]}; problems {bad[:4]}")
+    check(f"{tag}_no_overflow", s["docOver"] <= 0 and s["sheetOver"] <= 0, f"page {s['docOver']} px, sheet {s['sheetOver']} px")
+    if shot:
+        _dm1_grid_into_view(page)
+        _dm1_shot(page, shot + ("" if eng == "chromium" else "_" + eng))
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _dm1_current(browser, base, eng, item):
+    """This week's pills keep their look: no month, "ср 28" / "We 28", unless this week's own
+    days cross into a new month (the earlier rule, unchanged)."""
+    for lang in ("bg", "en"):
+        tag = f"dm1_{eng}_current_week_{lang}"
+        ctx, page, errs = _dm1_open(browser, base, 393, 852, True, lang, item)
+        s = page.evaluate(DM1_SHEET_JS)
+        inw = [p for p in s["pills"] if _dm1_inweek(p["d"], s)]
+        bad = []
+        prev = None
+        multi = len({p["d"][:7] for p in s["pills"]}) > 1
+        for i, p in enumerate(s["pills"]):
+            if _dm1_inweek(p["d"], s):
+                boundary = multi and (i == 0 or p["d"][:7] != s["pills"][i - 1]["d"][:7])
+                if bool(p["mon"]) != boundary:
+                    bad.append(f"{p['d']} month={p['mon']!r}")
+                if not boundary and not re.fullmatch(r"\S+ \d{1,2}", p["text"]):
+                    bad.append(f"{p['d']} text {p['text']!r}")
+        check(tag, inw and not bad,
+              f"{item['id']}: {len(inw)} pills this week {[p['text'] for p in inw][:5]}; problems {bad[:4]}")
+        if lang == "bg":
+            _dm1_strip_into_view(page)
+            _dm1_shot(page, "current_week_phone393_bg" + ("" if eng == "chromium" else "_" + eng))
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _dm1_period_strip(browser, base, eng):
+    """The period strip's next-week days (a Saturday, when it rolls over) name their month;
+    this week's days do not."""
+    sat = _b24_saturday()
+    clock = _ux_clock(_sofia_1445_epoch_ms(sat))
+    for phone, (w, h), lang in ((True, (375, 812), "bg"), (True, (375, 812), "en"), (False, (1280, 800), "en")):
+        dev = "phone375" if phone else "desktop1280"
+        tag = f"dm1_{eng}_period_strip_{dev}_{lang}"
+        ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode="cinema", clock=clock)
+        page, errs = _ux_page(ctx, base + "/home/")
+        page.evaluate("async () => { await document.fonts.ready; }")
+        s = page.evaluate(DM1_STRIP_JS)
+        nxt = [p for p in s["pills"] if p["d"] > s["we"]]
+        if not s["strip"] or not nxt:
+            skip(tag, f"clock {sat}: no next-week day in the strip ({[p['text'] for p in s['pills']]})")
+            ctx.close()
+            continue
+        bad = _dm1_month_problems(s, s["pills"], False)
+        # this week's days show no month, except one that starts a new month ("нд 1 ное")
+        bad += [f"{p['d']} this week month={p['mon']!r}" for p in s["pills"] if _dm1_inweek(p["d"], s)
+                and p["d"] != s["today"] and bool(p["mon"]) != (p["d"][8:] == "01")]
+        small = [f"{p['d']} {p['h']}" for p in s["pills"] if (phone and p["h"] < 44) or p["clip"]]
+        check(tag, not bad and not small and s["docOver"] <= 0,
+              f"clock {sat}; strip {[p['text'] for p in s['pills']]}; problems {bad[:3]}; short/clipped {small[:3]}; overflow {s['docOver']} px")
+        if phone and lang == "bg":
+            page.evaluate("(d)=>{const b=document.querySelector('.phead .daystrip [data-day=\"'+d+'\"]');if(b)b.scrollIntoView({inline:'center',block:'nearest'});}", nxt[0]["d"])
+            page.wait_for_timeout(300)
+            _dm1_shot(page, "period_strip_next_week_phone375_bg" + ("" if eng == "chromium" else "_" + eng))
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+# DM1-6: the pills read the ISO date in Sofia terms in any viewer timezone. dayWod and
+# dayAbbrLong once took local noon of the date and read it with UTC getters, so in Auckland
+# (UTC+13) 2026-11-01 showed "сб 31 ное" and 2027-01-01 "чт 31 яну". A viewer far east
+# (Pacific/Auckland) and far west (Pacific/Pago_Pago, UTC-11) must see the same pills.
+DM1_TZS = ("Pacific/Auckland", "Pacific/Pago_Pago")
+DM1_DOW = {"bg": ["нд", "пн", "вт", "ср", "чт", "пт", "сб"], "en": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]}
+
+# the film-sheet picker and grid rendered for dates the test chooses (TODAY .. TODAY+n), so the
+# month and year turns are covered whatever the data holds
+DM1_SYNTH_JS = r"""(n) => { const L = T[S.lang], ds = []; for (let i = 0; i < n; i++) ds.push(addDays(TODAY, i));
+  const rows = ds.map(d => ({venueId: 'v', dateStr: d, times: ['20:00']}));
+  const html = p3eShowtimesHtml('film', 'dm1-synth', rows, () => ({name: 'V'}), () => false, TODAY);
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  return {today: TODAY, ws: WEEK_START, we: WEEK_END, ms: L.monthsShort, months: L.months,
+    pills: [...doc.querySelectorAll('[data-p3day]')].map(b => ({d: b.dataset.p3day, abbr: (b.querySelector('span') || {}).textContent || '',
+      num: (b.querySelector('b') || {}).textContent || '', mon: b.querySelector('.p3e-dmon') ? b.querySelector('.p3e-dmon').textContent.trim() : null,
+      label: b.getAttribute('aria-label') || ''})),
+    ths: [...doc.querySelectorAll('.p3e-gpage th[data-date]')].map(th => ({d: th.dataset.date, text: th.textContent.replace(/\s+/g, ''),
+      num: (th.querySelector('b') || {}).textContent || '', mon: th.querySelector('small.p3e-gmon') ? th.querySelector('small.p3e-gmon').textContent.trim() : null}))}; }"""
+
+
+def _dm1_js_dow(iso):
+    return (datetime.date.fromisoformat(iso).weekday() + 1) % 7      # JS getUTCDay: 0 = Sunday
+
+
+def _dm1_pill_problems(rows, lang, ms, inweek, want_mon):
+    """The weekday, day number and month a pill or header shows are those of its ISO date.
+    want_mon(i, d) says whether a month is due; rows hold d, abbr, num, mon."""
+    bad = []
+    for i, p in enumerate(rows):
+        d = p["d"]
+        if p.get("abbr") is not None and p["abbr"].strip() != DM1_DOW[lang][_dm1_js_dow(d)]:
+            bad.append(f"{d} weekday {p['abbr']!r} want {DM1_DOW[lang][_dm1_js_dow(d)]!r}")
+        if p["num"].strip() != str(int(d[8:])):
+            bad.append(f"{d} day {p['num']!r} want {int(d[8:])}")
+        want = ms[int(d[5:7]) - 1] if want_mon(i, d) else None
+        if p["mon"] != want:
+            bad.append(f"{d} month {p['mon']!r} want {want!r}")
+    return bad
+
+
+def _dm1_picker_want(rows, inweek):
+    multi = len({p["d"][:7] for p in rows}) > 1
+    return lambda i, d: (not inweek(d)) or (multi and (i == 0 or d[:7] != rows[i - 1]["d"][:7]))
+
+
+def _dm1_strip_problems(s, lang):
+    """The period strip: "ср 28", "пн 2 ное", "нд 1 ное" (a new month this week), "ср 28 днес"."""
+    bad = []
+    for p in s["pills"]:
+        d = p["d"]
+        tok = p["text"].split()
+        want_dow = s["dows"][_dm1_js_dow(d)]
+        if len(tok) < 2 or tok[0] != want_dow or tok[1] != str(int(d[8:])):
+            bad.append(f"{d} shows {p['text']!r} want {want_dow} {int(d[8:])}")
+        want = None if d == s["today"] else (s["ms"][int(d[5:7]) - 1] if (not (s["ws"] <= d <= s["we"]) or d[8:] == "01") else None)
+        if p["mon"] != want:
+            bad.append(f"{d} month {p['mon']!r} want {want!r}")
+        if want and want not in p["label"]:
+            bad.append(f"{d} name {p['label']!r} lacks {want!r}")
+    return bad
+
+
+def _dm1_timezones(browser, base, eng, far):
+    """Real data at the suite's clock: the period strip and a far film's sheet (phone picker and
+    desktop grid), in a viewer timezone far east and far west of Sofia."""
+    for tz in DM1_TZS:
+        short = tz.split("/")[-1].lower()
+        for lang in ("bg", "en"):
+            ctx = _ux_ctx(browser, base, 375, 812, phone=True, lang=lang, mode="cinema", tz=tz)
+            page, errs = _ux_page(ctx, base + "/home/")
+            s = page.evaluate(DM1_STRIP_JS)
+            off = page.evaluate("() => new Date().getTimezoneOffset()")
+            if not s["pills"]:
+                skip(f"dm1_{eng}_tz_{short}_strip_{lang}", "no period strip")
+            else:
+                bad = _dm1_strip_problems(s, lang)
+                check(f"dm1_{eng}_tz_{short}_strip_{lang}", not bad,
+                      f"{tz} (offset {off} min), today {s['today']}: {[p['text'] for p in s['pills']]}; problems {bad[:4]}")
+            check(f"dm1_{eng}_tz_{short}_strip_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+        if not far:
+            skip(f"dm1_{eng}_tz_{short}_sheet", "no far film")
+            continue
+        for lang in ("bg", "en"):
+            ctx, page, errs = _dm1_open(browser, base, 393, 852, True, lang, far, tz=tz)
+            sh = page.evaluate(DM1_SHEET_JS)
+            raw = page.evaluate("""() => [...document.querySelectorAll('#scrim [data-p3day]')].map(b => ({d: b.dataset.p3day,
+                abbr: (b.querySelector('span') || {}).textContent || '', num: (b.querySelector('b') || {}).textContent || '',
+                mon: b.querySelector('.p3e-dmon') ? b.querySelector('.p3e-dmon').textContent.trim() : null}))""")
+            inw = lambda d: sh["ws"] <= d <= sh["we"]
+            bad = _dm1_pill_problems(raw, lang, sh["ms"], inw, _dm1_picker_want(raw, inw))
+            check(f"dm1_{eng}_tz_{short}_picker_{lang}", raw and not bad,
+                  f"{tz} {far['id']}: {len(raw)} pills, sample {[p['text'] for p in sh['pills'][-3:]]}; problems {bad[:4]}")
+            check(f"dm1_{eng}_tz_{short}_picker_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+        ctx, page, errs = _dm1_open(browser, base, 1280, 800, False, "bg", far, tz=tz)
+        ths = page.evaluate("""() => [...document.querySelectorAll('#scrim .p3e-gpage th[data-date]')].map(th => ({d: th.dataset.date,
+            text: th.textContent.replace(/\\s+/g, ''), num: (th.querySelector('b') || {}).textContent || '',
+            mon: th.querySelector('small.p3e-gmon') ? th.querySelector('small.p3e-gmon').textContent.trim() : null}))""")
+        sh = page.evaluate(DM1_SHEET_JS)
+        for th in ths:   # the header reads abbr + <b>num</b> + month
+            th["abbr"] = th["text"][:len(th["text"]) - len(th["num"]) - len(th["mon"] or "")]
+        multi = len({p["d"][:7] for p in ths}) > 1
+        bad = _dm1_pill_problems(ths, "bg", sh["ms"], None, lambda i, d: multi or not (sh["ws"] <= d <= sh["we"]))
+        check(f"dm1_{eng}_tz_{short}_grid_bg", ths and not bad,
+              f"{tz} {far['id']}: {len(ths)} headers {[p['text'] for p in ths[:3]]}; problems {bad[:4]}")
+        check(f"dm1_{eng}_tz_{short}_grid_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _dm1_boundaries(browser, base, eng):
+    """The clock pinned at a month turn (30 Nov 23:30), Boxing Day (26 Dec, the strip rolls into
+    the new year) and New Year's Eve (31 Dec, 1 Jan is this week's day): the period strip and
+    the sheet's picker and grid (rendered for TODAY .. TODAY+20) in Sofia and both far zones."""
+    year = int(CLOCK_TODAY_ISO[:4])
+    clocks = [(f"{year}-11-30", 23, 30), (f"{year}-12-26", 14, 45), (f"{year}-12-31", 14, 45)]
+    for day, hh, mm in clocks:
+        clock = _ux_clock(_sofia_epoch_ms(day, hh, mm))
+        for tz in ("Europe/Sofia",) + DM1_TZS:
+            short = tz.split("/")[-1].lower()
+            tag = f"dm1_{eng}_edge_{day[5:]}_{short}"
+            ctx = _ux_ctx(browser, base, 375, 812, phone=True, lang="bg", mode="cinema", clock=clock, tz=tz)
+            page, errs = _ux_page(ctx, base + "/home/")
+            s = page.evaluate(DM1_STRIP_JS)
+            if s["today"] != day:
+                check(f"{tag}_today", False, f"clock {day} {hh}:{mm} Sofia read as {s['today']}")
+            elif not s["pills"]:
+                skip(f"{tag}_strip", f"no strip: the data ends {s['last']}")
+            else:
+                bad = _dm1_strip_problems(s, "bg")
+                first = [p for p in s["pills"] if p["d"][8:] == "01" and s["ws"] <= p["d"] <= s["we"] and p["d"] != s["today"]]
+                need_first = any(p["d"][8:] == "01" for p in s["pills"]) and day != f"{year}-12-26"
+                check(f"{tag}_strip", not bad and (first or not need_first),
+                      f"week {s['ws']}..{s['we']}: {[p['text'] for p in s['pills']]}; first-of-month this week {[p['text'] for p in first]}; problems {bad[:4]}")
+                if tz == "Europe/Sofia":
+                    _dm1_shot(page, f"edge_{day[5:]}_strip_phone375_bg" + ("" if eng == "chromium" else "_" + eng))
+            for lang in ("bg", "en"):
+                page.evaluate("(l) => { S.lang = l; }", lang)
+                y = page.evaluate(DM1_SYNTH_JS, 21)
+                inw = lambda d: y["ws"] <= d <= y["we"]
+                bad = _dm1_pill_problems(y["pills"], lang, y["ms"], inw, _dm1_picker_want(y["pills"], inw))
+                turns = [p["d"] for p in y["pills"] if p["d"][8:] == "01"]
+                check(f"{tag}_picker_{lang}", y["pills"] and turns and not bad,
+                      f"{len(y['pills'])} pills {y['pills'][0]['d']}..{y['pills'][-1]['d']}, turns {turns}; problems {bad[:4]}")
+                for th in y["ths"]:
+                    th["abbr"] = th["text"][:len(th["text"]) - len(th["num"]) - len(th["mon"] or "")]
+                multi = len({p["d"][:7] for p in y["ths"]}) > 1
+                bad = _dm1_pill_problems(y["ths"], lang, y["ms"], inw, lambda i, d: multi or not inw(d))
+                check(f"{tag}_grid_{lang}", y["ths"] and not bad, f"{len(y['ths'])} headers; problems {bad[:4]}")
+            check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+
+
+def wave_dm1(browser):
+    eng = _hf_engine(browser)
+    ensure_shot_dir("DM1")
+    share_root, tmp = _ux_share_root()
+    srv, base = _ux_server(share_root)
+    try:
+        ctx = _ux_ctx(browser, base, 1280, 800)
+        page, _ = _ux_page(ctx, base + "/home/")
+        pk = page.evaluate(DM1_PICK_JS)
+        ctx.close()
+        print(f"  picks (today {pk['today']}, week {pk['ws']}..{pk['we']}): far={pk['far']} show={pk['farShow']} two={pk['two']} cur={pk['cur']}")
+        sections = []
+        if pk["far"]:
+            f = pk["far"]
+            sections += [
+                ("1: a film starting in a later month, phone 393 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_393_bg", 393, "bg", "far_film_phone393_bg")),
+                ("1: the same, phone 393 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_393_en", 393, "en", "far_film_phone393_en")),
+                ("1: the same, phone 375 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_375_bg", 375, "bg")),
+                ("1: the same, phone 375 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_375_en", 375, "en")),
+                ("1: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, f, f"dm1_{eng}_far_film_1280_bg", "bg", "far_film_desktop1280_bg")),
+                ("1: the same, desktop 1280 EN", lambda: _dm1_desktop(browser, base, eng, f, f"dm1_{eng}_far_film_1280_en", "en")),
+            ]
+        else:
+            skip(f"dm1_{eng}_far_film", f"no film whose screenings start after {pk['we']} in a later month")
+        if pk["doom"] and pk["far"] and pk["doom"]["id"] != pk["far"]["id"]:
+            dm = pk["doom"]
+            sections += [
+                ("1b: the owner's Avengers: Doomsday, phone 393 BG", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_393_bg", 393, "bg", "doomsday_phone393_bg")),
+                ("1b: the same, phone 393 EN", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_393_en", 393, "en", "doomsday_phone393_en")),
+                ("1b: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, dm, f"dm1_{eng}_doomsday_1280_bg", "bg", "doomsday_desktop1280_bg")),
+            ]
+        if pk["farShow"]:
+            sh = pk["farShow"]
+            sections += [
+                ("2: a show with dates next month, phone 393 BG", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_393_bg", 393, "bg", "theatre_next_month_phone393_bg")),
+                ("2: the same, phone 375 EN", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_375_en", 375, "en")),
+                ("2: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, sh, f"dm1_{eng}_show_1280_bg", "bg")),
+            ]
+        else:
+            skip(f"dm1_{eng}_show", f"no show with dates in {pk['nextMon']}")
+        if pk["two"]:
+            tw = pk["two"]
+
+            def _two():
+                s = _dm1_phone(browser, base, eng, tw, f"dm1_{eng}_two_months_393_bg", 393, "bg")
+                if s:
+                    mons = {p["mon"] for p in s["pills"] if not _dm1_inweek(p["d"], s)}
+                    check(f"dm1_{eng}_two_months_distinct", len(mons) >= 2,
+                          f"{tw['kind']} {tw['id']} {tw['first']}..{tw['last']}: months on the pills {sorted(m or '' for m in mons)}")
+                _dm1_desktop(browser, base, eng, tw, f"dm1_{eng}_two_months_1280_en", "en")
+            sections.append(("3: dates spanning two months", _two))
+        else:
+            skip(f"dm1_{eng}_two_months", "no title whose later dates span two months")
+        if pk["cur"]:
+            sections.append(("4: a current-week film is unchanged", lambda: _dm1_current(browser, base, eng, pk["cur"])))
+        else:
+            skip(f"dm1_{eng}_current_week", "no film showing today with two or more days this week")
+        sections.append(("5: the period strip's next-week days", lambda: _dm1_period_strip(browser, base, eng)))
+        sections.append(("6: far-east and far-west viewer timezones", lambda: _dm1_timezones(browser, base, eng, pk["far"] or pk["doom"])))
+        sections.append(("7: month and year turns (30 Nov 23:30, 26 Dec, 31 Dec)", lambda: _dm1_boundaries(browser, base, eng)))
+        for title, fn in sections:
+            print(f"\n=== DM1-{title} ===")
+            try:
+                fn()
+            except Exception as _ex:      # one section crashing must not hide the rest
+                check(f"dm1_{eng}_{title.split(':')[0]}_ran", False, f"{type(_ex).__name__}: {str(_ex)[:200]}")
+    finally:
+        srv.shutdown()
+        if tmp:
+            _ux_shutil.rmtree(tmp, ignore_errors=True)
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -18578,6 +19052,7 @@ WAVES = {
     "TR2": wave_tr2,
     "UX1": wave_ux1,
     "B24": wave_b24,
+    "DM1": wave_dm1,
 }
 
 def main():

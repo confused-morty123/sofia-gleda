@@ -611,6 +611,7 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 .dspill[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .dspill[disabled]{opacity:.32; cursor:default}
 .dspill .ds-today{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; opacity:.8; line-height:1}
+.dspill .ds-mon{display:block; font-size:11px; font-weight:500; line-height:1.1}
 /* keep old .pbanner-btn for any .data-drawer usages */
 .pbanner-btn{flex:0 0 auto; padding:7px 14px; border-radius:999px; border:1px solid var(--line-2);
   background:transparent; color:var(--fg-2); font-size:12px; font-weight:600; letter-spacing:.04em;
@@ -2276,6 +2277,13 @@ function withinHorizon(venueId,d){
    dUTC(TODAY).getUTCDay(): 0=Sun, 1=Mon, …, 6=Sat.
    Days until Sunday: (7 - day) % 7, clamped to 0 on Sunday itself. */
 const WEEK_END=(()=>{const dow=dUTC(TODAY).getUTCDay();return addDays(TODAY,(7-dow)%7);})();
+/* The current calendar week (Mon-Sun around TODAY). A day pill outside it carries its short
+   month (owner, 28 Oct 2026: "пн 21" for a December screening read as this month), so any
+   date a longer period, the next-week days or a film starting weeks away shows is clear;
+   the pills of this week keep their plain "ср 28" look. */
+const WEEK_START=addDays(WEEK_END,-6);
+const inThisWeek=d=>d>=WEEK_START&&d<=WEEK_END;
+const monShortOf=iso=>((t().monthsShort||t().months)[parseInt(iso.slice(5,7),10)-1]||"");
 function inRange(d){
   if(S.day==="all")return true;
   if(S.day==="range")return S.rFrom?(d>=S.rFrom&&d<=(S.rTo||S.rFrom)):true;
@@ -2709,8 +2717,12 @@ function buildDayStrip(){
     const hasSc=hasData.has(d);
     const isToday=d===TODAY;
     const label=fmtDay(d,false); /* e.g. "ср 7" */
-    const todayMark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:"";
-    const dsName=`${label}${isToday?" "+(L.dsToday||"днес"):""}, ${fmtDayDow(d)}`;
+    /* a next-week day names its month ("пн 2" + "ное"), as every pill outside this week does;
+       so does a day of this week that starts a new month ("нд 1 ное"), as the film sheet's
+       day picker does */
+    const mon=!inThisWeek(d)||d.slice(8,10)==="01"?monShortOf(d):"";
+    const todayMark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:mon?` <span class="ds-mon">${esc(mon)}</span>`:"";
+    const dsName=`${label}${isToday?" "+(L.dsToday||"днес"):mon?" "+mon:""}, ${fmtDayDow(d)}`;
     pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}" aria-label="${esc(dsName)}">${esc(label)}${todayMark}</button>`);
   }
   return`<div class="daystrip">${pills.join("")}</div>`;}
@@ -3814,7 +3826,9 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     const dow=["нд","пн","вт","ср","чт","пт","сб"];
     const dowen=["Su","Mo","Tu","We","Th","Fr","Sa"];
     try{
-      const d=new Date(iso+"T12:00:00");
+      /* dUTC, as fmtDay: local noon read with UTC getters fell on the day before in any
+         zone east of UTC+12 (Auckland saw "сб 31" for 1 Nov) */
+      const d=dUTC(iso);
       const wd=d.getUTCDay();
       const dn=d.getUTCDate();
       return{abbr:(S.lang==="bg"?dow:dowen)[wd],num:String(dn)};
@@ -3825,7 +3839,9 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   const daysHtml=`<div class="p3e-days" role="group" aria-label="${esc(L.times)}" data-p3dayswrap>
     ${dates.map((d,i)=>{
       const{abbr,num}=dayWod(d);
-      const monTxt=multiMon&&(i===0||d.slice(0,7)!==dates[i-1].slice(0,7))?((L.monthsShort||[])[parseInt(d.slice(5,7),10)-1]||""):"";
+      /* the month: on every day outside this week, and (as before) where this week's
+         days cross into a new month */
+      const monTxt=!inThisWeek(d)||(multiMon&&(i===0||d.slice(0,7)!==dates[i-1].slice(0,7)))?monShortOf(d):"";
       const mon=monTxt?` <small class="p3e-dmon">${esc(monTxt)}</small>`:"";
       return`<button class="p3e-day" type="button" data-p3day="${esc(d)}" aria-pressed="${d===selDate?"true":"false"}" aria-label="${esc(abbr+" "+num+(monTxt?" "+monTxt:"")+", "+fmtDayDow(d))}"><span>${esc(abbr)}</span> <b>${esc(num)}</b>${mon}</button>`;
     }).join("")}</div>`;
@@ -3857,7 +3873,8 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
      Every page is rendered and only the current one is shown. A page lists only the
      venues with a screening on its own dates (the owner's rule: no empty rows), so its
      height follows its rows; the pager sits above the table and never moves. When the
-     dates span more than one month, every column header carries the short month. */
+     dates span more than one month, every column header carries the short month; so does
+     every column outside the current week (inThisWeek). */
   const PAGE=7;
   const pages=[];
   for(let i=0;i<dates.length;i+=PAGE)pages.push(dates.slice(i,i+PAGE));
@@ -3869,7 +3886,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
     const dow=["нд","пн","вт","ср","чт","пт","сб"];
     const dowen=["Su","Mo","Tu","We","Th","Fr","Sa"];
     try{
-      const d=new Date(iso+"T12:00:00");
+      const d=dUTC(iso); /* UTC, as dayWod and fmtDay */
       return{abbr:(S.lang==="bg"?dow:dowen)[d.getUTCDay()],num:String(d.getUTCDate())};
     }catch(e){return{abbr:"",num:iso.slice(8)};}
   };
@@ -3895,7 +3912,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
 
   const headCell=d=>{
     const{abbr,num}=dayAbbrLong(d);
-    return`<th scope="col" data-date="${esc(d)}" aria-label="${esc(fmtDayDow(d))}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
+    return`<th scope="col" data-date="${esc(d)}" aria-label="${esc(fmtDayDow(d))}">${esc(abbr)}<b>${esc(num)}</b>${multiMonth||!inThisWeek(d)?`<small class="p3e-gmon">${esc(monShort(d))}</small>`:""}</th>`;
   };
   const rowFor=(vid,pd)=>{
     const v=venueMap(vid)||{};
