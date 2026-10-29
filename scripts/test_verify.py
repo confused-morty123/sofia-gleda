@@ -194,6 +194,7 @@ def _run(html_content: str, skip_smoke: bool = True,
         html_content = _finish(html_content)
     env = dict(os.environ)
     env["SOFIA_SKIP_SMOKE"] = "1" if skip_smoke else "0"
+    env["SOFIA_GA_MEASUREMENT_ID"] = ""      # analytics off unless a test sets an ID
     if skip_freshness:
         env["SOFIA_SKIP_FRESHNESS"] = "1"
     if extra_env:
@@ -219,7 +220,8 @@ def _run_out(html_content: str,
     so a test can tell WHICH check failed."""
     if finish:
         html_content = _finish(html_content)
-    env = dict(os.environ, SOFIA_SKIP_SMOKE="1", SOFIA_SKIP_FRESHNESS="1")
+    env = dict(os.environ, SOFIA_SKIP_SMOKE="1", SOFIA_SKIP_FRESHNESS="1",
+               SOFIA_GA_MEASUREMENT_ID="")      # analytics off unless a test sets an ID
     if extra_env:
         env.update(extra_env)
     with tempfile.NamedTemporaryFile(suffix=".html", mode="w",
@@ -1095,10 +1097,31 @@ _LG_CSP = ('<meta http-equiv="Content-Security-Policy" content="default-src \'se
            'script-src \'sha256-AAAA\'; img-src \'self\' https: data:; object-src \'none\'">')
 
 
-def _lg_root(logo=True, edit=None):
-    """A temp tree: icons, share pages, sw.js and this worktree's legal pages."""
+import gen_legal_pages as _GLP  # noqa: E402
+
+
+def _lg_write_legal(root, ga_id=""):
+    """The six legal pages as gen_legal_pages.py and csp.py write them, with analytics off
+    ("") or on for ga_id, whatever state this worktree's own build is in."""
+    version = _LG_VERSION if not ga_id else max(_LG_VERSION, _GLP_POLICY_DATE)
+    updated = {"terms": _GLP.TERMS_UPDATED, "privacy": version, "cookies": version}
+    google = _GLP.uses_google_fonts()
+    for doc in _GLP.DOCS:
+        for lang in _GLP.LANGS:
+            here, text = _GLP.page(doc, lang, updated[doc], google, ga_id)
+            target = root / here / "index.html"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(_csp.stamp(text, kind=_csp.kind_of(target)), encoding="utf-8")
+
+
+from site_config import GA_POLICY_DATE as _GLP_POLICY_DATE  # noqa: E402
+
+
+def _lg_root(logo=True, edit=None, ga_id=""):
+    """A temp tree: icons, share pages, sw.js and the legal pages (analytics off, or on
+    for ga_id)."""
     root = _make_file_root(with_icons=True, film_ids_ok=["lg-film"], show_ids_ok=["lg-show"])
-    _shutil.copytree(ROOT / "legal", root / "legal")
+    _lg_write_legal(root, ga_id)
     _shutil.copy(ROOT / "sw.js", root / "sw.js")
     if logo:
         (root / "icons" / "tmdb.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
@@ -1180,6 +1203,54 @@ _rc, _out = _lg_run(_lg_page, _lg_root(edit=lambda r, t: t.replace("</main>", "<
                                        if "/privacy/" in r else t))
 check("a privacy policy naming Google Fonts the pages no longer load fails", _rc != 0 and "Google Fonts" in _out)
 check("a page without the cookie notice skips the legal checks", _run_out(_minimal_html())[0] == 0)
+
+# Google Analytics 4 (scripts/site_config.py GA_MEASUREMENT_ID, here through the env override):
+# the page's bootstrap, the config, the policies and the CSP agree, and gtag.js is never in the markup
+print("\nGoogle Analytics: page, config, policies and CSP agree")
+_GA_TID = "G-TEST000000"
+_GA_ENV = {"SOFIA_GA_MEASUREMENT_ID": _GA_TID}
+_ga_ver = max(_LG_VERSION, _GLP_POLICY_DATE)
+_GA_JS = (_LG_JS.replace(f'const CONSENT_VERSION="{_LG_VERSION}";', f'const CONSENT_VERSION="{_ga_ver}";')
+          + ' function gaStart(){var s=document.createElement("script");'
+            's.src="https://www.googletagmanager.com/gtag/js?id="+window.SOFIA_GA;} consentRun("stats",gaStart);'
+            ' function _gaClear(){document.cookie="_ga=; Max-Age=0; path=/";}')
+_ga_page = _minimal_html(extra_js=_GA_JS).replace("</head>", _csp.ga_bootstrap(_GA_TID) + "</head>", 1)
+def _lg_run_ga(html_text, root, env=_GA_ENV):
+    try:
+        return _run_out(html_text, extra_env=dict(env, SOFIA_ROOT=str(root), SOFIA_OWNER_PENDING_OK="0"))
+    finally:
+        _shutil.rmtree(str(root), ignore_errors=True)
+_rc, _out = _lg_run_ga(_ga_page, _lg_root(ga_id=_GA_TID))
+check("a page with analytics, its policies and the config agreeing pass", _rc == 0)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+check("its CSP allows gtag.js and Google's collection hosts, and nothing more of Google",
+      "script-src" in _finish(_ga_page) and all(s in _finish(_ga_page) for s in (
+          "https://www.googletagmanager.com; style-src",
+          "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com;",
+          "https://*.google-analytics.com https://www.googletagmanager.com; font-src")))
+check("a page without analytics gets none of Google's hosts in its CSP",
+      "google" not in re.search(r'Content-Security-Policy" content="([^"]*)"', _finish(_lg_page)).group(1))
+_rc, _out = _lg_run_ga(_ga_page, _lg_root())
+check("analytics with policies that say nothing about it fails", _rc != 0 and "says nothing about Google Analytics" in _out)
+_rc, _out = _lg_run_ga(_lg_page, _lg_root())
+check("an ID in the config but none in the built page fails", _rc != 0 and "the page was built with none" in _out)
+_rc, _out = _lg_run_ga(_ga_page, _lg_root(ga_id=_GA_TID), env={"SOFIA_GA_MEASUREMENT_ID": ""})
+check("a page built with an ID while the config has none fails", _rc != 0 and "scripts/site_config.py says off" in _out)
+_rc, _out = _lg_run_ga(_lg_page, _lg_root(ga_id=_GA_TID), env={"SOFIA_GA_MEASUREMENT_ID": ""})
+check("policies describing analytics the page does not use fail", _rc != 0 and "describes Google Analytics" in _out)
+_rc, _out = _lg_run_ga(_ga_page.replace("</body>", '<script async src="https://www.googletagmanager.com/gtag/js?id='
+                                        + _GA_TID + '"></script></body>'), _lg_root(ga_id=_GA_TID))
+check("gtag.js in the page's markup (before consent) fails", _rc != 0 and "only load after consent" in _out)
+_rc, _out = _lg_run_ga(_ga_page.replace('consentRun("stats",gaStart);', "gaStart();"), _lg_root(ga_id=_GA_TID))
+check("a loader not gated by consent fails", _rc != 0 and "no consent-gated loader" in _out)
+_rc, _out = _lg_run_ga(_ga_page, _lg_root(ga_id=_GA_TID, edit=lambda r, t: t.replace("<code>_ga_TEST000000</code>", "<code>_gx</code>")
+                                         if r == "legal/en/cookies/index.html" else t))
+check("a cookie policy without the stream's _ga_<id> cookie fails", _rc != 0 and "_ga_TEST000000 is not listed" in _out)
+_rc, _out = _lg_run_ga(_ga_page.replace("Max-Age=0", "Max-Age=60"), _lg_root(ga_id=_GA_TID))
+check("a cookie the page sets itself (not a deletion) fails", _rc != 0 and "sets a cookie" in _out)
+_rc, _out = _lg_run_ga(_ga_page, _lg_root(ga_id=_GA_TID), env={"SOFIA_GA_MEASUREMENT_ID": "UA-12345-1"})
+check("a Measurement ID that is not G-XXXX fails", _rc != 0 and "GA Measurement ID" in _out)
 
 
 # Security: the CSP meta, its hashes, the known scripts (scripts/csp.py)

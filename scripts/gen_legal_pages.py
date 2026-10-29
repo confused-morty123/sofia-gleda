@@ -21,7 +21,10 @@ Run it again after changing:
     as their date and the banner asks again);
   - the font block (here or in the app: the privacy policy names Google Fonts only while a
     page still loads them);
-  - icons/tmdb.svg (TMDB's logo; the terms page shows it once the file is there).
+  - icons/tmdb.svg (TMDB's logo; the terms page shows it once the file is there);
+  - GA_MEASUREMENT_ID in scripts/site_config.py (with an ID the privacy and cookie policies
+    describe Google Analytics 4: GA_SECTION and GA_EDITS below; without one they say the
+    site keeps no visitor statistics).
 verify_build.py fails while a page holds a leftover placeholder ({CONTACT_…} or {OPERATOR_…}),
 misses the TMDB logo, or is out of step with the app (version, links, CSP, documented storage).
 
@@ -41,7 +44,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from site_config import SITE_URL  # noqa: E402
+from site_config import SITE_URL, ga_measurement_id, consent_version as _policy_version  # noqa: E402
 
 UI_SRC = ROOT / "src" / "sofia-screen.artifact.html"
 OUT = ROOT / "legal"
@@ -569,6 +572,260 @@ FONTS_NOTE = {
     },
 }
 
+# ------------------------------------------------------------------ Google Analytics 4
+# Only while scripts/site_config.py has a Measurement ID (the page then loads Google
+# Analytics after the visitor's consent): the privacy policy gains section 6, "Статистика за
+# посещенията (Google Analytics)" (the later sections move up by one), and the sentences
+# below, which would no longer be true, are replaced. Each must be found exactly once.
+# Without an ID the pages are exactly as before. [[GA_COOKIE]] is the stream's own cookie,
+# _ga_<the ID without "G-">. The facts (Google's documentation, 2026-10): Google Ireland
+# Limited is the processor for the EEA; GA4 logs and stores no IP address and receives EU
+# data on EU servers; _ga and _ga_<id> last 2 years; data retention can be set to 2 months
+# (the owner must set it in the property, Admin > Data collection > Data retention).
+
+GA_SECTION = {
+    "bg": """
+<h2 id="statistika">6. Статистика за посещенията (Google Analytics)</h2>
+<p>Ако в съобщението за бисквитките включите „Статистика“, сайтът зарежда Google Analytics 4, услуга на Google, за да виждаме обобщено колко са посещенията, кои страници и програми се разглеждат и от какви устройства. Без съгласието ви Google Analytics не се зарежда и към Google не се изпраща нищо.</p>
+<p>Какви данни: псевдонимен идентификатор на браузъра ви (в бисквитките <code>_ga</code> и <code>[[GA_COOKIE]]</code>), разгледаните страници и заглавия, действия в сайта (отваряне на връзка за билети, добавяне в календар, отваряне на карта, пускане на трейлър, споделяне, избран вид филтър и дължината на търсения текст, но не самият текст), езикът на сайта, видът на устройството и браузъра, приблизителното местоположение (град или държава) и времето на посещението. Не изпращаме имена, имейл адреси или текста, който търсите.</p>
+<p>Други събития: освен разглежданията на страници и изброените действия сайтът не изпраща нищо. Автоматичното измерване на Google Analytics (превъртане, връзки към други сайтове, търсене в сайта, видео, изтегляне на файлове, формуляри) е изключено в настройките. Google Analytics сам отбелязва само началото на посещението, първото посещение и колко време страницата е била активна.</p>
+<p>IP адрес: според <a href="https://support.google.com/analytics/answer/12017362">описанието на Google за данните от ЕС</a> Google Analytics 4 не записва и не съхранява IP адреси. Данните от устройства в ЕС се събират на сървъри в ЕС, където от IP адреса ви се определя приблизителното ви местоположение; след това Google не го записва и не го пази.</p>
+<p>Основание: вашето съгласие (чл. 6, пар. 1, буква „а“ от ОРЗД и чл. 4а от Закона за електронните съобщения). Можете да го оттеглите по всяко време чрез „Настройки за бисквитки“ в долната част на сайта: събирането спира веднага, а бисквитките <code>_ga</code> и <code>[[GA_COOKIE]]</code> се изтриват. Оттеглянето не засяга обработването преди него.</p>
+<p>Обработващ лични данни: Google Ireland Limited (Gordon House, Barrow Street, Дъблин 4, Ирландия) обработва данните от наше име по условията на Google за обработване на данни. Google може да ги предава на Google LLC в САЩ, която е сертифицирана по Рамката за защита на личните данни в отношенията между ЕС и САЩ (Решение за изпълнение (ЕС) 2023/1795). Google сигналите и персонализирането на рекламите са изключени, а съгласие за реклама не се иска и не се дава.</p>
+<p>Срок: в настройките на Google Analytics сме задали срок за съхранение на данните на ниво посетител и събитие 2 месеца. След това Google ги изтрива автоматично. Обобщените отчети, от които не може да се разпознае отделен посетител, могат да останат и след това.</p>
+<p>Повече: <a href="https://policies.google.com/privacy">Политиката за поверителност на Google</a> и <a href="https://support.google.com/analytics/answer/6004245">как Google Analytics защитава данните</a>. Можете да спрете Google Analytics на всички сайтове и с <a href="https://tools.google.com/dlpage/gaoptout">добавката на Google за браузъра</a>.</p>
+""",
+    "en": """
+<h2 id="statistics">6. Visitor statistics (Google Analytics)</h2>
+<p>If you switch on “Statistics” in the cookie notice, the site loads Google Analytics 4, a Google service, so that we can see in aggregate how many visits there are, which pages and listings are viewed and on what kinds of device. Without your consent Google Analytics does not load and nothing is sent to Google.</p>
+<p>What data: a pseudonymous identifier of your browser (in the <code>_ga</code> and <code>[[GA_COOKIE]]</code> cookies), the pages and titles you view, actions on the site (opening a ticket link, adding to a calendar, opening a map, playing a trailer, sharing, the type of filter you choose and the length of a search, but not the search itself), the site's language, your device and browser type, your approximate location (city or country) and the time of the visit. We send no names, email addresses or search text.</p>
+<p>Other events: the site sends nothing beyond the page views and the actions listed above. Google Analytics' enhanced measurement (scrolls, links to other websites, site search, video, file downloads, forms) is switched off in its settings. Google Analytics itself only records the start of a visit, a first visit and how long the page was active.</p>
+<p>IP address: according to <a href="https://support.google.com/analytics/answer/12017362">Google's description of EU data</a>, Google Analytics 4 does not log or store IP addresses. Data from devices in the EU is collected on servers in the EU, where your IP address is used to work out your approximate location; after that Google does not log or store it.</p>
+<p>Legal basis: your consent (Article 6(1)(a) GDPR and Article 4a of the Bulgarian Electronic Communications Act). You can withdraw it at any time through “Cookie settings” at the bottom of the site: collection stops at once and the <code>_ga</code> and <code>[[GA_COOKIE]]</code> cookies are deleted. Withdrawal does not affect processing before it.</p>
+<p>Processor: Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Ireland) processes the data on our behalf under Google's data processing terms. Google may transfer it to Google LLC in the United States, which is certified under the EU-U.S. Data Privacy Framework (Implementing Decision (EU) 2023/1795). Google signals and ad personalisation are switched off, and no consent for advertising is asked for or given.</p>
+<p>Retention: in Google Analytics' settings we have set the retention of user-level and event-level data to 2 months. Google then deletes it automatically. Aggregated reports, from which no individual visitor can be recognised, may be kept after that.</p>
+<p>More: the <a href="https://policies.google.com/privacy">Google Privacy Policy</a> and <a href="https://support.google.com/analytics/answer/6004245">how Google Analytics safeguards data</a>. You can also block Google Analytics on every website with <a href="https://tools.google.com/dlpage/gaoptout">Google's browser add-on</a>.</p>
+""",
+}
+
+GA_COOKIE_ITEMS = {
+    "bg": """<p>Само ако сте включили „Статистика“, Google Analytics поставя за домейна на сайта и тези две бисквитки:</p>
+<div class="lg-item">
+<h3><code>_ga</code></h3>
+<dl>
+<dt>Вид</dt><dd>Бисквитка на Google Analytics за домейна на сайта</dd>
+<dt>Съдържание</dt><dd>Случаен идентификатор, по който Google Analytics разпознава браузъра ви при следващо посещение</dd>
+<dt>За какво служи</dt><dd>Статистика за посещенията (вижте <a href="[[PRIVACY]]">Политиката за поверителност</a>, т. 6)</dd>
+<dt>Срок</dt><dd>2 години; изтрива се, когато изключите статистиката</dd>
+</dl>
+</div>
+<div class="lg-item">
+<h3><code>[[GA_COOKIE]]</code></h3>
+<dl>
+<dt>Вид</dt><dd>Бисквитка на Google Analytics за домейна на сайта</dd>
+<dt>Съдържание</dt><dd>Номерът и началото на текущото посещение</dd>
+<dt>За какво служи</dt><dd>Статистиката да брои посещенията</dd>
+<dt>Срок</dt><dd>2 години; изтрива се, когато изключите статистиката</dd>
+</dl>
+</div>
+
+<h2 id="drugi">3. Бисквитки на други сайтове</h2>""",
+    "en": """<p>Only if you have switched on “Statistics”, Google Analytics also sets these two cookies for the site's domain:</p>
+<div class="lg-item">
+<h3><code>_ga</code></h3>
+<dl>
+<dt>Type</dt><dd>Google Analytics cookie for the site's domain</dd>
+<dt>Contents</dt><dd>A random identifier by which Google Analytics recognises your browser on a later visit</dd>
+<dt>Purpose</dt><dd>Visitor statistics (see the <a href="[[PRIVACY]]">Privacy policy</a>, section 6)</dd>
+<dt>Kept</dt><dd>2 years; deleted when you switch statistics off</dd>
+</dl>
+</div>
+<div class="lg-item">
+<h3><code>[[GA_COOKIE]]</code></h3>
+<dl>
+<dt>Type</dt><dd>Google Analytics cookie for the site's domain</dd>
+<dt>Contents</dt><dd>The number and start of the current visit</dd>
+<dt>Purpose</dt><dd>The statistics count visits</dd>
+<dt>Kept</dt><dd>2 years; deleted when you switch statistics off</dd>
+</dl>
+</div>
+
+<h2 id="third-party">3. Cookies set by other websites</h2>""",
+}
+
+GA_EDITS = {
+    ("privacy", "bg"): [
+        ("<li>Сайтът няма потребителски профили, формуляри, статистика за посещенията и реклами.</li>",
+         "<li>Сайтът няма потребителски профили, формуляри и реклами.</li>\n"
+         "<li>Статистика за посещенията (Google Analytics) събираме само ако я включите в съобщението за "
+         "бисквитките, и можете да я изключите по всяко време (т. 6).</li>"),
+        ("<li>Не поставяме бисквитки.</li>",
+         "<li>Сами не поставяме бисквитки. Ако включите статистиката, Google Analytics поставя бисквитките "
+         "<code>_ga</code> и <code>[[GA_COOKIE]]</code>.</li>"),
+        ("Дотогава нищо не се изпраща към YouTube или Google.</li>", "Дотогава нищо не се изпраща към YouTube.</li>"),
+        ("Не използваме инструменти за статистика, проследяване или реклама.",
+         "Не използваме инструменти за реклама или за проследяване между сайтове. Статистика за посещенията "
+         "събираме само с вашето съгласие (т. 6)."),
+        ("Докато не натиснете бутона за пускане, сайтът не зарежда нищо от YouTube или Google:",
+         "Докато не натиснете бутона за пускане, сайтът не зарежда нищо от YouTube:"),
+        ("Тези данни не ни се изпращат и не можем да ги видим.",
+         "Тези данни не ни се изпращат и не можем да ги видим. Ако сте включили статистиката, в браузъра ви са "
+         "и бисквитките на Google Analytics (т. 6)."),
+        ("Сайтът не събира лични данни и не ги пази на сървър, който управляваме (т. 2), затова при нас няма данни "
+         "за вас, до които да ви дадем достъп или които да коригираме или изтрием.",
+         "Сайтът не събира имена или данни за контакт и не пази лични данни на сървър, който управляваме (т. 2). "
+         "Статистиката в Google Analytics (т. 6) е псевдонимна: без идентификатора от бисквитката ви не можем да "
+         "разберем кои записи са ваши, затова не можем да ви дадем достъп до тях или да ги коригираме или изтрием "
+         "поотделно. Те се изтриват автоматично след 2 месеца."),
+        ("Право на преносимост (чл. 20 от ОРЗД) имате, когато обработването се основава на съгласие или на договор; "
+         "в момента такова обработване няма. Ако в бъдеще поискаме съгласието ви за нещо, ще можете да го оттеглите "
+         "по всяко време.",
+         "Право на преносимост (чл. 20 от ОРЗД) имате, когато обработването се основава на съгласие или на договор. "
+         "На съгласие се основава само статистиката (т. 6). Можете да го оттеглите по всяко време чрез „Настройки за "
+         "бисквитки“, без това да засяга обработването преди оттеглянето (чл. 7, пар. 3 от ОРЗД)."),
+        ("<li>Не пазим лични данни на сървър, който управляваме, затова при нас няма данни, до които да ви дадем "
+         "достъп или които да изтрием.</li>",
+         "<li>Не пазим лични данни на сървър, който управляваме. Статистиката в Google Analytics (т. 6) е "
+         "псевдонимна и се изтрива автоматично след 2 месеца. За да спрете събирането и да изтриете бисквитките "
+         "<code>_ga</code> и <code>[[GA_COOKIE]]</code>, изключете „Статистика“ в „Настройки за бисквитки“ или "
+         "изчистете данните на сайта.</li>"),
+        ("При нас няма данни, които да могат да бъдат свързани с вас (чл. 11 от ОРЗД).",
+         "Без идентификатора от бисквитката ви не можем да свържем статистиката с вас (чл. 11 от ОРЗД)."),
+        ("Така изтривате езика, режима, любимите места, записа за съобщението за бисквитките и копието на сайта.",
+         "Така изтривате езика, режима, любимите места, записа за съобщението за бисквитките, копието на сайта и "
+         "бисквитките на Google Analytics, ако сте включили статистиката."),
+    ],
+    ("privacy", "en"): [
+        ("<li>The site has no user accounts, no forms, no visitor statistics and no ads.</li>",
+         "<li>The site has no user accounts, no forms and no ads.</li>\n"
+         "<li>We collect visitor statistics (Google Analytics) only if you switch them on in the cookie notice, "
+         "and you can switch them off at any time (section 6).</li>"),
+        ("<li>We set no cookies.</li>",
+         "<li>We set no cookies ourselves. If you switch statistics on, Google Analytics sets the <code>_ga</code> "
+         "and <code>[[GA_COOKIE]]</code> cookies.</li>"),
+        ("Until then nothing is sent to YouTube or Google.</li>", "Until then nothing is sent to YouTube.</li>"),
+        ("We use no analytics, tracking or advertising tools.",
+         "We use no advertising tools and no tracking across websites. We collect visitor statistics only with "
+         "your consent (section 6)."),
+        ("Until you press the play button, the site loads nothing from YouTube or Google:",
+         "Until you press the play button, the site loads nothing from YouTube:"),
+        ("None of this is sent to us and we cannot see it.",
+         "None of this is sent to us and we cannot see it. If you switched statistics on, your browser also keeps "
+         "the Google Analytics cookies (section 6)."),
+        ("The site collects no personal data and keeps none on any server we control (section 2), so there is no "
+         "data about you with us to give you, correct or delete.",
+         "The site collects no names or contact details and keeps no personal data on any server we control "
+         "(section 2). The statistics in Google Analytics (section 6) are pseudonymous: without the identifier in "
+         "your cookie we cannot tell which records are yours, so we cannot give you access to them or correct or "
+         "delete them one by one. They are deleted automatically after 2 months."),
+        ("You have the right to data portability (Article 20 GDPR) where processing is based on consent or a "
+         "contract; there is no such processing at present. If we ever ask for your consent, you will be able to "
+         "withdraw it at any time.",
+         "You have the right to data portability (Article 20 GDPR) where processing is based on consent or a "
+         "contract. Only the statistics are based on consent (section 6). You can withdraw it at any time through "
+         "“Cookie settings”, without affecting the processing before the withdrawal (Article 7(3) GDPR)."),
+        ("<li>We keep no personal data on any server we control, so there is nothing of yours with us to give you "
+         "or to delete.</li>",
+         "<li>We keep no personal data on any server we control. The statistics in Google Analytics (section 6) are "
+         "pseudonymous and deleted automatically after 2 months. To stop the collection and delete the "
+         "<code>_ga</code> and <code>[[GA_COOKIE]]</code> cookies, switch off “Statistics” in “Cookie settings” or "
+         "clear the site's data.</li>"),
+        ("We hold no data that could be linked to you (Article 11 GDPR).",
+         "Without the identifier in your cookie we cannot link the statistics to you (Article 11 GDPR)."),
+        ("This deletes the language, the mode, your favourite venues, the record of the cookie notice and the copy "
+         "of the site.",
+         "This deletes the language, the mode, your favourite venues, the record of the cookie notice, the copy of "
+         "the site and the Google Analytics cookies, if you switched statistics on."),
+    ],
+    ("cookies", "bg"): [
+        ("<li>Sofia Gleda не поставя бисквитки.</li>\n<li>Не използваме статистика за посещенията, проследяване или реклама.</li>",
+         "<li>Sofia Gleda сама не поставя бисквитки и не използва реклама или проследяване между сайтове.</li>\n"
+         "<li>Статистиката за посещенията (Google Analytics) работи само ако я включите в съобщението за "
+         "бисквитките. Тогава Google Analytics поставя бисквитките <code>_ga</code> и <code>[[GA_COOKIE]]</code> "
+         "(т. 2).</li>"),
+        ("<li>Затова съобщението за бисквитките само ви информира и няма какво да изключите.</li>",
+         "<li>Съобщението за бисквитките има един превключвател, „Статистика“. Той е изключен, докато не го "
+         "включите, и можете да го изключите по всяко време.</li>"),
+        ('<h2 id="saglasie">1. Защо не искаме съгласие</h2>', '<h2 id="saglasie">1. Кога искаме съгласие</h2>'),
+        ("Друго не пазим.</p>",
+         "За тях не искаме съгласие. За статистиката (Google Analytics) искаме изричното ви съгласие, защото тя не "
+         "е необходима, за да работи сайтът (чл. 4а от Закона за електронните съобщения). Без него тя не се "
+         "зарежда.</p>"),
+        ("и включените незадължителни категории (засега няма такива)", "и дали сте включили „Статистика“"),
+        ('\n<h2 id="drugi">3. Бисквитки на други сайтове</h2>', "\n" + "[[GA_COOKIE_ITEMS]]"),
+        ("Дотогава YouTube и Google не получават нищо и не поставят нищо в браузъра ви.",
+         "Дотогава YouTube не получава нищо и не поставя нищо в браузъра ви."),
+        ("Ако някога добавим незадължителни инструменти, например статистика за посещенията или вход с профил, те "
+         "ще се включват само след изричното ви съгласие, а съобщението ще ви попита отново.",
+         "Там можете да включите или изключите „Статистика“ по всяко време. Когато я изключите, събирането спира "
+         "веднага, бисквитките <code>_ga</code> и <code>[[GA_COOKIE]]</code> се изтриват и страницата се зарежда "
+         "отново. Можете да спрете Google Analytics на всички сайтове и с "
+         '<a href="https://tools.google.com/dlpage/gaoptout">добавката на Google за браузъра</a>. Ако добавим '
+         "други незадължителни инструменти, те ще се включват само след изричното ви съгласие, а съобщението ще "
+         "ви попита отново."),
+    ],
+    ("cookies", "en"): [
+        ("<li>Sofia Gleda sets no cookies.</li>\n<li>We use no visitor statistics, tracking or advertising.</li>",
+         "<li>Sofia Gleda sets no cookies itself and uses no advertising or tracking across websites.</li>\n"
+         "<li>Visitor statistics (Google Analytics) run only if you switch them on in the cookie notice. Google "
+         "Analytics then sets the <code>_ga</code> and <code>[[GA_COOKIE]]</code> cookies (section 2).</li>"),
+        ("<li>That is why the cookie notice only informs you and has nothing to switch off.</li>",
+         "<li>The cookie notice has one switch, “Statistics”. It is off until you switch it on, and you can switch "
+         "it off at any time.</li>"),
+        ('<h2 id="consent">1. Why we do not ask for consent</h2>', '<h2 id="consent">1. When we ask for consent</h2>'),
+        ("We keep nothing else.</p>",
+         "We do not ask for consent for these. For the statistics (Google Analytics) we ask for your explicit "
+         "consent, because they are not needed for the site to work (Article 4a of the Bulgarian Electronic "
+         "Communications Act). Without it they do not load.</p>"),
+        ("and the optional categories you switched on (there are none yet)", "and whether you switched on “Statistics”"),
+        ('\n<h2 id="third-party">3. Cookies set by other websites</h2>', "\n" + "[[GA_COOKIE_ITEMS]]"),
+        ("Until then YouTube and Google receive nothing and store nothing in your browser.",
+         "Until then YouTube receives nothing and stores nothing in your browser."),
+        ("If we ever add optional tools, such as visitor statistics or signing in with an account, they will only "
+         "run after you explicitly agree, and the notice will ask you again.",
+         "There you can switch “Statistics” on or off at any time. When you switch it off, collection stops at "
+         "once, the <code>_ga</code> and <code>[[GA_COOKIE]]</code> cookies are deleted and the page reloads. You "
+         'can also block Google Analytics on every website with <a href="https://tools.google.com/dlpage/gaoptout">'
+         "Google's browser add-on</a>. If we add other optional tools, they will only run after you explicitly "
+         "agree, and the notice will ask you again."),
+    ],
+}
+
+GA_DESC = {
+    ("privacy", "bg"): "Как Sofia Gleda обработва лични данни: хостинг, изображения от други сайтове, трейлъри от YouTube, "
+                       "статистика с Google Analytics и правата ви.",
+    ("privacy", "en"): "How Sofia Gleda handles personal data: hosting, images from other websites, YouTube trailers, "
+                       "statistics with Google Analytics and your rights.",
+    ("cookies", "bg"): "Какво пази Sofia Gleda в браузъра ви и защо, и кои бисквитки поставя Google Analytics, ако го "
+                       "разрешите.",
+    ("cookies", "en"): "What Sofia Gleda keeps in your browser, and why, and the cookies Google Analytics sets if you "
+                       "allow it.",
+}
+
+
+def _renumber_from(text, first, lang):
+    """Sections numbered `first` and later move up by one, with every reference to them."""
+    bump = lambda m: m.group(1) + str(int(m.group(2)) + (int(m.group(2)) >= first)) + m.group(3)
+    text = re.sub(r'(<h2 id="[^"]+">)(\d+)(\. )', bump, text)
+    ref = r"(?<!\w)(т\. )(\d+)(\b)" if lang == "bg" else r"(\bsection )(\d+)(\b)"
+    return re.sub(ref, bump, text)
+
+
+def with_analytics(text, doc, lang, ga_id):
+    """The policy text while the page loads Google Analytics after consent (see above)."""
+    if doc == "privacy":
+        text = _renumber_from(text, 6, lang)
+        anchor = '<h2 id="vrazki">7. ' if lang == "bg" else '<h2 id="links">7. '
+        if text.count(anchor) != 1:
+            sys.exit(f"gen_legal_pages: cannot place the analytics section in privacy/{lang}")
+        text = text.replace(anchor, GA_SECTION[lang].lstrip("\n") + "\n" + anchor)
+    for old, new in GA_EDITS.get((doc, lang), []):
+        if text.count(old) != 1:
+            sys.exit(f"gen_legal_pages: analytics edit for {doc}/{lang} found {text.count(old)} times: {old[:70]!r}")
+        text = text.replace(old, new)
+    return text.replace("[[GA_COOKIE_ITEMS]]", GA_COOKIE_ITEMS[lang]).replace("[[GA_COOKIE]]", "_ga_" + ga_id[2:])
+
+
 TEXTS = {("terms", "bg"): TERMS_BG, ("terms", "en"): TERMS_EN,
          ("privacy", "bg"): PRIVACY_BG, ("privacy", "en"): PRIVACY_EN,
          ("cookies", "bg"): COOKIES_BG, ("cookies", "en"): COOKIES_EN}
@@ -674,7 +931,7 @@ def consent_version():
     m = re.search(r'^const CONSENT_VERSION="(\d{4}-\d{2}-\d{2})";', UI_SRC.read_text(encoding="utf-8"), re.M)
     if not m:
         sys.exit(f"gen_legal_pages: const CONSENT_VERSION not found in {UI_SRC}")
-    return m.group(1)
+    return _policy_version(m.group(1))      # GA_POLICY_DATE while analytics is on (site_config.py)
 
 
 def uses_google_fonts():
@@ -699,19 +956,21 @@ def tmdb_logo(root):
     return f'<img class="lg-tmdb" src="{root}icons/tmdb.svg" alt="TMDB" height="20">'
 
 
-def page(doc, lang, updated, google):
+def page(doc, lang, updated, google, ga_id=""):
     u = UI[lang]
     here = path_of(doc, lang)
     root = "../" * here.count("/")
     other = "en" if lang == "bg" else "bg"
-    content = tpl(TEXTS[(doc, lang)],
+    text = with_analytics(TEXTS[(doc, lang)], doc, lang, ga_id) if ga_id else TEXTS[(doc, lang)]
+    desc = GA_DESC.get((doc, lang), u["desc"][doc]) if ga_id else u["desc"][doc]
+    content = tpl(text,
                   TERMS="../terms/", PRIVACY="../privacy/", COOKIES="../cookies/",
                   TMDB_LOGO=tmdb_logo(root),
                   FONTS_NOTE=FONTS_NOTE["google" if google else "self"][lang])
     links = "\n".join(
         f'<a href="../{d}/"' + (' aria-current="page"' if d == doc else "") + f'>{html.escape(u["nav"][d])}</a>'
         for d in DOCS)
-    head = tpl(HEAD, LANG=lang, TITLE=html.escape(u["titles"][doc]), DESC=html.escape(u["desc"][doc]),
+    head = tpl(HEAD, LANG=lang, TITLE=html.escape(u["titles"][doc]), DESC=html.escape(desc),
                CANONICAL=f"{SITE_URL}/{here}", URL_BG=f"{SITE_URL}/{path_of(doc, 'bg')}",
                URL_EN=f"{SITE_URL}/{path_of(doc, 'en')}", SITE=SITE_URL, OG_LOCALE=u["og_locale"],
                FONTS=FONTS, ROOT=root, CSS=CSS)
@@ -730,16 +989,18 @@ def page(doc, lang, updated, google):
 def main():
     version = consent_version()
     google = uses_google_fonts()
+    ga_id = ga_measurement_id()
     updated = {"terms": TERMS_UPDATED, "privacy": version, "cookies": version}
     for doc in DOCS:
         for lang in LANGS:
-            here, text = page(doc, lang, updated[doc], google)
+            here, text = page(doc, lang, updated[doc], google, ga_id)
             target = ROOT / here / "index.html"
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(text, encoding="utf-8")
             print(f"  wrote {here}index.html")
     print(f"gen_legal_pages: 6 pages (policies {version}, "
           f"fonts {'Google Fonts' if google else 'self-hosted'}, "
+          f"analytics {('Google Analytics ' + ga_id) if ga_id else 'off'}, "
           f"TMDB logo {'shown' if TMDB_LOGO.exists() else 'MISSING: add icons/tmdb.svg'})")
 
 
