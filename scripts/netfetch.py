@@ -142,8 +142,8 @@ CRAWL_DELAY = {
     "restapi.cineland.bg": 2.0,
     "cineland.bg": 2.0,
     # epaygo.bg event pages (scrape_programs.festival_sale_states): no robots.txt (it
-    # answers 302 to /front); 3 s is our own gap (2026-10-29)
-    "epaygo.bg": 3.0,
+    # answers 302 to /front); 3.5 s is our own gap (2026-10-29)
+    "epaygo.bg": 3.5,
 }
 
 
