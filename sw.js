@@ -15,10 +15,12 @@
  *
  * Bump CACHE_VERSION whenever this file changes so old caches are cleared.
  */
+// v10 (28 Oct 2026): Google's analytics requests are left alone (never cached, never answered
+// from a cache), for the visitor statistics a visitor may switch on in the cookie notice.
 // v9 (24 Oct 2026): fonts/fonts.css declares Geologica instead of Montserrat. It is in the
 // shell below and same-origin static files are served cache-first, so without the bump a
 // returning visitor kept the old @font-face rules (and their deleted files) for good.
-const CACHE_VERSION = "sofia-gleda-v9";
+const CACHE_VERSION = "sofia-gleda-v10";
 
 // Domain move (2026-10): on the old github.io address this worker retires itself.
 // Once sofiagleda.com is the custom domain, GitHub redirects every request here,
@@ -28,6 +30,9 @@ const CACHE_VERSION = "sofia-gleda-v9";
 // github.io deletes its own caches and unregisters, and the page there no longer
 // registers it (scripts/build_index.py). On any other host it works as before.
 const RETIRED = /(^|\.)github\.io$/.test(self.location.hostname);
+// Hosts of Google Analytics 4 (see the fetch handler): www.googletagmanager.com,
+// *.google-analytics.com, *.analytics.google.com.
+const GOOGLE_ANALYTICS = /(^|\.)(googletagmanager\.com|google-analytics\.com|analytics\.google\.com)$/;
 const SHELL_CACHE = CACHE_VERSION + "-shell";
 // A title's own address, which the app shows while its sheet is open (v7, 16 Oct 2026).
 const ITEM_PATH = /^\/(film|show|event)\/[^\/]+\/?(?:index\.html)?$/;
@@ -136,6 +141,11 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
+
+  // Google Analytics and Google Tag Manager (gtag.js, the hits, their pixels): straight to
+  // the network, never into or out of a cache. They exist only after the visitor has
+  // switched statistics on, and a cached script or hit would outlive that choice.
+  if (GOOGLE_ANALYTICS.test(url.hostname)) return;
 
   // A title's own address (/film/<id>/, /show/<id>/, /event/<id>/; a reload, or a link
   // opened in the browser) is answered with the app, network-first like "/": the app

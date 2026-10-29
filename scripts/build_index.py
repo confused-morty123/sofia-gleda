@@ -21,7 +21,7 @@ OUT  = ROOT / "index.html"
 
 import sys as _sys, pathlib as _pathlib
 _sys.path.insert(0, str(_pathlib.Path(__file__).parent))
-from site_config import SITE_URL as _SITE_URL  # noqa: E402
+from site_config import SITE_URL as _SITE_URL, ga_measurement_id, consent_version  # noqa: E402
 import csp  # noqa: E402
 
 HEAD = """<!doctype html>
@@ -112,6 +112,19 @@ def main():
     # Inject SITE_URL from site_config so the page always matches the canonical URL.
     frag = frag.replace('const SITE_URL="__SITE_URL__";',
                         f'const SITE_URL="{_SITE_URL}";')
+    # Google Analytics 4 (site_config.GA_MEASUREMENT_ID): with an ID, the Consent Mode
+    # defaults and the ID go into <head> (csp.ga_bootstrap; it loads nothing) and the
+    # cookie notice's version becomes the analytics policy's (site_config.consent_version),
+    # so every visitor is asked again. Without one the page is exactly as before.
+    ga_id = ga_measurement_id()
+    head = HEAD
+    if ga_id:
+        base_end = head.index("</script>\n", head.index("/* SOFIA-BASE */")) + len("</script>\n")
+        head = head[:base_end] + csp.ga_bootstrap(ga_id) + head[base_end:]
+        m = re.search(r'^const CONSENT_VERSION="(\d{4}-\d{2}-\d{2})";', frag, re.M)
+        if not m:
+            sys.exit("could not find const CONSENT_VERSION in the fragment")
+        frag = frag[:m.start(1)] + consent_version(m.group(1)) + frag[m.end(1):]
 
     # body content begins at the #app container; everything before it is head.
     marker = '<div id="app">'
@@ -122,12 +135,12 @@ def main():
     head_part = frag[:i].rstrip()
     body_part = frag[i:].rstrip()
 
-    html = HEAD + head_part + "\n</head>\n<body>\n" + body_part + "\n" + SW_REG
+    html = head + head_part + "\n</head>\n<body>\n" + body_part + "\n" + SW_REG
     # The Content-Security-Policy meta (script hashes): every later step that edits
     # the page stamps it again, and refresh_all.py does it last (scripts/csp.py).
     html = csp.stamp(html)
     out.write_text(html, encoding="utf-8")
-    print(f"wrote {out} ({len(html):,} bytes)")
+    print(f"wrote {out} ({len(html):,} bytes)" + (f", Google Analytics {ga_id}" if ga_id else ""))
 
 
 if __name__ == "__main__":

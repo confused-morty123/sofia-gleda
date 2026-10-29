@@ -15608,7 +15608,10 @@ LEGAL_TITLES = {"terms": ("Общи условия", "Terms of use"),
 # owner's decision of 2026-10-22 the site names no contact channel, the project page included.
 LEGAL_EXTERNAL_HOSTS = {"www.omdbapi.com", "creativecommons.org", "www.deepl.com", "docs.github.com", "www.cpdp.bg",
                         # the trailer (privacy and cookie policies): YouTube's terms, Google's privacy policy
-                        "www.youtube.com", "policies.google.com"}
+                        "www.youtube.com", "policies.google.com",
+                        # Google Analytics (only on a build with a Measurement ID): how GA safeguards
+                        # data, and Google's opt-out add-on
+                        "support.google.com", "tools.google.com"}
 TMDB_NOTICE = "This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB."
 DASHES = ("\u2014", "\u2013")          # em dash, en dash: the copy rules allow neither
 AI_TELLS = ("delve", "seamless", "leverage", "robust", "comprehensive", "rest assured", "in today's",
@@ -15663,6 +15666,8 @@ def _lg_open(browser, w, h, lang="bg", seed=None, mobile=False, reduced=None, ur
         "with:'',when:'any',taste:[]},lang:%s,mode:'cinema'}));}catch(e){}" % json.dumps(lang))
     if seed:
         ctx.add_init_script(seed)
+    # a page built with a Measurement ID may load Google Analytics after consent: never for real
+    ctx.route(_GA_HOSTS, lambda route: route.abort())
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -15737,6 +15742,13 @@ def wave_lg1(browser):
     if not ver:
         return
     cookie_policy = (webapp_root / "legal" / "cookies" / "index.html").read_text(encoding="utf-8")
+    # a page built with a Measurement ID (GA1) has one optional category, "Статистика": the
+    # notice then shows its switch (off) and "Приемам всички" / "Само необходимите" / "Запази
+    # избора" instead of "Разбрах"; refusing ("Само необходимите") is what closes it here
+    ga = bool(_csp.ga_id_of(html_path.read_text(encoding="utf-8")))
+    k_title, k_text = ("consentTitleOpt", "consentTextOpt") if ga else ("consentTitle", "consentText")
+    close_sel = "[data-consent-none]" if ga else "[data-consent-ok]"
+    no_opt = {"stats": False} if ga else {}
 
     print("\n=== LG1: desktop, BG, first visit ===")
     ctx, page, errs = _lg_open(browser, 1280, 900)
@@ -15747,11 +15759,17 @@ def wave_lg1(browser):
     if p["shown"]:
         check("lg1_notice_first_in_page_region", p["first"] and p["role"] == "region",
               f"first={p['first']} role={p['role']}")
-        check("lg1_notice_text_bg", p["title"] == T["bg"]["consentTitle"] and p["desc"] == T["bg"]["consentText"],
+        check("lg1_notice_text_bg", p["title"] == T["bg"][k_title] and p["desc"] == T["bg"][k_text],
               repr(p["title"]))
-        check("lg1_no_switches_while_nothing_optional",
-              p["boxes"] == 0 and p["ok"] == T["bg"]["consentOk"] and p["more"] == T["bg"]["consentMore"],
-              f"boxes={p['boxes']} ok={p['ok']!r} more={p['more']!r}")
+        if ga:
+            check("lg1_statistics_switch_off",
+                  p["boxes"] == 2 and p["ok"] is None and p["more"] == T["bg"]["consentMore"]
+                  and page.evaluate("document.querySelector('#sg-consent [data-consent-cat=\"stats\"]').checked") is False,
+                  f"boxes={p['boxes']} more={p['more']!r}")
+        else:
+            check("lg1_no_switches_while_nothing_optional",
+                  p["boxes"] == 0 and p["ok"] == T["bg"]["consentOk"] and p["more"] == T["bg"]["consentMore"],
+                  f"boxes={p['boxes']} ok={p['ok']!r} more={p['more']!r}")
         check("lg1_learn_more_link", (p["moreHref"] or "").endswith("/legal/cookies/") and _lg_file_exists(p["moreHref"]),
               p["moreHref"])
         check("lg1_desktop_card_bottom_left",
@@ -15771,17 +15789,27 @@ def wave_lg1(browser):
     webkit = getattr(browser, "raw", browser).browser_type.name == "webkit"
     page.evaluate("document.activeElement && document.activeElement.blur && document.activeElement.blur()")
     page.keyboard.press("Tab")
-    f1 = page.evaluate("document.activeElement.hasAttribute('data-consent-ok')")
-    page.keyboard.press("Alt+Tab" if webkit else "Tab")
-    f2 = page.evaluate("document.activeElement.classList.contains('consent-more')")
-    check("lg1_first_in_tab_order", f1 and f2, f"Tab 1 on the button: {f1}, next on the link: {f2}")
-    page.keyboard.press("Shift+Tab")
+    if ga:
+        f1 = page.evaluate("document.activeElement.getAttribute('data-consent-cat') === 'stats'")
+        for _ in range(3):
+            page.keyboard.press("Tab")
+        page.keyboard.press("Alt+Tab" if webkit else "Tab")
+        f2 = page.evaluate("document.activeElement.classList.contains('consent-more')")
+        check("lg1_first_in_tab_order", f1 and f2, f"Tab 1 on the switch: {f1}, after the three buttons the link: {f2}")
+        page.keyboard.press("Shift+Tab")
+        page.keyboard.press("Shift+Tab")
+    else:
+        f1 = page.evaluate("document.activeElement.hasAttribute('data-consent-ok')")
+        page.keyboard.press("Alt+Tab" if webkit else "Tab")
+        f2 = page.evaluate("document.activeElement.classList.contains('consent-more')")
+        check("lg1_first_in_tab_order", f1 and f2, f"Tab 1 on the button: {f1}, next on the link: {f2}")
+        page.keyboard.press("Shift+Tab")
     page.keyboard.press("Enter")
     page.wait_for_timeout(150)
     after = page.evaluate(_LG_PROBE)
     rec = _lg_record(page)
     check("lg1_ok_closes_and_stores",
-          not after["shown"] and rec.get("v") == ver and rec.get("opt") == {}
+          not after["shown"] and rec.get("v") == ver and rec.get("opt") == no_opt
           and bool(re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d", rec.get("at") or "")), f"record={rec}")
     check("lg1_focus_lands_in_the_page",
           page.evaluate("document.activeElement.hasAttribute('data-home')") and after["pad"] == "",
@@ -15817,7 +15845,8 @@ def wave_lg1(browser):
           f"shown={p['shown']}")
     check("lg1_reopen_does_not_move_page",
           abs(page.evaluate("document.querySelector('main').getBoundingClientRect().top") - before_open) < 0.5, "")
-    page.keyboard.press("Tab")
+    for _ in range(3 if ga else 1):     # with the switch: past it and "Приемам всички"
+        page.keyboard.press("Tab")
     page.keyboard.press("Enter")
     page.wait_for_timeout(150)
     check("lg1_focus_returns_to_footer",
@@ -15830,10 +15859,12 @@ def wave_lg1(browser):
     page.wait_for_timeout(200)
     p = page.evaluate(_LG_PROBE)
     check("lg1_notice_follows_language",
-          p["shown"] and p["lang"] == "en" and p["title"] == T["en"]["consentTitle"] and p["ok"] == T["en"]["consentOk"]
+          p["shown"] and p["lang"] == "en" and p["title"] == T["en"][k_title]
+          and (p["ok"] == T["en"]["consentOk"] if not ga else page.evaluate(
+              "document.querySelector('label[for=\"sgc-stats\"] b').textContent") == "Statistics")
           and (p["moreHref"] or "").endswith("/legal/en/cookies/") and _lg_file_exists(p["moreHref"]),
           f"{p.get('title')!r} {p.get('moreHref')}")
-    page.click("[data-consent-ok]")
+    page.click(close_sel)
     _lg_scroll_to_footer(page)
     ft = page.evaluate(_LG_FOOTER)
     links = (ft or {}).get("links") or []
@@ -15855,6 +15886,10 @@ def wave_lg1(browser):
 
     print("\n=== LG1: it sits under the sheets ===")
     ctx, page, errs = _lg_open(browser, 1280, 900)
+    # the taller notice with the "Статистика" switch (GA1) covers the first row: scroll one down
+    if ga:
+        page.evaluate("window.scrollBy(0, 420)")
+        page.wait_for_timeout(300)
     target = page.evaluate("""() => { const top = document.getElementById('sg-consent').getBoundingClientRect().top;
         const el = [...document.querySelectorAll('[data-film]')].find(e => { const r = e.getBoundingClientRect();
           return r.width > 20 && r.height > 20 && r.top > 60 && r.bottom < top - 4; });
@@ -15896,7 +15931,7 @@ def wave_lg1(browser):
         ctx, page, errs = _lg_open(browser, 390, 844, lang=lang, mobile=True)
         p = page.evaluate(_LG_PROBE)
         save_shot(page, wave, f"phone_{lang}_first_visit")
-        check(f"lg1_phone_notice_{lang}", p["shown"] and p["title"] == T[lang]["consentTitle"], repr(p.get("title")))
+        check(f"lg1_phone_notice_{lang}", p["shown"] and p["title"] == T[lang][k_title], repr(p.get("title")))
         if p["shown"]:
             strip = 71 if (p["coarse"] and not p["standalone"]) else 11
             check(f"lg1_phone_card_geometry_{lang}",
@@ -15904,7 +15939,7 @@ def wave_lg1(browser):
                   f"x={p['x']:.0f} right gap={p['rgap']:.0f} bottom gap={p['b']:.0f} (coarse={p['coarse']})")
             check(f"lg1_phone_no_overflow_{lang}", p["sw"] <= p["iw"], f"scrollWidth={p['sw']} innerWidth={p['iw']}")
             check(f"lg1_phone_tap_targets_{lang}", min(p["btnH"]) >= 44, f"heights={p['btnH']}")
-        page.tap("[data-consent-ok]")
+        page.tap(close_sel)
         page.wait_for_timeout(200)
         fab = page.evaluate("""() => { const f = document.querySelector('.fab'); if (!f) return null; const r = f.getBoundingClientRect();
             const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!(hit && hit.closest('.fab')); }""")
@@ -16025,6 +16060,11 @@ def wave_lg2(browser):
                 check(f"lg2_{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
                 # the same CSP and fonts as the app
                 a_csp, l_csp = _lg_csp(app["csp"]), _lg_csp(d["csp"])
+                # the app's GA4 sources (a build with a Measurement ID): a legal page never loads analytics
+                if a_csp:
+                    for _d, _v in _csp.GA_SOURCES.items():
+                        if _d in a_csp:
+                            a_csp[_d] = (a_csp[_d] - set(_v.split())) or {"'none'"}
                 same = (a_csp is None and l_csp is None) or (a_csp is not None and l_csp is not None and all(
                     a_csp.get(k) == l_csp.get(k) or (k == "script-src" and l_csp.get(k) == {"'none'"})
                     for k in set(a_csp) | set(l_csp)))
@@ -16071,7 +16111,8 @@ def wave_lg2(browser):
                   and not re.search(r"Проектът в GitHub|project on GitHub|/issues", d["html"]),
                   f"no GitHub page or issues link ({gh}), and no email address but the supervisory authority's")
             if "/en/" in rel:
-                proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb", "YouTube"}
+                proper = {"Sofia", "Gleda", "TMDB", "OMDb", "DeepL", "GitHub", "Google", "EU", "GDPR", "AI", "IMDb", "YouTube",
+                          "Analytics"}
                 caps = [h for h in d["headings"] for wd in re.sub(r"^\d+\.\s*", "", h).split()[1:]
                         if wd[:1].isupper() and wd.strip("(),.") not in proper]
                 check(f"lg2_{tag}_sentence_case", not caps, str(caps[:3]))
@@ -16173,6 +16214,8 @@ def wave_lg3(browser):
         'en:{name:"Test category",desc:"For the test only"}}];').replace(
         hook, 'consentRun("lgtest",()=>{window.__lgRan=(window.__lgRan||0)+1;});'
               'consentRun("nope",()=>{window.__lgNope=1;});' + hook)
+    # without the GA bootstrap (a build with a Measurement ID) the made-up category is the only one
+    patched = re.sub(r"<script>/\* SOFIA-GA \*/.*?</script>\n?", "", patched, flags=re.S)
     # a copy edits the main script, so a CSP with its hash would block it: drop the CSP here
     patched = re.sub(r'<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>\n?', "", patched, flags=re.I)
     test_file = webapp_root / "index.lgtest.html"
@@ -18444,6 +18487,749 @@ def wave_b24(browser):
             _ux_shutil.rmtree(tmp, ignore_errors=True)
 
 
+
+# ============================================================================
+# WAVE GA1: visitor statistics (Google Analytics 4, scripts/site_config.py)
+# ============================================================================
+# Every Google analytics host is routed: gtag.js is answered with a stub that reads the
+# page's dataLayer the way gtag.js does (consent, config, set, event) and turns each event
+# into a request to region1.google-analytics.com/g/collect (also routed, never sent), so
+# the checks look at the requests the page would make. Anything else of Google's is
+# aborted. The wave adapts to the page under test: built without a Measurement ID it checks
+# that nothing of Google exists; built with one (a test ID through SOFIA_GA_MEASUREMENT_ID)
+# it checks consent, loading, page views, events and withdrawal.
+import html as _ga_html  # noqa: E402
+from urllib.parse import quote as _ga_quote  # noqa: E402
+_GA_HOSTS = re.compile(r"^https?://([^/]*\.)?(googletagmanager\.com|google-analytics\.com|"
+                       r"analytics\.google\.com)(/|$)", re.I)
+_GA_YT = re.compile(r"^https?://([^/]*\.)?(youtube-nocookie\.com|youtube\.com|ytimg\.com|googlevideo\.com)(/|$)", re.I)
+_GA_STUB = r"""(function(){
+  var id=''; try{id=new URL(document.currentScript.src).searchParams.get('id')||'';}catch(e){}
+  var dl=window.dataLayer=window.dataLayer||[], granted=false, up={};
+  window.__gaStub={consent:[],config:[],loads:(window.__gaStub?window.__gaStub.loads:0)+1};
+  function send(name,p){
+    if(window['ga-disable-'+id]===true||!granted)return;
+    var q=new URLSearchParams(); q.set('v','2'); q.set('tid',id); q.set('en',name);
+    for(var k in p){ if(p[k]!==undefined) q.set('ep.'+k,String(p[k])); }
+    for(var u in up){ q.set('up.'+u,String(up[u])); }
+    fetch('https://region1.google-analytics.com/g/collect?'+q.toString(),{method:'POST',mode:'no-cors',keepalive:true}).catch(function(){});
+  }
+  function handle(a){
+    a=Array.prototype.slice.call(a||[]);
+    if(a[0]==='consent'){ window.__gaStub.consent.push([a[1],a[2]]);
+      if(a[2]&&a[2].analytics_storage) granted=a[2].analytics_storage==='granted'; }
+    else if(a[0]==='config'){ window.__gaStub.config.push([a[1],a[2]]);
+      if(granted&&window['ga-disable-'+id]!==true){ document.cookie='_ga=GA1.1.1111.2222; path=/; max-age=63072000';
+        document.cookie='_ga_'+id.slice(2)+'=GS1.1.3333.1; path=/; max-age=63072000'; } }
+    else if(a[0]==='set'&&a[1]==='user_properties'){ for(var k in a[2]) up[k]=a[2][k]; }
+    else if(a[0]==='event'){ send(a[1],a[2]||{}); }
+  }
+  dl.forEach(handle);
+  var push=dl.push; dl.push=function(){ for(var i=0;i<arguments.length;i++) handle(arguments[i]); return push.apply(dl,arguments); };
+})();"""
+_GA_SHOTS = pathlib.Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/analytics")
+# a click on a link that would leave the page (a ticket seller, a map, a calendar) is kept
+# here: the app's handlers and the statistics still see it, the browser goes nowhere
+_GA_STAY = ("window.addEventListener('click',function(e){var a=e.target&&e.target.closest&&"
+            "e.target.closest('a[target=_blank],a[download],a.ss-cal-li');if(a)e.preventDefault();},true);")
+
+
+def _ga_hits_of(reqs):
+    """The routed collect requests as dicts: en, ep.*, up.* (URL-decoded)."""
+    from urllib.parse import urlparse, parse_qsl
+    out = []
+    for u in reqs:
+        if "/g/collect" in u:
+            out.append(dict(parse_qsl(urlparse(u).query)))
+    return out
+
+
+# Google's real gtag.js, a local copy fetched once by hand for the live Measurement ID (never
+# downloaded by the tests). With real=True a wave serves it instead of the stub when the copy
+# exists and belongs to the page's ID; otherwise the stub stands in. Its hits leave in batches
+# (the URL carries the common part, each body line one event): _ga_events_of reads both.
+_GA_REAL_GTAG = pathlib.Path("/tmp/sg-val-gtag/gtag_real.js")
+_GA_OTHER = re.compile(r"^https?://([^/]*\.)?(google\.com|doubleclick\.net|gstatic\.com|google\.[a-z.]+)(/|$)", re.I)
+
+
+def _ga_real_gtag(ga_id):
+    """The real gtag.js for ga_id, or None (then the stub is used)."""
+    try:
+        t = _GA_REAL_GTAG.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    return t if ga_id and ga_id in t else None
+
+
+def _ga_events_of(rb):
+    """The events of the routed collect requests [(url, body)], one dict per event."""
+    from urllib.parse import urlparse, parse_qsl
+    out = []
+    for u, b in rb:
+        if "/g/collect" not in u:
+            continue
+        common = dict(parse_qsl(urlparse(u).query))
+        for line in [ln for ln in (b or "").split("\r\n") if ln.strip()] or [""]:
+            e = dict(common)
+            e.update(dict(parse_qsl(line)))
+            if e.get("en"):
+                out.append(e)
+    return out
+
+
+def _ga_path_of(e, base):
+    """The path of a page_view event (the stub sends ep.page_location, gtag.js dl)."""
+    return (e.get("ep.page_location") or e.get("dl") or "").replace(base.rstrip("/"), "")
+
+
+def _ga_open(browser, base, path, lang="bg", seed=None, w=1280, h=900, mobile=False, gtag=None, bodies=None):
+    """A context over HTTP (service worker blocked) with every Google host routed. Returns
+    (ctx, page, reqs, errs): reqs lists every Google request in order, never sent. gtag: the
+    body served as gtag.js (default the stub); bodies, when given, gets (url, post body) of
+    every Google request."""
+    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
+              service_workers="block", ignore_https_errors=True)
+    if mobile:
+        kw.update(is_mobile=True, has_touch=True, device_scale_factor=3)
+    ctx = getattr(browser, "raw", browser).new_context(**kw)     # not the suite's answered notice
+    ctx.add_init_script(CLOCK)
+    ctx.add_init_script(
+        "try{localStorage.setItem('sofia-screen-v2',JSON.stringify({prefs:{track:'both',genres:[],mood:[],"
+        "with:'',when:'any',taste:[]},lang:%s,mode:'cinema'}));}catch(e){}" % json.dumps(lang))
+    # the cookie record is set once per context (a reload, or a second tab, keeps the visitor's
+    # own choice; a second tab must not rewrite the record, the storage event would reach the first)
+    ctx.add_init_script("try{if(!localStorage.getItem('__gaSeeded')){localStorage.setItem('__gaSeeded','1');"
+                        "localStorage.removeItem('sofia-consent');" + (seed or "") + "}}catch(e){}")
+    ctx.add_init_script(_GA_STAY)
+    reqs = []
+
+    def _route(route):
+        u = route.request.url
+        reqs.append(u)
+        if bodies is not None:
+            try:
+                bodies.append((u, route.request.post_data))
+            except Exception:
+                bodies.append((u, None))
+        if u.startswith("https://www.googletagmanager.com/gtag/js"):
+            route.fulfill(status=200, content_type="application/javascript; charset=utf-8", body=gtag or _GA_STUB)
+        elif "/g/collect" in u:
+            route.fulfill(status=204, body="")
+        else:
+            route.abort()
+
+    def _yt(route):
+        if re.match(r"^https://www\.youtube-nocookie\.com/embed/", route.request.url):
+            route.fulfill(status=200, content_type="text/html; charset=utf-8", body=_TR1_STUB)
+        else:
+            route.abort()
+    ctx.route(_GA_HOSTS, _route)
+    ctx.route(_GA_OTHER, _route)
+    ctx.route(_GA_YT, _yt)
+    page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    page.goto(base + path)
+    page.wait_for_selector(".bar", timeout=30000)
+    page.wait_for_timeout(500)
+    return ctx, page, reqs, errs
+
+
+def _ga_open_film(page, prefer=None):
+    """Open a film's sheet by clicking its card (prefer: a film id); returns its id."""
+    fid = page.evaluate("""(prefer) => { const c = (prefer && document.querySelector('[data-film="' + CSS.escape(prefer) + '"]'))
+        || [...document.querySelectorAll('[data-film]')].find(e => e.getBoundingClientRect().width > 20);
+        if (!c) return null; c.scrollIntoView({block: 'center'}); return c.getAttribute('data-film'); }""", prefer)
+    if not fid:
+        return None
+    page.click(f'[data-film="{fid}"]')
+    page.wait_for_selector(".scrim .sheet", timeout=10000)
+    page.wait_for_timeout(500)
+    return fid
+
+
+def _ga_legal_texts(base_dir):
+    out = {}
+    for rel in LEGAL_PAGES:
+        t = (base_dir / rel / "index.html").read_text(encoding="utf-8")
+        out[rel] = re.sub(r"\s+", " ", _ga_html.unescape(re.sub(r"<[^>]+>", " ", t)))
+    return out
+
+
+def _ga_close_all(page):
+    """Escape until no sheet (nor the screening sheet) is open."""
+    for _ in range(5):
+        if not page.evaluate("!!document.querySelector('#ss-wrap .ss-sheet, #ss-pop .ss-sheet') || "
+                             "(typeof sheetOpen !== 'undefined' && sheetOpen)"):
+            break
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(450)
+
+
+def _ga_click_date_filter(page, nth=0):
+    """Click a visible date filter of the listing (the day strip or the period chips)."""
+    sel = ".dspill[data-day]:not([disabled]), [data-range]"
+    idx = page.evaluate("""([sel, nth]) => { const v = [...document.querySelectorAll(sel)]
+        .map((e, i) => [e, i]).filter(([e]) => e.getClientRects().length > 0 && e.getAttribute('aria-pressed') !== 'true');
+        return v.length ? v[Math.min(nth, v.length - 1)][1] : -1; }""", [sel, nth])
+    if idx < 0:
+        return False
+    loc = page.locator(sel).nth(idx)
+    loc.scroll_into_view_if_needed()
+    loc.click()
+    page.wait_for_timeout(400)
+    return True
+
+
+def _ga_open_settings(page):
+    """Reopen the cookie notice the visitor's way: the footer's "Настройки за бисквитки"."""
+    _lg_scroll_to_footer(page)
+    page.click("footer [data-consent-open]")
+    page.wait_for_selector("#sg-consent:not([hidden])", timeout=5000)
+    page.wait_for_timeout(200)
+
+
+def _ga_serve():
+    """Serve the worktree over HTTPS on a free local port (a throwaway self-signed
+    certificate; the contexts ignore certificate errors). Not plain HTTP: the page's CSP has
+    upgrade-insecure-requests, and WebKit upgrades the page's own reload (the one that
+    follows a withdrawal) to https, which a plain-HTTP server cannot answer."""
+    import functools
+    import http.server
+    import ssl
+    import tempfile
+    import threading
+    d = tempfile.mkdtemp(prefix="sg-ga1-")
+    subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", d + "/k.pem",
+                    "-out", d + "/c.pem", "-days", "1", "-subj", "/CN=127.0.0.1"], check=True, capture_output=True)
+
+    class _Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(_Quiet, directory=str(webapp_root)))
+    sc = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    sc.load_cert_chain(d + "/c.pem", d + "/k.pem")
+    srv.socket = sc.wrap_socket(srv.socket, server_side=True)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"https://127.0.0.1:{srv.server_address[1]}/"
+
+
+def wave_ga1(browser):
+    """GA1: visitor statistics with Google Analytics 4. Without a Measurement ID: no
+    "Статистика" switch, nothing of Google in the page, the policies keep "no statistics".
+    With one: Consent Mode defaults all denied, no request to Google before consent, gtag.js
+    only after "Статистика" is switched on, a page view per view of the router (no
+    duplicates), the events with their parameters (never a search's text), withdrawal stops
+    the hits at once and deletes the _ga cookies, the policies describe GA4."""
+    wave = "GA1"
+    ensure_shot_dir(wave)
+    src = html_path.read_text(encoding="utf-8")
+    ga_id = _csp.ga_id_of(src)
+    ver = _consent_version(src)
+    webkit = getattr(browser, "raw", browser).browser_type.name == "webkit"
+    eng = "webkit" if webkit else "chromium"
+    check("ga1_page_state", ver is not None, f"Measurement ID in the page: {ga_id or 'none (analytics off)'}; {eng}")
+    m = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]*)"', src)
+    page_csp = m.group(1) if m else ""
+    legal = _ga_legal_texts(webapp_root)
+    srv, base = _ga_serve()
+    try:
+        if not ga_id:
+            _ga1_off(browser, base, src, page_csp, legal, ver)
+        else:
+            _ga1_on(browser, base, src, page_csp, legal, ver, ga_id, webkit)
+    finally:
+        srv.shutdown()
+
+
+def _ga_open_card(page, attr):
+    """Open the sheet of the first visible card with data-<attr>; returns its id or None."""
+    cid = page.evaluate("""(a) => { const c = [...document.querySelectorAll('[data-' + a + ']')]
+        .find(e => e.getBoundingClientRect().width > 20 && !e.closest('.scrim'));
+        if (!c) return null; c.scrollIntoView({block: 'center'}); return c.getAttribute('data-' + a); }""", attr)
+    if not cid:
+        return None
+    page.click(f'[data-{attr}="{cid}"]')
+    page.wait_for_selector(".scrim .sheet", timeout=10000)
+    page.wait_for_timeout(500)
+    return cid
+
+
+def _ga_withdraw(page):
+    """Switch "Статистика" off through the footer's settings; returns once the page has reloaded."""
+    _ga_open_settings(page)
+    page.uncheck('#sg-consent [data-consent-cat="stats"]')
+    with page.expect_navigation(timeout=15000):
+        page.click("#sg-consent [data-consent-save]")
+    page.wait_for_selector(".bar", timeout=30000)
+
+
+def _ga1_tabs_and_real(browser, base, ver, ga_id, suffix, seed):
+    """Withdrawal reaches every tab (storage event) and a page back from the back-forward cache
+    (pageshow); after the withdrawal click no hit leaves at all; and, with Google's real
+    gtag.js when the local copy exists, the app's own page views (sg_src "app") are exactly
+    one per view of a walk, whatever Google adds on its own."""
+    real = _ga_real_gtag(ga_id)
+    kind = "real gtag.js" if real else "stub (no local gtag.js copy for this ID)"
+
+    print(f"\n=== GA1 ({ga_id}): withdrawal in one tab stops the other ({kind}) ===")
+    rb = []
+    ctx, A, reqs, errs = _ga_open(browser, base, html_env, seed=seed, gtag=real, bodies=rb)
+    B = ctx.new_page()
+    errs_b = []
+    B.on("pageerror", lambda e: errs_b.append(str(e)))
+    navs_b = []
+    B.on("framenavigated", lambda f: navs_b.append(f.url) if f == B.main_frame else None)
+    B.goto(base + html_env)
+    B.wait_for_selector(".bar", timeout=30000)
+    B.wait_for_timeout(2500)
+    _ga_open_film(B)
+    _ga_close_all(B)
+    B.wait_for_timeout(1500)
+    both = sum("/gtag/js" in u for u in reqs)
+    check("ga1_two_tabs_both_collect", both == 2 and B.evaluate("_gaOn === true") and A.evaluate("_gaOn === true")
+          and any(c["name"] == "_ga" for c in ctx.cookies()), f"gtag loads={both}")
+    n_b = len(navs_b)
+    A.bring_to_front()
+    _ga_open_settings(A)
+    A.uncheck('#sg-consent [data-consent-cat="stats"]')
+    n = len(reqs)
+    with A.expect_navigation(timeout=15000):
+        A.click("#sg-consent [data-consent-save]")
+    A.wait_for_selector(".bar", timeout=30000)
+    for _ in range(40):
+        if len(navs_b) > n_b:
+            break
+        B.wait_for_timeout(250)
+    B.wait_for_selector(".bar", timeout=30000)
+    B.wait_for_timeout(800)
+    check("ga1_other_tab_stops_and_reloads", len(navs_b) > n_b and B.evaluate("_gaOn === false"),
+          f"B navigations {n_b} -> {len(navs_b)}")
+    # keep using the other tab, as a visitor would
+    B.bring_to_front()
+    B.click('[data-switch="theatre"]')
+    B.wait_for_timeout(1000)
+    _ga_open_card(B, "show")
+    _ga_close_all(B)
+    _ga_click_date_filter(B)
+    B.wait_for_timeout(6500)        # gtag.js sends a batch within about 5 s
+    after = reqs[n:]
+    check("ga1_other_tab_no_hits_after_withdrawal", not after,
+          f"{len(after)} request(s): {[e.get('en') for e in _ga_events_of(rb[n:])]} {after[:1]}")
+    ck = [c["name"] for c in ctx.cookies() if c["name"].startswith("_ga")]
+    check("ga1_other_tab_no_ga_cookies", not ck, str(ck))
+    check("ga1_two_tabs_no_js_errors", not errs and not errs_b, "; ".join((errs + errs_b)[:3]))
+    ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): withdrawn while the page sat in the back-forward cache ===")
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env, seed=seed, gtag=real)
+    page.wait_for_timeout(1500)
+    page.evaluate("localStorage.setItem('sofia-consent', JSON.stringify({v: %s, at: new Date().toISOString(), opt: {stats: false}}))"
+                  % json.dumps(ver))
+    n = len(reqs)
+    with page.expect_navigation(timeout=15000):
+        page.evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}))")
+    page.wait_for_selector(".bar", timeout=30000)
+    _ga_open_film(page)
+    _ga_close_all(page)
+    page.wait_for_timeout(6000)
+    check("ga1_bfcache_withdrawal_stops", page.evaluate("_gaOn === false") and len(reqs) == n
+          and not [c for c in ctx.cookies() if c["name"].startswith("_ga")],
+          f"{len(reqs) - n} request(s) after: {reqs[n:][:1]}")
+    ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): nothing leaves after the withdrawal click ({kind}) ===")
+    for lang in ("bg", "en"):
+        rb = []
+        ctx, page, reqs, errs = _ga_open(browser, base, html_env, lang=lang, seed=seed, gtag=real, bodies=rb)
+        page.wait_for_timeout(1500)
+        _ga_open_film(page)
+        _ga_close_all(page)
+        page.click('[data-switch="theatre"]')
+        page.wait_for_timeout(300)
+        _ga_click_date_filter(page)
+        page.click("[data-search-open]")
+        page.fill("#q", "абв")
+        page.wait_for_timeout(1500)       # the search event is queued, not yet sent in a batch
+        _ga_open_settings(page)
+        page.uncheck('#sg-consent [data-consent-cat="stats"]')
+        n = len(reqs)
+        with page.expect_navigation(timeout=15000):
+            page.click("#sg-consent [data-consent-save]")
+        page.wait_for_selector(".bar", timeout=30000)
+        _ga_open_film(page)
+        _ga_close_all(page)
+        page.wait_for_timeout(6500)
+        after = reqs[n:]
+        check(f"ga1_{lang}_zero_hits_after_withdrawal_click", not after,
+              f"{len(after)} request(s): {[e.get('en') for e in _ga_events_of(rb[n:])]}")
+        check(f"ga1_{lang}_withdrawal_click_no_cookies", not [c for c in ctx.cookies() if c["name"].startswith("_ga")], "")
+        ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): one app page view per view of a walk ({kind}) ===")
+    rb = []
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env, seed=seed, gtag=real, bodies=rb)
+    page.wait_for_timeout(1500)
+    want = ["/home/"]
+    fid = _ga_open_film(page)
+    want.append(f"/film/{_ga_quote(fid or '', safe='')}/")
+    _ga_close_all(page)
+    page.wait_for_timeout(400)
+    want.append("/home/")
+    page.click('[data-switch="theatre"]')
+    page.wait_for_timeout(800)
+    want.append("/home/theatre/")
+    page.go_back()
+    page.wait_for_timeout(1000)
+    want.append("/home/")
+    page.go_forward()
+    page.wait_for_timeout(1000)
+    want.append("/home/theatre/")
+    sid = _ga_open_card(page, "show")
+    if sid:
+        want.append(f"/show/{_ga_quote(sid, safe='')}/")
+        _ga_close_all(page)
+        page.wait_for_timeout(400)
+        want.append("/home/theatre/")
+    page.click('[data-switch="cinema"]')
+    page.wait_for_timeout(800)
+    want.append("/home/")
+    eid = _ga_open_card(page, "event")
+    if eid:
+        want.append(f"/event/{_ga_quote(eid, safe='')}/")
+    page.wait_for_timeout(6500)        # the last batch
+    evs = _ga_events_of(rb)
+    app = [_ga_path_of(e, base) for e in evs if e.get("en") == "page_view" and e.get("ep.sg_src") == "app"]
+    other = [_ga_path_of(e, base) for e in evs if e.get("en") == "page_view" and e.get("ep.sg_src") != "app"]
+    print(f"  app page views {len(app)}, other page views (Google's own) {len(other)}: {other[:6]}")
+    check("ga1_walk_one_app_page_view_per_view", app == want and sid is not None,
+          f"want={want} got={app} (show {sid}, event {eid})")
+    if not eid:
+        skip("ga1_walk_event_view", "no event card in this build")
+    check("ga1_walk_no_js_errors", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+
+def _ga1_off(browser, base, src, page_csp, legal, ver):
+    print("\n=== GA1 (analytics off): no switch, nothing of Google ===")
+    check("ga1_off_no_bootstrap", "SOFIA_GA" not in src.split("/* SOFIA-APP */")[0] and "/* SOFIA-GA */" not in src,
+          "the page carries no GA bootstrap")
+    check("ga1_off_csp_has_no_google", "google" not in page_csp.lower(), page_csp[:80])
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env)
+    p = page.evaluate(_LG_PROBE)
+    check("ga1_off_notice_has_no_switch", p["shown"] and p["boxes"] == 0 and p["ok"] is not None,
+          f"boxes={p.get('boxes')} ok={p.get('ok')!r}")
+    check("ga1_off_no_datalayer", page.evaluate("typeof window.dataLayer === 'undefined' && typeof window.gtag === 'undefined'"), "")
+    page.click("#sg-consent [data-consent-ok]")
+    fid = _ga_open_film(page)
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(400)
+    page.click('[data-switch="theatre"]')
+    page.wait_for_timeout(1200)
+    check("ga1_off_no_google_request", not reqs, f"{len(reqs)} request(s): {reqs[:2]} (film {fid})")
+    check("ga1_off_no_cookies", page.evaluate("document.cookie") == "", page.evaluate("document.cookie"))
+    check("ga1_off_no_js_errors", not errs, "; ".join(errs[:3]))
+    ctx.close()
+    print("\n=== GA1 (analytics off): the policies keep \"no statistics\" ===")
+    for rel, says in (("legal/privacy/", "статистика за посещенията и реклами"),
+                      ("legal/en/privacy/", "no visitor statistics and no ads"),
+                      ("legal/cookies/", "Не използваме статистика за посещенията"),
+                      ("legal/en/cookies/", "We use no visitor statistics")):
+        t = legal[rel]
+        tag = rel.strip("/").replace("/", "_")
+        check(f"ga1_off_{tag}_no_statistics", says in t and "Google Analytics" not in t and "_ga" not in t, "")
+
+
+def _ga1_on(browser, base, src, page_csp, legal, ver, ga_id, webkit):
+    suffix = ga_id[2:]
+    print(f"\n=== GA1 ({ga_id}): the bootstrap, the CSP ===")
+    check("ga1_csp_sources", all(s in page_csp for s in (
+        "https://www.googletagmanager.com; style-src",
+        "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com;",
+        "img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com;")),
+        page_csp[:60])
+    check("ga1_no_gtag_in_markup", not re.search(r"<script[^>]+googletagmanager", src), "")
+
+    print(f"\n=== GA1 ({ga_id}): first visit, nothing before consent ===")
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env)
+    p = page.evaluate(_LG_PROBE)
+    T = page.evaluate("({bg: T.bg, en: T.en})")
+    cat = page.evaluate("""() => { const i = document.querySelector('#sg-consent [data-consent-cat="stats"]');
+        if (!i) return null; const l = document.querySelector('label[for="sgc-stats"]');
+        return {checked: i.checked, name: l.querySelector('b').textContent, desc: l.querySelector('small').textContent,
+                btns: [...document.querySelectorAll('#sg-consent button')].map(b => [b.textContent, b.className])}; }""")
+    check("ga1_stats_switch_off_by_default", p["shown"] and cat is not None and cat["checked"] is False
+          and cat["name"] == "Статистика" and "Google Analytics" in cat["desc"], str(cat)[:160])
+    check("ga1_equal_choices", cat is not None and [b[0] for b in cat["btns"]] == [T["bg"]["consentAll"], T["bg"]["consentNone"], T["bg"]["consentSave"]]
+          and cat["btns"][0][1] == cat["btns"][1][1], str((cat or {}).get("btns")))
+    dl = page.evaluate("JSON.stringify((window.dataLayer||[]).map(a => Array.prototype.slice.call(a)))")
+    check("ga1_consent_defaults_denied",
+          '["consent","default",{"ad_storage":"denied","ad_user_data":"denied","ad_personalization":"denied","analytics_storage":"denied"}]' in dl,
+          dl[:200])
+    if webkit is False:
+        page.screenshot(path=str(_GA_SHOTS / "desktop_1280_bg_notice.png"))
+    save_shot(page, "GA1", "desktop_bg_notice")
+    fid = _ga_open_film(page)
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(1500)
+    check("ga1_no_request_before_consent", not reqs, f"{len(reqs)}: {reqs[:2]}")
+    page.click("#sg-consent [data-consent-none]")
+    page.wait_for_timeout(1200)
+    rec = _lg_record(page)
+    check("ga1_necessary_only_stores_stats_false", rec.get("opt") == {"stats": False} and rec.get("v") == ver and not reqs,
+          f"record={rec} requests={len(reqs)}")
+    check("ga1_no_cookie_without_consent", page.evaluate("document.cookie") == "", page.evaluate("document.cookie"))
+
+    print(f"\n=== GA1 ({ga_id}): opting in loads gtag.js, then a page view ===")
+    _ga_open_settings(page)
+    page.check('#sg-consent [data-consent-cat="stats"]')
+    page.wait_for_timeout(300)
+    check("ga1_switch_alone_sends_nothing", not reqs, f"{len(reqs)}")
+    page.click("#sg-consent [data-consent-save]")
+    page.wait_for_timeout(1200)
+    gt = [u for u in reqs if "/gtag/js" in u]
+    check("ga1_gtag_loaded_once_after_consent", len(gt) == 1 and f"id={ga_id}" in gt[0], str(gt))
+    st = page.evaluate("window.__gaStub || null")
+    cfg = (st or {}).get("config") or []
+    check("ga1_config_no_page_view_no_signals", len(cfg) == 1 and cfg[0][0] == ga_id and cfg[0][1] == {
+        "send_page_view": False, "allow_google_signals": False, "allow_ad_personalization_signals": False}, str(cfg))
+    cons = (st or {}).get("consent") or []
+    check("ga1_consent_update_analytics_only",
+          ["update", {"analytics_storage": "granted"}] in cons
+          and not any(v == "granted" for c in cons for k, v in (c[1] or {}).items() if k.startswith("ad_")), str(cons))
+    hits = _ga_hits_of(reqs)
+    pv = [h for h in hits if h.get("en") == "page_view"]
+    check("ga1_page_view_on_opt_in", len(pv) == 1 and pv[0].get("ep.page_location") == base + "home/"
+          and pv[0].get("ep.page_title", "").endswith("| Sofia Gleda") and pv[0].get("ep.site_language") == "bg"
+          and pv[0].get("ep.surface") == "cinema" and pv[0].get("up.site_language") == "bg", str(pv)[:240])
+    ck = page.evaluate("document.cookie")
+    check("ga1_ga_cookies_after_consent", "_ga=" in ck and f"_ga_{suffix}=" in ck, ck)
+    ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): page views on route changes, no duplicates ===")
+    seed = _consent_seed_js(ver, opt="{stats:true}")
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env, seed=seed)
+    check("ga1_consented_visit_loads_at_once", sum("/gtag/js" in u for u in reqs) == 1, f"{len(reqs)}")
+    fid = _ga_open_film(page)
+    title = page.evaluate("(document.getElementById('sg-sheet-title')||{}).textContent||''").strip()
+    page.evaluate("history.replaceState(history.state, '', location.href)")
+    page.wait_for_timeout(400)
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(600)
+    page.click('[data-switch="theatre"]')
+    page.wait_for_timeout(800)
+    page.evaluate("history.replaceState(history.state, '', location.href)")
+    page.wait_for_timeout(300)
+    page.go_back()
+    page.wait_for_timeout(1000)
+    pv = [h for h in _ga_hits_of(reqs) if h.get("en") == "page_view"]
+    paths = [h.get("ep.page_location", "").replace(base.rstrip("/"), "") for h in pv]
+    want_film = f"/film/{_ga_quote(fid or '', safe='')}/"
+    check("ga1_page_views_on_route_changes",
+          paths[:4] == ["/home/", want_film, "/home/", "/home/theatre/"] and len(paths) == 5 and paths[4] == "/home/",
+          str(paths))
+    check("ga1_no_duplicate_page_views", all(a != b for a, b in zip(paths, paths[1:])), str(paths))
+    fpv = next((h for h in pv if "/film/" in h.get("ep.page_location", "")), {})
+    check("ga1_film_page_view_title", title and fpv.get("ep.page_title") == f"{title} | Sofia Gleda", repr(fpv.get("ep.page_title")))
+    th = next((h for h in pv if h.get("ep.page_location", "").endswith("/home/theatre/")), {})
+    check("ga1_surface_parameter", th.get("ep.surface") == "theatre" and pv[0].get("ep.surface") == "cinema",
+          f"{th.get('ep.surface')} / {pv[0].get('ep.surface') if pv else None}")
+    check("ga1_route_no_js_errors", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): the events ===")
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env, seed=seed)
+    secret = "лумиер"
+    page.click("[data-search-open]")
+    page.fill("#q", secret)
+    page.wait_for_timeout(1800)
+    page.fill("#q", "")
+    page.wait_for_timeout(300)
+    if page.query_selector("[data-search-open][aria-expanded=true]"):
+        page.click("[data-search-open]")
+        page.wait_for_timeout(300)
+    filt = _ga_click_date_filter(page)
+    # a film with a trailer and a showing (the sheet has pills): trailer, share, the screening sheet
+    tr = page.evaluate("""() => { const ids = [...document.querySelectorAll('[data-film]')].map(e => e.getAttribute('data-film'));
+        return ids.find(i => typeof TMDBART === 'object' && TMDBART[i] && TMDBART[i].v) || null; }""")
+    fid = _ga_open_film(page, tr)
+    if page.query_selector(".scrim .sheet [data-trailer]"):
+        page.click(".scrim .sheet [data-trailer]")
+        page.wait_for_timeout(500)
+    if page.query_selector(".scrim .sheet [data-share]"):
+        page.click(".scrim .sheet [data-share]")
+        page.wait_for_timeout(300)
+    if page.query_selector(".scrim .sheet a.buylink"):
+        page.click(".scrim .sheet a.buylink")
+        page.wait_for_timeout(200)
+    pidx = page.evaluate("""() => [...document.querySelectorAll('.scrim .sheet .p3e-pill[data-sspill]')]
+        .findIndex(e => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden')""")
+    pill = pidx is not None and pidx >= 0
+    if pill:
+        loc = page.locator(".scrim .sheet .p3e-pill[data-sspill]").nth(pidx)
+        loc.scroll_into_view_if_needed()
+        loc.click()
+        page.wait_for_selector("#ss-wrap .ss-sheet, #ss-pop .ss-sheet", timeout=8000)
+        page.wait_for_timeout(400)
+        for sel in ("a[data-ss-buy]", "a[data-ss-map]"):
+            if page.query_selector(sel):
+                page.click(sel)
+                page.wait_for_timeout(200)
+        if page.query_selector("[data-sscal]"):
+            page.click("[data-sscal]")
+            page.wait_for_timeout(400)
+            g = page.query_selector('a.ss-cal-li[href*="google"]')
+            if g:
+                g.click()
+                page.wait_for_timeout(300)
+    page.wait_for_timeout(800)
+    hits = _ga_hits_of(reqs)
+    ev = {}
+    for h in hits:
+        ev.setdefault(h.get("en"), []).append(h)
+    print("  events:", {k: len(v) for k, v in ev.items()})
+    s = (ev.get("search") or [{}])[0]
+    check("ga1_event_search_length_only", s.get("ep.search_length") == str(len(secret)), str(s)[:200])
+    raw = " ".join(reqs) + " " + page.evaluate("JSON.stringify((window.dataLayer||[]).map(a => Array.prototype.slice.call(a)))")
+    from urllib.parse import quote as _q
+    check("ga1_search_text_never_sent", secret not in raw and _q(secret) not in raw and "search_term" not in raw, "")
+    f = (ev.get("filter_apply") or [{}])[0]
+    check("ga1_event_filter_apply", filt and f.get("ep.filter_type") == "date" and len(f) <= 8, f"clicked={filt} {str(f)[:200]}")
+    if tr:
+        t_ = (ev.get("trailer_play") or [{}])[0]
+        check("ga1_event_trailer_play", t_.get("ep.item_id") == fid and t_.get("ep.item_kind") == "film", str(t_)[:200])
+    else:
+        skip("ga1_event_trailer_play", "no film with a trailer in this build")
+    sh = (ev.get("share") or [{}])[0]
+    check("ga1_event_share", sh.get("ep.item_kind") == "film" and sh.get("ep.item_id") == fid
+          and sh.get("ep.method") in ("native", "copy"), str(sh)[:200])
+    if pill:
+        tk = [h for h in ev.get("ticket_click", []) if h.get("ep.venue_id")]
+        check("ga1_event_ticket_click", bool(tk) and all(h.get("ep.item_kind") == "film" and h.get("ep.item_id") == fid
+              and h.get("ep.seller_host") and "/" not in h.get("ep.seller_host") for h in tk), str(tk)[:240])
+        mp = (ev.get("map_open") or [{}])[0]
+        check("ga1_event_map_open", mp.get("ep.item_id") == fid and bool(mp.get("ep.venue_id")), str(mp)[:200])
+        ca = (ev.get("calendar_add") or [{}])[0]
+        check("ga1_event_calendar_add", ca.get("ep.item_id") == fid and ca.get("ep.method") == "google"
+              and bool(ca.get("ep.venue_id")), str(ca)[:200])
+    else:
+        skip("ga1_event_ticket_map_calendar", "the film sheet has no showing")
+    allowed = {"v", "tid", "en", "ep.site_language", "ep.surface", "ep.page_location", "ep.page_title", "ep.item_kind",
+               "ep.item_id", "ep.venue_id", "ep.seller_host", "ep.method", "ep.search_length", "ep.filter_type",
+               "ep.sg_src", "up.site_language"}
+    extra = sorted({k for h in hits for k in h} - allowed)
+    check("ga1_events_carry_only_known_parameters", not extra, str(extra))
+    check("ga1_events_tagged_sg_src_app", bool(hits) and all(h.get("ep.sg_src") == "app" for h in hits),
+          str([h.get("en") for h in hits if h.get("ep.sg_src") != "app"])[:160])
+    check("ga1_events_no_js_errors", not errs, "; ".join(errs[:3]))
+
+    print(f"\n=== GA1 ({ga_id}): language, then withdrawal ===")
+    _ga_close_all(page)
+    page.click("[data-lang]")
+    page.wait_for_timeout(400)
+    _ga_click_date_filter(page, 1)
+    last = _ga_hits_of(reqs)[-1] if _ga_hits_of(reqs) else {}
+    check("ga1_language_follows", last.get("ep.site_language") == "en" and last.get("up.site_language") == "en", str(last)[:160])
+    check("ga1_cookies_before_withdrawal", f"_ga_{suffix}=" in page.evaluate("document.cookie"), "")
+    n_before = len(reqs)
+    _ga_open_settings(page)
+    page.uncheck('#sg-consent [data-consent-cat="stats"]')
+    with page.expect_navigation():
+        page.click("#sg-consent [data-consent-save]")
+    page.wait_for_selector(".bar", timeout=30000)
+    page.wait_for_timeout(600)
+    ck = page.evaluate("document.cookie")
+    check("ga1_withdrawal_deletes_ga_cookies", "_ga" not in ck, repr(ck))
+    check("ga1_withdrawal_stored", _lg_record(page).get("opt") == {"stats": False}, str(_lg_record(page)))
+    _ga_open_film(page)
+    _ga_close_all(page)
+    _ga_click_date_filter(page)
+    page.wait_for_timeout(1200)
+    check("ga1_withdrawal_stops_hits", len(reqs) == n_before, f"{len(reqs) - n_before} request(s) after: {reqs[n_before:][:2]}")
+    check("ga1_withdrawal_no_js_errors", not errs, "; ".join(errs[:3]))
+    ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): a stray _ga cookie without consent is deleted ===")
+    ctx, page, reqs, errs = _ga_open(browser, base, html_env, seed=_consent_seed_js(ver, opt="{stats:false}"))
+    ctx.add_cookies([{"name": "_ga", "value": "GA1.1.9.9", "url": base}, {"name": f"_ga_{suffix}", "value": "x", "url": base}])
+    page.reload()
+    page.wait_for_selector(".bar", timeout=30000)
+    page.wait_for_timeout(400)
+    check("ga1_stray_cookies_deleted", "_ga" not in page.evaluate("document.cookie") and not reqs,
+          f"{page.evaluate('document.cookie')!r} requests={len(reqs)}")
+    ctx.close()
+
+    _ga1_tabs_and_real(browser, base, ver, ga_id, suffix, seed)
+
+    print(f"\n=== GA1 ({ga_id}): phone, BG and EN; the screenshots ===")
+    for lang in ("bg", "en"):
+        ctx, page, reqs, errs = _ga_open(browser, base, html_env, lang=lang, w=393, h=852, mobile=True)
+        p = page.evaluate(_LG_PROBE)
+        name = page.evaluate("(document.querySelector('label[for=\"sgc-stats\"] b')||{}).textContent||''")
+        check(f"ga1_phone_{lang}_switch", p["shown"] and name == ("Статистика" if lang == "bg" else "Statistics")
+              and p["sw"] <= p["iw"] and min(p["btnH"]) >= 44 and p["y"] > 0, f"{name!r} sw={p['sw']} y={p.get('y')}")
+        if not webkit:
+            page.screenshot(path=str(_GA_SHOTS / f"phone_393_{lang}_notice.png"))
+        save_shot(page, "GA1", f"phone_{lang}_notice")
+        check(f"ga1_phone_{lang}_nothing_sent", not reqs, f"{len(reqs)}")
+        ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): the policies describe GA4 ===")
+    req = {
+        "legal/privacy/": ["Google Analytics 4", "Google Ireland Limited", "чл. 6, пар. 1, буква „а“ от ОРЗД",
+                           "Закона за електронните съобщения", "2 месеца", "Google LLC",
+                           "Рамката за защита на личните данни в отношенията между ЕС и САЩ", "не го записва",
+                           "„Настройки за бисквитки“", f"_ga_{suffix}", "добавката на Google за браузъра"],
+        "legal/en/privacy/": ["Google Analytics 4", "Google Ireland Limited", "Article 6(1)(a) GDPR",
+                              "Electronic Communications Act", "2 months", "Google LLC", "EU-U.S. Data Privacy Framework",
+                              "does not log or store it", "“Cookie settings”", f"_ga_{suffix}", "Google's browser add-on"],
+        "legal/cookies/": ["_ga", f"_ga_{suffix}", "2 години", "„Статистика“", "Закона за електронните съобщения",
+                           "добавката на Google за браузъра"],
+        "legal/en/cookies/": ["_ga", f"_ga_{suffix}", "2 years", "“Statistics”", "Electronic Communications Act",
+                              "Google's browser add-on"],
+    }
+    gone = {"legal/privacy/": "статистика за посещенията и реклами", "legal/en/privacy/": "no visitor statistics and no ads",
+            "legal/cookies/": "Не използваме статистика за посещенията", "legal/en/cookies/": "We use no visitor statistics"}
+    for rel, says in req.items():
+        tag = rel.strip("/").replace("/", "_")
+        missing = [s for s in says if s not in legal[rel]]
+        check(f"ga1_{tag}_describes_ga4", not missing and gone[rel] not in legal[rel], f"missing={missing}")
+    for rel in ("legal/terms/", "legal/en/terms/"):
+        check(f"ga1_{rel.strip('/').replace('/', '_')}_untouched", "Google Analytics" not in legal[rel], "")
+    # the privacy page's analytics section (the screenshot the owner reviews)
+    kw = dict(viewport={"width": 1280, "height": 900}, service_workers="block", ignore_https_errors=True)
+    ctx = browser.new_context(**kw)
+    gq = []
+    ctx.route(_GA_HOSTS, lambda r: (gq.append(r.request.url), r.abort()))
+    page = ctx.new_page()
+    for rel, anchor, shot in (("legal/privacy/", "statistika", "privacy_bg_analytics_section"),
+                              ("legal/en/privacy/", "statistics", "privacy_en_analytics_section")):
+        page.goto(base + rel + "#" + anchor)
+        page.wait_for_timeout(400)
+        page.evaluate(f"document.getElementById('{anchor}').scrollIntoView({{block:'start'}})")
+        page.wait_for_timeout(200)
+        if not webkit:
+            page.screenshot(path=str(_GA_SHOTS / f"{shot}.png"))
+        save_shot(page, "GA1", shot)
+        check(f"ga1_{shot}_present", page.evaluate(f"!!document.getElementById('{anchor}')")
+              and page.evaluate("document.scripts.length") == 0, "")
+    check("ga1_legal_pages_send_nothing", not gq, str(gq[:2]))
+    ctx.close()
+
+    print(f"\n=== GA1 ({ga_id}): sw.js leaves Google alone ===")
+    sw = (webapp_root / "sw.js").read_text(encoding="utf-8")
+    fh = sw[sw.find('addEventListener("fetch"'):]
+    i_ret = fh.find("if (GOOGLE_ANALYTICS.test(url.hostname)) return;")
+    i_resp = fh.find("respondWith")
+    rx = re.search(r"const GOOGLE_ANALYTICS = /(.+)/;", sw)
+    hosts_ok = False
+    if rx:
+        pyrx = re.compile(rx.group(1).replace("\\/", "/"))
+        hosts_ok = all(pyrx.search(h) for h in ("www.googletagmanager.com", "region1.google-analytics.com",
+                                                "region1.analytics.google.com")) and not pyrx.search("sofiagleda.com")
+    check("ga1_sw_never_handles_google", 0 <= i_ret < i_resp and hosts_ok, f"return at {i_ret}, respondWith at {i_resp}")
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -18479,6 +19265,7 @@ WAVES = {
     "TR2": wave_tr2,
     "UX1": wave_ux1,
     "B24": wave_b24,
+    "GA1": wave_ga1,
 }
 
 def main():

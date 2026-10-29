@@ -3654,7 +3654,7 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
         const _su=safeUrl(specificUrl||bookUrl(vid,date));
         if(!_su)return"";
         const _lbl=_al||((S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label);
-        return`<a class="buylink" href="${esc(_su)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(_lbl)} ↗</a>`;
+        return`<a class="buylink" href="${esc(_su)}" data-ga-venue="${esc(vid)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(_lbl)} ↗</a>`;
       })()}
     </div>
     <div class="buynote">${esc(_al?L.buyNoteAgg.replace("{agg}",_al):(isCinema?L.buyNoteC:L.buyNoteT))}</div></div>`;}
@@ -3689,7 +3689,7 @@ function filmBuyBox(f,rows){
     if(!u)return"";
     const _al=(typeof AGGLINKS==="object"&&AGGLINKS[f.id+"|"+vid])||null;
     const cname=_al||((S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label);
-    return`<a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(cname)} ↗</a>`;
+    return`<a class="buylink" href="${esc(u)}" data-ga-venue="${esc(vid)}" target="_blank" rel="noopener noreferrer">${esc(cname)} ↗</a>`;
   }).filter(Boolean);
   if(!items.length)return"";
   const epayNote=hasEpay?`<div class="buynote">${esc(S.lang==="bg"?"Кино Люмиер: билети чрез epaygo.bg":"Lumière: tickets via epaygo.bg")}</div>`:"";
@@ -4092,7 +4092,7 @@ function sheetEvent(ev){
     <div class="sec">${synBlock(S.lang==="bg"?ev.blurbBg:ev.blurbEn)}</div>
     <div class="buybox evbox">
       ${u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
-        <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
+        <a class="buylink" href="${esc(u)}" data-ga-venue="${esc(vb)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
       ${(()=>{
         /* an event an aggregator listed (fetch_events.py, auto:true) links the page it
            came from and says plainly whose listing it is */
@@ -5971,7 +5971,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   }
 
   /* Buttons */
-  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" target="_blank" rel="noopener noreferrer">${esc(L.ssShowMap)}</a>`;
+  const mapBtn=`<a class="ss-btn sec" href="${esc(mapUrl)}" data-ss-map target="_blank" rel="noopener noreferrer">${esc(L.ssShowMap)}</a>`;
   const calBtn=`<button class="ss-btn sec" data-sscal="${esc(kind+":"+id+"|"+venueId+"|"+dateStr+"|"+timeStr)}">${esc(L.ssAddCal)}</button>`;
 
   let buyBtnHtml="";
@@ -5989,7 +5989,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
       else{const th=thById[venueId]||thById[sh&&sh.theatre];opensName=S.lang==="bg"?(th&&th.name||""):(th&&(th.nameEn||th.name)||"");}
     }
     const helpLine=(L.ssBuyOpens||"").replace("{name}",opensName);
-    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener noreferrer">${esc(L.ssBuyTicket)}</a>
+    buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" data-ss-buy target="_blank" rel="noopener noreferrer">${esc(L.ssBuyTicket)}</a>
 <p class="ss-help">${esc(helpLine)}</p>`;
   }
 
@@ -6602,10 +6602,12 @@ try{
   else if(mqMob.addListener) mqMob.addListener(onMqChange);
 }catch(e){}
 /* ===================== cookie notice (consent) =====================
-   Sofia Gleda sets no cookies. What it keeps in the browser is strictly necessary for what
-   the visitor asked for: localStorage "sofia-screen-v2" (language, mode, favourites), the
-   record below, and on sofiagleda.com the service worker's caches. So the notice only
-   informs: "Разбрах" and "Научи повече", no switches. legal/cookies/ lists every item, and
+   Sofia Gleda sets no cookies itself. What it keeps in the browser is strictly necessary for
+   what the visitor asked for: localStorage "sofia-screen-v2" (language, mode, favourites),
+   the record below, and on sofiagleda.com the service worker's caches. Without an optional
+   category the notice only informs: "Разбрах" and "Научи повече", no switches. A page built
+   with a GA4 Measurement ID adds "Статистика" (Google Analytics sets its _ga cookies only
+   after that consent; see the statistics section below). legal/cookies/ lists every item, and
    verify_build.py fails when a localStorage key the page uses is missing from that list.
 
    The record: localStorage "sofia-consent" = {v, at, opt}: v is CONSENT_VERSION, at the time
@@ -6623,7 +6625,12 @@ try{
    The notice then lists a switch per category, off until the visitor turns it on.
    consentRun runs fn once: at once when the category is allowed, otherwise as soon as it
    is. An id that is not in CONSENT_OPTIONAL never runs. Withdrawing a category that has run
-   reloads the page, so nothing it started keeps running. */
+   calls its off() (if it has one: statistics stops sending and deletes its cookies) and
+   reloads the page, so nothing it started keeps running. The only category so far is
+   "stats" (visitor statistics, Google Analytics 4), and only on a page built with a
+   Measurement ID (see the statistics section below). A choice made in another tab, or while
+   the page sat in the back-forward cache, applies the same way (_consentRecheck). "Приемам всички" and "Само
+   необходимите" look the same: refusing is as easy as accepting. */
 const CONSENT_KEY="sofia-consent";
 /* 2026-10-22: the policies name no contact channel any more (the GitHub page is gone);
    2026-10-23: the privacy and cookie policies describe the YouTube trailer */
@@ -6644,20 +6651,43 @@ function consentRun(id,fn){
   (_cWait[id]=_cWait[id]||[]).push(fn);
   return false;
 }
+/* bring this page in line with a record (null: no choice): a category that has run and is
+   no longer allowed gets its off() and the page reloads (false); a newly allowed one starts
+   what waits for it */
+function _consentApply(rec){
+  const opt=(rec&&rec.opt)||{};
+  if(Object.keys(_cRan).some(id=>opt[id]!==true)){
+    CONSENT_OPTIONAL.forEach(c=>{if(_cRan[c.id]&&opt[c.id]!==true&&typeof c.off==="function"){try{c.off();}catch(e){}}});
+    location.reload();return false;}
+  Object.keys(_cWait).forEach(id=>{
+    if(opt[id]!==true)return;
+    const fns=_cWait[id];delete _cWait[id];_cRan[id]=true;
+    fns.forEach(f=>{try{f();}catch(e){}});
+  });
+  return true;
+}
 /* store a choice; false when it withdrew a category that has already run (the page reloads) */
 function _consentSave(opt){
   const clean={};
   CONSENT_OPTIONAL.forEach(c=>{clean[c.id]=opt[c.id]===true;});
   _cRec={v:CONSENT_VERSION,at:new Date().toISOString(),opt:clean};
   try{localStorage.setItem(CONSENT_KEY,JSON.stringify(_cRec));}catch(e){}
-  if(Object.keys(_cRan).some(id=>!clean[id])){location.reload();return false;}
-  Object.keys(_cWait).forEach(id=>{
-    if(!clean[id])return;
-    const fns=_cWait[id];delete _cWait[id];_cRan[id]=true;
-    fns.forEach(f=>{try{f();}catch(e){}});
-  });
-  return true;
+  return _consentApply(_cRec);
 }
+/* A choice made in another tab (the storage event) or while this page sat in the back-forward
+   cache (pageshow, persisted) applies here too: withdrawn there, statistics stops here and the
+   page reloads; allowed there, it starts here. An open notice shows the new choice. */
+function _consentRecheck(){
+  const had=!!_cRec;
+  _cRec=_consentLoad();
+  if(!_consentApply(_cRec))return;
+  const el=document.getElementById("sg-consent");
+  if(!el||el.hidden)return;
+  if(!had&&_cRec)consentClose();
+  else{el.innerHTML=_consentHTML();_cLang=S.lang;_consentPad();}
+}
+window.addEventListener("storage",e=>{if(e.key===CONSENT_KEY||e.key===null)_consentRecheck();});
+window.addEventListener("pageshow",e=>{if(e.persisted)_consentRecheck();});
 function _consentHTML(){
   const L=t(),cats=CONSENT_OPTIONAL,cur=(_cRec&&_cRec.opt)||{};
   const more=S.lang==="en"?"legal/en/cookies/":"legal/cookies/";
@@ -6666,7 +6696,7 @@ function _consentHTML(){
     ${cats.map(c=>{const n=c[S.lang]||c.bg||{};return`<li><label class="consent-cat" for="sgc-${esc(c.id)}"><b>${esc(n.name)}</b><small>${esc(n.desc)}</small></label><input type="checkbox" id="sgc-${esc(c.id)}" data-consent-cat="${esc(c.id)}"${cur[c.id]===true?" checked":""}></li>`;}).join("")}
   </ul>`:"";
   const btns=cats.length
-    ?`<button type="button" class="consent-btn pri" data-consent-all>${esc(L.consentAll)}</button><button type="button" class="consent-btn sec" data-consent-none>${esc(L.consentNone)}</button><button type="button" class="consent-btn sec" data-consent-save>${esc(L.consentSave)}</button>`
+    ?`<button type="button" class="consent-btn pri" data-consent-all>${esc(L.consentAll)}</button><button type="button" class="consent-btn pri" data-consent-none>${esc(L.consentNone)}</button><button type="button" class="consent-btn sec" data-consent-save>${esc(L.consentSave)}</button>`
     :`<button type="button" class="consent-btn pri" data-consent-ok>${esc(L.consentOk)}</button>`;
   return`<h2 class="consent-t" id="sgc-t">${esc(cats.length?L.consentTitleOpt:L.consentTitle)}</h2>
   <p class="consent-d" id="sgc-d">${esc(cats.length?L.consentTextOpt:L.consentText)}</p>${list}
@@ -6735,6 +6765,162 @@ document.addEventListener("click",e=>{
 });
 window.addEventListener("hashchange",_consentFromHash);
 window.addEventListener("resize",_consentPad);
+/* ===================== visitor statistics (Google Analytics 4) =====================
+   Off unless the page was built with a Measurement ID (scripts/site_config.py). Then
+   build_index.py puts the bootstrap SOFIA-GA in <head>: Google Consent Mode v2 defaults
+   (analytics_storage, ad_storage, ad_user_data and ad_personalization all "denied") and
+   window.SOFIA_GA, and the cookie notice gets the "Статистика" switch, off until the
+   visitor turns it on. Nothing goes to Google before that: no gtag.js, no cookieless ping.
+   On consent (consentRun "stats") gaStart loads gtag.js, grants analytics_storage only
+   (ads stay denied for good) and configures the stream without the automatic page view,
+   Google signals or ad personalisation. Turning the switch off again (gaStop) stops every
+   hit at once (ga-disable-<ID>), deletes the _ga cookies on this domain and reloads; any
+   _ga cookie found without consent is deleted too. Withdrawn in another tab, or while this
+   page sat in the back-forward cache, it stops the same way (_consentRecheck).
+   Page views: one per view of the app's own router (/home/, /home/theatre/, /film/<id>/,
+   /show/<id>/, /event/<id>/), sent when the view changes and never twice for the same view
+   (a replaceState that keeps the view sends nothing). Every hit carries the site's
+   language and surface, and sg_src "app": the hits the app itself sends, told apart from any
+   Google adds on its own (enhanced measurement). Events carry no personal data: ids of venues and titles, the
+   ticket seller's host, a kind, and of a search only its length, never its text. */
+const GA_ID=typeof window.SOFIA_GA==="string"&&/^G-[A-Z0-9]{4,16}$/.test(window.SOFIA_GA)
+  &&typeof window.gtag==="function"?window.SOFIA_GA:"";
+let _gaOn=false,_gaLast=null,_gaLang=null,_gaTimer=0,_gaSearchT=0,_gaSearchN=0,_gaSearchSent=0;
+if(GA_ID)CONSENT_OPTIONAL.push({id:"stats",off:gaStop,
+  bg:{name:"Статистика",desc:"Обобщена статистика за посещенията чрез Google Analytics. Поставя бисквитки на Google."},
+  en:{name:"Statistics",desc:"Aggregate visit statistics with Google Analytics. Sets Google cookies."}});
+function gaStart(){
+  if(_gaOn||!GA_ID)return;
+  _gaOn=true;
+  const g=window.gtag;
+  window["ga-disable-"+GA_ID]=false;
+  g("consent","update",{analytics_storage:"granted"});
+  g("js",new Date());
+  g("config",GA_ID,{send_page_view:false,allow_google_signals:false,allow_ad_personalization_signals:false});
+  const s=document.createElement("script");
+  s.async=true;s.src="https://www.googletagmanager.com/gtag/js?id="+encodeURIComponent(GA_ID);
+  document.head.appendChild(s);
+  /* the router changes the view through the History API (and popstate); a file:// page
+     switches its listing by render() alone, which calls _gaSoon too */
+  ["pushState","replaceState"].forEach(m=>{
+    const o=history[m];if(typeof o!=="function")return;
+    history[m]=function(){const r=o.apply(this,arguments);_gaSoon();return r;};
+  });
+  window.addEventListener("popstate",_gaSoon);
+  _gaPage();
+}
+/* Withdrawal, in this order: gtag.js's own off switch and the denied consent first; then,
+   while gtag.js has not loaded yet, its queue loses everything but the consent commands; then
+   nothing bound for Google Analytics leaves this page any more (gtag.js flushes the hits it
+   has batched when the page unloads, and the reload that follows would send them); then the
+   cookies go. */
+function gaStop(){
+  if(!GA_ID)return;
+  window["ga-disable-"+GA_ID]=true;
+  try{window.gtag("consent","update",{analytics_storage:"denied"});}catch(e){}
+  _gaOn=false;clearTimeout(_gaTimer);clearTimeout(_gaSearchT);
+  const dl=window.dataLayer;
+  if(Array.isArray(dl)&&dl.push===Array.prototype.push){
+    const keep=dl.filter(a=>a&&a[0]==="consent");dl.length=0;keep.forEach(a=>dl.push(a));}
+  _gaMute();
+  _gaClearCookies();
+}
+function _gaMute(){
+  const ga=u=>{try{return/(^|\.)(google-analytics\.com|analytics\.google\.com|googletagmanager\.com)$/i
+    .test(new URL(String(u&&typeof u==="object"&&"url"in u?u.url:u),location.href).hostname);}catch(e){return false;}};
+  try{const b=navigator.sendBeacon;if(typeof b==="function")navigator.sendBeacon=function(u){return ga(u)?true:b.apply(navigator,arguments);};}catch(e){}
+  try{const f=window.fetch;if(typeof f==="function")window.fetch=function(u){return ga(u)?Promise.resolve(new Response(null,{status:204})):f.apply(this,arguments);};}catch(e){}
+  try{const X=XMLHttpRequest.prototype,o=X.open;X.open=function(m,u){if(ga(u))this.send=function(){};return o.apply(this,arguments);};}catch(e){}
+  try{const d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,"src");
+    Object.defineProperty(HTMLImageElement.prototype,"src",{configurable:true,enumerable:d.enumerable,get:d.get,
+      set(v){if(!ga(v))d.set.call(this,v);}});}catch(e){}
+}
+/* _ga and _ga_<container>: host-only and on every parent domain gtag may have chosen */
+function _gaClearCookies(){
+  let names=[];
+  try{names=document.cookie.split(";").map(c=>c.split("=")[0].trim()).filter(n=>/^_ga(_[A-Za-z0-9]+)?$/.test(n));}
+  catch(e){return;}
+  const h=location.hostname||"",doms=[""];
+  if(h.indexOf(".")>0&&!/^[\d.]+$/.test(h)){const p=h.split(".");for(let i=0;i<p.length-1;i++)doms.push("; domain=."+p.slice(i).join("."));}
+  names.forEach(n=>doms.forEach(d=>{document.cookie=n+"=; Max-Age=0; path=/"+d;}));
+}
+function gaEvent(name,params){
+  if(!_gaOn||!GA_ID)return;
+  try{
+    if(_gaLang!==S.lang){_gaLang=S.lang;window.gtag("set","user_properties",{site_language:S.lang});}
+    window.gtag("event",name,Object.assign({site_language:S.lang,surface:S.mode==="theatre"?"theatre":"cinema"},params||{},{sg_src:"app"}));
+  }catch(e){}
+}
+function _gaView(){
+  const c=sheetOpen&&curSheet&&/^(film|show|event)$/.test(curSheet.kind)&&curSheet.id?curSheet:null;
+  if(c){
+    const h=document.getElementById("sg-sheet-title");
+    return{path:"/"+c.kind+"/"+encodeURIComponent(c.id)+"/",title:(h?h.textContent.trim()+" | ":"")+"Sofia Gleda"};
+  }
+  const th=S.mode==="theatre";
+  return{path:_surfacePath(S.mode),title:(S.lang==="en"?(th?"Theatre":"Cinema"):(th?"Театър":"Кино"))+" | Sofia Gleda"};
+}
+function _gaPage(){
+  if(!_gaOn)return;
+  const v=_gaView();
+  if(v.path===_gaLast)return;
+  _gaLast=v.path;
+  const origin=/^https?:$/.test(location.protocol)?location.origin:SITE_URL;
+  gaEvent("page_view",{page_location:origin+v.path,page_title:v.title});
+}
+function _gaSoon(){if(!_gaOn)return;clearTimeout(_gaTimer);_gaTimer=setTimeout(_gaPage,60);}
+function _gaHost(u){try{return new URL(u,location.href).hostname.replace(/^www\./,"");}catch(e){return"";}}
+/* the actions, where they already happen: a capture listener sees each click before the
+   app's own handlers re-render anything */
+const _GA_FILTERS=[["[data-range]","date"],["[data-pick]:not([disabled])","date"],["[data-day]","date"],
+  ["[data-strand]","strand"],["[data-genre]","genre"],["[data-venue]","venue"],["[data-only-fav]","favourites"],
+  ["[data-clearf]","clear"]];
+document.addEventListener("click",e=>{
+  if(!_gaOn||!e.target||!e.target.closest)return;
+  const q=s=>e.target.closest(s);
+  let a;
+  if(q("#ss-pop")||q("#ss-wrap")){
+    if(!_ss)return;
+    const at={item_kind:_ss.kind,item_id:_ss.id,venue_id:_ss.venueId};
+    if((a=q("a[data-ss-buy]")))gaEvent("ticket_click",Object.assign(at,{seller_host:_gaHost(a.href)}));
+    else if(q("a[data-ss-map]"))gaEvent("map_open",at);
+    else if((a=q("a.ss-cal-li")))gaEvent("calendar_add",Object.assign(at,{method:a.hasAttribute("data-sscalics")?"ics":/outlook|live\.com|office\.com/i.test(a.href)?"outlook":"google"}));
+    return;
+  }
+  if((a=q("a.buylink[href]"))){
+    const c=curSheet||{};
+    gaEvent("ticket_click",{item_kind:c.kind||"",item_id:c.id||"",venue_id:a.getAttribute("data-ga-venue")||"",seller_host:_gaHost(a.href)});
+    return;
+  }
+  if((a=q(".cal-panel [data-calg],.cal-panel [data-calo],.cal-panel [data-calics]"))&&_calPanel){
+    gaEvent("calendar_add",{item_kind:_calPanel.kind,item_id:_calPanel.id,venue_id:_calPanel.venueId,
+      method:a.hasAttribute("data-calics")?"ics":a.hasAttribute("data-calo")?"outlook":"google"});
+    return;
+  }
+  if((a=q("[data-trailer]"))){gaEvent("trailer_play",{item_kind:"film",item_id:a.getAttribute("data-trailer")||""});return;}
+  if((a=q("[data-share]"))){
+    const v=a.getAttribute("data-share")||"",i=v.indexOf(":");
+    gaEvent("share",{item_kind:v.slice(0,i),item_id:v.slice(i+1),method:navigator.share?"native":"copy"});
+    return;
+  }
+  const f=_GA_FILTERS.find(([sel])=>q(sel));
+  if(f)gaEvent("filter_apply",{filter_type:f[1]});
+},true);
+/* a search: its length once the typing has paused, never its text */
+document.addEventListener("input",e=>{
+  const el=e.target;
+  if(!_gaOn||!el||(el.id!=="q"&&el.id!=="q-m"))return;
+  _gaSearchN=String(el.value||"").trim().length;
+  clearTimeout(_gaSearchT);
+  _gaSearchT=setTimeout(()=>{
+    if(_gaSearchN&&_gaSearchN!==_gaSearchSent){_gaSearchSent=_gaSearchN;gaEvent("search",{search_length:_gaSearchN});}
+    else if(!_gaSearchN)_gaSearchSent=0;
+  },1200);
+},true);
+function gaBoot(){
+  if(!GA_ID)return;
+  if(!consentRun("stats",gaStart))_gaClearCookies();
+}
 /* The footer's legal lines: what Sofia Gleda is, the attributions the data sources require,
    the three policies and the cookie notice. */
 function legalFootHTML(){
@@ -6752,7 +6938,7 @@ render=function(){
     const keepY=document.querySelector("#app > .drawer")?(window.scrollY||0):null;
     origRender();mountProgressive();
     if(keepY!==null)_keepPageY(keepY);
-    _consentSync();
+    _consentSync();_gaSoon();
   }
   catch(e){ fatal(e); }
 };
@@ -6771,6 +6957,7 @@ function _keepPageY(y){
   if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
 }
 try{ _routeSurface(); boot(); _routeBoot(); }catch(e){ fatal(e); }
+try{ gaBoot(); }catch(e){}
 try{ consentBoot(); }catch(e){}
 window.addEventListener("error",e=>{
   const app=document.getElementById("app");

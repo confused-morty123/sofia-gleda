@@ -87,6 +87,32 @@ python3 scripts/verify_build.py              # checks index.html (SOFIA_HTML=<fi
 
 `scripts/make_icons.py` regenerates the PWA icons.
 
+### Visitor statistics (Google Analytics 4)
+
+The Measurement ID lives in one place: `GA_MEASUREMENT_ID` in `scripts/site_config.py`
+(today `G-SQWMGX9GL3`). Empty means analytics off: no script, no "Статистика" switch
+in the cookie notice, and the policies keep saying the site keeps no statistics.
+With an ID the app asks first (Consent Mode v2, everything denied, nothing sent to
+Google before the visitor switches "Статистика" on), and the privacy and cookie
+policies describe GA4. After changing the ID, rebuild in pipeline order:
+
+```bash
+python3 scripts/dev_build.py --from origin/main --out index.html
+python3 scripts/gen_share_pages.py && python3 scripts/gen_legal_pages.py && python3 scripts/csp.py
+SOFIA_HTML=index.html python3 scripts/verify_build.py
+```
+
+`SOFIA_GA_MEASUREMENT_ID=...` overrides the ID for a local test build (empty = off);
+never commit a build made that way. In Google Analytics set Admin > Data collection >
+Data retention to 2 months (the privacy policy says so) and leave Google signals off.
+Also, in Admin > Data streams > the stream > Enhanced measurement, switch enhanced
+measurement off (or at least, under Page views > advanced settings, "Page changes based
+on browser history events"): the app sends its own page view per route, so with it on
+every route change counts twice, and the other automatic events (scrolls, outbound
+clicks, site search, form interactions, video, file downloads) are not in the privacy
+policy's list. Keep Admin > Data collection > "User-provided data collection" off.
+The four settings the privacy policy relies on (Admin, property column, "Data collection and modification"): Data streams > the stream > Enhanced measurement: OFF; Data collection > User-provided data collection: OFF; Data retention > Event data retention: 2 months (Save); Data collection > Google signals data collection: OFF.
+
 ### Running it on your own Mac (optional)
 
 ```bash
