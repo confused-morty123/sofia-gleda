@@ -2341,19 +2341,21 @@ def wave_c1(browser):
     print("\n=== C1-8: Data clean-up ===")
     import subprocess, re
 
-    # Euro Cinema count
-    euro_data = subprocess.run(
-        ["python3", "-c",
-         "import sys; c=open('src/data.html').read(); print('euro_count='+str(c.count('Euro Cinema')))"],
-        cwd=str(webapp_root), capture_output=True, text=True)
-    euro_artifact = subprocess.run(
-        ["python3", "-c",
-         "import sys; c=open('src/sofia-screen.artifact.html').read(); print('euro_count='+str(c.count('Euro Cinema')))"],
-        cwd=str(webapp_root), capture_output=True, text=True)
-    euro_data_cnt = int((euro_data.stdout.strip().split('=')[1] if '=' in euro_data.stdout else '1'))
-    euro_art_cnt = int((euro_artifact.stdout.strip().split('=')[1] if '=' in euro_artifact.stdout else '1'))
-    check("c1_no_euro_cinema_in_data", euro_data_cnt == 0, f"Euro Cinema count in data.html: {euro_data_cnt}")
-    check("c1_no_euro_cinema_in_artifact", euro_art_cnt == 0, f"Euro Cinema count in artifact: {euro_art_cnt}")
+    # Euro Cinema (owner, 2026-10-29): its own cinema (euro-cinema), not another name for G8.
+    # data.html names it only in its own CINEMAS / BOOKING entries (and comments); the G8
+    # entry never does; the UI code hardcodes no venue (comments aside).
+    import json as _json_c1
+    _src_c1 = (webapp_root / "src" / "data.html").read_text(encoding="utf-8")
+    _cin_c1 = _json_c1.loads(re.search(r"^const CINEMAS\s*=\s*(.*?);\s*$", _src_c1, re.M).group(1))
+    _bk_c1 = _json_c1.loads(re.search(r"^const BOOKING\s*=\s*(.*?);\s*$", _src_c1, re.M).group(1))
+    _ec_c1 = [c.get("id") for c in _cin_c1 if "Euro Cinema" in _json_c1.dumps(c, ensure_ascii=False)]
+    _bk_ec = [k for k, v in _bk_c1.items() if "Euro Cinema" in _json_c1.dumps(v, ensure_ascii=False)]
+    check("c1_euro_cinema_own_venue_in_data", _ec_c1 == ["euro-cinema"] and _bk_ec == ["euro-cinema"],
+          f"CINEMAS entries naming Euro Cinema: {_ec_c1}; BOOKING: {_bk_ec}")
+    _art_c1 = re.sub(r"/\*.*?\*/", "", (webapp_root / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8"),
+                     flags=re.S)
+    euro_art_cnt = _art_c1.count("Euro Cinema") + _art_c1.count("euro-cinema")
+    check("c1_no_euro_cinema_in_artifact", euro_art_cnt == 0, f"Euro Cinema hardcoded in the UI code: {euro_art_cnt}")
 
     # No '—' in director/cast
     dash_check = subprocess.run(
@@ -2886,15 +2888,22 @@ def wave_d1(browser):
             if (!upcomingByFilm[r[0]]) upcomingByFilm[r[0]] = new Set();
             upcomingByFilm[r[0]].add(r[1]);
         }});
-        // Pick the first film that has any in-person venue
+        // Pick the first film that has any in-person venue, and one of its times THERE
+        // (the film may also play at cinemas that sell online: their pills come first)
+        // (a festival screening there is sold online: pick a film whose every upcoming
+        // screening is one of the cinema's own, box office only)
         let inPersonFilmId = null;
         let inPersonVenueId = null;
         for (const [fid, vids] of Object.entries(upcomingByFilm)) {{
+            const all = SHOWTIMES.filter(r => r[0] === fid && r[2] >= today);
+            if (!all.every(r => inPersonVids.includes(r[1]) && (r[3]||[]).every(t => boxOnly("film", fid, r[1], r[2], t)))) continue;
             inPersonFilmId = fid;
             inPersonVenueId = [...vids][0];
             break;
         }}
-        if (!inPersonFilmId) return {{found: false, reason: "no in-person film found"}};
+        if (!inPersonFilmId) return {{found: false, reason: "no upcoming screening at an in-person cinema",
+                                      vids: inPersonVids}};
+        const row = SHOWTIMES.find(r => r[0] === inPersonFilmId && r[1] === inPersonVenueId && r[2] >= today && (r[3]||[]).length);
         const f = filmById[inPersonFilmId];
         if (!f) return {{found: false, reason: "filmById miss for " + inPersonFilmId}};
         // P3E: film sheet renders .p3e-pill[data-sspill] buttons (not a.time links)
@@ -2910,7 +2919,8 @@ def wave_d1(browser):
             filmId: inPersonFilmId,
             venueId: inPersonVenueId,
             pillCount: pills.length,
-            inPersonBuyAnchorCount: inPersonBuyAnchors.length
+            inPersonBuyAnchorCount: inPersonBuyAnchors.length,
+            pillKey: row ? "film:" + inPersonFilmId + "|" + inPersonVenueId + "|" + row[2] + "|" + row[3][0] : null
         }};
     }}""")
 
@@ -2928,11 +2938,17 @@ def wave_d1(browser):
             if (f) {{ _sheetShowAllCinemas = false; curSheet = {{kind:"film", id:f.id}}; openSheet(sheetFilm(f), null); }}
         }}""")
         page.wait_for_timeout(600)
-        # Click first pill to open screening sheet
-        page.evaluate("""() => {
-            const pill = document.querySelector('.sheet .p3e-pill[data-sspill]');
+        # Open the screening sheet from a time AT the in-person cinema (its day chip first:
+        # the phone list shows one day). The first pill may be another cinema's.
+        page.evaluate("""(key) => {
+            const date = key ? key.split('|')[2] : null;
+            const chip = date && document.querySelector('.sheet [data-p3day="' + date + '"]');
+            if (chip) chip.click();
+            const pill = [...document.querySelectorAll('.sheet .p3e-pill[data-sspill]')]
+                .find(p => p.dataset.sspill === key && p.getClientRects().length)
+                || document.querySelector('.sheet .p3e-pill[data-sspill]');
             if (pill) { pill.scrollIntoView({block:'center'}); pill.click(); }
-        }""")
+        }""", inperson_result.get("pillKey"))
         page.wait_for_timeout(500)
         # Check screening sheet for box office label (P3E: text is in SS, not film sheet)
         ss_label = page.evaluate("""() => {
@@ -2949,9 +2965,19 @@ def wave_d1(browser):
         page.wait_for_timeout(400)
         save_shot(page, wave, "m-bg-inperson-sheet")
     else:
-        check("d1_inperson_label", False, inperson_result.get("reason", "no in-person film found"))
-        check("d1_inperson_time_links", False, "skipped")
-        check("d1_inperson_no_buy_anchor", False, "skipped")
+        # No upcoming screening at an in-person cinema in this build (a data state, not a
+        # site bug): render the time panel for one directly so the label is still checked.
+        vids = inperson_result.get("vids") or []
+        if vids:
+            txt = page.evaluate("""(v) => { const f = FILMS[0];
+                const d = document.createElement('div'); d.innerHTML = screeningSheetHtml('film', f.id, v, TODAY, '20:00');
+                return d.querySelector('.ss-btn.pri') ? 'BUY BUTTON' : d.textContent; }""", vids[0])
+            check("d1_inperson_label", "на касата" in txt,
+                  f"{inperson_result.get('reason')}; rendered for {vids[0]}: {txt[:80]!r}")
+        else:
+            check("d1_inperson_label", False, "no BOOKING entry has inPerson")
+        skip("d1_inperson_time_links", inperson_result.get("reason", "no in-person film found"))
+        skip("d1_inperson_no_buy_anchor", inperson_result.get("reason", "no in-person film found"))
 
     ctx.close()
 
@@ -12420,8 +12446,9 @@ def wave_p3f(browser):
                 '.ss-head',        // sheet header
                 '.ss-prelim-head', // preliminary notice heading
                 '.ss-prelim-body', // preliminary notice body
-                '.ss-box-head',    // box-office-only heading
-                '.ss-box-body',    // box-office-only body
+                '.ss-stub',        // box-office-only ticket stub
+                '.ss-ptag',        // preliminary-time tag
+                '.ss-site',        // the venue's own page line
                 '.ss-agg-head',    // aggregator preliminary heading
                 '.ss-agg-body',    // aggregator preliminary body
                 '.ss-buy-lbl',     // buy ticket button label
@@ -12558,11 +12585,13 @@ def _hf_shot(page, name):
         page.screenshot(path=f"/tmp/hf_shots/{name}{'' if eng == 'chromium' else '_' + eng}.png")
 
 
-def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None):
+def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None, dsf=None):
     """open_page with touch emulation on phones and no external traffic (new tabs
     from the buy/map/calendar links are aborted; the webfonts are self-hosted, so
-    they still load from fonts/)."""
+    they still load from fonts/). dsf: a device scale factor (sharper screenshots)."""
     kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
+    if dsf:
+        kw["device_scale_factor"] = dsf
     if phone:
         kw.update(has_touch=True, is_mobile=True)
     if ua:
@@ -18444,6 +18473,766 @@ def wave_b24(browser):
             _ux_shutil.rmtree(tmp, ignore_errors=True)
 
 
+# ============================================================================
+# WAVE BO1: box office only (owner, 2026-10-28; design: the ticket stub, option 3).
+# A showing whose tickets are not sold online states it in a non-interactive ticket
+# stub where "Купи билет" would be: the time panel (phone) and popover (desktop),
+# gold for a theatre, the cinema red (--crimson) for a cinema. Line 1 "Билети само на
+# касата" ("Билети на касата" when a third party sells that performance online: then a
+# plain "Купи онлайн от {seller}" button sits under it), line 2 the venue. The venue's
+# own page is one line under the address. A preliminary time carries a dashed
+# "непотвърден час" tag beside it (for every preliminary showing), with its explanation
+# for screen readers. The phone panel fits its content. The show/film sheets' "Билети от"
+# box carries a compact stub in the same colours. The owner's examples: „Жена ми се
+# казва Борис“ 1 Nov (online seller) and „Грамофонът“ 22 Nov (none), Сълза и смях; a
+# film at Одеон / G8 (BOOKING inPerson: their own programme; a festival screening there is
+# sold online and gets "Купи билет"). Forced colours: real buttons bordered, the stub a
+# note. Screenshots for the owner (real build only):
+# notes/design_options/box_office_v2/built/.
+# ============================================================================
+BO_EXAMPLE = "zhena-mi-se-kazva-boris"
+BO_EXAMPLE2 = "gramofonat"
+BO_SHOTS = webapp_root.parent / "notes" / "design_options" / "box_office_v2" / "built"
+BO_COPY = {
+    "bg": {"buy": "Купи билет", "head": "Билети само на касата", "headAlt": "Билети на касата",
+           "online": "Купи онлайн от Priceless Tickets", "opens": "Отваря pricelesstickets.bg",
+           "siteT": "Отвори сайта на театъра ↗", "siteC": "Отвори сайта на киното ↗",
+           "tag": "непотвърден час", "tagSr": "Часът не е потвърден. Провери го при покупката.",
+           "only": "само", "oldPrelim": "Предварителна програма"},
+    "en": {"buy": "Buy a ticket", "head": "Tickets at the box office only", "headAlt": "Tickets at the box office",
+           "online": "Buy online from Priceless Tickets", "opens": "Opens pricelesstickets.bg",
+           "siteT": "Open the theatre website ↗", "siteC": "Open the cinema website ↗",
+           "tag": "time not confirmed", "tagSr": "This time is not confirmed yet. Check before buying.",
+           "only": "only", "oldPrelim": "Preliminary programme"},
+}
+
+# shared colour helpers: rgb() strings and the root's hex variables, WCAG contrast
+BO_COLOR_JS = r"""
+  const rgb=c=>{const m=(c||'').match(/[\d.]+/g);return m?m.slice(0,3).map(Number):null};
+  const hex=h=>{h=(h||'').trim().replace('#','');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16))};
+  const lum=a=>{const c=a.map(x=>{x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]};
+  const cr=(a,b)=>{const x=lum(a),y=lum(b);return Math.round((Math.max(x,y)+.05)/(Math.min(x,y)+.05)*100)/100};
+  const root=getComputedStyle(document.documentElement);
+  const txt=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  const stubInfo=(stub,pre)=>{ if(!stub)return null;
+    const cs=getComputedStyle(stub),bg=rgb(cs.backgroundColor);
+    const a=stub.querySelector('.'+pre+'-a'),b=stub.querySelector('.'+pre+'-b');
+    const was=document.activeElement; stub.focus(); const focused=document.activeElement===stub; if(was&&was.focus)was.focus();
+    return {a:txt(a),b:txt(b),cin:stub.classList.contains('cin'),bg,
+      gild:hex(root.getPropertyValue('--gild')),crimson:hex(root.getPropertyValue('--crimson')),
+      crA:cr(rgb(getComputedStyle(a).color),bg),crB:cr(rgb(getComputedStyle(b).color),bg),
+      tag:stub.tagName,role:stub.getAttribute('role'),tabIndex:stub.tabIndex,focused,
+      inCtl:!!stub.closest('a,button,[tabindex],[onclick]'),ctlInside:stub.querySelectorAll('a,button,input,select,[tabindex]').length,
+      cursor:cs.cursor,ariaHidden:!!stub.closest('[aria-hidden="true"]'),
+      fontA:getComputedStyle(a).fontFamily,fvsA:getComputedStyle(a).fontVariationSettings,
+      bLines:Math.round(b.getBoundingClientRect().height/parseFloat(getComputedStyle(b).lineHeight))};};
+"""
+
+BO_PANEL_JS = r"""(phone)=>{
+  const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet');
+  if(!ss||!ss.getClientRects().length)return null;""" + BO_COLOR_JS + r"""
+  const tag=ss.querySelector('.ss-ptag'), site=ss.querySelector('a.ss-site');
+  const btns=[...ss.querySelectorAll('.ss-btns .ss-btn')], last=btns[btns.length-1];
+  const scs=getComputedStyle(ss), r=ss.getBoundingClientRect(), sp=ss.querySelector('.ss-spacer');
+  const oldHead=[...ss.querySelectorAll('.ss-status-head')].map(txt);
+  const sr=tag&&tag.querySelector('.sg-sr');
+  // the rhythm: the site line to the stub at the stacked buttons' gap; nothing under the
+  // last button beyond the panel's bottom padding (safe area included)
+  const stubEl=ss.querySelector('.ss-stub'), direct=[...ss.querySelectorAll('.ss-btns > .ss-btn')];
+  const btnGap=direct.length>1?Math.round(direct[direct.length-1].getBoundingClientRect().top-direct[direct.length-2].getBoundingClientRect().bottom):null;
+  const siteGap=(site&&stubEl)?Math.round(stubEl.getBoundingClientRect().top-site.getBoundingClientRect().bottom):null;
+  const pr=document.createElement('div');pr.style.cssText='position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+  document.body.appendChild(pr);const safe=parseFloat(getComputedStyle(pr).paddingBottom)||0;pr.remove();
+  const under=last?Math.round(r.bottom-parseFloat(scs.borderBottomWidth||0)-last.getBoundingClientRect().bottom):null;
+  return {btnGap, siteGap, safe, under,text:txt(ss), venue:txt(ss.querySelector('.ss-venue')), stub:stubInfo(ss.querySelector('.ss-stub'),'ss-stub'),
+    stubs:ss.querySelectorAll('.ss-stub,[data-boxonly]').length,
+    tag:tag?{vis:[...tag.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim(),
+             sr:txt(sr), srShown:!!sr&&getComputedStyle(sr).display!=='none'&&!sr.closest('[aria-hidden="true"]'),
+             dashed:getComputedStyle(tag).borderTopStyle,
+             beside:Math.abs(tag.getBoundingClientRect().top+tag.getBoundingClientRect().height/2
+                    -(ss.querySelector('.ss-time').getBoundingClientRect().top+ss.querySelector('.ss-time').getBoundingClientRect().height/2))<20}:null,
+    oldHead, site:site?{t:txt(site),href:site.getAttribute('href'),cls:site.className}:null,
+    pri:[...ss.querySelectorAll('.ss-btn.pri')].map(txt), sec:[...ss.querySelectorAll('.ss-btn.sec')].map(txt),
+    help:[...ss.querySelectorAll('.ss-help')].map(txt),
+    gap:last?Math.round(r.bottom-parseFloat(scs.paddingBottom)-parseFloat(scs.borderBottomWidth||0)-last.getBoundingClientRect().bottom):null,
+    padB:scs.paddingBottom, spacer:sp?Math.round(sp.getBoundingClientRect().height):0,
+    scrolls:ss.scrollHeight>ss.clientHeight+1, h:Math.round(r.height), vh:innerHeight};
+}"""
+
+BO_BUYBOX_JS = r"""()=>{""" + BO_COLOR_JS + r"""
+  const b=document.querySelector('#scrim .sheet .buybox'); if(!b)return null;
+  return {text:txt(b), stub:stubInfo(b.querySelector('.buystub'),'buystub'),
+    grey:b.querySelectorAll('.buylink.inperson').length,
+    links:[...b.querySelectorAll('a.buylink')].map(txt)};
+}"""
+
+
+def _bo_open_show(page, sid):
+    return page.evaluate("""(id)=>{const sh=showById[id]; if(!sh)return false;
+      curSheet={kind:'show',id}; openSheet(sheetShow(sh),null); return true;}""", sid)
+
+
+def _bo_open_film(page, fid):
+    return page.evaluate("""(id)=>{const f=filmById[id]; if(!f)return false;
+      _sheetShowAllCinemas=true; curSheet={kind:'film',id}; openSheet(sheetFilm(f),null); return true;}""", fid)
+
+
+def _bo_tap_key(page, phone, key):
+    """Tap the visible time pill with this data-sspill key (phone: its day chip first)."""
+    date = key.split("|")[2]
+    if phone:
+        chip = page.locator(f'#scrim [data-p3day="{date}"]')
+        if chip.count():
+            chip.first.scroll_into_view_if_needed(); chip.first.tap(); page.wait_for_timeout(250)
+    else:
+        # desktop week grid: page forward until the date's column shows
+        for _ in range(12):
+            if page.evaluate("(k)=>[...document.querySelectorAll('#scrim [data-sspill]')].some(e=>e.dataset.sspill===k&&e.getClientRects().length)", key):
+                break
+            nxt = page.locator('#scrim button.p3e-gnav[data-gnav="1"]:not([disabled])').filter(visible=True)
+            if not nxt.count():
+                break
+            nxt = nxt.first
+            nxt.click(); page.wait_for_timeout(200)
+    loc = page.locator(f'#scrim [data-sspill="{key}"]').filter(visible=True)
+    if not loc.count():
+        return False
+    loc.first.scroll_into_view_if_needed()
+    page.wait_for_timeout(150)
+    (loc.first.tap if phone else loc.first.click)()
+    page.wait_for_timeout(700)
+    return True
+
+
+def _bo_shot(page, name):
+    save_shot(page, "BO1", name)
+    if os.environ.get("SOFIA_HTML"):
+        BO_SHOTS.mkdir(parents=True, exist_ok=True)
+        eng = _hf_engine(page.context.browser)
+        page.screenshot(path=str(BO_SHOTS / f"{name}{'' if eng == 'chromium' else '_' + eng}.png"))
+
+
+def _bo_same(a, b):
+    return bool(a) and bool(b) and all(abs(x - y) <= 1 for x, y in zip(a, b))
+
+
+def _bo_stub_problems(st, lang, cinema, alt):
+    """[] when the stub is right: colour (gold theatre / red cinema), copy ("само" iff no
+    online seller), not a control, readable, text contrast >= 4.5:1."""
+    c = BO_COPY[lang]
+    if not st:
+        return ["no stub"]
+    p = []
+    want = st["crimson"] if cinema else st["gild"]
+    if not _bo_same(st["bg"], want):
+        p.append(f"background {st['bg']} is not {'--crimson' if cinema else '--gild'} {want}")
+    if st["cin"] != cinema:
+        p.append(f"cin class {st['cin']}")
+    if st["a"] != (c["headAlt"] if alt else c["head"]):
+        p.append(f"line 1 {st['a']!r}")
+    if alt and c["only"] in st["a"].lower():
+        p.append("'only' although an online seller exists")
+    if not st["b"]:
+        p.append("no venue on line 2")
+    if st["bLines"] > 1:
+        p.append(f"line 2 wraps to {st['bLines']} lines")
+    if st["tag"] in ("A", "BUTTON") or st["inCtl"] or st["ctlInside"] or st["tabIndex"] >= 0 or st["focused"]:
+        p.append(f"focusable or a control: tag={st['tag']} tabIndex={st['tabIndex']} focused={st['focused']} inCtl={st['inCtl']} inside={st['ctlInside']}")
+    if st["cursor"] not in ("default", "auto", "text"):
+        p.append(f"cursor {st['cursor']}")
+    if st["ariaHidden"]:
+        p.append("hidden from screen readers")
+    if st["crA"] < 4.5 or st["crB"] < 4.5:
+        p.append(f"contrast {st['crA']}:1 / {st['crB']}:1")
+    # line 1 in the surface's display face: Geologica (sharp axis) for a cinema, Source Serif 4 for a theatre
+    fa = st.get("fontA") or ""
+    if cinema and (not fa.strip('"\' ').startswith("Geologica") or "SHRP" not in (st.get("fvsA") or "")):
+        p.append(f"cinema stub line 1 font {fa!r} {st.get('fvsA')!r}")
+    if not cinema and not fa.strip('"\' ').startswith("Source Serif 4"):
+        p.append(f"theatre stub line 1 font {fa!r}")
+    return p
+
+
+def _bo_m(r):
+    return "" if not r else (f" [site->stub {r['siteGap']} btn gap {r['btnGap']} under {r['under']} pad {r['padB']} "
+                             f"font {(r['stub'] or {}).get('fontA', '')[:24]}]")
+
+
+def _bo_panel_problems(r, lang, phone, cinema, alt, prelim):
+    """[] when the time panel is right for a box-office-only showing."""
+    c = BO_COPY[lang]
+    if not r:
+        return ["no panel"]
+    p = _bo_stub_problems(r["stub"], lang, cinema, alt)
+    if r["pri"] or c["buy"] in r["text"]:
+        p.append(f"offers {c['buy']!r}: {r['pri']}")
+    if r["stub"] and not r["venue"].startswith(r["stub"]["b"]):
+        p.append(f"line 2 {r['stub']['b']!r} is not the venue {r['venue'][:40]!r}")
+    online = [s for s in r["sec"] if s == c["online"]]
+    if alt and (len(online) != 1 or c["opens"] not in r["help"]):
+        p.append(f"online seller button/caption: {r['sec']} {r['help']}")
+    if not alt and (online or any(("онлайн" in s or "online" in s.lower()) for s in r["sec"])):
+        p.append(f"an online button without a seller: {r['sec']}")
+    if len(r["sec"]) != (3 if alt else 2):
+        p.append(f"secondary buttons {r['sec']}")
+    if r["site"] and r["site"]["t"] != (c["siteC"] if cinema else c["siteT"]):
+        p.append(f"site line {r['site']}")
+    if r["site"] and "ss-btn" in r["site"]["cls"]:
+        p.append("the site line is a button")
+    if r["site"] and r["stub"] and (r["siteGap"] is None or r["btnGap"] is None or abs(r["siteGap"] - r["btnGap"]) > 4):
+        p.append(f"site line to stub {r['siteGap']} px, buttons {r['btnGap']} px apart")
+    p += _bo_prelim_problems(r, lang, prelim)
+    if phone:
+        p += _bo_fit_problems(r)
+    return p
+
+
+def _bo_prelim_problems(r, lang, prelim):
+    c = BO_COPY[lang]
+    p = []
+    if any(h == c["oldPrelim"] for h in r["oldHead"]):
+        p.append("the old preliminary card is still there")
+    if prelim:
+        t = r["tag"]
+        if not t or t["vis"] != c["tag"]:
+            p.append(f"preliminary tag {t}")
+        elif c["tagSr"] not in t["sr"] or not t["srShown"]:
+            p.append(f"preliminary tag explanation for screen readers: {t['sr']!r}")
+        elif t["dashed"] != "dashed" or not t["beside"]:
+            p.append(f"tag not a dashed outline beside the time: {t['dashed']} beside={t['beside']}")
+    elif r["tag"]:
+        p.append("a tag on a confirmed time")
+    return p
+
+
+def _bo_fit_problems(r):
+    """the phone panel fits its content: no empty band under the last button (inside its
+    padding, which keeps the browser's bottom toolbar clear), none above the buttons"""
+    p = []
+    if r["under"] is None or r["under"] > float(r["padB"].rstrip("px") or 0) + 8:
+        p.append(f"{r['under']} px under the last button (padding {r['padB']}, safe area {r['safe']})")
+    if r["gap"] is None or r["gap"] > 32:
+        p.append(f"gap under the last button {r['gap']} px (padding {r['padB']})")
+    if r["spacer"] > 32:
+        p.append(f"empty band of {r['spacer']} px above the buttons")
+    if not r["scrolls"] and r["h"] >= round(r["vh"] * 0.88) - 1 and r["spacer"] > 32:
+        p.append("the panel is the fixed 88% height")
+    return p
+
+
+def _bo_panel(browser, w, h, phone, lang, mode, opener, oid, key, shot=None, after=None):
+    ctx, page, errs = _hf_open(browser, w, h, phone, lang, mode, dsf=2 if (shot and phone) else None)
+    opener(page, oid); page.wait_for_timeout(700)
+    pre = after(page) if after else None
+    tapped = _bo_tap_key(page, phone, key)
+    r = page.evaluate(BO_PANEL_JS, phone) if tapped else None
+    if shot:
+        _bo_shot(page, shot)
+    return ctx, page, errs, tapped, r, pre
+
+
+BO_SIZES = ((375, 812, True), (393, 852, True), (1280, 800, False))
+
+
+def wave_bo1(browser):
+    print("\n=== BO1: box office only (ticket stub) ===")
+    eng = _hf_engine(browser)
+    ensure_shot_dir("BO1")
+    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
+    info = page.evaluate("""([ex,ex2])=>{
+      const today=TODAY, bx=(typeof BOXONLY!=='undefined'&&Array.isArray(BOXONLY))?BOXONLY:[];
+      const perfOn=new Set(PERFORMANCES.map(p=>p[0]+'|'+p[1]+'|'+p[2]));
+      const row=id=>{const r=bx.find(r=>r[0]===id&&r[1]>=today);return r?[r[0],r[1],r[2],!!r[3],isPrelimListing('show',id,'salzaismyah',r[1])]:null};
+      // a normal online show on a confirmed date: an official link, no box-office time, not inPerson
+      let online=null;
+      for(const p of PERFORMANCES){
+        if(p[1]<=today)continue; const sh=showById[p[0]]; if(!sh||sh.theatre==='salzaismyah')continue;
+        if((BOOKING[sh.theatre]||{}).inPerson||(typeof AGGLINKS==='object'&&AGGLINKS[sh.id]))continue;
+        if(isPrelimListing('show',sh.id,sh.theatre,p[1]))continue;
+        if(!LINK_MAP[sh.id]||PERFORMANCES.some(q=>q[0]===sh.id&&q[1]>=today&&boxOnly('show',sh.id,sh.theatre,q[1],q[2])))continue;
+        online=[sh.id,sh.theatre,p[1],p[2]]; break;}
+      // a preliminary time sold online (the tag is for every preliminary showing)
+      let prelimOnline=null;
+      for(const r of SHOWTIMES){ if(r[2]<today||!(r[3]||[]).length||!filmById[r[0]])continue;
+        if(isPrelimListing('film',r[0],r[1],r[2])&&!boxOnly('film',r[0],r[1],r[2],r[3][0])){prelimOnline=['film',r[0],r[1],r[2],r[3][0]];break;}}
+      if(!prelimOnline)for(const p of PERFORMANCES){ if(p[1]<today)continue; const sh=showById[p[0]]; if(!sh)continue;
+        if(isPrelimListing('show',sh.id,sh.theatre,p[1])&&!boxOnly('show',sh.id,sh.theatre,p[1],p[2])){prelimOnline=['show',sh.id,sh.theatre,p[1],p[2]];break;}}
+      // a film at a cinema that sells its own programme only at its box office (a regular
+      // screening there) and a festival screening at one (sold online), per cinema
+      const inP=Object.keys(BOOKING).filter(v=>BOOKING[v].inPerson&&cinById[v]);
+      const pick=(v,fest,after)=>{for(const r of SHOWTIMES){if(r[1]!==v||!(r[2]>after)||!filmById[r[0]])continue;
+        for(const t of (r[3]||[])){const u=festSaleUrl(r[0],v,r[2],t);
+          const shut=typeof festSaleState==='function'&&festSaleState(r[0],v,r[2],t);
+          if(fest?(u&&hostLabel(u)==='epaygo.bg'&&!shut):!!boxOnly('film',r[0],v,r[2],t))return [r[0],v,r[2],t];}}return null;};
+      const cin=pick('g8',false,today)||pick('odeon',false,today)||pick('g8',false,'0')||pick('odeon',false,'0');
+      const reg={}, fest={};
+      for(const v of ['g8','odeon']){reg[v]=pick(v,false,'0');fest[v]=pick(v,true,'0');}
+      return {bx:bx.length, bxBad:bx.filter(r=>!perfOn.has(r[0]+'|'+r[1]+'|'+r[2])).length,
+        ex:row(ex), ex2:row(ex2), online, prelimOnline, inP, cin, reg, fest};
+    }""", [BO_EXAMPLE, BO_EXAMPLE2])
+    print(f"  data: {info}")
+    check("bo1_data_every_entry_has_its_performance", info["bxBad"] == 0,
+          f"{info['bx']} BOXONLY entr(y/ies), {info['bxBad']} without a PERFORMANCES row")
+    check("bo1_inperson_venues", set(info["inP"]) >= {"odeon", "g8"}, f"BOOKING inPerson cinemas: {info['inP']}")
+    # the tag on a preliminary time that is sold online: rendered directly (any date)
+    po = info["prelimOnline"]
+    if not po:
+        skip("bo1_prelim_tag_online_showing", "no preliminary time sold online in this build")
+    else:
+        for lang in ("bg", "en"):
+            page.evaluate("(l)=>{S.lang=l}", lang)
+            r = page.evaluate("""(a)=>{const d=document.createElement('div');d.className='ss-sheet';
+              d.innerHTML=screeningSheetHtml(a[0],a[1],a[2],a[3],a[4]);document.body.appendChild(d);
+              const t=d.querySelector('.ss-ptag'),sr=t&&t.querySelector('.sg-sr');
+              const o={vis:t?[...t.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():null,
+                sr:sr?sr.textContent.trim():'',stub:!!d.querySelector('.ss-stub'),
+                old:[...d.querySelectorAll('.ss-status-head')].map(e=>e.textContent.trim())};d.remove();return o;}""", po)
+            c = BO_COPY[lang]
+            check(f"bo1_prelim_tag_online_showing_{lang}",
+                  r["vis"] == c["tag"] and c["tagSr"] in r["sr"] and not r["stub"] and c["oldPrelim"] not in r["old"],
+                  f"{po}: {r}")
+        page.evaluate("()=>{S.lang='bg'}")
+    # a preliminary venue row in a sheet keeps its "Предварителна програма" line (its
+    # i18n key once went missing with the panel's old preliminary card: the line was empty)
+    for lang in ("bg", "en"):
+        txt = page.evaluate("""(l)=>{S.lang=l;const d=document.createElement('div');
+          d.innerHTML=p3eRowHtml('show',{name:'X'},{venueId:'x',times:['19:00']},true,'');
+          const e=d.querySelector('.p3e-prelim-line');return e?e.textContent.trim():null;}""", lang)
+        check(f"bo1_sheet_prelim_line_{lang}", txt == {"bg": "Предварителна програма", "en": "Preliminary programme"}[lang],
+              f"prelim row line: {txt!r}")
+    page.evaluate("()=>{S.lang='bg'}")
+    ctx.close()
+
+    # ---- the two Сълза и смях examples: case 1 (online seller), case 2 (none) ----
+    for ex_id, ex in ((BO_EXAMPLE, info["ex"]), (BO_EXAMPLE2, info["ex2"])):
+        case = "case1" if ex_id == BO_EXAMPLE else "case2"
+        if not ex:
+            skip(f"bo1_{case}_panel", f"{ex_id} has no upcoming BOXONLY performance in this build")
+            continue
+        _, d, tm, alt, prelim = ex
+        key = f"show:{ex_id}|salzaismyah|{d}|{tm}"
+        runs = [(w, h, ph, lang) for (w, h, ph) in BO_SIZES for lang in ("bg", "en")] if case == "case1" \
+            else [(393, 852, True, "bg"), (393, 852, True, "en"), (1280, 800, False, "bg")]
+        for (w, h, phone, lang) in runs:
+            tag = f"{case}_{'phone' if phone else 'desktop'}{w}_{lang}"
+            shot = tag if (w in (393, 1280) and (lang == "bg" or (case == "case1" and w == 393))) else None
+            sb_js = BO_BUYBOX_JS if (w == 393 and lang == "bg") else None
+            ctx, page, errs, tapped, r, sb = _bo_panel(browser, w, h, phone, lang, "theatre", _bo_open_show, ex_id, key,
+                                                       shot=shot, after=(lambda pg: pg.evaluate(sb_js)) if sb_js else None)
+            probs = _bo_panel_problems(r, lang, phone, False, alt, prelim)
+            if r and lang == "bg" and (not r["site"] or "salzaismyah.bg/site/play/" not in (r["site"]["href"] or "")):
+                probs.append(f"no theatre page line: {r['site']}")
+            check(f"bo1_{tag}", tapped and not probs, f"{key} tapped={tapped} alt={alt} prelim={prelim}: {probs}{_bo_m(r)}")
+            if sb is not None and case == "case1":
+                c = BO_COPY["bg"]
+                sp = _bo_stub_problems(sb["stub"], "bg", False, alt) if sb else ["no buy box"]
+                if sb and (sb["grey"] or any("Купи билет" in t for t in sb["links"]) or (alt and not any(c["online"] in t for t in sb["links"]))):
+                    sp.append(f"buy box: grey={sb['grey']} links={sb['links']}")
+                check("bo1_case1_sheet_buybox_stub", not sp, f"{sp} {sb and sb['text'][:120]!r}")
+                aria = page.evaluate("(k)=>{const e=[...document.querySelectorAll('#scrim [data-sspill]')].find(x=>x.dataset.sspill===k);return e?e.getAttribute('aria-label'):null}", key)
+                check("bo1_example_pill_name", bool(aria) and "билети на касата" in aria and "само" not in aria, f"pill aria-label: {aria!r}")
+            if case == "case1" and phone and w == 393 and lang == "bg" and r:
+                # tapping the stub does nothing: the panel stays, no navigation, nothing focused on it
+                url0 = page.url
+                hit = _hf_tap_el(page, True, "()=>document.querySelector('#ss-wrap .ss-stub')")
+                page.wait_for_timeout(400)
+                after = page.evaluate("()=>({open:!!document.querySelector('#ss-wrap:not([hidden]) .ss-stub'),pages:0})")
+                check("bo1_stub_tap_is_harmless", hit and after["open"] and page.url == url0 and len(ctx.pages) == 1,
+                      f"tapped={hit} still open={after['open']} url same={page.url == url0} tabs={len(ctx.pages)}")
+            if case == "case1" and w == 1280 and lang == "bg":
+                cal = page.evaluate("(a)=>{const e=calEvent('show',a[0],'salzaismyah',a[1],a[2]);return e?{d:e.description||''}:null}",
+                                    [ex_id, d, tm])
+                txt = (cal or {}).get("d", "")
+                check("bo1_example_calendar", bool(cal) and "/site/selector/" not in txt and "на касата" in txt,
+                      f"calendar description: {txt[:160]!r}")
+            check(f"bo1_no_page_errors_{tag}", not errs, f"{errs[:2]}")
+            ctx.close()
+
+    # ---- a normal online show: "Купи билет", no stub, and the phone panel fits too ----
+    if not info["online"]:
+        skip("bo1_online_show_buy", "no upcoming confirmed show with an official link outside Сълза и смях")
+    else:
+        sid, vid, d, tm = info["online"]
+        for (w, h, phone) in ((393, 852, True), (1280, 800, False)):
+            ctx, page, errs, tapped, r, _ = _bo_panel(browser, w, h, phone, "bg", "theatre", _bo_open_show, sid,
+                                                      f"show:{sid}|{vid}|{d}|{tm}",
+                                                      shot="online_phone393_bg" if phone else None)
+            probs = [] if r else ["no panel"]
+            if r:
+                if r["pri"] != ["Купи билет"] or r["stubs"] or r["site"] or r["tag"]:
+                    probs.append(f"pri={r['pri']} stubs={r['stubs']} site={r['site']} tag={r['tag']}")
+                if phone:
+                    probs += _bo_fit_problems(r)
+            check(f"bo1_online_show_buy_{'phone' if phone else 'desktop'}", tapped and not probs,
+                  f"{sid} {d} {tm}: tapped={tapped} {probs}{_bo_m(r)}")
+            ctx.close()
+
+    # ---- a cinema that sells only at its box office: the red stub ----
+    if not info["cin"]:
+        ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+        r = page.evaluate("""(v)=>{const f=FILMS[0];const d=document.createElement('div');d.className='ss-sheet';
+          d.innerHTML=screeningSheetHtml('film',f.id,v,TODAY,'20:00');document.body.appendChild(d);
+          const s=d.querySelector('.ss-stub');const o={stub:!!s,cin:!!s&&s.classList.contains('cin'),
+            pri:d.querySelectorAll('.ss-btn.pri').length,text:d.textContent};d.remove();return o;}""", info["inP"][0])
+        check("bo1_cinema_inperson_panel", r["stub"] and r["cin"] and r["pri"] == 0 and "само на касата" in r["text"],
+              f"no upcoming in-person screening; rendered for {info['inP'][0]}: {r['stub']} cin={r['cin']} pri={r['pri']}")
+        ctx.close()
+    else:
+        fid, vid, d, tm = info["cin"]
+        key = f"film:{fid}|{vid}|{d}|{tm}"
+        prelim_c = None
+        for (w, h, phone) in BO_SIZES:
+            for lang in ("bg", "en"):
+                tag = f"cinema_{vid}_{'phone' if phone else 'desktop'}{w}_{lang}"
+                shot = tag if (w in (393, 1280) and lang == "bg") else None
+                sb_js = BO_BUYBOX_JS if (w == 393 and lang == "bg") else None
+                ctx, page, errs, tapped, r, sb = _bo_panel(browser, w, h, phone, lang, "cinema", _bo_open_film, fid, key,
+                                                           shot=shot, after=(lambda pg: pg.evaluate(sb_js)) if sb_js else None)
+                if prelim_c is None:
+                    prelim_c = page.evaluate("(a)=>isPrelimListing('film',a[0],a[1],a[2])", [fid, vid, d])
+                probs = _bo_panel_problems(r, lang, phone, True, False, prelim_c)
+                check(f"bo1_{tag}", tapped and not probs, f"{key} tapped={tapped}: {probs}{_bo_m(r)}")
+                if sb is not None:
+                    sp = _bo_stub_problems(sb["stub"], "bg", True, False) if sb else ["no buy box"]
+                    if sb and sb["grey"]:
+                        sp.append("a grey box-office pill is left")
+                    check("bo1_cinema_sheet_buybox_stub", not sp, f"{sp} {sb and sb['text'][:120]!r}")
+                check(f"bo1_no_page_errors_{tag}", not errs, f"{errs[:2]}")
+                ctx.close()
+    _bo_mixed_cinemas(browser, info, eng)
+    _bo_festival_shut(browser, eng)
+    _bo_euro_cinema(browser, eng)
+    print(f"  engine: {eng}")
+
+
+# Кино Euro Cinema (owner, 2026-10-29): its own cinema, not G8 (epaygo.bg places the
+# CineLibri screenings there at бул. Александър Стамболийски 17). A festival cinema
+# (BOOKING festival): its screenings are the festival's, sold online on epaygo.bg. Its
+# filter chip sits with the independents; a film sheet lists it as its own venue; the time
+# panel says where it is (name and address), its map button opens that place, and "Купи
+# билет" opens that screening's own epaygo.bg page (never G8's, never the stub).
+EC_COPY = {"bg": {"venue": "Кино Euro Cinema, бул. „Александър Стамболийски“ 17", "buy": "Купи билет",
+                  "opens": "Отваря epaygo.bg", "map": "Покажи на картата"},
+           "en": {"venue": "Euro Cinema, 17 Aleksandar Stamboliyski Blvd.", "buy": "Buy a ticket",
+                  "opens": "Opens epaygo.bg", "map": None}}
+EC_MAP = "42.696825%2C23.319943"
+EC_PANEL_JS = r"""(phone)=>{
+  const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet'); if(!ss)return null;
+  const txt=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  const pri=ss.querySelector('.ss-btn.pri');
+  return {venue:txt(ss.querySelector('.ss-venue')), pri:pri?pri.getAttribute('href'):null, priText:txt(pri),
+    help:[...ss.querySelectorAll('.ss-help')].map(txt),
+    sec:[...ss.querySelectorAll('.ss-btn.sec')].map(e=>({t:txt(e),href:e.getAttribute('href')})),
+    stub:!!ss.querySelector('.ss-stub,[data-boxonly]'), site:!!ss.querySelector('a.ss-site'),
+    note:!!ss.querySelector('[data-festsale]'), text:txt(ss)};}"""
+
+
+def _bo_euro_cinema(browser, eng):
+    print("  -- Кино Euro Cinema: its own venue, festival screenings sold online --")
+    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    info = page.evaluate(r"""()=>{
+      const c=cinById['euro-cinema'], b=BOOKING['euro-cinema']||null;
+      const FR=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
+      // an upcoming Euro Cinema screening on sale, with its own epaygo page and a film card
+      const row=FR.find(r=>r[1]==='euro-cinema'&&r[2]>=TODAY&&filmById[r[0]]&&/^https:\/\/epaygo\.bg\/\d+$/.test(r[5]||'')
+        &&(r[6]==='onsale'||r[6]==null)&&SHOWTIMES.some(s=>s[0]===r[0]&&s[1]==='euro-cinema'&&s[2]===r[2]&&(s[3]||[]).includes(r[3])));
+      const g8wrong=FR.filter(r=>r[1]==='g8'&&/euro cinema/i.test(r[7]||'')).length;
+      const ecRows=SHOWTIMES.filter(r=>r[1]==='euro-cinema'&&r[2]>=TODAY).length;
+      return {c:c?{name:c.name,nameEn:c.nameEn,kind:c.kind,area:c.area,areaEn:c.areaEn,map:venueMapUrl(c)}:null,
+        b, row:row||null, g8wrong, ecRows,
+        fm:!!(row&&FESTMARK&&FESTMARK.cinelibri&&(FESTMARK.cinelibri.films||[]).includes(row[0]))};}""")
+    print(f"  euro-cinema: {info}")
+    c = info["c"] or {}
+    check("bo1_euro_cinema_venue", bool(c) and c["kind"] == "independent" and c["name"] == "Кино Euro Cinema"
+          and c["nameEn"] == "Euro Cinema" and c["area"] == "бул. „Александър Стамболийски“ 17"
+          and EC_MAP in (c["map"] or "") and (info["b"] or {}).get("festival") and not (info["b"] or {}).get("inPerson"),
+          f"{info['c']} BOOKING {info['b']}")
+    check("bo1_euro_cinema_no_g8_row_at_euro_cinema", info["g8wrong"] == 0 and info["ecRows"] > 0,
+          f"{info['g8wrong']} FESTROWS row(s) under G8 placed at Euro Cinema by epaygo; {info['ecRows']} Euro Cinema row(s)")
+    # the cinema filter: its own chip among the independents, filtering to its screenings
+    page.evaluate("""()=>{const fab=document.querySelector('.fab');if(fab&&!fab.hidden){fab.click();return;}
+      const b=document.querySelector('.burger[data-drawer]');if(b)b.click();}""")
+    page.wait_for_timeout(600)
+    chip = page.evaluate("""()=>{const ch=document.querySelector(".drawer [data-venue='euro-cinema']"); if(!ch)return null;
+      const wrap=ch.closest('.chipwrap'), ind=[...wrap.querySelectorAll('[data-venue]')].map(e=>e.dataset.venue);
+      return {text:ch.textContent.trim(), indep:ind.includes('g8')&&ind.includes('odeon'), disabled:ch.disabled};}""")
+    check("bo1_euro_cinema_filter_chip", bool(chip) and chip["text"] == "Кино Euro Cinema" and chip["indep"] and not chip["disabled"],
+          f"chip: {chip}")
+    ctx.close()
+    if not info["row"]:
+        skip("bo1_euro_cinema_panel", "no upcoming Euro Cinema screening on sale with its own epaygo page in this build")
+        return
+    fid, _v, d, tm, _fest, url = info["row"][:6]
+    key = f"film:{fid}|euro-cinema|{d}|{tm}"
+    check("bo1_euro_cinema_festival_mark", info["fm"], f"{fid} not in FESTMARK.cinelibri")
+    for (w, h, phone) in ((393, 852, True), (1280, 800, False)):
+        for lang in ("bg", "en"):
+            tag = f"euro_cinema_{'phone' if phone else 'desktop'}{w}_{lang}"
+            shot = "euro_cinema_phone393_bg" if (phone and lang == "bg") else (tag if lang == "bg" else None)
+            ctx, page, errs, tapped, r, rowname = _bo_panel(
+                browser, w, h, phone, lang, "cinema", _bo_open_film, fid, key, shot=shot,
+                after=lambda pg: pg.evaluate("""()=>{const e=[...document.querySelectorAll('#scrim [data-sspill]')]
+                  .find(x=>x.dataset.sspill.includes('|euro-cinema|'));return !!e;}"""))
+            lk = page.evaluate(EC_PANEL_JS, phone) if tapped else None
+            cc = EC_COPY[lang]
+            probs = [] if lk else ["no panel"]
+            if lk:
+                if lk["venue"] != cc["venue"]:
+                    probs.append(f"venue line {lk['venue']!r}")
+                if lk["priText"] != cc["buy"] or lk["pri"] != url:
+                    probs.append(f"buy {lk['priText']!r} -> {lk['pri']!r}, want {url}")
+                if cc["opens"] not in lk["help"]:
+                    probs.append(f"caption {lk['help']}")
+                maps = [s for s in lk["sec"] if "google.com/maps" in (s["href"] or "")]
+                if len(maps) != 1 or EC_MAP not in maps[0]["href"]:
+                    probs.append(f"map button {lk['sec']}")
+                if lk["stub"] or lk["site"] or lk["note"] or "G8" in lk["text"] or "Гладстон" in lk["text"]:
+                    probs.append(f"stub={lk['stub']} site={lk['site']} note={lk['note']} text={lk['text'][:120]!r}")
+            check(f"bo1_{tag}", tapped and rowname and not probs, f"{key} tapped={tapped} sheet row={rowname}: {probs}")
+            check(f"bo1_{tag}_no_page_errors", not errs, f"{errs[:2]}")
+            ctx.close()
+
+
+# the cinemas whose own programme sells only at the box office (Одеон, G8), where the
+# festivals sell online (adversarial review, 2026-10-28)
+BO_PLAIN = {"g8": "https://g8cinema.com/bg/", "odeon": "http://bnf.bg/bg/odeon/program/"}
+BO_SELLERS = ["epaygo.bg", "urboapp.com", "pricelesstickets.bg", "eventim.bg", "ticketportal.bg", "bilet.bg", "ticketstation.bg"]
+BO_LINKS_JS = r"""(phone)=>{
+  const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet'); if(!ss)return null;
+  const pri=ss.querySelector('.ss-btn.pri'), site=ss.querySelector('a.ss-site');
+  return {pri:pri?pri.getAttribute('href'):null, priText:pri?pri.textContent.trim():null,
+    help:[...ss.querySelectorAll('.ss-help')].map(e=>e.textContent.trim()),
+    site:site?site.getAttribute('href'):null, stub:!!ss.querySelector('.ss-stub,[data-boxonly]')};}"""
+BO_FORCED_JS = r"""(phone)=>{
+  const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet'); if(!ss)return null;
+  const bd=e=>{const c=getComputedStyle(e);return {t:[c.borderTopStyle,parseFloat(c.borderTopWidth)],r:[c.borderRightStyle,parseFloat(c.borderRightWidth)],
+    b:[c.borderBottomStyle,parseFloat(c.borderBottomWidth)],l:[c.borderLeftStyle,parseFloat(c.borderLeftWidth)],cls:e.className};};
+  const st=ss.querySelector('.ss-stub');
+  return {fc:matchMedia('(forced-colors: active)').matches, btns:[...ss.querySelectorAll('.ss-btn')].map(bd), stub:st?bd(st):null};}"""
+
+
+def _bo_seller(u):
+    h = re.sub(r"^www\.", "", (re.match(r"https?://([^/:?#]+)", u or "") or [None, ""])[1].lower())
+    return bool(h) and any(h == x or h.endswith("." + x) for x in BO_SELLERS)
+
+
+def _bo_mixed_cinemas(browser, info, eng):
+    print("  -- Одеон / G8: festival screenings online, the cinema's own programme at the box office --")
+    for v in ("g8", "odeon"):
+        reg, fest = (info.get("reg") or {}).get(v), (info.get("fest") or {}).get(v)
+        # a regular screening: the red stub, no "Купи билет", the site line the cinema's plain page
+        if not reg:
+            skip(f"bo1_{v}_regular_box_office", f"no regular {v} screening in this build")
+        else:
+            fid, _, d, tm = reg
+            ctx, page, errs, tapped, r, _ = _bo_panel(browser, 393, 852, True, "bg", "cinema", _bo_open_film, fid,
+                                                      f"film:{fid}|{v}|{d}|{tm}")
+            lk = page.evaluate(BO_LINKS_JS, True) if tapped else None
+            cal = page.evaluate("(a)=>{const e=calEvent('film',a[0],a[1],a[2],a[3]);return e?{u:e.url,d:e.description}:null}", [fid, v, d, tm])
+            probs = _bo_panel_problems(r, "bg", True, True, False, page.evaluate("(a)=>isPrelimListing('film',a[0],a[1],a[2])", [fid, v, d])) if r else ["no panel"]
+            if lk and (lk["site"] != BO_PLAIN[v] or _bo_seller(lk["site"])):
+                probs.append(f"site line {lk['site']!r}, want {BO_PLAIN[v]!r}")
+            if not cal or cal["u"] != BO_PLAIN[v] or _bo_seller(cal["u"]):
+                probs.append(f"calendar url {cal and cal['u']!r}")
+            check(f"bo1_{v}_regular_box_office", tapped and not probs, f"{fid} {d} {tm}: {probs}")
+            ctx.close()
+        # a festival screening: "Купи билет" to epaygo, no stub
+        if not fest:
+            skip(f"bo1_{v}_festival_online", f"no festival {v} screening with an epaygo link in this build")
+        else:
+            fid, _, d, tm = fest
+            shot = f"{v}_festival_phone393_bg" if v == "g8" else None
+            ctx, page, errs, tapped, r, _ = _bo_panel(browser, 393, 852, True, "bg", "cinema", _bo_open_film, fid,
+                                                      f"film:{fid}|{v}|{d}|{tm}", shot=shot)
+            lk = page.evaluate(BO_LINKS_JS, True) if tapped else None
+            ok = bool(lk) and lk["priText"] == BO_COPY["bg"]["buy"] and (lk["pri"] or "").startswith("https://epaygo.bg/") \
+                and not lk["stub"] and not lk["site"] and "Отваря epaygo.bg" in lk["help"]
+            check(f"bo1_{v}_festival_online", tapped and ok, f"{fid} {d} {tm}: {lk}")
+            check(f"bo1_{v}_festival_no_page_errors", not errs, f"{errs[:2]}")
+            ctx.close()
+    # every box-office-only showing: its calendar link and site line are never a ticket seller's
+    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    bad = page.evaluate("""(sellers)=>{
+      const seller=u=>{const h=hostLabel(u);return !!h&&sellers.some(x=>h===x||h.endsWith('.'+x));};
+      const out=[];let n=0;
+      const probe=(k,id,v,d,t)=>{const bo=boxOnly(k,id,v,d,t);if(!bo)return;n++;
+        const ev=calEvent(k,id,v,d,t),el=document.createElement('div');el.innerHTML=screeningSheetHtml(k,id,v,d,t);
+        const site=el.querySelector('a.ss-site');
+        if((ev&&seller(ev.url))||(site&&seller(site.getAttribute('href'))))out.push(k+':'+id+'|'+v+'|'+d+'|'+t+' '+(ev&&ev.url));};
+      for(const r of SHOWTIMES)if((BOOKING[r[1]]||{}).inPerson&&r[2]>=TODAY)for(const t of (r[3]||[]))probe('film',r[0],r[1],r[2],t);
+      for(const r of (typeof BOXONLY!=='undefined'?BOXONLY:[])){const sh=showById[r[0]];if(sh)probe('show',r[0],sh.theatre,r[1],r[2]);}
+      return {n,out};}""", BO_SELLERS)
+    check("bo1_box_office_calendar_never_a_seller", bad["n"] > 0 and not bad["out"],
+          f"{bad['n']} box-office showing(s) checked; seller links: {bad['out'][:3]}")
+    ctx.close()
+    # Windows High Contrast (forced colours): real buttons have a visible border, the stub is a note
+    if eng != "chromium":
+        skip("bo1_forced_colors", f"forced-colors emulation is Chromium's ({eng})")
+        return
+    reg = (info.get("reg") or {}).get("g8") or (info.get("reg") or {}).get("odeon")
+    ex = info.get("ex")
+    for name, opener, oid, key, mode in (
+            ("cinema", _bo_open_film, reg and reg[0], reg and f"film:{reg[0]}|{reg[1]}|{reg[2]}|{reg[3]}", "cinema"),
+            ("theatre", _bo_open_show, BO_EXAMPLE, ex and f"show:{BO_EXAMPLE}|salzaismyah|{ex[1]}|{ex[2]}", "theatre")):
+        if not key:
+            skip(f"bo1_forced_colors_{name}", "no box-office showing in this build")
+            continue
+        ctx, page, errs, tapped, r, _ = _bo_panel(
+            browser, 393, 852, True, "bg", mode, opener, oid, key,
+            shot="forced_colors_phone393_bg" if name == "cinema" else None,
+            after=lambda pg: pg.emulate_media(forced_colors="active"))
+        fc = page.evaluate(BO_FORCED_JS, True) if tapped else None
+        probs = []
+        if not fc or not fc["fc"]:
+            probs.append("forced colours not active")
+        else:
+            for b in fc["btns"]:
+                if any(side[0] in ("none", "hidden") or side[1] < 1 for side in (b["t"], b["r"], b["b"], b["l"])):
+                    probs.append(f"button without a full border: {b}")
+            st = fc["stub"]
+            if not st:
+                probs.append("no stub")
+            elif not (st["t"][0] == "none" and st["r"][0] == "none" and st["b"][0] == "none" and st["l"][0] == "dotted" and st["l"][1] >= 1):
+                probs.append(f"stub has a full border or no dotted left edge: {st}")
+        check(f"bo1_forced_colors_{name}", tapped and not probs, f"{key}: {probs} buttons={len((fc or {}).get('btns') or [])}")
+        ctx.close()
+
+
+# A festival screening at Одеон / G8 that cannot be bought online now (skeptic, 2026-10-29:
+# Черното топче, Одеон, 6 Nov 18:00 is "SOLD OUT" on cinelibri.com and epaygo has no tickets):
+# FESTROWS carries its sale state; "soldout" says „Билетите са изчерпани“ / "Sold out",
+# "notyet" „Билетите още не са в продажба“ / "Tickets not on sale yet", in the panel's own
+# quiet text where "Купи билет" would be, with the festival's page as a quiet link; never the
+# ticket stub, never a button. Screenshots for the owner (phone 393, BG and EN).
+# A festival screening FESTROWS lists with url null (skeptic, 2026-10-29: Черното топче, Euro
+# Cinema, 31 Oct 13:15, whose CineLibri buy button links the 30 Oct 18:15 epaygo event): no
+# "Купи билет" (it would sell another screening); „Билети през фестивала“ / "Tickets via the
+# festival" and the festival's film page as the quiet link ("via").
+BO_SHUT = {"bg": {"soldout": "Билетите са изчерпани", "notyet": "Билетите още не са в продажба",
+                  "via": "Билети през фестивала", "page": "Отвори страницата на фестивала ↗"},
+           "en": {"soldout": "Sold out", "notyet": "Tickets not on sale yet", "via": "Tickets via the festival",
+                  "page": "Open the festival page ↗"}}
+BO_SHUT_JS = r"""(phone)=>{
+  const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet'); if(!ss)return null;
+  const n=ss.querySelector('[data-festsale]'), p=n&&n.querySelector('p'), a=n&&n.querySelector('a.ss-site');
+  const d=ss.querySelector('#ss-d'), txt=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  const was=document.activeElement; if(n){n.tabIndex; n.focus&&n.focus();} const nf=!!n&&document.activeElement===n; if(was&&was.focus)was.focus();
+  return {state:n?n.dataset.festsale:null, role:n?n.getAttribute('role'):null, note:txt(p), noteFocus:nf,
+    noteCtl:n?!!(p&&p.closest('a,button')):false, ctlInNote:n?n.querySelectorAll('button,.ss-btn').length:0,
+    link:a?{t:txt(a),href:a.getAttribute('href'),cls:a.className}:null,
+    fontNote:p?getComputedStyle(p).fontSize:null, fontDate:d?getComputedStyle(d).fontSize:null,
+    colorNote:p?getComputedStyle(p).color:null, colorDate:d?getComputedStyle(d).color:null,
+    pri:[...ss.querySelectorAll('.ss-btn.pri')].map(txt), sec:[...ss.querySelectorAll('.ss-btn.sec')].map(txt),
+    stubs:ss.querySelectorAll('.ss-stub,.buystub,[data-boxonly]').length, text:txt(ss)};}"""
+
+
+def _bo_shut_problems(r, lang, state):
+    c, buy = BO_SHUT[lang], BO_COPY[lang]["buy"]
+    if not r:
+        return ["no panel"]
+    p = []
+    if r["state"] != state or r["role"] != "note":
+        p.append(f"note state {r['state']!r} role {r['role']!r}")
+    if r["note"] != c[state]:
+        p.append(f"note text {r['note']!r}")
+    if r["pri"] or buy in r["text"]:
+        p.append(f"offers {buy!r}: {r['pri']}")
+    if r["stubs"]:
+        p.append(f"{r['stubs']} ticket stub(s): it is not a box-office sale")
+    if r["noteFocus"] or r["noteCtl"] or r["ctlInNote"]:
+        p.append("the note is focusable or a control")
+    lk = r["link"]
+    if not lk or lk["t"] != c["page"] or "ss-btn" in lk["cls"] or not re.match(r"https://(www\.)?(cinelibri\.com|kinomania\.bg)/", lk["href"] or ""):
+        p.append(f"festival page link {lk}")
+    if r["fontNote"] != r["fontDate"] or r["colorNote"] != r["colorDate"]:
+        p.append(f"note not in the panel's date style: {r['fontNote']}/{r['colorNote']} vs {r['fontDate']}/{r['colorDate']}")
+    if len(r["sec"]) != 2:
+        p.append(f"secondary buttons {r['sec']}")
+    return p
+
+
+def _bo_festival_shut(browser, eng):
+    print("  -- festival screenings sold out / not on sale yet (FESTROWS sale state) --")
+    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    data = page.evaluate("""()=>{
+      const fr=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
+      const up=fr.filter(r=>r[2]>=TODAY&&filmById[r[0]]&&(SHOWTIMES.some(s=>s[0]===r[0]&&s[1]===r[1]&&s[2]===r[2]&&(s[3]||[]).includes(r[3]))));
+      const pick=st=>up.filter(r=>r[6]===st).sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
+      // the gate: every upcoming sold-out / not-yet row renders its note, never a buy button or a stub
+      const bad=[];let n=0;
+      for(const r of up){ if(r[6]!=='soldout'&&r[6]!=='notyet')continue; n++;
+        const el=document.createElement('div'); el.innerHTML=screeningSheetHtml('film',r[0],r[1],r[2],r[3]);
+        const no=el.querySelector('[data-festsale]');
+        if(el.querySelector('.ss-btn.pri')||el.querySelector('[data-boxonly]')||!no||no.dataset.festsale!==r[6]
+           ||/Купи билет/.test(el.textContent))bad.push(r.slice(0,4).join('|'));}
+      // a row with no ticket link of its own (url null, no soldout / notyet): the "via" note
+      const vbad=[];let vn=0;
+      for(const r of up){ if(r[6]==='soldout'||r[6]==='notyet'||(r.length>5&&r[5]))continue; vn++;
+        const el=document.createElement('div'); el.innerHTML=screeningSheetHtml('film',r[0],r[1],r[2],r[3]);
+        const no=el.querySelector('[data-festsale]');
+        if(el.querySelector('.ss-btn.pri')||el.querySelector('[data-boxonly]')||!no||no.dataset.festsale!=='via'
+           ||/Купи билет/.test(el.textContent))vbad.push(r.slice(0,4).join('|'));}
+      const via=up.filter(r=>r[6]!=='soldout'&&r[6]!=='notyet'&&!(r.length>5&&r[5])).sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
+      const topche=up.find(r=>r[1]==='euro-cinema'&&r[2]==='2026-10-31'&&r[3]==='13:15'&&/topche/.test(r[0]))||null;
+      const any=up.filter(r=>r[6]==='onsale').sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
+      return {soldout:pick('soldout'),notyet:pick('notyet'),via,topche,vn,vbad,any,n,bad,
+        counts:{soldout:up.filter(r=>r[6]==='soldout').length,notyet:up.filter(r=>r[6]==='notyet').length,onsale:up.filter(r=>r[6]==='onsale').length,unknown:up.filter(r=>!r[6]).length}};}""")
+    print(f"  FESTROWS upcoming sale states: {data['counts']}")
+    check("bo1_fest_shut_gate_no_buy_button", not data["bad"],
+          f"{data['n']} sold-out / not-yet row(s); with a buy button or stub: {data['bad'][:3]}")
+    check("bo1_fest_via_gate_no_buy_button", not data["vbad"],
+          f"{data['vn']} row(s) with no ticket link of their own; with a buy button, stub or no 'via' note: {data['vbad'][:3]}")
+    if data["topche"]:
+        print(f"  Черното топче, Euro Cinema, 31 Oct 13:15: url {data['topche'][5]!r} sale {data['topche'][6:7]}")
+        check("bo1_fest_via_topche_31oct_no_own_link", data["topche"][5] is None, f"{data['topche']}")
+    # the rule itself on a synthetic state (any build): a festival row marked soldout / notyet
+    syn = page.evaluate("""()=>{
+      const fr=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
+      const r=fr.find(r=>filmById[r[0]]&&FEST_ROW_MAP[r.slice(0,4).join('|')]); if(!r)return null;
+      const k=r.slice(0,4).join('|'), keep=FEST_ROW_MAP[k].sale, out={};
+      const keepN=FEST_ROW_MAP[k].nourl;
+      for(const st of ['soldout','notyet','','via']){FEST_ROW_MAP[k].sale=st==='via'?'':st;FEST_ROW_MAP[k].nourl=st==='via';
+        const el=document.createElement('div'); el.innerHTML=screeningSheetHtml('film',r[0],r[1],r[2],r[3]);
+        out[st||'none']={pri:el.querySelectorAll('.ss-btn.pri').length,note:(el.querySelector('[data-festsale]')||{}).dataset?el.querySelector('[data-festsale]').dataset.festsale:null,
+          stub:el.querySelectorAll('[data-boxonly]').length,box:!!boxOnly('film',r[0],r[1],r[2],r[3])};}
+      FEST_ROW_MAP[k].sale=keep; FEST_ROW_MAP[k].nourl=keepN; return out;}""")
+    if not syn:
+        skip("bo1_fest_shut_rule", "no FESTROWS row in this build")
+    else:
+        ok = (syn["soldout"] == {"pri": 0, "note": "soldout", "stub": 0, "box": False}
+              and syn["notyet"] == {"pri": 0, "note": "notyet", "stub": 0, "box": False}
+              and syn["none"]["note"] is None and syn["none"]["stub"] == 0
+              and syn["via"] == {"pri": 0, "note": "via", "stub": 0, "box": False})
+        check("bo1_fest_shut_rule", ok, f"{syn}")
+    ctx.close()
+    for state in ("soldout", "notyet", "via"):
+        row, sim = data[state], ""
+        if not row and data["any"]:
+            # none in this build's data: a real festival screening shown in that state (the
+            # app's map set in the page only; the data is not changed), named "_simulated"
+            row, sim = data["any"], "_simulated"
+        if not row:
+            skip(f"bo1_fest_{state}_panel", f"no upcoming {state} festival screening in this build")
+            continue
+        fid, v, d, tm = row[:4]
+        key = f"film:{fid}|{v}|{d}|{tm}"
+        force = (lambda pg, k="|".join(row[:4]), st=state: pg.evaluate(
+            "([k,st])=>{if(st==='via'){FEST_ROW_MAP[k].sale='';FEST_ROW_MAP[k].nourl=true;}else FEST_ROW_MAP[k].sale=st;}",
+            [k, st])) if sim else None
+        for (w, h, phone, lang) in ((393, 852, True, "bg"), (393, 852, True, "en"), (1280, 800, False, "bg")):
+            tag = f"festival_{state}_{'phone' if phone else 'desktop'}{w}_{lang}{sim}"
+            shot = tag if phone else None
+            ctx, page, errs, tapped, r, _ = _bo_panel(browser, w, h, phone, lang, "cinema", _bo_open_film, fid, key, shot=shot,
+                                                      after=force)
+            sh = page.evaluate(BO_SHUT_JS, phone) if tapped else None
+            probs = _bo_shut_problems(sh, lang, state)
+            if phone and r:
+                probs += _bo_fit_problems(r)
+            check(f"bo1_{tag}", tapped and not probs, f"{key} tapped={tapped}: {probs}")
+            check(f"bo1_no_page_errors_{tag}", not errs, f"{errs[:2]}")
+            ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -18479,6 +19268,7 @@ WAVES = {
     "TR2": wave_tr2,
     "UX1": wave_ux1,
     "B24": wave_b24,
+    "BO1": wave_bo1,
 }
 
 def main():

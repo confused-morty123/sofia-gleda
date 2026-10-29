@@ -1344,6 +1344,158 @@ _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _
 check("…a path the browser refuses counts as missing", '"with": 119' in _out)
 
 # ---------------------------------------------------------------------------
+# 4c2a: BOXONLY — performances a theatre sells only at its box office
+# ---------------------------------------------------------------------------
+print("4c2a: BOXONLY")
+_bo_fn = "function boxOnly(k,i,v,d,t){return null;}"
+
+
+def _bo_page(entries_js, with_fn=True):
+    """The minimal page with BOXONLY declared and, unless with_fn is False, the app's
+    boxOnly() on a line of its own in the same script."""
+    h = _minimal_html(extra_js=f"const BOXONLY={entries_js};")
+    return h.replace("/* SOFIA-DATA-END */", f"{_bo_fn}\n/* SOFIA-DATA-END */", 1) if with_fn else h
+
+
+_bo_ok = _json.dumps([["show0", _FUTURE, "10:00", None, "https://th0.example.bg/play/1"]])
+_rc, _out = _run_out(_bo_page(_bo_ok))
+check("a BOXONLY entry naming a real performance exits 0 (and is counted)",
+      _rc == 0 and "BOXONLY: 1 performance(s)" in _out)
+check("an empty BOXONLY exits 0 (no boxOnly() needed)",
+      _run(_minimal_html(extra_js="const BOXONLY=[];"), skip_freshness=True) == 0)
+_bo_lost = _json.dumps([["show0", _FUTURE, "23:59", None, None]])
+_rc, _out = _run_out(_bo_page(_bo_lost))
+check("a BOXONLY entry with no PERFORMANCES row exits non-zero",
+      _rc != 0 and "name no PERFORMANCES row" in _out)
+_bo_js = _json.dumps([["show0", _FUTURE, "10:00", "javascript:alert(1)", None]])
+_rc, _out = _run_out(_bo_page(_bo_js))
+check("a BOXONLY alt link that is not http(s) exits non-zero",
+      _rc != 0 and "BOXONLY entr(ies) are not" in _out)
+_bo_short = _json.dumps([["show0", _FUTURE, "10:00"]])
+_rc, _out = _run_out(_bo_page(_bo_short))
+check("a BOXONLY entry without its alt and page slots exits non-zero",
+      _rc != 0 and "BOXONLY entr(ies) are not" in _out)
+_bo_dup = _json.dumps([["show0", _FUTURE, "10:00", None, None]] * 2)
+_rc, _out = _run_out(_bo_page(_bo_dup))
+check("a duplicate BOXONLY entry exits non-zero", _rc != 0 and "duplicate BOXONLY" in _out)
+_rc, _out = _run_out(_bo_page(_bo_ok, with_fn=False))
+check("BOXONLY entries in an app without boxOnly() exit non-zero (they would offer Купи билет)",
+      _rc != 0 and "no boxOnly()" in _out)
+
+# ---------------------------------------------------------------------------
+# 4c2a2: FESTROWS — festival screenings at box-office-only cinemas (Одеон, G8)
+# ---------------------------------------------------------------------------
+print("4c2a2: FESTROWS")
+_fr_fn = "function festSaleUrl(i,v,d,t){return '';}"
+_C0 = '"cinema0": {"label": "CC0", "url": "https://example0.bg/"}'
+
+
+def _fr_page(entries_js, with_fn=True, c0_url="https://example0.bg/"):
+    """cinema0 sells its own programme only at its box office (BOOKING inPerson)."""
+    h = _minimal_html(extra_js=f"const FESTROWS={entries_js};")
+    assert _C0 in h
+    h = h.replace(_C0, '"cinema0": {"label": "CC0", "url": "%s", "inPerson": true}' % c0_url, 1)
+    return h.replace("/* SOFIA-DATA-END */", f"{_fr_fn}\n/* SOFIA-DATA-END */", 1) if with_fn else h
+
+
+_fr_ok = _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144"]])
+_rc, _out = _run_out(_fr_page(_fr_ok))
+check("a FESTROWS entry for a screening at a box-office cinema exits 0 (and is counted)",
+      _rc == 0 and "FESTROWS: 1 festival" in _out)
+_rc, _out = _run_out(_fr_page(_json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", None]])))
+check("a FESTROWS entry without a link exits 0", _rc == 0)
+_rc, _out = _run_out(_fr_page(_json.dumps([["f1", "cinema1", _FUTURE, "10:00", "cinelibri", None]])))
+check("a FESTROWS entry at a cinema that sells online anyway exits non-zero",
+      _rc != 0 and "sells online anyway" in _out)
+_rc, _out = _run_out(_fr_page(_json.dumps([["f0", "cinema0", _FUTURE, "23:59", "cinelibri", None]])))
+check("a FESTROWS entry with no SHOWTIMES row exits non-zero", _rc != 0 and "name no SHOWTIMES row" in _out)
+_rc, _out = _run_out(_fr_page(_json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://example0.bg/x"]])))
+check("a FESTROWS link that is not a festival or ticket-shop page exits non-zero",
+      _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+_rc, _out = _run_out(_fr_page(_fr_ok, with_fn=False))
+check("FESTROWS entries in an app without festSaleUrl() exit non-zero", _rc != 0 and "no festSaleUrl()" in _out)
+# the sale state (7th field, 2026-10-29): onsale / soldout / notyet / null
+_fr7 = lambda st: _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144", st]])
+_fr_fn_both = _fr_fn + "\nfunction festSaleState(i,v,d,t){return '';}"
+_fr_fn0 = _fr_fn
+_fr_fn = _fr_fn_both
+for _st in ("soldout", "notyet", "onsale", None):
+    _rc, _out = _run_out(_fr_page(_fr7(_st)))
+    check(f"a FESTROWS entry with sale state {_st!r} exits 0", _rc == 0)
+_rc, _out = _run_out(_fr_page(_fr7("soldout")))
+check("a sold-out FESTROWS entry is counted", "1 sold out, 0 not on sale yet" in _out)
+_rc, _out = _run_out(_fr_page(_fr7("maybe")))
+check("a FESTROWS sale state outside onsale/soldout/notyet exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+# the day the state was read (9th field, 2026-10-29): YYYY-MM-DD or null
+_fr9 = lambda rd: _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144", "onsale",
+                                None, rd]])
+for _rd in ("2026-10-29", None):
+    _rc, _out = _run_out(_fr_page(_fr9(_rd)))
+    check(f"a FESTROWS entry read on {_rd!r} (9th field) exits 0", _rc == 0)
+_rc, _out = _run_out(_fr_page(_fr9("yesterday")))
+check("a FESTROWS read day that is not YYYY-MM-DD exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+_fr_fn = _fr_fn0
+_rc, _out = _run_out(_fr_page(_fr7("notyet")))
+check("a not-on-sale FESTROWS entry in an app without festSaleState() exits non-zero",
+      _rc != 0 and "no festSaleState()" in _out)
+_rc, _out = _run_out(_fr_page(_fr7("onsale")))
+check("an on-sale FESTROWS entry needs no festSaleState()", _rc == 0)
+_rc, _out = _run_out(_fr_page("[]", c0_url="https://example0.bg/#buy-tickets"))
+check("a box-office cinema whose BOOKING url is a '#buy' ticket anchor exits non-zero",
+      _rc != 0 and "sells only at its box office but its url is a ticket page" in _out)
+_rc, _out = _run_out(_fr_page("[]", c0_url="https://epaygo.bg/123"))
+check("a box-office cinema whose BOOKING url is a ticket seller's exits non-zero",
+      _rc != 0 and "sells only at its box office but its url is a ticket page" in _out)
+
+# ---------------------------------------------------------------------------
+# 4c2a2: a festival cinema (BOOKING festival: Кино Euro Cinema, owner 2026-10-29) and the
+# epaygo place (FESTROWS 8th field): no row under G8 whose epaygo page names Euro Cinema
+# ---------------------------------------------------------------------------
+print("4c2a2: festival cinema + epaygo place")
+_EC_FIELDS = ', "area": "бул. „Александър Стамболийски“ 17", "areaEn": "17 Aleksandar Stamboliyski Blvd.", ' \
+             '"maps": "https://www.google.com/maps/search/?api=1&query=42.696825%2C23.319943"'
+_EP = "https://epaygo.bg/1354611053"
+_PL_EC, _PL_G8 = 'Кино "Euro Cinema"', "Културен център G8"
+
+
+def _ec_page(entries, vlinks=None, ec_fields=_EC_FIELDS):
+    """cinema0 -> g8 (box office only), cinema1 -> euro-cinema (BOOKING festival)."""
+    _fn = "function festSaleUrl(i,v,d,t){return '';}\nfunction festSaleState(i,v,d,t){return '';}"
+    h = _minimal_html(extra_js="const FESTROWS=" + _json.dumps(entries) + ";",
+                      vlinks_override=_json.dumps(vlinks) if vlinks else "")
+    h = h.replace(_C0, '"cinema0": {"label": "CC0", "url": "https://example0.bg/", "inPerson": true}', 1)
+    h = h.replace('"cinema1": {"label": "CC1", "url": "https://example1.bg/"}',
+                  '"cinema1": {"label": "CC1", "url": "https://www.cinelibri.com/eurocinema/", "festival": true}', 1)
+    h = h.replace('{"id": "cinema1", "chain": "CC", "name": "Cinema 1", "city": "Sofia"}',
+                  '{"id": "cinema1", "chain": "CC", "name": "Cinema 1", "city": "Sofia"' + ec_fields + '}', 1)
+    h = h.replace('"cinema0"', '"g8"').replace('"cinema1"', '"euro-cinema"')
+    return h.replace("/* SOFIA-DATA-END */", _fn + "\n/* SOFIA-DATA-END */", 1)
+
+
+_ec_ok = [["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_EC],
+          ["f0", "g8", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/2355774239", "onsale", _PL_G8]]
+_rc, _out = _run_out(_ec_page(_ec_ok))
+check("FESTROWS at a festival cinema (Euro Cinema) and at G8, each where epaygo places it, exit 0",
+      _rc == 0 and "FESTROWS: 2 festival" in _out)
+_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, None, None]]))
+check("…a row whose epaygo place is not known (null) exits 0", _rc == 0)
+_rc, _out = _run_out(_ec_page([["f0", "g8", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_EC]]))
+check("a FESTROWS row under G8 whose epaygo page names Euro Cinema exits non-zero",
+      _rc != 0 and "filed under a cinema their epaygo.bg page does not name" in _out)
+_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_G8]]))
+check("…and vice versa (under Euro Cinema, epaygo names G8)",
+      _rc != 0 and "filed under a cinema their epaygo.bg page does not name" in _out)
+_rc, _out = _run_out(_ec_page(_ec_ok, vlinks=[["f0", "g8", _EP]]))
+check("a G8 VLINKS entry linking an epaygo event stored as Euro Cinema's exits non-zero",
+      _rc != 0 and "VLINKS entr(ies) link an epaygo.bg event at another cinema" in _out)
+_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", 5]]))
+check("a FESTROWS place that is not a string or null exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+_rc, _out = _run_out(_ec_page([], ec_fields=', "area": "бул. „Александър Стамболийски“ 17", "areaEn": "17 Aleksandar Stamboliyski Blvd."'))
+check("a festival cinema without a map place exits non-zero", _rc != 0 and "has no map place" in _out)
+_rc, _out = _run_out(_ec_page([], ec_fields=', "maps": "https://www.google.com/maps/search/?api=1&query=42.69%2C23.31"'))
+check("a festival cinema without an address exits non-zero", _rc != 0 and "has no address" in _out)
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()

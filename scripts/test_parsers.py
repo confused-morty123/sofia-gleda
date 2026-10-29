@@ -2397,7 +2397,10 @@ for fest, name, want in [
     ("cinelibri", "Cine Grand Park center", ("app", "cg-park")),
     ("cinelibri", "Cinema City Mall of Sofia", ("app", "cc-sofia")),
     ("cinelibri", "Casa Libri", ("app", "casa-libri")),
-    ("cinelibri", "Евросинема", ("app", "g8")),
+    # Евросинема / Euro Cinema is its own cinema (owner, 2026-10-29), not G8
+    ("cinelibri", "Евросинема", ("app", "euro-cinema")),
+    ("cinelibri", "Евро Синема", ("app", "euro-cinema")),
+    ("cinelibri", "Културен център G8", ("app", "g8")),
     ("cinelibri", "Топлоцентрала", ("app", "toplo-film")),
     ("cinelibri", "Сцена Централни Хали", ("app", "tsentralni-hali")),
     ("cinelibri", "Евро Синема Варна", ("outside", None)),
@@ -2412,7 +2415,7 @@ for fest, name, want in [
     ("cinelibri", "Кино Арена Mega Mall", ("app", "arena-mega")),
     ("kinomania", "Кино Арена West Mall", ("app", "arena-mega")),
     ("kinomania", "Кино Арена Mega Mall", ("app", "arena-mega")),
-    ("kinomania", "Euro Cinema", ("app", "g8")),
+    ("kinomania", "Euro Cinema", ("app", "euro-cinema")),
     ("kinomania", "Lucky Пловдив", ("outside", None)),
     ("kinomania", "Стара Загора - Регионална библиотека", ("outside", None)),
 ]:
@@ -2518,7 +2521,11 @@ check("CineLibri reader: covered days", (_cl["covered_from"], _cl["covered_to"])
 check("CineLibri reader: Sofia screenings (title, date, time, venue, ticket)", _cl["screenings"][:2], [
     ("Мастило", "2026-10-15", "19:00", "Зала 1 на НДК", "https://epaygo.bg/3185539248"),
     ("Кокухо: Живо съкровище", "2026-11-08", "13:00", "Културен център G8", "https://epaygo.bg/3140859053")])
-check("CineLibri reader: every Sofia venue is known (Евросинема is G8)", _cl["unknown_venues"], {})
+check("CineLibri reader: every Sofia venue is known (Евросинема is Euro Cinema)", _cl["unknown_venues"], {})
+check("CineLibri reader: the Евросинема card maps to euro-cinema, the G8 card to g8",
+      [OFE.venue_id("cinelibri", s_[3]) for s_ in _cl["screenings"]
+       if s_[0].startswith("Малкият Никола") or s_[0].startswith("Кокухо")],
+      [("app", "g8"), ("app", "euro-cinema")])
 check("CineLibri reader: ... the Евросинема screening is kept under its own name for the venue table",
       [s_[3] for s_ in _cl["screenings"] if s_[0].startswith("Малкият Никола")], ["Евросинема"])
 check("CineLibri reader: other towns are dropped and counted", _cl["outside_sofia"], {"ФКЦ, Варна": 1})
@@ -3015,6 +3022,17 @@ check("11. a kept cinema: the festival row is added beside the kept one, prelimi
       (["18:00", "20:30"], 1, [], []))
 check("11b. ... and last run's festival rows there are never removed (the venue keeps every row)",
       _times(_r, "g", "dom-kino", "2026-10-28"), ["19:00"])
+# ... except a screening the festival now files at another venue (Euro Cinema told apart from
+# G8, 2026-10-29): with G8's own read failed, it must move to Euro Cinema, not show at both
+_r, _p, _pr, _i = S.merge_festival_rows(
+    [["e", "g8", "2026-10-30", ["20:45"]], ["h", "g8", "2026-10-30", ["18:00"]]], {"g8": _FL}, {},
+    {"cinelibri": [("e", "euro-cinema", "2026-10-30", "20:45")]},
+    {"cinelibri": ("2026-10-15", "2026-11-08")},
+    {"cinelibri": [("e", "g8", "2026-10-30", "20:45"), ("h", "g8", "2026-10-30", "18:00")]},
+    [], _FL, _EN, kept_venues={"g8"})
+check("11c. a kept cinema: a festival row the festival now files at another venue moves there",
+      (_times(_r, "e", "g8", "2026-10-30"), _times(_r, "e", "euro-cinema", "2026-10-30"), _times(_r, "h", "g8", "2026-10-30")),
+      (None, ["20:45"], ["18:00"]))
 
 _vrows = [["m", "ndk1", "2026-10-15", ["19:00"]], ["k", "ndk1", "2026-11-12", ["19:00"]],
           ["x", "dom-kino", "2026-10-15", ["18:00"]]]

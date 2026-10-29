@@ -440,6 +440,816 @@ check("fetch: stage pages down → the grid is still read, coverage ends with th
 check("fetch: stage pages down → hall is None for all rows",
       all(r[3].get("hall") is None for r in res_nostg["rows"]), True)
 
+print("salzaismyah — box office only (owner, 2026-10-28): the stage card's own signal")
+check("stage cards: buy link = online; 'БИЛЕТИ НА КАСА' and no buy link = box; cancelled = undetermined",
+      O.parse_salza_stage_sales(fx("theatre_salzaismyah_stage1.html")),
+      {"3148": (None, "https://www.salzaismyah.bg/site/play/545"),
+       "3147": ("online", "https://www.salzaismyah.bg/site/play/228"),
+       "3159": ("box", "https://www.salzaismyah.bg/site/play/194")})
+_stage_html = fx("theatre_salzaismyah_stage1.html")
+_bad_head = _stage_html.replace("01.11 неделя 19:00", "02.11 понеделник 19:00", 1)
+check("a card whose heading is not its schema.org date and time is undetermined",
+      O.parse_salza_stage_sales(_bad_head).get("3159", ("?",))[0], None)
+_apos = _stage_html.replace('"name": "ЖЕНА МИ СЕ КАЗВА БОРИС', '"name": "\\\'\\\'ЖЕНА МИ СЕ КАЗВА БОРИС', 1)
+check("schema.org with backslash-escaped apostrophes (not JSON) is still read",
+      [e[3] for e in O.parse_salza_stage(_apos)[1] if e[2] == "3159"], ["\'\'ЖЕНА МИ СЕ КАЗВА БОРИС"])
+_play = lambda body: ('<html><body><div class="col-md-6"><p>Комедия</p>' + body +
+                      '</div><hr><h5>КОНТАКТИ</h5><p>Театрална формация</p>'
+                      '<p><a href="https://melpomenatheatre.com">https://melpomenatheatre.com</a></p>'
+                      '<p><a href="http://www.pricelesstickets.bg">www.pricelesstickets.bg</a></p></body></html>')
+check("seller: 'Онлайн билети : <link>' names the seller (the page's own link is kept)",
+      O.parse_online_seller(_play('<p>Онлайн билети : <a href="http://www.pricelesstickets.bg/">www.pricelesstickets.bg</a></p>'),
+                            "salzaismyah.bg"), "http://www.pricelesstickets.bg/")
+check("seller: a bare address after the phrase, linked elsewhere on the page",
+      O.parse_online_seller(_play("<p>За онлайн билети е https://pricelesstickets.bg</p>"), "salzaismyah.bg"),
+      "http://www.pricelesstickets.bg")
+check("seller: a mistyped address counts only via the page's own link of that name",
+      O.parse_online_seller(_play("<p><strong>Онлайн билети за най-хубавите места в салона на:</strong></p>"
+                                  "<p><strong>www.pricelesstickets.b</strong></p>"), "salzaismyah.bg"),
+      "http://www.pricelesstickets.bg")
+check("seller: a contact link alone is not a seller",
+      O.parse_online_seller(_play("<p>Времетраене: 120 минути</p>"), "salzaismyah.bg"), None)
+check("seller: the theatre's own site is not another seller",
+      O.parse_online_seller("<p>Онлайн билети: www.salzaismyah.bg</p>", "salzaismyah.bg"), None)
+check("seller: a social page named after the phrase is not a seller",
+      O.parse_online_seller("<p>Онлайн билети и новини: www.facebook.com/salzaismyah</p>", "salzaismyah.bg"), None)
+_bo_pages = dict(salza_pages)
+_bo_pages["https://www.salzaismyah.bg/site/play/194"] = _play(
+    '<p>Онлайн билети : <a href="http://www.pricelesstickets.bg/">www.pricelesstickets.bg</a></p>').encode()
+_bo_net = FakeNet(_bo_pages)
+_bo_res = O.fetch_salzaismyah(_bo_net, TODAY)
+_bo_by = {(r[1], r[2]): r[3] for r in _bo_res["rows"] + _bo_res.get("extra_rows", [])}
+check("fetch: the box-office performance is marked, with its play page and the seller it names",
+      {k: _bo_by[("2026-11-01", "19:00")].get(k) for k in ("boxoffice", "boxoffice_page", "boxoffice_alt")},
+      {"boxoffice": True, "boxoffice_page": "https://www.salzaismyah.bg/site/play/194",
+       "boxoffice_alt": "http://www.pricelesstickets.bg/"})
+check("fetch: a performance with its buy link is marked sold online",
+      _bo_by[("2026-10-10", "19:05")].get("boxoffice"), False)
+check("fetch: a play page is read once, only for box-office performances",
+      [u for u in _bo_net.asked if "/site/play/" in u], ["https://www.salzaismyah.bg/site/play/194"])
+_bo_res2 = O.fetch_salzaismyah(FakeNet(salza_pages), TODAY)
+_bo_by2 = {(r[1], r[2]): r[3] for r in _bo_res2["rows"] + _bo_res2.get("extra_rows", [])}
+check("fetch: play page unreachable -> the performance stays undetermined (never guessed), noted",
+      ("boxoffice" in _bo_by2[("2026-11-01", "19:00")],
+       any("play page not read" in n for n in _bo_res2["notes"])), (False, True))
+check("fetch: stage pages unreachable -> nothing is marked",
+      any("boxoffice" in r[3] for r in res_nostg["rows"]), False)
+# C (adversarial review, 2026-10-28): a layout change must not read one card's signal for all
+_CARD_OPEN = '<div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-5">'
+_flat = _stage_html.replace(_CARD_OPEN, "").replace('</div>\n<script type="application/ld+json">',
+                                                     '\n<script type="application/ld+json">')
+_none3 = {"3148": None, "3147": None, "3159": None}
+_sales = lambda h: {k: v[0] for k, v in O.parse_salza_stage_sales(h).items()}
+check("V1 flat grid (no card per performance): every performance undetermined, not all 'online'",
+      _sales(_flat), _none3)
+check("V2 flat grid, buy class renamed, one 'БИЛЕТИ НА КАСА' badge: undetermined, not all 'box'",
+      _sales(_flat.replace("btn-buy-ticket", "btn-ticket")), _none3)
+check("V4b 'ОНЛАЙН И НА КАСА' badge and renamed buy class: never 'box' (its own selector link reads online)",
+      _sales(_stage_html.replace("btn-buy-ticket", "btn-tix").replace("БИЛЕТИ НА КАСА", "ОНЛАЙН И НА КАСА")),
+      {"3148": None, "3147": "online", "3159": None})
+# round 2 (skeptic, 2026-10-29). A1: the buy class renamed AND every card given the box badge,
+# the cards' own /site/selector/ links intact: a card linking its own selector is never 'box'
+_BADGE = '<span class="status-badge status-badge-navy"><i class="fas fa-ticket-alt"></i> БИЛЕТИ НА КАСА</span>'
+_a1 = _stage_html.replace('class="btn-buy-ticket"', 'class="btn btn-primary"').replace(
+    "КУПИ БИЛЕТ</a></div>", "КУПИ БИЛЕТ</a>" + _BADGE + "</div>")
+# round 4 (skeptic, 2026-10-29): a box badge beside a buy link to its own selector is a card
+# that contradicts itself: the selector page decides ("box?"), never online on the card alone
+check("A1 renamed buy class + a box badge on every card: the card with its own selector links goes to its selector page",
+      _sales(_a1), {"3148": None, "3147": "box?", "3159": "box"})
+# round 3 (skeptic E1, 2026-10-29): the poster's own-selector link alone is no longer read
+# online; the card is left to its selector page ("box?" with the box badge)
+check("A1b only the poster's link to its own selector (buy button gone), box badge: to the selector page, never box",
+      _sales(_stage_html.replace('<a href="/site/selector/3147" class="btn-buy-ticket"><i class="fas fa-ticket-alt"></i> КУПИ БИЛЕТ</a>',
+                                 _BADGE))["3147"], "box?")
+check("A1c a 'КУПИ БИЛЕТ' link to the card's own selector with any class: online",
+      _sales(_stage_html.replace('class="btn-buy-ticket"', 'class="x-buy"'))["3147"], "online")
+check("A1d a 'КУПИ БИЛЕТ' text link without a selector in a badge card: undetermined, never box",
+      _sales(_stage_html.replace(_BADGE.replace("status-badge-navy", "status-badge-navy"),
+                                 _BADGE + '<a href="/site/checkout">КУПИ БИЛЕТ</a>'))["3159"], None)
+# B: a stage page with a single card: the card is its grid cell, never <html>; the play
+# page is the card's own title link, never a promo / footer /site/play/ link
+_L = _stage_html.split("\n")
+_CO = '<div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-5">'
+_one = "\n".join(_L[:32] + [_L[32][:_L[32].index(_CO)]] + _L[36:])
+_promo = '<div class="promo"><a href="/site/play/999">ПРЕМИЕРА</a></div>'
+_one_promo = _one.replace('<main id="main-content">', _promo + '<main id="main-content">')
+check("B single card: box, its own play page",
+      O.parse_salza_stage_sales(_one), {"3159": ("box", "https://www.salzaismyah.bg/site/play/194")})
+check("B1 single card + a promo /site/play/ link in the header: the card's own title link, not the promo",
+      O.parse_salza_stage_sales(_one_promo), {"3159": ("box", "https://www.salzaismyah.bg/site/play/194")})
+check("B3 single card + a status badge in the page header: the card alone (box), the header not read",
+      O.parse_salza_stage_sales(_one.replace('<main id="main-content">',
+                                             '<span class="status-badge">НОВО</span><main id="main-content">')),
+      {"3159": ("box", "https://www.salzaismyah.bg/site/play/194")})
+check("B4 a card without its title link: no play page (so never marked box)",
+      O.parse_salza_stage_sales(_one.replace('<a href="/site/play/194"><h4', '<span><h4').replace("</h4></a>", "</h4></span>")),
+      {"3159": ("box", None)})
+_one_net = FakeNet({"https://www.salzaismyah.bg/site/play/999": b"<html>promo</html>",
+                    "https://www.salzaismyah.bg/site/play/194": _play("").encode()})
+_one_rows = [["Б", "2026-11-01", "19:00", {"url": "https://www.salzaismyah.bg/site/selector/3159", "hall": None}]]
+O.salza_box_office(_one_net, _one_rows, [_one_promo], [])
+check("B1 end to end: only the card's own play page is read and named",
+      (_one_rows[0][3].get("boxoffice_page"), [u for u in _one_net.asked if "/site/play/" in u]),
+      ("https://www.salzaismyah.bg/site/play/194", ["https://www.salzaismyah.bg/site/play/194"]))
+# the play page's own list of performances: the independent signal a first run needs
+_pl_box = ('<html><body><main><h5>ПРЕДСТАВЛЕНИЯ</h5><div><strong>Открита сцена СЪЛЗА И СМЯХ</strong> - '
+           '<time> 1 ноември, неделя, от 19:00</time>&nbsp;<i></i> <small><strong>БИЛЕТИ НА КАСА</strong></small></div>'
+           '<div><a href="https://www.salzaismyah.bg/site/selector/3164"><strong>Открита сцена</strong> - '
+           '<time>21 ноември, събота, от 19:00</time></a></div><hr><h5>КОНТАКТИ</h5></main></body></html>')
+check("play page list: 'БИЛЕТИ НА КАСА' line = box, a selector-linked line = online",
+      O.parse_salza_play_sales(_pl_box), {(11, 1, "19:00"): "box", (11, 21, "19:00"): "online"})
+check("play page without the list: {}", O.parse_salza_play_sales(_play("")), {})
+_cf = lambda html: (lambda n, r: (O.salza_box_office(n, r, [_one], (nt := [])), r[0][3], nt))(
+    FakeNet({"https://www.salzaismyah.bg/site/play/194": html.encode()}),
+    [["Б", "2026-11-01", "19:00", {"url": "https://www.salzaismyah.bg/site/selector/3159", "hall": None}]])
+check("the play page's own line says box: marked and confirmed",
+      {k: _cf(_pl_box)[1].get(k) for k in ("boxoffice", "boxoffice_confirmed")},
+      {"boxoffice": True, "boxoffice_confirmed": True})
+check("the play page does not list it: marked, not confirmed",
+      {k: _cf(_play(""))[1].get(k) for k in ("boxoffice", "boxoffice_confirmed")},
+      {"boxoffice": True, "boxoffice_confirmed": False})
+_contra = _cf(_pl_box.replace("<time> 1 ноември, неделя, от 19:00</time>&nbsp;<i></i> <small><strong>БИЛЕТИ НА КАСА</strong></small>",
+                              '<a href="/site/selector/3159"><time> 1 ноември, неделя, от 19:00</time></a>'))
+check("the play page sells it online (its selector linked): undetermined, noted",
+      ("boxoffice" in _contra[1], any("play page sells it online" in n for n in _contra[2])), (False, True))
+check("a buy link to another performance's selector is not this card's: undetermined",
+      _sales(_stage_html.replace('href="/site/selector/3147" class="btn-buy-ticket"',
+                                 'href="/site/selector/9999" class="btn-buy-ticket"'))["3147"], None)
+check("the badge is matched exactly (whitespace and case normalised)",
+      _sales(_stage_html.replace("БИЛЕТИ НА КАСА", "Билети  на   каса"))["3159"], "box")
+check("a card with two status badges is undetermined",
+      _sales(_stage_html.replace('<span class="status-badge status-badge-navy">',
+                                 '<span class="status-badge">ПОСЛЕДНИ МЕСТА</span><span class="status-badge status-badge-navy">'))["3159"], None)
+# round 3 (skeptic, 2026-10-29). E1: every card's poster links its own /site/selector/<id>;
+# that link alone is not an online signal: a buy link is, or the selector page
+_POSTER_3159 = '<img src="https://www.salzaismyah.bg/uploads/events_image/9eb69f128549a8bb8e539c3962245d21.jpg"'
+_e1 = _stage_html.replace(_POSTER_3159, '<a href="/site/selector/3159">' + _POSTER_3159, 1).replace(
+    'alt="ЖЕНА МИ СЕ КАЗВА БОРИС ">', 'alt="ЖЕНА МИ СЕ КАЗВА БОРИС "></a>', 1)
+check("E1 a poster linked to its own selector on the box card: to the selector page ('box?'), not online",
+      _sales(_e1), {"3148": None, "3147": "online", "3159": "box?"})
+check("E1 the buy buttons gone, posters linked: no card reads online on the poster link alone",
+      _sales(_e1.replace('<a href="/site/selector/3147" class="btn-buy-ticket"><i class="fas fa-ticket-alt"></i> КУПИ БИЛЕТ</a>', "")),
+      {"3148": None, "3147": "online?", "3159": "box?"})
+check("selector page: 'няма онлайн продажби' = box, a ticket choice = online, anything else None",
+      [O.parse_salza_selector_sales(fx(f"theatre_salzaismyah_selector_{k}.html")) for k in ("box", "online")]
+      + [O.parse_salza_selector_sales(_play(""))], ["box", "online", None])
+_SEL = "https://www.salzaismyah.bg/site/selector/{}"
+_e1_play = _play("<p>Онлайн билети: www.pricelesstickets.bg</p>").encode()
+
+
+def _e1_run(pages, html=_e1, rows=None):
+    net = FakeNet(dict({"https://www.salzaismyah.bg/site/play/194": _e1_play}, **pages))
+    rows = rows or [["Б", "2026-11-01", "19:00", {"url": _SEL.format(3159), "hall": None}],
+                    ["А", "2026-10-10", "19:05", {"url": _SEL.format(3147), "hall": None}]]
+    notes = []
+    O.salza_box_office(net, rows, [html], notes)
+    return [r[3].get("boxoffice") for r in rows], [u for u in net.asked if "/selector/" in u], notes
+
+
+check("E1 end to end: the selector page says no online sales -> box; only the ambiguous card's page read",
+      _e1_run({_SEL.format(3159): raw("theatre_salzaismyah_selector_box.html")})[:2],
+      ([True, False], [_SEL.format(3159)]))
+_r = _e1_run({_SEL.format(3159): raw("theatre_salzaismyah_selector_online.html")})
+check("E1 the selector page sells it while the card says box: undetermined, noted",
+      (_r[0], any("its selector page online" in n for n in _r[2])), ([None, False], True))
+_r = _e1_run({})
+check("E1 the selector page unreachable: undetermined (never online on the poster link), noted",
+      (_r[0], any("selector page 3159 not read" in n for n in _r[2])), ([None, False], True))
+_e1n = _e1.replace('<a href="/site/selector/3147" class="btn-buy-ticket"><i class="fas fa-ticket-alt"></i> КУПИ БИЛЕТ</a>', "")
+check("E1 no buy button, no badge, the selector page sells it: online",
+      _e1_run({_SEL.format(3147): raw("theatre_salzaismyah_selector_online.html"),
+               _SEL.format(3159): raw("theatre_salzaismyah_selector_box.html")}, _e1n)[0], [True, False])
+check("E1 no buy button, no badge, the selector page says no online sales: undetermined (box needs the badge)",
+      _e1_run({_SEL.format(3147): raw("theatre_salzaismyah_selector_box.html"),
+               _SEL.format(3159): raw("theatre_salzaismyah_selector_box.html")}, _e1n)[0], [True, None])
+_cap_sales = {"1": ("box?", None), "2": ("online?", None), "3": ("box?", None)}
+_cap_net = FakeNet({_SEL.format(n): raw("theatre_salzaismyah_selector_box.html") for n in (1, 2, 3)})
+_cap_notes = []
+O.salza_confirm_sales(_cap_net, _cap_sales, _cap_notes, cap=1)
+check("selector pages are capped per run: past the cap undetermined, noted once",
+      ({k: v[0] for k, v in _cap_sales.items()}, len(_cap_net.asked), sum("more than 1" in n for n in _cap_notes)),
+      ({"1": "box", "2": None, "3": None}, 1, 1))
+_w_sales = {"1": ("box?", None), "2": ("box?", None)}
+_w_net = FakeNet({_SEL.format(n): raw("theatre_salzaismyah_selector_box.html") for n in (1, 2)})
+O.salza_confirm_sales(_w_net, _w_sales, [], wanted={"2"})
+check("selector pages only for the grid's rows", (_w_sales["1"][0], _w_sales["2"][0], len(_w_net.asked)), (None, "box", 1))
+# round 4 (skeptic F1, 2026-10-29): the box card of 3159 gains a buy button to its own selector
+# beside its "БИЛЕТИ НА КАСА" badge (the live stage 1 page, reproduced): never silently online
+_F1_BADGE = '<span class="status-badge status-badge-navy"><i class="fas fa-ticket-alt"></i> БИЛЕТИ НА КАСА</span>'
+_f1 = lambda txt="КУПИ БИЛЕТ": _stage_html.replace(
+    _F1_BADGE, _F1_BADGE + f'<a class="btn-buy-ticket" href="/site/selector/3159"> {txt}</a>', 1)
+check("F1 box badge + a buy button to its own selector: to the selector page ('box?'), never online",
+      _sales(_f1())["3159"], "box?")
+check("F1 the same with the button reading just 'БИЛЕТИ': 'box?'", _sales(_f1("БИЛЕТИ"))["3159"], "box?")
+check("F1 box badge + another badge + its own buy button: undetermined",
+      _sales(_f1().replace(_F1_BADGE, '<span class="status-badge">ПОСЛЕДНИ МЕСТА</span>' + _F1_BADGE, 1))["3159"], None)
+_play194 = {"https://www.salzaismyah.bg/site/play/194": _pl_box.encode()}
+_r = _e1_run(dict(_play194, **{_SEL.format(3159): raw("theatre_salzaismyah_selector_box.html")}), _f1())
+check("F1 end to end: the selector page says no online sales -> still box office only (3147 online)",
+      _r[:2], ([True, False], [_SEL.format(3159)]))
+_r = _e1_run(dict(_play194, **{_SEL.format(3159): raw("theatre_salzaismyah_selector_online.html")}), _f1())
+check("F1 end to end: the selector page sells it -> undetermined (last run's entry kept), noted",
+      (_r[0], any("selector 3159" in n for n in _r[2])), ([None, False], True))
+_f1_rows = [["boris", "2026-11-01", "19:00", {"url": _SEL.format(3159), "hall": "Открита сцена", "stage_page": 1}],
+            ["a", "2026-10-10", "19:05", {"url": _SEL.format(3147), "hall": "Открита сцена", "stage_page": 1}]]
+O.salza_box_office(FakeNet(dict(_play194, **{_SEL.format(3159): raw("theatre_salzaismyah_selector_online.html")})),
+                   _f1_rows, [_f1()], [])
+import scrape_programs as _S  # noqa: E402
+check("F1 BOXONLY: the box-only performance is never silently dropped (undetermined keeps last run's entry)",
+      [e[0] for e in _S.theatre_box_office("official", [(r[0], r[1], r[2], r[3], "") for r in _f1_rows],
+                                           [r[:3] + [r[3]["hall"]] for r in _f1_rows],
+                                           [["boris", "2026-11-01", "19:00", None, None]],
+                                           [r[:3] + [r[3]["hall"]] for r in _f1_rows])], ["boris"])
+# round 4 (skeptic F1/F2, 2026-10-29): a performance box office only last run that reads online
+# now is checked on its play page (the selector it links, or "БИЛЕТИ НА КАСА" for it)
+_P228 = "https://www.salzaismyah.bg/site/play/228"
+_pl228 = lambda line: ('<html><body><main><h5>ПРЕДСТАВЛЕНИЯ</h5><div>' + line +
+                       '</div><hr><h5>КОНТАКТИ</h5></main></body></html>').encode()
+_ON228 = '<a href="https://www.salzaismyah.bg/site/selector/3147"><strong>Открита сцена</strong> - <time>10 октомври, събота, от 19:05</time></a>'
+_BX228 = '<strong>Открита сцена</strong> - <time>10 октомври, събота, от 19:05</time> <small><strong>БИЛЕТИ НА КАСА</strong></small>'
+
+
+def _flip(pages, prev=(("2026-10-10", "19:05"),), sel3147="online"):
+    base = {_SEL.format(3159): raw("theatre_salzaismyah_selector_box.html")}
+    if sel3147:
+        base[_SEL.format(3147)] = raw(f"theatre_salzaismyah_selector_{sel3147}.html")
+    net = FakeNet(dict(base, **pages))
+    rows = [["a", "2026-10-10", "19:05", {"url": _SEL.format(3147), "hall": None}]]
+    notes = []
+    O.salza_box_office(net, rows, [_stage_html], notes, prev_box=set(prev))
+    return ({k: rows[0][3].get(k) for k in ("boxoffice", "boxoffice_confirmed")},
+            _P228 in net.asked, any("box office only last run" in n for n in notes))
+
+
+# round 5 (skeptics, 2026-10-29): a performance box office only last run that reads online now
+# is decided by its selector page (the only page stating online sales); its play page must not
+# still say box office for it; a selector link around a play-page line is not online by itself
+check("F2 box only last run, online now, selector sells it, its play page links its selector: online, confirmed",
+      _flip({_P228: _pl228(_ON228)}), ({"boxoffice": False, "boxoffice_confirmed": True}, True, False))
+check("F2 box only last run, online now, selector sells it, play page still says 'БИЛЕТИ НА КАСА': undetermined, noted",
+      _flip({_P228: _pl228(_BX228)}), ({"boxoffice": None, "boxoffice_confirmed": None}, True, True))
+check("F2 box only last run, online now, selector sells it, its play page not read: undetermined, noted",
+      _flip({}), ({"boxoffice": None, "boxoffice_confirmed": None}, True, True))
+check("F2 box only last run, online now, selector sells it, play page does not list it: online, confirmed (selector)",
+      _flip({_P228: _pl228("")}), ({"boxoffice": False, "boxoffice_confirmed": True}, True, False))
+check("R1 box only last run, the card sells it, play page links its selector, selector says no online sales: undetermined, noted",
+      _flip({_P228: _pl228(_ON228)}, sel3147="box"), ({"boxoffice": None, "boxoffice_confirmed": None}, False, True))
+check("R1 box only last run, the card sells it, selector page not read: undetermined, noted",
+      _flip({_P228: _pl228(_ON228)}, sel3147=None), ({"boxoffice": None, "boxoffice_confirmed": None}, False, True))
+check("F2 online last run too: neither its selector nor its play page is read",
+      _flip({_P228: _pl228(_ON228)}, prev=()), ({"boxoffice": False, "boxoffice_confirmed": None}, False, False))
+O.BOX_PREV = {"salzaismyah": {("2026-10-10", "19:05")}}
+check("F2 prev_box defaults to BOX_PREV['salzaismyah'] (set by scrape_programs)",
+      (lambda n, r: (O.salza_box_office(n, r, [_stage_html], []), r[0][3].get("boxoffice"))[1])(
+          FakeNet({_P228: _pl228(_BX228)}), [["a", "2026-10-10", "19:05", {"url": _SEL.format(3147), "hall": None}]]),
+      None)
+O.BOX_PREV = {}
+# round 5 (skeptics, 2026-10-29), from the live markup: the box label moved INSIDE the
+# selector link ("<a class='btn-buy-ticket btn-box-office' href=/site/selector/N>БИЛЕТИ НА
+# КАСА</a>"), the play page's box line wrapped in its selector link; the selector page still
+# says "няма онлайн продажби". Never online on a link whose own text says box office.
+_U_BTN = '<a href="/site/selector/3159" class="btn-buy-ticket btn-box-office"><i class="fas fa-ticket-alt"></i> БИЛЕТИ НА КАСА</a>'
+_u_stage = _stage_html.replace(_F1_BADGE, _U_BTN, 1)
+_U_LINE = ('<a href="https://www.salzaismyah.bg/site/selector/3159"><strong>Открита сцена СЪЛЗА И СМЯХ</strong> - '
+           '<time> 1 ноември, неделя, от 19:00</time>&nbsp;<i></i> <small><strong>БИЛЕТИ НА КАСА</strong></small></a>')
+_u_play = ('<html><body><main><h5>ПРЕДСТАВЛЕНИЯ</h5><div>' + _U_LINE +
+           '</div><hr><h5>КОНТАКТИ</h5></main></body></html>').encode()
+check("U2 the box label inside its own selector link (class btn-buy-ticket): 'box?' (the selector page decides), never online",
+      _sales(_u_stage), {"3148": None, "3147": "online", "3159": "box?"})
+check("U2 a play-page line linked to its selector that says 'БИЛЕТИ НА КАСА': box, never online",
+      O.parse_salza_play_sales(_u_play.decode()), {(11, 1, "19:00"): "box"})
+check("R2 a reworded box badge ('БИЛЕТИ САМО НА КАСА') + a buy link to its own selector: 'box?'",
+      _sales(_f1().replace("БИЛЕТИ НА КАСА", "БИЛЕТИ САМО НА КАСА", 1))["3159"], "box?")
+
+
+def _u_run(stage, play, sel="box", prev=(("2026-11-01", "19:00"),)):
+    pages = {"https://www.salzaismyah.bg/site/play/194": play}
+    if sel:
+        pages[_SEL.format(3159)] = raw(f"theatre_salzaismyah_selector_{sel}.html")
+    net = FakeNet(pages)
+    rows = [["boris", "2026-11-01", "19:00", {"url": _SEL.format(3159), "hall": "Открита сцена", "stage_page": 1}],
+            ["a", "2026-10-10", "19:05", {"url": _SEL.format(3147), "hall": "Открита сцена", "stage_page": 1}]]
+    notes = []
+    O.salza_box_office(net, rows, [stage], notes, prev_box=set(prev))
+    prev_e = [["boris", "2026-11-01", "19:00", None, None]] if prev else []
+    w = [r[:3] + [r[3]["hall"]] for r in rows]
+    ents = _S.theatre_box_office("official", [(r[0], r[1], r[2], r[3], "") for r in rows], w, prev_e, w, notes)
+    return ({k: rows[0][3].get(k) for k in ("boxoffice", "boxoffice_confirmed")}, [e[0] for e in ents],
+            _SEL.format(3159) in net.asked, notes)
+
+
+check("U3 one card + its play page changed, box only last run, the selector page says no online sales: still box office only",
+      _u_run(_u_stage, _u_play)[:3], ({"boxoffice": True, "boxoffice_confirmed": True}, ["boris"], True))
+check("U4 the same card, a new box show (not box only last run), play page untouched: box office only",
+      _u_run(_u_stage, _pl_box.encode(), prev=())[:3], ({"boxoffice": True, "boxoffice_confirmed": True}, ["boris"], True))
+_r = _u_run(_u_stage, _u_play, sel="online")
+check("U3 the selector page sells it: undetermined, last run's entry kept, noted",
+      (_r[0]["boxoffice"], _r[1], any("selector 3159" in n for n in _r[3])), (None, ["boris"], True))
+_r1_stage = _stage_html.replace(_F1_BADGE, '<a class="btn-buy-ticket" href="/site/selector/3159"> КУПИ БИЛЕТ</a>', 1)
+_r = _u_run(_r1_stage, _u_play)
+check("R1 badge gone, a 'КУПИ БИЛЕТ' button, play line linked, selector says box: undetermined, entry kept, noted",
+      (_r[0], _r[1], _r[2], any("box office only last run" in n for n in _r[3])),
+      ({"boxoffice": None, "boxoffice_confirmed": None}, ["boris"], True, True))
+_r = _u_run(_r1_stage, _u_play.replace("БИЛЕТИ НА КАСА".encode(), b""), sel=None)
+check("R3 the same, play-line text dropped, selector page not read: undetermined, entry kept, noted",
+      (_r[0]["boxoffice"], _r[1], any("selector page 3159 not read" in n for n in _r[3])), (None, ["boris"], True))
+_r = _u_run(_r1_stage, _u_play.replace("БИЛЕТИ НА КАСА".encode(), b""), sel="online")
+check("R1 the theatre really opened online sales (selector sells it, play line linked): online, confirmed, dropped",
+      _r[:2], ({"boxoffice": False, "boxoffice_confirmed": True}, []))
+# round 6 (skeptic 1, 2026-10-29, live stage 1 reproduced): the box badge of a box-only
+# performance new since last run becomes the theatre's usual button to its own selector with
+# another label. A btn-buy-ticket link is decisive only when it says "КУПИ…"; else it is a
+# plain link and the selector page decides. Never boxoffice=False without that page.
+_S1_BTN = lambda lbl: (f'<a href="/site/selector/3159" class="btn-buy-ticket"><i class="fas fa-ticket-alt"></i> '
+                       f'{lbl}</a>')
+_s1 = lambda lbl: _stage_html.replace(_F1_BADGE, _S1_BTN(lbl), 1)
+check("S1 a btn-buy-ticket to its own selector labelled 'НЯМА ОНЛАЙН ПРОДАЖБИ': 'box?', never online",
+      _sales(_s1("НЯМА ОНЛАЙН ПРОДАЖБИ")), {"3148": None, "3147": "online", "3159": "box?"})
+check("S1 the same labelled 'САМО В КАСАТА': 'box?'", _sales(_s1("САМО В КАСАТА"))["3159"], "box?")
+check("S1 the same labelled 'ИНФОРМАЦИЯ': 'online?' (the selector page decides), never online outright",
+      _sales(_s1("ИНФОРМАЦИЯ"))["3159"], "online?")
+check("S1 'няма онлайн' / 'в касата' wording is box office; 'КУПИ' or 'ОНЛАЙН И НА КАСА' never",
+      [O._box_said(t) for t in ("НЯМА ОНЛАЙН ПРОДАЖБИ", "Само в касата", "БИЛЕТИ НА КАСАТА", "КУПИ БИЛЕТ НА КАСА",
+                                "ОНЛАЙН И НА КАСА")], [True, True, True, False, False])
+check("S1 a selector page saying only 'Няма онлайн продажби.' reads box",
+      O.parse_salza_selector_sales("<html><body><p>Няма онлайн продажби.</p></body></html>"), "box")
+for _lbl in ("НЯМА ОНЛАЙН ПРОДАЖБИ", "САМО В КАСАТА"):
+    _r = _u_run(_s1(_lbl), _pl_box.encode(), prev=())
+    check(f"S1 end to end, new box-only show, button '{_lbl}', selector says no online sales: box office only, listed",
+          _r[:3], ({"boxoffice": True, "boxoffice_confirmed": True}, ["boris"], True))
+_r = _u_run(_s1("ИНФОРМАЦИЯ"), _pl_box.encode(), prev=())
+check("S1 end to end, button 'ИНФОРМАЦИЯ', selector says no online sales: undetermined (never online), noted",
+      (_r[0]["boxoffice"], _r[2], any("selector 3159" in n for n in _r[3])), (None, True, True))
+_r = _u_run(_s1("ИНФОРМАЦИЯ"), _pl_box.encode(), sel=None, prev=())
+check("S1 the same, selector page not read: undetermined (never online), noted",
+      (_r[0]["boxoffice"], any("selector page 3159 not read" in n for n in _r[3])), (None, True))
+check("S1 an online card's own 'КУПИ БИЛЕТ' btn-buy-ticket still reads online (no selector page read)",
+      _e1_run({}, _stage_html)[:2], ([True, False], []))
+# round 8 (skeptic, 2026-10-29): the buy verb is a whole word ("ЗАКУПИ НА КАСАТА" is no buy
+# link), and a link with box wording or classed btn-box-office is never decisive online: the
+# card goes to the selector page ("box?")
+check("W1 'КУПИ' only as a whole word: 'ЗАКУПИ'/'ЗАКУПИТЕ' + box wording is box office, 'КУПИ…' never",
+      [O._box_said(t) for t in ("ЗАКУПИ НА КАСАТА", "Закупете билети в касата", "ЗАКУПИТЕ БИЛЕТИ НА КАСАТА",
+                                "КУПИ НА КАСАТА", "Купи билет")], [True, True, True, False, False])
+_W1_BTN = lambda lbl, cls="btn-buy-ticket btn-box-office": (
+    f'<a href="/site/selector/3159" class="{cls}"><i class="fas fa-ticket-alt"></i> {lbl}</a>')
+_w1 = lambda lbl, cls="btn-buy-ticket btn-box-office": _stage_html.replace(_F1_BADGE, _W1_BTN(lbl, cls), 1)
+check("W1 a btn-box-office link 'ЗАКУПИ НА КАСАТА' to its own selector: 'box?', never online",
+      _sales(_w1("ЗАКУПИ НА КАСАТА")), {"3148": None, "3147": "online", "3159": "box?"})
+check("W1 a btn-buy-ticket link 'КУПИ БИЛЕТ НА КАСА' to its own selector: 'box?', never online",
+      _sales(_w1("КУПИ БИЛЕТ НА КАСА", "btn-buy-ticket"))["3159"], "box?")
+check("W1 a btn-box-office link saying only 'КУПИ БИЛЕТ' to its own selector: 'box?', never online",
+      _sales(_w1("КУПИ БИЛЕТ"))["3159"], "box?")
+_r = _u_run(_w1("ЗАКУПИ НА КАСАТА"), _pl_box.encode(), prev=())
+check("W1 end to end, new box-only card, btn-box-office 'ЗАКУПИ НА КАСАТА', selector says no online sales: box office only, listed",
+      _r[:3], ({"boxoffice": True, "boxoffice_confirmed": True}, ["boris"], True))
+_r = _u_run(_w1("ЗАКУПИ НА КАСАТА"), _pl_box.encode(), sel="online", prev=())
+check("W1 the same, the selector page sells it: undetermined (never online), noted",
+      (_r[0]["boxoffice"], _r[2], any("selector 3159" in n for n in _r[3])), (None, True, True))
+# round 6 (skeptic 2, 2026-10-29): a reworded box badge on a card with no buy link is box
+# office (any _box_said wording), confirmed by the play page; an unread box wording is noted
+for _w in ("БИЛЕТИ САМО НА КАСА", "БИЛЕТИ НА КАСАТА"):
+    _st = _stage_html.replace(_F1_BADGE, _F1_BADGE.replace("БИЛЕТИ НА КАСА", _w), 1)
+    _pb = _pl_box.replace("БИЛЕТИ НА КАСА", _w).encode()
+    check(f"A1 no-link card, badge '{_w}': box", _sales(_st)["3159"], "box")
+    for _prev, _what in (((), "first run"), ((("2026-11-01", "19:00"),), "history run")):
+        _r = _u_run(_st, _pb, prev=_prev)
+        check(f"A1 badge '{_w}', {_what}: box office only, confirmed by the play page, listed, no note",
+              (_r[0], _r[1], _r[3]), ({"boxoffice": True, "boxoffice_confirmed": True}, ["boris"], []))
+    check(f"A1 badge '{_w}' + a poster link to its own selector: 'box?'",
+          _sales(_e1.replace(_F1_BADGE, _F1_BADGE.replace("БИЛЕТИ НА КАСА", _w), 1))["3159"], "box?")
+_st = _stage_html.replace(_F1_BADGE, _F1_BADGE.replace("БИЛЕТИ НА КАСА", "БИЛЕТИ НА КАСА И ОНЛАЙН"), 1)
+_r = _u_run(_st, _pl_box.encode(), prev=())
+check("A1 a box wording not read ('БИЛЕТИ НА КАСА И ОНЛАЙН'): undetermined, noted, never silent",
+      (_sales(_st)["3159"], _r[0]["boxoffice"], any("2026-11-01 19:00" in n and "not read" in n for n in _r[3])),
+      (None, None, True))
+_n = []
+_ss = {"7": ("box?", None)}
+O.salza_confirm_sales(FakeNet({_SEL.format(7): b"<html><body><p>nothing here</p></body></html>"}), _ss, _n)
+check("A1 a selector page read but saying neither: undetermined, noted",
+      (_ss["7"][0], any("selector 7" in n and "neither" in n for n in _n)), (None, True))
+# round 7 (skeptics, 2026-10-29, live stage 1 reproduced): a box card that gains a second badge,
+# whose badge class is renamed, or whose title link moves inside its heading, is never dropped
+# silently: a neutral badge (ПРЕМИЕРА, ГОСТУВАНЕ) is ignored, "badge" counts as a badge class,
+# <h4><a href=/site/play/N> is the title link; any box wording left unread is noted per row
+_P194 = "https://www.salzaismyah.bg/site/play/194"
+_NO_BOX = ({"boxoffice": True, "boxoffice_confirmed": True}, ["boris"])
+_t1 = re.sub(r'<a href="(/site/play/\d+)"><h4([^>]*)>(.*?)</h4></a>', r'<h4\2><a href="\1">\3</a></h4>', _stage_html)
+_x2 = _stage_html.replace('class="status-badge status-badge-navy"', 'class="badge badge-navy"')
+_t2 = lambda b: _stage_html.replace(_F1_BADGE, f'<span class="status-badge status-badge-red">{b}</span> ' + _F1_BADGE, 1)
+for _name, _st in (("T1 title link inside the heading (<h4><a>)", _t1), ("T2 + a 'ПРЕМИЕРА' badge", _t2("ПРЕМИЕРА")),
+                   ("X1 + a 'ГОСТУВАНЕ' badge", _t2("ГОСТУВАНЕ")), ("X2 badge class renamed to 'badge badge-navy'", _x2)):
+    check(f"{_name}: the box card reads box with its own play page",
+          O.parse_salza_stage_sales(_st)["3159"], ("box", _P194))
+    for _prev, _what in (((), "new since last run"), ((("2026-11-01", "19:00"),), "box only last run")):
+        _r = _u_run(_st, _pl_box.encode(), prev=_prev)
+        check(f"{_name}, {_what}: box office only, confirmed, listed, no note", (_r[0], _r[1], _r[3]), _NO_BOX + ([],))
+check("T1 the online card keeps its buy link reading", _sales(_t1)["3147"], "online")
+_r = _u_run(_stage_html, _pl_box.encode(), prev=())
+check("round 7 control: the real card, new since last run: listed, no note", (_r[0], _r[1], _r[3]), _NO_BOX + ([],))
+_un = {
+    "an unknown second badge ('ПОСЛЕДНИ МЕСТА')": _t2("ПОСЛЕДНИ МЕСТА"),
+    "the box wording outside any badge (plain <span>)": _stage_html.replace(
+        _F1_BADGE, '<span class="sale-note"><i class="fas fa-ticket-alt"></i> БИЛЕТИ НА КАСА</span>', 1),
+}
+for _name, _st in _un.items():
+    _r = _u_run(_st, _pl_box.encode(), prev=())
+    check(f"round 7 {_name}: undetermined, noted for that row, never silent",
+          (_sales(_st)["3159"], _r[0]["boxoffice"],
+           any("2026-11-01 19:00" in n and "box office in a form not read" in n for n in _r[3])), (None, None, True))
+_bx = set()
+O.parse_salza_stage_sales(_flat, _bx)
+check("round 7 a flat grid (no card per performance): the box card's selector is still flagged box wording",
+      _bx, {"3159"})
+_bx = set()
+O.parse_salza_stage_sales(_stage_html, _bx)
+check("round 7 the real page: only the box card is flagged box wording", _bx, {"3159"})
+_nt = re.sub(r'<a href="/site/play/194">(<h4[^>]*>[^<]*</h4>)</a>', r'<span>\1</span>', _stage_html, count=1)
+_r = _u_run(_nt, _pl_box.encode(), prev=())
+check("round 7 a box card without its title link: undetermined, noted (play page not found), never silent",
+      (O.parse_salza_stage_sales(_nt)["3159"], _r[0]["boxoffice"],
+       any("2026-11-01 19:00" in n and "play page not found" in n for n in _r[3])), (("box", None), None, True))
+# E1q / E1r: a reworded stage heading is still the same stage
+check("E1q/E1r stage headings normalised: case, quotes, dashes, the theatre's own name",
+      [O.salza_hall_name(h) for h in ("ОТКРИТА СЦЕНА", "Открита сцена „СЪЛЗА И СМЯХ“", "открита сцена - театър „Сълза и смях“",
+                                      "Камерна сцена „Славянска беседа“", "Сцена „Ъндърграунд“")],
+      ["Открита сцена", "Открита сцена", "Открита сцена", "Камерна сцена „Славянска беседа“", "Сцена „Ъндърграунд“"])
+_q_pages = dict(salza_pages)
+_q_pages[O.SALZA_STAGE_URL.format(n=1)] = raw("theatre_salzaismyah_stage1.html").decode("utf-8").replace(
+    "<strong>Открита сцена СЪЛЗА И СМЯХ</strong></h2>", "<strong>Открита сцена „СЪЛЗА И СМЯХ“</strong></h2>").encode()
+_q_res = O.fetch_salzaismyah(FakeNet(_q_pages), TODAY)
+check("E1q fetch: a quoted heading keeps the hall name and the stage page number",
+      {(r[3].get("hall"), r[3].get("stage_page")) for r in _q_res["rows"] + _q_res.get("extra_rows", []) if r[3].get("stage_page") == 1},
+      {("Открита сцена", 1)})
+check("fetch: each placed row carries its stage page number",
+      [r[3].get("stage_page") for r in res["rows"] if r[1:3] == ("2026-10-09", "19:30")], [2])
+# E: an http:// seller link becomes https:// when the seller's site answers on https (one GET per host)
+_e_pages = dict(_bo_pages)
+_e_pages["https://www.pricelesstickets.bg/"] = b"<html>ok</html>"
+_e_net = FakeNet(_e_pages)
+_e_res = O.fetch_salzaismyah(_e_net, TODAY)
+_e_by = {(r[1], r[2]): r[3] for r in _e_res["rows"] + _e_res.get("extra_rows", [])}
+check("seller served on https: the link is upgraded to https, the host asked once",
+      (_e_by[("2026-11-01", "19:00")].get("boxoffice_alt"),
+       _e_net.asked.count("https://www.pricelesstickets.bg/")), ("https://www.pricelesstickets.bg/", 1))
+check("seller not reachable on https: the link stays http",
+      _bo_by[("2026-11-01", "19:00")].get("boxoffice_alt"), "http://www.pricelesstickets.bg/")
+
+print("BOXONLY — scrape_programs.theatre_box_office (one theatre, pure)")
+import scrape_programs as _S  # noqa: E402
+_w = [["boris", "2026-11-01", "19:00", "Открита сцена", None], ["x", "2026-11-02", "19:00", None, None],
+      ["y", "2026-11-03", "19:00", None, None]]
+_m = lambda **kw: dict({"hall": None}, **kw)
+_rr = [("boris", "2026-11-01", "19:00", _m(boxoffice=True, boxoffice_alt="http://www.pricelesstickets.bg/",
+                                          boxoffice_page="https://www.salzaismyah.bg/site/play/194"), "Б"),
+       ("x", "2026-11-02", "19:00", _m(boxoffice=False), "X"),
+       ("y", "2026-11-03", "19:00", _m(), "Y")]
+check("official: the flagged performance is listed with its seller and page",
+      _S.theatre_box_office("official", _rr, _w, []),
+      [["boris", "2026-11-01", "19:00", "http://www.pricelesstickets.bg/", "https://www.salzaismyah.bg/site/play/194"]])
+check("official: sold online now -> last run's entry is dropped",
+      _S.theatre_box_office("official", _rr, _w, [["x", "2026-11-02", "19:00", None, None]])[1:], [])
+check("official: undetermined this run -> last run's entry is kept",
+      [e[0] for e in _S.theatre_box_office("official", _rr, _w, [["y", "2026-11-03", "19:00", None, None]])],
+      ["boris", "y"])
+check("unreachable: last run's entries are kept for performances still written, others dropped",
+      _S.theatre_box_office("unreachable", [], _w, [["y", "2026-11-03", "19:00", None, None],
+                                                    ["gone", "2026-11-04", "19:00", None, None]]),
+      [["y", "2026-11-03", "19:00", None, None]])
+check("a flagged row that is not written (past, excluded) is not listed",
+      _S.theatre_box_office("official", [("z", "2026-11-09", "19:00", _m(boxoffice=True), "Z")], _w, []), [])
+check("a non-http link is dropped, the entry kept",
+      _S.theatre_box_office("official", [("boris", "2026-11-01", "19:00",
+                                          _m(boxoffice=True, boxoffice_alt="javascript:x"), "Б")], _w, []),
+      [["boris", "2026-11-01", "19:00", None, None]])
+_pg = "<script>\nconst PRELIM_ROWS=[];\nconst AGGLINKS={};\n</script>"
+_pg2 = _S.write_boxonly(_pg, [["boris", "2026-11-01", "19:00", None, None]])
+check("write_boxonly inserts after PRELIM_ROWS; read_boxonly reads it back",
+      (_pg2.splitlines()[2][:20], _S.read_boxonly(_pg2)), ("const BOXONLY=[[\"bor", [["boris", "2026-11-01", "19:00", None, None]]))
+check("write_boxonly replaces in place", _S.read_boxonly(_S.write_boxonly(_pg2, [])), [])
+check("read_boxonly: an undeclared constant is []", _S.read_boxonly(_pg), [])
+# C (4): a stage that reads all box office or all online after a mix last run is not believed
+_hw = [["a", "2026-11-01", "19:00", "Камерна"], ["b", "2026-11-02", "19:00", "Камерна"],
+       ["c", "2026-11-03", "19:00", "Камерна"], ["d", "2026-11-04", "19:00", "Открита"]]
+_hm = lambda f, hall="Камерна": {"hall": hall, "boxoffice": f}
+_prev_mix = [["a", "2026-11-01", "19:00", None, None]]
+check("all box office on a stage that was a mix last run: undetermined, last run's entries kept",
+      [e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _hm(True), "") for k in _hw[:3]],
+                                           _hw, _prev_mix, _hw, [])], ["a"])
+_n = []
+check("all online on a stage that was a mix last run: last run's entry kept, noted",
+      ([e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _hm(False), "") for k in _hw[:3]],
+                                            _hw, _prev_mix, _hw, _n)], len(_n)), (["a"], 1))
+_n = []
+_S.theatre_box_office("official", [("a", "2026-11-01", "19:00", dict(_hm(False), boxoffice_confirmed=True), ""),
+                                   ("b", "2026-11-02", "19:00", _hm(False), ""), ("c", "2026-11-03", "19:00", _hm(False), "")],
+                      _hw, _prev_mix, _hw, _n)
+check("the guard note says how many rows it left undetermined and how many confirmed rows it believed (never 'kept' them)",
+      [n.split(": ", 1)[1] for n in _n],
+      ["Камерна reads all online (3 performance(s)) after a mix last run: 2 unconfirmed left undetermined, last run's entries kept; "
+       "1 confirmed by a second page of the theatre believed"])
+check("all box office on a stage that was all box office last run: believed",
+      [e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _hm(True), "") for k in _hw[:3]],
+                                           _hw, [[k[0], k[1], k[2], None, None] for k in _hw[:3]], _hw)],
+      ["a", "b", "c"])
+check("a mix this run is believed",
+      [e[0] for e in _S.theatre_box_office("official", [("a", "2026-11-01", "19:00", _hm(False), ""),
+                                                        ("b", "2026-11-02", "19:00", _hm(True), ""),
+                                                        ("c", "2026-11-03", "19:00", _hm(True), "")],
+                                           _hw, _prev_mix, _hw)], ["b", "c"])
+
+# round 2: a stage that flips wholesale versus last run, any number of determined rows
+_hw2 = _hw[:3]
+_n = []
+check("A1 via the guard: a stage all online last run reads all box office now: nothing marked, noted",
+      ([e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _hm(True), "") for k in _hw2],
+                                            _hw, [], _hw, _n)], len(_n)), ([], 1))
+check("a stage all box office last run reads all online now: last run's entries kept",
+      [e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _hm(False), "") for k in _hw2],
+                                           _hw, [[k[0], k[1], k[2], None, None] for k in _hw2], _hw)], ["a", "b", "c"])
+check("one determined row that flips a single-row stage is not believed either",
+      [e[0] for e in _S.theatre_box_office("official", [("d", "2026-11-04", "19:00", _hm(True, "Открита"), "")],
+                                           _hw, [], _hw)], [])
+check("one row flipping on a stage whose other rows did not (a mix this run): believed",
+      [e[0] for e in _S.theatre_box_office("official", [("a", "2026-11-01", "19:00", _hm(True), ""),
+                                                        ("b", "2026-11-02", "19:00", _hm(False), "")],
+                                           _hw, [], _hw)], ["a"])
+_hn = [[k[0], k[1], k[2], None] for k in _hw]
+check("hall None: compared with last run's rows of unknown stage (all online): an all-box run is not believed",
+      [e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _hm(True, None), "") for k in _hn[:2]],
+                                           _hn, [], _hn)], [])
+check("hall None, no unknown-stage rows last run: compared with all the theatre's (all online): not believed",
+      [e[0] for e in _S.theatre_box_office("official", [("x", "2026-11-05", "19:00", _hm(True, None), "")],
+                                           _hn + [["x", "2026-11-05", "19:00", None]], [], _hw)], [])
+check("a stage with no rows last run: believed",
+      [e[0] for e in _S.theatre_box_office("official", [("n", "2026-11-06", "19:00", _hm(True, "Нова"), "")],
+                                           [["n", "2026-11-06", "19:00", "Нова"]], [], _hw)], ["n"])
+# round 3 (skeptic E1r/E1q, 2026-10-29): the guard is keyed on the stage page, not the heading
+_sp = lambda f, hall, n=1: {"hall": hall, "boxoffice": f, "stage_page": n}
+_g_prev_rows = [["a", "2026-11-01", "19:00", "Открита сцена"], ["b", "2026-11-02", "19:00", "Открита сцена"],
+                ["c", "2026-11-03", "19:00", "Открита сцена"]]
+_g_prev_box = [["a", "2026-11-01", "19:00", None, None]]
+for _lbl, _hall in (("E1r", "ОТКРИТА СЦЕНА"), ("E1q", "Открита сцена „СЪЛЗА И СМЯХ“")):
+    _n = []
+    check(f"{_lbl} reworded heading ({_hall}) reads all online after a mix: last run's entry kept, noted",
+          ([e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _sp(False, _hall), "") for k in _g_prev_rows],
+                                                _g_prev_rows, _g_prev_box, _g_prev_rows, _n)], len(_n)), (["a"], 1))
+_n = []
+check("E1r no stage page, an unknown hall, no comparable rows, the theatre had BOXONLY: compared at theatre level",
+      ([e[0] for e in _S.theatre_box_office("official", [("n", "2026-11-06", "19:00", _hm(True, "НОВА"), ""),
+                                                         ("o", "2026-11-07", "19:00", _hm(True, "НОВА"), "")],
+                                            _g_prev_rows + [["n", "2026-11-06", "19:00", "НОВА"], ["o", "2026-11-07", "19:00", "НОВА"]],
+                                            _g_prev_box, _g_prev_rows, _n)], any("theatre as a whole" in x for x in _n)),
+      (["a"], True))
+check("E1r a new stage page with no comparable rows and no BOXONLY last run: believed",
+      [e[0] for e in _S.theatre_box_office("official", [("n", "2026-11-06", "19:00", _sp(True, "НОВА", 3), "")],
+                                           [["n", "2026-11-06", "19:00", "НОВА"]], [], _g_prev_rows)], ["n"])
+check("stage page key: the same performances as last run, a mix this run: believed",
+      [e[0] for e in _S.theatre_box_office("official", [("a", "2026-11-01", "19:00", _sp(False, "X"), ""),
+                                                        ("b", "2026-11-02", "19:00", _sp(True, "X"), "")],
+                                           _g_prev_rows, _g_prev_box, _g_prev_rows)], ["b"])
+# round 4 (skeptic, 2026-10-29): a uniform stage must not lock in. A guest performance sold
+# only at the box office on an otherwise empty stage page 3, its play page saying so too
+_U = "Сцена „Ъндърграунд“"
+_u_rows = [["a", "2026-11-01", "19:00", "Открита сцена"], ["b", "2026-11-02", "19:00", "Открита сцена"]]
+_u_g = ["g", "2026-11-12", "20:00", _U]
+_u_rr = lambda g_meta: [("a", "2026-11-01", "19:00", _sp(True, "Открита сцена"), ""),
+                        ("b", "2026-11-02", "19:00", _sp(False, "Открита сцена"), ""),
+                        ("g", "2026-11-12", "20:00", g_meta, "")]
+_u_prev, _u_prev_rows, _u_hist = [["a", "2026-11-01", "19:00", None, None]], _u_rows, []
+for _run in (1, 2, 3):
+    _n = []
+    _u_prev = _S.theatre_box_office("official", _u_rr(dict(_sp(True, _U, 3), boxoffice_confirmed=True)),
+                                    _u_rows + [_u_g], _u_prev, _u_prev_rows, _n)
+    _u_prev_rows = _u_rows + [_u_g]
+    _u_hist.append(([e[0] for e in _u_prev], len(_n)))
+check("U1 a uniform box-only stage 3 (its play page agrees), runs 1-3: marked every run, no note",
+      _u_hist, [(["a", "g"], 0)] * 3)
+_n = []
+check("U1 the same, its play page silent (stage card alone): not marked, noted (an independent signal needed)",
+      ([e[0] for e in _S.theatre_box_office("official", _u_rr(_sp(True, _U, 3)), _u_rows + [_u_g],
+                                            [["a", "2026-11-01", "19:00", None, None]], _u_rows, _n)], len(_n)),
+      (["a"], 1))
+_u_prev, _u_hist = [["a", "2026-11-01", "19:00", None, None], ["g", "2026-11-12", "20:00", None, None]], []
+for _run in (1, 2, 3):
+    _n = []
+    _u_prev = _S.theatre_box_office("official", _u_rr(dict(_sp(False, _U, 3), boxoffice_confirmed=True)),
+                                    _u_rows + [_u_g], _u_prev, _u_rows + [_u_g], _n)
+    _u_hist.append(([e[0] for e in _u_prev], len(_n)))
+check("U2 reverse: stage 3 turns online, its play page links the selector, runs 1-3: dropped, no note",
+      _u_hist, [(["a"], 0)] * 3)
+_n = []
+check("U2 the same, not confirmed by the play page: the guard keeps last run's entry, noted",
+      ([e[0] for e in _S.theatre_box_office("official", _u_rr(_sp(False, _U, 3)), _u_rows + [_u_g],
+                                            [["a", "2026-11-01", "19:00", None, None], ["g", "2026-11-12", "20:00", None, None]],
+                                            _u_rows + [_u_g], _n)], len(_n)), (["a", "g"], 1))
+_n = []
+check("U3 the guard still holds a stage that flips wholesale with no play page agreeing",
+      ([e[0] for e in _S.theatre_box_office("official", [(k[0], k[1], k[2], _sp(False, "Открита сцена"), "") for k in _u_rows],
+                                            _u_rows, [["a", "2026-11-01", "19:00", None, None]], _u_rows, _n)], len(_n)),
+      (["a"], 1))
+_fr1 = [("a", "2026-11-01", "19:00", dict(_hm(True), boxoffice_confirmed=True), ""),
+        ("b", "2026-11-02", "19:00", dict(_hm(True), boxoffice_confirmed=False), ""),
+        ("c", "2026-11-03", "19:00", _hm(False), "")]
+check("first run (no BOXONLY yet): only a performance its play page also says is box office",
+      [e[0] for e in _S.theatre_box_office("official", _fr1, _hw, [], [], first_run=True)], ["a"])
+check("a later run: the stage card's signal is enough",
+      [e[0] for e in _S.theatre_box_office("official", _fr1, _hw, [], [])], ["a", "b"])
+check("read_boxonly(page, None): None when undeclared (a first run), [] when declared empty",
+      (_S.read_boxonly(_pg, None), _S.read_boxonly(_S.write_boxonly(_pg, []), None)), (None, []))
+
+print("FESTROWS — scrape_programs.box_office_festival_rows (Одеон, G8)")
+_st = [["fest-film", "g8", "2026-11-01", ["13:00"]], ["reg-film", "g8", "2026-11-01", ["16:00"]],
+       ["ehoto", "odeon", "2026-10-29", ["20:00"]], ["fest-film", "lumiere", "2026-11-02", ["18:00"]],
+       ["two", "g8", "2026-11-03", ["14:00", "18:00"]]]
+_info = {"confirmed": [["cinelibri", "fest-film", "g8", "2026-11-01", "13:00"],
+                       ["cinelibri", "fest-film", "lumiere", "2026-11-02", "18:00"],
+                       ["cinelibri", "gone", "g8", "2026-11-05", "18:00"]],
+         "listed": [], "prelim_row": [], "prelim_date": [],
+         "contradicted": [["cinelibri", "ehoto", "odeon", "2026-10-29", "20:30"],
+                          ["cinelibri", "two", "g8", "2026-11-03", "20:00"]]}
+_scr = [("fest-film", "g8", "2026-11-01", "13:00", "https://epaygo.bg/1050441144", "https://www.cinelibri.com/x/"),
+        ("ehoto", "odeon", "2026-10-29", "20:30", "http://bnf.bg/bg/odeon/movies/6040/", "https://www.cinelibri.com/ehoto-mezhdu-nas/")]
+check("a festival screening at a box-office cinema, with its own epaygo page; the venue's contradicted time "
+      "maps to the festival's (its page, not the venue's); other cinemas and unshown rows left out",
+      _S.box_office_festival_rows(_info, _scr, _st, ["g8", "odeon"]),
+      [["ehoto", "odeon", "2026-10-29", "20:00", "cinelibri", "https://www.cinelibri.com/ehoto-mezhdu-nas/"],
+       ["fest-film", "g8", "2026-11-01", "13:00", "cinelibri", "https://epaygo.bg/1050441144"]])
+check("box_office_cinemas reads BOOKING inPerson",
+      _S.box_office_cinemas({"g8": {"inPerson": True}, "odeon": {"inPerson": True}, "cc": {"url": "x"}}), ["g8", "odeon"])
+_pg3 = _S.write_festrows(_pg2, [["f", "g8", "2026-11-01", "13:00", "cinelibri", None]])
+check("write_festrows inserts after BOXONLY and replaces in place",
+      (_pg3.splitlines()[3][:17], _S.write_festrows(_pg3, []).count("const FESTROWS=[];")), ("const FESTROWS=[[", 1))
+
+print("FESTROWS sale state: sold out / not on sale yet (skeptic, 2026-10-29)")
+import official_festivals as _OF  # noqa: E402
+_ep = lambda date_txt, tm, tickets, desc="Описание текст": (
+    f'<html><body><nav>Често задавани въпроси</nav><div>{date_txt}</div><h1>ЧЕРНОТО ТОПЧЕ</h1>'
+    f'<div>Място на провеждане Одеон</div><div>Начален час: {tm}</div><h3>Билети</h3>{tickets}'
+    f'<h3>Описание</h3><p>{desc}</p></body></html>')
+_EP_NONE = "<p>В момента няма билети в продажба.</p>"
+_EP_ON = "<div>Стандартен билет</div><button>Избери места</button><div>Избрани билети: 0.00</div>"
+check("epaygo: 'няма билети в продажба' without sold-out wording = notyet",
+      _S.parse_epaygo_sale(_ep("06 ное 2026", "18:00", _EP_NONE), "2026-11-06", {"18:00"}), "notyet")
+check("epaygo: a ticket type to choose seats for = onsale",
+      _S.parse_epaygo_sale(_ep("23 ное 2026", "18:30", _EP_ON), "2026-11-23", {"18:30"}), "onsale")
+check("epaygo: sold-out wording in the tickets block = soldout",
+      _S.parse_epaygo_sale(_ep("06 ное 2026", "18:00", "<p>Билетите са изчерпани</p>" + _EP_NONE), "2026-11-06", {"18:00"}),
+      "soldout")
+check("epaygo: 'изчерпан' in the film's description is not the tickets block",
+      _S.parse_epaygo_sale(_ep("06 ное 2026", "18:00", _EP_ON, "героят е изчерпан"), "2026-11-06", {"18:00"}), "onsale")
+check("epaygo: another date or start time = not this screening (None)",
+      (_S.parse_epaygo_sale(_ep("07 ное 2026", "18:00", _EP_NONE), "2026-11-06", {"18:00"}),
+       _S.parse_epaygo_sale(_ep("06 ное 2026", "20:00", _EP_NONE), "2026-11-06", {"18:00"})), (None, None))
+check("epaygo: an unknown page or none = None",
+      (_S.parse_epaygo_sale("<html>Грешка</html>", "2026-11-06", {"18:00"}), _S.parse_epaygo_sale(None, "x", set())), (None, None))
+_cl_card = lambda note: (
+    '<h2>Прожекции в София</h2><div class="vc_grid-container"><div class="vc_grid-item">'
+    '<a href="https://www.cinelibri.com/chernoto-topche/" title="Черното топче" class="vc_gitem-link vc-zone-link"></a>'
+    '<div class="vc_gitem-post-data-source-post_title"><h4>Черното топче</h4></div>'
+    '<div class="vc_gitem-acf">Одеон</div><div class="vc_gitem-acf"><p>петък,<br>6 ноември 2026 г., 18:00 часа<p></div>'
+    f'<div class="vc_gitem-acf film_add_info">{note}</div>'
+    '<a href="https://epaygo.bg/3480852601" title="КУПИ БИЛЕТИ">КУПИ БИЛЕТИ</a></div></div>')
+check("CineLibri day card: a red 'SOLD OUT' note marks the screening sold out; none or another note does not",
+      [_OF.parse_cinelibri_day(_cl_card(n), "2026-11-06")[0][0]["soldout"]
+       for n in ('<span style="color: red; font-weight: bold;">SOLD OUT</span>', "", "Премиера със специален гост",
+                 "ИЗЧЕРПАНИ БИЛЕТИ")], [True, False, False, True])
+_fr = [["topche", "odeon", "2026-11-06", "18:00", "cinelibri", "https://epaygo.bg/3480852601"],
+       ["bog", "odeon", "2026-11-23", "18:30", "kinomania", "https://epaygo.bg/4258828609"],
+       ["nyama", "g8", "2026-11-07", "16:15", "cinelibri", "https://epaygo.bg/1111111111"],
+       ["page", "g8", "2026-11-08", "13:00", "cinelibri", "https://www.cinelibri.com/x/"],
+       ["old", "g8", "2026-10-20", "18:00", "cinelibri", "https://epaygo.bg/2222222222"],
+       ["ehoto", "odeon", "2026-11-09", "20:00", "cinelibri", "https://epaygo.bg/3333333333"]]
+_pages = {"https://epaygo.bg/3480852601": _ep("06 ное 2026", "18:00", _EP_NONE),
+          "https://epaygo.bg/4258828609": _ep("23 ное 2026", "18:30", _EP_ON),
+          "https://epaygo.bg/1111111111": _ep("07 ное 2026", "16:15", _EP_NONE),
+          "https://epaygo.bg/3333333333": _ep("09 ное 2026", "20:30", _EP_NONE)}
+_asked = []
+def _fetch(u):
+    _asked.append(u)
+    return _pages.get(u)
+_info2 = {"contradicted": [["cinelibri", "ehoto", "odeon", "2026-11-09", "20:30"]]}
+_prev = [["page", "g8", "2026-11-08", "13:00", "cinelibri", None, "notyet"],
+         ["old", "g8", "2026-10-20", "18:00", "cinelibri", None, "soldout"]]
+_got = {r[0]: r[6] for r in _S.festival_sale_states(_fr, {("topche", "odeon", "2026-11-06", "18:00")}, _info2, _prev,
+                                                     "2026-10-29", _fetch)}
+check("sale states: the festival's SOLD OUT mark wins (no epaygo read); epaygo 'no tickets' = notyet; on sale; "
+      "no epaygo page and past rows keep last run's; a contradicted venue time is checked at the festival's time",
+      _got, {"topche": "soldout", "bog": "onsale", "nyama": "notyet", "page": "notyet", "old": "soldout", "ehoto": "notyet"})
+check("sale states: epaygo pages read nearest first, each once, only upcoming rows, never for a marked one",
+      _asked, ["https://epaygo.bg/1111111111", "https://epaygo.bg/3333333333", "https://epaygo.bg/4258828609"])
+_asked.clear()
+_got2 = {r[0]: r[6] for r in _S.festival_sale_states(_fr, set(), {}, [["bog", "odeon", "2026-11-23", "18:30", "k", None, "soldout"]],
+                                                     "2026-10-29", _fetch, cap=1)}
+check("sale states: over the cap, last run's state is kept (never guessed); unread rows without one stay null",
+      (_got2["bog"], _got2["nyama"], _got2["topche"], len(_asked)), ("soldout", None, "notyet", 1))
+_got3 = {r[0]: r[6] for r in _S.festival_sale_states(_fr[:1], set(), {}, [_fr[0] + ["onsale"]], "2026-10-29",
+                                                     lambda u: (_ for _ in ()).throw(OSError("down")))}
+check("sale states: an epaygo page that fails to load keeps last run's state", _got3, {"topche": "onsale"})
+_mm = [["topche", "g8", "2026-10-31", "13:15", "cinelibri", "https://epaygo.bg/1354611053"],
+       ["topche", "g8", "2026-10-30", "18:15", "cinelibri", "https://epaygo.bg/1354611053"]]
+_mm_notes = []
+_got4 = {r[2]: (r[5], r[6]) for r in _S.festival_sale_states(
+    _mm, set(), {}, [_mm[0] + ["onsale"]], "2026-10-29",
+    lambda u: _ep("30 окт 2026", "18:15", _EP_ON), notes=_mm_notes)}
+check("sale states: an epaygo link that is another screening's page (CineLibri's 31 Oct row links the "
+      "30 Oct event) is dropped and its state left unknown; the page's own screening keeps both",
+      (_got4, len(_mm_notes)),
+      ({"2026-10-31": (None, None), "2026-10-30": ("https://epaygo.bg/1354611053", "onsale")}, 1))
+print("Euro Cinema is its own venue: the epaygo place decides (owner, 2026-10-29)")
+_ep_ec1, _ep_ec2 = fx("festival_epaygo_1354611053.html"), fx("festival_epaygo_1188683500.html")
+check("epaygo fixtures 1354611053 / 1188683500: date, start time, place, on sale",
+      [(_S._epaygo_when(h)[:2], _S.parse_epaygo_place(h)) for h in (_ep_ec1, _ep_ec2)]
+      + [_S.parse_epaygo_sale(_ep_ec1, "2026-10-30", {"18:15"})],
+      [(("2026-10-30", "18:15"), 'Кино "Euro Cinema"'), (("2026-10-30", "20:45"), 'Кино "Euro Cinema"'), "onsale"])
+check("epaygo place: the 'Място на провеждане' line when the page has no schema.org location; none = None",
+      (_S.parse_epaygo_place('<span class="hide_web">Място на провеждане</span><span class="hide_mobile">'
+                             'Културен център G8 зала 1</span>'), _S.parse_epaygo_place("<html></html>"),
+       _S.parse_epaygo_place(None)), ("Културен център G8 зала 1", None, None))
+check("epaygo place -> venue: Euro Cinema, G8 (any hall), Одеон; anything else decides nothing",
+      [_OF.epaygo_place_venue(x) for x in ('Кино "Euro Cinema"', "Културен център G8", "Културен център G8 зала 1",
+                                            "Одеон филмотечно кино", "Филмотечно кино Одеон", "Кино Люмиер", None)],
+      ["euro-cinema", "g8", "g8", "odeon", "odeon", None, None])
+check("festival venue names: Евросинема / Euro Cinema are euro-cinema (not G8) in both festivals",
+      [_OF.venue_id(f, n) for f, n in (("cinelibri", "Евросинема"), ("cinelibri", "Евро Синема"),
+                                       ("cinelibri", "Euro Cinema"), ("kinomania", "Euro Cinema"),
+                                       ("kinomania", "ЕВРОСИНЕМА"), ("cinelibri", "Културен център G8"))],
+      [("app", "euro-cinema")] * 5 + [("app", "g8")])
+check("BOOKING: FESTROWS covers the box-office cinemas and the festival cinemas (Euro Cinema)",
+      _S.fest_sale_venues({"g8": {"inPerson": True}, "euro-cinema": {"url": "u", "festival": True},
+                           "lumiere": {"url": "u"}, "odeon": {"inPerson": True}}), ["euro-cinema", "g8", "odeon"])
+check("Euro Cinema is a festival venue (its rows are the festivals' screenings, confirmed)",
+      "euro-cinema" in _S.FESTIVAL_VENUES, True)
+_ec_rows = [["topche", "g8", "2026-10-30", "18:15", "cinelibri", "https://epaygo.bg/1354611053"],
+            ["nepoz", "euro-cinema", "2026-10-30", "20:45", "cinelibri", "https://epaygo.bg/1188683500"],
+            ["reggio", "g8", "2026-10-29", "18:00", "cinelibri", "https://epaygo.bg/2355774239"]]
+_ec_pages = {"https://epaygo.bg/1354611053": _ep_ec1, "https://epaygo.bg/1188683500": _ep_ec2,
+             "https://epaygo.bg/2355774239": _ep("29 окт 2026", "18:00", _EP_ON).replace(
+                 "<div>Място на провеждане Одеон</div>",
+                 '<span>Място на провеждане</span><span class="x">Културен център G8</span>')}
+_ec_fr = _S.festival_sale_states(_ec_rows, set(), {}, [["reggio", "g8", "2026-10-29", "18:00", "cinelibri", None,
+                                                         "onsale", "Културен център G8"]],
+                                 "2026-10-29", _ec_pages.get)
+check("sale states keep the epaygo page's own place (8th field) for the page's own screening",
+      {r[0]: r[7] for r in _ec_fr}, {"topche": 'Кино "Euro Cinema"', "nepoz": 'Кино "Euro Cinema"',
+                                     "reggio": "Културен център G8"})
+_ec_fr_prev = _S.festival_sale_states(_ec_rows[2:], set(), {}, [["reggio", "g8", "2026-10-29", "18:00", "cinelibri", None,
+                                                                  "onsale", "Културен център G8"]],
+                                      "2026-10-29", lambda u: None)
+check("…a page not read keeps last run's place for that very row", _ec_fr_prev[0][7], "Културен център G8")
+# the day each sale state was read (9th field; README: read once per nightly refresh)
+_rd = {r[0]: r[8] for r in _S.festival_sale_states(_fr, {("topche", "odeon", "2026-11-06", "18:00")}, _info2,
+                                                   [["page", "g8", "2026-11-08", "13:00", "cinelibri", None, "notyet", None, "2026-10-27"],
+                                                    ["old", "g8", "2026-10-20", "18:00", "cinelibri", None, "soldout"]],
+                                                   "2026-10-29", _pages.get)}
+check("sale states record the day they were read: today when read this run, last run's day when carried over, "
+      "None when unknown (no state)",
+      _rd, {"topche": "2026-10-29", "bog": "2026-10-29", "nyama": "2026-10-29", "page": "2026-10-27", "old": None,
+            "ehoto": "2026-10-29"})
+_ec_notes = []
+_ec_moves = _S.epaygo_relocations(_ec_fr, ["euro-cinema", "g8", "odeon"], {}, notes=_ec_notes)
+check("guard: a row under G8 whose epaygo page names Euro Cinema moves there; the rest stay",
+      _ec_moves, {("topche", "g8", "2026-10-30", "18:15"): "euro-cinema"})
+check("guard: …but not when G8's own programme lists that very time (flagged, its epaygo link dropped)",
+      (_S.epaygo_relocations(_ec_fr, ["euro-cinema", "g8"], {"g8": {("topche", "2026-10-30"): {"18:15"}}}, notes=_ec_notes),
+       len(_ec_notes)), ({("topche", "g8", "2026-10-30", "18:15"): None}, 1))
+check("guard: …nor to a venue FESTROWS does not cover (only reported)",
+      _S.epaygo_relocations(_ec_fr, ["g8"], {}, notes=_ec_notes), {})
+_ec_vice = [["nepoz", "euro-cinema", "2026-10-30", "20:45", "cinelibri", "https://epaygo.bg/x", "onsale", "Културен център G8"]]
+check("guard: vice versa, a row under Euro Cinema whose epaygo page names G8 moves to G8",
+      _S.epaygo_relocations(_ec_vice, ["euro-cinema", "g8"]), {("nepoz", "euro-cinema", "2026-10-30", "20:45"): "g8"})
+_ec_st = [["topche", "g8", "2026-10-30", ["18:15", "20:15"]], ["nepoz", "euro-cinema", "2026-10-30", ["20:45"]],
+          ["solo", "g8", "2026-10-31", ["13:00"]]]
+_ec_f2, _ec_st2, _ec_pr2, _ec_pf2, _ec_moved = _S.apply_epaygo_relocations(
+    _ec_moves, _ec_fr, _ec_st, [["topche", "g8", "2026-10-30"]], {"g8": "2026-10-31", "euro-cinema": "2026-12-05"},
+    set(_S.FESTIVAL_VENUES), "2026-10-29")
+check("apply: the time moves in SHOWTIMES (the G8 cell keeps its other time), FESTROWS re-filed, nothing preliminary "
+      "at the festival venue, the G8 PRELIM_ROWS entry stays while G8 still shows the film that day",
+      (_ec_st2, sorted(r[:2] for r in _ec_f2), _ec_pr2, _ec_moved),
+      ([["nepoz", "euro-cinema", "2026-10-30", ["20:45"]], ["topche", "euro-cinema", "2026-10-30", ["18:15"]],
+        ["topche", "g8", "2026-10-30", ["20:15"]], ["solo", "g8", "2026-10-31", ["13:00"]]],
+       [["nepoz", "euro-cinema"], ["reggio", "g8"], ["topche", "euro-cinema"]], [["topche", "g8", "2026-10-30"]],
+       [["topche", "g8", "2026-10-30", "18:15", "euro-cinema"]]))
+_v_f, _v_st, _v_pr, _v_pf, _ = _S.apply_epaygo_relocations(
+    {("nepoz", "euro-cinema", "2026-10-30", "20:45"): "g8"}, _ec_vice, [["nepoz", "euro-cinema", "2026-10-30", ["20:45"]]],
+    [], {"g8": "2026-10-31"}, set(_S.FESTIVAL_VENUES), "2026-10-29")
+check("apply: moved to G8 on a date its programme covers = preliminary per row there (PRELIM_ROWS)",
+      (_v_st, _v_pr, _v_f[0][:2]), ([["nepoz", "g8", "2026-10-30", ["20:45"]]], [["nepoz", "g8", "2026-10-30"]],
+                                   ["nepoz", "g8"]))
+_k_f, _k_st, _, _, _k_m = _S.apply_epaygo_relocations(
+    {("topche", "g8", "2026-10-30", "18:15"): None}, [_ec_fr[2]], [["topche", "g8", "2026-10-30", ["18:15"]]], [], {},
+    set(_S.FESTIVAL_VENUES), "2026-10-29")
+check("apply: a flagged row stays where it is, without the epaygo link, state or place",
+      (_k_f, _k_st, _k_m), ([["topche", "g8", "2026-10-30", "18:15", "cinelibri", None, None, None, None]],
+                            [["topche", "g8", "2026-10-30", ["18:15"]]], []))
+check("a G8 VLINKS entry linking an epaygo event FESTROWS places at Euro Cinema is found (and dropped by the run)",
+      _S.misplaced_vlinks({("nepoz", "g8"): "https://epaygo.bg/1188683500", ("nepoz", "euro-cinema"): "https://epaygo.bg/1188683500",
+                           ("reggio", "g8"): "https://epaygo.bg/2355774239", ("x", "g8"): "https://g8cinema.com/bg/x"}, _ec_fr),
+      [(("nepoz", "g8"), "https://epaygo.bg/1188683500")])
+check("read_festrows reads last run's entries back ([] when undeclared)",
+      (_S.read_festrows(_S.write_festrows(_pg2, [_fr[0] + ["soldout"]])), _S.read_festrows(_pg)),
+      ([_fr[0] + ["soldout"]], []))
+
 print("salzaismyah — re-homed Театър София co-productions get no guessed hall")
 import scrape_programs as _S  # noqa: E402 (already imported below, but needed here)
 _why_coproduction = "staged at Театър СЪЛЗА И СМЯХ (co-production listed by Театър София)"
