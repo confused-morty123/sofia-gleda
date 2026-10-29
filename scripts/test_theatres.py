@@ -1334,6 +1334,90 @@ check("read_festrows reads last run's entries back ([] when undeclared)",
       (_S.read_festrows(_S.write_festrows(_pg2, [_fr[0] + ["soldout"]])), _S.read_festrows(_pg)),
       ([_fr[0] + ["soldout"]], []))
 
+print("FESTROWS: the ticket seller's start time is shown (owner, 2026-10-29)")
+# CineLibri, 29 Oct (cinelibri.com/29-oktomvri/ and the epaygo pages, 2026-10-29): Ехото между нас
+# at Одеон, venue 20:00, festival and epaygo 20:30; Лудории at G8, venue 20:10, festival and epaygo 20:15
+_sp = lambda when, tm, title, place: (
+    f'<html><head><title>{title} Купи билети за | EPAYGO</title></head><body><div>{when}</div><h1>{title}</h1>'
+    f'<span class="hide_web">Място на провеждане</span><span class="hide_mobile">{place}</span>'
+    f'<div>Начален час: {tm}</div><h3>Билети</h3>{_EP_ON}<h3>Описание</h3><p>.</p></body></html>')
+_s_st = [["ehoto", "odeon", "2026-10-29", ["20:00"]], ["ludorii", "g8", "2026-10-29", ["20:10"]],
+         ["far", "odeon", "2026-10-30", ["14:00"]], ["solo", "g8", "2026-10-31", ["18:00"]],
+         ["noep", "odeon", "2026-11-01", ["17:00"]], ["elsewhere", "g8", "2026-11-02", ["19:00"]],
+         ["ehoto", "lumiere", "2026-10-31", ["16:30"]]]
+_s_info = {"confirmed": [["cinelibri", "solo", "g8", "2026-10-31", "18:00"]],
+           "contradicted": [["cinelibri", "ehoto", "odeon", "2026-10-29", "20:30"],
+                            ["cinelibri", "ludorii", "g8", "2026-10-29", "20:15"],
+                            ["cinelibri", "far", "odeon", "2026-10-30", "18:00"],
+                            ["cinelibri", "noep", "odeon", "2026-11-01", "17:30"],
+                            ["cinelibri", "elsewhere", "g8", "2026-11-02", "19:20"]]}
+_s_scr = [("ehoto", "odeon", "2026-10-29", "20:30", "https://epaygo.bg/1458357835", None),
+          ("ludorii", "g8", "2026-10-29", "20:15", "https://epaygo.bg/3410316404", None),
+          ("far", "odeon", "2026-10-30", "18:00", "https://epaygo.bg/5555555555", None),
+          ("solo", "g8", "2026-10-31", "18:00", "https://epaygo.bg/6666666666", None),
+          ("noep", "odeon", "2026-11-01", "17:30", None, "https://www.cinelibri.com/noep/"),
+          ("elsewhere", "g8", "2026-11-02", "19:20", "https://epaygo.bg/7777777777", None)]
+_s_pages = {"https://epaygo.bg/1458357835": _sp("29 окт 2026", "20:30", "ЕХОТО МЕЖДУ НАС", "Одеон филмотечно кино"),
+            "https://epaygo.bg/3410316404": _sp("29 окт 2026", "20:15", "ЛУДОРИИ", "Културен център G8"),
+            "https://epaygo.bg/5555555555": _sp("30 окт 2026", "18:00", "ДАЛЕЧ", "Одеон филмотечно кино"),
+            "https://epaygo.bg/6666666666": _sp("31 окт 2026", "18:00", "САМО", "Културен център G8"),
+            "https://epaygo.bg/7777777777": _sp("02 ное 2026", "19:20", "ДРУГАДЕ", "Кино Люмиер")}
+_s_tt = {"ehoto": ["Ехото между нас"], "ludorii": ["Лудории"], "far": ["Далеч"], "solo": ["Само"],
+         "noep": ["Без епейго"], "elsewhere": ["Другаде"]}
+_s_fr = _S.box_office_festival_rows(_s_info, _s_scr, _s_st, ["g8", "odeon"])
+_s_ep = {}
+_s_fr = _S.festival_sale_states(_s_fr, set(), _s_info, [], "2026-10-29", _s_pages.get, titles=_s_tt, seller=_s_ep)
+check("sale states record each verified epaygo page's own start time (the seller's), keyed by the row's link",
+      sorted((k[0], k[2], v) for k, v in _s_ep.items()),
+      [("ehoto", "20:00", "20:30"), ("elsewhere", "19:00", "19:20"), ("far", "14:00", "18:00"),
+       ("ludorii", "20:10", "20:15"), ("solo", "18:00", "18:00")])
+_s_notes = []
+_s_fr2, _s_st2, _s_fix = _S.festival_seller_times(_s_fr, _s_st, _s_info, _s_ep, notes=_s_notes)
+check("seller time: Ехото 20:00 -> 20:30 and Лудории 20:10 -> 20:15 (epaygo, title and place checked); a festival "
+      "time without an epaygo page (noep 17:00 -> 17:30); never more than 90 min (far, 4 h: kept, noted); an epaygo page "
+      "placed elsewhere decides nothing, the festival's time does (elsewhere 19:00 -> 19:20)",
+      (_s_fix, sorted(r[:4] + [r[10]] for r in _s_fr2), len(_s_notes)),
+      ([["ehoto", "odeon", "2026-10-29", "20:00", "20:30", "epaygo"],
+        ["elsewhere", "g8", "2026-11-02", "19:00", "19:20", "festival"],
+        ["ludorii", "g8", "2026-10-29", "20:10", "20:15", "epaygo"],
+        ["noep", "odeon", "2026-11-01", "17:00", "17:30", "festival"]],
+       [["ehoto", "odeon", "2026-10-29", "20:30", "20:30"], ["elsewhere", "g8", "2026-11-02", "19:20", "19:20"],
+        ["far", "odeon", "2026-10-30", "14:00", None], ["ludorii", "g8", "2026-10-29", "20:15", "20:15"],
+        ["noep", "odeon", "2026-11-01", "17:30", "17:30"], ["solo", "g8", "2026-10-31", "18:00", "18:00"]], 1))
+check("seller time in SHOWTIMES: the venue's time replaced, never both; other venues untouched",
+      sorted(map(tuple, (r[:3] + [tuple(r[3])] for r in _s_st2))),
+      sorted([("ehoto", "odeon", "2026-10-29", ("20:30",)), ("ludorii", "g8", "2026-10-29", ("20:15",)),
+              ("far", "odeon", "2026-10-30", ("14:00",)), ("solo", "g8", "2026-10-31", ("18:00",)),
+              ("noep", "odeon", "2026-11-01", ("17:30",)), ("elsewhere", "g8", "2026-11-02", ("19:20",)),
+              ("ehoto", "lumiere", "2026-10-31", ("16:30",))]))
+check("seller time: the row keeps its festival, epaygo link, sale state, place and title",
+      [r[4:10] for r in _s_fr2 if r[0] == "ehoto"],
+      [["cinelibri", "https://epaygo.bg/1458357835", "onsale", "Одеон филмотечно кино", "2026-10-29", "ЕХОТО МЕЖДУ НАС"]])
+_s_ep2 = {}
+_s_fx = _S.festival_sale_states([r[:6] for r in _S.box_office_festival_rows(_s_info, _s_scr, _s_st, ["g8", "odeon"])
+                                 if r[0] == "ehoto"], set(), _s_info, [], "2026-10-29",
+                                lambda u: _sp("29 окт 2026", "20:30", "ДРУГ ФИЛМ", "Одеон филмотечно кино"),
+                                titles=_s_tt, seller=_s_ep2)
+_s_fx2, _, _s_fxfix = _S.festival_seller_times(
+    _s_fx, [["ehoto", "odeon", "2026-10-29", ["20:00"]]], _s_info, _s_ep2)
+check("seller time: an epaygo page that names another film is never the seller (link dropped, no epaygo time); "
+      "the festival's own day page time is",
+      (_s_ep2, _s_fx2[0][5], _s_fxfix), ({}, None, [["ehoto", "odeon", "2026-10-29", "20:00", "20:30", "festival"]]))
+# the next run: the venue still lists 20:00; last run's row (now 20:30) is found under the festival's
+# time, so an epaygo page not read again keeps its link, state, place and seller time
+_s_prev = [r for r in _s_fr2 if r[0] == "ehoto"]
+_s_ep3 = {}
+_s_fr3 = _S.festival_sale_states([["ehoto", "odeon", "2026-10-29", "20:00", "cinelibri", "https://epaygo.bg/1458357835"]],
+                                 set(), _s_info, _s_prev, "2026-10-29", lambda u: None, titles=_s_tt, seller=_s_ep3)
+_s_fr4, _s_st4, _s_fix4 = _S.festival_seller_times(_s_fr3, [["ehoto", "odeon", "2026-10-29", ["20:00"]]], _s_info, _s_ep3)
+check("next run, page not read again: last run's state, place, title and seller time carried over, 20:30 shown again",
+      (_s_fr4[0][3:], _s_st4, _s_fix4[0][4:]),
+      (["20:30", "cinelibri", "https://epaygo.bg/1458357835", "onsale", "Одеон филмотечно кино", "2026-10-29",
+        "ЕХОТО МЕЖДУ НАС", "20:30"], [["ehoto", "odeon", "2026-10-29", ["20:30"]]], ["20:30", "epaygo"]))
+check("seller time: rows of older callers (6-10 fields) get the 11th field; a confirmed row keeps its time",
+      [len(r) for r in _S.festival_seller_times([["solo", "g8", "2026-10-31", "18:00", "cinelibri", None]],
+                                                [["solo", "g8", "2026-10-31", ["18:00"]]], _s_info)[0]], [11])
+
 print("salzaismyah — re-homed Театър София co-productions get no guessed hall")
 import scrape_programs as _S  # noqa: E402 (already imported below, but needed here)
 _why_coproduction = "staged at Театър СЪЛЗА И СМЯХ (co-production listed by Театър София)"

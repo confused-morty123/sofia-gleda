@@ -1552,6 +1552,17 @@ for _rd in ("2026-10-29", None):
     check(f"a FESTROWS entry read on {_rd!r} (9th field) exits 0", _rc == 0)
 _rc, _out = _run_out(_fr_page(_fr9("yesterday")))
 check("a FESTROWS read day that is not YYYY-MM-DD exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+# the ticket seller's start time (11th field, owner 2026-10-29): shown, never the venue's
+_fr11 = lambda shown, st: _json.dumps([["f0", "cinema0", _FUTURE, shown, "cinelibri", "https://epaygo.bg/1050441144",
+                                        "onsale", None, None, "ФИЛМ 0", st]])
+for _st in ("10:00", None):
+    _rc, _out = _run_out(_fr_page(_fr11("10:00", _st)))
+    check(f"a FESTROWS entry whose seller time is {_st!r} at its shown 10:00 exits 0", _rc == 0)
+_rc, _out = _run_out(_fr_page(_fr11("10:00", "10:30")))
+check("a FESTROWS entry showing the venue's 10:00 while the seller's verified time is 10:30 exits non-zero",
+      _rc != 0 and "not the ticket seller's" in _out and "seller 10:30" in _out)
+_rc, _out = _run_out(_fr_page(_fr11("10:00", "half past")))
+check("a FESTROWS seller time that is not HH:MM exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
 _fr_fn = _fr_fn0
 _rc, _out = _run_out(_fr_page(_fr7("notyet")))
 check("a not-on-sale FESTROWS entry in an app without festSaleState() exits non-zero",

@@ -755,18 +755,21 @@ else:
         _st4 = {(r[0], r[1], r[2], t) for r in (data["SHOWTIMES"] or []) if isinstance(r, list) and len(r) >= 4
                 for t in (r[3] or [])}
         _bad_fr = [x for x in _fr_data
-                   if not (isinstance(x, list) and len(x) in (6, 7, 8, 9, 10) and all(isinstance(v, str) for v in x[:5])
+                   if not (isinstance(x, list) and len(x) in (6, 7, 8, 9, 10, 11) and all(isinstance(v, str) for v in x[:5])
                            and (len(x) == 6 or x[6] in (None, "onsale", "soldout", "notyet"))
                            and (len(x) < 8 or x[7] is None or (isinstance(x[7], str) and 0 < len(x[7]) < 160))
                            and (len(x) < 9 or x[8] is None or (isinstance(x[8], str)
                                                                and re.fullmatch(r"\d{4}-\d{2}-\d{2}", x[8])))
                            and (len(x) < 10 or x[9] is None or (isinstance(x[9], str) and 0 < len(x[9]) <= 150))
+                           and (len(x) < 11 or x[10] is None or (isinstance(x[10], str)
+                                                                 and re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", x[10])))
                            and (x[5] is None or (isinstance(x[5], str) and re.match(r"https?://[^\s\"<>]+$", x[5])
                                                  and any(_host_of(x[5]) == h or _host_of(x[5]).endswith("." + h)
                                                          for h in _SALE_HOSTS))))]
         if _bad_fr:
             fail(f"{len(_bad_fr)} FESTROWS entr(ies) are not [filmId, venueId, date, time, festival, festival/ticket-shop url|null, "
-                 f"onsale/soldout/notyet|null, epaygo place|null, day the state was read|null, epaygo title|null], "
+                 f"onsale/soldout/notyet|null, epaygo place|null, day the state was read|null, epaygo title|null, "
+                 f"seller's start time|null], "
                  f"e.g. {str(_bad_fr[0])[:120]}")
         _ok_fr = [x for x in _fr_data if x not in _bad_fr]
         _lost_fr = [x for x in _ok_fr if tuple(x[:4]) not in _st4]
@@ -777,6 +780,16 @@ else:
             fail(f"{len(_off_fr)} FESTROWS entr(ies) at a cinema that sells online anyway, e.g. {'/'.join(_off_fr[0][:4])}")
         if len(_ok_fr) != len({tuple(x[:4]) for x in _ok_fr}):
             fail("duplicate FESTROWS entries (same film, cinema, date and time)")
+        # the seller's time is shown (owner, 2026-10-29: Ехото между нас at Одеон 29 Oct, venue
+        # 20:00, CineLibri and epaygo 20:30 -> 20:30): no row whose verified seller start time
+        # (11th field, scrape_programs.festival_seller_times) differs from its shown time
+        _seller_off = [x for x in _ok_fr if len(x) > 10 and x[10] and x[10] != x[3]]
+        if _seller_off:
+            fail(f"{len(_seller_off)} FESTROWS entr(ies) show the venue's time, not the ticket seller's, "
+                 f"e.g. {'/'.join(_seller_off[0][:4])} (seller {_seller_off[0][10]})")
+        _seller_fixed = [x for x in _ok_fr if len(x) > 10 and x[10]]
+        if _seller_fixed:
+            note(f"FESTROWS: {len(_seller_fixed)} screening(s) with the seller's verified start time")
         # the venue epaygo.bg names decides (owner, 2026-10-29: G8 and Euro Cinema are two
         # cinemas; CineLibri runs both at the same hour): no row filed under one of them
         # whose epaygo page places it at the other, and no VLINKS entry of one of them that

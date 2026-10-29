@@ -2270,6 +2270,7 @@ EPAYGO_CAP = 40
 EPAYGO_SECONDS = 180
 FEST_SALE_STATES = ("onsale", "soldout", "notyet")
 _EPAYGO_EVENT = re.compile(r"^https://epaygo\.bg/\d+/?$")
+_HHMM = re.compile(r"(?:[01]\d|2[0-3]):[0-5]\d")
 _EP_MONTHS = {m: i + 1 for i, m in enumerate(("яну", "фев", "мар", "апр", "май", "юни", "юли",
                                                "авг", "сеп", "окт", "ное", "дек"))}
 
@@ -2380,7 +2381,7 @@ def read_festrows(page):
 
 
 def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_text, cap=EPAYGO_CAP, notes=None,
-                         titles=None):
+                         titles=None, seller=None):
     """FESTROWS with each upcoming screening's sale state appended (7th field): "soldout"
     when the festival's own page marks it sold out (`soldout`: {(fid, venue, date,
     festival's time)}, a contradicted venue time mapped as box_office_festival_rows maps
@@ -2406,6 +2407,12 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
             and a row whose epaygo link has no matching title stored (never read) keeps no
             link and no epaygo state either (the app offers the festival's page). Rows with
             the same date and time are told apart by their film, never by the slot.
+    seller  a dict to fill (festival_seller_times reads it): {(fid, date, venue time, url):
+            the epaygo page's own start time} for each row whose kept epaygo link was read
+            as that screening's (its date, a time the row or the festival gives, its film),
+            else last run's seller time for that very link (FESTROWS' 11th field).
+    Last run's row is found under the venue's time or, a time corrected to the seller's
+    last run (festival_seller_times), under the festival's time for that screening.
     fetch_text(url) -> html | None (the run's polite session)."""
     from collections import defaultdict
     prev = {tuple(r[:4]): (r[6] if len(r) > 6 and r[6] in FEST_SALE_STATES else None) for r in prev_rows}
@@ -2415,6 +2422,8 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
                                 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r[8]) else None) for r in prev_rows}
     prev_title = {tuple(r[:4]): (r[5], r[9]) for r in prev_rows
                   if len(r) > 9 and isinstance(r[5], str) and isinstance(r[9], str) and r[9]}
+    prev_seller = {tuple(r[:4]): (r[5], r[10]) for r in prev_rows
+                   if len(r) > 10 and isinstance(r[5], str) and isinstance(r[10], str) and _HHMM.fullmatch(r[10])}
 
     def names_film(title, fid):
         return titles is None or bool(title and FI.same_film_title(title, (titles or {}).get(fid) or ()))
@@ -2428,14 +2437,26 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
             alt_t[(fid, v, d, ts[0])].add(tf)
             if (fid, v, d, tf) in soldout:
                 marked.add((fid, v, d, ts[0]))
+    prev_keys = set(prev) | set(prev_title) | set(prev_seller)
+
+    def pkey(key):
+        # last run's row: under the venue's time, else (its time corrected to the seller's
+        # last run) under the festival's time for this screening
+        if key in prev_keys:
+            return key
+        alts = [key[:3] + (t_,) for t_ in sorted(alt_t.get(key, ())) if key[:3] + (t_,) in prev_keys]
+        return alts[0] if len(alts) == 1 else key
     cache, asked, out = {}, 0, {}
     for r in sorted(festrows, key=lambda e: (e[2], e[3], e[0], e[1])):
         key = tuple(r[:4])
-        state, place = prev.get(key), prev_place.get(key)
-        read = prev_read.get(key) if state else None
+        pk = pkey(key)
+        state, place = prev.get(pk), prev_place.get(pk)
+        read = prev_read.get(pk) if state else None
         url = r[5] if len(r) > 5 and isinstance(r[5], str) else ""
-        pt = prev_title.get(key)
+        pt = prev_title.get(pk)
         title = pt[1] if pt and url and pt[0].rstrip("/") == url.rstrip("/") and names_film(pt[1], r[0]) else None
+        ps = prev_seller.get(pk)
+        ep_time = ps[1] if ps and title and ps[0].rstrip("/") == url.rstrip("/") else None
         fest_mark = False
         if r[2] >= today:
             if key in marked:
@@ -2455,7 +2476,7 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
                 if w and w[0] == r[2] and w[1] in times and not names_film(et, r[0]):
                     # the festival linked another film's screening at this hour (CineLibri's
                     # G8 / Euro Cinema pair, 4 Nov 19:45): never this row's link or state
-                    url, state, place, read, title = None, None, None, None, None
+                    url, state, place, read, title, ep_time = None, None, None, None, None, None
                     if notes is not None:
                         notes.append(f"{r[0]} {r[1]} {r[2]} {r[3]}: its epaygo page sells {et!r}, "
                                      f"not this film: link dropped")
@@ -2465,11 +2486,12 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
                         state, read = got, today
                     place = parse_epaygo_place(cache.get(url)) or place
                     title = et or title
+                    ep_time = w[1]
                 if w and (w[0] != r[2] or w[1] not in times):
                     # the festival linked another screening's page (CineLibri, 2026-10-29: its
                     # 31 Oct 13:15 row links the 30 Oct 18:15 event): no ticket link for this
                     # one (the app offers the festival's film page), state unknown
-                    url, state, place, read, title = None, None, None, None, None
+                    url, state, place, read, title, ep_time = None, None, None, None, None, None
                     if notes is not None:
                         notes.append(f"{r[0]} {r[2]} {r[3]}: its epaygo page is the {w[0]} {w[1]} screening's")
         if titles is not None and url and _EPAYGO_EVENT.match(url) and not title:
@@ -2484,6 +2506,8 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
             row[5] = None
         out[key] = row + [state, place, read if state else None,
                           title if _EPAYGO_EVENT.match(row[5] or "") else None]
+        if seller is not None and ep_time and _EPAYGO_EVENT.match(row[5] or ""):
+            seller[(row[0], row[2], row[3], row[5])] = ep_time
     return sorted(out.values(), key=lambda e: e[:4])
 
 
@@ -2578,6 +2602,80 @@ def apply_epaygo_relocations(moves, festrows, rows, prelim_rows, prelim_from, fe
     out_rows.sort(key=lambda r: (r[1], r[2], r[0]))
     return (sorted(out_f.values(), key=lambda e: e[:4]), out_rows,
             sorted(list(x) for x in pr), pf, moved)
+
+
+SELLER_GAP_MINUTES = 90
+
+
+def _hm_minutes(t):
+    return int(t[:2]) * 60 + int(t[3:5])
+
+
+def festival_seller_times(festrows, rows, fest_info, seller=None, max_gap=SELLER_GAP_MINUTES, notes=None):
+    """Show the ticket seller's start time for a festival screening (owner, 2026-10-29:
+    when the venue's own programme and the seller disagree, the seller's time; Ехото
+    между нас at Одеон 29 Oct, venue 20:00, CineLibri and epaygo 20:30). Pure.
+    festrows  festival_sale_states' rows, after epaygo_relocations (their venue is final)
+    rows      SHOWTIMES [[fid, venue, date, [times]]]
+    fest_info merge_festival_rows' info: a "contradicted" record [festival, fid, venue,
+              date, festival's time] is the festival's own time for the row
+              box_office_festival_rows mapped to the venue's single time that day
+    seller    festival_sale_states' {(fid, date, time, url): epaygo start time}
+    The seller's time: the epaygo page's "Начален час" when the row keeps that epaygo link
+    with its title (the film, checked by festival_sale_states) and its place naming the
+    row's venue; else the festival's own day page time. It replaces the venue's time (in
+    SHOWTIMES and FESTROWS, the row's link, sale state and the rest kept; never both
+    times) only on the same date and at most `max_gap` minutes away; otherwise the venue's
+    time stays (noted). Every row gets an 11th field: the seller's verified time, else None.
+    Returns (festrows, rows, fixed [[fid, venue, date, venue time, seller time, source]])."""
+    from collections import defaultdict
+    per_cell = defaultdict(list)
+    for r in festrows:
+        per_cell[tuple(r[:3])].append(r)
+    fest_t = defaultdict(set)
+    for fest, fid, v, d, tf in (fest_info or {}).get("contradicted", []):
+        fest_t[(fest, fid, v, d)].add(tf)
+    cells = defaultdict(set)
+    for r in rows:
+        cells[(r[0], r[1], r[2])].update(r[3])
+    taken = {tuple(r[:4]) for r in festrows}
+    out_f, fixed = [], []
+    for r in sorted(festrows, key=lambda e: e[:4]):
+        r = list(r) + [None] * (10 - len(r))
+        r = r[:10]
+        fid, v, d, t = r[:4]
+        url = r[5] if isinstance(r[5], str) else ""
+        ep = (seller or {}).get((fid, d, t, url)) if _EPAYGO_EVENT.match(url) else None
+        src_, st = None, None
+        if (ep and _HHMM.fullmatch(ep) and r[9]
+                and OF.epaygo_place_venue(r[7] if isinstance(r[7], str) else None) == v):
+            src_, st = "epaygo", ep
+        else:
+            tfs = fest_t.get((r[4], fid, v, d), set())
+            if len(tfs) == 1 and len(per_cell[(fid, v, d)]) == 1 and len(cells.get((fid, v, d), ())) == 1:
+                src_, st = "festival", next(iter(tfs))
+            elif not tfs:
+                src_, st = "festival", t
+        if st and st != t:
+            gap = abs(_hm_minutes(st) - _hm_minutes(t))
+            if gap > max_gap or (fid, v, d, st) in taken:
+                if notes is not None:
+                    notes.append(f"{fid} {v} {d}: the seller's time {st} ({src_}) is "
+                                 + (f"{gap} min from the venue's {t}" if gap > max_gap else "another row's")
+                                 + ", the venue's time kept")
+                st = None
+            else:
+                cells[(fid, v, d)].discard(t)
+                cells[(fid, v, d)].add(st)
+                taken.discard((fid, v, d, t))
+                taken.add((fid, v, d, st))
+                fixed.append([fid, v, d, t, st, src_])
+                r[3] = st
+        out_f.append(r + [st if st and _HHMM.fullmatch(st) else None])
+    out_rows = [[f, v, d, sorted(ts)] for (f, v, d), ts in cells.items() if ts]
+    order = {(r[0], r[1], r[2]): i for i, r in enumerate(rows)}
+    out_rows.sort(key=lambda r: order.get((r[0], r[1], r[2]), len(order)))
+    return sorted(out_f, key=lambda e: e[:4]), out_rows, fixed
 
 
 def write_festrows(page, entries):
@@ -4241,9 +4339,11 @@ def main():
         rec_ = index.films.get(fid_) or cinema_films.get(fid_) or {}
         film_titles[fid_] = sorted({x for x in (rec_.get("bg"), rec_.get("en"), rec_.get("originalTitle"))
                                     if isinstance(x, str) and x} | fest_titles.get(fid_, set()))
+    ep_starts = {}
     with session.deadline(EPAYGO_SECONDS):
         festrows = festival_sale_states(festrows, fest_soldout, fest_info, read_festrows(src),
-                                        today_iso, session.text, notes=sale_notes, titles=film_titles)
+                                        today_iso, session.text, notes=sale_notes, titles=film_titles,
+                                        seller=ep_starts)
     ep_moves = epaygo_relocations(festrows, fest_sale_v, own, notes=sale_notes)
     if ep_moves:
         festrows, new_showtimes, prelim_rows, prelim, ep_moved = apply_epaygo_relocations(
@@ -4255,6 +4355,23 @@ def main():
                 vlinks[(fid, b)] = pg
         print(f"FESTROWS: {len(ep_moved)} screening(s) moved to the venue epaygo.bg names "
               f"({', '.join(f'{x[0]} {x[2]} {x[3]} {x[1]}->{x[4]}' for x in ep_moved[:3])})")
+    # the seller's start time (owner, 2026-10-29): where the venue's programme and the ticket
+    # seller disagree on a festival screening (Одеон 20:00, CineLibri and epaygo 20:30), the
+    # row shows the seller's time instead (verified: its film, place, date, <= 90 min)
+    festrows, new_showtimes, seller_fixed = festival_seller_times(
+        festrows, new_showtimes, fest_info, ep_starts, notes=sale_notes)
+    for fid, v, d, t_old, t_new, how in seller_fixed:
+        for amap in (old_showattr.get(f"{fid}|{v}"), fresh_showattr.get((fid, v))):
+            if amap and f"{d} {t_old}" in amap:
+                amap.setdefault(f"{d} {t_new}", amap.pop(f"{d} {t_old}"))
+        fest_ = next((r[4] for r in festrows if r[:4] == [fid, v, d, t_new]), None)
+        if fest_ in fest_report:
+            fest_report[fest_].setdefault("seller_time", []).append([fid, v, d, t_old, t_new, how])
+    if seller_fixed:
+        print(f"FESTROWS: {len(seller_fixed)} screening(s) at the seller's time, not the venue's ("
+              + ", ".join(f"{x[0]} {x[1]} {x[2]} {x[3]}->{x[4]} ({x[5]})" for x in seller_fixed[:4]) + ")")
+        report["festivals"] = fest_report
+        CHANGES.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     # a (film, venue) link to an epaygo.bg event that epaygo places at another venue (a
     # link kept from a run before the venue was told apart) never sells that venue's rows
     for k_, u_ in misplaced_vlinks(vlinks, festrows, film_titles):

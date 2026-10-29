@@ -18646,6 +18646,10 @@ BO_REGULAR = {"g8": [["chist-kasmet", "2026-10-29", "22:00"]], "odeon": []}
 # CineLibri, 4 Nov 19:45 (cinelibri.com/4-noemvri/ and epaygo.bg, 2026-10-29): two films at one hour
 BO_PAIR = [["otechestvo", "euro-cinema", "g8", "2026-11-04", "19:45", "https://epaygo.bg/1708861677"],
            ["sinelibri-chernoto-topche", "g8", "euro-cinema", "2026-11-04", "19:45", "https://epaygo.bg/4036081133"]]
+# the ticket seller's start time (owner, 2026-10-29): Ехото между нас at Одеон, venue 20:00, CineLibri and
+# epaygo 20:30; Лудории at G8, venue 20:10, CineLibri and epaygo 20:15 (both checked on epaygo.bg 2026-10-29)
+BO_SELLER = [["sinelibri-2026-ehoto-mezhdu-nas", "odeon", "2026-10-29", "20:30", "20:00", "https://epaygo.bg/1458357835"],
+             ["sinelibri-2026-ludorii", "g8", "2026-10-29", "20:15", "20:10", "https://epaygo.bg/3410316404"]]
 BO_SHOTS = webapp_root.parent / "notes" / "design_options" / "box_office_v2" / "built"
 BO_COPY = {
     "bg": {"buy": "Купи билет", "head": "Билети само на касата", "headAlt": "Билети на касата",
@@ -18952,6 +18956,21 @@ def wave_bo1(browser):
         check("bo1_cinelibri_4nov_1945_pair",
               all(x["at"] and not x["wrongAt"] and x["fr"] == x["want"] and x["sale"] == x["want"] and not x["box"] for x in pair),
               f"Отечество @ Euro Cinema / Черното топче @ G8, 4 Nov 19:45: {pair}")
+    # the seller's start time, never the venue's (no screening at both times)
+    sel = page.evaluate("""(rows)=>rows.map(([f,v,d,t,vt,url])=>{
+      const cell=SHOWTIMES.filter(r=>r[0]===f&&r[1]===v&&r[2]===d).flatMap(r=>r[3]||[]);
+      const fr=(typeof FESTROWS!=='undefined'?FESTROWS:[]).filter(r=>r[0]===f&&r[1]===v&&r[2]===d);
+      return {f,v,d,want:t,venueT:vt,cell,frT:fr.map(r=>r[3]),frSeller:fr.map(r=>r.length>10?r[10]:null),
+        sale:festSaleUrl(f,v,d,t),wantUrl:url,box:!!boxOnly('film',f,v,d,t),past:d<TODAY,known:!!filmById[f]};})""", BO_SELLER)
+    for x in sel:
+        name = f"bo1_seller_time_{x['f']}_{x['v']}"
+        if not x["known"] or (not x["cell"] and x["past"]):
+            skip(name, f"{x['f']} at {x['v']} on {x['d']} is not in this build (fixture or past)")
+            continue
+        check(name, x["cell"] == [x["want"]] and x["venueT"] not in x["cell"] and x["frT"] == [x["want"]]
+              and x["frSeller"] == [x["want"]] and x["sale"] == x["wantUrl"] and not x["box"],
+              f"{x['d']}: shown {x['cell']}, FESTROWS {x['frT']} (seller {x['frSeller']}), want {x['want']} not the "
+              f"venue's {x['venueT']}; sale {x['sale']} box={x['box']}")
     # the tag on a preliminary time that is sold online: rendered directly (any date)
     po = info["prelimOnline"]
     if not po:

@@ -974,7 +974,25 @@
       "gained": {
         "title_bg": 55,
         "title_en": 53
-      }
+      },
+      "seller_time": [
+        [
+          "sinelibri-2026-ehoto-mezhdu-nas",
+          "odeon",
+          "2026-10-29",
+          "20:00",
+          "20:30",
+          "epaygo"
+        ],
+        [
+          "sinelibri-2026-ludorii",
+          "g8",
+          "2026-10-29",
+          "20:10",
+          "20:15",
+          "epaygo"
+        ]
+      ]
     },
     "kinomania": {
       "status": "official",
