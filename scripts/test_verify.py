@@ -1302,6 +1302,50 @@ _rc, _out = _run_out(_tr_stamped.replace("frame-src https://www.youtube-nocookie
 check("a CSP that also allows www.youtube.com frames fails", _rc != 0 and "frame-src" in _out)
 
 # ---------------------------------------------------------------------------
+# 5a4: a shipped TMDB match is the venue's film (2026-10-28, Everest / The Departed)
+# ---------------------------------------------------------------------------
+print("5a4: TMDB identity — the venue's facts, a premiere, part of a title")
+_noyear = lambda html: html.replace('"genres": []}, {"id": "f1"', '"genres": [], "year": null}, {"id": "f1"', 1)
+_fi = lambda html, fi: html.replace("const FILMINFO={};", "const FILMINFO=" + _json.dumps(fi) + ";", 1)
+_rc, _out = _run_out(_fi(_tr_page({"f0": {"y": 2026, "en": "Loving", "dir": "Jeff Nichols"}}),
+                         {"f0": {"dir": "Родриго Сорогойен"}}))
+check("a match whose director the venue contradicts (Обич / Loving) fails 5a4",
+      _rc != 0 and "5a4 TMDB identity" in _out and "director" in _out)
+_rc, _out = _run_out(_fi(_tr_page({"f0": {"y": 2026, "en": "Film 0", "dir": "Jeff Nichols"}}),
+                         {"f0": {"dir": "Джеф Никълс"}}))
+check("…the same director in Cyrillic passes", "5a4" not in _out)
+_rc, _out = _run_out(_tr_page({"f0": {"y": 2026, "en": "Film 0", "g": ["Драма"]}}).replace(
+    '"genres": []}, {"id": "f1"', '"genres": ["Документален"]}, {"id": "f1"', 1))
+check("a documentary matched to a drama fails 5a4", _rc != 0 and "5a4" in _out and "documentary" in _out)
+_prem = 'const PREMIERES={"film:f0":["2026-10-30"]};'
+_rc, _out = _run_out(_noyear(_tr_page({"f0": {"y": 2022, "en": "Beast"}}, extra_js=_prem)))
+check("a film premiering now matched to a 2022 film, with no venue year, is reported by 5a4 but does not "
+      "fail the gate (a re-release looks the same; Звярът / Beast)",
+      "premieres 2026-10-30" in _out and "match(es) the venue contradicts" not in _out)
+_rc, _out = _run_out(_noyear(_tr_page({"f0": {"y": 2024, "en": "Film 0"}}, extra_js=_prem)))
+check("…a two-year-old film premiering here passes (a Bulgarian release lags)", "5a4" not in _out)
+_rc, _out = _run_out(_tr_page({"f0": {"y": 2010, "en": "Arrietty"}}, extra_js=_prem).replace(
+    '"genres": []}, {"id": "f1"', '"genres": [], "year": 2012}, {"id": "f1"', 1))
+check("…a re-release whose venue prints its own year (2012 for a 2010 film) passes", "5a4" not in _out)
+_r5a4 = _make_file_root(with_icons=True)
+try:
+    (_r5a4 / "tmdb_films.json").write_text(_json.dumps({"f0": {
+        "matched": True, "via": "bg-BG", "q": "0", "tbg": "Нещо друго", "original_title": "Something Else"}}),
+        encoding="utf-8")
+    _rc, _out = _run_out(_noyear(_tr_page({"f0": {"y": 2006, "en": "The Departed"}})),
+                         extra_env={"SOFIA_ROOT": str(_r5a4)})
+    check("a match found on part of the BG title that TMDB's title lacks fails 5a4 (ЕВЕРЕСТ: / The Departed)",
+          "5a4" in _out and "part of the title" in _out)
+    (_r5a4 / "tmdb_films.json").write_text(_json.dumps({"f0": {
+        "matched": True, "via": "bg-BG", "q": "0", "tbg": "Филм 0: Завръщането"}}), encoding="utf-8")
+    _rc, _out = _run_out(_noyear(_tr_page({"f0": {"y": 2006, "en": "Film 0"}})),
+                         extra_env={"SOFIA_ROOT": str(_r5a4)})
+    check("…TMDB's own title keeping the lost words passes", "5a4" not in _out)
+finally:
+    import shutil as _sh5a4
+    _sh5a4.rmtree(_r5a4, ignore_errors=True)
+
+# ---------------------------------------------------------------------------
 # 5a: ids are lower-case ASCII slugs; local poster paths pass the browser's rule
 # ---------------------------------------------------------------------------
 print("5a: ASCII ids and loadable poster paths")

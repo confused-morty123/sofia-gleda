@@ -84,8 +84,18 @@ _FESTIVALS = [
     r"sofia\s+documental(?:\s+\d{4})?", r"софия\s+документал(?:\s+\d{4})?",
     r"киномания(?:\s+\d{4})?", r"kinomania(?:\s+\d{4})?",
     r"софия\s+филм\s+фест(?:\s+\d{4})?", r"sofia\s+film\s+fest(?:\s+\d{4})?",
+    r"синелебри(?:\s+\d{4})?", r"sinelebri(?:\s+\d{4})?",   # NDK's own spelling, 2026-10
 ]
-_FESTIVAL_RE = re.compile(r"^\s*(?:" + "|".join(_FESTIVALS) + r")\s*[:\-–—|]\s*", re.I)
+# A festival's edition number before its name: Дом на киното's "40.Киномания: Обич"
+# (2026-10), "40. Киномания – …". Only in front of a listed name.
+_EDITION = r"(?:\d{1,3}\s*\.?\s*(?:-?(?:то|ти|ми|ви)\s+)?)?"
+# A cinema's own programme strand in front of a film's title, with or without a
+# separator: Cinema City's "Хелоуин Селекция: Наследникът" and "Хелоуин Селекция
+# Коварен капан: Бягство" (2026-10-31 screenings of films already on its bill).
+_STRANDS = [r"хелоуин\s+селекция", r"halloween\s+selection"]
+_FESTIVAL_RE = re.compile(
+    r"^\s*(?:" + _EDITION + r"(?:" + "|".join(_FESTIVALS) + r")\s*[:\-–—|]"
+    r"|(?:" + "|".join(_STRANDS) + r")(?:\s*[:\-–—|]|\s+(?=\S)))\s*", re.I)
 # The same names written AFTER the title, behind a spaced dash or bar (Люмиер,
 # 2026-10-21: "КУКЛА - СИНЕЛИБРИ", "LES MISÉRABLES - CINELIBRI"). The space before
 # the separator keeps hyphenated words whole.
@@ -741,6 +751,26 @@ def _contained(a, b):
     return None
 
 
+# Short words a venue drops or adds without changing the title: Влайкова's
+# "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА" is Дом на киното's "Еверест: Другата страна".
+_FUNCTION_WORDS = {"от", "на", "за", "в", "във", "и", "с", "със", "по", "до",
+                   "the", "of", "a", "an", "and", "to", "in", "on"}
+
+
+def _function_word_drop(a, b):
+    """(longer key, shorter key) when one key is the other with ONE short function
+    word removed and three words or more remain, else None."""
+    for ka in a["keys"]:
+        for kb in b["keys"]:
+            for lo, sh in ((ka, kb), (kb, ka)):
+                lw, sw = lo.split(), sh.split()
+                if len(lw) != len(sw) + 1 or len(sw) < 3 or _digits(lo) != _digits(sh):
+                    continue
+                if any(w in _FUNCTION_WORDS and lw[:i] + lw[i + 1:] == sw for i, w in enumerate(lw)):
+                    return lo, sh
+    return None
+
+
 def _shared_venue_dates(a, b):
     return any(_overlap_dates(a["venues"][v], b["venues"][v]) for v in set(a["venues"]) & set(b["venues"]))
 
@@ -783,6 +813,12 @@ def _edge(a, b, multi_hall=()):
     shared = sorted(a["ids"] & b["ids"])
     if shared:
         return "same-id", f"the same {'TMDB' if shared[0].startswith('tmdb:') else 'IMDb'} id {shared[0]}"
+    fw = _function_word_drop(a, b)
+    if fw and _overlap_dates(a["dates"], b["dates"]) and not (set(a["venues"]) & set(b["venues"])):
+        # the same words but one "от"/"на"/"the", in the same weeks, and no venue
+        # lists both (one venue showing both titles is two films)
+        return "function-word", (f"{fw[0]!r} is {fw[1]!r} with one short word more; the same weeks, "
+                                 "no venue lists both")
     for s, l in ((a, b), (b, a)):
         c = _contained(s, l)
         if not c:
@@ -834,7 +870,11 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
                  there), or the same runtime (±3) and year;
       contained  "X" as whole words inside the main title "Z X: Y" (ten letters
                  or more): the same runtime (±3) and year, the same weeks, and no
-                 venue lists both.
+                 venue lists both;
+      function-word  the same title but for ONE short word ("от", "на", "the"…),
+                 three words or more left, the same numbers, the same weeks, and no
+                 venue lists both ("Еверест: От другата страна" / "Еверест: Другата
+                 страна").
     A shorter title that fits two different films merges with neither. A listing
     of a language version ("(с английски субтитри)") is never merged with one
     without it; when its title is another film's main title at the same venue in
@@ -887,7 +927,7 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
             if e:
                 edges[(a, b)] = e
     # a shorter title that fits two films that are not otherwise one: neither
-    fuzzy = {"prefix", "contained"}
+    fuzzy = {"prefix", "contained", "function-word"}
     partners = {}
     for (a, b), (rule, _r) in edges.items():
         if rule in fuzzy:
@@ -920,7 +960,10 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
         if any(_conflict(ev[x], ev[y]) or frozenset((x, y)) in distinct
                for i, x in enumerate(members) for y in members[i + 1:]):
             continue
-        keep = sorted(members, key=lambda f: (ev[f]["minted"], -len(ev[f]["venues"]), -len(ev[f]["slots"]),
+        # keep the film's own title over a strand-prefixed listing ("Обич", not
+        # "40.Киномания: Обич"): its id carries the venue page, poster and credits
+        keep = sorted(members, key=lambda f: (ev[f]["minted"], _prefixed(films[f].get("bg")),
+                                              -len(ev[f]["venues"]), -len(ev[f]["slots"]),
                                               -(bool(ev[f]["years"]) + bool(ev[f]["runtimes"])),
                                               -len(films[f].get("bg") or ""), f))[0]
         for f in sorted(members):
@@ -931,6 +974,11 @@ def detect_duplicates(films, minted, rows, links=(), film_info=None, tmdb=None, 
             reason = "; ".join(r for _x, r in why) or "through another record of the same film"
             out.append({"drop": f, "into": keep, "rule": rule, "reason": reason})
     return out
+
+
+def _prefixed(title):
+    """True when the title carries a festival / strand prefix or suffix."""
+    return clean_title(title) != clean_title(title, keep_prefix=True)
 
 
 def remap_scraped(name, value, redirect):

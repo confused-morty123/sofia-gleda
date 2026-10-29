@@ -225,6 +225,115 @@
    "original": "The Lord of the Rings: The Fellowship of the Ring",
    "director": "Питър Джаксън",
    "reason": "BG title ‘Властелинът на пръстените: Задругата на пръстена’ does not match TMDB’s ‘The Lord of the Rings: The Fellowship of the Ring’ (2001, dir. Peter Jackson, TMDB ID 120). Original title search returns exact match with year guard. Source: https://www.themoviedb.org/movie/120. Verified 2026-10-13."
+  },
+  {
+   "titles": [
+    "Небеса"
+   ],
+   "film": "nebesa",
+   "year": 2002,
+   "director": "Том Тиквер",
+   "original": "Heaven",
+   "reason": "https://domnakinoto.com/nebesa-movie7142.html prints 'Франция - Италия - Германия - Великобритания, 2002', 'Реж. Том Тиквер', 96 min. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Диаманти"
+   ],
+   "film": "diamanti",
+   "year": 2024,
+   "director": "Ферзан Йозпетек",
+   "original": "Diamanti",
+   "reason": "https://programata.bg/kino/filmi/diamanti/ and g8cinema.com/bg/diamanti print 'Италия, 2024', 'Режисьор: Ферзан Йозпетек'. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Обич"
+   ],
+   "film": "obich",
+   "year": 2026,
+   "director": "Родриго Сорогойен",
+   "original": "El ser querido",
+   "reason": "https://www.kinomania.bg/bg_BG/film/obich-3734.html prints 'The Beloved / El ser querido, Испания, 2026, 135 минути, Реж. Родриго Сорогойен'. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Жозефин"
+   ],
+   "film": "zhozefin",
+   "year": 2026,
+   "director": "Бет де Араужо",
+   "original": "Josephine",
+   "reason": "https://www.kinomania.bg/bg_BG/film/zhozefin-3748.html prints 'Josephine, САЩ, 2026, 121 минути, Реж. Бет де Араужо'. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Голи"
+   ],
+   "film": "goli",
+   "year": 1993,
+   "director": "Майк Лий",
+   "original": "Naked",
+   "reason": "https://programata.bg/kino/filmi/goli/ prints 'Великобритания, 1993, 131 мин., Режисьор: Майк Лий' (with David Thewlis). fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Потоп"
+   ],
+   "film": "potop",
+   "year": 2024,
+   "director": "Гинтс Зилбалодис",
+   "original": "Flow",
+   "reason": "https://programata.bg/kino/filmi/potop/ prints 'анимация, Латвия, Белгия, Франция, 2024, 84 мин., Режисьор: Гинтс Зилбалодис'. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Любовта е лудост"
+   ],
+   "film": "lyubovta-e-ludost",
+   "year": 2025,
+   "director": "Паоло Дженовезе",
+   "original": "FolleMente",
+   "reason": "https://g8cinema.com/bg/lyubovta-e-ludost prints 'Follemente, Италия, 2025, Режисьор: Паоло Дженовезе'. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Звярът"
+   ],
+   "film": "zvyarat",
+   "year": 2026,
+   "director": "Renny Harlin",
+   "reason": "https://www.kinoarena.com/bg/movie/zvyarut prints 'Режисьор Renny Harlin', premiere 30.10.2026; Cine Grand links it as IMDb tt29256561. fetch_tmdb.py searches TMDB with this year (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "ЕДНА ИСТОРИЯ - СИНЕЛИБРИ"
+   ],
+   "film": "edna-istoriya-sinelibri",
+   "year": 2026,
+   "director": "Анна Фолиета",
+   "original": "Una storia",
+   "reason": "https://www.cinelibri.com/edna-istoriya/ prints 'Una Storia, Италия (2026), 107 мин., Режисьор: Анна Фолиета'. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "LES MISÉRABLES - CINELIBRI"
+   ],
+   "film": "les-mis-rables-cinelibri",
+   "year": 2026,
+   "director": "Фред Кавайе",
+   "original": "Les Misérables",
+   "reason": "NDK's page ndk.bg/en/event/kletnicite-sinelibri is Синелибри 2026's „Клетниците“ (Fred Cavayé, France 2026), not the 2012 musical. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Еверест: Другата страна",
+    "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА"
+   ],
+   "film": "everest-drugata-strana",
+   "year": 2026,
+   "original": "Everest: The Other Side",
+   "reason": "https://vlaikovacinema.com/screening/еверест-от-другата-страна/ prints 'Документален | EVEREST: THE OTHER SIDE | САЩ | 2026'; domnakinoto.com/everest-drugata-strana-movie7350.html the same film, 110 min. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
   }
  ]
 }

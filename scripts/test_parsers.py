@@ -4449,6 +4449,178 @@ TMDB.apply_trending(_out, {"a": {"tmdb_id": 22, "trend": 5}, "c": {"tmdb_id": 33
 check("trending keep-previous: same TMDB title keeps its rank, a rematched one does not", (5, None),
       (_out["a"].get("trend"), _out["c"].get("trend")))
 
+# ------------------------------------------------- fetch_tmdb: a match must be the venue's film
+# 2026-10-28: „ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА“ (Влайкова, a 2026 documentary) was matched to
+# The Departed (BG "От другата страна"); Обич -> Loving, Диаманти -> Diamonds Are Forever,
+# Звярът -> Beast (2022). contradiction() checks the venue's own facts; tmdb_blocklist.json
+# keeps a verified-wrong id out for good; a BG match found on part of the title stands
+# only when TMDB's title keeps the lost words or the year confirms it.
+print("\nfetch_tmdb: the venue's facts, the blocklist, part-of-the-title matches")
+_C = TMDB.contradiction
+check("director: Родриго Сорогойен is not Jeff Nichols (Обич / Loving)",
+      bool(_C({"director": "Родриго Сорогойен"}, {"dir": "Jeff Nichols"})), True)
+check("director: the same people in two scripts agree (Ферзан Йозпетек / Ferzan Özpetek, "
+      "Джейкъб Чейс / Jacob Chase, Джеймс Уоткинс / James Watkins, Том Тиквер / Tom Tykwer)",
+      [_C({"director": v}, {"dir": t}) for v, t in (("Ферзан Йозпетек", "Ferzan Özpetek"),
+                                                    ("Джейкъб Чейс", "Jacob Chase"),
+                                                    ("Джеймс Уоткинс", "James Watkins"),
+                                                    ("Том Тиквер", "Tom Tykwer"))], [None] * 4)
+check("director: TMDB's Bulgarian name (nb) counts too",
+      _C({"director": "Кристофър Нолан"}, {"dir": "Christopher Nolan", "nb": {"Christopher Nolan": "Кристофър Нолан"}}), None)
+check("documentary vs fiction: Киномания: Началото (Документален) is not Batman Begins",
+      bool(_C({"genres": ["Документален"]}, {"genres": ["Драма", "Екшън"]})), True)
+check("…a concert film that TMDB files as documentary AND music is not a contradiction",
+      _C({"genres": ["Музикален"]}, {"genres": ["Документален", "Музикален"]}), None)
+check("runtime: 96 min (Небеса, Tykwer) vs 70 is another film",
+      bool(_C({"runtime": 96}, {"runtime": 70})), True)
+check("runtime: 99 vs 93 is not (venues round, cut credits)", _C({"runtime": 99}, {"runtime": 93}), None)
+check("runtime: a concert recording cut to a slot proves nothing (100 vs 160, Музикален)",
+      _C({"runtime": 100, "genres": ["Музикален"]}, {"runtime": 160, "genres": ["Музикален"]}), None)
+check("IMDb: Cine Grand's /m/zvart-imdbtt29256561 is not Beast (2022, tt13223398)",
+      bool(_C(TMDB.venue_facts({}, {}, ["https://www.cinegrand.bg/m/zvart-imdbtt29256561?x=1"]),
+              {"imdb_id": "tt13223398"})), True)
+check("year: beyond MAX_YEAR_GAP is another film; an unknown year abstains",
+      (bool(_C({"year": 2026}, {"tmdb_year": "2006"})), _C({}, {"tmdb_year": "2006"})), (True, None))
+check("venue_facts take the record's own fields, then film_info's, never TMDB's",
+      TMDB.venue_facts({"runtime": 110, "genres": []}, {"dir": "Майк Лий", "year": 1993, "genres": ["Драма"]}),
+      {"year": 1993, "runtime": 110, "genres": ["Драма"], "director": "Майк Лий", "imdb": set()})
+_bl_dir = _tmp.mkdtemp()
+_bl_p = _pl.Path(_bl_dir) / "tmdb_blocklist.json"
+_bl_p.write_text(_json.dumps({"blocked": {"everest-ot-drugata-strana": {"tmdb_ids": [1422]}, "x": [5, "7"]}}),
+                 encoding="utf-8")
+check("tmdb_blocklist.json: {film: {tmdb_ids}} and {film: [ids]} both read",
+      TMDB.load_tmdb_blocklist(_bl_p), {"everest-ot-drugata-strana": {1422}, "x": {5, 7}})
+check("tmdb_blocklist.json: a missing file blocks nothing", TMDB.load_tmdb_blocklist(_pl.Path(_bl_dir) / "no.json"), {})
+check("pick_bg: a one-word title inside a longer one ('Началото' in 'Батман в началото') needs the year",
+      (TMDB.pick_bg([{"id": 272, "title": "Батман в началото", "release_date": "2005-06-10"}], "Началото", None),
+       (TMDB.pick_bg([{"id": 272, "title": "Батман в началото", "release_date": "2005-06-10"}], "Началото", 2005)
+        or {}).get("id")), (None, 272))
+check("pick_bg: a short title inside a long one (less than half of it) needs the year",
+      TMDB.pick_bg([{"id": 574638, "title": "Rolling Thunder Revue: Една история за Боб Дилън от Мартин Скорсезе",
+                     "release_date": "2019-06-12"}], "Една история", None), None)
+check("pick_bg: an exact Bulgarian title still matches without a year",
+      (TMDB.pick_bg([{"id": 1, "title": "Сиянието", "release_date": "1980-05-23"}], "Сиянието", None) or {}).get("id"), 1)
+
+# main(), mocked TMDB: the Влайкова listing that found The Departed
+def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, film_info=None, links="[]"):
+    calls = []
+    def _api(path, params):
+        calls.append((path, dict(params)))
+        if path == "search/movie":
+            return {"results": [dict(r) for r in results_by_query.get(params.get("query"), [])]}
+        if path.startswith("movie/"):
+            return details.get(int(path.split("/")[1]), {})
+        return {"results": []}
+    saved = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.TMDB_BLOCKLIST_PATH,
+             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image)
+    with _tmp.TemporaryDirectory() as td:
+        td = _pl.Path(td)
+        (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
+                                       + ";\nconst LINKS=" + links + ";\n/* SOFIA-DATA-END */", encoding="utf-8")
+        (td / "bl.json").write_text(_json.dumps({"blocked": blocklist or {}}), encoding="utf-8")
+        (td / "al.json").write_text(_json.dumps(aliases or {"groups": []}), encoding="utf-8")
+        (td / "fi.json").write_text(_json.dumps(film_info or {}), encoding="utf-8")
+        TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH = (
+            _api, "t", td / "index.html", td / "t.json", td / "l.json", td / "h.json")
+        TMDB.TMDB_BLOCKLIST_PATH, TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH = td / "bl.json", td / "al.json", td / "fi.json"
+        TMDB.og_image = lambda url: None
+        try:
+            import io as _io, contextlib as _cl
+            with _cl.redirect_stdout(_io.StringIO()):
+                TMDB.main()
+            out = _json.loads((td / "t.json").read_text(encoding="utf-8")) if (td / "t.json").exists() else {}
+        finally:
+            (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.TMDB_BLOCKLIST_PATH,
+             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image) = saved
+    return out, calls
+
+_departed = {"id": 1422, "title": "От другата страна", "original_title": "The Departed", "original_language": "en",
+             "release_date": "2006-10-05", "poster_path": "/dep.jpg", "vote_count": 16843}
+_odyssey = {"id": 9, "title": "Одисея", "original_title": "The Odyssey", "original_language": "en",
+            "release_date": "2026-07-17", "poster_path": "/ody.jpg", "vote_count": 10}
+_det = {1422: {"runtime": 151, "genres": [{"id": 80}], "credits": {"crew": [{"job": "Director", "name": "Martin Scorsese"}]}},
+        9: {"runtime": 173, "genres": [{"id": 12}], "credits": {"crew": [{"job": "Director", "name": "Christopher Nolan"}]}}}
+_out, _ = _tm_main([{"id": "everest-ot-drugata-strana", "bg": "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА", "en": ""},
+                    {"id": "odiseya", "bg": "Одисея", "en": ""}],
+                   {"ОТ ДРУГАТА СТРАНА": [_departed], "Одисея": [_odyssey]}, _det)
+check("main(): 'ЕВЕРЕСТ:' lost from the query and absent from The Departed's title -> no match",
+      _out.get("everest-ot-drugata-strana"), {"matched": False, "en": ""})
+check("main(): …a full-title BG match still matches, and records how it was found",
+      {k: (_out.get("odiseya") or {}).get(k) for k in ("matched", "tmdb_id", "via", "q")},
+      {"matched": True, "tmdb_id": 9, "via": "bg", "q": "Одисея"})
+_tj = {"id": 7, "title": "Том и Джери: Забраненият компас", "original_title": "猫和老鼠：星盘奇缘",
+       "original_language": "zh", "release_date": "2025-01-01", "poster_path": "/tj.jpg"}
+_out, _ = _tm_main([{"id": "tj", "bg": "ТОМ И ДЖЕРИ: ЗАБРАНЕНИЯТ КОМПАС", "en": ""}],
+                   {"ЗАБРАНЕНИЯТ КОМПАС": [_tj]}, {7: {}})
+check("main(): a match whose BG title keeps the lost words ('Том и Джери') stands, with tbg stored",
+      {k: (_out.get("tj") or {}).get(k) for k in ("matched", "via", "tbg")},
+      {"matched": True, "via": "bg-BG", "tbg": "Том и Джери: Забраненият компас"})
+_loving = {"id": 339419, "title": "Обич", "original_title": "Loving", "original_language": "en",
+           "release_date": "2016-11-04", "poster_path": "/lov.jpg", "vote_count": 986}
+_out, _ = _tm_main([{"id": "obich", "bg": "Обич", "en": ""}], {"Обич": [_loving]},
+                   {339419: {"runtime": 123, "credits": {"crew": [{"job": "Director", "name": "Jeff Nichols"}]}}},
+                   film_info={"obich": {"dir": "Родриго Сорогойен"}})
+check("main(): the venue's director (film_info) rejects a same-title match (Обич / Loving)",
+      _out.get("obich"), {"matched": False, "en": ""})
+_out, _calls = _tm_main([{"id": "obich", "bg": "Обич", "en": ""}], {"Обич": [_loving]},
+                        {339419: {"runtime": 123}}, blocklist={"obich": {"tmdb_ids": [339419]}})
+check("main(): a blocklisted TMDB id is never matched again for that film, details never fetched",
+      (_out.get("obich"), [p for p, _q in _calls if p.startswith("movie/")]), ({"matched": False, "en": ""}, []))
+_out, _ = _tm_main([{"id": "nebesa", "bg": "Небеса", "en": ""}],
+                   {"Heaven": [{"id": 10575, "title": "Heaven", "original_title": "Heaven", "release_date": "2002-02-07",
+                                "poster_path": "/h.jpg", "vote_count": 300},
+                               {"id": 882294, "title": "Heaven", "original_title": "Небеса", "release_date": "1940-06-13"}]},
+                   {10575: {"runtime": 96, "credits": {"crew": [{"job": "Director", "name": "Tom Tykwer"}]}}},
+                   blocklist={"nebesa": [882294]},
+                   aliases={"groups": [{"titles": ["Небеса"], "film": "nebesa", "year": 2002, "original": "Heaven"}]})
+check("main(): with the curated year and original title the right film is found (Небеса -> Heaven 2002)",
+      (_out.get("nebesa") or {}).get("tmdb_id"), 10575)
+
+# Duplicate records, 2026-10-28: Влайкова's „ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА“ beside Дом на
+# киното's „Еверест: Другата страна“ (one short word apart); Дом на киното's
+# "40.Киномания: Обич" beside Kinomania's "Обич" (an edition number before the
+# festival); Cinema City's "Хелоуин Селекция[:] Наследникът" beside "Наследникът".
+def _dr(fid, venue, dates, times=("18:00",)):
+    return [[fid, venue, d, list(times)] for d in dates]
+
+
+print("film identity: one short word, numbered festival editions, a cinema's programme strand")
+_W2 = ["2026-10-30", "2026-10-31", "2026-11-01"]
+_ev_films = {"everest-ot": {"id": "everest-ot", "bg": "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА", "en": "", "source": "vlaikova"},
+             "everest": {"id": "everest", "bg": "Еверест: Другата страна", "en": "", "runtime": 110,
+                         "genres": ["Документален"], "source": "dom-kino"}}
+_ev_rows = _dr("everest-ot", "vlaikova", _W2[1:]) + _dr("everest", "dom-kino", _W2[:1]) + _dr("everest", "arena-mega", _W2)
+check("'Еверест: От другата страна' is 'Еверест: Другата страна' (one 'от', the same weeks, no venue lists both)",
+      _DD(_ev_films, _ev_rows), [("everest-ot", "everest", "function-word")])
+check("…not when one venue lists both titles (two films there)",
+      _DD(_ev_films, _ev_rows + _dr("everest-ot", "arena-mega", _W2[2:], ["21:00"])), [])
+check("…not when the weeks do not touch",
+      _DD(_ev_films, _dr("everest-ot", "vlaikova", ["2026-12-01"]) + _dr("everest", "dom-kino", _W2[:1])), [])
+check("…not for an extra word that is not a short function word ('Еверест: Северната другата страна')",
+      _DD({"a": dict(_ev_films["everest-ot"], id="a", bg="ЕВЕРЕСТ: СЕВЕРНАТА ДРУГАТА СТРАНА"),
+           "everest": _ev_films["everest"]},
+          _dr("a", "vlaikova", _W2) + _dr("everest", "dom-kino", _W2)), [])
+check("…not when fewer than three words would remain ('Сянка на' / 'Сянка')",
+      _DD({"a": {"id": "a", "bg": "Сянка на", "en": ""}, "b": {"id": "b", "bg": "Сянка", "en": ""}},
+          _dr("a", "vlaikova", _W2) + _dr("b", "dom-kino", _W2)), [])
+check("…and a year conflict vetoes it",
+      _DD({"everest-ot": dict(_ev_films["everest-ot"], year=2006), "everest": dict(_ev_films["everest"], year=2026)},
+          _ev_rows), [])
+for _t, _want in (("40.Киномания: Обич", "Обич"), ("40. Киномания – Обич", "Обич"),
+                  ("Киномания 2026: Голишар", "Голишар"), ("Хелоуин Селекция: Наследникът", "Наследникът"),
+                  ("Хелоуин Селекция Коварен капан: Бягство", "Коварен капан: Бягство"),
+                  ("THE BLOODY COUNTESS - SINELEBRI", "THE BLOODY COUNTESS"),
+                  ("40 години по-късно", "40 години по-късно"), ("Хелоуин", "Хелоуин"),
+                  ("ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА", "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА"),
+                  ("Падане 2: Мъртва точка", "Падане 2: Мъртва точка")):
+    check(f"clean_title({_t!r})", FID.clean_title(_t), _want)
+_km_films = {"obich": {"id": "obich", "bg": "Обич", "en": "", "source": "lumiere"},
+             "40-kinomaniya-obich": {"id": "40-kinomaniya-obich", "bg": "40.Киномания: Обич", "en": "",
+                                     "runtime": 135, "source": "dom-kino"}}
+check("'40.Киномания: Обич' is merged into 'Обич', and the film's own title is the one kept",
+      _DD(_km_films, _dr("obich", "lumiere", _W2[:1]) + _dr("40-kinomaniya-obich", "dom-kino", _W2)),
+      [("40-kinomaniya-obich", "obich", "same-key")])
+
 print()
 if fails:
     print(f"{len(fails)} test(s) failed: " + ", ".join(fails))
