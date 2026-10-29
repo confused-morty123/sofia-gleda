@@ -1,5 +1,15 @@
 {
  "events": {
+  "chetvartoto-izdanie-na-horror-film-fest-p188286": {
+   "at": "2026-10-29",
+   "file": "posters/ev-chetvartoto-izdanie-na-horror-film-fest-p188286.jpg",
+   "h": 379,
+   "page": "https://programata.bg/kino/its-alive-chetvartoto-izdanie-na-horror-film-fest/",
+   "src": "https://programata.bg/wp-content/uploads/2026/10/825267183_1050670621261254_3387294159955412668_n-1024x379.png",
+   "to": "2026-11-14",
+   "via": "programata",
+   "w": 1024
+  },
   "cinelibri": {
    "at": "2026-10-15",
    "file": "posters/ev-cinelibri.jpg",
@@ -21,7 +31,12 @@
    "w": 1920
   }
  },
- "generated": "2026-10-28T07:17:55+00:00",
+ "generated": "2026-10-29T07:29:03+00:00",
  "refused": {},
- "sizes": {}
+ "sizes": {
+  "https://programata.bg/wp-content/uploads/2026/10/825267183_1050670621261254_3387294159955412668_n-1024x379.png": [
+   1024,
+   379
+  ]
+ }
 }

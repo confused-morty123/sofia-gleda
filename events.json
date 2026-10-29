@@ -2,6 +2,145 @@
  "events": [
   {
    "auto": true,
+   "blurbBg": "Фестивал, 31 октомври – 14 ноември 2026. Сред местата: Дом на киното.",
+   "blurbEn": "Festival, 31 October – 14 November 2026. Venues include Cinema House.",
+   "dates_from": "date field",
+   "from": "2026-10-31",
+   "g": [
+    "#237395",
+    "#061A23"
+   ],
+   "id": "chetvartoto-izdanie-na-horror-film-fest-p188286",
+   "kind": "festival",
+   "missed": 0,
+   "modified": "2026-10-28T14:03:05",
+   "post": 188286,
+   "scope": "cinema",
+   "source": "programata.bg",
+   "status": "upcoming",
+   "tag": "СЛЕД 2 ДНИ",
+   "title": "Четвъртото издание на Horror Film Fest",
+   "titleEn": "The fourth edition of the Horror Film Fest",
+   "titles": [
+    {
+     "t": "…Отново е това време на годината…",
+     "v": []
+    },
+    {
+     "t": "четвърта част на It’s Alive",
+     "v": []
+    },
+    {
+     "t": "Дом на киното",
+     "v": [
+      "dom-kino"
+     ]
+    },
+    {
+     "t": "Тийн секс и смърт в камп Миазма",
+     "v": []
+    },
+    {
+     "t": "наградата на публиката",
+     "v": []
+    },
+    {
+     "t": "срещи с част от режисьорите",
+     "v": []
+    },
+    {
+     "t": "Wrath of the Gods",
+     "v": []
+    },
+    {
+     "t": "отвъд хоръра",
+     "v": []
+    },
+    {
+     "t": "документален филм на Джон Уилсън The History of Concrete",
+     "v": []
+    },
+    {
+     "t": "канадското мокюментари Nirvanna the Band the Show the Moviе",
+     "v": []
+    },
+    {
+     "t": "Дом на киното и Филмотечно кино Одеон",
+     "v": []
+    },
+    {
+     "t": "7Arts",
+     "v": []
+    },
+    {
+     "t": "31.10 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "01.11 КАФЕ-КЛУБ КОМПАС",
+     "v": []
+    },
+    {
+     "t": "02.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "03.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "04.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "05.11 КИНО ОДЕОН",
+     "v": []
+    },
+    {
+     "t": "06.11 КИНО ОДЕОН",
+     "v": []
+    },
+    {
+     "t": "07.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "08.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "08.11 КИНО ОДЕОН",
+     "v": []
+    },
+    {
+     "t": "09.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "10.11 КИНО ОДЕОН",
+     "v": []
+    },
+    {
+     "t": "11.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "13.11 ДОМ НА КИНОТО",
+     "v": []
+    },
+    {
+     "t": "14.11 ДОМ НА КИНОТО",
+     "v": []
+    }
+   ],
+   "to": "2026-11-14",
+   "url": "https://programata.bg/kino/its-alive-chetvartoto-izdanie-na-horror-film-fest/",
+   "venues": [
+    "dom-kino"
+   ]
+  },
+  {
+   "auto": true,
    "blurbBg": "Фестивал, 12–29 ноември 2026. Сред местата: НДК (Зала 1).",
    "blurbEn": "Festival, 12–29 November 2026. Venues include NDK (Hall 1).",
    "dates_from": "date field",
@@ -18,7 +157,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 15 ДНИ",
+   "tag": "СЛЕД 14 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -56,7 +195,7 @@
    ]
   }
  ],
- "generated": "2026-10-28T07:17:52+00:00",
+ "generated": "2026-10-29T07:28:54+00:00",
  "ok": true,
  "posts": {
   "180082": {
@@ -194,11 +333,22 @@
    "date": "2026-10-21T16:31:37",
    "modified": "2026-10-21T16:31:38",
    "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "188212": {
+   "date": "2026-10-28T11:23:28",
+   "modified": "2026-10-28T11:23:39",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "188286": {
+   "date": "2026-10-28T14:03:05",
+   "id": "chetvartoto-izdanie-na-horror-film-fest-p188286",
+   "modified": "2026-10-28T14:03:05",
+   "verdict": "event"
   }
  },
  "read": {
-  "listed": 27,
-  "pages": 0,
+  "listed": 29,
+  "pages": 2,
   "unreadable": 0
  },
  "source": "programata.bg"

@@ -631,7 +631,7 @@
  },
  "sinelibri-2026-metropolis": {
   "cast": "Алфред Абел, Густав Фрьолих, Бригите Хелм и др",
-  "src": "https://vlaikovacinema.com/screening/%d1%81%d0%b8%d0%bd%d0%b5%d0%bb%d0%b8%d0%b1%d1%80%d0%b8-2026-%d0%bc%d0%b5%d1%82%d1%80%d0%be%d0%bf%d0%be%d0%bb%d0%b8%d1%81/",
+  "src": "https://programata.bg/kino/filmi/metropolis/",
   "pv": 5,
   "country": "Германия",
   "year": 1927,
@@ -642,7 +642,8 @@
   "fsrc": "https://www.cinelibri.com/metropolis/",
   "dir": "Фриц Ланг",
   "title_bg": "Метрополис",
-  "title_en": "Metropolis"
+  "title_en": "Metropolis",
+  "synBg": "Не може ума и ръцете да бъдат едно, освен ако сърцето не им е  посредник. В едно фантастично бъдеще Работещите се изправят срещу  Мислещите, за да открият, че биха могли да вървят напред единствено ако  са заедно."
  },
  "akira-kurosava-sanishta-1990": {
   "dir": "Akira Kurosawa",
@@ -1133,7 +1134,10 @@
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/fjord-1-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/fiord-3679.html",
   "title_bg": "Фиорд",
-  "title_en": "Fjord"
+  "title_en": "Fjord",
+  "genres": [
+   "Драма"
+  ]
  },
  "francheska-i-dzhovani-lyubov-i-mafiya": {
   "synBg": "През 1979 г. Палермо е разтърсен от мафиотски атаки. Израснал в насилствена среда, 15-годишният Дино е обвинен в убийството на баща си. Франческа Морвило, заместник-прокурор в съда за непълнолетни, поема случая. Борейки се срещу една система, която наказва непълнолетните, вместо да ги образова и да им предлага бъдеще, различно от това на родителите им, Франческа остава вярна на ценностите си. Филмът е вдъхновен от действителната история на италианските магистрати Франческа Морвило и Джовани Фалконе, спътници в живота и в борбата срещу мафията.",
@@ -1614,7 +1618,9 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/studena-voina5.jpg",
   "fsrc": "https://www.cinelibri.com/studena-voina/",
   "title_bg": "Студена война",
-  "title_en": "Cold War"
+  "title_en": "Cold War",
+  "src": "https://www.ndk.bg/en/event/studena-voina-sinelibri",
+  "pv": 5
  },
  "taksi-za-raya": {
   "synBg": "Един строителен работник, български емигрант във Виена, умира внезапно. Съпругата му държи да го изпрати подобаващо и кани най-близките му приятели да прекарат нощта заедно с нея в бдение над покойника. Под въздействието на алкохола бдението постепенно се превръща в Дионисиева мистерия, в която мъртвите оживяват, а живите започват да приличат на мъртви. Границите между изкуството да живееш и изкуството да умираш постепенно се размиват. „Такси за рая“ проследява три преплетени истории: историята на нелегално нощно бдение във Виена; историята на двама служители на погребално бюро, специализирано в транспортиране на тленни останки на български емигранти обратно в родината; историята на полски престъпник, който трябва да бъде преведен през границата в ковчег.",
@@ -1747,7 +1753,11 @@
   "title_bg": "Черни пари за бели нощи",
   "dir": "Кристина Грозева, Петър Вълчанов",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/photo-bmfwn-1-0x450.jpg",
-  "fsrc": "https://www.kinomania.bg/bg_BG/film/cherni-pari-za-beli-noshti-3680.html"
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/cherni-pari-za-beli-noshti-3680.html",
+  "genres": [
+   "Драма",
+   "Комедия"
+  ]
  },
  "kinomaniya-2026-golishar": {
   "title_bg": "голишар",
@@ -1757,13 +1767,17 @@
    "Драма"
   ],
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/15/nestling_still_3-1-0x450.jpg",
-  "fsrc": "https://www.kinomania.bg/bg_BG/film/golishar-3692.html"
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/golisharnbspnbsp-sreshta-s-ekipa-3692.html"
  },
  "srednoshtno-slantse": {
   "title_bg": "Среднощно слънце",
   "dir": "Венцислав Сариев",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/15/under-the-midnight-sun-screen-poster-0x450.jpg",
-  "fsrc": "https://www.kinomania.bg/bg_BG/film/srednoshtno-sluntze-3696.html"
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/srednoshtno-sluntze-sreshta-s-ekipa-3696.html",
+  "genres": [
+   "Драма",
+   "Мистерия"
+  ]
  },
  "pochivkata-2": {
   "src": "https://www.kinoarena.com/bg/movie/pocivkata-2",
@@ -1873,16 +1887,37 @@
   "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38477/9169-preview-20261021-072119_resize1000x1000.jpg?v=1792568736"
  },
  "zvyarat": {
-  "src": "https://www.kinoarena.com/bg/movie/zvyarut",
-  "pv": 5
+  "src": "https://programata.bg/kino/filmi/zvyarat-2/",
+  "pv": 5,
+  "synBg": "Опити за преврат принуждават президента на САЩ да седне зад волана на президентската лимузина и да отключи пълния потенциал на Звяра . Той ще трябва да използва всички секретни функции на автомобила, за да спаси ранения си агент, да се събере със съпругата си и да спаси света.",
+  "dir": "Рени Харлин",
+  "cast": "Самюел Л. Джаксън, Джоел Кинаман, Гай Бърнет",
+  "genres": [
+   "Драма",
+   "Екшън",
+   "Трилър"
+  ]
  },
  "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": {
-  "src": "https://www.kinoarena.com/bg/movie/how-to-save-the-immortal-2-elixir-of-life",
-  "pv": 5
+  "src": "https://programata.bg/kino/filmi/bezsmartniyat-i-krasaviczata-2-eliksir-na-zhivota/",
+  "pv": 5,
+  "synBg": "Драйбоун Безсмъртния и Барбара Смелата се готвят за сватбата си, но не всички роднини на булката са доволни от този съюз. Властната ѝ леля, кралица Брунгилда, смята, че племенницата ѝ заслужава по-подходящ съпруг. В злополучен опит да спре венчавката, тя по невнимание прави мощно сънно заклинание върху Барбара. Кралицата обявява, че митичният Еликсир на живота може да спаси момичето, но само истински благороден рицар ще оцелее по коварния път до него – до страховито място, където опасности дебнат зад всеки ъгъл. Драйбоун, известен и като тъмен магьосник, няма шанс в това благородно начинание, затова привлича на своя страна Илайджа — доблестен, но тромав и плах рицар. В тази приказка, изпълнена с екшън, магия и хумор, само истински герой може да спаси Барбара и да върне мира и радостта в кралството…",
+  "dir": "Roman Artemyev",
+  "cast": "озвучаващи артисти: Момчил Степанов, Елена Грозданова, Живко Джуранов, Василка Сугарева, Ася Рачева",
+  "genres": [
+   "Анимация"
+  ]
  },
  "topki": {
-  "src": "https://www.kinoarena.com/bg/movie/topki",
-  "pv": 5
+  "src": "https://programata.bg/kino/filmi/topki/",
+  "pv": 5,
+  "synBg": "Ако някой беше казал това на 23-годишната многообещаваща звезда на женския футбол – Лора, тя никога не би повярвала. Но когато пред нея изниква единствената възможност да осъщестни мечтата си – да бъде футболна треньорка – тя се заема с аматьорския отбор на Скала Бов. Лора се изправя срещу расисти, сексисти и закоравели балканци и естествено среща тяхната първосигнална съпротива. Това, което те не са очаквали обаче е, че Лора има топки .",
+  "dir": "Любомир Печев",
+  "cast": "Александра Лашкова, Иван Савов, Алекс Иванов, Мариан Вълев, Китодар Тодоров",
+  "genres": [
+   "Български",
+   "Комедия"
+  ]
  },
  "puk": {
   "dir": "Анри Кулев",
@@ -1978,7 +2013,7 @@
   "title_bg": "Невидимо в кутия",
   "dir": "Хирокадзу Корееда",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-sheep_in_the_b-0x450.jpg",
-  "fsrc": "https://www.kinomania.bg/bg_BG/film/nevidimo-v-kytiya-s-bulgarski-i-angliiiski-sybtitri-3750.html"
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/nevidimo-v-kytiya-3750.html"
  },
  "pogledni-nazad": {
   "title_bg": "Погледни назад",
@@ -2001,5 +2036,163 @@
  },
  "everest-drugata-strana": {
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8617S2R.jpg"
+ },
+ "aferata-boyarski": {
+  "title_bg": "Аферата Боярски",
+  "dir": "Жан-Пол Саломе",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/laffaire_bojarski_boj0803-2025-guy-ferrandis--le-bureau-films--les-compagnons-du-cinema-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/aferata-boyarski-3715.html"
+ },
+ "bez-stsenariy": {
+  "title_bg": "Без сценарий",
+  "dir": "Ема Константинова",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/bez-stzenariii_valentin_ganev-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/bez-stzenariii-3732.html"
+ },
+ "bitkata-dyo-gol": {
+  "title_bg": "Битката дьо Гол",
+  "dir": "Антонен Бодри",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/28/fff2026_fbevent_1920x1080px-1-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/bitkata-dyo-gol-chast-1-filmut-shte-bude-predstaven-ot-n-pr-g-zha-mari-dyumylen-poslanik-na-frantziya-3716.html"
+ },
+ "dobroto-voyniche": {
+  "title_bg": "Доброто войниче",
+  "dir": "Стефан Бризе",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/1920-un_petit_bon_soldat-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/dobroto-voiiniche-3721.html"
+ },
+ "dom-za-neya": {
+  "title_bg": "Дом за нея",
+  "dir": "Мелиса Годе",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/la-maison-des-femmes-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/dom-za-neya-3717.html"
+ },
+ "edin-osoben-den": {
+  "title_bg": "Един особен ден",
+  "dir": "Еторе Скола",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/edin-osoben-den-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/edin-osoben-den-3729.html"
+ },
+ "elektricheskata-tseluvka": {
+  "title_bg": "Електрическата целувка",
+  "dir": "Пиер Салвадори",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/1920-elektricheskata-tzelyvka-venusguyferrandis_vutre-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/elektricheskata-tzelyvka-3718.html"
+ },
+ "eva": {
+  "title_bg": "ЕВА",
+  "dir": "Мартин Геновски",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-eva-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/evanbsp-sreshta-s-ekipa-3747.html"
+ },
+ "golemite-maystori-na-kinoto": {
+  "title_bg": "Големите майстори на киното",
+  "dir": "Паоло Чивати",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/golemite-maiistori-na-kinoto-masters-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/golemite-maiistori-na-kinoto-3728.html"
+ },
+ "istoriya-na-dokumentalniya-film": {
+  "title_bg": "История на документалния филм",
+  "dir": "Марк Казънс",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/istoriya-na-dokymentalniya-film_the_story_of_documentary_film-still-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/istoriya-na-dokymentalniya-film-sreshta-s-rezhisyora-mark-kazuns-3731.html"
+ },
+ "izostaven-ot-vsichki": {
+  "title_bg": "Изоставен от всички",
+  "dir": "Венсан Гаренк",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/izostaven-ot-vsichki-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/izostaven-ot-vsichki-3719.html"
+ },
+ "karma": {
+  "title_bg": "Карма",
+  "dir": "Гийом Кане",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/1920-karma-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/karma-3720.html"
+ },
+ "kateritsata": {
+  "title_bg": "Катерицата",
+  "dir": "Маркус Лехмусрусу",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/kateritzata-katericata1-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/kateritzata-3738.html"
+ },
+ "krasavitsata-i-zvyara": {
+  "title_bg": "Красавицата и Звяра",
+  "dir": "Жан Кокто",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/krasavitzata-i-zvyara_la_belle_et_la_bete_jean_cocteau-_1946-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/krasavitzata-i-zvyara-3730.html"
+ },
+ "ledena-zemya": {
+  "title_bg": "Ледена земя",
+  "dir": "Аманда Кернел",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/15/braceyourheart_2000x1200_summer-still_photo-credit-sophia-olsson-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/ledena-zemya-3694.html"
+ },
+ "lyubovna-magiya": {
+  "title_bg": "Любовна магия",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/lyubovna-magiya-el_amor_brujo-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/lyubovna-magiya-3709.html"
+ },
+ "mazhat-kogoto-obicham": {
+  "title_bg": "Мъжът, когото обичам",
+  "dir": "Айра Закс",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/muzhut-kogoto-obicham-the-man-i-love-2026-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/muzhut-kogoto-obicham-3740.html"
+ },
+ "nepoznata-zhena": {
+  "title_bg": "Непозната жена",
+  "dir": "Май ел Туки",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/nepoznata-zhena_woman-unknown-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/nepoznata-zhena-3737.html"
+ },
+ "nevidimo": {
+  "title_bg": "НевиДимо",
+  "dir": "Лиляна Бързева",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/nevidimo-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/nevidimo-3714.html"
+ },
+ "sladko-ot-peperudi": {
+  "title_bg": "Сладко от пеперуди",
+  "dir": "Кантемир Балагов",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/1920-sladko-ot-peperydi-but-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/sladko-ot-peperydi-3741.html"
+ },
+ "stakleno-more": {
+  "title_bg": "Стъклено море",
+  "dir": "Алексис Алексиу",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/stukleno-more-sea_of_glass_poster-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/stukleno-more-3708.html"
+ },
+ "strahlivets": {
+  "title_bg": "Страхливец",
+  "dir": "Лукас Донт",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/1920-coward-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/strahlivetz-3736.html"
+ },
+ "tishina": {
+  "title_bg": "Тишина",
+  "dir": "Димитър Петков",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/tishina-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/tishina-vecher-za-galin-malakchiev-3733.html"
+ },
+ "zhalti-pisma": {
+  "title_bg": "Жълти писма",
+  "dir": "Илкер Чатак",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/zhupti-pisma_yellow_letters-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/zhulti-pisma-3739.html"
+ },
+ "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-1-sab": {
+  "synBg": "Поредица от 4 събития – „СОФИЯ РАЗКАЗВА – ХОРА И УЛИЦИ, ЧИТАЛИЩЕ И КИНО „. Първото събитие от поредицата включва беседа на тема „СОФИЙСКИТЕ КВАРТАЛИ“ и прожекция на филма „НАШИЯТ КВАРТАЛ“ Лектори: Виктор Топалов и Здравко Петров Беседите и прожекциите са организирани от читалище „Антон Страшимиров-1926“, „Бохемска София“ и „Исторически маршрути“ .",
+  "src": "https://vlaikovacinema.com/events/%d1%81%d0%be%d1%84%d0%b8%d0%b9%d1%81%d0%ba%d0%b8%d1%82%d0%b5-%d0%ba%d0%b2%d0%b0%d1%80%d1%82%d0%b0%d0%bb%d0%b8-%d0%b8-%d0%bf%d1%80%d0%be%d0%b6%d0%b5%d0%ba%d1%86%d0%b8%d1%8f-%d0%bd/",
+  "pv": 5
+ },
+ "the-bloody-countess-sinelebri": {
+  "src": "https://www.ndk.bg/en/event/kiervavata-grafinia-sinelibri",
+  "pv": 5,
+  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38485/9164-preview-20261021-072334_resize1000x1000.jpg?v=1792569540"
+ },
+ "ludorii-sinelibri": {
+  "src": "https://www.ndk.bg/en/event/ludorii-sinelibri",
+  "pv": 5,
+  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38484/9159-preview-20261021-072318_resize1000x1000.jpg?v=1792569539"
  }
 }

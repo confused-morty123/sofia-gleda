@@ -3855,5 +3855,426 @@
    "#275F3A"
   ],
   "source": "lumiere"
+ },
+ "igrite-na-glada-izgrevat-v-denya-na-zhatvata": {
+  "id": "igrite-na-glada-izgrevat-v-denya-na-zhatvata",
+  "bg": "Игрите на глада: Изгревът в Деня на жътвата",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фентъзи",
+   "Фантастика",
+   "Трилър"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 158,
+  "year": 2026,
+  "originalTitle": "THE HUNGER GAMES: SUNRISE ON THE REAPING"
+ },
+ "obsebvane": {
+  "id": "obsebvane",
+  "bg": "ОБСЕБВАНЕ",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cineland",
+  "runtime": 109,
+  "year": 2026,
+  "originalTitle": "OBSESSION"
+ },
+ "backrooms": {
+  "id": "backrooms",
+  "bg": "BACKROOMS",
+  "en": "",
+  "genres": [
+   "Трилър"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cineland",
+  "runtime": 111,
+  "year": 2026
+ },
+ "pisak-7": {
+  "id": "pisak-7",
+  "bg": "ПИСЪК 7",
+  "en": "",
+  "genres": [
+   "Трилър",
+   "Хорър"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cineland",
+  "runtime": 115,
+  "year": 2026,
+  "originalTitle": "SCREAM 7"
+ },
+ "vlastelinat-na-prastenite-zadrugata-na-prastena-udalzheno-iz": {
+  "id": "vlastelinat-na-prastenite-zadrugata-na-prastena-udalzheno-iz",
+  "bg": "Властелинът на пръстените: Задругата на пръстена (удължено издание)",
+  "en": "",
+  "genres": [
+   "Приключенски"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 228
+ },
+ "levit": {
+  "id": "levit",
+  "bg": "Левит",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon"
+ },
+ "echo-between-us-sinelibri": {
+  "id": "echo-between-us-sinelibri",
+  "bg": "ECHO BETWEEN US - SINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere"
+ },
+ "mazhat-kogoto-obicham": {
+  "id": "mazhat-kogoto-obicham",
+  "bg": "Мъжът, когото обичам",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "vlaikova"
+ },
+ "elektricheskata-tseluvka": {
+  "id": "elektricheskata-tseluvka",
+  "bg": "Електрическата целувка",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "frenski-institut"
+ },
+ "karma": {
+  "id": "karma",
+  "bg": "Карма",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Трилър"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "frenski-institut"
+ },
+ "sladko-ot-peperudi": {
+  "id": "sladko-ot-peperudi",
+  "bg": "Сладко от пеперуди",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon"
+ },
+ "strahlivets": {
+  "id": "strahlivets",
+  "bg": "Страхливец",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "lumiere"
+ },
+ "aferata-boyarski": {
+  "id": "aferata-boyarski",
+  "bg": "Аферата Боярски",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere"
+ },
+ "bitkata-dyo-gol": {
+  "id": "bitkata-dyo-gol",
+  "bg": "Битката дьо Гол",
+  "en": "",
+  "genres": [
+   "Биографичен",
+   "Исторически"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "lumiere"
+ },
+ "dobroto-voyniche": {
+  "id": "dobroto-voyniche",
+  "bg": "Доброто войниче",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
+ },
+ "zhalti-pisma": {
+  "id": "zhalti-pisma",
+  "bg": "Жълти писма",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon"
+ },
+ "golemite-maystori-na-kinoto": {
+  "id": "golemite-maystori-na-kinoto",
+  "bg": "Големите майстори на киното",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "lumiere"
+ },
+ "izostaven-ot-vsichki": {
+  "id": "izostaven-ot-vsichki",
+  "bg": "Изоставен от всички",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "g8"
+ },
+ "krasavitsata-i-zvyara": {
+  "id": "krasavitsata-i-zvyara",
+  "bg": "Красавицата и Звяра",
+  "en": "",
+  "genres": [
+   "Романтика",
+   "Фентъзи"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "nepoznata-zhena": {
+  "id": "nepoznata-zhena",
+  "bg": "Непозната жена",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
+ },
+ "dom-za-neya": {
+  "id": "dom-za-neya",
+  "bg": "Дом за нея",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "frenski-institut"
+ },
+ "istoriya-na-dokumentalniya-film": {
+  "id": "istoriya-na-dokumentalniya-film",
+  "bg": "История на документалния филм",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "odeon"
+ },
+ "kateritsata": {
+  "id": "kateritsata",
+  "bg": "Катерицата",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "odeon"
+ },
+ "lyubovna-magiya": {
+  "id": "lyubovna-magiya",
+  "bg": "Любовна магия",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Музикален"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "lumiere"
+ },
+ "bez-stsenariy": {
+  "id": "bez-stsenariy",
+  "bg": "Без сценарий",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "odeon"
+ },
+ "eva": {
+  "id": "eva",
+  "bg": "ЕВА",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon"
+ },
+ "edin-osoben-den": {
+  "id": "edin-osoben-den",
+  "bg": "Един особен ден",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "ledena-zemya": {
+  "id": "ledena-zemya",
+  "bg": "Ледена земя",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "lumiere"
+ },
+ "nevidimo": {
+  "id": "nevidimo",
+  "bg": "НевиДимо",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "odeon"
+ },
+ "stakleno-more": {
+  "id": "stakleno-more",
+  "bg": "Стъклено море",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino"
+ },
+ "tishina": {
+  "id": "tishina",
+  "bg": "Тишина",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
  }
 }
