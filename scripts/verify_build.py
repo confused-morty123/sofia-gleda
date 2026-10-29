@@ -184,6 +184,15 @@ except BaseException:                                    # bs4 missing: the same
                 "филмотечно кино одеон": "odeon", "кино одеон": "odeon"}.get(k)
 
 
+# whether an epaygo.bg page's own title (FESTROWS' 10th field, stored at scrape time) names the
+# row's film (film_identity.same_film_title: stdlib only; skeptic, 2026-10-29: CineLibri's two
+# 4 Nov 19:45 films at G8 and Euro Cinema had their epaygo links crossed)
+try:
+    from film_identity import same_film_title as _same_film_title   # noqa: E402
+except BaseException:                                    # never silently pass: the check fails
+    _same_film_title = None
+
+
 def festival_host(host):
     return any(host == h or host.endswith("." + h) for h in FESTIVAL_TICKET_HOSTS)
 
@@ -746,17 +755,18 @@ else:
         _st4 = {(r[0], r[1], r[2], t) for r in (data["SHOWTIMES"] or []) if isinstance(r, list) and len(r) >= 4
                 for t in (r[3] or [])}
         _bad_fr = [x for x in _fr_data
-                   if not (isinstance(x, list) and len(x) in (6, 7, 8, 9) and all(isinstance(v, str) for v in x[:5])
+                   if not (isinstance(x, list) and len(x) in (6, 7, 8, 9, 10) and all(isinstance(v, str) for v in x[:5])
                            and (len(x) == 6 or x[6] in (None, "onsale", "soldout", "notyet"))
                            and (len(x) < 8 or x[7] is None or (isinstance(x[7], str) and 0 < len(x[7]) < 160))
                            and (len(x) < 9 or x[8] is None or (isinstance(x[8], str)
                                                                and re.fullmatch(r"\d{4}-\d{2}-\d{2}", x[8])))
+                           and (len(x) < 10 or x[9] is None or (isinstance(x[9], str) and 0 < len(x[9]) <= 150))
                            and (x[5] is None or (isinstance(x[5], str) and re.match(r"https?://[^\s\"<>]+$", x[5])
                                                  and any(_host_of(x[5]) == h or _host_of(x[5]).endswith("." + h)
                                                          for h in _SALE_HOSTS))))]
         if _bad_fr:
             fail(f"{len(_bad_fr)} FESTROWS entr(ies) are not [filmId, venueId, date, time, festival, festival/ticket-shop url|null, "
-                 f"onsale/soldout/notyet|null, epaygo place|null, day the state was read|null], "
+                 f"onsale/soldout/notyet|null, epaygo place|null, day the state was read|null, epaygo title|null], "
                  f"e.g. {str(_bad_fr[0])[:120]}")
         _ok_fr = [x for x in _fr_data if x not in _bad_fr]
         _lost_fr = [x for x in _ok_fr if tuple(x[:4]) not in _st4]
@@ -787,6 +797,33 @@ else:
         if _wrong_vl:
             fail(f"{len(_wrong_vl)} VLINKS entr(ies) link an epaygo.bg event at another cinema, "
                  f"e.g. {'/'.join(_wrong_vl[0][:2])} -> {_wrong_vl[0][2]}")
+        # an epaygo.bg link sells the row's film: the page's own title, stored at scrape time
+        # (10th field), names it — film by film, never by the slot (two films can share one).
+        # No network: the stored title against FILMS' bg / en / original title.
+        _ftitles = {f.get("id"): [t for t in (f.get("bg"), f.get("en"), f.get("originalTitle")) if isinstance(t, str) and t]
+                    for f in (data["FILMS"] or []) if isinstance(f, dict)}
+        _ep_ev = re.compile(r"^https://epaygo\.bg/\d+/?$")
+        _no_title = [x for x in _ok_fr if isinstance(x[5], str) and _ep_ev.match(x[5]) and not (len(x) > 9 and x[9])]
+        if _no_title:
+            fail(f"{len(_no_title)} FESTROWS entr(ies) link an epaygo.bg event without its stored title (never checked "
+                 f"against the film), e.g. {'/'.join(_no_title[0][:4])} -> {_no_title[0][5]}")
+        if _same_film_title is None:
+            fail("film_identity.same_film_title is not importable: FESTROWS' epaygo titles cannot be checked")
+        else:
+            _wrong_film = [x for x in _ok_fr if isinstance(x[5], str) and _ep_ev.match(x[5]) and len(x) > 9 and x[9]
+                           and not _same_film_title(x[9], _ftitles.get(x[0]) or [])]
+            if _wrong_film:
+                fail(f"{len(_wrong_film)} FESTROWS entr(ies) link an epaygo.bg event that sells another film, "
+                     f"e.g. {'/'.join(_wrong_film[0][:4])} -> {_wrong_film[0][5]} ({_wrong_film[0][9]!r})")
+            _title_of = {x[5].rstrip("/"): x[9] for x in _ok_fr if isinstance(x[5], str) and _ep_ev.match(x[5])
+                         and len(x) > 9 and x[9]}
+            _wrong_vf = [x for x in (vlinks_data if isinstance(vlinks_data, list) else [])
+                         if isinstance(x, list) and len(x) >= 3 and isinstance(x[2], str)
+                         and x[2].rstrip("/") in _title_of
+                         and not _same_film_title(_title_of[x[2].rstrip("/")], _ftitles.get(x[0]) or [])]
+            if _wrong_vf:
+                fail(f"{len(_wrong_vf)} VLINKS entr(ies) link an epaygo.bg event FESTROWS stores for another film, "
+                     f"e.g. {'/'.join(_wrong_vf[0][:2])} -> {_wrong_vf[0][2]}")
         if _fr_data and not re.search(r"\bfunction festSaleUrl\(", js):
             fail("FESTROWS has entries but the app has no festSaleUrl() — they would show the box-office stub")
         _shut_fr = [x for x in _ok_fr if len(x) > 6 and x[6] in ("soldout", "notyet")]

@@ -18637,6 +18637,15 @@ def wave_b24(browser):
 # ============================================================================
 BO_EXAMPLE = "zhena-mi-se-kazva-boris"
 BO_EXAMPLE2 = "gramofonat"
+# a regular screening of G8's OWN programme (no festival film): checked on g8cinema.com/bg/movies.php
+# 2026-10-29 (week 23-29 Oct: "Чист късмет" 22:00). Before, "regular G8" was the first box-office row
+# at G8, which picked otechestvo 4 Nov 19:45 — a CineLibri screening at Euro Cinema the dev build had
+# filed under G8 without its FESTROWS row (skeptic, 2026-10-29). A later build without it falls back
+# to a G8 row of a film no festival lists.
+BO_REGULAR = {"g8": [["chist-kasmet", "2026-10-29", "22:00"]], "odeon": []}
+# CineLibri, 4 Nov 19:45 (cinelibri.com/4-noemvri/ and epaygo.bg, 2026-10-29): two films at one hour
+BO_PAIR = [["otechestvo", "euro-cinema", "g8", "2026-11-04", "19:45", "https://epaygo.bg/1708861677"],
+           ["sinelibri-chernoto-topche", "g8", "euro-cinema", "2026-11-04", "19:45", "https://epaygo.bg/4036081133"]]
 BO_SHOTS = webapp_root.parent / "notes" / "design_options" / "box_office_v2" / "built"
 BO_COPY = {
     "bg": {"buy": "Купи билет", "head": "Билети само на касата", "headAlt": "Билети на касата",
@@ -18884,7 +18893,7 @@ def wave_bo1(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("BO1")
     ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
-    info = page.evaluate("""([ex,ex2])=>{
+    info = page.evaluate("""([ex,ex2,pinned,pair])=>{
       const today=TODAY, bx=(typeof BOXONLY!=='undefined'&&Array.isArray(BOXONLY))?BOXONLY:[];
       const perfOn=new Set(PERFORMANCES.map(p=>p[0]+'|'+p[1]+'|'+p[2]));
       const row=id=>{const r=bx.find(r=>r[0]===id&&r[1]>=today);return r?[r[0],r[1],r[2],!!r[3],isPrelimListing('show',id,'salzaismyah',r[1])]:null};
@@ -18905,20 +18914,44 @@ def wave_bo1(browser):
       // a film at a cinema that sells its own programme only at its box office (a regular
       // screening there) and a festival screening at one (sold online), per cinema
       const inP=Object.keys(BOOKING).filter(v=>BOOKING[v].inPerson&&cinById[v]);
+      // a regular screening = the cinema's OWN programme: a film no festival lists (FESTMARK, FESTROWS)
+      const festFilm=new Set();
+      for(const k of Object.keys(typeof FESTMARK==='object'&&FESTMARK?FESTMARK:{}))for(const f of (FESTMARK[k].films||[]))festFilm.add(f);
+      for(const r of ((typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[]))festFilm.add(r[0]);
       const pick=(v,fest,after)=>{for(const r of SHOWTIMES){if(r[1]!==v||!(r[2]>after)||!filmById[r[0]])continue;
+        if(!fest&&festFilm.has(r[0]))continue;
         for(const t of (r[3]||[])){const u=festSaleUrl(r[0],v,r[2],t);
           const shut=typeof festSaleState==='function'&&festSaleState(r[0],v,r[2],t);
           if(fest?(u&&hostLabel(u)==='epaygo.bg'&&!shut):!!boxOnly('film',r[0],v,r[2],t))return [r[0],v,r[2],t];}}return null;};
+      const pin=v=>{for(const [f,d,t] of (pinned[v]||[])){const r=SHOWTIMES.find(r=>r[0]===f&&r[1]===v&&r[2]===d&&(r[3]||[]).includes(t));
+        if(r&&d>=today&&filmById[f]&&!festFilm.has(f)&&boxOnly('film',f,v,d,t))return [f,v,d,t];}return null;};
       const cin=pick('g8',false,today)||pick('odeon',false,today)||pick('g8',false,'0')||pick('odeon',false,'0');
-      const reg={}, fest={};
-      for(const v of ['g8','odeon']){reg[v]=pick(v,false,'0');fest[v]=pick(v,true,'0');}
+      const reg={}, fest={}, pinnedUsed={};
+      for(const v of ['g8','odeon']){const pv=pin(v);pinnedUsed[v]=!!pv;reg[v]=pv||pick(v,false,'0');fest[v]=pick(v,true,'0');}
+      const regFest=Object.values(reg).filter(x=>x&&festFilm.has(x[0])).map(x=>x.join('|'));
+      // the 4 Nov 19:45 CineLibri pair: each film at its own venue with its own epaygo page
+      const pairOut=pair.map(([f,v,wrong,d,t,url])=>({f,
+        at:SHOWTIMES.some(r=>r[0]===f&&r[1]===v&&r[2]===d&&(r[3]||[]).includes(t)),
+        wrongAt:SHOWTIMES.some(r=>r[0]===f&&r[1]===wrong&&r[2]===d&&(r[3]||[]).includes(t)),
+        fr:(FESTROWS.find(r=>r[0]===f&&r[1]===v&&r[2]===d&&r[3]===t)||[]).slice(5,6)[0]||null,
+        sale:festSaleUrl(f,v,d,t), box:!!boxOnly('film',f,v,d,t), want:url, past:d<today}));
       return {bx:bx.length, bxBad:bx.filter(r=>!perfOn.has(r[0]+'|'+r[1]+'|'+r[2])).length,
-        ex:row(ex), ex2:row(ex2), online, prelimOnline, inP, cin, reg, fest};
-    }""", [BO_EXAMPLE, BO_EXAMPLE2])
+        ex:row(ex), ex2:row(ex2), online, prelimOnline, inP, cin, reg, fest, pinnedUsed, regFest, pairOut};
+    }""", [BO_EXAMPLE, BO_EXAMPLE2, BO_REGULAR, BO_PAIR])
     print(f"  data: {info}")
     check("bo1_data_every_entry_has_its_performance", info["bxBad"] == 0,
           f"{info['bx']} BOXONLY entr(y/ies), {info['bxBad']} without a PERFORMANCES row")
     check("bo1_inperson_venues", set(info["inP"]) >= {"odeon", "g8"}, f"BOOKING inPerson cinemas: {info['inP']}")
+    # the "regular" cases are the cinemas' own programme, never a festival film (skeptic, 2026-10-29)
+    check("bo1_regular_is_own_programme", not info["regFest"] and (info["reg"] or {}).get("g8") is not None,
+          f"regular picks {info['reg']} (pinned used: {info['pinnedUsed']}); festival films among them: {info['regFest']}")
+    pair = info["pairOut"]
+    if all(x["past"] for x in pair):
+        skip("bo1_cinelibri_4nov_1945_pair", "4 Nov 2026 has passed")
+    else:
+        check("bo1_cinelibri_4nov_1945_pair",
+              all(x["at"] and not x["wrongAt"] and x["fr"] == x["want"] and x["sale"] == x["want"] and not x["box"] for x in pair),
+              f"Отечество @ Euro Cinema / Черното топче @ G8, 4 Nov 19:45: {pair}")
     # the tag on a preliminary time that is sold online: rendered directly (any date)
     po = info["prelimOnline"]
     if not po:

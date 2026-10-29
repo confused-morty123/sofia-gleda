@@ -1513,7 +1513,9 @@ def _fr_page(entries_js, with_fn=True, c0_url="https://example0.bg/"):
     return h.replace("/* SOFIA-DATA-END */", f"{_fr_fn}\n/* SOFIA-DATA-END */", 1) if with_fn else h
 
 
-_fr_ok = _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144"]])
+# an epaygo.bg link carries its page's own title (10th field, 2026-10-29), which names the row's film
+_fr_ok = _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144", None, None, None,
+                       "ФИЛМ 0"]])
 _rc, _out = _run_out(_fr_page(_fr_ok))
 check("a FESTROWS entry for a screening at a box-office cinema exits 0 (and is counted)",
       _rc == 0 and "FESTROWS: 1 festival" in _out)
@@ -1530,7 +1532,8 @@ check("a FESTROWS link that is not a festival or ticket-shop page exits non-zero
 _rc, _out = _run_out(_fr_page(_fr_ok, with_fn=False))
 check("FESTROWS entries in an app without festSaleUrl() exit non-zero", _rc != 0 and "no festSaleUrl()" in _out)
 # the sale state (7th field, 2026-10-29): onsale / soldout / notyet / null
-_fr7 = lambda st: _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144", st]])
+_fr7 = lambda st: _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144", st,
+                                 None, None, "ФИЛМ 0"]])
 _fr_fn_both = _fr_fn + "\nfunction festSaleState(i,v,d,t){return '';}"
 _fr_fn0 = _fr_fn
 _fr_fn = _fr_fn_both
@@ -1543,7 +1546,7 @@ _rc, _out = _run_out(_fr_page(_fr7("maybe")))
 check("a FESTROWS sale state outside onsale/soldout/notyet exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
 # the day the state was read (9th field, 2026-10-29): YYYY-MM-DD or null
 _fr9 = lambda rd: _json.dumps([["f0", "cinema0", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/1050441144", "onsale",
-                                None, rd]])
+                                None, rd, "ФИЛМ 0"]])
 for _rd in ("2026-10-29", None):
     _rc, _out = _run_out(_fr_page(_fr9(_rd)))
     check(f"a FESTROWS entry read on {_rd!r} (9th field) exits 0", _rc == 0)
@@ -1587,17 +1590,17 @@ def _ec_page(entries, vlinks=None, ec_fields=_EC_FIELDS):
     return h.replace("/* SOFIA-DATA-END */", _fn + "\n/* SOFIA-DATA-END */", 1)
 
 
-_ec_ok = [["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_EC],
-          ["f0", "g8", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/2355774239", "onsale", _PL_G8]]
+_ec_ok = [["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_EC, None, "Филм 1"],
+          ["f0", "g8", _FUTURE, "10:00", "cinelibri", "https://epaygo.bg/2355774239", "onsale", _PL_G8, None, "Филм 0"]]
 _rc, _out = _run_out(_ec_page(_ec_ok))
 check("FESTROWS at a festival cinema (Euro Cinema) and at G8, each where epaygo places it, exit 0",
       _rc == 0 and "FESTROWS: 2 festival" in _out)
-_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, None, None]]))
+_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, None, None, None, "Филм 1"]]))
 check("…a row whose epaygo place is not known (null) exits 0", _rc == 0)
-_rc, _out = _run_out(_ec_page([["f0", "g8", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_EC]]))
+_rc, _out = _run_out(_ec_page([["f0", "g8", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_EC, None, "Филм 0"]]))
 check("a FESTROWS row under G8 whose epaygo page names Euro Cinema exits non-zero",
       _rc != 0 and "filed under a cinema their epaygo.bg page does not name" in _out)
-_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_G8]]))
+_rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", _PL_G8, None, "Филм 1"]]))
 check("…and vice versa (under Euro Cinema, epaygo names G8)",
       _rc != 0 and "filed under a cinema their epaygo.bg page does not name" in _out)
 _rc, _out = _run_out(_ec_page(_ec_ok, vlinks=[["f0", "g8", _EP]]))
@@ -1605,6 +1608,52 @@ check("a G8 VLINKS entry linking an epaygo event stored as Euro Cinema's exits n
       _rc != 0 and "VLINKS entr(ies) link an epaygo.bg event at another cinema" in _out)
 _rc, _out = _run_out(_ec_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP, "onsale", 5]]))
 check("a FESTROWS place that is not a string or null exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+# the epaygo title (10th field, skeptic 2026-10-29): CineLibri's 4 Nov 19:45 pair — Отечество at Euro
+# Cinema (epaygo 1708861677), Черното топче at G8 (4036081133) — two films at one hour, told apart
+# by the title each epaygo page names (fixtures festival_epaygo_1708861677 / _4036081133)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import scrape_programs as _SP  # noqa: E402
+_FX = pathlib.Path(__file__).resolve().parent / "fixtures"
+_T_OT = _SP.parse_epaygo_title((_FX / "festival_epaygo_1708861677.html").read_text(encoding="utf-8"))
+_T_CT = _SP.parse_epaygo_title((_FX / "festival_epaygo_4036081133.html").read_text(encoding="utf-8"))
+_EP_OT, _EP_CT = "https://epaygo.bg/1708861677", "https://epaygo.bg/4036081133"
+
+
+def _pair_page(entries, vlinks=None):
+    """f0 = Черното топче (catalogue 'Синелибри: Черното топче'), f1 = Отечество; both at 10:00."""
+    h = _ec_page(entries, vlinks)
+    for k, a, b in (("bg", "Филм 0", "Синелибри: Черното топче"), ("en", "Film 0", "La bola negra"),
+                    ("bg", "Филм 1", "Отечество"), ("en", "Film 1", "Fatherland")):
+        a, b = f'"{k}": {_json.dumps(a)}', f'"{k}": {_json.dumps(b)}'
+        assert a in h, a
+        h = h.replace(a, b, 1)
+    return h
+
+
+_pair_ok = [["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP_OT, "onsale", _PL_EC, None, _T_OT],
+            ["f0", "g8", _FUTURE, "10:00", "cinelibri", _EP_CT, "onsale", "Културен център G8 зала 1", None, _T_CT]]
+check("fixtures: the two 4 Nov 19:45 epaygo pages name ОТЕЧЕСТВО and ЧЕРНОТО ТОПЧЕ",
+      (_T_OT, _T_CT) == ("ОТЕЧЕСТВО", "ЧЕРНОТО ТОПЧЕ"))
+_rc, _out = _run_out(_pair_page(_pair_ok, vlinks=[["f1", "euro-cinema", _EP_OT], ["f0", "g8", "https://www.cinelibri.com/chernoto-topche/"]]))
+check("the 4 Nov 19:45 pair, each film with its own epaygo page (title stored), exits 0", _rc == 0 and "FESTROWS: 2 festival" in _out)
+_rc, _out = _run_out(_pair_page([["f0", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP_OT, "onsale", _PL_EC, None, _T_OT]]))
+check("the crossed pair: Черното топче under Euro Cinema with Отечество's epaygo page exits non-zero",
+      _rc != 0 and "link an epaygo.bg event that sells another film" in _out)
+_rc, _out = _run_out(_pair_page([["f1", "g8", _FUTURE, "10:00", "cinelibri", _EP_CT, "onsale", "Културен център G8 зала 1",
+                                  None, _T_CT]]))
+check("…and Отечество under G8 with Черното топче's page exits non-zero",
+      _rc != 0 and "link an epaygo.bg event that sells another film" in _out)
+_rc, _out = _run_out(_pair_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP_OT, "onsale", _PL_EC]]))
+check("an epaygo link without its stored title (never checked against the film) exits non-zero",
+      _rc != 0 and "without its stored title" in _out)
+_rc, _out = _run_out(_pair_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", None, None, None, None, None]]))
+check("a FESTROWS row without a link needs no title", _rc == 0)
+_rc, _out = _run_out(_pair_page(_pair_ok, vlinks=[["f0", "euro-cinema", _EP_OT]]))
+check("a VLINKS entry linking an epaygo event FESTROWS stores for another film exits non-zero",
+      _rc != 0 and "VLINKS entr(ies) link an epaygo.bg event FESTROWS stores for another film" in _out)
+_rc, _out = _run_out(_pair_page([["f1", "euro-cinema", _FUTURE, "10:00", "cinelibri", _EP_OT, "onsale", _PL_EC, None, 7]]))
+check("a FESTROWS epaygo title that is not a string or null exits non-zero", _rc != 0 and "FESTROWS entr(ies) are not" in _out)
+
 _rc, _out = _run_out(_ec_page([], ec_fields=', "area": "бул. „Александър Стамболийски“ 17", "areaEn": "17 Aleksandar Stamboliyski Blvd."'))
 check("a festival cinema without a map place exits non-zero", _rc != 0 and "has no map place" in _out)
 _rc, _out = _run_out(_ec_page([], ec_fields=', "maps": "https://www.google.com/maps/search/?api=1&query=42.69%2C23.31"'))

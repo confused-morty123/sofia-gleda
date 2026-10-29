@@ -195,6 +195,62 @@ def translit(k):
     return "".join(_TRANSLIT.get(ch, ch) for ch in k)
 
 
+def title_keys(title):
+    """The identity keys of a published title and of each part a ticket shop joins
+    with "/" (epaygo.bg, 2026-10-29: "40. Киномания: Ана Маняни/Anna") or " | "
+    ("СИНЕЛИБРИ 2026 – ЕМБАРГО | представяне на …"); the festival prefix is off
+    (clean_title). Empty when the title has no letters or digits."""
+    t = clean_title(title or "")
+    out = set()
+    for part in {t, *re.split(r"\s*/\s*|\s+\|\s+", t)}:
+        k = key(part)
+        if k:
+            out.add(k)
+    return out
+
+
+def same_film_title(published, titles):
+    """True when a ticket shop's (or festival's) title names the film whose titles
+    are `titles` (its catalogue bg / en / original title, the festival's own title):
+    the same key in either script (translit), or one adds whole words to the other
+    ("КОКУХО: ЖИВО СЪКРОВИЩЕ" / "Кокухо") when the shorter has 5+ letters. Used to
+    check that an epaygo.bg event page sells THIS film (skeptic, 2026-10-29: two
+    CineLibri films at one hour, G8 and Euro Cinema, had their links crossed)."""
+    a = title_keys(published)
+    if not a:
+        return False
+    for t in titles or ():
+        for kb in title_keys(t):
+            for ka in a:
+                if _same_words(ka, kb) or _same_words(translit(ka), translit(kb)):
+                    return True
+    return False
+
+
+def _word_close(a, b):
+    """One word in two spellings: equal, or (4+ letters, no digits) differing only in the
+    last two letters of the longer — a Bulgarian article form ("непознатата" / "непозната",
+    "документалният" / "документалния", kinomania.bg vs epaygo.bg, 2026-10-29)."""
+    if a == b:
+        return True
+    if re.search(r"\d", a + b) or min(len(a), len(b)) < 4:
+        return False
+    n = 0
+    while n < min(len(a), len(b)) and a[n] == b[n]:
+        n += 1
+    return n >= max(len(a), len(b)) - 2
+
+
+def _same_words(ka, kb):
+    """Two keys word by word (_word_close); the longer may only add whole words after them,
+    and only when the shorter has 5+ letters ("кокухо" / "кокухо живо съкровище")."""
+    wa, wb = ka.split(), kb.split()
+    s_, l_ = (wa, wb) if len(wa) <= len(wb) else (wb, wa)
+    if not s_ or not all(_word_close(x, y) for x, y in zip(s_, l_)):
+        return False
+    return len(s_) == len(l_) or _letters("".join(s_)) >= 5
+
+
 def _letters(k):
     return sum(ch.isalpha() for ch in k)
 

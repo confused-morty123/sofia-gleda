@@ -1240,12 +1240,96 @@ _k_f, _k_st, _, _, _k_m = _S.apply_epaygo_relocations(
     {("topche", "g8", "2026-10-30", "18:15"): None}, [_ec_fr[2]], [["topche", "g8", "2026-10-30", ["18:15"]]], [], {},
     set(_S.FESTIVAL_VENUES), "2026-10-29")
 check("apply: a flagged row stays where it is, without the epaygo link, state or place",
-      (_k_f, _k_st, _k_m), ([["topche", "g8", "2026-10-30", "18:15", "cinelibri", None, None, None, None]],
+      (_k_f, _k_st, _k_m), ([["topche", "g8", "2026-10-30", "18:15", "cinelibri", None, None, None, None, None]],
                             [["topche", "g8", "2026-10-30", ["18:15"]]], []))
 check("a G8 VLINKS entry linking an epaygo event FESTROWS places at Euro Cinema is found (and dropped by the run)",
       _S.misplaced_vlinks({("nepoz", "g8"): "https://epaygo.bg/1188683500", ("nepoz", "euro-cinema"): "https://epaygo.bg/1188683500",
                            ("reggio", "g8"): "https://epaygo.bg/2355774239", ("x", "g8"): "https://g8cinema.com/bg/x"}, _ec_fr),
       [(("nepoz", "g8"), "https://epaygo.bg/1188683500")])
+print("two festival films in one slot: each epaygo page must name its row's film (skeptic, 2026-10-29)")
+# CineLibri, 4 Nov 19:45: Отечество at Euro Cinema (epaygo 1708861677), Черното топче at G8 zala 1
+# (4036081133). The dev build filed both under g8, keyed one slot's film by (venue, date, time) and
+# gave Черното топче Отечество's page. Fixtures: one GET each, 2026-10-29.
+import film_identity as _FI  # noqa: E402
+_ep_ot, _ep_ct = fx("festival_epaygo_1708861677.html"), fx("festival_epaygo_4036081133.html")
+check("epaygo fixtures 1708861677 / 4036081133: title, date, start time, place, on sale",
+      [(_S.parse_epaygo_title(h), _S._epaygo_when(h)[:2], _S.parse_epaygo_place(h),
+        _S.parse_epaygo_sale(h, "2026-11-04", {"19:45"})) for h in (_ep_ot, _ep_ct)],
+      [("ОТЕЧЕСТВО", ("2026-11-04", "19:45"), 'Кино "Euro Cinema"', "onsale"),
+       ("ЧЕРНОТО ТОПЧЕ", ("2026-11-04", "19:45"), "Културен център G8 зала 1", "onsale")])
+check("epaygo title: the <title> before 'Купи билети' when the page has no schema.org Event; none = None",
+      (_S.parse_epaygo_title("<title>40. Киномания: Ана Маняни/Anna Купи билети за|EPAYGO</title>"),
+       _S.parse_epaygo_title("<html></html>"), _S.parse_epaygo_title(None)),
+      ("40. Киномания: Ана Маняни/Anna", None, None))
+_TT = {"otechestvo": ["Отечество", "Fatherland", "Отечество"],
+       "sinelibri-chernoto-topche": ["Синелибри: Черното топче", "La bola negra", "Черното топче"],
+       "anna": ["Ана Маняни"], "kokuho": ["Синелибри 2026: КОКУХО: ЖИВО СЪКРОВИЩЕ"]}
+check("same_film_title: festival prefixes, case, '/' BG/EN parts, added words; another film never",
+      [_FI.same_film_title(a, _TT[f]) for a, f in (
+          ("ОТЕЧЕСТВО", "otechestvo"), ("ЧЕРНОТО ТОПЧЕ  ", "sinelibri-chernoto-topche"),
+          ("ОТЕЧЕСТВО", "sinelibri-chernoto-topche"), ("ЧЕРНОТО ТОПЧЕ", "otechestvo"),
+          ("40. Киномания: Ана Маняни/Anna", "anna"), ("КОКУХО: ЖИВО СЪКРОВИЩЕ", "kokuho"),
+          ("FATHERLAND", "otechestvo"), ("", "otechestvo"))],
+      [True, True, False, False, True, True, True, False])
+check("same_film_title: a Bulgarian article form is the same word (kinomania / epaygo spellings); a digit never",
+      [_FI.same_film_title(a, b) for a, b in (
+          ("40. Киномания: Непознатата жена/Woman Unknown", ["Непозната жена"]),
+          ("40. Киномания: История на документалният филм - 80те/The Story of Documentary Film 80`s",
+           ["История на документалния филм"]),
+          ("Падане 2", ["Падане 3"]), ("Юли", ["Юли и Август"]))],
+      [True, True, False, False])
+# the dev build's crossed rows: each film filed at the other's venue with the other's link
+_pair_x = [["sinelibri-chernoto-topche", "euro-cinema", "2026-11-04", "19:45", "cinelibri", "https://epaygo.bg/1708861677"],
+           ["otechestvo", "g8", "2026-11-04", "19:45", "cinelibri", "https://epaygo.bg/4036081133"]]
+_pair_ok = [["otechestvo", "euro-cinema", "2026-11-04", "19:45", "cinelibri", "https://epaygo.bg/1708861677"],
+            ["sinelibri-chernoto-topche", "g8", "2026-11-04", "19:45", "cinelibri", "https://epaygo.bg/4036081133"]]
+_pair_pages = {"https://epaygo.bg/1708861677": _ep_ot, "https://epaygo.bg/4036081133": _ep_ct}
+_pn = []
+_px = _S.festival_sale_states(_pair_x, set(), {}, [], "2026-10-29", _pair_pages.get, notes=_pn, titles=_TT)
+check("sale states, crossed pair: a page that sells the other film gives no link, state, place or title (noted)",
+      ([r[5:] for r in _px], len(_pn)), ([[None, None, None, None, None]] * 2, 2))
+check("…so no row moves on the other film's epaygo place", _S.epaygo_relocations(_px, ["euro-cinema", "g8", "odeon"]), {})
+_po = _S.festival_sale_states(_pair_ok, set(), {}, [], "2026-10-29", _pair_pages.get, titles=_TT)
+check("sale states, the true pair: each row keeps its own page, state, place and the page's title (10th field)",
+      {r[0]: (r[1], r[5], r[6], r[7], r[9]) for r in _po},
+      {"otechestvo": ("euro-cinema", "https://epaygo.bg/1708861677", "onsale", 'Кино "Euro Cinema"', "ОТЕЧЕСТВО"),
+       "sinelibri-chernoto-topche": ("g8", "https://epaygo.bg/4036081133", "onsale", "Културен център G8 зала 1",
+                                     "ЧЕРНОТО ТОПЧЕ")})
+_pn2 = []
+_pu = _S.festival_sale_states(_pair_ok, set(), {}, [r[:6] + ["onsale", None, "2026-10-28"] for r in _pair_ok],
+                              "2026-10-29", lambda u: None, notes=_pn2, titles=_TT)
+check("sale states: an epaygo link never read as this film's page keeps no link and no epaygo state (noted)",
+      ([r[5:] for r in _pu], sum("not checked against the film" in n for n in _pn2)), ([[None, None, None, None, None]] * 2, 2))
+_pk = _S.festival_sale_states(_pair_ok, {("otechestvo", "euro-cinema", "2026-11-04", "19:45")}, {},
+                              [r + ["onsale", None, "2026-10-28", "ОТЕЧЕСТВО" if r[0] == "otechestvo" else "ОТЕЧЕСТВО"]
+                               for r in _pair_ok], "2026-10-29", lambda u: None, titles=_TT)
+check("sale states: last run's title is kept only when it names the film (its own link); the festival's SOLD OUT stays",
+      {r[0]: (r[5], r[6], r[9]) for r in _pk},
+      {"otechestvo": ("https://epaygo.bg/1708861677", "soldout", "ОТЕЧЕСТВО"),
+       "sinelibri-chernoto-topche": (None, None, None)})
+check("sale states without titles (an older caller) attach as before, title recorded",
+      [r[9] for r in _S.festival_sale_states(_pair_x, set(), {}, [], "2026-10-29", _pair_pages.get)],
+      ["ЧЕРНОТО ТОПЧЕ", "ОТЕЧЕСТВО"])
+check("a VLINKS entry linking an epaygo event FESTROWS stores for another film is found (titles given)",
+      _S.misplaced_vlinks({("sinelibri-chernoto-topche", "euro-cinema"): "https://epaygo.bg/1708861677",
+                           ("otechestvo", "euro-cinema"): "https://epaygo.bg/1708861677/"}, _po, _TT),
+      [(("sinelibri-chernoto-topche", "euro-cinema"), "https://epaygo.bg/1708861677")])
+# box_office_festival_rows keys every row by its film: the pair's two films at one hour stay two rows
+_bo_pair = _S.box_office_festival_rows(
+    {"confirmed": [["cinelibri", "otechestvo", "euro-cinema", "2026-11-04", "19:45"],
+                   ["cinelibri", "sinelibri-chernoto-topche", "g8", "2026-11-04", "19:45"]]},
+    [("otechestvo", "euro-cinema", "2026-11-04", "19:45", "https://epaygo.bg/1708861677", None),
+     ("sinelibri-chernoto-topche", "g8", "2026-11-04", "19:45", "https://epaygo.bg/4036081133", None)],
+    [["otechestvo", "euro-cinema", "2026-11-04", ["19:45"]], ["sinelibri-chernoto-topche", "g8", "2026-11-04", ["19:45"]]],
+    ["euro-cinema", "g8", "odeon"])
+check("box_office_festival_rows: two films at one hour, each with its own link", [r[:2] + r[5:6] for r in _bo_pair],
+      [["otechestvo", "euro-cinema", "https://epaygo.bg/1708861677"],
+       ["sinelibri-chernoto-topche", "g8", "https://epaygo.bg/4036081133"]])
+_mx = _S.merge_festival_rows([], {}, {}, {"cinelibri": [("otechestvo", "g8", "2026-11-04", "19:45"),
+                                                        ("sinelibri-chernoto-topche", "g8", "2026-11-04", "19:45")]},
+                             {"cinelibri": ("2026-10-29", "2026-11-08")}, {}, [], "2026-10-29", "2026-11-30")[0]
+check("merge_festival_rows: two films the festival files in one slot stay two rows (keyed by film)", _mx,
+      [["otechestvo", "g8", "2026-11-04", ["19:45"]], ["sinelibri-chernoto-topche", "g8", "2026-11-04", ["19:45"]]])
 check("read_festrows reads last run's entries back ([] when undeclared)",
       (_S.read_festrows(_S.write_festrows(_pg2, [_fr[0] + ["soldout"]])), _S.read_festrows(_pg)),
       ([_fr[0] + ["soldout"]], []))

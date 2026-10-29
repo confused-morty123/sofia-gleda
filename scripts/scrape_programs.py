@@ -2339,6 +2339,31 @@ def parse_epaygo_place(html):
     return name or None
 
 
+_EPAYGO_EVENT_LD = re.compile(r'"@type"\s*:\s*"Event"\s*,\s*"name"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"')
+_EPAYGO_TITLE_TAG = re.compile(r"(?s)<title>(.*?)</title>")
+
+
+def parse_epaygo_title(html):
+    """An epaygo.bg event page's own title ("ОТЕЧЕСТВО", "40. Киномания: Ана Маняни/Anna"):
+    its schema.org Event name, else the <title> before "Купи билети". None when the
+    page names none. The film it sells (festival_sale_states checks it against the row's
+    film before the link or a sale state is used)."""
+    if not html:
+        return None
+    m = _EPAYGO_EVENT_LD.search(html)
+    name = ""
+    if m:
+        try:
+            name = json.loads('"' + m.group(1) + '"')
+        except ValueError:
+            name = m.group(1).replace('\\"', '"')
+    if not name.strip():
+        m = _EPAYGO_TITLE_TAG.search(html)
+        name = re.split(r"\s+Купи билети", _html_unescape(m.group(1)), maxsplit=1)[0] if m else ""
+    name = re.sub(r"\s+", " ", _html_unescape(name or "")).strip()
+    return name[:150] or None
+
+
 def _html_unescape(s):
     import html as _h
     return _h.unescape(s)
@@ -2354,7 +2379,8 @@ def read_festrows(page):
     return [x for x in v if isinstance(x, list) and len(x) >= 4] if isinstance(v, list) else []
 
 
-def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_text, cap=EPAYGO_CAP, notes=None):
+def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_text, cap=EPAYGO_CAP, notes=None,
+                         titles=None):
     """FESTROWS with each upcoming screening's sale state appended (7th field): "soldout"
     when the festival's own page marks it sold out (`soldout`: {(fid, venue, date,
     festival's time)}, a contradicted venue time mapped as box_office_festival_rows maps
@@ -2370,6 +2396,16 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
     read it (the festival's SOLD OUT mark or the epaygo page), else last run's for that
     very row, None when the state is None. The state is read once per refresh; the
     seller's page shows live availability (the app keeps "Купи билет" for "onsale").
+    A 10th field is the epaygo page's own title (parse_epaygo_title) for a row whose url is
+    an epaygo.bg event: read this run, else last run's for that very row and link.
+    titles  {fid: [the film's titles]} (catalogue bg / en / original, the festival's own
+            title). Given (the run passes it), an epaygo page is that row's only when its
+            title names the row's film (film_identity.same_film_title; skeptic, 2026-10-29:
+            CineLibri's G8 and Euro Cinema films at 19:45 on 4 Nov had their links crossed):
+            a page that names another film gives no link, no sale state and no place (noted),
+            and a row whose epaygo link has no matching title stored (never read) keeps no
+            link and no epaygo state either (the app offers the festival's page). Rows with
+            the same date and time are told apart by their film, never by the slot.
     fetch_text(url) -> html | None (the run's polite session)."""
     from collections import defaultdict
     prev = {tuple(r[:4]): (r[6] if len(r) > 6 and r[6] in FEST_SALE_STATES else None) for r in prev_rows}
@@ -2377,6 +2413,11 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
                   for r in prev_rows}
     prev_read = {tuple(r[:4]): (r[8] if len(r) > 8 and isinstance(r[8], str)
                                 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r[8]) else None) for r in prev_rows}
+    prev_title = {tuple(r[:4]): (r[5], r[9]) for r in prev_rows
+                  if len(r) > 9 and isinstance(r[5], str) and isinstance(r[9], str) and r[9]}
+
+    def names_film(title, fid):
+        return titles is None or bool(title and FI.same_film_title(title, (titles or {}).get(fid) or ()))
     per_day = defaultdict(list)
     for r in festrows:
         per_day[tuple(r[:3])].append(r[3])
@@ -2392,10 +2433,13 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
         key = tuple(r[:4])
         state, place = prev.get(key), prev_place.get(key)
         read = prev_read.get(key) if state else None
+        url = r[5] if len(r) > 5 and isinstance(r[5], str) else ""
+        pt = prev_title.get(key)
+        title = pt[1] if pt and url and pt[0].rstrip("/") == url.rstrip("/") and names_film(pt[1], r[0]) else None
+        fest_mark = False
         if r[2] >= today:
-            url = r[5] if len(r) > 5 and isinstance(r[5], str) else ""
             if key in marked:
-                state, read = "soldout", today
+                state, read, fest_mark = "soldout", today, True
             elif _EPAYGO_EVENT.match(url):
                 if url not in cache and asked < cap:
                     asked += 1
@@ -2406,23 +2450,40 @@ def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_t
                     if cache[url] is None and notes is not None:
                         notes.append(f"epaygo page not read: {url}")
                 times = {r[3]} | alt_t.get(key, set())
-                got = parse_epaygo_sale(cache.get(url), r[2], times)
-                if got:
-                    state, read = got, today
                 w = _epaygo_when(cache.get(url))
-                if w and w[0] == r[2] and w[1] in times:
+                et = parse_epaygo_title(cache.get(url)) if w and w[0] == r[2] and w[1] in times else None
+                if w and w[0] == r[2] and w[1] in times and not names_film(et, r[0]):
+                    # the festival linked another film's screening at this hour (CineLibri's
+                    # G8 / Euro Cinema pair, 4 Nov 19:45): never this row's link or state
+                    url, state, place, read, title = None, None, None, None, None
+                    if notes is not None:
+                        notes.append(f"{r[0]} {r[1]} {r[2]} {r[3]}: its epaygo page sells {et!r}, "
+                                     f"not this film: link dropped")
+                elif w and w[0] == r[2] and w[1] in times:
+                    got = parse_epaygo_sale(cache.get(url), r[2], times)
+                    if got:
+                        state, read = got, today
                     place = parse_epaygo_place(cache.get(url)) or place
+                    title = et or title
                 if w and (w[0] != r[2] or w[1] not in times):
                     # the festival linked another screening's page (CineLibri, 2026-10-29: its
                     # 31 Oct 13:15 row links the 30 Oct 18:15 event): no ticket link for this
                     # one (the app offers the festival's film page), state unknown
-                    url, state, place, read = None, None, None, None
+                    url, state, place, read, title = None, None, None, None, None
                     if notes is not None:
                         notes.append(f"{r[0]} {r[2]} {r[3]}: its epaygo page is the {w[0]} {w[1]} screening's")
+        if titles is not None and url and _EPAYGO_EVENT.match(url) and not title:
+            # an epaygo link whose page was never read as this film's: not attached
+            url, place = None, None
+            if not fest_mark:
+                state, read = None, None
+            if notes is not None:
+                notes.append(f"{r[0]} {r[1]} {r[2]} {r[3]}: epaygo page not checked against the film, link left out")
         row = list(r[:6]) + [None] * (6 - len(r[:6]))
-        if r[2] >= today and url is None and _EPAYGO_EVENT.match(row[5] or ""):
+        if url is None and _EPAYGO_EVENT.match(row[5] or ""):
             row[5] = None
-        out[key] = row + [state, place, read if state else None]
+        out[key] = row + [state, place, read if state else None,
+                          title if _EPAYGO_EVENT.match(row[5] or "") else None]
     return sorted(out.values(), key=lambda e: e[:4])
 
 
@@ -2458,13 +2519,19 @@ def epaygo_relocations(festrows, venues, own=None, notes=None):
     return moves
 
 
-def misplaced_vlinks(vlinks, festrows):
+def misplaced_vlinks(vlinks, festrows, titles=None):
     """[((fid, venue), url)] of the VLINKS entries that link an epaygo.bg event FESTROWS
-    stores at another venue (its epaygo place, 8th field). Pure."""
+    stores at another venue (its epaygo place, 8th field) or, given titles ({fid:
+    [titles]}), for another film (its epaygo title, 10th field). Pure."""
     at = {r[5].rstrip("/"): OF.epaygo_place_venue(r[7]) for r in festrows
           if len(r) > 7 and r[7] and isinstance(r[5], str)}
+    named = {r[5].rstrip("/"): r[9] for r in festrows
+             if len(r) > 9 and r[9] and isinstance(r[5], str)}
     return sorted((k, u) for k, u in vlinks.items()
-                  if isinstance(u, str) and at.get(u.rstrip("/")) not in (None, k[1]))
+                  if isinstance(u, str) and (at.get(u.rstrip("/")) not in (None, k[1])
+                                             or (titles is not None and u.rstrip("/") in named
+                                                 and not FI.same_film_title(named[u.rstrip("/")],
+                                                                            titles.get(k[0]) or ()))))
 
 
 def apply_epaygo_relocations(moves, festrows, rows, prelim_rows, prelim_from, festival_venues,
@@ -2493,7 +2560,7 @@ def apply_epaygo_relocations(moves, festrows, rows, prelim_rows, prelim_from, fe
         dst = moves[key]
         fid, src, d, t = key
         if dst is None:
-            out_f[key] = list(r[:5]) + [None, None, None, None]
+            out_f[key] = list(r[:5]) + [None] * (max(len(r), 9) - 5)
             continue
         cells[(fid, src, d)].discard(t)
         if not cells[(fid, src, d)]:
@@ -3497,6 +3564,7 @@ def main():
     fest_errors, fest_report, fest_rows, fest_cover, fest_fresh = {}, {}, {}, {}, {}
     fest_screens, fest_films_used, fest_decisions = [], {}, []
     fest_soldout = set()                           # (fid, venue, date, time) the festival marks sold out
+    fest_titles = defaultdict(set)                 # fid -> the festivals' own titles for it
     for fest in ([] if args.no_festivals else OF.FESTIVALS):
         print(f"festival {fest}")
         prev = prev_fest.get(fest) or {}
@@ -3548,6 +3616,7 @@ def main():
                     if kind != "app" or vid not in cinema_ids:
                         continue
                     fid = title_fid[title]
+                    fest_titles[fid].add(title)
                     rows_f.append((fid, vid, d, t))
                     if (title, d, t, vname) in sold_now:
                         fest_soldout.add((fid, vid, d, t))
@@ -4165,9 +4234,16 @@ def main():
     fest_sale_v = fest_sale_venues(read_const_obj(src, "BOOKING"))
     festrows = box_office_festival_rows(fest_info, fest_screens, new_showtimes, fest_sale_v)
     sale_notes = []
+    # each film's titles, to check that an epaygo page sells THAT film (two festival films at
+    # one hour are told apart by their title, never by the slot; skeptic, 2026-10-29)
+    film_titles = {}
+    for fid_ in {r[0] for r in festrows} | {k_[0] for k_ in vlinks}:
+        rec_ = index.films.get(fid_) or cinema_films.get(fid_) or {}
+        film_titles[fid_] = sorted({x for x in (rec_.get("bg"), rec_.get("en"), rec_.get("originalTitle"))
+                                    if isinstance(x, str) and x} | fest_titles.get(fid_, set()))
     with session.deadline(EPAYGO_SECONDS):
         festrows = festival_sale_states(festrows, fest_soldout, fest_info, read_festrows(src),
-                                        today_iso, session.text, notes=sale_notes)
+                                        today_iso, session.text, notes=sale_notes, titles=film_titles)
     ep_moves = epaygo_relocations(festrows, fest_sale_v, own, notes=sale_notes)
     if ep_moves:
         festrows, new_showtimes, prelim_rows, prelim, ep_moved = apply_epaygo_relocations(
@@ -4181,9 +4257,9 @@ def main():
               f"({', '.join(f'{x[0]} {x[2]} {x[3]} {x[1]}->{x[4]}' for x in ep_moved[:3])})")
     # a (film, venue) link to an epaygo.bg event that epaygo places at another venue (a
     # link kept from a run before the venue was told apart) never sells that venue's rows
-    for k_, u_ in misplaced_vlinks(vlinks, festrows):
+    for k_, u_ in misplaced_vlinks(vlinks, festrows, film_titles):
         vlinks.pop(k_, None)
-        sale_notes.append(f"VLINKS {k_[0]} {k_[1]}: {u_} is another venue's screening, dropped")
+        sale_notes.append(f"VLINKS {k_[0]} {k_[1]}: {u_} is another venue's or film's screening, dropped")
     for n_ in sale_notes[:5]:
         print(f"  ! FESTROWS: {n_}")
 
