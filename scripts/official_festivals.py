@@ -101,8 +101,10 @@ TICKET_HOSTS = ("cinelibri.com", "kinomania.bg", "epaygo.bg", "urboapp.com")
 # Festival venue name -> app venue id. Explicit on purpose: a name not listed is
 # reported, never guessed ("Арена" could be either Кино Арена). Every name here
 # was seen on the festival's own programme on 2026-10-09. Евросинема / Euro
-# Cinema is G8 under its old name (the owner: "Euro Cinema does not exist; it is
-# G8"). Топлоцентрала and Сцена „Централни хали“ show films only in festivals:
+# Cinema is its own cinema, not G8 (owner, 2026-10-29: epaygo.bg places those
+# screenings at Кино "Euro Cinema", бул. Александър Стамболийски 17; G8 is ул. Уилям
+# Гладстон 8, and CineLibri runs both, sometimes at the same hour): euro-cinema.
+# Топлоцентрала and Сцена „Централни хали“ show films only in festivals:
 # cinema venues of their own (toplo-film — `toplo` is the theatre —, tsentralni-hali).
 VENUES = {
     "cinelibri": {
@@ -124,8 +126,10 @@ VENUES = {
         "Кино Арена Mega Mall": "arena-mega",
         "Cineland Bulgaria Mall": "cineland",
         "Casa Libri": "casa-libri",
-        "Евросинема": "g8",
-        "Euro Cinema": "g8",
+        "Евросинема": "euro-cinema",
+        "Евро Синема": "euro-cinema",
+        "Euro Cinema": "euro-cinema",
+        "Кино Euro Cinema": "euro-cinema",
         "Топлоцентрала": "toplo-film",
         "Сцена Централни Хали": "tsentralni-hali",
     },
@@ -142,7 +146,9 @@ VENUES = {
         "Синема Сити Парадайс Център": "cc-paradise",
         "Кино Арена West Mall": "arena-mega",
         "Кино Арена Mega Mall": "arena-mega",
-        "Euro Cinema": "g8",
+        "Euro Cinema": "euro-cinema",
+        "Евросинема": "euro-cinema",
+        "Кино Euro Cinema": "euro-cinema",
     },
 }
 # Venue names the festivals use for screenings in other towns (dropped, counted).
@@ -171,6 +177,33 @@ def fold_venue(name):
 
 _FOLDED = {f: {fold_venue(k): v for k, v in table.items()} for f, table in VENUES.items()}
 _FOLDED_OUT = {f: {fold_venue(k) for k in names} for f, names in OUTSIDE_SOFIA.items()}
+
+# epaygo.bg's own place name for a festival screening ("Място на провеждане", its
+# schema.org location) -> app venue id. The ticket shop names the hall the ticket
+# is for, so it decides when a festival's page files a screening under the wrong
+# one of two venues it runs at the same hour (G8 / Euro Cinema, 2026-10-29). Seen
+# on epaygo.bg event pages 2026-10-29: Кино "Euro Cinema" (бул. Александър
+# Стамболийски 17), Културен център G8 / Културен център G8 зала 1 (ул. Уилям
+# Гладстон 8), Одеон филмотечно кино / Филмотечно кино Одеон. A place not listed
+# decides nothing (None).
+EPAYGO_PLACES = {
+    "кино euro cinema": "euro-cinema",
+    "euro cinema": "euro-cinema",
+    "евросинема": "euro-cinema",
+    "евро синема": "euro-cinema",
+    "културен център g8": "g8",
+    "културен център g8 зала 1": "g8",
+    "културен център g8 зала 2": "g8",
+    "одеон филмотечно кино": "odeon",
+    "филмотечно кино одеон": "odeon",
+    "кино одеон": "odeon",
+}
+
+
+def epaygo_place_venue(place):
+    """The app venue an epaygo.bg place name stands for, None when it is not one
+    of EPAYGO_PLACES (never guessed)."""
+    return EPAYGO_PLACES.get(fold_venue(place)) if place else None
 
 
 def venue_id(festival, name):
@@ -334,8 +367,14 @@ def cinelibri_days(content, today):
     return sorted(days.items())
 
 
+# a card's own "sold out" note (seen 2026-10-29 on the day pages: a red "SOLD OUT" in the
+# card's film_add_info line, Черното топче, Одеон, 6 Nov); Bulgarian wording too
+SOLD_OUT = re.compile(r"(?i)\bsold[\s-]*out\b|изчерпан|разпродаден")
+
+
 def _cl_item(it):
-    """One grid card -> {title, venue, date, time, film_url, ticket_url, extra}."""
+    """One grid card -> {title, venue, date, time, film_url, ticket_url, extra, soldout}.
+    soldout: the card's own note says the screening is sold out (never inferred)."""
     head = it.select_one(".vc_gitem-post-data-source-post_title")
     link = it.select_one("a.vc-zone-link[href]") or it.select_one("a.vc_gitem-link[href]")
     title = _ws(head.get_text(" ")) if head else ""
@@ -359,9 +398,11 @@ def _cl_item(it):
             ticket = _https(a["href"])
     if not (title and venue and when):
         return None
+    notes_ = [_ws(d.get_text(" ")) for d in it.select(".vc_gitem-acf")]
     return {"title": title, "venue": venue, "date": when[0], "time": when[1],
             "film_url": _https(link["href"]) if link is not None else None,
-            "ticket_url": ticket, "extra": extra}
+            "ticket_url": ticket, "extra": extra,
+            "soldout": any(SOLD_OUT.search(x or "") for x in notes_)}
 
 
 def parse_cinelibri_day(html, iso):
@@ -576,7 +617,7 @@ def read_cinelibri(session, today, last_day, notes):
                 and _host(img) == "cinelibri.com" and not _CL_BRANDING.search(img.rsplit("/", 1)[-1])):
             f["poster"] = img
 
-    films, screenings, unknown = {}, [], Counter()
+    films, screenings, unknown, soldout = {}, [], Counter(), []
     for x in items:
         s = slug_of(x["film_url"])
         f = by_slug.get(s) if s else None
@@ -598,11 +639,13 @@ def read_cinelibri(session, today, last_day, notes):
         if kind == "unknown":
             unknown[x["venue"]] += 1
         screenings.append((title, x["date"], x["time"], x["venue"], x["ticket_url"]))
+        if x.get("soldout"):
+            soldout.append([title, x["date"], x["time"], x["venue"]])
     used = {s[0] for s in screenings}
     return _result("cinelibri", CL_BASE + "/programa/",
                    [f for f in films.values() if f["title_bg"] in used],
                    screenings, (covered[0], covered[-1]) if covered else None,
-                   unknown, outside, notes)
+                   unknown, outside, notes, soldout)
 
 
 # =============================================================== Kinomania
@@ -774,8 +817,11 @@ def read_kinomania(session, today, last_day, notes):
 
 
 # ===================================================================== API
-def _result(fest, source, films, screenings, covered, unknown, outside, notes):
+def _result(fest, source, films, screenings, covered, unknown, outside, notes, soldout=()):
+    """soldout: [title, date, time, venue] of the screenings the festival's own page marks
+    sold out (CineLibri's day cards; Kinomania's programme has no such mark)."""
     return {"festival": fest, "name": NAMES[fest], "source": source,
+            "soldout": sorted(list(x) for x in soldout),
             "films": films, "screenings": sorted(screenings, key=lambda s: (s[1], s[2], s[3], s[0])),
             "covered_from": covered[0] if covered else None,
             "covered_to": covered[1] if covered else None,

@@ -171,6 +171,17 @@ try:
     from official_festivals import TICKET_HOSTS as FESTIVAL_TICKET_HOSTS   # noqa: E402
 except BaseException:                                    # bs4 missing: same list
     FESTIVAL_TICKET_HOSTS = ("cinelibri.com", "kinomania.bg", "epaygo.bg", "urboapp.com")
+# epaygo.bg's own place name -> app venue (official_festivals.EPAYGO_PLACES): the gate
+# reads the place FESTROWS stored, never the network
+try:
+    from official_festivals import epaygo_place_venue as _epaygo_place_venue   # noqa: E402
+except BaseException:                                    # bs4 missing: the same rule
+    def _epaygo_place_venue(place):
+        k = re.sub(r"\s+", " ", re.sub(r"[„“”\"«»‘’'`]", "", (place or "").lower())).strip(" ,.-")
+        return {"кино euro cinema": "euro-cinema", "euro cinema": "euro-cinema", "евросинема": "euro-cinema",
+                "евро синема": "euro-cinema", "културен център g8": "g8", "културен център g8 зала 1": "g8",
+                "културен център g8 зала 2": "g8", "одеон филмотечно кино": "odeon",
+                "филмотечно кино одеон": "odeon", "кино одеон": "odeon"}.get(k)
 
 
 def festival_host(host):
@@ -636,6 +647,156 @@ else:
         if _missing_th:
             fail(f"{len(_missing_th)} PRELIM_ROWS theatre row(s) have no matching PERFORMANCES entry, "
                  f"e.g. {', '.join('/'.join(x) for x in _missing_th[:3])}")
+
+# ---------------------------------------- 4c2a. BOXONLY: performances sold only at the box office
+# [[showId, "YYYY-MM-DD", "HH:MM", alt, page], …] (scrape_programs.theatre_box_office):
+# the time panel says "Билети само на касата" instead of "Купи билет". Every entry
+# must name a performance PERFORMANCES lists, once; alt and page are null or http(s).
+# The live click test (7) renders each one and checks no buy button appears.
+_bo = re.search(r"^const BOXONLY\s*=\s*(.*?);\s*$", js, flags=re.M)
+boxonly_data = []
+if _bo is None:
+    note("BOXONLY is not declared — no performance is marked box office only")
+else:
+    try:
+        boxonly_data = json.loads(_bo.group(1))
+    except Exception:
+        boxonly_data = None
+    if not isinstance(boxonly_data, list):
+        fail("BOXONLY is not a JSON array of [showId, date, time, alt, page]")
+        boxonly_data = []
+    else:
+        _url_ok = lambda u: u is None or (isinstance(u, str) and re.match(r"https?://[^\s\"<>]+$", u))
+        _bad_bo = [x for x in boxonly_data
+                   if not (isinstance(x, list) and len(x) == 5 and all(isinstance(v, str) for v in x[:3])
+                           and re.fullmatch(r"\d{4}-\d\d-\d\d", x[1]) and re.fullmatch(r"\d\d:\d\d", x[2])
+                           and _url_ok(x[3]) and _url_ok(x[4]))]
+        if _bad_bo:
+            fail(f"{len(_bad_bo)} BOXONLY entr(ies) are not [showId, date, time, alt|null, page|null], "
+                 f"e.g. {str(_bad_bo[0])[:100]}")
+        _perf3 = {tuple(p[:3]) for p in (data["PERFORMANCES"] or []) if isinstance(p, list) and len(p) >= 3}
+        _good_bo = [x for x in boxonly_data if x not in _bad_bo]
+        _lost_bo = [x for x in _good_bo if tuple(x[:3]) not in _perf3]
+        if _lost_bo:
+            fail(f"{len(_lost_bo)} BOXONLY entr(ies) name no PERFORMANCES row, "
+                 f"e.g. {', '.join('/'.join(x[:3]) for x in _lost_bo[:3])}")
+        _dup_bo = len(_good_bo) - len({tuple(x[:3]) for x in _good_bo})
+        if _dup_bo:
+            fail(f"{_dup_bo} duplicate BOXONLY entr(ies) (same show, date and time)")
+        if boxonly_data and not re.search(r"\bfunction boxOnly\(", js):
+            fail("BOXONLY has entries but the app has no boxOnly() — they would still offer \"Купи билет\"")
+        note(f"BOXONLY: {len(boxonly_data)} performance(s) sold only at the box office")
+
+# ---------------------------------------- 4c2a2. FESTROWS: festival screenings at box-office-only cinemas
+# [[filmId, venueId, date, time, festival, url|null, sale|null], …] (scrape_programs.box_office_festival_rows,
+# festival_sale_states: sale is "onsale", "soldout" or "notyet"; a build before it has 6 fields):
+# Одеон and G8 (BOOKING inPerson) sell their own programme only at the box office, the
+# festivals there sell online. Every entry names a SHOWTIMES row at such a cinema, once;
+# url is null or a festival / ticket-shop page. A box-office cinema's own BOOKING url is
+# its plain page, never a ticket seller's or a "#buy" anchor (the stub's site line and
+# the calendar link use it).
+_SALE_HOSTS = ("cinelibri.com", "kinomania.bg", "epaygo.bg", "urboapp.com")
+_SELLER_HOSTS = _SALE_HOSTS + ("pricelesstickets.bg", "eventim.bg", "ticketportal.bg", "bilet.bg", "ticketstation.bg")
+
+
+def _host_of(u):
+    m = re.match(r"https?://([^/:?#]+)", u or "")
+    h = (m.group(1).lower() if m else "")
+    return h[4:] if h.startswith("www.") else h
+
+
+def _is_seller(u):
+    h = _host_of(u)
+    return bool(h) and any(h == x or h.endswith("." + x) for x in _SELLER_HOSTS)
+
+
+_box_cin = sorted(v for v, b in (data["BOOKING"] or {}).items() if isinstance(b, dict) and b.get("inPerson"))
+# festival cinemas (BOOKING festival: Кино Euro Cinema, owner 2026-10-29): the app lists only
+# the festivals' screenings there, sold online; FESTROWS covers them too. Such a venue is new
+# to most visitors: its card must say where it is (address in both languages, a map place).
+_fest_cin = sorted(v for v, b in (data["BOOKING"] or {}).items() if isinstance(b, dict) and b.get("festival"))
+_cin_by = {c.get("id"): c for c in (data["CINEMAS"] or []) if isinstance(c, dict)}
+for _v in _fest_cin:
+    _c = _cin_by.get(_v) or {}
+    if not _c:
+        fail(f"BOOKING[{_v}] is a festival cinema but CINEMAS has no {_v}")
+        continue
+    if (data["BOOKING"][_v] or {}).get("inPerson"):
+        fail(f"BOOKING[{_v}] is both a festival cinema and box office only")
+    if not (str(_c.get("area") or "").strip() and str(_c.get("areaEn") or "").strip()):
+        fail(f"cinema {_v} has no address (area / areaEn)")
+    _mp = str(_c.get("maps") or "")
+    if not (re.match(r"https://www\.google\.com/maps/", _mp) or (_mp and not _mp.startswith("http"))):
+        fail(f"cinema {_v} has no map place (maps): {_mp[:80]!r}")
+for _v in _box_cin:
+    _u = (data["BOOKING"][_v] or {}).get("url") or ""
+    if _is_seller(_u) or "#buy" in _u.lower():
+        fail(f"BOOKING[{_v}] sells only at its box office but its url is a ticket page: {_u}")
+_fr = re.search(r"^const FESTROWS\s*=\s*(.*?);\s*$", js, flags=re.M)
+if _fr is None:
+    note("FESTROWS is not declared — festival screenings at box-office cinemas count by film id / epaygo link only")
+else:
+    try:
+        _fr_data = json.loads(_fr.group(1))
+    except Exception:
+        _fr_data = None
+    if not isinstance(_fr_data, list):
+        fail("FESTROWS is not a JSON array of [filmId, venueId, date, time, festival, url]")
+    else:
+        _st4 = {(r[0], r[1], r[2], t) for r in (data["SHOWTIMES"] or []) if isinstance(r, list) and len(r) >= 4
+                for t in (r[3] or [])}
+        _bad_fr = [x for x in _fr_data
+                   if not (isinstance(x, list) and len(x) in (6, 7, 8, 9) and all(isinstance(v, str) for v in x[:5])
+                           and (len(x) == 6 or x[6] in (None, "onsale", "soldout", "notyet"))
+                           and (len(x) < 8 or x[7] is None or (isinstance(x[7], str) and 0 < len(x[7]) < 160))
+                           and (len(x) < 9 or x[8] is None or (isinstance(x[8], str)
+                                                               and re.fullmatch(r"\d{4}-\d{2}-\d{2}", x[8])))
+                           and (x[5] is None or (isinstance(x[5], str) and re.match(r"https?://[^\s\"<>]+$", x[5])
+                                                 and any(_host_of(x[5]) == h or _host_of(x[5]).endswith("." + h)
+                                                         for h in _SALE_HOSTS))))]
+        if _bad_fr:
+            fail(f"{len(_bad_fr)} FESTROWS entr(ies) are not [filmId, venueId, date, time, festival, festival/ticket-shop url|null, "
+                 f"onsale/soldout/notyet|null, epaygo place|null, day the state was read|null], "
+                 f"e.g. {str(_bad_fr[0])[:120]}")
+        _ok_fr = [x for x in _fr_data if x not in _bad_fr]
+        _lost_fr = [x for x in _ok_fr if tuple(x[:4]) not in _st4]
+        if _lost_fr:
+            fail(f"{len(_lost_fr)} FESTROWS entr(ies) name no SHOWTIMES row, e.g. {'/'.join(_lost_fr[0][:4])}")
+        _off_fr = [x for x in _ok_fr if x[1] not in _box_cin and x[1] not in _fest_cin]
+        if _off_fr:
+            fail(f"{len(_off_fr)} FESTROWS entr(ies) at a cinema that sells online anyway, e.g. {'/'.join(_off_fr[0][:4])}")
+        if len(_ok_fr) != len({tuple(x[:4]) for x in _ok_fr}):
+            fail("duplicate FESTROWS entries (same film, cinema, date and time)")
+        # the venue epaygo.bg names decides (owner, 2026-10-29: G8 and Euro Cinema are two
+        # cinemas; CineLibri runs both at the same hour): no row filed under one of them
+        # whose epaygo page places it at the other, and no VLINKS entry of one of them that
+        # links an epaygo event stored as the other's. The place FESTROWS stored, no network.
+        _wrong_place = [x for x in _ok_fr if len(x) > 7 and x[7]
+                        and _epaygo_place_venue(x[7]) not in (None, x[1])
+                        and _epaygo_place_venue(x[7]) in set(_box_cin) | set(_fest_cin)]
+        if _wrong_place:
+            fail(f"{len(_wrong_place)} FESTROWS entr(ies) filed under a cinema their epaygo.bg page does not name, "
+                 f"e.g. {'/'.join(_wrong_place[0][:4])} at {_wrong_place[0][7]!r}")
+        _place_of = {}
+        for x in _ok_fr:
+            if len(x) > 7 and x[7] and isinstance(x[5], str) and _host_of(x[5]) == "epaygo.bg":
+                _place_of.setdefault(x[5].rstrip("/"), _epaygo_place_venue(x[7]))
+        _wrong_vl = [x for x in (vlinks_data if isinstance(vlinks_data, list) else [])
+                     if isinstance(x, list) and len(x) >= 3 and isinstance(x[2], str)
+                     and _place_of.get(x[2].rstrip("/")) not in (None, x[1])]
+        if _wrong_vl:
+            fail(f"{len(_wrong_vl)} VLINKS entr(ies) link an epaygo.bg event at another cinema, "
+                 f"e.g. {'/'.join(_wrong_vl[0][:2])} -> {_wrong_vl[0][2]}")
+        if _fr_data and not re.search(r"\bfunction festSaleUrl\(", js):
+            fail("FESTROWS has entries but the app has no festSaleUrl() — they would show the box-office stub")
+        _shut_fr = [x for x in _ok_fr if len(x) > 6 and x[6] in ("soldout", "notyet")]
+        if _shut_fr and not re.search(r"\bfunction festSaleState\(", js):
+            fail(f"{len(_shut_fr)} FESTROWS entr(ies) are sold out / not on sale yet but the app has no festSaleState() "
+                 f"(they would still offer \"Купи билет\")")
+        if _shut_fr:
+            note(f"FESTROWS: {sum(1 for x in _shut_fr if x[6] == 'soldout')} sold out, "
+                 f"{sum(1 for x in _shut_fr if x[6] == 'notyet')} not on sale yet")
+        note(f"FESTROWS: {len(_fr_data)} festival screening(s) at box-office-only / festival cinemas")
 
 # ---------------------------------------- 4c2b. AGGLINKS integrity
 # AGGLINKS = {"<showId>": "theatre.art.bg", "<filmId>|<venueId>": "programata.bg", …}
@@ -1821,6 +1982,51 @@ def smoke():
                     if not page.query_selector(".sheet"):
                         fail(f"[{tz}] clicking a performance did not open its sheet"
                              + (" — " + errs[0] if errs else ""))
+            # box office only: every BOXONLY performance and every screening at a
+            # BOOKING inPerson or festival cinema render their time panel as the rule says: a
+            # box-office-only one with the stub, no "Купи билет", and its site line and
+            # calendar link never a ticket seller's page; a festival screening there
+            # with "Купи билет" (owner, 2026-10-28)
+            if tz == "Europe/Sofia":
+                _bo_bad = page.evaluate("""(sellers)=>{
+                  if(typeof screeningSheetHtml!=="function")return ["screeningSheetHtml is missing"];
+                  const host=u=>{try{return new URL(u).hostname.replace(/^www\\./,'')}catch(e){return''}};
+                  const seller=u=>{const h=host(u);return !!h&&sellers.some(x=>h===x||h.endsWith('.'+x));};
+                  const FRA=(typeof FESTROWS!=="undefined"&&Array.isArray(FESTROWS))?FESTROWS:[];
+                  const FR=new Set(FRA.map(r=>r.slice(0,4).join('|')));
+                  const SHUT=new Map(FRA.filter(r=>r[6]==='soldout'||r[6]==='notyet').map(r=>[r.slice(0,4).join('|'),r[6]]));
+                  const VL=(typeof VLINKS!=="undefined"&&Array.isArray(VLINKS))?VLINKS:[];
+                  const out=[], probe=(k,id,v,d,t)=>{const el=document.createElement('div');
+                    el.innerHTML=screeningSheetHtml(k,id,v,d,t);
+                    const tag=k+':'+id+'|'+v+'|'+d+'|'+t, bo=boxOnly(k,id,v,d,t);
+                    // the rule itself, from the data (not through boxOnly): a FESTROWS row, a
+                    // festival-named film id or an epaygo.bg link is sold online; any other
+                    // screening at a box-office-only cinema is not
+                    if(k==='film'){
+                      const fest=!!(BOOKING[v]||{}).festival||FR.has(id+'|'+v+'|'+d+'|'+t)||/(?:^|-)(sinelibri|kinomaniya)-/.test(id)
+                        ||host((VL.find(x=>x[0]===id&&x[1]===v)||[])[2]||'')==='epaygo.bg';
+                      if(fest&&bo)out.push(tag+' (festival screening shows the box-office stub)');
+                      if(!fest&&!bo)out.push(tag+' (box-office-only screening offers online sale)');}
+                    // a festival screening sold out / not on sale yet: its note, no buy button, no stub
+                    const shut=k==='film'?SHUT.get(id+'|'+v+'|'+d+'|'+t):null;
+                    if(shut){ const n=el.querySelector('[data-festsale]');
+                      if(bo||el.querySelector('.ss-btn.pri')||el.querySelector('[data-boxonly]')||!n||n.dataset.festsale!==shut
+                         ||n.querySelector('a.ss-btn,button'))out.push(tag+' ('+shut+': a buy button, a stub or no note)'); return; }
+                    if(!bo){ if(!el.querySelector('.ss-btn.pri[href]')||el.querySelector('[data-boxonly]'))out.push(tag+' (festival: no buy button)'); return; }
+                    if(!el.querySelector('[data-boxonly]')||el.querySelector('.ss-btn.pri'))out.push(tag+' (buy button or no note)');
+                    const site=el.querySelector('a.ss-site'), ev=calEvent(k,id,v,d,t);
+                    if(site&&seller(site.getAttribute('href')))out.push(tag+' (site line '+site.getAttribute('href')+')');
+                    if(ev&&(seller(ev.url)||sellers.some(x=>(ev.description||'').includes(x+'/'))))out.push(tag+' (calendar '+ev.url+')');};
+                  const bx=(typeof BOXONLY!=="undefined"&&Array.isArray(BOXONLY))?BOXONLY:[];
+                  for(const r of bx){const sh=showById[r[0]]; if(sh)probe('show',r[0],sh.theatre,r[1],r[2]);}
+                  // a festival cinema (BOOKING festival: Euro Cinema) the same way: every
+                  // screening there is the festival's, sold online
+                  for(const v of Object.keys(BOOKING).filter(v=>(BOOKING[v].inPerson||BOOKING[v].festival)&&cinById[v]))
+                    for(const r of SHOWTIMES.filter(r=>r[1]===v&&r[2]>=TODAY))for(const t of (r[3]||[]))probe('film',r[0],v,r[2],t);
+                  return out;}""", list(_SELLER_HOSTS))
+                if _bo_bad:
+                    fail(f"{len(_bo_bad)} box-office-only / festival showing(s) render wrongly, "
+                         f"e.g. {', '.join(_bo_bad[:3])}")
             if errs:
                 fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
             _v = page.evaluate("window.__cspv||[]")

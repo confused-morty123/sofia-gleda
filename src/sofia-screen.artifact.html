@@ -860,19 +860,24 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 }
 /* ===================== P3E: screening sheet ===================== */
 /* The time popup. Phones: the approved tall bottom sheet in its own overlay (#ss-wrap),
-   pinned to the bottom of the visible viewport, 88dvh tall and scrolling inside; the
-   spacer keeps the buttons at its foot. */
+   pinned to the bottom of the visible viewport, as tall as its content (at most 88dvh,
+   then it scrolls inside). */
 .ss-sheet{display:flex;flex-direction:column}
 .ss-wrap{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;justify-content:flex-end;
   background:rgba(0,0,0,.55);overscroll-behavior:contain;
   padding-inline:env(safe-area-inset-left,0px) env(safe-area-inset-right,0px)} /* landscape notch */
 .ss-wrap[hidden]{display:none!important}
 .ss-wrap .ss-sheet{position:relative;flex:0 0 auto;width:100%;max-width:640px;margin:0 auto;
-  height:88vh;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  height:auto;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   background:var(--ink-3);border:1px solid var(--line);border-bottom:0;border-radius:26px 26px 16px 16px;
   box-shadow:0 -12px 40px rgba(0,0,0,.45);
   padding:16px 22px calc(28px + env(safe-area-inset-bottom,0px))}
-@supports (height:1dvh){ .ss-wrap .ss-sheet{height:88dvh;max-height:88dvh} }
+@supports (height:1dvh){ .ss-wrap .ss-sheet{height:auto;max-height:88dvh} }
+/* the panel fits its content (owner, 2026-10-28, ticket-stub option): no fixed 88dvh and no
+   empty band between the facts and the buttons; it still scrolls inside past 88dvh */
+.ss-wrap .ss-btns{margin-top:20px}
+/* box office only: the stub follows the facts (the site link) at the buttons' own gap */
+.ss-wrap .ss-btns.bo{margin-top:12px}
 @media (hover:none) and (pointer:coarse){
   .ss-wrap .ss-sheet{padding-bottom:max(72px,calc(28px + env(safe-area-inset-bottom,0px)))} }
 @media (hover:none) and (pointer:coarse) and (display-mode:standalone){
@@ -890,6 +895,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .ss-wrap .ss-status{margin-top:12px;padding:10px 12px}
   .ss-wrap .ss-spacer{display:none}
   .ss-wrap .ss-btns{gap:8px;margin-top:12px}
+  .ss-wrap .ss-btns.bo{margin-top:8px}
   .ss-wrap .ss-btn{height:44px;font-size:15px}
   .ss-wrap .ss-help{margin:4px 0 0}
   .ss-wrap .ss-cal-title{margin-top:0}
@@ -916,8 +922,91 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .ss-status-head{display:flex;align-items:center;gap:8px;font-weight:500;
   color:#D9C27A;margin-bottom:4px}
 .ss-ambert{width:7px;height:7px;border-radius:50%;background:var(--gild);display:inline-block;flex-shrink:0}
+/* Box office only, the ticket stub (owner, 2026-10-28, option 3): the buy slot becomes a
+   stub that states where tickets are sold. Information, not a control: not focusable, no
+   hover or pressed state, default cursor, selectable text, left-aligned on two lines
+   (buttons here are centred, one line), a perforated left edge and a dashed tear line.
+   Full strength, never dimmed. Gold (--gild) for a theatre, the cinema red (--crimson) for
+   a cinema. Text contrast: #17110B on #D9B23C 9.26:1, #4A3B14 on it 5.39:1; #FFFFFF on
+   #E0163A 4.83:1 (#A30E28 7.92:1 under Increase Contrast). */
+.ss-stub{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;
+  min-height:66px;padding:10px 18px 10px 30px;border-radius:0 16px 16px 0;text-align:left;
+  background:var(--gild);color:#17110B;cursor:default;-webkit-user-select:text;user-select:text;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-mask:radial-gradient(circle at 0 6px,transparent 4px,#000 4.6px) 0 0/9px 12px repeat-y,
+               linear-gradient(#000,#000) right 0 top 0/calc(100% - 9px) 100% no-repeat;
+          mask:radial-gradient(circle at 0 6px,transparent 4px,#000 4.6px) 0 0/9px 12px repeat-y,
+               linear-gradient(#000,#000) right 0 top 0/calc(100% - 9px) 100% no-repeat}
+.ss-stub::before{content:"";position:absolute;left:16px;top:9px;bottom:9px;border-left:1.5px dashed rgba(23,17,11,.38)}
+.ss-stub-a{font-family:"Source Serif 4",Georgia,serif;font-size:19px;font-weight:600;line-height:1.2;letter-spacing:.005em}
+.ss-stub-b{font-family:var(--f-ui);font-size:15px;font-weight:400;color:#4A3B14;line-height:1.3}
+.ss-stub.cin,.buystub.cin{background:var(--crimson);color:#fff}
+/* a cinema's stub speaks the cinema display face: Geologica with its sharp-corner axis, at the
+   weight and tracking of the cinema headings (theatre stubs keep Source Serif 4) */
+.ss-stub.cin .ss-stub-a,.buystub.cin .buystub-a{font-family:"Geologica","Segoe UI",system-ui,sans-serif;
+  font-weight:700;letter-spacing:-.01em;font-variation-settings:"SHRP" 100}
+.ss-stub.cin .ss-stub-b,.buystub.cin .buystub-b{color:#fff}
+.ss-stub.cin::before,.buystub.cin::before{border-left-color:rgba(255,255,255,.55)}
+.ss-bo-grp{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+/* a festival screening sold out / not on sale yet: the date line's text, the site line's link */
+.ss-fsale{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:2px}
+.ss-fsale p.ss-date{margin:0}
+.ss-bo-grp .ss-help{margin:-2px 0 0}
+/* the preliminary note: a dashed tag beside the time (the site's dashed-time language) */
+.ss-trow{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px}
+.ss-ptag{display:inline-flex;align-items:center;min-height:30px;padding:2px 12px;border-radius:999px;
+  border:1.5px dashed rgba(217,194,122,.65);color:#D9C27A;font-family:var(--f-ui);font-size:15px;font-weight:500;line-height:1.2}
+/* the venue's own page: one quiet line under the address */
+.ss-site{display:inline-flex;align-self:flex-start;align-items:center;min-height:44px;margin-top:2px;font-size:15px;color:var(--fg);
+  text-decoration:underline;text-decoration-color:rgba(255,255,255,.35);text-underline-offset:3px}
+@media (hover:hover){.ss-site:hover{text-decoration-color:var(--fg)}}
+/* the compact stub in a show's or film's "Билети от" box, beside the online pills */
+.buystub{position:relative;display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;
+  min-height:44px;padding:5px 14px 5px 22px;border-radius:0 12px 12px 0;text-align:left;
+  background:var(--gild);color:#17110B;cursor:default;-webkit-user-select:text;user-select:text;
+  -webkit-mask:radial-gradient(circle at 0 4.5px,transparent 3px,#000 3.5px) 0 0/7px 9px repeat-y,
+               linear-gradient(#000,#000) right 0 top 0/calc(100% - 7px) 100% no-repeat;
+          mask:radial-gradient(circle at 0 4.5px,transparent 3px,#000 3.5px) 0 0/7px 9px repeat-y,
+               linear-gradient(#000,#000) right 0 top 0/calc(100% - 7px) 100% no-repeat}
+.buystub::before{content:"";position:absolute;left:12px;top:6px;bottom:6px;border-left:1px dashed rgba(23,17,11,.38)}
+.buystub-a{font-family:"Source Serif 4",Georgia,serif;font-size:14px;font-weight:600;line-height:1.2}
+.buystub-b{font-family:var(--f-ui);font-size:12px;font-weight:400;color:#4A3B14;line-height:1.25}
+/* Increase Contrast / Reduce Transparency: a solid outline and solid tear line; line 2 at
+   full ink; the cinema red darkened to #A30E28 (white on it 7.92:1). Forced colours (Windows
+   High Contrast): every real button and link pill in the panel and the sheets gets a solid
+   ButtonText border, and the stub reads as a note, not a button: no box, only a dotted
+   CanvasText rule on its left edge, CanvasText text, no cut edge. */
+@media (prefers-contrast:more){
+  .ss-stub,.buystub{box-shadow:inset 0 0 0 2px #17110B}
+  .ss-stub.cin,.buystub.cin{background:#A30E28;box-shadow:inset 0 0 0 2px #fff}
+  .ss-stub-b,.buystub-b{color:#17110B}
+  .ss-stub::before,.buystub::before{border-left-color:#17110B}
+  .ss-stub.cin::before,.buystub.cin::before{border-left-color:#fff}
+  .ss-ptag{border-color:#D9C27A}
+}
+@media (prefers-reduced-transparency:reduce){
+  .ss-stub::before,.buystub::before{border-left-color:#17110B}
+  .ss-stub.cin::before,.buystub.cin::before{border-left-color:#fff}
+  .ss-ptag{border-color:#D9C27A}
+}
+@media (forced-colors:active){
+  .ss-btn,.ss-btn.pri,.ss-btn.sec,.buylink,.buybox .buylink,.buybox .buylink:not(.inperson):not(.alt){
+    border:2px solid ButtonText!important;color:ButtonText!important} /* beats the later .ss-btn.pri/.sec colours */
+  .ss-stub,.buystub,.ss-stub.cin,.buystub.cin{-webkit-mask:none;mask:none;border:0;border-left:2px dotted CanvasText;
+    border-radius:0;background:Canvas;color:CanvasText;box-shadow:none}
+  .ss-stub-a,.buystub-a,.ss-stub-b,.buystub-b,.ss-stub.cin .ss-stub-a,.buystub.cin .buystub-a,
+  .ss-stub.cin .ss-stub-b,.buystub.cin .buystub-b{color:CanvasText}
+  .ss-stub::before,.buystub::before,.ss-stub.cin::before,.buystub.cin::before{display:none}
+  .ss-ptag{border-color:CanvasText;color:CanvasText}
+}
+@media(min-width:761px){
+  .ss-stub{min-height:60px}.ss-stub-a{font-size:18px}.ss-stub-b{font-size:14px}
+  .ss-ptag{font-size:14px;min-height:28px}.ss-site{min-height:32px;font-size:14px}
+  .ss-pop .ss-bo-grp{gap:8px;margin-bottom:8px}
+}
 .ss-spacer{flex:1;min-height:16px}
 .ss-btns{display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.ss-spacer.bo{flex:0 0 0;min-height:0}
 .ss-btn{display:flex;align-items:center;justify-content:center;gap:10px;
   width:100%;height:54px;border:0;border-radius:16px;
   font-family:var(--f-ui);font-size:16px;font-weight:500;
@@ -955,6 +1044,8 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   .ss-pop .ss-status{margin-top:14px;padding:12px 14px}
   .ss-pop .ss-spacer{min-height:14px}
   .ss-pop .ss-btns{gap:10px}
+  .ss-pop .ss-spacer.bo{min-height:0}
+  .ss-pop .ss-btns.bo{margin-top:10px}
   .ss-pop .ss-btn{height:44px;font-size:15px}
   .ss-pop .ss-help{margin:4px 0 0}
   .ss-pop .ss-cal-ev{margin:18px 0 14px}
@@ -1550,7 +1641,7 @@ bg:{tagline:"кино и театър в софия",
  bannerAll:"Цялата програма",bannerCustom:"Избран период",bannerChange:"Промени",
  fabFilters:"Филтри",
 plFilm:["филм","филма"],plShow:["представление","представления"],plScreening:["прожекция","прожекции"],plPerf:["представление","представления"],plCinema:["кино","кина"],plResult:["резултат","резултата"],srFor:"за „{q}“",srNoHits:"Няма съвпадения за „{q}“",noHitsHelp:"Провери изписването или изчисти търсенето.",yearL:"Година",
-lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSearch:"Изчисти търсенето",prevMonth:"Предишен месец",nextMonth:"Следващ месец",railBack:"Назад в реда",railFwd:"Напред в реда",fabActive:"{n} активни",prelimShort:"предварителна програма",boxOnly:"само на касата",clearAll:"Изчисти всички",
+lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSearch:"Изчисти търсенето",prevMonth:"Предишен месец",nextMonth:"Следващ месец",railBack:"Назад в реда",railFwd:"Напред в реда",fabActive:"{n} активни",prelimShort:"предварителна програма",boxOnly:"само на касата",boxAtShort:"билети на касата",clearAll:"Изчисти всички",
  secByGenre:"По жанр",secByCinema:"По кино",secByTheatre:"По театър",
  subStateTheatres:"Държавни и общински",subIndependent:"Независими",
  railPopular:"Популярни тази седмица",railPopularPeriod:"Популярни за периода",
@@ -1573,9 +1664,19 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  notInProgramme:"Заглавието не е в текущата програма.",
  /* P3E */
  ssBoxOfficeHead:"Билети само на касата",
- ssBoxOfficeBody:"Киното не продава билети онлайн за тази прожекция.",
- ssBoxOfficeFull:"От {price}. Киното не продава билети онлайн за тази прожекция.",
  ssBoxOfficeBodyT:"Театърът не продава билети онлайн за това представление.",
+ ssBoxOfficeHeadAlt:"Билети на касата",
+ ssBoxOfficeAltBody:"Театърът не продава билети онлайн за това представление. За онлайн билети страницата на постановката посочва {alt}.",
+ ssAltOnline:"Онлайн билети: {alt}",
+ ssSiteOpenT:"Отвори сайта на театъра ↗",
+ ssSiteOpenC:"Отвори сайта на киното ↗",
+ ssFestSoldOut:"Билетите са изчерпани",
+ ssFestNotYet:"Билетите още не са в продажба",
+ ssFestVia:"Билети през фестивала",
+ ssFestPage:"Отвори страницата на фестивала ↗",
+ ssBuyOnlineFrom:"Купи онлайн от {seller}",
+ ssOpensHost:"Отваря {host}",
+ ssPrelimTag:"непотвърден час",
  ssAggHead:"Предварителна програма от {agg}",
  ssAggBody:"Театърът още не е публикувал това представление в своята програма.",
  ssPrelimHead:"Предварителна програма",
@@ -1653,7 +1754,7 @@ en:{tagline:"cinema & theatre in sofia",
  bannerAll:"Full programme",bannerCustom:"Selected period",bannerChange:"Change",
  fabFilters:"Filters",
 plFilm:["film","films"],plShow:["production","productions"],plScreening:["screening","screenings"],plPerf:["performance","performances"],plCinema:["cinema","cinemas"],plResult:["result","results"],srFor:"for “{q}”",srNoHits:"No matches for “{q}”",noHitsHelp:"Check the spelling or clear the search.",yearL:"Year",
-lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMonth:"Previous month",nextMonth:"Next month",railBack:"Scroll back",railFwd:"Scroll forward",fabActive:"{n} active",prelimShort:"preliminary programme",boxOnly:"box office only",clearAll:"Clear all",
+lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMonth:"Previous month",nextMonth:"Next month",railBack:"Scroll back",railFwd:"Scroll forward",fabActive:"{n} active",prelimShort:"preliminary programme",boxOnly:"box office only",boxAtShort:"tickets at the box office",clearAll:"Clear all",
  secByGenre:"By genre",secByCinema:"By cinema",secByTheatre:"By theatre",
  subStateTheatres:"State & municipal",subIndependent:"Independent",
  railPopular:"Popular this week",railPopularPeriod:"Popular in this period",
@@ -1677,9 +1778,19 @@ lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMon
  notInProgramme:"This title is no longer in the programme.",
  /* P3E */
  ssBoxOfficeHead:"Tickets at the box office only",
- ssBoxOfficeBody:"This cinema does not sell tickets online for this screening.",
- ssBoxOfficeFull:"From {price}. This cinema does not sell tickets online for this screening.",
  ssBoxOfficeBodyT:"This theatre does not sell tickets online for this performance.",
+ ssBoxOfficeHeadAlt:"Tickets at the box office",
+ ssBoxOfficeAltBody:"This theatre does not sell tickets online for this performance. For online tickets, the production's own page names {alt}.",
+ ssAltOnline:"Online tickets: {alt}",
+ ssSiteOpenT:"Open the theatre website ↗",
+ ssSiteOpenC:"Open the cinema website ↗",
+ ssFestSoldOut:"Sold out",
+ ssFestNotYet:"Tickets not on sale yet",
+ ssFestVia:"Tickets via the festival",
+ ssFestPage:"Open the festival page ↗",
+ ssBuyOnlineFrom:"Buy online from {seller}",
+ ssOpensHost:"Opens {host}",
+ ssPrelimTag:"time not confirmed",
  ssAggHead:"Preliminary listing from {agg}",
  ssAggBody:"The theatre has not published this performance on its own programme yet.",
  ssPrelimHead:"Preliminary programme",
@@ -3564,6 +3675,103 @@ const VLINK_MAP=(()=>{
     VLINKS.forEach(([fid,vid,u])=>{m[fid+"|"+vid]=u;});
   return m;
 })();
+/* the host a link opens, for its label: "pricelesstickets.bg" */
+function hostLabel(u){try{return new URL(u).hostname.replace(/^www\./,"");}catch(e){return"";}}
+/* an online seller's own name for "Купи онлайн от …" (its host when not listed here) */
+const SELLER_NAMES={"pricelesstickets.bg":"Priceless Tickets","eventim.bg":"Eventim","ticketportal.bg":"Ticketportal","bilet.bg":"Bilet.bg","epaygo.bg":"EPAYGO","ticketstation.bg":"Ticketstation"};
+function sellerLabel(u){const h=hostLabel(u);return SELLER_NAMES[h]||h;}
+const _hostIn=(u,hs)=>{const h=hostLabel(u);return!!h&&hs.some(x=>h===x||h.endsWith("."+x));};
+/* a ticket seller's page (never the box-office-only link of a showing) */
+const isSellerUrl=u=>_hostIn(u,Object.keys(SELLER_NAMES).concat(["urboapp.com"]));
+/* Festival screenings at the cinemas whose own programme sells only at the box office
+   (owner, 2026-10-28). Одеон and G8 (BOOKING inPerson) sell their regular programme at the
+   box office; the festivals held there (CineLibri, Киномания) sell online (epaygo.bg).
+   FESTROWS, written by the scraper: [[filmId, venueId, date, time, festival, url, sale], …]
+   each festival screening there with its online link (null when the scraper had none) and
+   how it sells (2026-10-29): "soldout" (the festival's page or epaygo says sold out),
+   "notyet" (epaygo has no tickets on sale), "onsale", or null (not known: its link).
+   A festival cinema (BOOKING festival: Кино Euro Cinema, owner 2026-10-29) lists only the
+   festivals' screenings, all sold online: FESTROWS gives each its own link and sale state. */
+const festSaleVenue=v=>{const b=BOOKING[v]||{};return!!(b.inPerson||b.festival);};
+const FEST_ROW_MAP=(()=>{
+  const m={};
+  if(typeof FESTROWS!=="undefined"&&Array.isArray(FESTROWS))
+    FESTROWS.forEach(r=>{if(Array.isArray(r)&&r.length>=4)m[r[0]+"|"+r[1]+"|"+r[2]+"|"+r[3]]={fest:r[4]||"",url:safeUrl(r[5])||"",nourl:r.length>5&&!safeUrl(r[5]),sale:(r[6]==="soldout"||r[6]==="notyet")?r[6]:""};});
+  return m;
+})();
+/* a film id the venue's own listing named after a festival ("Синелибри 2026 – Лудории") */
+const FEST_SERIES=/(?:^|-)(sinelibri|kinomaniya)-/;
+const FEST_PROG={cinelibri:"https://www.cinelibri.com/programa/",kinomania:"https://www.kinomania.bg/bg_BG/programa-tablica.html"};
+const FEST_SALE_HOSTS=["cinelibri.com","kinomania.bg","epaygo.bg","urboapp.com"];
+/* the festival's own page for a film (it lists every date with its buy button), else its programme */
+function festPageOf(id,fest){
+  const fs=safeUrl((FI()[id]||{}).fsrc)||"";
+  if(_hostIn(fs,["cinelibri.com","kinomania.bg"]))return fs;
+  const f=fest||(festsOf("film",id).find(x=>FEST_PROG[x]))||"";
+  return FEST_PROG[f]||"";
+}
+/* A screening at a box-office-only cinema: its online link when it is a festival screening
+   (FESTROWS lists it, its film id names a festival, or its link is epaygo.bg), else "" (the
+   cinema's own programme: box office only). The festival's link for that very screening
+   first, then an epaygo / festival link, then the festival's page for the film. */
+function festSaleUrl(id,venueId,dateStr,timeStr){
+  const fr=FEST_ROW_MAP[id+"|"+venueId+"|"+dateStr+"|"+timeStr];
+  const vl=safeUrl(VLINK_MAP[id+"|"+venueId])||"";
+  const ser=FEST_SERIES.exec(id);
+  if(!fr&&!ser&&hostLabel(vl)!=="epaygo.bg")return"";
+  const fest=(fr&&fr.fest)||(ser?(ser[1]==="sinelibri"?"cinelibri":"kinomania"):"");
+  /* an epaygo.bg link is one screening's page: for a screening FESTROWS lists without its own
+     link (none, or the festival's link named another screening) the film's page instead */
+  const vlOk=_hostIn(vl,FEST_SALE_HOSTS)&&!(fr&&hostLabel(vl)==="epaygo.bg");
+  return(fr&&fr.url)||(vlOk?vl:"")||festPageOf(id,fest)||FEST_PROG[fest||"cinelibri"];
+}
+/* A festival screening at a box-office-only cinema that cannot be bought online now:
+   "soldout" or "notyet" from FESTROWS (the scraper's reading, never guessed here), else "".
+   Its panel then states it instead of "Купи билет", with the festival's page as a quiet
+   link, and no ticket stub (it is not a box-office sale). */
+function festSaleState(id,venueId,dateStr,timeStr){
+  const fr=FEST_ROW_MAP[id+"|"+venueId+"|"+dateStr+"|"+timeStr];
+  return fr&&festSaleVenue(venueId)?fr.sale:"";
+}
+/* a box-office-only cinema's own plain page (BOOKING url: Одеон's programme, G8's home),
+   for the stub's site line and the calendar; never a ticket seller's page */
+function boxSiteUrl(id,venueId){
+  const home=safeUrl((BOOKING[venueId]||{}).url)||"";
+  return home&&!isSellerUrl(home)?home:"";
+}
+/* Box office only (owner, 2026-10-28): a showing whose tickets are not sold online says
+   so wherever it would otherwise offer "Купи билет". Two sources, one rule:
+   BOOKING[venueId].inPerson   the venue's own programme sells only at its box office (Одеон,
+                               G8); a festival screening there sells online (festSaleUrl)
+   BOXONLY                     one performance its theatre does not sell online
+                               ([showId,date,time,alt,page], written by the scraper).
+   boxOnly(...) is null for a showing sold online, else {venue, alt, page}: venue is true
+   for a box-office-only cinema's own screening; alt an online seller the production's own
+   page names (its own "Купи онлайн от …" button under the stub, never "Купи билет"); page
+   the venue's page for it (never a ticket seller's). */
+const BOX_MAP=(()=>{
+  const m={};
+  if(typeof BOXONLY!=="undefined"&&Array.isArray(BOXONLY))
+    BOXONLY.forEach(r=>{if(Array.isArray(r)&&r.length>=3)m[r[0]+"|"+r[1]+"|"+r[2]]={venue:false,alt:safeUrl(r[3])||"",page:safeUrl(r[4])||""};});
+  return m;
+})();
+function boxOnly(kind,id,venueId,dateStr,timeStr){
+  if((BOOKING[venueId]||{}).inPerson){
+    if(kind==="film"&&festSaleUrl(id,venueId,dateStr,timeStr))return null;
+    return{venue:true,alt:"",page:kind==="film"?boxSiteUrl(id,venueId):(safeUrl(BOOKING[venueId].url)||"")};
+  }
+  if(kind!=="show")return null;
+  const sh=showById[id];
+  if(sh&&(BOOKING[sh.theatre]||{}).inPerson)return{venue:true,alt:"",page:safeUrl(BOOKING[sh.theatre].url)||""};
+  return BOX_MAP[id+"|"+dateStr+"|"+timeStr]||null;
+}
+/* the ticket stub (box office only): line 1 where tickets are sold, line 2 the venue; red for
+   a cinema, gold for a theatre. Plain text in a role="note" box: never a link or a button,
+   never focusable. compact: the small one in a sheet's "Билети от" box. */
+function boStubHtml(cin,line1,venue,compact){
+  const c=compact?"buystub":"ss-stub";
+  return`<${compact?"span":"div"} class="${c}${cin?" cin":""}" role="note" data-boxonly><span class="${c}-a">${esc(line1)}</span><span class="sg-sr">, </span><span class="${c}-b">${esc(venue)}</span></${compact?"span":"div"}>`;
+}
 /* SHOWATTR_MAP: keyed by "filmId|venueId" → {"YYYY-MM-DD HH:MM": "dub,3d"} */
 const SHOWATTR_MAP=(()=>{
   if(typeof SHOWATTR!=="undefined"&&typeof SHOWATTR==="object"&&!Array.isArray(SHOWATTR))
@@ -3591,8 +3799,14 @@ function attrLabels(attrStr,lang){
 }
 /* Film-specific resolver (never uses LINK_MAP — that mapped one global URL per film,
    causing all venues to link to the wrong cinema page).
-   Priority: VLINKS entry → BOOKING deep link with date → BOOKING tix → BOOKING url */
-function filmTixUrl(filmId,venueId,date){
+   Priority: VLINKS entry → BOOKING deep link with date → BOOKING tix → BOOKING url.
+   A box-office-only cinema (BOOKING inPerson): the festival's online link for a festival
+   screening (time given), else the cinema's own page, never a ticket seller's. */
+function filmTixUrl(filmId,venueId,date,time){
+  if((BOOKING[venueId]||{}).inPerson)
+    return(date&&time&&festSaleUrl(filmId,venueId,date,time))||boxSiteUrl(filmId,venueId)||null;
+  /* a festival cinema (Euro Cinema): that screening's own festival link first */
+  if((BOOKING[venueId]||{}).festival&&date&&time){const fu=festSaleUrl(filmId,venueId,date,time);if(fu)return fu;}
   const vk=filmId+"|"+venueId;
   if(VLINK_MAP[vk])return VLINK_MAP[vk];
   const b=BOOKING[venueId]; if(!b)return null;
@@ -3641,11 +3855,12 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
   /* a link chosen from an aggregator (AGGLINKS) is labelled with its name, and the note
      says so: "the theatre's own official box office" would not be true */
   const _al=(showId&&typeof AGGLINKS==="object"&&AGGLINKS[showId])||null;
-  /* a theatre that sells only at its box office: the same grey pill as on the film sheet */
+  /* a venue that sells only at its box office: the compact ticket stub, as on the film sheet
+     (gold for a theatre, red for a cinema) */
   if(b.inPerson){
     const nm=(S.lang==="en"&&(thById[vid]||{}).nameEn)||(S.lang==="en"&&(cinById[vid]||{}).nameEn)||b.label;
     return`<div class="buybox"><div class="bl">${esc(L.buyAt)}</div>
-    <div class="buylinks"><span class="buylink inperson">${esc(nm)}, ${esc(L.boxOnly)}</span></div></div>`;
+    <div class="buylinks">${boStubHtml(isCinema||(!!cinById[vid]&&!thById[vid]),L.ssBoxOfficeHead,nm,true)}</div></div>`;
   }
   return`<div class="buybox">
     <div class="bl">${esc(L.buyAt)}</div>
@@ -3658,6 +3873,25 @@ function buyBox(vid,date,isCinema,specificUrl,showId){
       })()}
     </div>
     <div class="buynote">${esc(_al?L.buyNoteAgg.replace("{agg}",_al):(isCinema?L.buyNoteC:L.buyNoteT))}</div></div>`;}
+/* A show whose every upcoming performance its theatre sells only at the box office
+   (BOXONLY): the buy box says so in the compact gold ticket stub instead of offering
+   "Купи билет"; an online seller the production's own page names, when every one of
+   them names the same, is a plain pill beside it ("само" only when there is none). "" when any performance sells online
+   (each time's panel then says which do not). */
+function showBoxOnlyBox(sh){
+  const L=t();
+  const up=(PERFORMANCES||[]).filter(p=>p[0]===sh.id&&p[1]>=TODAY);
+  if(!up.length)return"";
+  const bos=up.map(p=>boxOnly("show",sh.id,sh.theatre,p[1],p[2]));
+  if(bos.some(b=>!b)||bos.some(b=>b.venue))return"";
+  const th=thById[sh.theatre]||{};
+  const nm=(S.lang==="en"&&th.nameEn)||th.name||(BOOKING[sh.theatre]||{}).label||"";
+  const alts=[...new Set(bos.map(b=>b.alt))];
+  const alt=alts.length===1&&alts[0]?alts[0]:"";
+  return`<div class="buybox"><div class="bl">${esc(L.buyAt)}</div>
+    <div class="buylinks">${boStubHtml(false,alt?L.ssBoxOfficeHeadAlt:L.ssBoxOfficeHead,nm,true)}${alt?`
+      <a class="buylink evsrc" href="${esc(alt)}" target="_blank" rel="noopener noreferrer">${esc(L.ssBuyOnlineFrom.replace("{seller}",sellerLabel(alt)))} ↗</a>`:""}</div>
+    <div class="buynote">${esc(alt?L.ssBoxOfficeAltBody.replace("{alt}",hostLabel(alt)):L.ssBoxOfficeBodyT)}</div></div>`;}
 /* Film buy box: compact pills per cinema, sorted by screening count desc then name.
    When the resolved VLINKS URL is a programata.bg page (preliminary-only pair),
    the pill is labelled "programata.bg ↗" instead of the cinema name. */
@@ -3681,11 +3915,27 @@ function filmBuyBox(f,rows){
     if(viaEpay)hasEpay=true;
     if(b.inPerson){
       const cname=(S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label;
-      /* owner, 2026-10-23: a box-office-only venue is a grey pill in the same shape as the
-         online-ticket pills, with no arrow; its text says so ("само на касата") */
-      return`<span class="buylink inperson">${esc(cname)}, ${esc(L.boxOnly)}</span>`;
+      /* a box-office-only cinema (owner, 2026-10-28): its own screenings get the compact red
+         ticket stub, no arrow, not a link ("Билети само на касата"); its festival screenings
+         are sold online: a pill to the festival's link (the screening's own when there is
+         one, else the festival's page for the film, which lists every date) */
+      /* a festival screening that cannot be bought now (sold out, not on sale yet) is neither */
+      const slots=rows.filter(r=>r[1]===vid&&r[2]>=TODAY).flatMap(r=>(r[3]||[]).filter(t=>!festSaleState(f.id,vid,r[2],t)).map(t=>festSaleUrl(f.id,vid,r[2],t)));
+      const on=[...new Set(slots.filter(Boolean))];
+      const ou=on.length===1?on[0]:on.length?(festPageOf(f.id)||on[0]):"";
+      return(ou?`<a class="buylink" href="${esc(ou)}" target="_blank" rel="noopener noreferrer">${esc(cname)} ↗</a>`:"")
+        +((!slots.length&&!rows.some(r=>r[1]===vid&&r[2]>=TODAY&&(r[3]||[]).length))||slots.includes("")?boStubHtml(true,L.ssBoxOfficeHead,cname,true):"");
     }
-    const u=safeUrl(filmTixUrl(f.id,vid,null)||b.url);
+    /* a festival cinema (Euro Cinema): the screenings that can be bought now; none, no pill;
+       one link for all of them, that link */
+    let fu="";
+    if(b.festival){
+      const live=rows.filter(r=>r[1]===vid&&r[2]>=TODAY).flatMap(r=>(r[3]||[]).filter(t=>!festSaleState(f.id,vid,r[2],t)).map(t=>festSaleUrl(f.id,vid,r[2],t)));
+      if(rows.some(r=>r[1]===vid&&r[2]>=TODAY)&&!live.length)return"";
+      const on=[...new Set(live.filter(Boolean))];
+      fu=on.length===1?on[0]:"";
+    }
+    const u=safeUrl(fu||filmTixUrl(f.id,vid,null)||b.url);
     if(!u)return"";
     const _al=(typeof AGGLINKS==="object"&&AGGLINKS[f.id+"|"+vid])||null;
     const cname=_al||((S.lang==="bg"?c&&c.name:c&&(c.nameEn||c.name))||b.label);
@@ -3722,9 +3972,10 @@ const _p3DayRenderFns=new Map();
    then the stage (theatre), the address and the preliminary note, each on its own line,
    then the times. For a show the row's price slot carries the stage name. */
 /* A time's accessible name: the time first (what the pill shows), then where and when, and
-   whether it is from a preliminary programme, which the dashed outline shows by sight only. */
-function _pillName(tm,venue,dateStr,prelim){
-  return `${tm}, ${venue}, ${fmtDayDow(dateStr)}${prelim?", "+t().prelimShort:""}`;
+   whether it is from a preliminary programme, which the dashed outline shows by sight only,
+   and whether its tickets are sold only at the box office (its panel says so). */
+function _pillName(tm,venue,dateStr,prelim,box){
+  return `${tm}, ${venue}, ${fmtDayDow(dateStr)}${prelim?", "+t().prelimShort:""}${box?", "+(box.alt?t().boxAtShort:t().boxOnly):""}`;
 }
 function p3eRowHtml(itemKind,v,r,prelim,pills){
   const isShow=itemKind==="show";
@@ -3804,7 +4055,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim))}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim,boxOnly(itemKind,itemId,r.venueId,dateStr,tm)))}">${esc(tm)}</button>`;
       }).join("");
       return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
@@ -3870,7 +4121,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const prelim=isP(vid,d);
       const pillsD=rr.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${vid}|${d}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||vid,d,prelim))}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||vid,d,prelim,boxOnly(itemKind,itemId,vid,d,tm)))}">${esc(tm)}</button>`;
       }).join(" ");
       return`<td>${pillsD}</td>`;
     }).join("");
@@ -3916,7 +4167,7 @@ function p3eRegisterDayPicker(container, itemKind, itemId, normalizedRows, venue
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
-        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim))}">${esc(tm)}</button>`;
+        return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim,boxOnly(itemKind,itemId,r.venueId,dateStr,tm)))}">${esc(tm)}</button>`;
       }).join("");
       return p3eRowHtml(itemKind,v,r,prelim,pills);
     }).join("");
@@ -4054,7 +4305,7 @@ function sheetShow(sh){
     <div class="chips">${sh.badge?`<span class="chip solid">${esc(badgeDisplay(sh.badge))}</span>`:""}
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
       ${sh.duration?`<span class="chip">${esc(sh.duration)} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
-    ${buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
+    ${showBoxOnlyBox(sh)||buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
     <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
     ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h3>${esc(L.aboutT)}</h3><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
@@ -4091,7 +4342,9 @@ function sheetEvent(ev){
       <span class="chip">${esc(ev.scope==="both"?(S.lang==="bg"?"кино и театър":"cinema & theatre"):ev.scope==="cinema"?L.cinema:L.theatre)}</span></div>
     <div class="sec">${synBlock(S.lang==="bg"?ev.blurbBg:ev.blurbEn)}</div>
     <div class="buybox evbox">
-      ${u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
+      ${b&&b.inPerson?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">${boStubHtml(!!cinById[vb]&&!thById[vb],L.ssBoxOfficeHead,
+        (S.lang==="en"&&((cinById[vb]||{}).nameEn||(thById[vb]||{}).nameEn))||(cinById[vb]||thById[vb]||{}).name||b.label,true)}</div>`
+      :u?`<div class="bl">${esc(L.buyAt)}</div><div class="buylinks">
         <a class="buylink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(L.buy)}: ${esc(b.label)} ↗</a></div>`:""}
       ${(()=>{
         /* an event an aggregator listed (fetch_events.py, auto:true) links the page it
@@ -5533,7 +5786,7 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     title=filmTitle(f);
     venue=(S.lang==="bg"?c.name:(c.nameEn||c.name));
     area=(S.lang==="en"?c.areaEn||c.area:c.area)||"";
-    url=filmTixUrl(id,venueId,dateStr)||"";
+    url=filmTixUrl(id,venueId,dateStr,timeStr)||"";
     runtimeMin=f.runtime||120;
   } else {
     const sh=showById[id]; if(!sh)return null;
@@ -5557,13 +5810,18 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     const parts=_calAttr.split(",").map(k=>_MAP[k]).filter(Boolean);
     return parts.length?" ("+parts.join(", ")+")":"";
   })();
+  /* box office only: the entry links the venue's page (never a ticket page) and says so:
+     the theatre's page for the production, or a box-office-only cinema's own page */
+  const _bo=boxOnly(kind,id,venueId,dateStr,timeStr);
+  if(_bo)url=_bo.page||"";
+  const boxNote=_bo?"\n"+(_bo.alt?T[S.lang].ssBoxOfficeHeadAlt:T[S.lang].ssBoxOfficeHead)+(_bo.alt?" ("+T[S.lang].ssAltOnline.replace("{alt}",hostLabel(_bo.alt))+")":""):"";
   const fullTitle=title+_calAttrSuffix+", "+venue;
   const location=venue+(area?", "+area:"");
   const prelimNote=isPrelimListing(kind,id,venueId,dateStr)
     ?(S.lang==="en"?"\nPreliminary: not yet checked against the venue's full programme. Subject to change."
                    :"\nПредварителна програма: още не е сверена с пълната програма на мястото. Възможни са промени.")
     :"";
-  const description=(url?url+"\n":"")+"Sofia Gleda"+_calAttrSuffix+prelimNote;
+  const description=(url?url+"\n":"")+"Sofia Gleda"+_calAttrSuffix+boxNote+prelimNote;
   const off=_sofiaOffset(dateStr,timeStr);
   /* Compute end time */
   const [y,mo,d]=dateStr.split("-").map(Number);
@@ -5701,7 +5959,7 @@ function calIcs(ev){
     fold("SUMMARY:"+rfcEsc(ev.fullTitle)),
     fold("LOCATION:"+rfcEsc(ev.location)),
     fold("DESCRIPTION:"+rfcEsc(ev.description)),
-    fold("URL:"+rfcEsc(ev.url)),
+    ...(ev.url?[fold("URL:"+rfcEsc(ev.url))]:[]),
     "END:VEVENT",
     "END:VCALENDAR"
   ];
@@ -5860,7 +6118,7 @@ function venueMapUrl(venue){
 function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   const L=t();
   let title="",venueName="",venueArea="",tixUrl_="",runtimeMin=120,mapUrl="";
-  let isPrelim=false,aggSource=null,isBoxOfficeOnly=false,boxPrice="";
+  let isPrelim=false,aggSource=null,isBoxOfficeOnly=false,bo=null,siteUrl="",festSale="",festPage="";
   let attrStr="";
 
   if(kind==="film"){
@@ -5874,9 +6132,23 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     const b=BOOKING[venueId]||{};
     isPrelim=isPrelimListing("film",id,venueId,dateStr);
     aggSource=(typeof AGGLINKS==="object"&&AGGLINKS[id+"|"+venueId])||null;
-    const u=filmTixUrl(id,venueId,dateStr);
-    if(b.inPerson){isBoxOfficeOnly=true;boxPrice=PRICES[venueId]||"";}
-    else{tixUrl_=safeUrl(u)||"";}
+    const u=filmTixUrl(id,venueId,dateStr,timeStr);
+    bo=boxOnly("film",id,venueId,dateStr,timeStr);
+    if(bo){isBoxOfficeOnly=true;
+      /* the cinema's own page for the film (or its programme): a plain link, never "Купи билет",
+         never a ticket seller's page */
+      siteUrl=bo.page&&!isSellerUrl(bo.page)?bo.page:"";}
+    else{
+      festSale=festSaleState(id,venueId,dateStr,timeStr);
+      /* a festival screening with no ticket link of its own (FESTROWS url null: the festival
+         linked another screening's epaygo page, or none): no "Купи билет" that would sell the
+         wrong screening; "Билети през фестивала" and the festival's page as a quiet link */
+      const fr0=FEST_ROW_MAP[id+"|"+venueId+"|"+dateStr+"|"+timeStr];
+      if(!festSale&&fr0&&fr0.nourl&&festSaleVenue(venueId))festSale="via";
+      /* sold out / not on sale yet: no "Купи билет"; the festival's page as a quiet link */
+      if(festSale){const fr=fr0||{};
+        festPage=safeUrl(festPageOf(id,fr.fest)||FEST_PROG[fr.fest||"cinelibri"])||"";}
+      else tixUrl_=safeUrl(u)||"";}
     attrStr=showAttrFor(id,venueId,dateStr,timeStr)||"";
   } else {
     const sh=showById[id]; if(!sh)return"";
@@ -5890,7 +6162,11 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
     isPrelim=isPrelimListing("show",id,venueId,dateStr);
     aggSource=(typeof AGGLINKS==="object"&&AGGLINKS[id])||null;
     const tu=safeUrl(tixUrl("show",id,sh.theatre));
-    if(b.inPerson){isBoxOfficeOnly=true;boxPrice="";}
+    bo=boxOnly("show",id,venueId,dateStr,timeStr);
+    if(bo){isBoxOfficeOnly=true;
+      /* the theatre's page for the production: the one BOXONLY names, else the show's own
+         link unless an aggregator's (a plain link, never "Купи билет") */
+      siteUrl=bo.page||(aggSource?"":(tu||""));}
     else{tixUrl_=tu||"";}
   }
 
@@ -5943,25 +6219,32 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   }
 
   /* Main step */
-  /* Status card: prelim > aggSource > box office only */
+  /* A preliminary time: a dashed tag beside the time (its explanation for screen readers).
+     An aggregator's listing that is not preliminary keeps its card. */
+  const prelimTag=isPrelim?`<span class="ss-ptag">${esc(L.ssPrelimTag)}<span class="sg-sr">. ${esc(L.ssPrelimBody)}</span></span>`:"";
   let statusHtml="";
-  if(isPrelim){
-    statusHtml=`<div class="ss-status">
-      <div class="ss-status-head"><span class="ss-ambert"></span>${esc(L.ssPrelimHead)}</div>
-      ${esc(L.ssPrelimBody)}</div>`;
-  } else if(aggSource){
+  if(!isPrelim&&aggSource){
     statusHtml=`<div class="ss-status">
       <div class="ss-status-head"><span class="ss-ambert"></span>${esc((L.ssAggHead||"").replace("{agg}",aggSource))}</div>
       ${esc(L.ssAggBody)}</div>`;
-  } else if(isBoxOfficeOnly){
-    const body=boxPrice
-      ?(L.ssBoxOfficeFull||"").replace("{price}",boxPrice)
-      :(kind==="film"?L.ssBoxOfficeBody:L.ssBoxOfficeBodyT);
-    statusHtml=`<div class="ss-status" style="background:var(--ink-2)">
-      <div class="a" style="font-size:14.5px;font-weight:500;color:var(--fg);margin-bottom:4px">${esc(L.ssBoxOfficeHead)}</div>
-      <div class="b" style="font-size:13px;color:var(--fg-2)">${esc(body)}</div>
-    </div>`;
   }
+  /* Box office only: the venue's own page under the address, and in the buy slot the ticket
+     stub ("само" unless a third party sells it online: then that seller's button under it) */
+  const siteHtml=isBoxOfficeOnly&&siteUrl
+    ?`<a class="ss-site" href="${esc(siteUrl)}" target="_blank" rel="noopener noreferrer">${esc(kind==="film"?L.ssSiteOpenC:L.ssSiteOpenT)}</a>`:"";
+  let boHtml="";
+  if(isBoxOfficeOnly){
+    const alt=bo&&bo.alt?bo.alt:"";
+    boHtml=`<div class="ss-bo-grp">${boStubHtml(kind==="film",alt?L.ssBoxOfficeHeadAlt:L.ssBoxOfficeHead,venueName,false)}${alt?`
+<a class="ss-btn sec" href="${esc(alt)}" target="_blank" rel="noopener noreferrer">${esc(L.ssBuyOnlineFrom.replace("{seller}",sellerLabel(alt)))}</a>
+<p class="ss-help">${esc(L.ssOpensHost.replace("{host}",hostLabel(alt)))}</p>`:""}</div>`;
+  }
+
+  /* A festival screening sold out, not on sale yet, or with no ticket link of its own ("via",
+     FESTROWS url null): a plain note where
+     "Купи билет" would be, in the panel's own quiet text, and the festival's page as a
+     quiet link; never the ticket stub (it is not a box-office sale), never a button */
+  const festHtml=festSale?`<div class="ss-fsale" role="note" data-festsale="${esc(festSale)}"><p class="ss-date">${esc(festSale==="soldout"?L.ssFestSoldOut:festSale==="via"?L.ssFestVia:L.ssFestNotYet)}</p>${festPage?`<a class="ss-site" href="${esc(festPage)}" target="_blank" rel="noopener noreferrer">${esc(L.ssFestPage)}</a>`:""}</div>`:"";
 
   /* SHOWATTR chips */
   let chipsHtml="";
@@ -5982,27 +6265,33 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
       const _al=(typeof AGGLINKS==="object"&&AGGLINKS[id+"|"+venueId])||null;
       if(_al)opensName=_al;
       else{const c=cinById[venueId];opensName=S.lang==="bg"?(c&&c.name||""):(c&&(c.nameEn||c.name)||"");}
+      /* a festival screening at a box-office-only cinema opens the festival's or the seller's page;
+         at a festival cinema (Euro Cinema) always the festival's or its ticket shop's */
+      if((BOOKING[venueId]||{}).inPerson&&hostLabel(tixUrl_)!==hostLabel((BOOKING[venueId]||{}).url))opensName="";
+      if((BOOKING[venueId]||{}).festival)opensName="";
     } else {
       const _al=(typeof AGGLINKS==="object"&&AGGLINKS[id])||null;
       const sh=showById[id];
       if(_al)opensName=_al;
       else{const th=thById[venueId]||thById[sh&&sh.theatre];opensName=S.lang==="bg"?(th&&th.name||""):(th&&(th.nameEn||th.name)||"");}
     }
-    const helpLine=(L.ssBuyOpens||"").replace("{name}",opensName);
+    const helpLine=opensName?(L.ssBuyOpens||"").replace("{name}",opensName):(L.ssOpensHost||"").replace("{host}",hostLabel(tixUrl_));
     buyBtnHtml=`<a class="ss-btn pri" href="${esc(tixUrl_)}" target="_blank" rel="noopener noreferrer">${esc(L.ssBuyTicket)}</a>
 <p class="ss-help">${esc(helpLine)}</p>`;
   }
 
   return`<div class="ss-grab"></div>
 <button class="ss-close-btn" data-ssclose aria-label="${esc(L.lblClose)}">✕</button>
-<div class="ss-time" id="ss-t">${esc(timeStr)}</div>
+${prelimTag?`<div class="ss-trow"><div class="ss-time" id="ss-t">${esc(timeStr)}</div>${prelimTag}</div>`
+  :`<div class="ss-time" id="ss-t">${esc(timeStr)}</div>`}
 <div class="ss-date" id="ss-d">${esc(dateDisplay)}</div>
 <div class="ss-venue">${esc(venueName)}${venueArea?", "+esc(venueArea):""}</div>
+${siteHtml}
 ${chipsHtml}
 ${statusHtml}
-<div class="ss-spacer"></div>
-<div class="ss-btns">
-  ${buyBtnHtml}
+<div class="ss-spacer${isBoxOfficeOnly?" bo":""}"></div>
+<div class="ss-btns${isBoxOfficeOnly?" bo":""}">
+  ${boHtml}${festHtml}${buyBtnHtml}
   ${mapBtn}
   ${calBtn}
 </div>`;

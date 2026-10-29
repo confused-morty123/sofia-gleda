@@ -1210,16 +1210,32 @@ def parse_salza(html, year, month):
 # Сълза и смях heads its stage pages in capitals ("Камерна сцена СЛАВЯНСКА
 # БЕСЕДА"); the app names its halls the way the theatres' listings and its
 # THEATRES entry do (stages: "Открита сцена"), with HALL_EN translations.
-SALZA_HALLS = {"открита сцена сълза и смях": "Открита сцена",
+# Keys are normalised headings (_salza_hall_key): lower case, quotes and dashes dropped,
+# the theatre's own name ("Сълза и смях", "театър") taken off.
+SALZA_HALLS = {"открита сцена": "Открита сцена",
                "камерна сцена славянска беседа": "Камерна сцена „Славянска беседа“",
-               "ъндърграунд - сцена": "Сцена „Ъндърграунд“"}
+               "ъндърграунд сцена": "Сцена „Ъндърграунд“",
+               "сцена ъндърграунд": "Сцена „Ъндърграунд“"}
+_SALZA_QUOTES = re.compile(r"[„“”\"'«»‘’`]")
+_SALZA_OWN_NAME = re.compile(r"\b(?:театър\s+)?сълза\s+и\s+смях\b|\bтеатър\b", re.I)
+
+
+def _salza_hall_key(heading):
+    """A stage heading normalised for lookup (skeptic, 2026-10-29: a reworded heading
+    such as "ОТКРИТА СЦЕНА" or "Открита сцена „СЪЛЗА И СМЯХ“" is still the same stage):
+    lower case, quotes, dashes and punctuation dropped, the theatre's own name removed,
+    spaces collapsed."""
+    h = _SALZA_QUOTES.sub(" ", clean(heading).lower())
+    h = _SALZA_OWN_NAME.sub(" ", h)
+    h = re.sub(r"[-–—.,:;()]", " ", h)
+    return re.sub(r"\s+", " ", h).strip()
 
 
 def salza_hall_name(heading):
-    """The display hall for one of Сълза и смях's stage headings; an unknown
-    heading is shown as published."""
+    """The display hall for one of Сълза и смях's stage headings (normalised, see
+    _salza_hall_key); an unknown heading is shown as published."""
     h = clean(heading)
-    return SALZA_HALLS.get(re.sub(r"\s+", " ", h.lower()), h)
+    return SALZA_HALLS.get(_salza_hall_key(h), h)
 
 
 def fetch_salzaismyah(net, today):
@@ -1248,10 +1264,12 @@ def fetch_salzaismyah(net, today):
     # with the current month.
     covered_to = None
     try:
-        stages = [parse_salza_stage(_get(net, SALZA_STAGE_URL.format(n=n))) for n in SALZA_STAGE_PAGES]
+        stage_pages = [_get(net, SALZA_STAGE_URL.format(n=n)) for n in SALZA_STAGE_PAGES]
+        stages = [parse_salza_stage(p) for p in stage_pages]
     except Unavailable as e:                           # MarkupError included
         why = f"stage pages not read ({e})"
     else:
+        salza_box_office(net, rows, stage_pages, notes)
         unplaced, unlisted = salza_stage_rows(rows, stages, today, excluded)
         # The stage a performance is on is its hall. A row salza_stage_rows could
         # not place (unknown stage) keeps hall=None — never guessed.
@@ -1286,10 +1304,17 @@ def parse_salza_stage(html):
         raise MarkupError("salzaismyah: stage page without its stage heading")
     events = []
     for sc in soup.select('script[type="application/ld+json"]'):
+        raw = sc.string or sc.get_text() or ""
         try:
-            data = json.loads(sc.string or sc.get_text() or "")
+            data = json.loads(raw)
         except ValueError:
-            raise MarkupError(f"salzaismyah: unreadable schema.org block on {stage}")
+            # The theatre escapes apostrophes in titles with a backslash (ТАКЪВ Е ЖИВОТЪТ),
+            # which JSON does not allow (seen 2026-10-28: the stage pages went unread,
+            # so later months were all marked preliminary). A backslash-apostrophe is read as an apostrophe.
+            try:
+                data = json.loads(re.sub(r"(?<!\\)((?:\\\\)*)\\'", r"\1'", raw))
+            except ValueError:
+                raise MarkupError(f"salzaismyah: unreadable schema.org block on {stage}")
         for ev in data if isinstance(data, list) else [data]:
             if not isinstance(ev, dict) or ev.get("@type") != "Event":
                 continue
@@ -1305,29 +1330,474 @@ def parse_salza_stage(html):
     return stage, events
 
 
+_SALZA_BASE = "https://www.salzaismyah.bg/"
+_ONLINE_PHRASE = re.compile(r"онлайн\s+билет", re.I)
+_HOSTISH = re.compile(r"(?:https?://)?((?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+)", re.I)
+_FULL_HOST = re.compile(r"^(?:[a-z0-9-]+\.)+(?:bg|com|eu|net|org)$", re.I)
+# hosts a page links near "онлайн билети" that never sell tickets (a "follow us" line)
+_NOT_SELLERS = {"facebook.com", "fb.com", "instagram.com", "youtube.com", "youtu.be", "tiktok.com",
+                "google.com", "goo.gl", "linkedin.com", "twitter.com", "x.com"}
+
+
+_BOX_BADGE = "БИЛЕТИ НА КАСА"
+
+
+_BOX_WORDS = re.compile(r"НА КАСА|В КАСАТА")
+# the buy verb as a whole word: "КУПИ", "КУПИ БИЛЕТ", never "ЗАКУПИ" / "ЗАКУПИТЕ" / "КУПИТЕ"
+# (skeptic, 2026-10-29: "ЗАКУПИ НА КАСАТА" read as a buy link)
+_BUY_WORD = re.compile(r"(?<![^\W\d_])КУПИ(?![^\W\d_])")
+
+
+def _box_said(text):
+    """A label that says box office only, never "КУПИ": "НА КАСА" / "В КАСАТА" without
+    "ОНЛАЙН" (the badge, "БИЛЕТИ САМО НА КАСА", "БИЛЕТИ НА КАСАТА", "САМО В КАСАТА",
+    a button or a play-page line reading so), or "НЯМА ОНЛАЙН" (the selector page's
+    own "няма онлайн продажби" as a label; skeptic, 2026-10-29)."""
+    t = " ".join(clean(text).upper().split())
+    if _BUY_WORD.search(t):
+        return False
+    return "НЯМА ОНЛАЙН" in t or (bool(_BOX_WORDS.search(t)) and "ОНЛАЙН" not in t)
+
+
+_STOP_TAGS = {None, "[document]", "html", "body", "main", "section", "header", "footer", "article", "nav"}
+
+
+def _is_grid(el):
+    return "row" in (el.get("class") or [])
+
+
+def _salza_card(head, is_head):
+    """The card of one stage-page day heading: its grid cell (the nearest ancestor with a
+    bootstrap "col-*" class whose parent is the grid's "row"), else the largest ancestor
+    that still holds exactly that one heading, stopping below the grid wrapper and the
+    page's own sections (a page with a single card never climbs to <html> and takes in
+    the header's or footer's links). None when its parent already holds several headings
+    (a flat grid with no card per performance). How many badges it has is the stage
+    reading's business (parse_salza_stage_sales: a badge that says nothing about sale is
+    neutral; skeptic, 2026-10-29: a second "ПРЕМИЕРА" badge dropped a box card silently)."""
+    card = head.parent
+    if card is None or sum(1 for d in card.find_all("div") if is_head(d)) != 1:
+        return None
+    while True:
+        if any(c.startswith("col-") or c == "col" for c in (card.get("class") or [])):
+            break
+        par = card.parent
+        if par is None or getattr(par, "name", None) in _STOP_TAGS or _is_grid(par) \
+                or sum(1 for d in par.find_all("div") if is_head(d)) != 1:
+            break
+        card = par
+    if getattr(card, "name", None) in _STOP_TAGS or _is_grid(card):
+        return None
+    return card
+
+
+# a badge that says nothing about how the tickets are sold (skeptic, 2026-10-29: the box-only
+# guest shows may carry "ГОСТУВАНЕ" or "ПРЕМИЕРА" beside "БИЛЕТИ НА КАСА"); any other extra
+# badge ("ПОСЛЕДНИ МЕСТА") still leaves the card undetermined, noted
+_SALZA_NEUTRAL_BADGE = re.compile(
+    r"(?:ПРЕМИЕРА|ГОСТУВАНЕ|ПОСЛЕДНО(?: ПРЕДСТАВЛЕНИЕ)?|НОВО|НОВ СПЕКТАКЪЛ|ЮБИЛЕЙНО(?: ПРЕДСТАВЛЕНИЕ)?|\d{1,2}\+)!?")
+
+
+def _salza_badges(card):
+    """The card's status badges, normalised and upper-cased: elements classed "status-badge"
+    or "badge" (skeptic, 2026-10-29: a CSS rename to "badge badge-navy" read no badge at
+    all), the outermost only, neutral ones (_SALZA_NEUTRAL_BADGE) left out."""
+    els = [e for e in card.find_all(True) if {"status-badge", "badge"} & set(e.get("class") or [])]
+    els = [e for e in els if not any(p in els for p in e.parents)]
+    texts = [" ".join(clean(e.get_text(" ")).upper().split()) for e in els]
+    return [t for t in texts if not _SALZA_NEUTRAL_BADGE.fullmatch(t)]
+
+
+def _box_wording(text):
+    t = " ".join(clean(text).upper().split())
+    return bool(_BOX_WORDS.search(t)) or "НЯМА ОНЛАЙН" in t
+
+
+def _salza_segment_text(head, heads):
+    """The text from one day heading up to the next (or to the page's footer): the scope
+    read for box-office wording when the heading has no card of its own (a flat grid)."""
+    stop, out = set(map(id, heads)) - {id(head)}, []
+    for el in head.next_elements:
+        if id(el) in stop or getattr(el, "name", None) in ("footer", "nav", "header"):
+            break
+        if isinstance(el, str) and getattr(el.parent, "name", None) not in ("script", "style"):
+            out.append(str(el))
+    return " ".join(out)
+
+
+_SALZA_NO_SALE = re.compile(r"ОТМЕН|ИЗЧЕРП|РАЗПРОДАД|SOLD", re.I)
+
+
+def _salza_title_play(card):
+    """The play page of a card: only its own title link (an <a href=/site/play/…>
+    around the card's heading <h4>, or inside it: <h4><a …>; skeptic, 2026-10-29),
+    never another /site/play/ link in the card."""
+    for a in card.select('a[href*="/site/play/"]'):
+        if a.find(["h3", "h4", "h5"]) is not None or a.find_parent(["h3", "h4", "h5"]) is not None:
+            return urllib.parse.urljoin(_SALZA_BASE, a["href"])
+    return None
+
+
+def parse_salza_stage_sales(html, boxish=None):
+    """How one stage page says each performance is sold (owner, 2026-10-28: a
+    performance sold only at the box office must not offer "Купи билет").
+    {selector id: (sale, play page url)}; sale is
+      "online"  when the card has a link whose text says "КУПИ…" to the event's own
+                /site/selector/<id>, unless a badge says cancelled or sold out, or says
+                box office (then "box?": the card contradicts itself and the selector
+                page decides; with other badges too, None); a btn-buy-ticket link with
+                another label is only a plain link (below), never decisive; a link whose
+                own text says box office only ("БИЛЕТИ НА КАСА", "НЯМА ОНЛАЙН
+                ПРОДАЖБИ", whatever its class or href) is never a buy link: it counts as
+                the box badge;
+      "box"     only when the card has no link to its own selector, no buy link at all,
+                and its one badge says box office only (_box_said: "БИЛЕТИ НА КАСА",
+                "БИЛЕТИ САМО НА КАСА", "БИЛЕТИ НА КАСАТА");
+      "box?"    that box badge, no "КУПИ" link, but a plain link (the poster's, or a
+                btn-buy-ticket button not saying "КУПИ") to its own selector: to be
+                confirmed on the selector page (salza_box_office);
+      "online?" no badge, no "КУПИ" link, only a plain link to its own selector: likewise
+                (skeptic, 2026-10-29: a poster linking its selector is not an online
+                signal by itself; a redesign that links every poster read all online);
+      None      otherwise (cancelled, sold out, "ОНЛАЙН И НА КАСА" without a buy link, a
+                buy link to another selector or without one, anything else:
+                undetermined).
+    A card is the day heading's grid cell (_salza_card); a layout without one card per
+    performance (a flat grid) leaves every performance undetermined rather than reading
+    one card's signal for all. Cards and schema.org events pair up in page order; a card
+    whose heading is not its event's date and time is undetermined too. The play page is
+    the card's own title link only. The schema.org offers say "InStock" either way, so
+    they are never the signal.
+    boxish: when a set, the selectors whose card says box office anywhere in its text
+    ("НА КАСА", "В КАСАТА", "НЯМА ОНЛАЙН"; with no card of its own, the text from its
+    heading to the next) are added to it, before any card is rejected (skeptic,
+    2026-10-29), so an undetermined one is noted (salza_box_office), never silent."""
+    _stage, events = parse_salza_stage(html)
+    soup = soup_of(html)
+
+    def is_head(d):
+        return "w-100" in (d.get("class") or []) and "text-center" in (d.get("class") or []) \
+            and bool(_SALZA_STAGE_DAY.match(clean(d.get_text(" "))))
+    heads = [d for d in soup.select("div.w-100.text-center") if is_head(d)]
+    out = {}
+    for head, (d, t, sel, _title) in zip(heads, events):
+        if not sel:
+            continue
+        text = clean(head.get_text(" "))
+        card = _salza_card(head, is_head)
+        play_url = _salza_title_play(card) if card is not None else None
+        if boxish is not None and _box_wording(card.get_text(" ") if card is not None
+                                               else _salza_segment_text(head, heads)):
+            boxish.add(sel)
+        if card is None or not (text.startswith(f"{d[8:10]}.{d[5:7]} ") and hhmm(text.split()[-1]) == t):
+            out[sel] = (None, play_url)
+            continue
+        links = card.select("a[href]")
+        sel_of = lambda a: (_SALZA_SELECTOR.search(a["href"]) or [None, None])[1]
+        own = [a for a in links if sel_of(a) == sel]
+        # a link (any class) whose own text says box office ("НА КАСА", "В КАСАТА", "НЯМА
+        # ОНЛАЙН", even beside "КУПИ"), or classed btn-box-office, is the box label, never a
+        # buy link (skeptic, 2026-10-29: "<a class=btn-buy-ticket href=/site/selector/N>
+        # БИЛЕТИ НА КАСА</a>" and "ЗАКУПИ НА КАСАТА" read online): it counts as the box
+        # badge, so a card with it and its own selector link goes to the selector page
+        box_lbl = [a for a in links if _box_said(a.get_text(" ")) or _box_wording(a.get_text(" "))
+                   or "btn-box-office" in (a.get("class") or [])]
+        buy_text = [a for a in links if _BUY_WORD.search(" ".join(clean(a.get_text(" ")).upper().split()))
+                    and a not in box_lbl]
+        buys = [a for a in links if "btn-buy-ticket" in (a.get("class") or []) and a not in box_lbl] + buy_text
+        other_sel = [a for a in links if sel_of(a) not in (None, sel)]
+        badges = _salza_badges(card)
+        if box_lbl and not any(_box_said(b) for b in badges):
+            badges.append(_BOX_BADGE)
+        # the decisive online signal is a link that SAYS "КУПИ…" to its own selector; a
+        # link that is a buy link only by its class (btn-buy-ticket) with another label
+        # ("НЯМА ОНЛАЙН ПРОДАЖБИ", "ИНФОРМАЦИЯ") is no more than the poster's plain link
+        # (skeptic, 2026-10-29: such a button on a new box-only card read online)
+        own_buy = [a for a in buy_text if sel_of(a) == sel]
+        box_badge = len(badges) == 1 and _box_said(badges[0])
+        no_sale = any(_SALZA_NO_SALE.search(b) for b in badges)
+        if other_sel or no_sale or (buys and not own_buy and not own):
+            out[sel] = (None, play_url)
+        elif own_buy and any(_box_said(b) for b in badges):
+            # a box badge (any wording: "БИЛЕТИ САМО НА КАСА") AND a buy link to its own
+            # selector (skeptic, 2026-10-29): the card contradicts itself, so neither wins;
+            # the selector page decides ("box?", box only when it says no online sales;
+            # else undetermined, noted)
+            out[sel] = ("box?" if len(badges) == 1 else None, play_url)
+        elif own_buy:
+            # the online signal: a buy link to its own selector; never "box" then
+            out[sel] = ("online", play_url)
+        elif own and not (buys and not own_buy and any(sel_of(a) != sel for a in buys)):
+            # only a plain link (the poster's, or a btn-buy-ticket button not saying
+            # "КУПИ") to its own selector: not a signal by itself; the selector page
+            # decides (it says "За това представление няма онлайн продажби." when there
+            # is none)
+            out[sel] = ("online?" if not badges else "box?" if box_badge else None, play_url)
+        elif not own and not buys and box_badge:
+            # one badge that says box office only, in any wording ("БИЛЕТИ САМО НА КАСА",
+            # "БИЛЕТИ НА КАСАТА"; skeptic, 2026-10-29), and no link to sell it
+            out[sel] = ("box", play_url)
+        else:
+            out[sel] = (None, play_url)
+    return out
+
+
+_SALZA_PLAY_ROW = re.compile(r"(\d{1,2})\s+([а-яА-Я]+)\s*,\s*[а-яА-Я]+\s*,\s*от\s+(\d{1,2}[:.]\d{2})")
+
+
+def parse_salza_play_sales(html):
+    """The play page's own list of performances ("ПРЕДСТАВЛЕНИЯ": "Открита сцена СЪЛЗА И
+    СМЯХ - 1 ноември, неделя, от 19:00  БИЛЕТИ НА КАСА", or the same line as a link to
+    its /site/selector/ id): {(month, day, "HH:MM"): "box" | "online"}. "box" for a line
+    that says "БИЛЕТИ НА КАСА" (or any box-office-only wording), linked or not (skeptic,
+    2026-10-29: a selector link around a line is not an online signal by itself, like the
+    poster's on the stage page); "online" for a line linking a selector that does not say
+    so. The independent signal a first run needs before it marks a performance box
+    office only. {} when the list is not found."""
+    soup = soup_of(html)
+    h = next((x for x in soup.find_all(["h4", "h5", "h6"]) if clean(x.get_text(" ")).upper() == "ПРЕДСТАВЛЕНИЯ"), None)
+    out = {}
+    if h is None:
+        return out
+    for div in h.find_next_siblings("div"):
+        tm = div.find("time")
+        if tm is None:
+            continue
+        m = _SALZA_PLAY_ROW.search(clean(tm.get_text(" ")))
+        mo = bg_month(m.group(2)) if m else None
+        if not mo:
+            continue
+        key = (mo, int(m.group(1)), hhmm(m.group(3)))
+        linked = any(_SALZA_SELECTOR.search(a["href"]) for a in div.select("a[href]"))
+        said = " ".join(clean(div.get_text(" ")).upper().split())
+        if _box_said(said):
+            out[key] = "box"
+        elif linked:
+            out[key] = "online"
+    return out
+
+
+def parse_online_seller(html, own_host):
+    """The online seller a production's own page names for its tickets ("Онлайн
+    билети : www.pricelesstickets.bg", "За онлайн билети е https://…"): the first
+    web address within 160 characters after the phrase "онлайн билет…", before the
+    page's КОНТАКТИ block. A mistyped address ("www.pricelesstickets.b") counts only
+    when the page itself links a host of that name. The page's own link to the host
+    is returned when it has one, else https://<host>/. None when the page names no
+    seller (a contact link alone is not one)."""
+    soup = soup_of(html)
+    text = clean(soup.get_text(" "))
+    links = [a["href"] for a in soup.select("a[href]") if a["href"].startswith(("http://", "https://"))]
+
+    def bare(h):
+        h = h.lower()
+        return h[4:] if h.startswith("www.") else h
+    for m in _ONLINE_PHRASE.finditer(text):
+        window = text[m.end():m.end() + 160].split("КОНТАКТИ")[0]
+        hm = _HOSTISH.search(window)
+        if not hm:
+            continue
+        host = bare(hm.group(1).rstrip("."))
+        if host == own_host or host.endswith("." + own_host):
+            continue
+        if any(host == n or host.endswith("." + n) for n in _NOT_SELLERS):
+            continue
+        name = host.split(".")[0]
+        full = bool(_FULL_HOST.match(host))
+        for u in links:
+            h = bare(urllib.parse.urlparse(u).netloc)
+            if (h == host) if full else (h.split(".")[0] == name and _FULL_HOST.match(h)):
+                return u
+        if full:
+            return f"https://{host}/"
+    return None
+
+
+SALZA_SELECTOR_PAGE = "https://www.salzaismyah.bg/site/selector/{sel}"
+SALZA_SELECTOR_CAP = 12        # selector pages read per run, only for ambiguous cards
+_SALZA_NO_ONLINE = re.compile(r"няма\s+онлайн\s+продажби", re.I)
+_SALZA_SELLS = re.compile(r"добави\s+в\s+кошницата|избор\s+на\s+билети", re.I)
+
+
+def parse_salza_selector_sales(html):
+    """salzaismyah.bg/site/selector/<id>: "box" when it says "(За това представление)
+    няма онлайн продажби" and offers no tickets, "online" when it offers tickets
+    ("ИЗБОР НА БИЛЕТИ" / "ДОБАВИ В КОШНИЦАТА") and does not say so, None otherwise."""
+    text = clean(soup_of(html).get_text(" "))
+    no, sells = bool(_SALZA_NO_ONLINE.search(text)), bool(_SALZA_SELLS.search(text))
+    return "box" if no and not sells else "online" if sells and not no else None
+
+
+def salza_confirm_sales(net, sales, notes, wanted=None, cap=SALZA_SELECTOR_CAP):
+    """Resolve the cards parse_salza_stage_sales left to the selector page ("box?",
+    "online?") in place: "box?" becomes "box" and "online?" "online" only when the
+    selector page agrees; anything else (disagrees, unreadable, past the cap) is
+    undetermined. One GET per selector, only those in `wanted` (the grid's rows) when
+    given, at most `cap` per run."""
+    asked = 0
+    for sel in sorted(sales, key=int):
+        sale, play = sales[sel]
+        if sale not in ("box?", "online?"):
+            continue
+        if wanted is not None and sel not in wanted:
+            sales[sel] = (None, play)
+            continue
+        said, read = None, False
+        if asked < cap:
+            asked += 1
+            try:
+                said = parse_salza_selector_sales(_get(net, SALZA_SELECTOR_PAGE.format(sel=sel)))
+                read = True
+            except Unavailable:
+                notes.append(f"selector page {sel} not read: how its tickets are sold left undetermined")
+        elif asked == cap:
+            asked += 1
+            notes.append(f"more than {cap} ambiguous stage cards: the rest left undetermined")
+        sales[sel] = (sale[:-1] if said == sale[:-1] else None, play)
+        if said is None and read:
+            notes.append(f"selector {sel}: the stage card reads {sale[:-1]}, its selector page "
+                         f"says neither: undetermined")
+        if said and said != sale[:-1]:
+            notes.append(f"selector {sel}: the stage card reads {sale[:-1]}, its selector page {said}: undetermined")
+
+
+def salza_box_office(net, rows, stage_pages, notes, prev_box=None):
+    """Mark each month-grid row with how its tickets are sold (meta "boxoffice"):
+    True when its stage card says "БИЛЕТИ НА КАСА" with no buy link, False when the
+    card has its buy link; unset (undetermined) otherwise. A box-office row also
+    gets "boxoffice_page" (the play page) and "boxoffice_alt": the online seller
+    that page names, if any (https when that seller's site serves https), and
+    "boxoffice_confirmed": whether the play page's own list of performances says
+    "БИЛЕТИ НА КАСА" for it too. A play page that links that performance's selector
+    contradicts the stage page: undetermined. The play page is read once per play; when it cannot
+    be read the row stays undetermined (never guessed). A card whose only link to its
+    selector is a plain one (the poster's) is decided by the selector page
+    (salza_confirm_sales), never by that link alone.
+    prev_box: the (date, time) of the performances last run listed as box office only
+    (BOX_PREV["salzaismyah"] when not given). A row now read online that was one of
+    them is decided by its selector page, the only page that states online sales
+    (skeptic, 2026-10-29: a box-only performance must not be dropped on the stage card
+    or a play-page link alone; it counts toward the selector cap): online only when the
+    selector page offers tickets and its play page, read, does not say "БИЛЕТИ НА КАСА"
+    for it ("boxoffice_confirmed" True then, the independent signal the stage guard in
+    theatre_box_office believes); anything else leaves it undetermined, noted."""
+    if prev_box is None:
+        prev_box = BOX_PREV.get("salzaismyah") or ()
+    prev_box = {tuple(k[:2]) for k in prev_box}
+    sales, boxish = {}, set()
+    for html in stage_pages:
+        sales.update(parse_salza_stage_sales(html, boxish))
+    # cards with box-office wording the stage reading left undetermined: noted per row
+    # below (skeptic, 2026-10-29: a reworded box badge must never be silent)
+    unread_box = {s for s in boxish if sales.get(s, (None,))[0] is None}
+    recheck = set()
+    for r in rows:
+        m = _SALZA_SELECTOR.search(r[3].get("url") or "")
+        if m and (r[1], r[2]) in prev_box and sales.get(m.group(1), (None,))[0] in ("online", "online?"):
+            # box office only last run, online now: its selector page decides
+            recheck.add(m.group(1))
+            sales[m.group(1)] = ("online?", sales[m.group(1)][1])
+    salza_confirm_sales(net, sales, notes, {m.group(1) for r in rows
+                                            if (m := _SALZA_SELECTOR.search(r[3].get("url") or ""))})
+    seller, secure = {}, {}
+
+    def https_if_served(u):
+        # an http:// seller link becomes https:// when the seller's site answers on https
+        # (one GET per host); else it stays as the page wrote it
+        if not u or not u.startswith("http://"):
+            return u
+        su = "https://" + u[len("http://"):]
+        host = urllib.parse.urlparse(su).netloc.lower()
+        if host not in secure:
+            try:
+                secure[host] = net.get(su) is not None
+            except Exception:                          # noqa: BLE001 (any failure: keep http)
+                secure[host] = False
+        return su if secure[host] else u
+    def play_page(play):
+        # (read, its online seller, its own list of performances): one GET per play
+        if play not in seller:
+            try:
+                page = _get(net, play)
+                seller[play] = (True, https_if_served(parse_online_seller(page, "salzaismyah.bg")),
+                                parse_salza_play_sales(page))
+            except Unavailable:
+                seller[play] = (False, None, {})
+                notes.append(f"play page not read ({play}): how its tickets are sold left undetermined")
+        return seller[play]
+    for r in rows:
+        sel = _SALZA_SELECTOR.search(r[3].get("url") or "")
+        sale, play = sales.get(sel.group(1), (None, None)) if sel else (None, None)
+        if sel and sel.group(1) in unread_box and sale is None:
+            notes.append(f"{r[1]} {r[2]}: its stage card says box office in a form not read: undetermined")
+        if sel and sel.group(1) in recheck:
+            # box office only last run, online now: its selector page sells it (sale
+            # "online"), and its play page, read, must not say box office for it
+            if sale != "online":
+                notes.append(f"{r[1]} {r[2]}: box office only last run, the stage page now sells it online, "
+                             f"its selector page does not confirm: undetermined")
+                continue
+            ok, _alt, listed = play_page(play) if play else (False, None, {})
+            said = listed.get((int(r[1][5:7]), int(r[1][8:10]), r[2]))
+            if not ok or said == "box":
+                notes.append(f"{r[1]} {r[2]}: box office only last run, the stage page now sells it online, "
+                             f"{'the play page still says box office' if ok else 'its play page not read'}: undetermined")
+            else:
+                r[3]["boxoffice"] = False
+                r[3]["boxoffice_confirmed"] = True
+        elif sale == "online":
+            r[3]["boxoffice"] = False
+        elif sale == "box" and not play:
+            # box office on the stage card, but no title link to its play page found
+            # (skeptic, 2026-10-29: never dropped silently)
+            notes.append(f"{r[1]} {r[2]}: its stage card says box office, its play page not found: undetermined")
+        elif sale == "box" and play:
+            ok, alt, listed = play_page(play)
+            said = listed.get((int(r[1][5:7]), int(r[1][8:10]), r[2]))
+            if ok and said == "online":
+                # the play page links this performance's selector: the two pages disagree
+                notes.append(f"{r[1]} {r[2]}: the stage page says box office, the play page sells it online: undetermined")
+            elif ok:
+                r[3]["boxoffice"] = True
+                r[3]["boxoffice_page"] = play
+                # the play page's own line for it says "БИЛЕТИ НА КАСА": the independent
+                # signal a first run (no BOXONLY yet) needs (theatre_box_office)
+                r[3]["boxoffice_confirmed"] = said == "box"
+                if alt:
+                    r[3]["boxoffice_alt"] = alt
+
+
 def salza_stage_rows(rows, stages, today, excluded=()):
-    """Put each month-grid row on its stage (meta["stage"]): by its
+    """Put each month-grid row on its stage (meta["stage"], and meta["stage_page"], the
+    /site/events/N number its stage page has in SALZA_STAGE_PAGES order): by its
     /site/selector/ id, else by date and time when only one stage plays then.
     stages: [(stage, events)] from parse_salza_stage; excluded: the grid's
     cancelled entries (the stage pages still list them). Returns (grid rows
     dated after today that no stage page lists, stage-page performances after
     today that the grid does not list)."""
-    by_id, by_slot = {}, defaultdict(set)
-    for stage, events in stages:
+    by_id, by_slot, page_of = {}, defaultdict(set), {}
+    for i, (stage, events) in enumerate(stages):
+        # the stage page's number (/site/events/N): the stable key the box-office stage
+        # guard groups by (theatre_box_office), whatever the heading says
+        n = SALZA_STAGE_PAGES[i] if i < len(SALZA_STAGE_PAGES) else None
         for d, t, sel, _title in events:
             if sel:
                 by_id[sel] = stage
-            by_slot[(d, t)].add(stage)
+                page_of[sel] = n
+            by_slot[(d, t)].add((stage, n))
     t0 = today.isoformat()
     unplaced, slots = [], {(e[1], e[2]) for e in excluded}
     for r in rows:
         slots.add((r[1], r[2]))
         sel = _SALZA_SELECTOR.search(r[3].get("url") or "")
         stage = by_id.get(sel.group(1)) if sel else None
+        n = page_of.get(sel.group(1)) if stage is not None else None
         if stage is None and len(by_slot.get((r[1], r[2]), ())) == 1:
-            stage = next(iter(by_slot[(r[1], r[2])]))
+            stage, n = next(iter(by_slot[(r[1], r[2])]))
         if stage:
             r[3]["stage"] = stage
+            if n is not None:
+                r[3]["stage_page"] = n
         elif r[1] > t0:
             unplaced.append(r)
     unlisted = [(d, t, title, stage) for stage, events in stages for d, t, _s, title in events
@@ -1855,6 +2325,10 @@ LAST_STATUS: dict = {}
 # published.
 HISTORY: dict = {}
 _FETCH_HISTORY = None
+# Last run's BOXONLY performances per venue, {venue: {(date, time)}}: set by the
+# caller (scrape_programs.py, from the build's BOXONLY). salza_box_office checks a
+# performance that turns from box office only to online on its play page too.
+BOX_PREV: dict = {}
 # rows a venue's RESELLER lists, read when its own programme could not be (see
 # fetch_kuklen): never official — fetch_venue returns None — for the caller to
 # show as preliminary. {venue: {"source", "rows", "excluded", "notes"}}

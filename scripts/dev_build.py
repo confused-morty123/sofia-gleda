@@ -7,7 +7,7 @@ This builds index.dev.html instead, with no network and no tokens:
 
   1. build_index.py --out <PATH>               (UI from src/, seed data)
   2. transplant the constants scrape_programs.py writes (SNAPSHOT, SHOWTIMES,
-     PERFORMANCES, LINKS, VLINKS, PRELIM_FROM, PRELIM_ROWS, …, FESTMARK) from the
+     PERFORMANCES, LINKS, VLINKS, PRELIM_FROM, PRELIM_ROWS, BOXONLY, FESTROWS, …, FESTMARK) from the
      committed index.html (git HEAD or REF); a constant the UI source does not
      declare is skipped. A ref from before FESTMARK gets it from that ref's
      build_report.json festival rows, counted the way the scraper counts them
@@ -28,7 +28,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from csp import json_for_script, stamp_file  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent          # webapp/
-SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS", "AGGLINKS", "SHOWATTR", "PREMIERES", "FESTMARK"]
+SCRAPED = ["SNAPSHOT", "SHOWTIMES", "PERFORMANCES", "LINKS", "VLINKS", "PRELIM_FROM", "PRELIM_ROWS", "BOXONLY", "FESTROWS", "AGGLINKS", "SHOWATTR", "PREMIERES", "FESTMARK"]
 
 
 def run(*cmd, env=None):

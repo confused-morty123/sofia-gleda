@@ -177,11 +177,13 @@ VENUE_LINK_ALLOWLIST = {
 # Venues with no (film) programme of their own: the festivals' programmes are
 # their official source (owner, 2026-10-09), so festival screenings there are
 # confirmed — НДК Зала 1, Френски институт, Топлоцентрала's film screenings
-# (toplo-film; `toplo` is the theatre) and Сцена „Централни хали“.
+# (toplo-film; `toplo` is the theatre), Сцена „Централни хали“ and Кино Euro Cinema
+# (euro-cinema, owner 2026-10-29: its own cinema, not G8; the app does not read its
+# regular programme, so its rows are the festivals' screenings there).
 # Every other cinema publishes its own programme (or the app reads none of it, as
 # for Casa Libri): a festival screening there is preliminary until
 # the venue lists it. See merge_festival_rows().
-FESTIVAL_VENUES = ("ndk1", "frenski-institut", "toplo-film", "tsentralni-hali")
+FESTIVAL_VENUES = ("ndk1", "frenski-institut", "toplo-film", "tsentralni-hali", "euro-cinema")
 
 # Regex to extract ticket-specific deep links from venue pages.
 # vlaikova pages embed an urboapp widget; lumiere pages link to epaygo.
@@ -1323,12 +1325,18 @@ def merge_festival_rows(rows, prelim_from, own, fest_rows, fest_cover, prev_fest
         return own.get(v, {}).get((fid, d)) or set()
 
     # 1. last run's festival rows leave first (for a festival with data this run)
+    now_at = defaultdict(set)                     # this run: (festival, fid, date, time) -> venues
+    for fest, rs in fest_rows.items():
+        for fid, v, d, t in rs:
+            now_at[(fest, fid, d, t)].add(v)
     for fest, prev in (prev_fest_rows or {}).items():
         if fest not in fest_rows:
             continue
         for fid, v, d, t in prev:
-            if v in kept_venues:
-                continue                          # a kept venue keeps every previous row
+            if v in kept_venues and not (now_at.get((fest, fid, d, t), set()) - {v}):
+                continue                          # a kept venue keeps every previous row, except
+                # one the festival now files at another venue (a venue told apart, Euro Cinema
+                # from G8, 2026-10-29): that screening moves, it is not doubled
             if t not in own_times(fid, v, d) and (fid, v, d) in cells:
                 cells[(fid, v, d)].discard(t)
     spans = [tuple(c) for c in fest_cover.values() if c and c[0] and c[1]]
@@ -2053,6 +2061,470 @@ def write_prelim_rows(page, prelim_rows):
     if not pf:
         raise KeyError("PRELIM_FROM")
     return page[:pf.end()] + f"\nconst PRELIM_ROWS={lit};" + page[pf.end():]
+
+
+def _http_or_none(u):
+    return u if isinstance(u, str) and u.startswith(("https://", "http://")) else None
+
+
+def theatre_box_office(status, rr_rows, written_rows, prev_entries, prev_rows=(), notes=None, first_run=False):
+    """BOXONLY entries for one theatre: [show, date, time, alt, page] for each written
+    performance the theatre does not sell online (owner, 2026-10-28: such a showing
+    states it instead of offering "Купи билет"). Pure, no network.
+
+    status "official": this run's official rows decide. Their meta "boxoffice" True
+        lists the performance (alt = meta "boxoffice_alt", an online seller the
+        production's own page names; page = meta "boxoffice_page"); False means it
+        is sold online; absent or None (undetermined) keeps last run's entry for
+        that very performance, if it had one.
+    any other status: last run's entries of the performances still written.
+    rr_rows       [(show, date, time, meta, title)] this run's official rows
+    written_rows  this theatre's PERFORMANCES rows as written
+    prev_entries  last run's BOXONLY entries of this theatre
+    prev_rows     last run's PERFORMANCES rows of this theatre ([show, date, time, hall, …])
+    notes         a list the page-wide guard below reports to
+    first_run     no BOXONLY was written before (the build does not declare it): a
+                  performance is marked only when its play page says so too (meta
+                  "boxoffice_confirmed"), never on the stage page's card alone
+    The stage guard: a stage whose determined performances read all box office or all
+    online this run, any number of them, is not believed when last run's comparable
+    rows were a mix or all the other way: a layout change reads one card's signal for
+    every card. Its performances count as undetermined (last run's entries kept, a note
+    written). A stage is keyed on something stable (skeptic, 2026-10-29: a reworded
+    heading must not escape the guard): meta "stage_page" (the theatre's own stage page
+    number) when present, else meta "hall" (an unknown stage, hall None, counts as one).
+    Its comparable rows are last run's rows of the very performances it lists now plus
+    last run's rows on its hall; with none, last run's rows of unknown stage for hall
+    None, and the theatre's rows as a whole when it had BOXONLY entries last run. Never
+    marks a performance without that concrete signal. A performance whose meta
+    "boxoffice_confirmed" is True (its play page's own line agrees with the stage card,
+    either way) is exempt from the guard: two independent pages agree."""
+    from collections import defaultdict
+    on = {tuple(r[:3]) for r in written_rows}
+    prev = {tuple(e[:3]): list(e[:5]) for e in prev_entries if tuple(e[:3]) in on}
+    if status != "official":
+        return sorted(prev.values(), key=lambda e: e[:3])
+    prev_box = {tuple(e[:3]) for e in prev_entries}
+
+    def flag_of(m):
+        m = m or {}
+        f = m.get("boxoffice")
+        if f is True and first_run and m.get("boxoffice_confirmed") is not True:
+            return None
+        return f
+    def group_of(m):
+        m = m or {}
+        sp = m.get("stage_page")
+        return ("page", sp) if sp is not None else ("hall", m.get("hall") or None)
+    by_group, keys_of, halls_of = defaultdict(set), defaultdict(set), defaultdict(set)
+    unconfirmed = defaultdict(int)
+    for sid, d, t, m, _title in rr_rows:
+        if not sid:
+            continue
+        g = group_of(m)
+        keys_of[g].add((sid, d, t))
+        halls_of[g].add((m or {}).get("hall") or None)
+        flag = flag_of(m)
+        if (sid, d, t) in on and flag is not None:
+            by_group[g].add(((sid, d, t), flag))
+            if (m or {}).get("boxoffice_confirmed") is not True:
+                unconfirmed[g] += 1
+    distrust = set()
+    for g, got in by_group.items():
+        flags = {f for _k, f in got}
+        if len(flags) != 1 or not unconfirmed[g]:
+            # a mix, or every row's play page agrees with its card: nothing to distrust
+            continue
+        halls = halls_of[g] - {None}
+        unknown = g == ("hall", None)
+        rows_h = [r for r in prev_rows if tuple(r[:3]) in keys_of[g]
+                  or (len(r) > 3 and (r[3] in halls if r[3] else unknown))]
+        scope = "stage"
+        if not rows_h and unknown:
+            rows_h = list(prev_rows)
+        if not rows_h and prev_box:
+            rows_h, scope = list(prev_rows), "theatre"
+        was = {tuple(r[:3]) in prev_box for r in rows_h}
+        if was and was != flags:
+            distrust.add(g)
+            if notes is not None:
+                name = g[1] if g[0] == "hall" else f"stage page {g[1]}"
+                name = (name or "unknown stage") + (f" ({', '.join(sorted(halls))})" if g[0] == "page" and halls else "")
+                # say what the guard did (skeptic, 2026-10-29): rows confirmed by a second
+                # page are exempt and believed, never "kept"
+                conf = len(got) - unconfirmed[g]
+                notes.append(f"box office: {name} reads all {'box office' if True in flags else 'online'} "
+                             f"({len(got)} performance(s)) after {'a mix' if len(was) == 2 else 'all the other way'} "
+                             f"last run{' (the theatre as a whole)' if scope == 'theatre' else ''}: "
+                             f"{unconfirmed[g]} unconfirmed left undetermined, last run's entries kept"
+                             + (f"; {conf} confirmed by a second page of the theatre believed" if conf else ""))
+    out, decided = {}, set()
+    for sid, d, t, m, _title in rr_rows:
+        key = (sid, d, t)
+        if not sid or key not in on:
+            continue
+        flag = flag_of(m)
+        if group_of(m) in distrust and (m or {}).get("boxoffice_confirmed") is not True:
+            # a second page of the theatre's own agrees with the card (the play page's
+            # line for it): believed whatever the rest of its stage reads, so the guard
+            # never re-confirms its own earlier output (skeptic, 2026-10-29)
+            flag = None
+        if flag is True:
+            out[key] = [sid, d, t, _http_or_none(m.get("boxoffice_alt")), _http_or_none(m.get("boxoffice_page"))]
+        if flag is not None:
+            decided.add(key)
+    for key, e in prev.items():
+        if key not in decided and key not in out:
+            out[key] = e
+    return sorted(out.values(), key=lambda e: e[:3])
+
+
+def read_boxonly(page, undeclared=()):
+    """Last run's BOXONLY entries [[show, date, time, alt, page]] (`undeclared`, [] by
+    default, when the build does not declare it: pass None to tell a first run apart)."""
+    m = re.search(r"^const BOXONLY\s*=\s*(\[[^\n]*?\]);[ \t]*$", page, re.M)
+    if not m:
+        return list(undeclared) if undeclared is not None else None
+    try:
+        v = json.loads(m.group(1))
+    except ValueError:
+        return []
+    return [list(x[:5]) + [None] * (5 - len(x[:5])) for x in v
+            if isinstance(x, list) and len(x) >= 3 and all(isinstance(y, str) for y in x[:3])] \
+        if isinstance(v, list) else []
+
+
+def write_boxonly(page, entries):
+    """Replace `const BOXONLY=[…];` in the SOFIA-DATA block, or insert it on the line
+    after `const PRELIM_ROWS=…;` when the build does not declare it yet."""
+    lit = json_for_script(sorted(entries, key=lambda e: e[:3]))
+    m = re.search(r"^const BOXONLY\s*=\s*\[[^\n]*?\];[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const BOXONLY={lit};" + page[m.end():]
+    pr = re.search(r"^const PRELIM_ROWS\s*=[^\n]*;[ \t]*$", page, re.M)
+    if not pr:
+        raise KeyError("PRELIM_ROWS")
+    return page[:pr.end()] + f"\nconst BOXONLY={lit};" + page[pr.end():]
+
+
+def box_office_cinemas(booking):
+    """The cinemas whose own (regular) programme sells only at the box office:
+    BOOKING[venueId].inPerson (Одеон, G8). Festival screenings there are sold online."""
+    return sorted(v for v, b in (booking or {}).items() if isinstance(b, dict) and b.get("inPerson"))
+
+
+def fest_sale_venues(booking):
+    """The cinemas FESTROWS covers: the box-office-only ones (BOOKING inPerson: Одеон, G8)
+    and those whose BOOKING says `festival` (the app lists only the festivals' screenings
+    there, each sold online by the festival: Euro Cinema, owner 2026-10-29)."""
+    return sorted(v for v, b in (booking or {}).items()
+                  if isinstance(b, dict) and (b.get("inPerson") or b.get("festival")))
+
+
+def _fest_sale_url(url):
+    """A festival screening's online sale link: its ticket shop or the festival's own
+    page (official_festivals.TICKET_HOSTS), never the venue's box-office page."""
+    h = _host(url) if isinstance(url, str) and url.startswith(("https://", "http://")) else ""
+    return url if h and any(h == t or h.endswith("." + t) for t in OF.TICKET_HOSTS) else None
+
+
+def box_office_festival_rows(fest_info, screens, rows, venues):
+    """FESTROWS: [fid, venue, date, time, festival, url] for each festival screening
+    shown at a box-office-only cinema (owner, 2026-10-28: Одеон and G8 sell their
+    own programme at the box office, the festivals held there sell online) or at a
+    festival cinema (BOOKING festival: Euro Cinema, 2026-10-29). Pure.
+    fest_info  merge_festival_rows' info ([festival, fid, venue, date, time] records)
+    screens    [(fid, venue, date, time, ticket, film page)] this run's festival rows
+    rows       the final SHOWTIMES
+    venues     fest_sale_venues(BOOKING)
+    url: that screening's own ticket page, else the festival's film page (which lists
+    every date with its buy button), else None. A row the venue lists at another time
+    than the festival ("contradicted": Одеон 20:00, CineLibri 20:30 the same evening)
+    is that festival screening when the venue shows the film exactly once that day."""
+    from collections import defaultdict
+    venues = set(venues)
+    shown = defaultdict(set)
+    for r in rows:
+        if r[1] in venues:
+            shown[(r[0], r[1], r[2])].update(r[3])
+    sale = {}
+    for fid, v, d, t, ticket, page in screens:
+        sale[(fid, v, d, t)] = _fest_sale_url(ticket) or _fest_sale_url(page) or sale.get((fid, v, d, t))
+    out = {}
+    for k in ("confirmed", "prelim_row", "prelim_date", "listed"):
+        for fest, fid, v, d, t in fest_info.get(k, []):
+            if v in venues and t in shown.get((fid, v, d), ()):
+                out.setdefault((fid, v, d, t), [fid, v, d, t, fest, sale.get((fid, v, d, t))])
+    for fest, fid, v, d, t in fest_info.get("contradicted", []):
+        if v not in venues:
+            continue
+        free = [x for x in shown.get((fid, v, d), ()) if (fid, v, d, x) not in out]
+        if len(shown.get((fid, v, d), ())) == 1 and len(free) == 1:
+            out[(fid, v, d, free[0])] = [fid, v, d, free[0], fest, sale.get((fid, v, d, t))]
+    return sorted(out.values(), key=lambda e: e[:4])
+
+
+# epaygo.bg event pages read per run for the festival screenings at Одеон / G8 (nearest
+# first; the rest keep last run's state), one request at least 3 s apart (netfetch.CRAWL_DELAY)
+EPAYGO_CAP = 40
+EPAYGO_SECONDS = 180
+FEST_SALE_STATES = ("onsale", "soldout", "notyet")
+_EPAYGO_EVENT = re.compile(r"^https://epaygo\.bg/\d+/?$")
+_EP_MONTHS = {m: i + 1 for i, m in enumerate(("яну", "фев", "мар", "апр", "май", "юни", "юли",
+                                               "авг", "сеп", "окт", "ное", "дек"))}
+
+
+def _epaygo_when(html):
+    """An epaygo.bg event page's own date and start time: ("YYYY-MM-DD", "HH:MM", page
+    text, index of "Начален час"), None when the page does not state them."""
+    if not html:
+        return None
+    t = re.sub(r"(?s)<script.*?</script>|<style.*?</style>", " ", html)
+    t = re.sub(r"\s+", " ", _html_unescape(re.sub(r"<[^>]+>", " ", t)))
+    i = t.find("Начален час")
+    if i < 0:
+        return None
+    dm = None
+    for dm in re.finditer(r"\b(\d{1,2}) (яну|фев|мар|апр|май|юни|юли|авг|сеп|окт|ное|дек)[а-я]* (\d{4})\b", t[:i]):
+        pass
+    tm = re.match(r"Начален час\s*:\s*(\d{1,2}):(\d{2})", t[i:])
+    if not dm or not tm:
+        return None
+    return (f"{dm.group(3)}-{_EP_MONTHS[dm.group(2)]:02d}-{int(dm.group(1)):02d}",
+            f"{int(tm.group(1)):02d}:{tm.group(2)}", t, i)
+
+
+def parse_epaygo_sale(html, date, times):
+    """How an epaygo.bg event page says the screening on `date` at one of `times` sells
+    (2026-10-29: "Билети … Избери места" on sale; "В момента няма билети в продажба." when
+    nothing is offered, which says nothing about why). "soldout" (sold-out wording in the
+    tickets block), "notyet" (no tickets on sale, no sold-out wording), "onsale" (a ticket
+    type to choose seats for), None when the page is not that screening's (its date or
+    start time differs) or says none of these. Never guessed."""
+    w = _epaygo_when(html)
+    if not w or w[0] != date or w[1] not in times:
+        return None
+    t, i = w[2], w[3]
+    j = t.find("Описание", i)
+    box = t[i:j if j > i else i + 800]
+    if OF.SOLD_OUT.search(box):
+        return "soldout"
+    if re.search(r"(?i)няма билети в продажба", box):
+        return "notyet"
+    if "Избери места" in box or "Избрани билети" in box:
+        return "onsale"
+    return None
+
+
+_EPAYGO_PLACE_LD = re.compile(r'"location"\s*:\s*\{\s*"@type"\s*:\s*"Place"\s*,\s*"name"\s*:\s*"((?:[^"\\]|\\.)*)"')
+_EPAYGO_PLACE_LABEL = re.compile(r'Място на провеждане</span>\s*<span[^>]*>([^<]+)</span>')
+
+
+def parse_epaygo_place(html):
+    """An epaygo.bg event page's own place name ('Кино "Euro Cinema"', 'Културен център
+    G8'): its schema.org location, else the "Място на провеждане" line. None when the
+    page names none."""
+    if not html:
+        return None
+    m = _EPAYGO_PLACE_LD.search(html)
+    if m:
+        try:
+            name = json.loads('"' + m.group(1) + '"')
+        except ValueError:
+            name = m.group(1).replace('\\"', '"')
+    else:
+        m = _EPAYGO_PLACE_LABEL.search(html)
+        name = _html_unescape(m.group(1)) if m else ""
+    name = re.sub(r"\s+", " ", name or "").strip()
+    return name or None
+
+
+def _html_unescape(s):
+    import html as _h
+    return _h.unescape(s)
+
+
+def read_festrows(page):
+    """Last run's FESTROWS entries ([] when undeclared or unreadable)."""
+    m = re.search(r"^const FESTROWS\s*=\s*(\[[^\n]*?\]);[ \t]*$", page, re.M)
+    try:
+        v = json.loads(m.group(1)) if m else []
+    except ValueError:
+        return []
+    return [x for x in v if isinstance(x, list) and len(x) >= 4] if isinstance(v, list) else []
+
+
+def festival_sale_states(festrows, soldout, fest_info, prev_rows, today, fetch_text, cap=EPAYGO_CAP, notes=None):
+    """FESTROWS with each upcoming screening's sale state appended (7th field): "soldout"
+    when the festival's own page marks it sold out (`soldout`: {(fid, venue, date,
+    festival's time)}, a contradicted venue time mapped as box_office_festival_rows maps
+    it) or its epaygo.bg page says so, "notyet" when that page has no tickets on sale and
+    no sold-out wording, "onsale" when it offers tickets. Otherwise (no epaygo page, a page
+    not read, not that screening's, over the cap, a past date) last run's state for that
+    very row, else None (the app then offers the festival's link as before). The epaygo
+    pages are read nearest first, at most `cap` of them, each URL once.
+    An 8th field is the epaygo page's own place name (parse_epaygo_place) when the page
+    read is that screening's, else last run's for that very row, else None: the ticket
+    shop's word on where the screening is (epaygo_relocations, the gate).
+    A 9th field is the day (YYYY-MM-DD) the sale state was read: `today` when this run
+    read it (the festival's SOLD OUT mark or the epaygo page), else last run's for that
+    very row, None when the state is None. The state is read once per refresh; the
+    seller's page shows live availability (the app keeps "Купи билет" for "onsale").
+    fetch_text(url) -> html | None (the run's polite session)."""
+    from collections import defaultdict
+    prev = {tuple(r[:4]): (r[6] if len(r) > 6 and r[6] in FEST_SALE_STATES else None) for r in prev_rows}
+    prev_place = {tuple(r[:4]): (r[7] if len(r) > 7 and isinstance(r[7], str) and r[7] else None)
+                  for r in prev_rows}
+    prev_read = {tuple(r[:4]): (r[8] if len(r) > 8 and isinstance(r[8], str)
+                                and re.fullmatch(r"\d{4}-\d{2}-\d{2}", r[8]) else None) for r in prev_rows}
+    per_day = defaultdict(list)
+    for r in festrows:
+        per_day[tuple(r[:3])].append(r[3])
+    marked, alt_t = set(soldout), defaultdict(set)
+    for _fest, fid, v, d, tf in (fest_info or {}).get("contradicted", []):
+        ts = per_day.get((fid, v, d), [])
+        if len(ts) == 1:
+            alt_t[(fid, v, d, ts[0])].add(tf)
+            if (fid, v, d, tf) in soldout:
+                marked.add((fid, v, d, ts[0]))
+    cache, asked, out = {}, 0, {}
+    for r in sorted(festrows, key=lambda e: (e[2], e[3], e[0], e[1])):
+        key = tuple(r[:4])
+        state, place = prev.get(key), prev_place.get(key)
+        read = prev_read.get(key) if state else None
+        if r[2] >= today:
+            url = r[5] if len(r) > 5 and isinstance(r[5], str) else ""
+            if key in marked:
+                state, read = "soldout", today
+            elif _EPAYGO_EVENT.match(url):
+                if url not in cache and asked < cap:
+                    asked += 1
+                    try:
+                        cache[url] = fetch_text(url)
+                    except Exception:                  # noqa: BLE001 (keep last run's state)
+                        cache[url] = None
+                    if cache[url] is None and notes is not None:
+                        notes.append(f"epaygo page not read: {url}")
+                times = {r[3]} | alt_t.get(key, set())
+                got = parse_epaygo_sale(cache.get(url), r[2], times)
+                if got:
+                    state, read = got, today
+                w = _epaygo_when(cache.get(url))
+                if w and w[0] == r[2] and w[1] in times:
+                    place = parse_epaygo_place(cache.get(url)) or place
+                if w and (w[0] != r[2] or w[1] not in times):
+                    # the festival linked another screening's page (CineLibri, 2026-10-29: its
+                    # 31 Oct 13:15 row links the 30 Oct 18:15 event): no ticket link for this
+                    # one (the app offers the festival's film page), state unknown
+                    url, state, place, read = None, None, None, None
+                    if notes is not None:
+                        notes.append(f"{r[0]} {r[2]} {r[3]}: its epaygo page is the {w[0]} {w[1]} screening's")
+        row = list(r[:6]) + [None] * (6 - len(r[:6]))
+        if r[2] >= today and url is None and _EPAYGO_EVENT.match(row[5] or ""):
+            row[5] = None
+        out[key] = row + [state, place, read if state else None]
+    return sorted(out.values(), key=lambda e: e[:4])
+
+
+def epaygo_relocations(festrows, venues, own=None, notes=None):
+    """The FESTROWS rows epaygo.bg places at another of `venues` than the one they are
+    filed under (owner, 2026-10-29: CineLibri runs G8 and Euro Cinema at the same hour;
+    the ticket shop's place decides). Pure.
+    festrows  festival_sale_states' rows (8th field: the epaygo page's place name)
+    venues    fest_sale_venues(BOOKING): a row moves only between these
+    own       {venue: {(fid, date): {times}}}: a time the venue's OWN programme lists
+              stays (the venue may run its own screening then); flagged, not moved
+    Returns {(fid, venue, date, time): new venue} for the rows to move; a row whose place
+    names a venue outside `venues`, or that its venue's own programme lists, is only
+    reported in notes."""
+    venues, moves = set(venues), {}
+    for r in festrows:
+        place = r[7] if len(r) > 7 else None
+        dst = OF.epaygo_place_venue(place)
+        if not dst or dst == r[1]:
+            continue
+        key = tuple(r[:4])
+        if dst not in venues:
+            if notes is not None:
+                notes.append(f"{'/'.join(key)}: epaygo places it at {place!r} ({dst}), not moved")
+            continue
+        if r[3] in ((own or {}).get(r[1], {}).get((r[0], r[2])) or ()):
+            if notes is not None:
+                notes.append(f"{'/'.join(key)}: epaygo places it at {place!r} but {r[1]}'s own "
+                             f"programme lists it: kept, without the epaygo link")
+            moves[key] = None
+            continue
+        moves[key] = dst
+    return moves
+
+
+def misplaced_vlinks(vlinks, festrows):
+    """[((fid, venue), url)] of the VLINKS entries that link an epaygo.bg event FESTROWS
+    stores at another venue (its epaygo place, 8th field). Pure."""
+    at = {r[5].rstrip("/"): OF.epaygo_place_venue(r[7]) for r in festrows
+          if len(r) > 7 and r[7] and isinstance(r[5], str)}
+    return sorted((k, u) for k, u in vlinks.items()
+                  if isinstance(u, str) and at.get(u.rstrip("/")) not in (None, k[1]))
+
+
+def apply_epaygo_relocations(moves, festrows, rows, prelim_rows, prelim_from, festival_venues,
+                             floor, own=None):
+    """Move the screenings epaygo_relocations found to their venue. Pure.
+    rows         SHOWTIMES [[fid, venue, date, [times]]]
+    prelim_rows  PRELIM_ROWS [[fid, venue, date]]
+    prelim_from  {venue: first preliminary date} (updated as merge_festival_rows would:
+                 a venue with a programme of its own gets the moved row preliminary per
+                 row on a date its programme covers; a festival venue never)
+    A move to None keeps the row where it is but drops its epaygo link, sale state and
+    place (the other venue's ticket page must not sell it).
+    Returns (festrows, rows, prelim_rows, prelim_from, moved [(fid, from, date, time, to)])."""
+    from collections import defaultdict
+    cells = defaultdict(set)
+    for r in rows:
+        cells[(r[0], r[1], r[2])].update(r[3])
+    pr = {tuple(x) for x in prelim_rows}
+    pf = dict(prelim_from)
+    out_f, moved = {}, []
+    for r in festrows:
+        key = tuple(r[:4])
+        if key not in moves:
+            out_f.setdefault(key, list(r))
+            continue
+        dst = moves[key]
+        fid, src, d, t = key
+        if dst is None:
+            out_f[key] = list(r[:5]) + [None, None, None, None]
+            continue
+        cells[(fid, src, d)].discard(t)
+        if not cells[(fid, src, d)]:
+            pr.discard((fid, src, d))
+        cells[(fid, dst, d)].add(t)
+        if dst not in festival_venues and t not in ((own or {}).get(dst, {}).get((fid, d)) or ()):
+            if not pf.get(dst):
+                pf[dst] = floor
+            if d < pf[dst]:
+                pr.add((fid, dst, d))
+        nk = (fid, dst, d, t)
+        out_f[nk] = [fid, dst, d, t] + list(r[4:])
+        moved.append([fid, src, d, t, dst])
+    out_rows = [[f, v, d, sorted(ts)] for (f, v, d), ts in cells.items() if ts]
+    out_rows.sort(key=lambda r: (r[1], r[2], r[0]))
+    return (sorted(out_f.values(), key=lambda e: e[:4]), out_rows,
+            sorted(list(x) for x in pr), pf, moved)
+
+
+def write_festrows(page, entries):
+    """Replace `const FESTROWS=[…];` in the SOFIA-DATA block, or insert it on the line
+    after `const BOXONLY=…;` (else `const PRELIM_ROWS=…;`) when not declared yet."""
+    lit = json_for_script(sorted(entries, key=lambda e: e[:4]))
+    m = re.search(r"^const FESTROWS\s*=\s*\[[^\n]*?\];[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const FESTROWS={lit};" + page[m.end():]
+    pr = (re.search(r"^const BOXONLY\s*=[^\n]*;[ \t]*$", page, re.M)
+          or re.search(r"^const PRELIM_ROWS\s*=[^\n]*;[ \t]*$", page, re.M))
+    if not pr:
+        raise KeyError("PRELIM_ROWS")
+    return page[:pr.end()] + f"\nconst FESTROWS={lit};" + page[pr.end():]
 
 
 def write_agglinks(page, agglinks):
@@ -2812,6 +3284,10 @@ def main():
 
     cinema_ids = list(cinema_kind) or list(CINEMA_ORDER)
     old_prelim = read_prelim_from(src)
+    old_boxonly = read_boxonly(src, None)
+    box_first_run = old_boxonly is None            # no BOXONLY yet: play pages must agree
+    old_boxonly = old_boxonly or []
+    boxonly = []
     prev_stats = previous_official_stats()
     # per venue: the last successful read (official_state.json), what its fetch
     # was refused as (401/403/429/challenge), a self-check it failed this run
@@ -3020,6 +3496,7 @@ def main():
                 own_slots[(vid, d, t)].add(fid)
     fest_errors, fest_report, fest_rows, fest_cover, fest_fresh = {}, {}, {}, {}, {}
     fest_screens, fest_films_used, fest_decisions = [], {}, []
+    fest_soldout = set()                           # (fid, venue, date, time) the festival marks sold out
     for fest in ([] if args.no_festivals else OF.FESTIVALS):
         print(f"festival {fest}")
         prev = prev_fest.get(fest) or {}
@@ -3065,12 +3542,15 @@ def main():
                                                               mint_film, fest)
                 fest_decisions += decisions
                 rows_f = []
+                sold_now = {tuple(x[:4]) for x in res.get("soldout") or []}
                 for title, d, t, vname, ticket in res["screenings"]:
                     kind, vid = OF.venue_id(fest, vname)
                     if kind != "app" or vid not in cinema_ids:
                         continue
                     fid = title_fid[title]
                     rows_f.append((fid, vid, d, t))
+                    if (title, d, t, vname) in sold_now:
+                        fest_soldout.add((fid, vid, d, t))
                     page = (films.get(title) or {}).get("url")
                     fest_screens.append((fid, vid, d, t, ticket, page))
                     fest_films_used.setdefault(fid, (films.get(title) or {}, fest))
@@ -3218,6 +3698,11 @@ def main():
         diff.unreachable.append("theatre.art.bg")
     th_official, secondary, sec_dates = {}, {}, {}
     OT.HISTORY = {v: VS.seen_history(e, today_iso) for v, e in state["venues"].items() if e.get("seen")}
+    # last run's box-office-only performances, so a fetcher can check one that turns
+    # online on a second page of the theatre's own (OT.salza_box_office)
+    OT.BOX_PREV = defaultdict(set)
+    for e in old_boxonly:
+        OT.BOX_PREV[show_index.theatre_of(show_index.canonical(e[0]))].add((e[1], e[2]))
     for v in theatre_ids:
         if v not in OT.FETCHERS:
             continue
@@ -3432,6 +3917,17 @@ def main():
                                                       rr.get("extra_rows", []) if rr else [],
                                                       agg_full, on_stage, existing=th_links)
         _agg_sourced_sids.update(_agg_sids_v)
+        # BOXONLY: the performances this theatre sells only at its box office
+        prev_box = [[show_index.canonical(e[0])] + e[1:] for e in old_boxonly
+                    if show_index.theatre_of(show_index.canonical(e[0])) == v]
+        prev_th_rows = {v: [[show_index.canonical(r[0])] + list(r[1:4]) for r in old_performances
+                            if show_index.theatre_of(show_index.canonical(r[0])) == v]}
+        box_notes = []
+        box_v = theatre_box_office(status, (rr.get("rows", []) + rr.get("extra_rows", [])) if rr else [],
+                                   rows, prev_box, prev_th_rows.get(v, []), box_notes, first_run=box_first_run)
+        for n_ in box_notes:
+            print(f"  ! {v}: {n_}")
+        boxonly += box_v
         cf_ct = [max(cov[0], floor), min(cov[1], end)] if cov else None
         venue_report[v] = {
             "kind": "theatre", "status": status, "source": source, "covered": cf_ct,
@@ -3454,7 +3950,8 @@ def main():
             "kept_rows": info.get("kept"), "kept_policy": pol if status == "unreachable" else None,
             "kept_conflicts": (info.get("conflicts") or [])[:24],
             "secondary": (secondary.get(v) or {}).get("source"),
-            "blocked": [list(b) for b in blocked.get(v) or []]}
+            "blocked": [list(b) for b in blocked.get(v) or []],
+            "box_office_only": [e[:3] for e in box_v], "box_office_notes": box_notes}
     links.update(th_links)
 
     # 5) self-check: inside every covered range the written rows must be exactly
@@ -3658,6 +4155,38 @@ def main():
         print("dry run — index.html untouched")
         return 0
 
+    # FESTROWS: the festival screenings at the box-office-only cinemas (Одеон, G8) and the
+    # festival cinemas (BOOKING festival: Euro Cinema), each sold online by the festival.
+    # Each upcoming one's sale state (sold out / not on sale yet / on sale: the festival's
+    # own mark, else its epaygo page, else last run's, never guessed) and the epaygo page's
+    # own place name. A screening epaygo places at another of those cinemas than the
+    # festival's page said (CineLibri runs G8 and Euro Cinema at the same hour) moves
+    # there, in SHOWTIMES too, before they are written (owner, 2026-10-29).
+    fest_sale_v = fest_sale_venues(read_const_obj(src, "BOOKING"))
+    festrows = box_office_festival_rows(fest_info, fest_screens, new_showtimes, fest_sale_v)
+    sale_notes = []
+    with session.deadline(EPAYGO_SECONDS):
+        festrows = festival_sale_states(festrows, fest_soldout, fest_info, read_festrows(src),
+                                        today_iso, session.text, notes=sale_notes)
+    ep_moves = epaygo_relocations(festrows, fest_sale_v, own, notes=sale_notes)
+    if ep_moves:
+        festrows, new_showtimes, prelim_rows, prelim, ep_moved = apply_epaygo_relocations(
+            ep_moves, festrows, new_showtimes, prelim_rows, prelim, set(FESTIVAL_VENUES), floor, own)
+        fpage = {(s_[0], s_[2], s_[3]): s_[5] for s_ in fest_screens}
+        for fid, _a, d, t_, b in ep_moved:
+            pg = fpage.get((fid, d, t_))
+            if (fid, b) not in vlinks and pg and allowed_festival_link(b, pg):
+                vlinks[(fid, b)] = pg
+        print(f"FESTROWS: {len(ep_moved)} screening(s) moved to the venue epaygo.bg names "
+              f"({', '.join(f'{x[0]} {x[2]} {x[3]} {x[1]}->{x[4]}' for x in ep_moved[:3])})")
+    # a (film, venue) link to an epaygo.bg event that epaygo places at another venue (a
+    # link kept from a run before the venue was told apart) never sells that venue's rows
+    for k_, u_ in misplaced_vlinks(vlinks, festrows):
+        vlinks.pop(k_, None)
+        sale_notes.append(f"VLINKS {k_[0]} {k_[1]}: {u_} is another venue's screening, dropped")
+    for n_ in sale_notes[:5]:
+        print(f"  ! FESTROWS: {n_}")
+
     new_showtimes.sort(key=lambda r: (r[1], r[2], r[0]))
     new_performances.sort(key=lambda r: (r[1], r[2], r[0]))
 
@@ -3750,6 +4279,21 @@ def main():
     out = write_prelim_from(out, prelim)
     # festival screenings a venue's covered programme does not list: per row
     out = write_prelim_rows(out, prelim_rows)
+    # performances a theatre sells only at its box office (no "Купи билет" for them)
+    try:
+        out = write_boxonly(out, boxonly)
+        print(f"wrote BOXONLY: {len(boxonly)} box-office-only performance(s)")
+    except KeyError:
+        print("BOXONLY/PRELIM_ROWS constant not found — skipping BOXONLY update")
+    # festival screenings at the box-office-only cinemas (Одеон, G8) and the festival
+    # cinemas (Euro Cinema): sold online (FESTROWS, computed before SHOWTIMES were written)
+    try:
+        out = write_festrows(out, festrows)
+        print(f"wrote FESTROWS: {len(festrows)} festival screening(s) at box-office-only / festival cinemas "
+              f"({sum(1 for r in festrows if r[6] == 'soldout')} sold out, "
+              f"{sum(1 for r in festrows if r[6] == 'notyet')} not on sale yet)")
+    except KeyError:
+        print("FESTROWS/PRELIM_ROWS constant not found — skipping FESTROWS update")
     # aggregator-sourced links: theatre.art.bg show pages and programata.bg cinema pages
     # (only those that ended up in the published LINKS / VLINKS).
     def _agg_domain_of(url):
