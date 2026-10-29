@@ -1922,8 +1922,12 @@ def legal_checks():
             keys.add(names[arg])
         else:
             fail(f"localStorage key {arg!r} cannot be resolved: name it in a constant and list it in the cookie policy")
-    if re.search(r"document\.cookie\s*=", js):
-        fail("the page sets a cookie, but the cookie policy says it sets none")
+    # the page's only cookie writes are deletions (Max-Age=0: the _ga cookies when the
+    # visitor withdraws consent for statistics); it never sets a cookie of its own
+    for _cw in re.finditer(r"document\.cookie\s*=", js):
+        if "Max-Age=0" not in js[_cw.end():_cw.end() + 60]:
+            fail("the page sets a cookie, but the cookie policy says it sets none")
+            break
     sw = _FILE_ROOT / "sw.js"
     cache = re.search(r'CACHE_VERSION\s*=\s*"([a-z-]+)v\d+"', sw.read_text(encoding="utf-8")) if sw.exists() else None
     for r in ("legal/cookies/", "legal/en/cookies/"):
@@ -1945,8 +1949,52 @@ def legal_checks():
             fail(f"{r}: says {'nothing about' if google else 'that it uses'} Google Fonts, but the pages "
                  f"{'load' if google else 'do not load'} them: run scripts/gen_legal_pages.py")
 
-    # the same Content-Security-Policy as the app
+    # Google Analytics 4: the page, the policies and site_config.py agree (on or off)
+    try:
+        from site_config import ga_measurement_id
+        want_ga = ga_measurement_id()
+    except (ImportError, ValueError) as _ga_err:
+        want_ga = None
+        fail(f"GA Measurement ID: {_ga_err}")
+    import csp as _csp_ga                                            # noqa: E402
+    have_ga = _csp_ga.ga_id_of(src)
+    if want_ga is not None and have_ga != want_ga:
+        fail(f"Google Analytics: scripts/site_config.py says {want_ga or 'off'}, the page was built with "
+             f"{have_ga or 'none'}: rebuild (dev_build.py / build_index.py, gen_share_pages.py, "
+             "gen_legal_pages.py, csp.py)")
+    if have_ga:
+        if "googletagmanager.com/gtag/js" not in js or 'consentRun("stats",gaStart)' not in js:
+            fail("Google Analytics: the page has the GA bootstrap but no consent-gated loader")
+        if re.search(r'<script[^>]+src="[^"]*googletagmanager', src):
+            fail("Google Analytics: gtag.js is in the page's markup: it may only load after consent")
+        suffix = have_ga[2:]
+        for r in ("legal/cookies/", "legal/en/cookies/"):
+            for c in ("_ga", f"_ga_{suffix}"):
+                if r in pages and f"<code>{c}</code>" not in pages[r]:
+                    fail(f"{r}: the page loads Google Analytics after consent, but the cookie {c} is not listed: "
+                         "run scripts/gen_legal_pages.py")
+    for r in ("legal/privacy/", "legal/en/privacy/", "legal/cookies/", "legal/en/cookies/"):
+        if r in pages and ("Google Analytics" in pages[r]) != bool(have_ga):
+            fail(f"{r}: {'says nothing about' if have_ga else 'describes'} Google Analytics, but the page "
+                 f"{'uses' if have_ga else 'does not use'} it: run scripts/gen_legal_pages.py")
+    for r, t in pages.items():
+        if "googletagmanager" in t or "SOFIA_GA" in t:
+            fail(f"{r}: loads analytics (the legal pages never do)")
+    _shares = list(_csp_ga.share_pages(_FILE_ROOT))
+    _ga_shares = [sp for sp in _shares if "googletagmanager" in sp.read_text(encoding="utf-8")]
+    if _ga_shares:
+        fail(f"{len(_ga_shares)} share page(s) load analytics, e.g. {_ga_shares[0].parent.name}: they never do")
+    sw_text = sw.read_text(encoding="utf-8") if sw.exists() else ""
+    if have_ga and sw.exists() and "google-analytics.com" not in sw_text:
+        fail("sw.js does not leave Google's analytics requests alone (they must never be cached)")
+
+    # the same Content-Security-Policy as the app (a legal page may leave out the GA4
+    # sources: it never loads analytics)
     main_csp = _csp_of(src)
+    if main_csp and have_ga:
+        for _d, _v in _csp_ga.GA_SOURCES.items():
+            if _d in main_csp:
+                main_csp[_d] = main_csp[_d] - set(_v.split())
     for r, t in pages.items():
         csp = _csp_of(t)
         if main_csp is None and csp is None:
@@ -1999,6 +2047,12 @@ def smoke():
             ctx.add_init_script("window.__cspv=[];document.addEventListener("
                                 "'securitypolicyviolation',function(e){window.__cspv.push("
                                 "e.violatedDirective+' '+(e.blockedURI||'')+' '+(e.sample||''))},true);")
+            # Google Analytics may load only after consent, and this journey refuses it: any
+            # request to Google's analytics hosts fails the gate (and is never let through)
+            google_hits = []
+            ctx.route(re.compile(r"^https?://([^/]*\.)?(googletagmanager\.com|google-analytics\.com|"
+                                 r"analytics\.google\.com)(/|$)"),
+                      lambda route: (google_hits.append(route.request.url), route.abort()))
             page = ctx.new_page()
             errs = []
             page.on("pageerror", lambda e: errs.append(str(e)))
@@ -2010,17 +2064,21 @@ def smoke():
             if page.query_selector("[data-onb-skip]"):
                 page.click("[data-onb-skip]")
             page.wait_for_selector(".bar", timeout=20000)
-            # a first visit: the cookie notice is up, and "Разбрах" closes it and keeps the choice
+            # a first visit: the cookie notice is up, and "Разбрах" (with analytics on:
+            # "Само необходимите") closes it and keeps the choice
             if re.search(r'(?m)^const CONSENT_VERSION="', js):
-                if not page.is_visible("#sg-consent [data-consent-ok]"):
+                close = "#sg-consent [data-consent-none]" if "/* SOFIA-GA */" in js else "#sg-consent [data-consent-ok]"
+                if not page.is_visible(close):
                     fail(f"[{tz}] the cookie notice did not show on a first visit")
                 else:
-                    page.click("#sg-consent [data-consent-ok]")
+                    page.click(close)
                     page.wait_for_timeout(200)
                     if (page.is_visible("#sg-consent")
                             or not page.evaluate("!!localStorage.getItem('sofia-consent')")):
                         fail(f"[{tz}] the cookie notice's button did not close it and keep the choice")
             cards = page.query_selector_all("[data-film]")
+            if google_hits:
+                fail(f"[{tz}] the page contacted Google Analytics without consent: {google_hits[0][:80]}")
             if not cards:
                 fail(f"[{tz}] no film cards rendered")
             else:

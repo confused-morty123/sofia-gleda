@@ -45,6 +45,45 @@ DIRECTIVES = [
     ("upgrade-insecure-requests", ""),
 ]
 
+# Google Analytics 4 (scripts/site_config.py GA_MEASUREMENT_ID): only an app page that
+# carries the GA bootstrap script (SOFIA-GA, written by build_index.py while an ID is set)
+# gets these sources, added to the directives above. gtag.js comes from Google Tag
+# Manager's host; the hits go to the regional collection hosts. Share pages and legal pages
+# never load analytics, so they never get them. The policy follows the page itself: a page
+# built without the bootstrap keeps today's policy whatever the config says (verify_build.py
+# fails when the two disagree).
+GA_SOURCES = {
+    "script-src": "https://www.googletagmanager.com",
+    "connect-src": "https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
+    "img-src": "https://*.google-analytics.com https://www.googletagmanager.com",
+}
+GA_MARK = "/* SOFIA-GA */"
+GA_ID_IN_PAGE = re.compile(r'window\.SOFIA_GA="(G-[A-Z0-9]{4,16})";')
+
+
+def ga_bootstrap(ga_id):
+    """The inline GA bootstrap for <head>: Consent Mode v2 defaults, every storage denied,
+    set before anything else can load, and the Measurement ID for the app. It loads
+    nothing: the app adds gtag.js only after the visitor turns "Статистика" on."""
+    if not re.fullmatch(r"G-[A-Z0-9]{4,16}", ga_id or ""):
+        raise CSPError(f"not a GA4 Measurement ID: {ga_id!r}")
+    return (f"<script>{GA_MARK}window.dataLayer=window.dataLayer||[];"
+            "window.gtag=function(){window.dataLayer.push(arguments);};"
+            'window.gtag("consent","default",{ad_storage:"denied",ad_user_data:"denied",'
+            'ad_personalization:"denied",analytics_storage:"denied"});'
+            'window.gtag("set","ads_data_redaction",true);'
+            f'window.SOFIA_GA="{ga_id}";</script>\n')
+
+
+def ga_id_of(html):
+    """The Measurement ID of the page's GA bootstrap, "" when it has none."""
+    for s in inline_scripts(html):
+        if s.strip().startswith(GA_MARK):
+            m = GA_ID_IN_PAGE.search(s)
+            return m.group(1) if m else ""
+    return ""
+
+
 # The inline scripts of index.html, by how their text starts. Each may appear once.
 # (prefix, required suffix or None)
 PAGE_SCRIPTS = [
@@ -54,6 +93,7 @@ PAGE_SCRIPTS = [
     ("/* SOFIA-APP */", None),
     ("/* SOFIA-SW */", None),
     ("/* SOFIA-BASE */", None),                  # puts in <base href="/"> (not on a file:// preview)
+    (GA_MARK, None),                             # Consent Mode defaults + the GA4 ID (only while one is set)
 ]
 # A share page (film/<id>/, show/<id>/) has exactly one: the script gen_share_pages.py
 # writes, whatever it does (today a redirect into the app), marked by its first line.
@@ -99,11 +139,23 @@ def sha256(text):
     return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
 
 
-def policy(hashes):
-    parts = []
+def directives(analytics=False):
+    """DIRECTIVES, with the GA4 sources added when the page carries the GA bootstrap."""
+    out = []
     for name, value in DIRECTIVES:
+        if analytics and name in GA_SOURCES and name != "script-src":
+            value = f"{value} {GA_SOURCES[name]}"
+        out.append((name, value))
+    return out
+
+
+def policy(hashes, analytics=False):
+    parts = []
+    for name, value in directives(analytics):
         if name == "script-src":
             value = " ".join(hashes) if hashes else "'none'"
+            if analytics:
+                value += " " + GA_SOURCES["script-src"]
         parts.append(f"{name} {value}".strip())
     return "; ".join(parts)
 
@@ -154,7 +206,8 @@ def stamp(html, kind="page", strict=True):
         if problems:
             raise CSPError("; ".join(problems))
     hashes = sorted(set(sha256(s) for s in scripts))
-    meta = f'<meta http-equiv="Content-Security-Policy" content="{policy(hashes)}">\n'
+    analytics = kind == "page" and bool(ga_id_of(html))
+    meta = f'<meta http-equiv="Content-Security-Policy" content="{policy(hashes, analytics)}">\n'
     html = META_RE.sub("", html)
     m = CHARSET_RE.search(html)
     if m:
@@ -196,14 +249,20 @@ def check(html, kind="page"):
             name, _, value = part.partition(" ")
             got[name] = value.strip()
     scripts = inline_scripts(html)
+    analytics = kind == "page" and bool(ga_id_of(html))
     want_hashes = sorted(set(sha256(s) for s in scripts))
-    have_hashes = sorted(got.get("script-src", "").split())
+    have_hashes = sorted(t for t in got.get("script-src", "").split()
+                         if not (analytics and t == GA_SOURCES["script-src"]))
+    if analytics and GA_SOURCES["script-src"] not in got.get("script-src", "").split():
+        problems.append(f"script-src lacks {GA_SOURCES['script-src']}, which the page's GA bootstrap needs")
+    if not analytics and GA_SOURCES["script-src"] in got.get("script-src", "").split():
+        problems.append(f"script-src allows {GA_SOURCES['script-src']}, but the page has no GA bootstrap")
     if have_hashes != (want_hashes or ["'none'"]):
         stale = sorted(set(have_hashes) - set(want_hashes))
         missing = sorted(set(want_hashes) - set(have_hashes))
         problems.append(f"script-src does not match the inline scripts ({len(missing)} not allowed, "
                         f"{len(stale)} stale): run scripts/csp.py after the last edit")
-    for name, value in DIRECTIVES:
+    for name, value in directives(analytics):
         if name == "script-src":
             continue
         if got.get(name) != value:
