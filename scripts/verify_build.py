@@ -2057,7 +2057,8 @@ def smoke():
             # BOOKING inPerson or festival cinema render their time panel as the rule says: a
             # box-office-only one with the stub, no "Купи билет", and its site line and
             # calendar link never a ticket seller's page; a festival screening there
-            # with "Купи билет" (owner, 2026-10-28)
+            # with "Купи билет" (owner, 2026-10-28), unless FESTROWS says sold out, not on
+            # sale yet, or gives it no ticket link of its own ("via": the festival's page)
             if tz == "Europe/Sofia":
                 _bo_bad = page.evaluate("""(sellers)=>{
                   if(typeof screeningSheetHtml!=="function")return ["screeningSheetHtml is missing"];
@@ -2066,6 +2067,9 @@ def smoke():
                   const FRA=(typeof FESTROWS!=="undefined"&&Array.isArray(FESTROWS))?FESTROWS:[];
                   const FR=new Set(FRA.map(r=>r.slice(0,4).join('|')));
                   const SHUT=new Map(FRA.filter(r=>r[6]==='soldout'||r[6]==='notyet').map(r=>[r.slice(0,4).join('|'),r[6]]));
+                  // a FESTROWS row with no ticket link of its own (url null): "via", the
+                  // festival's page as a quiet link, never "Купи билет" (2026-10-29)
+                  FRA.forEach(r=>{const k=r.slice(0,4).join('|');if(!SHUT.has(k)&&r.length>5&&!r[5]&&festSaleVenue(r[1]))SHUT.set(k,'via');});
                   const VL=(typeof VLINKS!=="undefined"&&Array.isArray(VLINKS))?VLINKS:[];
                   const out=[], probe=(k,id,v,d,t)=>{const el=document.createElement('div');
                     el.innerHTML=screeningSheetHtml(k,id,v,d,t);
