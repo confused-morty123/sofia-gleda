@@ -27,11 +27,11 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 172/225 ok, 53 missing IMDb ratings"
+  "message": "OMDb: 183/238 ok, 55 missing IMDb ratings"
  },
  {
   "level": "ok",
   "venue": "theatre-posters",
-  "message": "theatre posters: 495/502 upcoming shows have a poster; recently missing: clean-girl-fat-festival, dobroto-tyalo, igra-na-kotki, insomniya, karnaval, poema-za-hlebarkite, tatul"
+  "message": "theatre posters: 498/504 upcoming shows have a poster; recently missing: clean-girl-fat-festival, dobroto-tyalo, igra-na-kotki, karnaval, poema-za-hlebarkite, tatul"
  }
 ]

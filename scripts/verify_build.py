@@ -1159,6 +1159,77 @@ if isinstance(_tart, dict):
         fail(f"TMDBART has {len(_nb_bad)} Bulgarian name(s) that are not Bulgarian Cyrillic: " + "; ".join(_nb_bad[:4]))
     if _tr_n:
         note(f"{_tr_n} film(s) carry a trailer (TMDBART v)")
+
+# ------------------------------------------- 5a4. a TMDB match is the venue's film
+# 2026-10-28: „ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА“ (Влайкова, a 2026 documentary) shipped
+# with The Departed's poster and IMDb 8.5; twelve more same-title matches (Обич ->
+# Loving, Диаманти -> a Bond film, Звярът -> Beast 2022…) had shipped for weeks.
+# A shipped match (TMDBART) fails the gate when
+#   - the venue's own facts contradict it (fetch_tmdb.contradiction: year beyond
+#     MAX_YEAR_GAP, runtime, documentary vs fiction, director, IMDb id);
+#   - (reported only, never failed: a re-release looks the same) the film premieres
+#     now (PREMIERES) but TMDB's film is more than three years older, and nothing
+#     the venue prints dates the film;
+#   - it was found on part of a Bulgarian title (tmdb_films.json via "bg-BG": the
+#     query lost words such as "ЕВЕРЕСТ:") that TMDB's own title does not carry,
+#     with no venue year (±1) to confirm it.
+_tart4 = _tart if isinstance(_tart, dict) else (_const_obj_tr("TMDBART") or {})
+if _tart4:
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import fetch_tmdb as _FT                                   # noqa: E402
+        from film_identity import title_year as _title_year, strip_prefix as _strip_prefix  # noqa: E402
+    except BaseException as _e:                                    # pragma: no cover
+        _FT = None
+        note(f"5a4 skipped: cannot import fetch_tmdb ({_e})")
+    if _FT:
+        _films4 = {f.get("id"): f for f in (data.get("FILMS") or []) if isinstance(f, dict)}
+        _fi4 = _const_obj_tr("FILMINFO") or {}
+        _prem4 = _const_obj_tr("PREMIERES") or {}
+        _urls4 = {}
+        for _cn in ("LINKS", "VLINKS"):
+            for _row in (const(_cn) or []):
+                if isinstance(_row, list) and len(_row) >= 2 and isinstance(_row[-1], str):
+                    _urls4.setdefault(_row[0], []).append(_row[-1])
+        try:
+            _side4 = json.loads((_FILE_ROOT / "tmdb_films.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _side4 = {}
+        _id_bad4, _id_warn4 = [], []
+        for _k, _r in _tart4.items():
+            if not isinstance(_r, dict) or _k not in _films4:
+                continue
+            _f, _fi = _films4[_k], (_fi4.get(_k) or {})
+            _sd = _side4.get(_k) if isinstance(_side4.get(_k), dict) else {}
+            _cand = {"tmdb_year": _r.get("y"), "runtime": _r.get("rn"), "genres": _r.get("g"),
+                     "dir": _r.get("dir"), "nb": _r.get("nb"), "imdb_id": _sd.get("imdb_id")}
+            _facts = _FT.venue_facts(_f, _fi, _urls4.get(_k))
+            _why = _FT.contradiction(_facts, _cand)
+            _own_y = _facts.get("year") or _title_year(_f.get("bg") or "")
+            _ty = int(_r["y"]) if str(_r.get("y") or "").isdigit() else None
+            _pd = [d for d in (_prem4.get("film:" + _k) or []) if isinstance(d, str) and d[:4].isdigit()]
+            # A premiere date with an old TMDB film is only a hint: a re-release
+            # (Cinema City dates one as a premiere and may print no year) is the old
+            # film, and fetch_tmdb cannot apply this rule, so it would block every
+            # refresh until someone blocklists a correct match. It is reported, not failed.
+            if not _why and _ty and _pd and _ty < int(min(_pd)[:4]) - 3 and not (
+                    _own_y and abs(int(_own_y) - _ty) <= _FT.MAX_YEAR_GAP):
+                _id_warn4.append(f"{_k} -> {_r.get('en') or '?'} ({_ty}): premieres {min(_pd)}, "
+                                 "and the venue prints no year")
+            if not _why and _sd.get("via") == "bg-BG" and _sd.get("q"):
+                _lost = _FT.stripped_words(_strip_prefix(_f.get("bg") or ""), _sd["q"])
+                if _lost and not _FT.keeps_dropped({"title": _sd.get("tbg"), "original_title": _sd.get("original_title")},
+                                                   _lost) and not (_own_y and _ty and abs(int(_own_y) - _ty) <= 1):
+                    _why = (f"found as {_sd['q']!r}, part of the title: TMDB's title has no "
+                            f"{', '.join(sorted(_lost))}")
+            if _why:
+                _id_bad4.append(f"{_k} -> {_r.get('en') or '?'} ({_r.get('y') or '?'}): {_why}")
+        if _id_warn4:
+            note(f"5a4 TMDB identity: {len(_id_warn4)} premiering film(s) matched to a much older TMDB film "
+                 "(a re-release, or another film: check, then tmdb_blocklist.json): " + "; ".join(_id_warn4[:5]))
+        if _id_bad4:
+            fail(f"5a4 TMDB identity: {len(_id_bad4)} match(es) the venue contradicts "
+                 "(unmatch them: tmdb_blocklist.json): " + "; ".join(_id_bad4[:5]))
 if "youtube-nocookie.com/embed/" in js:
     if not re.search(r'"https://www\.youtube-nocookie\.com/embed/"', js):
         fail("the trailer iframe must load from https://www.youtube-nocookie.com/embed/ (the CSP's frame-src)")

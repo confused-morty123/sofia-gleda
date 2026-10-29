@@ -1,0 +1,212 @@
+{
+ "_about": "TMDB ids verified to be ANOTHER film than the one the app lists under that id. fetch_tmdb.py drops these ids from every search for the film, so the next refresh cannot match them again; any other TMDB entry can still be matched (and must pass fetch_tmdb.contradiction()). Each was checked against the venue's own film page. Remove an entry only with new evidence.",
+ "blocked": {
+  "diamanti": {
+   "tmdb_ids": [
+    681
+   ],
+   "was": "Diamonds Are Forever (1971)",
+   "is": "Diamanti (IT 2024, dir. Ферзан Йозпетек)",
+   "evidence": "https://programata.bg/kino/filmi/diamanti/",
+   "checked": "2026-10-28"
+  },
+  "edna-istoriya-sinelibri": {
+   "tmdb_ids": [
+    574638
+   ],
+   "was": "Rolling Thunder Revue (2019)",
+   "is": "Una Storia (IT 2026, dir. Анна Фолиета, 107 min)",
+   "evidence": "https://www.cinelibri.com/edna-istoriya/",
+   "checked": "2026-10-28"
+  },
+  "eva": {
+   "tmdb_ids": [
+    1026099
+   ],
+   "was": "Ева (RU 2022, dir. Andrey Burmistrov)",
+   "is": "ЕВА (BG, dir. Мартин Геновски), Киномания 2026 screening with the crew",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/evanbsp-sreshta-s-ekipa-3747.html",
+   "checked": "2026-10-29"
+  },
+  "everest-ot-drugata-strana": {
+   "tmdb_ids": [
+    1422
+   ],
+   "was": "The Departed (2006)",
+   "is": "Everest: The Other Side (USA 2026, documentary)",
+   "evidence": "https://vlaikovacinema.com/screening/еверест-от-другата-страна/",
+   "checked": "2026-10-28"
+  },
+  "goli": {
+   "tmdb_ids": [
+    1740
+   ],
+   "was": "Nackt (2002, Doris Dörrie)",
+   "is": "Naked (UK 1993, dir. Майк Лий, 131 min)",
+   "evidence": "https://programata.bg/kino/filmi/goli/",
+   "checked": "2026-10-28"
+  },
+  "karma": {
+   "tmdb_ids": [
+    396876
+   ],
+   "was": "Карма (MK 2015, dir. Vladimir Mitrevski)",
+   "is": "Карма (dir. Гийом Кане), Киномания 2026",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/karma-3720.html",
+   "checked": "2026-10-29"
+  },
+  "kinomaniya-2026-golishar": {
+   "tmdb_ids": [
+    1626594
+   ],
+   "was": "Nestling (2025, Yana Kadurina)",
+   "is": "Голишар / Nestling (BG 2026, 11-min short, dir. Георги Мартев)",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/golishar-3692.html",
+   "checked": "2026-10-28"
+  },
+  "kinomaniya-nachaloto": {
+   "tmdb_ids": [
+    272
+   ],
+   "was": "Batman Begins (2005)",
+   "is": "Киномания: Началото (BG 2026, 22-min documentary, dir. Борис Мисирков, Георги Богданов)",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/kinomaniya-nachaloto-3706.html",
+   "checked": "2026-10-28"
+  },
+  "krasavitsata-i-zvyara": {
+   "tmdb_ids": [
+    321612
+   ],
+   "was": "Beauty and the Beast (US 2017, dir. Bill Condon)",
+   "is": "La Belle et la Bête (FR 1946, dir. Жан Кокто), Киномания 2026",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/krasavitzata-i-zvyara-3730.html",
+   "checked": "2026-10-29"
+  },
+  "krastnicata": {
+   "tmdb_ids": [
+    1336521
+   ],
+   "was": "The Godmother (2025, 56-min documentary)",
+   "is": "Кръстницата (FR 2025, comedy/crime, 106 min — the app's own record)",
+   "evidence": "src/data.html FILMS",
+   "checked": "2026-10-28"
+  },
+  "les-mis-rables-cinelibri": {
+   "tmdb_ids": [
+    82695
+   ],
+   "was": "Les Misérables (2012, Tom Hooper)",
+   "is": "Les Misérables (FR 2026, dir. Фред Кавайе) — Синелибри's „Клетниците“",
+   "evidence": "https://www.ndk.bg/en/event/kletnicite-sinelibri",
+   "checked": "2026-10-28"
+  },
+  "lyubovta-e-ludost": {
+   "tmdb_ids": [
+    1471382
+   ],
+   "was": "Love Is Merely a Madness (2025)",
+   "is": "FolleMente (IT 2025, dir. Паоло Дженовезе)",
+   "evidence": "https://g8cinema.com/bg/lyubovta-e-ludost",
+   "checked": "2026-10-28"
+  },
+  "muha": {
+   "tmdb_ids": [
+    106080
+   ],
+   "was": "Муха (2008, RU, 90 min)",
+   "is": "МУХА (BG 2025, 26-min short, dir. Слава Миланова)",
+   "evidence": "https://domnakinoto.com/muha-movie7230.html",
+   "checked": "2026-10-28"
+  },
+  "nebesa": {
+   "tmdb_ids": [
+    882294
+   ],
+   "was": "Небеса (1940, USSR)",
+   "is": "Heaven (2002, dir. Том Тиквер, 96 min)",
+   "evidence": "https://domnakinoto.com/nebesa-movie7142.html",
+   "checked": "2026-10-28"
+  },
+  "nevidimo": {
+   "tmdb_ids": [
+    69117
+   ],
+   "was": "Unseen Evil 2 (US 2004, horror)",
+   "is": "НевиДимо (BG documentary, dir. Лиляна Бързева), Киномания 2026",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/nevidimo-3714.html",
+   "checked": "2026-10-29"
+  },
+  "obich": {
+   "tmdb_ids": [
+    339419
+   ],
+   "was": "Loving (2016)",
+   "is": "El ser querido / The Beloved (ES 2026, dir. Родриго Сорогойен)",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/obich-3734.html",
+   "checked": "2026-10-28"
+  },
+  "potop": {
+   "tmdb_ids": [
+    1567441
+   ],
+   "was": "Flood (2025, Martin Gonda)",
+   "is": "Flow (LV/BE/FR 2024, animation, dir. Гинтс Зилбалодис, 84 min)",
+   "evidence": "https://programata.bg/kino/filmi/potop/",
+   "checked": "2026-10-28"
+  },
+  "sentient": {
+   "tmdb_ids": [
+    1595215
+   ],
+   "was": "Sentient (2026, Tony Jones, documentary)",
+   "is": "Sentient (UK 2026, 90-min thriller, dir. Даниел Симпсън)",
+   "evidence": "https://www.cinelibri.com/sentient/",
+   "checked": "2026-10-28"
+  },
+  "srednoshtno-slantse": {
+   "tmdb_ids": [
+    287935
+   ],
+   "was": "Midnight Sun (2014)",
+   "is": "Under the Midnight Sun (BG 2026, 40 min, dir. Венцислав Сариев)",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/srednoshtno-sluntze-3696.html",
+   "checked": "2026-10-28"
+  },
+  "tishina": {
+   "tmdb_ids": [
+    124555
+   ],
+   "was": "Silence (DE/IE 2012, dir. Pat Collins)",
+   "is": "Тишина (BG, dir. Димитър Петков), Киномания 2026 evening for Галин Малакчиев",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/tishina-vecher-za-galin-malakchiev-3733.html",
+   "checked": "2026-10-29"
+  },
+  "yuli": {
+   "tmdb_ids": [
+    1573688
+   ],
+   "was": "Color Theories by Julio Torres (2026)",
+   "is": "Юли / Juli (BG 2026, 50-min documentary, dir. Станислава Айви)",
+   "evidence": "https://www.cinelibri.com/juli/",
+   "checked": "2026-10-28"
+  },
+  "zhozefin": {
+   "tmdb_ids": [
+    199661
+   ],
+   "was": "Joséphine (2013, Agnès Obadia)",
+   "is": "Josephine (US 2026, dir. Бет де Араужо)",
+   "evidence": "https://www.kinomania.bg/bg_BG/film/zhozefin-3748.html",
+   "checked": "2026-10-28"
+  },
+  "zvyarat": {
+   "tmdb_ids": [
+    760741
+   ],
+   "was": "Beast (2022, Baltasar Kormákur)",
+   "is": "The Beast (2026, dir. Renny Harlin, IMDb tt29256561)",
+   "evidence": "https://www.kinoarena.com/bg/movie/zvyarut",
+   "checked": "2026-10-28"
+  }
+ }
+}

@@ -172,6 +172,132 @@ def plausible_year(year, r):
     return g is None or g <= MAX_YEAR_GAP
 
 
+# ── Match acceptance: the venue's own facts against the candidate's ───────────
+# A title can only nominate a candidate. "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА" (Влайкова,
+# a 2026 documentary) became The Departed (2006, BG "От другата страна"), "Обич"
+# (Sorogoyen, 2026) became Loving (2016), "Диаманти" (Özpetek) a Bond film. The
+# venue already says who directed it, how long it runs, whether it is a
+# documentary and, on Cine Grand's links, its IMDb id; a candidate that
+# contradicts any of these is another film, and "no match" (the cinema's own
+# poster) beats a wrong one. Every rule abstains when either side is unknown.
+DOC_GENRE = "Документален"
+MUSIC_GENRE = "Музикален"
+RUNTIME_SLACK = 20            # minutes; venues round, add intermissions, cut credits
+_IMDB_IN_URL_RE = re.compile(r"imdb(tt\d{6,10})", re.I)
+
+
+def _name_tokens(s):
+    """A credit line ('Ферзан Йозпетек', 'Jimmy Chin, E. Chai Vasarhelyi') as
+    rough Latin sound-alike tokens, so the two scripts compare."""
+    from film_identity import _TRANSLIT
+    import unicodedata
+    s = (s or "").lower().replace("ё", "е")
+    s = "".join(_TRANSLIT.get(ch, ch) for ch in s)
+    s = "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
+    for a, b in (("dzh", "j"), ("zh", "j"), ("dj", "j"), ("kh", "h"), ("ph", "f"), ("th", "t"),
+                 ("ck", "k"), ("w", "v"), ("y", "i"), ("q", "k"), ("x", "ks")):
+        s = s.replace(a, b)
+    s = re.sub(r"c(?!h)", "k", s)
+    s = re.sub(r"(.)\1+", r"\1", s)
+    return [t for t in re.split(r"[^a-z]+", s) if len(t) >= 3]
+
+
+def _skeleton(t):
+    """A name token's consonants: Джейкъб Чейс / Jacob Chase -> jkb chs."""
+    return re.sub(r"[aeiou]", "", t)
+
+
+def names_agree(venue, tmdb, bg_names=()):
+    """True when a name in the venue's credit line is one of TMDB's (either script),
+    False when both are known and none is, None when either is missing."""
+    import difflib
+    vt = _name_tokens(venue)
+    tt = _name_tokens(tmdb) + [t for n in bg_names for t in _name_tokens(n)]
+    if not vt or not tt:
+        return None
+    def same(a, b):
+        if a == b or difflib.SequenceMatcher(None, a, b).ratio() >= 0.72:
+            return True
+        sa, sb = _skeleton(a), _skeleton(b)
+        return len(sa) >= 3 and len(sb) >= 3 and difflib.SequenceMatcher(None, sa, sb).ratio() >= 0.8
+    return any(same(a, b) for a in vt for b in tt)
+
+
+def venue_imdb_ids(urls):
+    """IMDb ids a venue carries in its own film links (Cine Grand: /m/zvart-imdbtt29256561)."""
+    return {m.group(1).lower() for u in urls or () for m in _IMDB_IN_URL_RE.finditer(u or "")}
+
+
+def contradiction(facts, cand):
+    """Why a TMDB candidate cannot be the film the venue lists, or None.
+
+    facts: what the venue/curated record says — year, runtime, genres, director,
+           imdb (a set of ids from its links). cand: the candidate as stored in
+           tmdb_films.json — tmdb_year, runtime, genres, dir, nb (BG names),
+           imdb_id. The same rule runs in main() before a match is kept and in
+           verify_build / the regression check over the stored sidecar."""
+    facts, cand = facts or {}, cand or {}
+    if not plausible_year(facts.get("year"), {"release_date": str(cand.get("tmdb_year") or "")}):
+        return f"year {facts.get('year')} vs TMDB {cand.get('tmdb_year')}"
+    ids = {i.lower() for i in facts.get("imdb") or ()}
+    if ids and cand.get("imdb_id") and cand["imdb_id"].lower() not in ids:
+        return f"venue IMDb {'/'.join(sorted(ids))} vs TMDB {cand['imdb_id']}"
+    try:
+        vr, tr = int(facts.get("runtime") or 0), int(cand.get("runtime") or 0)
+    except (TypeError, ValueError):
+        vr = tr = 0
+    vg, tg = set(facts.get("genres") or ()), set(cand.get("genres") or ())
+    # a concert recording is cut to fit a cinema slot (TXT "ACT: TOMORROW": 160 min
+    # on TMDB, 100 at Cinema City), so its runtime proves nothing
+    if (vr > 0 and tr > 0 and MUSIC_GENRE not in tg | vg
+            and abs(vr - tr) > max(RUNTIME_SLACK, 0.25 * max(vr, tr))):
+        return f"runtime {vr} vs TMDB {tr} min"
+    if vg and tg and ((DOC_GENRE in vg) != (DOC_GENRE in tg)) and not (vg & tg):
+        return (f"venue {'a documentary' if DOC_GENRE in vg else ', '.join(sorted(vg))} vs "
+                f"TMDB {', '.join(sorted(tg))}")
+    # nb holds the Bulgarian names of all TMDB's people (cast too): it helps the
+    # director's own name match across scripts, but with no TMDB director there is
+    # nothing to compare (2026-10-29: Топки, TMDB lists its cast and no director, was
+    # failed for "Любомир Печев vs the cast")
+    nb = (cand.get("nb") or {}).values() if isinstance(cand.get("nb"), dict) else ()
+    if cand.get("dir") and names_agree(facts.get("director"), cand.get("dir"), list(nb)) is False:
+        return f"director {facts.get('director')} vs TMDB {cand.get('dir')}"
+    return None
+
+
+def venue_facts(film, fi=None, urls=()):
+    """The facts contradiction() checks, from the film's own record (FILMS: the
+    curated seed or the venue-minted record) and film_info.json (the venue's film
+    page), never from TMDB."""
+    film, fi = film or {}, fi or {}
+    d = film.get("director") or fi.get("dir") or ""
+    return {"year": film.get("year") or fi.get("year"),
+            "runtime": film.get("runtime") or fi.get("runtime"),
+            "genres": film.get("genres") or fi.get("genres") or [],
+            "director": "" if d.strip() in ("", "—", "-") else d,
+            "imdb": venue_imdb_ids(urls)}
+
+
+# Per-film TMDB ids verified to be ANOTHER film (tmdb_blocklist.json, committed):
+# {film id: [tmdb id, …]}. A blocked id is never matched again; any other
+# candidate still is, so a correct entry TMDB adds later is picked up.
+TMDB_BLOCKLIST_PATH = ROOT / "tmdb_blocklist.json"
+
+
+def load_tmdb_blocklist(path=None):
+    try:
+        d = json.load(open(path or TMDB_BLOCKLIST_PATH, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for fid, v in (d.get("blocked") or {}).items() if isinstance(d, dict) else ():
+        ids = v.get("tmdb_ids") if isinstance(v, dict) else v
+        if isinstance(ids, int):
+            ids = [ids]
+        out[fid] = {int(i) for i in ids or () if str(i).isdigit()}
+    return out
+
+
 def title_agrees(r, en):
     """The result's title or original title equals or contains ours (or ours contains it)."""
     ten = norm(en)
@@ -223,13 +349,21 @@ def pick_bg(results, bg, year):
     for r in results:
         rt = cnorm(r.get("title")); ro = cnorm(r.get("original_title"))
         s = 0.0
+        ry = (r.get("release_date") or "")[:4]
         if nb == rt or nb == ro:
             s = 100.0
         elif len(nb) >= 6 and (nb in rt or (rt and rt in nb)):
+            # A title inside another only counts when it is most of it, and a
+            # one-word title never on its own: "Началото" is inside "Батман в
+            # началото", "Една история" inside a Bob Dylan documentary's long BG
+            # title. Then only the venue's year (±1) can confirm it.
+            short, long_ = sorted((nb, rt), key=len)
+            weak = len((bg or "").split()) < 2 or len(short) < 0.5 * len(long_)
+            if weak and not (ry.isdigit() and year and abs(int(ry) - int(year)) <= 1):
+                continue
             s = 60.0
         if not s:
             continue
-        ry = (r.get("release_date") or "")[:4]
         if ry and year and ry == str(year):
             s += 20.0
         s += min(r.get("vote_count", 0), 5000) / 5000.0
@@ -305,6 +439,20 @@ def tmdb_hints(path=None):
             out[fid] = {"original": (g.get("original") or "").strip() or None, "year": yr,
                         "director": g.get("director")}
     return out
+
+
+def stripped_words(title, clean):
+    """Words of the title (3 letters or more) that the decluttered query lost."""
+    have = set(cnorm(w) for w in (clean or "").split())
+    return {cnorm(w) for w in (title or "").split() if len(cnorm(w)) >= 3} - have
+
+
+def keeps_dropped(r, dropped):
+    """The result's own title still carries every word the query lost (Tom & Jerry:
+    "ТОМ И ДЖЕРИ: ЗАБРАНЕНИЯТ КОМПАС" may be found as "ЗАБРАНЕНИЯТ КОМПАС" because
+    its BG title still says "Том и Джери")."""
+    t = cnorm(r.get("title")) + " " + cnorm(r.get("original_title"))
+    return all(w in t for w in dropped)
 
 
 def declutter(title):
@@ -384,13 +532,14 @@ def search_api(params):
     return res
 
 
-def search_en(en, year):
-    """Query TMDB by English title (with, then without, the year) and pick best."""
+def search_en(en, year, blocked=()):
+    """Query TMDB by English title (with, then without, the year) and pick best.
+    Results whose id is blocked for this film (tmdb_blocklist.json) never count."""
     res = search_api({"query": en, "year": year, "include_adult": "false"})
-    results = (res or {}).get("results", [])
+    results = [r for r in (res or {}).get("results", []) if r.get("id") not in blocked]
     if not results:
         res = search_api({"query": en, "include_adult": "false"})
-        results = (res or {}).get("results", [])
+        results = [r for r in (res or {}).get("results", []) if r.get("id") not in blocked]
     return pick(results, en, year)
 
 
@@ -806,6 +955,16 @@ def main():
 
     out = {}
     hints = tmdb_hints()
+    blocked_ids = load_tmdb_blocklist()
+    # Every venue URL per film (LINKS + VLINKS): a Cine Grand link names the IMDb id.
+    film_urls = {}
+    for name in ("LINKS", "VLINKS"):
+        try:
+            for row in (grab(data, name) or []):
+                if isinstance(row, (list, tuple)) and len(row) >= 2 and row[0]:
+                    film_urls.setdefault(row[0], []).append(row[-1])
+        except Exception:
+            pass
     # film_info.json: festival/venue details (title_bg, title_en, original, …).
     # Used as fallback sources for the EN title when FILMS carries nothing.
     film_info: dict = {}
@@ -817,6 +976,8 @@ def main():
         fid = f["id"]
         en, bg, year = f.get("en"), f.get("bg"), f.get("year")
         fi = film_info.get(fid) or {}
+        year = year or fi.get("year")            # the venue's / festival's own page
+        blocked = blocked_ids.get(fid, set())
         # A curated year / original title (film_aliases.json) for a yearless title:
         # search "The Thing" (1982), never the bare "Нещото" that is also the 2011 film.
         hint = hints.get(fid)
@@ -850,6 +1011,7 @@ def main():
         # has them, without ever accepting a loose, fabricated match.
         via_bg = False
         match_source = None   # for the log: bg / original / en
+        match_query = None    # the query that found it (stored as "q": verify_build reads it)
         _search_err0 = SEARCH_ERRORS
         # A festival prefix is not part of the title: search without it from the
         # start ("Хорър Филм Фест: Сиянието" -> "Сиянието").
@@ -860,18 +1022,20 @@ def main():
         _f_en = f.get("en")   # original FILMS.en value before any fallback was applied
         _en_is_original = (not _f_en) and bool(en)
         if en:
-            best = search_en(en, year)
+            best = search_en(en, year, blocked)
             if best:
                 match_source = "original" if _en_is_original else "en"
+                match_query = en
             if not best:
                 # Re-release decoration / Director-prefix clutter blocks the match;
                 # retry with the canonical title (and any year extracted from it).
                 clean, extracted_yr = declutter(en)
                 use_year = extracted_yr if extracted_yr is not None else year
                 if clean and clean.lower() != en.lower():
-                    best = search_en(clean, use_year)
+                    best = search_en(clean, use_year, blocked)
                     if best:
                         match_source = "original" if _en_is_original else "en"
+                        match_query = clean
                         print(f"      (matched after declutter: {en!r} -> {clean!r})")
             # When a year was embedded in the title, REQUIRE the match's release
             # year to be within ±1 so a retrospective can't pick up a remake.
@@ -889,10 +1053,11 @@ def main():
             # Always search with the FULL Bulgarian title first.
             res = search_api({"query": bg, "language": "bg",
                                        "include_adult": "false"})
-            results = (res or {}).get("results", [])
+            results = [r for r in (res or {}).get("results", []) if r.get("id") not in blocked]
             best = pick_bg(results, bg, year)
             if best:
                 match_source = "bg"
+                match_query = bg
             # Fallback: if full title found nothing, try decluttered form
             # (strips "Director: Title (Year)" and festival prefixes).
             clean_bg, extracted_yr_bg = declutter(bg)
@@ -900,10 +1065,22 @@ def main():
                 use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else year
                 res2 = search_api({"query": clean_bg, "language": "bg",
                                             "include_adult": "false"})
-                results2 = (res2 or {}).get("results", [])
+                results2 = [r for r in (res2 or {}).get("results", []) if r.get("id") not in blocked]
                 best = pick_bg(results2, clean_bg, use_year_bg)
+                # The decluttered query lost words that were the title, not clutter:
+                # Влайкова prints every title in capitals, so "ЕВЕРЕСТ:" looked like a
+                # series prefix and "ОТ ДРУГАТА СТРАНА" found The Departed. Such a match
+                # stands only when the result keeps those words or the year confirms it.
+                lost = stripped_words(bg, clean_bg)
+                ry_b = ((best or {}).get("release_date") or "")[:4]
+                if best and lost and not keeps_dropped(best, lost) and not (
+                        use_year_bg and ry_b.isdigit() and abs(int(ry_b) - int(use_year_bg)) <= 1):
+                    print(f"      (bg match rests on part of the title: {clean_bg!r} without "
+                          f"{', '.join(sorted(lost))} — rejected)")
+                    best = None
                 if best:
                     match_source = "bg-BG"
+                    match_query = clean_bg
                     print(f"      (bg matched after declutter: {bg!r} -> {clean_bg!r})")
             else:
                 extracted_yr_bg = None  # full-title matched; no embedded year to enforce
@@ -938,7 +1115,9 @@ def main():
             best = None
         _pv = prev.get(fid) or {}
         if (not best and SEARCH_ERRORS > _search_err0 and _pv.get("matched")
-                and plausible_year(year, {"release_date": str(_pv.get("tmdb_year") or "")})):
+                and _pv.get("tmdb_id") not in blocked
+                and plausible_year(year, {"release_date": str(_pv.get("tmdb_year") or "")})
+                and not contradiction(venue_facts(f, fi, film_urls.get(fid)), _pv)):
             # The search itself failed (TMDB error, not "no results"): keep last run's
             # record rather than blanking the film's poster and details until the next run.
             print(f"[{i+1}/{len(films)}] {fid:24s} search failed — keeping last run's match")
@@ -971,7 +1150,12 @@ def main():
             "tmdb_year": (best.get("release_date") or "")[:4],
             "tmdb_vote": best.get("vote_average"),
             "vote_count": best.get("vote_count"),
+            # how it was found: verify_build re-checks a match found on part of the title
+            "via": match_source,
+            "q": match_query,
         }
+        if via_bg:
+            rec["tbg"] = best.get("title")      # TMDB's Bulgarian title of the match
         # Owner's choice: fill English synopsis/country from TMDB where it exists,
         # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
         # Also fetch director/cast from credits (append_to_response=credits).
@@ -994,6 +1178,21 @@ def main():
             rec["dir"] = dir_
         elif pv.get("dir"):
             rec["dir"] = pv["dir"]
+        # The venue's own facts against the candidate's (contradiction()): a match
+        # whose year, runtime, documentary-ness, director or IMDb id the venue
+        # contradicts is another film. No match keeps the cinema's own poster.
+        # rec carries no imdb_id yet (it is stored further down): pass it here, or the
+        # venue-IMDb rule (Cine Grand's /m/zvart-imdbtt29256561) could never fire.
+        why = contradiction(venue_facts(f, fi, film_urls.get(fid)), dict(rec, imdb_id=imdb_id))
+        if why:
+            print(f"[{i+1}/{len(films)}] {fid:24s} REJECTED {rec['en'] or rec['original_title']} "
+                  f"({rec['tmdb_year']}) id={rec['tmdb_id']}: {why}")
+            out[fid] = {"matched": False, "en": en}
+            img = og_image(links.get(fid))
+            if img:
+                film_links[fid] = img
+                print(f"      og:image -> {img}")
+            continue
         if cast_:
             rec["cast"] = cast_
         elif pv.get("cast"):

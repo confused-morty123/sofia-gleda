@@ -510,11 +510,28 @@ def wave_a1(browser):
         # Save screenshot with search open and results showing
         save_shot(page, wave, "m-search-open")
 
-        # Click clear
+        # The phone header (owner's option 1, 2026-10-25): the search row REPLACES the toggle
+        # row; x (inside the field) clears and keeps typing, "Отказ" closes the search.
+        row = page.evaluate("""() => { const t = document.querySelector('.bar-row-toggle'), s = document.querySelector('.bar-row-search');
+            const vis = e => !!e && e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+            return {toggleShown: vis(t), toggleInert: !!(t && t.inert), searchShown: vis(s),
+                    cancel: (document.querySelector('[data-search-cancel]') || {}).textContent || null}; }""")
+        check("search_replaces_toggle_row", not row["toggleShown"] and row["toggleInert"] and row["searchShown"]
+              and row["cancel"] == "Отказ", f"{row}")
         clear_btn = page.query_selector("[data-qclear-m]")
+        check("clear_x_shown_with_query", bool(clear_btn and clear_btn.is_visible()), "")
         if clear_btn and clear_btn.is_visible():
             clear_btn.click()
             page.wait_for_timeout(300)
+            st = page.evaluate("({q: S.q, open: S.searchOpen, act: document.activeElement && document.activeElement.id})")
+            check("clear_x_clears_and_keeps_typing", st["q"] == "" and st["open"] and st["act"] == "q-m", f"{st}")
+            page.keyboard.type("од")
+            page.wait_for_timeout(400)
+
+        cancel_btn = page.query_selector("[data-search-cancel]")
+        if cancel_btn and cancel_btn.is_visible():
+            cancel_btn.click()
+            page.wait_for_timeout(600)
 
             qm_gone = page.query_selector("#q-m") is None or not page.query_selector("#q-m").is_visible()
             check("qm_cleared", qm_gone, "")
@@ -524,6 +541,11 @@ def wave_a1(browser):
 
             search_open = page.evaluate("S.searchOpen")
             check("searchOpen_false", not search_open, f"S.searchOpen={search_open}")
+            back = page.evaluate("""() => { const t = document.querySelector('.bar-row-toggle');
+                return {shown: !!t && getComputedStyle(t).visibility !== 'hidden' && getComputedStyle(t).opacity === '1', inert: !!(t && t.inert)}; }""")
+            check("cancel_restores_toggle_row", back["shown"] and not back["inert"], f"{back}")
+        else:
+            check("qm_cleared", False, "no visible [data-search-cancel]")
 
         # Open again and press Escape
         btn_again = page.query_selector("[data-search-open]")
@@ -558,9 +580,15 @@ def wave_a1(browser):
         width_match = abs(b0_width - b1_width) <= 1
         check("button_widths_equal", width_match, f"widths={b0_width:.1f}, {b1_width:.1f}")
 
-        b0_height = buttons[0].bounding_box()["height"] if buttons[0].bounding_box() else 0
-        height_ok = b0_height >= 40
-        check("button_height_40", height_ok, f"height={b0_height:.1f}")
+        # the phone toggle (owner's option 1, 2026-10-25) is 44 px tall in all; its buttons are
+        # 36 px with a hit area over the toggle's padding: a tap anywhere in its 44 px hits them
+        hit = page.evaluate("""() => { const seg = document.querySelector('.seg'), b = seg.querySelector('button');
+            const s = seg.getBoundingClientRect(), r = b.getBoundingClientRect(), cx = r.left + r.width / 2;
+            const at = y => { const e = document.elementFromPoint(cx, y); return !!e && e.closest('button') === b; };
+            return {segH: s.height, top: at(s.top + 0.5), bottom: at(s.bottom - 0.5), mid: at(s.top + s.height / 2)}; }""")
+        height_ok = hit["segH"] >= 44 and hit["top"] and hit["bottom"] and hit["mid"]
+        check("button_height_40", height_ok, f"toggle {hit['segH']:.1f}px tall; its top, middle and bottom edge hit the button: "
+              f"{hit['top']}, {hit['mid']}, {hit['bottom']}")
 
         # Check pressed button background. Design phase (owner: Option A, 2026-10-23): the
         # selected segment is a neutral white thumb (--fg); the accent marks the selected day only
@@ -3550,8 +3578,8 @@ def wave_h(browser):
                 check(f"h2_{size_tag}_wrap_open", wrap_w > 100,
                       f".desk-search-wrap maxWidth={wrap_w}px after open (need >100)")
 
-            # Click again to close
-            btn2 = page.query_selector("[data-search-open]")
+            # Click again to close (phones: the magnifier is hidden with the toggle row; "Отказ" closes)
+            btn2 = page.query_selector("[data-search-open]" if w > 760 else "[data-search-cancel]")
             if btn2:
                 btn2.click()
                 page.wait_for_timeout(300)
@@ -3578,6 +3606,7 @@ def wave_h(browser):
         }
         return {
             brand: bb('.brand'),
+            logo: bb('.brand-logo'),
             lang: bb('[data-lang]'),
             seg: bb('.seg'),
             search: bb('[data-search-open]'),
@@ -3589,15 +3618,16 @@ def wave_h(browser):
         check("h3_mobile_logo_centred", abs(cx - lw / 2) <= 4,
               f"brand centre_x={cx:.1f}, expected {lw / 2:.1f}±4 (layout viewport {lw:.0f}px)")
 
-    # lang should be on same row as brand (logo row) — not on same row as seg
-    if mobile_geo["lang"] and mobile_geo["brand"] and mobile_geo["seg"]:
+    # lang should be on same row as brand (logo row) — not on same row as seg; the phone
+    # header (owner's option 1, 2026-10-25) centres it on the logo itself, above the motto
+    if mobile_geo["lang"] and mobile_geo["logo"] and mobile_geo["seg"]:
         lang_cy = mobile_geo["lang"]["y"] + mobile_geo["lang"]["h"] / 2
-        brand_cy = mobile_geo["brand"]["y"] + mobile_geo["brand"]["h"] / 2
+        brand_cy = mobile_geo["logo"]["y"] + mobile_geo["logo"]["h"] / 2
         seg_cy = mobile_geo["seg"]["y"] + mobile_geo["seg"]["h"] / 2
-        lang_on_logo_row = abs(lang_cy - brand_cy) <= 8
+        lang_on_logo_row = abs(lang_cy - brand_cy) <= 1
         lang_not_on_seg_row = abs(lang_cy - seg_cy) > 8
         check("h3_mobile_lang_on_logo_row", lang_on_logo_row,
-              f"lang_cy={lang_cy:.1f}, brand_cy={brand_cy:.1f} (diff={abs(lang_cy-brand_cy):.1f})")
+              f"lang_cy={lang_cy:.1f}, logo_cy={brand_cy:.1f} (diff={abs(lang_cy-brand_cy):.1f})")
         check("h3_mobile_lang_separate_from_controls", lang_not_on_seg_row,
               f"lang_cy={lang_cy:.1f} same row as seg_cy={seg_cy:.1f}")
 
@@ -5219,10 +5249,13 @@ def wave_j(browser, webkit_browser=None):
                     return parseFloat(window.getComputedStyle(wrap).maxWidth) || 0;
                 }"""
             else:
+                # phones (owner's option 1, 2026-10-25): the search row fades in over the
+                # toggle row in place; its opacity in hundredths (0 while not displayed)
                 measure_js = """() => {
                     const row = document.querySelector('.bar-row-search');
                     if (!row) return null;
-                    return row.getBoundingClientRect().height;
+                    const c = getComputedStyle(row);
+                    return c.display === 'none' ? 0 : Math.round(parseFloat(c.opacity) * 100);
                 }"""
 
             # Click to open and sample dimension over ~450ms
@@ -5244,8 +5277,8 @@ def wave_j(browser, webkit_browser=None):
             still_open = page.evaluate("S.searchOpen")
             q_val = page.evaluate("S.q")
 
-            # Click magnifier to close
-            page.evaluate("document.querySelector('[data-search-open]').click()")
+            # Click magnifier to close (phones: "Отказ", the magnifier is hidden with the toggle row)
+            page.evaluate("document.querySelector('%s').click()" % ("[data-search-open]" if is_desktop else "[data-search-cancel]"))
             close_samples = []
             for _ in range(12):
                 val = page.evaluate(measure_js)
@@ -7604,8 +7637,8 @@ def wave_m(browser):
     }""")
 
     if "err" not in state_375:
-        # phones: the search opens in its own row below the toggle, so the toggle is left
-        # exactly as it is (owner's report of 2026-10-15; HF2-A checks it frame by frame)
+        # phones: the search replaces the toggle row and never shrinks the toggle itself
+        # (owner's option 1, 2026-10-25; HF2-A checks it frame by frame)
         check("m1_seg_q_at_375", not state_375["segQ"],
               f"seg-q present on mobile: the toggle must not change while searching on a phone")
         # On mobile the CSS overrides the width to flex, so just confirm no overflow
@@ -13613,7 +13646,8 @@ def _hf_grid_paging(browser, eng):
 
 def _hf_grid_months(browser, eng):
     """G2: when a grid's dates span more than one month, every column header carries the
-    short month (BG "ное", EN "Nov"); a single-month grid shows none."""
+    short month (BG "ное", EN "Nov"); a single-month grid shows it only on the columns
+    outside the current week (DM1, 28 Oct 2026: it used to show none at all)."""
     for lang in ("bg", "en"):
         ctx, page, errs = _hf_open(browser, 1280, 800, False, lang=lang)
         r = page.evaluate("""()=>{const L=T[S.lang];let multi=0,single=0;const bad=[];
@@ -13622,7 +13656,9 @@ def _hf_grid_months(browser, eng):
               const many=new Set(dates.map(x=>x.slice(0,7))).size>1;
               if(many){multi++;for(const th of ths){const m=th.querySelector('small.p3e-gmon');const want=L.monthsShort[parseInt(th.dataset.date.slice(5,7),10)-1];
                 if(!m||m.textContent.trim()!==want){bad.push(kind+':'+id+' '+th.dataset.date+' month='+(m?m.textContent:'none'));break;}}}
-              else{single++;if(ths.some(th=>th.querySelector('small.p3e-gmon')))bad.push(kind+':'+id+' single month shows a month');}};
+              else{single++;for(const th of ths){const m=th.querySelector('small.p3e-gmon'),out=!inThisWeek(th.dataset.date);
+                const want=L.monthsShort[parseInt(th.dataset.date.slice(5,7),10)-1];
+                if(out?(!m||m.textContent.trim()!==want):!!m){bad.push(kind+':'+id+' single month '+th.dataset.date+' month='+(m?m.textContent:'none'));break;}}}};
             for(const f of FILMS){const rows=upcomingRows(SHOWTIMES.filter(r=>r[0]===f.id));if(rows.length)each('film',f.id,sheetFilm(f),rows.map(r=>r[2]));}
             for(const sh of SHOWS){const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));if(ps.length&&thById[sh.theatre])each('show',sh.id,sheetShow(sh),ps.map(p=>p[1]));}
             return {multi,single,bad:bad.slice(0,6),nbad:bad.length,sample:(()=>{for(const sh of SHOWS){const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));
@@ -14029,9 +14065,17 @@ HF2_SEG_REC_JS = r"""(ms)=>{const s=document.querySelector('.seg');const R=windo
   requestAnimationFrame(tick);}"""
 
 
+HF2_ROWS_JS = r"""()=>{const t=document.querySelector('.bar-row-toggle'),s=document.querySelector('.bar-row-search'),
+  c=document.querySelector('[data-search-cancel]');const vis=e=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';
+  return {toggle:vis(t),inert:!!(t&&t.inert),op:t?getComputedStyle(t).opacity:null,search:vis(s),cancel:vis(c)?c.textContent:null};}"""
+
+
 def _hf2_toggle(browser, eng):
-    """Bug 1: on phones opening and closing the search never touches the toggle; desktops
-    keep the collision-based shrink (P3A): icons only when the field would crowd it."""
+    """Bug 1, redone for the owner's option 1 (2026-10-25): on phones the open search REPLACES the
+    toggle row in place (the row hidden and inert, "Отказ" shown) without touching the toggle
+    itself, and "Отказ" brings the row back exactly as it was; desktops keep the collision-based
+    shrink (P3A): icons only when the field would crowd it."""
+    cancel = {"bg": "Отказ", "en": "Cancel"}
     for w, h in ((390, 844), (375, 812)):
         for lang in ("bg", "en"):
             ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang)
@@ -14039,15 +14083,23 @@ def _hf2_toggle(browser, eng):
             s0 = page.evaluate(HF2_SEG_JS)
             for step in ("open", "close"):
                 page.evaluate(HF2_SEG_REC_JS, 650)
-                _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+                _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')" if step == "open"
+                           else "()=>document.querySelector('[data-search-cancel]')")
                 page.wait_for_timeout(750)
                 s1 = page.evaluate(HF2_SEG_JS)
+                rows = page.evaluate(HF2_ROWS_JS)
                 rec = page.evaluate("window.__hf2seg")
                 is_open = page.evaluate("S.searchOpen")
                 labels_ok = all(l["op"] > 0.99 and l["w"] > 10 for l in s1["labels"])
-                ok = s1 == s0 and labels_ok and rec["anims"] == 0 and rec["events"] == 0 and is_open == (step == "open")
+                if step == "open":
+                    rows_ok = not rows["toggle"] and rows["inert"] and rows["search"] and rows["cancel"] == cancel[lang]
+                    seg_ok = s1["cls"] == s0["cls"] and s1["btns"] and len(s1["labels"]) == 2
+                else:
+                    rows_ok = rows["toggle"] and not rows["inert"] and rows["op"] == "1" and not rows["search"] and rows["cancel"] is None
+                    seg_ok = s1 == s0 and labels_ok
+                ok = seg_ok and rows_ok and rec["anims"] == 0 and rec["events"] == 0 and is_open == (step == "open")
                 check(f"{tag}_search_{step}", ok,
-                      f"searchOpen={is_open} class {s0['cls']!r}->{s1['cls']!r} rect {s0['rect']}->{s1['rect']} "
+                      f"searchOpen={is_open} rows {rows} class {s0['cls']!r}->{s1['cls']!r} rect {s0['rect']}->{s1['rect']} "
                       f"buttons {s0['btns']}->{s1['btns']} labels {[(l['txt'], l['op'], l['w']) for l in s1['labels']]} "
                       f"animations sampled={rec['anims']} transition events={rec['events']} ({rec['frames']} frames)")
                 if step == "open" and w == 390 and lang == "bg":
@@ -14175,16 +14227,24 @@ def _hf2_search(browser, eng):
                   f"{len(fr)} frames: scrollY spread {_hf2_spread(fr, 'y')}, header top spread {_hf2_spread(fr, 'h')}, "
                   f"results top spread {_hf2_spread(fr, 'm')}, field replaced in {sum(1 for f in fr if not f['same'])}, "
                   f"header re-created in {sum(1 for f in fr if not f['hdr'])}")
-            # x clears and closes in place: same field and header, the page and the FAB back
-            y_before = page.evaluate("Math.round(scrollY)")
+            # x (inside the field) clears and keeps typing: same field, focused, still open
             _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+            page.wait_for_timeout(400)
+            xs = page.evaluate("""()=>{const qi=document.getElementById('q-m');return {q:S.q,open:S.searchOpen,same:qi===window.__hf2qi,
+              act:document.activeElement===qi,page:!!document.querySelector('#app > main .phead')};}""")
+            check(f"{tag}_x_clears_and_keeps_typing", xs["q"] == "" and xs["open"] and xs["same"] and xs["act"] and xs["page"], f"{xs}")
+            page.keyboard.type(word[:2])
+            page.wait_for_timeout(600)
+            # "Отказ" closes in place: same field and header, the page and the FAB back, the toggle row as it was
+            y_before = page.evaluate("Math.round(scrollY)")
+            _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
             page.wait_for_timeout(700)
             st = page.evaluate("""()=>{const qi=document.getElementById('q-m');const m=document.querySelector('#app > main');
               return {q:S.q,open:S.searchOpen,same:qi===window.__hf2qi,val:qi?qi.value:null,hdr:!!(document.querySelector('#app > header.bar')||{}).__hf2,
                 rowShown:!!qi&&qi.getClientRects().length>0,page:!!m.querySelector('.phead'),fab:!!document.querySelector('.fab'),
                 act:document.activeElement===qi,y:Math.round(scrollY),minH:m.style.minHeight};}""")
             seg1 = page.evaluate(HF2_SEG_JS)
-            check(f"{tag}_clear_restores_page_in_place",
+            check(f"{tag}_cancel_restores_page_in_place",
                   st["q"] == "" and not st["open"] and st["same"] and st["val"] == "" and st["hdr"] and not st["rowShown"]
                   and st["page"] and st["fab"] and not st["act"] and st["minH"] == "" and seg1 == seg0 and abs(st["y"] - y_before) <= 2,
                   f"{st} toggle unchanged={seg1 == seg0}")
@@ -14222,12 +14282,12 @@ def _hf2_search(browser, eng):
         check(f"{tag}_results_still_while_they_change", still and _hf2_spread(fr, "h") <= 0.5 and all(f["same"] and f["act"] and f["hdr"] for f in fr),
               f"cards per letter {seq}; after the first results: scrollY spread {_hf2_spread(after, 'y') if after else None}, "
               f"results top spread {_hf2_spread(after, 'm') if after else None}; header top spread {_hf2_spread(fr, 'h')}")
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
         page.wait_for_timeout(800)
         y1, c1 = page.evaluate("()=>{const m=document.querySelector('#app > main').getBoundingClientRect().top+scrollY;return [Math.round(scrollY),Math.round(scrollY-m)];}")
         hdr = page.evaluate("!!(document.querySelector('#app > header.bar')||{}).__hf2")
-        check(f"{tag}_clear_returns_to_the_page_position", abs(c1 - c0) <= 2 and hdr,
-              f"the screen {c0}px into the listing before the results (page at y={y0}), {c1}px after x (y={y1}); header kept={hdr}")
+        check(f"{tag}_cancel_returns_to_the_page_position", abs(c1 - c0) <= 2 and hdr,
+              f"the screen {c0}px into the listing before the results (page at y={y0}), {c1}px after Отказ (y={y1}); header kept={hdr}")
         check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
         ctx.close()
 
@@ -14439,8 +14499,8 @@ def _hf2_result_sheets(browser, eng):
                       f"y {y_open}->{s3['y']} depth={s3['depth']} field focused={u3['fieldFocused']} results {res['got']}/{res['exp']} for {res['q']!r}")
                 page.wait_for_timeout(450)
         page.evaluate(HF2_KB_DOWN_JS)
-        # then out of the search: a card of the page opens and stays open
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-qclear-m]')")
+        # then out of the search ("Отказ"): a card of the page opens and stays open
+        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
         page.wait_for_timeout(800)
         films = page.evaluate(HF_CANDIDATES_JS, "film")
         if films:
@@ -14557,14 +14617,25 @@ def _hf2_fit(browser, eng):
         found = {}
         found["header_at_top"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > header.bar"])
         found["content_at_top"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > main .phead"])
+        if w <= 760:
+            # the phone header (option 1): the logo row starts 20 px below the inset, the language
+            # button (centred on the logo, 7 px above its top) clear of it too
+            lg = page.evaluate("""()=>{const b=s=>{const e=document.querySelector(s);return e?e.getBoundingClientRect().top:null;};
+                return {logo:b('#app > header.bar .brand-logo'),lang:b('#app > header.bar [data-lang]'),bar:b('#app > header.bar')};}""")
+            check(f"hf2_logo_clears_inset_{name}", lg["logo"] is not None and abs(lg["logo"] - (t + 20)) <= 1
+                  and lg["lang"] is not None and lg["lang"] >= t + 12, f"inset {t}px: {lg} (logo top should be inset + 20)")
         page.evaluate("window.scrollTo(0,1200)")
         page.wait_for_timeout(300)
         found["pinned_controls"] = page.evaluate(HF2_UNSAFE_JS, [t, r, 0, l, "#app > header.bar .bar-row-controls, #app > header.bar .bar-in"])
         found["fab"] = page.evaluate(HF2_UNSAFE_JS, [0, r, b, 0, "#app > .fab"])
         # the pinned header's logo row sits in the status-bar band: an opaque layer above it covers the band
-        band = page.evaluate("""(t)=>{const s=getComputedStyle(document.body,'::before'),h=document.querySelector('#app > header.bar');
-            return {pos:s.position,h:parseFloat(s.height)||0,z:parseInt(s.zIndex)||0,hz:parseInt(getComputedStyle(h).zIndex)||0,bg:s.backgroundColor};}""", t)
-        band_ok = t == 0 or (band["pos"] == "fixed" and abs(band["h"] - t) <= 0.5 and band["z"] > band["hz"] and band["bg"].startswith("rgb(") )
+        # a REAL element (iOS Safari 26 tints its status bar from it, not from a pseudo-element), opaque
+        band = page.evaluate("""(t)=>{const e=document.querySelector('body > .sb-band'),h=document.querySelector('#app > header.bar');
+            if(!e)return {el:false};const s=getComputedStyle(e),r=e.getBoundingClientRect();
+            return {el:true,pos:s.position,top:r.top,w:r.width,h:r.height,z:parseInt(s.zIndex)||0,hz:parseInt(getComputedStyle(h).zIndex)||0,bg:s.backgroundColor,
+              pseudo:getComputedStyle(document.body,'::before').content};}""", t)
+        band_ok = band["el"] and band["pos"] == "fixed" and band["top"] == 0 and band["w"] == w and abs(band["h"] - t) <= 0.5 \
+            and band["z"] > band["hz"] and band["bg"] == "rgb(12, 10, 15)" and band["pseudo"] in ("none", "normal")
         if w > 760:
             found["content_sides"] = page.evaluate(HF2_UNSAFE_JS, [0, r, 0, l, "#app > main .rail .rhead, #app > main .card"])
         _hf_tap_el(page, True, "()=>document.querySelector('.fab')")
@@ -14588,31 +14659,34 @@ def _hf2_fit(browser, eng):
         ctx.close()
 
 
-# ── 6: the search row closes as it opens ──────────────────────────────────────
-HF2_ROW_REC_JS = r"""(ms)=>{const row=document.querySelector('.bar-row-search');const R=window.__hf2row=[];const t0=performance.now();
-  const tick=()=>{const t=performance.now()-t0;R.push([Math.round(t),getComputedStyle(row).display==='none'?0:Math.round(row.getBoundingClientRect().height*10)/10]);
+# ── 6: the search row replaces the toggle row and gives it back ────────────────
+# every frame for ms: the search row's and the toggle row's opacity (0 = not displayed / hidden)
+HF2_ROW_REC_JS = r"""(ms)=>{const row=document.querySelector('.bar-row-search'),tg=document.querySelector('.bar-row-toggle');
+  const R=window.__hf2row=[];const t0=performance.now();
+  const op=e=>{const c=getComputedStyle(e);return c.display==='none'||c.visibility==='hidden'?0:Math.round(parseFloat(c.opacity)*100)/100;};
+  const tick=()=>{const t=performance.now()-t0;R.push([Math.round(t),op(row),op(tg)]);
     if(t<ms)requestAnimationFrame(tick);};requestAnimationFrame(tick);}"""
 
 
-def _hf2_span(samples, full, rising):
-    """(half, end) of a height animation, in ms from its start (the last frame before the
-    height moved), or (None, None)."""
-    moved = (lambda v: v > 0.05) if rising else (lambda v: v < full - 0.05)
-    i = next((k for k, (_, v) in enumerate(samples) if moved(v)), None)
+def _hf2_span(samples, full, rising, k=1):
+    """(half, end) of a fade (value k of each sample, 0..full), in ms from its start (the
+    last frame before it moved), or (None, None)."""
+    moved = (lambda v: v > 0.02) if rising else (lambda v: v < full - 0.02)
+    i = next((n for n, x in enumerate(samples) if moved(x[k])), None)
     if i is None:
         return None, None
     t0 = samples[max(0, i - 1)][0]
-    half = next((t for t, v in samples[i:] if (v >= 0.5 * full if rising else v <= 0.5 * full)), None)
-    # within half a pixel of the end state, both ways (an exact 0 only shows once the row
-    # is display:none again, a frame or two after the transition)
-    end = next((t for t, v in samples[i:] if (v >= full - 0.5 if rising else v <= 0.5)), None)
+    half = next((x[0] for x in samples[i:] if (x[k] >= 0.5 * full if rising else x[k] <= 0.5 * full)), None)
+    end = next((x[0] for x in samples[i:] if (x[k] >= full - 0.02 if rising else x[k] <= 0.02)), None)
     return (half - t0 if half is not None else None), (end - t0 if end is not None else None)
 
 
 def _hf2_search_close(browser, eng):
-    """Item 6: closing mirrors opening (same length, reversed curve), with and without a
-    query, by the magnifier and by x; the header is never rebuilt; reduced motion: instant."""
-    for w, h, how in ((390, 844, "magnifier"), (375, 812, "x")):
+    """Item 6, redone for the owner's option 1 (2026-10-25): the search row fades in over the
+    toggle row as that fades out, and "Отказ" (or Escape) runs the same fade the other way
+    (about the same length); the query is cleared and the page comes back in place, the
+    header never rebuilt; reduced motion: an instant swap both ways."""
+    for w, h, how in ((390, 844, "cancel"), (375, 812, "escape")):
         tag = f"hf2_search_close_{w}_{how}"
         ctx, page, errs = _hf2_open(browser, w, h, True)
         page.evaluate(HF2_ROW_REC_JS, 420)
@@ -14623,41 +14697,46 @@ def _hf2_search_close(browser, eng):
         page.wait_for_timeout(700)
         page.evaluate("()=>{document.querySelector('#app > header.bar').__hf2=1;}")
         page.evaluate(HF2_ROW_REC_JS, 480)
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')" if how == "magnifier" else "()=>document.querySelector('[data-qclear-m]')")
+        if how == "cancel":
+            _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
+        else:
+            page.keyboard.press("Escape")
         page.wait_for_timeout(650)
         closing = page.evaluate("window.__hf2row")
         st = page.evaluate("""()=>({q:S.q,open:S.searchOpen,hdr:!!document.querySelector('#app > header.bar').__hf2,
-            page:!!document.querySelector('#app > main .phead'),field:document.activeElement===document.getElementById('q-m')})""")
-        full = max(v for _, v in opening) if opening else 0
-        mid = sorted({v for _, v in closing if 0 < v < full - 0.5})
-        mono = all(closing[i][1] >= closing[i + 1][1] - 0.5 for i in range(len(closing) - 1))
-        t50o, end_open = _hf2_span(opening, full, True)
-        t50c, end_close = _hf2_span(closing, full, False)
-        # the same length (frame timing allows some slack: the ratio, not a fixed margin)
-        # and mirrored curves (the half-way times of the two add up to that length)
-        mirrored = (None not in (end_close, end_open, t50o, t50c) and end_open > 0
-                    and 0.75 <= end_close / end_open <= 1.35
-                    and abs((t50o + t50c) - end_open) <= 0.25 * end_open + 20)
-        check(f"{tag}_animates", full > 30 and mono and len(mid) >= 4 and end_close is not None and end_close <= 300,
-              f"field row {full}px; closing heights {[v for _, v in closing][:16]} ({len(mid)} in between, shut {end_close} ms after it started)")
-        check(f"{tag}_mirrors_opening", mirrored,
-              f"open: half {t50o} ms, full {end_open} ms after it started; close: half {t50c} ms, shut {end_close} ms "
-              f"(a mirror: the same length, and the half-way times add up to it)")
-        check(f"{tag}_query_cleared_in_place", st["q"] == "" and not st["open"] and st["hdr"] and st["page"] and not st["field"], f"{st}")
+            page:!!document.querySelector('#app > main .phead'),field:document.activeElement===document.getElementById('q-m'),
+            toggleInert:document.querySelector('.bar-row-toggle').inert})""")
+        mid_o = [x for x in opening if 0.02 < x[1] < 0.98]
+        mid_c = [x for x in closing if 0.02 < x[1] < 0.98]
+        _, end_open = _hf2_span(opening, 1, True)
+        _, end_close = _hf2_span(closing, 1, False)
+        _, tog_back = _hf2_span(closing, 1, True, k=2)
+        swapped = opening and opening[-1][1:] == [1, 0] and closing and closing[-1][1:] == [0, 1]
+        check(f"{tag}_animates", swapped and len(mid_o) >= 3 and len(mid_c) >= 3 and end_close is not None and end_close <= 300
+              and tog_back is not None and tog_back <= 300,
+              f"opening (search, toggle) {[x[1:] for x in opening][:12]}; closing {[x[1:] for x in closing][:12]}; "
+              f"search row out in {end_close} ms, toggle row back in {tog_back} ms")
+        check(f"{tag}_mirrors_opening", None not in (end_open, end_close) and end_open > 0 and 0.6 <= end_close / end_open <= 1.5,
+              f"search row in {end_open} ms, out {end_close} ms")
+        check(f"{tag}_query_cleared_in_place", st["q"] == "" and not st["open"] and st["hdr"] and st["page"] and not st["field"]
+              and not st["toggleInert"], f"{st}")
         check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
         ctx.close()
     ctx, page, errs = _hf2_open(browser, 390, 844, True, reduced=True)
+    page.evaluate(HF2_ROW_REC_JS, 300)
     _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
     page.wait_for_timeout(400)
+    opening = page.evaluate("window.__hf2row")
     page.keyboard.type("сп", delay=50)
     page.wait_for_timeout(600)
     page.evaluate(HF2_ROW_REC_JS, 300)
-    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+    _hf_tap_el(page, True, "()=>document.querySelector('[data-search-cancel]')")
     page.wait_for_timeout(450)
     closing = page.evaluate("window.__hf2row")
-    full = max(v for _, v in closing) if closing else 0
-    check("hf2_search_close_reduced_motion_instant", not [v for _, v in closing if 0 < v < full - 0.5] and closing and closing[-1][1] == 0,
-          f"heights {[v for _, v in closing][:10]}")
+    between = [x[1:] for x in opening + closing if 0.02 < x[1] < 0.98 or 0.02 < x[2] < 0.98]
+    check("hf2_search_close_reduced_motion_instant", not between and opening and opening[-1][1:] == [1, 0]
+          and closing and closing[-1][1:] == [0, 1],
+          f"frames between states {between[:6]}; open end {opening[-1:] if opening else None}, closed end {closing[-1:] if closing else None}")
     ctx.close()
 
 
@@ -14708,11 +14787,13 @@ def _hf2_switch(browser, eng):
 def wave_hf2(browser):
     """
     Wave HF2: the owner's phone reports of 2026-10-15, round 2.
-    HF2-A toggle: phone 390/375 BG/EN, search open and close leave it exactly as it was;
+    HF2-A toggle: phone 390/375 BG/EN, the open search replaces the toggle row (hidden, inert,
+          the toggle itself untouched) and "Отказ" gives it back exactly as it was;
           desktop 1024/1280 shrink only when crowded (P3A), also while typing
     HF2-B live search: "спайдър"/"spider" letter by letter (120 ms and 600 ms apart),
           every frame: same focused field, header and results top still, scrollY still;
-          results follow every letter; x restores the page in place; from a scrolled page
+          results follow every letter; x clears and keeps typing; "Отказ" restores the page
+          in place; from a scrolled page
           the results open under the header and stay put
     HF2-C filter taps with the drawer open (5 options and Изчисти), 390/375 BG/EN, both
           programmes: every frame for 500 ms no blank or undecoded poster in view, no
@@ -14720,8 +14801,10 @@ def wave_hf2(browser):
     HF2-D a search result's sheet: every close route, keyboard up (with a letter pending)
           and down, 390 and 440, then the next result
     HF2-E fit: 440/402/393/375/360 BG/EN on home, sheets, drawer, search, time panel;
-          safe areas (Chromium): portrait status bar and home indicator, landscape notch
-    HF2-F the search row closes as it opens (also with a query and by x); reduced motion
+          safe areas (Chromium): portrait status bar and home indicator, landscape notch; the
+          status-bar band is a real opaque element; the phone logo row clears the inset
+    HF2-F the search row and the toggle row swap in place, both ways ("Отказ", Escape), with a
+          query; reduced motion: instant
     HF2-G Кино/Театър transition, never blank, nothing left behind; reduced motion
     """
     eng = _hf_engine(browser)
@@ -16823,8 +16906,8 @@ def _ux_no_uir(html):
 
 
 def _ux_ctx(browser, base, w, h, phone=False, lang="bg", mode="cinema", ua=None, reduced=False, js=True,
-            clock=None, sw=False):
-    kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG",
+            clock=None, sw=False, tz="Europe/Sofia"):
+    kw = dict(viewport={"width": w, "height": h}, timezone_id=tz, locale="bg-BG",
               service_workers="allow" if sw else "block", java_script_enabled=js)
     if phone:
         kw.update(has_touch=True, is_mobile=True)
@@ -18347,7 +18430,21 @@ def _b24_ring_pixels(png, rect, clip, margin):
     return out
 
 
+B24_RING_JS = r"""(sel) => { const e = document.querySelector(sel); const q = e.getBoundingClientRect(), c = getComputedStyle(e);
+  const ow = parseFloat(c.outlineWidth) || 0, oo = parseFloat(c.outlineOffset) || 0, reach = Math.max(0, ow + oo);
+  const clips = []; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
+    const s = getComputedStyle(a); if (/(hidden|clip|auto|scroll)/.test(s.overflowX + s.overflowY)) { const ar = a.getBoundingClientRect();
+      if (q.left - reach < ar.left - .5 || q.right + reach > ar.right + .5 || q.top - reach < ar.top - .5 || q.bottom + reach > ar.bottom + .5)
+        clips.push(a.className); } }
+  return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
+    bg: c.backgroundColor, border: c.borderTopWidth, radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'),
+    kbd: document.documentElement.classList.contains('sg-kbd'), active: document.activeElement === e, clips}; }"""
+
+
 def _b24_search(browser, base, eng):
+    """7: the focused search field. Desktop: one 2 px ring inside the pill, never clipped.
+    Phone (the owner's option 1, 2026-10-25): a filled field with no heavy white outline when
+    tapped (the caret shows the focus); a keyboard user (Tab) gets the same 2 px ring inside it."""
     for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900)), (False, (1024, 768))):
         dev = f"{'phone' if phone else 'desktop'}_{w}"
         ctx, page, errs = _b24_open(browser, base, w, h, phone=phone)
@@ -18357,15 +18454,18 @@ def _b24_search(browser, base, eng):
         page.focus(sel)
         page.keyboard.type("ко")
         page.wait_for_timeout(500)
-        r = page.evaluate("""(sel) => { const e = document.querySelector(sel); const q = e.getBoundingClientRect(), c = getComputedStyle(e);
-            const ow = parseFloat(c.outlineWidth) || 0, oo = parseFloat(c.outlineOffset) || 0, reach = Math.max(0, ow + oo);
-            const clips = []; for (let a = e.parentElement; a && a !== document.body; a = a.parentElement) {
-              const s = getComputedStyle(a); if (/(hidden|clip|auto|scroll)/.test(s.overflowX + s.overflowY)) { const ar = a.getBoundingClientRect();
-                if (q.left - reach < ar.left - .5 || q.right + reach > ar.right + .5 || q.top - reach < ar.top - .5 || q.bottom + reach > ar.bottom + .5)
-                  clips.push(a.className); } }
-            return {x: q.left, y: q.top, w: q.width, h: q.height, style: c.outlineStyle, ow, oo, color: c.outlineColor, shadow: c.boxShadow,
-              radius: c.borderTopLeftRadius, fv: e.matches(':focus-visible'), active: document.activeElement === e, clips}; }""", sel)
-        # 6 px beside the field, 3 px above and below it (a phone's toggle ends 5 px above it)
+        if phone:
+            t = page.evaluate(B24_RING_JS, sel)
+            check(f"b24_{eng}_search_filled_no_outline_{dev}",
+                  t["active"] and not t["kbd"] and t["style"] == "none" and t["shadow"] == "none" and t["border"] == "0px"
+                  and t["bg"] == "rgba(255, 255, 255, 0.11)" and t["h"] >= 44,
+                  f"tapped: outline {t['style']} box-shadow={t['shadow']} border {t['border']} background {t['bg']} height {t['h']}")
+            # keyboard: Tab to the clear x, Shift+Tab back to the field
+            page.keyboard.press("Tab")
+            page.keyboard.press("Shift+Tab")
+            page.wait_for_timeout(200)
+        r = page.evaluate(B24_RING_JS, sel)
+        # 6 px beside the field, 3 px above and below it
         margin, my = 6, 3
         clip = {"x": max(0, r["x"] - margin), "y": max(0, r["y"] - my)}
         clip["width"] = min(r["w"] + 2 * margin, w - clip["x"])
@@ -18374,8 +18474,8 @@ def _b24_search(browser, base, eng):
         outside = _b24_ring_pixels(png, r, clip, margin)
         ok = (r["active"] and r["fv"] and r["style"] == "solid" and r["ow"] >= 2 and r["oo"] + r["ow"] <= 0
               and r["color"] == B24_FG and r["shadow"] == "none" and not r["clips"] and outside == 0)
-        check(f"b24_{eng}_search_ring_{dev}", ok,
-              f"focus-visible={r['fv']} outline {r['style']} {r['ow']}px offset {r['oo']}px {r['color']} box-shadow={r['shadow']} "
+        check(f"b24_{eng}_search_ring_{dev}{'_keyboard' if phone else ''}", ok,
+              f"focus-visible={r['fv']} keyboard={r['kbd']} outline {r['style']} {r['ow']}px offset {r['oo']}px {r['color']} box-shadow={r['shadow']} "
               f"radius={r['radius']} clipped by={r['clips']} bright pixels outside the pill={outside}")
         save_shot(page, "B24", f"search_focus_{dev}_{eng}")
         check(f"b24_{eng}_search_{dev}_no_js_errors", not errs, f"errors={errs[:3]}")
@@ -18429,8 +18529,10 @@ def _b24_zoom(browser, base, eng):
         f = page.evaluate(B24_FIELD_JS, sel)
         focused = page.evaluate("(s)=>document.activeElement===document.querySelector(s)", sel)
         check(f"b24_{eng}_zoom_{dev}_search_16px", f and f["fs"] >= 16 and focused and f["scale"] == 1
-              and abs(f["h"] - desk["h"]) <= .5 and f["ta"] == "manipulation" and not bad_meta(f["meta"]),
-              f"{sel} {f and f['fs']}px focused={focused} h={f and round(f['h'], 2)} (desktop {round(desk['h'], 2)}) "
+              # the phone header's field (owner's option 1, 2026-10-25) is the 44 px row's own height;
+              # a phone on its side has the desktop header and keeps the 15 px field's height
+              and abs(f["h"] - (44 if sel == "#q-m" else desk["h"])) <= .5 and f["ta"] == "manipulation" and not bad_meta(f["meta"]),
+              f"{sel} {f and f['fs']}px focused={focused} h={f and round(f['h'], 2)} (phone row 44, desktop {round(desk['h'], 2)}) "
               f"touch-action={f and f['ta']} scale={f and f['scale']} viewport='{f and f['meta']}'")
         page.keyboard.press("Escape")
         page.wait_for_timeout(300)
@@ -19233,6 +19335,476 @@ def _bo_festival_shut(browser, eng):
             ctx.close()
 
 
+# WAVE DM1: day pills name their month outside the current week (owner, 28 Oct 2026)
+# The owner's iPhone screenshot of "Avengers: Doomsday" showed "ср 16 ... вт 22" with no month
+# for December screenings. Rule: a day pill whose date is outside the current calendar week
+# (WEEK_START..WEEK_END, Mon-Sun around TODAY) carries its short month (BG "дек", EN "Dec"):
+# the phone day picker of film and show sheets (.p3e-dmon), the desktop week grid's column
+# headers (.p3e-gmon) and the next-week days of the period strip (.ds-mon). This week's pills
+# keep their old look (a month only where this week's days cross into a new month). Checks:
+# a film starting in a later month (phone 393 BG/EN, desktop 1280 BG/EN), a show with dates
+# next month, a title whose later dates span two months, a current-week film, sizes and
+# overflow at 375, the selected pill's month contrast, the strip's scrolling, accessible names.
+# Over http in either engine (SOFIA_BROWSER=webkit). Shots: /tmp/sg-shots/DM1.
+# ============================================================================
+DM1_PICK_JS = r"""() => {
+  const we = WEEK_END, tm = TODAY.slice(0, 7);
+  const d0 = dUTC(TODAY), nextMon = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1)).toISOString().slice(0, 7);
+  const films = [], shows = [];
+  for (const f of FILMS) { const ds = [...new Set(upcomingRows(SHOWTIMES.filter(r => r[0] === f.id)).map(r => r[2]))].sort();
+    if (ds.length) films.push({kind: 'film', id: f.id, ds, name: [f.id, f.bg, f.en].join(' ')}); }
+  for (const s of SHOWS) { if (!thById[s.theatre]) continue;
+    const ds = [...new Set(upcomingPerfs(PERFORMANCES.filter(p => p[0] === s.id)).map(p => p[1]))].sort();
+    if (ds.length) shows.push({kind: 'show', id: s.id, ds, name: s.titleEn || s.title}); }
+  const far = L => L.filter(x => x.ds[0] > we && x.ds[0].slice(0, 7) > tm)
+    .sort((a, b) => ((a.ds[0].slice(0, 7) !== nextMon) - (b.ds[0].slice(0, 7) !== nextMon)) || (b.ds.length - a.ds.length));
+  /* the film of the owner's report ("Avengers: Doomsday", BG "Отмъстителите: Възходът на Доктор Дуум") */
+  const doom = far(films).find(x => /doomsday|duum|дуум/i.test(x.name));
+  const nextShow = shows.filter(x => x.ds.some(d => d > we && d.slice(0, 7) === nextMon))
+    .sort((a, b) => b.ds.filter(d => d.slice(0, 7) === nextMon).length - a.ds.filter(d => d.slice(0, 7) === nextMon).length);
+  const twoMon = films.concat(shows).filter(x => new Set(x.ds.filter(d => d > we).map(d => d.slice(0, 7))).size > 1)
+    .sort((a, b) => (a.ds.length - b.ds.length));
+  /* a current-week film: the most of its dates in this week, all of them in one month, today among them */
+  const cur = films.filter(x => x.ds[0] === TODAY && x.ds.filter(inThisWeek).length >= 2)
+    .sort((a, b) => (x => x.ds.every(inThisWeek) ? 0 : 1)(a) - (x => x.ds.every(inThisWeek) ? 0 : 1)(b) || b.ds.filter(inThisWeek).length - a.ds.filter(inThisWeek).length);
+  const pick = x => x ? {kind: x.kind, id: x.id, n: x.ds.length, first: x.ds[0], last: x.ds[x.ds.length - 1], name: x.name} : null;
+  return {far: pick(far(films)[0]), doom: pick(doom), farShow: pick(nextShow[0]), two: pick(twoMon[0]), cur: pick(cur[0]),
+    today: TODAY, ws: WEEK_START, we, nextMon};
+}"""
+
+DM1_SHEET_JS = r"""() => {
+  const sc = document.getElementById('scrim'), L = T[S.lang];
+  const lum = c => { const m = c.match(/[\d.]+/g).map(Number).slice(0, 3).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+    return .2126 * m[0] + .7152 * m[1] + .0722 * m[2]; };
+  const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const bgOf = el => { for (let e = el; e; e = e.parentElement) { const c = getComputedStyle(e).backgroundColor; if (c && !/rgba\(.*, 0\)$/.test(c) && c !== 'transparent') return c; } return 'rgb(0,0,0)'; };
+  const strip = sc.querySelector('[data-p3dayswrap]'), sr = strip ? strip.getBoundingClientRect() : null;
+  const pills = [...sc.querySelectorAll('[data-p3day]')].map((b, i, all) => { const r = b.getBoundingClientRect(), m = b.querySelector('.p3e-dmon');
+    const mr = m ? m.getBoundingClientRect() : null;
+    return {d: b.dataset.p3day, mon: m ? m.textContent.trim() : null, label: b.getAttribute('aria-label') || '', text: b.textContent.replace(/\s+/g, ' ').trim(),
+      on: b.getAttribute('aria-pressed') === 'true', w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10,
+      clip: b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1,
+      monIn: mr ? (mr.left >= r.left - .5 && mr.right <= r.right + .5 && mr.top >= r.top - .5 && mr.bottom <= r.bottom + .5) : true,
+      cr: m ? Math.round(cr(getComputedStyle(m).color, bgOf(b)) * 100) / 100 : null}; });
+  const ths = [...sc.querySelectorAll('.p3e-gpage th[data-date]')].map(th => { const m = th.querySelector('small.p3e-gmon');
+    return {d: th.dataset.date, mon: m ? m.textContent.trim() : null, label: th.getAttribute('aria-label') || '', shown: !th.closest('[aria-hidden]')}; });
+  return {pills, ths, ws: WEEK_START, we: WEEK_END, months: L.months, ms: L.monthsShort, stripShown: !!(strip && strip.getClientRects().length),
+    stripSW: strip ? strip.scrollWidth : 0, stripCW: strip ? strip.clientWidth : 0, docOver: document.documentElement.scrollWidth - innerWidth,
+    sheetOver: (() => { const s = sc.querySelector('.sheet'); return s ? s.scrollWidth - s.clientWidth : 0; })(),
+    font: (() => { const b = sc.querySelector('[data-p3day] b'); return b ? getComputedStyle(b).fontFamily : ''; })()};
+}"""
+
+DM1_STRIP_JS = r"""() => { const s = document.querySelector('.phead .daystrip'), L = T[S.lang];
+  return {strip: !!s, ws: WEEK_START, we: WEEK_END, today: TODAY, last: LASTDAY, dows: L.dows, months: L.months, ms: L.monthsShort,
+    docOver: document.documentElement.scrollWidth - innerWidth,
+    pills: s ? [...s.querySelectorAll('[data-day]')].filter(b => b.dataset.day !== 'week').map(b => { const r = b.getBoundingClientRect(), m = b.querySelector('.ds-mon');
+      return {d: b.dataset.day, mon: m ? m.textContent.trim() : null, label: b.getAttribute('aria-label') || '', text: b.textContent.replace(/\s+/g, ' ').trim(),
+        h: Math.round(r.height * 10) / 10, clip: b.scrollWidth > b.clientWidth + 1}; }) : []}; }"""
+
+
+def _dm1_inweek(d, info):
+    return info["ws"] <= d <= info["we"]
+
+
+def _dm1_open(browser, base, w, h, phone, lang, item, clock=None, tz="Europe/Sofia"):
+    mode = "theatre" if item["kind"] == "show" else "cinema"
+    ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock, tz=tz)
+    page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/") + f"?{item['kind']}={item['id']}")
+    try:
+        page.wait_for_selector("#scrim .sheet", timeout=10000)
+    except Exception:
+        pass
+    page.evaluate("async () => { await document.fonts.ready; }")
+    page.wait_for_timeout(400)
+    return ctx, page, errs
+
+
+def _dm1_month_problems(info, rows, want_all_out):
+    """Each pill/header outside this week shows the short month of its own date and its
+    accessible name the full month; returns a list of problems."""
+    bad = []
+    for p in rows:
+        mi = int(p["d"][5:7]) - 1
+        if not _dm1_inweek(p["d"], info):
+            if p["mon"] != info["ms"][mi]:
+                bad.append(f"{p['d']} month={p['mon']!r} want {info['ms'][mi]!r}")
+            if info["months"][mi] not in p["label"] or (p.get("mon") and p["mon"] not in p["label"]):
+                bad.append(f"{p['d']} name {p['label']!r} lacks the month")
+        elif want_all_out:
+            bad.append(f"{p['d']} is in this week")
+    return bad
+
+
+def _dm1_shot(page, name):
+    save_shot(page, "DM1", name)
+
+
+DM1_INTO_VIEW_JS = r"""([sel, gap]) => { const el = document.querySelector(sel); if (!el) return false;
+  /* scroll whichever box holds the sheet (the scrim, or the sheet itself on phones) */
+  for (let n = el.parentElement; n; n = n.parentElement) { const o = getComputedStyle(n).overflowY;
+    if ((o === 'auto' || o === 'scroll') && n.scrollHeight > n.clientHeight + 1) {
+      n.scrollTop += el.getBoundingClientRect().top - n.getBoundingClientRect().top - gap; } }
+  return true; }"""
+
+
+def _dm1_strip_into_view(page):
+    page.evaluate(DM1_INTO_VIEW_JS, ["#scrim [data-p3dayswrap]", 120])
+    page.wait_for_timeout(250)
+
+
+def _dm1_grid_into_view(page):
+    page.evaluate(DM1_INTO_VIEW_JS, ["#scrim .p3e-grp-desk", 140])
+    page.wait_for_timeout(250)
+
+
+def _dm1_phone(browser, base, eng, item, tag, w, lang, shot=None):
+    ctx, page, errs = _dm1_open(browser, base, w, 852, True, lang, item)
+    s = page.evaluate(DM1_SHEET_JS)
+    if not s["pills"] or not s["stripShown"]:
+        check(f"{tag}_strip", False, f"{item['kind']} {item['id']}: no day picker (pills={len(s['pills'])})")
+        ctx.close()
+        return None
+    bad = _dm1_month_problems(s, s["pills"], False)
+    out = [p for p in s["pills"] if not _dm1_inweek(p["d"], s)]
+    check(f"{tag}_months", not bad and out,
+          f"{item['kind']} {item['id']} ({item['first']}..{item['last']}, week {s['ws']}..{s['we']}): {len(out)} pills outside this week, "
+          f"sample {[p['text'] for p in s['pills'][:3]]}; problems {bad[:4]}")
+    small = [f"{p['d']} {p['w']}x{p['h']}" for p in s["pills"] if p["w"] < 44 or p["h"] < 44]
+    clip = [p["d"] for p in s["pills"] if p["clip"] or not p["monIn"]]
+    check(f"{tag}_size_{w}", not small and not clip and s["docOver"] <= 0 and s["sheetOver"] <= 0,
+          f"pills < 44 px: {small[:3]}; month outside/clipped: {clip[:3]}; page overflow {s['docOver']} px, sheet {s['sheetOver']} px")
+    sel = [p for p in s["pills"] if p["on"] and p["mon"]]
+    low = [p for p in s["pills"] if p["mon"] and p["cr"] is not None and p["cr"] < 4.5]
+    check(f"{tag}_month_contrast", sel and not low,
+          f"selected {[(p['d'], p['cr']) for p in sel][:1]}; under 4.5:1 {[(p['d'], p['cr'], p['on']) for p in low][:3]}")
+    # the strip still scrolls to its last day, and that day can be tapped
+    if s["stripSW"] > s["stripCW"] + 1:
+        page.evaluate("()=>{const s=document.querySelector('#scrim [data-p3dayswrap]');s.scrollIntoView({block:'center'});s.scrollLeft=s.scrollWidth;}")
+        page.wait_for_timeout(300)
+        last = s["pills"][-1]["d"]
+        vis = page.evaluate("(d)=>{const s=document.querySelector('#scrim [data-p3dayswrap]').getBoundingClientRect(),b=document.querySelector('#scrim [data-p3day=\"'+d+'\"]').getBoundingClientRect();"
+                            "return b.left>=s.left-1&&b.right<=s.right+1;}", last)
+        _hf_tap_el(page, True, "(d)=>document.querySelector('#scrim [data-p3day=\"'+d+'\"]')", last)
+        page.wait_for_timeout(300)
+        st = page.evaluate("(d)=>({on:document.querySelector('#scrim [data-p3day=\"'+d+'\"]').getAttribute('aria-pressed'),"
+                           "rows:document.querySelectorAll('#scrim .p3e-grp-slot [data-sspill]').length})", last)
+        check(f"{tag}_strip_scrolls", vis and st["on"] == "true" and st["rows"] > 0,
+              f"{len(s['pills'])} pills, strip {s['stripSW']}/{s['stripCW']} px; last day {last} in view={vis}, pressed={st['on']}, times={st['rows']}")
+        page.evaluate("()=>{const s=document.querySelector('#scrim [data-p3dayswrap]');s.scrollLeft=0;}")
+        _hf_tap_el(page, True, "(d)=>document.querySelector('#scrim [data-p3day=\"'+d+'\"]')", s["pills"][0]["d"])
+        page.wait_for_timeout(250)
+    if shot:
+        _dm1_strip_into_view(page)
+        _dm1_shot(page, shot + ("" if eng == "chromium" else "_" + eng))
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+    return s
+
+
+def _dm1_desktop(browser, base, eng, item, tag, lang, shot=None):
+    ctx, page, errs = _dm1_open(browser, base, 1280, 800, False, lang, item)
+    s = page.evaluate(DM1_SHEET_JS)
+    ths = s["ths"]
+    multi = len({p["d"][:7] for p in ths}) > 1
+    bad = _dm1_month_problems(s, ths, False)
+    # a column of this week shows a month only when the dates span months (the earlier rule)
+    bad += [f"{p['d']} in this week shows {p['mon']!r}" for p in ths if _dm1_inweek(p["d"], s) and bool(p["mon"]) != multi]
+    out = [p for p in ths if not _dm1_inweek(p["d"], s)]
+    check(f"{tag}_grid_months", ths and out and not bad,
+          f"{item['kind']} {item['id']}: {len(ths)} column headers, {len(out)} outside this week; first {[p['mon'] for p in ths[:3]]}; problems {bad[:4]}")
+    check(f"{tag}_no_overflow", s["docOver"] <= 0 and s["sheetOver"] <= 0, f"page {s['docOver']} px, sheet {s['sheetOver']} px")
+    if shot:
+        _dm1_grid_into_view(page)
+        _dm1_shot(page, shot + ("" if eng == "chromium" else "_" + eng))
+    check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+    ctx.close()
+
+
+def _dm1_current(browser, base, eng, item):
+    """This week's pills keep their look: no month, "ср 28" / "We 28", unless this week's own
+    days cross into a new month (the earlier rule, unchanged)."""
+    for lang in ("bg", "en"):
+        tag = f"dm1_{eng}_current_week_{lang}"
+        ctx, page, errs = _dm1_open(browser, base, 393, 852, True, lang, item)
+        s = page.evaluate(DM1_SHEET_JS)
+        inw = [p for p in s["pills"] if _dm1_inweek(p["d"], s)]
+        bad = []
+        prev = None
+        multi = len({p["d"][:7] for p in s["pills"]}) > 1
+        for i, p in enumerate(s["pills"]):
+            if _dm1_inweek(p["d"], s):
+                boundary = multi and (i == 0 or p["d"][:7] != s["pills"][i - 1]["d"][:7])
+                if bool(p["mon"]) != boundary:
+                    bad.append(f"{p['d']} month={p['mon']!r}")
+                if not boundary and not re.fullmatch(r"\S+ \d{1,2}", p["text"]):
+                    bad.append(f"{p['d']} text {p['text']!r}")
+        check(tag, inw and not bad,
+              f"{item['id']}: {len(inw)} pills this week {[p['text'] for p in inw][:5]}; problems {bad[:4]}")
+        if lang == "bg":
+            _dm1_strip_into_view(page)
+            _dm1_shot(page, "current_week_phone393_bg" + ("" if eng == "chromium" else "_" + eng))
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _dm1_period_strip(browser, base, eng):
+    """The period strip's next-week days (a Saturday, when it rolls over) name their month;
+    this week's days do not."""
+    sat = _b24_saturday()
+    clock = _ux_clock(_sofia_1445_epoch_ms(sat))
+    for phone, (w, h), lang in ((True, (375, 812), "bg"), (True, (375, 812), "en"), (False, (1280, 800), "en")):
+        dev = "phone375" if phone else "desktop1280"
+        tag = f"dm1_{eng}_period_strip_{dev}_{lang}"
+        ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode="cinema", clock=clock)
+        page, errs = _ux_page(ctx, base + "/home/")
+        page.evaluate("async () => { await document.fonts.ready; }")
+        s = page.evaluate(DM1_STRIP_JS)
+        nxt = [p for p in s["pills"] if p["d"] > s["we"]]
+        if not s["strip"] or not nxt:
+            skip(tag, f"clock {sat}: no next-week day in the strip ({[p['text'] for p in s['pills']]})")
+            ctx.close()
+            continue
+        bad = _dm1_month_problems(s, s["pills"], False)
+        # this week's days show no month, except one that starts a new month ("нд 1 ное")
+        bad += [f"{p['d']} this week month={p['mon']!r}" for p in s["pills"] if _dm1_inweek(p["d"], s)
+                and p["d"] != s["today"] and bool(p["mon"]) != (p["d"][8:] == "01")]
+        small = [f"{p['d']} {p['h']}" for p in s["pills"] if (phone and p["h"] < 44) or p["clip"]]
+        check(tag, not bad and not small and s["docOver"] <= 0,
+              f"clock {sat}; strip {[p['text'] for p in s['pills']]}; problems {bad[:3]}; short/clipped {small[:3]}; overflow {s['docOver']} px")
+        if phone and lang == "bg":
+            page.evaluate("(d)=>{const b=document.querySelector('.phead .daystrip [data-day=\"'+d+'\"]');if(b)b.scrollIntoView({inline:'center',block:'nearest'});}", nxt[0]["d"])
+            page.wait_for_timeout(300)
+            _dm1_shot(page, "period_strip_next_week_phone375_bg" + ("" if eng == "chromium" else "_" + eng))
+        check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+# DM1-6: the pills read the ISO date in Sofia terms in any viewer timezone. dayWod and
+# dayAbbrLong once took local noon of the date and read it with UTC getters, so in Auckland
+# (UTC+13) 2026-11-01 showed "сб 31 ное" and 2027-01-01 "чт 31 яну". A viewer far east
+# (Pacific/Auckland) and far west (Pacific/Pago_Pago, UTC-11) must see the same pills.
+DM1_TZS = ("Pacific/Auckland", "Pacific/Pago_Pago")
+DM1_DOW = {"bg": ["нд", "пн", "вт", "ср", "чт", "пт", "сб"], "en": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]}
+
+# the film-sheet picker and grid rendered for dates the test chooses (TODAY .. TODAY+n), so the
+# month and year turns are covered whatever the data holds
+DM1_SYNTH_JS = r"""(n) => { const L = T[S.lang], ds = []; for (let i = 0; i < n; i++) ds.push(addDays(TODAY, i));
+  const rows = ds.map(d => ({venueId: 'v', dateStr: d, times: ['20:00']}));
+  const html = p3eShowtimesHtml('film', 'dm1-synth', rows, () => ({name: 'V'}), () => false, TODAY);
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  return {today: TODAY, ws: WEEK_START, we: WEEK_END, ms: L.monthsShort, months: L.months,
+    pills: [...doc.querySelectorAll('[data-p3day]')].map(b => ({d: b.dataset.p3day, abbr: (b.querySelector('span') || {}).textContent || '',
+      num: (b.querySelector('b') || {}).textContent || '', mon: b.querySelector('.p3e-dmon') ? b.querySelector('.p3e-dmon').textContent.trim() : null,
+      label: b.getAttribute('aria-label') || ''})),
+    ths: [...doc.querySelectorAll('.p3e-gpage th[data-date]')].map(th => ({d: th.dataset.date, text: th.textContent.replace(/\s+/g, ''),
+      num: (th.querySelector('b') || {}).textContent || '', mon: th.querySelector('small.p3e-gmon') ? th.querySelector('small.p3e-gmon').textContent.trim() : null}))}; }"""
+
+
+def _dm1_js_dow(iso):
+    return (datetime.date.fromisoformat(iso).weekday() + 1) % 7      # JS getUTCDay: 0 = Sunday
+
+
+def _dm1_pill_problems(rows, lang, ms, inweek, want_mon):
+    """The weekday, day number and month a pill or header shows are those of its ISO date.
+    want_mon(i, d) says whether a month is due; rows hold d, abbr, num, mon."""
+    bad = []
+    for i, p in enumerate(rows):
+        d = p["d"]
+        if p.get("abbr") is not None and p["abbr"].strip() != DM1_DOW[lang][_dm1_js_dow(d)]:
+            bad.append(f"{d} weekday {p['abbr']!r} want {DM1_DOW[lang][_dm1_js_dow(d)]!r}")
+        if p["num"].strip() != str(int(d[8:])):
+            bad.append(f"{d} day {p['num']!r} want {int(d[8:])}")
+        want = ms[int(d[5:7]) - 1] if want_mon(i, d) else None
+        if p["mon"] != want:
+            bad.append(f"{d} month {p['mon']!r} want {want!r}")
+    return bad
+
+
+def _dm1_picker_want(rows, inweek):
+    multi = len({p["d"][:7] for p in rows}) > 1
+    return lambda i, d: (not inweek(d)) or (multi and (i == 0 or d[:7] != rows[i - 1]["d"][:7]))
+
+
+def _dm1_strip_problems(s, lang):
+    """The period strip: "ср 28", "пн 2 ное", "нд 1 ное" (a new month this week), "ср 28 днес"."""
+    bad = []
+    for p in s["pills"]:
+        d = p["d"]
+        tok = p["text"].split()
+        want_dow = s["dows"][_dm1_js_dow(d)]
+        if len(tok) < 2 or tok[0] != want_dow or tok[1] != str(int(d[8:])):
+            bad.append(f"{d} shows {p['text']!r} want {want_dow} {int(d[8:])}")
+        want = None if d == s["today"] else (s["ms"][int(d[5:7]) - 1] if (not (s["ws"] <= d <= s["we"]) or d[8:] == "01") else None)
+        if p["mon"] != want:
+            bad.append(f"{d} month {p['mon']!r} want {want!r}")
+        if want and want not in p["label"]:
+            bad.append(f"{d} name {p['label']!r} lacks {want!r}")
+    return bad
+
+
+def _dm1_timezones(browser, base, eng, far):
+    """Real data at the suite's clock: the period strip and a far film's sheet (phone picker and
+    desktop grid), in a viewer timezone far east and far west of Sofia."""
+    for tz in DM1_TZS:
+        short = tz.split("/")[-1].lower()
+        for lang in ("bg", "en"):
+            ctx = _ux_ctx(browser, base, 375, 812, phone=True, lang=lang, mode="cinema", tz=tz)
+            page, errs = _ux_page(ctx, base + "/home/")
+            s = page.evaluate(DM1_STRIP_JS)
+            off = page.evaluate("() => new Date().getTimezoneOffset()")
+            if not s["pills"]:
+                skip(f"dm1_{eng}_tz_{short}_strip_{lang}", "no period strip")
+            else:
+                bad = _dm1_strip_problems(s, lang)
+                check(f"dm1_{eng}_tz_{short}_strip_{lang}", not bad,
+                      f"{tz} (offset {off} min), today {s['today']}: {[p['text'] for p in s['pills']]}; problems {bad[:4]}")
+            check(f"dm1_{eng}_tz_{short}_strip_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+        if not far:
+            skip(f"dm1_{eng}_tz_{short}_sheet", "no far film")
+            continue
+        for lang in ("bg", "en"):
+            ctx, page, errs = _dm1_open(browser, base, 393, 852, True, lang, far, tz=tz)
+            sh = page.evaluate(DM1_SHEET_JS)
+            raw = page.evaluate("""() => [...document.querySelectorAll('#scrim [data-p3day]')].map(b => ({d: b.dataset.p3day,
+                abbr: (b.querySelector('span') || {}).textContent || '', num: (b.querySelector('b') || {}).textContent || '',
+                mon: b.querySelector('.p3e-dmon') ? b.querySelector('.p3e-dmon').textContent.trim() : null}))""")
+            inw = lambda d: sh["ws"] <= d <= sh["we"]
+            bad = _dm1_pill_problems(raw, lang, sh["ms"], inw, _dm1_picker_want(raw, inw))
+            check(f"dm1_{eng}_tz_{short}_picker_{lang}", raw and not bad,
+                  f"{tz} {far['id']}: {len(raw)} pills, sample {[p['text'] for p in sh['pills'][-3:]]}; problems {bad[:4]}")
+            check(f"dm1_{eng}_tz_{short}_picker_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+        ctx, page, errs = _dm1_open(browser, base, 1280, 800, False, "bg", far, tz=tz)
+        ths = page.evaluate("""() => [...document.querySelectorAll('#scrim .p3e-gpage th[data-date]')].map(th => ({d: th.dataset.date,
+            text: th.textContent.replace(/\\s+/g, ''), num: (th.querySelector('b') || {}).textContent || '',
+            mon: th.querySelector('small.p3e-gmon') ? th.querySelector('small.p3e-gmon').textContent.trim() : null}))""")
+        sh = page.evaluate(DM1_SHEET_JS)
+        for th in ths:   # the header reads abbr + <b>num</b> + month
+            th["abbr"] = th["text"][:len(th["text"]) - len(th["num"]) - len(th["mon"] or "")]
+        multi = len({p["d"][:7] for p in ths}) > 1
+        bad = _dm1_pill_problems(ths, "bg", sh["ms"], None, lambda i, d: multi or not (sh["ws"] <= d <= sh["we"]))
+        check(f"dm1_{eng}_tz_{short}_grid_bg", ths and not bad,
+              f"{tz} {far['id']}: {len(ths)} headers {[p['text'] for p in ths[:3]]}; problems {bad[:4]}")
+        check(f"dm1_{eng}_tz_{short}_grid_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _dm1_boundaries(browser, base, eng):
+    """The clock pinned at a month turn (30 Nov 23:30), Boxing Day (26 Dec, the strip rolls into
+    the new year) and New Year's Eve (31 Dec, 1 Jan is this week's day): the period strip and
+    the sheet's picker and grid (rendered for TODAY .. TODAY+20) in Sofia and both far zones."""
+    year = int(CLOCK_TODAY_ISO[:4])
+    clocks = [(f"{year}-11-30", 23, 30), (f"{year}-12-26", 14, 45), (f"{year}-12-31", 14, 45)]
+    for day, hh, mm in clocks:
+        clock = _ux_clock(_sofia_epoch_ms(day, hh, mm))
+        for tz in ("Europe/Sofia",) + DM1_TZS:
+            short = tz.split("/")[-1].lower()
+            tag = f"dm1_{eng}_edge_{day[5:]}_{short}"
+            ctx = _ux_ctx(browser, base, 375, 812, phone=True, lang="bg", mode="cinema", clock=clock, tz=tz)
+            page, errs = _ux_page(ctx, base + "/home/")
+            s = page.evaluate(DM1_STRIP_JS)
+            if s["today"] != day:
+                check(f"{tag}_today", False, f"clock {day} {hh}:{mm} Sofia read as {s['today']}")
+            elif not s["pills"]:
+                skip(f"{tag}_strip", f"no strip: the data ends {s['last']}")
+            else:
+                bad = _dm1_strip_problems(s, "bg")
+                first = [p for p in s["pills"] if p["d"][8:] == "01" and s["ws"] <= p["d"] <= s["we"] and p["d"] != s["today"]]
+                need_first = any(p["d"][8:] == "01" for p in s["pills"]) and day != f"{year}-12-26"
+                check(f"{tag}_strip", not bad and (first or not need_first),
+                      f"week {s['ws']}..{s['we']}: {[p['text'] for p in s['pills']]}; first-of-month this week {[p['text'] for p in first]}; problems {bad[:4]}")
+                if tz == "Europe/Sofia":
+                    _dm1_shot(page, f"edge_{day[5:]}_strip_phone375_bg" + ("" if eng == "chromium" else "_" + eng))
+            for lang in ("bg", "en"):
+                page.evaluate("(l) => { S.lang = l; }", lang)
+                y = page.evaluate(DM1_SYNTH_JS, 21)
+                inw = lambda d: y["ws"] <= d <= y["we"]
+                bad = _dm1_pill_problems(y["pills"], lang, y["ms"], inw, _dm1_picker_want(y["pills"], inw))
+                turns = [p["d"] for p in y["pills"] if p["d"][8:] == "01"]
+                check(f"{tag}_picker_{lang}", y["pills"] and turns and not bad,
+                      f"{len(y['pills'])} pills {y['pills'][0]['d']}..{y['pills'][-1]['d']}, turns {turns}; problems {bad[:4]}")
+                for th in y["ths"]:
+                    th["abbr"] = th["text"][:len(th["text"]) - len(th["num"]) - len(th["mon"] or "")]
+                multi = len({p["d"][:7] for p in y["ths"]}) > 1
+                bad = _dm1_pill_problems(y["ths"], lang, y["ms"], inw, lambda i, d: multi or not inw(d))
+                check(f"{tag}_grid_{lang}", y["ths"] and not bad, f"{len(y['ths'])} headers; problems {bad[:4]}")
+            check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
+
+
+def wave_dm1(browser):
+    eng = _hf_engine(browser)
+    ensure_shot_dir("DM1")
+    share_root, tmp = _ux_share_root()
+    srv, base = _ux_server(share_root)
+    try:
+        ctx = _ux_ctx(browser, base, 1280, 800)
+        page, _ = _ux_page(ctx, base + "/home/")
+        pk = page.evaluate(DM1_PICK_JS)
+        ctx.close()
+        print(f"  picks (today {pk['today']}, week {pk['ws']}..{pk['we']}): far={pk['far']} show={pk['farShow']} two={pk['two']} cur={pk['cur']}")
+        sections = []
+        if pk["far"]:
+            f = pk["far"]
+            sections += [
+                ("1: a film starting in a later month, phone 393 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_393_bg", 393, "bg", "far_film_phone393_bg")),
+                ("1: the same, phone 393 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_393_en", 393, "en", "far_film_phone393_en")),
+                ("1: the same, phone 375 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_375_bg", 375, "bg")),
+                ("1: the same, phone 375 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_375_en", 375, "en")),
+                ("1: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, f, f"dm1_{eng}_far_film_1280_bg", "bg", "far_film_desktop1280_bg")),
+                ("1: the same, desktop 1280 EN", lambda: _dm1_desktop(browser, base, eng, f, f"dm1_{eng}_far_film_1280_en", "en")),
+            ]
+        else:
+            skip(f"dm1_{eng}_far_film", f"no film whose screenings start after {pk['we']} in a later month")
+        if pk["doom"] and pk["far"] and pk["doom"]["id"] != pk["far"]["id"]:
+            dm = pk["doom"]
+            sections += [
+                ("1b: the owner's Avengers: Doomsday, phone 393 BG", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_393_bg", 393, "bg", "doomsday_phone393_bg")),
+                ("1b: the same, phone 393 EN", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_393_en", 393, "en", "doomsday_phone393_en")),
+                ("1b: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, dm, f"dm1_{eng}_doomsday_1280_bg", "bg", "doomsday_desktop1280_bg")),
+            ]
+        if pk["farShow"]:
+            sh = pk["farShow"]
+            sections += [
+                ("2: a show with dates next month, phone 393 BG", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_393_bg", 393, "bg", "theatre_next_month_phone393_bg")),
+                ("2: the same, phone 375 EN", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_375_en", 375, "en")),
+                ("2: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, sh, f"dm1_{eng}_show_1280_bg", "bg")),
+            ]
+        else:
+            skip(f"dm1_{eng}_show", f"no show with dates in {pk['nextMon']}")
+        if pk["two"]:
+            tw = pk["two"]
+
+            def _two():
+                s = _dm1_phone(browser, base, eng, tw, f"dm1_{eng}_two_months_393_bg", 393, "bg")
+                if s:
+                    mons = {p["mon"] for p in s["pills"] if not _dm1_inweek(p["d"], s)}
+                    check(f"dm1_{eng}_two_months_distinct", len(mons) >= 2,
+                          f"{tw['kind']} {tw['id']} {tw['first']}..{tw['last']}: months on the pills {sorted(m or '' for m in mons)}")
+                _dm1_desktop(browser, base, eng, tw, f"dm1_{eng}_two_months_1280_en", "en")
+            sections.append(("3: dates spanning two months", _two))
+        else:
+            skip(f"dm1_{eng}_two_months", "no title whose later dates span two months")
+        if pk["cur"]:
+            sections.append(("4: a current-week film is unchanged", lambda: _dm1_current(browser, base, eng, pk["cur"])))
+        else:
+            skip(f"dm1_{eng}_current_week", "no film showing today with two or more days this week")
+        sections.append(("5: the period strip's next-week days", lambda: _dm1_period_strip(browser, base, eng)))
+        sections.append(("6: far-east and far-west viewer timezones", lambda: _dm1_timezones(browser, base, eng, pk["far"] or pk["doom"])))
+        sections.append(("7: month and year turns (30 Nov 23:30, 26 Dec, 31 Dec)", lambda: _dm1_boundaries(browser, base, eng)))
+        for title, fn in sections:
+            print(f"\n=== DM1-{title} ===")
+            try:
+                fn()
+            except Exception as _ex:      # one section crashing must not hide the rest
+                check(f"dm1_{eng}_{title.split(':')[0]}_ran", False, f"{type(_ex).__name__}: {str(_ex)[:200]}")
+    finally:
+        srv.shutdown()
+        if tmp:
+            _ux_shutil.rmtree(tmp, ignore_errors=True)
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -19269,6 +19841,7 @@ WAVES = {
     "UX1": wave_ux1,
     "B24": wave_b24,
     "BO1": wave_bo1,
+    "DM1": wave_dm1,
 }
 
 def main():

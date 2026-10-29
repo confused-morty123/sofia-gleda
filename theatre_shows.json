@@ -5761,7 +5761,7 @@
  },
  "5-godini-toplotsentrala-daniel-avery-dj-set": {
   "id": "5-godini-toplotsentrala-daniel-avery-dj-set",
-  "title": "5 ГОДИНИ ТОПЛОЦЕНТРАЛА! Daniel Avery DJ SET",
+  "title": "5 години Топлоцентрала! Daniel Avery DJ SET",
   "titleEn": "",
   "theatre": "toplo",
   "author": "",
@@ -6100,5 +6100,131 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w": {
+  "id": "5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w",
+  "title": "5 години Топлоцентрала! LET’S NOT GET LOST IN A DETAIL NOW Workshop with Maarten Seghers/NEEDCOMPANY",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-songs-of-disconnection": {
+  "id": "5-godini-toplotsentrala-songs-of-disconnection",
+  "title": "5 години Топлоцентрала! Songs of disconnection",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-vzeto-ot-internet-ili-kratko-rakovod": {
+  "id": "5-godini-toplotsentrala-vzeto-ot-internet-ili-kratko-rakovod",
+  "title": "5 години Топлоцентрала! Взето от интернет или кратко ръководство за употребата на танца I ВХОД СВОБОДЕН",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-di-shtraus-tehnik-ideya-tekst-i-hore": {
+  "id": "5-godini-toplotsentrala-di-shtraus-tehnik-ideya-tekst-i-hore",
+  "title": "5 години Топлоцентрала! Ди/Щраус техник - идея, текст и хореография от Иво Димчев",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-tela-na-vlastta-ikar-2026-za-savreme": {
+  "id": "5-godini-toplotsentrala-tela-na-vlastta-ikar-2026-za-savreme",
+  "title": "5 години Топлоцентрала! Тела на властта|ИКАР 2026 за СЪВРЕМЕНЕН ТАНЦ И ПЪРФОРМАНС",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "laboratoriya-po-teatar-na-predmetite-fat-festival-2026": {
+  "id": "laboratoriya-po-teatar-na-predmetite-fat-festival-2026",
+  "title": "Лаборатория по театър на предметите | ФАТ Фестивал 2026",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "zhena-na-parva-sreshta": {
+  "id": "zhena-na-parva-sreshta",
+  "title": "ЖЕНА НА ПЪРВА СРЕЩА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
