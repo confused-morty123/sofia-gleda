@@ -38,7 +38,7 @@ harvests img for poster-less entries).
     python3 scripts/fetch_film_info.py --venue vlaikova  # Влайкова's film pages only
 """
 from __future__ import annotations
-import json, os, re, sys, pathlib
+import datetime, json, os, re, sys, pathlib
 
 try:
     from bs4 import BeautifulSoup
@@ -439,7 +439,15 @@ def parse_info_line(text):
         return None
     raw = t.split("|")
     fields = [f.strip(" :") for f in raw]
-    yi = next((i for i, f in enumerate(fields) if re.fullmatch(r"(?:18|19|20)\d{2}", f)), None)
+    # The year is the LAST complete year-like field: a film titled by a number
+    # ("| 1917 | Великобритания, САЩ | 2019 |", "| 1900 | NOVECENTO | Италия | 1976 |")
+    # prints it in the title position, before the real year. A "year" later than next
+    # year is a title too ("| 2046 | Хонконг, Китай | 2004 |"), never a release year.
+    max_year = datetime.date.today().year + 1
+    cands = [i for i, f in enumerate(fields)
+             if re.fullmatch(r"(?:18|19|20)\d{2}", f) and int(f) <= max_year]
+    complete = [i for i in cands if i < len(fields) - 1]
+    yi = (complete or cands or [None])[-1]
     if yi is None or yi == 0 and not t.lstrip().startswith("|"):
         return None
     before = [f for f in fields[:yi] if f]
@@ -459,7 +467,7 @@ def parse_info_line(text):
         return gs if gs and len(f) <= 40 and len(f.split()) <= 3 else []
 
     for f in before:
-        if _LATIN_ONLY_RE.match(f):
+        if _LATIN_ONLY_RE.match(f) or re.fullmatch(r"\d{4}", f):   # "1917", "2046": a title
             latin.append(f)
         elif genre_of(f):
             genres.extend(g for g in genre_of(f) if g not in genres)

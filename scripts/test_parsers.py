@@ -2843,6 +2843,25 @@ check("info line: a leading genre, a typo 'l' for '|', co-production countries",
       [({"title_en": "Everest: The Other Side", "country": "САЩ", "year": 2026, "genres": ["Документален"]}, ""),
        ({"title_en": "How to Save the Immortal 2: Elixir of Life", "country": "Русия", "year": 2026}, "Драйбоун …"),
        ({"title_en": "Nina Roza", "country": "Канада, Италия, България, Белгия", "year": 2026}, "")])
+# A film titled by a number (Влайкова runs classics series): the first year-like field was
+# read as the year, so 1917 (2019) became year 1917, NOVECENTO was dropped, and fetch_tmdb's
+# year check would reject the right TMDB match. The last complete year field is the year.
+check("info line: a title that is a year is a title; the year is the last year field",
+      [FI.parse_info_line("| 1917 | Великобритания, САЩ | 2019 |"),
+       FI.parse_info_line("| 1900 | NOVECENTO | Италия | 1976 |"),
+       FI.parse_info_line("| 2046 | Хонконг, Китай | 2004 |"),
+       FI.parse_info_line("| 2046 | Хонконг, Китай |")],
+      [({"title_en": "1917", "country": "Великобритания, САЩ", "year": 2019}, ""),
+       ({"title_en": "1900", "original": "Novecento", "country": "Италия", "year": 1976}, ""),
+       ({"title_en": "2046", "country": "Хонконг, Китай", "year": 2004}, ""),
+       None])
+_vk_num = FI.parse_vlaikova_page(BeautifulSoup(
+    (FIXTURES / "vlaikova_film_everest.html").read_text(encoding="utf-8").replace(
+        "EVEREST: THE OTHER SIDE | САЩ | 2026 |", "1900 | NOVECENTO | Италия | 1976 |"), "lxml"),
+    "https://vlaikovacinema.com/screening/x/")
+check("Влайкова page with a number title: year 1976, titles 1900 / Novecento",
+      {k: _vk_num.get(k) for k in ("title_en", "original", "country", "year")},
+      {"title_en": "1900", "original": "Novecento", "country": "Италия", "year": 1976})
 check("info line: prose with a year or a pipe is not one",
       [FI.parse_info_line(t) for t in ("1986 г. последиците от аварията достигат и България.",
                                        "Режисьор: Иван | Сценарий: Петър, 2020 г. и още думи")], [None, None])
