@@ -262,7 +262,29 @@ def contradiction(facts, cand):
     nb = (cand.get("nb") or {}).values() if isinstance(cand.get("nb"), dict) else ()
     if cand.get("dir") and names_agree(facts.get("director"), cand.get("dir"), list(nb)) is False:
         return f"director {facts.get('director')} vs TMDB {cand.get('dir')}"
+    # The venue's own Latin title (Влайкова's info line "| EVEREST: THE OTHER SIDE |
+    # САЩ | 2026 |", a festival's EN/original title): a candidate whose titles share
+    # none of them AND whose year is not the venue's (±1) is another film. Both are
+    # needed: a festival's international title may differ from TMDB's, and a remake
+    # may share the title. Abstains when either side has no title or no year.
+    vt = [t for t in facts.get("titles") or () if norm(t)]
+    ct = [t for t in (cand.get("en"), cand.get("original_title")) if norm(t)]
+    g = year_gap(facts.get("year"), {"release_date": str(cand.get("tmdb_year") or "")})
+    if vt and ct and g is not None and g > 1 and not any(titles_agree(a, b) for a in vt for b in ct):
+        return f"title {vt[0]} ({facts.get('year')}) vs TMDB {ct[0]} ({cand.get('tmdb_year')})"
     return None
+
+
+def titles_agree(a, b):
+    """Two Latin titles name the same film: equal or one contains the other once
+    folded (norm), or nearly the same spelling (a dropped article, a typo)."""
+    import difflib
+    na, nb_ = norm(a), norm(b)
+    if not na or not nb_:
+        return False
+    if na == nb_ or (min(len(na), len(nb_)) >= 4 and (na in nb_ or nb_ in na)):
+        return True
+    return difflib.SequenceMatcher(None, na, nb_).ratio() >= 0.85
 
 
 def venue_facts(film, fi=None, urls=()):
@@ -271,11 +293,14 @@ def venue_facts(film, fi=None, urls=()):
     page), never from TMDB."""
     film, fi = film or {}, fi or {}
     d = film.get("director") or fi.get("dir") or ""
+    titles = [t.strip() for t in (fi.get("title_en"), fi.get("original"), film.get("originalTitle"))
+              if isinstance(t, str) and t.strip() and not _has_cyrillic(t)]
     return {"year": film.get("year") or fi.get("year"),
             "runtime": film.get("runtime") or fi.get("runtime"),
             "genres": film.get("genres") or fi.get("genres") or [],
             "director": "" if d.strip() in ("", "—", "-") else d,
-            "imdb": venue_imdb_ids(urls)}
+            "imdb": venue_imdb_ids(urls),
+            "titles": list(dict.fromkeys(titles))}
 
 
 # Per-film TMDB ids verified to be ANOTHER film (tmdb_blocklist.json, committed):

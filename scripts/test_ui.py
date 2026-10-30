@@ -13996,6 +13996,8 @@ def wave_hf1(browser):
 import hashlib
 
 HF2_POSTERS = sorted((webapp_root / "posters").glob("*.jpg"))
+HF2_POSTER_HOSTS = ("image.tmdb.org", "programata.bg", "kinoarena.com", "cinemacity.bg", "kinomania.bg",
+                    "cinelibri.com", "g8cinema.com")
 _HF2_BYTES = {}
 
 # marks every <img> whose decode() resolved: "decoded" in the poster checks below means
@@ -14005,7 +14007,7 @@ HF2_DECODE_PATCH = """(()=>{const P=HTMLImageElement.prototype,od=P.decode;if(!o
 
 
 def _hf2_open(browser, w, h, phone, lang="bg", mode="cinema", reduced=False):
-    """_hf_open plus real poster bytes for the CDN posters (TMDB, programata): each URL
+    """_hf_open plus real poster bytes for the CDN and venue posters (HF2_POSTER_HOSTS): each URL
     always gets the same local picture, so posters load, decode and can blink as on a
     phone; every other request stays offline."""
     kw = dict(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia", locale="bg-BG")
@@ -14020,7 +14022,11 @@ def _hf2_open(browser, w, h, phone, lang="bg", mode="cinema", reduced=False):
 
     def _route(route):
         u = route.request.url
-        if HF2_POSTERS and ("image.tmdb.org" in u or "programata.bg" in u):
+        # the venue sites' own poster pictures too (kinoarena, cinemacity, ...): a film
+        # unmatched from TMDB falls back to its venue's picture, which stayed offline here
+        # and failed as "not loaded" (2026-10-29: zvyarat's kinoarena poster)
+        if HF2_POSTERS and (any(h in u for h in HF2_POSTER_HOSTS[:2])
+                            or (route.request.resource_type == "image" and any(h in u for h in HF2_POSTER_HOSTS))):
             f = HF2_POSTERS[int(hashlib.md5(u.encode()).hexdigest(), 16) % len(HF2_POSTERS)]
             if f not in _HF2_BYTES:
                 _HF2_BYTES[f] = f.read_bytes()

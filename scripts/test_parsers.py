@@ -2805,6 +2805,99 @@ _vk_bleed = BeautifulSoup((FIXTURES / "vlaikova_credits_bleed.html").read_text(e
 check("Влайкова page: 'Режисьор: Ойер Плаза<br/>Сценаристи: …' -> director 'Ойер Плаза'",
       FI.parse_vlaikova_page(_vk_bleed, "https://vlaikovacinema.com/screening/x/").get("dir"), "Ойер Плаза")
 
+# Влайкова's info line and film block (2026-10-30). The parser read only labelled credits,
+# so „Еверест: Другата страна“ showed „Няма налична информация“ although Влайкова prints its
+# synopsis, and without the year / English title TMDB matched The Departed.
+print("Влайкова film page: info line, runtime, genres, credits, synopsis")
+def _vk(name):
+    return FI.parse_vlaikova_page(BeautifulSoup((FIXTURES / name).read_text(encoding="utf-8"), "lxml"),
+                                  "https://vlaikovacinema.com/screening/x/")
+_vk_ev = _vk("vlaikova_film_everest.html")
+check("Еверест: the info line gives the English title, country and year; the badge the genre",
+      {k: _vk_ev.get(k) for k in ("title_en", "original", "country", "year", "genres", "dir", "cast")},
+      {"title_en": "Everest: The Other Side", "original": None, "country": "САЩ", "year": 2026,
+       "genres": ["Документален"], "dir": None, "cast": None})
+check("Еверест: the synopsis is the film's own text, without the info line",
+      (_vk_ev.get("synBg", "").startswith("Интимен портрет на двама души"), "|" in _vk_ev.get("synBg", "|"),
+       len(_vk_ev.get("synBg", "")) > 400), (True, False, True))
+_vk_ob = _vk("vlaikova_film_obich.html")
+check("Обич: two Latin titles (English, original), runtime from the meta line, labelled credits",
+      {k: _vk_ob.get(k) for k in ("title_en", "original", "country", "year", "runtime", "dir", "cast", "genres")},
+      {"title_en": "The Beloved", "original": "El Ser Querido", "country": "Испания", "year": 2026, "runtime": 135,
+       "dir": "Родриго Сорогойен", "cast": "Хавиер Бардем, Виктория Луенго, Раул Аревало, Марина Фойс",
+       "genres": ["Драма"]})
+check("Обич: the festival line (★ …) is not the synopsis, the prose after it is",
+      (_vk_ob.get("synBg", "").startswith("С участието на носителя"), "★" in _vk_ob.get("synBg", "★")), (True, False))
+_vk_hr = _vk("vlaikova_film_hroniki.html")
+check("Хроники: a country-only info line; 'Филм на режисьора Калоян Николов' names the director",
+      {k: _vk_hr.get(k) for k in ("title_en", "country", "year", "runtime", "dir", "genres")},
+      {"title_en": None, "country": "България", "year": 2026, "runtime": 91, "dir": "Калоян Николов",
+       "genres": ["Български", "Документален"]})
+check("Хроники: the screening notes (bold) are skipped, both synopsis paragraphs kept",
+      (_vk_hr.get("synBg", "").startswith("Документален филм, посветен"), "Прожекцията" in _vk_hr.get("synBg", ""),
+       _vk_hr.get("synBg", "").count("\n\n")), (True, False, 1))
+check("info line: a leading genre, a typo 'l' for '|', co-production countries",
+      [FI.parse_info_line("Документален | EVEREST: THE OTHER SIDE | САЩ | 2026 |"),
+       FI.parse_info_line("l HOW TO SAVE THE IMMORTAL 2: ELIXIR OF LIFE | Русия | 2026 | Драйбоун …"),
+       FI.parse_info_line("| NINA ROZA | Канада-Италия-България-Белгия | 2026 |")],
+      [({"title_en": "Everest: The Other Side", "country": "САЩ", "year": 2026, "genres": ["Документален"]}, ""),
+       ({"title_en": "How to Save the Immortal 2: Elixir of Life", "country": "Русия", "year": 2026}, "Драйбоун …"),
+       ({"title_en": "Nina Roza", "country": "Канада, Италия, България, Белгия", "year": 2026}, "")])
+# A film titled by a number (Влайкова runs classics series): the first year-like field was
+# read as the year, so 1917 (2019) became year 1917, NOVECENTO was dropped, and fetch_tmdb's
+# year check would reject the right TMDB match. The last complete year field is the year.
+check("info line: a title that is a year is a title; the year is the last year field",
+      [FI.parse_info_line("| 1917 | Великобритания, САЩ | 2019 |"),
+       FI.parse_info_line("| 1900 | NOVECENTO | Италия | 1976 |"),
+       FI.parse_info_line("| 2046 | Хонконг, Китай | 2004 |"),
+       FI.parse_info_line("| 2046 | Хонконг, Китай |")],
+      [({"title_en": "1917", "country": "Великобритания, САЩ", "year": 2019}, ""),
+       ({"title_en": "1900", "original": "Novecento", "country": "Италия", "year": 1976}, ""),
+       ({"title_en": "2046", "country": "Хонконг, Китай", "year": 2004}, ""),
+       None])
+_vk_num = FI.parse_vlaikova_page(BeautifulSoup(
+    (FIXTURES / "vlaikova_film_everest.html").read_text(encoding="utf-8").replace(
+        "EVEREST: THE OTHER SIDE | САЩ | 2026 |", "1900 | NOVECENTO | Италия | 1976 |"), "lxml"),
+    "https://vlaikovacinema.com/screening/x/")
+check("Влайкова page with a number title: year 1976, titles 1900 / Novecento",
+      {k: _vk_num.get(k) for k in ("title_en", "original", "country", "year")},
+      {"title_en": "1900", "original": "Novecento", "country": "Италия", "year": 1976})
+check("info line: prose with a year or a pipe is not one",
+      [FI.parse_info_line(t) for t in ("1986 г. последиците от аварията достигат и България.",
+                                       "Режисьор: Иван | Сценарий: Петър, 2020 г. и още думи")], [None, None])
+check("an English title in capitals is cased as a person writes it; mixed case is kept",
+      [FI.title_case_caps(t) for t in ("FROST WITHOUT SNOW AND ICE", "ROCKY II", "THE BELOVED", "Sirāt")],
+      ["Frost Without Snow and Ice", "Rocky II", "The Beloved", "Sirāt"])
+_md = {"synBg": "старо", "year": 2025, "title_en": "Festival Title"}
+check("merge: synopsis refreshes, a stored year / title is never replaced, nothing is blanked",
+      (FI.merge_details(_md, {"synBg": "ново", "year": 2026, "title_en": "Other", "runtime": 90, "dir": ""}),
+       _md), (["synBg", "runtime"], {"synBg": "ново", "year": 2025, "title_en": "Festival Title", "runtime": 90}))
+_md2 = {"synBg": "от фестивала", "dir": "А"}
+check("merge (fill_only, an entry already complete): only empty fields are filled",
+      (FI.merge_details(_md2, {"synBg": "от Влайкова", "dir": "Б", "year": 2026}, fill_only=True), _md2),
+      (["year"], {"synBg": "от фестивала", "dir": "А", "year": 2026}))
+_vk_films = [{"id": "everest-drugata-strana", "bg": "Еверест: Другата страна"}, {"id": "skoti", "bg": "Скоти"},
+             {"id": "a", "bg": "Кукла"}, {"id": "b", "bg": "КУКЛА"}]
+_vk_merges = {"everest-ot-drugata-strana": {"into": "everest-drugata-strana",
+                                            "record": {"bg": "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА"}}}
+check("Влайкова pages: by the film's own title key, a merged listing's title, never an ambiguous key",
+      FI.vlaikova_pages_for(_vk_films, {"ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА": "https://vlaikovacinema.com/screening/e/",
+                                        "СКОТИ": "https://vlaikovacinema.com/screening/s/",
+                                        "СИНЕЛИБРИ 2026 – КУКЛА": "https://vlaikovacinema.com/screening/k/"},
+                            _vk_merges, {}),
+      {"everest-drugata-strana": "https://vlaikovacinema.com/screening/e/",
+       "skoti": "https://vlaikovacinema.com/screening/s/"})
+check("Влайкова pages: a merged-away listing's stored page serves the film it was merged into",
+      FI.vlaikova_pages_for(_vk_films, {}, _vk_merges,
+                            {"everest-ot-drugata-strana": {"src": "https://vlaikovacinema.com/screening/e/"}}),
+      {"everest-drugata-strana": "https://vlaikovacinema.com/screening/e/"})
+check("the programme grid's film links are read (a.cinema-title on vlaikovacinema.com /screening/ only)",
+      FI.vlaikova_programme_links(BeautifulSoup(
+          '<a class="cinema-title" href="https://vlaikovacinema.com/screening/x/">X</a>'
+          '<a class="cinema-title" href="https://vlaikovacinema.com/events/y/">Y</a>'
+          '<a class="cinema-title" href="https://evil.example/screening/z/">Z</a>', "lxml")),
+      {"X": "https://vlaikovacinema.com/screening/x/"})
+
 _san = {"a": {"dir": "Нани Морети В ролите", "cast": "А, Б"}, "b": {"dir": "Сценаристи"},
         "c": {"dir": "Ебс Бърнау", "cast": "български дублаж: Весела Манолова"}}
 check("stored credits are cleaned in place, wherever the film's link now points",
@@ -4503,7 +4596,21 @@ check("year: beyond MAX_YEAR_GAP is another film; an unknown year abstains",
       (bool(_C({"year": 2026}, {"tmdb_year": "2006"})), _C({}, {"tmdb_year": "2006"})), (True, None))
 check("venue_facts take the record's own fields, then film_info's, never TMDB's",
       TMDB.venue_facts({"runtime": 110, "genres": []}, {"dir": "Майк Лий", "year": 1993, "genres": ["Драма"]}),
-      {"year": 1993, "runtime": 110, "genres": ["Драма"], "director": "Майк Лий", "imdb": set()})
+      {"year": 1993, "runtime": 110, "genres": ["Драма"], "director": "Майк Лий", "imdb": set(), "titles": []})
+check("venue_facts: the venue page's Latin titles (film_info title_en / original), never a Cyrillic one",
+      TMDB.venue_facts({}, {"title_en": "Everest: The Other Side", "original": "Еверест", "year": 2026})["titles"],
+      ["Everest: The Other Side"])
+check("title + year: The Departed (2006) is not Влайкова's 'Everest: The Other Side' (2026)",
+      bool(_C({"titles": ["Everest: The Other Side"], "year": 2026},
+              {"en": "The Departed", "original_title": "The Departed", "tmdb_year": "2006"})), True)
+check("title + year: a different title 3 years off is another film (inside MAX_YEAR_GAP)",
+      bool(_C({"titles": ["The Chilean"], "year": 2026}, {"en": "Chilean Spring", "tmdb_year": "2023"})), True)
+check("title + year: either agreeing is no contradiction (an international title, a remake)",
+      [_C({"titles": ["The Beloved", "El Ser Querido"], "year": 2026},
+          {"en": "Beloved", "original_title": "El ser querido", "tmdb_year": "2023"}),
+       _C({"titles": ["Frost Without Snow and Ice"], "year": 2026}, {"en": "Frost", "tmdb_year": "2026"}),
+       _C({"titles": ["Everest: The Other Side"]}, {"en": "The Departed", "tmdb_year": "2006"})],
+      [None, None, None])
 _bl_dir = _tmp.mkdtemp()
 _bl_p = _pl.Path(_bl_dir) / "tmdb_blocklist.json"
 _bl_p.write_text(_json.dumps({"blocked": {"everest-ot-drugata-strana": {"tmdb_ids": [1422]}, "x": [5, "7"]}}),
