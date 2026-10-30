@@ -18,7 +18,12 @@ The "skip complete entries" shortcut must not prevent harvesting `img`.
 
 Parsers:
   programata.bg /kino/filmi/<slug>/  — the richest source for BG cinema
-  vlaikovacinema.com /screening/.../  — BG description + cast/dir
+  vlaikovacinema.com /screening/.../  — the info line (English/original title,
+                                        country, year), runtime, genres, director(s),
+                                        cast and the BG synopsis. Read for every film
+                                        Влайкова shows, also when its LINKS entry
+                                        points elsewhere (the programme grid's titles
+                                        matched by identity key; a merged listing's page)
   ndk.bg/en/...                       — English description (synEn) + poster
   Other hosts                         — skipped
 
@@ -29,7 +34,8 @@ Keep-previous: never blanks an entry a failed fetch could not refresh; skips
 films whose existing entry already has synopsis + dir + cast (but still
 harvests img for poster-less entries).
 
-    python3 scripts/fetch_film_info.py          # -> film_info.json
+    python3 scripts/fetch_film_info.py                   # -> film_info.json
+    python3 scripts/fetch_film_info.py --venue vlaikova  # Влайкова's film pages only
 """
 from __future__ import annotations
 import json, os, re, sys, pathlib
@@ -346,24 +352,277 @@ def parse_programata(soup, url):
 # vlaikovacinema.com screening page parser
 # URL pattern: https://vlaikovacinema.com/screening/<slug>/
 # --------------------------------------------------------------------------
+#
+# A Влайкова film page (2026-10-30, read on eight pages) is
+#   <div class="screening-single-content">
+#     <h1 class="screening-single-title">ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА</h1>
+#     <div class="screening-single-badges"><span class="cinema-badge
+#          cinema-badge-documentary">Документален</span> …</div>
+#     <div class="screening-single-meta">102 мин.</div>            (not always)
+#     <div class="screening-single-description">
+#       <p><strong>| EVEREST: THE OTHER SIDE | САЩ | 2026 |</strong><br/>synopsis…</p>
+#       <p><strong>Режисьор: </strong>…<br/><strong>В ролите:</strong> …</p>
+#       <p><strong>Език: </strong>…</p> <p>★ Фестивални селекции: …</p>
+# The info line names the English title (and the original one when it differs:
+# "| THE BELOVED | EL SER QUERIDO | Испания | 2026 |"), the country and the year;
+# a listing may lead with the genre ("Документален | EVEREST: …") and a typo may
+# open it with "l" for "|". Older pages put the same text in .entry-content.
+
+# Badge classes Влайкова uses for a genre (the rest are "Премиера", "Дублиран" …).
+_VLAIKOVA_BADGE_GENRES = {
+    "cinema-badge-documentary": "Документален",
+    "cinema-badge-animation": "Анимация",
+    "cinema-badge-bulgarian": "Български",
+}
+# The parser version a Влайкова entry is stamped with: entries parsed before the
+# info line was read (pv 5) are re-read once.
+_VLAIKOVA_PARSER_VERSION = 6
+
+_INFO_LINE_RE = re.compile(
+    r"^\s*(?:\||[lI](?=\s))?\s*((?:[^|]{1,150}\|\s*)*?)((?:18|19|20)\d{2})\s*\|?\s*(.*)$", re.S)
+_LATIN_ONLY_RE = re.compile(r"^[^Ѐ-ӿ]*[A-Za-z][^Ѐ-ӿ]*$")
+_VLAIKOVA_LABEL_RE = re.compile(
+    r"^\s*(В\s+ролите|Участват|Актьори|С\s+участието\s+на|Режисьори|Режисьор(?:\s+и\s+сценарист\w*)?|Сценаристи|"
+    r"Сценарист|Сценарий|Жанр|Език|Субтитри|Оператори|Оператор|Музика|Композитор|"
+    r"Продуценти|Продуцент|Монтаж|Държава|Година|Времетраене|Продължителност|"
+    r"Фестивали[^:：]{0,30})\s*[:：]\s*(.*)$", re.I | re.S)
+# A screening note, a festival list or an award line is not the film's synopsis.
+_VLAIKOVA_NOTE_RE = re.compile(
+    r"^\s*(?:★|\*|Прожекци|На\s+прожекцията|Специалн\w*\s+прожекци|Фестивал\w*\s+(?:селекции|и\s+отличия)|"
+    r"Награди|Билети|Вход\b)|Влайкова|ВЛАЙКОВА|прожекцията\s+ще|след\s+прожекцията", re.I)
+_ONE_DIRECTOR_RE = re.compile(
+    r"\b(?:Филм|Документален\s+филм)\s+на\s+режисьора\s+([А-ЯA-Z][\w’'-]+(?:\s+[А-ЯA-Z][\w’'-]+){1,2})")
+_EN_SMALL_WORDS = {"a", "an", "the", "and", "or", "but", "nor", "of", "in", "on", "at", "to",
+                   "for", "by", "from", "with", "as", "vs", "via", "into"}
+
+
+def _nbsp(s):
+    return re.sub(r"[ \t   ]+", " ", s or "").strip()
+
+
+def title_case_caps(t):
+    """An English title Влайкова prints in capitals, as a person would write it:
+    "EVEREST: THE OTHER SIDE" -> "Everest: The Other Side". A title that is not
+    all capitals is kept as printed; Roman numerals and words with digits stay."""
+    t = _nbsp(t)
+    if not t or t != t.upper():
+        return t
+    out, first = [], True
+    for w in t.split(" "):
+        low = w.lower()
+        core = re.sub(r"^\W+|\W+$", "", w)
+        if re.fullmatch(r"[IVXLC]+", core) and core not in ("I",) or re.search(r"\d", w):
+            out.append(w)
+        elif low in _EN_SMALL_WORDS and not first:
+            out.append(low)
+        else:
+            out.append(re.sub(r"[^\W\d_]", lambda m: m.group(0).upper(), low, count=1))
+        first = w.endswith(":")
+    return " ".join(out)
+
+
+def parse_info_line(text):
+    """The fields of a Влайкова info line, "| EVEREST: THE OTHER SIDE | САЩ | 2026 |".
+    Shapes seen (2026-10-30): a leading genre ("Документален | EVEREST: …"), the
+    Bulgarian title first and the country after the year ("КОСА | HAIR | 1979 | САЩ |"),
+    the genre after the year ("… | 2026 | Психологическа драма |"), "І" (Cyrillic I)
+    or a typo "l" for "|". Returns (fields, rest): fields holds title_en / original /
+    country / year / genres when printed; rest is the text after the line (a synopsis
+    that shares its paragraph). None when the text is not an info line: it needs a
+    "|" and a year field, and every field before the year must be a title, a country
+    or a genre."""
+    t = _nbsp(text)
+    if t.count("|") == 0 and len(re.findall(r"(?:^|\s)І(?=\s|$)", t)) >= 2:
+        t = re.sub(r"(?:^|(?<=\s))І(?=\s|$)", "|", t)          # "І LALKA І Полша І 2026 І"
+    t = re.sub(r"^[lI](?=\s)", "|", t)                        # "l HOW TO SAVE …"
+    if "|" not in t:
+        return None
+    raw = t.split("|")
+    fields = [f.strip(" :") for f in raw]
+    yi = next((i for i, f in enumerate(fields) if re.fullmatch(r"(?:18|19|20)\d{2}", f)), None)
+    if yi is None or yi == 0 and not t.lstrip().startswith("|"):
+        return None
+    before = [f for f in fields[:yi] if f]
+    if not before and yi > 1 or len(before) > 6:
+        return None
+    # After the year: complete fields ("| САЩ |", "| Психологическа драма |") belong to
+    # the line; the last piece, with no closing "|", is the text that follows it.
+    after_complete, rest = [f for f in fields[yi + 1:-1] if f], fields[-1] if yi + 1 < len(fields) else ""
+    rec, latin, genres = {}, [], []
+    country = ""
+
+    def genre_of(f):
+        g = _GENRE_MAP.get(f.lower())
+        if g:
+            return [g]
+        gs = map_genres(re.sub(r"\s+", ",", f))
+        return gs if gs and len(f) <= 40 and len(f.split()) <= 3 else []
+
+    for f in before:
+        if _LATIN_ONLY_RE.match(f):
+            latin.append(f)
+        elif genre_of(f):
+            genres.extend(g for g in genre_of(f) if g not in genres)
+        elif re.fullmatch(r"[Ѐ-ӿ][Ѐ-ӿ .,\-–]*", f):
+            if latin or f is before[-1]:
+                country = f                # the Cyrillic field after the titles
+            # else: the Bulgarian title printed first ("КОСА | HAIR | …")
+        else:
+            return None                    # a sentence, not an info line
+    for f in after_complete:
+        if len(f) > 60:
+            break
+        if genre_of(f):
+            genres.extend(g for g in genre_of(f) if g not in genres)
+        elif not country and re.fullmatch(r"[Ѐ-ӿ][Ѐ-ӿ .,\-–]*", f):
+            country = f
+    if latin:
+        rec["title_en"] = title_case_caps(latin[0])
+        if len(latin) > 1:
+            rec["original"] = title_case_caps(latin[1])
+    if country:
+        parts = []
+        for c in re.split(r"\s*[,\-–]\s*", country):
+            if c and c not in parts:
+                parts.append(c)            # "Франция, Япония, Германия, Белгия, Белгия"
+        rec["country"] = ", ".join(parts)
+    rec["year"] = int(fields[yi])
+    if genres:
+        rec["genres"] = list(dict.fromkeys(genres))
+    return rec, rest.strip()
+
+
+def _segments(p):
+    """A <p> split at its <br/>s: [(text, emphasised)], where emphasised is True when
+    the segment is (nearly) all bold/italic — a note or a credit, never a synopsis."""
+    out = []
+    for frag in re.split(r"<br\s*/?>", str(p), flags=re.I):
+        fs = BeautifulSoup(frag, "lxml")
+        text = _nbsp(fs.get_text(" ", strip=True))
+        if not text:
+            continue
+        emph = sum(len(_nbsp(e.get_text(" ", strip=True)))
+                   for e in fs.find_all(["strong", "b", "em", "i"])
+                   if not e.find_parent(["strong", "b", "em", "i"]))
+        out.append((text, emph >= 0.8 * len(text)))
+    return out
+
+
+def _credit_names(value, limit=5):
+    v = _clean_credit_value(value)
+    v = re.sub(r"\s+и\s+др\.?\s*$", "", v)
+    v = re.sub(r",?\s+и\s+(?=[А-ЯA-Z])", ", ", v)
+    names = [n.strip(" .") for n in v.split(",") if n.strip(" .")]
+    names = [n for n in names if ":" not in n and len(n) <= 40]
+    return ", ".join(names[:limit])
+
+
+def parse_vlaikova_description(soup):
+    """The structured fields of a Влайкова film page: title_en, original, country,
+    year, runtime, genres, dir, cast and the synopsis (synBg). Only what the page
+    prints; a field it does not print is absent."""
+    rec: dict = {}
+    scope = soup.select_one(".screening-single-content") or soup
+    desc = (scope.select_one(".screening-single-description")
+            or soup.select_one(".screening-single-description")
+            or soup.select_one(".entry-content"))
+    genres: list = []
+    for b in scope.select(".cinema-badge"):
+        for c in b.get("class") or ():
+            g = _VLAIKOVA_BADGE_GENRES.get(c)
+            if g and g not in genres:
+                genres.append(g)
+    meta = scope.select_one(".screening-single-meta")
+    if meta:
+        rm = re.search(r"(\d{2,3})\s*мин", meta.get_text(" ", strip=True))
+        if rm and 20 <= int(rm.group(1)) <= 400:
+            rec["runtime"] = int(rm.group(1))
+    if desc is None:
+        if genres:
+            rec["genres"] = sorted(genres)
+        return rec
+
+    prose, started, info_seen = [], False, False
+    for p in desc.find_all("p"):
+        for text, emph in _segments(p):
+            if not info_seen:
+                parsed = parse_info_line(text)
+                if parsed:
+                    info_seen = True
+                    fields, rest = parsed
+                    for k, v in fields.items():
+                        if k == "genres":
+                            genres.extend(g for g in v if g not in genres)
+                        else:
+                            rec[k] = v
+                    text, emph = rest, False
+                    if not text:
+                        continue
+            lm = _VLAIKOVA_LABEL_RE.match(text)
+            if lm:
+                label, value = lm.group(1).lower(), lm.group(2)
+                if label.startswith("режисьор") and not rec.get("dir"):
+                    d = _credit_names(value, limit=3)
+                    if d and len(d) <= 80:
+                        rec["dir"] = d
+                elif re.match(r"(в\s+ролите|участват|актьори|с\s+участието)", label) and not rec.get("cast"):
+                    c = _credit_names(value)
+                    if c:
+                        rec["cast"] = c
+                elif label == "жанр":
+                    for g in map_genres(re.sub(r"\s+", ",", value)):
+                        if g not in genres:
+                            genres.append(g)
+                elif label in ("времетраене", "продължителност") and "runtime" not in rec:
+                    rm = re.search(r"(\d{2,3})", value)
+                    if rm and 20 <= int(rm.group(1)) <= 400:
+                        rec["runtime"] = int(rm.group(1))
+                if started:
+                    started = None          # credits after the synopsis end it
+                continue
+            if not rec.get("dir"):
+                dm = _ONE_DIRECTOR_RE.search(text)
+                if dm:
+                    rec["dir"] = dm.group(1)
+            if emph or _VLAIKOVA_NOTE_RE.search(text) or _PLACEHOLDER_RE.search(text):
+                if started:
+                    started = None
+                continue
+            if started is None:
+                continue
+            if len(text) >= 40:
+                prose.append(text)
+                started = True
+    syn = "\n\n".join(prose).strip()
+    if len(syn) >= 80:
+        rec["synBg"] = syn
+    if rec.get("country") and rec["country"].strip() == "България" and "Български" not in genres:
+        genres.append("Български")
+    if genres:
+        rec["genres"] = sorted(set(genres))
+    return rec
+
 
 def parse_vlaikova_page(soup, url):
-    """Parse a vlaikovacinema.com screening page for synopsis/dir/cast."""
-    rec: dict = {}
+    """Parse a vlaikovacinema.com screening page: the info line (English and
+    original title, country, year), runtime, genres, director(s), cast and the
+    synopsis (parse_vlaikova_description), then the older label search for any
+    credit the structured pass did not find."""
+    rec: dict = parse_vlaikova_description(soup)
 
     # Synopsis: .entry-content p, .screening-description, .film-description
-    for sel in (".entry-content p", ".entry-content",
-                ".screening-description p", ".screening-description",
-                ".film-description p", ".film-description",
-                ".content p", ".content"):
-        nodes = soup.select(sel)
-        for node in nodes:
-            text = node.get_text(" ", strip=True)
-            if len(text) >= 80 and not _PLACEHOLDER_RE.search(text):
-                rec["synBg"] = text
+    if "synBg" not in rec:
+        for sel in (".screening-description p", ".screening-description",
+                    ".film-description p", ".film-description",
+                    ".content p", ".content"):
+            nodes = soup.select(sel)
+            for node in nodes:
+                text = node.get_text(" ", strip=True)
+                if len(text) >= 80 and not _PLACEHOLDER_RE.search(text) and "|" not in text:
+                    rec["synBg"] = text
+                    break
+            if "synBg" in rec:
                 break
-        if "synBg" in rec:
-            break
 
     # Director / cast — look for labelled spans/divs.
     # Stop at the next label (word followed by colon) to avoid swallowing
@@ -393,8 +652,8 @@ def parse_vlaikova_page(soup, url):
                 if c and c != "—":
                     rec["cast"] = c
 
-    # Genres
-    for sel in (".film-genres", ".genres", "[class*='genre']"):
+    # Genres (an older page's genre block, when the badges and info line gave none)
+    for sel in (() if rec.get("genres") else (".film-genres", ".genres", "[class*='genre']")):
         node = soup.select_one(sel)
         if node:
             text = node.get_text(" ", strip=True)
@@ -666,7 +925,81 @@ def parse_film_page(soup, url):
 # Main
 # --------------------------------------------------------------------------
 
-def main():
+VLAIKOVA_HOME = "https://vlaikovacinema.com/"
+# Fields the Влайкова info line adds. A value a festival page or a person already
+# stored is kept (fill-only); the page's synopsis and credits refresh as before.
+_FILL_ONLY_FIELDS = ("title_en", "original", "country", "year", "runtime")
+
+
+def vlaikova_programme_links(soup):
+    """{title as printed: film page URL} from Влайкова's own programme grid (the
+    page scrape_programs.parse_vlaikova reads: a.cinema-title, href = film page)."""
+    out = {}
+    for a in (soup.select("a.cinema-title") if soup is not None else ()):
+        href, title = a.get("href") or "", a.get_text(" ", strip=True)
+        if title and _host_is(href, "vlaikovacinema.com") and "/screening/" in href:
+            out.setdefault(title, href)
+    return out
+
+
+def vlaikova_pages_for(films, programme, merges, prev):
+    """{film id: its Влайкова film page} for every film that has one, whatever
+    venue its LINKS entry points to (Еверест: Другата страна links to Дом на
+    киното, the page that reads nothing): a programme title whose identity key
+    (film_identity.key) is the film's own, or that of a listing merged into it
+    (film_merges.json); and a merged-away listing's stored Влайкова page. A key
+    that names two films is skipped, never guessed."""
+    from film_identity import key as _key, film_redirects
+    redirect = film_redirects(merges)
+    ids = {f.get("id") for f in films if f.get("id")}
+    by_key: dict = {}
+    for f in films:
+        k = _key(f.get("bg") or "")
+        if k:
+            by_key.setdefault(k, set()).add(f["id"])
+    for old, m in (merges or {}).items():
+        k = _key(((m.get("record") or {}).get("bg")) or "")
+        new = redirect.get(old)
+        if k and new in ids:
+            by_key.setdefault(k, set()).add(new)
+    out = {}
+    for title, url in sorted((programme or {}).items()):
+        hit = by_key.get(_key(title)) or set()
+        if len(hit) == 1:
+            out.setdefault(next(iter(hit)), url)
+    for old, new in redirect.items():
+        src = ((prev or {}).get(old) or {}).get("src") or ""
+        if new in ids and _host_is(src, "vlaikovacinema.com"):
+            out.setdefault(new, src)
+    return out
+
+
+def merge_details(entry, rec, fill_only=False):
+    """Merge a parsed page (rec) into a film_info entry: synopsis, credits and
+    genres refresh when the page prints them; the info-line fields only fill an
+    empty one (all fields do with fill_only: an entry that was already complete,
+    e.g. from a festival's page, read again only for the info line); nothing is
+    ever blanked. Returns the fields that changed."""
+    changed = []
+    for field in ("synBg", "synEn", "dir", "cast", "genres") + _FILL_ONLY_FIELDS:
+        val = rec.get(field)
+        if not val or (field == "genres" and not isinstance(val, list)):
+            continue
+        if (fill_only or field in _FILL_ONLY_FIELDS) and entry.get(field):
+            continue
+        if entry.get(field) != val:
+            entry[field] = val
+            changed.append(field)
+    return changed
+
+
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    # --venue vlaikova: only Влайкова's film pages (the programme grid and each film's
+    # page); every other film and host is left as it is.
+    only = argv[argv.index("--venue") + 1] if "--venue" in argv else None
+    if only not in (None, "vlaikova"):
+        sys.exit(f"--venue {only}: only 'vlaikova' can be run on its own")
     src = HTML.read_text(encoding="utf-8")
 
     # Read FILMS
@@ -726,6 +1059,17 @@ def main():
 
     session = Fetcher(budget_seconds=300)
 
+    # Влайкова's own film pages, for films whose LINKS entry points elsewhere.
+    try:
+        from film_identity import load_merges
+        merges = load_merges()
+    except Exception:
+        merges = {}
+    vl_programme = vlaikova_programme_links(session.soup(VLAIKOVA_HOME))
+    vl_pages = vlaikova_pages_for(films, vl_programme, merges, prev)
+    print(f"  Влайкова: {len(vl_programme)} titles on the programme, "
+          f"{len(vl_pages)} film page(s) matched to a film")
+
     # Track stats
     n_fetched = n_synopsis = n_dir = n_cast = n_genres = n_img = 0
 
@@ -737,6 +1081,16 @@ def main():
             continue
 
         existing = out.get(fid, {})
+        # The page to read: the film's LINKS entry on a host this script parses;
+        # else its Влайкова page (a LINKS entry on Дом на киното reads nothing).
+        url = links.get(fid)
+        if not url or not _host_is(url, "programata.bg", "vlaikovacinema.com", "ndk.bg", "kinoarena.com"):
+            url = vl_pages.get(fid)
+        if not url:
+            continue
+        is_vlaikova = _host_is(url, "vlaikovacinema.com")
+        if only == "vlaikova" and not is_vlaikova:
+            continue
         # Does this film still need a poster image (img)?
         needs_img = (fid not in tmdb_with_poster
                      and fid not in film_links_covered
@@ -749,21 +1103,14 @@ def main():
         has_cast = bool(existing.get("cast") and existing.get("cast") != "—")
         details_complete = (has_syn and has_dir and has_cast
                             and not _film_info_stale(existing))
-        if details_complete and not needs_img:
+        # A Влайкова page read before its info line was parsed is read once more.
+        vl_stale = is_vlaikova and existing.get("pv", 0) < _VLAIKOVA_PARSER_VERSION
+        if details_complete and not needs_img and not vl_stale:
             continue
 
         # Determine if this film (in FILMS) needs details
-        details_needed = needs_details(f)
+        details_needed = needs_details(f) or vl_stale
         if not details_needed and not needs_img:
-            continue
-
-        # Get the link for this film
-        url = links.get(fid)
-        if not url:
-            continue
-
-        # Only supported parsers, on their own hosts (exact or subdomain)
-        if not _host_is(url, "programata.bg", "vlaikovacinema.com", "ndk.bg", "kinoarena.com"):
             continue
 
         soup = session.soup(url)
@@ -782,20 +1129,21 @@ def main():
             if _has_label_bleed(_cv):
                 del entry[_cf]
 
-        # ----- Parse details (synopsis, dir, cast, genres) -----
-        if details_needed and not details_complete:
+        # ----- Parse details (synopsis, dir, cast, genres; Влайкова's info line) -----
+        if details_needed and (not details_complete or vl_stale):
             rec = parse_film_page(soup, url)
-            for field in ("synBg", "synEn", "dir", "cast", "genres"):
-                val = rec.get(field)
-                if val:
-                    if field == "genres" and not isinstance(val, list):
-                        continue
-                    if field == "genres" and not val:
-                        continue
-                    entry[field] = val
+            # A value read from another page (a festival's, programata's) is only
+            # completed from this one, never replaced; this page's own earlier
+            # reading is refreshed (an older parser's label bleed is corrected).
+            from urllib.parse import unquote
+            same_page = unquote(entry.get("src") or "") == unquote(url)
+            changed = merge_details(entry, rec, fill_only=details_complete or not same_page)
+            if changed and is_vlaikova:
+                print(f"  {fid}: {', '.join(changed)}")
 
             entry["src"] = url
-            entry["pv"] = _PARSER_VERSION   # parser version stamp
+            # parser version stamp
+            entry["pv"] = _VLAIKOVA_PARSER_VERSION if is_vlaikova else _PARSER_VERSION
 
             # Count coverage
             if rec.get("synBg") or rec.get("synEn"):
