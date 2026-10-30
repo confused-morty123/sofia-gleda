@@ -79,7 +79,10 @@ check("gate reads runs, writes nothing",
       bool(re.search(r"  gate:\n(?:.*\n){0,4}    permissions:\n      contents: read\n      actions: read", WF)), True)
 check("refresh job only when the gate says so",
       "  refresh:\n    needs: gate\n    if: needs.gate.outputs.run == 'true'\n" in WF, True)
-check("refresh job re-checks without waiting", "schedule_gate.py --event \"$GITHUB_EVENT_NAME\" --no-wait" in WF, True)
+check("refresh job re-checks the gate's night, without waiting",
+      "schedule_gate.py --event \"$GITHUB_EVENT_NAME\" --no-wait --day \"$GATE_DAY\"" in WF
+      and "GATE_DAY: ${{ needs.gate.outputs.day }}" in WF
+      and "      day: ${{ steps.gate.outputs.day }}\n" in WF, True)
 check("refresh job holds the concurrency lock, never cancels",
       bool(re.search(r"  refresh:\n(?:.*\n)*?    concurrency:\n      group: sofia-gleda-refresh\n"
                      r"      cancel-in-progress: false\n", WF)), True)
@@ -147,6 +150,30 @@ ok, _, _, log = run_gate(sofia(2026, 10, 31, 5, 0), last_err=True)
 check("git unreadable: fails open (refreshes)", ok, True)
 check("re-check (--no-wait) at 21:30 does not refresh",
       G.gate("schedule", False, clock=lambda: sofia(2026, 10, 30, 21, 30), last=lambda: 0.0, log=lambda m: None), False)
+
+print("recheck(): the refresh job asks only whether the gate's night is refreshed")
+# The skeptic's two cases (2026-10-30 review): the gate decided at 21:14:40 and the
+# refresh job's re-check ran at 21:15:10; a failed 03:05 refresh re-run at 22:00.
+_d = dt.date(2026, 10, 31)
+ok, at, slept, _ = run_gate(sofia(2026, 10, 31, 21, 14) + 40, last=sofia(2026, 10, 30, 3, 40))
+_day = dt.datetime.fromtimestamp(at, G.SOFIA).date()
+check("gate at 21:14:40 refreshes for 31 Oct", (ok, _day), (True, _d))
+check("…and the re-check at 21:15:10 still refreshes (no clock window)",
+      G.recheck(_day, "schedule", 1, last=lambda: sofia(2026, 10, 30, 3, 40), log=lambda m: None), True)
+check("re-check: the night is already refreshed (a firing that queued behind it) -> no second refresh",
+      G.recheck(_d, "schedule", 1, last=lambda: sofia(2026, 10, 31, 3, 9), log=lambda m: None), False)
+check("re-check: a refresh before 03:00 is the previous night's",
+      G.recheck(_d, "schedule", 1, last=lambda: sofia(2026, 10, 31, 2, 50), log=lambda m: None), True)
+check("re-check: 'Re-run failed jobs' (attempt 2) at 22:00 refreshes",
+      G.recheck(_d, "schedule", 2, last=lambda: sofia(2026, 10, 31, 3, 9), log=lambda m: None), True)
+check("re-check: git unreadable fails open",
+      G.recheck(_d, "schedule", 1, last=lambda: (_ for _ in ()).throw(OSError()), log=lambda m: None), True)
+check("re-check: manual runs always refresh",
+      G.recheck(_d, "workflow_dispatch", 1, last=lambda: sofia(2026, 10, 31, 3, 9), log=lambda m: None), True)
+_ev = G.effective_event("schedule", 2)
+ok, at, slept, _ = run_gate(sofia(2026, 10, 31, 22, 0), last=sofia(2026, 10, 30, 3, 40), event=_ev)
+check("'Re-run all jobs' (attempt 2) at 22:00: the gate refreshes at once, no sleep", (ok, slept), (True, 0))
+check("first attempt of a scheduled run stays scheduled", G.effective_event("schedule", 1), "schedule")
 
 print("decide(): the October clock change, Sun 2026-10-25 (04:00 EEST -> 03:00 EET)")
 ok, at, slept, _ = run_gate(sofia(2026, 10, 24, 21, 30), last=sofia(2026, 10, 24, 3, 40))

@@ -62,6 +62,7 @@ jobs:
       actions: read               # to see whether an earlier firing is already waiting
     outputs:
       run: ${{ steps.gate.outputs.run }}
+      day: ${{ steps.gate.outputs.day }}
     steps:
       # Third-party actions are pinned to a full commit SHA (a tag can be moved to
       # other code; a SHA cannot). To update: take the release's commit from
@@ -97,9 +98,14 @@ jobs:
           # is now, not on the commit main was at when GitHub queued the event.
           ref: ${{ github.event_name == 'schedule' && 'main' || '' }}
 
+      # Only "is the night the gate chose already refreshed?": never the clock window,
+      # so a refresh the gate decided at 21:14 is not dropped at 21:15, and a re-run
+      # of a failed refresh (GITHUB_RUN_ATTEMPT > 1) refreshes.
       - name: Check that the night's refresh is still needed
         id: recheck
-        run: python3 scripts/schedule_gate.py --event "$GITHUB_EVENT_NAME" --no-wait
+        env:
+          GATE_DAY: ${{ needs.gate.outputs.day }}
+        run: python3 scripts/schedule_gate.py --event "$GITHUB_EVENT_NAME" --no-wait --day "$GATE_DAY"
 
       - name: Set up Python
         if: steps.recheck.outputs.run == 'true'

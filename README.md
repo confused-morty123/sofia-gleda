@@ -43,9 +43,11 @@ evening before (16:17, 18:17, 20:17, 22:17 and 00:47 Sofia) and its first job,
 - from 03:05 to 21:15 it refreshes at once if tonight's refresh is not done
   (late is better than never; a refresh that failed the publish gate is retried);
 - it stops when an earlier firing is already waiting, and the refresh job checks
-  again before it starts, so one refresh runs per night ("done" = a bot commit
-  "Scheduled refresh: ..." on main after 03:00 Sofia);
-- the manual "Run workflow" button always refreshes at once.
+  again before it starts whether the night the gate chose is already refreshed
+  (only that, never the time of day), so one refresh runs per night ("done" = a
+  bot commit "Scheduled refresh: ..." on main after 03:00 Sofia);
+- the manual "Run workflow" button, and "Re-run jobs" on any run, always refresh
+  at once.
 
 With these five firings the refresh starts at 03:05 whenever GitHub's delay is
 under about 10 h 45 min, before 04:00 up to 11 h 30 min, and still runs every

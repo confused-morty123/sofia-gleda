@@ -23,9 +23,14 @@ takes the first one (summer time). On the last Sunday of March 03:05 does not
 exist (03:00 jumps to 04:00): the gate's target is then 04:05 summer time.
 
     python3 scripts/schedule_gate.py --event schedule   # gate job: may sleep
-    python3 scripts/schedule_gate.py --event schedule --no-wait   # re-check only
+    python3 scripts/schedule_gate.py --event schedule --no-wait --day 2026-10-31
+        # the refresh job's re-check: is the night the gate chose still not refreshed?
 
-Writes run=true|false to $GITHUB_OUTPUT. Unexpected errors (git, the GitHub
+A re-run of a run (GITHUB_RUN_ATTEMPT > 1, "Re-run jobs" in the Actions tab) is
+the owner asking for a refresh, so it refreshes at once like a manual run.
+
+Writes run=true|false and day=YYYY-MM-DD (the Sofia date the gate refreshes
+for) to $GITHUB_OUTPUT. Unexpected errors (git, the GitHub
 API) fail open: an extra refresh is harmless, a missed one is not.
 Tests: python3 scripts/test_schedule.py
 """
@@ -154,21 +159,58 @@ def gate(event: str, may_wait: bool, clock=time.time, sleep=time.sleep,
     return action == "run"
 
 
+def effective_event(event: str, attempt: int) -> str:
+    """A re-run of a scheduled run (attempt > 1) is the owner asking for a refresh:
+    it refreshes at once, like workflow_dispatch."""
+    if event == "schedule" and attempt > 1:
+        print(f"re-run (attempt {attempt}) of a scheduled run: refreshing at once")
+        return "re-run"
+    return event
+
+
+def recheck(day: dt.date, event: str, attempt: int = 1, last=last_refresh_epoch,
+            log=print) -> bool:
+    """The refresh job's re-check, after it has the lock: is the night the gate chose
+    (day) still not refreshed? It never looks at the clock window: the gate already
+    decided, and a decision at 21:14:59 must not be undone at 21:15:01. Manual runs
+    and re-runs always refresh."""
+    if event != "schedule" or attempt > 1:
+        log(f"{event}, attempt {attempt}: refreshing")
+        return True
+    try:
+        done = last() >= local_epoch(day, DONE_FROM)
+    except Exception as e:                      # fail open: refresh rather than miss a day
+        log(f"could not read the last refresh ({type(e).__name__}); refreshing")
+        return True
+    log(f"the {day} refresh is " + ("already done; not refreshing" if done else "still needed; refreshing"))
+    return not done
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--event", default=os.environ.get("GITHUB_EVENT_NAME", "schedule"))
     ap.add_argument("--no-wait", action="store_true", help="decide only, never sleep")
+    ap.add_argument("--day", help="with --no-wait: the Sofia date the gate chose (YYYY-MM-DD)")
     a = ap.parse_args()
+    attempt = int(os.environ.get("GITHUB_RUN_ATTEMPT") or 1)
+    day = None
     try:
-        run = gate(a.event, not a.no_wait, my_id=int(os.environ.get("GITHUB_RUN_ID") or 0))
+        if a.no_wait and a.day:
+            day = dt.date.fromisoformat(a.day)
+            run = recheck(day, a.event, attempt)
+        else:
+            event = effective_event(a.event, attempt)
+            run = gate(event, not a.no_wait, my_id=int(os.environ.get("GITHUB_RUN_ID") or 0))
     except Exception as e:                      # fail open
         print(f"gate error ({type(e).__name__}: {e}); refreshing")
         run = True
-    print(f"run={'true' if run else 'false'}")
+    if day is None:                             # the gate refreshes for the night it decided on
+        day = dt.datetime.now(SOFIA).date()
+    print(f"run={'true' if run else 'false'} day={day}")
     out = os.environ.get("GITHUB_OUTPUT")
     if out:
         with open(out, "a", encoding="utf-8") as fh:
-            fh.write(f"run={'true' if run else 'false'}\n")
+            fh.write(f"run={'true' if run else 'false'}\nday={day}\n")
     return 0
 
 
