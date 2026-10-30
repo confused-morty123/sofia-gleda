@@ -89,7 +89,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 110
  },
  "frants": {
   "id": "frants",
@@ -1909,23 +1910,6 @@
   "originalTitle": "The Diary of a Chambermaid",
   "country": "Румъния/Франция"
  },
- "edna-istoriya": {
-  "id": "edna-istoriya",
-  "bg": "Една история",
-  "en": "",
-  "genres": [
-   "Драма"
-  ],
-  "g": [
-   "#2A331B",
-   "#4A5F27"
-  ],
-  "source": "lumiere",
-  "runtime": 107,
-  "year": 2026,
-  "originalTitle": "Una Storia",
-  "country": "Италия"
- },
  "klara-i-slantseto": {
   "id": "klara-i-slantseto",
   "bg": "Клара и слънцето",
@@ -3042,22 +3026,6 @@
   "runtime": 86,
   "year": 2026
  },
- "helouin-selektsiya-obsebvane": {
-  "id": "helouin-selektsiya-obsebvane",
-  "bg": "Хелоуин Селекция: Обсебване",
-  "en": "",
-  "genres": [
-   "Хорър",
-   "Романтика"
-  ],
-  "g": [
-   "#2A331B",
-   "#4A5F27"
-  ],
-  "source": "cc-sofia",
-  "runtime": 108,
-  "year": 2026
- },
  "helouin-selektsiya-spider-island": {
   "id": "helouin-selektsiya-spider-island",
   "bg": "Хелоуин Селекция: Spider Island",
@@ -3071,21 +3039,6 @@
   ],
   "source": "cc-sofia",
   "runtime": 95,
-  "year": 2026
- },
- "helouin-selektsiya-backrooms": {
-  "id": "helouin-selektsiya-backrooms",
-  "bg": "Хелоуин Селекция: Backrooms",
-  "en": "",
-  "genres": [
-   "Хорър"
-  ],
-  "g": [
-   "#1B331F",
-   "#275F3A"
-  ],
-  "source": "cc-sofia",
-  "runtime": 110,
   "year": 2026
  },
  "rozhden-den": {
@@ -3130,20 +3083,6 @@
   "runtime": 80,
   "year": 2026
  },
- "40-kinomaniya-mazhat-kogoto-obicham": {
-  "id": "40-kinomaniya-mazhat-kogoto-obicham",
-  "bg": "40.Киномания: Мъжът, когото обичам",
-  "en": "",
-  "genres": [
-   "Драма"
-  ],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "dom-kino",
-  "runtime": 96
- },
  "teatralno-studio-iuvenes-predstavya-lyubov-po-chehov-s-minia": {
   "id": "teatralno-studio-iuvenes-predstavya-lyubov-po-chehov-s-minia",
   "bg": "Театрално студио IUVENES представя „Любов по ЧЕХОВ“ с миниатюрите „МЕЧКА“ и „ПРЕДЛОЖЕНИЕ“",
@@ -3166,46 +3105,6 @@
   ],
   "source": "dom-kino",
   "runtime": 92
- },
- "40-kinomaniya-stakleno-more": {
-  "id": "40-kinomaniya-stakleno-more",
-  "bg": "40.Киномания: Стъклено море",
-  "en": "",
-  "genres": [
-   "Драма"
-  ],
-  "g": [
-   "#332A1B",
-   "#5F4527"
-  ],
-  "source": "dom-kino",
-  "runtime": 130
- },
- "40-kinomaniya-strahlivets": {
-  "id": "40-kinomaniya-strahlivets",
-  "bg": "40.Киномания: Страхливец",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#2A331B",
-   "#4A5F27"
-  ],
-  "source": "dom-kino",
-  "runtime": 127
- },
- "40-kinomaniya-sladko-ot-peperudi": {
-  "id": "40-kinomaniya-sladko-ot-peperudi",
-  "bg": "40.Киномания: Сладко от пеперуди",
-  "en": "",
-  "genres": [
-   "Драма"
-  ],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "dom-kino",
-  "runtime": 97
  },
  "40-kinomaniya-ostatachni-obrazi": {
   "id": "40-kinomaniya-ostatachni-obrazi",
@@ -3257,34 +3156,6 @@
   "source": "dom-kino",
   "runtime": 117
  },
- "40-kinomaniya-karma": {
-  "id": "40-kinomaniya-karma",
-  "bg": "40.Киномания: Карма",
-  "en": "",
-  "genres": [
-   "Драма"
-  ],
-  "g": [
-   "#1B3330",
-   "#275F57"
-  ],
-  "source": "dom-kino",
-  "runtime": 140
- },
- "40-kinomaniya-elektricheskata-tseluvka": {
-  "id": "40-kinomaniya-elektricheskata-tseluvka",
-  "bg": "40.Киномания: Електрическата целувка",
-  "en": "",
-  "genres": [
-   "Романтика"
-  ],
-  "g": [
-   "#2B1B33",
-   "#50275F"
-  ],
-  "source": "dom-kino",
-  "runtime": 122
- },
  "40-kinomaniya-dom-dobar": {
   "id": "40-kinomaniya-dom-dobar",
   "bg": "40.Киномания: Дом добър",
@@ -3297,34 +3168,6 @@
   "source": "dom-kino",
   "runtime": 107
  },
- "40-kinomaniya-golemite-maystori-na-kinoto": {
-  "id": "40-kinomaniya-golemite-maystori-na-kinoto",
-  "bg": "40.Киномания: Големите майстори на киното",
-  "en": "",
-  "genres": [
-   "Документален"
-  ],
-  "g": [
-   "#331B1B",
-   "#5F2727"
-  ],
-  "source": "dom-kino",
-  "runtime": 73
- },
- "40-kinomaniya-aferata-boyarski": {
-  "id": "40-kinomaniya-aferata-boyarski",
-  "bg": "40.Киномания: Аферата Боярски",
-  "en": "",
-  "genres": [
-   "Драма"
-  ],
-  "g": [
-   "#1B2733",
-   "#27485F"
-  ],
-  "source": "dom-kino",
-  "runtime": 128
- },
  "bog-se-smee": {
   "id": "bog-se-smee",
   "bg": "Бог се смее",
@@ -3336,7 +3179,8 @@
    "#331B1B",
    "#5F2727"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 110
  },
  "ana-manyani": {
   "id": "ana-manyani",
@@ -3350,7 +3194,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 112
  },
  "vsichki-obichat-bil-evans": {
   "id": "vsichki-obichat-bil-evans",
@@ -3364,7 +3209,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "dom-kino"
+  "source": "dom-kino",
+  "runtime": 102
  },
  "kinomaniya-nachaloto": {
   "id": "kinomaniya-nachaloto",
@@ -3390,7 +3236,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "dom-kino"
+  "source": "dom-kino",
+  "runtime": 135
  },
  "tatko-sled-polunosht": {
   "id": "tatko-sled-polunosht",
@@ -3406,7 +3253,8 @@
   ],
   "source": "lumiere",
   "year": 2026,
-  "country": "САЩ"
+  "country": "САЩ",
+  "runtime": 126
  },
  "film-kontsert-s-bratya-vladigerovi-trio": {
   "id": "film-kontsert-s-bratya-vladigerovi-trio",
@@ -3431,7 +3279,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 115
  },
  "bezsmartniyat-i-krasavitsata-2": {
   "id": "bezsmartniyat-i-krasavitsata-2",
@@ -3508,7 +3357,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 86
  },
  "zhozefin": {
   "id": "zhozefin",
@@ -3521,7 +3371,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 121
  },
  "nevidimo-v-kutiya": {
   "id": "nevidimo-v-kutiya",
@@ -3535,7 +3386,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 127
  },
  "pogledni-nazad": {
   "id": "pogledni-nazad",
@@ -3548,7 +3400,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 100
  },
  "igrite-na-glada-izgrevat-v-denya-na-zhatvata": {
   "id": "igrite-na-glada-izgrevat-v-denya-na-zhatvata",
@@ -3665,7 +3518,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 96
  },
  "elektricheskata-tseluvka": {
   "id": "elektricheskata-tseluvka",
@@ -3678,7 +3532,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "frenski-institut"
+  "source": "frenski-institut",
+  "runtime": 122
  },
  "karma": {
   "id": "karma",
@@ -3692,7 +3547,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "frenski-institut"
+  "source": "frenski-institut",
+  "runtime": 140
  },
  "sladko-ot-peperudi": {
   "id": "sladko-ot-peperudi",
@@ -3705,7 +3561,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 97
  },
  "strahlivets": {
   "id": "strahlivets",
@@ -3718,7 +3575,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 127
  },
  "aferata-boyarski": {
   "id": "aferata-boyarski",
@@ -3731,7 +3589,8 @@
    "#332A1B",
    "#5F4527"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 128
  },
  "bitkata-dyo-gol": {
   "id": "bitkata-dyo-gol",
@@ -3784,7 +3643,8 @@
    "#331B1B",
    "#5F2727"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 73
  },
  "izostaven-ot-vsichki": {
   "id": "izostaven-ot-vsichki",
@@ -3956,7 +3816,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "dom-kino"
+  "source": "dom-kino",
+  "runtime": 130
  },
  "tishina": {
   "id": "tishina",
@@ -3970,5 +3831,59 @@
    "#4A5F27"
   ],
   "source": "odeon"
+ },
+ "bezsmartniya-i-krasavitsata-2-eleksir-na-zhivota": {
+  "id": "bezsmartniya-i-krasavitsata-2-eleksir-na-zhivota",
+  "bg": "Безсмъртния и красавицата 2 Елексир на живота",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "g8",
+  "runtime": 80,
+  "country": "Русия"
+ },
+ "pohititelite-na-izcheznaliya-kivot": {
+  "id": "pohititelite-na-izcheznaliya-kivot",
+  "bg": "Похитителите на изчезналия кивот",
+  "en": "",
+  "genres": [
+   "Приключенски"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 115
+ },
+ "secret-screening": {
+  "id": "secret-screening",
+  "bg": "Secret Screening",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 106
+ },
+ "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-": {
+  "id": "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-",
+  "bg": "„СОФИЙСКИТЕ КВАРТАЛИ” И ПРОЖЕКЦИЯ НА “НАШИЯТ КВАРТАЛ ”ЦАР ИВАН АСЕН ІІ” – 1 събитие от поредицата „СОФИЯ РАЗКАЗВА – ХОРА И УЛИЦИ, ЧИТАЛИЩЕ И КИНО“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "vlaikova"
  }
 }

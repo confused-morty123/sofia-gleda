@@ -6,6 +6,31 @@
  },
  {
   "level": "warning",
+  "venue": "arena-mall",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "arena-mega",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "cc-paradise",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "cc-sofia",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "cineland",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
   "venue": "natfiz",
   "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
@@ -27,11 +52,11 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 183/238 ok, 55 missing IMDb ratings"
+  "message": "OMDb: 177/235 ok, 58 missing IMDb ratings"
  },
  {
-  "level": "ok",
+  "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 498/504 upcoming shows have a poster; recently missing: clean-girl-fat-festival, dobroto-tyalo, igra-na-kotki, karnaval, poema-za-hlebarkite, tatul"
+  "message": "theatre posters: 504/512 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (8 days), karnaval (8 days), poema-za-hlebarkite (8 days)"
  }
 ]

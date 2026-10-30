@@ -6226,5 +6226,113 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "ne-svikva-s-tamnoto-okoto-koreni": {
+  "id": "ne-svikva-s-tamnoto-okoto-koreni",
+  "title": "НЕ СВИКВА С ТЪМНОТО ОКОТО (КОРЕНИ)",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "kuche-na-ime-kote": {
+  "id": "kuche-na-ime-kote",
+  "title": "Куче на име Коте",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "5-godini-toplotsentrala-trigaida-live-and-ivan-shopov-dj-set": {
+  "id": "5-godini-toplotsentrala-trigaida-live-and-ivan-shopov-dj-set",
+  "title": "5 години Топлоцентрала! Trigaida live and Ivan Shopov DJ Set ВХОД СВОБОДЕН",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-vladimir-mihaylov-akustichen-vhod-sv": {
+  "id": "5-godini-toplotsentrala-vladimir-mihaylov-akustichen-vhod-sv",
+  "title": "5 години Топлоцентрала! Владимир Михайлов - акустичен ВХОД СВОБОДЕН",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "chudesa-ot-prezhda": {
+  "id": "chudesa-ot-prezhda",
+  "title": "Чудеса от прежда",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "podarakat": {
+  "id": "podarakat",
+  "title": "Подаръкът",
+  "titleEn": "",
+  "theatre": "artvent",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "artvent"
  }
 }

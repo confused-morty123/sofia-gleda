@@ -1125,7 +1125,11 @@
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/09/23/le_fantome_de_l_opera_snd_full_dawa_9_2d1067d340-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/fantomut-na-operata-3677.html",
   "title_bg": "Фантомът на операта",
-  "title_en": "Le Fantôme de l'Opéra"
+  "title_en": "Le Fantôme de l'Opéra",
+  "genres": [
+   "Драма",
+   "Фантастика"
+  ]
  },
  "fiord": {
   "synBg": "Семейство Георгиу - вярваща румънско-норвежка двойка (Себастиан Стан и Ренате Рейнсве), се преселва в отдалечено норвежко градче край фиордите с петте си деца. Там те се сближават със съседите си, семейство Халберг. Децата им се сприятеляват въпреки различното си възпитание. Когато тийнейджърката Елия Георгиу се появява в училище с няколко синини по тялото, местната общност започва да се пита дали традиционното възпитание, което децата в семейство Георгиу получават от родителите си, няма нещо общо с това.“",
@@ -1840,7 +1844,19 @@
  "edna-istoriya-sinelibri": {
   "src": "https://www.ndk.bg/en/event/edna-istoriia-sinelibri",
   "pv": 5,
-  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38477/9169-preview-20261021-072119_resize1000x1000.jpg?v=1792568736"
+  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38477/9169-preview-20261021-072119_resize1000x1000.jpg?v=1792568736",
+  "title_bg": "Една история",
+  "title_en": "Una Storia",
+  "synBg": "Привидно стабилната връзка на Ерика и Мауро се разпада, когато дъщеря им заминава за колеж. Изправени пред своите незараснали рани и забравени мечти, те се впускат в тиха борба да преоткрият себе си – като автономни личности и като двойка. Същинската тема на този универсален в посланията си филм е не толкова кризата на един брак, колкото кризата на личността. Въпросът „Какво остава от нас, когато престанем да живеем само за другите?“ може да бъде отнесен към всеки зрител над определена възраст. „Една история“ е режисьорски дебют на актрисата Анна Фолиета, известна с ролите си в „Перфектни непознати“ на Паоло Дженовезе и „Ако животът ти сервира лимони“ на Чиро Д‘Емилио.",
+  "dir": "Анна Фолиета",
+  "cast": "Алба Рорвахер, Гуидо Каприно, Катерина Казини",
+  "country": "Италия",
+  "year": 2026,
+  "runtime": 107,
+  "genres": [
+   "Драма"
+  ],
+  "fsrc": "https://www.cinelibri.com/edna-istoriya/"
  },
  "vsichki-vlyubeni-v-noshtta-sinelibri": {
   "src": "https://www.ndk.bg/en/event/vsicki-vliubeni-v-noshhta-sinelibri",
@@ -2117,9 +2133,11 @@
  },
  "krasavitsata-i-zvyara": {
   "title_bg": "Красавицата и Звяра",
-  "dir": "Жан Кокто",
+  "dir": "Жан Кокто В ролит е",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/krasavitzata-i-zvyara_la_belle_et_la_bete_jean_cocteau-_1946-0x450.jpg",
-  "fsrc": "https://www.kinomania.bg/bg_BG/film/krasavitzata-i-zvyara-3730.html"
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/krasavitzata-i-zvyara-3730.html",
+  "src": "https://vlaikovacinema.com/screening/40-%d0%ba%d0%b8%d0%bd%d0%be%d0%bc%d0%b0%d0%bd%d0%b8%d1%8f-%d0%ba%d1%80%d0%b0%d1%81%d0%b0%d0%b2%d0%b8%d1%86%d0%b0%d1%82%d0%b0-%d0%b8-%d0%b7%d0%b2%d1%8f%d1%80%d0%b0/",
+  "pv": 5
  },
  "ledena-zemya": {
   "title_bg": "Ледена земя",
@@ -2181,7 +2199,7 @@
   "fsrc": "https://www.kinomania.bg/bg_BG/film/zhulti-pisma-3739.html"
  },
  "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-1-sab": {
-  "synBg": "Поредица от 4 събития – „СОФИЯ РАЗКАЗВА – ХОРА И УЛИЦИ, ЧИТАЛИЩЕ И КИНО „. Първото събитие от поредицата включва беседа на тема „СОФИЙСКИТЕ КВАРТАЛИ“ и прожекция на филма „НАШИЯТ КВАРТАЛ“ Лектори: Виктор Топалов и Здравко Петров Беседите и прожекциите са организирани от читалище „Антон Страшимиров-1926“, „Бохемска София“ и „Исторически маршрути“ .",
+  "synBg": "Поредица от 4 събития – „СОФИЯ РАЗКАЗВА – ХОРА И УЛИЦИ, ЧИТАЛИЩЕ И КИНО „. Първото събитие от поредицата включва беседа на тема „СОФИЙСКИТЕ КВАРТАЛИ“ и прожекция на филма „НАШИЯТ КВАРТАЛ „ЦАР ИВАН АСЕН II“ Лектори: Виктор Топалов и Здравко Петров Беседите и прожекциите са организирани от читалище „Антон Страшимиров-1926“, „Бохемска София“ и „Исторически маршрути“ .",
   "src": "https://vlaikovacinema.com/events/%d1%81%d0%be%d1%84%d0%b8%d0%b9%d1%81%d0%ba%d0%b8%d1%82%d0%b5-%d0%ba%d0%b2%d0%b0%d1%80%d1%82%d0%b0%d0%bb%d0%b8-%d0%b8-%d0%bf%d1%80%d0%be%d0%b6%d0%b5%d0%ba%d1%86%d0%b8%d1%8f-%d0%bd/",
   "pv": 5
  },
@@ -2194,5 +2212,10 @@
   "src": "https://www.ndk.bg/en/event/ludorii-sinelibri",
   "pv": 5,
   "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38484/9159-preview-20261021-072318_resize1000x1000.jpg?v=1792569539"
+ },
+ "echo-between-us-sinelibri": {
+  "src": "https://www.ndk.bg/en/event/exoto-mezdu-nas-sinelibri",
+  "pv": 5,
+  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38487/9172-preview-20261021-072405_resize1000x1000.jpg?v=1792570853"
  }
 }
