@@ -517,6 +517,23 @@ _rc8, _out8 = _run_out(_links_base_html.replace("const LINKS=[];",
 check("LINKS theatre.art.bg homepage exits non-zero",
       _rc8 != 0 and ("homepage" in _out8 or "aggregator" in _out8 or "empty" in _out8 or "LINKS" in _out8))
 
+# 5c: a show link naming one performance fails while the show has several upcoming
+# (show0 has 2 in _bulk_performances); a show page, or a show with no upcoming, passes.
+print("\n5c: LINKS never one performance's page")
+for _u5 in ("https://www.nationaltheatre.bg/bg/predstavlenie/medeya/2026-12-05|20:00:00",
+            "https://sofiatheatre.eu/program/881", "https://epaygo.bg/1205909474",
+            "https://www.salzaismyah.bg/site/selector/3185",
+            "http://theatre.art.bg/kupi-bilet.php?p=85913&id=2972&theatre=14&city=20",
+            "https://toplocentrala.bg/program/performance/5sola?day=3"):
+    _rc5c, _out5c = _run_out(_links_base_html.replace(
+        "const LINKS=[];", f"const LINKS={_json.dumps([['show0', _u5]])};"))
+    check(f"LINKS show0 -> {_u5[:45]}… exits non-zero", _rc5c != 0 and "5c LINKS" in _out5c)
+for _id5, _u5 in (("show0", "https://www.nationaltheatre.bg/bg/predstavlenie/medeya"),
+                  ("show-x", "https://sofiatheatre.eu/program/881")):
+    _rc5c, _out5c = _run_out(_links_base_html.replace(
+        "const LINKS=[];", f"const LINKS={_json.dumps([[_id5, _u5]])};"))
+    check(f"LINKS {_id5} -> {_u5[:45]} passes 5c", "5c LINKS" not in _out5c)
+
 # LINKS with a real theatre.art.bg show page passes.
 _links_real = _json.dumps([["show-x", "https://theatre.art.bg/spectakyl/show-x"]])
 _rc9, _out9 = _run_out(_links_base_html.replace("const LINKS=[];",

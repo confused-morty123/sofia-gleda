@@ -1975,7 +1975,18 @@ def read_const_obj(page, name):
         return {}
 
 
-def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, existing=None):
+def show_page_of(m):
+    """The performance-neutral link an official row gives its show: the show's own page
+    ("page") when the row's link is one performance's ("buy", or a link of that shape:
+    OT.is_performance_link), else the row's link. None when it has no such link: one
+    performance's purchase page is never a show's link (per-performance links: later)."""
+    if m.get("buy") or OT.is_performance_link(m.get("url")):
+        p = m.get("page") or OT.derived_show_page(m.get("buy") or m.get("url"))
+        return p if p and not OT.is_performance_link(p) else None
+    return m.get("url") or None
+
+
+def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, existing=None, window=None):
     """Return (th_links, agg_sids): {sid: url} dict and set of sids whose links
     came FROM the theatre.art.bg aggregator (not from the venue's own programme).
 
@@ -1988,7 +1999,11 @@ def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, exi
     existing       optional {sid: url} pre-populated by minted-show logic
 
     Official rows win over aggregator pages.  For a show in official coverage
-    its own URL is used.  For a show only the aggregator lists (after coverage,
+    its own performance-neutral URL is used (show_page_of: the show's page, never one
+    performance's purchase page), that of its earliest performance in `window`
+    ((first, last) day; rows outside it never set a link). A show whose rows give only
+    performance links gets None (no link of its own: neutral_show_links then gives it the
+    theatre's programme page) unless `existing` has a neutral one.  For a show only the aggregator lists (after coverage,
     or when status=="none") the theatre.art.bg event page is used.
     agg_sids contains only the sids that received an aggregator-page link, i.e.
     those not in official coverage — NOT official shows whose URL happens to be
@@ -1998,9 +2013,18 @@ def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, exi
     agg_sids = set()
     if status == "official":
         # Official URL always beats any pre-existing aggregator/minted link.
+        chosen = {}
         for sid, d, t, m, _ in sorted(rr_rows + rr_extra_rows, key=lambda x: (x[1], x[2])):
-            if m.get("url") and sid in on_stage:
-                th_links[sid] = m["url"]
+            if sid not in on_stage or not (m.get("url") or m.get("page")):
+                continue
+            if window and not (window[0] <= d <= window[1]):
+                continue
+            u = show_page_of(m)
+            if u or sid not in chosen:
+                chosen[sid] = chosen.get(sid) or u
+        for sid, u in chosen.items():
+            if u or OT.is_performance_link(th_links.get(sid)) or sid not in th_links:
+                th_links[sid] = u
         official_sids = {sid for sid, d, t, m, _ in rr_rows + rr_extra_rows}
         for sid, _t, d, tm, _h, _link, page, _p in sorted(agg_full, key=lambda x: (x[2], x[3])):
             if page and sid and sid in on_stage and sid not in official_sids and sid not in th_links:
@@ -2015,6 +2039,72 @@ def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, exi
     # links (in existing) are kept; aggregator pages are not added (the
     # kept rows from the previous run already have their links).
     return th_links, agg_sids
+
+
+# The theatre's programme page: a show whose source gives only performance purchase
+# pages (no page of its own) links here, never another date's purchase page.
+THEATRE_PROGRAMME = {
+    "national": "https://www.nationaltheatre.bg/bg/programa",
+    "sofia-th": "https://sofiatheatre.eu/program",
+    "satira": "https://satirata.bg/program",
+    "salzaismyah": "https://www.salzaismyah.bg/site/calendar",
+    "sfumato": "http://sfumato.info/",
+    "toplo": "https://toplocentrala.bg/program/performance",
+}
+SHOW_PAGE_CHECKS = 80          # new show pages confirmed by GET per run (the rest next run)
+SHOW_PAGE_SECONDS = 150
+
+
+def neutral_show_links(links, theatre_of):
+    """No show's LINKS entry names one performance: a show link that is None or a
+    performance purchase page (OT.is_performance_link) becomes its theatre's programme
+    page (THEATRE_PROGRAMME), else is removed (the app then opens BOOKING). Films and
+    events are left alone. Returns the show ids changed."""
+    changed = []
+    for sid in sorted(links):
+        th = theatre_of(sid)
+        if th is None:
+            continue
+        u = links[sid]
+        if u and not OT.is_performance_link(u):
+            continue
+        changed.append(sid)
+        if OT.derived_show_page(u):
+            links[sid] = OT.derived_show_page(u)
+        elif THEATRE_PROGRAMME.get(th):
+            links[sid] = THEATRE_PROGRAMME[th]
+        else:
+            links.pop(sid)
+    return changed
+
+
+def confirm_show_pages(links, new_pages, prev_links, get, cap=SHOW_PAGE_CHECKS, notes=None):
+    """A show page taken from a programme for the first time (new_pages: {sid: url},
+    a URL last run's LINKS did not have for that show) is used only when a GET answers it
+    with a page that is not a login form; else the show gets None (neutral_show_links:
+    the programme page). Nearest first by sid order, at most `cap` GETs, each URL once;
+    the rest get None this run and are tried again on the next. get(url) -> response | None."""
+    seen, n = {}, 0
+    for sid in sorted(new_pages):
+        u = new_pages[sid]
+        if links.get(sid) != u or prev_links.get(sid) == u:
+            continue
+        if u not in seen:
+            if n >= cap:
+                seen[u] = False
+            else:
+                n += 1
+                try:
+                    r = get(u)
+                except Exception:                      # noqa: BLE001 (any failure: not confirmed)
+                    r = None
+                final = str(getattr(r, "url", "") or u)
+                seen[u] = r is not None and getattr(r, "status_code", 200) < 400 and "login" not in final.lower()
+        if not seen[u]:
+            links[sid] = None
+            if notes is not None:
+                notes.append(f"{sid}: show page not confirmed ({u}) — the programme page instead")
+    return n
 
 
 def drop_deep_vlinks(vlinks, booking):
@@ -3938,6 +4028,7 @@ def main():
     # theatre.art.bg event page as the link. A theatre whose source is down keeps
     # last run's rows instead, so nothing is minted for it.
     th_links, minted_from_agg = {}, defaultdict(list)
+    _new_pages = {}
     _agg_sourced_sids = set()   # sids whose LINKS entry came from theatre.art.bg aggregator
     for v in theatre_ids:
         res = th_official.get(v)
@@ -4075,15 +4166,21 @@ def main():
         if status != "unreachable":
             seen_theatres.add(v)
         # LINKS: the theatre's own page of each show it lists (that of its
-        # earliest upcoming performance); theatre.art.bg's event page for an
-        # aggregator-only listing (a theatre with no programme of its own, or a
-        # show that falls past official coverage). Shows not listed this run keep
-        # theirs.
+        # earliest upcoming performance, never one performance's purchase page);
+        # theatre.art.bg's event page for an aggregator-only listing (a theatre with
+        # no programme of its own, or a show that falls past official coverage).
+        # Shows not listed this run keep theirs.
         on_stage = {r[0] for r in rows}
+        _rr_all = (rr.get("rows", []) + rr.get("extra_rows", [])) if rr else []
         th_links, _agg_sids_v = theatre_link_choices(status, rr.get("rows", []) if rr else [],
                                                       rr.get("extra_rows", []) if rr else [],
-                                                      agg_full, on_stage, existing=th_links)
+                                                      agg_full, on_stage, existing=th_links,
+                                                      window=(floor, end))
         _agg_sourced_sids.update(_agg_sids_v)
+        if status == "official":
+            for sid, _d, _t, m, _ in _rr_all:
+                if m.get("page") and sid in on_stage and th_links.get(sid) == show_page_of(m):
+                    _new_pages[sid] = th_links[sid]
         # BOXONLY: the performances this theatre sells only at its box office
         prev_box = [[show_index.canonical(e[0])] + e[1:] for e in old_boxonly
                     if show_index.theatre_of(show_index.canonical(e[0])) == v]
@@ -4119,7 +4216,21 @@ def main():
             "secondary": (secondary.get(v) or {}).get("source"),
             "blocked": [list(b) for b in blocked.get(v) or []],
             "box_office_only": [e[:3] for e in box_v], "box_office_notes": box_notes}
+    prev_links = dict(links)
     links.update(th_links)
+    # a show page used for the first time is confirmed by GET (never a login form)
+    _page_notes = []
+    with session.deadline(SHOW_PAGE_SECONDS):
+        _n = confirm_show_pages(links, _new_pages, prev_links, session.get, notes=_page_notes)
+    if _n or _page_notes:
+        print(f"LINKS: {_n} new show page(s) checked, {len(_page_notes)} not confirmed")
+        for n_ in _page_notes[:5]:
+            print(f"  ! {n_}")
+    # no show is linked to one performance's purchase page (per-performance links: later)
+    _neutral = neutral_show_links(links, show_index.theatre_of)
+    if _neutral:
+        print(f"LINKS: {len(_neutral)} show(s) given their theatre's programme page "
+              f"(no page of their own, only performance links): {', '.join(_neutral[:6])}")
 
     # 5) self-check: inside every covered range the written rows must be exactly
     #    the venue's own programme; nothing past-dated; every film/show id known;

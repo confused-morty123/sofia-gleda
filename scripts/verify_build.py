@@ -1532,6 +1532,36 @@ if _links_agg_homepages:
          "(empty/root path — likely a scraper bug; use a specific show-page URL): "
          + "; ".join(_links_agg_homepages[:3]))
 
+# 5c. LINKS holds ONE link per show, opened for every date: it must not name one
+# performance (a dated URL, Театър София /program/<id>, epaygo.bg/<id>, Сълза и смях
+# /site/selector/<id>, theatre.art.bg kupi-bilet.php?p=, Топлоцентрала ?day=) while
+# the show has more than one upcoming performance (Медея 8 Nov opened 5 Dec, 2026-10-30).
+PERF_SPECIFIC_LINK_RE = re.compile(
+    r"/\d{4}-\d{2}-\d{2}(?:[|/?#]|%7C|$)|/program/\d+(?:[/?#]|$)|//(?:www\.)?epaygo\.bg/\d+"
+    r"|/site/selector/\d+|kupi-bilet\.php\?(?:[^#]*&)?p=\d|[?&]day=\d", re.I)
+try:
+    import listing_window as _LW5c
+    _today5c = _LW5c.sofia_today().isoformat()
+except Exception:
+    _today5c = datetime.date.today().isoformat()
+_up5c = {}
+for _r in (data.get("PERFORMANCES") or _const_any("PERFORMANCES") or []):
+    if isinstance(_r, list) and len(_r) > 1 and str(_r[1]) >= _today5c:
+        _up5c[_r[0]] = _up5c.get(_r[0], 0) + 1
+_perf_links = []
+try:
+    _links5c = json.loads(_links_m.group(1)) if _links_m else []
+except Exception:                     # malformed LINKS: reported by the checks above
+    _links5c = []
+for _e in (_links5c if isinstance(_links5c, list) else []):
+    if (isinstance(_e, list) and len(_e) == 2 and isinstance(_e[1], str)
+            and PERF_SPECIFIC_LINK_RE.search(_e[1]) and _up5c.get(_e[0], 0) > 1):
+        _perf_links.append(f"{_e[0]} ({_up5c[_e[0]]} performances): {_e[1][:90]}")
+if _perf_links:
+    fail(f"5c LINKS: {len(_perf_links)} show link(s) name one performance while the show has "
+         "several upcoming (every other date would open the wrong performance): "
+         + "; ".join(_perf_links[:4]))
+
 # BOOKING = {venueId: {url, tix, deep, ...}, ...}
 if isinstance(data.get("BOOKING"), dict):
     for _vid, _bv in data["BOOKING"].items():

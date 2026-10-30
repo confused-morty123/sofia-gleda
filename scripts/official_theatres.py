@@ -240,6 +240,47 @@ def mkrow(title, date, time, hall=None, url=None, price=None, premiere=None, **e
     return (title, iso, time, meta)
 
 
+# A theatre's link to ONE performance (owner's bug, 2026-10-30: Медея's 8 Nov "Купи билет"
+# opened the 5 Dec purchase page, because each show kept one performance's link). These
+# belong in PLINKS ([show, date, time, url], that performance only), never in LINKS (one
+# link per show, used for every date). A row's meta carries such a link as "buy", and the
+# show's performance-neutral page from the same source as "page".
+PERFORMANCE_LINK_RE = re.compile(
+    r"nationaltheatre\.bg/.*/\d{4}-\d{2}-\d{2}(?:\||%7C)\d{2}:\d{2}"   # Народен: dated purchase page
+    r"|sofiatheatre\.eu/program/\d+"                                     # Театър София: /program/<id>
+    r"|//(?:www\.)?epaygo\.bg/\d+"                                        # Сатирата: an epaygo.bg event
+    r"|salzaismyah\.bg/site/selector/\d+"                                 # Сълза и смях: a selector
+    r"|theatre\.art\.bg/kupi-bilet\.php\?"                                # theatre.art.bg purchase (Sfumato)
+    r"|toplocentrala\.bg/[^?#]*\?day=\d+", re.I)                          # Топлоцентрала: dated page
+_LINK_DATE_TIME = re.compile(r"/(\d{4}-\d{2}-\d{2})(?:\||%7C)(\d{2}):(\d{2})", re.I)
+
+
+def is_performance_link(url):
+    """True for a link to one performance (PERFORMANCE_LINK_RE)."""
+    return bool(url and PERFORMANCE_LINK_RE.search(url))
+
+
+def link_date_time(url):
+    """(date, "HH:MM") a performance link spells out (Народен's …/YYYY-MM-DD|HH:MM:SS), else None."""
+    m = _LINK_DATE_TIME.search(url or "")
+    return (m.group(1), f"{m.group(2)}:{m.group(3)}") if m else None
+
+
+_NEUTRAL_DERIVABLE = (
+    (re.compile(r"(nationaltheatre\.bg/[^?#]*?)/\d{4}-\d{2}-\d{2}(?:\||%7C)[\d:%A-F]+$", re.I), r"\1"),
+    (re.compile(r"(toplocentrala\.bg/[^?#]*)\?day=\d+$", re.I), r"\1"),
+)
+
+
+def derived_show_page(url):
+    """The show's own page when it follows from one performance's link alone (Народен:
+    drop /YYYY-MM-DD|HH:MM:SS; Топлоцентрала: drop ?day=N), else None."""
+    for rx, rep in _NEUTRAL_DERIVABLE:
+        if url and rx.search(url):
+            return rx.sub(rep, url)
+    return None
+
+
 def absolute(base, href):
     if not href:
         return None
@@ -531,7 +572,10 @@ def parse_national(html, year, month):
         day, mon = int(dm.group(1)), bg_month(dm.group(2))
         hour_el = b.select_one(".hour")
         time_txt = hhmm(hour_el.get_text(" ", strip=True) if hour_el else "") or hhmm(md)
-        slug, link = None, None
+        slug, link, page = None, None, None
+        show_a = b.select_one("h2 a[href]")
+        if show_a and not _NAT_SLUG.search(urllib.parse.unquote(show_a["href"])):
+            page = absolute("https://www.nationaltheatre.bg/", show_a["href"])
         for el in b.select("a[href]"):
             m = _NAT_SLUG.search(urllib.parse.unquote(el["href"]))
             if m:
@@ -545,7 +589,6 @@ def parse_national(html, year, month):
         else:
             y = year + 1 if (month == 12 and mon == 1) else year
             date, time_ = dt.date(y, mon, day), time_txt
-            show_a = b.select_one("h2 a[href]")
             link = show_a["href"] if show_a else None
         if not time_ or weekday_conflict(date, md):
             raise MarkupError(f"national: bad time/weekday for {title!r} {md!r}")
@@ -557,9 +600,11 @@ def parse_national(html, year, month):
             excluded.append((title, date.isoformat(), time_,
                              "no stage on the programme — staged off-site (venue not given)"))
             continue
-        rows.append(mkrow(title, date, time_, hall=stage,
-                          url=absolute("https://www.nationaltheatre.bg/", link),
-                          guest=guest))
+        url = absolute("https://www.nationaltheatre.bg/", link)
+        # buy: this performance's own purchase page (…/YYYY-MM-DD|HH:MM:SS); page: the
+        # show's own page the same block links (h2), performance-neutral (PLINKS / LINKS)
+        rows.append(mkrow(title, date, time_, hall=stage, url=url, guest=guest,
+                          buy=url if slug else None, page=page if slug else None))
     return rows, excluded, len(blocks)
 
 
@@ -624,7 +669,8 @@ def parse_sofia_th(html):
             rep = dates.get("href")
             listing.append({"title": title, "date": date, "time": time_, "hall": hall,
                             "sold_out": card.select_one(".no-tickets") is not None,
-                            "url": buy["href"] if buy else rep})
+                            "url": buy["href"] if buy else rep,
+                            "buy": buy["href"] if buy else None, "page": rep if buy else None})
         elif title_el is not None:
             info = card.select_one("div.mt-4")
             if info is None:
@@ -700,7 +746,7 @@ def fetch_sofia_th(net, today):
                 continue
             rows.append(mkrow(e["title"], e["date"], time_,
                               hall=re.sub(r"^театър софия\s*[-–—]\s*", "", hall, flags=re.I),
-                              url=e["url"],
+                              url=e["url"], buy=e.get("buy"), page=e.get("page"),
                               premiere=True if _PREMIERE_RE.search(label) else None,
                               sold_out=e["sold_out"] or "изчерпани" in label))
     return finish("sofia-th", SOFIA_TH_SOURCE, rows, today, excluded=excluded, notes=notes)
@@ -1131,11 +1177,14 @@ def parse_satira(html, tz):
             raise MarkupError("satira: startsAt without a UTC offset")
         local = start.astimezone(tz)
         st = e.get("settings") or {}
-        url = st.get("ticketUrlNoRegistration") or (
-            "https://satirata.bg/" + st["eventPage"] if st.get("eventPage") else None)
+        page = "https://satirata.bg/" + st["eventPage"] if st.get("eventPage") else None
+        buy = st.get("ticketUrlNoRegistration") or None
+        url = buy or page
+        # buy: this event's own epaygo.bg purchase page; page: the production's page
         rows.append(mkrow(e.get("title"), local.date(), local.strftime("%H:%M"),
                           hall=names.get(st.get("stage")),
-                          price=(st.get("custom") or {}).get("price"), url=url))
+                          price=(st.get("custom") or {}).get("price"), url=url,
+                          buy=buy, page=page if buy else None))
     return rows
 
 
@@ -1203,7 +1252,11 @@ def parse_salza(html, year, month):
             if "text-danger" in (el.get("class") or []) or re.search(r"отменено", text, re.I):
                 excluded.append((title, date.isoformat(), time_, "cancelled (ОТМЕНЕНО)"))
                 continue
-            rows.append(mkrow(title, date, time_, url=el.get("href")))
+            href = el.get("href")
+            # buy: the performance's own /site/selector/<id> purchase page (its play page,
+            # performance-neutral, is added from the stage pages: salza_box_office)
+            rows.append(mkrow(title, date, time_, url=href,
+                              buy=href if href and _SALZA_SELECTOR.search(href) else None))
     return rows, excluded
 
 
@@ -1728,6 +1781,8 @@ def salza_box_office(net, rows, stage_pages, notes, prev_box=None):
     for r in rows:
         sel = _SALZA_SELECTOR.search(r[3].get("url") or "")
         sale, play = sales.get(sel.group(1), (None, None)) if sel else (None, None)
+        if play and r[3].get("buy"):
+            r[3]["page"] = play          # the production's own page (LINKS), never a selector
         if sel and sel.group(1) in unread_box and sale is None:
             notes.append(f"{r[1]} {r[2]}: its stage card says box office in a form not read: undetermined")
         if sel and sel.group(1) in recheck:
@@ -1809,6 +1864,7 @@ def salza_stage_rows(rows, stages, today, excluded=()):
 TOPLO_URL = "https://toplocentrala.bg/program/performance"
 TOPLO_MONTH_URL = "https://toplocentrala.bg/program/performance/{y}/{m:02d}"
 TOPLO_SOURCE = "toplocentrala.bg/program/performance (+ /YYYY/MM month pages, schema.org)"
+_TOPLO_DAY = re.compile(r"\?day=\d+$")
 
 
 def parse_toplo(html):
@@ -1836,9 +1892,14 @@ def parse_toplo(html):
             raise MarkupError(f"toplo: printed date disagrees with startDate {sd.get('content')}")
         kind, hall = li.select_one(".program-type"), li.select_one(".program-hall")
         a = li.select_one("a[href]")
+        href = a["href"] if a else None
+        # a "?day=N" link is that performance's own dated page (its heading names the
+        # date): PLINKS; the show's page is the same link without the query (LINKS)
+        dated = bool(href and _TOPLO_DAY.search(href))
         rows.append(mkrow(tn.get_text(" ", strip=True), date, time_,
                           hall=hall.get_text(" ", strip=True) if hall else None,
-                          url=a["href"] if a else None,
+                          url=href, buy=href if dated else None,
+                          page=_TOPLO_DAY.sub("", href) if dated else None,
                           kind=clean(kind.get_text(" ", strip=True)) if kind else None))
     return rows
 
@@ -2047,9 +2108,11 @@ def parse_sfumato(html, today):
             if not (mon and day.isdigit() and time_ and a):
                 raise MarkupError("sfumato: unreadable programme block")
             buy = b.select_one("a.buy-ticket-btn[href]")
+            own = absolute(SFUMATO_URL, a.get("href"))
+            # buy: this performance's theatre.art.bg purchase page; page: its own page
             rows.append(mkrow(a.get_text(" ", strip=True), nearest_date(int(day), mon, today),
-                              time_, hall=hall,
-                              url=buy["href"] if buy else absolute(SFUMATO_URL, a.get("href"))))
+                              time_, hall=hall, url=buy["href"] if buy else own,
+                              buy=buy["href"] if buy else None, page=own if buy else None))
     return rows
 
 
