@@ -20,7 +20,7 @@ like an app and refreshes its own listings every three days.
 | `icons/` | App icons (the red projector-flare mark). |
 | `scripts/` | The data pipeline (Python). See below. |
 | `requirements.txt` | Python packages the robot installs automatically. |
-| `.github/workflows/refresh.yml` | The refresh robot (GitHub Actions, every day at 03:05 Sofia time). |
+| `.github/workflows/refresh.yml` | The refresh robot (GitHub Actions, every night at 03:05 Sofia time, see below). |
 | `SETUP.md` | Step-by-step hosting guide for a non-technical user. |
 
 Generated data files that appear after the first refresh:
@@ -30,9 +30,43 @@ Festival screenings' sale states in `FESTROWS` (sold out, not on sale yet) are r
 
 ---
 
+## When the refresh runs
+
+The refresh starts at 03:05 Sofia time (summer and winter time alike) and takes
+about 35 minutes. GitHub starts a repository's scheduled runs late, and on this
+repository by hours: in October 2026 a 03:05 cron started at 08:00 to 09:00 Sofia
+time, later each day. So `.github/workflows/refresh.yml` fires five times from the
+evening before (16:17, 18:17, 20:17, 22:17 and 00:47 Sofia) and its first job,
+`scripts/schedule_gate.py`, decides what each firing does:
+
+- from 21:15 to 03:05 it sleeps until 03:05, then refreshes (a job may run 6 hours);
+- from 03:05 to 21:15 it refreshes at once if tonight's refresh is not done
+  (late is better than never; a refresh that failed the publish gate is retried);
+- it stops when an earlier firing is already waiting, and the refresh job checks
+  again before it starts whether the night the gate chose is already refreshed
+  (only that, never the time of day), so one refresh runs per night ("done" = a
+  bot commit "Scheduled refresh: ..." on main after 03:00 Sofia);
+- the manual "Run workflow" button, and "Re-run jobs" on any run, always refresh
+  at once.
+
+With these five firings the refresh starts at 03:05 whenever GitHub's delay is
+under about 10 h 45 min, before 04:00 up to 11 h 30 min, and still runs every
+night for any delay under a day. Every time is Europe/Sofia, so both clock-change
+nights work: on the last Sunday of October the first 03:05 (summer time) is used;
+on the last Sunday of March 03:05 does not exist and the refresh starts at 04:05.
+Tests: `python3 scripts/test_schedule.py`.
+
+The cost: on every night one GitHub runner sleeps for up to 6 hours and four
+short gate jobs (about 20 seconds each) start and stop, all free for a public
+repository. If GitHub ever delays scheduled runs by more than half a day, the only
+dependable fix is outside GitHub: an external cron service (for example
+cron-job.org) that calls the workflow's `workflow_dispatch` API at 03:05 Sofia
+with a fine-grained token limited to this repository's Actions (read and write).
+That needs the owner to create the token; it is not set up.
+
 ## The pipeline
 
-Run in order by `scripts/refresh_all.py` (which the robot calls every 3 days):
+Run in order by `scripts/refresh_all.py` (which the robot calls every night):
 
 1. **`scrape_programs.py`** — re-reads cinema (programata.bg + venue sites) and
    theatre (theatre.art.bg, artvent.bg + venue sites) programmes and edits the
