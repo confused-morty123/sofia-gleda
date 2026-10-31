@@ -6,6 +6,11 @@
  },
  {
   "level": "warning",
+  "venue": "g8",
+  "message": "the aggregator lists other times than the kept rows (the kept rows are shown): 2026-11-01 nina-roza kept ['20:50'], aggregator ['20:40']; 2026-11-03 shopen kept ['21:20'], aggregator ['21:10']; 2026-11-02 topki kept ['16:30', '21:00'], aggregator ['20:50']; 2026-11-01 maystora kept ['21:10'], aggregator ['21:00']; 2026-11-01 bashta-majka kept ['21:50'], aggregator ['21:40']; 2026-11-03 sirat kept ['21:20'], aggregator ['21:10']"
+ },
+ {
+  "level": "warning",
   "venue": "arena-mall",
   "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
  },
@@ -31,6 +36,26 @@
  },
  {
   "level": "warning",
+  "venue": "vlaikova",
+  "message": "official source unreachable (Влайкова: no dated grid parsed); last read 2026-10-30, 1 day ago — 45 screenings kept and shown as preliminary (removed after 14 days)"
+ },
+ {
+  "level": "warning",
+  "venue": "g8",
+  "message": "official source unreachable (G8: no 'Седмична програма' week range); last read 2026-10-30, 1 day ago — 102 screenings kept and shown as preliminary (removed after 14 days)"
+ },
+ {
+  "level": "warning",
+  "venue": "vazrazhdane",
+  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-10-30, 1 day ago — 63 performances kept and shown as preliminary (removed after 14 days)"
+ },
+ {
+  "level": "warning",
+  "venue": "toplo",
+  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-10-30, 1 day ago — 69 performances kept and shown as preliminary (removed after 14 days)"
+ },
+ {
+  "level": "warning",
   "venue": "natfiz",
   "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
@@ -46,17 +71,22 @@
  },
  {
   "level": "warning",
+  "venue": "iam",
+  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-10-30, 1 day ago — 12 performances kept and shown as preliminary (removed after 14 days)"
+ },
+ {
+  "level": "warning",
   "venue": "atelie313",
   "message": "no official programme: all 27 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 177/235 ok, 58 missing IMDb ratings"
+  "message": "OMDb: 178/236 ok, 58 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 504/512 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (8 days), karnaval (8 days), poema-za-hlebarkite (8 days)"
+  "message": "theatre posters: 504/510 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (9 days), karnaval (9 days), poema-za-hlebarkite (9 days)"
  }
 ]

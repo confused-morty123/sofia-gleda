@@ -17,8 +17,8 @@
    "post": 188286,
    "scope": "cinema",
    "source": "programata.bg",
-   "status": "upcoming",
-   "tag": "СЛЕД 1 ДЕН",
+   "status": "active",
+   "tag": "СЛЕД 0 ДНИ",
    "title": "Четвъртото издание на Horror Film Fest",
    "titleEn": "The fourth edition of the Horror Film Fest",
    "titles": [
@@ -157,7 +157,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 13 ДНИ",
+   "tag": "СЛЕД 12 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -195,7 +195,7 @@
    ]
   }
  ],
- "generated": "2026-10-30T07:34:53+00:00",
+ "generated": "2026-10-31T01:36:08+00:00",
  "ok": true,
  "posts": {
   "180082": {

@@ -6334,5 +6334,41 @@
   "synBg": "",
   "synEn": "",
   "source": "artvent"
+ },
+ "puknatini": {
+  "id": "puknatini",
+  "title": "ПУКНАТИНИ",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "rusalka": {
+  "id": "rusalka",
+  "title": "РУСАЛКА",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
  }
 }

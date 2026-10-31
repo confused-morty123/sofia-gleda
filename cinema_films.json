@@ -3237,7 +3237,8 @@
    "#27485F"
   ],
   "source": "dom-kino",
-  "runtime": 135
+  "runtime": 135,
+  "year": 2026
  },
  "tatko-sled-polunosht": {
   "id": "tatko-sled-polunosht",
@@ -3280,7 +3281,8 @@
    "#275F57"
   ],
   "source": "lumiere",
-  "runtime": 115
+  "runtime": 115,
+  "year": 2026
  },
  "bezsmartniyat-i-krasavitsata-2": {
   "id": "bezsmartniyat-i-krasavitsata-2",
@@ -3358,7 +3360,8 @@
    "#275F3A"
   ],
   "source": "lumiere",
-  "runtime": 86
+  "runtime": 86,
+  "year": 2026
  },
  "zhozefin": {
   "id": "zhozefin",
@@ -3372,7 +3375,8 @@
    "#275F57"
   ],
   "source": "lumiere",
-  "runtime": 121
+  "runtime": 121,
+  "year": 2026
  },
  "nevidimo-v-kutiya": {
   "id": "nevidimo-v-kutiya",
@@ -3387,7 +3391,8 @@
    "#27485F"
   ],
   "source": "lumiere",
-  "runtime": 127
+  "runtime": 127,
+  "year": 2026
  },
  "pogledni-nazad": {
   "id": "pogledni-nazad",
@@ -3401,7 +3406,8 @@
    "#275F3A"
   ],
   "source": "lumiere",
-  "runtime": 100
+  "runtime": 100,
+  "year": 2026
  },
  "igrite-na-glada-izgrevat-v-denya-na-zhatvata": {
   "id": "igrite-na-glada-izgrevat-v-denya-na-zhatvata",
@@ -3519,7 +3525,8 @@
    "#27485F"
   ],
   "source": "vlaikova",
-  "runtime": 96
+  "runtime": 96,
+  "year": 2026
  },
  "elektricheskata-tseluvka": {
   "id": "elektricheskata-tseluvka",
@@ -3533,7 +3540,8 @@
    "#27485F"
   ],
   "source": "frenski-institut",
-  "runtime": 122
+  "runtime": 122,
+  "year": 2026
  },
  "karma": {
   "id": "karma",
@@ -3562,7 +3570,8 @@
    "#27485F"
   ],
   "source": "odeon",
-  "runtime": 97
+  "runtime": 97,
+  "year": 2026
  },
  "strahlivets": {
   "id": "strahlivets",
@@ -3630,7 +3639,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 128
  },
  "golemite-maystori-na-kinoto": {
   "id": "golemite-maystori-na-kinoto",
@@ -3885,5 +3895,18 @@
    "#275F57"
   ],
   "source": "vlaikova"
+ },
+ "lach-svetlina": {
+  "id": "lach-svetlina",
+  "bg": "Лъч светлина",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere"
  }
 }
