@@ -1042,7 +1042,15 @@
   "pv": 6
  },
  "godzilla-minus-zero": {
-  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8389S2R.jpg"
+  "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8389S2R.jpg",
+  "synBg": "Войната срина Япония, а Годзила я довърши тотално. Изминали са две години на агонизиращи битки за възстановяването на страната и възвръщането на нормалното ежедневие. Точно когато хората успяват да се вкопчат в трудно спечеления мир, се появява нова заплаха, която попарва надеждите за един миг. Трети път няма да има. Всичко свършва сега.",
+  "dir": "Takashi Yamazaki",
+  "cast": "Minami Hamabe, Ryûnosuke Kamiki, Jun Kunimura",
+  "genres": [
+   "Екшън"
+  ],
+  "src": "https://programata.bg/kino/filmi/godzilla-minus-zero/",
+  "pv": 5
  },
  "sinelibri-2026-svetovno-neizvestna": {
   "img": "https://www.cinemacity.bg/xmedia-cw/repo/feats/posters/8510S2R.jpg",
@@ -1326,7 +1334,9 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/osta-na-zhivota5.jpg",
   "fsrc": "https://www.cinelibri.com/osta-na-zhivota/",
   "title_bg": "Оста на живота",
-  "title_en": "Axis of Life"
+  "title_en": "Axis of Life",
+  "src": "https://www.ndk.bg/en/event/osta-na-zivota-sinelibri",
+  "pv": 5
  },
  "ostaynitsa": {
   "synBg": "Има едно място, където любовта означава смърт и където Бог не съществува. За да оцелееш, трябва да забравиш за любовта. Високо в албанските планини 16-годишната Бекиа е принудена от баща си да сключи брак с мъж от селото. В нощта преди сватбата се случва нещо, което променя хода на събитията. Тя разтрогва годежа и се възползва от правото да стане мъж според патриархалните закони. Отказва се от женската си същност и приема името Матя. Решение, което предизвестява смъртта на баща ѝ и пълния разпад на семейството. Петнадесет години по-късно, в наши дни, Матя вече не може да крие своята тайна. Тя предприема пътуване към България, за да се срещне с брат си, който е в изгнание, и със спомените от детството си, с надеждата да събере отново разпилените части от себе си. Филмът е адаптация по романа „Остайница“ на Рене Карабаш. Книгата отвежда читателите в планинско албанско селце, където и до днес Канунът – сборник с архаични закони от времето на Лека Дукагини (XV век) – тегне над селяните и патриархалния им живот. С новаторска изящност авторската изследва въпроса какво е да си жена в свят на насилие, вражди, мъжка доминантност и сурови отношения като резултат от древни патриархални традиции.",
@@ -1811,7 +1821,14 @@
   "pv": 5
  },
  "dzhambo-magicheskoto-priklyuchenie": {
-  "img": "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/ed6ef7335dafacbfa37ee374723733c83264b3d0.jpeg"
+  "img": "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/ed6ef7335dafacbfa37ee374723733c83264b3d0.jpeg",
+  "synBg": "Джъмбо е добро и чувствително момче, което често е обект на подигравки. Той мечтае един ден да се изправи срещу тези, които го тормозят и да докаже, че не е слаб. Но животът му се променя, когато неочаквано среща Мери – загадъчно духче от вълшебен свят, което се нуждае от помощ. Нейното семейство е в опасност и Джъмбо трябва да ѝ помогне да спаси родители си. Заедно с най-добрите си приятели той се впуска в невероятно приключение, в което границата между реалността и магическия свят изчезва. По пътя ги очакват мистерии, забавни моменти, опасности и неочаквани приятелства. Докато се изправя пред своите страхове и предизвикателства, Джъмбо постепенно разбира, че истинската сила не се крие в това да бъдеш най-смелият или най-силният, а в способността да повярваш в себе си, да пазиш приятелите си и да не се отказваш от тези, които обичаш.",
+  "dir": "Райън Адрианди",
+  "genres": [
+   "Анимация"
+  ],
+  "src": "https://programata.bg/kino/filmi/dzhambo/",
+  "pv": 5
  },
  "koleden-kontsert-na-andre-riyo-2026-let-it-snow": {
   "img": "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/9eb514090754ca38bf88a73152648fada7f7c5d3.jpeg",
@@ -2383,5 +2400,54 @@
   "dir": "Али Асгари",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/30/bit-of-light-0x450.png",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/luch-svetlina-3899.html"
+ },
+ "40-kinomaniya-dom-dobar": {
+  "title_bg": "Дом добър",
+  "dir": "Войчех Смажовски",
+  "cast": "Агата Туркот, Томаш Шухард, Агата Кулеша, Мария Собочинска, Аркадиуш Якубик",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/dom-dobur-kinomaniya_kinoteka_polski-institut_6-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/dom-dobur-3915.html"
+ },
+ "40-kinomaniya-fotochuvstvitelna": {
+  "title_bg": "Фоточувствителна",
+  "dir": "Тадеуш Шлива",
+  "cast": "Матилда Гегжно, Игнаци Лис, Бартломей Деклева, Александра Писула",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/fotochyvstvitelna-kinoteka_polski-institut_3-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/fotochyvstvitelna-3912.html"
+ },
+ "40-kinomaniya-katin": {
+  "title_bg": "Катин",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/katin-3913.html"
+ },
+ "40-kinomaniya-nyama-duhove-v-zhilishteto-na-ul-dobra": {
+  "title_bg": "Няма духове в жилището на ул. „Добра\"",
+  "dir": "Еми Бухвалд",
+  "cast": "Бартломей Деклева, Изабела Дуджяк, Тимотеуш Рожинек, Каролина Жепа",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/nyama-dyhove...-kinoteka_polski-institut_1-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/nyama-dyhove-v-zhilishteto-na-yl-bdquodobra-3910.html"
+ },
+ "40-kinomaniya-ostatachni-obrazi": {
+  "title_bg": "Остатъчни образи",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/ostatuchni-obrazi-3916.html"
+ },
+ "40-kinomaniya-zhivot-za-nachinaeshti": {
+  "title_bg": "Живот за начинаещи",
+  "dir": "Павел Подолски",
+  "cast": "Магдалена Машчаница, Михал Шикорски, Бартломей Котчедоф",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/zhivot-za-nachinaeshti-kinomaniya_kinoteka_polski-institut_5-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/zhivot-za-nachinaeshti-3914.html"
+ },
+ "debyutat": {
+  "title_bg": "Дебютът",
+  "dir": "Джеси Айзенбърг",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/debut-1-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/debyutut-3908.html"
+ },
+ "obetovana-zemya": {
+  "title_bg": "Обетована земя",
+  "dir": "Анджей Вайда",
+  "cast": "Даниел Олбрихски, Войчех Пшоняк, Анджей Северин, Калина Йендрушик, Анна Нехребецка",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/obetovana-zemya-kinoteka_polski-institut_2-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/obetovana-zemya-3911.html"
  }
 }

@@ -5635,7 +5635,7 @@
  },
  "sharenata-knizhka-kontsert-za-nay-malkite": {
   "id": "sharenata-knizhka-kontsert-za-nay-malkite",
-  "title": "\"ШАРЕНАТА КНИЖКА\" - КОНЦЕРТ ЗА НАЙ-МАЛКИТЕ",
+  "title": "\"Шарената книжка\" - концерт за най-малките",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -5653,7 +5653,7 @@
  },
  "momche-i-vyatar-2": {
   "id": "momche-i-vyatar-2",
-  "title": "МОМЧЕ И ВЯТЪР",
+  "title": "Момче и вятър",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -5671,7 +5671,7 @@
  },
  "nyakoy-e-obarkal-adresa": {
   "id": "nyakoy-e-obarkal-adresa",
-  "title": "НЯКОЙ Е ОБЪРКАЛ АДРЕСА",
+  "title": "Някой е объркал адреса",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -5689,7 +5689,7 @@
  },
  "petyo-i-valkat": {
   "id": "petyo-i-valkat",
-  "title": "ПЕТЬО И ВЪЛКЪТ",
+  "title": "Петьо и вълкът",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -5707,7 +5707,7 @@
  },
  "printsesite-i-zmeyat-2": {
   "id": "printsesite-i-zmeyat-2",
-  "title": "ПРИНЦЕСИТЕ И ЗМЕЯТ",
+  "title": "Принцесите и Змеят",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -5905,7 +5905,7 @@
  },
  "lyubovni-pisma": {
   "id": "lyubovni-pisma",
-  "title": "ЛЮБОВНИ ПИСМА",
+  "title": "Любовни писма",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -5923,7 +5923,7 @@
  },
  "pchelite": {
   "id": "pchelite",
-  "title": "ПЧЕЛИТЕ",
+  "title": "Пчелите",
   "titleEn": "",
   "theatre": "citymark",
   "author": "",
@@ -6370,5 +6370,59 @@
   "synBg": "",
   "synEn": "",
   "source": "national"
+ },
+ "opasen-char": {
+  "id": "opasen-char",
+  "title": "ОПАСЕН ЧАР",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "dalgiyat-pat-na-denya-kam-noshtta": {
+  "id": "dalgiyat-pat-na-denya-kam-noshtta",
+  "title": "ДЪЛГИЯТ ПЪТ НА ДЕНЯ КЪМ НОЩТА",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "kiki-i-bozo": {
+  "id": "kiki-i-bozo",
+  "title": "КИКИ И БОЗО",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
  }
 }

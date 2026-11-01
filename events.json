@@ -157,7 +157,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 12 ДНИ",
+   "tag": "СЛЕД 11 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -195,14 +195,9 @@
    ]
   }
  ],
- "generated": "2026-10-31T01:36:08+00:00",
+ "generated": "2026-11-01T01:36:15+00:00",
  "ok": true,
  "posts": {
-  "180082": {
-   "date": "2026-05-04T20:36:56",
-   "modified": "2026-05-04T20:36:56",
-   "verdict": "skip: ended 2026-05-10"
-  },
   "180132": {
    "date": "2026-05-05T10:28:20",
    "modified": "2026-05-05T10:28:20",
@@ -347,7 +342,7 @@
   }
  },
  "read": {
-  "listed": 29,
+  "listed": 28,
   "pages": 0,
   "unreadable": 0
  },

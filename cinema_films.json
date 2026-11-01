@@ -3908,5 +3908,40 @@
    "#5F2745"
   ],
   "source": "lumiere"
+ },
+ "klara-and-the-sun-sinelibri": {
+  "id": "klara-and-the-sun-sinelibri",
+  "bg": "KLARA AND THE SUN - SINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere"
+ },
+ "debyutat": {
+  "id": "debyutat",
+  "bg": "Дебютът",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "lumiere"
+ },
+ "obetovana-zemya": {
+  "id": "obetovana-zemya",
+  "bg": "Обетована земя",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino"
  }
 }
