@@ -2326,7 +2326,18 @@
   "title_bg": "Мъжът, когото обичам",
   "dir": "Айра Закс",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/27/muzhut-kogoto-obicham-the-man-i-love-2026-0x450.jpg",
-  "fsrc": "https://www.kinomania.bg/bg_BG/film/muzhut-kogoto-obicham-3740.html"
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/muzhut-kogoto-obicham-3740.html",
+  "synBg": "Ню Йорк в края на 80-те години. На фона на кипящата бохемска театрална сцена пърформанс артистът от Манхатън Джими се опитва да пренареди емоционалния си живот въпреки тежкото си заболяване. Неочаквано той се оказва в любовен триъгълник, в който намира едновременно спасение и опасност.",
+  "cast": "Рами Малек, Ребека Хол, Том Стъридж, Ебон Мос-Бакрак",
+  "genres": [
+   "Драма"
+  ],
+  "title_en": "The Man I Love",
+  "country": "САЩ, Франция",
+  "year": 2026,
+  "runtime": 95,
+  "src": "https://vlaikovacinema.com/screening/40-%d0%ba%d0%b8%d0%bd%d0%be%d0%bc%d0%b0%d0%bd%d0%b8%d1%8f-%d0%bc%d1%8a%d0%b6%d1%8a%d1%82-%d0%ba%d0%be%d0%b3%d0%be%d1%82%d0%be-%d0%be%d0%b1%d0%b8%d1%87%d0%b0%d0%bc/",
+  "pv": 6
  },
  "nepoznata-zhena": {
   "title_bg": "Непозната жена",
@@ -2449,5 +2460,14 @@
   "cast": "Даниел Олбрихски, Войчех Пшоняк, Анджей Северин, Калина Йендрушик, Анна Нехребецка",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/31/obetovana-zemya-kinoteka_polski-institut_2-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/obetovana-zemya-3911.html"
+ },
+ "george-michael-the-faith-tour": {
+  "synBg": "Джордж Майкъл е една от най-влиятелните звезди на своето поколение; неговият глас и авторският му талант дефинират цяла епоха. Изграден от наскоро открити, неизлъчвани досега кадри, заснети на 35 мм лента по време на концерта му през 1988 г. в Palais Omnisports de Paris-Bercy, George Michael: The Faith Tour улавя Джордж в разгара на творческата му мощ по време на рекордното му турне Faith. Внимателно възстановен и ремастериран, филмът превръща един знаков културен момент във впечатляващо киноизживяване.",
+  "title_en": "George Michael – the Faith Tour",
+  "original": "Uk",
+  "year": 2026,
+  "runtime": 113,
+  "src": "https://vlaikovacinema.com/screening/george-michael-the-faith-tour/",
+  "pv": 6
  }
 }

@@ -651,6 +651,23 @@
     "year": 2025
    }
   },
+  "klara-and-the-sun-sinelibri": {
+   "into": "klara-i-slantseto",
+   "rule": "prefix",
+   "reason": "'klara and the sun' begins 'klara and the sun sinelibri'; the same screening is listed under both",
+   "since": "2026-11-02",
+   "record": {
+    "id": "klara-and-the-sun-sinelibri",
+    "bg": "KLARA AND THE SUN - SINELIBRI",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "lumiere"
+   }
+  },
   "kukla-sinelibri": {
    "into": "sinelibri-2026-kukla",
    "rule": "same-key",

@@ -157,7 +157,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 11 ДНИ",
+   "tag": "СЛЕД 10 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -195,19 +195,9 @@
    ]
   }
  ],
- "generated": "2026-11-01T01:36:15+00:00",
+ "generated": "2026-11-02T01:34:47+00:00",
  "ok": true,
  "posts": {
-  "180132": {
-   "date": "2026-05-05T10:28:20",
-   "modified": "2026-05-05T10:28:20",
-   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
-  },
-  "180162": {
-   "date": "2026-05-05T11:02:17",
-   "modified": "2026-05-05T11:02:18",
-   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
-  },
   "180884": {
    "date": "2026-05-15T14:33:57",
    "modified": "2026-05-15T14:34:04",
@@ -342,7 +332,7 @@
   }
  },
  "read": {
-  "listed": 28,
+  "listed": 26,
   "pages": 0,
   "unreadable": 0
  },

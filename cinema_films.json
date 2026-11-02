@@ -3909,17 +3909,6 @@
   ],
   "source": "lumiere"
  },
- "klara-and-the-sun-sinelibri": {
-  "id": "klara-and-the-sun-sinelibri",
-  "bg": "KLARA AND THE SUN - SINELIBRI",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "lumiere"
- },
  "debyutat": {
   "id": "debyutat",
   "bg": "Дебютът",
@@ -3943,5 +3932,27 @@
    "#4A5F27"
   ],
   "source": "dom-kino"
+ },
+ "the-journeys-of-dostoevsky-sinelibri": {
+  "id": "the-journeys-of-dostoevsky-sinelibri",
+  "bg": "THE JOURNEYS OF DOSTOEVSKY - SINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere"
+ },
+ "cold-war-synelebri": {
+  "id": "cold-war-synelebri",
+  "bg": "COLD WAR - SYNELEBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
  }
 }
