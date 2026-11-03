@@ -391,6 +391,25 @@
     "source": "vlaikova"
    }
   },
+  "george-michael-the-faith-tour-bez-prevod": {
+   "into": "george-michael-the-faith-tour",
+   "rule": "prefix",
+   "reason": "'george michael the faith tour' begins 'george michael the faith tour без превод'; runtime [113]≈[113] min and year 2026",
+   "since": "2026-11-03",
+   "record": {
+    "id": "george-michael-the-faith-tour-bez-prevod",
+    "bg": "GEORGE MICHAEL - THE FAITH TOUR - БЕЗ ПРЕВОД",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#2B1B33",
+     "#50275F"
+    ],
+    "source": "cineland",
+    "runtime": 113,
+    "year": 2026
+   }
+  },
   "haos-v-komedi-fransez-sinelibri": {
    "into": "haos-v-komedi-fransez",
    "rule": "same-key",

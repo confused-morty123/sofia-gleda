@@ -79,6 +79,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"85": {
+"n": "Johnny Depp",
+"bg": "Джони Деп",
+"t": "2026-11-03"
+},
 "108": {
 "n": "Peter Jackson",
 "bg": "Питър Джаксън",
@@ -248,6 +253,11 @@
 "n": "Miranda Otto",
 "bg": null,
 "t": "2026-10-23"
+},
+"510": {
+"n": "Tim Burton",
+"bg": "Тим Бъртън",
+"t": "2026-11-03"
 },
 "514": {
 "n": "Jack Nicholson",
@@ -808,6 +818,36 @@
 "n": "Matt Damon",
 "bg": "Мат Деймън",
 "t": "2026-10-23"
+},
+"1901": {
+"n": "Caroline Thompson",
+"bg": null,
+"t": "2026-11-03"
+},
+"1902": {
+"n": "Dianne Wiest",
+"bg": "Даян Уийст",
+"t": "2026-11-03"
+},
+"1904": {
+"n": "Anthony Michael Hall",
+"bg": null,
+"t": "2026-11-03"
+},
+"1907": {
+"n": "Kathy Baker",
+"bg": null,
+"t": "2026-11-03"
+},
+"1919": {
+"n": "Stefan Czapsky",
+"bg": null,
+"t": "2026-11-03"
+},
+"1920": {
+"n": "Winona Ryder",
+"bg": "Уинона Райдър",
+"t": "2026-11-03"
 },
 "1925": {
 "n": "Vincent Cassel",
@@ -2739,6 +2779,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"24076": {
+"n": "Judith Kaufmann",
+"bg": null,
+"t": "2026-11-03"
+},
 "24217": {
 "n": "Haris Zambarloukos",
 "bg": "Харис Замбарлукос",
@@ -4324,6 +4369,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"89760": {
+"n": "Özgü Namal",
+"bg": null,
+"t": "2026-11-03"
+},
 "89903": {
 "n": "Mamiko Noto",
 "bg": null,
@@ -5719,6 +5769,11 @@
 "bg": "Майлс Телър",
 "t": "2026-10-27"
 },
+"999758": {
+"n": "Tansu Biçer",
+"bg": null,
+"t": "2026-11-03"
+},
 "1002482": {
 "n": "Sofian El Fani",
 "bg": null,
@@ -5833,6 +5888,11 @@
 "n": "Mirela Naska",
 "bg": null,
 "t": "2026-10-24"
+},
+"1052796": {
+"n": "Kerem Can",
+"bg": null,
+"t": "2026-11-03"
 },
 "1053172": {
 "n": "Bertrand Mandico",
@@ -7524,6 +7584,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"1576308": {
+"n": "İpek Bilgin",
+"bg": null,
+"t": "2026-11-03"
+},
 "1576786": {
 "n": "Renate Reinsve",
 "bg": null,
@@ -7553,6 +7618,11 @@
 "n": "Takeshi Sone",
 "bg": null,
 "t": "2026-10-30"
+},
+"1584382": {
+"n": "İlker Çatak",
+"bg": null,
+"t": "2026-11-03"
 },
 "1587696": {
 "n": "Benjamin Massoubre",
@@ -7868,6 +7938,11 @@
 "n": "Dušan Joksimović",
 "bg": null,
 "t": "2026-10-25"
+},
+"1716841": {
+"n": "Enis Köstepen",
+"bg": null,
+"t": "2026-11-03"
 },
 "1721268": {
 "n": "Christian Convery",
@@ -8623,6 +8698,11 @@
 "n": "Fatima Al Qadiri",
 "bg": null,
 "t": "2026-10-25"
+},
+"2318218": {
+"n": "Marvin Miller",
+"bg": null,
+"t": "2026-11-03"
 },
 "2320763": {
 "n": "H.E.R.",
@@ -9669,10 +9749,20 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"4810483": {
+"n": "Leyla Smyrna Cabas",
+"bg": null,
+"t": "2026-11-03"
+},
 "4823100": {
 "n": "Mason Reeves",
 "bg": null,
 "t": "2026-10-30"
+},
+"4824090": {
+"n": "Ayda Meryem Çatak",
+"bg": null,
+"t": "2026-11-03"
 },
 "4836320": {
 "n": "Martina Scrinzi",

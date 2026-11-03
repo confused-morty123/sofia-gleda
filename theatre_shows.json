@@ -6460,5 +6460,59 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "5-godini-toplotsentrala-back-to-the-future-drag-music-time-t": {
+  "id": "5-godini-toplotsentrala-back-to-the-future-drag-music-time-t",
+  "title": "5 години Топлоцентрала! Back to the future - Drag, Music & Time Travel",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
+  "id": "5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo",
+  "title": "5 години Топлоцентрала! Владо Михайлов - акустичен ВХОД СВОБОДЕН",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kameliya-todorova-kontsert-50-godini-na-stsenata": {
+  "id": "kameliya-todorova-kontsert-50-godini-na-stsenata",
+  "title": "Камелия Тодорова - концерт 50 години на сцената",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }

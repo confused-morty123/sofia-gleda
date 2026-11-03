@@ -157,7 +157,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 10 ДНИ",
+   "tag": "СЛЕД 9 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -195,7 +195,7 @@
    ]
   }
  ],
- "generated": "2026-11-02T01:34:47+00:00",
+ "generated": "2026-11-03T01:34:51+00:00",
  "ok": true,
  "posts": {
   "180884": {
@@ -329,11 +329,16 @@
    "id": "chetvartoto-izdanie-na-horror-film-fest-p188286",
    "modified": "2026-10-28T14:03:05",
    "verdict": "event"
+  },
+  "188611": {
+   "date": "2026-11-02T15:09:44",
+   "modified": "2026-11-02T15:09:45",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
   }
  },
  "read": {
-  "listed": 26,
-  "pages": 0,
+  "listed": 27,
+  "pages": 1,
   "unreadable": 0
  },
  "source": "programata.bg"

@@ -2998,19 +2998,6 @@
   "year": 2026,
   "originalTitle": "MARATHON: GODZILLA MINUS ONE И GODZILLA MINUS ZERO БЕЗ ПРЕВОД НА БЪЛГАРСКИ"
  },
- "george-michael-the-faith-tour-bez-prevod": {
-  "id": "george-michael-the-faith-tour-bez-prevod",
-  "bg": "GEORGE MICHAEL - THE FAITH TOUR - БЕЗ ПРЕВОД",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#2B1B33",
-   "#50275F"
-  ],
-  "source": "cineland",
-  "runtime": 113,
-  "year": 2026
- },
  "helouin-selektsiya-payatsi": {
   "id": "helouin-selektsiya-payatsi",
   "bg": "Хелоуин Селекция: Паяци",
@@ -3500,7 +3487,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "odeon"
+  "source": "odeon",
+  "runtime": 98
  },
  "echo-between-us-sinelibri": {
   "id": "echo-between-us-sinelibri",
@@ -3954,5 +3942,19 @@
    "#275F3A"
   ],
   "source": "lumiere"
+ },
+ "eduard-nozhitsite": {
+  "id": "eduard-nozhitsite",
+  "bg": "Едуард Ножиците",
+  "en": "",
+  "genres": [
+   "Фентъзи"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 105
  }
 }
