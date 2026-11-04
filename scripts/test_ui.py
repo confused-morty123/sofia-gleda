@@ -262,9 +262,11 @@ def frames(page, action_js, measure_js, ms):
         return out; }""" % (action_js, measure_js, ms, ms + 2000))
 
 
-PAGE_IDLE_JS = """(ms) => new Promise(res => { const t0 = performance.now(); let last = t0, calm = 0;
+PAGE_IDLE_JS = """([ms, anims]) => new Promise(res => { const t0 = performance.now(); let last = t0, calm = 0;
   const done = () => res(Math.round(performance.now() - t0)); setTimeout(done, ms);
-  const f = () => { const now = performance.now(); calm = now - last < 50 ? calm + 1 : 0; last = now;
+  const busy = () => anims && document.getAnimations().some(a => a.playState === 'running'
+    && a.effect && a.effect.getComputedTiming().endTime !== Infinity);
+  const f = () => { const now = performance.now(); calm = now - last < 50 && !busy() ? calm + 1 : 0; last = now;
     if (calm >= 3) done(); else requestAnimationFrame(f); };
   requestAnimationFrame(f); })"""
 
@@ -276,7 +278,17 @@ def wait_page_idle(page, timeout_ms=8000):
     after load (a phone page, 2026-11-04), so a test tapping at 0.3 s met a page that had
     not drawn yet and failed for reasons the site does not have."""
     try:
-        return page.evaluate(PAGE_IDLE_JS, timeout_ms)
+        return page.evaluate(PAGE_IDLE_JS, [timeout_ms, False])
+    except Exception:
+        return None
+
+
+def wait_settled(page, timeout_ms=4000):
+    """wait_page_idle, and no (finite) animation still running: read the end state of an
+    action only once it has ended. The owner's Mac is there by the test's fixed wait; a
+    slower machine (WebKit on GitHub's runners) may still be animating the close."""
+    try:
+        return page.evaluate(PAGE_IDLE_JS, [timeout_ms, True])
     except Exception:
         return None
 
@@ -5307,7 +5319,14 @@ def wave_j(browser, webkit_browser=None):
 
             # Click to open and sample dimension over ~450ms
             # Click to open and record the dimension on every frame for 450 ms
-            open_samples = frames(page, "() => document.querySelector('[data-search-open]').click()", measure_js, 450)
+            # each frame: the value, its time, and the durations of the animations and
+            # transitions running on the element measured (see the slow-machine rule below)
+            el_sel = ".desk-search-wrap" if is_desktop else ".bar-row-search"
+            timed_js = ("() => { const v = (%s)(), e = document.querySelector('%s');"
+                        " return [v, Math.round(performance.now()), e ? e.getAnimations().map(a =>"
+                        " Math.round(Number(a.effect.getTiming().duration) || 0)) : []]; }" % (measure_js, el_sel))
+            open_rec = frames(page, "() => document.querySelector('[data-search-open]').click()", timed_js, 450)
+            open_samples = [x[0] for x in open_rec]
 
             # Check focus
             page.wait_for_timeout(100)
@@ -5321,8 +5340,9 @@ def wave_j(browser, webkit_browser=None):
             q_val = page.evaluate("S.q")
 
             # Click magnifier to close (phones: "Отказ", the magnifier is hidden with the toggle row)
-            close_samples = frames(page, "() => document.querySelector('%s').click()"
-                                   % ("[data-search-open]" if is_desktop else "[data-search-cancel]"), measure_js, 300)
+            close_rec = frames(page, "() => document.querySelector('%s').click()"
+                               % ("[data-search-open]" if is_desktop else "[data-search-cancel]"), timed_js, 300)
+            close_samples = [x[0] for x in close_rec]
 
             page.wait_for_timeout(350)  # wait for animation + query clear
             q_cleared = page.evaluate("S.q")
@@ -5332,6 +5352,7 @@ def wave_j(browser, webkit_browser=None):
             return {
                 "open_samples": [x for x in open_samples if x is not None],
                 "close_samples": [x for x in close_samples if x is not None],
+                "open_rec": open_rec, "close_rec": close_rec,
                 "focused_ok": focused_ok,
                 "active_id": active_id,
                 "still_open": still_open,
@@ -5371,12 +5392,32 @@ def wave_j(browser, webkit_browser=None):
             open_distinct = len(set(round(x, 0) for x in os_s)) >= 3
             close_distinct = len(set(round(x, 0) for x in cs_s)) >= 3
 
+            def _slow_but_animated(rec, vals):
+                """A machine that drew no frame for 100 ms or more of the animation (WebKit on
+                GitHub's runners closing the phone search: the page behind it is rebuilt) cannot
+                show 3 values; there the animation itself is the evidence: the element had an
+                animation or transition of 100 ms or more, the values that were drawn are
+                monotonic and the state changed. Machines drawing in time keep the 3-value rule."""
+                ts = [x[1] for x in rec]
+                gaps = [b - a for a, b in zip(ts, ts[1:])]
+                slow = bool(gaps) and max(gaps) >= 100
+                durs = [d for x in rec for d in x[2]]
+                return slow and len(set(vals)) >= 2 and any(d >= 100 for d in durs), (gaps, sorted(set(durs)))
+            open_slow, open_info = _slow_but_animated(res["open_rec"], os_s)
+            close_slow, close_info = _slow_but_animated(res["close_rec"], cs_s)
+            if open_slow:
+                open_monotonic = all(os_s[i] <= os_s[i+1] + 1 for i in range(len(os_s)-1))
+                open_distinct = True
+            if close_slow:
+                close_monotonic = all(cs_s[i] >= cs_s[i+1] - 1 for i in range(len(cs_s)-1))
+                close_distinct = True
+
             check(f"j4_search_open_monotonic_{tag}",
                   open_monotonic and open_distinct,
-                  f"open samples={os_s[:6]} (need monotonic ≥3 distinct)")
+                  f"open samples={os_s[:6]} (need monotonic ≥3 distinct); frame gaps/animations {open_info}")
             check(f"j4_search_close_monotonic_{tag}",
                   close_monotonic and close_distinct,
-                  f"close samples={cs_s[:6]} (need monotonic ≥3 distinct)")
+                  f"close samples={cs_s[:6]} (need monotonic ≥3 distinct); frame gaps/animations {close_info}")
             check(f"j4_search_focused_{tag}",
                   res["focused_ok"],
                   f"active element id={res['active_id']!r} (need 'q' or 'q-m')")
@@ -11229,6 +11270,7 @@ def wave_p3b(browser, webkit_browser=None):
                 # Close it
                 page.keyboard.press("Escape")
                 page.wait_for_timeout(600)
+                wait_settled(page)
                 sheet_gone = page.evaluate(
                     "() => !document.querySelector('.sheet') || document.getElementById('scrim').hidden")
                 check("p3b_12_webkit_sheet_closes", sheet_gone,
@@ -12826,6 +12868,7 @@ def _hf_close_popup(page, phone, route, ctx):
         note = f"tabs={len(others)} dl={len(downloads)} sameUrl={page.url == url0} popStill={s['pop']} film={s['film']}"
         _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssclose]')")
     page.wait_for_timeout(600)
+    wait_settled(page)
     return note
 
 
@@ -12860,6 +12903,7 @@ def _hf_close_sheet(page, phone, route):
     elif route == "back":
         page.evaluate(HF_BACK_JS)
     page.wait_for_timeout(750)
+    wait_settled(page)
 
 
 def _hf_check_stays_open(page, phone, kind, cid, label, wave_tag):
@@ -13855,6 +13899,7 @@ def _hf_drawer(browser, eng, phone):
         else:
             _hf_tap_el(page, phone, "()=>document.querySelector('.drawer .dclose')")
         page.wait_for_timeout(600)
+        wait_settled(page)
         closed = page.evaluate("()=>!document.querySelector('.drawer')&&!!document.querySelector('.fab')")
         check(f"{tag}_{mode}_drawer_close_one_tap_{'backdrop' if mode == 'cinema' else 'x'}", closed, f"drawer gone and FAB back: {closed}")
         if phone:

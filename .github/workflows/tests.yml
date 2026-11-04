@@ -110,7 +110,17 @@ jobs:
           # requirements.txt pins the playwright version, which fixes the browser builds
           key: playwright-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
+      - name: Restore the system packages the browsers need
+        # The ~360 MB of .deb files install-deps downloads, cached: some runners fetch them
+        # from the Ubuntu mirror at a crawl (12 min and more on 2026-11-04, for 25 s elsewhere).
+        id: apt-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-debs
+          key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
+
       - name: Install the browsers
+        id: install
         # The gate and test_verify open Chromium (WebKit too, kept so the cache key is shared).
         # On a cache hit only the system libraries are installed (they are not cached).
         env:
@@ -123,8 +133,10 @@ jobs:
         run: |
           sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service \
             apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\n' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\nAPT::Keep-Downloaded-Packages "true";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99zz-ci > /dev/null
+          # the packages a previous run downloaded (cache below): apt installs them from disk
+          if ls ~/apt-debs/*.deb > /dev/null 2>&1; then sudo cp ~/apt-debs/*.deb /var/cache/apt/archives/; fi
           for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
               timeout -k 10 240 python3 -m playwright install-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
@@ -141,7 +153,18 @@ jobs:
             sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
             sudo dpkg --configure -a || true
           done
-          cat /tmp/pw-install.log | tail -n 5
+          tail -n 5 /tmp/pw-install.log
+          mkdir -p ~/apt-debs && cp /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+          echo "debs=$(ls ~/apt-debs | grep -c '\.deb$' || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Save the system packages for the next runs
+        # only a real set of packages (an empty folder cached once would be restored for good)
+        if: steps.apt-cache.outputs.cache-hit != 'true' && fromJSON(steps.install.outputs.debs || '0') > 50
+        continue-on-error: true        # another job of the run may have saved them first
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-debs
+          key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
       - name: Build the page offline (src/ + the committed listings)
         id: build
@@ -221,7 +244,17 @@ jobs:
           # requirements.txt pins the playwright version, which fixes the browser builds
           key: playwright-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
+      - name: Restore the system packages the browsers need
+        # The ~360 MB of .deb files install-deps downloads, cached: some runners fetch them
+        # from the Ubuntu mirror at a crawl (12 min and more on 2026-11-04, for 25 s elsewhere).
+        id: apt-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-debs
+          key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
+
       - name: Install the browsers
+        id: install
         # The gate and test_verify open Chromium (WebKit too, kept so the cache key is shared).
         # On a cache hit only the system libraries are installed (they are not cached).
         env:
@@ -234,8 +267,10 @@ jobs:
         run: |
           sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service \
             apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\n' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\nAPT::Keep-Downloaded-Packages "true";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99zz-ci > /dev/null
+          # the packages a previous run downloaded (cache below): apt installs them from disk
+          if ls ~/apt-debs/*.deb > /dev/null 2>&1; then sudo cp ~/apt-debs/*.deb /var/cache/apt/archives/; fi
           for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
               timeout -k 10 240 python3 -m playwright install-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
@@ -252,7 +287,18 @@ jobs:
             sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
             sudo dpkg --configure -a || true
           done
-          cat /tmp/pw-install.log | tail -n 5
+          tail -n 5 /tmp/pw-install.log
+          mkdir -p ~/apt-debs && cp /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+          echo "debs=$(ls ~/apt-debs | grep -c '\.deb$' || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Save the system packages for the next runs
+        # only a real set of packages (an empty folder cached once would be restored for good)
+        if: steps.apt-cache.outputs.cache-hit != 'true' && fromJSON(steps.install.outputs.debs || '0') > 50
+        continue-on-error: true        # another job of the run may have saved them first
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-debs
+          key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
       - name: Build the page offline (src/ + the committed listings)
         run: |
@@ -327,7 +373,17 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
+      - name: Restore the system packages the browsers need
+        # The ~360 MB of .deb files install-deps downloads, cached: some runners fetch them
+        # from the Ubuntu mirror at a crawl (12 min and more on 2026-11-04, for 25 s elsewhere).
+        id: apt-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-debs
+          key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
+
       - name: Install the browsers
+        id: install
         # Both engines in every shard: waves J and P3B open WebKit inside the Chromium run.
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
@@ -339,8 +395,10 @@ jobs:
         run: |
           sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service \
             apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\n' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\nAPT::Keep-Downloaded-Packages "true";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99zz-ci > /dev/null
+          # the packages a previous run downloaded (cache below): apt installs them from disk
+          if ls ~/apt-debs/*.deb > /dev/null 2>&1; then sudo cp ~/apt-debs/*.deb /var/cache/apt/archives/; fi
           for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
               timeout -k 10 240 python3 -m playwright install-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
@@ -357,7 +415,18 @@ jobs:
             sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
             sudo dpkg --configure -a || true
           done
-          cat /tmp/pw-install.log | tail -n 5
+          tail -n 5 /tmp/pw-install.log
+          mkdir -p ~/apt-debs && cp /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+          echo "debs=$(ls ~/apt-debs | grep -c '\.deb$' || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Save the system packages for the next runs
+        # only a real set of packages (an empty folder cached once would be restored for good)
+        if: steps.apt-cache.outputs.cache-hit != 'true' && fromJSON(steps.install.outputs.debs || '0') > 50
+        continue-on-error: true        # another job of the run may have saved them first
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-debs
+          key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
       - name: Build the page offline (src/ + the committed listings)
         run: |
