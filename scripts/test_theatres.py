@@ -1581,7 +1581,7 @@ check("list: a content area with no cards is an empty list",
 ev = O.parse_natfiz_event(fx("theatre_natfiz_event_vaal.html"))
 check("event page: date with its year, time, category, address (Сцена 47)",
       ev, {"date": "2026-11-06", "time": "19:30", "cats": ["Представления"],
-           "address": "Театър НАТФИЗ, Сцена 47", "own_box": True, "free": False})
+           "address": "Театър НАТФИЗ, Сцена 47", "own_box": True, "free": False, "cancelled": False})
 check("event page: no address printed (Събуждане на мъртвите), tickets at Театър НАТФИЗ's box office",
       {k: v for k, v in O.parse_natfiz_event(fx("theatre_natfiz_event_sabuzhdane.html")).items()
        if k in ("address", "own_box")}, {"address": "", "own_box": True})
@@ -1632,17 +1632,69 @@ nf_net = FakeNet({NF: raw("theatre_natfiz_list.html"),
                   NF + "myuzikal-vecher-na-klasa-na-prof-penko-gospodinov/": raw("theatre_natfiz_event_myuzikal.html"),
                   NF + "folklorna-magiya-ot-pirin-26/": raw("theatre_natfiz_event_folklorna.html"),
                   NF + "dekameron-lyubov-i-smart-po-bokacho/": raw("theatre_natfiz_event_dekameron.html")})
+# Every other event page: the ВААЛ page with that card's date, time and address (the
+# list's own values). Казимир & Каролине and the second Събуждане are left unreached.
+_NF_VAAL = fx("theatre_natfiz_event_vaal.html")
+
+
+def _nf_page(date, time_, address, cat="Представления", body=""):
+    d = f"{date[8:10]}.{date[5:7]}.{date[:4]} - {time_}"
+    html = (_NF_VAAL.replace("06.11.2026 - 19:30", d)
+            .replace("Театър НАТФИЗ, Сцена 47                ", address + "                ")
+            .replace(">Представления</a>", f">{cat}</a>"))
+    if body:
+        html = html.replace('<div class="event-content">\n<div>', '<div class="event-content">\n<div><p>' + body + "</p>", 1)
+    return html.encode()
+
+
+_NF_UNREACHED = {NF + "kazimir-karoline-2/", NF + "sabuzhdaneto-na-martvite-2/"}
+for _t, _d, _tm, _a, _u in nf_list:
+    if _u not in nf_net.pages and _u not in _NF_UNREACHED:
+        nf_net.pages[_u] = _nf_page(_d, _tm, _a)
 res = O.fetch_venue("natfiz", nf_net, NF_TODAY)
-check("fetch: 11 performances at Театър НАТФИЗ, 7 excluded (5 puppet, 2 no venue), covered to the last listed day",
+check("fetch: 10 performances at Театър НАТФИЗ, 8 excluded (5 puppet, 1 no venue, 2 pages not reached), "
+      "covered to the last listed day",
       (O.LAST_STATUS["natfiz"], len(res["rows"]), len(res["extra_rows"]), len(res["excluded"]),
-       res["covered_from"], res["covered_to"]), ("ok", 11, 0, 7, "2026-11-04", "2026-11-25"))
+       res["covered_from"], res["covered_to"]), ("ok", 10, 0, 8, "2026-11-04", "2026-11-25"))
 check("fetch: every row links its own page, one page per performance",
-      len({r[3]["buy"] for r in res["rows"]}), 11)
+      len({r[3]["buy"] for r in res["rows"]}), 10)
 check("fetch: no address and its page not reached (Събуждане, 28 Nov) → excluded: no box office line to go by",
       [e[1] for e in res["excluded"] if e[0] == "Събуждане на мъртвите"], ["2026-11-28"])
-check("fetch: a page not reached → the list's date, time and address, noted",
+check("fetch: a page not reached → not a row (category unverified), noted",
       (any(n.startswith(NF + "kazimir-karoline-2/: unreachable") for n in res["notes"]),
-       [r[3]["hall"] for r in res["rows"] if r[0] == "Казимир & Каролине"]), (True, ["Сцена 47"]))
+       [r for r in res["rows"] if r[0] == "Казимир & Каролине"],
+       [e[3] for e in res["excluded"] if e[0] == "Казимир & Каролине"]),
+      (True, [], ["its event page not reached: category and venue not verified"]))
+# skeptic b2-natfiz: a theme update that renames .ev-date must fail the venue, not
+# publish list-only rows (a lecture card would then pass as a performance)
+_lect = ("Лекция: майсторски клас", "2026-11-20", "19:30", "Театър НАТФИЗ, Сцена 47", NF + "lektsiya/")
+_list_lect = fx("theatre_natfiz_list.html")
+check("fetch: every event page renamed .ev-date → None (previous rows kept), a markup change",
+      (O.fetch_venue("natfiz", FakeNet({u: (b.decode("utf-8").replace("ev-date", "ev-when").encode()
+                                            if u != NF else b) for u, b in nf_net.pages.items()}), NF_TODAY),
+       O.LAST_STATUS["natfiz"].startswith("natfiz: no date on the event page")), (None, True))
+check("fetch: most event pages not reached → None (previous rows kept), never list-only rows",
+      (O.fetch_venue("natfiz", FakeNet({NF: nf_net.pages[NF]}), NF_TODAY),
+       "event pages not reached" in O.LAST_STATUS["natfiz"]), (None, True))
+_one_lecture = dict(nf_net.pages)
+_one_lecture[NF] = _list_lect.replace(
+    "https://natfiz.bg/event/volpone-2/", _lect[4]).replace(">Волпоне<", ">" + _lect[0] + "<").encode()
+_res_l = O.fetch_natfiz(FakeNet(_one_lecture), NF_TODAY)
+check("fetch: a card whose page is not reached (here a lecture) is not a row",
+      [r for r in _res_l["rows"] if r[0] == _lect[0]], [])
+_res_l2 = O.fetch_natfiz(FakeNet(dict(_one_lecture, **{_lect[4]: _nf_page(*_lect[1:4], cat="Лекции")})), NF_TODAY)
+check("fetch: the same card with its page reached (category Лекции) is excluded as not a performance",
+      ([r for r in _res_l2["rows"] if r[0] == _lect[0]],
+       [e[3] for e in _res_l2["excluded"] if e[0] == _lect[0]]), ([], ["not a performance: category Лекции"]))
+_res_c = O.fetch_natfiz(FakeNet(dict(nf_net.pages, **{NF + "letishte/": _nf_page(
+    "2026-11-19", "19:00", "Театър НАТФИЗ, Голяма сцена", body="ПРЕДСТАВЛЕНИЕТО Е ОТМЕНЕНО")})), NF_TODAY)
+check("fetch: a cancellation written only in the page body → excluded",
+      ([r for r in _res_c["rows"] if r[0] == "Летище"], [e[3] for e in _res_c["excluded"] if e[0] == "Летище"]),
+      ([], ["cancelled (the event page says so)"]))
+check("event page body: synopsis words are no cancellation, a sentence about the performance is",
+      [bool(O._NATFIZ_BODY_CANCELLED.search(t)) for t in
+       ("отложеният живот на героите", "Представлението се отлага за 5 декември", "ОТМЕНЕНО")],
+      [False, True, True])
 check("fetch: only natfiz.bg/event/ pages are asked for", all(u.startswith(NF) for u in nf_net.asked), True)
 _moved = fx("theatre_natfiz_event_vaal.html").replace("06.11.2026 - 19:30", "06.11.2026 - 20:00")
 res2 = O.fetch_natfiz(FakeNet(dict(nf_net.pages, **{NF + "vaal/": _moved.encode()})), NF_TODAY)

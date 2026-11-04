@@ -2132,6 +2132,13 @@ _NATFIZ_DT = re.compile(r"\b(\d{2})\.(\d{2})\.(\d{4})\s*[-–—]\s*([01]?\d|2[0
 _NATFIZ_OWN_BOX = re.compile(r"касата\s+на\s+театър\s+натфиз", re.I)
 _NATFIZ_FREE = re.compile(r"вход\s+свободен", re.I)
 _NATFIZ_CANCELLED = re.compile(r"отмен[ея]н|\bотлож", re.I)
+# In the page body the synopsis is free text ("отложеният живот"), so only a sentence
+# about this performance, or a word in capitals, marks a cancellation.
+_NATFIZ_BODY_CANCELLED = re.compile(
+    r"(?i:\b(?:представлението|спектакълът|събитието)\s+(?:е\s+|се\s+)?(?:отмен|отлож|отлага))"
+    r"|\bОТМЕН(?:ЕНО|ЕН|ЕНА|ЯТ|Я)\b|\bОТЛОЖЕН[ОА]?\b")
+# More event pages than this share not reached → the venue fails (previous rows kept).
+NATFIZ_MAX_UNREACHED = 1 / 3
 
 
 def parse_natfiz_list(html, today):
@@ -2181,7 +2188,8 @@ def parse_natfiz_event(html):
     return {"date": f"{m.group(3)}-{m.group(2)}-{m.group(1)}",
             "time": f"{int(m.group(4)):02d}:{m.group(5)}",
             "cats": cats, "address": next((ln for ln in lines if ln), ""),
-            "own_box": bool(_NATFIZ_OWN_BOX.search(text)), "free": bool(_NATFIZ_FREE.search(text))}
+            "own_box": bool(_NATFIZ_OWN_BOX.search(text)), "free": bool(_NATFIZ_FREE.search(text)),
+            "cancelled": bool(_NATFIZ_BODY_CANCELLED.search(text))}
 
 
 def natfiz_hall(address):
@@ -2203,6 +2211,8 @@ def natfiz_split(title, date, time_, url, address, page=None):
     a = (address or "").lower()
     if _NATFIZ_CANCELLED.search(title):
         return None, (title, date, time_, "cancelled")
+    if page is not None and page.get("cancelled"):
+        return None, (title, date, time_, "cancelled (the event page says so)")
     if page is not None and NATFIZ_PERFORMANCE_CAT not in [c.lower() for c in page["cats"]]:
         return None, (title, date, time_, "not a performance: category "
                       + (", ".join(page["cats"]) or "none"))
@@ -2223,15 +2233,22 @@ def fetch_natfiz(net, today):
         raise Unavailable("natfiz: no upcoming events listed")
     rows, excluded, notes = [], [], []
     t0 = today.isoformat()
+    upcoming = unreached = 0
     for title, date, time_, address, url in listed:
         if date < t0:
             continue
+        upcoming += 1
         try:
             page = parse_natfiz_event(_get(net, url))
+        except MarkupError:
+            raise           # the event pages changed shape: the venue fails, previous rows kept
         except Unavailable as e:
-            # the list is the theatre's own too: its date, time and address stand in
-            notes.append(f"{url}: {e} — the event list's date, time and address used")
-            page = None
+            # The list shows no category and no box-office line: a page not reached
+            # cannot be told from a lecture or an exhibition, so it is not a row.
+            unreached += 1
+            notes.append(f"{url}: {e} — not published: category and venue not verified")
+            excluded.append((title, date, time_, "its event page not reached: category and venue not verified"))
+            continue
         if page is not None:
             if (page["date"], page["time"]) != (date, time_):
                 notes.append(f"{url}: the list says {date} {time_}, the page {page['date']} "
@@ -2245,6 +2262,8 @@ def fetch_natfiz(net, today):
             rows.append(row)
         if exc:
             excluded.append(exc)
+    if upcoming and unreached > upcoming * NATFIZ_MAX_UNREACHED:
+        raise Unavailable(f"natfiz: {unreached} of {upcoming} event pages not reached")
     return finish("natfiz", NATFIZ_SOURCE, rows, today, excluded=excluded, notes=notes)
 
 
