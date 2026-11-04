@@ -54,6 +54,44 @@ _DECOR_RE = re.compile(
     r"final cut|extended cut|uncut|special edition|redux|4k|imax|70\s*mm)\b.*$",
     re.I)
 
+# The same decoration as Bulgarian venues print it: "Отмъстителите: Краят – Специално
+# издание" (Avengers: Endgame, 2019, re-released 2026), "Колите: 20 години от
+# премиерата". TMDB knows the film by its own title only. "N години по-късно" names a
+# film too (28 години по-късно), so it is decoration only after a dash or in brackets,
+# never after a colon or as the whole title.
+_REREL_BG = (r"специално\s+издание|юбилейно\s+издание|ново\s+издание|"
+             r"ремастериран[аои]?(?:\s+версия)?|реставриран[аои]?(?:\s+версия)?|"
+             r"възстановен[аои]?\s+версия|режисьорска\s+версия|разширена\s+версия|"
+             r"удължена\s+версия|4\s*[KК](?:\s+версия)?|\d+\s+години\s+от\s+премиерата|"
+             r"\d+(?:-?(?:та|ти|а))?\s+годишнина|годишнина")
+_DECOR_BG_RE = re.compile(
+    r"\s*(?:(?:[-–—:|]|\()\s*(?:" + _REREL_BG + r")|(?:[-–—|]|\()\s*\d+\s+години\s+по-късно)\s*\)?\s*$",
+    re.I)
+# English re-release markers (a subset of _DECOR_RE: IMAX and 70 mm are formats a new
+# film is shown in, not a sign of an old one).
+_REREL_EN_RE = re.compile(
+    r"(?:[-–—:|(]\s*)(?:\d+\s*(?:th|st|nd|rd)?\s*)?(?:anniversary|restored|restoration|remastered|"
+    r"re-?release|director'?s cut|final cut|extended cut|special edition|redux|4k)\b", re.I)
+
+
+def rerelease_marker(title):
+    """True when the title carries an explicit re-release / edition marker
+    ("– Специално издание", "(20th Anniversary)", "– 4K"): the film is an old one shown
+    again, so its TMDB year may be decades before the screening (year_ok)."""
+    t = (title or "").strip()
+    return bool(t) and bool(_DECOR_BG_RE.search(t) or _REREL_EN_RE.search(t))
+
+
+def strip_rerelease(title):
+    """The title without its trailing re-release markers (_DECOR_BG_RE): those words
+    are decoration, never words a match must keep (stripped_words)."""
+    t, prev = (title or "").strip(), None
+    while t and t != prev:
+        prev = t
+        t = _DECOR_BG_RE.sub("", t).strip()
+    return t
+
+
 # Trailing "| 1979 |" year decoration — also captures the year (group 1).
 _TRAILING_YEAR_BARS_RE = re.compile(r"\s*\|\s*(\d{4})\s*\|\s*$")
 # Festival / series prefixes, e.g. "СИНЕЛИБРИ 2026 – ", "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: "
@@ -172,6 +210,22 @@ def plausible_year(year, r):
     return g is None or g <= MAX_YEAR_GAP
 
 
+def year_ok(year, r, rerelease=False):
+    """plausible_year(), except that a title with an explicit re-release marker
+    (rerelease_marker) may match a film any number of years OLDER than the year the
+    venue prints (its re-release year): never a newer one."""
+    if plausible_year(year, r):
+        return True
+    if not rerelease:
+        return False
+    try:
+        y = int(year)
+    except (TypeError, ValueError):
+        return True
+    ry = _release_year(r)
+    return ry is not None and ry <= y
+
+
 # ── Match acceptance: the venue's own facts against the candidate's ───────────
 # A title can only nominate a candidate. "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА" (Влайкова,
 # a 2026 documentary) became The Departed (2006, BG "От другата страна"), "Обич"
@@ -237,7 +291,12 @@ def contradiction(facts, cand):
            imdb_id. The same rule runs in main() before a match is kept and in
            verify_build / the regression check over the stored sidecar."""
     facts, cand = facts or {}, cand or {}
-    if not plausible_year(facts.get("year"), {"release_date": str(cand.get("tmdb_year") or "")}):
+    _cy = {"release_date": str(cand.get("tmdb_year") or "")}
+    # a marked re-release ("– Специално издание") is the old film: its TMDB year may be
+    # long before the year the venue prints, never after it
+    older_rerelease = bool(facts.get("rerelease")) and not plausible_year(facts.get("year"), _cy) \
+        and year_ok(facts.get("year"), _cy, rerelease=True)
+    if not plausible_year(facts.get("year"), _cy) and not older_rerelease:
         return f"year {facts.get('year')} vs TMDB {cand.get('tmdb_year')}"
     ids = {i.lower() for i in facts.get("imdb") or ()}
     if ids and cand.get("imdb_id") and cand["imdb_id"].lower() not in ids:
@@ -270,7 +329,8 @@ def contradiction(facts, cand):
     vt = [t for t in facts.get("titles") or () if norm(t)]
     ct = [t for t in (cand.get("en"), cand.get("original_title")) if norm(t)]
     g = year_gap(facts.get("year"), {"release_date": str(cand.get("tmdb_year") or "")})
-    if vt and ct and g is not None and g > 1 and not any(titles_agree(a, b) for a in vt for b in ct):
+    if vt and ct and g is not None and g > 1 and not older_rerelease \
+            and not any(titles_agree(a, b) for a in vt for b in ct):
         return f"title {vt[0]} ({facts.get('year')}) vs TMDB {ct[0]} ({cand.get('tmdb_year')})"
     return None
 
@@ -300,7 +360,8 @@ def venue_facts(film, fi=None, urls=()):
             "genres": film.get("genres") or fi.get("genres") or [],
             "director": "" if d.strip() in ("", "—", "-") else d,
             "imdb": venue_imdb_ids(urls),
-            "titles": list(dict.fromkeys(titles))}
+            "titles": list(dict.fromkeys(titles)),
+            "rerelease": any(rerelease_marker(t) for t in (film.get("bg"), film.get("en"), fi.get("title_bg")))}
 
 
 # Per-film TMDB ids verified to be ANOTHER film (tmdb_blocklist.json, committed):
@@ -539,6 +600,10 @@ def declutter(title):
         prev = t
         t = _PAREN_RE.sub("", t).strip()
     t = _DECOR_RE.sub("", t).strip()
+    prev = None
+    while t and t != prev:
+        prev = t
+        t = _DECOR_BG_RE.sub("", t).strip()
 
     return t, extracted_year
 
@@ -772,13 +837,58 @@ def details_en(tmdb_id, d=None):
     return ov, (country or None), imdb_id, dir_, cast_
 
 
-def details_bg(tmdb_id):
+def details_bg(tmdb_id, with_title=False):
     """Bulgarian overview from the film's detail record (language=bg-BG).
-    Returns the Bulgarian overview string, or None if absent/empty."""
+    Returns the Bulgarian overview string, or None if absent/empty. with_title:
+    (overview, title) instead, title being TMDB's bg-BG title ("" when TMDB answered
+    with no Bulgarian one, None when the call failed)."""
     d = api(f"movie/{tmdb_id}", {"language": "bg-BG"})
     if not d:
+        return (None, None) if with_title else None
+    ov = (d.get("overview") or "").strip() or None
+    if not with_title:
+        return ov
+    t = (d.get("title") or "").strip()
+    return ov, (t if _has_cyrillic(t) else "")
+
+
+# A film without a venue year is matched by its IMDb id only when TMDB dates it this
+# recently (a cinema's programme is mostly new films; an old id is a typo or a
+# placeholder, Cine Grand's Топки carries tt1234654) or the title marks a re-release.
+FIND_RECENT_YEARS = 3
+
+
+def find_by_venue_imdb(urls, year, blocked=(), rerelease=False, hint=None, today=None):
+    """TMDB's film for the IMDb id the venue itself prints in its film link (Cine
+    Grand: /m/godzilla-minus-zero-imdbtt34384661), or None. Only one id may be named;
+    the film must not be blocked for this film id, and its year must fit: the curated
+    year ±1 (film_aliases.json), the venue's year (year_ok), or with no year at all a
+    release within FIND_RECENT_YEARS (any older one only for a marked re-release).
+    contradiction() still checks it like any other match. The id is returned as
+    "_imdb" on the result."""
+    ids = venue_imdb_ids(urls)
+    if len(ids) != 1:
         return None
-    return (d.get("overview") or "").strip() or None
+    imdb_id = next(iter(ids))
+    d = api(f"find/{imdb_id}", {"external_source": "imdb_id", "language": "en-US"})
+    if d is None:
+        global SEARCH_ERRORS
+        SEARCH_ERRORS += 1
+        return None
+    res = [r for r in (d.get("movie_results") or []) if isinstance(r, dict) and isinstance(r.get("id"), int)]
+    if len(res) != 1 or res[0]["id"] in (blocked or ()):
+        return None
+    r = dict(res[0], _imdb=imdb_id)
+    ry = _release_year(r)
+    if ry is None:
+        return None
+    if hint and hint.get("year"):
+        return r if abs(ry - int(hint["year"])) <= 1 else None
+    if year:
+        return r if year_ok(year, r, rerelease) else None
+    import datetime as _dt
+    this_year = (today or _dt.date.today()).year
+    return r if (ry >= this_year - FIND_RECENT_YEARS or rerelease) else None
 
 
 def trailer_year_ok(film_year, tmdb_year):
@@ -817,6 +927,7 @@ def art_record(v, film_year=None):
     if v.get("dir"):           rec["dir"] = v["dir"]                 # director(s) from TMDB credits
     if v.get("cast"):          rec["cast"] = v["cast"]               # top-5 cast from TMDB credits
     if v.get("ovBg"):          rec["ovBg"] = v["ovBg"]               # Bulgarian overview from TMDB
+    if _has_cyrillic(v.get("tbg")): rec["tb"] = v["tbg"]               # TMDB's bg-BG title of the match
     if v.get("trend"):         rec["tr"] = v["trend"]                # rank on TMDB's weekly trending list (1 = first)
     ty = str(v.get("tmdb_year") or "")[:4]
     if ty.isdigit():           rec["y"] = int(ty)                    # release year (fallback)
@@ -1018,9 +1129,13 @@ def main():
             if ot and not _has_cyrillic(ot):
                 en = ot
         if not en:
-            fi_en = (fi.get("title_en") or "").strip()
-            if fi_en and not _has_cyrillic(fi_en):
-                en = fi_en
+            for fi_en in ((fi.get("title_en") or "").strip(), (fi.get("original") or "").strip()):
+                if fi_en and not _has_cyrillic(fi_en):
+                    en = fi_en
+                    break
+        # "– Специално издание", "(20th Anniversary)": an old film shown again, whose
+        # TMDB year may be decades before the year the venue prints (year_ok)
+        rerel = any(rerelease_marker(t) for t in (f.get("bg"), f.get("en"), fi.get("title_bg")))
         if fid in BLOCKLIST:
             print(f"[{i+1}/{len(films)}] {fid:24s} BLOCKED (known false match — generated art kept)")
             out[fid] = {"matched": False, "en": en}
@@ -1046,7 +1161,14 @@ def main():
         # match_source log label ("original") which downstream code stores verbatim.
         _f_en = f.get("en")   # original FILMS.en value before any fallback was applied
         _en_is_original = (not _f_en) and bool(en)
-        if en:
+        # The venue names the film's IMDb id itself (Cine Grand: /m/zvart-imdbtt29256561):
+        # TMDB's film with that id is the venue's film, whatever the title, provided its
+        # year fits (find_by_venue_imdb). The searches below run only when it gives none.
+        best = find_by_venue_imdb(film_urls.get(fid), year, blocked, rerel, hint)
+        if best:
+            match_source, match_query = "imdb", best.get("_imdb")
+            print(f"      (found by the venue's IMDb id {best.get('_imdb')})")
+        elif en:
             best = search_en(en, year, blocked)
             if best:
                 match_source = "original" if _en_is_original else "en"
@@ -1096,7 +1218,7 @@ def main():
                 # Влайкова prints every title in capitals, so "ЕВЕРЕСТ:" looked like a
                 # series prefix and "ОТ ДРУГАТА СТРАНА" found The Departed. Such a match
                 # stands only when the result keeps those words or the year confirms it.
-                lost = stripped_words(bg, clean_bg)
+                lost = stripped_words(strip_rerelease(bg), clean_bg)
                 ry_b = ((best or {}).get("release_date") or "")[:4]
                 if best and lost and not keeps_dropped(best, lost) and not (
                         use_year_bg and ry_b.isdigit() and abs(int(ry_b) - int(use_year_bg)) <= 1):
@@ -1127,14 +1249,15 @@ def main():
         # When the EN title came from a fallback source (FILMS.originalTitle or
         # film_info.title_en) and we know the film's year, apply the same ±1 year
         # guard so a same-title remake in a different decade cannot steal the poster.
-        if best and _en_is_original and year and not hint:
+        if best and _en_is_original and year and not hint and match_source != "imdb":
             tmdb_yr_str = (best.get("release_date") or "")[:4]
-            if tmdb_yr_str.isdigit() and abs(int(tmdb_yr_str) - int(year)) > 1:
+            if tmdb_yr_str.isdigit() and abs(int(tmdb_yr_str) - int(year)) > 1 and not (
+                    rerel and int(tmdb_yr_str) <= int(year)):
                 print(f"      (fallback year {year} vs TMDB {tmdb_yr_str} — rejected)")
                 best = None
         # Whatever path found it, a match far from the venue's own year is another film
         # (Паяци 2026 -> Spiders 2000, Минотавър 2026 -> a 1994 TV film).
-        if best and not plausible_year(year, best):
+        if best and not year_ok(year, best, rerel):
             print(f"      (year {year} vs TMDB {(best.get('release_date') or '')[:4]}: more than "
                   f"{MAX_YEAR_GAP} years apart, another film — rejected)")
             best = None
@@ -1179,7 +1302,7 @@ def main():
             "via": match_source,
             "q": match_query,
         }
-        if via_bg:
+        if via_bg and _has_cyrillic(best.get("title")):
             rec["tbg"] = best.get("title")      # TMDB's Bulgarian title of the match
         # Owner's choice: fill English synopsis/country from TMDB where it exists,
         # Bulgarian otherwise. Theatre shows aren't in TMDB, so this is films only.
@@ -1222,24 +1345,38 @@ def main():
             rec["cast"] = cast_
         elif pv.get("cast"):
             rec["cast"] = pv["cast"]
-        # Bulgarian overview — separate call with language=bg-BG
-        ov_bg = details_bg(best["id"])
+        # Bulgarian overview and title: a separate call with language=bg-BG. The title
+        # (tbg, TMDB's bg-BG translation of this verified match) is what the page may
+        # show in Bulgarian when the venues print only a Latin title that is not the
+        # film's international one (art_record "tb").
+        ov_bg, t_bg = details_bg(best["id"], with_title=True)
         if ov_bg:
             rec["ovBg"] = ov_bg
-        elif pv.get("ovBg"):
+        elif pv.get("ovBg") and pv.get("tmdb_id") == rec["tmdb_id"]:
             rec["ovBg"] = pv["ovBg"]
+        if t_bg and _has_cyrillic(t_bg):
+            rec.setdefault("tbg", t_bg)
+        elif t_bg is None and pv.get("tbg") and pv.get("tmdb_id") == rec["tmdb_id"]:
+            rec.setdefault("tbg", pv["tbg"])
         # Genuine IMDb rating via OMDb (keyed by TMDB's imdb_id). The score tile is
         # labelled "IMDb", so only a real IMDb number may fill it — never TMDB's own
         # vote_average. Retry on every run: films with imdb_id but no cached imdb are
         # attempted again so a transient error or fixed token recovers automatically.
         # Keep-previous: inherit last run's rating only on network/API error so a
         # None is never cached as "final" — the next run will retry.
+        pv = prev.get(fid, {})
+        if not imdb_id and d is None and pv.get("tmdb_id") == rec["tmdb_id"] and pv.get("imdb_id"):
+            # The detail call failed: last run's IMDb id of this same TMDB film, so its
+            # rating is looked up (or kept) instead of dropped until the next run.
+            imdb_id = pv["imdb_id"]
         if imdb_id:
             rec["imdb_id"] = imdb_id
         rating, votes, rt_score, mc_score, omdb_err = omdb_rating(imdb_id)
-        pv = prev.get(fid, {})
-        if omdb_err is not None:
-            # Error (network/API) — inherit previous values so tiles keep showing
+        # Last run's values are inherited only for the SAME IMDb id (a film matched to
+        # another TMDB entry this run never shows the old film's score), on an OMDb error
+        # or when OMDb answers without a number it had before (an IMDb rating does not
+        # disappear; OMDb's N/A for a rated film is a glitch).
+        if imdb_id and pv.get("imdb_id") == imdb_id and (omdb_err is not None or rating is None):
             if rating is None and pv.get("imdb") is not None:
                 rating = pv["imdb"]
             if not votes and pv.get("imdbVotes"):

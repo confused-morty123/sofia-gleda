@@ -176,6 +176,19 @@ def poster_coverage_of(out):
     return None
 
 
+def bg_titles_of(out):
+    """The "BG_TITLES {json}" line verify_build.py prints (report 5c3): the titles
+    shown in BG mode without a Bulgarian form."""
+    for line in reversed(str(out or "").splitlines()):
+        if line.startswith("BG_TITLES "):
+            try:
+                rep = json.loads(line.split(" ", 1)[1])
+                return rep if isinstance(rep, dict) else None
+            except ValueError:
+                return None
+    return None
+
+
 def main(argv=None):
     # No options, but parse anyway: `--help` prints this docstring and exits, and
     # a stray argument is an error. Without this, `refresh_all.py --help` started
@@ -202,6 +215,7 @@ def main(argv=None):
     verdict = run(*VERIFY)
     results.append(verdict)
     posters = poster_coverage_of(verdict.get("_out", ""))
+    bg_titles = bg_titles_of(verdict.get("_out", ""))
     for r in results:
         r.pop("_out", None)
 
@@ -215,6 +229,8 @@ def main(argv=None):
     }
     if posters:
         report["posters"] = posters               # verify_build 5c2 compares with it next run
+    if bg_titles is not None:
+        report["bg_titles"] = bg_titles           # titles shown in BG mode without a Bulgarian form
     if aborted:
         report["official_aborted"] = aborted
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
