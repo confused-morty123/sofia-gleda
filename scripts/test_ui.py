@@ -206,6 +206,7 @@ def open_page(browser, w, h, lang="bg", mode="cinema"):
 
     page.goto(HTML)
     page.wait_for_selector(".bar", timeout=20000)
+    wait_page_idle(page)
 
     return (ctx, page, errors)
 
@@ -259,6 +260,25 @@ def frames(page, action_js, measure_js, ms):
             if (performance.now() - t0 < %d) requestAnimationFrame(f); else res(); };
           requestAnimationFrame(f); setTimeout(res, %d); });
         return out; }""" % (action_js, measure_js, ms, ms + 2000))
+
+
+PAGE_IDLE_JS = """(ms) => new Promise(res => { const t0 = performance.now(); let last = t0, calm = 0;
+  const done = () => res(Math.round(performance.now() - t0)); setTimeout(done, ms);
+  const f = () => { const now = performance.now(); calm = now - last < 50 ? calm + 1 : 0; last = now;
+    if (calm >= 6) done(); else requestAnimationFrame(f); };
+  requestAnimationFrame(f); })"""
+
+
+def wait_page_idle(page, timeout_ms=8000):
+    """Wait until the page renders frames steadily again (six in a row under 50 ms apart),
+    i.e. its start-up work is done; returns the ms waited. On the owner's Mac that is the
+    moment the page appears; WebKit on GitHub's Linux runners drew its first frame ~2.8 s
+    after load (a phone page, 2026-11-04), so a test tapping at 0.3 s met a page that had
+    not drawn yet and failed for reasons the site does not have."""
+    try:
+        return page.evaluate(PAGE_IDLE_JS, timeout_ms)
+    except Exception:
+        return None
 
 
 def touch_swipe(page, x, y, dx=0, dy=0, speed=1000):
@@ -4957,6 +4977,7 @@ def wave_j(browser, webkit_browser=None):
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(HTML)
             page.wait_for_selector(".bar", timeout=20000)
+            wait_page_idle(page)
             page.wait_for_timeout(800)
 
             # Scroll naturally to find the toggle button
@@ -5059,6 +5080,7 @@ def wave_j(browser, webkit_browser=None):
             page = ctx.new_page()
             page.goto(HTML)
             page.wait_for_selector(".bar", timeout=20000)
+            wait_page_idle(page)
             page.wait_for_timeout(800)
             btn = None
             for _ in range(20):
@@ -5261,6 +5283,7 @@ def wave_j(browser, webkit_browser=None):
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(HTML)
             page.wait_for_selector(".bar", timeout=20000)
+            wait_page_idle(page)
             page.wait_for_timeout(500)
 
             is_desktop = (w >= 760)
@@ -12660,6 +12683,7 @@ def _hf_open(browser, w, h, phone, lang="bg", mode="cinema", ua=None, dsf=None):
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(HTML)
     page.wait_for_selector(".bar", timeout=20000)
+    wait_page_idle(page)
     page.wait_for_timeout(300)
     return ctx, page, errors
 
@@ -14065,6 +14089,7 @@ def _hf2_open(browser, w, h, phone, lang="bg", mode="cinema", reduced=False):
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(HTML)
     page.wait_for_selector(".bar", timeout=20000)
+    wait_page_idle(page)
     page.wait_for_timeout(400)
     return ctx, page, errors
 
@@ -15817,6 +15842,7 @@ def _lg_open(browser, w, h, lang="bg", seed=None, mobile=False, reduced=None, ur
     page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(url or HTML)
     page.wait_for_selector(".bar", timeout=20000)
+    wait_page_idle(page)
     page.wait_for_timeout(400)          # the notice's entrance (0.28 s) has finished
     # ... and on a slower machine, wait until it really has (GitHub's runners, WebKit: the
     # card measured 12 px from the bottom, mid-rise, for the 24 px it rests at)
@@ -17039,6 +17065,7 @@ def _ux_page(ctx, url, wait_app=True):
     page.goto(url)
     if wait_app:
         page.wait_for_selector(".bar", timeout=20000)
+        wait_page_idle(page)
         page.wait_for_timeout(500)
     return page, errs
 
