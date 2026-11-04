@@ -2158,13 +2158,19 @@ NATFIZ_PUPPET = "куклен театър"       # Куклен театър Н
 NATFIZ_PERFORMANCE_CAT = "представления"
 _NATFIZ_EVENT = re.compile(r"^https://natfiz\.bg/event/[^/?#]+/?$")
 _NATFIZ_DT = re.compile(r"\b(\d{2})\.(\d{2})\.(\d{4})\s*[-–—]\s*([01]?\d|2[0-3])[:.]([0-5]\d)\b")
-_NATFIZ_OWN_BOX = re.compile(r"касата\s+на\s+театър\s+натфиз", re.I)
+# The box office of Театър НАТФИЗ itself: its address follows (Раковски 108А). "Касата на
+# Театър НАТФИЗ/Куклен театър НАТФИЗ" names both theatres' box offices: not this venue.
+_NATFIZ_OWN_BOX = re.compile(r"касата\s+на\s+театър\s+натфиз(?!\s*/)\W{0,6}ул\.?\W{0,4}"
+                             r"(?:г\.?\s*с\.?\s*)?раковски\W{0,4}108", re.I)
+_NATFIZ_PUPPET_BODY = re.compile(r"куклен\s+театър\s+натфиз|карададжа", re.I)
 _NATFIZ_FREE = re.compile(r"вход\s+свободен", re.I)
 _NATFIZ_CANCELLED = re.compile(r"отмен[ея]н|\bотлож", re.I)
 # In the page body the synopsis is free text ("отложеният живот"), so only a sentence
 # about this performance, or a word in capitals, marks a cancellation.
 _NATFIZ_BODY_CANCELLED = re.compile(
     r"(?i:\b(?:представлението|спектакълът|събитието)\s+(?:е\s+|се\s+)?(?:отмен|отлож|отлага))"
+    r"|(?i:\b(?:представлението|спектакълът|събитието)\b[^.!?]{0,40}?\b(?:е|се|бе|беше|ще\s+бъде)\s+(?:отмен|отлож|отлага))"
+    r"|(?i:\bотменен[оа]?\b|\bсе\s+отменя\b|\bотложен[оа]?\b)"
     r"|\bОТМЕН(?:ЕНО|ЕН|ЕНА|ЯТ|Я)\b|\bОТЛОЖЕН[ОА]?\b")
 # More event pages than this share not reached → the venue fails (previous rows kept).
 NATFIZ_MAX_UNREACHED = 1 / 3
@@ -2217,7 +2223,8 @@ def parse_natfiz_event(html):
     return {"date": f"{m.group(3)}-{m.group(2)}-{m.group(1)}",
             "time": f"{int(m.group(4)):02d}:{m.group(5)}",
             "cats": cats, "address": next((ln for ln in lines if ln), ""),
-            "own_box": bool(_NATFIZ_OWN_BOX.search(text)), "free": bool(_NATFIZ_FREE.search(text)),
+            "own_box": bool(_NATFIZ_OWN_BOX.search(text)) and not _NATFIZ_PUPPET_BODY.search(text),
+            "free": bool(_NATFIZ_FREE.search(text)),
             "cancelled": bool(_NATFIZ_BODY_CANCELLED.search(text))}
 
 

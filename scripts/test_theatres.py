@@ -1734,6 +1734,34 @@ check("event page body: synopsis words are no cancellation, a sentence about the
       [bool(O._NATFIZ_BODY_CANCELLED.search(t)) for t in
        ("отложеният живот на героите", "Представлението се отлага за 5 декември", "ОТМЕНЕНО")],
       [False, True, True])
+# Skeptic 2026-11-04: a puppet show whose card lost its address must not be filed here
+# ("касата на Театър НАТФИЗ/Куклен театър НАТФИЗ" names both box offices), and an
+# ordinary prose notice of a cancellation must exclude the performance.
+_fp_blank = O.parse_natfiz_event(fx("theatre_natfiz_event_folklorna.html").replace(
+    "                Куклен театър НАТФИЗ", "                ", 1))
+check("event page: Куклен театър НАТФИЗ's box-office line with no address is not Театър НАТФИЗ's box office",
+      (_fp_blank["address"], _fp_blank["own_box"]), ("", False))
+check("split: that puppet show with a blank address → excluded, never a row here",
+      O.natfiz_split("Фолклорна магия от Пирин", "2026-11-07", "11:30", NF + "f/", "", _fp_blank)[0], None)
+check("box office: only Театър НАТФИЗ's own (Раковски 108А) counts",
+      [bool(O._NATFIZ_OWN_BOX.search(t)) and not O._NATFIZ_PUPPET_BODY.search(t) for t in (
+          "БИЛЕТИ МОЖЕ ДА ЗАКУПИТЕ ОТ КАСАТА НА ТЕАТЪР НАТФИЗ (ул. “Г. С. Раковски” 108А, тел. 02/9231 303)",
+          "БИЛЕТИ МОЖЕ ДА ЗАКУПИТЕ ОТ КАСАТА НА ТЕАТЪР НАТФИЗ/КУКЛЕН ТЕАТЪР НАТФИЗ",
+          "КАСАТА НА ТЕАТЪР НАТФИЗ (ул. „Г. С. Раковски“ 108А); играе се в Куклен театър НАТФИЗ")],
+      [True, False, False])
+_prose = ("Представлението на 6 ноември е отменено.", "Внимание! Отменено поради болест на актьор.",
+          "Уважаеми зрители, представлението на 06.11 се отменя. Билетите се възстановяват.")
+check("event page body: a cancellation in ordinary prose (not capitals) is a cancellation",
+      [bool(O._NATFIZ_BODY_CANCELLED.search(t)) for t in _prose], [True, True, True])
+check("event page body: synopsis words still are not",
+      [bool(O._NATFIZ_BODY_CANCELLED.search(t)) for t in
+       ("Представлението разказва за отложения живот", "отложеният живот на героите")], [False, False])
+for _i, _t in enumerate(_prose):
+    _res_p = O.fetch_natfiz(FakeNet(dict(nf_net.pages, **{NF + "letishte/": _nf_page(
+        "2026-11-19", "19:00", "Театър НАТФИЗ, Голяма сцена", body=_t)})), NF_TODAY)
+    check(f"fetch: prose cancellation {_i + 1} in the page body → excluded",
+          ([r for r in _res_p["rows"] if r[0] == "Летище"],
+           [e[3] for e in _res_p["excluded"] if e[0] == "Летище"]), ([], ["cancelled (the event page says so)"]))
 check("fetch: only natfiz.bg/event/ pages are asked for", all(u.startswith(NF) for u in nf_net.asked), True)
 _moved = fx("theatre_natfiz_event_vaal.html").replace("06.11.2026 - 19:30", "06.11.2026 - 20:00")
 res2 = O.fetch_natfiz(FakeNet(dict(nf_net.pages, **{NF + "vaal/": _moved.encode()})), NF_TODAY)
