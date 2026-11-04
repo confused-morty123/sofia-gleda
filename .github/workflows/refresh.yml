@@ -183,7 +183,10 @@ jobs:
           except Exception:
               cov = {}
           if cov.get("upcoming"):
-              lines = [f"## Theatre posters\n{cov.get('with')}/{cov.get('upcoming')} upcoming shows have a poster\n"]
+              fc = cov.get("films") or {}
+              lines = [f"## Posters (own image: poster_health.md lists every missing title and its cause)\n"
+                       f"Plays: {cov.get('with')}/{cov.get('upcoming')} show their own poster or photo"
+                       + (f"; films: {fc.get('with')}/{fc.get('upcoming')}" if fc.get("upcoming") else "") + "\n"]
               for th, t in sorted((cov.get("by_theatre") or {}).items()):
                   miss = [m for m in t.get("missing") or [] if re.fullmatch(r"[a-z0-9-]+", str(m))]
                   if miss:
@@ -246,7 +249,7 @@ jobs:
           # NOTE: changes.json is deliberately absent — it is in .gitignore, and
           # "git add" of an ignored, untracked path exits non-zero, which under
           # the shell's set -e aborted this whole step and discarded the refresh.
-          for f in index.html tmdb_films.json person_names.json theatre_posters.json cinema_films.json film_merges.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json events.json event_posters.json icons/apple-touch-icon.png; do
+          for f in index.html tmdb_films.json person_names.json theatre_posters.json poster_sources.json poster_health.json poster_health.md cinema_films.json film_merges.json theatre_shows.json film_links_posters.json film_info.json build_report.json translations.json official_state.json health.json events.json event_posters.json icons/apple-touch-icon.png; do
             [ -f "$f" ] && git add "$f"
           done
           # Stage per-title share pages and the site share-preview image.

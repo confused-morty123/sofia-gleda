@@ -23,6 +23,9 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     9. fetch_events.py              festivals / limited runs programata.bg announces -> events.json
    10. fetch_event_posters.py       those events' key art, re-hosted -> posters/ev-*, event_posters.json
    11. inject_data.py               inline the poster maps, film details and auto events -> index.html
+  11b. poster_health.py             TRUE poster coverage (own image), the own pages of the titles
+                                    still missing (own_page_posters.py), re-inline -> poster_sources.json,
+                                    poster_health.json/.md, build_report.json["poster_health"]
    12. gen_share_pages.py           the app at /home/ and /home/theatre/, and static /film/<id>/,
                                     /show/<id>/, /event/<id>/ share pages -> home/, film/, show/, event/
    13. csp.py                       the Content-Security-Policy meta (script hashes) of
@@ -96,12 +99,13 @@ STEPS = [
     ("events",          "fetch_events.py",           []),    # programata.bg festivals -> events.json (keep-previous)
     ("event posters",   "fetch_event_posters.py",    []),    # their key art -> posters/ev-*, event_posters.json
     ("inline posters",  "inject_data.py",            []),
+    ("poster health",   "poster_health.py",          []),    # true coverage; own pages of the titles still missing; re-inlines
     ("share pages",     "gen_share_pages.py",        []),
     ("csp",             "csp.py",                    []),    # LAST edit of the pages: their CSP script hashes
 ]
 
 # Lines of each step's output kept in build_report.json (default 8).
-TAIL_LINES = {"theatre posters": 25}
+TAIL_LINES = {"theatre posters": 25, "poster health": 12}
 
 # Run after the steps above, and treated as a gate rather than best-effort.
 VERIFY = ("verify",  "verify_build.py", [])
@@ -229,6 +233,10 @@ def main(argv=None):
     }
     if posters:
         report["posters"] = posters               # verify_build 5c2 compares with it next run
+    try:                                          # poster_health.py's notes (the dashboard reads them)
+        report["poster_health"] = json.loads((ROOT / "poster_health.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
     if bg_titles is not None:
         report["bg_titles"] = bg_titles           # titles shown in BG mode without a Bulgarian form
     if aborted:

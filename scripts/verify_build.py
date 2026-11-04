@@ -1509,17 +1509,24 @@ try:
 except Exception as e:
     note(f"SHOWALIAS wiring check skipped: {e}")
 
-# --------------------------------------------- 5c2. poster coverage of upcoming shows
-# Counted exactly as the browser shows a poster (realPoster() + safeImg(), mirrored
-# by posterpolicy.browser_poster). A note, not a failure, on a normal day; a
-# failure when it falls below 90 % or by 3+ points against the previous
-# build_report.json — that is a poster source that died, not churn. The numbers go
-# out as one "POSTER_COVERAGE {json}" line, which refresh_all.py keeps in
-# build_report.json["posters"]. A page with fewer than COVERAGE_MIN_SHOWS upcoming
-# shows (a test fixture; a collapsed scrape is caught by the floors) is only noted.
+# --------------------------------------------- 5c2. poster coverage of upcoming titles
+# The TRUE coverage (posterpolicy.true_coverage), films and plays: an image counts
+# only when it is provably the title's own: read from the page the listing links
+# it to and recorded in poster_sources.json (own_page_posters.py), a TMDB poster,
+# or a film's programme-page image. Until 2026-11-04 this check counted any file
+# the browser could load (posterpolicy.poster_coverage): 521/526 plays "with a
+# poster" while stage photos matched by title on aggregators, another play's photo
+# and site images stood in for the posters the theatres' own pages show. That
+# number is still printed ("displayed") for comparison.
+# A failure below the bar (posterpolicy.TRUE_BAR, one bar for the gate and test_parsers) or 3+ points
+# down against the previous build_report.json of the same metric: a poster source
+# that died, not churn. The numbers go out as one "POSTER_COVERAGE {json}" line,
+# which refresh_all.py keeps in build_report.json["posters"]. A page with fewer than
+# COVERAGE_MIN_SHOWS upcoming shows (a test fixture) is only noted.
 COVERAGE_MIN_SHOWS = 100
+COVERAGE_MIN_FILMS = 40
 try:
-    from posterpolicy import poster_coverage, LOGO_MD5                 # noqa: E402
+    from posterpolicy import poster_coverage, true_coverage, load_sources, TRUE_BAR, LOGO_MD5  # noqa: E402
     import hashlib as _hl
     _snap = data.get("SNAPSHOT") or {}
     _to = ((_snap.get("window") or {}).get("to")) or "9999-12-31"
@@ -1530,28 +1537,52 @@ try:
         _from = datetime.date.today().isoformat()
     _up = {r[0] for r in (data.get("PERFORMANCES") or [])
            if isinstance(r, list) and len(r) > 1 and _from <= str(r[1]) <= _to}
+    _upf = {r[0] for r in (data.get("SHOWTIMES") or [])
+            if isinstance(r, list) and len(r) > 2 and _from <= str(r[2]) <= _to}
     _pmaps = {n: (_const_any(n) or {}) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART", "SHOWART")}
-    _cov = poster_coverage(data.get("SHOWS") or [], _up, _pmaps)
+    _shows_all = data.get("SHOWS") or []
+    _show_ids = {x.get("id") for x in _shows_all}
+    _film_ids = {x.get("id") for x in (data.get("FILMS") or [])}
+    _theatre_of = {x.get("id"): x.get("theatre") or "?" for x in _shows_all}
+    _srcs = load_sources(_FILE_ROOT)
+    _disp = poster_coverage(_shows_all, _up, _pmaps)
+    _ts = true_coverage(_up & _show_ids, _pmaps, _srcs, "shows", _theatre_of, _FILE_ROOT)
+    _tf = true_coverage(_upf & _film_ids, _pmaps, _srcs, "films", None, _FILE_ROOT)
+    _cov = {"metric": "own-page", "upcoming": _ts["upcoming"], "with": _ts["with"],
+            "missing": sorted(_ts["missing"]), "causes": _ts["missing"], "how": _ts["how"],
+            "by_theatre": {k: {"upcoming": v["upcoming"], "missing": v["missing"]}
+                           for k, v in _ts["by_group"].items()},
+            "displayed": {"upcoming": _disp["upcoming"], "with": _disp["with"]},
+            "films": {"upcoming": _tf["upcoming"], "with": _tf["with"],
+                      "missing": sorted(_tf["missing"]), "causes": _tf["missing"]}}
     print("POSTER_COVERAGE " + json.dumps(_cov, ensure_ascii=False, sort_keys=True))
-    _pct = 100.0 * _cov["with"] / _cov["upcoming"] if _cov["upcoming"] else 100.0
-    _cov_msg = (f"poster coverage: {_cov['with']}/{_cov['upcoming']} upcoming shows ({_pct:.1f} %)"
-                + (f"; missing: {', '.join(_cov['missing'][:12])}" if _cov["missing"] else ""))
     try:
         _prev_cov = (json.loads((_FILE_ROOT / "build_report.json").read_text(encoding="utf-8"))
                      .get("posters") or {})
     except (OSError, ValueError, AttributeError):
         _prev_cov = {}
-    _prev_pct = (100.0 * _prev_cov["with"] / _prev_cov["upcoming"]
-                 if isinstance(_prev_cov, dict) and _prev_cov.get("upcoming") else None)
-    if _cov["upcoming"] < COVERAGE_MIN_SHOWS:
-        note(_cov_msg + f" (fewer than {COVERAGE_MIN_SHOWS} upcoming shows: not judged)")
-    elif _pct < 90.0:
-        fail(f"5c2 {_cov_msg} — below 90 %: a poster source has probably stopped working")
-    elif _prev_pct is not None and _prev_pct - _pct >= 3.0:
-        fail(f"5c2 {_cov_msg} — down {_prev_pct - _pct:.1f} points since the last build "
-             f"({_prev_pct:.1f} %): a poster source has probably stopped working")
-    else:
-        note(_cov_msg + ("" if _prev_pct is not None else " (no previous coverage to compare)"))
+    if not (isinstance(_prev_cov, dict) and _prev_cov.get("metric") == "own-page"):
+        _prev_cov = {}                    # the old "any image" number: not comparable
+    for _label, _c, _prev, _min, _bar in (
+            ("plays", _ts, _prev_cov, COVERAGE_MIN_SHOWS, TRUE_BAR["shows"]),
+            ("films", _tf, _prev_cov.get("films") or {}, COVERAGE_MIN_FILMS, TRUE_BAR["films"])):
+        _pct = _c["pct"]
+        _msg = (f"poster coverage ({_label}, own image): {_c['with']}/{_c['upcoming']} ({_pct:.1f} %)"
+                + (f"; missing: {', '.join(sorted(_c['missing'])[:12])}" if _c["missing"] else ""))
+        if _label == "plays":
+            _msg += f"; {_disp['with']}/{_disp['upcoming']} display some image"
+        _prev_pct = (100.0 * _prev["with"] / _prev["upcoming"]
+                     if isinstance(_prev, dict) and _prev.get("upcoming") else None)
+        if _c["upcoming"] < _min:
+            note(_msg + f" (fewer than {_min} upcoming: not judged)")
+        elif _pct < _bar:
+            fail(f"5c2 {_msg} — below {_bar:g} %: a poster source has probably stopped "
+                 "working (poster_health.md lists every title and its cause)")
+        elif _prev_pct is not None and _prev_pct - _pct >= 3.0:
+            fail(f"5c2 {_msg} — down {_prev_pct - _pct:.1f} points since the last build "
+                 f"({_prev_pct:.1f} %): a poster source has probably stopped working")
+        else:
+            note(_msg + ("" if _prev_pct is not None else " (no previous coverage to compare)"))
     # One logo file standing in as the "poster" of several plays (the theatre.art.bg
     # logo on two Сфумато shows, 2026-10-08) is a scrape that went wrong.
     _by_md5 = {}

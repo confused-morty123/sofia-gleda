@@ -176,6 +176,93 @@ def poster_coverage(shows, upcoming, maps):
             "by_theatre": dict(sorted(by.items()))}
 
 
+# ------------------------------------------------------------ the TRUE coverage
+# poster_coverage() above answers "does the browser load SOME image for this id".
+# That is what the gate counted until 2026-11-04 (521/526 theatre shows, 99 %),
+# while the owner saw stage photos, another play's photo (СЕДЕМ НОЩИ НА ВИОЛА
+# КАРАВЕЛОВА had НОРА's bytes) or aggregator matches where the theatre's own page
+# shows the poster: nothing recorded where a re-hosted file came from, so any
+# file counted. The true number counts an image only when it is provably the
+# title's own: own_page_posters.py read it from the page the listing links the
+# title to and recorded that page in poster_sources.json (file md5 included, so a
+# later overwrite is noticed); a TMDB poster (matched by fetch_tmdb's identity
+# rules); or a film's programme-page image (fetch_tmdb / fetch_film_info read it
+# from the film's own link). Bar for both: TRUE_BAR (test_parsers + gate 5c2).
+TRUE_BAR = {"films": 95.0, "shows": 95.0}
+SOURCES_FILE = "poster_sources.json"
+
+
+def load_sources(root=None):
+    """poster_sources.json of `root` (the repo), or the file SOFIA_POSTER_SOURCES
+    names (test_verify's fixtures)."""
+    import os
+    f = (pathlib.Path(os.environ["SOFIA_POSTER_SOURCES"]) if os.environ.get("SOFIA_POSTER_SOURCES")
+         else pathlib.Path(root or pathlib.Path(__file__).resolve().parent.parent) / SOURCES_FILE)
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        d = {}
+    return {k: d.get(k) or {} for k in ("shows", "films", "misses")}
+
+
+def _md5_of(path, root):
+    import hashlib
+    f = pathlib.Path(root) / path
+    return hashlib.md5(f.read_bytes()).hexdigest() if f.is_file() else None
+
+
+def true_poster(pid, maps, sources, kind="shows", root=None):
+    """(True, how) when the visitor sees this title's OWN image; (False, cause)
+    otherwise. kind: "shows" or "films" (which poster_sources.json section)."""
+    root = root or pathlib.Path(__file__).resolve().parent.parent
+    url = browser_poster(pid, maps)
+    if not url:
+        return False, "no image: the generated art shows"
+    if url == "tmdb":
+        return True, "TMDB poster"
+    base = (maps.get("SHOWALIAS") or {}).get(pid) or pid
+    rec = (sources.get(kind) or {}).get(base)
+    if is_local_poster(url):
+        why = local_poster_problem(url, root)
+        if why:
+            return False, why
+        if rec and rec.get("path") == url and rec.get("md5") == _md5_of(url, root):
+            return True, f"own page: {rec.get('kind', 'image')}"
+        if rec and rec.get("path") == url:
+            return False, "the file changed since it was read from the title's page"
+        return False, "unverified: no record of the page this file came from"
+    if rec and rec.get("img") == url:
+        return True, f"own page: {rec.get('kind', 'image')}"
+    if kind == "films":
+        # POSTERS for films: the film's own programme page (fetch_tmdb og:image,
+        # fetch_film_info / harvest_cinema_posters img), already policy-checked
+        return True, "the film's programme page"
+    return False, "unverified: a remote image with no record of its page"
+
+
+def true_coverage(ids, maps, sources, kind="shows", group_of=None, root=None):
+    """{"upcoming", "with", "pct", "missing": {id: cause}, "how": {how: n},
+    "by_group": {group: {"upcoming", "with", "missing": [ids]}}}"""
+    ids = sorted(set(ids))
+    missing, how, by = {}, {}, {}
+    for i in ids:
+        ok, why = true_poster(i, maps, sources, kind, root)
+        g = by.setdefault((group_of or {}).get(i, "?") if group_of is not None else "all",
+                          {"upcoming": 0, "with": 0, "missing": []})
+        g["upcoming"] += 1
+        if ok:
+            g["with"] += 1
+            how[why] = how.get(why, 0) + 1
+        else:
+            missing[i] = why
+            g["missing"].append(i)
+    n = len(ids)
+    return {"upcoming": n, "with": n - len(missing),
+            "pct": round(100.0 * (n - len(missing)) / n, 1) if n else 100.0,
+            "missing": missing, "how": dict(sorted(how.items())),
+            "by_group": dict(sorted(by.items()))}
+
+
 # Suffixes that mark "this event is a screening of a film we already list".
 MIRROR_SUFFIXES = ("-screening", "-prozhekciya", "-prem", "-premiere", "-gala",
                    "-retro-screening", "-show")
