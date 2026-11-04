@@ -60,6 +60,12 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: "1"
+  # The suites run on the owner's Mac, in Sofia: the runners' UTC clock zone and POSIX
+  # locale would move every "today", "tomorrow" and midnight a Python check computes
+  # (the pages themselves get Europe/Sofia and bg-BG from each browser context).
+  TZ: Europe/Sofia
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
   # SOFIA_SKIP_FRESHNESS is NOT set here: test_verify checks that a stale or missing
   # "generated" fails the gate, and an inherited flag would turn those checks red. It is
   # set only on the publish-gate step below and by ci_waves.py for the UI waves.

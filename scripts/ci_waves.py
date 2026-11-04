@@ -177,6 +177,13 @@ def cmd_matrix(args):
     print(json.dumps(out, indent=None if args.github_output else 1))
 
 
+def _annotation(text, limit=3800):
+    """Text made safe for one workflow-command line: % CR LF escaped as GitHub requires,
+    so nothing in it can end the annotation or start another command."""
+    text = text if len(text) <= limit else text[:limit] + " [...]"
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
 def run_wave(browser, wave, log):
     env = dict(os.environ, SOFIA_BROWSER=browser)
     env.setdefault("SOFIA_HTML", "index.html")
@@ -219,6 +226,12 @@ def cmd_run(args):
             more = f" (+{len(names) - 8} more)" if len(names) > 8 else ""
             print(f"::error title=UI wave {w} ({args.browser})::{len(fails)} failed check(s): "
                   f"{', '.join(names[:8]) or 'see ' + log.name}{more}", flush=True)
+            # a second annotation with what the run's logs would show (the logs need a
+            # sign-in; annotations do not): each failed check's detail, or, for a wave that
+            # crashed or timed out before its summary, the end of its log
+            detail = "\n".join(f[:400] for f in fails) if fails else "\n".join(
+                [l[:300] for l in text.rstrip().splitlines()[-30:]])
+            print(f"::notice title=UI wave {w} ({args.browser}) details::{_annotation(detail)}", flush=True)
         print(f"ci_waves: {args.browser} {w} {status} {total} in {secs} s "
               f"(estimate {ESTIMATES[args.browser].get(w, DEFAULT_ESTIMATE)} s){' after a re-run' if rerun else ''}",
               flush=True)

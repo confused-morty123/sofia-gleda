@@ -2304,6 +2304,14 @@ def wave_c1(browser):
     # ── Check C1-7: Period header shows month (октомври / October) after selecting month ──
     # Wave H: .pbanner replaced by .phead; open drawer via .phead-other[data-drawer]
     print("\n=== C1-7: Period header month mode ===")
+    # "This month" is the clock's calendar month: октомври/October when the suite was
+    # written (clock 2026-10-07), the month of the build's SNAPSHOT date today. The check
+    # names keep their October spelling so past reports stay comparable.
+    _mi = datetime.date.fromisoformat(CLOCK_TODAY_ISO).month - 1
+    month_bg_name = ["януари", "февруари", "март", "април", "май", "юни", "юли", "август",
+                     "септември", "октомври", "ноември", "декември"][_mi]
+    month_en_name = ["january", "february", "march", "april", "may", "june", "july", "august",
+                     "september", "october", "november", "december"][_mi]
     # BG: select month range, then check .phead text contains "октомври"
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
@@ -2324,14 +2332,14 @@ def wave_c1(browser):
         page.wait_for_timeout(400)
         if month_bg:
             phead_bg_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
-            check("c1_banner_bg_has_oktober", "октомври" in phead_bg_text.lower(),
-                  f"'октомври' not in BG phead after month select: {phead_bg_text[:120]!r}")
+            check("c1_banner_bg_has_oktober", month_bg_name in phead_bg_text.lower(),
+                  f"{month_bg_name!r} not in BG phead after month select: {phead_bg_text[:120]!r}")
         else:
             check("c1_banner_bg_has_oktober", False, "no [data-range='month'] in BG drawer")
     else:
         # Fallback: check week range still has the month somewhere visible
         phead_bg_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
-        check("c1_banner_bg_has_oktober", "октомври" in phead_bg_text.lower(),
+        check("c1_banner_bg_has_oktober", month_bg_name in phead_bg_text.lower(),
               f"no .phead-other found; phead text: {phead_bg_text[:120]!r}")
     ctx.close()
 
@@ -2355,13 +2363,13 @@ def wave_c1(browser):
         page.wait_for_timeout(400)
         if month_en:
             phead_en_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
-            check("c1_banner_en_has_october", "october" in phead_en_text.lower(),
-                  f"'October' not in EN phead after month select: {phead_en_text[:120]!r}")
+            check("c1_banner_en_has_october", month_en_name in phead_en_text.lower(),
+                  f"{month_en_name!r} not in EN phead after month select: {phead_en_text[:120]!r}")
         else:
             check("c1_banner_en_has_october", False, "no [data-range='month'] in EN drawer")
     else:
         phead_en_text = page.evaluate("document.querySelector('.phead')?.textContent || ''")
-        check("c1_banner_en_has_october", "october" in phead_en_text.lower(),
+        check("c1_banner_en_has_october", month_en_name in phead_en_text.lower(),
               f"no .phead-other found in EN; phead text: {phead_en_text[:120]!r}")
     ctx.close()
 
@@ -8171,9 +8179,12 @@ def wave_n(browser):
     ctx2, page2, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
 
     midnight_result = page2.evaluate("""() => {
-        // Find any film+cinema pair we can use
-        const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]);
-        if (!row) return {missing: 'no usable SHOWTIMES row'};
+        // A film+cinema pair whose film runs at least 90 minutes (calEvent's default for an
+        // unknown runtime is 120), so a 22:30 start ends after midnight. Any first row used to
+        // do, until the listings of 2026-11 led with a shorter film (it ended the same day).
+        const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]
+                                                 && (filmById[r[0]].runtime || 120) >= 90);
+        if (!row) return {missing: 'no usable SHOWTIMES row (a film of 90+ minutes)'};
         const filmId   = row[0];
         const venueId  = row[1];
         // Force a 22:30 start so that a ≥90-min film ends after midnight.
