@@ -235,6 +235,11 @@ def cmd_run(args):
         print(f"ci_waves: {args.browser} {w} {status} {total} in {secs} s "
               f"(estimate {ESTIMATES[args.browser].get(w, DEFAULT_ESTIMATE)} s){' after a re-run' if rerun else ''}",
               flush=True)
+    if os.environ.get("GITHUB_ACTIONS"):
+        # the shard's times, public with the annotations (the summary page needs a sign-in)
+        times = "; ".join(f"{w} {st} {sec} s (estimate {ESTIMATES[args.browser].get(w, DEFAULT_ESTIMATE)} s)"
+                          f"{', re-run' if r else ''}" for w, st, _, sec, r in rows)
+        print(f"::notice title=UI shard times ({args.browser})::{_annotation(times)}", flush=True)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         lines = [f"## UI waves, {args.browser}: {', '.join(selected)}", "",

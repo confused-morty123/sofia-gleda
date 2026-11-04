@@ -113,12 +113,18 @@ jobs:
         # On a cache hit only the system libraries are installed (they are not cached).
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
+        # apt on a runner can hang on a slow mirror (2026-11-04: one shard sat 30 min in this
+        # step): each try is cut at 6 minutes and tried once more.
         run: |
-          if [ "$CACHE_HIT" = "true" ]; then
-            python3 -m playwright install-deps chromium webkit
-          else
-            python3 -m playwright install --with-deps chromium webkit
-          fi
+          for try in 1 2; do
+            if [ "$CACHE_HIT" = "true" ]; then
+              timeout 360 python3 -m playwright install-deps chromium webkit && break
+            else
+              timeout 360 python3 -m playwright install --with-deps chromium webkit && break
+            fi
+            [ "$try" = 2 ] && exit 1
+            echo "::warning title=Browser install::try $try failed or timed out; trying again"
+          done
 
       - name: Build the page offline (src/ + the committed listings)
         id: build
@@ -224,12 +230,18 @@ jobs:
         # Both engines in every shard: waves J and P3B open WebKit inside the Chromium run.
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
+        # apt on a runner can hang on a slow mirror (2026-11-04: one shard sat 30 min in this
+        # step): each try is cut at 6 minutes and tried once more.
         run: |
-          if [ "$CACHE_HIT" = "true" ]; then
-            python3 -m playwright install-deps chromium webkit
-          else
-            python3 -m playwright install --with-deps chromium webkit
-          fi
+          for try in 1 2; do
+            if [ "$CACHE_HIT" = "true" ]; then
+              timeout 360 python3 -m playwright install-deps chromium webkit && break
+            else
+              timeout 360 python3 -m playwright install --with-deps chromium webkit && break
+            fi
+            [ "$try" = 2 ] && exit 1
+            echo "::warning title=Browser install::try $try failed or timed out; trying again"
+          done
 
       - name: Build the page offline (src/ + the committed listings)
         run: |

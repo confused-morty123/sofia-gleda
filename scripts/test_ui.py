@@ -246,6 +246,42 @@ def save_shot(page, wave, name):
     return path
 
 
+def frames(page, action_js, measure_js, ms):
+    """Run action_js in the page, then record measure_js once at once and on every animation
+    frame for `ms` milliseconds; returns the list of values. An animation measured this way
+    is seen frame by frame wherever the test runs; sampling it from Python every 25 ms
+    instead saw only one or two frames when each round trip took longer (headless WebKit
+    and Chromium on GitHub's Linux runners, no GPU), so a smooth animation read as a jump.
+    Both arguments are JS function expressions; they run in the page as written."""
+    return page.evaluate("""async () => { const act = (%s), meas = (%s), out = [], t0 = performance.now();
+        act(); out.push(meas());
+        await new Promise(res => { const f = () => { out.push(meas());
+            if (performance.now() - t0 < %d) requestAnimationFrame(f); else res(); };
+          requestAnimationFrame(f); setTimeout(res, %d); });
+        return out; }""" % (action_js, measure_js, ms, ms + 2000))
+
+
+def touch_swipe(page, x, y, dx=0, dy=0, speed=1000):
+    """A finger dragged from (x, y) by (dx, dy) at about `speed` px/s and held still before
+    it lifts (no fling), sent as CDP touch events (Chromium with has_touch). It replaces
+    Input.synthesizeScrollGesture with gestureSourceType "touch", which scrolls on macOS but
+    does nothing in headless Chromium on Linux (GitHub's runners, 2026-11-04: neither a rail
+    nor the page moved), so every touch scroll there read as a broken page."""
+    cdp = page.context.new_cdp_session(page)
+    try:
+        n = max(8, round(max(abs(dx), abs(dy)) / speed * 60))
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]})
+        for i in range(1, n + 1):
+            page.wait_for_timeout(16)
+            cdp.send("Input.dispatchTouchEvent", {"type": "touchMove",
+                                                  "touchPoints": [{"x": x + dx * i / n, "y": y + dy * i / n}]})
+        page.wait_for_timeout(120)
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": x + dx, "y": y + dy}]})
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+    finally:
+        cdp.detach()
+
+
 # ── Content-Security-Policy watch ─────────────────────────────────────────────
 # Every page any wave opens reports CSP violations: an init script listens for
 # `securitypolicyviolation` (Chromium and WebKit both fire it) and logs it, and a
@@ -4948,14 +4984,9 @@ def wave_j(browser, webkit_browser=None):
             btn_top_before = page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").getBoundingClientRect().top")
             scroll_y_before = page.evaluate("window.scrollY")
 
-            # Click to open and poll heights + btn top every ~25ms
-            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").click()")
-
-            heights_open = []
-            btn_tops_open = []
-            scroll_ys_open = []
-            for _ in range(18):  # 18 * 25ms = 450ms
-                sample = page.evaluate(f"""() => {{
+            # Click to open and record heights + btn top on every frame for 450 ms
+            click_js = f"() => document.querySelector(\"[data-sectoggle='{key}']\").click()"
+            sample_js = f"""() => {{
                     const btn = document.querySelector("[data-sectoggle='{key}']");
                     const body = document.getElementById('sec-{key}-content');
                     return {{
@@ -4963,31 +4994,18 @@ def wave_j(browser, webkit_browser=None):
                         bodyH: body ? body.getBoundingClientRect().height : null,
                         scrollY: window.scrollY
                     }};
-                }}""")
-                btn_tops_open.append(sample["btnTop"])
-                heights_open.append(sample["bodyH"])
-                scroll_ys_open.append(sample["scrollY"])
-                page.wait_for_timeout(25)
+                }}"""
+            samples = frames(page, click_js, sample_js, 450)
+            btn_tops_open = [x["btnTop"] for x in samples]
+            heights_open = [x["bodyH"] for x in samples]
+            scroll_ys_open = [x["scrollY"] for x in samples]
 
             # --- Closing animation ---
             page.wait_for_timeout(100)  # let open animation finish
             btn_top_before_close = page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").getBoundingClientRect().top")
-            page.evaluate(f"document.querySelector(\"[data-sectoggle='{key}']\").click()")
-
-            heights_close = []
-            btn_tops_close = []
-            for _ in range(18):
-                sample = page.evaluate(f"""() => {{
-                    const btn = document.querySelector("[data-sectoggle='{key}']");
-                    const body = document.getElementById('sec-{key}-content');
-                    return {{
-                        btnTop: btn ? btn.getBoundingClientRect().top : null,
-                        bodyH: body ? body.getBoundingClientRect().height : null,
-                    }};
-                }}""")
-                btn_tops_close.append(sample["btnTop"])
-                heights_close.append(sample["bodyH"])
-                page.wait_for_timeout(25)
+            samples = frames(page, click_js, sample_js, 450)
+            btn_tops_close = [x["btnTop"] for x in samples]
+            heights_close = [x["bodyH"] for x in samples]
 
             # J2: check phead probe is still present (no full re-render)
             probe_still_present = page.evaluate("document.querySelector('.phead')?.dataset.probe === '1'")
@@ -5265,12 +5283,8 @@ def wave_j(browser, webkit_browser=None):
                 }"""
 
             # Click to open and sample dimension over ~450ms
-            page.evaluate("document.querySelector('[data-search-open]').click()")
-            open_samples = []
-            for _ in range(18):
-                val = page.evaluate(measure_js)
-                open_samples.append(val)
-                page.wait_for_timeout(25)
+            # Click to open and record the dimension on every frame for 450 ms
+            open_samples = frames(page, "() => document.querySelector('[data-search-open]').click()", measure_js, 450)
 
             # Check focus
             page.wait_for_timeout(100)
@@ -5284,12 +5298,8 @@ def wave_j(browser, webkit_browser=None):
             q_val = page.evaluate("S.q")
 
             # Click magnifier to close (phones: "Отказ", the magnifier is hidden with the toggle row)
-            page.evaluate("document.querySelector('%s').click()" % ("[data-search-open]" if is_desktop else "[data-search-cancel]"))
-            close_samples = []
-            for _ in range(12):
-                val = page.evaluate(measure_js)
-                close_samples.append(val)
-                page.wait_for_timeout(25)
+            close_samples = frames(page, "() => document.querySelector('%s').click()"
+                                   % ("[data-search-open]" if is_desktop else "[data-search-cancel]"), measure_js, 300)
 
             page.wait_for_timeout(350)  # wait for animation + query clear
             q_cleared = page.evaluate("S.q")
@@ -12779,6 +12789,10 @@ def _hf_close_popup(page, phone, route, ctx):
                 p.close()
             except Exception:
                 pass
+        if others:
+            # the visitor is back on the site's tab once the new one closes; WebKit on Linux
+            # otherwise keeps the site's page in the background, where it stops rendering
+            page.bring_to_front()
         s = page.evaluate(HF_STATE_JS)
         note = f"tabs={len(others)} dl={len(downloads)} sameUrl={page.url == url0} popStill={s['pop']} film={s['film']}"
         _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-ssclose]')")
@@ -13093,8 +13107,7 @@ def _hf_scroll(browser, eng, phone):
                     page.mouse.move(10, h // 2); page.mouse.wheel(0, 500); page.wait_for_timeout(250)
                 page.mouse.move(w // 2, h // 2); page.mouse.wheel(0, 500); page.wait_for_timeout(300)
             if phone and eng == "chromium":
-                cdp = page.context.new_cdp_session(page)
-                cdp.send("Input.synthesizeScrollGesture", {"x": w // 2, "y": h // 2, "yDistance": -300, "gestureSourceType": "touch", "speed": 1200})
+                touch_swipe(page, w // 2, h // 2, dy=-300, speed=1200)
                 page.wait_for_timeout(400)
             if not wheel_ok and not (phone and eng == "chromium"):
                 page.evaluate("()=>{const sh=document.querySelector('#scrim .sheet');sh.scrollTop+=400;}")
@@ -13127,8 +13140,7 @@ def _hf_scroll(browser, eng, phone):
                 elif m == "key":
                     page.keyboard.press("PageDown" if down else "PageUp"); page.wait_for_timeout(450)
                 else:
-                    cdp = page.context.new_cdp_session(page)
-                    cdp.send("Input.synthesizeScrollGesture", {"x": w // 2, "y": h // 2, "yDistance": -300 if down else 300, "gestureSourceType": "touch", "speed": 1200})
+                    touch_swipe(page, w // 2, h // 2, dy=-300 if down else 300, speed=1200)
                     page.wait_for_timeout(500)
                 yb = page.evaluate("Math.round(scrollY)")
                 scroll_again = scroll_again and ((yb > ya) if down else (yb < ya))
@@ -15801,6 +15813,14 @@ def _lg_open(browser, w, h, lang="bg", seed=None, mobile=False, reduced=None, ur
     page.goto(url or HTML)
     page.wait_for_selector(".bar", timeout=20000)
     page.wait_for_timeout(400)          # the notice's entrance (0.28 s) has finished
+    # ... and on a slower machine, wait until it really has (GitHub's runners, WebKit: the
+    # card measured 12 px from the bottom, mid-rise, for the 24 px it rests at)
+    try:
+        page.wait_for_function("() => !document.getAnimations().some(a => a.playState === 'running' && a.effect"
+                               " && a.effect.target && a.effect.target.closest && a.effect.target.closest('#sg-consent'))",
+                               timeout=5000)
+    except Exception:
+        pass
     return ctx, page, errors
 
 
@@ -16017,9 +16037,13 @@ def wave_lg1(browser):
     if ga:
         page.evaluate("window.scrollBy(0, 420)")
         page.wait_for_timeout(300)
+    # a card wholly between the sticky header and the notice: after the scroll the first
+    # [data-film] can sit half under the header (its centre 1 px below the header's edge),
+    # where WebKit's click may land on the header and open nothing
     target = page.evaluate("""() => { const top = document.getElementById('sg-consent').getBoundingClientRect().top;
+        const bar = document.querySelector('.bar').getBoundingClientRect().bottom;
         const el = [...document.querySelectorAll('[data-film]')].find(e => { const r = e.getBoundingClientRect();
-          return r.width > 20 && r.height > 20 && r.top > 60 && r.bottom < top - 4; });
+          return r.width > 20 && r.height > 20 && r.top > Math.max(60, bar + 4) && r.bottom < top - 4; });
         if (!el) return null; const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }""")
     if target:
         page.mouse.click(target[0], target[1])
@@ -17822,9 +17846,7 @@ def _ux_rails(browser, base, eng):
                     page.mouse.click(*a)
                 how = "arrow" if a else "no arrow"
             elif eng == "chromium":
-                cdp = ctx.new_cdp_session(page)
-                cdp.send("Input.synthesizeScrollGesture", {"x": int(rr[0] + rr[2] / 2), "y": int(rr[1] + rr[3] / 3),
-                                                            "xDistance": -(200 + 60 * k), "gestureSourceType": "touch", "speed": 900})
+                touch_swipe(page, int(rr[0] + rr[2] / 2), int(rr[1] + rr[3] / 3), dx=-(200 + 60 * k), speed=900)
                 how = "touch swipe"
             else:
                 page.evaluate("([i, k]) => { const t = document.querySelectorAll('#app .rtrack')[i], c = t.children[2 + k];"
@@ -17948,7 +17970,11 @@ def _ux_rails_offsnap(browser, base, eng):
                                     " return {bad: w.bad, n: w.n, conn: w.tr.isConnected,"
                                     " end: [Math.round(w.tr.scrollLeft), Math.round(r.left), Math.round(r.top)]}; }") if c else {}
                 off = bool(st) and st["dist"] > 1
-                need_off = how == "flight" or eng == "webkit"
+                # the precondition, not the check: Safari's WebKit (macOS) leaves a smooth
+                # scroll resting between two cards, so there it must, or the case was never
+                # built. WebKit on Linux (GitHub's runners) snaps it to a card as Chromium
+                # does, so a rail cannot rest off a card there and "rest" is Chromium's case.
+                need_off = how == "flight" or (eng == "webkit" and sys.platform == "darwin")
                 ok = (bool(c) and (off or not need_off) and opened is True and closed is True and res["conn"]
                       and not res["bad"] and all(abs(a - b) <= 1 for a, b in zip(res["end"], base_)))
                 check(f"ux1_{eng}_rail_offsnap_{dev}_{how}_{k + 1}", ok,
@@ -17968,9 +17994,7 @@ def _ux_rails_offsnap(browser, base, eng):
                 again = "the arrow" if a else "no arrow"
             elif eng == "chromium":
                 rr = page.evaluate("(i) => { const r = document.querySelectorAll('#app .rtrack')[i].getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }", i)
-                cdp = ctx.new_cdp_session(page)
-                cdp.send("Input.synthesizeScrollGesture", {"x": int(rr[0] + rr[2] / 2), "y": int(rr[1] + rr[3] / 3),
-                                                            "xDistance": -230, "gestureSourceType": "touch", "speed": 900})
+                touch_swipe(page, int(rr[0] + rr[2] / 2), int(rr[1] + rr[3] / 3), dx=-230, speed=900)
                 again = "a touch swipe"
             else:       # mobile WebKit here has neither touch scrolling nor a wheel: a smooth scroll onto a card
                 page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i], c = t.children[6];"
@@ -21276,6 +21300,13 @@ WAVES = {
     "HS1": wave_hs1,
 }
 
+# Chromium on Linux (GitHub's runners) hints glyph outlines to whole pixels by default, so
+# the self-hosted fonts set a little wider than on the owner's Mac (2026-11-04: the phone
+# motto came 1 px nearer the language button, 11 px for the 12 px a check wants); unhinted,
+# with fractional advances, it sets text as macOS does. macOS ignores the switch.
+CHROMIUM_ARGS = ["--font-render-hinting=none"] if sys.platform.startswith("linux") else []
+
+
 def main():
     """Parse command line, run selected waves, print summary."""
     selected = sys.argv[1:] if len(sys.argv) > 1 else list(WAVES.keys())
@@ -21312,7 +21343,7 @@ def main():
         if engine == "webkit":
             browser = _watch_csp(_Relaunching(lambda: pw.webkit.launch(headless=True)))
         else:
-            browser = _watch_csp(getattr(pw, engine).launch(headless=True))
+            browser = _watch_csp(getattr(pw, engine).launch(headless=True, args=CHROMIUM_ARGS))
         print(f"Browser: {engine}")
         # every wave but LG1-LG3 starts as a visitor who has answered the cookie notice
         _seed = _consent_seed_js(_consent_version()) if _consent_version() else None
