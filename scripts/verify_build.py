@@ -599,7 +599,7 @@ else:
                 import official_theatres as _OT                           # noqa: E402
                 _no_official = set(_OT.NO_OFFICIAL_SOURCE)
             except BaseException:                                         # bs4 missing: same list
-                _no_official = {"atelie313", "natfiz", "new-ndk", "derida"}
+                _no_official = {"atelie313", "new-ndk", "derida"}
             _late = sorted(t for t in _playing & _no_official
                            if t in _prelim and isinstance(_prelim[t], str) and _prelim[t] > _w_from)
             if _late:
@@ -1723,11 +1723,12 @@ if _links_agg_homepages:
 
 # 5c. LINKS holds ONE link per show, opened for every date: it must not name one
 # performance (a dated URL, Театър София /program/<id>, epaygo.bg/<id>, Сълза и смях
-# /site/selector/<id>, theatre.art.bg kupi-bilet.php?p=, Топлоцентрала ?day=) while
-# the show has more than one upcoming performance (Медея 8 Nov opened 5 Dec, 2026-10-30).
+# /site/selector/<id>, theatre.art.bg kupi-bilet.php?p=, Топлоцентрала ?day=, НАТФИЗ
+# /event/<slug>/) while the show has more than one upcoming performance (Медея 8 Nov
+# opened 5 Dec, 2026-10-30).
 PERF_SPECIFIC_LINK_RE = re.compile(
     r"/\d{4}-\d{2}-\d{2}(?:[|/?#]|%7C|$)|/program/\d+(?:[/?#]|$)|//(?:www\.)?epaygo\.bg/\d+"
-    r"|/site/selector/\d+|kupi-bilet\.php\?(?:[^#]*&)?p=\d|[?&]day=\d", re.I)
+    r"|/site/selector/\d+|kupi-bilet\.php\?(?:[^#]*&)?p=\d|[?&]day=\d|//natfiz\.bg/event/[^/?#]+", re.I)
 try:
     import listing_window as _LW5c
     _today5c = _LW5c.sofia_today().isoformat()

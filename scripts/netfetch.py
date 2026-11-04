@@ -147,6 +147,9 @@ CRAWL_DELAY = {
     # Зад канала's programme (official_theatres.fetch_zadkanala): robots.txt asks for
     # "Crawl-delay: 10" (2026-11-04); a run reads up to MONTHS_AHEAD month pages
     "zadkanala.bg": 10.0,
+    # natfiz.bg (official_theatres.fetch_natfiz: the event list + one page per
+    # performance): robots.txt asks no Crawl-delay; 2 s is our own floor (2026-11-04)
+    "natfiz.bg": 2.0,
 }
 
 

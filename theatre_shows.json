@@ -6766,5 +6766,185 @@
   "synBg": "",
   "synEn": "",
   "source": "satira"
+ },
+ "8-eseta-za-identichnostta": {
+  "id": "8-eseta-za-identichnostta",
+  "title": "8 есета за идентичността",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "8-eseta-za-lyubovta": {
+  "id": "8-eseta-za-lyubovta",
+  "title": "8 есета за любовта",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "apartament-19": {
+  "id": "apartament-19",
+  "title": "АПАРТАМЕНТ 19",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "vaal": {
+  "id": "vaal",
+  "title": "ВААЛ",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "volpone": {
+  "id": "volpone",
+  "title": "Волпоне",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "dekameron-lyubov-i-smart-po-bokacho": {
+  "id": "dekameron-lyubov-i-smart-po-bokacho",
+  "title": "Декамерон Любов и Смърт по Бокачо",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "kavkazkiyat-tebeshiren-krag": {
+  "id": "kavkazkiyat-tebeshiren-krag",
+  "title": "Кавказкият тебеширен кръг",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "kazimir-karoline": {
+  "id": "kazimir-karoline",
+  "title": "Казимир & Каролине",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "letishte": {
+  "id": "letishte",
+  "title": "Летище",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "sabuzhdane-na-martvite": {
+  "id": "sabuzhdane-na-martvite",
+  "title": "Събуждане на мъртвите",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
  }
 }
