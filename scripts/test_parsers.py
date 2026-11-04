@@ -4771,6 +4771,29 @@ _out, _ = _tm_main([{"id": "kraat", "bg": "Отмъстителите: Края�
                    {"Отмъстителите: Краят": [_endgame]}, _egdet)
 check("main(): …the same title with no re-release marker and the venue's 2026 is not the 2019 film",
       (_out.get("kraat") or {}).get("matched"), False)
+# skeptic (2026-11-04): two films of the same name older than the venue's re-release year
+# (Mulan 1998 and 2020) tied, and TMDB's order alone chose which film's score was shown.
+_mu98 = {"id": 10674, "title": "Мулан", "original_title": "Mulan", "original_language": "en",
+         "release_date": "1998-06-18", "poster_path": "/m98.jpg", "vote_count": 9800}
+_mu20 = {"id": 337401, "title": "Мулан", "original_title": "Mulan", "original_language": "en",
+         "release_date": "2020-09-04", "poster_path": "/m20.jpg", "vote_count": 6500}
+for _ord, _lab in (([_mu20, _mu98], "2020 first"), ([_mu98, _mu20], "1998 first")):
+    check(f"pick_bg / pick: same-title films both older than the re-release year name neither ({_lab})",
+          (TMDB.pick_bg(_ord, "Мулан", 2026), TMDB.pick(_ord, "Mulan", 2026)), (None, None))
+    check(f"pick_bg / pick: …the original year printed picks that film ({_lab})",
+          (TMDB.pick_bg(_ord, "Мулан", 1998)["id"], TMDB.pick(_ord, "Mulan", 1998)["id"]), (10674, 10674))
+    _out, _ = _tm_main([{"id": "mulan-si", "bg": "Мулан – Специално издание", "en": "", "year": 2026, "runtime": 88}],
+                       {"Мулан": _ord}, {10674: {"runtime": 88}, 337401: {"runtime": 115}})
+    check(f"main(): 'Мулан – Специално издание' (venue 2026) matches neither Mulan ({_lab})",
+          (_out.get("mulan-si") or {}).get("matched"), False)
+    _out, _ = _tm_main([{"id": "mulan-si", "bg": "Мулан – Специално издание", "en": "", "year": 2026, "runtime": 88}],
+                       {"Мулан": _ord, "Mulan": _ord}, {10674: {"runtime": 88}, 337401: {"runtime": 115}},
+                       aliases={"groups": [{"titles": ["Мулан – Специално издание"], "film": "mulan-si",
+                                            "year": 1998, "original": "Mulan"}]})
+    check(f"main(): …a curated year settles it: Mulan 1998 ({_lab})",
+          (_out.get("mulan-si") or {}).get("tmdb_id"), 10674)
+check("pick_bg: one same-title film older than the re-release year is still found (no namesake)",
+      TMDB.pick_bg([_mu98], "Мулан", 2026)["id"], 10674)
 # The venue's own IMDb id (Cine Grand): TMDB's find/<id>, guarded by the year
 _gz = {"id": 1290000, "title": "Godzilla Minus Zero", "original_title": "ゴジラ-0.0", "original_language": "ja",
        "release_date": "2026-11-03", "poster_path": "/gz.jpg", "vote_count": 40}
@@ -4795,6 +4818,12 @@ _out, _ = _tm_main([{"id": "gz", "bg": "Godzilla Minus Zero", "en": "", "year": 
 check("main(): …and never a TMDB id blocklisted for that film", (_out.get("gz") or {}).get("matched"), False)
 check("find_by_venue_imdb: two different ids in the venue's links name no film",
       TMDB.find_by_venue_imdb(["https://x/m/a-imdbtt1111111", "https://x/m/b-imdbtt2222222"], 2026), None)
+_new = dict(_gz, id=6, title="Some 2026 Film", release_date="2026-02-01")
+_out, _ = _tm_main([{"id": "bezs2", "bg": "Безсмъртният и красавицата 2", "en": ""}], {}, {6: {"imdb_id": "tt12345871"}},
+                   vlinks='[["bezs2","cg-park","https://www.cinegrand.bg/m/b-imdbtt12345871"]]',
+                   finds={"tt12345871": [_new]})
+check("main(): a keyboard-run venue id (tt12345871) with no venue year is a placeholder, even for a recent film",
+      (_out.get("bezs2") or {}).get("matched"), False)
 # OMDb / IMDb: last run's values only for the same IMDb id
 _mv = {"id": 77, "title": "Нов филм", "original_title": "New Film", "original_language": "en",
        "release_date": "2026-01-01", "poster_path": "/n.jpg", "vote_count": 900}

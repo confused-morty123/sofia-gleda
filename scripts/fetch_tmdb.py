@@ -395,6 +395,22 @@ def title_agrees(r, en):
     return False
 
 
+def older_namesake(results, best, same_title, year):
+    """True when `best` fits the venue's year only as a re-release (more than
+    MAX_YEAR_GAP before it, year_ok's exemption) and another result with the same
+    title is also older than that year: Mulan 1998 and Mulan 2020 for "Мулан –
+    Специално издание" (2026). Search order and vote counts then chose between two
+    films, so neither is the venue's: no match, unless a curated year, the venue's
+    IMDb id or a year within MAX_YEAR_GAP settles it."""
+    try:
+        y = int(year)
+    except (TypeError, ValueError):
+        return False
+    if best is None or plausible_year(y, best):
+        return False
+    return any(r is not best and same_title(r) and (_release_year(r) or y + 1) <= y for r in results)
+
+
 def pick(results, en, year):
     """The best search result for an English title. A result whose title does not agree
     with ours (TMDB also searches alternative titles) is a candidate only when its year
@@ -418,7 +434,10 @@ def pick(results, en, year):
             else: s -= 10 * min(abs(int(ry) - int(year)), 5)
         s += min(r.get("vote_count", 0), 5000) / 5000.0
         return s
-    return max(results, key=score)
+    best = max(results, key=score)
+    if older_namesake(results, best, lambda r: ten in (norm(r.get("title")), norm(r.get("original_title"))), year):
+        return None
+    return best
 
 
 def pick_bg(results, bg, year):
@@ -455,7 +474,11 @@ def pick_bg(results, bg, year):
         s += min(r.get("vote_count", 0), 5000) / 5000.0
         if s > bestscore:
             best, bestscore = r, s
-    return best if bestscore >= 60.0 else None
+    if best is None or bestscore < 60.0:
+        return None
+    if older_namesake(results, best, lambda r: nb in (cnorm(r.get("title")), cnorm(r.get("original_title"))), year):
+        return None
+    return best
 
 
 TRENDING_PAGES = 5   # TMDB's weekly trending films, 20 a page: the first 100
@@ -886,6 +909,10 @@ def find_by_venue_imdb(urls, year, blocked=(), rerelease=False, hint=None, today
         return r if abs(ry - int(hint["year"])) <= 1 else None
     if year:
         return r if year_ok(year, r, rerelease) else None
+    if imdb_id.lower().startswith("tt1234"):
+        # a keyboard-run id with no year to check it against (Топки tt1234654,
+        # Безсмъртният и красавицата 2 tt12345871): a placeholder, not the film's id
+        return None
     import datetime as _dt
     this_year = (today or _dt.date.today()).year
     return r if (ry >= this_year - FIND_RECENT_YEARS or rerelease) else None
@@ -1136,6 +1163,9 @@ def main():
         # "– Специално издание", "(20th Anniversary)": an old film shown again, whose
         # TMDB year may be decades before the year the venue prints (year_ok)
         rerel = any(rerelease_marker(t) for t in (f.get("bg"), f.get("en"), fi.get("title_bg")))
+        # ...and its curated year (film_aliases.json) names WHICH old film: searched with
+        # it, Mulan 1998 is told from Mulan 2020 (older_namesake rejects such a tie)
+        syear = hint["year"] if (hint and rerel) else year
         if fid in BLOCKLIST:
             print(f"[{i+1}/{len(films)}] {fid:24s} BLOCKED (known false match — generated art kept)")
             out[fid] = {"matched": False, "en": en}
@@ -1169,7 +1199,7 @@ def main():
             match_source, match_query = "imdb", best.get("_imdb")
             print(f"      (found by the venue's IMDb id {best.get('_imdb')})")
         elif en:
-            best = search_en(en, year, blocked)
+            best = search_en(en, syear, blocked)
             if best:
                 match_source = "original" if _en_is_original else "en"
                 match_query = en
@@ -1177,7 +1207,7 @@ def main():
                 # Re-release decoration / Director-prefix clutter blocks the match;
                 # retry with the canonical title (and any year extracted from it).
                 clean, extracted_yr = declutter(en)
-                use_year = extracted_yr if extracted_yr is not None else year
+                use_year = extracted_yr if extracted_yr is not None else syear
                 if clean and clean.lower() != en.lower():
                     best = search_en(clean, use_year, blocked)
                     if best:
@@ -1201,7 +1231,7 @@ def main():
             res = search_api({"query": bg, "language": "bg",
                                        "include_adult": "false"})
             results = [r for r in (res or {}).get("results", []) if r.get("id") not in blocked]
-            best = pick_bg(results, bg, year)
+            best = pick_bg(results, bg, syear)
             if best:
                 match_source = "bg"
                 match_query = bg
@@ -1209,7 +1239,7 @@ def main():
             # (strips "Director: Title (Year)" and festival prefixes).
             clean_bg, extracted_yr_bg = declutter(bg)
             if not best and clean_bg and clean_bg.lower() != bg.lower():
-                use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else year
+                use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else syear
                 res2 = search_api({"query": clean_bg, "language": "bg",
                                             "include_adult": "false"})
                 results2 = [r for r in (res2 or {}).get("results", []) if r.get("id") not in blocked]
