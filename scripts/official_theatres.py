@@ -2153,9 +2153,15 @@ def parse_art_venue(html, today):
                 raise MarkupError(f"theatre.art.bg: weekday mismatch {ptext!r}")
             hall = re.sub(r"^.*часа\s*,?\s*", "", ptext)
             hall = None if hall.lower() in ("", "сцена") else hall
-            for time_ in times_in(ptext):
+            times = times_in(ptext)
+            own = absolute("https://theatre.art.bg/", a.get("href"))
+            # buy: the entry's own kupi-bilet.php?p= purchase link, only when the entry is ONE
+            # performance (one time); a sold-out entry links its show page instead (hidden)
+            kb = box.select_one("a.kupi-bilet[href*='kupi-bilet.php']")
+            buy = absolute("https://theatre.art.bg/", kb["href"]) if kb and len(times) == 1 else None
+            for time_ in times:
                 rows.append(mkrow(strip_quotes(a.get_text(" ", strip=True)), date, time_, hall=hall,
-                                  url=absolute("https://theatre.art.bg/", a.get("href"))))
+                                  url=own, buy=buy, page=own if buy else None))
                 n += 1
         first = nearest_date(1, mon, today.replace(day=1))
         months[(first.year, first.month)] = n

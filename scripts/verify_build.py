@@ -696,6 +696,76 @@ else:
             fail("BOXONLY has entries but the app has no boxOnly() — they would still offer \"Купи билет\"")
         note(f"BOXONLY: {len(boxonly_data)} performance(s) sold only at the box office")
 
+# ---------------------------------------- 4c2a1. PLINKS: one performance's own purchase page
+# [[showId, "YYYY-MM-DD", "HH:MM", url], …] (scrape_programs.performance_links, owner
+# 2026-11-04): the time panel's "Купи билет" opens url for exactly that performance. Every
+# entry names a PERFORMANCES row, once, and no BOXONLY one; its url is http(s), names that
+# performance alone (no other entry has it) and spells no other date or time than its row's
+# (Народен's …/YYYY-MM-DD|HH:MM:SS). The live click test (7) renders each one.
+_PL_DT = re.compile(r"(\d{4}-\d{2}-\d{2})(?:\||%7C)(\d{2}):(\d{2})", re.I)
+_PL_DATE = re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})(?!\d)")
+
+
+def plink_wrong_when(row):
+    """None when a PLINKS url spells no date/time other than its row's, else what it spells."""
+    import urllib.parse as _upl
+    u = _upl.unquote(row[3])
+    m = _PL_DT.search(u)
+    if m and (m.group(1), f"{m.group(2)}:{m.group(3)}") != (row[1], row[2]):
+        return f"{m.group(1)} {m.group(2)}:{m.group(3)}"
+    other = [x for x in _PL_DATE.findall(u) if x != row[1]]
+    return other[0] if other else None
+
+
+_pl = re.search(r"^const PLINKS\s*=\s*(.*?);\s*$", js, flags=re.M)
+plinks_data = []
+if _pl is None:
+    note("PLINKS is not declared: every performance opens its show's link")
+else:
+    try:
+        plinks_data = json.loads(_pl.group(1))
+    except Exception:
+        plinks_data = None
+    if not isinstance(plinks_data, list):
+        fail("PLINKS is not a JSON array of [showId, date, time, url]")
+        plinks_data = []
+    else:
+        _bad_pl = [x for x in plinks_data
+                   if not (isinstance(x, list) and len(x) == 4 and all(isinstance(v, str) for v in x)
+                           and re.fullmatch(r"\d{4}-\d\d-\d\d", x[1]) and re.fullmatch(r"\d\d:\d\d", x[2])
+                           and re.match(r"https?://[^\s\"<>]+$", x[3]))]
+        if _bad_pl:
+            fail(f"{len(_bad_pl)} PLINKS entr(ies) are not [showId, date, time, http(s) url], "
+                 f"e.g. {str(_bad_pl[0])[:100]}")
+        _good_pl = [x for x in plinks_data if x not in _bad_pl]
+        _perf3p = {tuple(p[:3]) for p in (data["PERFORMANCES"] or []) if isinstance(p, list) and len(p) >= 3}
+        _lost_pl = [x for x in _good_pl if tuple(x[:3]) not in _perf3p]
+        if _lost_pl:
+            fail(f"{len(_lost_pl)} PLINKS entr(ies) name no PERFORMANCES row, "
+                 f"e.g. {', '.join('/'.join(x[:3]) for x in _lost_pl[:3])}")
+        if len(_good_pl) != len({tuple(x[:3]) for x in _good_pl}):
+            fail("duplicate PLINKS entries (same show, date and time)")
+        _by_url = {}
+        for x in _good_pl:
+            _by_url.setdefault(x[3], set()).add(tuple(x[:3]))
+        _shared_pl = sorted(u for u, ks in _by_url.items() if len(ks) > 1)
+        if _shared_pl:
+            fail(f"{len(_shared_pl)} PLINKS url(s) are given to more than one performance (each would "
+                 f"open another's page), e.g. {_shared_pl[0][:90]}")
+        _when_pl = [(x, plink_wrong_when(x)) for x in _good_pl]
+        _when_pl = [(x, w) for x, w in _when_pl if w]
+        if _when_pl:
+            fail(f"{len(_when_pl)} PLINKS url(s) encode another date/time than their row, e.g. "
+                 + "; ".join(f"{'/'.join(x[:3])} -> {w}" for x, w in _when_pl[:3]))
+        _bo3 = {tuple(b[:3]) for b in (boxonly_data or []) if isinstance(b, list) and len(b) >= 3}
+        _box_pl = [x for x in _good_pl if tuple(x[:3]) in _bo3]
+        if _box_pl:
+            fail(f"{len(_box_pl)} box-office-only performance(s) (BOXONLY) have a PLINKS buy link, "
+                 f"e.g. {'/'.join(_box_pl[0][:3])}")
+        if plinks_data and not re.search(r"\bfunction perfTixUrl\(", js):
+            fail("PLINKS has entries but the app has no perfTixUrl(): every performance would open the show link")
+        note(f"PLINKS: {len(plinks_data)} performance(s) open their own purchase page")
+
 # ---------------------------------------- 4c2a2. FESTROWS: festival screenings at box-office-only cinemas
 # [[filmId, venueId, date, time, festival, url|null, sale|null], …] (scrape_programs.box_office_festival_rows,
 # festival_sale_states: sale is "onsale", "soldout" or "notyet"; a build before it has 6 fields):
@@ -2240,6 +2310,24 @@ def smoke():
                 if _bo_bad:
                     fail(f"{len(_bo_bad)} box-office-only / festival showing(s) render wrongly, "
                          f"e.g. {', '.join(_bo_bad[:3])}")
+                # PLINKS: each performance's panel opens its own purchase page; a performance
+                # of the same show without one opens the show's link, never another's page
+                _pl_bad = page.evaluate("""()=>{
+                  const PL=(typeof PLINKS!=="undefined"&&Array.isArray(PLINKS))?PLINKS:[];
+                  if(!PL.length)return [];
+                  if(typeof screeningSheetHtml!=="function")return ["screeningSheetHtml is missing"];
+                  const own=new Map(PL.map(r=>[r.slice(0,3).join('|'),r[3]])), urls=new Set(PL.map(r=>r[3]));
+                  const shows=new Set(PL.map(r=>r[0])), out=[];
+                  const buy=(id,d,t)=>{const sh=showById[id];if(!sh)return null;const el=document.createElement('div');
+                    el.innerHTML=screeningSheetHtml('show',id,sh.theatre,d,t);
+                    const b=el.querySelector('.ss-btn.pri[href]');return b?b.getAttribute('href'):'';};
+                  for(const p of PERFORMANCES){ if(!shows.has(p[0])||!showById[p[0]])continue;
+                    const k=p.slice(0,3).join('|'), h=buy(p[0],p[1],p[2]), want=own.get(k);
+                    if(want){ if(h!==want)out.push(k+' opens '+h+', not its own '+want); }
+                    else if(h&&urls.has(h))out.push(k+' opens a page of another performance '+h); }
+                  return out;}""")
+                if _pl_bad:
+                    fail(f"{len(_pl_bad)} performance(s) open the wrong purchase page, e.g. {'; '.join(_pl_bad[:3])}")
             if errs:
                 fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
             _v = page.evaluate("window.__cspv||[]")

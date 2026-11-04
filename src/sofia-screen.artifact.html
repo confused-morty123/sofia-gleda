@@ -3814,6 +3814,22 @@ function boxOnly(kind,id,venueId,dateStr,timeStr){
   if(sh&&(BOOKING[sh.theatre]||{}).inPerson)return{venue:true,alt:"",page:safeUrl(BOOKING[sh.theatre].url)||""};
   return BOX_MAP[id+"|"+dateStr+"|"+timeStr]||null;
 }
+/* One performance's own purchase page (owner, 2026-11-04): PLINKS, written by the scraper,
+   [[showId,date,time,url],…] from the theatre's own per-performance link (Народен's dated
+   page, Театър „София“'s buy button, Сатирата's epaygo.bg event, …). The time panel's
+   "Купи билет" opens it for exactly that show, date and time; any other performance opens
+   the show's own link (LINKS, never another date's page). A box-office-only performance
+   (BOXONLY) never gets one: its stub stays. */
+const PLINK_MAP=(()=>{
+  const m={};
+  if(typeof PLINKS!=="undefined"&&Array.isArray(PLINKS))
+    PLINKS.forEach(r=>{if(Array.isArray(r)&&r.length>=4){const u=safeUrl(r[3]);if(u)m[r[0]+"|"+r[1]+"|"+r[2]]=u;}});
+  return m;
+})();
+function perfTixUrl(id,dateStr,timeStr){
+  if(BOX_MAP[id+"|"+dateStr+"|"+timeStr])return "";
+  return PLINK_MAP[id+"|"+dateStr+"|"+timeStr]||"";
+}
 /* the ticket stub (box office only): line 1 where tickets are sold, line 2 the venue; red for
    a cinema, gold for a theatre. Plain text in a role="note" box: never a link or a button,
    never focusable. compact: the small one in a sheet's "Билети от" box. */
@@ -6223,7 +6239,8 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
       /* the theatre's page for the production: the one BOXONLY names, else the show's own
          link unless an aggregator's (a plain link, never "Купи билет") */
       siteUrl=bo.page||(aggSource?"":(tu||""));}
-    else{tixUrl_=tu||"";}
+    /* that performance's own purchase page (PLINKS), else the show's own link */
+    else{tixUrl_=perfTixUrl(id,dateStr,timeStr)||tu||"";}
   }
 
   /* Format date line */

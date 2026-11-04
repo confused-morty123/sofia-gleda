@@ -27,7 +27,7 @@ per row (PRELIM_ROWS) on a date the venue's programme covers, by date
 Requires: requests, beautifulsoup4, lxml
 """
 from __future__ import annotations
-import argparse, json, os, re, sys, time, datetime as dt, pathlib
+import argparse, json, os, re, sys, time, urllib.parse, datetime as dt, pathlib
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -563,6 +563,43 @@ def art_slots(box):
     return slots
 
 
+_ART_BUY_SEL = "a.kupi_bilet[href], a[href*='kupi-bilet']"
+
+
+def art_slot_links(box, slots):
+    """{time: kupi-bilet link} of one theatre.art.bg listing, each performance only
+    the link printed right after its own <h4><strong> (before the next <strong>).
+    A matinée pair prints one link per performance; giving the pair's first link to
+    both opened the 11:00 seat map from the 17:00 panel. Any doubt names no link at
+    all: a <strong> that is not a time (a cancelled or prefixed slot), a slot with
+    no link or two, a link outside the pairs, or a repeated time. A listing with one
+    performance (its <strong> or only the cover time) takes the box's link only when
+    the box prints exactly one."""
+    anchors = [a for a in box.select(_ART_BUY_SEL) if a.get("href")]
+    strongs = box.select("h4 strong")
+    if len(slots) == 1:
+        if len(anchors) == 1 and all(_ART_SLOT.match(st.get_text(" ", strip=True)) for st in strongs):
+            return {slots[0][0]: anchors[0]["href"]}
+        return {}
+    pairs, cur = [], None
+    for el in box.select("h4 strong, h4 " + _ART_BUY_SEL.replace(", ", ", h4 ")):
+        if el.name == "strong":
+            m = _ART_SLOT.match(el.get_text(" ", strip=True))
+            if not m:
+                return {}
+            cur = [f"{int(m.group(1)):02d}:{m.group(2)}", []]
+            pairs.append(cur)
+        elif el.get("href"):
+            if cur is None:
+                return {}
+            cur[1].append(el["href"])
+    times = [t for t, _ in pairs]
+    if (len(pairs) != len(slots) or len(set(times)) != len(times) or set(times) != {t for t, _ in slots}
+            or any(len(ls) != 1 for _, ls in pairs) or len(anchors) != len(pairs)):
+        return {}
+    return {t: ls[0] for t, ls in pairs}
+
+
 def art_day_verdict(soup, date):
     """Does a theatre.art.bg day page really list `date`? For a date it has no
     programme for, the site answers with TODAY's listings in another template
@@ -587,10 +624,12 @@ def scrape_theatre_day(date, session):
     (its own <h3><a>), every performance time with its stage (see art_slots),
     the venue's theatre id (from the kupi-bilet link, so a row can be attributed
     to a specific venue) and that buy link. Returns (title, date, time,
-    theatre_id, buy_link, hall, event_page, price) — one row per performance;
-    event_page is the production's own theatre.art.bg page, price the text the
-    listing prints ("от 6.00 до 7.00 €"); any of the last five is None when a
-    listing lacks it. None when the page did not arrive or its day cannot be
+    theatre_id, buy_link, hall, event_page, price, slot_link) — one row per
+    performance; event_page is the production's own theatre.art.bg page, price the
+    text the listing prints ("от 6.00 до 7.00 €"), slot_link the kupi-bilet link
+    printed for that very performance (art_slot_links; the PLINKS source), while
+    buy_link is the listing's first one (its theatre id); any of the last six is
+    None when a listing lacks it. None when the page did not arrive or its day cannot be
     verified (art_day_verdict); [] when the site shows another day's listings
     for this date, i.e. it publishes nothing for it."""
     soup = fetch(THEATRE_DAY_URL.format(date=date), session)
@@ -611,7 +650,7 @@ def scrape_theatre_day(date, session):
             title = (h.get("title") or h.get_text(" ", strip=True)).strip() if h else ""
             if not title or not (2 < len(title) < 160):
                 continue
-            buy = box.select_one("a.kupi_bilet[href], a[href*='kupi-bilet']")
+            buy = box.select_one(_ART_BUY_SEL)
             tid, link = None, None
             if buy and buy.get("href"):
                 link = buy["href"]
@@ -629,8 +668,13 @@ def scrape_theatre_day(date, session):
             page = (ART_BASE + page) if page and page.startswith("/") else (page or None)
             pnode = box.select_one("a.kupi_bilet h6 span, h6 span")
             price = re.sub(r"\s+", " ", pnode.get_text(" ", strip=True)).strip() if pnode else None
-            for time_, hall in art_slots(box):
-                out.append((title, date, time_, tid, link, hall, page, price or None))
+            slots = art_slots(box)
+            own = art_slot_links(box, slots)
+            for time_, hall in slots:
+                sl = own.get(time_)
+                if sl and sl.startswith("/"):
+                    sl = ART_BASE + sl
+                out.append((title, date, time_, tid, link, hall, page, price or None, sl))
     return out
 
 
@@ -2039,6 +2083,105 @@ def theatre_link_choices(status, rr_rows, rr_extra_rows, agg_full, on_stage, exi
     # links (in existing) are kept; aggregator pages are not added (the
     # kept rows from the previous run already have their links).
     return th_links, agg_sids
+
+
+# PLINKS (owner, 2026-11-04): each performance's own purchase page, where the theatre
+# exposes one. Taken only from the link the theatre's own programme prints for that very
+# row (the parsers' "buy"), or the kupi-bilet.php?p= link theatre.art.bg prints for that very
+# listing of a theatre it sells for (ART_PLINK_THEATRES); never built from a URL pattern.
+ART_PLINK_THEATRES = frozenset({"citymark", "atelie313", "derida", "kuklen", "th199", "sfumato"})
+_ART_KUPI = re.compile(r"^https?://theatre\.art\.bg/kupi-bilet\.php\?(?:[^#]*&)?p=\d+", re.I)
+_PLINK_DT = re.compile(r"(\d{4}-\d{2}-\d{2})(?:\||%7C)(\d{2}):(\d{2})", re.I)
+_PLINK_DATE = re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})(?!\d)")
+
+
+def plink_matches(date, time_, url):
+    """False when `url` spells a date (and time) other than the performance's own
+    (Народен: …/YYYY-MM-DD|HH:MM:SS), or is not http(s); else True."""
+    if not isinstance(url, str) or not re.match(r"https?://[^\s\"<>]+$", url):
+        return False
+    u = urllib.parse.unquote(url)
+    m = _PLINK_DT.search(u)
+    if m and (m.group(1), f"{m.group(2)}:{m.group(3)}") != (date, time_):
+        return False
+    return all(x == date for x in _PLINK_DATE.findall(u))
+
+
+def performance_links(performances, official_rows, art_rows, prev, boxonly, read=()):
+    """PLINKS rows [[show, date, time, url], …], sorted.
+
+    performances   this run's PERFORMANCES rows ([show, date, time, …])
+    official_rows  (show, date, time, meta) of every theatre whose own programme was read
+                   this run; meta["buy"] is the link the programme prints for that row
+    art_rows       (show, theatre, date, time, link): theatre.art.bg listings, link its
+                   kupi-bilet.php?p= for that listing (ART_PLINK_THEATRES only)
+    prev           last run's PLINKS
+    boxonly        this run's BOXONLY entries: such a performance never gets a link
+    read           (show, date, time) this run's sources listed
+
+    A link is used only for a performance this run writes, one link per performance (two
+    different ones: none; the theatre's own programme before theatre.art.bg) and one
+    performance per link (a link given for two performances names neither alone: none),
+    and only when the date and time it spells are the row's own (plink_matches). Last
+    run's link is kept only for a performance that still exists, is not box office only
+    and that no source listed this run (its theatre unreachable)."""
+    perf = {tuple(p[:3]) for p in performances if isinstance(p, (list, tuple)) and len(p) >= 3}
+    box = {tuple(b[:3]) for b in boxonly}
+    own, art, users = defaultdict(set), defaultdict(set), defaultdict(set)
+    for sid, d, t, m in official_rows:
+        u = (m or {}).get("buy")
+        if sid and u:
+            own[(sid, d, t)].add(u)
+    for sid, v, d, t, link in art_rows:
+        if sid and v in ART_PLINK_THEATRES and link and _ART_KUPI.match(link):
+            art[(sid, d, t)].add(link)
+    for src_ in (own, art):
+        for k, us in src_.items():
+            for u in us:
+                users[u].add(k)
+    out = {}
+    for k in sorted(perf - box):
+        us = own.get(k) or art.get(k) or set()
+        if len(us) != 1:
+            continue
+        u = next(iter(us))
+        if users[u] == {k} and plink_matches(k[1], k[2], u):
+            out[k] = u
+    used, read = set(out.values()), set(read)
+    for e in prev or []:
+        k = tuple(e[:3])
+        if (k in perf and k not in box and k not in out and k not in read and len(e) > 3
+                and e[3] not in used and e[3] not in users and plink_matches(k[1], k[2], e[3])):
+            out[k] = e[3]
+            used.add(e[3])
+    return sorted([list(k) + [u] for k, u in out.items()])
+
+
+def read_plinks(page):
+    """Last run's PLINKS entries [[show, date, time, url]] ([] when undeclared or malformed)."""
+    m = re.search(r"^const PLINKS\s*=\s*(\[[^\n]*?\]);[ \t]*$", page, re.M)
+    if not m:
+        return []
+    try:
+        v = json.loads(m.group(1))
+    except ValueError:
+        return []
+    return [list(x[:4]) for x in v if isinstance(x, list) and len(x) >= 4
+            and all(isinstance(y, str) for y in x[:4])] if isinstance(v, list) else []
+
+
+def write_plinks(page, entries):
+    """Replace `const PLINKS=[…];` in the SOFIA-DATA block, or insert it on the line
+    after `const BOXONLY=…;` (else `const PRELIM_ROWS=…;`) when not declared yet."""
+    lit = json_for_script(sorted(entries, key=lambda e: e[:3]))
+    m = re.search(r"^const PLINKS\s*=\s*\[[^\n]*?\];[ \t]*$", page, re.M)
+    if m:
+        return page[:m.start()] + f"const PLINKS={lit};" + page[m.end():]
+    pr = (re.search(r"^const BOXONLY\s*=[^\n]*;[ \t]*$", page, re.M)
+          or re.search(r"^const PRELIM_ROWS\s*=[^\n]*;[ \t]*$", page, re.M))
+    if not pr:
+        raise KeyError("PRELIM_ROWS")
+    return page[:pr.end()] + f"\nconst PLINKS={lit};" + page[pr.end():]
 
 
 # The theatre's programme page: a show whose source gives only performance purchase
@@ -3937,6 +4080,7 @@ def main():
     theatre_ids = theatre_ids or list(THEATRE_ORDER)
     print("theatre aggregator theatre.art.bg")
     art_rows, art_dates, art_other = defaultdict(list), set(), defaultdict(int)
+    art_buy = defaultdict(list)          # PLINKS candidates: (title, date, time, kupi-bilet link)
     art_end, n_art0 = time.monotonic() + ART_AGGREGATOR_SECONDS, len(session.log)   # every day page
     for date in window:
         with session.deadline(max(0.0, art_end - time.monotonic())):
@@ -3944,12 +4088,14 @@ def main():
         if day is None:
             continue
         art_dates.add(date)
-        for title, d, time_, tid, link, hall, page, price in day:
+        for title, d, time_, tid, link, hall, page, price, slot_link in day:
             v = THEATRE_ART_IDS.get(tid)
             if v is None:
                 art_other[tid or "?"] += 1          # a venue the app does not list
             else:
                 art_rows[v].append((title, d, time_, hall, link, page, theatre_price(price)))
+                if v in ART_PLINK_THEATRES:         # that listing's own purchase link (PLINKS)
+                    art_buy[v].append((title, d, time_, slot_link))
     blocked["theatre.art.bg"] = session.blocked_since(n_art0)
     if not art_dates:
         diff.unreachable.append("theatre.art.bg")
@@ -3977,6 +4123,8 @@ def main():
                 secondary[v] = OT.SECONDARY[v]
                 art_rows[v] = [(t, d, tm, (m or {}).get("hall"), (m or {}).get("url"), (m or {}).get("url"),
                                 theatre_price((m or {}).get("price"))) for t, d, tm, m in secondary[v]["rows"]]
+                if v in ART_PLINK_THEATRES:
+                    art_buy[v] += [(t, d, tm, (m or {}).get("buy")) for t, d, tm, m in secondary[v]["rows"]]
                 sec_dates[v] = {r[1] for r in secondary[v]["rows"]}
         else:
             th_official[v] = res
@@ -4058,6 +4206,7 @@ def main():
                 th_links[sid] = _mint_url[sid]
 
     new_performances, seen_theatres = [], set()
+    plink_own, plink_art, plink_read = [], [], set()      # PLINKS sources, this run
     # Collect premiere dates per show from official venues only.
     # Format: {"show:<sid>": sorted_list_of_iso_dates}
     # Source: rr rows where m.get("premiere") is True, only for status=="official".
@@ -4165,6 +4314,16 @@ def main():
                         prelim_rows.append([sid, v, d])
         if status != "unreachable":
             seen_theatres.add(v)
+        # PLINKS: the purchase link each listing this run read prints for its own performance
+        if status == "official":
+            for sid, d_, t_, m_, _ti in (rr.get("rows", []) + rr.get("extra_rows", [])):
+                plink_own.append((sid, d_, t_, m_))
+                plink_read.add((sid, d_, t_))
+        for t_, d_, tm_, link_ in art_buy.get(v, []):
+            sid_ = show_index.resolve(t_, v)[0]
+            if sid_:
+                plink_art.append((sid_, v, d_, tm_, link_))
+                plink_read.add((sid_, d_, tm_))
         # LINKS: the theatre's own page of each show it lists (that of its
         # earliest upcoming performance, never one performance's purchase page);
         # theatre.art.bg's event page for an aggregator-only listing (a theatre with
@@ -4493,6 +4652,9 @@ def main():
 
     new_showtimes.sort(key=lambda r: (r[1], r[2], r[0]))
     new_performances.sort(key=lambda r: (r[1], r[2], r[0]))
+    # each performance's own purchase page, where its theatre links one (PLINKS)
+    old_plinks = [[show_index.canonical(e[0])] + e[1:] for e in read_plinks(src)]
+    plinks = performance_links(new_performances, plink_own, plink_art, old_plinks, boxonly, plink_read)
 
     out = src[:st_s] + emit_rows(new_showtimes) + src[st_e:]
     pf_s2, pf_e2, _ = extract_array(out, "PERFORMANCES")
@@ -4589,6 +4751,14 @@ def main():
         print(f"wrote BOXONLY: {len(boxonly)} box-office-only performance(s)")
     except KeyError:
         print("BOXONLY/PRELIM_ROWS constant not found — skipping BOXONLY update")
+    try:
+        out = write_plinks(out, plinks)
+        from collections import Counter as _PC
+        _pc = _PC(show_index.theatre_of(e[0]) for e in plinks)
+        print(f"wrote PLINKS: {len(plinks)} performance(s) open their own purchase page ("
+              + ", ".join(f"{k}: {n}" for k, n in sorted(_pc.items(), key=lambda x: str(x[0]))) + ")")
+    except KeyError:
+        print("PLINKS/PRELIM_ROWS constant not found: skipping PLINKS update")
     # festival screenings at the box-office-only cinemas (Одеон, G8) and the festival
     # cinemas (Euro Cinema): sold online (FESTROWS, computed before SHOWTIMES were written)
     try:

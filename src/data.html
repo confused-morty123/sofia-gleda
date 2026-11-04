@@ -48,6 +48,17 @@ const PRELIM_ROWS=[];
    (Сълза и смях: "БИЛЕТИ НА КАСА" on its stage pages); every entry has a
    PERFORMANCES row. Absent row -> sold as the venue's BOOKING says. */
 const BOXONLY=[];
+/* PLINKS contract: [[showId, "YYYY-MM-DD", "HH:MM", url], …]
+   One performance's own purchase page, as the theatre's own programme links that very
+   performance (Народен's /bg/predstavlenie/<slug>/<date>|<time>, Театър „София“'s buy
+   button, Сатирата's epaygo.bg event, Сълза и смях's /site/selector/<id>, Sfumato's and
+   the theatre.art.bg-sold theatres' kupi-bilet.php?p=, Топлоцентрала's ?day=N page).
+   The time panel's "Купи билет" opens it for exactly that show, date and time; every
+   other performance opens the show's LINKS entry. Never synthesised from a URL pattern;
+   one performance per link and one link per performance; a link that spells a date and
+   time spells its own row's. Written by scrape_programs.py; every entry has a
+   PERFORMANCES row and none a BOXONLY row. */
+const PLINKS=[];
 /* FESTROWS contract: [[filmId, venueId, "YYYY-MM-DD", "HH:MM", festival, url, sale, place, read], …]
    The festival screenings (official_festivals.py: CineLibri, Киномания) at a cinema
    whose own programme sells only at its box office (BOOKING[venueId].inPerson: Одеон,
