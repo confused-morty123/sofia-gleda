@@ -299,6 +299,15 @@
     "no usable image on the page"
    ]
   },
+  "show:dekameron-lyubov-i-smart-po-bokacho": {
+   "last": "2026-11-04",
+   "tried": [
+    "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
   "show:dnevnikat-na-edin-lud-2": {
    "last": "2026-11-04",
    "tried": [
@@ -565,6 +574,28 @@
    "path": "posters/5-godini-toplotsentrala-vzeto-ot-internet-ili-kratko-rakovod.jpg",
    "w": 1080
   },
+  "8-eseta-za-identichnostta": {
+   "checked": "2026-11-04",
+   "h": 2300,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2017/11/8-eseta-za-identichnostta-plakat.jpg",
+   "kind": "poster",
+   "md5": "24fe6e4ad81f5371c02d7564af90e809",
+   "page": "https://natfiz.bg/event/8-eseta-za-identichnostta/",
+   "path": "posters/8-eseta-za-identichnostta.jpg",
+   "w": 1610
+  },
+  "8-eseta-za-lyubovta": {
+   "checked": "2026-11-04",
+   "h": 2300,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2017/11/8-eseta-za-lyubovta-plakat.jpg",
+   "kind": "poster",
+   "md5": "61550e3c0f48d30cb9e1fa62de3d73d6",
+   "page": "https://natfiz.bg/event/8-eseta-za-lubovta/",
+   "path": "posters/8-eseta-za-lyubovta.jpg",
+   "w": 1608
+  },
   "act-fest-2026-i-insert-coin-player-one": {
    "checked": "2026-11-04",
    "h": 550,
@@ -674,6 +705,17 @@
    "page": "http://sfumato.info/антитъга___7187",
    "path": "posters/antitaga.jpg",
    "w": 800
+  },
+  "apartament-19": {
+   "checked": "2026-11-04",
+   "h": 1418,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2026/01/App19-5.jpg",
+   "kind": "poster",
+   "md5": "5963c17cfec166938acfde172807c7d7",
+   "page": "https://natfiz.bg/event/apartament-19-2/",
+   "path": "posters/apartament-19.jpg",
+   "w": 992
   },
   "arabska-nosht": {
    "checked": "2026-11-04",
@@ -2534,6 +2576,28 @@
    "path": "posters/kaspar-pesni-na-takavostta.jpg",
    "w": 900
   },
+  "kavkazkiyat-tebeshiren-krag": {
+   "checked": "2026-11-04",
+   "h": 851,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2026/04/Kavkazkiat-Plakat.jpg",
+   "kind": "poster",
+   "md5": "668970ec6e3457108c9aff84989d5281",
+   "page": "https://natfiz.bg/event/kavkazkiyat-tebeshiren-krag/",
+   "path": "posters/kavkazkiyat-tebeshiren-krag.jpg",
+   "w": 595
+  },
+  "kazimir-karoline": {
+   "checked": "2026-11-04",
+   "h": 2560,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2025/12/KK_POSTER_100x70_page-0001-1-scaled.jpg",
+   "kind": "poster",
+   "md5": "fc40af2ee5a563a69cd8ad2f2c5d4376",
+   "page": "https://natfiz.bg/event/kazimir-karoline-2/",
+   "path": "posters/kazimir-karoline.jpg",
+   "w": 1792
+  },
   "kislorod": {
    "checked": "2026-11-04",
    "h": 550,
@@ -2830,6 +2894,17 @@
    "page": "https://www.tba.art.bg/лекция-№3-за-силата-на-словото-гостува-дт-пловдив___6454",
    "path": "posters/lekciya-3-za-silata-na-slovoto-gostuva-d.jpg",
    "w": 800
+  },
+  "letishte": {
+   "checked": "2026-11-04",
+   "h": 1200,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2026/03/Letishte-Plakat.jpg",
+   "kind": "poster",
+   "md5": "2f8052cd6270545cb341923a27348f3a",
+   "page": "https://natfiz.bg/event/letishte/",
+   "path": "posters/letishte.jpg",
+   "w": 840
   },
   "leydi-makbet-ili-7-nachina-da-ubiesh-nyakogo": {
    "checked": "2026-11-04",
@@ -4668,6 +4743,17 @@
    "path": "posters/rozhdeniyat-den-na-rupart.jpg",
    "w": 800
   },
+  "sabuzhdane-na-martvite": {
+   "checked": "2026-11-04",
+   "h": 992,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2026/09/SabujdaneMartvite-Plakat-70x100cm.jpg",
+   "kind": "poster",
+   "md5": "e1a4bb5b4e32bcddef69c1bdd98ef6c1",
+   "page": "https://natfiz.bg/event/sabuzhdaneto-na-martvite/",
+   "path": "posters/sabuzhdane-na-martvite.jpg",
+   "w": 694
+  },
   "sama-zhena": {
    "checked": "2026-11-04",
    "h": 1408,
@@ -5493,6 +5579,17 @@
    "path": "posters/uzhasnite-roditeli.jpg",
    "w": 735
   },
+  "vaal": {
+   "checked": "2026-11-04",
+   "h": 1536,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2026/11/VAAL-Plakat.jpg",
+   "kind": "poster",
+   "md5": "e9cdedfb868461be0b8d42201f6838d7",
+   "page": "https://natfiz.bg/event/vaal/",
+   "path": "posters/vaal.jpg",
+   "w": 1075
+  },
   "vecherya-za-tapaci": {
    "checked": "2026-11-04",
    "h": 1408,
@@ -5635,6 +5732,17 @@
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/vlyubenite",
    "path": "posters/vlyubenite.jpg",
    "w": 220
+  },
+  "volpone": {
+   "checked": "2026-11-04",
+   "h": 2362,
+   "how": "the event page's own picture",
+   "img": "https://natfiz.bg/wp-content/uploads/2026/03/plakat-Volpone.jpg",
+   "kind": "poster",
+   "md5": "88f59bce744f36a6a8d43868a294c6e9",
+   "page": "https://natfiz.bg/event/volpone-2/",
+   "path": "posters/volpone.jpg",
+   "w": 1657
   },
   "vrazhalec": {
    "checked": "2026-11-04",

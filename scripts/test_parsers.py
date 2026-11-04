@@ -3885,6 +3885,23 @@ check("candidates: a theme's resize suffix (_fit-detail) is not the title's name
       [(u.rsplit("/", 1)[-1], t) for u, t, _ in OPP.candidates(
           _tc_pg, "https://toplocentrala.bg/events/let-s-not-get-lost-in-a-detail-now")],
       [("let-s-not-get-lost-detail-now_fit-detail.jpg", 1), ("viber-image-2026-10-28_fit-detail.jpg", 2)])
+_nfx = (pathlib.Path(__file__).resolve().parent / "fixtures")
+check("candidates (НАТФИЗ): the event page's own picture only, not its related events; the curtain stand-in is none",
+      [OPP.candidates((_nfx / "theatre_natfiz_event_vaal.html").read_text(encoding="utf-8"),
+                      "https://natfiz.bg/event/vaal/"),
+       OPP.candidates((_nfx / "theatre_natfiz_event_dekameron.html").read_text(encoding="utf-8"),
+                      "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/")],
+      [[("https://natfiz.bg/wp-content/uploads/2026/11/VAAL-Plakat.jpg", 1, "the event page's own picture")], []])
+import tempfile as _tfnf
+with _tfnf.TemporaryDirectory() as _dnf:
+    _hnf = pathlib.Path(_dnf) / "index.html"
+    _hnf.write_text('const SHOWS=[{"id":"vaal","title":"ВААЛ","theatre":"natfiz"}];\n'
+                    'const PERFORMANCES=[["vaal","2026-11-06","19:30",null,null]];\n'
+                    'const LINKS=[["vaal","https://natfiz.bg/event/"]];\n'
+                    'const PLINKS=[["vaal","2026-11-07","19:30","https://natfiz.bg/event/vaal-2/"],'
+                    '["vaal","2026-11-06","19:30","https://natfiz.bg/event/vaal/"]];\n', encoding="utf-8")
+    check("catalogue (НАТФИЗ): a show's own page is its earliest performance's event page, not the event list",
+          OPP.catalogue(_hnf)[2].get("show:vaal"), ["https://natfiz.bg/event/vaal/"])
 _cl_pg = ('<div data-elementor-type="popup" data-elementor-id="9"><img src="https://cineland.bg/app/uploads/2025/12/48b560a1.jpg"></div>'
           '<nav><img src="https://cineland.bg/app/uploads/nav-film.jpg"></nav>'
           '<main><img src="https://cineland.bg/app/uploads/2026/10/arieti-poster.jpg"></main>'

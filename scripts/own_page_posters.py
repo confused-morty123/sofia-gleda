@@ -93,6 +93,8 @@ HTTP_ONLY = {"bnf.bg"}
 POSTER_NAME_HOSTS = {"zadkanala.bg", "toplocentrala.bg", "tba.art.bg", "sfumato.info",
                      "nationaltheatre.bg", "salzaismyah.bg", "theatre199.org"}
 IMG_EXT_RE = re.compile(r"\.(?:jpe?g|png|webp)(?:$|[?#])", re.I)
+NATFIZ_LIST = "https://natfiz.bg/event/"
+NATFIZ_EVENT_RE = re.compile(r"^https://natfiz\.bg/event/[^/?#]+/?$")
 POSTER_WORD_RE = re.compile(r"poster|plakat|plakati|afish|плакат|афиш|kimo_grid2", re.I)
 # A theme's resize suffix on every gallery file ("…_fit-detail.jpg" on all of
 # Топлоцентрала's) is not part of the file's own name.
@@ -350,6 +352,15 @@ def candidates(html, base, other_titles=()):
     """[(url, tier, how)] in page order: tier 1 = the page's key image for the
     title (og:image, its poster slot), tier 2 = other content images. Images
     that belong to another title (foreign_images) are left out."""
+    if (urllib.parse.urlsplit(base).hostname or "").lower().removeprefix("www.") == "natfiz.bg":
+        # an event page: the first picture of its own body, never the "Свързани
+        # събития" block (other performances, the show's other dates among them),
+        # never the theatre's curtain stand-in (fetch_theatre_posters.natfiz_image)
+        from fetch_theatre_posters import natfiz_image
+        img = natfiz_image(html)
+        if img and not PLACEHOLDER_RE.search(urllib.parse.unquote(img).lower()):
+            return [(img, 1, "the event page's own picture")]
+        return []
     out, seen = [], set(foreign_images(html, base, other_titles))
     seen |= placeholder_images(html, base)
     html = strip_site_blocks(html)
@@ -609,9 +620,21 @@ def catalogue(html_path=HTML):
     for sid in up_shows & set(shows):
         titles["show:" + sid] = shows[sid].get("title") or ""
         venue["show:" + sid] = shows[sid].get("theatre") or "?"
+    # НАТФИЗ has no page per show: its LINKS entry is the event list, so its
+    # show's own page is its earliest performance's event page (PLINKS), as
+    # fetch_theatre_posters.natfiz_pages reads it
+    natfiz_page = {}
+    for r in sorted(r for r in (_const(src, "PLINKS") or []) if isinstance(r, list) and len(r) >= 4):
+        if isinstance(r[3], str) and NATFIZ_EVENT_RE.match(r[3]):
+            natfiz_page.setdefault(r[0], r[3])
     for row in _const(src, "LINKS") or []:
         if isinstance(row, list) and len(row) >= 2 and ("show:" + row[0]) in titles:
-            links["show:" + row[0]].append(row[1])
+            url = row[1]
+            if isinstance(url, str) and url.rstrip("/") == NATFIZ_LIST.rstrip("/"):
+                url = natfiz_page.get(row[0])
+                if not url:
+                    continue
+            links["show:" + row[0]].append(url)
     for fid in up_films & set(films):
         titles["film:" + fid] = films[fid].get("bg") or films[fid].get("en") or ""
         venue["film:" + fid] = "film"
