@@ -6514,5 +6514,239 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "arabska-nosht": {
+  "id": "arabska-nosht",
+  "title": "Арабска нощ",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "programa-beket-o-shtastlivi-dni-50-to-predstavlenie": {
+  "id": "programa-beket-o-shtastlivi-dni-50-to-predstavlenie",
+  "title": "Програма \"Бекет\" О, щастливи дни 50 то представление",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "biskvitko-spasyava-koleda": {
+  "id": "biskvitko-spasyava-koleda",
+  "title": "БИСКВИТКО СПАСЯВА КОЛЕДА",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "lyubopitnoto-slonche": {
+  "id": "lyubopitnoto-slonche",
+  "title": "Любопитното слонче",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "magichnata-nosht-predi-koleda": {
+  "id": "magichnata-nosht-predi-koleda",
+  "title": "Магичната нощ преди Коледа",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "snezhnata-kralitsa": {
+  "id": "snezhnata-kralitsa",
+  "title": "Снежната кралица",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "stana-neshto-neobiknoveno": {
+  "id": "stana-neshto-neobiknoveno",
+  "title": "Стана нещо необикновено",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "trimata-snezhkovtsi": {
+  "id": "trimata-snezhkovtsi",
+  "title": "Тримата снежковци",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "trite-prasentsa-3": {
+  "id": "trite-prasentsa-3",
+  "title": "Трите прасенца",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "5-godini-toplotsentrala-baba": {
+  "id": "5-godini-toplotsentrala-baba",
+  "title": "5 години Топлоцентрала! Баба",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "ima-li-zhivot-sled-braka-v-klub-moderen-teatar-burgas": {
+  "id": "ima-li-zhivot-sled-braka-v-klub-moderen-teatar-burgas",
+  "title": "ИМА ЛИ ЖИВОТ СЛЕД БРАКА? в Клуб „Модерен театър“, Бургас",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "p-osveti": {
+  "id": "p-osveti",
+  "title": "(П)освети",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "sartseto-na-koleda": {
+  "id": "sartseto-na-koleda",
+  "title": "СЪРЦЕТО НА КОЛЕДА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }

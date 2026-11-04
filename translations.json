@@ -665,6 +665,12 @@
     "kind": "title",
     "src": "Rammstein - Live in Mexico City"
   },
+  "2058fe3a2c240c500193d3992bb3fd47ddbccca8": {
+    "at": "2026-11-04",
+    "en": "To the left of the London–Calcutta road",
+    "kind": "title",
+    "src": "Вляво от пътя Лондон-Калкута"
+  },
   "206fbb81bb2acd272f829329c378bd5e5be5fb72": {
     "at": "2026-10-09",
     "en": "The Society of Dead Poets",
@@ -1157,6 +1163,12 @@
     "kind": "title",
     "src": "ACT FEST 2026 CO–SURFACE / СЪ–ПОВЪРХНОСТ"
   },
+  "369d5e46b3721870b242679ff478f8c4ec05ebb9": {
+    "at": "2026-11-04",
+    "en": "The Supernatural and the Supernatural – Short Films (Block 2)",
+    "kind": "title",
+    "src": "Свръхестествено и супернатурално - къси филми (блок 2)"
+  },
   "36a0ab45187d56104a613df29751e53666522ada": {
     "at": "2026-10-09",
     "en": "LADIES INVITE",
@@ -1385,6 +1397,12 @@
     "kind": "title",
     "src": "Лабиринт"
   },
+  "412ca14727d8b165afebb951ec32ec8e40143966": {
+    "at": "2026-11-04",
+    "en": "The Magical Night Before Christmas",
+    "kind": "title",
+    "src": "Магичната нощ преди Коледа"
+  },
   "416efad0039ac59ce4f0349e7881369356e747f2": {
     "at": "2026-10-09",
     "en": "The lift",
@@ -1408,6 +1426,12 @@
     "en": "HUMAN ERROR",
     "kind": "title",
     "src": "ЧОВЕШКА ГРЕШКА"
+  },
+  "4252cd070b3a969647edc0c35389cd20f47efb8a": {
+    "at": "2026-11-04",
+    "en": "'Beckett' Programme: Oh, Happy Days – 50th performance",
+    "kind": "title",
+    "src": "Програма \"Бекет\" О, щастливи дни 50 то представление"
   },
   "42c8fee1f24681dfddf89bfdbec059bea3a60d65": {
     "at": "2026-10-14",
@@ -1877,6 +1901,12 @@
     "kind": "title",
     "src": "Хелоуин Селекция Заразно зло"
   },
+  "560be2278b4a4a5d78a10ec37431b1be33f5cc92": {
+    "at": "2026-11-04",
+    "en": "(P)light up",
+    "kind": "title",
+    "src": "(П)освети"
+  },
   "565161541a9fc61ceefb9c081274428d59f73093": {
     "at": "2026-10-23",
     "en": "PETYO AND THE WOLF",
@@ -2087,6 +2117,12 @@
     "kind": "syn",
     "src": "Онова, което остава под чертата."
   },
+  "5cebf52e6990144a4f3296320f9503ac90b29a93": {
+    "at": "2026-11-04",
+    "en": "The Code of the Bulgarians",
+    "kind": "title",
+    "src": "Кодът на българите"
+  },
   "5d1a1c1f1d30033739cd60115544d811be8af806": {
     "at": "2026-10-09",
     "en": "Drama on the Black Sea coast.",
@@ -2129,11 +2165,23 @@
     "kind": "title",
     "src": "Квартет за двама"
   },
+  "5f1d2c87057ca928fe89df6d0bf77a8225379c9b": {
+    "at": "2026-11-04",
+    "en": "Something extraordinary happened",
+    "kind": "title",
+    "src": "Стана нещо необикновено"
+  },
   "602b5e276acbb78b9f2b07f148fbbbec0ff4ce4e": {
     "at": "2026-10-27",
     "en": "40. Cinema Mania: Karma",
     "kind": "title",
     "src": "40.Киномания: Карма"
+  },
+  "603ed89c180eaf5ba1e3f9cdaaff6bd897ab56dd": {
+    "at": "2026-11-04",
+    "en": "THE HEART OF CHRISTMAS",
+    "kind": "title",
+    "src": "СЪРЦЕТО НА КОЛЕДА"
   },
   "608274c277dbf91fff622dde6a5374fac8600196": {
     "at": "2026-10-09",
@@ -2218,6 +2266,12 @@
     "en": "Drama.",
     "kind": "syn",
     "src": "Драма."
+  },
+  "640cc57fa467957494291b3c7fa082ddd8a2dfb3": {
+    "at": "2026-11-04",
+    "en": "Non-migrants",
+    "kind": "title",
+    "src": "Немигранти"
   },
   "642202a73fc78ced922120054d73b1ff47609e5c": {
     "at": "2026-10-22",
@@ -2363,6 +2417,12 @@
     "kind": "title",
     "src": "Чудеса от прежда"
   },
+  "699da110f5b6694e1fb4f99061c6e9b314c278b6": {
+    "at": "2026-11-04",
+    "en": "Avalanche",
+    "kind": "title",
+    "src": "Лавина"
+  },
   "69a0d807cbff8f9c965b2b9f882507e5bb65f1ae": {
     "at": "2026-10-09",
     "en": "DE PROFUNDIS by Oscar Wilde",
@@ -2494,6 +2554,12 @@
     "en": "Halloween Selection: Clayface",
     "kind": "title",
     "src": "Хелоуин Селекция: Клейфейс"
+  },
+  "6d8a2d8c6260e6dc396a0403b739c2c2afb251c9": {
+    "at": "2026-11-04",
+    "en": "The Snow Queen",
+    "kind": "title",
+    "src": "Снежната кралица"
   },
   "6ddaec12f895aec459ca20a5cef68dcbfe4632ed": {
     "at": "2026-10-09",
@@ -2674,6 +2740,12 @@
     "en": "Karakondzhul",
     "kind": "title",
     "src": "Караконджул"
+  },
+  "775f95593c152e1c58ef78322d9368f895d6df11": {
+    "at": "2026-11-04",
+    "en": "IS THERE LIFE AFTER MARRIAGE? at the ‘Modern Theatre’ Club, Burgas",
+    "kind": "title",
+    "src": "ИМА ЛИ ЖИВОТ СЛЕД БРАКА? в Клуб „Модерен театър“, Бургас"
   },
   "7761f32c693b291bdbe0e57cb7b64fc504dfba0f": {
     "at": "2026-10-09",
@@ -2903,6 +2975,12 @@
     "kind": "title",
     "src": "ЖЕНИ ГОВОРЯТ ЗА..."
   },
+  "8008cbbfffeab869f1a88df7a04def3ea49efe6f": {
+    "at": "2026-11-04",
+    "en": "Arabian Night",
+    "kind": "title",
+    "src": "Арабска нощ"
+  },
   "8055739ab6a210e26cc0202d7bc93b18e0d1f49a": {
     "at": "2026-10-09",
     "en": "THE YEAR OF MAGICAL THINKING",
@@ -2987,6 +3065,12 @@
     "kind": "syn",
     "src": "На фокус са съдбите на Жан и Корин Люшер – баща и дъщеря в о"
   },
+  "837350d06eabd32b3c087c14aff9f13d917fce1b": {
+    "at": "2026-11-04",
+    "en": "5 years of the Heating Plant! Grandma",
+    "kind": "title",
+    "src": "5 години Топлоцентрала! Баба"
+  },
   "84245fd6033508f067be963c3bd9c80b31c65d9f": {
     "at": "2026-10-09",
     "en": "Sinelibri: A Wedding with a Hint of Orange",
@@ -3058,6 +3142,12 @@
     "en": "Ignorance",
     "kind": "title",
     "src": "Неведение"
+  },
+  "86783908882ceaef68a6985749b0d26ada7f5c2c": {
+    "at": "2026-11-04",
+    "en": "The Three Snowmen",
+    "kind": "title",
+    "src": "Тримата снежковци"
   },
   "86c56f40747809610142f4620e0d79c1d690d611": {
     "at": "2026-10-09",
@@ -3569,6 +3659,12 @@
     "kind": "title",
     "src": "Мадам Бовари - Гостува ДТ-Ямбол"
   },
+  "9f2ae3c55f6e64ee26345ec6eee06559270c2e0c": {
+    "at": "2026-11-04",
+    "en": "A BISCUIT SAVES CHRISTMAS",
+    "kind": "title",
+    "src": "БИСКВИТКО СПАСЯВА КОЛЕДА"
+  },
   "9f2d7d2e4e991b46faced74bd2fd1dcb183a0480": {
     "at": "2026-10-09",
     "en": "SOCRATES’ LAST NIGHT | 60 YEARS OF THEATRE 199",
@@ -3688,6 +3784,12 @@
     "en": "CO–SURFACE / CO–SURFACE",
     "kind": "title",
     "src": "CO–SURFACE / СЪ–ПОВЪРХНОСТ"
+  },
+  "a3d2bd510d4c068afb670cd4b07560342a8311e2": {
+    "at": "2026-11-04",
+    "en": "Meaning – a film about welfare economics",
+    "kind": "title",
+    "src": "Смисъл – филм за икономиката на благосъстоянието"
   },
   "a3f485a730023c5094ebd9d685b7360dcd98523b": {
     "at": "2026-10-09",
@@ -4343,6 +4445,12 @@
     "kind": "title",
     "src": "Етърви"
   },
+  "c27c52893510de498123f96c3837d00b29762c7f": {
+    "at": "2026-11-04",
+    "en": "Be careful what you wish for – short films (block 3)",
+    "kind": "title",
+    "src": "Внимавай какво си пожелаваш - къси филми (блок 3)"
+  },
   "c29fb28535eea4b1adcb898c19d361377f95b76a": {
     "at": "2026-10-22",
     "en": "Chronicles of an Inconvenient Truth (with English subtitles)",
@@ -4973,6 +5081,12 @@
     "kind": "title",
     "src": "Заклеваш ли се в децата?"
   },
+  "dca6dddbe56436397bf1dba37989febdc34d0c80": {
+    "at": "2026-11-04",
+    "en": "He invited me in",
+    "kind": "title",
+    "src": "Покани ме да вляза"
+  },
   "dcdbf1c3e4aa4a1bf7ca6ff6caabdc04224c8dec": {
     "at": "2026-10-09",
     "en": "Sinelibri 2026: KOKUHO: A LIVING TREASURE",
@@ -4990,6 +5104,12 @@
     "en": "On 27 July 1986, Queen performed the biggest stadium concert in their history at the Nepstadion in Budapest in front of 80,000 ecstatic fans. The concert was part of the famous Magic Tour – the last tour on which the band travelled the world with their lead singer, Freddie Mercury. Three years before the fall of the Berlin Wall, this was the first concert by a Western rock band to be held in a stadium behind the Iron Curtain. The event was of such great significance to the Hungarian authorities and the film industry that a team comprising some of the country’s finest cinematographers and technical specialists was assembled to film it, ensuring the concert would be preserved for future generations.",
     "kind": "syn",
     "src": "На 27 юли 1986 г. Queen изнасят най-големия стадионен концер"
+  },
+  "dea03e346710192e37e8578bb5c217eaf928ef1f": {
+    "at": "2026-11-04",
+    "en": "The Curious Little Elephant",
+    "kind": "title",
+    "src": "Любопитното слонче"
   },
   "dead23c0e8b4f374295ba77dc621a9474638cb6b": {
     "at": "2026-10-27",

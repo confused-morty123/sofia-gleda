@@ -3956,5 +3956,163 @@
   ],
   "source": "dom-kino",
   "runtime": 105
+ },
+ "nemigranti": {
+  "id": "nemigranti",
+  "bg": "Немигранти",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Комедия"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 96,
+  "year": 2026
+ },
+ "kotarakat-s-shapkata": {
+  "id": "kotarakat-s-shapkata",
+  "bg": "Котаракът с шапката",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Комедия",
+   "Семеен"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 107,
+  "year": 2026,
+  "originalTitle": "THE CAT IN THE HAT"
+ },
+ "kotarakat-s-shapka": {
+  "id": "kotarakat-s-shapka",
+  "bg": "Котаракът с шапка",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "arena-mega"
+ },
+ "ramayana-razhdaneto-na-edna-legenda": {
+  "id": "ramayana-razhdaneto-na-edna-legenda",
+  "bg": "Рамаяна: Раждането на една легенда",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Драма",
+   "Фентъзи"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 205,
+  "year": 2026,
+  "originalTitle": "RAMAYANA: RISE OF A LEGEND"
+ },
+ "tayniyat-svyat-na-arieti-2": {
+  "id": "tayniyat-svyat-na-arieti-2",
+  "bg": "ТАЙНИЯТ СВЯТ НА АРИЕТИ",
+  "en": "",
+  "genres": [
+   "Аниме"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cineland",
+  "runtime": 94,
+  "year": 2010,
+  "originalTitle": "THE SECRET WORLD OF ARRIETY"
+ },
+ "smisal-film-za-ikonomikata-na-blagosastoyanieto": {
+  "id": "smisal-film-za-ikonomikata-na-blagosastoyanieto",
+  "bg": "Смисъл – филм за икономиката на благосъстоянието",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "svrahestestveno-i-supernaturalno-kasi-filmi-blok-2": {
+  "id": "svrahestestveno-i-supernaturalno-kasi-filmi-blok-2",
+  "bg": "Свръхестествено и супернатурално - къси филми (блок 2)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "odeon"
+ },
+ "pokani-me-da-vlyaza": {
+  "id": "pokani-me-da-vlyaza",
+  "bg": "Покани ме да вляза",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
+ },
+ "lavina": {
+  "id": "lavina",
+  "bg": "Лавина",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon"
+ },
+ "kodat-na-balgarite": {
+  "id": "kodat-na-balgarite",
+  "bg": "Кодът на българите",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "odeon"
+ },
+ "vnimavay-kakvo-si-pozhelavash-kasi-filmi-blok-3": {
+  "id": "vnimavay-kakvo-si-pozhelavash-kasi-filmi-blok-3",
+  "bg": "Внимавай какво си пожелаваш - къси филми (блок 3)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "odeon"
+ },
+ "vlyavo-ot-patya-london-kalkuta": {
+  "id": "vlyavo-ot-patya-london-kalkuta",
+  "bg": "Вляво от пътя Лондон-Калкута",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon"
  }
 }
