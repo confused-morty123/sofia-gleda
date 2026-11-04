@@ -1559,10 +1559,126 @@ res = O.fetch_tba(FakeNet({O.TBA_URL.format(y=2026, m=10): raw("theatre_tba_prog
 check("fetch: ticket centre down → programme alone, noted",
       (len(res["rows"]), any("only one of the two" in n for n in res["notes"])), (9, True))
 
+# ====================================================================== natfiz
+print("natfiz — natfiz.bg/event/ (Театър НАТФИЗ; Куклен театър НАТФИЗ is another venue)")
+NF_TODAY = dt.date(2026, 11, 4)
+NF = "https://natfiz.bg/event/"
+nf_list = O.parse_natfiz_list(fx("theatre_natfiz_list.html"), NF_TODAY)
+check("list: every card, in the page's order, the year from the nearest date",
+      (len(nf_list), nf_list[0], nf_list[-1][:3]),
+      (18, ("ВААЛ /ПРЕМИЕРА/", "2026-11-06", "19:30", "Театър НАТФИЗ, Сцена 47", NF + "vaal/"),
+       ("Събуждане на мъртвите", "2026-11-28", "19:00")))
+check("list: an empty address stays empty, never guessed",
+      [c[3] for c in nf_list if c[0] == "Събуждане на мъртвите"], ["", ""])
+check("list: the year rolls into January", O.parse_natfiz_list(
+      fx("theatre_natfiz_list.html").replace("ное.", "яну."), dt.date(2026, 12, 20))[0][1], "2027-01-06")
+raises("list: a card without a time is a markup change", O.MarkupError, O.parse_natfiz_list,
+       fx("theatre_natfiz_list.html").replace('class="event-time"', 'class="x"', 1), NF_TODAY)
+raises("list: no content area at all is a markup change", O.MarkupError, O.parse_natfiz_list,
+       "<html><body><p>Maintenance</p></body></html>", NF_TODAY)
+check("list: a content area with no cards is an empty list",
+      O.parse_natfiz_list('<html><body><div id="content"><p>Няма събития</p></div></body></html>', NF_TODAY), [])
+ev = O.parse_natfiz_event(fx("theatre_natfiz_event_vaal.html"))
+check("event page: date with its year, time, category, address (Сцена 47)",
+      ev, {"date": "2026-11-06", "time": "19:30", "cats": ["Представления"],
+           "address": "Театър НАТФИЗ, Сцена 47", "own_box": True, "free": False})
+check("event page: no address printed (Събуждане на мъртвите), tickets at Театър НАТФИЗ's box office",
+      {k: v for k, v in O.parse_natfiz_event(fx("theatre_natfiz_event_sabuzhdane.html")).items()
+       if k in ("address", "own_box")}, {"address": "", "own_box": True})
+check("event page: free entry (Мюзикъл), no address, no box office named",
+      {k: v for k, v in O.parse_natfiz_event(fx("theatre_natfiz_event_myuzikal.html")).items()
+       if k in ("address", "own_box", "free")}, {"address": "", "own_box": False, "free": True})
+check("event page: the related events block (other performances) is not read",
+      O.parse_natfiz_event(fx("theatre_natfiz_event_myuzikal.html"))["date"], "2026-11-24")
+raises("event page without its date line is a markup change", O.MarkupError, O.parse_natfiz_event,
+       fx("theatre_natfiz_event_vaal.html").replace("ev-date", "ev-x"))
+check("hall: the stage after the theatre's name",
+      [O.natfiz_hall(a) for a in ("Театър НАТФИЗ, Сцена 47", "Театър НАТФИЗ, Голяма сцена", "Театър НАТФИЗ")],
+      ["Сцена 47", "Голяма сцена", None])
+row, exc = O.natfiz_split("ВААЛ /ПРЕМИЕРА/", "2026-11-06", "19:30", NF + "vaal/", "Театър НАТФИЗ, Сцена 47", ev)
+check("split: Театър НАТФИЗ → a row; its own page is that performance's link (buy), premiere flagged",
+      (row[:3], row[3]["hall"], row[3]["buy"], row[3]["url"], row[3]["premiere"], exc),
+      (("ВААЛ /ПРЕМИЕРА/", "2026-11-06", "19:30"), "Сцена 47", NF + "vaal/", NF + "vaal/", True, None))
+fp = O.parse_natfiz_event(fx("theatre_natfiz_event_folklorna.html"))
+row, exc = O.natfiz_split("Фолклорна магия от Пирин", "2026-11-07", "11:30", NF + "f/", fp["address"], fp)
+check("split: Куклен театър НАТФИЗ (ул. „Стефан Карададжа“ 20) is excluded, never filed here",
+      (row, exc[:3], exc[3].startswith("another NATFIZ venue: Куклен театър НАТФИЗ")),
+      (None, ("Фолклорна магия от Пирин", "2026-11-07", "11:30"), True))
+import scrape_programs as _SPN                                 # noqa: E402
+check("…and that reason is not re-homed to Столичен куклен театър (kuklen)",
+      _SPN.excluded_host(exc[3], "natfiz"), None)
+mp = O.parse_natfiz_event(fx("theatre_natfiz_event_myuzikal.html"))
+check("split: no address and no box office named → excluded, the venue is never guessed",
+      O.natfiz_split("Мюзикъл", "2026-11-24", "19:00", NF + "m/", "", mp)[0], None)
+sp = O.parse_natfiz_event(fx("theatre_natfiz_event_sabuzhdane.html"))
+row, _ = O.natfiz_split("Събуждане на мъртвите", "2026-11-18", "19:00", NF + "s/", "", sp)
+check("split: no address, Театър НАТФИЗ's box office → a row without a stage", (row[1], row[3]["hall"]),
+      ("2026-11-18", None))
+check("split: another category (a lecture) is not a performance",
+      O.natfiz_split("Лекция", "2026-11-06", "19:30", NF + "l/", "Театър НАТФИЗ, Сцена 47",
+                     dict(ev, cats=["Лекции"]))[1][3], "not a performance: category Лекции")
+check("split: a cancelled performance is excluded",
+      O.natfiz_split("Волпоне (ОТМЕНЕНО)", "2026-11-20", "19:30", NF + "v/", "Театър НАТФИЗ, Сцена 47", ev)[1][3],
+      "cancelled")
+check("split: free entry is the row's price", O.natfiz_split(
+      "X", "2026-11-24", "19:00", NF + "x/", "Театър НАТФИЗ, Сцена 47", dict(mp, address="Театър НАТФИЗ"))[0][3]["price"],
+      "Вход свободен")
+check("a natfiz.bg event page is one performance's link; the event list is not",
+      (O.is_performance_link(NF + "vaal-2/"), O.is_performance_link(NF)), (True, False))
+nf_net = FakeNet({NF: raw("theatre_natfiz_list.html"),
+                  NF + "vaal/": raw("theatre_natfiz_event_vaal.html"),
+                  NF + "letishte/": raw("theatre_natfiz_event_letishte.html"),
+                  NF + "sabuzhdaneto-na-martvite/": raw("theatre_natfiz_event_sabuzhdane.html"),
+                  NF + "myuzikal-vecher-na-klasa-na-prof-penko-gospodinov/": raw("theatre_natfiz_event_myuzikal.html"),
+                  NF + "folklorna-magiya-ot-pirin-26/": raw("theatre_natfiz_event_folklorna.html"),
+                  NF + "dekameron-lyubov-i-smart-po-bokacho/": raw("theatre_natfiz_event_dekameron.html")})
+res = O.fetch_venue("natfiz", nf_net, NF_TODAY)
+check("fetch: 11 performances at Театър НАТФИЗ, 7 excluded (5 puppet, 2 no venue), covered to the last listed day",
+      (O.LAST_STATUS["natfiz"], len(res["rows"]), len(res["extra_rows"]), len(res["excluded"]),
+       res["covered_from"], res["covered_to"]), ("ok", 11, 0, 7, "2026-11-04", "2026-11-25"))
+check("fetch: every row links its own page, one page per performance",
+      len({r[3]["buy"] for r in res["rows"]}), 11)
+check("fetch: no address and its page not reached (Събуждане, 28 Nov) → excluded: no box office line to go by",
+      [e[1] for e in res["excluded"] if e[0] == "Събуждане на мъртвите"], ["2026-11-28"])
+check("fetch: a page not reached → the list's date, time and address, noted",
+      (any(n.startswith(NF + "kazimir-karoline-2/: unreachable") for n in res["notes"]),
+       [r[3]["hall"] for r in res["rows"] if r[0] == "Казимир & Каролине"]), (True, ["Сцена 47"]))
+check("fetch: only natfiz.bg/event/ pages are asked for", all(u.startswith(NF) for u in nf_net.asked), True)
+_moved = fx("theatre_natfiz_event_vaal.html").replace("06.11.2026 - 19:30", "06.11.2026 - 20:00")
+res2 = O.fetch_natfiz(FakeNet(dict(nf_net.pages, **{NF + "vaal/": _moved.encode()})), NF_TODAY)
+check("fetch: the event page's time wins over the list's, noted",
+      ([r[2] for r in res2["rows"] if r[3]["buy"] == NF + "vaal/"],
+       any("the page 2026-11-06 20:00" in n for n in res2["notes"])), (["20:00"], True))
+check("fetch: the event list unreachable → None (previous rows kept)",
+      (O.fetch_venue("natfiz", FakeNet({}), NF_TODAY), O.LAST_STATUS["natfiz"].startswith("unreachable")), (None, True))
+check("fetch: nothing upcoming listed → None, never an empty programme",
+      O.fetch_venue("natfiz", FakeNet({NF: b'<html><body><div id="content"></div></body></html>'}), NF_TODAY), None)
+# LINKS / PLINKS, as scrape_programs.main wires an official theatre (pure parts)
+_rr = [("vaal", "2026-11-06", "19:30", {"url": NF + "vaal/", "buy": NF + "vaal/"}, "ВААЛ"),
+       ("vaal", "2026-11-07", "19:30", {"url": NF + "vaal-2/", "buy": NF + "vaal-2/"}, "ВААЛ")]
+_tl, _ = _SPN.theatre_link_choices("official", _rr, [], [], {"vaal"}, existing={}, window=("2026-11-04", "2026-12-04"))
+_ln = dict(_tl)
+_SPN.neutral_show_links(_ln, lambda sid: "natfiz")
+check("LINKS: a НАТФИЗ show links the event list, never one performance's page", _ln, {"vaal": NF})
+check("PLINKS: each performance its own page",
+      _SPN.performance_links([["vaal", "2026-11-06", "19:30"], ["vaal", "2026-11-07", "19:30"]],
+                             [r[:4] for r in _rr], [], [], []),
+      [["vaal", "2026-11-06", "19:30", NF + "vaal/"], ["vaal", "2026-11-07", "19:30", NF + "vaal-2/"]])
+import fetch_theatre_posters as _FTPN                          # noqa: E402
+check("poster: the first picture of the page's own body, largest size (not the related events' posters)",
+      _FTPN.natfiz_image(fx("theatre_natfiz_event_vaal.html")),
+      "https://natfiz.bg/wp-content/uploads/2026/11/VAAL-Plakat.jpg")
+check("poster: the theatre's curtain stand-in art (Декамерон) is no poster",
+      _FTPN.natfiz_image(fx("theatre_natfiz_event_dekameron.html")), None)
+check("poster: a show's earliest performance page from PLINKS",
+      _FTPN.natfiz_pages('const PLINKS=[["vaal","2026-11-07","19:30","%svaal-2/"],'
+                         '["vaal","2026-11-06","19:30","%svaal/"],["x","2026-11-06","19:30","https://epaygo.bg/1"]];'
+                         % (NF, NF)), {"vaal": NF + "vaal/"})
+
 # ================================================================= fetch_venue
 print("fetch_venue never raises")
-check("no official source → None", O.fetch_venue("natfiz", FakeNet({}), TODAY), None)
-check("…with the reason", O.LAST_STATUS["natfiz"].startswith("no official source"), True)
+check("no official source → None", O.fetch_venue("derida", FakeNet({}), TODAY), None)
+check("…with the reason", O.LAST_STATUS["derida"].startswith("no official source"), True)
 check("unreachable → None", O.fetch_venue("toplo", FakeNet({}), TODAY), None)
 check("…with the reason", O.LAST_STATUS["toplo"].startswith("unreachable"), True)
 broken = b"<html><body><ul><li class='program-list-item'><div>?</div></li></ul></body></html>"
@@ -1795,8 +1911,8 @@ check("no official source (Ателие 313): aggregator rows on dates read, las
       "all preliminary from today", (rows, pf),
       ([["h", "2026-10-11", "11:00", None, None], ["h", "2026-10-25", "11:00", None, None]], F))
 check("…an unknown aggregator title is not minted", info["unplaced"], [["2026-10-12", "11:00", "НЕЩО НОВО"]])
-check("no official source and nothing listed (Натфиз): no rows",
-      S.merge_theatre_venue("natfiz", "none", [], None, [], [], {"2026-10-11"}, [], None, F, E)[:2], ([], F))
+check("no official source and nothing listed (Нов театър НДК): no rows",
+      S.merge_theatre_venue("new-ndk", "none", [], None, [], [], {"2026-10-11"}, [], None, F, E)[:2], ([], F))
 rows, pf, _ = S.merge_theatre_venue("th199", "official", [("k", "2026-10-09", "19:30", None, None)],
                                     ("2026-10-09", "2026-10-18"),
                                     [("t", "2026-10-08", "19:30", None, None), ("k", "2026-10-19", "19:30", None, None)],

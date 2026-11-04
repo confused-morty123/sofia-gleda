@@ -144,6 +144,9 @@ CRAWL_DELAY = {
     # epaygo.bg event pages (scrape_programs.festival_sale_states): no robots.txt (it
     # answers 302 to /front); 3.5 s is our own gap (2026-10-29)
     "epaygo.bg": 3.5,
+    # natfiz.bg (official_theatres.fetch_natfiz: the event list + one page per
+    # performance): robots.txt asks no Crawl-delay; 2 s is our own floor (2026-11-04)
+    "natfiz.bg": 2.0,
 }
 
 

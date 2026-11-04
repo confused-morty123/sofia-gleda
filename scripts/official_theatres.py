@@ -251,7 +251,8 @@ PERFORMANCE_LINK_RE = re.compile(
     r"|//(?:www\.)?epaygo\.bg/\d+"                                        # Сатирата: an epaygo.bg event
     r"|salzaismyah\.bg/site/selector/\d+"                                 # Сълза и смях: a selector
     r"|theatre\.art\.bg/kupi-bilet\.php\?"                                # theatre.art.bg purchase (Sfumato)
-    r"|toplocentrala\.bg/[^?#]*\?day=\d+", re.I)                          # Топлоцентрала: dated page
+    r"|toplocentrala\.bg/[^?#]*\?day=\d+"                                # Топлоцентрала: dated page
+    r"|//natfiz\.bg/event/[^/?#]+", re.I)                                # НАТФИЗ: one performance's page
 _LINK_DATE_TIME = re.compile(r"/(\d{4}-\d{2}-\d{2})(?:\||%7C)(\d{2}):(\d{2})", re.I)
 
 
@@ -2120,6 +2121,133 @@ def fetch_sfumato(net, today):
     return finish("sfumato", SFUMATO_SOURCE, parse_sfumato(_get(net, SFUMATO_URL), today), today)
 
 
+# ===================================================================== natfiz
+NATFIZ_URL = "https://natfiz.bg/event/"
+NATFIZ_SOURCE = "natfiz.bg/event/ (event list + each event's own page)"
+NATFIZ_OWN = "театър натфиз"          # the venue THEATRES lists: ул. „Г. С. Раковски“ 108А
+NATFIZ_PUPPET = "куклен театър"       # Куклен театър НАТФИЗ: ул. „Стефан Карададжа“ 20, not this venue
+NATFIZ_PERFORMANCE_CAT = "представления"
+_NATFIZ_EVENT = re.compile(r"^https://natfiz\.bg/event/[^/?#]+/?$")
+_NATFIZ_DT = re.compile(r"\b(\d{2})\.(\d{2})\.(\d{4})\s*[-–—]\s*([01]?\d|2[0-3])[:.]([0-5]\d)\b")
+_NATFIZ_OWN_BOX = re.compile(r"касата\s+на\s+театър\s+натфиз", re.I)
+_NATFIZ_FREE = re.compile(r"вход\s+свободен", re.I)
+_NATFIZ_CANCELLED = re.compile(r"отмен[ея]н|\bотлож", re.I)
+
+
+def parse_natfiz_list(html, today):
+    """natfiz.bg/event/ ("Събитие архив") — one `article.event-classic-item` per
+    performance, upcoming only: `.date-block` "06" / "ное.", `.event-time` "19:30",
+    `.event-address` "Театър НАТФИЗ, Сцена 47" (empty for some), the title link to
+    that performance's own page (/event/<slug>/; a second date of a show is
+    /event/<slug>-2/). No year is printed. → [(title, date, time, address, url)]."""
+    soup = soup_of(html)
+    if soup.select_one("#content") is None:
+        raise MarkupError("natfiz: no content area on the event list page")
+    out = []
+    for art in soup.select("article.event-classic-item"):
+        a = art.select_one(".item-title a[href]")
+        day, mon = art.select_one(".date-block .day"), art.select_one(".date-block .month")
+        tm = art.select_one(".event-time")
+        month = bg_month(clean(mon.get_text()).rstrip(".")) if mon else None
+        time_ = hhmm(tm.get_text(" ", strip=True)) if tm else None
+        dtext = clean(day.get_text()) if day else ""
+        if not (a and dtext.isdigit() and month and time_ and _NATFIZ_EVENT.match(a["href"])):
+            raise MarkupError("natfiz: unreadable event card")
+        addr = art.select_one(".event-address")
+        out.append((clean(a.get_text(" ", strip=True)),
+                    nearest_date(int(dtext), month, today).isoformat(), time_,
+                    clean(addr.get_text(" ", strip=True)) if addr else "", a["href"]))
+    return out
+
+
+def parse_natfiz_event(html):
+    """One performance's own page (/event/<slug>/): `.ev-date` "06.11.2026 - 19:30"
+    with its category links (`a.cat-link`, "Представления"), the address line beside
+    it ("Театър НАТФИЗ, Сцена 47"), and the body (`.event-content`'s first div: poster,
+    credits, synopsis, how to buy). The "Свързани събития" block after it is other
+    performances and is not read. → {"date", "time", "cats", "address", "own_box",
+    "free"}: own_box — the body sends buyers to Театър НАТФИЗ's box office."""
+    soup = soup_of(html)
+    when = soup.select_one(".single-event-content .ev-date")
+    info = when.find_parent(class_="event-info") if when else None
+    m = _NATFIZ_DT.search(clean(when.get_text(" ", strip=True))) if when else None
+    if not (m and info):
+        raise MarkupError("natfiz: no date on the event page")
+    cats = [clean(c.get_text(" ", strip=True)) for c in when.select("a.cat-link")]
+    lines = [clean(d.get_text(" ", strip=True)) for d in info.find_all("div", recursive=False) if d is not when]
+    content = soup.select_one(".single-event-content .event-content")
+    body = content.find("div", recursive=False) if content else None
+    text = clean(body.get_text(" ", strip=True)) if body else ""
+    return {"date": f"{m.group(3)}-{m.group(2)}-{m.group(1)}",
+            "time": f"{int(m.group(4)):02d}:{m.group(5)}",
+            "cats": cats, "address": next((ln for ln in lines if ln), ""),
+            "own_box": bool(_NATFIZ_OWN_BOX.search(text)), "free": bool(_NATFIZ_FREE.search(text))}
+
+
+def natfiz_hall(address):
+    """"Театър НАТФИЗ, Сцена 47" → "Сцена 47"; "Театър НАТФИЗ" → None."""
+    rest = re.sub(r"^\s*театър\s+натфиз\s*[,–—-]?\s*", "", address or "", flags=re.I)
+    return clean(rest) or None
+
+
+def natfiz_split(title, date, time_, url, address, page=None):
+    """Where one listed performance belongs. Театър НАТФИЗ (the venue THEATRES lists,
+    on Раковски 108А; its stages Голяма сцена, Сцена 47 and the small studios) → a
+    row, its own page as that performance's link ("buy": one dated page per
+    performance, never the show's link). Куклен театър НАТФИЗ is another NATFIZ
+    theatre at another address: excluded. A page that is not in the "Представления"
+    category (a lecture, an exhibition) is not a performance: excluded. No address
+    printed: a row only when the page sends buyers to Театър НАТФИЗ's own box office
+    (the venue is then the page's own word), else excluded — a venue is never
+    guessed. Returns (row or None, excluded entry or None)."""
+    a = (address or "").lower()
+    if _NATFIZ_CANCELLED.search(title):
+        return None, (title, date, time_, "cancelled")
+    if page is not None and NATFIZ_PERFORMANCE_CAT not in [c.lower() for c in page["cats"]]:
+        return None, (title, date, time_, "not a performance: category "
+                      + (", ".join(page["cats"]) or "none"))
+    if NATFIZ_PUPPET in a:
+        return None, (title, date, time_, f"another NATFIZ venue: {address} "
+                      "(ул. „Стефан Карададжа“ 20), not Театър НАТФИЗ")
+    price = "Вход свободен" if page and page.get("free") else None
+    if a.startswith(NATFIZ_OWN):
+        return mkrow(title, date, time_, hall=natfiz_hall(address), url=url, buy=url, price=price), None
+    if not a and page is not None and page.get("own_box"):
+        return mkrow(title, date, time_, url=url, buy=url, price=price), None
+    return None, (title, date, time_, f"venue not stated as Театър НАТФИЗ: {address or 'no address printed'}")
+
+
+def fetch_natfiz(net, today):
+    listed = parse_natfiz_list(_get(net, NATFIZ_URL), today)
+    if not listed:
+        raise Unavailable("natfiz: no upcoming events listed")
+    rows, excluded, notes = [], [], []
+    t0 = today.isoformat()
+    for title, date, time_, address, url in listed:
+        if date < t0:
+            continue
+        try:
+            page = parse_natfiz_event(_get(net, url))
+        except Unavailable as e:
+            # the list is the theatre's own too: its date, time and address stand in
+            notes.append(f"{url}: {e} — the event list's date, time and address used")
+            page = None
+        if page is not None:
+            if (page["date"], page["time"]) != (date, time_):
+                notes.append(f"{url}: the list says {date} {time_}, the page {page['date']} "
+                             f"{page['time']} — the page's used")
+                date, time_ = page["date"], page["time"]
+            if page["address"] and clean(page["address"]).lower() != address.lower():
+                notes.append(f"{url}: the list says {address!r}, the page {page['address']!r} — the page's used")
+                address = page["address"]
+        row, exc = natfiz_split(title, date, time_, url, address, page)
+        if row:
+            rows.append(row)
+        if exc:
+            excluded.append(exc)
+    return finish("natfiz", NATFIZ_SOURCE, rows, today, excluded=excluded, notes=notes)
+
+
 # ==================================================================== citymark
 CITYMARK_URL = ("https://theatre.art.bg/" + urllib.parse.quote("сити-марк-арт-център") + "___173")
 CITYMARK_SOURCE = "theatre.art.bg (official channel)"
@@ -2372,7 +2500,6 @@ NO_OFFICIAL_SOURCE = {
     "atelie313": "atelie313.com is a JavaScript-only super.website app (no programme in the "
                  "HTML); theatre.art.bg lists it (theatre id 22) but that is an aggregator — "
                  "its rows stay preliminary",
-    "natfiz": "the monthly programme is a single JPG poster (natfiz.bg/udt-mesechna-programa/)",
     "new-ndk": "no programme of its own: tickets.ndk.bg lists every NDK hall without "
                "identifying Нов театър",
     "derida": "derida.eu/sabitiya/ (programme page) is JavaScript-rendered — no machine-readable dated programme",
@@ -2384,6 +2511,7 @@ FETCHERS = OrderedDict([
     ("mladezhki", fetch_mladezhki), ("kuklen", fetch_kuklen), ("satira", fetch_satira),
     ("salzaismyah", fetch_salzaismyah), ("toplo", fetch_toplo), ("iam", fetch_iam),
     ("artvent", fetch_artvent), ("sfumato", fetch_sfumato), ("citymark", fetch_citymark),
+    ("natfiz", fetch_natfiz),
 ])
 
 # why the last fetch_* of each venue returned None (for the run report)

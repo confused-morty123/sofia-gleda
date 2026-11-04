@@ -147,10 +147,11 @@ THEATRE_OWN_SOURCES = {
 }
 # theatre.art.bg theatre ids → app theatre ids: see THEATRE_ART_IDS below (the
 # merge attributes every aggregator row by these ids, never by title).
-# Natfiz publishes its monthly programme only as a single JPG poster, Нов театър
-# НДК sells behind a login wall (tickets.ndk.bg), and Сцена Дерида serves a
-# JavaScript-only shell — none expose machine-readable dated shows; they have no
-# official source (official_theatres.NO_OFFICIAL_SOURCE).
+# Нов театър НДК sells behind a login wall (tickets.ndk.bg), and Сцена Дерида
+# serves a JavaScript-only shell — neither exposes machine-readable dated shows;
+# they have no official source (official_theatres.NO_OFFICIAL_SOURCE). НАТФИЗ's
+# monthly programme is a JPG poster, but natfiz.bg/event/ lists every performance
+# (official_theatres.fetch_natfiz).
 
 TIME_RE = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 DATE_RE = re.compile(r"\b(\d{1,2})[.\-/](\d{1,2})(?:[.\-/](\d{2,4}))?\b")
@@ -2193,6 +2194,9 @@ THEATRE_PROGRAMME = {
     "salzaismyah": "https://www.salzaismyah.bg/site/calendar",
     "sfumato": "http://sfumato.info/",
     "toplo": "https://toplocentrala.bg/program/performance",
+    # НАТФИЗ has one page per PERFORMANCE (/event/<slug>/, /event/<slug>-2/ …) and none per
+    # show: its shows link the event list, each performance its own page (PLINKS)
+    "natfiz": "https://natfiz.bg/event/",
 }
 SHOW_PAGE_CHECKS = 80          # new show pages confirmed by GET per run (the rest next run)
 SHOW_PAGE_SECONDS = 150

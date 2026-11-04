@@ -756,6 +756,58 @@ NATIONAL_SLUG_RE = re.compile(
     r'(?:[/|][^/\'">\s]+)?$', re.I)
 
 
+NATFIZ_EVENT_RE = re.compile(r"^https://natfiz\.bg/event/[^/?#]+/?$")
+_IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.I)
+# the theatre's stand-in art (a curtain with its logo, "Zavesa-curtains-02…", on a
+# production with no poster yet: Декамерон, 2026-11-04) is no show's poster
+NATFIZ_GENERIC_RE = re.compile(r"/[^/]*(?:zavesa|curtain|logo)[^/]*$", re.I)
+_ATTR_RE = r'\b{}\s*=\s*["\']([^"\']*)["\']'
+
+
+def natfiz_image(html):
+    """The poster of a natfiz.bg event page: the first picture in the page's own body
+    (`.event-content`, before the "Свързани събития" block of OTHER performances,
+    each with its own poster), at the largest size its srcset offers. Not og:image:
+    on some pages it is a different, older picture than the one the page shows. The
+    theatre's stand-in art (NATFIZ_GENERIC_RE) is refused: no poster then."""
+    i = html.find('class="event-content"')
+    if i < 0:
+        return None
+    j = html.find('class="related-event"', i)
+    body = html[i:j if j > 0 else len(html)]
+    m = _IMG_TAG_RE.search(body)
+    if not m:
+        return None
+    tag = m.group(0)
+    best, best_w = None, -1
+    srcset = re.search(_ATTR_RE.format("srcset"), tag, re.I)
+    for part in (srcset.group(1).split(",") if srcset else []):
+        bits = part.strip().split()
+        if len(bits) == 2 and bits[1].endswith("w") and bits[1][:-1].isdigit() and int(bits[1][:-1]) > best_w:
+            best, best_w = bits[0], int(bits[1][:-1])
+    if best is None:
+        src = re.search(_ATTR_RE.format("src"), tag, re.I)
+        best = src.group(1) if src else None
+    if best and best.startswith("https://natfiz.bg/wp-content/uploads/") and \
+            re.search(r"\.(jpe?g|png|webp)$", best, re.I) and not NATFIZ_GENERIC_RE.search(best):
+        return best
+    return None
+
+
+def natfiz_pages(body):
+    """{show id: its earliest performance's own natfiz.bg/event/ page} from PLINKS (НАТФИЗ
+    has no page per show: its LINKS entry is the event list)."""
+    out = {}
+    try:
+        rows = grab(body, "PLINKS") or []
+    except Exception:
+        return out
+    for r in sorted(r for r in rows if isinstance(r, list) and len(r) >= 4):
+        if isinstance(r[3], str) and NATFIZ_EVENT_RE.match(r[3]):
+            out.setdefault(r[0], r[3])
+    return out
+
+
 def _og_image(html):
     """Return og:image URL if it exists and looks like a real image."""
     m = OG_RE.search(html) or OG_RE2.search(html)
@@ -942,7 +994,8 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
 
     Handles th199, national, salzaismyah (stage pages), zadkanala, mladezhki
     (mlt.bg), kuklen (sofiapuppet.com), tba (self-signed, via netfetch),
-    iam, artvent, and satira (satirata.bg show pages).
+    iam, artvent, satira (satirata.bg show pages) and natfiz (its performance
+    pages, from PLINKS).
     """
     body = html_src.split("/* SOFIA-DATA-START */")[1].split("/* SOFIA-DATA-END */")[0]
     links = {}
@@ -974,12 +1027,13 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
                 print(f"  satira map: {len(satira_slugs)} slugs")
             break
 
+    natfiz = natfiz_pages(body)
     found = {}
     for sid in sorted(wanted):
         if net.budget_spent():
             print("  time budget reached — stopping from_own_pages", file=sys.stderr)
             break
-        url = links.get(sid)
+        url = natfiz.get(sid) or links.get(sid)
         img = None
 
         # ---------- th199 ----------
@@ -1074,6 +1128,12 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
             html = net.text(url, attempts=2)
             if html:
                 img = vazr_image(html, _title_of(matcher, sid))
+
+        # ---------- НАТФИЗ (one performance's natfiz.bg/event/ page, from PLINKS) ----------
+        elif url and NATFIZ_EVENT_RE.match(url):
+            html = net.text(url, attempts=2)
+            if html:
+                img = natfiz_image(html)
 
         # ---------- iam (iamstudio.bg) ----------
         elif url and "iamstudio.bg" in url:
