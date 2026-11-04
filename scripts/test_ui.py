@@ -12581,6 +12581,10 @@ def wave_p3f(browser):
 # Runs in Chromium by default; SOFIA_BROWSER=webkit runs the same checks in WebKit.
 # ============================================================================
 
+# the "back" close route: the browser's Back while the app has a sheet or popup entry of its
+# own on the history stack; with none (it failed to open), Back would leave the page (to
+# about:blank, the tab's start) and every later step of the wave would crash on it
+HF_BACK_JS = "() => { if (typeof _histDepth === 'undefined' || _histDepth > 0) history.back(); }"
 HF_STATE_JS = r"""() => {
   const s=document.getElementById('scrim');
   /* shown = laid out AND actually visible: the product of the opacities up to <body>
@@ -12751,7 +12755,7 @@ def _hf_close_popup(page, phone, route, ctx):
     elif route == "drag":
         _hf_drag(page, "#ss-wrap .ss-sheet")
     elif route == "back":
-        page.evaluate("history.back()")
+        page.evaluate(HF_BACK_JS)
     elif route == "calback":
         _hf_tap_el(page, phone, "()=>document.querySelector('" + scope + "[data-sscal]')")
         page.wait_for_timeout(250)
@@ -12827,7 +12831,7 @@ def _hf_close_sheet(page, phone, route):
         page.wait_for_timeout(80)
         _hf_drag(page, "#scrim .sheet")
     elif route == "back":
-        page.evaluate("history.back()")
+        page.evaluate(HF_BACK_JS)
     page.wait_for_timeout(750)
 
 
@@ -14803,7 +14807,8 @@ def _hf2_switch(browser, eng):
         if reduced:
             check(f"{tag}_instant", not moving and not blank and clean, f"animated frames {len(moving)}; blank {len(blank)}; end {end}")
         else:
-            check(f"{tag}_animates", len(moving) >= 4, f"{len(moving)} of {len(s)} frames between states: {[x[:3] for x in moving[:5]]}")
+            check(f"{tag}_animates", len(moving) >= 4, f"{len(moving)} of {len(s)} frames between states: {[x[:3] for x in moving[:5]]}; "
+                  f"frame times {[x[0] for x in s]} ms")
             check(f"{tag}_never_blank", not blank and p["nbad"] == 0,
                   f"blank frames {blank[:3]}; posters blank/undecoded in {p['nbad']} frames {p['bad'][:2]}")
             check(f"{tag}_nothing_left_behind", clean, f"{end}")
@@ -16037,14 +16042,15 @@ def wave_lg1(browser):
     if ga:
         page.evaluate("window.scrollBy(0, 420)")
         page.wait_for_timeout(300)
-    # a card wholly between the sticky header and the notice: after the scroll the first
-    # [data-film] can sit half under the header (its centre 1 px below the header's edge),
-    # where WebKit's click may land on the header and open nothing
+    # the middle of a card's part between the sticky header and the notice: after the scroll
+    # the first [data-film] can sit half under the header, its centre 1 px below the
+    # header's edge, where WebKit's click may land on the header and open nothing
     target = page.evaluate("""() => { const top = document.getElementById('sg-consent').getBoundingClientRect().top;
-        const bar = document.querySelector('.bar').getBoundingClientRect().bottom;
-        const el = [...document.querySelectorAll('[data-film]')].find(e => { const r = e.getBoundingClientRect();
-          return r.width > 20 && r.height > 20 && r.top > Math.max(60, bar + 4) && r.bottom < top - 4; });
-        if (!el) return null; const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }""")
+        const lo = document.querySelector('.bar').getBoundingClientRect().bottom + 4, hi = top - 4;
+        for (const e of document.querySelectorAll('[data-film]')) { const r = e.getBoundingClientRect();
+          const t = Math.max(r.top, lo), b = Math.min(r.bottom, hi);
+          if (r.width > 20 && b - t > 20) return [r.left + r.width / 2, (t + b) / 2]; }
+        return null; }""")
     if target:
         page.mouse.click(target[0], target[1])
         page.wait_for_timeout(700)
@@ -20131,7 +20137,9 @@ _GA_STUB = r"""(function(){
   dl.forEach(handle);
   var push=dl.push; dl.push=function(){ for(var i=0;i<arguments.length;i++) handle(arguments[i]); return push.apply(dl,arguments); };
 })();"""
-_GA_SHOTS = pathlib.Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/analytics")
+# the owner's review folder on the Mac; anywhere else (GitHub's runners) the screenshot folder
+_GA_SHOTS = (pathlib.Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/analytics")
+             if pathlib.Path("/Users/I589592/Downloads/Sofia Gleda/notes").is_dir() else Path("/tmp/sg-shots/GA1"))
 # a click on a link that would leave the page (a ticket seller, a map, a calendar) is kept
 # here: the app's handlers and the statistics still see it, the browser goes nowhere
 _GA_STAY = ("window.addEventListener('click',function(e){var a=e.target&&e.target.closest&&"

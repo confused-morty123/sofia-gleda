@@ -113,17 +113,25 @@ jobs:
         # On a cache hit only the system libraries are installed (they are not cached).
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
-        # apt on a runner can hang on a slow mirror (2026-11-04: one shard sat 30 min in this
-        # step): each try is cut at 6 minutes and tried once more.
+        # apt on a runner can stall on a mirror (2026-11-04: one shard sat 30 min in this step,
+        # three more over 6 min where it takes 25 s): apt gives up on a silent connection after
+        # 20 s and retries; each try is cut at 4 min, its apt processes stopped and dpkg
+        # repaired, and tried again, three tries in all.
         run: |
-          for try in 1 2; do
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
+          for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
-              timeout 360 python3 -m playwright install-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install-deps chromium webkit && break
             else
-              timeout 360 python3 -m playwright install --with-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit && break
             fi
-            [ "$try" = 2 ] && exit 1
+            [ "$try" = 3 ] && exit 1
             echo "::warning title=Browser install::try $try failed or timed out; trying again"
+            sudo pkill -9 -x apt-get || true
+            sudo pkill -9 -x dpkg || true
+            sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+            sudo dpkg --configure -a || true
           done
 
       - name: Build the page offline (src/ + the committed listings)
@@ -230,17 +238,25 @@ jobs:
         # Both engines in every shard: waves J and P3B open WebKit inside the Chromium run.
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
-        # apt on a runner can hang on a slow mirror (2026-11-04: one shard sat 30 min in this
-        # step): each try is cut at 6 minutes and tried once more.
+        # apt on a runner can stall on a mirror (2026-11-04: one shard sat 30 min in this step,
+        # three more over 6 min where it takes 25 s): apt gives up on a silent connection after
+        # 20 s and retries; each try is cut at 4 min, its apt processes stopped and dpkg
+        # repaired, and tried again, three tries in all.
         run: |
-          for try in 1 2; do
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
+          for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
-              timeout 360 python3 -m playwright install-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install-deps chromium webkit && break
             else
-              timeout 360 python3 -m playwright install --with-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit && break
             fi
-            [ "$try" = 2 ] && exit 1
+            [ "$try" = 3 ] && exit 1
             echo "::warning title=Browser install::try $try failed or timed out; trying again"
+            sudo pkill -9 -x apt-get || true
+            sudo pkill -9 -x dpkg || true
+            sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+            sudo dpkg --configure -a || true
           done
 
       - name: Build the page offline (src/ + the committed listings)
