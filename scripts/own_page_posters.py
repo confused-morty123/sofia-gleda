@@ -18,8 +18,11 @@ another production's image (the hard rule after the 23 wrong posters of
   1. the official poster: the page's key image (og:image or the theatre's own
      poster slot) in portrait shape;
   2. the theatre's key image for the show in another shape (still its own art);
-  3. nothing: the app keeps its generated art. A gallery photo is not attached
-     (2026-11-04: the one such pick was a cinema's site-wide banner).
+  3. a production photo from the page's own gallery: the most poster-like one
+     (closest to portrait, at least 600 px on the long side, croppable); never
+     one from a site-wide popup, <nav> or <footer> (2026-11-04: Cineland's
+     "лев → €" banner sat in a popup and was attached to a film);
+  4. nothing: the app keeps its generated art.
 
 The page must be the title's: its own headings (<title>, og:title, <h1>, an
 unlinked <h2>) name the title (page_identity), and the request did not end on
@@ -561,11 +564,6 @@ def pick(net, cands, chrome, verbose=False):
         kind = classify(w, h, tier)
         if not kind:
             notes.append(f"{url[:80]}: {w}x{h}, not usable as {'a key image' if tier == 1 else 'a photo'}")
-            continue
-        if kind == "photo":
-            # any image of the page's gallery: it may be a banner, a sponsor or the
-            # site's (Cineland's "лев → €" notice, 2026-11-04), so it is not attached
-            notes.append(f"{url[:80]}: a gallery photo, not the title's own art: not attached")
             continue
         rec = {"img": url, "kind": kind, "w": w, "h": h, "how": how, "data": data}
         if best is None or RANK[kind] < RANK[best["kind"]] or (
