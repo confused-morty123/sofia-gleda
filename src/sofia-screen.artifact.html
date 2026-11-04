@@ -1231,9 +1231,14 @@ body{font-size:15px}
 @media(max-width:760px){ footer .legal-nav{align-items:start} }
 
 /* ---- steps 18-19: first viewport, moderate items (M2, M4, M10, M12, M17) ---- */
-/* phones: the hero's synopsis is three lines (the full text is in the sheet), so its buttons
-   are in the first screen instead of under the floating Filters button */
-@media (max-width:760px){ .hero-syn{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden} }
+/* the hero's synopsis: three lines on phones (its buttons stay in the first screen instead
+   of under the floating Filters button), four on wider screens (.synwrap.clamp), and a long
+   one gets „Прочети повече“ / "Read more", which opens it in place (heroSyn, heroSynFit) */
+@media (max-width:760px){ .hero .synwrap.clamp .hero-syn{-webkit-line-clamp:3} }
+.hero .hero-synw{margin-bottom:17px; max-width:54ch}
+.hero .hero-synw .hero-syn{margin-bottom:0}
+.hero .hero-synw .readmore{display:inline-flex; align-items:center; min-height:28px; margin-top:2px; color:#F4EFF6}
+.hero .hero-synw .readmore[hidden]{display:none}
 .p3e-dmon{display:block; font-size:11px; line-height:1; color:var(--fg-3); margin-top:1px}
 .p3e-day[aria-pressed="true"] .p3e-dmon{color:var(--on-accent)}
 .p3e-pill.ss-src{box-shadow:0 0 0 2px var(--fg)}
@@ -1700,7 +1705,6 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  ssBoxOfficeBodyT:"Театърът не продава билети онлайн за това представление.",
  ssBoxOfficeHeadAlt:"Билети на касата",
  ssBoxOfficeAltBody:"Театърът не продава билети онлайн за това представление. За онлайн билети страницата на постановката посочва {alt}.",
- ssAltOnline:"Онлайн билети: {alt}",
  ssSiteOpenT:"Отвори сайта на театъра ↗",
  ssSiteOpenC:"Отвори сайта на киното ↗",
  ssFestSoldOut:"Билетите са изчерпани",
@@ -1814,7 +1818,6 @@ lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMon
  ssBoxOfficeBodyT:"This theatre does not sell tickets online for this performance.",
  ssBoxOfficeHeadAlt:"Tickets at the box office",
  ssBoxOfficeAltBody:"This theatre does not sell tickets online for this performance. For online tickets, the production's own page names {alt}.",
- ssAltOnline:"Online tickets: {alt}",
  ssSiteOpenT:"Open the theatre website ↗",
  ssSiteOpenC:"Open the cinema website ↗",
  ssFestSoldOut:"Sold out",
@@ -2190,10 +2193,11 @@ function synBlock(text){
   const raw=String(text||"").trim();
   if(!raw)return `<p class="no-info-note">${esc(t().noInfoFilm)}</p>`;
   const paras=raw.split(/\n{2,}/).map(p=>`<p>${esc(p.trim())}</p>`).join("");
-  const more=S.lang==="bg"?"Прочети повече":"Read more", less=S.lang==="bg"?"Скрий":"Read less";
+  const [more,less]=_readMoreLabels();
   return `<div class="synwrap clamp"><div class="synbody">${paras}</div>`
-    +`<button class="readmore" data-readmore data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
+    +`<button type="button" class="readmore" data-readmore aria-expanded="false" data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
 }
+function _readMoreLabels(){return S.lang==="bg"?["Прочети повече","Скрий"]:["Read more","Read less"];}
 const titleOf=o=>S.lang==="bg"?o.title:(o.titleEn||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[o.id])||o.title);
 /* Country in the active language (owner's choice: authoritative English where it
    exists, Bulgarian fallback otherwise). The dataset country is Bulgarian; TMDB
@@ -3028,6 +3032,27 @@ function focusShows(){
   return visibleShows().map(s=>({s,pr:prem(s),n:showPerfs(s.id).length,v:scoreShow(s,null)}))
     .sort((a,b)=>b.pr-a.pr||b.n-a.n||b.v-a.v||a.s.id.localeCompare(b.s.id));
 }
+/* The hero's synopsis, clamped like the sheet's (.synwrap.clamp; 3 lines on phones, 4 wider)
+   with „Прочети повече“ / "Read more" under it, which opens it in place; heroSynFit hides
+   the button when the text fits. The whole text is in the page, so screen readers read it. */
+function heroSyn(text){
+  if(!text)return"";
+  const [more,less]=_readMoreLabels();
+  return`<div class="synwrap clamp hero-synw"><p class="synbody hero-syn" id="hero-syn">${esc(text)}</p>`
+    +`<button type="button" class="readmore" data-readmore aria-expanded="false" aria-controls="hero-syn" data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
+}
+/* after every render or resize: the button only under a synopsis that is cut (an open one
+   stays open) */
+function heroSynFit(root){
+  (root||document).querySelectorAll(".hero .synwrap").forEach(w=>{
+    const body=w.querySelector(".synbody"),btn=w.querySelector(".readmore");
+    if(!body||!btn||btn.getAttribute("aria-expanded")==="true")return;
+    w.classList.add("clamp");
+    btn.hidden=!(body.scrollHeight>body.clientHeight+2);
+  });
+}
+let _heroFitRaf=0;
+window.addEventListener("resize",()=>{if(!_heroFitRaf)_heroFitRaf=requestAnimationFrame(()=>{_heroFitRaf=0;heroSynFit();});});
 function hero(){
   const L=t(),day=dayOrAll();
   if(S.mode==="cinema"){
@@ -3040,7 +3065,7 @@ function hero(){
       <h2 class="hero-title">${esc(filmTitle(f))}</h2>
       <div class="hero-meta">${scoreBadge(f)}
         <span>${esc(f.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>${f.runtime?`<span>${esc(f.runtime)} ${esc(L.min)}</span>`:""}${f.year?`<span>${esc(f.year)}</span>`:""}${n?`<span>${esc(plural(n,L.plScreening))}</span>`:""}</div>
-      ${synOf(f)?`<p class="hero-syn">${esc(synOf(f))}</p>`:""}
+      ${heroSyn(synOf(f))}
       <div class="acts"><button class="btn" data-film="${esc(f.id)}">${esc(L.seeTimes)}</button>
       ${rk[1]?`<button class="btn ghost" data-film="${esc(rk[1].f.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(filmTitle(rk[1].f))}</button>`:""}</div>
       </div></div>`;}
@@ -3053,7 +3078,7 @@ function hero(){
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
     <div class="hero-meta"><span>${esc(S.lang==="en"?(th.nameEn||th.name):th.name)}</span><span>${esc(sh.genres.slice(0,3).map(genreDisplay).join(" · "))}</span>
       ${sh.duration?`<span>${esc(sh.duration)} ${esc(L.min)}</span>`:""}${p.length?`<span>${esc(plural(p.length,L.plPerf))}</span>`:""}</div>
-    ${synOf(sh)?`<p class="hero-syn">${esc(synOf(sh))}</p>`:""}
+    ${heroSyn(synOf(sh))}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
     </div></div>`;}
@@ -4858,7 +4883,7 @@ function refreshPage(opts){
     probe.className="sg-probe";probe.setAttribute("aria-hidden","true");
     const mr=main.getBoundingClientRect();
     probe.style.left=mr.left+"px";probe.style.width=mr.width+"px";
-    probe.appendChild(fresh);document.body.appendChild(probe);
+    probe.appendChild(fresh);document.body.appendChild(probe);heroSynFit(fresh);
     const top=mainY-(toY!==null?toY:y0);  /* where the content will start on screen */
     _fillRails(fresh,top);
     /* posters the page shows loaded will be moved over (in document order, as the swap
@@ -4923,6 +4948,7 @@ function _swapMain(main,fresh,now,toY,dip,surface){
   /* the switch restyles the page (fonts, accent) together with the new content */
   if(surface)document.documentElement.setAttribute("data-surface",S.mode);
   main.replaceChildren(...fresh.childNodes);
+  heroSynFit(main);
   main.__sgView=now;
   /* while results are shown the content reaches at least the bottom of the screen, so
      fewer results never make the page shorter than the scroll position (that moved it) */
@@ -5833,16 +5859,17 @@ function _sofiaOffset(dateStr,timeStr){
   return 3; /* fallback */
 }
 
-/* Build a calendar event object from row data */
+/* Build a calendar event object from row data. Owner, 2026-10-30: the event carries no
+   description and no link (a show's one LINKS page named another date); the title, the
+   location (venue, address, stage), the date and the time say everything useful. */
 function calEvent(kind,id,venueId,dateStr,timeStr){
-  let title,venue,area,url,runtimeMin;
+  let title,venue,area,runtimeMin;
   if(kind==="film"){
     const f=filmById[id]; if(!f)return null;
     const c=cinById[venueId]; if(!c)return null;
     title=filmTitle(f);
     venue=(S.lang==="bg"?c.name:(c.nameEn||c.name));
     area=(S.lang==="en"?c.areaEn||c.area:c.area)||"";
-    url=filmTixUrl(id,venueId,dateStr,timeStr)||"";
     runtimeMin=f.runtime||120;
   } else {
     const sh=showById[id]; if(!sh)return null;
@@ -5854,10 +5881,9 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     const hallSuffix=hallRaw&&hallRaw!==th.name?", "+(S.lang==="en"?hallDisplay(hallRaw):hallRaw):"";
     venue=(S.lang==="bg"?th.name:(th.nameEn||th.name));
     area=((S.lang==="en"?th.areaEn||th.area:th.area)||"")+hallSuffix;
-    url=tixUrl("show",id,sh.theatre)||"";
     runtimeMin=sh.duration||120;
   }
-  /* Attr suffix for title and description: "(БГ дублаж, 3D)" or "(BG dub, 3D)" */
+  /* Attr suffix for the title: "(БГ дублаж, 3D)" or "(BG dub, 3D)" */
   const _calAttr=(kind==="film")?showAttrFor(id,venueId,dateStr,timeStr):"";
   const _calAttrSuffix=(()=>{
     if(!_calAttr)return"";
@@ -5866,18 +5892,8 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
     const parts=_calAttr.split(",").map(k=>_MAP[k]).filter(Boolean);
     return parts.length?" ("+parts.join(", ")+")":"";
   })();
-  /* box office only: the entry links the venue's page (never a ticket page) and says so:
-     the theatre's page for the production, or a box-office-only cinema's own page */
-  const _bo=boxOnly(kind,id,venueId,dateStr,timeStr);
-  if(_bo)url=_bo.page||"";
-  const boxNote=_bo?"\n"+(_bo.alt?T[S.lang].ssBoxOfficeHeadAlt:T[S.lang].ssBoxOfficeHead)+(_bo.alt?" ("+T[S.lang].ssAltOnline.replace("{alt}",hostLabel(_bo.alt))+")":""):"";
   const fullTitle=title+_calAttrSuffix+", "+venue;
   const location=venue+(area?", "+area:"");
-  const prelimNote=isPrelimListing(kind,id,venueId,dateStr)
-    ?(S.lang==="en"?"\nPreliminary: not yet checked against the venue's full programme. Subject to change."
-                   :"\nПредварителна програма: още не е сверена с пълната програма на мястото. Възможни са промени.")
-    :"";
-  const description=(url?url+"\n":"")+"Sofia Gleda"+_calAttrSuffix+boxNote+prelimNote;
   const off=_sofiaOffset(dateStr,timeStr);
   /* Compute end time */
   const [y,mo,d]=dateStr.split("-").map(Number);
@@ -5944,7 +5960,7 @@ function calEvent(kind,id,venueId,dateStr,timeStr){
   }
   const startObj=toLocal(startMs);
   const endObj=toLocal(endMs);
-  return{kind,id,venueId,dateStr,timeStr,fullTitle,location,description,url,
+  return{kind,id,venueId,dateStr,timeStr,fullTitle,location,
     startGcal:startObj.gcal(),endGcal:endObj.gcal(),
     startOutlook:startObj.outlook(),endOutlook:endObj.outlook(),
     startUtcZ:startObj.utcZ(),endUtcZ:endObj.utcZ(),
@@ -5958,8 +5974,7 @@ function calGoogleUrl(ev){
     +"&text="+e(ev.fullTitle)
     +"&dates="+ev.startGcal+"/"+ev.endGcal
     +"&ctz=Europe/Sofia"
-    +"&location="+e(ev.location)
-    +"&details="+e(ev.description);
+    +"&location="+e(ev.location);
 }
 
 function calOutlookUrl(ev){
@@ -5969,8 +5984,7 @@ function calOutlookUrl(ev){
     +"?subject="+e(ev.fullTitle)
     +"&startdt="+e(ev.startOutlook)
     +"&enddt="+e(ev.endOutlook)
-    +"&location="+e(ev.location)
-    +"&body="+e(ev.description);
+    +"&location="+e(ev.location);
 }
 
 function calIcs(ev){
@@ -6014,8 +6028,6 @@ function calIcs(ev){
     "DTEND:"+ev.endUtcZ,
     fold("SUMMARY:"+rfcEsc(ev.fullTitle)),
     fold("LOCATION:"+rfcEsc(ev.location)),
-    fold("DESCRIPTION:"+rfcEsc(ev.description)),
-    ...(ev.url?[fold("URL:"+rfcEsc(ev.url))]:[]),
     "END:VEVENT",
     "END:VCALENDAR"
   ];
@@ -6702,34 +6714,28 @@ document.addEventListener("click",e=>{
   if(q("[data-close]")||e.target.id==="scrim"){_sheetShowAllCinemas=false;if(sheetOpen&&e.detail)_shieldTaps();closeSheet();return;}
   if(q(".time")||q(".buylink"))return;            /* let real links through */
 
+  /* „Прочети повече“ / "Read more" (the sheet's synopsis and the hero's): opens or closes
+     the text in place, its height eased between the clamped and the full one (at once
+     with reduced motion); aria-expanded says which */
   const rm=q("[data-readmore]");
   if(rm){const w=rm.closest(".synwrap");if(w){
     const body=w.querySelector(".synbody");
-    const expanding=w.classList.contains("clamp"); /* true → will expand */
-    if(body&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-      if(expanding){
-        /* Expanding: remove clamp first so we can measure full height */
-        w.classList.remove("clamp");
-        const full=body.scrollHeight;
-        const start=body.getBoundingClientRect().height;
-        body.style.overflow="hidden";
-        body.animate([{maxHeight:start+"px"},{maxHeight:full+"px"}],
-          {duration:260,easing:"cubic-bezier(.25,.46,.45,.94)",fill:"forwards"})
-          .onfinish=()=>{body.style.overflow="";};
-      } else {
-        /* Collapsing: animate down then add clamp */
-        const start=body.getBoundingClientRect().height;
-        const anim=body.animate([{maxHeight:start+"px"},{maxHeight:"0px"}],
-          {duration:200,easing:"ease-in",fill:"forwards"});
-        anim.onfinish=()=>{
-          w.classList.add("clamp");
-          body.style.maxHeight="";body.style.overflow="";
-        };
-      }
-    } else {
-      w.classList.toggle("clamp");
-    }
+    const expanding=rm.getAttribute("aria-expanded")!=="true";
+    rm.setAttribute("aria-expanded",String(expanding));
     rm.textContent=expanding?rm.dataset.lessLabel:rm.dataset.moreLabel;
+    if(!body){w.classList.toggle("clamp",!expanding);return;}
+    const from=body.getBoundingClientRect().height;
+    body.getAnimations().forEach(a=>a.cancel());
+    body.style.overflow="";
+    w.classList.toggle("clamp",!expanding);
+    const to=body.getBoundingClientRect().height;
+    if(Math.abs(to-from)<1||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    /* closing: the whole text stays while the box shrinks, the clamp comes at the end */
+    if(!expanding)w.classList.remove("clamp");
+    body.style.overflow="hidden";
+    const an=body.animate([{maxHeight:from+"px"},{maxHeight:to+"px"}],
+      expanding?{duration:260,easing:"cubic-bezier(.25,.46,.45,.94)"}:{duration:200,easing:"ease-in"});
+    an.onfinish=()=>{body.style.overflow="";if(!expanding)w.classList.add("clamp");};
   }return;}
   const shr=q("[data-share]");
   if(shr){const[kind,...rest]=shr.dataset.share.split(":");const id=rest.join(":");
@@ -7288,7 +7294,7 @@ render=function(){
     /* behind an open (or closing) filter drawer the page keeps its place: mount enough
        of the lazily built rails to hold the old offset, then put the offset back */
     const keepY=document.querySelector("#app > .drawer")?(window.scrollY||0):null;
-    origRender();mountProgressive();
+    origRender();heroSynFit();mountProgressive();
     if(keepY!==null)_keepPageY(keepY);
     _consentSync();_gaSoon();
   }

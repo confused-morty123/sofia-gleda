@@ -4595,7 +4595,7 @@ def wave_i(browser):
 
     # ── I-5: Content checks ──
     print("\n=== I-5: Content checks ===")
-    _i5_film_names = ["i5_summary_title","i5_summary_dash_venue","i5_location_area","i5_desc_tix_url"]
+    _i5_film_names = ["i5_summary_title","i5_summary_dash_venue","i5_location_area","i5_no_desc_no_link"]
     ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
     if not _wave_i_digar_ok:
         for name in _i5_film_names:
@@ -4629,11 +4629,12 @@ def wave_i(browser):
         /* Get film title */
         const f = filmById['digar'];
         const fTitle = f ? filmTitle(f) : '';
-        /* Get ticket URL */
-        const tixU = filmTixUrl('digar','cc-sofia','2026-10-08');
+        /* owner, 2026-10-30: no DESCRIPTION, no URL, no link anywhere in the event */
+        const urlLine = get('URL');
+        const anyLink = /https?:/i.test(ics);
         return {
-            summary, loc, desc,
-            cArea, cName, fTitle, tixU,
+            summary, loc, desc, urlLine, anyLink,
+            cArea, cName, fTitle,
             summaryHasTitle: summary ? summary.includes(fTitle) : false,
             summaryHasCommaVenue: summary ? summary.includes(', ' + cName) : false,
             summaryHasVenue: summary ? summary.includes(cName) : false,
@@ -4641,10 +4642,6 @@ def wave_i(browser):
                 /* loc may have escaped commas; unescape for comparison */
                 const unesc = loc.replace(/\\,/g, ',').replace(/\\;/g, ';');
                 return unesc.includes(cArea) || loc.includes(cArea);
-            })() : false,
-            descHasTixUrl: desc && tixU ? (function() {
-                const unesc = desc.replace(/\\n/g, '\n');
-                return unesc.includes(tixU) || desc.includes(tixU);
             })() : false
         };
     }""")
@@ -4661,8 +4658,9 @@ def wave_i(browser):
                   f"hasCommaVenue={content_check['summaryHasCommaVenue']}, hasVenue={content_check['summaryHasVenue']}, cName={content_check['cName']!r}")
             check("i5_location_area", content_check["locHasArea"],
                   f"LOCATION={content_check['loc']!r}, cArea={content_check['cArea']!r}")
-            check("i5_desc_tix_url", content_check["descHasTixUrl"],
-                  f"DESCRIPTION={content_check['desc']!r}, tixU={content_check['tixU']!r}")
+            check("i5_no_desc_no_link",
+                  content_check["desc"] is None and content_check["urlLine"] is None and not content_check["anyLink"],
+                  f"DESCRIPTION={content_check['desc']!r}, URL={content_check['urlLine']!r}, link={content_check['anyLink']}")
 
     # Theatre show: hall in area when performance has hall
     show_content = page.evaluate(r"""() => {
@@ -6984,22 +6982,22 @@ def wave_l(browser):
                       f"lineText={en_prelim_check['lineText']!r}, "
                       f"hasFn={en_prelim_check['hasFn']!r}")
 
-            # Check calEvent description contains prelim note
+            # The calendar export carries no description and no link (owner, 2026-10-30),
+            # a preliminary row included: title, place and time only
             cal_prelim = page.evaluate(f"""() => {{
                 if (typeof calEvent !== 'function' || typeof SHOWTIMES === 'undefined') return {{err:'no calEvent'}};
                 const st = SHOWTIMES.find(s => s[1] === '{cin_id}' && s[2] === '{date_late}');
                 if (!st) return {{err:'no showtime found'}};
                 const ev = calEvent('film', st[0], st[1], st[2], (st[3]||[])[0]||'');
                 if (!ev) return {{err:'calEvent returned null'}};
-                return {{desc: (ev.description||'').slice(0,200)}};
+                const ics = calIcs(ev);
+                return {{desc: 'description' in ev, url: 'url' in ev, icsDesc: /\\r\\n(DESCRIPTION|URL)[:;]/.test(ics)}};
             }}""")
 
             if "err" not in cal_prelim:
-                prelim_in_desc = "preliminary" in cal_prelim["desc"].lower()
-                check("l6a_cinema_prelim_cal_desc",
-                      prelim_in_desc,
-                      f"calEvent description contains 'preliminary': {prelim_in_desc!r} "
-                      f"(desc={cal_prelim['desc'][:80]!r})")
+                check("l6a_cinema_prelim_cal_no_desc",
+                      not (cal_prelim["desc"] or cal_prelim["url"] or cal_prelim["icsDesc"]),
+                      f"calendar event of a preliminary row has no description/link: {cal_prelim!r}")
 
             # Empty PRELIM_FROM: no tags
             clear_prelim(page)
@@ -7315,7 +7313,7 @@ def wave_l(browser):
                   prelim_en.get("tag") is not None and "preliminary" in (prelim_en.get("tag") or "").lower(),
                   f"EN prelim-line on dateA={prelim_en.get('tag')!r}")
 
-        # Calendar note: cal_note must include the preliminary text when open on dateA
+        # Calendar: no description and no link on a preliminary performance either (owner, 2026-10-30)
         close_sheet(page_p2f)
         page_p2f.evaluate("() => { S.lang = 'bg'; }")
         open_show_sheet(page_p2f, sid)
@@ -7325,20 +7323,20 @@ def wave_l(browser):
             return p ? p[2] : null;
         }}""")
         if not perf_time_a:
-            skip("l6c_p2f_prelim_rows_cal_note", f"no performance found for {sid} on {dateA}")
+            skip("l6c_p2f_prelim_rows_cal_no_desc", f"no performance found for {sid} on {dateA}")
         else:
             cal = page_p2f.evaluate(f"""() => {{
                 if (typeof calEvent !== 'function') return {{err: 'calEvent not reachable'}};
                 const ev = calEvent('show', '{sid}', '{thId}', '{dateA}', '{perf_time_a}');
-                return ev ? {{description: ev.description}} : {{err: 'calEvent returned null'}};
+                if (!ev) return {{err: 'calEvent returned null'}};
+                const ics = calIcs(ev);
+                return {{desc: 'description' in ev || 'url' in ev, ics: /\\r\\n(DESCRIPTION|URL)[:;]/.test(ics) || /https?:/.test(ics)}};
             }}""")
             if "err" in cal:
-                check("l6c_p2f_prelim_rows_cal_note", False, cal["err"])
+                check("l6c_p2f_prelim_rows_cal_no_desc", False, cal["err"])
             else:
-                check("l6c_p2f_prelim_rows_cal_note",
-                      "Предварителна програма" in (cal.get("description") or "")
-                      or "preliminary" in (cal.get("description") or "").lower(),
-                      f"cal description={cal.get('description','')[:80]!r}")
+                check("l6c_p2f_prelim_rows_cal_no_desc", not cal["desc"] and not cal["ics"],
+                      f"calendar of a preliminary performance has no description/link: {cal!r}")
 
         ctx.close()
 
@@ -7859,11 +7857,11 @@ def wave_p(browser):
       P5  every real PRELIM_ROWS row of the build is marked in its film's sheet
           (SOFIA_HTML mode; skipped when the build has none);
       P6  no page errors;
-      P7  the calendar export says so too: calEvent's description carries the
-          preliminary note for the marked row only (not the film's other date or
-          venue, not another film there, not with PRELIM_ROWS = []), and the
-          Google link of the marked row's calendar panel in the sheet carries it
-          (BG and EN). isPrelimListing is the one rule behind both.
+      P7  the calendar export carries no description and no link (owner,
+          2026-10-30), a marked row included: no DESCRIPTION/URL in the .ics, no
+          http(s) link in it, and the Google link of the marked row's calendar step
+          has no details= and no link in its text (BG and EN); the other rows and
+          PRELIM_ROWS = [] the same.
     """
     wave = "P"
     ensure_shot_dir(wave)
@@ -7931,21 +7929,25 @@ def wave_p(browser):
     PRELIM_NOTE = {"bg": "Предварителна програма", "en": "Preliminary:"}
 
     def cal_note(page, film_id, venue_id, iso, lang):
-        """True/False: calEvent's description for the row's first time carries the
-        preliminary note; {'err': why} when there is no such row or no calEvent."""
+        """True: the row's calendar event (first time) has no description and no link
+        (no DESCRIPTION/URL line, no http(s) and no note in the .ics); False otherwise;
+        {'err': why} when there is no such row or no calEvent."""
         return page.evaluate("""([fid, vid, d, note]) => {
             if (typeof calEvent !== 'function') return {err: 'no calEvent'};
             const r = SHOWTIMES.find(x => x[0] === fid && x[1] === vid && x[2] === d);
             if (!r) return {err: 'no SHOWTIMES row ' + fid + '@' + vid + ' ' + d};
             const ev = calEvent('film', fid, vid, d, (r[3] || [])[0] || '');
             if (!ev) return {err: 'calEvent returned null'};
-            return (ev.description || '').includes(note);
+            const ics = calIcs(ev);
+            return !('description' in ev) && !('url' in ev) && !/\\r\\n(DESCRIPTION|URL)[:;]/.test(ics)
+                && !/https?:/i.test(ics) && !ics.includes(note);
         }""", [film_id, venue_id, iso, PRELIM_NOTE[lang]])
 
     def panel_note(page, venue_id, iso, lang):
         """P3E: click the day chip for iso, find the .p3e-row for venue_id, click the
         first .p3e-pill[data-sspill] to open the screening sheet, then open the calendar
-        step and check the Google link's 'details' param carries the preliminary note."""
+        step: True when the Google link has no 'details' param and no link or note in
+        any of its parameters."""
         return page.evaluate("""([vid, d, note]) => {
             const sheet = document.querySelector('.sheet');
             if (!sheet) return {err: 'no sheet'};
@@ -7976,12 +7978,11 @@ def wave_p(browser):
             const gLink = calLinks.find(a => !a.dataset.sscalics && a.textContent.includes('Google'));
             if (!gLink) return {err: 'no Google Calendar link in cal step'};
             const href = gLink.href || '';
-            const m = href.match(/[?&]details=([^&]*)/);
-            const details = m ? decodeURIComponent(m[1]) : '';
+            const q = [...new URL(href).searchParams.entries()];
             // Close screening sheet
             const closeBtn = ss.querySelector('[data-ssclose]');
             if (closeBtn) closeBtn.click();
-            return details.includes(note);
+            return !q.some(([k, v]) => k === 'details' || /https?:|www\\./i.test(v) || v.includes(note));
         }""", [venue_id, iso, PRELIM_NOTE[lang]])
 
     ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
@@ -8032,15 +8033,15 @@ def wave_p(browser):
         close_sheet(page)
         # P7: the calendar export of the same rows (PRELIM_ROWS still marks one row)
         c1 = cal_note(page, pick["fid"], pick["v"], pick["d"], "bg")
-        check("p7_cal_marked_row", c1 is True, f"{pick['fid']}@{pick['v']} {pick['d']}: {c1}")
+        check("p7_cal_marked_row", c1 is True, f"no description/link for the marked row {pick['fid']}@{pick['v']} {pick['d']}: {c1}")
         c2 = [cal_note(page, pick["fid"], pick["v"], pick["d2"], "bg"),
               cal_note(page, pick["fid"], pick["w"], pick["d"], "bg"),
               cal_note(page, pick["g"], pick["v"], pick["d"], "bg")]
-        check("p7_cal_other_rows", c2 == [False, False, False],
+        check("p7_cal_other_rows", c2 == [True, True, True],
               f"other date / other venue / other film: {c2}")
         open_film_sheet(page, pick["fid"])
         c3 = panel_note(page, pick["v"], pick["d"], "bg")
-        check("p7_cal_panel_google_link", c3 is True, f"Google link of the marked row's panel: {c3}")
+        check("p7_cal_panel_google_link", c3 is True, f"Google link of the marked row's panel has no details/link: {c3}")
         close_sheet(page)
         set_marks(page, [])
         open_film_sheet(page, pick["fid"])
@@ -8052,7 +8053,7 @@ def wave_p(browser):
         check("p4_empty", none_marked, "no prelim markers with PRELIM_ROWS=[] and PRELIM_FROM={}")
         close_sheet(page)
         c4 = cal_note(page, pick["fid"], pick["v"], pick["d"], "bg")
-        check("p7_cal_empty", c4 is False, f"PRELIM_ROWS=[] and PRELIM_FROM={{}}: {c4}")
+        check("p7_cal_empty", c4 is True, f"PRELIM_ROWS=[] and PRELIM_FROM={{}}: {c4}")
         # restore the build's own markings for P5
         page.evaluate("""(real) => {
             if (typeof PRELIM_FROM !== 'undefined') { Object.keys(PRELIM_FROM).forEach(k => delete PRELIM_FROM[k]);
@@ -8093,7 +8094,7 @@ def wave_p(browser):
         check("p1_en_legend", legend(page), "legend present in EN")
         save_shot(page, wave, "p1_marked_row_en")
         c5 = [cal_note(page, pick["fid"], pick["v"], pick["d"], "en"), panel_note(page, pick["v"], pick["d"], "en")]
-        check("p7_cal_en", c5 == [True, True], f"EN note in calEvent / in the panel's Google link: {c5}")
+        check("p7_cal_en", c5 == [True, True], f"EN: no description/link in calEvent / in the panel's Google link: {c5}")
         check("p6_no_page_errors_en", not errs, " | ".join(errs[:3]))
         ctx.close()
 
@@ -9546,37 +9547,29 @@ def wave_p2e(browser):
                   f"suffix={got_suffix!r}, want={expected_suffix!r}")
         ctx.close()
 
-    # ── P2E-7: Calendar description uses localised text, no raw tokens ───────────
-    print("\n=== P2E-7: Calendar description uses localised text, not raw tokens ===")
+    # ── P2E-7: the calendar event (real calEvent) has no description and no link
+    # (owner, 2026-10-30); the version label lives in its title, localised, no raw tokens
+    print("\n=== P2E-7: Calendar event: no description, version label in the title ===")
     ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
     page.wait_for_timeout(400)
 
     result = page.evaluate(f"""() => {{
-        // Simulate calEvent() description construction for _sg_film|_sg_venue
-        const attr = showAttrFor("{_sg_film}", "{_sg_venue}", "{_sg_date}", "{_sg_time}");
-        if (!attr) return {{found: false, reason: "no attr for {_sg_film}|{_sg_venue}|{_sg_date}|{_sg_time}"}};
-        const _L = T["bg"];
-        const _MAP = {{dub:_L.bgDub, sub:_L.bgSub, "3d":_L.fmt3d, imax:_L.fmtImax,
-                      "4dx":_L.fmt4dx, screenx:_L.fmtScreenx, "d-box":_L.fmtDbox}};
-        const parts = attr.split(",").map(k => _MAP[k]).filter(Boolean);
-        const suffix = parts.length ? " (" + parts.join(", ") + ")" : "";
-        // Old code would produce: "Sofia Gleda [dub,3d]"
-        // New code produces: "Sofia Gleda (Субтитри)"
-        const description = "Sofia Gleda" + suffix;
-        const hasRawTokens = /[[][\\w,]+[]]/.test(description);
-        return {{found: true, attr, suffix, description, hasRawTokens}};
+        const ev = calEvent("film", "{_sg_film}", "{_sg_venue}", "{_sg_date}", "{_sg_time}");
+        if (!ev) return {{found: false, reason: "calEvent returned null for {_sg_film}|{_sg_venue}|{_sg_date}|{_sg_time}"}};
+        const ics = calIcs(ev);
+        return {{found: true, title: ev.fullTitle, hasDesc: "description" in ev || "url" in ev,
+                 icsDesc: /\\r\\n(DESCRIPTION|URL)[:;]/.test(ics), hasRawTokens: /[[][\\w,]+[]]/.test(ev.fullTitle)}};
     }}""")
 
     if not result.get("found"):
         skip("p2e_cal_desc_no_raw_tokens", result.get("reason", "no attr"))
     else:
         check("p2e_cal_desc_no_raw_tokens",
-              not result.get("hasRawTokens"),
-              f"description={{result.get('description')!r}}")
-        # "sub" key maps to "Субтитри"; check that was injected and decoded
+              not result.get("hasRawTokens") and not result.get("hasDesc") and not result.get("icsDesc"),
+              f"no description/link, title={{result.get('title')!r}}")
         check("p2e_cal_desc_has_localised",
-              "Субтитри" in (result.get("description") or ""),
-              f"description={{result.get('description')!r}}")
+              "Субтитри" in (result.get("title") or ""),
+              f"title={{result.get('title')!r}}")
     ctx.close()
 
 
@@ -13902,12 +13895,16 @@ def _hf_ics(browser, eng):
         valid = (t.startswith("BEGIN:VCALENDAR") and "END:VCALENDAR" in t and "BEGIN:VEVENT" in t and "END:VEVENT" in t
                  and has("DTSTART") and has("DTEND") and has("SUMMARY:") and has("LOCATION:") and has("UID:")
                  and any(("TZID=Europe/Sofia" in l or l.rstrip().endswith("Z")) for l in lines if l.startswith("DTSTART")))
+        # owner, 2026-10-30: no description, no link; RFC 5545 line rules
+        rfc = _ics_rfc5545_problems(t)[0] if t else ["empty"]
+        nolink = not has("DESCRIPTION") and not has("URL") and not re.search(r"https?:", t)
+        valid = valid and nolink and not rfc
         if label == "iphone_ua" or apple:
             ok = apple and info["href"].startswith("blob:") and info["dl"] is None and valid and info["type"].startswith("text/calendar")
         else:
             ok = info["href"].startswith("blob:") and (info["dl"] or "").startswith("sg-") and (info["dl"] or "").endswith(".ics") and valid and info["type"].startswith("text/calendar")
         check(name, ok, f"appleTouch={apple} href={info['href']}... download={info['dl']!r} type={info['type']!r} valid={valid} "
-                        f"DTSTART={[l for l in lines if l.startswith('DTSTART')][:1]}")
+                        f"DTSTART={[l for l in lines if l.startswith('DTSTART')][:1]} no link={nolink} rfc5545={rfc[:2]}")
         if label == "desktop":
             try:
                 with page.expect_download(timeout=5000) as dl_info:
@@ -13916,8 +13913,9 @@ def _hf_ics(browser, eng):
                 path = d.path()
                 body = open(path, encoding="utf-8").read() if path else ""
                 s = page.evaluate(HF_STATE_JS)
-                check("hf1_ics_desktop_download", d.suggested_filename.startswith("sg-") and body.startswith("BEGIN:VCALENDAR") and s["film"] and s["pop"],
-                      f"file={d.suggested_filename} bytes={len(body)} sheet still open={s['film']} popup still open={s['pop']}")
+                body_ok = body.startswith("BEGIN:VCALENDAR") and not re.search(r"(?m)^(DESCRIPTION|URL)[:;]|https?:", body)
+                check("hf1_ics_desktop_download", d.suggested_filename.startswith("sg-") and body_ok and s["film"] and s["pop"],
+                      f"file={d.suggested_filename} bytes={len(body)} no description/link={body_ok} sheet still open={s['film']} popup still open={s['pop']}")
             except Exception as ex:
                 check("hf1_ics_desktop_download", False, f"no download: {str(ex)[:120]}")
         ctx.close()
@@ -18898,6 +18896,156 @@ def _bo_panel(browser, w, h, phone, lang, mode, opener, oid, key, shot=None, aft
 BO_SIZES = ((375, 812, True), (393, 852, True), (1280, 800, False))
 
 
+# Calendar export (owner, 2026-10-30): an event carries no description and no link; the
+# title, location, date and time say everything useful. CAL_NOLINK_JS([kind,id,venue,date,
+# time]) -> null when calEvent gives no event, else {probs: [...], ics, google, outlook,
+# title, location, name (the item's title), venue, area, runtime}: probs lists every
+# description or link in the event object, the .ics, the Google / Outlook URLs (their
+# text parameters) and the screening sheet's own calendar step.
+CAL_NOLINK_JS = """(a)=>{
+  const [k,id,v,d,t]=a, ev=calEvent(k,id,v,d,t); if(!ev)return null;
+  const link=s=>/https?:|www\\./i.test(s), probs=[];
+  if('description' in ev)probs.push('event description');
+  if('url' in ev)probs.push('event url '+ev.url);
+  const ics=calIcs(ev), g=calGoogleUrl(ev), o=calOutlookUrl(ev);
+  if(/\\r\\n(DESCRIPTION|URL|ATTACH)[:;]/.test(ics))probs.push('ics DESCRIPTION/URL/ATTACH');
+  if(link(ics))probs.push('ics link');
+  const params=u=>{try{return [...new URL(u).searchParams.entries()];}catch(e){return [['bad',u]];}};
+  for(const [nm,u,bad] of [['google',g,['details']],['outlook',o,['body']]])
+    for(const [kk,x] of params(u)){if(bad.includes(kk))probs.push(nm+' '+kk+'=');if(link(x))probs.push(nm+' '+kk+' link');}
+  // the screening sheet's calendar step (what a user taps): the same three exports
+  const el=document.createElement('div');el.innerHTML=screeningSheetHtml(k,id,v,d,t,'cal');
+  const lis=[...el.querySelectorAll('a.ss-cal-li')];
+  if(lis.length!==3)probs.push('calendar step has '+lis.length+' rows');
+  for(const li of lis){const h=li.getAttribute('href')||'';
+    if(h.startsWith('blob:'))continue;
+    if(!/^https:\\/\\/(calendar\\.google\\.com|outlook\\.live\\.com)\\//.test(h))probs.push('step row '+h.slice(0,60));
+    for(const [kk,x] of params(h)){if(kk==='details'||kk==='body')probs.push('step '+kk+'=');if(link(x))probs.push('step '+kk+' link');}}
+  let name,venue,area,runtime;
+  if(k==='film'){const f=filmById[id],c=cinById[v];name=filmTitle(f);venue=S.lang==='bg'?c.name:(c.nameEn||c.name);
+    area=(S.lang==='en'?c.areaEn||c.area:c.area)||'';runtime=f.runtime||120;}
+  else{const sh=showById[id],th=thById[sh.theatre]||thById[v];name=titleOf(sh);venue=S.lang==='bg'?th.name:(th.nameEn||th.name);
+    area=(S.lang==='en'?th.areaEn||th.area:th.area)||'';runtime=sh.duration||120;}
+  return {probs,ics,google:g,outlook:o,title:ev.fullTitle,location:ev.location,name,venue,area,runtime};}"""
+
+
+def _ics_rfc5545_problems(ics):
+    """RFC 5545 line check of a one-event VCALENDAR: CRLF line ends only, every line at
+    most 75 octets, folded lines start with one space, no empty property, the required
+    properties once each, BEGIN/END in order."""
+    probs = []
+    if not ics.endswith("\r\n"):
+        probs.append("no final CRLF")
+    if re.search(r"\r(?!\n)|(?<!\r)\n", ics):
+        probs.append("bare CR or LF")
+    phys = ics[:-2].split("\r\n") if ics.endswith("\r\n") else ics.split("\r\n")
+    for ln in phys:
+        if len(ln.encode("utf-8")) > 75:
+            probs.append(f"line over 75 octets: {ln[:30]!r}")
+    if phys and phys[0].startswith(" "):
+        probs.append("first line is a continuation")
+    lines = []
+    for ln in phys:
+        if ln.startswith(" ") and lines:
+            lines[-1] += ln[1:]
+        else:
+            lines.append(ln)
+    for ln in lines:
+        if not re.match(r"^[A-Z][A-Z0-9-]*(;[^:]*)?:.+$", ln):
+            probs.append(f"malformed or empty property: {ln[:40]!r}")
+    names = [ln.split(":", 1)[0].split(";", 1)[0] for ln in lines]
+    want = ["BEGIN", "VERSION", "PRODID", "CALSCALE", "METHOD", "BEGIN", "UID", "DTSTAMP", "DTSTART",
+            "DTEND", "SUMMARY", "LOCATION", "END", "END"]
+    if names != want:
+        probs.append(f"properties {names}")
+    if lines[:1] != ["BEGIN:VCALENDAR"] or lines[-1:] != ["END:VCALENDAR"] or "BEGIN:VEVENT" not in lines \
+            or "END:VEVENT" not in lines or "VERSION:2.0" not in lines:
+        probs.append("VCALENDAR/VEVENT frame")
+    return probs, {n: ln.split(":", 1)[1] for n, ln in zip(names, lines)}
+
+
+def _ics_unesc(v):
+    return re.sub(r"\\([\;,nN])", lambda m: "\n" if m.group(1) in "nN" else m.group(1), v)
+
+
+def _bo_calendar_export(browser):
+    """Calendar export (owner, 2026-10-30) for a film, a theatre show („Медея“ on 8 Nov,
+    whose one LINKS page names 5 Dec; else „Боже мой“ off 9 Dec), a festival row and a
+    box-office row (a theatre's and a cinema's), BG and EN: no description and no link
+    in the event, the .ics, the Google / Outlook URLs or the calendar step; the title,
+    location, start and end right; the .ics passes the RFC 5545 line check."""
+    print("  -- calendar export: no description, no link (owner, 2026-10-30) --")
+    import urllib.parse
+    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    picks = page.evaluate("""()=>{
+      const fr=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
+      const frk=new Set(fr.map(r=>r.slice(0,4).join('|')));
+      const out={};
+      for(const r of SHOWTIMES){ if(r[2]<TODAY||!filmById[r[0]]||!cinById[r[1]])continue; const b=BOOKING[r[1]]||{};
+        for(const t of (r[3]||[])){ const k=[r[0],r[1],r[2],t];
+          if(!out.film&&!b.inPerson&&!b.festival&&!frk.has(k.join('|'))&&!boxOnly('film',...k))out.film=['film',...k];
+          if(!out.festival&&frk.has(k.join('|'))&&!boxOnly('film',...k))out.festival=['film',...k];
+          if(!out.boxFilm&&boxOnly('film',...k))out.boxFilm=['film',...k]; }}
+      const perf=(PERFORMANCES||[]).filter(p=>p[1]>=TODAY&&showById[p[0]]);
+      // the owner's report: „Медея“, Народен театър, 8 Nov 19:00 (its one LINKS page names 5 Dec)
+      const bm=perf.find(p=>p[0]==='medeya'&&p[1]==='2026-11-08')||perf.find(p=>p[0]==='bozhe-moy'&&p[1]!=='2026-12-09');
+      // else another show with several dates whose one link names a date
+      const multi=bm||perf.find(p=>perf.filter(q=>q[0]===p[0]).length>1&&/20\\d\\d-\\d\\d-\\d\\d/.test(LINK_MAP[p[0]]||'')
+                                   &&!(LINK_MAP[p[0]]||'').includes(p[1]));
+      if(multi)out.show=['show',multi[0],showById[multi[0]].theatre,multi[1],multi[2]];
+      const bx=(typeof BOXONLY!=='undefined'&&Array.isArray(BOXONLY))?BOXONLY:[];
+      const b=bx.find(r=>r[1]>=TODAY&&showById[r[0]]);
+      if(b)out.boxShow=['show',b[0],showById[b[0]].theatre,b[1],b[2]];
+      return out;}""")
+    print(f"  calendar rows: {picks}")
+    for case in ("film", "show", "festival", "boxShow", "boxFilm"):
+        a = picks.get(case)
+        name = f"bo1_cal_{case}"
+        if not a:
+            skip(name, f"no {case} row in this build")
+            continue
+        k, cid, v, d, t = a
+        for lang in ("bg", "en"):
+            page.evaluate("(l)=>{S.lang=l;}", lang)
+            r = page.evaluate(CAL_NOLINK_JS, a)
+            if not r:
+                check(f"{name}_{lang}", False, f"calEvent returned null for {a}")
+                continue
+            probs = list(r["probs"])
+            rfc, props = _ics_rfc5545_problems(r["ics"])
+            probs += [f"rfc5545: {x}" for x in rfc]
+            # title, location, start and end, from the data (not through calEvent)
+            if not (r["title"].startswith(r["name"]) and r["title"].endswith(", " + r["venue"])):
+                probs.append(f"title {r['title']!r} (want {r['name']!r} … , {r['venue']!r})")
+            want_loc = r["venue"] + (", " + r["area"] if r["area"] else "")
+            if not r["location"].startswith(want_loc):
+                probs.append(f"location {r['location']!r} (want {want_loc!r}…)")
+            if _ics_unesc(props.get("SUMMARY", "")) != r["title"] or _ics_unesc(props.get("LOCATION", "")) != r["location"]:
+                probs.append(f"ics SUMMARY/LOCATION {props.get('SUMMARY')!r} / {props.get('LOCATION')!r}")
+            st = datetime.datetime.fromisoformat(f"{d}T{t}").replace(tzinfo=SOFIA_TZ)
+            en = st.astimezone(datetime.timezone.utc) + datetime.timedelta(minutes=r["runtime"])  # elapsed, not wall-clock
+            utc = lambda x: x.astimezone(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            if props.get("DTSTART") != utc(st) or props.get("DTEND") != utc(en):
+                probs.append(f"ics DTSTART/DTEND {props.get('DTSTART')}/{props.get('DTEND')}, want {utc(st)}/{utc(en)}")
+            loc = lambda x: x.astimezone(SOFIA_TZ)
+            gq = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(r["google"]).query))
+            want_g = loc(st).strftime("%Y%m%dT%H%M%S") + "/" + loc(en).strftime("%Y%m%dT%H%M%S")
+            if gq.get("text") != r["title"] or gq.get("location") != r["location"] or gq.get("dates") != want_g \
+                    or gq.get("ctz") != "Europe/Sofia" or set(gq) != {"action", "text", "dates", "ctz", "location"}:
+                probs.append(f"google {gq}")
+            oq = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(r["outlook"]).query))
+            iso = lambda x: loc(x).strftime("%Y-%m-%dT%H:%M:00") + loc(x).strftime("%z")[:3] + ":00"
+            if oq.get("subject") != r["title"] or oq.get("location") != r["location"] \
+                    or oq.get("startdt") != iso(st) or oq.get("enddt") != iso(en) \
+                    or set(oq) != {"subject", "startdt", "enddt", "location"}:
+                probs.append(f"outlook {oq}")
+            check(f"{name}_{lang}", not probs, f"{a}: {probs or 'title ' + repr(r['title']) + ', ' + props.get('DTSTART', '')}")
+            if case == "show" and lang == "bg":
+                print("  sample .ics (" + cid + " " + d + "):\n    " + r["ics"].replace("\r\n", "\n    "))
+    check("bo1_cal_no_page_errors", not errs, f"{errs[:2]}")
+    ctx.close()
+
+
 def wave_bo1(browser):
     print("\n=== BO1: box office only (ticket stub) ===")
     eng = _hf_engine(browser)
@@ -19043,11 +19191,10 @@ def wave_bo1(browser):
                 check("bo1_stub_tap_is_harmless", hit and after["open"] and page.url == url0 and len(ctx.pages) == 1,
                       f"tapped={hit} still open={after['open']} url same={page.url == url0} tabs={len(ctx.pages)}")
             if case == "case1" and w == 1280 and lang == "bg":
-                cal = page.evaluate("(a)=>{const e=calEvent('show',a[0],'salzaismyah',a[1],a[2]);return e?{d:e.description||''}:null}",
-                                    [ex_id, d, tm])
-                txt = (cal or {}).get("d", "")
-                check("bo1_example_calendar", bool(cal) and "/site/selector/" not in txt and "на касата" in txt,
-                      f"calendar description: {txt[:160]!r}")
+                # the calendar event: no description and no link (owner, 2026-10-30)
+                cal = page.evaluate(CAL_NOLINK_JS, ["show", ex_id, "salzaismyah", d, tm])
+                check("bo1_example_calendar", bool(cal) and not cal["probs"] and cal["title"].startswith(cal["name"]),
+                      f"calendar: {cal}")
             check(f"bo1_no_page_errors_{tag}", not errs, f"{errs[:2]}")
             ctx.close()
 
@@ -19105,6 +19252,7 @@ def wave_bo1(browser):
     _bo_mixed_cinemas(browser, info, eng)
     _bo_festival_shut(browser, eng)
     _bo_euro_cinema(browser, eng)
+    _bo_calendar_export(browser)
     print(f"  engine: {eng}")
 
 
@@ -19231,12 +19379,12 @@ def _bo_mixed_cinemas(browser, info, eng):
             ctx, page, errs, tapped, r, _ = _bo_panel(browser, 393, 852, True, "bg", "cinema", _bo_open_film, fid,
                                                       f"film:{fid}|{v}|{d}|{tm}")
             lk = page.evaluate(BO_LINKS_JS, True) if tapped else None
-            cal = page.evaluate("(a)=>{const e=calEvent('film',a[0],a[1],a[2],a[3]);return e?{u:e.url,d:e.description}:null}", [fid, v, d, tm])
+            cal = page.evaluate(CAL_NOLINK_JS, ["film", fid, v, d, tm])
             probs = _bo_panel_problems(r, "bg", True, True, False, page.evaluate("(a)=>isPrelimListing('film',a[0],a[1],a[2])", [fid, v, d])) if r else ["no panel"]
             if lk and (lk["site"] != BO_PLAIN[v] or _bo_seller(lk["site"])):
                 probs.append(f"site line {lk['site']!r}, want {BO_PLAIN[v]!r}")
-            if not cal or cal["u"] != BO_PLAIN[v] or _bo_seller(cal["u"]):
-                probs.append(f"calendar url {cal and cal['u']!r}")
+            if not cal or cal["probs"]:
+                probs.append(f"calendar carries a description or link: {cal and cal['probs']}")
             check(f"bo1_{v}_regular_box_office", tapped and not probs, f"{fid} {d} {tm}: {probs}")
             ctx.close()
         # a festival screening: "Купи билет" to epaygo, no stub
@@ -19253,20 +19401,24 @@ def _bo_mixed_cinemas(browser, info, eng):
             check(f"bo1_{v}_festival_online", tapped and ok, f"{fid} {d} {tm}: {lk}")
             check(f"bo1_{v}_festival_no_page_errors", not errs, f"{errs[:2]}")
             ctx.close()
-    # every box-office-only showing: its calendar link and site line are never a ticket seller's
+    # every box-office-only showing: its calendar export carries no link at all (owner,
+    # 2026-10-30) and its site line is never a ticket seller's
     ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
     bad = page.evaluate("""(sellers)=>{
       const seller=u=>{const h=hostLabel(u);return !!h&&sellers.some(x=>h===x||h.endsWith('.'+x));};
+      const link=s=>/https?:|www\\./i.test(s);
+      const qlink=u=>{try{return [...new URL(u).searchParams.entries()].some(([k,x])=>k==='details'||k==='body'||link(x));}catch(e){return true;}};
       const out=[];let n=0;
       const probe=(k,id,v,d,t)=>{const bo=boxOnly(k,id,v,d,t);if(!bo)return;n++;
         const ev=calEvent(k,id,v,d,t),el=document.createElement('div');el.innerHTML=screeningSheetHtml(k,id,v,d,t);
         const site=el.querySelector('a.ss-site');
-        if((ev&&seller(ev.url))||(site&&seller(site.getAttribute('href'))))out.push(k+':'+id+'|'+v+'|'+d+'|'+t+' '+(ev&&ev.url));};
+        const calBad=!ev||'url' in ev||'description' in ev||link(calIcs(ev))||qlink(calGoogleUrl(ev))||qlink(calOutlookUrl(ev));
+        if(calBad||(site&&seller(site.getAttribute('href'))))out.push(k+':'+id+'|'+v+'|'+d+'|'+t+(calBad?' calendar':' site'));};
       for(const r of SHOWTIMES)if((BOOKING[r[1]]||{}).inPerson&&r[2]>=TODAY)for(const t of (r[3]||[]))probe('film',r[0],r[1],r[2],t);
       for(const r of (typeof BOXONLY!=='undefined'?BOXONLY:[])){const sh=showById[r[0]];if(sh)probe('show',r[0],sh.theatre,r[1],r[2]);}
       return {n,out};}""", BO_SELLERS)
-    check("bo1_box_office_calendar_never_a_seller", bad["n"] > 0 and not bad["out"],
-          f"{bad['n']} box-office showing(s) checked; seller links: {bad['out'][:3]}")
+    check("bo1_box_office_calendar_no_link", bad["n"] > 0 and not bad["out"],
+          f"{bad['n']} box-office showing(s) checked; calendar with a link / seller site line: {bad['out'][:3]}")
     ctx.close()
     # Windows High Contrast (forced colours): real buttons have a visible border, the stub is a note
     if eng != "chromium":
@@ -20647,6 +20799,161 @@ def _ga1_on(browser, base, src, page_csp, legal, ver, ga_id, webkit):
     check("ga1_sw_never_handles_google", 0 <= i_ret < i_resp and hosts_ok, f"return at {i_ret}, respondWith at {i_resp}")
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# WAVE HS1: the "На фокус" hero's synopsis (owner, 2026-11-04: „Черното топче“'s long
+# synopsis filled the hero)
+# ═══════════════════════════════════════════════════════════════════════════════
+# HS1_FORCE_JS([kind, id, synBg, synEn]): make the title the hero (focusFilms/focusShows
+# return it first) and re-render; synBg/synEn (when given) replace its synopsis first, for
+# the short-synopsis case. HS1_STATE_JS: the hero's synopsis block as a user sees it.
+HS1_FORCE_JS = """(a)=>{const [k,id,sb,se]=a;
+  const o=k==='film'?filmById[id]:showById[id]; if(!o)return false;
+  if(sb!=null){o.synBg=sb;o.synEn=se;}
+  if(k==='film'){S.mode='cinema';focusFilms=()=>[{f:o}];}else{S.mode='theatre';focusShows=()=>[{s:o}];}
+  render();return true;}"""
+HS1_STATE_JS = """()=>{const h=document.querySelector('main .hero');if(!h)return null;
+  const w=h.querySelector('.synwrap'),p=h.querySelector('.hero-syn'),b=h.querySelector('.readmore');
+  if(!p)return {noSyn:true};
+  const cs=getComputedStyle(p),lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.5,hr=h.getBoundingClientRect();
+  const nx=h.nextElementSibling,bv=!!b&&!b.hidden&&b.getClientRects().length>0&&getComputedStyle(b).display!=='none';
+  const title=h.querySelector('.hero-title').textContent;
+  return {title,clamp:!!w&&w.classList.contains('clamp'),text:p.textContent,
+    h:p.getBoundingClientRect().height,full:p.scrollHeight,lh,lines:Math.round(p.getBoundingClientRect().height/lh),
+    ellipsis:cs.webkitLineClamp||cs.getPropertyValue('-webkit-line-clamp'),
+    btn:!!b,btnVis:bv,btnTag:b?b.tagName:'',btnType:b?b.getAttribute('type'):'',ae:b?b.getAttribute('aria-expanded'):null,
+    ac:b?b.getAttribute('aria-controls'):null,pid:p.id,label:b?b.textContent.trim():'',
+    srHidden:!!p.closest('[aria-hidden="true"],[hidden],[inert]'),
+    heroH:hr.height,nextTop:nx?nx.getBoundingClientRect().top:null,
+    btnBottom:b&&bv?b.getBoundingClientRect().bottom:null,actsTop:(h.querySelector('.acts')||p).getBoundingClientRect().top,
+    btnH:b&&bv?b.getBoundingClientRect().height:0,anims:p.getAnimations().length};}"""
+HS1_LABELS = {"bg": ("Прочети повече", "Скрий"), "en": ("Read more", "Read less")}
+HS1_SIZES = ((375, 812), (393, 852), (768, 1024), (1280, 800), (1440, 900))
+
+
+def _hs1_pick(page):
+    """Per language, the long-synopsis titles: „Черното топче“ (the owner's case) if this
+    build has it, else the cinema title with the longest synopsis; the theatre show with
+    the longest synopsis."""
+    return page.evaluate("""()=>{
+      const lang=S.lang, out={};
+      for(const L of ['bg','en']){
+        S.lang=L; const len=o=>(synOf(o)||'').length;
+        const ct=Object.keys(filmById).find(id=>/chernoto-topche/.test(id)&&len(filmById[id])>600);
+        let film=ct||null,best=0;
+        if(!film)for(const f of FILMS){const n=len(f);if(n>best){best=n;film=f.id;}}
+        let show=null;best=0;for(const s of SHOWS){const n=len(s);if(n>best){best=n;show=s.id;}}
+        out[L]={film,filmLen:film?len(filmById[film]):0,show,showLen:show?len(showById[show]):0};}
+      S.lang=lang; return out;}""")
+
+
+def _hs1_case(browser, eng, w, h, lang, kind, oid, tag, shot=False, short=None):
+    ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema" if kind == "film" else "theatre")
+    try:
+        ok = page.evaluate(HS1_FORCE_JS, [kind, oid] + (list(short) if short else [None, None]))
+        page.wait_for_timeout(250)
+        s = page.evaluate(HS1_STATE_JS)
+        if not ok or not s or s.get("noSyn"):
+            check(f"{tag}_hero", False, f"no hero synopsis for {kind}:{oid} ({ok}, {s})")
+            return
+        phone = w <= 760
+        want = 3 if phone else 4
+        more, less = HS1_LABELS[lang]
+        if short:
+            check(f"{tag}_short_no_control", not s["btnVis"] and s["full"] <= s["h"] + 2 and s["lines"] <= want,
+                  f"button visible={s['btnVis']} lines={s['lines']} h={s['h']:.0f} full={s['full']}")
+            if shot:
+                save_shot(page, "HS1", f"{tag}_short")
+            check(f"{tag}_no_page_errors", not errs, f"{errs[:2]}")
+            return
+        check(f"{tag}_clamped", s["clamp"] and s["lines"] == want and s["full"] > s["h"] + s["lh"],
+              f"{w}px: {s['lines']} line(s) shown (want {want}), h={s['h']:.0f} of {s['full']} lh={s['lh']:.1f}")
+        check(f"{tag}_full_text_for_screen_readers", len(s["text"]) > 300 and not s["srHidden"],
+              f"text in the page: {len(s['text'])} chars, hidden from AT={s['srHidden']}")
+        check(f"{tag}_control", s["btnVis"] and s["btnTag"] == "BUTTON" and s["btnType"] == "button"
+              and s["ae"] == "false" and s["ac"] == s["pid"] and s["label"] == more and s["btnH"] >= 24,
+              f"visible={s['btnVis']} <{s['btnTag']} type={s['btnType']}> aria-expanded={s['ae']} "
+              f"aria-controls={s['ac']} (p#{s['pid']}) label={s['label']!r} height={s['btnH']:.0f}")
+        check(f"{tag}_control_above_buttons", s["btnBottom"] is not None and s["btnBottom"] <= s["actsTop"] + 1,
+              f"control bottom={s['btnBottom']} buttons top={s['actsTop']}")
+        if shot:
+            save_shot(page, "HS1", f"{tag}_clamped")
+        # keyboard: focus the control and press Enter, then Space to close again
+        page.evaluate("()=>document.querySelector('main .hero .readmore').focus()")
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(450)
+        e = page.evaluate(HS1_STATE_JS)
+        grow = e["heroH"] - s["heroH"]
+        check(f"{tag}_expands_in_place", e["ae"] == "true" and not e["clamp"] and e["label"] == less
+              and abs(e["h"] - e["full"]) <= 2 and e["lines"] > want and e["anims"] == 0,
+              f"aria-expanded={e['ae']} clamp={e['clamp']} label={e['label']!r} h={e['h']:.0f} full={e['full']} lines={e['lines']}")
+        check(f"{tag}_rails_move_by_the_growth_only",
+              s["nextTop"] is None or abs((e["nextTop"] - s["nextTop"]) - grow) <= 2,
+              f"hero grew {grow:.0f}px, the next block moved {None if s['nextTop'] is None else round(e['nextTop'] - s['nextTop'])}px")
+        check(f"{tag}_focus_kept", page.evaluate("()=>document.activeElement&&document.activeElement.matches('main .hero .readmore')"),
+              "focus stays on the control")
+        if shot:
+            save_shot(page, "HS1", f"{tag}_expanded")
+        page.keyboard.press("Space")
+        page.wait_for_timeout(400)
+        c = page.evaluate(HS1_STATE_JS)
+        check(f"{tag}_collapses_again", c["ae"] == "false" and c["clamp"] and c["lines"] == want and c["label"] == more
+              and abs(c["heroH"] - s["heroH"]) <= 1,
+              f"aria-expanded={c['ae']} clamp={c['clamp']} lines={c['lines']} hero {c['heroH']:.0f} (was {s['heroH']:.0f})")
+        # reduced motion: opens at once, no animation
+        page.emulate_media(reduced_motion="reduce")
+        page.evaluate("()=>document.querySelector('main .hero .readmore').click()")
+        r = page.evaluate(HS1_STATE_JS)
+        check(f"{tag}_reduced_motion_instant", r["ae"] == "true" and r["anims"] == 0 and abs(r["h"] - r["full"]) <= 2,
+              f"right after the tap: anims={r['anims']} h={r['h']:.0f} full={r['full']}")
+        check(f"{tag}_no_page_errors", not errs, f"{errs[:2]}")
+    finally:
+        ctx.close()
+
+
+def wave_hs1(browser):
+    """HS1: the "На фокус" hero on the cinema and theatre home screens. A long synopsis is
+    clamped to 3 lines on phones and 4 on wider screens with „Прочети повече“ / "Read more"
+    (a <button>, aria-expanded, aria-controls) that opens it in place and closes it again,
+    by mouse and keyboard; the rails below move only by the growth; with reduced motion it
+    opens at once; screen readers get the whole text; a short synopsis has no control.
+    375, 393, 768, 1280, 1440; BG and EN; the build's own hero too."""
+    print("\n=== HS1: hero synopsis clamp + Read more ===")
+    eng = _hf_engine(browser)
+    ensure_shot_dir("HS1")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="cinema")
+    pk = _hs1_pick(page)
+    # the build's own cinema hero, as it comes: the control is there exactly when the text is cut
+    own = page.evaluate(HS1_STATE_JS)
+    ctx.close()
+    print(f"  long synopsis: {pk}; own hero: {own and own.get('title')}")
+    if own and not own.get("noSyn"):
+        cut = own["full"] > own["h"] + 2
+        check(f"hs1_{eng}_own_hero_control_iff_cut", own["btnVis"] == cut and own["lines"] <= 4,
+              f"{own['title']!r}: cut={cut} control={own['btnVis']} lines={own['lines']}")
+    else:
+        skip(f"hs1_{eng}_own_hero_control_iff_cut", f"the build's cinema hero has no synopsis ({own})")
+    for lang in ("bg", "en"):
+        pl = pk[lang]
+        if not pl["film"] or pl["filmLen"] < 400:
+            skip(f"hs1_{eng}_film_{lang}", f"no long film synopsis in {lang} ({pl})")
+        else:
+            for w, h in HS1_SIZES:
+                _hs1_case(browser, eng, w, h, lang, "film", pl["film"], f"hs1_{eng}_film_{w}_{lang}",
+                          shot=(lang == "bg" and w in (393, 1280)))
+        if not pl["show"] or pl["showLen"] < 280:
+            skip(f"hs1_{eng}_show_{lang}", f"no long theatre synopsis in {lang} ({pl})")
+        else:
+            for w, h in ((393, 852), (1280, 800)):
+                _hs1_case(browser, eng, w, h, lang, "show", pl["show"], f"hs1_{eng}_show_{w}_{lang}",
+                          shot=(lang == "bg"))
+        if pl["film"]:
+            for w, h in ((393, 852), (1280, 800)):
+                _hs1_case(browser, eng, w, h, lang, "film", pl["film"], f"hs1_{eng}_short_{w}_{lang}",
+                          shot=(lang == "bg" and w == 393),
+                          short=("Кратко резюме в един ред.", "A one-line synopsis."))
+    print(f"  engine: {eng}")
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -20685,6 +20992,7 @@ WAVES = {
     "BO1": wave_bo1,
     "DM1": wave_dm1,
     "GA1": wave_ga1,
+    "HS1": wave_hs1,
 }
 
 def main():
