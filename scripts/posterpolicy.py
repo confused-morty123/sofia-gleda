@@ -29,7 +29,7 @@ last week's JSON, this week's scrape, or a future hand-added SEED entry:
 """
 from __future__ import annotations
 import json, re, pathlib
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 # Venues and aggregators that key an image to a production themselves. An opaque
 # filename from these is still trustworthy: it is the venue's own id for the show.
@@ -76,6 +76,15 @@ LOGO_STEM_RE = re.compile(r"\blogo[_\-]|[_\-]logo\b|^logo$"
                            r"|\bdefault[_\-]avatar\b|\bplaceholder\b",
                            re.I)
 
+# Placeholders and funders' marks are never a title's art, whatever page they sit
+# on (2026-11-04: Кукления's "Очаквайте" Christmas placeholder as a play's og:image,
+# the Министерство на културата funding notice in a Топлоцентрала gallery).
+# Matched against the unquoted, lower-cased URL (reject_reason, the own-page
+# harvester) and an <img>'s alt text (the harvester).
+PLACEHOLDER_RE = re.compile(
+    r"ochakvay|очаквайте|coming[\s_-]*soon|ministerstvo|министерство|minkult|"
+    r"sponsor|спонсор|partners?\b|партньор|finansov|финансов|podkrepa|подкрепа|donors?\b|funded",
+    re.I)
 # A poster we have already fetched and re-hosted beside index.html. Same-origin,
 # served over the app's own HTTPS, so there is no third-party host to trust or
 # distrust and no hotlink/cert risk — the provenance was checked once, when the
@@ -235,9 +244,38 @@ def true_poster(pid, maps, sources, kind="shows", root=None):
         return True, f"own page: {rec.get('kind', 'image')}"
     if kind == "films":
         # POSTERS for films: the film's own programme page (fetch_tmdb og:image,
-        # fetch_film_info / harvest_cinema_posters img), already policy-checked
-        return True, "the film's programme page"
+        # fetch_film_info / harvest_cinema_posters img), already policy-checked.
+        # A cinema's or festival's own site keys its images to its own film pages;
+        # a listings aggregator's image is the film's own only when the film links
+        # that aggregator's page (VLINKS): programata.bg stills and YouTube frames
+        # on films linked only to bnf.bg / Cineland (2026-11-04) are not.
+        if host_of(url) not in AGGREGATOR_FILM_HOSTS or _film_link_site(pid, url, maps):
+            return True, "the film's programme page"
+        return False, "unverified: an aggregator's image, and the film does not link its page"
     return False, "unverified: a remote image with no record of its page"
+
+
+# Listings sites that carry other people's films: their image is not the film's
+# own page's unless the film links that page.
+AGGREGATOR_FILM_HOSTS = {"programata.bg"}
+
+
+def _site(host):
+    """The registrable part of a host ("cdn.kinoarena.com" → "kinoarena.com")."""
+    parts = (host or "").lower().removeprefix("www.").split(".")
+    return ".".join(parts[-3:]) if len(parts) >= 3 and parts[-2] in ("co", "com", "org") else ".".join(parts[-2:])
+
+
+def _film_link_site(pid, url, maps):
+    """True when the image's site is one of the sites this film links (VLINKS
+    rows [film, venue, url]). maps without VLINKS (an older caller) → True."""
+    vl = maps.get("VLINKS")
+    if not isinstance(vl, list):
+        return True
+    base = (maps.get("SHOWALIAS") or {}).get(pid) or pid
+    sites = {_site(host_of(r[2])) for r in vl
+             if isinstance(r, list) and len(r) >= 3 and r[0] in (pid, base) and isinstance(r[2], str)}
+    return _site(host_of(url)) in sites
 
 
 def true_coverage(ids, maps, sources, kind="shows", group_of=None, root=None):
@@ -357,6 +395,9 @@ def reject_reason(poster_id, url, catalogue=None):
         if LOGO_STEM_RE.search(stem):
             return (f"filename '{stem[:40]}' looks like site chrome (logo / template "
                     "image), not production art")
+        if PLACEHOLDER_RE.search(unquote(url).lower()):
+            return (f"filename '{stem[:40]}' is a placeholder or a funder's mark, "
+                    "not production art")
     if catalogue is not None:
         mirrored = catalogue.mirrors_film(poster_id)
         if mirrored:

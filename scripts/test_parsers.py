@@ -3878,6 +3878,122 @@ check("photo choice: the most portrait-like photo wins over a larger landscape o
 check("page_mentions: the page names the title / it does not",
       [OPP.page_mentions("<h1>Господин Нощ</h1>", "ГОСПОДИН НОЩ"), OPP.page_mentions("<h1>Чайка</h1>", "ГОСПОДИН НОЩ")],
       [True, False])
+# ---- skeptic b2-posters: wrong images counted as "own", and a page that is no longer the title's
+_tc_pg = ('<img src="https://toplocentrala.bg/attachments/Event/1221/gallery/viber-image-2026-10-28_fit-detail.jpg">'
+          '<img src="https://toplocentrala.bg/attachments/Event/1221/gallery/let-s-not-get-lost-detail-now_fit-detail.jpg">')
+check("candidates: a theme's resize suffix (_fit-detail) is not the title's name; the file's own name still is",
+      [(u.rsplit("/", 1)[-1], t) for u, t, _ in OPP.candidates(
+          _tc_pg, "https://toplocentrala.bg/events/let-s-not-get-lost-in-a-detail-now")],
+      [("let-s-not-get-lost-detail-now_fit-detail.jpg", 1), ("viber-image-2026-10-28_fit-detail.jpg", 2)])
+_cl_pg = ('<div data-elementor-type="popup" data-elementor-id="9"><img src="https://cineland.bg/app/uploads/2025/12/48b560a1.jpg"></div>'
+          '<nav><img src="https://cineland.bg/app/uploads/nav-film.jpg"></nav>'
+          '<main><img src="https://cineland.bg/app/uploads/2026/10/arieti-poster.jpg"></main>'
+          '<footer><img src="https://cineland.bg/app/uploads/footer-banner.jpg"></footer>')
+check("candidates: images in an Elementor popup, <nav> or <footer> are the site's, not the film's",
+      [u.rsplit("/", 1)[-1] for u, _, _ in OPP.candidates(_cl_pg, "https://cineland.bg/movies/arieti/")],
+      ["arieti-poster.jpg"])
+check("candidates: a placeholder („Очаквайте“) or a funder's mark, by file name or alt text, is never a candidate",
+      [u.rsplit("/", 1)[-1] for u, _, _ in OPP.candidates(
+          '<meta property="og:image" content="https://theatre.peakview.bg/theatre/photos/BIG1 KOLEDA V SKT OCHAKVAYTE.jpg" />'
+          '<img src="https://zadkanala.bg/a/logo-mk.jpg" alt="Министерство на културата">'
+          '<img src="https://zadkanala.bg/a/scene.jpg" alt="Сцена">', "https://zadkanala.bg/spektakli/x")],
+      ["scene.jpg"])
+check("posterpolicy: a placeholder file name is refused from any host",
+      bool(PP.reject_reason("x", "https://theatre.peakview.bg/theatre/photos/BIG1%20OCHAKVAYTE.jpg")), True)
+_chayka_nav = ('<nav><a href="/bg/predstavlenie/chayka">Чайка</a> <a href="/bg/predstavlenie/vishneva-gradina">'
+               'Вишнева градина</a></nav>')
+check("page_identity: the page's own headings name the title; a nav, a repertoire list or a linked h2 do not",
+      [OPP.page_identity("<title>Чайка | Народен театър</title>" + _chayka_nav, "Чайка"),
+       OPP.page_identity("<title>Вишнева градина | Народен театър</title>" + _chayka_nav + "<h1>Вишнева градина</h1>", "Чайка"),
+       OPP.page_identity("<title>Народен театър</title>" + _chayka_nav + '<h2><a href="/x">Чайка</a></h2>', "Чайка"),
+       OPP.page_identity("<title>Одеон</title><h1>Филми</h1><h2> Кодът на българите <span>(2026)</span></h2>",
+                         "Кодът на българите"),
+       OPP.page_identity("<h1>Дванадесета нощ</h1>", "Седем нощи на Виола Каравелова")],
+      [True, False, False, True, False])
+check("moved_page: a redirect to another page is not the title's page; a trailing slash or www is",
+      [OPP.moved_page("https://a.bg/show/chayka", "https://a.bg/"),
+       OPP.moved_page("https://a.bg/show/chayka", "https://www.a.bg/show/chayka/"), OPP.moved_page("https://a.bg/x", None)],
+      [True, False, False])
+import io as _iob2, datetime as _dtb2
+
+
+def _jpgb2(w, h, c):
+    _b = _iob2.BytesIO()
+    from PIL import Image as _I
+    _I.new("RGB", (w, h), c).save(_b, "JPEG")
+    return _b.getvalue()
+
+
+class _NetB2:
+    def __init__(self, pages, imgs, final=None):
+        self.pages, self.imgs, self.final = pages, imgs, final or {}
+
+    def get(self, url, kind="page"):
+        if kind == "img":
+            return OPP._Resp(self.imgs[url]) if url in self.imgs else None
+        if url not in self.pages:
+            return None
+        r = OPP._Resp(self.pages[url].encode("utf-8"))
+        r.url = self.final.get(url, url)
+        return r
+
+    def over_budget(self):
+        return False
+
+
+_save_b2 = (OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store)
+with __import__("tempfile").TemporaryDirectory() as _dh:
+    _dhp = pathlib.Path(_dh)
+    OPP.THEATRE_JSON, OPP.POSTERS_DIR = _dhp / "tp.json", _dhp / "posters"
+    OPP.store = lambda data, name: (f"posters/{name}.jpg", __import__("hashlib").md5(data).hexdigest())
+    _lk = "https://nationaltheatre.bg/bg/predstavlenie/chayka"
+    _prev = {"page": _lk, "img": "https://nationaltheatre.bg/storage/shows/aaaa1111.jpg", "kind": "poster",
+             "w": 400, "h": 600, "how": "og:image", "path": "posters/chayka.jpg", "md5": "x" * 32,
+             "checked": "2026-11-04"}
+    _oth = "https://nationaltheatre.bg/storage/shows/bbbb2222.jpg"
+    _pgA = (f'<html><head><title>Вишнева градина | Народен театър</title><meta property="og:image" content="{_oth}">'
+            f"</head><body>{_chayka_nav}<h1>Вишнева градина</h1></body></html>")
+    _srcA = {"shows": {"chayka": dict(_prev)}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]},
+                _NetB2({_lk: _pgA}, {_oth: _jpgb2(500, 750, "red")}), _srcA, _dtb2.date(2026, 11, 20))
+    check("harvest recheck: the same URL now shows another production → the recorded poster is kept",
+          (_srcA["shows"]["chayka"]["img"], _srcA["shows"]["chayka"].get("recheck_found_nothing")),
+          (_prev["img"], "2026-11-20"))
+    _home = "https://nationaltheatre.bg/storage/shows/season.jpg"
+    _pgB = (f'<html><head><title>Народен театър</title><meta property="og:image" content="{_home}"></head>'
+            f"<body>{_chayka_nav}<h2>Афиш</h2></body></html>")
+    _srcB = {"shows": {}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]},
+                _NetB2({_lk: _pgB}, {_home: _jpgb2(800, 1100, "blue")}), _srcB, _dtb2.date(2026, 11, 20))
+    check("harvest: a dead URL served as the home page (the nav names the title) → nothing attached",
+          ("chayka" in _srcB["shows"], "show:chayka" in _srcB["misses"]), (False, True))
+    _pgC = (f'<html><head><title>Чайка | Народен театър</title><meta property="og:image" content="{_oth}"></head>'
+            "<body><h1>Чайка</h1></body></html>")
+    _srcC = {"shows": {}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]},
+                _NetB2({_lk: _pgC}, {_oth: _jpgb2(500, 750, "red")}, {_lk: "https://nationaltheatre.bg/bg/"}),
+                _srcC, _dtb2.date(2026, 11, 20))
+    check("harvest: a page that redirects elsewhere is not the title's page → nothing attached",
+          "chayka" in _srcC["shows"], False)
+    _srcD = {"shows": {}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]},
+                _NetB2({_lk: _pgC}, {_oth: _jpgb2(500, 750, "red")}), _srcD, _dtb2.date(2026, 11, 20))
+    check("harvest: the title's own page → its poster", _srcD["shows"].get("chayka", {}).get("img"), _oth)
+    _gl = "https://cineland.bg/movies/x/"
+    _gimg = "https://cineland.bg/app/uploads/2025/12/banner.jpg"
+    _srcE = {"shows": {}, "films": {}, "misses": {}}
+    OPP.harvest({"show:x"}, {"show:x": "Икс филм"}, {"show:x": [_gl]},
+                _NetB2({_gl: f'<title>Икс филм</title><img src="{_gimg}">'}, {_gimg: _jpgb2(1200, 900, "red")}),
+                _srcE, _dtb2.date(2026, 11, 20))
+    check("harvest: a gallery photo alone (here a site banner) is not attached as the title's art",
+          "x" in _srcE["shows"], False)
+OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_b2
+_mf = {"POSTERS": {"k": "https://programata.bg/wp-content/uploads/2026/02/hqdefault.jpg",
+                   "l": "https://programata.bg/wp-content/uploads/2026/02/poster.jpg",
+                   "m": "https://www.kinomania.bg/public/uploads/gallery/m.jpg"},
+       "VLINKS": [["k", "bnf", "https://bnf.bg/bg/odeon/movies/1/"], ["l", "x", "https://programata.bg/filmi/l/"]]}
+check("true coverage (films): an aggregator's image counts only when the film links that page; a venue's own does",
+      [PP.true_poster(i, _mf, {"films": {}}, "films")[0] for i in ("k", "l", "m")], [False, True, True])
 import tempfile as _tfb2, hashlib as _hlb2
 from PIL import Image as _Imb2
 with _tfb2.TemporaryDirectory() as _db2:
@@ -4596,7 +4712,8 @@ else:
     _cov_perf = _cov_const("PERFORMANCES") or []
     _cov_st = _cov_const("SHOWTIMES") or []
     _cov_maps = {"SHOWALIAS": _cov_alias, "POSTERS": _cov_posters, "TMDBART": _cov_tmdb,
-                 "SHOWART": _cov_showart, "EVENTART": _cov_const("EVENTART") or {}}
+                 "SHOWART": _cov_showart, "EVENTART": _cov_const("EVENTART") or {},
+                 "VLINKS": _cov_const("VLINKS") or []}
     _cov_srcs = _PPcov.load_sources(_cov_src.parent)
     _cov_up_s = {r[0] for r in _cov_perf} & {x["id"] for x in _cov_shows}
     _cov_up_f = {r[0] for r in _cov_st} & {x["id"] for x in _cov_films}

@@ -18,9 +18,16 @@ another production's image (the hard rule after the 23 wrong posters of
   1. the official poster: the page's key image (og:image or the theatre's own
      poster slot) in portrait shape;
   2. the theatre's key image for the show in another shape (still its own art);
-  3. a production photo from the page's gallery: the most poster-like one
-     (closest to portrait, at least 600 px on the long side, croppable);
-  4. nothing: the app keeps its generated art.
+  3. nothing: the app keeps its generated art. A gallery photo is not attached
+     (2026-11-04: the one such pick was a cinema's site-wide banner).
+
+The page must be the title's: its own headings (<title>, og:title, <h1>, an
+unlinked <h2>) name the title (page_identity), and the request did not end on
+another page (a redirect). A nav menu or repertoire list naming the title does
+not count. On a recheck a recorded poster is replaced only by an image from such
+a page, and the replaced one is noted ("replaced"); otherwise it is kept.
+Placeholders and funders' marks (posterpolicy.PLACEHOLDER_RE) and images in a
+site-wide popup, <nav> or <footer> are never candidates.
 
 Every attached image is re-hosted under posters/ and recorded in
 poster_sources.json with the page it came from, the image URL, its kind, size and
@@ -47,8 +54,8 @@ import urllib.parse
 from collections import defaultdict
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from posterpolicy import (LOGO_MD5, LOGO_STEM_RE, is_local_poster,    # noqa: E402
-                          norm_title)
+from posterpolicy import (LOGO_MD5, LOGO_STEM_RE, PLACEHOLDER_RE,    # noqa: E402
+                          is_local_poster, norm_title)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
@@ -87,6 +94,9 @@ POSTER_NAME_HOSTS = {"zadkanala.bg", "toplocentrala.bg", "tba.art.bg", "sfumato.
                      "nationaltheatre.bg", "salzaismyah.bg", "theatre199.org"}
 IMG_EXT_RE = re.compile(r"\.(?:jpe?g|png|webp)(?:$|[?#])", re.I)
 POSTER_WORD_RE = re.compile(r"poster|plakat|plakati|afish|плакат|афиш|kimo_grid2", re.I)
+# A theme's resize suffix on every gallery file ("…_fit-detail.jpg" on all of
+# Топлоцентрала's) is not part of the file's own name.
+RESIZE_SUFFIX_RE = re.compile(r"[_-](?:fit|thumb|resize|crop|scale)[_-][a-z]+$|[_-]\d{2,4}x\d{2,4}$", re.I)
 
 
 # ------------------------------------------------------------ polite fetching
@@ -307,11 +317,42 @@ def foreign_images(html, base, other_titles=()):
     return out
 
 
+def placeholder_images(html, base):
+    """<img> sources whose alt text names a placeholder or a funder."""
+    out = set()
+    for tag in _IMG_TAG_RE.findall(html):
+        a, sm = _ALT_RE.search(tag), _SRC_RE.search(tag)
+        if a and sm and PLACEHOLDER_RE.search(a.group(1)):
+            out.add(_abs(sm.group(1), base))
+            out.add(_abs(bigger(sm.group(1)), base))
+    out.discard(None)
+    return out
+
+
+_SITE_BLOCK_HINT = re.compile(r"""data-elementor-type=["'](?:popup|header|footer)|<footer\b|<nav\b""", re.I)
+
+
+def strip_site_blocks(html):
+    """The page without its site-wide containers (an Elementor popup, header or
+    footer; <footer>; <nav>): images there are the site's, not the title's
+    (2026-11-04: Cineland's "лев → €" banner in a popup, attached to a film)."""
+    if not _SITE_BLOCK_HINT.search(html):
+        return html
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    for el in soup.select('[data-elementor-type="popup"], [data-elementor-type="header"], '
+                          '[data-elementor-type="footer"], footer, nav'):
+        el.decompose()
+    return str(soup)
+
+
 def candidates(html, base, other_titles=()):
     """[(url, tier, how)] in page order: tier 1 = the page's key image for the
     title (og:image, its poster slot), tier 2 = other content images. Images
     that belong to another title (foreign_images) are left out."""
     out, seen = [], set(foreign_images(html, base, other_titles))
+    seen |= placeholder_images(html, base)
+    html = strip_site_blocks(html)
     host = (urllib.parse.urlsplit(base).hostname or "").lower().removeprefix("www.")
     # latin words of the page's own slug ("spektakli/fitzroy"): a gallery file
     # named after them ("FITZROY-web-01.png") is the title's designed art
@@ -330,14 +371,19 @@ def candidates(html, base, other_titles=()):
         stem = path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
         if LOGO_STEM_RE.search(stem):
             return
+        if PLACEHOLDER_RE.search(urllib.parse.unquote(u).lower()):
+            return
         seen.add(u)
         fname = urllib.parse.unquote(path.rsplit("/", 1)[-1]).lower()
+        core = fname.rsplit(".", 1)[0]
+        for _ in range(2):
+            core = RESIZE_SUFFIX_RE.sub("", core)
         # A gallery file named as a poster ("…plakat…") is the title's poster only
         # where a show page's gallery is that show's alone: Възраждане's pages list
         # the season's other posters ("2026_09_ISTORII_PLAKAT…" on РОГОНОСЦИ's).
         if tier == 2 and host in POSTER_NAME_HOSTS and POSTER_WORD_RE.search(urllib.parse.unquote(path)):
             tier, how = 1, how + " (named as a poster)"
-        elif tier == 2 and any(t in fname for t in slug_tokens):
+        elif tier == 2 and any(t in core for t in slug_tokens):
             tier, how = 1, how + " (named after the title)"
         out.append((u, tier, how))
 
@@ -404,6 +450,57 @@ def page_mentions(html, title):
     return any(t in text for t in toks[:4])
 
 
+_HEAD_RES = (re.compile(r"<title[^>]*>(.*?)</title>", re.I | re.S),
+             re.compile(r"<h1\b[^>]*>(.*?)</h1>", re.I | re.S))
+_META_TITLE_RE = re.compile(r"""<meta\b[^>]*(?:property|name)=["'](?:og:title|twitter:title)["'][^>]*>""", re.I)
+_H2_RE = re.compile(r"<h2\b[^>]*>(.*?)</h2>", re.I | re.S)
+
+
+def _text(fragment):
+    import html as _html
+    return _fold(_html.unescape(re.sub(r"<[^>]+>", " ", fragment)))
+
+
+def page_identity(html, title):
+    """True when the page's OWN headings name the title: half or more of its words
+    (3+ letters, up to 6) in <title>, og:title / twitter:title and <h1> together,
+    or in one <h2> that is not a link (Одеон's film pages). A nav menu, a
+    repertoire list or a sidebar naming the title does not count: a page that now
+    shows another production, or the theatre's home page served for a dead URL,
+    keeps the title only there (page_mentions alone let both through)."""
+    noise = {_fold(n) for n in NOISE}
+    toks = [t for t in _fold(title).split() if len(t) >= 3 and t not in noise][:6]
+    if not toks:
+        return True
+    need = max(1, (len(toks) + 1) // 2)
+    parts = [m.group(1) for rx in _HEAD_RES for m in rx.finditer(html)]
+    for m in _META_TITLE_RE.finditer(html):
+        c = _CONTENT_RE.search(m.group(0))
+        if c:
+            parts.append(c.group(1))
+    head = _text(" ".join(parts))
+    if sum(t in head for t in toks) >= need:
+        return True
+    for m in _H2_RE.finditer(html):
+        if "<a" in m.group(1).lower():
+            continue
+        h2 = _text(m.group(1))
+        if sum(t in h2 for t in toks) >= need:
+            return True
+    return False
+
+
+def moved_page(asked, final):
+    """True when a page request ended on another page (a redirect to the home
+    page or the repertoire for a dead URL): not the title's page."""
+    if not final:
+        return False
+    a, f = urllib.parse.urlsplit(asked), urllib.parse.urlsplit(final)
+    key = lambda p: ((p.hostname or "").lower().removeprefix("www."),          # noqa: E731
+                     urllib.parse.unquote(p.path).rstrip("/").lower())
+    return key(a) != key(f)
+
+
 # ------------------------------------------------------------ choosing an image
 def measure(data):
     from PIL import Image
@@ -464,6 +561,11 @@ def pick(net, cands, chrome, verbose=False):
         kind = classify(w, h, tier)
         if not kind:
             notes.append(f"{url[:80]}: {w}x{h}, not usable as {'a key image' if tier == 1 else 'a photo'}")
+            continue
+        if kind == "photo":
+            # any image of the page's gallery: it may be a banner, a sponsor or the
+            # site's (Cineland's "лев → €" notice, 2026-11-04), so it is not attached
+            notes.append(f"{url[:80]}: a gallery photo, not the title's own art: not attached")
             continue
         rec = {"img": url, "kind": kind, "w": w, "h": h, "how": how, "data": data}
         if best is None or RANK[kind] < RANK[best["kind"]] or (
@@ -569,12 +671,15 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
         for pg, _ in ps:
             if pg:
                 by_host[urllib.parse.urlsplit(pg).hostname].add(pg)
-    html_of = {}
+    html_of, moved = {}, {}
 
     def work_pages(urls):
         for u in sorted(urls):
             r = net.get(u)
             html_of[u] = decode(r.content) if r is not None and r.content else None
+            final = getattr(r, "url", None) if r is not None else None
+            if isinstance(final, str) and moved_page(u, final):
+                moved[u] = final
     _run(work_pages, by_host)
 
     # images on 3+ different pages of one host are site chrome
@@ -635,9 +740,15 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
             okpages = [pg for pg, _ in pages[k] if pg and html_of.get(pg)]
             badpages = [pg for pg, _ in pages[k] if pg and not html_of.get(pg)]
             notes += [f"page not read: {pg[:90]}" for pg in badpages]
-            mism = [pg for pg in okpages if not page_mentions(html_of[pg], titles[k])]
+            mism = []
+            for pg in okpages:
+                if pg in moved:
+                    mism.append(pg)
+                    notes.append(f"the page now leads to {moved[pg][:80]}: not used")
+                elif not page_identity(html_of[pg], titles[k]):
+                    mism.append(pg)
+                    notes.append(f"the page's headings do not name the title: not used ({pg[:70]})")
             if mism and len(mism) == len(okpages):
-                notes.append("the page does not name the title: not used")
                 best = None
             else:
                 cl = [c for c in cands[k] if c[3] not in mism]
@@ -664,11 +775,18 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
             continue
         if best:
             name = ident if kind == "show" else f"film-{ident}"
+            prev = sources[bucket].get(ident) or {}
             path, md5 = store(best["data"], name)
             sources[bucket][ident] = {"page": best["page"], "img": best["img"],
                                       "kind": best["kind"], "w": best["w"], "h": best["h"],
                                       "how": best["how"], "path": path, "md5": md5,
                                       "checked": today.isoformat()}
+            if prev.get("md5") and prev.get("md5") != md5:
+                # a recheck that found another image (the page's headings still name
+                # the title): kept for review in poster_health.md
+                sources[bucket][ident]["replaced"] = {"img": prev.get("img"), "md5": prev["md5"],
+                                                      "on": today.isoformat()}
+                summary[f"{kind} replaced on recheck"] += 1
             sources["misses"].pop(k, None)
             if kind == "show":
                 shows_json[ident] = path

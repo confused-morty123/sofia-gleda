@@ -1540,6 +1540,7 @@ try:
     _upf = {r[0] for r in (data.get("SHOWTIMES") or [])
             if isinstance(r, list) and len(r) > 2 and _from <= str(r[2]) <= _to}
     _pmaps = {n: (_const_any(n) or {}) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART", "SHOWART")}
+    _pmaps["VLINKS"] = _const_any("VLINKS") or []
     _shows_all = data.get("SHOWS") or []
     _show_ids = {x.get("id") for x in _shows_all}
     _film_ids = {x.get("id") for x in (data.get("FILMS") or [])}

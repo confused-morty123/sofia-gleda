@@ -7,7 +7,7 @@ poster steps (owner spec 2026-10-30 / 2026-11-04).
      (posterpolicy.true_coverage: read from the title's own page and recorded in
      poster_sources.json, a TMDB poster, or a film's programme-page image).
   2. Reads, for the titles still without one, their own pages again
-     (own_page_posters.py: official poster, then a production photo; never a
+     (own_page_posters.py: the official poster or the theatre's key image; never a
      search by title). Only titles that are due are read (a page that had
      nothing is retried after a few days), within a time budget.
   3. When that attached anything, re-inlines the poster maps (inject_data.py)
@@ -65,6 +65,7 @@ def upcoming(src):
 def measure(html=HTML, root=ROOT):
     src = pathlib.Path(html).read_text(encoding="utf-8")
     maps = {n: (_const(src, n) or {}) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART", "SHOWART")}
+    maps["VLINKS"] = _const(src, "VLINKS") or []
     sources = PP.load_sources(root)
     shows = {s["id"]: s for s in (_const(src, "SHOWS") or [])}
     films = {f["id"] for f in (_const(src, "FILMS") or [])}

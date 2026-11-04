@@ -1,7 +1,7 @@
 # Poster health, 2026-11-04
 
-- Films: 207/210 (98.6 %) show their own poster.
-- Plays: 502/526 (95.4 %) show their own poster or a production photo from their own page (523 display some image).
+- Films: 201/210 (95.7 %) show their own poster.
+- Plays: 500/526 (95.1 %) show their own poster or a production photo from their own page (522 display some image).
 - Target: 95 % each. This run attached: nothing.
 
 ## Plays per theatre
@@ -12,7 +12,7 @@
 | atelie313 | 18/18 | 0 |
 | citymark | 11/11 | 0 |
 | iam | 7/7 | 0 |
-| kuklen | 26/26 | 0 |
+| kuklen | 25/26 | 1 |
 | mladezhki | 34/48 | 14 |
 | national | 70/70 | 0 |
 | salzaismyah | 48/48 | 0 |
@@ -21,13 +21,14 @@
 | sofia-th | 16/16 | 0 |
 | tba | 37/39 | 2 |
 | th199 | 40/43 | 3 |
-| toplo | 53/56 | 3 |
+| toplo | 52/56 | 4 |
 | vazrazhdane | 29/29 | 0 |
 | zad-kanala | 21/22 | 1 |
 
 ## Plays without their own image
 
-### unverified: no record of the page this file came from (21)
+### unverified: no record of the page this file came from (22)
+- `5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w`: tried https://toplocentrala.bg/program/performance/let-s-not-get-lost-in-a-detail-now-workshop-w-maarten-seghers-needcompany (removed 2026-11-04: a funder's notice (Министерство на културата), matched only by the theme's _fit-detail suffix; the image before 2026-11-04 (the title's art, from the listing, not its own page) is kept)
 - `5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo`: tried https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden (https://toplocentrala.bg/attachments/Event/1225/main/Acoustic-live-2_thumb-detai: 851x315, not usable as a key image)
 - `az-foyerbah`: tried https://theatre.art.bg/x_5097_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `az-se-kazvah`: tried https://toplocentrala.bg/program/performance/az-se-kazvah (https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thum: 900x368, not usable as a key image)
@@ -50,15 +51,24 @@
 - `sablechi-se-za-vecherya`: tried https://theatre.art.bg/x_5963_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `spetsialni-povodi`: tried https://theatre.art.bg/x_4673_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 
-### no image: the generated art shows (3)
+### no image: the generated art shows (4)
 - `dalgiyat-pat-na-denya-kam-noshtta`: tried https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20 (no usable image on the page)
 - `igra-na-kotki`: tried https://zadkanala.bg/spektakli/igra-na-kotki (no usable image on the page)
 - `karnaval`: tried no own page linked (no own page linked)
+- `magichnata-nosht-predi-koleda`: tried https://theatre.art.bg/x_8103_10_20 (removed 2026-11-04: a generic „Очаквайте“ placeholder, not production art)
 
 
 ## Films without their own image
 
-### no image: the generated art shows (3)
+### unverified: an aggregator's image, and the film does not link its page (5)
+- `bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: tried no own page linked
+- `dzhambo-magicheskoto-priklyuchenie`: tried no own page linked
+- `hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: tried no own page linked
+- `kucheto-na-zlatyu`: tried no own page linked
+- `naza`: tried no own page linked
+
+### no image: the generated art shows (4)
 - `kasometrazhen-konkurs`: tried no own page linked (epaygo.bg is a ticket page, not the title's page)
 - `sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-`: tried no own page linked (embed.urboapp.com is a ticket page, not the title's page)
+- `tayniyat-svyat-na-arieti-2`: tried https://cineland.bg/bg/movie/the-secret-world-of-arriety/ (removed 2026-11-04: Cineland's site-wide banner from a popup, not the film's art)
 - `tseremoniya-po-nagrazhdavane-na-simvolite-na-sofiyskite-kvar`: tried no own page linked (embed.urboapp.com is a ticket page, not the title's page)

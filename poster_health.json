@@ -1,7 +1,7 @@
 {
  "before": {
-  "films": 98.6,
-  "shows": 95.4
+  "films": 95.7,
+  "shows": 95.1
  },
  "below_target": [],
  "date": "2026-11-04",
@@ -10,22 +10,28 @@
   "how": {
    "TMDB poster": 158,
    "own page: key": 3,
-   "own page: photo": 1,
    "own page: poster": 10,
-   "the film's programme page": 35
+   "the film's programme page": 30
   },
-  "pct": 98.6,
+  "pct": 95.7,
   "upcoming": 210,
-  "with": 207
+  "with": 201
  },
  "fixed_this_run": {},
  "missing": {
   "films": {
+   "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": "unverified: an aggregator's image, and the film does not link its page",
+   "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
+   "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
    "kasometrazhen-konkurs": "no image: the generated art shows",
+   "kucheto-na-zlatyu": "unverified: an aggregator's image, and the film does not link its page",
+   "naza": "unverified: an aggregator's image, and the film does not link its page",
    "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-": "no image: the generated art shows",
+   "tayniyat-svyat-na-arieti-2": "no image: the generated art shows",
    "tseremoniya-po-nagrazhdavane-na-simvolite-na-sofiyskite-kvar": "no image: the generated art shows"
   },
   "shows": {
+   "5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w": "unverified: no record of the page this file came from",
    "5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": "unverified: no record of the page this file came from",
    "az-foyerbah": "unverified: no record of the page this file came from",
    "az-se-kazvah": "unverified: no record of the page this file came from",
@@ -42,6 +48,7 @@
    "kotarakat-v-chizmi": "unverified: no record of the page this file came from",
    "kuche-na-ime-kote": "unverified: no record of the page this file came from",
    "lazaritsa": "unverified: no record of the page this file came from",
+   "magichnata-nosht-predi-koleda": "no image: the generated art shows",
    "malkata-rusalka": "unverified: no record of the page this file came from",
    "malkoto-slonche": "unverified: no record of the page this file came from",
    "mezhdunaroden-simpozium-melba": "unverified: no record of the page this file came from",
@@ -57,7 +64,7 @@
   "atelie313": "18/18",
   "citymark": "11/11",
   "iam": "7/7",
-  "kuklen": "26/26",
+  "kuklen": "25/26",
   "mladezhki": "34/48",
   "national": "70/70",
   "salzaismyah": "48/48",
@@ -66,21 +73,21 @@
   "sofia-th": "16/16",
   "tba": "37/39",
   "th199": "40/43",
-  "toplo": "53/56",
+  "toplo": "52/56",
   "vazrazhdane": "29/29",
   "zad-kanala": "21/22"
  },
  "shows": {
   "how": {
    "TMDB poster": 1,
-   "own page: key": 210,
+   "own page: key": 209,
    "own page: photo": 1,
-   "own page: poster": 290
+   "own page: poster": 289
   },
-  "pct": 95.4,
+  "pct": 95.1,
   "upcoming": 526,
-  "with": 502
+  "with": 500
  },
- "shows_displayed": 523,
+ "shows_displayed": 522,
  "target": 95.0
 }
