@@ -4000,9 +4000,10 @@ with __import__("tempfile").TemporaryDirectory() as _dh:
     _gimg = "https://cineland.bg/app/uploads/2025/12/banner.jpg"
     _srcE = {"shows": {}, "films": {}, "misses": {}}
     OPP.harvest({"show:x"}, {"show:x": "Икс филм"}, {"show:x": [_gl]},
-                _NetB2({_gl: f'<title>Икс филм</title><img src="{_gimg}">'}, {_gimg: _jpgb2(1200, 900, "red")}),
+                _NetB2({_gl: f'<title>Икс филм</title><div data-elementor-type="popup"><img src="{_gimg}"></div>'},
+                       {_gimg: _jpgb2(1200, 900, "red")}),
                 _srcE, _dtb2.date(2026, 11, 20))
-    check("harvest: a gallery photo alone (here a site banner) is not attached as the title's art",
+    check("harvest: the site's popup banner (Cineland, 2026-11-04) is not attached as the title's photo",
           "x" in _srcE["shows"], False)
 OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_b2
 _mf = {"POSTERS": {"k": "https://programata.bg/wp-content/uploads/2026/02/hqdefault.jpg",
