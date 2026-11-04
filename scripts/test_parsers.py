@@ -3988,6 +3988,58 @@ with __import__("tempfile").TemporaryDirectory() as _dh:
                 _srcE, _dtb2.date(2026, 11, 20))
     check("harvest: the site's popup banner (Cineland, 2026-11-04) is not attached as the title's photo",
           "x" in _srcE["shows"], False)
+    # Skeptic 2026-11-04: on a recheck a recorded poster must survive (C) a soft 404,
+    # the home page with HTTP 200 whose repertoire cards wrap the title's h2 in a link,
+    # and (D) a new site-wide share image set as og:image on the title's own page.
+    _season, _share = "https://nationaltheatre.bg/up/season-2026-27.jpg", "https://nationaltheatre.bg/up/share-2026.jpg"
+    _pgSoft = (f'<html><head><title>Народен театър | Начало</title><meta property="og:image" content="{_season}">'
+               '<link rel="canonical" href="https://nationaltheatre.bg/"></head><body><h1>Народен театър</h1>'
+               '<a href="/bg/predstavlenie/chayka-2026"><h2>Чайка</h2></a></body></html>')
+    _srcF = {"shows": {"chayka": dict(_prev)}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]},
+                _NetB2({_lk: _pgSoft}, {_season: _jpgb2(1200, 800, "green")}), _srcF, _dtb2.date(2026, 11, 20))
+    check("harvest recheck: a soft 404 (home page, linked h2 card) → the recorded poster is kept",
+          (_srcF["shows"]["chayka"]["img"], "replaced" in _srcF["shows"]["chayka"]), (_prev["img"], False))
+    check("page_identity: an h2 inside a link (a repertoire card) is not the page's heading",
+          OPP.page_identity('<title>Театър | Начало</title><a href="/x"><h2>Чайка</h2></a>', "Чайка"), False)
+    check("root_canonical: a canonical at the site's root on a show URL is a soft 404; on the root itself it is not",
+          [bool(OPP.root_canonical('<link rel="canonical" href="https://a.bg/">', "https://a.bg/show/chayka")),
+           bool(OPP.root_canonical('<link rel="canonical" href="https://a.bg/show/chayka">', "https://a.bg/show/chayka")),
+           bool(OPP.root_canonical('<meta property="og:url" content="/">', "https://a.bg/show/chayka")),
+           bool(OPP.root_canonical('<link rel="canonical" href="https://a.bg/">', "https://a.bg/"))],
+          [True, False, True, False])
+    _pgShare = (f'<html><head><title>Чайка | Народен театър</title><meta property="og:image" content="{_share}">'
+                "</head><body><h1>Чайка</h1></body></html>")
+    _srcG = {"shows": {"chayka": dict(_prev)}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]},
+                _NetB2({_lk: _pgShare}, {_share: _jpgb2(1200, 630, "gray")}), _srcG, _dtb2.date(2026, 11, 20))
+    check("harvest recheck: a recorded poster is never replaced by a lesser kind (a site-wide share image)",
+          (_srcG["shows"]["chayka"]["img"], _srcG["shows"]["chayka"]["recheck_lesser"]["kind"]), (_prev["img"], "key"))
+    # a same-kind image on a recheck is held, then confirmed HOLD_DAYS later; one that
+    # another title's page shows as its og:image meanwhile is site chrome, never used
+    _new = "https://nationaltheatre.bg/up/chayka-new.jpg"
+    _pgNew = (f'<html><head><title>Чайка | Народен театър</title><meta property="og:image" content="{_new}">'
+              "</head><body><h1>Чайка</h1></body></html>")
+    _netNew = _NetB2({_lk: _pgNew}, {_new: _jpgb2(500, 760, "orange")})
+    _srcH = {"shows": {"chayka": dict(_prev)}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]}, _netNew, _srcH, _dtb2.date(2026, 11, 20))
+    _h1 = (_srcH["shows"]["chayka"]["img"], _srcH["shows"]["chayka"].get("pending", {}).get("img"))
+    _due = [OPP.due("show:chayka", _srcH, _dtb2.date(2026, 11, d)) for d in (21, 23)]
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]}, _netNew, _srcH, _dtb2.date(2026, 11, 23))
+    check("harvest recheck: another poster is held first (recorded one shown), re-read after HOLD_DAYS, then used",
+          (_h1, _due, _srcH["shows"]["chayka"]["img"], _srcH["shows"]["chayka"]["replaced"]["img"]),
+          ((_prev["img"], _new), [False, True], _new, _prev["img"]))
+    _srcI = {"shows": {"chayka": dict(_prev)}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка"}, {"show:chayka": [_lk]}, _netNew, _srcI, _dtb2.date(2026, 11, 20))
+    _lk2 = "https://nationaltheatre.bg/bg/predstavlenie/nora"
+    OPP.harvest({"show:nora"}, {"show:nora": "Нора"}, {"show:nora": [_lk2]},
+                _NetB2({_lk2: _pgNew.replace("Чайка", "Нора")}, {_new: _jpgb2(500, 760, "orange")}),
+                _srcI, _dtb2.date(2026, 11, 21))
+    OPP.harvest({"show:chayka"}, {"show:chayka": "Чайка", "show:nora": "Нора"}, {"show:chayka": [_lk]},
+                _netNew, _srcI, _dtb2.date(2026, 11, 23))
+    check("harvest recheck: a held image that another title's page shows on a later night is site-wide → never used",
+          (_srcI["shows"]["chayka"]["img"], "nora" in _srcI["shows"], _new in _srcI["chrome"]),
+          (_prev["img"], False, True))
 OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_b2
 _mf = {"POSTERS": {"k": "https://programata.bg/wp-content/uploads/2026/02/hqdefault.jpg",
                    "l": "https://programata.bg/wp-content/uploads/2026/02/poster.jpg",
