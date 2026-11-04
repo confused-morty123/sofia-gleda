@@ -2602,6 +2602,151 @@ check("unreachable: no new links added from aggregator pages",
 check("unreachable: agg_sids is empty",
       _lc_unreach_agg, set())
 
+# ========================================================================= PL
+# Per-performance purchase links (PLINKS, owner 2026-11-04): each parser keeps the link its
+# theatre prints for THAT row as meta "buy" (the show's own page as "page"); the scraper
+# turns them into PLINKS (performance_links). Fixtures: the live pages of 2026-11-04, trimmed.
+print("PL: per-performance purchase links (fixtures of 2026-11-04)")
+import scrape_programs as _SP  # noqa: E402
+_T4 = dt.date(2026, 11, 4)
+
+
+def _buys(rows, word):
+    return [(r[1], r[2], r[3].get("buy"), r[3].get("page")) for r in rows if word.lower() in r[0].lower()]
+
+
+_NT = "https://www.nationaltheatre.bg/bg/predstavlenie/medeya"
+_n11 = O.parse_national(fx("theatre_national_pl_2026-11.html"), 2026, 11)[0]
+_n12 = O.parse_national(fx("theatre_national_pl_2026-12.html"), 2026, 12)[0]
+check("national: Медея 8 Nov keeps its own dated purchase page, the show page beside it",
+      _buys(_n11, "Медея"), [("2026-11-08", "19:00", _NT + "/2026-11-08|19:00:00", _NT)])
+check("national: Медея 5 Dec keeps its own (another date's page never)",
+      _buys(_n12, "Медея"), [("2026-12-05", "20:00", _NT + "/2026-12-05|20:00:00", _NT)])
+check("national: every row's buy link spells that row's date and time",
+      all(_SP.plink_matches(r[1], r[2], r[3]["buy"]) for r in _n11 + _n12), True)
+check("national: plink_matches refuses another performance's dated page",
+      _SP.plink_matches("2026-11-08", "19:00", _NT + "/2026-12-05|20:00:00"), False)
+
+_sl = O.parse_sofia_th(fx("theatre_sofia-th_pl_2026-12.html"))[0]
+check("sofia-th: Пинокио 5 and 20 Dec, each its own buy button (/program/842, /843)",
+      [(str(e["date"]), e["time"], e["buy"]) for e in _sl if "Пинокио" in e["title"]],
+      [("2026-12-05", "11:00", "https://sofiatheatre.eu/program/842"),
+       ("2026-12-20", "11:00", "https://sofiatheatre.eu/program/843")])
+check("sofia-th: a sold-out row has no buy link (falls back to the show page)",
+      {e["buy"] for e in _sl if e["sold_out"]}, {None})
+
+_sa = O.parse_satira(fx("theatre_satira_pl_2026-11.html"), TZ)
+check("satira: Денят на гларуса 5 and 28 Nov, each its own epaygo.bg event",
+      _buys(_sa, "гларуса"),
+      [("2026-11-05", "20:00", "https://epaygo.bg/1019698321", "https://satirata.bg/show/deniat-n-glarusa"),
+       ("2026-11-28", "20:00", "https://epaygo.bg/3302885029", "https://satirata.bg/show/deniat-n-glarusa")])
+
+_sz = O.parse_salza(fx("theatre_salzaismyah_pl_2026-11.html"), 2026, 11)[0]
+check("salzaismyah: ДВАМА ЧИСТО ГОЛИ МЪЖЕ 21 Nov, its own selector",
+      [(r[1], r[2], r[3].get("buy")) for r in _sz if "ГОЛИ МЪЖЕ" in r[0].upper()],
+      [("2026-11-21", "19:00", "https://www.salzaismyah.bg/site/selector/3164")])
+check("salzaismyah: no two rows share a selector",
+      len({r[3]["buy"] for r in _sz if r[3].get("buy")}) == sum(1 for r in _sz if r[3].get("buy")), True)
+
+_sf = O.parse_sfumato(fx("theatre_sfumato_pl.html"), _T4)
+_AP = "http://sfumato.info/актьори-срещу-поети___2972"
+check("sfumato: Актьори срещу поети 10 Nov and 19 Dec, each its own kupi-bilet.php?p=",
+      _buys(_sf, "Актьори срещу поети"),
+      [("2026-11-10", "19:00", "http://theatre.art.bg/kupi-bilet.php?p=85913&id=2972&theatre=14&city=20", _AP),
+       ("2026-12-19", "19:00", "http://theatre.art.bg/kupi-bilet.php?p=86234&id=2972&theatre=14&city=20", _AP)])
+
+_TA = "https://toplocentrala.bg/program/performance/aivar-or-lyutenitsa"
+check("toplo: Айвар или лютеница 14 Nov ?day=10, 13 Dec ?day=11 (each page names its own date)",
+      _buys(O.parse_toplo(fx("theatre_toplo_pl_2026-11.html")) + O.parse_toplo(fx("theatre_toplo_pl_2026-12.html")),
+            "Айвар"),
+      [("2026-11-14", "20:00", _TA + "?day=10", _TA), ("2026-12-13", "20:00", _TA + "?day=11", _TA)])
+
+_cm = O.parse_art_venue(fx("theatre_citymark_pl.html"), _T4)[0]
+check("citymark (theatre.art.bg venue page): Хензел и Гретел 14 Nov, its kupi-bilet.php?p=",
+      _buys(_cm, "Хензел"),
+      [("2026-11-14", "11:00", "https://theatre.art.bg/kupi-bilet.php?p=86126&id=7730&theatre=173&city=20",
+        "https://theatre.art.bg/хензел-и-гретел_7730_173_20")])
+_two = ('<div id="parentHorizontalTab"><ul class="resp-tabs-list"><li><a>Ноември</a></li></ul>'
+        '<div class="resp-tabs-container"><div><div class="kupi-bilet-box"><ul><li><div class="number">14</div></li>'
+        '<li><h3><a href="/x_1_173_20">X</a></h3><p>14 Събота 11.00 и 13.00 часа, сцена</p></li>'
+        '<li><a class="kupi-bilet" href="/kupi-bilet.php?p=1&amp;id=1&amp;theatre=173&amp;city=20">Купи</a></li>'
+        '</ul></div></div></div></div>')
+check("theatre.art.bg venue page: one link for two times names neither (no buy)",
+      [(r[2], r[3].get("buy")) for r in O.parse_art_venue(_two, _T4)[0]], [("11:00", None), ("13:00", None)])
+check("theatre.art.bg venue page: a sold-out entry (its show page, hidden) has no buy link",
+      {r[3].get("buy") for r in O.parse_art_venue(fx("theatre_citymark.html"), TODAY)[0]
+       if r[0] != "Канкун"}, {None})
+
+
+class _DayNet:
+    def __init__(self, body):
+        self.body = body
+
+    def soup(self, url, **kw):
+        return BeautifulSoup(O.decode(self.body), "lxml")
+
+
+_day = _SP.scrape_theatre_day("2026-11-07", _DayNet(raw("theatre_artbg_pl_2026-11-07.html")))
+check("theatre.art.bg day page: АНЕТО 11:00 and 17:00 carry ONE purchase link",
+      [(r[2], r[4]) for r in _day if r[0] == "АНЕТО"],
+      [("11:00", "https://theatre.art.bg/kupi-bilet.php?p=85934&id=8058&theatre=10&city=20"),
+       ("17:00", "https://theatre.art.bg/kupi-bilet.php?p=85934&id=8058&theatre=10&city=20")])
+_art = [(r[0].lower(), _SP.THEATRE_ART_IDS.get(r[3]), r[1], r[2], r[4]) for r in _day]
+_perf = [[sid, d, t] for sid, v, d, t, _l in _art if v]
+_pl = _SP.performance_links(_perf, [], _art, [], [])
+check("PLINKS from the day page: the shared АНЕТО link names neither performance",
+      [e for e in _pl if e[0] == "ането"], [])
+check("PLINKS from the day page: Ателие 313, Сити Марк and Sfumato listings keep their own",
+      sorted((e[0][:18], e[3].split("?", 1)[1]) for e in _pl),
+      sorted([("червената шапчица", "p=85982&id=3262&theatre=22&city=20"),
+              ('"шарената книжка" ', "p=86125&id=6364&theatre=173&city=20"),
+              ("митове за крал мак", "p=85910&id=7667&theatre=14&city=20")]))
+check("PLINKS from the day page: a theatre theatre.art.bg does not sell for (Младежки) gets none",
+      any(_SP.THEATRE_ART_IDS.get(r[3]) == "mladezhki" for r in _day)
+      and not any(e[0].startswith("конрад") for e in _pl), True)
+
+# performance_links rules
+_P = [["a", "2026-11-08", "19:00"], ["a", "2026-12-05", "20:00"], ["b", "2026-11-10", "19:00"],
+      ["c", "2026-11-11", "19:00"], ["d", "2026-11-12", "19:00"], ["e", "2026-11-13", "19:00"]]
+_own = [("a", "2026-11-08", "19:00", {"buy": _NT + "/2026-11-08|19:00:00"}),
+        ("a", "2026-12-05", "20:00", {"buy": _NT + "/2026-12-05|20:00:00"}),
+        ("a", "2027-02-07", "19:00", {"buy": _NT + "/2027-02-07|19:00:00"}),       # past the window
+        ("b", "2026-11-10", "19:00", {"buy": "https://epaygo.bg/1"}),
+        ("c", "2026-11-11", "19:00", {"buy": "https://epaygo.bg/1"}),               # same link as b
+        ("d", "2026-11-12", "19:00", {"buy": "https://epaygo.bg/4"}),
+        ("d", "2026-11-12", "19:00", {"buy": "https://epaygo.bg/5"}),               # two links for d
+        ("e", "2026-11-13", "19:00", {"buy": _NT + "/2026-11-14|19:00:00"})]        # another date
+_got = _SP.performance_links(_P, _own, [], [], [])
+check("performance_links: each performance its own link, nothing else",
+      _got, [["a", "2026-11-08", "19:00", _NT + "/2026-11-08|19:00:00"],
+             ["a", "2026-12-05", "20:00", _NT + "/2026-12-05|20:00:00"]])
+check("performance_links: a BOXONLY performance never gets one",
+      _SP.performance_links(_P, _own, [], [], [["a", "2026-11-08", "19:00", None, None]]),
+      [["a", "2026-12-05", "20:00", _NT + "/2026-12-05|20:00:00"]])
+_k = "https://theatre.art.bg/kupi-bilet.php?p=9&id=1&theatre=22&city=20"
+check("performance_links: the theatre's own link before theatre.art.bg's",
+      _SP.performance_links([["f", "2026-11-14", "19:00"]],
+                            [("f", "2026-11-14", "19:00", {"buy": "http://theatre.art.bg/kupi-bilet.php?p=8"})],
+                            [("f", "sfumato", "2026-11-14", "19:00", _k)], [], []),
+      [["f", "2026-11-14", "19:00", "http://theatre.art.bg/kupi-bilet.php?p=8"]])
+check("performance_links: a theatre.art.bg link that is not kupi-bilet.php?p= is not taken",
+      _SP.performance_links([["f", "2026-11-14", "19:00"]], [],
+                            [("f", "atelie313", "2026-11-14", "19:00", "https://theatre.art.bg/x_1_22_20")], [], []), [])
+_prev = [["a", "2026-11-08", "19:00", "https://old.example/a8"], ["g", "2026-11-15", "19:00", "https://old.example/g"],
+         ["h", "2026-11-16", "19:00", "https://old.example/h"], ["z", "2026-11-17", "19:00", "https://old.example/z"]]
+_P2 = [["a", "2026-11-08", "19:00"], ["g", "2026-11-15", "19:00"], ["h", "2026-11-16", "19:00"]]
+check("performance_links: last run's link kept only for a performance that still exists and no source read",
+      _SP.performance_links(_P2, [("a", "2026-11-08", "19:00", {"buy": "https://epaygo.bg/8"})], [], _prev, [],
+                            read={("a", "2026-11-08", "19:00"), ("h", "2026-11-16", "19:00")}),
+      [["a", "2026-11-08", "19:00", "https://epaygo.bg/8"], ["g", "2026-11-15", "19:00", "https://old.example/g"]])
+_pg = 'const BOXONLY=[];\n'
+_pg2 = _SP.write_plinks(_pg, [["a", "2026-11-08", "19:00", "https://epaygo.bg/8"]])
+check("write_plinks inserts after BOXONLY, read_plinks reads it back",
+      (_pg2.splitlines()[1][:14], _SP.read_plinks(_pg2)),
+      ("const PLINKS=[", [["a", "2026-11-08", "19:00", "https://epaygo.bg/8"]]))
+check("write_plinks replaces an existing declaration",
+      _SP.read_plinks(_SP.write_plinks(_pg2, [])), [])
+
 print()
 if fails:
     print(f"{len(fails)} FAILED: {', '.join(fails)}")

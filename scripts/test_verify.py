@@ -1515,6 +1515,66 @@ check("BOXONLY entries in an app without boxOnly() exit non-zero (they would off
       _rc != 0 and "no boxOnly()" in _out)
 
 # ---------------------------------------------------------------------------
+# 4c2a1: PLINKS, one performance's own purchase page
+# ---------------------------------------------------------------------------
+print("4c2a1: PLINKS")
+_pl_fn = "function perfTixUrl(i,d,t){return '';}"
+# show0's performances (see _bulk_performances): _FUTURE 10:00 and +5 days 10:00
+_F5 = (datetime.date.today() + datetime.timedelta(days=6)).isoformat()
+
+
+def _pl_page(entries, boxonly=None, with_fn=True):
+    """The minimal page with PLINKS (and BOXONLY when given) declared and, unless with_fn is
+    False, the app's perfTixUrl() and boxOnly() on lines of their own."""
+    js = f"const PLINKS={_json.dumps(entries)};"
+    if boxonly is not None:
+        js += f"\n        const BOXONLY={_json.dumps(boxonly)};"     # the page's own indent (dedent)
+    h = _minimal_html(extra_js=js)
+    fns = (_pl_fn + "\n" + _bo_fn) if with_fn else _bo_fn
+    return h.replace("/* SOFIA-DATA-END */", f"{fns}\n/* SOFIA-DATA-END */", 1)
+
+
+_NT = "https://www.nationaltheatre.bg/bg/predstavlenie/medeya/"
+_pl_ok = [["show0", _FUTURE, "10:00", _NT + _FUTURE + "|10:00:00"],
+          ["show0", _F5, "10:00", "https://epaygo.bg/1438494211"]]
+_rc, _out = _run_out(_pl_page(_pl_ok))
+check("PLINKS naming their own performances exit 0 (and are counted)",
+      _rc == 0 and "PLINKS: 2 performance(s)" in _out)
+check("an empty PLINKS exits 0 (no perfTixUrl() needed)",
+      _run(_minimal_html(extra_js="const PLINKS=[];"), skip_freshness=True) == 0)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", _NT + _F5 + "|10:00:00"]]))
+check("a PLINKS url that spells another date exits non-zero",
+      _rc != 0 and "encode another date/time than their row" in _out)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", _NT + _FUTURE + "|20:00:00"]]))
+check("a PLINKS url that spells another time exits non-zero",
+      _rc != 0 and "encode another date/time than their row" in _out)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", _NT.rstrip("/") + "/" + _FUTURE + "%7C10%3A00%3A00"]]))
+check("a PLINKS url with its own date and time %-encoded exits 0", _rc == 0)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "23:59", "https://epaygo.bg/1"]]))
+check("a PLINKS entry with no PERFORMANCES row exits non-zero",
+      _rc != 0 and "PLINKS entr(ies) name no PERFORMANCES row" in _out)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", "https://epaygo.bg/1"],
+                               ["show0", _F5, "10:00", "https://epaygo.bg/1"]]))
+check("one PLINKS url given to two performances exits non-zero",
+      _rc != 0 and "given to more than one performance" in _out)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", "https://epaygo.bg/1"]] * 2))
+check("a duplicate PLINKS entry exits non-zero", _rc != 0 and "duplicate PLINKS" in _out)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", "javascript:alert(1)"]]))
+check("a PLINKS url that is not http(s) exits non-zero",
+      _rc != 0 and "PLINKS entr(ies) are not" in _out)
+_rc, _out = _run_out(_pl_page([["show0", _FUTURE, "10:00", "https://epaygo.bg/1"]],
+                              boxonly=[["show0", _FUTURE, "10:00", None, None]]))
+check("a box-office-only performance (BOXONLY) with a PLINKS link exits non-zero",
+      _rc != 0 and "(BOXONLY) have a PLINKS buy link" in _out)
+_rc, _out = _run_out(_pl_page(_pl_ok, with_fn=False))
+check("PLINKS entries in an app without perfTixUrl() exit non-zero",
+      _rc != 0 and "no perfTixUrl()" in _out)
+_rc, _out = _run_out(_pl_page(_pl_ok).replace(
+    "const LINKS=[];", 'const LINKS=[["show0","' + _NT + _FUTURE + '|10:00:00"]];', 1))
+check("the neutral-LINKS check still fails a show link naming one performance",
+      _rc != 0 and "5c LINKS" in _out)
+
+# ---------------------------------------------------------------------------
 # 4c2a2: FESTROWS — festival screenings at box-office-only cinemas (Одеон, G8)
 # ---------------------------------------------------------------------------
 print("4c2a2: FESTROWS")

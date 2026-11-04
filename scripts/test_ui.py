@@ -20647,6 +20647,161 @@ def _ga1_on(browser, base, src, page_csp, legal, ver, ga_id, webkit):
     check("ga1_sw_never_handles_google", 0 <= i_ret < i_resp and hosts_ok, f"return at {i_ret}, respondWith at {i_resp}")
 
 
+# ============================================================================
+# WAVE PL1: per-performance purchase links (owner, 2026-11-04). The time panel's
+# "Купи билет" opens THAT performance's own purchase page (PLINKS: the link the
+# theatre prints for it), else the show's neutral page; never another date's. The
+# caption stays „Отваря сайта на {theatre}“. The show sheet's buy box stays show-level,
+# a box-office-only performance (BOXONLY) keeps its stub (and Сълза и смях's online
+# seller button) and never gets a PLINKS button. Examples: Медея 8 Nov and 5 Dec
+# (Народен), a Театър „София“ and a Сатирата show on two dates each.
+# ============================================================================
+PL_MEDEYA = [["medeya", "2026-11-08", "19:00"], ["medeya", "2026-12-05", "20:00"]]
+PL_COPY = {"bg": {"buy": "Купи билет", "opens": "Отваря сайта на {name}"},
+           "en": {"buy": "Buy a ticket", "opens": "Opens the {name} website"}}
+PL_PANEL_JS = r"""(phone)=>{
+  const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet');
+  if(!ss||!ss.getClientRects().length)return null;
+  const txt=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  const b=ss.querySelector('.ss-btn.pri');
+  return {buy:b?b.getAttribute('href'):null, label:txt(b), hook:b?b.hasAttribute('data-ss-buy'):false,
+          target:b?b.getAttribute('target'):null, rel:b?b.getAttribute('rel'):null,
+          help:[...ss.querySelectorAll('.ss-help')].map(txt), stub:!!ss.querySelector('[data-boxonly]'),
+          time:txt(ss.querySelector('.ss-time')), date:txt(ss.querySelector('.ss-date'))};
+}"""
+
+
+def wave_pl1(browser):
+    print("\n=== PL1: per-performance purchase links (PLINKS) ===")
+    ensure_shot_dir("PL1")
+    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
+    info = page.evaluate("""(medeya)=>{
+      const PL=(typeof PLINKS!=='undefined'&&Array.isArray(PLINKS))?PLINKS:[];
+      const today=TODAY, own=new Map(PL.map(r=>[r.slice(0,3).join('|'),r[3]]));
+      const perf=new Set(PERFORMANCES.map(p=>p.slice(0,3).join('|')));
+      const byShow={}; for(const r of PL){(byShow[r[0]]=byShow[r[0]]||[]).push(r);}
+      // a show of this theatre with two upcoming performances that each have their own page
+      const two=th=>{for(const id of Object.keys(byShow).sort()){const sh=showById[id];
+        if(!sh||sh.theatre!==th)continue; const rs=byShow[id].filter(r=>r[1]>=today);
+        if(rs.length>=2&&new Set(rs.map(r=>r[3])).size===rs.length)return rs.slice(0,2);}return null;};
+      const med=medeya.map(([i,d,t])=>({id:i,d,t,perf:perf.has(i+'|'+d+'|'+t),url:own.get(i+'|'+d+'|'+t)||null,
+        th:(showById[i]||{}).theatre||null,past:d<today}));
+      const bx=(typeof BOXONLY!=='undefined'&&Array.isArray(BOXONLY))?BOXONLY:[];
+      return {n:PL.length, med, sth:two('sofia-th'), sat:two('satira'),
+        lost:PL.filter(r=>!perf.has(r.slice(0,3).join('|'))).length,
+        boxPl:bx.filter(r=>own.has(r.slice(0,3).join('|'))).length,
+        box:bx.filter(r=>r[1]>=today).map(r=>[r[0],r[1],r[2],!!r[3]]),
+        shared:PL.length-new Set(PL.map(r=>r[3])).size};
+    }""", PL_MEDEYA)
+    print(f"  data: {json.dumps(info, ensure_ascii=False)[:600]}")
+    if not info["n"]:
+        skip("pl1_all", "this build has no PLINKS (fixture ref from before PLINKS; run with SOFIA_HTML)")
+        ctx.close()
+        return
+    check("pl1_data_every_entry_has_its_performance", info["lost"] == 0, f"{info['lost']} PLINKS without a PERFORMANCES row")
+    check("pl1_data_one_performance_per_link", info["shared"] == 0, f"{info['shared']} link(s) given twice")
+    check("pl1_data_no_boxonly_link", info["boxPl"] == 0, f"{info['boxPl']} BOXONLY performance(s) with a PLINKS link")
+
+    # every performance of every show with PLINKS, both languages, from the panel itself: its own
+    # page, else a page that is no other performance's (no other date, no other performance id)
+    for lang in ("bg", "en"):
+        bad = page.evaluate("""(lang)=>{S.lang=lang;
+          const PL=(typeof PLINKS!=='undefined'&&Array.isArray(PLINKS))?PLINKS:[];
+          const own=new Map(PL.map(r=>[r.slice(0,3).join('|'),r[3]])), shows=new Set(PL.map(r=>r[0]));
+          const idOf=u=>{const m=(u||'').match(/(?:\\/program\\/|epaygo\\.bg\\/|\\/selector\\/|[?&]p=|[?&]day=)(\\d+)/);return m?m[0]:null;};
+          // another performance: any other row's page, or the id another row OF THIS SHOW carries
+          // (?day=N counts per show; Народен's dated pages are checked by their date)
+          const urlOf=new Map(PL.map(r=>[r[3],r.slice(0,3).join('|')]));
+          const ids=new Map(PL.map(r=>[r[0]+'#'+idOf(r[3]),r.slice(0,3).join('|')]).filter(x=>!x[0].endsWith('#null')));
+          const out=[]; let n=0;
+          for(const p of PERFORMANCES){ if(!shows.has(p[0])||p[1]<TODAY)continue; const sh=showById[p[0]]; if(!sh)continue;
+            const k=p.slice(0,3).join('|'), el=document.createElement('div');
+            el.innerHTML=screeningSheetHtml('show',p[0],sh.theatre,p[1],p[2]); n++;
+            const b=el.querySelector('.ss-btn.pri'), h=b?b.getAttribute('href'):'', want=own.get(k);
+            if(want&&h!==want){out.push(k+': '+h+' not its own '+want);continue;}
+            const dates=(decodeURIComponent(h||'').match(/\\d{4}-\\d{2}-\\d{2}/g)||[]).filter(x=>x!==p[1]);
+            if(dates.length)out.push(k+': names another date '+dates[0]);
+            if(h&&urlOf.has(h)&&urlOf.get(h)!==k){out.push(k+': opens '+urlOf.get(h)+"'s page");continue;}
+            const id=idOf(h), ik=p[0]+'#'+id; if(id&&ids.has(ik)&&ids.get(ik)!==k)out.push(k+': names another performance '+id);}
+          S.lang='bg'; return {n,out};}""", lang)
+        check(f"pl1_every_performance_its_own_or_neutral_{lang}", not bad["out"],
+              f"{bad['n']} performance(s) of PLINKS shows rendered; {len(bad['out'])} wrong: {bad['out'][:3]}")
+    ctx.close()
+
+    # the examples, tapped as a user would, phone and desktop, BG and EN
+    cases = []
+    for m in info["med"]:
+        if m["past"]:
+            skip(f"pl1_medeya_{m['d']}", f"Медея {m['d']} has passed")
+        elif not (m["perf"] and m["url"]):
+            check(f"pl1_medeya_{m['d']}_has_own_page", False, f"{m}")
+        else:
+            cases.append(("medeya", m["id"], m["th"], m["d"], m["t"], m["url"]))
+    for tag, rs in (("sofia-th", info["sth"]), ("satira", info["sat"])):
+        if not rs:
+            check(f"pl1_{tag}_show_on_two_dates", False, f"no {tag} show with two upcoming PLINKS performances")
+            continue
+        for r in rs:
+            cases.append((tag, r[0], tag, r[1], r[2], r[3]))
+    sizes = ((393, 852, True), (1280, 800, False))
+    urls = {c[5] for c in cases}
+    for tag, sid, th, d, tm, url in cases:
+        key = f"show:{sid}|{th}|{d}|{tm}"
+        for (w, h, phone) in sizes:
+            for lang in ("bg", "en"):
+                name = f"pl1_{tag}_{sid}_{d}_{'phone' if phone else 'desktop'}_{lang}"
+                ctx, page, errs = _hf_open(browser, w, h, phone, lang, "theatre")
+                _bo_open_show(page, sid); page.wait_for_timeout(700)
+                tapped = _bo_tap_key(page, phone, key)
+                r = page.evaluate(PL_PANEL_JS, phone) if tapped else None
+                thn = page.evaluate("(a)=>{const t=thById[a];return t?(a&&S.lang==='en'?(t.nameEn||t.name):t.name):''}", th)
+                al = page.evaluate("(id)=>(typeof AGGLINKS==='object'&&AGGLINKS[id])||null", sid)
+                want_help = PL_COPY[lang]["opens"].replace("{name}", al or thn)
+                probs = []
+                if not r:
+                    probs.append("no panel")
+                else:
+                    if r["buy"] != url:
+                        probs.append(f"buy {r['buy']} is not its own {url}")
+                    if r["buy"] in urls - {url}:
+                        probs.append("opens another example's page")
+                    if r["label"] != PL_COPY[lang]["buy"] or want_help not in r["help"]:
+                        probs.append(f"label {r['label']!r} help {r['help']} (want {want_help!r})")
+                    if not r["hook"] or r["target"] != "_blank" or "noopener" not in (r["rel"] or ""):
+                        probs.append(f"hook={r['hook']} target={r['target']} rel={r['rel']}")
+                    if r["stub"] or r["time"] != tm:
+                        probs.append(f"stub={r['stub']} time={r['time']}")
+                if lang == "bg" and w == 393:
+                    save_shot(page, "PL1", f"{tag}_{sid}_{d}")
+                if lang == "bg" and not phone:
+                    # the show sheet's buy box stays show-level: never one performance's page
+                    sb = page.evaluate("""()=>[...document.querySelectorAll('#scrim .sheet .buybox a')].map(a=>a.getAttribute('href'))""")
+                    check(f"pl1_{tag}_{sid}_{d}_sheet_buybox_show_level", not (set(sb) & urls), f"buy box links: {sb}")
+                check(name, tapped and not probs and not errs, f"{key}: {probs} errors={errs[:2]}")
+                ctx.close()
+
+    # box office only: the stub, no "Купи билет", the online seller's button untouched, even if
+    # PLINKS named the performance (the app refuses it)
+    if not info["box"]:
+        skip("pl1_boxonly_untouched", "no upcoming BOXONLY performance in this build")
+    else:
+        ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
+        for lang in ("bg", "en"):
+            res = page.evaluate("""(a)=>{S.lang=a[1];const out=[];
+              for(const [id,d,t,alt] of a[0]){const sh=showById[id];if(!sh)continue;
+                PLINK_MAP[id+'|'+d+'|'+t]='https://example.org/forced-'+d;
+                const el=document.createElement('div');el.innerHTML=screeningSheetHtml('show',id,sh.theatre,d,t);
+                delete PLINK_MAP[id+'|'+d+'|'+t];
+                const pri=el.querySelector('.ss-btn.pri'),stub=el.querySelector('[data-boxonly]');
+                const sec=[...el.querySelectorAll('a.ss-btn.sec')].filter(x=>!x.hasAttribute('data-ss-map'));
+                if(pri||!stub||/forced-/.test(el.innerHTML)||(alt&&sec.length!==1)||(!alt&&sec.length))
+                  out.push([id,d,t,!!pri,!!stub,sec.length]);}
+              S.lang='bg';return out;}""", [info["box"], lang])
+            check(f"pl1_boxonly_untouched_{lang}", not res, f"{len(info['box'])} BOXONLY performance(s); wrong: {res[:3]}")
+        check("pl1_no_page_errors_boxonly", not errs, f"{errs[:2]}")
+        ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -20683,6 +20838,7 @@ WAVES = {
     "UX1": wave_ux1,
     "B24": wave_b24,
     "BO1": wave_bo1,
+    "PL1": wave_pl1,
     "DM1": wave_dm1,
     "GA1": wave_ga1,
 }
