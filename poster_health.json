@@ -1,7 +1,7 @@
 {
  "before": {
   "films": 95.7,
-  "shows": 95.1
+  "shows": 95.0
  },
  "below_target": [],
  "date": "2026-11-04",
@@ -40,6 +40,7 @@
    "buratino-2": "unverified: no record of the page this file came from",
    "clean-girl-fat-festival": "unverified: no record of the page this file came from",
    "dalgiyat-pat-na-denya-kam-noshtta": "no image: the generated art shows",
+   "dekameron-lyubov-i-smart-po-bokacho": "no image: the generated art shows",
    "dnevnikat-na-edin-lud-2": "unverified: no record of the page this file came from",
    "igra-na-kotki": "no image: the generated art shows",
    "ivanovden": "unverified: no record of the page this file came from",
@@ -66,6 +67,7 @@
   "iam": "7/7",
   "kuklen": "25/26",
   "mladezhki": "34/48",
+  "natfiz": "9/10",
   "national": "70/70",
   "salzaismyah": "48/48",
   "satira": "42/42",
@@ -82,12 +84,12 @@
    "TMDB poster": 1,
    "own page: key": 209,
    "own page: photo": 1,
-   "own page: poster": 289
+   "own page: poster": 298
   },
-  "pct": 95.1,
-  "upcoming": 526,
-  "with": 500
+  "pct": 95.0,
+  "upcoming": 536,
+  "with": 509
  },
- "shows_displayed": 522,
+ "shows_displayed": 531,
  "target": 95.0
 }

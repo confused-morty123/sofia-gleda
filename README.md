@@ -175,8 +175,10 @@ Three jobs:
   36-hour freshness check: the data is whatever was last committed), then
   `test_parsers`, `test_theatres`, `test_verify`, `test_security`, `test_schedule`.
   Every test runs even when an earlier one failed, so one run shows all failures.
-  A known failure is shown, not hidden: today `test_parsers` fails its film poster
-  coverage threshold, so this job is red until that is fixed. About 15 minutes.
+  A failure is shown, not hidden: the step goes red and so does the job. Only the
+  publish-gate step skips the freshness check (`SOFIA_SKIP_FRESHNESS=1` on that
+  step alone): `test_verify` checks that a stale build fails the gate, so the flag
+  is not set for the whole job. About 15 minutes.
 - **plan**: `scripts/ci_waves.py` splits the waves of `scripts/test_ui.py` into
   shards of at most about 8 minutes of tests each (a shard takes about 10 minutes with
   setup; B24 and HF1 are longer and get a shard of their own).

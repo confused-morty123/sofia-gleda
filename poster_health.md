@@ -1,7 +1,7 @@
 # Poster health, 2026-11-04
 
 - Films: 201/210 (95.7 %) show their own poster.
-- Plays: 500/526 (95.1 %) show their own poster or a production photo from their own page (522 display some image).
+- Plays: 509/536 (95.0 %) show their own poster or a production photo from their own page (531 display some image).
 - Target: 95 % each. This run attached: nothing.
 
 ## Plays per theatre
@@ -14,6 +14,7 @@
 | iam | 7/7 | 0 |
 | kuklen | 25/26 | 1 |
 | mladezhki | 34/48 | 14 |
+| natfiz | 9/10 | 1 |
 | national | 70/70 | 0 |
 | salzaismyah | 48/48 | 0 |
 | satira | 42/42 | 0 |
@@ -51,8 +52,9 @@
 - `sablechi-se-za-vecherya`: tried https://theatre.art.bg/x_5963_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `spetsialni-povodi`: tried https://theatre.art.bg/x_4673_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 
-### no image: the generated art shows (4)
+### no image: the generated art shows (5)
 - `dalgiyat-pat-na-denya-kam-noshtta`: tried https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20 (no usable image on the page)
+- `dekameron-lyubov-i-smart-po-bokacho`: tried https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/ (no usable image on the page)
 - `igra-na-kotki`: tried https://zadkanala.bg/spektakli/igra-na-kotki (no usable image on the page)
 - `karnaval`: tried no own page linked (no own page linked)
 - `magichnata-nosht-predi-koleda`: tried https://theatre.art.bg/x_8103_10_20 (removed 2026-11-04: a generic „Очаквайте“ placeholder, not production art)

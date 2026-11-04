@@ -123,8 +123,8 @@ jobs:
           python3 scripts/csp.py
 
       # From here on every step runs when the build worked, even after a failed test, so
-      # one run shows every failure. A known failure (test_parsers' poster-coverage
-      # threshold) is not hidden: the step goes red and the job fails with it.
+      # one run shows every failure. A failure is not hidden: the step goes red and
+      # the job fails with it.
       - name: Publish gate (verify_build.py)
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         # The gate's freshness check (SNAPSHOT older than 36 h) is about the live data,
