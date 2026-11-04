@@ -2687,20 +2687,44 @@ class _DayNet:
 
 
 _day = _SP.scrape_theatre_day("2026-11-07", _DayNet(raw("theatre_artbg_pl_2026-11-07.html")))
-check("theatre.art.bg day page: АНЕТО 11:00 and 17:00 carry ONE purchase link",
-      [(r[2], r[4]) for r in _day if r[0] == "АНЕТО"],
-      [("11:00", "https://theatre.art.bg/kupi-bilet.php?p=85934&id=8058&theatre=10&city=20"),
-       ("17:00", "https://theatre.art.bg/kupi-bilet.php?p=85934&id=8058&theatre=10&city=20")])
-_art = [(r[0].lower(), _SP.THEATRE_ART_IDS.get(r[3]), r[1], r[2], r[4]) for r in _day]
-_perf = [[sid, d, t] for sid, v, d, t, _l in _art if v]
-_pl = _SP.performance_links(_perf, [], _art, [], [])
-check("PLINKS from the day page: the shared АНЕТО link names neither performance",
-      [e for e in _pl if e[0] == "ането"], [])
+_K = "https://theatre.art.bg/kupi-bilet.php?p=%s&id=8058&theatre=10&city=20"
+check("theatre.art.bg day page: АНЕТО 11:00 and 17:00 each carry the link printed after its own time",
+      [(r[2], r[8]) for r in _day if r[0] == "АНЕТО"], [("11:00", _K % 85934), ("17:00", _K % 85935)])
+check("theatre.art.bg day page: the listing's first link still gives the theatre id",
+      {(r[3], r[4]) for r in _day if r[0] == "АНЕТО"}, {("10", _K % 85934)})
+
+
+def _pl_of(day):
+    art = [(r[0].lower(), _SP.THEATRE_ART_IDS.get(r[3]), r[1], r[2], r[8]) for r in day]
+    return _SP.performance_links([[sid, d, t] for sid, v, d, t, _l in art if v], [], art, [], [])
+
+
+_pl = _pl_of(_day)
+check("PLINKS from the day page: АНЕТО's matinée pair, each performance its own seat map",
+      [e for e in _pl if e[0] == "ането"],
+      [["ането", "2026-11-07", "11:00", _K % 85934], ["ането", "2026-11-07", "17:00", _K % 85935]])
 check("PLINKS from the day page: Ателие 313, Сити Марк and Sfumato listings keep their own",
-      sorted((e[0][:18], e[3].split("?", 1)[1]) for e in _pl),
+      sorted((e[0][:18], e[3].split("?", 1)[1]) for e in _pl if e[0] != "ането"),
       sorted([("червената шапчица", "p=85982&id=3262&theatre=22&city=20"),
               ('"шарената книжка" ', "p=86125&id=6364&theatre=173&city=20"),
               ("митове за крал мак", "p=85910&id=7667&theatre=14&city=20")]))
+# skeptic (2026-11-04): with only the pair's FIRST link read, a first slot the parser
+# no longer recognises left 17:00 alone with the 11:00 link, and PLINKS published it.
+_raw_pl = raw("theatre_artbg_pl_2026-11-07.html").decode("utf-8")
+_s1 = "<strong>11.00 часа, Салон Гурко 14</strong>"
+assert _raw_pl.count(_s1) == 1
+for _why, _rep in (("a cancelled first slot", "<strong>ОТМЕНЕНО 11.00 часа, Салон Гурко 14</strong>"),
+                   ("a prefixed first slot", "<strong>Премиера: 11.00 часа, Салон Гурко 14</strong>"),
+                   ("a first slot not in <strong>", "<b>11.00 часа, Салон Гурко 14</b>")):
+    _d2 = _SP.scrape_theatre_day("2026-11-07", _DayNet(_raw_pl.replace(_s1, _rep).encode("utf-8")))
+    check(f"theatre.art.bg day page: {_why} leaves АНЕТО 17:00 with no link (never the 11:00 one)",
+          ([(r[2], r[8]) for r in _d2 if r[0] == "АНЕТО"], [e for e in _pl_of(_d2) if e[0] == "ането"]),
+          ([("17:00", None)], []))
+_one = _raw_pl.replace('<a class="kupi_bilet" href="/kupi-bilet.php?p=85935&amp;id=8058&amp;theatre=10&amp;city=20"',
+                       '<a class="x" href="/x"', 1)
+check("theatre.art.bg day page: a pair printing one link names neither performance",
+      [(r[2], r[8]) for r in _SP.scrape_theatre_day("2026-11-07", _DayNet(_one.encode("utf-8"))) if r[0] == "АНЕТО"],
+      [("11:00", None), ("17:00", None)])
 check("PLINKS from the day page: a theatre theatre.art.bg does not sell for (Младежки) gets none",
       any(_SP.THEATRE_ART_IDS.get(r[3]) == "mladezhki" for r in _day)
       and not any(e[0].startswith("конрад") for e in _pl), True)

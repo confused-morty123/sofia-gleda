@@ -563,6 +563,43 @@ def art_slots(box):
     return slots
 
 
+_ART_BUY_SEL = "a.kupi_bilet[href], a[href*='kupi-bilet']"
+
+
+def art_slot_links(box, slots):
+    """{time: kupi-bilet link} of one theatre.art.bg listing, each performance only
+    the link printed right after its own <h4><strong> (before the next <strong>).
+    A matinée pair prints one link per performance; giving the pair's first link to
+    both opened the 11:00 seat map from the 17:00 panel. Any doubt names no link at
+    all: a <strong> that is not a time (a cancelled or prefixed slot), a slot with
+    no link or two, a link outside the pairs, or a repeated time. A listing with one
+    performance (its <strong> or only the cover time) takes the box's link only when
+    the box prints exactly one."""
+    anchors = [a for a in box.select(_ART_BUY_SEL) if a.get("href")]
+    strongs = box.select("h4 strong")
+    if len(slots) == 1:
+        if len(anchors) == 1 and all(_ART_SLOT.match(st.get_text(" ", strip=True)) for st in strongs):
+            return {slots[0][0]: anchors[0]["href"]}
+        return {}
+    pairs, cur = [], None
+    for el in box.select("h4 strong, h4 " + _ART_BUY_SEL.replace(", ", ", h4 ")):
+        if el.name == "strong":
+            m = _ART_SLOT.match(el.get_text(" ", strip=True))
+            if not m:
+                return {}
+            cur = [f"{int(m.group(1)):02d}:{m.group(2)}", []]
+            pairs.append(cur)
+        elif el.get("href"):
+            if cur is None:
+                return {}
+            cur[1].append(el["href"])
+    times = [t for t, _ in pairs]
+    if (len(pairs) != len(slots) or len(set(times)) != len(times) or set(times) != {t for t, _ in slots}
+            or any(len(ls) != 1 for _, ls in pairs) or len(anchors) != len(pairs)):
+        return {}
+    return {t: ls[0] for t, ls in pairs}
+
+
 def art_day_verdict(soup, date):
     """Does a theatre.art.bg day page really list `date`? For a date it has no
     programme for, the site answers with TODAY's listings in another template
@@ -587,10 +624,12 @@ def scrape_theatre_day(date, session):
     (its own <h3><a>), every performance time with its stage (see art_slots),
     the venue's theatre id (from the kupi-bilet link, so a row can be attributed
     to a specific venue) and that buy link. Returns (title, date, time,
-    theatre_id, buy_link, hall, event_page, price) — one row per performance;
-    event_page is the production's own theatre.art.bg page, price the text the
-    listing prints ("от 6.00 до 7.00 €"); any of the last five is None when a
-    listing lacks it. None when the page did not arrive or its day cannot be
+    theatre_id, buy_link, hall, event_page, price, slot_link) — one row per
+    performance; event_page is the production's own theatre.art.bg page, price the
+    text the listing prints ("от 6.00 до 7.00 €"), slot_link the kupi-bilet link
+    printed for that very performance (art_slot_links; the PLINKS source), while
+    buy_link is the listing's first one (its theatre id); any of the last six is
+    None when a listing lacks it. None when the page did not arrive or its day cannot be
     verified (art_day_verdict); [] when the site shows another day's listings
     for this date, i.e. it publishes nothing for it."""
     soup = fetch(THEATRE_DAY_URL.format(date=date), session)
@@ -611,7 +650,7 @@ def scrape_theatre_day(date, session):
             title = (h.get("title") or h.get_text(" ", strip=True)).strip() if h else ""
             if not title or not (2 < len(title) < 160):
                 continue
-            buy = box.select_one("a.kupi_bilet[href], a[href*='kupi-bilet']")
+            buy = box.select_one(_ART_BUY_SEL)
             tid, link = None, None
             if buy and buy.get("href"):
                 link = buy["href"]
@@ -629,8 +668,13 @@ def scrape_theatre_day(date, session):
             page = (ART_BASE + page) if page and page.startswith("/") else (page or None)
             pnode = box.select_one("a.kupi_bilet h6 span, h6 span")
             price = re.sub(r"\s+", " ", pnode.get_text(" ", strip=True)).strip() if pnode else None
-            for time_, hall in art_slots(box):
-                out.append((title, date, time_, tid, link, hall, page, price or None))
+            slots = art_slots(box)
+            own = art_slot_links(box, slots)
+            for time_, hall in slots:
+                sl = own.get(time_)
+                if sl and sl.startswith("/"):
+                    sl = ART_BASE + sl
+                out.append((title, date, time_, tid, link, hall, page, price or None, sl))
     return out
 
 
@@ -4044,14 +4088,14 @@ def main():
         if day is None:
             continue
         art_dates.add(date)
-        for title, d, time_, tid, link, hall, page, price in day:
+        for title, d, time_, tid, link, hall, page, price, slot_link in day:
             v = THEATRE_ART_IDS.get(tid)
             if v is None:
                 art_other[tid or "?"] += 1          # a venue the app does not list
             else:
                 art_rows[v].append((title, d, time_, hall, link, page, theatre_price(price)))
                 if v in ART_PLINK_THEATRES:         # that listing's own purchase link (PLINKS)
-                    art_buy[v].append((title, d, time_, link))
+                    art_buy[v].append((title, d, time_, slot_link))
     blocked["theatre.art.bg"] = session.blocked_since(n_art0)
     if not art_dates:
         diff.unreachable.append("theatre.art.bg")
