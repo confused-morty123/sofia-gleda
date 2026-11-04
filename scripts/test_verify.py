@@ -197,6 +197,10 @@ def _run(html_content: str, skip_smoke: bool = True,
     env["SOFIA_GA_MEASUREMENT_ID"] = ""      # analytics off unless a test sets an ID
     if skip_freshness:
         env["SOFIA_SKIP_FRESHNESS"] = "1"
+    else:
+        # An inherited flag (CI sets it for the publish gate) must not bypass the
+        # freshness checks this suite expects to fail.
+        env.pop("SOFIA_SKIP_FRESHNESS", None)
     if extra_env:
         env.update(extra_env)
     with tempfile.NamedTemporaryFile(suffix=".html", mode="w",
@@ -272,6 +276,19 @@ stale_ts = (datetime.datetime.now(datetime.timezone.utc)
 stale_html = _good_html.replace(f'"generated":"{_NOW_ISO}"', f'"generated":"{stale_ts}"')
 check("stale generated (48h ago) exits non-zero",
       _run(stale_html, skip_freshness=False) != 0)
+
+# An inherited SOFIA_SKIP_FRESHNESS=1 (CI sets it for the publish gate) must not
+# leak into the checks above: they still expect the stale build to fail.
+_prev_skip = os.environ.get("SOFIA_SKIP_FRESHNESS")
+os.environ["SOFIA_SKIP_FRESHNESS"] = "1"
+try:
+    check("inherited SOFIA_SKIP_FRESHNESS=1 does not bypass skip_freshness=False",
+          _run(stale_html, skip_freshness=False) != 0)
+finally:
+    if _prev_skip is None:
+        os.environ.pop("SOFIA_SKIP_FRESHNESS", None)
+    else:
+        os.environ["SOFIA_SKIP_FRESHNESS"] = _prev_skip
 
 # SOFIA_SKIP_FRESHNESS=1 must bypass freshness failure
 check("SOFIA_SKIP_FRESHNESS=1 bypasses stale-freshness failure",

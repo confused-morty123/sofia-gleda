@@ -158,6 +158,71 @@ python3 -m playwright install chromium   # for the verify gate
 TMDB_TOKEN=your_token OMDB_TOKEN=your_key python3 scripts/refresh_all.py
 ```
 
+### Tests in GitHub Actions
+
+`.github/workflows/tests.yml` runs the suites on GitHub's machines, so checking a
+change no longer ties up the Mac for hours. It starts on every push to any branch,
+on pull requests, and from the **Run workflow** button (Actions tab > Tests). It
+never scrapes and never publishes: the page is built offline from the listings
+already committed (`dev_build.py --from HEAD`, then the share pages, legal pages and
+CSP), as in "Making a UI change". The nightly refresh's own commits do not start it,
+and `[skip ci]` in a commit message skips it. A push that changes only `.md` files
+is not tested.
+
+Three jobs:
+
+- **unit**: the offline build, the publish gate (`verify_build.py`, without the
+  36-hour freshness check: the data is whatever was last committed), then
+  `test_parsers`, `test_theatres`, `test_verify`, `test_security`, `test_schedule`.
+  Every test runs even when an earlier one failed, so one run shows all failures.
+  A known failure is shown, not hidden: today `test_parsers` fails its film poster
+  coverage threshold, so this job is red until that is fixed. About 15 minutes.
+- **plan**: `scripts/ci_waves.py` splits the waves of `scripts/test_ui.py` into
+  shards of at most about 8 minutes of tests each (a shard takes about 10 minutes with
+  setup; B24 and HF1 are longer and get a shard of their own).
+- **ui (chromium n/N)** and **ui (webkit n/N)**: one runner per shard, all in
+  parallel, real mode (`SOFIA_HTML=index.html SOFIA_SKIP_FRESHNESS=1`). Chromium
+  runs every wave; WebKit runs the waves written for both engines (`WEBKIT_WAVES` in
+  `ci_waves.py`: HF1, HF2, UX1, B24, BO1, DM1, GA1, HS1, LG1, PL1). Each wave is its
+  own process; a wave that fails on the known 30-second page-load timeout is re-run
+  once. A failing shard does not stop the others.
+
+**Reading the results.** Open the run (Actions tab, or the commit's check mark).
+The run's summary page has the shard plan and, per shard, a table of waves with
+pass counts and times, and the failed checks. A failed shard also keeps its logs
+(one per wave) and screenshots as an artifact `ui-logs-<engine>-<n>` for 14 days.
+Without a browser, read the same through the public API (no token needed for this
+public repository):
+
+```bash
+R=https://api.github.com/repos/confused-morty123/sofia-gleda
+curl -s "$R/actions/workflows/tests.yml/runs?branch=<branch>&per_page=1"   # status, conclusion, id
+curl -s "$R/actions/runs/<run id>/jobs?per_page=100"                       # each job and step, pass or fail
+curl -s "$R/commits/<sha>/check-runs"                                       # the same, by commit
+curl -s "$R/check-runs/<job id>/annotations"                                # failed waves and their check names
+```
+
+Each failed wave leaves one annotation naming its failed checks, so the last call
+tells which checks broke. Job logs and artifacts need a signed-in download (the API
+answers 403 without a token); jobs, steps, conclusions and annotations are public.
+
+**Running a subset (smoke run).**
+
+- Run workflow button: fill **waves** (for example `HF1 HS1 B24`), pick the
+  **browsers**, and untick **unit** to skip the unit job.
+- From a push: add a line to the commit message, `CI-Waves: HF1 HS1` (and,
+  if wanted, `CI-Browsers: webkit`). With both engines WebKit runs only the
+  named waves that are in `WEBKIT_WAVES`; `CI-Browsers: webkit` runs every named
+  wave in WebKit. The unit job always runs on a push.
+- An unknown wave name fails the plan job at once (`test_ui.py` itself would
+  skip it silently).
+
+Locally, `python3 scripts/ci_waves.py list` shows every wave with its estimated
+time, `python3 scripts/ci_waves.py matrix --waves "HF1 HS1"` shows the shards a
+run would get, and `python3 scripts/ci_waves.py run --browser webkit HF1` runs
+waves the way CI does. After a new wave lands, add its time (printed by `run` on
+CI) to `ESTIMATES` in `ci_waves.py`; until then it counts as 2 minutes.
+
 ---
 
 ## Design notes for whoever works on this next
