@@ -1433,6 +1433,43 @@ finally:
     import shutil as _sh5a4
     _sh5a4.rmtree(_r5a4, ignore_errors=True)
 
+_rc, _out = _run_out(_noyear(_tr_page({"f0": {"y": 2019, "en": "Avengers: Endgame"}}, extra_js=_prem)).replace(
+    '"bg": ' + _json.dumps("Филм 0"), '"bg": ' + _json.dumps("Филм 0 – Специално издание"), 1))
+check("…a premiering title marked as a re-release ('– Специално издание') matched to its 2019 film is not reported",
+      "5a4" not in _out)
+_rc, _out = _run_out(_tr_page({"f0": {"y": 2019, "en": "Avengers: Endgame"}}).replace(
+    '"bg": ' + _json.dumps("Филм 0") + ', "en": "Film 0", "year": 2026', '"bg": ' + _json.dumps("Филм 0 – Специално издание") + ', "en": "", "year": 2026', 1))
+check("…nor failed when the venue prints the re-release year (2026) for the 2019 film", "5a4" not in _out)
+_rc, _out = _run_out(_tr_page({"f0": {"y": 2019, "en": "Avengers: Endgame"}}).replace(
+    '"bg": ' + _json.dumps("Филм 0") + ', "en": "Film 0", "year": 2026', '"bg": ' + _json.dumps("Филм 0") + ', "en": "", "year": 2026', 1))
+check("…the same match without the marker (2026 vs 2019) still fails 5a4", _rc != 0 and "5a4 TMDB identity" in _out)
+
+# ---------------------------------------------------------------------------
+# 5c3: titles shown in BG mode without a Bulgarian form (a report, never a failure)
+# ---------------------------------------------------------------------------
+print("5c3: BG-mode titles without a Bulgarian form")
+_bgt_page = _tr_page({"f2": {"en": "Street Fighter"}, "f3": {"en": "Original Name", "tb": "Българско име"}}).replace(
+    '"bg": ' + _json.dumps("Филм 1") + ', "en": "Film 1"', '"bg": "Street Fighter", "en": ""', 1).replace(
+    '"bg": ' + _json.dumps("Филм 2") + ', "en": "Film 2"', '"bg": "Street Fighter", "en": "Street Fighter"', 1).replace(
+    '"bg": ' + _json.dumps("Филм 3") + ', "en": "Film 3"', '"bg": "Festival Listing Name", "en": ""', 1).replace(
+    '"title": ' + _json.dumps("Спектакъл 1"), '"title": "Prima Facie"', 1)
+_rc, _out = _run_out(_bgt_page)
+_bgl = next((l for l in _out.splitlines() if l.startswith("BG_TITLES ")), "")
+_bgj = _json.loads(_bgl.split(" ", 1)[1]) if _bgl else {}
+check("the gate prints one BG_TITLES line and a 5c3 note, and does not fail on it",
+      bool(_bgl) and "5c3 BG mode:" in _out and "5c3" not in "".join(
+          l for l in _out.splitlines() if "FAIL" in l or "problem" in l.lower()))
+check("…a Latin venue title (film and play) is listed; English FILMS.en is no longer what BG mode shows",
+      sorted(t.split("|")[0] for t in _bgj.get("titles", [])) == ["film:f1", "film:f2", "show:show1"])
+check("…TMDB's bg-BG title (tb) replaces a Latin venue title that is not the film's international one",
+      _bgj.get("count") == 3 and not any(t.startswith("film:f3|") for t in _bgj.get("titles", [])))
+import importlib as _il_rf
+sys.path.insert(0, str(ROOT / "scripts"))
+_RF = _il_rf.import_module("refresh_all")
+check("refresh_all keeps the BG_TITLES line in build_report.json (bg_titles)",
+      _RF.bg_titles_of("x\nBG_TITLES {\"count\": 2, \"titles\": [\"film:a|A|v\"]}\nall checks passed")
+      == {"count": 2, "titles": ["film:a|A|v"]})
+
 # ---------------------------------------------------------------------------
 # 5a: ids are lower-case ASCII slugs; local poster paths pass the browser's rule
 # ---------------------------------------------------------------------------

@@ -2302,14 +2302,26 @@ const festName=fid=>{const n=FEST_NAMES[fid]||{bg:fid,en:fid};return S.lang==="e
 /* the poster corner marks (cards) and the chips (sheets) of a film or a play */
 const festMarks=(kind,id)=>festsOf(kind,id).map(x=>`<span class="fest-mark">${esc(festName(x))}</span>`).join("");
 const festChips=(kind,id)=>festsOf(kind,id).map(x=>`<span class="chip fest-chip">${esc(festName(x))}</span>`).join("");
-/* movie names default to English (owner's preference), Bulgarian kept as the
-   secondary line so nothing is lost.
+/* A film's name in the page's language. EN: the English title (FILMS.en, TMDB's,
+   the translation), Bulgarian last. BG (owner, 2026-11-04: "in BG mode some titles
+   appear in English"): the Bulgarian title the venues print, the English one as the
+   secondary line (filmSubtitle). A venue that prints only a Latin title keeps it as
+   printed (Godzilla Minus Zero, Street Fighter: that is the Bulgarian distribution's
+   title) unless it is not the film's international title and TMDB has a Bulgarian
+   one for this verified match (TMDBART tb). Nothing is machine-translated.
    For CineLibri festival films: BG shows the festival's own title_bg (stored in
    FILMINFO[id].title_bg by festival_details), which is properly cased without the
    cinema prefix. EN shows the festival's title_en or TMDB's en — both written to
    FILMS.en by inject_films.py, so the normal precedence already handles them.
    Falls back to the cinema's prefixed title so nothing breaks if the pipeline
    hasn't run yet. */
+const _TITLE_CYR=/[\u0400-\u04FF]/;
+const filmTitleBg=f=>{
+  const bg=f.bg||"",a=ART[f.id]||{};
+  if(!bg)return f.en||a.en||"";
+  if(_TITLE_CYR.test(bg)||!(a.tb&&_TITLE_CYR.test(a.tb)))return bg;
+  const k=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+  return k(bg)&&(k(bg)===k(a.en)||k(bg)===k(f.en))?bg:a.tb;};
 const filmTitle=f=>{
   if(cinelibriId(f.id)){
     const fi=FILMINFO[f.id]||{};
@@ -2318,7 +2330,7 @@ const filmTitle=f=>{
     return fi.title_bg||f.bg||"";}
   return S.lang==="en"
     ?(f.en||((ART[f.id]||{}).en)||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[f.id])||f.bg||"")
-    :(f.en||f.bg||((ART[f.id]||{}).en)||"");};
+    :filmTitleBg(f);};
 /* filmSubtitle: the film's other title, shown small above the headline. A CineLibri film's Bulgarian
    title is the festival's own (FILMINFO title_bg), not the cinema's "Синелибри 2026 – …" listing name,
    so the line shows its official English title instead of repeating the prefix. */

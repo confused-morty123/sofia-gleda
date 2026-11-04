@@ -101,7 +101,9 @@ _PLACEHOLDER_RE = re.compile(r'прожекция в|прожекция във|s
 
 # Parser version — bump this to force re-fetch of all entries that were
 # written by an older parser (old entries have no "pv" key or a smaller int).
-_PARSER_VERSION = 5
+# 6 (2026-11-04): programata's Година / Времетраене / Държава / Оригинално заглавие
+# lines are read too (the year, runtime and original title fetch_tmdb.py matches with).
+_PARSER_VERSION = 6
 
 # Credit-label words that must never appear inside a dir/cast value.
 # Used both for sanitisation and for stale-detection.
@@ -314,6 +316,25 @@ def parse_programata(soup, url):
         if key in summary_map and "българия" in summary_map[key].lower():
             is_bg = True
             break
+
+    # Year, runtime, country and (when printed) the original title: fill-only fields
+    # (_FILL_ONLY_FIELDS) that fetch_tmdb.py searches and checks a match with
+    # ("Улица Малага": Година 2025, Времетраене (минути) 116, Мароко, Франция, …).
+    for key, val in summary_map.items():
+        if key.startswith("година"):
+            ym = re.search(r"\b((?:18|19|20)\d{2})\b", val)
+            if ym:
+                rec["year"] = int(ym.group(1))
+        elif key.startswith("времетраене") or key.startswith("продължителност"):
+            rm = re.search(r"\b(\d{2,3})\b", val)
+            if rm and 1 <= int(rm.group(1)) <= 400:
+                rec["runtime"] = int(rm.group(1))
+        elif key.startswith("държава") and val.strip() not in ("", "—", "-"):
+            rec["country"] = "/".join(c.strip() for c in val.split(",") if c.strip())
+        elif key.startswith("оригинално заглавие") or key in ("original title", "оригинал"):
+            ot = re.sub(r"\s+", " ", val).strip()
+            if ot and not re.search(r"[Ѐ-ӿ]", ot) and len(ot) <= 150:
+                rec["original"] = ot
 
     # ---- Synopsis: <p> inside div.text.mb-5.pb-5 ----
     # (Programata uses: <div class="text mb-5 pb-5"><p>synopsis text…</p></div>)

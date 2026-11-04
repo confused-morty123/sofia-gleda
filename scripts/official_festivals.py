@@ -754,12 +754,33 @@ def parse_kinomania_film(html, url):
             m = re.fullmatch(r"\((.+)\)", line[len(title):].strip())
             if m:
                 film["original"] = m.group(1).strip() or None
+        # The 2026 pages (Страхливец, 2026-11-04) print the facts as bare lines under
+        # the title: "Страхливец" / "Coward" / "Белгия-Франция-Нидерландия, 2026, 127
+        # минути". The Latin line right after the title is the original title, the
+        # "country, year, runtime" line the rest; labelled lines win.
+        elif title and film["original"] is None and lines.index(line) > 0 \
+                and lines[lines.index(line) - 1] == title and not re.search(r"[а-яА-Я]", line) \
+                and re.search(r"[A-Za-z]", line) and len(line) <= 120:
+            film["original"] = line
+        elif re.fullmatch(r"[^\d:]{3,120},\s*(?:18|19|20)\d{2}\s*(?:г\.?)?(?:,\s*\d{2,3}\s*мин\w*\.?)?", line):
+            labels.setdefault("_facts", line)
     film["title_bg"] = title or None
+    # "Minotaur / Минотавр" (Минотавър, 2026): the English and the original title. The
+    # one Latin part is the film's English title, as the page prints it.
+    if film["original"] and not film.get("title_en") and "/" in film["original"]:
+        _lat = [x.strip() for x in film["original"].split("/")
+                if x.strip() and re.search(r"[A-Za-z]", x) and not re.search(r"[а-яА-Я]", x)]
+        if len(_lat) == 1:
+            film["title_en"] = _lat[0]
+    _y = None
     if labels.get("държава"):
         film["country"], _y = country_year(labels["държава"])
+    elif labels.get("_facts"):
+        _c, _y = country_year(labels["_facts"])
+        film["country"] = "/".join(x.strip() for x in re.split(r"\s*[-–]\s*", _c)) if _c else None
     ym = re.search(r"(?:18|19|20)\d{2}", labels.get("година", ""))
-    film["year"] = int(ym.group(0)) if ym else None
-    film["runtime"] = runtime_min(labels.get("продължителност"))
+    film["year"] = int(ym.group(0)) if ym else _y
+    film["runtime"] = runtime_min(labels.get("продължителност")) or runtime_min(labels.get("_facts"))
     film["director"] = _person_list(_label(labels, "режисьор", "режисура") or "")
     film["cast"] = _person_list(_label(labels, "с участието", "в ролите", "участват") or "")
     film["genres_text"] = _label(labels, "жанр")

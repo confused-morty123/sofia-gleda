@@ -1289,7 +1289,9 @@ if isinstance(_tart, dict):
 #     MAX_YEAR_GAP, runtime, documentary vs fiction, director, IMDb id);
 #   - (reported only, never failed: a re-release looks the same) the film premieres
 #     now (PREMIERES) but TMDB's film is more than three years older, and nothing
-#     the venue prints dates the film;
+#     the venue prints dates the film; a title that marks a re-release ("– Специално
+#     издание", fetch_tmdb.rerelease_marker) is not reported, and contradiction()
+#     lets it match a film older than the venue's year;
 #   - it was found on part of a Bulgarian title (tmdb_films.json via "bg-BG": the
 #     query lost words such as "ЕВЕРЕСТ:") that TMDB's own title does not carry,
 #     with no venue year (±1) to confirm it.
@@ -1332,12 +1334,12 @@ if _tart4:
             # (Cinema City dates one as a premiere and may print no year) is the old
             # film, and fetch_tmdb cannot apply this rule, so it would block every
             # refresh until someone blocklists a correct match. It is reported, not failed.
-            if not _why and _ty and _pd and _ty < int(min(_pd)[:4]) - 3 and not (
+            if not _why and _ty and _pd and _ty < int(min(_pd)[:4]) - 3 and not _facts.get("rerelease") and not (
                     _own_y and abs(int(_own_y) - _ty) <= _FT.MAX_YEAR_GAP):
                 _id_warn4.append(f"{_k} -> {_r.get('en') or '?'} ({_ty}): premieres {min(_pd)}, "
                                  "and the venue prints no year")
             if not _why and _sd.get("via") == "bg-BG" and _sd.get("q"):
-                _lost = _FT.stripped_words(_strip_prefix(_f.get("bg") or ""), _sd["q"])
+                _lost = _FT.stripped_words(_FT.strip_rerelease(_strip_prefix(_f.get("bg") or "")), _sd["q"])
                 if _lost and not _FT.keeps_dropped({"title": _sd.get("tbg"), "original_title": _sd.get("original_title")},
                                                    _lost) and not (_own_y and _ty and abs(int(_own_y) - _ty) <= 1):
                     _why = (f"found as {_sd['q']!r}, part of the title: TMDB's title has no "
@@ -1563,6 +1565,91 @@ try:
                  + ", ".join(sorted(_ids)[:6]))
 except ImportError:
     note("posterpolicy.py not found — skipped the poster coverage check")
+
+# ------------------------------------------- 5c3. titles shown in BG mode without a Bulgarian form
+# Owner, 2026-11-04: in BG mode some titles appeared in English. Every title the page
+# shows in Bulgarian (a film or play with an upcoming date, an event that has not
+# ended), counted as the page shows it (filmTitleBg in src/: the venues' Bulgarian
+# title; a CineLibri film's FILMINFO title_bg; TMDB's bg-BG title (TMDBART tb) only
+# for a Latin venue title that is not the film's international one), with any
+# festival or series prefix removed: one with no Cyrillic letter has no Bulgarian
+# form. Most are the distribution's own Latin titles (Street Fighter, a concert, a
+# play the theatre names in English); nothing is translated, so this is a report,
+# not a failure: "BG_TITLES {json}", kept by refresh_all.py in build_report.json.
+def bg_titles_without_bulgarian(films, showtimes, shows, performances, events, today,
+                                tmdbart=None, filminfo=None, strip=None):
+    """[(kind, id, title as shown, venues)] for the titles shown in BG mode that have
+    no Cyrillic letter once a festival/series prefix is removed (strip)."""
+    cyr = re.compile(r"[Ѐ-ӿ]")
+    art, fi = tmdbart or {}, filminfo or {}
+    strip = strip or (lambda t: t)
+    def k(t):
+        return re.sub(r"[^a-z0-9]", "", (t or "").lower())
+    def shown(f):
+        fid, bg = f.get("id") or "", f.get("bg") or ""
+        if fid.startswith("sinelibri-"):
+            return (fi.get(fid) or {}).get("title_bg") or bg
+        a = art.get(fid) if isinstance(art.get(fid), dict) else {}
+        if not bg:
+            return f.get("en") or a.get("en") or ""
+        if cyr.search(bg) or not (isinstance(a.get("tb"), str) and cyr.search(a["tb"])):
+            return bg
+        return bg if k(bg) and k(bg) in (k(a.get("en")), k(f.get("en"))) else a["tb"]
+    out = []
+    venues = {}
+    for r in showtimes or []:
+        if isinstance(r, list) and len(r) > 2 and isinstance(r[2], str) and r[2] >= today:
+            venues.setdefault(r[0], set()).add(str(r[1]))
+    fby = {f.get("id"): f for f in films or [] if isinstance(f, dict)}
+    for fid in sorted(venues):
+        t = shown(fby.get(fid) or {"id": fid})
+        if t and not cyr.search(strip(t) or t):
+            out.append(("film", fid, t, sorted(venues[fid])))
+    sv = {}
+    sby = {x.get("id"): x for x in shows or [] if isinstance(x, dict)}
+    for r in performances or []:
+        if isinstance(r, list) and len(r) > 1 and isinstance(r[1], str) and r[1] >= today:
+            sv.setdefault(r[0], set()).add(str((sby.get(r[0]) or {}).get("theatre") or "?"))
+    for sid in sorted(sv):
+        t = (sby.get(sid) or {}).get("title") or ""
+        if t and not cyr.search(strip(t) or t):
+            out.append(("show", sid, t, sorted(sv[sid])))
+    for e in events or []:
+        if not isinstance(e, dict) or (e.get("status") or "active") != "active":
+            continue
+        if str(e.get("to") or e.get("from") or "9999") < today:
+            continue
+        t = e.get("title") or ""
+        if t and not cyr.search(t):
+            out.append(("event", e.get("id") or "?", t, [str(e.get("source") or "?")]))
+    return out
+
+
+try:
+    try:
+        import listing_window as _LW3
+        _today3 = _LW3.sofia_today().isoformat()
+    except Exception:
+        _today3 = datetime.date.today().isoformat()
+    try:
+        from film_identity import strip_prefix as _sp3
+    except Exception:
+        _sp3 = None
+    _bgt = bg_titles_without_bulgarian(
+        data.get("FILMS"), data.get("SHOWTIMES"), data.get("SHOWS"), data.get("PERFORMANCES"),
+        (data.get("EVENTS") or []) + (_const_any("EVENTS_AUTO") or []), _today3,
+        _const_obj_tr("TMDBART"), _const_obj_tr("FILMINFO"), _sp3)
+    _bgt_kinds = {}
+    for _kd, *_ in _bgt:
+        _bgt_kinds[_kd] = _bgt_kinds.get(_kd, 0) + 1
+    print("BG_TITLES " + json.dumps({"count": len(_bgt), "by_kind": _bgt_kinds,
+                                     "titles": [f"{_kd}:{_i}|{_t}|{','.join(_v)}" for _kd, _i, _t, _v in _bgt]},
+                                    ensure_ascii=False, sort_keys=True))
+    note(f"5c3 BG mode: {len(_bgt)} title(s) shown without a Bulgarian form "
+         f"({', '.join(f'{v} {k}' for k, v in sorted(_bgt_kinds.items())) or 'none'})"
+         + (": " + "; ".join(f"{_t} ({_kd})" for _kd, _i, _t, _v in _bgt[:8]) if _bgt else ""))
+except Exception as _e3:                                           # pragma: no cover
+    note(f"5c3 BG-mode title report skipped: {_e3}")
 
 # ----------------------------------------- 5d. no non-http(s) URLs in data constants (CODE-12)
 # Every URL that ends up in an href or window.open must be http(s).

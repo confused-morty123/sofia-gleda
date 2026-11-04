@@ -334,6 +334,33 @@
    "year": 2026,
    "original": "Everest: The Other Side",
    "reason": "https://vlaikovacinema.com/screening/еверест-от-другата-страна/ prints 'Документален | EVEREST: THE OTHER SIDE | САЩ | 2026'; domnakinoto.com/everest-drugata-strana-movie7350.html the same film, 110 min. fetch_tmdb.py searches TMDB with this year and original title (±1), so the wrong same-title match recorded in tmdb_blocklist.json cannot come back. Verified 2026-10-28."
+  },
+  {
+   "titles": [
+    "Улица Малага",
+    "Улица \"Малага\""
+   ],
+   "film": "ulitsa-malaga",
+   "venues": [
+    "g8",
+    "odeon"
+   ],
+   "year": 2025,
+   "director": "Мариам Тузани",
+   "original": "Calle Málaga",
+   "reason": "Културен център G8's own page (https://g8cinema.com/bg/ulitsa-malaga) prints 'Оригинално заглавие: Calle Málaga', Испания, 2025 г., 110 минути, Режисьор: Мариам Тузани; Одеон (http://bnf.bg/bg/odeon/movies/5908/) prints the same original title in brackets. fetch_tmdb.py searches TMDB with this original title and year (±1). Verified 2026-11-04."
+  },
+  {
+   "titles": [
+    "Синьото е топъл цвят"
+   ],
+   "film": "sinyoto-e-topal-tsvyat",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 2013,
+   "director": "Абделлатиф Кешиш",
+   "reason": "Дом на киното's own page (https://domnakinoto.com/sinyoto-e-topal-tsvyat-movie7336.html) prints 'Франция - Белгия - Испания, 2013 | Реж. Абделлатиф Кешиш' and the 2013 Palme d'Or: the 2013 film, shown with the Bulgarian edition of the graphic novel. The page prints no original title, so only the year (±1) and director are given. Verified 2026-11-04."
   }
  ]
 }

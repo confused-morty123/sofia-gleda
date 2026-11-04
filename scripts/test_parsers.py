@@ -146,6 +146,8 @@ check("programata genres use vocabulary",
       all(g in FI.GENRE_VOCAB or g == "Български" for g in prog_rec.get("genres", [])), True)
 check("programata Bulgarian country -> Български genre",
       "Български" in (prog_rec.get("genres") or []), True)
+check("programata Година / Времетраене / Държава are read (fill-only facts fetch_tmdb matches with)",
+      [prog_rec.get(k) for k in ("year", "runtime", "country", "original")], [2025, 110, "България", None])
 
 # Bleed guard: cast must be ≤160 chars and must not start with synopsis text.
 # This validates the fix for the "cast swallows synopsis" bug (issue #1).
@@ -2562,6 +2564,15 @@ check("film page: a gallery file named '…poster…' beats the og:image still",
       "digital-poster-1080-x-1920-px--wild-horse-nine-september-2026_2-0x450.jpg")
 check("film page: synopsis after 'Анотация:'",
       _kf["syn_bg"].startswith("През 1973 г., малко преди военния преврат в Чили"), True)
+_kl = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film_lines.html").read_text(encoding="utf-8"),
+                               "https://www.kinomania.bg/bg_BG/film/test-1.html")
+check("2026 film page: the Latin line under the title is the original, the bare 'country, year, runtime' line the rest",
+      [_kl[k] for k in ("title_bg", "original", "country", "year", "runtime", "director")],
+      ["Тестов филм", "Test Film", "Белгия/Франция/Нидерландия", 2026, 127, "Иван Тестов"])
+_klm = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film_lines.html").read_text(encoding="utf-8").replace(
+    ">Тестов филм</h1>", ">Тестов филм (Test Film / Тестовый фильм)</h1>"), "https://www.kinomania.bg/bg_BG/film/test-2.html")
+check("2026 film page: a heading's 'English / Russian original' (Минотавър) gives its one Latin part as the English title",
+      (_klm["original"], _klm["title_en"]), ("Test Film / Тестовый фильм", "Test Film"))
 _kp = OFE.parse_kinomania_film((FIXTURES / "festival_kinomania_film_parens.html").read_text(encoding="utf-8"),
                                "https://www.kinomania.bg/bg_BG/film/fantomut-na-operata-3677.html")
 check("film page whose heading carries the original title",
@@ -2798,7 +2809,7 @@ for _raw, _want in [("Ойер Плаза Сценаристи", "Ойер Пл�
                     ("Кристоф Оноре", "Кристоф Оноре")]:
     check(f"_clean_credit_value({_raw!r})", FI._clean_credit_value(_raw), _want)
 check("a dubbed film's voice cast is not label bleed",
-      FI._film_info_stale({"pv": 5, "dir": "Х", "cast": "български дублаж: Весела Манолова, Георги Стоянов"}), False)
+      FI._film_info_stale({"pv": FI._PARSER_VERSION, "dir": "Х", "cast": "български дублаж: Весела Манолова, Георги Стоянов"}), False)
 check("a stored 'Ойер Плаза Сценаристи' is stale (re-fetched and re-parsed)",
       FI._film_info_stale({"pv": 5, "dir": "Ойер Плаза Сценаристи", "cast": "А, Б"}), True)
 _vk_bleed = BeautifulSoup((FIXTURES / "vlaikova_credits_bleed.html").read_text(encoding="utf-8"), "lxml")
@@ -4596,7 +4607,7 @@ check("year: beyond MAX_YEAR_GAP is another film; an unknown year abstains",
       (bool(_C({"year": 2026}, {"tmdb_year": "2006"})), _C({}, {"tmdb_year": "2006"})), (True, None))
 check("venue_facts take the record's own fields, then film_info's, never TMDB's",
       TMDB.venue_facts({"runtime": 110, "genres": []}, {"dir": "Майк Лий", "year": 1993, "genres": ["Драма"]}),
-      {"year": 1993, "runtime": 110, "genres": ["Драма"], "director": "Майк Лий", "imdb": set(), "titles": []})
+      {"year": 1993, "runtime": 110, "genres": ["Драма"], "director": "Майк Лий", "imdb": set(), "titles": [], "rerelease": False})
 check("venue_facts: the venue page's Latin titles (film_info title_en / original), never a Cyrillic one",
       TMDB.venue_facts({}, {"title_en": "Everest: The Other Side", "original": "Еверест", "year": 2026})["titles"],
       ["Everest: The Other Side"])
@@ -4629,21 +4640,33 @@ check("pick_bg: an exact Bulgarian title still matches without a year",
       (TMDB.pick_bg([{"id": 1, "title": "Сиянието", "release_date": "1980-05-23"}], "Сиянието", None) or {}).get("id"), 1)
 
 # main(), mocked TMDB: the Влайкова listing that found The Departed
-def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, film_info=None, links="[]"):
+def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, film_info=None, links="[]",
+             vlinks="[]", finds=None, prev=None, omdb=None, details_bg=None):
+    """finds: {imdb id: [TMDB results]} for find/<id>; prev: last run's tmdb_films.json;
+    omdb: a stand-in for omdb_rating; details_bg: {tmdb id: bg-BG detail record}."""
     calls = []
     def _api(path, params):
         calls.append((path, dict(params)))
         if path == "search/movie":
             return {"results": [dict(r) for r in results_by_query.get(params.get("query"), [])]}
+        if path.startswith("find/"):
+            return {"movie_results": [dict(r) for r in (finds or {}).get(path.split("/")[1], [])]}
         if path.startswith("movie/"):
+            if params.get("language") == "bg-BG" and details_bg is not None:
+                return details_bg.get(int(path.split("/")[1]))
             return details.get(int(path.split("/")[1]), {})
         return {"results": []}
     saved = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.TMDB_BLOCKLIST_PATH,
-             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image)
+             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image, TMDB.omdb_rating, TMDB.SEARCH_ERRORS)
     with _tmp.TemporaryDirectory() as td:
         td = _pl.Path(td)
         (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
-                                       + ";\nconst LINKS=" + links + ";\n/* SOFIA-DATA-END */", encoding="utf-8")
+                                       + ";\nconst LINKS=" + links + ";\nconst VLINKS=" + vlinks
+                                       + ";\n/* SOFIA-DATA-END */", encoding="utf-8")
+        if prev is not None:
+            (td / "t.json").write_text(_json.dumps(prev, ensure_ascii=False), encoding="utf-8")
+        if omdb is not None:
+            TMDB.omdb_rating = omdb
         (td / "bl.json").write_text(_json.dumps({"blocked": blocklist or {}}), encoding="utf-8")
         (td / "al.json").write_text(_json.dumps(aliases or {"groups": []}), encoding="utf-8")
         (td / "fi.json").write_text(_json.dumps(film_info or {}), encoding="utf-8")
@@ -4658,7 +4681,7 @@ def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, fil
             out = _json.loads((td / "t.json").read_text(encoding="utf-8")) if (td / "t.json").exists() else {}
         finally:
             (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.TMDB_BLOCKLIST_PATH,
-             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image) = saved
+             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image, TMDB.omdb_rating, TMDB.SEARCH_ERRORS) = saved
     return out, calls
 
 _departed = {"id": 1422, "title": "От другата страна", "original_title": "The Departed", "original_language": "en",
@@ -4702,6 +4725,144 @@ _out, _ = _tm_main([{"id": "nebesa", "bg": "Небеса", "en": ""}],
                    aliases={"groups": [{"titles": ["Небеса"], "film": "nebesa", "year": 2002, "original": "Heaven"}]})
 check("main(): with the curated year and original title the right film is found (Небеса -> Heaven 2002)",
       (_out.get("nebesa") or {}).get("tmdb_id"), 10575)
+
+# Films without a score, 2026-11-04: „Отмъстителите: Краят – Специално издание“ (Avengers:
+# Endgame 2019, re-released) found nothing; Cine Grand names the IMDb id of films TMDB's
+# search missed (Godzilla Minus Zero); a failed detail call or OMDb glitch dropped a rating.
+print("scores: re-release markers, the venue's IMDb id, keep-previous ratings")
+for _t, _want in (("Отмъстителите: Краят – Специално издание", ("Отмъстителите: Краят", True)),
+                  ("Колите: 20 години от премиерата", ("Колите", True)),
+                  ("Титаник – 25 години по-късно", ("Титаник", True)),
+                  ("Акира – 4К", ("Акира", True)),
+                  ("Сиянието (ремастерирана версия)", ("Сиянието", True)),
+                  ("Cars (20th Anniversary)", ("Cars", True)),
+                  ("28 години по-късно", ("28 години по-късно", False)),
+                  ("28 години по-късно: Храмът на костите", ("28 години по-късно: Храмът на костите", False)),
+                  ("Avatar (IMAX)", ("Avatar", False)),
+                  ("Специално издание", ("Специално издание", False))):
+    check(f"declutter / rerelease_marker({_t!r})", (TMDB.declutter(_t)[0], TMDB.rerelease_marker(_t)), _want)
+check("year_ok: a marked re-release may be decades older than the venue's year, never newer",
+      [TMDB.year_ok(2026, {"release_date": "2019-04-24"}, True), TMDB.year_ok(2026, {"release_date": "2019-04-24"}),
+       TMDB.year_ok(2010, {"release_date": "2026-01-01"}, True), TMDB.year_ok(None, {"release_date": "1980"}, True)],
+      [True, False, False, True])
+check("contradiction: a re-release (venue 2026) of a 2019 film is no year contradiction, an unmarked title is",
+      (TMDB.contradiction({"year": 2026, "rerelease": True}, {"tmdb_year": "2019"}),
+       bool(TMDB.contradiction({"year": 2026}, {"tmdb_year": "2019"}))), (None, True))
+check("contradiction: …the re-release still fails on its runtime or director",
+      bool(TMDB.contradiction({"year": 2026, "rerelease": True, "runtime": 95}, {"tmdb_year": "2019", "runtime": 181})),
+      True)
+check("venue_facts: the venue's title marks a re-release",
+      (TMDB.venue_facts({"bg": "Отмъстителите: Краят – Специално издание"})["rerelease"],
+       TMDB.venue_facts({"bg": "Отмъстителите: Краят"})["rerelease"]), (True, False))
+_endgame = {"id": 299534, "title": "Отмъстителите: Краят", "original_title": "Avengers: Endgame",
+            "original_language": "en", "release_date": "2019-04-24", "poster_path": "/eg.jpg", "vote_count": 26000}
+_egdet = {299534: {"runtime": 181, "imdb_id": "tt4154796",
+                   "credits": {"crew": [{"job": "Director", "name": "Anthony Russo"}]}}}
+_eg_id = "otmastitelite-krayat-spetsialno-izdanie"
+for _yr, _label in ((2019, "the venue prints the original year"), (2026, "the venue prints the re-release year")):
+    _out, _ = _tm_main([{"id": _eg_id, "bg": "Отмъстителите: Краят – Специално издание", "en": "",
+                         "year": _yr, "runtime": 183}],
+                       {"Отмъстителите: Краят": [_endgame]}, _egdet,
+                       omdb=lambda i: (8.4, "1.4M", 94, 78, None) if i == "tt4154796" else (None,) * 4 + ("x",))
+    check(f"main(): '– Специално издание' is searched without the marker and matches Avengers: Endgame ({_label})",
+          {k: (_out.get(_eg_id) or {}).get(k) for k in ("tmdb_id", "imdb_id", "imdb")},
+          {"tmdb_id": 299534, "imdb_id": "tt4154796", "imdb": 8.4})
+_out, _ = _tm_main([{"id": "kraat", "bg": "Отмъстителите: Краят", "en": "", "year": 2026}],
+                   {"Отмъстителите: Краят": [_endgame]}, _egdet)
+check("main(): …the same title with no re-release marker and the venue's 2026 is not the 2019 film",
+      (_out.get("kraat") or {}).get("matched"), False)
+# skeptic (2026-11-04): two films of the same name older than the venue's re-release year
+# (Mulan 1998 and 2020) tied, and TMDB's order alone chose which film's score was shown.
+_mu98 = {"id": 10674, "title": "Мулан", "original_title": "Mulan", "original_language": "en",
+         "release_date": "1998-06-18", "poster_path": "/m98.jpg", "vote_count": 9800}
+_mu20 = {"id": 337401, "title": "Мулан", "original_title": "Mulan", "original_language": "en",
+         "release_date": "2020-09-04", "poster_path": "/m20.jpg", "vote_count": 6500}
+for _ord, _lab in (([_mu20, _mu98], "2020 first"), ([_mu98, _mu20], "1998 first")):
+    check(f"pick_bg / pick: same-title films both older than the re-release year name neither ({_lab})",
+          (TMDB.pick_bg(_ord, "Мулан", 2026), TMDB.pick(_ord, "Mulan", 2026)), (None, None))
+    check(f"pick_bg / pick: …the original year printed picks that film ({_lab})",
+          (TMDB.pick_bg(_ord, "Мулан", 1998)["id"], TMDB.pick(_ord, "Mulan", 1998)["id"]), (10674, 10674))
+    _out, _ = _tm_main([{"id": "mulan-si", "bg": "Мулан – Специално издание", "en": "", "year": 2026, "runtime": 88}],
+                       {"Мулан": _ord}, {10674: {"runtime": 88}, 337401: {"runtime": 115}})
+    check(f"main(): 'Мулан – Специално издание' (venue 2026) matches neither Mulan ({_lab})",
+          (_out.get("mulan-si") or {}).get("matched"), False)
+    _out, _ = _tm_main([{"id": "mulan-si", "bg": "Мулан – Специално издание", "en": "", "year": 2026, "runtime": 88}],
+                       {"Мулан": _ord, "Mulan": _ord}, {10674: {"runtime": 88}, 337401: {"runtime": 115}},
+                       aliases={"groups": [{"titles": ["Мулан – Специално издание"], "film": "mulan-si",
+                                            "year": 1998, "original": "Mulan"}]})
+    check(f"main(): …a curated year settles it: Mulan 1998 ({_lab})",
+          (_out.get("mulan-si") or {}).get("tmdb_id"), 10674)
+check("pick_bg: one same-title film older than the re-release year is still found (no namesake)",
+      TMDB.pick_bg([_mu98], "Мулан", 2026)["id"], 10674)
+# The venue's own IMDb id (Cine Grand): TMDB's find/<id>, guarded by the year
+_gz = {"id": 1290000, "title": "Godzilla Minus Zero", "original_title": "ゴジラ-0.0", "original_language": "ja",
+       "release_date": "2026-11-03", "poster_path": "/gz.jpg", "vote_count": 40}
+_gzv = ('[["godzilla-minus-zero","cg-park","https://www.cinegrand.bg/m/godzilla-minus-zero-imdbtt34384661'
+        '?ignoreMissing=1"]]')
+_out, _calls = _tm_main([{"id": "godzilla-minus-zero", "bg": "Godzilla Minus Zero", "en": "", "year": 2026}], {},
+                        {1290000: {"runtime": 120, "imdb_id": "tt34384661"}}, vlinks=_gzv,
+                        finds={"tt34384661": [_gz]})
+check("main(): a film TMDB's search misses is found by the IMDb id in the venue's own link",
+      {k: (_out.get("godzilla-minus-zero") or {}).get(k) for k in ("tmdb_id", "via", "q", "imdb_id")},
+      {"tmdb_id": 1290000, "via": "imdb", "q": "tt34384661", "imdb_id": "tt34384661"})
+_old = dict(_gz, id=5, title="An Old Film", release_date="2008-01-01")
+_out, _ = _tm_main([{"id": "topki", "bg": "Топки", "en": ""}], {}, {5: {"imdb_id": "tt1234654"}},
+                   vlinks='[["topki","cg-park","https://www.cinegrand.bg/m/topki-imdbtt1234654"]]',
+                   finds={"tt1234654": [_old]})
+check("main(): …a venue id that leads to a 2008 film, for a listing with no year, is not taken (a placeholder id)",
+      (_out.get("topki") or {}).get("matched"), False)
+_out, _ = _tm_main([{"id": "gz", "bg": "Godzilla Minus Zero", "en": "", "year": 2026}], {},
+                   {1290000: {"runtime": 120, "imdb_id": "tt34384661"}},
+                   vlinks='[["gz","cg-park","https://www.cinegrand.bg/m/g-imdbtt34384661"]]',
+                   finds={"tt34384661": [_gz]}, blocklist={"gz": [1290000]})
+check("main(): …and never a TMDB id blocklisted for that film", (_out.get("gz") or {}).get("matched"), False)
+check("find_by_venue_imdb: two different ids in the venue's links name no film",
+      TMDB.find_by_venue_imdb(["https://x/m/a-imdbtt1111111", "https://x/m/b-imdbtt2222222"], 2026), None)
+_new = dict(_gz, id=6, title="Some 2026 Film", release_date="2026-02-01")
+_out, _ = _tm_main([{"id": "bezs2", "bg": "Безсмъртният и красавицата 2", "en": ""}], {}, {6: {"imdb_id": "tt12345871"}},
+                   vlinks='[["bezs2","cg-park","https://www.cinegrand.bg/m/b-imdbtt12345871"]]',
+                   finds={"tt12345871": [_new]})
+check("main(): a keyboard-run venue id (tt12345871) with no venue year is a placeholder, even for a recent film",
+      (_out.get("bezs2") or {}).get("matched"), False)
+# OMDb / IMDb: last run's values only for the same IMDb id
+_mv = {"id": 77, "title": "Нов филм", "original_title": "New Film", "original_language": "en",
+       "release_date": "2026-01-01", "poster_path": "/n.jpg", "vote_count": 900}
+_prev = {"nov": {"matched": True, "tmdb_id": 77, "imdb_id": "tt0000077", "imdb": 7.1, "imdbVotes": "12.0K",
+                 "poster_path": "/n.jpg", "tmdb_year": "2026"}}
+_na = lambda i: (None, None, None, None, None)
+_out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}], {"New Film": [_mv]},
+                   {77: {"imdb_id": "tt0000077"}}, prev=_prev, omdb=_na)
+check("main(): OMDb answering N/A for a film it rated last run keeps last run's rating",
+      {k: (_out.get("nov") or {}).get(k) for k in ("imdb", "imdbVotes")}, {"imdb": 7.1, "imdbVotes": "12.0K"})
+_out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}], {"New Film": [_mv]},
+                   {77: {"imdb_id": "tt0000099"}}, prev=_prev,
+                   omdb=lambda i: (None, None, None, None, "Request limit reached!"))
+check("main(): …but an OMDb error never gives a film another IMDb id's rating",
+      ((_out.get("nov") or {}).get("imdb_id"), (_out.get("nov") or {}).get("imdb")), ("tt0000099", None))
+_out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}], {"New Film": [_mv]},
+                   {77: None}, prev=_prev, omdb=lambda i: (None, None, None, None, "Request limit reached!") if i else _na(i))
+check("main(): a failed detail call keeps last run's IMDb id and rating for the same TMDB film",
+      {k: (_out.get("nov") or {}).get(k) for k in ("imdb_id", "imdb")}, {"imdb_id": "tt0000077", "imdb": 7.1})
+# TMDB's bg-BG title of a verified match (tbg -> TMDBART tb)
+_out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}], {"New Film": [_mv]},
+                   {77: {"imdb_id": "tt0000077"}}, details_bg={77: {"title": "Нов филм", "overview": "Сюжет."}})
+check("main(): TMDB's bg-BG title is stored for an English-title match, and shipped as TMDBART tb",
+      ((_out.get("nov") or {}).get("tbg"), TMDB.art_record(_out.get("nov") or {}).get("tb")), ("Нов филм", "Нов филм"))
+_out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}], {"New Film": [_mv]},
+                   {77: {"imdb_id": "tt0000077"}}, details_bg={77: {"title": "New Film", "overview": ""}})
+check("main(): …a bg-BG answer with only the Latin title stores none", "tbg" in (_out.get("nov") or {}), False)
+# A verified alias (the venue prints the original title and year): Улица Малага
+_al = _json.load(open(_pl.Path(TMDB.__file__).parent / "film_aliases.json", encoding="utf-8"))
+_cm = {"id": 1400001, "title": "Calle Málaga", "original_title": "Calle Málaga", "original_language": "es",
+       "release_date": "2025-09-01", "poster_path": "/cm.jpg", "vote_count": 120}
+_out, _ = _tm_main([{"id": "ulitsa-malaga", "bg": "Улица Малага", "en": "", "runtime": 110}],
+                   {"Calle Málaga": [_cm]}, {1400001: {"runtime": 116, "imdb_id": "tt3000001",
+                    "credits": {"crew": [{"job": "Director", "name": "Maryam Touzani"}]}}}, aliases=_al)
+check("film_aliases.json: Улица Малага is searched as G8 prints it (Calle Málaga, 2025) and matched",
+      (_out.get("ulitsa-malaga") or {}).get("tmdb_id"), 1400001)
+check("film_aliases.json: Синьото е топъл цвят carries Дом на киното's year (2013), no invented original title",
+      TMDB.tmdb_hints(_pl.Path(TMDB.__file__).parent / "film_aliases.json").get("sinyoto-e-topal-tsvyat"),
+      {"original": None, "year": 2013, "director": "Абделлатиф Кешиш"})
 
 # Duplicate records, 2026-10-28: Влайкова's „ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА“ beside Дом на
 # киното's „Еверест: Другата страна“ (one short word apart); Дом на киното's
