@@ -6748,5 +6748,23 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "chovekoyadkata": {
+  "id": "chovekoyadkata",
+  "title": "Човекоядката",
+  "titleEn": "",
+  "theatre": "satira",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "satira"
  }
 }

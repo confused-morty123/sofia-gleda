@@ -4114,5 +4114,59 @@
    "#275F57"
   ],
   "source": "odeon"
+ },
+ "tseremoniya-po-nagrazhdavane-na-simvolite-na-sofiyskite-kvar": {
+  "id": "tseremoniya-po-nagrazhdavane-na-simvolite-na-sofiyskite-kvar",
+  "bg": "Церемония по награждаване на символите на Софийските квартали „Яворов“ и „Цар Иван Асен II“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "vlaikova"
+ },
+ "maystorskiya-klas-na-prof-georgi-dyulgerov": {
+  "id": "maystorskiya-klas-na-prof-georgi-dyulgerov",
+  "bg": "Майсторския клас на проф. Георги Дюлгеров",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
+ },
+ "baskiya": {
+  "id": "baskiya",
+  "bg": "Баския",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "lumiere",
+  "runtime": 107,
+  "year": 1996,
+  "originalTitle": "Basquiat"
+ },
+ "actually-it-is-rocket-science": {
+  "id": "actually-it-is-rocket-science",
+  "bg": "Actually, It Is Rocket Science",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Документален",
+   "Спорт"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 90,
+  "year": 2026
  }
 }

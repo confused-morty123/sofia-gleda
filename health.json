@@ -6,6 +6,11 @@
  },
  {
   "level": "warning",
+  "venue": "zad-kanala",
+  "message": "official source unreachable (zad-kanala: date text disagrees with 2027-01-08T19:00:00+02:00); last read 2026-11-04, 0 days ago — 53 performances kept and shown as preliminary (removed after 14 days)"
+ },
+ {
+  "level": "warning",
   "venue": "natfiz",
   "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
@@ -27,11 +32,11 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 183/244 ok, 61 missing IMDb ratings"
+  "message": "OMDb: 202/277 ok, 75 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 520/525 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (13 days), karnaval (13 days)"
+  "message": "theatre posters: 521/526 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (13 days), karnaval (13 days)"
  }
 ]

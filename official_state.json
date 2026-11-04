@@ -351,7 +351,7 @@
   "lumiere": {
    "source": "official",
    "last_ok": "2026-11-04",
-   "covered_to": "2026-12-15",
+   "covered_to": "2026-12-22",
    "failing_since": null,
    "last_error": null
   },
@@ -1556,7 +1556,8 @@
       "izvanzemni-strasti": "сцена „COMEDY BAR Happy Сатира“"
      },
      "2026-11-19 19:30": {
-      "100-godini-georgi-parcalev": "Голяма сцена"
+      "100-godini-georgi-parcalev": "Голяма сцена",
+      "chovekoyadkata": "Камерна зала „Методи Андонов“"
      },
      "2026-11-19 20:00": {
       "bushon-za-smyana": "сцена „COMEDY BAR Happy Сатира“"
@@ -2697,8 +2698,8 @@
    "source": "official",
    "last_ok": "2026-11-04",
    "covered_to": "2026-12-30",
-   "failing_since": null,
-   "last_error": null,
+   "failing_since": "2026-11-04",
+   "last_error": "zad-kanala: date text disagrees with 2027-01-08T19:00:00+02:00",
    "seen": {
     "stages": [
      ""
@@ -2735,5 +2736,5 @@
    }
   }
  },
- "updated": "2026-11-04T03:22:22+02:00"
+ "updated": "2026-11-04T16:29:31+02:00"
 }
