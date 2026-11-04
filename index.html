@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-BSgHQ1o8TBnzZ2JllPfYpFMTrzVKevU81cryYc0F0z0=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-G0PgAXC2Q8pAhuOh8Cc+TrJTlWIteJAzASQO7ir+yuU=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-XVsev2427EwPtFqXXz2xdxuoitS0vp36PO8Mj4tn69I=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-BSgHQ1o8TBnzZ2JllPfYpFMTrzVKevU81cryYc0F0z0=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-OpFpeEKFWExRgO+WN2CUlqFBc//clxf1s3ngb2D4yjc=' 'sha256-XKZb1Gj7rX7C/60KzTm28UPoWGqnCp3cA8/Wj9xjR/4=' 'sha256-XVsev2427EwPtFqXXz2xdxuoitS0vp36PO8Mj4tn69I=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -3224,18 +3224,28 @@ function heroSyn(text){
   return`<div class="synwrap clamp hero-synw"><p class="synbody hero-syn" id="hero-syn">${esc(text)}</p>`
     +`<button type="button" class="readmore" data-readmore aria-expanded="false" aria-controls="hero-syn" data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
 }
-/* after every render or resize: the button only under a synopsis that is cut (an open one
-   stays open) */
+/* after every render or resize, and again once the webfont arrives or the text box changes
+   width (a synopsis measured in the fallback font fitted 3 lines, in Geologica 4): the button
+   only under a synopsis that is cut (an open one stays open) */
+let _heroFitRaf=0,_heroSynRO=null;const _heroSynSeen=new Set();
+function heroSynFitSoon(){if(!_heroFitRaf)_heroFitRaf=requestAnimationFrame(()=>{_heroFitRaf=0;heroSynFit();});}
 function heroSynFit(root){
+  _heroSynSeen.forEach(b=>{if(!b.isConnected){_heroSynRO.unobserve(b);_heroSynSeen.delete(b);}});
   (root||document).querySelectorAll(".hero .synwrap").forEach(w=>{
     const body=w.querySelector(".synbody"),btn=w.querySelector(".readmore");
-    if(!body||!btn||btn.getAttribute("aria-expanded")==="true")return;
+    if(!body||!btn)return;
+    if(_heroSynRO&&body.isConnected&&!_heroSynSeen.has(body)){_heroSynSeen.add(body);_heroSynRO.observe(body);}
+    if(btn.getAttribute("aria-expanded")==="true")return;
     w.classList.add("clamp");
     btn.hidden=!(body.scrollHeight>body.clientHeight+2);
   });
 }
-let _heroFitRaf=0;
-window.addEventListener("resize",()=>{if(!_heroFitRaf)_heroFitRaf=requestAnimationFrame(()=>{_heroFitRaf=0;heroSynFit();});});
+if(typeof ResizeObserver==="function")_heroSynRO=new ResizeObserver(heroSynFitSoon);
+window.addEventListener("resize",heroSynFitSoon);
+if(document.fonts){
+  if(document.fonts.ready)document.fonts.ready.then(heroSynFitSoon,()=>{});
+  if(document.fonts.addEventListener)document.fonts.addEventListener("loadingdone",heroSynFitSoon);
+}
 function hero(){
   const L=t(),day=dayOrAll();
   if(S.mode==="cinema"){

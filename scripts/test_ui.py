@@ -20910,6 +20910,119 @@ def _hs1_case(browser, eng, w, h, lang, kind, oid, tag, shot=False, short=None):
         ctx.close()
 
 
+def _hs1_serve(font_delay):
+    """The build over HTTPS on a free local port (like _ga_serve: the CSP upgrades insecure
+    requests), every .woff2 answered `font_delay` seconds late, so the page lays out in the
+    fallback font first and Geologica swaps in later, as on a real first visit."""
+    import functools
+    import http.server
+    import ssl
+    import tempfile
+    import threading
+    d = tempfile.mkdtemp(prefix="sg-hs1-")
+    subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", d + "/k.pem",
+                    "-out", d + "/c.pem", "-days", "1", "-subj", "/CN=127.0.0.1"], check=True, capture_output=True)
+
+    class _Slow(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):
+            if self.path.split("?", 1)[0].endswith(".woff2"):
+                __import__("time").sleep(font_delay)
+            return super().do_GET()
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(_Slow, directory=str(html_path.parent)))
+    sc = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    sc.load_cert_chain(d + "/c.pem", d + "/k.pem")
+    srv.socket = sc.wrap_socket(srv.socket, server_side=True)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv, f"https://127.0.0.1:{srv.server_address[1]}/{html_path.name}"
+
+
+# Near the threshold, measured in the fallback font: the longest text that still fits the
+# clamp before the webfont arrives (the skeptic's „Resident Evil“ synopsis, EN at 393 px:
+# 3 lines in the fallback, 4 in Geologica, cut with no Read more).
+HS1_FIT_FALLBACK_JS = """()=>{const w0=document.querySelector('main .hero .synwrap');if(!w0)return null;
+  const texts=[];for(const f of FILMS){const t=(f.synEn||'').trim();if(t.split(/\\s+/).length>25)texts.push(t);if(texts.length>=16)break;}
+  const out=[];
+  texts.forEach((t,i)=>{const w=w0.cloneNode(true);w.classList.add('clamp');w.setAttribute('data-hs1-probe',i);
+    const p=w.querySelector('.synbody'),b=w.querySelector('.readmore');p.removeAttribute('id');b.removeAttribute('aria-controls');
+    b.setAttribute('aria-expanded','false');w0.parentNode.insertBefore(w,w0.nextSibling);
+    const words=t.split(/\\s+/),fits=n=>{p.textContent=words.slice(0,n).join(' ');return p.scrollHeight<=p.clientHeight+2;};
+    let lo=1,hi=words.length;if(!fits(lo)){w.remove();return;}while(lo<hi){const m=(lo+hi+1)>>1;if(fits(m))lo=m;else hi=m-1;}
+    fits(lo);out.push(lo);});
+  heroSynFit();
+  return {n:out.length,geo:document.fonts.check('16px Geologica'),
+    hiddenBefore:[...document.querySelectorAll('[data-hs1-probe] .readmore')].filter(b=>b.hidden).length};}"""
+HS1_PROBES_JS = """()=>[...document.querySelectorAll('[data-hs1-probe]')].map(w=>{const p=w.querySelector('.synbody'),
+  b=w.querySelector('.readmore');return {cut:p.scrollHeight>p.clientHeight+2,btn:!b.hidden};})"""
+
+
+def _hs1_wait_font(page, limit_ms=15000):
+    """Until Geologica has arrived (polled: the CSP forbids wait_for_function's eval), then a
+    few frames for the page's own font hooks."""
+    for _ in range(limit_ms // 100):
+        if page.evaluate("()=>document.fonts.status==='loaded'&&document.fonts.check('16px Geologica')"):
+            break
+        page.wait_for_timeout(100)
+    page.wait_for_timeout(300)
+
+
+def _hs1_font_swap(browser, eng):
+    """The Read more control is re-checked once the webfont arrives: the build's own hero
+    (BG and EN, 393 and 1280) and a synopsis that only just fits in the fallback font, with
+    every .woff2 answered 1.5 s late (each case a fresh context: nothing cached)."""
+    srv, url = _hs1_serve(1.5)
+
+    def fresh(w, h, lang):
+        ctx = browser.new_context(viewport={"width": w, "height": h}, timezone_id="Europe/Sofia",
+                                  locale="bg-BG", ignore_https_errors=True)
+        ctx.add_init_script(CLOCK)
+        ctx.add_init_script("try{localStorage.setItem('sofia-screen-v2',JSON.stringify({prefs:{track:'both',"
+                            f"genres:[],mood:[],with:'',when:'any',taste:[]}},lang:'{lang}',mode:'cinema'}}))}}catch(e){{}}")
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(url, wait_until="domcontentloaded")
+        page.wait_for_selector("main .hero", timeout=20000)
+        return ctx, page, errs
+    try:
+        for lang, w, h in (("en", 393, 852), ("bg", 393, 852), ("en", 1280, 800), ("bg", 1280, 800)):
+            tag = f"hs1_{eng}_fontswap_{w}_{lang}"
+            ctx, page, errs = fresh(w, h, lang)
+            try:
+                _hs1_wait_font(page)
+                own = page.evaluate(HS1_STATE_JS)
+                if own and not own.get("noSyn"):
+                    cut = own["full"] > own["h"] + 2
+                    check(f"{tag}_own_hero_control_iff_cut_after_font", own["btnVis"] == cut,
+                          f"{own['title']!r}: cut={cut} control={own['btnVis']} (h={own['h']:.0f} full={own['full']})")
+                else:
+                    skip(f"{tag}_own_hero_control_iff_cut_after_font", f"no hero synopsis ({own})")
+                check(f"{tag}_no_page_errors", not errs, f"{errs[:2]}")
+            finally:
+                ctx.close()
+            if lang != "en" or w != 393:
+                continue
+            # the fallback-fitting text set before Geologica arrives
+            ctx, page, errs = fresh(w, h, lang)
+            try:
+                pick = page.evaluate(HS1_FIT_FALLBACK_JS)
+                if not pick or pick["geo"] or not pick["n"]:
+                    skip(f"{tag}_near_threshold", f"could not measure before the webfont ({pick})")
+                else:
+                    _hs1_wait_font(page)
+                    pr = page.evaluate(HS1_PROBES_JS)
+                    bad = [i for i, x in enumerate(pr) if x["cut"] != x["btn"]]
+                    check(f"{tag}_near_threshold_control_iff_cut_after_font", not bad,
+                          f"{pick['n']} synopses cut to just fit the fallback font ({pick['hiddenBefore']} without "
+                          f"the control then); in Geologica {sum(x['cut'] for x in pr)} are cut; control wrong for {bad}")
+            finally:
+                ctx.close()
+    finally:
+        srv.shutdown()
+
+
 def wave_hs1(browser):
     """HS1: the "На фокус" hero on the cinema and theatre home screens. A long synopsis is
     clamped to 3 lines on phones and 4 on wider screens with „Прочети повече“ / "Read more"
@@ -20951,6 +21064,7 @@ def wave_hs1(browser):
                 _hs1_case(browser, eng, w, h, lang, "film", pl["film"], f"hs1_{eng}_short_{w}_{lang}",
                           shot=(lang == "bg" and w == 393),
                           short=("Кратко резюме в един ред.", "A one-line synopsis."))
+    _hs1_font_swap(browser, eng)
     print(f"  engine: {eng}")
 
 

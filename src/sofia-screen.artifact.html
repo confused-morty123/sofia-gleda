@@ -3041,18 +3041,28 @@ function heroSyn(text){
   return`<div class="synwrap clamp hero-synw"><p class="synbody hero-syn" id="hero-syn">${esc(text)}</p>`
     +`<button type="button" class="readmore" data-readmore aria-expanded="false" aria-controls="hero-syn" data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
 }
-/* after every render or resize: the button only under a synopsis that is cut (an open one
-   stays open) */
+/* after every render or resize, and again once the webfont arrives or the text box changes
+   width (a synopsis measured in the fallback font fitted 3 lines, in Geologica 4): the button
+   only under a synopsis that is cut (an open one stays open) */
+let _heroFitRaf=0,_heroSynRO=null;const _heroSynSeen=new Set();
+function heroSynFitSoon(){if(!_heroFitRaf)_heroFitRaf=requestAnimationFrame(()=>{_heroFitRaf=0;heroSynFit();});}
 function heroSynFit(root){
+  _heroSynSeen.forEach(b=>{if(!b.isConnected){_heroSynRO.unobserve(b);_heroSynSeen.delete(b);}});
   (root||document).querySelectorAll(".hero .synwrap").forEach(w=>{
     const body=w.querySelector(".synbody"),btn=w.querySelector(".readmore");
-    if(!body||!btn||btn.getAttribute("aria-expanded")==="true")return;
+    if(!body||!btn)return;
+    if(_heroSynRO&&body.isConnected&&!_heroSynSeen.has(body)){_heroSynSeen.add(body);_heroSynRO.observe(body);}
+    if(btn.getAttribute("aria-expanded")==="true")return;
     w.classList.add("clamp");
     btn.hidden=!(body.scrollHeight>body.clientHeight+2);
   });
 }
-let _heroFitRaf=0;
-window.addEventListener("resize",()=>{if(!_heroFitRaf)_heroFitRaf=requestAnimationFrame(()=>{_heroFitRaf=0;heroSynFit();});});
+if(typeof ResizeObserver==="function")_heroSynRO=new ResizeObserver(heroSynFitSoon);
+window.addEventListener("resize",heroSynFitSoon);
+if(document.fonts){
+  if(document.fonts.ready)document.fonts.ready.then(heroSynFitSoon,()=>{});
+  if(document.fonts.addEventListener)document.fonts.addEventListener("loadingdone",heroSynFitSoon);
+}
 function hero(){
   const L=t(),day=dayOrAll();
   if(S.mode==="cinema"){
