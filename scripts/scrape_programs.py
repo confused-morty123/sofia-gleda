@@ -4831,6 +4831,18 @@ def main():
     for (fid, vid), times_map in fresh_showattr.items():
         if (fid, vid) in active_st_pairs:
             showattr_merged[(fid, vid)] = times_map
+    # ...and, within a pair, to the screenings still listed: a refresh during the day finds
+    # the venue's earlier screenings gone, so last run's labels for them must go too (the
+    # gate fails on a SHOWATTR time with no SHOWTIMES row, as on 2026-11-04 at 15:50).
+    st_slots = {}
+    for r in new_showtimes:
+        st_slots.setdefault((r[0], r[1]), set()).update(f"{r[2]} {t}" for t in (r[3] or []))
+    for pair in list(showattr_merged):
+        kept = {k: v for k, v in showattr_merged[pair].items() if k in st_slots.get(pair, ())}
+        if kept:
+            showattr_merged[pair] = kept
+        else:
+            del showattr_merged[pair]
     showattr_out = {f"{fid}|{vid}": v for (fid, vid), v in sorted(showattr_merged.items())}
     try:
         out = write_showattr(out, showattr_out)
