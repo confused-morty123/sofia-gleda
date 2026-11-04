@@ -12774,6 +12774,7 @@ def _hf_pill(page, frac=0.5, index=0, scroll=True):
 
 
 def _hf_tap_pill(page, phone, frac=0.5, index=0):
+    wait_settled(page)          # the sheet has finished opening (a slow machine is still sliding it in)
     r = _hf_pill(page, frac, index)
     if not r:
         return None
@@ -14847,6 +14848,12 @@ def _hf2_search_close(browser, eng):
 
 # ── 7: Кино / Театър ──────────────────────────────────────────────────────────
 HF2_MAIN_REC_JS = r"""(ms)=>{const R=window.__hf2m=[];const t0=performance.now();
+  /* the animations started on <main> while recording, as the page calls them (instrumented
+     only here, for the slow-machine rule of _hf2_switch); the page's own call is unchanged */
+  const A=window.__hf2a=[],orig=Element.prototype.animate;
+  Element.prototype.animate=function(k,o){if(this.tagName==='MAIN')A.push({d:Math.round(Number(typeof o==='number'?o:o&&o.duration)||0),
+    k:JSON.stringify(k).slice(0,200)});return orig.call(this,k,o);};
+  setTimeout(()=>{Element.prototype.animate=orig;},ms+200);
   const tick=()=>{const m=document.querySelector('#app > main');const t=performance.now()-t0;
     if(m){const cs=getComputedStyle(m);let vis=0;
       for(const c of m.children){const q=c.getBoundingClientRect();if(q.height>0&&q.bottom>0&&q.top<innerHeight){vis=1;break;}}
@@ -14880,23 +14887,25 @@ def _hf2_switch(browser, eng):
         clean = (end["style"].replace(" ", "") in ("", "min-height:;") and end["anims"] == 0 and end["surface"] == "theatre"
                  and end["shows"] > 0 and end["films"] == 0 and end["y"] == 0 and end["hdr"])
         # A machine that cannot draw the ~260 ms switch in 4 frames (GitHub's Linux runners,
-        # WebKit without a GPU: ~90 ms between frames while the new programme is built) is
-        # judged on the animations themselves: the dim (SWITCH_OUT) and the rise (SWITCH_IN)
-        # both ran on <main>, 200 ms or more together, and at least 2 drawn frames were
-        # between the states, one of them lifted. A machine drawing every 33 ms or faster
-        # (the owner's Mac) must show 4 frames, as before.
+        # WebKit without a GPU: 90-280 ms between frames while the new programme is built, so
+        # the rise can start and end between two frames) is judged on the animations the page
+        # starts on <main>: the dim (opacity down, SWITCH_OUT) and the rise (from a lift to
+        # opacity 1, SWITCH_IN), 200 ms or more together. A machine drawing every 33 ms or
+        # faster (the owner's Mac) must show 4 drawn frames between the states, as before.
         times = [x[0] for x in s]
         early = [b - a for a, b in zip(times, times[1:]) if a < 450]
         slow = bool(early) and sorted(early)[len(early) // 2] > 33
         durs = sorted({d for x in s for d in (x[7] if len(x) > 7 else [])})
-        lifted = any(x[2] not in ("none", "matrix(1, 0, 0, 1, 0, 0)") for x in moving)
-        by_anim = slow and len(moving) >= 2 and lifted and len(durs) >= 2 and sum(durs[-2:]) >= 200
+        started = page.evaluate("window.__hf2a || []")
+        dim = [a for a in started if '"opacity":' in a["k"] and "translate" not in a["k"]]
+        rise = [a for a in started if "translateY" in a["k"] and '"opacity":1' in a["k"]]
+        by_anim = slow and bool(dim) and bool(rise) and dim[-1]["d"] + rise[-1]["d"] >= 200
         if reduced:
             check(f"{tag}_instant", not moving and not blank and clean, f"animated frames {len(moving)}; blank {len(blank)}; end {end}")
         else:
             check(f"{tag}_animates", len(moving) >= 4 or by_anim,
                   f"{len(moving)} of {len(s)} frames between states: {[x[:3] for x in moving[:5]]}; "
-                  f"frame times {times} ms; animations on main {durs} ms"
+                  f"frame times {times} ms; animations on main {durs} ms; started {[(a['d'], a['k'][:60]) for a in started]}"
                   f"{' (a slow machine: judged on the animations)' if slow else ''}")
             check(f"{tag}_never_blank", not blank and p["nbad"] == 0,
                   f"blank frames {blank[:3]}; posters blank/undecoded in {p['nbad']} frames {p['bad'][:2]}")
