@@ -1470,6 +1470,18 @@ def main():
     merged.update(prev_ok)
     merged.update(new_ok)
     merged.update(seed_ok)
+    # An image own_page_posters.py read from the show's own page, with its page on
+    # record (poster_sources.json), outranks every tier here: SEED and aggregator
+    # matches carry no provenance, and a --refresh must not re-download a SEED URL
+    # over it (posters/<id>.* is the same file).
+    try:
+        _own = json.loads((ROOT / "poster_sources.json").read_text(encoding="utf-8")).get("shows") or {}
+    except (OSError, ValueError):
+        _own = {}
+    for _sid, _rec in _own.items():
+        _p = (_rec or {}).get("path") or ""
+        if _p and (ROOT / _p).is_file():
+            merged[_sid] = _p
 
     if policy_log:
         print("\nposter policy:")

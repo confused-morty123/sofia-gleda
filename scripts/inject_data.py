@@ -127,6 +127,34 @@ _fi_img_log = []
 # for this very run — but we only need to CHECK `knows`, which is stable).
 # We build the catalogue once below, after alias computation.
 _fi_img_pending = {}  # fid -> img_url, to be policy-checked after catalogue is ready
+
+# Images read from each title's OWN page by own_page_posters.py, with their
+# provenance in poster_sources.json. A play's own-page image replaces whatever
+# theatre_posters.json holds for it (an aggregator match, a hand-added file); a
+# film's is used only when it has no TMDB poster and no programme-page image,
+# ahead of the film_info img fallback. Only files that still exist, unchanged.
+try:
+    import hashlib as _hl
+    _own = json.load(open(ROOT / "poster_sources.json", encoding="utf-8"))
+except (OSError, ValueError):
+    _own = {}
+_own_n = {"shows": 0, "films": 0}
+for _sid, _rec in (_own.get("shows") or {}).items():
+    _p = (_rec or {}).get("path") or ""
+    if _p and (ROOT / _p).is_file() and _hl.md5((ROOT / _p).read_bytes()).hexdigest() == _rec.get("md5"):
+        if showart.get(_sid) != _p:
+            showart[_sid] = _p
+            _own_n["shows"] += 1
+for _fid, _rec in (_own.get("films") or {}).items():
+    _p = (_rec or {}).get("path") or ""
+    if (_p and _fid not in _tmdb_with_poster and _fid not in posters_override
+            and (ROOT / _p).is_file()
+            and _hl.md5((ROOT / _p).read_bytes()).hexdigest() == _rec.get("md5")):
+        posters_override[_fid] = _p
+        _own_n["films"] += 1
+if any(_own_n.values()):
+    print(f"  own-page posters (poster_sources.json): {_own_n['shows']} play(s) replaced, "
+          f"{_own_n['films']} film(s) added to POSTERS")
 for _fid, _fi in filminfo.items():
     _img = _fi.get("img")
     if not _img:

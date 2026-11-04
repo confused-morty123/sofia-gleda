@@ -1509,9 +1509,9 @@ check("posterpolicy's JS_SAFEIMG_PATH (used by verify_build 5a/5c) equals the re
       bool(_m5a and _m5b) and _m5a.group(1) == _m5b.group(1))
 
 # ---------------------------------------------------------------------------
-# 5c2: poster coverage of the upcoming shows (counted as the browser does)
+# 5c2: poster coverage of the upcoming titles: the TRUE number (own image)
 # ---------------------------------------------------------------------------
-print("5c2: poster coverage")
+print("5c2: poster coverage (own image)")
 _cov_shows = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
               for i in range(120)]
 _cov_perfs = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 4)).isoformat(),
@@ -1519,15 +1519,26 @@ _cov_perfs = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + 
 _cov_base = (_minimal_html(performances_override=_json.dumps(_cov_perfs))
              .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows) + ";"))
 _all_art = {f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}PLAKAT.jpg" for i in range(120)}
-_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"))
-check("every upcoming show with a poster passes and prints POSTER_COVERAGE 120/120",
-      _rc == 0 and '"upcoming": 120' in _out and '"with": 120' in _out)
+_cov_root = pathlib.Path(tempfile.mkdtemp(prefix="sg5c2-"))
+(_cov_root / "poster_sources.json").write_text(_json.dumps({"shows": {
+    k: {"img": v, "page": f"https://theatre.art.bg/x_{i}_14_20", "kind": "poster"}
+    for i, (k, v) in enumerate(_all_art.items())}}), encoding="utf-8")
+_cov_env = {"SOFIA_POSTER_SOURCES": str(_cov_root / "poster_sources.json")}
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"), _cov_env)
+check("every upcoming show with its own-page poster on record passes and prints POSTER_COVERAGE 120/120",
+      _rc == 0 and '"upcoming": 120' in _out and '"with": 120' in _out and '"metric": "own-page"' in _out)
 _some_art = dict(list(_all_art.items())[:100])
-_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_some_art) + ";"))
-check("coverage below 90 % (100/120) fails 5c2", _rc != 0 and "below 90 %" in _out)
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_some_art) + ";"), _cov_env)
+check("coverage below the bar (100/120) fails 5c2", _rc != 0 and "below 95 %" in _out)
 _bad_art = dict(_all_art, show5="posters/show5 x.jpg")
-_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_bad_art) + ";"))
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_bad_art) + ";"), _cov_env)
 check("…a path the browser refuses counts as missing", '"with": 119' in _out)
+_unrec = dict(_all_art, **{f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}OTHER.jpg" for i in range(10)})
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_unrec) + ";"), _cov_env)
+check("…an image with no record of the title's page it came from does not count, though it displays "
+      "(the 2026-11-04 bug: 521/526 counted, stage photos and another play's photo included)",
+      _rc != 0 and '"with": 110' in _out and "120/120 display some image" in _out
+      and "unverified" in _out)
 
 # ---------------------------------------------------------------------------
 # 4c2a: BOXONLY — performances a theatre sells only at its box office
