@@ -60,10 +60,9 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: "1"
-  # The gate's freshness check (SNAPSHOT older than 36 h) is about the live data, which
-  # the nightly refresh's own gate enforces; here the listings are whatever was last
-  # committed, so a branch a few days old must not fail on its age.
-  SOFIA_SKIP_FRESHNESS: "1"
+  # SOFIA_SKIP_FRESHNESS is NOT set here: test_verify checks that a stale or missing
+  # "generated" fails the gate, and an inherited flag would turn those checks red. It is
+  # set only on the publish-gate step below and by ci_waves.py for the UI waves.
 
 jobs:
   unit:
@@ -128,6 +127,11 @@ jobs:
       # threshold) is not hidden: the step goes red and the job fails with it.
       - name: Publish gate (verify_build.py)
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        # The gate's freshness check (SNAPSHOT older than 36 h) is about the live data,
+        # which the nightly refresh's own gate enforces; here the listings are whatever
+        # was last committed, so a branch a few days old must not fail on its age.
+        env:
+          SOFIA_SKIP_FRESHNESS: "1"
         run: SOFIA_HTML=index.html python3 scripts/verify_build.py
 
       - name: test_parsers
@@ -191,7 +195,7 @@ jobs:
           persist-credentials: false
 
       - name: Fetch origin/main (wave B24 compares the service worker's shell with the release)
-        run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main || echo "origin/main not fetched; B24 skips that check"
+        run: git fetch --no-tags --depth=1 origin +main:refs/remotes/origin/main || echo "origin/main not fetched; B24 skips that check"
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
