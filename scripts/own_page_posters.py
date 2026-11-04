@@ -26,9 +26,13 @@ another production's image (the hard rule after the 23 wrong posters of
 
 The page must be the title's: its own headings (<title>, og:title, <h1>, an
 unlinked <h2>) name the title (page_identity), and the request did not end on
-another page (a redirect). A nav menu or repertoire list naming the title does
-not count. On a recheck a recorded poster is replaced only by an image from such
-a page, and the replaced one is noted ("replaced"); otherwise it is kept.
+another page (a redirect, or a canonical / og:url at the site's root: the home
+page served for a dead URL). A nav menu, a repertoire list or a heading inside a
+link naming the title does not count. On a recheck a recorded image is never
+replaced by a lesser kind (poster > key > photo); another image of its kind is
+held ("pending") and replaces it only when a run HOLD_DAYS later finds it again
+and no other title's page has shown it as its og:image (og_seen, kept across
+runs); the replaced one is noted ("replaced"). Otherwise the recorded one stays.
 Placeholders and funders' marks (posterpolicy.PLACEHOLDER_RE) and images in a
 site-wide popup, <nav> or <footer> are never candidates.
 
@@ -69,6 +73,7 @@ HOST_GAP = 2.0                  # seconds between two requests to one host
 MAX_IMAGES_PER_TITLE = 6        # downloads tried for one title before giving up
 RECHECK_DAYS = 14               # a recorded poster's page is read again after this
 RETRY_DAYS = 3                  # a title with nothing found is tried again after this
+HOLD_DAYS = 3                   # a recheck's new image replaces the recorded one only if found again this much later
 
 # The theatre.art.bg theatre id of each venue whose own site is not read directly.
 ART_MIRROR = {"mlt.bg": 4, "sofiapuppet.com": 10}
@@ -475,6 +480,37 @@ def _text(fragment):
     return _fold(_html.unescape(re.sub(r"<[^>]+>", " ", fragment)))
 
 
+_A_OPEN_RE, _A_CLOSE_RE = re.compile(r"<a\b", re.I), re.compile(r"</a\s*>", re.I)
+
+
+def _inside_link(html, pos):
+    """True when position pos sits inside an open <a>…</a> (a repertoire card
+    `<a href="/spektakli/x"><h2>X</h2></a>` on a home page: a link, not a heading)."""
+    before = html[max(0, pos - 4000):pos]
+    opens = [m.end() for m in _A_OPEN_RE.finditer(before)]
+    closes = [m.end() for m in _A_CLOSE_RE.finditer(before)]
+    return bool(opens) and (not closes or opens[-1] > closes[-1])
+
+
+_CANON_RES = (re.compile(r"""<link\b[^>]*rel=["']canonical["'][^>]*>""", re.I),
+              re.compile(r"""<meta\b[^>]*property=["']og:url["'][^>]*>""", re.I))
+_HREF_RE = re.compile(r"""href=["']([^"']+)["']""", re.I)
+
+
+def root_canonical(html, asked):
+    """The page's canonical / og:url when it is the site's root while the page asked
+    for is not (a soft 404: the home page served with HTTP 200 at a dead show URL),
+    else None."""
+    if not html or urllib.parse.urlsplit(asked).path.strip("/") == "":
+        return None
+    for rx in _CANON_RES:
+        for m in rx.finditer(html[:200000]):
+            c = _HREF_RE.search(m.group(0)) or _CONTENT_RE.search(m.group(0))
+            if c and urllib.parse.urlsplit(urllib.parse.urljoin(asked, c.group(1).strip())).path.strip("/") == "":
+                return c.group(1).strip()
+    return None
+
+
 def page_identity(html, title):
     """True when the page's OWN headings name the title: half or more of its words
     (3+ letters, up to 6) in <title>, og:title / twitter:title and <h1> together,
@@ -496,7 +532,7 @@ def page_identity(html, title):
     if sum(t in head for t in toks) >= need:
         return True
     for m in _H2_RE.finditer(html):
-        if "<a" in m.group(1).lower():
+        if "<a" in m.group(1).lower() or _inside_link(html, m.start()):
             continue
         h2 = _text(m.group(1))
         if sum(t in h2 for t in toks) >= need:
@@ -665,6 +701,8 @@ def due(key, sources, today, force=False):
     if rec:
         if not (ROOT / rec.get("path", "")).is_file():
             return True
+        if rec.get("pending"):
+            return (today - dt.date.fromisoformat(rec["pending"].get("on", "2000-01-01"))).days >= HOLD_DAYS
         last = rec.get("checked") or "2000-01-01"
         return (today - dt.date.fromisoformat(last)).days >= RECHECK_DAYS
     miss = sources["misses"].get(key)
@@ -701,6 +739,8 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
             final = getattr(r, "url", None) if r is not None else None
             if isinstance(final, str) and moved_page(u, final):
                 moved[u] = final
+            elif root_canonical(html_of[u], u):
+                moved[u] = root_canonical(html_of[u], u)
     _run(work_pages, by_host)
 
     # images on 3+ different pages of one host are site chrome
@@ -731,8 +771,19 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
                 page_titles[pg].add(norm_title(titles.get(k, "")))
     # (one production on two venues' pages, theatre.art.bg …_3262_8_20 and _3262_22_20,
     # shares its image legitimately: chrome only when the pages are different titles)
+    # og:image observations kept across runs (a nightly run reads one page of a host:
+    # a new site-wide share image is seen as such once a second title's page shows it)
+    og_seen = sources.setdefault("og_seen", {})
+    for u, pgs in og_of.items():
+        seen = og_seen.setdefault(u, {})
+        for pg in pgs:
+            seen[pg] = sorted(page_titles[pg])[0] if page_titles[pg] else ""
+    if len(og_seen) > 6000:
+        for u in sorted(og_seen)[:len(og_seen) - 6000]:
+            og_seen.pop(u, None)
     chrome = ({u for u, pgs in og_of.items()
                if len(pgs) >= 2 and len(set().union(*(page_titles[p] for p in pgs))) >= 2}
+              | {u for u, seen in og_seen.items() if len(set(seen.values())) >= 2}
               | {u for u, pgs in seen_on.items() if len(pgs) >= 3 and u not in og_of}
               | set(sources.get("chrome") or []))
     sources["chrome"] = sorted(chrome)[:3000]
@@ -794,9 +845,33 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
         if best and kind == "film" and film_need and not film_need(ident):
             summary["film already has a poster"] += 1
             continue
+        prev = sources[bucket].get(ident) or {}
+        if best and prev.get("md5"):
+            new_md5 = hashlib.md5(best["data"]).hexdigest()
+            held = prev.get("pending") or {}
+            if new_md5 == prev["md5"]:
+                pass                            # the same image: refreshed below
+            elif RANK.get(best["kind"], 9) > RANK.get(prev.get("kind"), 9):
+                # a recorded poster is never replaced by a lesser kind (a season banner
+                # or a site-wide share image on a recheck): kept, noted
+                prev["checked"] = today.isoformat()
+                prev["recheck_lesser"] = {"img": best["img"], "kind": best["kind"], "on": today.isoformat()}
+                prev.pop("pending", None)
+                summary[f"{kind} kept (recheck found only a {best['kind']})"] += 1
+                continue
+            elif not (held.get("img") == best["img"] and held.get("md5") == new_md5
+                      and (today - dt.date.fromisoformat(held.get("on", today.isoformat()))).days >= HOLD_DAYS
+                      and best["img"] not in chrome):
+                # another image of the same rank: held for review, the recorded one stays
+                # until a later run (HOLD_DAYS on) finds the same image again and no
+                # other title's page has shown it meanwhile
+                if held.get("img") != best["img"] or held.get("md5") != new_md5:
+                    prev["pending"] = {"img": best["img"], "md5": new_md5, "kind": best["kind"],
+                                       "page": best["page"], "on": today.isoformat()}
+                summary[f"{kind} replacement held for review"] += 1
+                continue
         if best:
             name = ident if kind == "show" else f"film-{ident}"
-            prev = sources[bucket].get(ident) or {}
             path, md5 = store(best["data"], name)
             sources[bucket][ident] = {"page": best["page"], "img": best["img"],
                                       "kind": best["kind"], "w": best["w"], "h": best["h"],
