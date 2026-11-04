@@ -169,16 +169,18 @@ CSP), as in "Making a UI change". The nightly refresh's own commits do not start
 and `[skip ci]` in a commit message skips it. A push that changes only `.md` files
 is not tested.
 
-Three jobs:
+Four jobs:
 
 - **unit**: the offline build, the publish gate (`verify_build.py`, without the
   36-hour freshness check: the data is whatever was last committed), then
-  `test_parsers`, `test_theatres`, `test_verify`, `test_security`, `test_schedule`.
+  `test_parsers`, `test_theatres`, `test_verify`, `test_schedule`.
   Every test runs even when an earlier one failed, so one run shows all failures.
   A failure is shown, not hidden: the step goes red and so does the job. Only the
   publish-gate step skips the freshness check (`SOFIA_SKIP_FRESHNESS=1` on that
   step alone): `test_verify` checks that a stale build fails the gate, so the flag
-  is not set for the whole job. About 15 minutes.
+  is not set for the whole job. About 4 minutes.
+- **security (chromium)** and **security (webkit)**: `test_security`, one engine
+  each (`SOFIA_BROWSER`), in parallel; about 6 minutes each.
 - **plan**: `scripts/ci_waves.py` splits the waves of `scripts/test_ui.py` into
   shards of at most about 8 minutes of tests each (a shard takes about 10 minutes with
   setup; B24 and HF1 are longer and get a shard of their own).
@@ -188,6 +190,18 @@ Three jobs:
   `ci_waves.py`: HF1, HF2, UX1, B24, BO1, DM1, GA1, HS1, LG1, PL1). Each wave is its
   own process; a wave that fails on the known 30-second page-load timeout is re-run
   once. A failing shard does not stop the others.
+
+The runners are set up as the Mac: `TZ=Europe/Sofia` (the checks compute "today" and
+midnights in Python), a UTF-8 locale, Playwright 1.62.0 from `requirements.txt` with
+its browsers and their system libraries (apt gets network timeouts and three tries),
+Chromium on Linux started with `--font-render-hinting=none` (unhinted text sets at the
+Mac's widths). Each browser context still gets its own viewport, Europe/Sofia, bg-BG
+and the frozen clock from the test. What differs and how the tests cope: headless
+Chromium on Linux ignores synthesized touch gestures, so touch swipes are sent as CDP
+touch events (`touch_swipe`); the machines are slower, so every page helper waits until
+the page draws steadily (`wait_page_idle`) and animations are recorded frame by frame
+in the page (`frames`), not polled from Python; WebKit on Linux snaps a rail that
+Safari leaves between two cards, so UX1 asks for the off-a-card rest only on macOS.
 
 **Reading the results.** Open the run (Actions tab, or the commit's check mark).
 The run's summary page has the shard plan and, per shard, a table of waves with
@@ -204,14 +218,16 @@ curl -s "$R/commits/<sha>/check-runs"                                       # th
 curl -s "$R/check-runs/<job id>/annotations"                                # failed waves and their check names
 ```
 
-Each failed wave leaves one annotation naming its failed checks, so the last call
-tells which checks broke. Job logs and artifacts need a signed-in download (the API
-answers 403 without a token); jobs, steps, conclusions and annotations are public.
+Each failed wave leaves one annotation naming its failed checks and a second with
+each failed check's detail (or, for a wave that crashed, the end of its log), and each
+shard one with its waves' times, so the last call tells which checks broke and why.
+Job logs and artifacts need a signed-in download (the API answers 403 without a
+token); jobs, steps, conclusions and annotations are public.
 
 **Running a subset (smoke run).**
 
 - Run workflow button: fill **waves** (for example `HF1 HS1 B24`), pick the
-  **browsers**, and untick **unit** to skip the unit job.
+  **browsers**, and untick **unit** to skip the unit and security jobs.
 - From a push: add a line to the commit message, `CI-Waves: HF1 HS1` (and,
   if wanted, `CI-Browsers: webkit`). With both engines WebKit runs only the
   named waves that are in `WEBKIT_WAVES`; `CI-Browsers: webkit` runs every named

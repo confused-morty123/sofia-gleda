@@ -6,8 +6,10 @@
 # the README's "Making a UI change" build, and then tested.
 #
 #   unit  the offline build + share and legal pages + CSP, the publish gate, and
-#         test_parsers, test_theatres, test_verify, test_security, test_schedule.
+#         test_parsers, test_theatres, test_verify, test_schedule.
 #         Every test runs even when an earlier one fails, so all failures show.
+#   security  test_security, one runner per engine (Chromium, WebKit), in parallel
+#         with the rest: it is the longest offline suite (~11 min both engines in one).
 #   plan  splits the UI waves of scripts/test_ui.py into shards (scripts/ci_waves.py).
 #   ui    one runner per shard, Chromium and WebKit, in parallel.
 #
@@ -109,30 +111,37 @@ jobs:
           key: playwright-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
       - name: Install the browsers
-        # The gate and test_verify open Chromium; test_security runs Chromium and WebKit.
+        # The gate and test_verify open Chromium (WebKit too, kept so the cache key is shared).
         # On a cache hit only the system libraries are installed (they are not cached).
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
-        # apt on a runner can stall on a mirror (2026-11-04: one shard sat 30 min in this step,
-        # three more over 6 min where it takes 25 s): apt gives up on a silent connection after
-        # 20 s and retries; each try is cut at 4 min, its apt processes stopped and dpkg
-        # repaired, and tried again, three tries in all.
+        # apt on a runner can stall (2026-11-04: one shard sat 30 min in this step, others
+        # 6-12 min, where it takes 25 s). The runner's own apt timers are stopped (they hold
+        # the dpkg lock at boot), apt gives up on a silent connection after 20 s and retries,
+        # and each try is cut at 4 min, its apt processes stopped and dpkg repaired, three
+        # tries in all; a failed try leaves the end of its output as an annotation.
         run: |
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' \
+          sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service \
+            apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\n' \
             | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
           for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
-              timeout -k 10 240 python3 -m playwright install-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
             else
-              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
             fi
+            tail -n 12 /tmp/pw-install.log
+            { echo "try $try failed or timed out; the end of its output:"; tail -n 6 /tmp/pw-install.log | cut -c1-200
+              echo "apt/dpkg running:"; pgrep -a 'apt|dpkg|unattended' | cut -c1-120 | head -n 4; } \
+              | python3 -c 'import sys; t = sys.stdin.read().strip(); print("::warning title=Browser install::" + t.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
             [ "$try" = 3 ] && exit 1
-            echo "::warning title=Browser install::try $try failed or timed out; trying again"
             sudo pkill -9 -x apt-get || true
             sudo pkill -9 -x dpkg || true
             sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
             sudo dpkg --configure -a || true
           done
+          cat /tmp/pw-install.log | tail -n 5
 
       - name: Build the page offline (src/ + the committed listings)
         id: build
@@ -166,13 +175,97 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 scripts/test_verify.py
 
-      - name: test_security
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: SOFIA_HTML=index.html python3 scripts/test_security.py
-
       - name: test_schedule
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 scripts/test_schedule.py
+
+  security:
+    # Same skips as unit.
+    if: >-
+      !(github.event_name == 'push' && github.event.head_commit != null &&
+        github.event.head_commit.author.name == 'Sofia Gleda bot') &&
+      (github.event_name != 'workflow_dispatch' || inputs.unit)
+    name: security (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      # Third-party actions are pinned to a full commit SHA, as in refresh.yml (a tag can
+      # be moved to other code; a SHA cannot). To update: take the release's commit from
+      # `git ls-remote --tags https://github.com/actions/<name>` and change both the SHA
+      # and the version comment.
+      - name: Check out the repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"            # the version refresh.yml runs
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        # The same exact pins the refresh installs (requirements.txt).
+        run: pip install -r requirements.txt
+
+      - name: Cache the Playwright browsers
+        id: pw-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          # requirements.txt pins the playwright version, which fixes the browser builds
+          key: playwright-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
+
+      - name: Install the browsers
+        # The gate and test_verify open Chromium (WebKit too, kept so the cache key is shared).
+        # On a cache hit only the system libraries are installed (they are not cached).
+        env:
+          CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
+        # apt on a runner can stall (2026-11-04: one shard sat 30 min in this step, others
+        # 6-12 min, where it takes 25 s). The runner's own apt timers are stopped (they hold
+        # the dpkg lock at boot), apt gives up on a silent connection after 20 s and retries,
+        # and each try is cut at 4 min, its apt processes stopped and dpkg repaired, three
+        # tries in all; a failed try leaves the end of its output as an annotation.
+        run: |
+          sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service \
+            apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\n' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
+          for try in 1 2 3; do
+            if [ "$CACHE_HIT" = "true" ]; then
+              timeout -k 10 240 python3 -m playwright install-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
+            else
+              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
+            fi
+            tail -n 12 /tmp/pw-install.log
+            { echo "try $try failed or timed out; the end of its output:"; tail -n 6 /tmp/pw-install.log | cut -c1-200
+              echo "apt/dpkg running:"; pgrep -a 'apt|dpkg|unattended' | cut -c1-120 | head -n 4; } \
+              | python3 -c 'import sys; t = sys.stdin.read().strip(); print("::warning title=Browser install::" + t.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
+            [ "$try" = 3 ] && exit 1
+            sudo pkill -9 -x apt-get || true
+            sudo pkill -9 -x dpkg || true
+            sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+            sudo dpkg --configure -a || true
+          done
+          cat /tmp/pw-install.log | tail -n 5
+
+      - name: Build the page offline (src/ + the committed listings)
+        run: |
+          python3 scripts/dev_build.py --from HEAD --out index.html
+          python3 scripts/gen_share_pages.py
+          python3 scripts/gen_legal_pages.py
+          python3 scripts/csp.py
+
+      - name: test_security (${{ matrix.browser }})
+        env:
+          SOFIA_HTML: index.html
+          SOFIA_BROWSER: ${{ matrix.browser }}
+        run: python3 scripts/test_security.py
 
   plan:
     if: >-
@@ -238,26 +331,33 @@ jobs:
         # Both engines in every shard: waves J and P3B open WebKit inside the Chromium run.
         env:
           CACHE_HIT: ${{ steps.pw-cache.outputs.cache-hit }}
-        # apt on a runner can stall on a mirror (2026-11-04: one shard sat 30 min in this step,
-        # three more over 6 min where it takes 25 s): apt gives up on a silent connection after
-        # 20 s and retries; each try is cut at 4 min, its apt processes stopped and dpkg
-        # repaired, and tried again, three tries in all.
+        # apt on a runner can stall (2026-11-04: one shard sat 30 min in this step, others
+        # 6-12 min, where it takes 25 s). The runner's own apt timers are stopped (they hold
+        # the dpkg lock at boot), apt gives up on a silent connection after 20 s and retries,
+        # and each try is cut at 4 min, its apt processes stopped and dpkg repaired, three
+        # tries in all; a failed try leaves the end of its output as an annotation.
         run: |
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\n' \
+          sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service \
+            apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nDPkg::Lock::Timeout "120";\n' \
             | sudo tee /etc/apt/apt.conf.d/80-ci-net > /dev/null
           for try in 1 2 3; do
             if [ "$CACHE_HIT" = "true" ]; then
-              timeout -k 10 240 python3 -m playwright install-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
             else
-              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit && break
+              timeout -k 10 240 python3 -m playwright install --with-deps chromium webkit > /tmp/pw-install.log 2>&1 && break
             fi
+            tail -n 12 /tmp/pw-install.log
+            { echo "try $try failed or timed out; the end of its output:"; tail -n 6 /tmp/pw-install.log | cut -c1-200
+              echo "apt/dpkg running:"; pgrep -a 'apt|dpkg|unattended' | cut -c1-120 | head -n 4; } \
+              | python3 -c 'import sys; t = sys.stdin.read().strip(); print("::warning title=Browser install::" + t.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
             [ "$try" = 3 ] && exit 1
-            echo "::warning title=Browser install::try $try failed or timed out; trying again"
             sudo pkill -9 -x apt-get || true
             sudo pkill -9 -x dpkg || true
             sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
             sudo dpkg --configure -a || true
           done
+          cat /tmp/pw-install.log | tail -n 5
 
       - name: Build the page offline (src/ + the committed listings)
         run: |

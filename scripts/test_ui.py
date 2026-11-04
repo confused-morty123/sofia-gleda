@@ -265,12 +265,12 @@ def frames(page, action_js, measure_js, ms):
 PAGE_IDLE_JS = """(ms) => new Promise(res => { const t0 = performance.now(); let last = t0, calm = 0;
   const done = () => res(Math.round(performance.now() - t0)); setTimeout(done, ms);
   const f = () => { const now = performance.now(); calm = now - last < 50 ? calm + 1 : 0; last = now;
-    if (calm >= 6) done(); else requestAnimationFrame(f); };
+    if (calm >= 3) done(); else requestAnimationFrame(f); };
   requestAnimationFrame(f); })"""
 
 
 def wait_page_idle(page, timeout_ms=8000):
-    """Wait until the page renders frames steadily again (six in a row under 50 ms apart),
+    """Wait until the page renders frames steadily again (three in a row under 50 ms apart),
     i.e. its start-up work is done; returns the ms waited. On the owner's Mac that is the
     moment the page appears; WebKit on GitHub's Linux runners drew its first frame ~2.8 s
     after load (a phone page, 2026-11-04), so a test tapping at 0.3 s met a page that had
@@ -12753,6 +12753,7 @@ def _hf_drag(page, sel, frac=0.45):
 
 def _hf_close_popup(page, phone, route, ctx):
     """Close (or use, then close) the time popup by one route; returns a note."""
+    wait_page_idle(page, 4000)
     scope = "#ss-wrap " if phone else "#ss-pop "
     note = ""
     if route == "x":
@@ -12837,6 +12838,8 @@ def _hf_tap_backbar(page, phone):
 
 
 def _hf_close_sheet(page, phone, route):
+    # the page has finished what the last step started (a slow machine is still drawing it)
+    wait_page_idle(page, 4000)
     if route == "backbar":
         _hf_tap_backbar(page, phone)
     elif route == "x":
@@ -14523,6 +14526,7 @@ def _hf2_result_sheets(browser, eng):
                     continue
                 page.wait_for_timeout(150)
                 r = page.evaluate(HF2_RESULT_JS.replace("if(r0.top<170||r0.bottom>innerHeight-90)window.scrollBy(0,r0.top-innerHeight/2.6);", ""), (idx - 1) * 3 + 1)
+                wait_page_idle(page, 4000)
                 if kb == "up":
                     # a letter (a trailing space) still waiting in the live search: it lands under the sheet
                     page.keyboard.type(" ")
@@ -14802,7 +14806,8 @@ HF2_MAIN_REC_JS = r"""(ms)=>{const R=window.__hf2m=[];const t0=performance.now()
     if(m){const cs=getComputedStyle(m);let vis=0;
       for(const c of m.children){const q=c.getBoundingClientRect();if(q.height>0&&q.bottom>0&&q.top<innerHeight){vis=1;break;}}
       R.push([Math.round(t),Math.round(parseFloat(cs.opacity)*100)/100,cs.transform,m.children.length,vis,
-              document.documentElement.getAttribute('data-surface'),m.getAnimations().length]);}
+              document.documentElement.getAttribute('data-surface'),m.getAnimations().length,
+              m.getAnimations().map(a=>Math.round(Number(a.effect.getTiming().duration)||0))]);}
     if(t<ms)requestAnimationFrame(tick);};requestAnimationFrame(tick);}"""
 
 
@@ -14829,11 +14834,25 @@ def _hf2_switch(browser, eng):
         blank = [x for x in s if x[1] < 0.2 or x[3] == 0 or not x[4]]
         clean = (end["style"].replace(" ", "") in ("", "min-height:;") and end["anims"] == 0 and end["surface"] == "theatre"
                  and end["shows"] > 0 and end["films"] == 0 and end["y"] == 0 and end["hdr"])
+        # A machine that cannot draw the ~260 ms switch in 4 frames (GitHub's Linux runners,
+        # WebKit without a GPU: ~90 ms between frames while the new programme is built) is
+        # judged on the animations themselves: the dim (SWITCH_OUT) and the rise (SWITCH_IN)
+        # both ran on <main>, 200 ms or more together, and at least 2 drawn frames were
+        # between the states, one of them lifted. A machine drawing every 33 ms or faster
+        # (the owner's Mac) must show 4 frames, as before.
+        times = [x[0] for x in s]
+        early = [b - a for a, b in zip(times, times[1:]) if a < 450]
+        slow = bool(early) and sorted(early)[len(early) // 2] > 33
+        durs = sorted({d for x in s for d in (x[7] if len(x) > 7 else [])})
+        lifted = any(x[2] not in ("none", "matrix(1, 0, 0, 1, 0, 0)") for x in moving)
+        by_anim = slow and len(moving) >= 2 and lifted and len(durs) >= 2 and sum(durs[-2:]) >= 200
         if reduced:
             check(f"{tag}_instant", not moving and not blank and clean, f"animated frames {len(moving)}; blank {len(blank)}; end {end}")
         else:
-            check(f"{tag}_animates", len(moving) >= 4, f"{len(moving)} of {len(s)} frames between states: {[x[:3] for x in moving[:5]]}; "
-                  f"frame times {[x[0] for x in s]} ms")
+            check(f"{tag}_animates", len(moving) >= 4 or by_anim,
+                  f"{len(moving)} of {len(s)} frames between states: {[x[:3] for x in moving[:5]]}; "
+                  f"frame times {times} ms; animations on main {durs} ms"
+                  f"{' (a slow machine: judged on the animations)' if slow else ''}")
             check(f"{tag}_never_blank", not blank and p["nbad"] == 0,
                   f"blank frames {blank[:3]}; posters blank/undecoded in {p['nbad']} frames {p['bad'][:2]}")
             check(f"{tag}_nothing_left_behind", clean, f"{end}")
@@ -17079,6 +17098,7 @@ def _ux_tap_sel(page, phone, sel, scroll=True):
     if not r:
         return False
     page.wait_for_timeout(120)
+    wait_page_idle(page, 4000)
     _hf_tap(page, phone, r["x"], r["y"])
     return True
 
@@ -17980,7 +18000,12 @@ def _ux_rails_offsnap(browser, base, eng):
                 else:
                     st = page.evaluate("""async ([i, dx]) => { const t = document.querySelectorAll('#app .rtrack')[i];
                         const raf = () => new Promise(r => requestAnimationFrame(r));
-                        t.scrollBy({left: dx, behavior: 'smooth'}); for (let n = 0; n < 40 && t.scrollLeft < dx * .4; n++) await raf();
+                        // in flight, 40% of the way or more, and off a card by more than 1 px (a machine
+                        // drawing few frames can land its first frame past 40% right on a card)
+                        const l0 = t.getBoundingClientRect().left, max = t.scrollWidth - t.clientWidth;
+                        const off = () => Math.min(...[...t.children].map(c => Math.abs(Math.min(max, Math.max(0,
+                            c.getBoundingClientRect().left - l0 + t.scrollLeft)) - t.scrollLeft))) > 1;
+                        t.scrollBy({left: dx, behavior: 'smooth'}); for (let n = 0; n < 40 && (t.scrollLeft < dx * .4 || !off()); n++) await raf();
                         const tr = t.getBoundingClientRect(), c = [...t.children].find(c => { const r = c.getBoundingClientRect(); return r.left >= tr.left + 20 && r.right <= tr.right - 20; });
                         if (!c) return null; c.click(); return true; }""", [i, dx])
                     if st:
