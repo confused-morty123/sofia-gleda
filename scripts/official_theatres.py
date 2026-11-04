@@ -828,41 +828,67 @@ def _next_day(iso):
 # ================================================================== zad-kanala
 ZK_URL = "https://zadkanala.bg/programa/{y}-{m:02d}"
 ZK_SOURCE = "zadkanala.bg/programa/YYYY-MM"
-_ZK_TEXT = re.compile(r"(\d{1,2})\s+([А-Яа-я]{3,})\.?\s+(\d{4})\s*-\s*(\d{1,2}:\d{2})")
+_ZK_TEXT = re.compile(r"(\d{1,2})\s+([А-Яа-я]{2,})\.?\s+(\d{4})\s*-\s*(\d{1,2}:\d{2})")
+# Performances whose printed date contradicts their machine-readable one that a run
+# tolerates: each is skipped (neither date is guessed) and noted. More than this, or
+# half of a month page or more, is a page that cannot be trusted: MarkupError.
+ZK_MAX_DISAGREE = 2
 
 
-def parse_zadkanala(html, tz=None):
+def _zk_month(word):
+    """'Ян.' / 'Ноем.' / 'Дек.' → 1 / 11 / 12: the site abbreviates January to two
+    letters ("8 Ян. 2027 - 19:00", 2026-11-04), so any prefix that names exactly one
+    month counts ('Ма.' names two: None)."""
+    w = (word or "").strip().lower().rstrip(".")
+    hits = [i + 1 for i, m in enumerate(BG_MONTHS) if len(w) >= 2 and m.startswith(w)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def parse_zadkanala(html, tz=None, skipped=None):
     """One month of zadkanala.bg/programa/YYYY-MM (Drupal views table): the
     `content` attribute of `.date-display-single` is an ISO datetime with its
     UTC offset ("2026-10-25T19:00:00+02:00"); the visible text ("25 Окт. 2026 -
-    19:00") must say the same."""
+    19:00") must say the same. A performance where the two disagree is left out
+    and recorded in `skipped` as (title, iso datetime, printed text); a run's
+    `skipped` list longer than ZK_MAX_DISAGREE, or disagreements on half of this
+    page or more, raise MarkupError (the page as a whole is not to be trusted)."""
     soup = soup_of(html)
-    rows = []
-    for span in soup.select("span.date-display-single[content]"):
+    skipped = [] if skipped is None else skipped
+    rows, bad = [], 0
+    spans = soup.select("span.date-display-single[content]")
+    for span in spans:
         try:
             when = dt.datetime.fromisoformat(span["content"])
         except ValueError:
             raise MarkupError(f"zad-kanala: bad datetime {span['content']!r}")
         if when.tzinfo is not None and tz is not None:
             when = when.astimezone(tz)
-        txt = _ZK_TEXT.search(clean(span.get_text(" ", strip=True)))
-        if (not txt or int(txt.group(1)) != when.day or bg_month(txt.group(2)) != when.month
-                or int(txt.group(3)) != when.year or hhmm(txt.group(4)) != when.strftime("%H:%M")):
-            raise MarkupError(f"zad-kanala: date text disagrees with {span['content']}")
         tr = span.find_parent("tr")
         a = tr.select_one(".views-field-title a") if tr else None
         if a is None:
             raise MarkupError("zad-kanala: row without a title")
-        rows.append(mkrow(a.get_text(" ", strip=True), when.date(), when.strftime("%H:%M"),
+        title = a.get_text(" ", strip=True)
+        shown = clean(span.get_text(" ", strip=True))
+        txt = _ZK_TEXT.search(shown)
+        if (not txt or int(txt.group(1)) != when.day or _zk_month(txt.group(2)) != when.month
+                or int(txt.group(3)) != when.year or hhmm(txt.group(4)) != when.strftime("%H:%M")):
+            bad += 1
+            skipped.append((clean(title), span["content"], shown))
+            if len(skipped) > ZK_MAX_DISAGREE or 2 * bad >= len(spans):
+                raise MarkupError(f"zad-kanala: date text disagrees with {span['content']} "
+                                  f"({len(skipped)} performance(s) this run, {bad} of {len(spans)} "
+                                  f"on this page)")
+            continue
+        rows.append(mkrow(title, when.date(), when.strftime("%H:%M"),
                           url=absolute("https://zadkanala.bg/", a.get("href"))))
     return rows
 
 
 def fetch_zadkanala(net, today):
-    rows, notes, tz = [], [], sofia_tz()
+    rows, notes, skipped, tz = [], [], [], sofia_tz()
     for i, (y, m) in enumerate(months_from(today)):
         try:
-            page = parse_zadkanala(_get(net, ZK_URL.format(y=y, m=m)), tz)
+            page = parse_zadkanala(_get(net, ZK_URL.format(y=y, m=m)), tz, skipped)
         except MarkupError:
             raise
         except Unavailable:
@@ -876,6 +902,9 @@ def fetch_zadkanala(net, today):
             notes.append(f"{y}-{m:02d}: page shows another month — stopped")
             break
         rows += page
+    notes += [f"{iso[:10]} {iso[11:16]}: {title!r} left out — its printed date {shown!r} "
+              f"disagrees with its machine-readable date {iso} (neither is guessed)"
+              for title, iso, shown in skipped if iso[:10] >= today.isoformat()]
     return finish("zad-kanala", ZK_SOURCE, rows, today, notes=notes)
 
 

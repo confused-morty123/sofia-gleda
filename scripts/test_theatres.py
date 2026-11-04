@@ -306,7 +306,46 @@ check("rows (offset +03:00 then +02:00)", brief(rows), [("СЛУЧАЯТ ДЖЕ�
                                                          ("СЛУЧАЯТ ДЖЕМ", "2026-10-25", "19:00")])
 check("detail link", rows[0][3]["url"], "https://zadkanala.bg/spektakli/sluchayat-dzhem")
 bad = fx("theatre_zad-kanala.html").replace("2026-10-24T19:00:00+03:00", "2026-10-24T20:00:00+03:00")
-raises("ISO attribute and printed text must agree", O.MarkupError, O.parse_zadkanala, bad, TZ)
+skipped = []
+check("one performance whose ISO attribute and printed text disagree is left out, the rest kept",
+      brief(O.parse_zadkanala(bad, TZ, skipped)), [("СЛУЧАЯТ ДЖЕМ", "2026-10-08", "19:00"), ("СЛУЧАЯТ ДЖЕМ", "2026-10-25", "19:00")])
+check("... and recorded with both dates (neither guessed)", skipped,
+      [("ВЕЛИКА", "2026-10-24T20:00:00+03:00", "24 Окт. 2026 - 19:00")])
+bad2 = bad.replace("2026-10-25T19:00:00+02:00", "2026-10-25T21:00:00+02:00")
+raises("disagreement on half of a page or more: the page is not trusted", O.MarkupError, O.parse_zadkanala, bad2, TZ)
+# January is printed "Ян." (two letters): live zadkanala.bg/programa/2027-01, 2026-11-04,
+# which the old three-letter rule read as a disagreement and dropped the whole theatre
+jan = fx("theatre_zad-kanala_2027-01.html")
+rows = O.parse_zadkanala(jan, TZ)
+check("'8 Ян. 2027 - 19:00' agrees with 2027-01-08T19:00:00+02:00 (live page)", brief(rows)[:2],
+      [("ФИЦРОЙ", "2027-01-08", "19:00"), ("ТРЕЙНСПОТИНГ", "2027-01-09", "19:00")])
+check("all six live rows read", len(rows), 6)
+check("month prefixes: two letters when unique, ambiguous none",
+      [O._zk_month(w) for w in ("Ян.", "Ноем.", "Дек.", "Окт", "Ма.", "Я")], [1, 11, 12, 10, None, None])
+jan1 = jan.replace(">10 Ян. 2027 - 19:00<", ">11 Ян. 2027 - 19:00<")
+skipped = []
+check("one contradictory performance on the live page: only it is left out",
+      [r[1] for r in O.parse_zadkanala(jan1, TZ, skipped)],
+      ["2027-01-08", "2027-01-09", "2027-01-11", "2027-01-12", "2027-01-13"])
+check("... recorded as (title, ISO, printed)", skipped,
+      [("ЕДНА ИСПАНСКА ПИЕСА", "2027-01-10T19:00:00+02:00", "11 Ян. 2027 - 19:00")])
+jan3 = (jan1.replace(">12 Ян. 2027 - 19:00<", ">12 Ян. 2027 - 20:00<")
+            .replace(">13 Ян. 2027 - 19:00<", ">13 Дек. 2027 - 19:00<"))
+raises(f"more than {O.ZK_MAX_DISAGREE} contradictory performances in a run: the page is not trusted",
+       O.MarkupError, O.parse_zadkanala, jan3, TZ)
+skipped = [("X", "2026-12-01T19:00:00+02:00", "2 Дек. 2026 - 19:00")] * 2   # earlier months' tally
+raises("the limit counts the whole run, not one month", O.MarkupError, O.parse_zadkanala, jan1, TZ, skipped)
+zk_day = dt.date(2027, 1, 5)
+res = O.fetch_zadkanala(FakeNet({O.ZK_URL.format(y=2027, m=1): jan1.encode("utf-8")}), zk_day)
+check("fetch: the theatre is read, minus the one performance", [r[1] for r in res["rows"] + res["extra_rows"]],
+      ["2027-01-08", "2027-01-09", "2027-01-11", "2027-01-12", "2027-01-13"])
+check("fetch: the build report notes it with both dates",
+      [n for n in res["notes"] if "left out" in n],
+      ["2027-01-10 19:00: 'ЕДНА ИСПАНСКА ПИЕСА' left out — its printed date '11 Ян. 2027 - 19:00' "
+       "disagrees with its machine-readable date 2027-01-10T19:00:00+02:00 (neither is guessed)"])
+check("fetch: the live page itself reads clean (no note)",
+      [n for n in O.fetch_zadkanala(FakeNet({O.ZK_URL.format(y=2027, m=1): jan.encode("utf-8")}), zk_day)["notes"]
+       if "left out" in n], [])
 
 # ================================================================== vazrazhdane
 print("vazrazhdane — theatrevazrajdane.bg/programa/")
