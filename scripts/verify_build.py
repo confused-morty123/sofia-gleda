@@ -772,8 +772,8 @@ else:
 # Одеон and G8 (BOOKING inPerson) sell their own programme only at the box office, the
 # festivals there sell online. Every entry names a SHOWTIMES row at such a cinema, once;
 # url is null or a festival / ticket-shop page. A box-office cinema's own BOOKING url is
-# its plain page, never a ticket seller's or a "#buy" anchor (the stub's site line and
-# the calendar link use it).
+# its plain page, never a ticket seller's or a "#buy" anchor (the stub's site line uses
+# it). A calendar export carries no link at all (owner, 2026-10-30).
 _SALE_HOSTS = ("cinelibri.com", "kinomania.bg", "epaygo.bg", "urboapp.com")
 _SELLER_HOSTS = _SALE_HOSTS + ("pricelesstickets.bg", "eventim.bg", "ticketportal.bg", "bilet.bg", "ticketstation.bg")
 
@@ -2350,8 +2350,8 @@ def smoke():
                              + (" — " + errs[0] if errs else ""))
             # box office only: every BOXONLY performance and every screening at a
             # BOOKING inPerson or festival cinema render their time panel as the rule says: a
-            # box-office-only one with the stub, no "Купи билет", and its site line and
-            # calendar link never a ticket seller's page; a festival screening there
+            # box-office-only one with the stub, no "Купи билет", and its site line never a
+            # ticket seller's page; a festival screening there
             # with "Купи билет" (owner, 2026-10-28), unless FESTROWS says sold out, not on
             # sale yet, or gives it no ticket link of its own ("via": the festival's page)
             if tz == "Europe/Sofia":
@@ -2384,9 +2384,8 @@ def smoke():
                          ||n.querySelector('a.ss-btn,button'))out.push(tag+' ('+shut+': a buy button, a stub or no note)'); return; }
                     if(!bo){ if(!el.querySelector('.ss-btn.pri[href]')||el.querySelector('[data-boxonly]'))out.push(tag+' (festival: no buy button)'); return; }
                     if(!el.querySelector('[data-boxonly]')||el.querySelector('.ss-btn.pri'))out.push(tag+' (buy button or no note)');
-                    const site=el.querySelector('a.ss-site'), ev=calEvent(k,id,v,d,t);
-                    if(site&&seller(site.getAttribute('href')))out.push(tag+' (site line '+site.getAttribute('href')+')');
-                    if(ev&&(seller(ev.url)||sellers.some(x=>(ev.description||'').includes(x+'/'))))out.push(tag+' (calendar '+ev.url+')');};
+                    const site=el.querySelector('a.ss-site');
+                    if(site&&seller(site.getAttribute('href')))out.push(tag+' (site line '+site.getAttribute('href')+')');};
                   const bx=(typeof BOXONLY!=="undefined"&&Array.isArray(BOXONLY))?BOXONLY:[];
                   for(const r of bx){const sh=showById[r[0]]; if(sh)probe('show',r[0],sh.theatre,r[1],r[2]);}
                   // a festival cinema (BOOKING festival: Euro Cinema) the same way: every
@@ -2415,6 +2414,26 @@ def smoke():
                   return out;}""")
                 if _pl_bad:
                     fail(f"{len(_pl_bad)} performance(s) open the wrong purchase page, e.g. {'; '.join(_pl_bad[:3])}")
+                # calendar export (owner, 2026-10-30): no description and no link in any
+                # showing's event, .ics, Google or Outlook URL (a show's one link named
+                # another date); the .ics has no empty property and its lines fold at 75 octets
+                _cal_bad = page.evaluate("""()=>{
+                  if(typeof calEvent!=="function"||typeof calIcs!=="function")return {n:0,out:["calEvent/calIcs missing"]};
+                  const link=s=>/https?:|www\\./i.test(s), out=[]; let n=0;
+                  const q=u=>{try{return [...new URL(u).searchParams.entries()];}catch(e){return [["bad",u]];}};
+                  const probe=(k,id,v,d,t)=>{const ev=calEvent(k,id,v,d,t); if(!ev)return; n++;
+                    const ics=calIcs(ev), tag=k+':'+id+'|'+v+'|'+d+'|'+t, enc=new TextEncoder();
+                    if('description' in ev||'url' in ev)out.push(tag+' (event description/url)');
+                    if(link(ics)||/\\r\\n(DESCRIPTION|URL)[:;]/.test(ics))out.push(tag+' (.ics description/link)');
+                    if(ics.split('\\r\\n').some(l=>enc.encode(l).length>75||/^[A-Z-]+:$/.test(l)))out.push(tag+' (.ics line)');
+                    for(const [kk,x] of q(calGoogleUrl(ev)).concat(q(calOutlookUrl(ev))))
+                      if(kk==='details'||kk==='body'||link(x))out.push(tag+' (Google/Outlook '+kk+')');};
+                  for(const r of SHOWTIMES)if(r[2]>=TODAY)for(const t of (r[3]||[]))probe('film',r[0],r[1],r[2],t);
+                  for(const p of (PERFORMANCES||[]))if(p[1]>=TODAY&&showById[p[0]])probe('show',p[0],showById[p[0]].theatre,p[1],p[2]);
+                  return {n,out};}""")
+                if not _cal_bad["n"] or _cal_bad["out"]:
+                    fail(f"calendar export carries a description or link ({_cal_bad['n']} showing(s) checked): "
+                         f"{', '.join(_cal_bad['out'][:3])}")
             if errs:
                 fail(f"[{tz}] JavaScript errors: " + " | ".join(sorted(set(errs))[:3]))
             _v = page.evaluate("window.__cspv||[]")
