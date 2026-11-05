@@ -40,10 +40,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEST_UI = ROOT / "scripts" / "test_ui.py"
 
 # Waves that run in WebKit too (they use the engine in their checks; see the module docstring).
-WEBKIT_WAVES = ["HF1", "HF2", "UX1", "B24", "BO1", "DM1", "GA1", "HS1", "LG1", "PL1"]
+WEBKIT_WAVES = ["HF1", "HF2", "UX1", "B24", "BO1", "DM1", "GA1", "HS1", "LG1", "PL1", "RT1"]
 
 # Seconds per wave, measured on the owner's Mac (shared with other jobs) on a real build
-# (SOFIA_HTML=index.html), 2026-11-03 and 2026-11-04, one wave per process. Update from the times `run` prints.
+# (SOFIA_HTML=index.html), 2026-11-03 and 2026-11-04 (RT1 2026-11-05), one wave per process. Update from the times `run` prints.
 ESTIMATES = {
     "chromium": {
         "A1": 46, "B1": 47, "C1": 56, "D1": 42, "H": 41, "I": 41, "J": 89, "L": 162,
@@ -51,11 +51,11 @@ ESTIMATES = {
         "P3D": 4, "P3A": 24, "P3B": 33, "P3C": 7, "P3E": 46, "P3F": 12,
         "HF1": 489, "HF2": 289, "EV1": 3, "EV2": 40, "EV3": 6, "EV4": 12,
         "LG1": 14, "LG2": 12, "LG3": 4, "TR1": 17, "TR2": 4, "UX1": 238,
-        "B24": 646, "BO1": 99, "PL1": 61, "DM1": 57, "GA1": 104, "HS1": 38,
+        "B24": 646, "BO1": 99, "PL1": 61, "DM1": 57, "GA1": 104, "HS1": 38, "RT1": 13,
     },
     "webkit": {
         "HF1": 526, "HF2": 289, "UX1": 221, "B24": 675, "BO1": 107, "DM1": 64,
-        "GA1": 106, "HS1": 46, "LG1": 15, "PL1": 70,
+        "GA1": 106, "HS1": 46, "LG1": 15, "PL1": 70, "RT1": 4,
     },
 }
 DEFAULT_ESTIMATE = 120      # a wave not timed yet

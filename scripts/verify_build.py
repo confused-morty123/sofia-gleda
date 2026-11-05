@@ -1779,7 +1779,9 @@ try:
     _lost = _RC.lost_scores(_prev_rc, _rcv) if (isinstance(_prev_rc, dict)
                                                 and _prev_rc.get("metric") == _rcv["metric"]) else {}
     if _lost:
-        note("5c4 ratings WARNING: " + "; ".join(f"{len(v)} film(s) lost their {k} score since the last build, "
+        # warn(), not note(): refresh_all.py copies "warning:" lines into health.json and
+        # build_report.json["gate_warnings"], so a broken rating fetch reaches the dashboard
+        warn("5c4 ratings WARNING: " + "; ".join(f"{len(v)} film(s) lost their {k} score since the last build, "
                                          f"matched to the same TMDB film ({', '.join(v[:6])})"
                                          for k, v in sorted(_lost.items()))
              + ": a rating fetch broke and its previous values were not kept (fetch_tmdb.py keep-previous)")
@@ -1787,6 +1789,43 @@ try:
         note(_rc_msg + ("" if _prev_rc.get("metric") == _rcv["metric"] else " (no previous coverage to compare)"))
 except Exception as _e4:                                           # pragma: no cover
     note(f"5c4 ratings coverage skipped: {_e4}")
+
+# ----------------------------------------- 5c5. no frozen scores in the sheet's box row
+# FILM_EXTRA[id].box / .boxEn is the sheet's "Каса и прием" / "Box office & reception"
+# row: hand-written text that never refreshes. Scores written there contradicted the
+# live, source-labelled chips (2026-11-05: Insidious "58% критика" beside an RT chip of
+# 57 %). The row keeps box-office takings, awards, festivals and records; a rating
+# number in it is a data-integrity failure (scores come only from TMDBART).
+BOX_SCORE_RES = (
+    re.compile(r"\d+\s?%.{0,30}?(критик|публик|зрител|critic|audience|\bRT\b|rotten)"
+               r"|(критик|публик|зрител|critic|audience|\bRT\b|rotten).{0,30}?\d+\s?%", re.I | re.S),
+    re.compile(r"\b(IMDb|Metacritic|Metascore|TMDB|MyAnimeList|Letterboxd)\b\s*[:\-–—]?\s*\d"
+               r"|\d\s*(IMDb|Metacritic|Metascore|TMDB|MyAnimeList|Letterboxd)\b", re.I),
+    re.compile(r"(?<![\d.,/])\d(?:[.,]\d)?\s?/\s?10(?![\d/.])"),
+)
+
+
+def box_score_problems(film_extra):
+    """'id.box: text' for every FILM_EXTRA box/boxEn text carrying a score."""
+    bad = []
+    for _fid, _x in (film_extra or {}).items():
+        if not isinstance(_x, dict):
+            continue
+        for _k in ("box", "boxEn"):
+            _t = _x.get(_k)
+            if isinstance(_t, str) and any(r.search(_t) for r in BOX_SCORE_RES):
+                bad.append(f"{_fid}.{_k}: {_t!r}")
+    return bad
+
+
+_bx_fe = _const_any("FILM_EXTRA")
+if _bx_fe is None and re.search(r"^const FILM_EXTRA\s*=", js, flags=re.M):
+    fail("5c5 FILM_EXTRA is declared but is not one parseable JSON line: its box rows went unchecked")
+_bx_bad = box_score_problems(_bx_fe)
+if _bx_bad:
+    fail(f"5c5 FILM_EXTRA box row carries {len(_bx_bad)} frozen score(s) that can contradict the "
+         "live rating chips (keep takings, awards, festivals, records; scores come from TMDBART): "
+         + "; ".join(_bx_bad[:8]))
 
 # ----------------------------------------- 5d. no non-http(s) URLs in data constants (CODE-12)
 # Every URL that ends up in an href or window.open must be http(s).
