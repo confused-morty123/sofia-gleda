@@ -2055,8 +2055,55 @@ check("…the same scores as the last build pass", _rc == 0)
 _rc, _out = _run_out(_tr_page({}), _env5)
 check("…three films that lost their IMDb rating since the last build (same match) are a 5c4 WARNING, not a failure",
       _rc == 0 and "5c4 ratings WARNING: 3 film(s) lost their imdb score" in _out)
+check("…and that WARNING goes out as a \"  warning:\" line (refresh_all copies those into health.json "
+      "and gate_warnings), not as a note",
+      "  warning: 5c4 ratings WARNING: 3 film(s)" in _out and "  note: 5c4 ratings WARNING" not in _out)
+sys.path.insert(0, str(ROOT / "scripts"))
+from refresh_all import gate_warnings_of as _gw_of    # noqa: E402
+check("…refresh_all.gate_warnings_of picks the 5c4 WARNING up",
+      any(w.startswith("5c4 ratings WARNING: 3 film(s)") for w in _gw_of(_out)))
+
 _rc, _out = _run_out(_tr_page({"f0": {"imdb": 7.0}, "f1": {"imdb": 7.1}}), _env5)
 check("…one lost rating is no warning (RT can leave OMDb)", _rc == 0 and "5c4 ratings WARNING" not in _out)
+
+# ---------------------------------------------------------------------------
+# 5c5: no frozen scores in FILM_EXTRA's box row ("Каса и прием" / "Box office & reception")
+# ---------------------------------------------------------------------------
+print("5c5: FILM_EXTRA box rows carry no rating numbers")
+
+
+def _bx_page(fe):
+    return _minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA=" + _json.dumps(fe, ensure_ascii=False)
+                                   + ";", 1)
+
+
+_bx_ok = {"f0": {"box": "Бюджет 110 млн. $ · приходи 37,4 млн. $", "boxEn": "Budget $110 m · revenue $37.4 m"},
+          "f1": {"box": "„Златна палма“, Кан 2025", "boxEn": "Palme d'Or, Cannes 2025"},
+          "f2": {"box": "Рекорден старт; най-бързо влизане в IMDb Top 250",
+                 "boxEn": "Record opening; fastest entry into IMDb Top 250"},
+          "f3": {"box": "Каса далеч над критическия прием", "boxEn": "20 years since the premiere"},
+          "f4": {"box": "Премиера в Сънданс 2026", "facts": ["94% критика"]},
+          "f5": {"box": "„Оскар“ за чуждоезичен филм, 2021 · излиза на 1/10/2021"}}
+_rc, _out = _run_out(_bx_page(_bx_ok))
+check("box-office takings, awards, festivals, records and an IMDb Top 250 entry pass (scores outside box are not 5c5's)",
+      _rc == 0 and "5c5" not in _out)
+if _rc != 0:
+    print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
+for _name, _bad in (("critics/audience percentages in BG fail", {"box": "58% критика, 69% публика"}),
+                    ("an audience score in EN fails", {"box": "Кан 2025", "boxEn": "98% audience score"}),
+                    ("a critics score written after the word fails", {"box": "90% при критиката"}),
+                    ("an RT score fails", {"boxEn": "RT 57 %"}),
+                    ("Rotten Tomatoes with a percentage fails", {"boxEn": "Rotten Tomatoes 91%"}),
+                    ("an IMDb number fails", {"box": "IMDb 7.1 · Кан 2025"}),
+                    ("a Metacritic number written before the name fails", {"box": "Кан 2025 · 67 Metacritic"}),
+                    ("a TMDB number fails", {"boxEn": "TMDB: 7.4"}),
+                    ("a MyAnimeList score fails", {"box": "MyAnimeList 7.2 от 46 100 гласа"}),
+                    ("an x/10 score fails", {"boxEn": "8.5/10 from critics"})):
+    _rc, _out = _run_out(_bx_page({"f0": {"age": "12+"}, "f1": _bad}))
+    check(_name, _rc != 0 and "5c5 FILM_EXTRA box row carries 1 frozen score" in _out and "f1." in _out)
+_rc, _out = _run_out(_minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA={\"f0\":{\"box\":1,};", 1))
+check("an unparseable FILM_EXTRA fails (its box rows would go unchecked)",
+      _rc != 0 and "5c5 FILM_EXTRA is declared but is not one parseable JSON line" in _out)
 
 # ---------------------------------------------------------------------------
 # Summary
