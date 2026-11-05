@@ -2067,42 +2067,102 @@ _rc, _out = _run_out(_tr_page({"f0": {"imdb": 7.0}, "f1": {"imdb": 7.1}}), _env5
 check("…one lost rating is no warning (RT can leave OMDb)", _rc == 0 and "5c4 ratings WARNING" not in _out)
 
 # ---------------------------------------------------------------------------
-# 5c5: no frozen scores in FILM_EXTRA's box row ("Каса и прием" / "Box office & reception")
+# 5c5: no frozen scores in any sheet-rendered text (box, why, note, facts, synopses; BG/EN)
 # ---------------------------------------------------------------------------
-print("5c5: FILM_EXTRA box rows carry no rating numbers")
+print("5c5: sheet-rendered texts carry no rating numbers")
 
 
-def _bx_page(fe):
-    return _minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA=" + _json.dumps(fe, ensure_ascii=False)
-                                   + ";", 1)
+def _bx_page(fe, films=None, shows=None, show_extra=None):
+    """The minimal page with FILM_EXTRA set and the given FILMS / SHOWS rows (matched by
+    id, so the bulk rows the other checks count stay) and SHOW_EXTRA entries merged in."""
+    h = _minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA=" + _json.dumps(fe, ensure_ascii=False)
+                                + ";", 1)
+    for _cn, _cv in (("FILMS", films), ("SHOWS", shows), ("SHOW_EXTRA", show_extra)):
+        if _cv is None:
+            continue
+        _m = re.search(r"^const %s=(.*);$" % _cn, h, flags=re.M)
+        assert _m, _cn + " is not declared on one line in the minimal page"
+        _cur = _json.loads(_m.group(1))
+        if isinstance(_cur, list):
+            _by = {r.get("id"): r for r in _cur}
+            for _row in _cv:
+                if _row["id"] in _by:
+                    _by[_row["id"]].update(_row)
+                else:
+                    _cur.append(dict(_row))
+        else:
+            _cur.update(_cv)
+        _line = "const %s=%s;" % (_cn, _json.dumps(_cur, ensure_ascii=False))
+        h = h[:_m.start()] + _line + h[_m.end():]
+    return h
 
 
 _bx_ok = {"f0": {"box": "Бюджет 110 млн. $ · приходи 37,4 млн. $", "boxEn": "Budget $110 m · revenue $37.4 m"},
-          "f1": {"box": "„Златна палма“, Кан 2025", "boxEn": "Palme d'Or, Cannes 2025"},
+          "f1": {"box": "„Златна палма“, Кан 2025", "boxEn": "Palme d'Or, Cannes 2025",
+                 "facts": ["Заснет на Super 16 mm лента", "„Оскар“ за чуждоезичен филм, 2021"]},
           "f2": {"box": "Рекорден старт; най-бързо влизане в IMDb Top 250",
-                 "boxEn": "Record opening; fastest entry into IMDb Top 250"},
-          "f3": {"box": "Каса далеч над критическия прием", "boxEn": "20 years since the premiere"},
-          "f4": {"box": "Премиера в Сънданс 2026", "facts": ["94% критика"]},
-          "f5": {"box": "„Оскар“ за чуждоезичен филм, 2021 · излиза на 1/10/2021"}}
-_rc, _out = _run_out(_bx_page(_bx_ok))
-check("box-office takings, awards, festivals, records and an IMDb Top 250 entry pass (scores outside box are not 5c5's)",
+                 "boxEn": "Record opening; fastest entry into IMDb Top 250",
+                 "why": "Един от най-високо оценените филми на режисьора.",
+                 "whyEn": "Critics were harsh, audiences loved it."},
+          "f3": {"box": "Каса далеч над критическия прием", "boxEn": "20 years since the premiere",
+                 "facts": ["Най-слабо приетият му филм от години"],
+                 "factsEn": ["One of the year's sharpest splits between critics and audiences"]},
+          "f4": {"box": "Премиера в Сънданс 2026", "fmt": "IMAX 70 mm · 2D", "fmtEn": "4K restoration, 35 mm print"},
+          "f5": {"box": "„Оскар“ за чуждоезичен филм, 2021 · излиза на 1/10/2021",
+                 "boxEn": "Opening weekend $12.5 m in 3,200 cinemas; 100% sold out in Sofia"}}
+_ok_films = [{"id": "f0", "note": "„Златен лъв“ във Венеция 2025. Критиката го приема много по-добре от публиката.",
+              "noteEn": "BAFTA for Best Film Not in the English Language. 7 Oscar nominations.",
+              "synBg": "Седемгодишно момиче чака 3 часа донорски орган.", "synEn": "Season 2 of 5, episodes 1-3."}]
+_rc, _out = _run_out(_bx_page(_bx_ok, films=_ok_films))
+check("box-office takings, awards, festivals, records, an IMDb Top 250 entry and score-free notes pass",
       _rc == 0 and "5c5" not in _out)
 if _rc != 0:
     print("      " + "\n      ".join(_out.strip().splitlines()[-4:]))
-for _name, _bad in (("critics/audience percentages in BG fail", {"box": "58% критика, 69% публика"}),
-                    ("an audience score in EN fails", {"box": "Кан 2025", "boxEn": "98% audience score"}),
-                    ("a critics score written after the word fails", {"box": "90% при критиката"}),
+_BAD = "5c5 sheet text carries 1 frozen score"
+for _name, _bad in (("critics/audience percentages in BG box fail", {"box": "58% критика, 69% публика"}),
+                    ("an audience score in EN box fails", {"box": "Кан 2025", "boxEn": "98% audience score"}),
+                    ("a critics score written after the word fails", {"box": "Кан 2025", "facts": ["90% при критиката"]}),
+                    ("the reverse order (критиката 90%) fails", {"why": "Посрещнат от критиката 90% положително"}),
+                    ("a bracketed score after the word fails", {"whyEn": "Critics were harsh (39%), fine."}),
+                    ("'x% fresh' fails", {"factsEn": ["It is 87% fresh"]}),
                     ("an RT score fails", {"boxEn": "RT 57 %"}),
                     ("Rotten Tomatoes with a percentage fails", {"boxEn": "Rotten Tomatoes 91%"}),
                     ("an IMDb number fails", {"box": "IMDb 7.1 · Кан 2025"}),
+                    ("'IMDb: 7' fails", {"factsEn": ["IMDb: 7"]}),
                     ("a Metacritic number written before the name fails", {"box": "Кан 2025 · 67 Metacritic"}),
+                    ("'8.4 в IMDb' fails", {"facts": ["Метрикс: 8.4 в IMDb от 491 700 гласа"]}),
+                    ("'98 on Metacritic' fails", {"factsEn": ["98 on Metacritic"]}),
+                    ("'7,1 at TMDB' fails", {"factsEn": ["7,1 at TMDB"]}),
+                    ("'91 in Rotten Tomatoes' fails", {"whyEn": "91 in Rotten Tomatoes"}),
                     ("a TMDB number fails", {"boxEn": "TMDB: 7.4"}),
                     ("a MyAnimeList score fails", {"box": "MyAnimeList 7.2 от 46 100 гласа"}),
-                    ("an x/10 score fails", {"boxEn": "8.5/10 from critics"})):
+                    ("a Tomatometer number fails", {"factsEn": ["Tomatometer: 94"]}),
+                    ("a Popcornmeter number fails", {"factsEn": ["92% Popcornmeter"]}),
+                    ("a CinemaScore grade fails", {"whyEn": "Audiences gave it a CinemaScore: A-"}),
+                    ("a CinemaScore with a number fails", {"factsEn": ["CinemaScore 4"]}),
+                    ("an x/10 score fails", {"boxEn": "8.5/10 from critics"}),
+                    ("an 'x / 5' score fails", {"facts": ["Средно 4,5 / 5"]}),
+                    ("an ambiguous '10/10 номинации' fails (reword it)", {"facts": ["10/10 номинации"]}),
+                    ("'оценка 8' fails", {"why": "Средна оценка 8 от зрителите"}),
+                    ("'rating: 7.5' fails", {"whyEn": "Overall rating: 7.5"}),
+                    ("a score in fmt fails", {"fmtEn": "2D · IMDb 7.0"})):
     _rc, _out = _run_out(_bx_page({"f0": {"age": "12+"}, "f1": _bad}))
-    check(_name, _rc != 0 and "5c5 FILM_EXTRA box row carries 1 frozen score" in _out and "f1." in _out)
+    check(_name, _rc != 0 and _BAD in _out and "FILM_EXTRA.f1." in _out)
+for _name, _page, _where in (
+        ("a score in a FILMS note fails",
+         _bx_page({}, films=[{"id": "f1", "note": "BAFTA. 96% при критиката."}]), "FILMS.f1.note"),
+        ("a score in a FILMS noteEn fails",
+         _bx_page({}, films=[{"id": "f1", "noteEn": "98% from critics and 98 on Metacritic."}]), "FILMS.f1.noteEn"),
+        ("a score in a FILMS synopsis fails",
+         _bx_page({}, films=[{"id": "f1", "synEn": "A cult hit (IMDb 8.1) returns."}]), "FILMS.f1.synEn"),
+        ("a score in a theatre review quote fails",
+         _bx_page({}, shows=[{"id": "s1", "reviews": [{"src": "X", "text": "Оценка: 5/5"}]}]), "SHOWS.s1.reviews"),
+        ("a score in SHOW_EXTRA facts fails",
+         _bx_page({}, show_extra={"s1": {"factsEn": ["Rated 9/10 by critics"]}}), "SHOW_EXTRA.s1.factsEn")):
+    _rc, _out = _run_out(_page)
+    check(_name, _rc != 0 and _BAD in _out and _where in _out)
 _rc, _out = _run_out(_minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA={\"f0\":{\"box\":1,};", 1))
-check("an unparseable FILM_EXTRA fails (its box rows would go unchecked)",
+check("an unparseable FILM_EXTRA fails (its sheet texts would go unchecked)",
       _rc != 0 and "5c5 FILM_EXTRA is declared but is not one parseable JSON line" in _out)
 
 # ---------------------------------------------------------------------------
