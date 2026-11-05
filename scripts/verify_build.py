@@ -1528,12 +1528,16 @@ except Exception as e:
 # Owner rule 2026-11-05: coverage shortfalls warn, never block fresh programmes;
 # only a collapse blocks. Per metric (plays, films), once there are at least
 # COVERAGE_MIN_* upcoming titles:
-#   fail()  own-image coverage below COVERAGE_FLOOR_PCT (a poster source is dead),
-#           or COVERAGE_COLLAPSE_DROP+ points down against the comparison point
-#           in one run;
-#   warn()  below the bar (posterpolicy.TRUE_BAR, one bar for the gate and
+#   fail()  own-image coverage below COVERAGE_FLOOR_PCT (90 %, owner 2026-11-05:
+#           a poster source is dead), or COVERAGE_COLLAPSE_DROP+ points down
+#           against the comparison point in one run (checked first, so a collapse
+#           is named as one; with a 90 % floor and coverage capped at 100 % it can
+#           no longer fail a page the floor passes, it labels the failure);
+#   warn()  below the bar (posterpolicy.TRUE_BAR, 95 %, one bar for the gate and
 #           test_parsers), or COVERAGE_WARN_DROP+ points down;
 #   note()  otherwise.
+# Under the bar, refresh_all.py also runs poster_fix.py (the diagnostic and fix
+# pass) before this gate; it never blocks publishing either.
 # The comparison point is build_report.json["posters"]["baseline"][plays|films]
 # when present: the highest coverage seen, lowered by refresh_all.py only slowly
 # and only on runs the gate passed (POSTER_BASELINE_DECAY), so a source that dies
@@ -1545,7 +1549,7 @@ except Exception as e:
 # build_report.json (test_verify's fixtures).
 COVERAGE_MIN_SHOWS = 100
 COVERAGE_MIN_FILMS = 40
-COVERAGE_FLOOR_PCT = 80.0       # below this: fail (a dead poster source)
+COVERAGE_FLOOR_PCT = 90.0       # below this: fail (a dead poster source)
 COVERAGE_COLLAPSE_DROP = 15.0   # this many points down vs the baseline: fail
 COVERAGE_WARN_DROP = 3.0        # this many points down vs the baseline: warn
 try:
@@ -1607,12 +1611,12 @@ try:
         _drop = (_ref - _pct) if _ref is not None else 0.0
         if _c["upcoming"] < _min:
             note(_msg + f" (fewer than {_min} upcoming: not judged)")
-        elif _pct < COVERAGE_FLOOR_PCT:
-            fail(f"5c2 {_msg} — below the {COVERAGE_FLOOR_PCT:g} % floor: a poster source has "
-                 "stopped working (poster_health.md lists every title and its cause)")
         elif _drop >= COVERAGE_COLLAPSE_DROP:
             fail(f"5c2 {_msg} — down {_drop:.1f} points against {_ref_what} ({_ref:.1f} %) "
                  f"in one run ({COVERAGE_COLLAPSE_DROP:g}+ is a collapse): a poster source has stopped working")
+        elif _pct < COVERAGE_FLOOR_PCT:
+            fail(f"5c2 {_msg} — below the {COVERAGE_FLOOR_PCT:g} % floor: a poster source has "
+                 "stopped working (poster_health.md lists every title and its cause)")
         elif _pct < _bar:
             warn(f"5c2 {_msg} — below {_bar:g} %: a poster source has probably stopped "
                  "working (poster_health.md lists every title and its cause)"

@@ -111,6 +111,23 @@ def report_md(m, sources, fixed, today):
     return "\n".join(L).rstrip() + "\n"
 
 
+def health_record(before, after, fixed, errors, today):
+    """poster_health.json for the measurements `before` / `after` (measure())."""
+    return {
+        "date": today,
+        "target": TARGET,
+        "films": {k: after["films"][k] for k in ("upcoming", "with", "pct", "how")},
+        "shows": {k: after["shows"][k] for k in ("upcoming", "with", "pct", "how")},
+        "shows_displayed": after["shows_displayed"],
+        "per_theatre": {th: f"{g['with']}/{g['upcoming']}" for th, g in after["shows"]["by_group"].items()},
+        "below_target": [k for k in ("films", "shows") if 100.0 * after[k]["with"] < TARGET * after[k]["upcoming"]],
+        "missing": {"shows": after["shows"]["missing"], "films": after["films"]["missing"]},
+        "fixed_this_run": fixed,
+        "before": {"films": before["films"]["pct"], "shows": before["shows"]["pct"]},
+        "errors": errors,
+    }
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--no-fix", action="store_true", help="measure and report only")
@@ -160,19 +177,7 @@ def main(argv=None):
         after = before
         errors.append(f"could not measure again: {e}")
     sources = PP.load_sources()
-    out = {
-        "date": today,
-        "target": TARGET,
-        "films": {k: after["films"][k] for k in ("upcoming", "with", "pct", "how")},
-        "shows": {k: after["shows"][k] for k in ("upcoming", "with", "pct", "how")},
-        "shows_displayed": after["shows_displayed"],
-        "per_theatre": {th: f"{g['with']}/{g['upcoming']}" for th, g in after["shows"]["by_group"].items()},
-        "below_target": [k for k in ("films", "shows") if after[k]["pct"] < TARGET],
-        "missing": {"shows": after["shows"]["missing"], "films": after["films"]["missing"]},
-        "fixed_this_run": fixed,
-        "before": {"films": before["films"]["pct"], "shows": before["shows"]["pct"]},
-        "errors": errors,
-    }
+    out = health_record(before, after, fixed, errors, today)
     OUT_JSON.write_text(json.dumps(out, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
                         encoding="utf-8")
     OUT_MD.write_text(report_md(after, sources, fixed, today), encoding="utf-8")
