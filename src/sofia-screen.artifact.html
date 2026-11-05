@@ -1663,7 +1663,7 @@ bg:{tagline:"кино и театър в софия",
  wr:"Сценарий",mu:"Музика",dop:"Оператор",olang:"Оригинален език",
  trTrailer:"Трейлър",trTeaser:"Тийзър",trPlay:"Пусни трейлъра",trPlayTeaser:"Пусни тийзъра",trStop:"Спри видеото",
  trIn:{bg:"на български",en:"на английски"},trNote:"Зарежда се от YouTube едва когато го пуснеш.",
- votes:"гласа",plVote:["глас","гласа"],scImdb:"IMDb: {v} от 10",scTmdb:"TMDB: {v} от 10",scRt:"Rotten Tomatoes, критици: {v} %",scMc:"Metacritic: {v} от 100",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
+ votes:"гласа",imdbVotes:"IMDb вот",plVote:["глас","гласа"],scImdb:"IMDb: {v} от 10",scTmdb:"TMDB: {v} от 10",scRt:"Rotten Tomatoes, критици: {v} %",scMc:"Metacritic: {v} от 100",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
  coverage:"Програмата не е публикувана за този прозорец.",
  notePre:"Програмата обхваща",noteMid:": театри и независими кина три месеца напред, мултиплексите две седмици (толкова обявяват). Проверява се наново всеки понеделник.",
  upcoming:"предстои",active:"тече сега",evTomorrow:"утре",evInDays:"след {n} дни",evUntil:"до {d}",evToday:"днес",sources:"Източници",
@@ -1775,7 +1775,7 @@ en:{tagline:"cinema & theatre in sofia",
  wr:"Screenplay",mu:"Music",dop:"Cinematography",olang:"Original language",
  trTrailer:"Trailer",trTeaser:"Teaser",trPlay:"Play the trailer",trPlayTeaser:"Play the teaser",trStop:"Stop the video",
  trIn:{bg:"in Bulgarian",en:"in English"},trNote:"Loads from YouTube only when you play it.",
- votes:"votes",plVote:["vote","votes"],scImdb:"IMDb: {v} out of 10",scTmdb:"TMDB: {v} out of 10",scRt:"Rotten Tomatoes critics: {v}%",scMc:"Metacritic: {v} out of 100",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
+ votes:"votes",imdbVotes:"IMDb votes",plVote:["vote","votes"],scImdb:"IMDb: {v} out of 10",scTmdb:"TMDB: {v} out of 10",scRt:"Rotten Tomatoes critics: {v}%",scMc:"Metacritic: {v} out of 100",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
  coverage:"No programme published for this window.",
  notePre:"Programme covers",noteMid:": theatres and independent cinemas three months out, multiplexes as far ahead as they announce. Rechecked every Monday.",
  upcoming:"upcoming",active:"on now",evTomorrow:"tomorrow",evInDays:"in {n} days",evUntil:"until {d}",evToday:"today",sources:"Sources",
@@ -4382,7 +4382,7 @@ function sheetFilm(f){
   {const tv=tmdbShown(f);if(tv!=null)rt.push(`<div class="rtile tmdb"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div><div class="rc">${esc(plural(tmdbVotesOf(f),L.plVote))}</div></div>`);}
   {const rv=rtOf(f);if(isScore(rv))rt.push(`<div class="rtile rt"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(Math.round(rv))}<small>%</small></div></div>`);}
   {const mv=mcOf(f);if(isScore(mv))rt.push(`<div class="rtile mc"><div class="rl">Metacritic</div><div class="rv">${esc(Math.round(mv))}<small>/100</small></div></div>`);}
-  if(imS!=null&&votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
+  if(imS!=null&&votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.imdbVotes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   const tr=trailerOf(f);
   return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>

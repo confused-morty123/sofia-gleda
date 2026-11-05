@@ -21394,7 +21394,7 @@ def wave_hs1(browser):
 # (the chip falls through to TMDB / RT / MC); a rating without a vote count (curated
 # seed) shows as before. A chip is the source and the score only, never a vote count
 # (owner, 2026-11-05: "IMDb 7.9", "TMDB 7.0"); the counts are on the sheet: TMDB's under
-# its tile, IMDb's in its own "гласа" tile, last, as on the live site.
+# its tile, IMDb's in its own tile labelled "IMDb вот" / "IMDb votes" (owner, 2026-11-05), last.
 # The owner's notes folder on the Mac; elsewhere (GitHub's Linux runners, where /Users
 # cannot be created) a temporary folder, as GA1 does.
 RT1_SHOT_DIR = (Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/ratings")
@@ -21618,7 +21618,7 @@ def wave_rt1(browser):
         check(f"{tag}_all_card_sr_text", a["card"] and f"IMDb: 7.4 {out10}" in a["card"]["vh"]
               and a["card"]["title"] == a["card"]["vh"], f"{a['card'] and a['card']['vh']!r}")
         labels = [t["l"] for t in a["sheet"]]
-        check(f"{tag}_all_sheet_tiles_in_order", labels == ["IMDb", "TMDB", "Rotten Tomatoes", "Metacritic", vote],
+        check(f"{tag}_all_sheet_tiles_in_order", labels == ["IMDb", "TMDB", "Rotten Tomatoes", "Metacritic", "IMDb вот" if lang == "bg" else "IMDb votes"],
               f"{a['sheet']}")
         check(f"{tag}_all_sheet_values", [t["v"] for t in a["sheet"]] == ["7.4/10", "8.1/10", "88%", "72/100", "12.5K"],
               f"{a['sheet']}")
@@ -21654,7 +21654,7 @@ def wave_rt1(browser):
         check(f"{tag}_imdb_10plus_votes_chip_score_only_sheet_has_count", x["card"] and x["card"]["label"] == "IMDb"
               and x["card"]["vis"] == "7.9" and "11" not in x["card"]["text"]
               and x["card"]["vh"] == f"IMDb: 7.9 {out10}"
-              and [t["l"] for t in x["sheet"]] == ["IMDb", "TMDB", vote]
+              and [t["l"] for t in x["sheet"]] == ["IMDb", "TMDB", "IMDb вот" if lang == "bg" else "IMDb votes"]
               and [t["v"] for t in x["sheet"]][2] == "11" and x["sheet"][1]["c"] == f"22 {vote}", f"{x}")
         check(f"{tag}_imdb_chip_never_a_count",
               (r["imdb999"]["card"] or {}).get("vis") == "7.0" and (r["imdb1k"]["card"] or {}).get("vis") == "7.0"
