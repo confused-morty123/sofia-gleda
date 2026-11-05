@@ -467,7 +467,6 @@ a{color:inherit}
 .rtile .rv small{font-size:11px; color:var(--fg-3); font-weight:400}
 .rtile.imdb .rv{color:#F5C518}
 .rtile .rc{font-size:11px; color:var(--fg-3); font-variant-numeric:tabular-nums; margin-top:1px}
-.score small{font-size:.78em; font-weight:500; opacity:.8; margin-left:1px}
 .vh{position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
 .sec h3,.sec h4{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3); margin-bottom:9px;
   padding-bottom:6px; border-bottom:1px solid var(--line)}
@@ -1664,7 +1663,7 @@ bg:{tagline:"кино и театър в софия",
  wr:"Сценарий",mu:"Музика",dop:"Оператор",olang:"Оригинален език",
  trTrailer:"Трейлър",trTeaser:"Тийзър",trPlay:"Пусни трейлъра",trPlayTeaser:"Пусни тийзъра",trStop:"Спри видеото",
  trIn:{bg:"на български",en:"на английски"},trNote:"Зарежда се от YouTube едва когато го пуснеш.",
- votes:"гласа",plVote:["глас","гласа"],scImdb:"IMDb: {v} от 10",scTmdb:"TMDB: {v} от 10, {n}",scRt:"Rotten Tomatoes, критици: {v} %",scMc:"Metacritic: {v} от 100",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
+ votes:"гласа",plVote:["глас","гласа"],scImdb:"IMDb: {v} от 10",scTmdb:"TMDB: {v} от 10",scRt:"Rotten Tomatoes, критици: {v} %",scMc:"Metacritic: {v} от 100",reset:"Настрой отново",lang:"EN",noData:"Нищо в тази селекция за избрания ден.",
  coverage:"Програмата не е публикувана за този прозорец.",
  notePre:"Програмата обхваща",noteMid:": театри и независими кина три месеца напред, мултиплексите две седмици (толкова обявяват). Проверява се наново всеки понеделник.",
  upcoming:"предстои",active:"тече сега",evTomorrow:"утре",evInDays:"след {n} дни",evUntil:"до {d}",evToday:"днес",sources:"Източници",
@@ -1776,7 +1775,7 @@ en:{tagline:"cinema & theatre in sofia",
  wr:"Screenplay",mu:"Music",dop:"Cinematography",olang:"Original language",
  trTrailer:"Trailer",trTeaser:"Teaser",trPlay:"Play the trailer",trPlayTeaser:"Play the teaser",trStop:"Stop the video",
  trIn:{bg:"in Bulgarian",en:"in English"},trNote:"Loads from YouTube only when you play it.",
- votes:"votes",plVote:["vote","votes"],scImdb:"IMDb: {v} out of 10",scTmdb:"TMDB: {v} out of 10, {n}",scRt:"Rotten Tomatoes critics: {v}%",scMc:"Metacritic: {v} out of 100",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
+ votes:"votes",plVote:["vote","votes"],scImdb:"IMDb: {v} out of 10",scTmdb:"TMDB: {v} out of 10",scRt:"Rotten Tomatoes critics: {v}%",scMc:"Metacritic: {v} out of 100",reset:"Redo setup",lang:"БГ",noData:"Nothing in this selection for the chosen day.",
  coverage:"No programme published for this window.",
  notePre:"Programme covers",noteMid:": theatres and independent cinemas three months out, multiplexes as far ahead as they announce. Rechecked every Monday.",
  upcoming:"upcoming",active:"on now",evTomorrow:"tomorrow",evInDays:"in {n} days",evUntil:"until {d}",evToday:"today",sources:"Sources",
@@ -2280,8 +2279,6 @@ const tmdbVotesOf=o=>{
 /* TMDB's score as the page shows it: a number with at least TMDB_SHOW_MIN votes, else null. */
 const tmdbShown=o=>{const v=tmdbOf(o),c=tmdbVotesOf(o);
   return (typeof v==="number"&&isFinite(v)&&typeof c==="number"&&c>=TMDB_SHOW_MIN)?v:null;};
-/* a vote count as the dataset writes IMDb's: 950, 1.2K, 2.0M */
-const votesCompact=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);
 const isScore=v=>typeof v==="number"&&isFinite(v);
 /* For ranking: IMDb rating if shown (imdbShown), else TMDB if it has ≥TMDB_VOTE_MIN votes. */
 const ratingOf=o=>{
@@ -2948,22 +2945,17 @@ function datesWith(){
 /* ===================== cards ===================== */
 const scoreCls=v=>v==null?"na":v>=7.5?"hi":"";
 /* scoreBadge: ONE chip per card, the first genuine score of IMDb (from IMDB_SHOW_MIN
-   votes; under 1,000 with the count) > TMDB (≥TMDB_SHOW_MIN
-   votes, with the count) > Rotten Tomatoes > Metacritic, each labelled with its source.
-   The IMDb label only ever carries an IMDb number. No score, no chip (never "—").
-   The visible text is short ("TMDB 6.4 · 32"); screen readers get the whole sentence. */
+   votes) > TMDB (from TMDB_SHOW_MIN votes) > Rotten Tomatoes > Metacritic, each
+   labelled with its source. The chip is the source and the score only ("IMDb 7.9",
+   "TMDB 7.0", "RT 52%", "MC 61"); vote counts are on the sheet's tiles (owner,
+   2026-11-05). The IMDb label only ever carries an IMDb number. No score, no chip
+   (never "—"). Screen readers get the whole sentence. */
 function scoreBadge(f){
   const L=t(),chip=(cls,lab,val,desc)=>`<span class="score ${cls}" title="${esc(desc)}"><i aria-hidden="true">${lab}</i><span aria-hidden="true">${val}</span><span class="vh">${esc(desc)}</span></span>`;
   const im=imdbShown(f);
-  if(im!=null){const n=imdbVoteN(f);
-    /* under 1,000 votes the count is part of the chip, as TMDB's ("IMDb 7.9 · 11") */
-    return (n!=null&&n<1000)
-      ?chip(scoreCls(im),"IMDb",`${fx1(im)}<small>· ${esc(String(n))}</small>`,L.scImdb.replace("{v}",fx1(im))+", "+plural(n,L.plVote))
-      :chip(scoreCls(im),"IMDb",fx1(im),L.scImdb.replace("{v}",fx1(im)));}
+  if(im!=null)return chip(scoreCls(im),"IMDb",fx1(im),L.scImdb.replace("{v}",fx1(im)));
   const tv=tmdbShown(f);
-  if(tv!=null){const n=tmdbVotesOf(f);
-    return chip("tmdb "+scoreCls(tv),"TMDB",`${fx1(tv)}<small>· ${esc(votesCompact(n))}</small>`,
-      L.scTmdb.replace("{v}",fx1(tv)).replace("{n}",plural(n,L.plVote)));}
+  if(tv!=null)return chip("tmdb "+scoreCls(tv),"TMDB",fx1(tv),L.scTmdb.replace("{v}",fx1(tv)));
   const rv=rtOf(f);
   if(isScore(rv))return chip("rt","RT",`${esc(Math.round(rv))}%`,L.scRt.replace("{v}",Math.round(rv)));
   const mv=mcOf(f);
@@ -4381,12 +4373,16 @@ function sheetFilm(f){
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
   /* every genuine score, each tile labelled with its source: IMDb (from IMDB_SHOW_MIN
-     votes, its own vote count under it), TMDB (from TMDB_SHOW_MIN votes, its count under it), Rotten Tomatoes
-     (critics), Metacritic. A source without a number has no tile. */
-  {const im=imdbShown(f);if(im!=null)rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${fx1(im)+"<small>/10</small>"}</div>${votesOf(f)?`<div class="rc">${esc(votesOf(f))} ${esc(L.votes)}</div>`:""}</div>`);}
+     votes), TMDB (from TMDB_SHOW_MIN votes, its count under it), Rotten Tomatoes
+     (critics), Metacritic. A source without a number has no tile. IMDb's vote count is
+     its own tile, last, as on the live site (owner, 2026-11-05: the chip shows only the
+     score, the votes are on the film's sheet); no IMDb tile, no vote tile. */
+  const imS=imdbShown(f);
+  if(imS!=null)rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${fx1(imS)+"<small>/10</small>"}</div></div>`);
   {const tv=tmdbShown(f);if(tv!=null)rt.push(`<div class="rtile tmdb"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div><div class="rc">${esc(plural(tmdbVotesOf(f),L.plVote))}</div></div>`);}
   {const rv=rtOf(f);if(isScore(rv))rt.push(`<div class="rtile rt"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(Math.round(rv))}<small>%</small></div></div>`);}
   {const mv=mcOf(f);if(isScore(mv))rt.push(`<div class="rtile mc"><div class="rl">Metacritic</div><div class="rv">${esc(Math.round(mv))}<small>/100</small></div></div>`);}
+  if(imS!=null&&votesOf(f))rt.push(`<div class="rtile"><div class="rl">${esc(L.votes)}</div><div class="rv">${esc(votesOf(f))}</div></div>`);
   const tr=trailerOf(f);
   return`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero${tr?" has-tr":""}" style="background:${grad(f.g)}">
     ${posterArt("sh-"+f.id,f.genres,f.g,filmTitle(f))}<div class="hero-scrim"></div>

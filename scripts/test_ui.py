@@ -21228,13 +21228,14 @@ def wave_hs1(browser):
 
 # ── RT1: ratings chips on cards and in the sheet (owner, 2026-11-04) ─────────────
 # "Оценки от IMDb" read 47.1 %; the owner wants every genuine score shown. A card shows
-# ONE chip, the first of IMDb > TMDB (from TMDB_SHOW_MIN=10 votes, with its count) >
-# Rotten Tomatoes > Metacritic, labelled with its source; the sheet shows every score
-# as a labelled tile. The IMDb label only ever carries an IMDb number, never TMDB's,
+# ONE chip, the first of IMDb > TMDB (from TMDB_SHOW_MIN=10 votes) > Rotten Tomatoes >
+# Metacritic, labelled with its source; the sheet shows every score as a labelled tile. The IMDb label only ever carries an IMDb number, never TMDB's,
 # and no chip or tile ever shows "—" as a score. IMDb has the same floor as TMDB
 # (skeptic, 2026-11-05): fewer than IMDB_SHOW_MIN=10 votes is no IMDb chip and no tile
-# (the chip falls through to TMDB / RT / MC); under 1,000 votes the chip carries the
-# count ("IMDb 7.9 · 11"); a rating without a vote count (curated seed) shows as before.
+# (the chip falls through to TMDB / RT / MC); a rating without a vote count (curated
+# seed) shows as before. A chip is the source and the score only, never a vote count
+# (owner, 2026-11-05: "IMDb 7.9", "TMDB 7.0"); the counts are on the sheet: TMDB's under
+# its tile, IMDb's in its own "гласа" tile, last, as on the live site.
 RT1_SHOT_DIR = Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/ratings")
 
 RT1_SYNTH_JS = """(today) => {
@@ -21306,7 +21307,7 @@ RT1_REAL_JS = """(today) => {
     const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || n >= 10)) ? im0 : null;
     if (num(im0) && im == null) floored.push(id);
     let want = null;
-    if (num(im)) want = ["IMDb", im.toFixed(1), n != null && n < 1000 ? "· " + n : ""];
+    if (num(im)) want = ["IMDb", im.toFixed(1)];
     else if (num(a.tv) && num(a.tc) && a.tc >= 10) want = ["TMDB", a.tv.toFixed(1)];
     else if (num(rt)) want = ["RT", Math.round(rt) + "%"];
     else if (num(mc)) want = ["MC", String(Math.round(mc))];
@@ -21314,9 +21315,9 @@ RT1_REAL_JS = """(today) => {
     const c = d.querySelector(".p-top .score");
     const got = c ? [(c.querySelector("i") || {}).textContent, ((c.querySelector("span[aria-hidden]") || {}).textContent || "").trim()] : null;
     if (got) { shown++; labels[got[0]] = (labels[got[0]] || 0) + 1; }
-    const ok = want ? (got && got[0] === want[0] && got[1].startsWith(want[1])
-                       && (want[0] !== "IMDb" || (want[2] ? got[1].replace(/\\s+/g, " ").endsWith(want[2]) : got[1] === want[1]))) : !got;
-    if (want && want[0] === "IMDb" && want[2]) counted++;
+    // the chip is the source and the score, nothing else (no vote count)
+    const ok = want ? (got && got[0] === want[0] && got[1] === want[1]) : !got;
+    if (got && /\\d\\s*·|·\\s*\\d/.test(got[1])) counted++;
     if (!ok || (got && /—/.test(c.textContent))) bad.push(id + ": want " + JSON.stringify(want) + " got " + JSON.stringify(got));
     if (got && got[0] === "IMDb" && num(im) && got[1].startsWith(im.toFixed(1))) imdbOk++;
   }
@@ -21361,7 +21362,8 @@ RT1_PICK_JS = """(today) => {
 
 
 def _rt1_shots(page, pick, lang):
-    """3 cards (IMDb, TMDB, RT chip) and the sheet's tiles, phone 393 BG."""
+    """Phone 393: 3 cards (IMDb, TMDB, RT chip; score only), the sheet of the IMDb-chip
+    card (its vote count in the tiles) and a sheet with all four scores."""
     ids = [pick.get(k) for k in ("imdb", "tmdb", "rt") if pick.get(k)]
     page.evaluate("""(ids) => {
       const g = document.createElement("div"); g.id = "rt1-grid"; g.className = "grid";
@@ -21373,20 +21375,26 @@ def _rt1_shots(page, pick, lang):
     RT1_SHOT_DIR.mkdir(parents=True, exist_ok=True)
     saved = []
     for k, el in zip([k for k in ("imdb", "tmdb", "rt") if pick.get(k)], page.query_selector_all("#rt1-grid .card")):
-        path = RT1_SHOT_DIR / f"card_{k}_393_{lang}.png"
+        path = RT1_SHOT_DIR / f"chips_score_only_card_{k}_393_{lang}.png"
         el.screenshot(path=str(path))
         saved.append(path.name)
     page.evaluate("() => { const g = document.getElementById('rt1-grid'); if (g) g.remove(); }")
-    if pick.get("all"):
-        page.evaluate("(id) => { location.hash = 'film=' + id; }", pick["all"])
+    for k in ("imdb", "all"):
+        if not pick.get(k):
+            continue
+        page.evaluate("() => { location.hash = ''; }")
+        page.wait_for_timeout(500)
+        page.evaluate("(id) => { location.hash = 'film=' + id; }", pick[k])
         page.wait_for_timeout(1200)
         r = page.query_selector(".sheet .ratings")
         if r:
             r.scroll_into_view_if_needed()
             page.wait_for_timeout(400)
-            path = RT1_SHOT_DIR / f"sheet_all_scores_393_{lang}.png"
+            path = RT1_SHOT_DIR / f"chips_score_only_sheet_{k}_393_{lang}.png"
             page.screenshot(path=str(path))
             saved.append(path.name)
+    page.evaluate("() => { location.hash = ''; }")
+    page.wait_for_timeout(400)
     return saved
 
 
@@ -21423,8 +21431,9 @@ def _rt1_floor_shots(page, fid, lang):
 
 
 def wave_rt1(browser):
-    """RT1: one labelled chip per card (IMDb > TMDB with its vote count > RT > MC), every
-    score as a labelled tile in the sheet, BG and EN; TMDB only from 10 votes; never a
+    """RT1: one labelled chip per card (IMDb > TMDB > RT > MC), source and score only, no
+    vote count; every score as a labelled tile in the sheet with the vote counts (TMDB's
+    under its tile, IMDb's in its own tile), BG and EN; IMDb and TMDB only from 10 votes; never a
     TMDB number under the IMDb label; no "—" as a score. Real data: every upcoming film's
     card follows the rule. Chromium and WebKit (SOFIA_BROWSER=webkit)."""
     print("\n=== RT1: ratings chips on cards, tiles in the sheet ===")
@@ -21447,16 +21456,20 @@ def wave_rt1(browser):
         check(f"{tag}_all_card_sr_text", a["card"] and f"IMDb: 7.4 {out10}" in a["card"]["vh"]
               and a["card"]["title"] == a["card"]["vh"], f"{a['card'] and a['card']['vh']!r}")
         labels = [t["l"] for t in a["sheet"]]
-        check(f"{tag}_all_sheet_four_tiles_in_order", labels == ["IMDb", "TMDB", "Rotten Tomatoes", "Metacritic"],
+        check(f"{tag}_all_sheet_tiles_in_order", labels == ["IMDb", "TMDB", "Rotten Tomatoes", "Metacritic", vote],
               f"{a['sheet']}")
-        check(f"{tag}_all_sheet_values", [t["v"] for t in a["sheet"]] == ["7.4/10", "8.1/10", "88%", "72/100"],
+        check(f"{tag}_all_sheet_values", [t["v"] for t in a["sheet"]] == ["7.4/10", "8.1/10", "88%", "72/100", "12.5K"],
               f"{a['sheet']}")
-        check(f"{tag}_all_sheet_vote_counts", len(a["sheet"]) == 4 and a["sheet"][0]["c"] == f"12.5K {vote}"
+        check(f"{tag}_all_sheet_vote_counts", len(a["sheet"]) == 5 and a["sheet"][0]["c"] == ""
               and a["sheet"][1]["c"] == f"320 {vote}", f"{a['sheet']}")
-        check(f"{tag}_tmdb_only_card", b["card"] and b["card"]["label"] == "TMDB" and "tmdb" in b["card"]["cls"]
-              and b["card"]["vis"].startswith("6.4") and b["card"]["vis"].endswith("32"), f"{b['card']}")
+        check(f"{tag}_all_card_no_vote_count", a["card"] and "12.5" not in a["card"]["text"]
+              and "·" not in a["card"]["text"] and vote not in a["card"]["vh"], f"{a['card']}")
+        check(f"{tag}_tmdb_only_card_score_only", b["card"] and b["card"]["label"] == "TMDB" and "tmdb" in b["card"]["cls"]
+              and b["card"]["vis"] == "6.4" and "32" not in b["card"]["text"], f"{b['card']}")
         check(f"{tag}_tmdb_only_never_imdb_label", b["card"] and b["card"]["label"] != "IMDb"
-              and "IMDb" not in b["card"]["vh"] and f"32 {vote}" in b["card"]["vh"], f"{b['card']}")
+              and "IMDb" not in b["card"]["vh"] and f"TMDB: 6.4 {out10}" in b["card"]["vh"]
+              and vote not in b["card"]["vh"], f"{b['card']}")
+        check(f"{tag}_tmdb_only_sheet_shows_count", [t["c"] for t in b["sheet"]] == [f"32 {vote}"], f"{b['sheet']}")
         check(f"{tag}_tmdb_only_sheet", [t["l"] for t in b["sheet"]] == ["TMDB"], f"{b['sheet']}")
         check(f"{tag}_tmdb_10_votes_shown_9_not",
               (r["tmdb10"]["card"] or {}).get("label") == "TMDB" and r["tmdb9"]["card"] is None
@@ -21476,32 +21489,44 @@ def wave_rt1(browser):
         x = r["imdb7only"]
         check(f"{tag}_imdb_under_10_votes_alone_no_chip_no_tile", x["card"] is None and not x["sheet"], f"{x}")
         x = r["imdb11"]
-        check(f"{tag}_imdb_low_votes_chip_shows_count", x["card"] and x["card"]["label"] == "IMDb"
-              and x["card"]["vis"].startswith("7.9") and x["card"]["vis"].endswith("· 11")
-              and f"IMDb: 7.9 {out10}" in x["card"]["vh"] and f"11 {vote}" in x["card"]["vh"]
-              and [t["l"] for t in x["sheet"]] == ["IMDb", "TMDB"] and x["sheet"][0]["c"] == f"11 {vote}", f"{x}")
-        check(f"{tag}_imdb_999_votes_counted_1k_not",
-              (r["imdb999"]["card"] or {}).get("vis", "").endswith("· 999")
-              and (r["imdb1k"]["card"] or {}).get("vis") == "7.0", f"999: {r['imdb999']['card']}, 1K: {r['imdb1k']['card']}")
+        check(f"{tag}_imdb_10plus_votes_chip_score_only_sheet_has_count", x["card"] and x["card"]["label"] == "IMDb"
+              and x["card"]["vis"] == "7.9" and "11" not in x["card"]["text"]
+              and x["card"]["vh"] == f"IMDb: 7.9 {out10}"
+              and [t["l"] for t in x["sheet"]] == ["IMDb", "TMDB", vote]
+              and [t["v"] for t in x["sheet"]][2] == "11" and x["sheet"][1]["c"] == f"22 {vote}", f"{x}")
+        check(f"{tag}_imdb_chip_never_a_count",
+              (r["imdb999"]["card"] or {}).get("vis") == "7.0" and (r["imdb1k"]["card"] or {}).get("vis") == "7.0"
+              and [t["v"] for t in r["imdb999"]["sheet"]] == ["7.0/10", "999"]
+              and [t["v"] for t in r["imdb1k"]["sheet"]] == ["7.0/10", "1.0K"],
+              f"999: {r['imdb999']}, 1K: {r['imdb1k']}")
         x = r["imdbSeed"]
         check(f"{tag}_imdb_without_vote_count_shown_as_before", x["card"] and x["card"]["label"] == "IMDb"
               and x["card"]["vis"] == "7.2" and [t["l"] for t in x["sheet"]] == ["IMDb"]
               and x["sheet"][0]["c"] == "", f"{x}")
+        x = r["imdb7tmdb"]
+        check(f"{tag}_imdb_under_10_votes_no_vote_tile", vote not in [t["l"] for t in x["sheet"]]
+              and not any(t["v"] == "7" for t in x["sheet"]), f"{x['sheet']}")
+        chips = [(k, v["card"]["text"]) for k, v in r.items() if isinstance(v, dict) and v.get("card")]
+        check(f"{tag}_no_chip_carries_a_vote_count",
+              not [c for c in chips if "·" in c[1] or vote in c[1]], f"{chips}")
         dash = [k for k, v in r.items() if isinstance(v, dict) and v.get("card") and "—" in v["card"]["text"]]
         dash += [k for k, v in r.items() if isinstance(v, dict) and any("—" in t["v"] for t in v.get("sheet") or [])]
         check(f"{tag}_no_dash_as_score", not dash, f"{dash}")
         real = page.evaluate(RT1_REAL_JS, CLOCK_TODAY_ISO)
+        check(f"{tag}_real_no_chip_with_a_vote_count", real["counted"] == 0, f"{real['counted']} chip(s) with a count")
         check(f"{tag}_real_every_card_follows_the_rule", not real["bad"],
               f"{len(real['bad'])} of {real['total']}: {real['bad'][:4]}; chips {real['shown']}/{real['total']} {real['labels']}")
         check(f"{tag}_real_rendered_imdb_chips_are_imdb", not real["domBad"] and real["domN"] > 0,
               f"{real['domN']} rendered card chips; {real['domBad'][:4]}")
         print(f"  real data: {len(real['floored'])} upcoming film(s) under the IMDb vote floor "
-              f"({', '.join(real['floored'][:6])}); {real['counted']} IMDb chip(s) with the vote count")
+              f"({', '.join(real['floored'][:6])}); chips {real['shown']}/{real['total']} {real['labels']}")
         check(f"{tag}_no_js_errors", not errs, f"{errs[:2]}")
         if lang == "bg" and eng == "chromium" and os.environ.get("SOFIA_HTML"):
             pick = page.evaluate(RT1_PICK_JS, CLOCK_TODAY_ISO)
             saved = _rt1_shots(page, pick, lang)
-            check(f"{tag}_screenshots", len(saved) == 4, f"{pick} -> {saved} in {RT1_SHOT_DIR}")
+            need = [f"chips_score_only_card_imdb_393_{lang}.png", f"chips_score_only_sheet_imdb_393_{lang}.png",
+                    f"chips_score_only_card_tmdb_393_{lang}.png"]
+            check(f"{tag}_screenshots", all(n in saved for n in need), f"{pick} -> {saved} in {RT1_SHOT_DIR}")
             if pick.get("floor"):
                 fl = _rt1_floor_shots(page, pick["floor"], lang)
                 check(f"{tag}_floor_screenshots", len(fl) == 2, f"{pick['floor']} -> {fl} in {RT1_SHOT_DIR}")
