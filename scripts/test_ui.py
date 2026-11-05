@@ -12909,8 +12909,12 @@ def _hf_close_sheet(page, phone, route):
 
 def _hf_check_stays_open(page, phone, kind, cid, label, wave_tag):
     exp = page.evaluate(HF_TITLE_JS, [kind, cid])
+    # the last close has ended (a tap during a close is swallowed by design; a slow machine,
+    # WebKit on GitHub's runners, is still closing after the caller's fixed wait)
+    wait_settled(page)
     _hf_open_card(page, phone, kind, cid)
     page.wait_for_timeout(600)
+    wait_settled(page)
     s1 = page.evaluate(HF_STATE_JS)
     page.wait_for_timeout(1500)
     s2 = page.evaluate(HF_STATE_JS)
@@ -13009,9 +13013,9 @@ def _hf_flows(browser, eng, phone):
         p = _hf_tap_pill(page, phone, 0.5)
         page.wait_for_timeout(500)
         s1 = page.evaluate(HF_STATE_JS)
-        page.keyboard.press("Escape"); page.wait_for_timeout(450)
+        page.keyboard.press("Escape"); page.wait_for_timeout(450); wait_settled(page)
         s2 = page.evaluate(HF_STATE_JS)
-        page.keyboard.press("Escape"); page.wait_for_timeout(700)
+        page.keyboard.press("Escape"); page.wait_for_timeout(700); wait_settled(page)
         s3 = page.evaluate(HF_STATE_JS)
         check(f"{tag}_show_popup_esc_esc", bool(p) and s1["pop"] and not s2["pop"] and s2["film"] and not s3["film"] and s3["depth"] == 0,
               f"pill={bool(p)} popup={s1['pop']} afterEsc1 popup={s2['pop']} film={s2['film']} afterEsc2 film={s3['film']} depth={s3['depth']}")
@@ -13035,11 +13039,11 @@ def _hf_special_flows(browser, eng, phone):
         _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(550)
         s0 = page.evaluate(HF_STATE_JS)
         if how == "back_back":
-            page.evaluate("history.back()"); page.wait_for_timeout(500)
+            page.evaluate("history.back()"); page.wait_for_timeout(500); wait_settled(page)
             mid = page.evaluate(HF_STATE_JS)
             page.evaluate("history.back()"); page.wait_for_timeout(800)
         elif how == "esc_esc":
-            page.keyboard.press("Escape"); page.wait_for_timeout(450)
+            page.keyboard.press("Escape"); page.wait_for_timeout(450); wait_settled(page)
             mid = page.evaluate(HF_STATE_JS)
             page.keyboard.press("Escape"); page.wait_for_timeout(800)
         else:
@@ -13054,6 +13058,7 @@ def _hf_special_flows(browser, eng, phone):
                 page.keyboard.press("Enter"); page.wait_for_timeout(450)
             page.evaluate("()=>{const b=document.querySelector('#scrim .sbar .sclose'); b.focus(); }")
             page.keyboard.press("Enter"); page.wait_for_timeout(800)
+        wait_settled(page)
         s1 = page.evaluate(HF_STATE_JS)
         mid_ok = (how == "backbar_key") or (not mid["pop"] and mid["film"])
         ok = s0["pop"] and mid_ok and not s1["film"] and not s1["pop"] and not s1["ssVar"] and s1["depth"] == 0 and s1["body"] == ""
@@ -13568,6 +13573,7 @@ def _hf_double_tap(browser, eng):
                         else:
                             page.mouse.dblclick(bx, by)
                         page.wait_for_timeout(900)
+                        wait_settled(page)
                         lg = page.evaluate("window.__hfLog")
                         s = page.evaluate(HF_STATE_JS)
                         clicks = [e["t"] for e in lg if e["k"] == "click"]
