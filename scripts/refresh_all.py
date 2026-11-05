@@ -292,6 +292,19 @@ def poster_baseline(prev, cur, published):
     return out
 
 
+def ratings_coverage_of(out):
+    """The "RATINGS_COVERAGE {json}" line verify_build.py prints (check 5c4): films
+    with a genuine score, per source and in all (scripts/ratings_coverage.py)."""
+    for line in reversed(str(out or "").splitlines()):
+        if line.startswith("RATINGS_COVERAGE "):
+            try:
+                rep = json.loads(line.split(" ", 1)[1])
+                return rep if isinstance(rep, dict) else None
+            except ValueError:
+                return None
+    return None
+
+
 def bg_titles_of(out):
     """The "BG_TITLES {json}" line verify_build.py prints (report 5c3): the titles
     shown in BG mode without a Bulgarian form."""
@@ -334,6 +347,7 @@ def main(argv=None):
     bg_titles = bg_titles_of(verdict.get("_out", ""))
     gate_warnings = gate_warnings_of(verdict.get("_out", ""))
     add_gate_warnings(ROOT / "health.json", gate_warnings)
+    ratings = ratings_coverage_of(verdict.get("_out", ""))
     for r in results:
         r.pop("_out", None)
 
@@ -363,6 +377,8 @@ def main(argv=None):
         report["gate_warnings"] = gate_warnings   # published anyway: coverage, not data integrity
     if bg_titles is not None:
         report["bg_titles"] = bg_titles           # titles shown in BG mode without a Bulgarian form
+    if ratings is not None:
+        report["ratings_coverage"] = ratings      # verify_build 5c4 compares with it next run; the dashboard reads it
     if aborted:
         report["official_aborted"] = aborted
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

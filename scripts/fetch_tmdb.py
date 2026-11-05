@@ -633,6 +633,57 @@ def declutter(title):
 
 # Searches that failed (an API error, not "no results") this run. A film whose search
 # failed keeps last run's match instead of dropping to NO MATCH (keep-previous).
+def search_bg(bg, syear, blocked=()):
+    """The TMDB film for a Bulgarian title, searched with language=bg (pick_bg), or
+    None: (best, match_source, match_query). The full title first, then the
+    decluttered one, which must keep the words it lost or have the year confirm it;
+    a year printed in the title must match (±1)."""
+    best, match_source, match_query = None, None, None
+    # Always search with the FULL Bulgarian title first.
+    res = search_api({"query": bg, "language": "bg",
+                               "include_adult": "false"})
+    results = [r for r in (res or {}).get("results", []) if r.get("id") not in blocked]
+    best = pick_bg(results, bg, syear)
+    if best:
+        match_source = "bg"
+        match_query = bg
+    # Fallback: if full title found nothing, try decluttered form
+    # (strips "Director: Title (Year)" and festival prefixes).
+    clean_bg, extracted_yr_bg = declutter(bg)
+    if not best and clean_bg and clean_bg.lower() != bg.lower():
+        use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else syear
+        res2 = search_api({"query": clean_bg, "language": "bg",
+                                    "include_adult": "false"})
+        results2 = [r for r in (res2 or {}).get("results", []) if r.get("id") not in blocked]
+        best = pick_bg(results2, clean_bg, use_year_bg)
+        # The decluttered query lost words that were the title, not clutter:
+        # Влайкова prints every title in capitals, so "ЕВЕРЕСТ:" looked like a
+        # series prefix and "ОТ ДРУГАТА СТРАНА" found The Departed. Such a match
+        # stands only when the result keeps those words or the year confirms it.
+        lost = stripped_words(strip_rerelease(bg), clean_bg)
+        ry_b = ((best or {}).get("release_date") or "")[:4]
+        if best and lost and not keeps_dropped(best, lost) and not (
+                use_year_bg and ry_b.isdigit() and abs(int(ry_b) - int(use_year_bg)) <= 1):
+            print(f"      (bg match rests on part of the title: {clean_bg!r} without "
+                  f"{', '.join(sorted(lost))} — rejected)")
+            best = None
+        if best:
+            match_source = "bg-BG"
+            match_query = clean_bg
+            print(f"      (bg matched after declutter: {bg!r} -> {clean_bg!r})")
+    else:
+        extracted_yr_bg = None  # full-title matched; no embedded year to enforce
+    # Year mismatch guard — only when the decluttered year was used
+    if best and extracted_yr_bg is not None:
+        tmdb_yr_str = (best.get("release_date") or "")[:4]
+        if tmdb_yr_str and abs(int(tmdb_yr_str) - extracted_yr_bg) > 1:
+            print(f"      (bg year mismatch: title year {extracted_yr_bg} "
+                  f"vs TMDB {tmdb_yr_str} — rejected)")
+            best = None
+            match_source = None
+    return best, match_source, match_query
+
+
 SEARCH_ERRORS = 0
 
 
@@ -935,7 +986,10 @@ def trailer_year_ok(film_year, tmdb_year):
 def art_record(v, film_year=None):
     """One film's TMDBART entry (the page's short keys) from its tmdb_films.json record.
     inject_data.py writes these; film_year is the year FILMS prints, for the trailer's
-    year guard. Returns {} for an unmatched record."""
+    year guard. Returns {} for an unmatched record, except one rated through the IMDb
+    id its venue names (OMDB_VIA): only its IMDb / RT / Metacritic scores."""
+    if v and not v.get("matched") and v.get("via") == OMDB_VIA and v.get("imdb_id"):
+        return {k: v[k] for k in ("imdb", "imdbVotes", "rt", "mc") if v.get(k) is not None and v.get(k) != ""}
     if not v or not v.get("matched"):
         return {}
     rec = {}
@@ -983,69 +1037,172 @@ def _votes_compact(n):
     return str(n)
 
 
-def omdb_rating(imdb_id):
-    """Genuine IMDb rating + vote count + RT critics % + Metacritic score via OMDb,
-    keyed by the film's imdb_id. Returns
-    (rating_float, votes_compact, rt_int, mc_int, error_text) — error_text is None on
-    success, a string on any failure (missing token, API error, network issue). Never
-    fabricates: a missing token, 'N/A' values, or any error yield None for each field.
-    rt_int is the Rotten Tomatoes critics' score as an integer percent (0-100), or None.
-    mc_int is the Metacritic score as an integer /100, or None.
-    TMDB's own vote_average is NOT used here — it is a different metric, not IMDb."""
+OMDB_RETRY_SLEEP = 1.5      # seconds before the one in-run retry of a network error
+_OMDB_NO_RETRY = ("invalid api key", "request limit", "no api key", "incorrect imdb id")
+
+
+def _omdb_get(imdb_id):
+    """One OMDb answer for imdb_id as a dict, or raises. A network error (timeout,
+    connection reset, a 5xx) is retried once in the run after OMDB_RETRY_SLEEP; an
+    answer OMDb gives on purpose (Response=False: a wrong key, the daily limit) is not."""
+    q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
+    last = None
+    for attempt in (1, 2):
+        try:
+            req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
+                                         headers={"User-Agent": UA, "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
+                return json.load(r)
+        except Exception as e:                       # network, HTTP 5xx, a broken body
+            last = e
+            if attempt == 1:
+                print(f"    ! omdb network error {imdb_id}: {e} (retrying once)", file=sys.stderr)
+                time.sleep(OMDB_RETRY_SLEEP)
+    raise last
+
+
+def _omdb_int(v):
+    m = re.match(r"\s*(\d+)", str(v or ""))
+    return int(m.group(1)) if m else None
+
+
+def omdb_lookup(imdb_id):
+    """Everything OMDb says about imdb_id, as a dict: rating (float), votes (compact
+    text), rt (Rotten Tomatoes critics' %, int), mc (Metacritic /100, int), err (None
+    on success, a string on any failure: no key, an API error, the network), and the
+    film's own facts for an identity check: title, year (int), runtime (int minutes),
+    type ("movie", "series", ...). Never fabricates: 'N/A' and every failure give None.
+    TMDB's own vote_average is NOT used here: it is a different metric, not IMDb."""
+    out = {"rating": None, "votes": None, "rt": None, "mc": None, "err": None,
+           "title": None, "year": None, "runtime": None, "type": None}
     if not imdb_id:
-        return None, None, None, None, None
+        return out
     if not OMDB_TOKEN:
         # No key this run (a missing or misnamed secret) is an outage, not "this film
         # has no ratings": the error makes main() keep last run's values. Returning
         # no error here dropped every IMDb rating on 13 Oct 2026.
-        return None, None, None, None, "OMDB_TOKEN not set"
+        out["err"] = "OMDB_TOKEN not set"
+        return out
     try:
-        q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
-        req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
-                                     headers={"User-Agent": UA, "Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
-            d = json.load(r)
+        d = _omdb_get(imdb_id)
     except Exception as e:
         err = str(e)
         print(f"    ! omdb network error {imdb_id}: {err}", file=sys.stderr)
-        return None, None, None, None, f"network: {err}"
-    if d.get("Response") == "False":
+        out["err"] = f"network: {err}"
+        return out
+    if not isinstance(d, dict) or d.get("Response") == "False":
         # OMDb returns an Error field: "Invalid API key!", "Request limit reached!", etc.
-        err = d.get("Error") or "Response=False"
+        err = (d.get("Error") if isinstance(d, dict) else None) or "Response=False"
         print(f"    ! omdb api error {imdb_id}: {err}", file=sys.stderr)
-        return None, None, None, None, err
+        out["err"] = err
+        return out
     rating = d.get("imdbRating")
     try:
-        rating = float(rating) if rating and rating != "N/A" else None
+        out["rating"] = float(rating) if rating and rating != "N/A" else None
     except (ValueError, TypeError):
-        rating = None
+        out["rating"] = None
     votes_raw = (d.get("imdbVotes") or "").replace(",", "")
-    votes = _votes_compact(int(votes_raw)) if votes_raw.isdigit() else None
-    # Rotten Tomatoes critics' score from the Ratings array ("90%") or Metascore field.
-    rt_int = None
-    mc_int = None
+    out["votes"] = _votes_compact(int(votes_raw)) if votes_raw.isdigit() else None
+    # Rotten Tomatoes critics' score from the Ratings array ("90%"), Metacritic from
+    # the array ("66/100") or the Metascore field.
     for src in (d.get("Ratings") or []):
         if src.get("Source") == "Rotten Tomatoes":
             val = (src.get("Value") or "").rstrip("%")
-            try:
-                rt_int = int(val)
-            except (ValueError, TypeError):
-                rt_int = None
+            out["rt"] = int(val) if val.isdigit() else None
         elif src.get("Source") == "Metacritic":
             val = (src.get("Value") or "").split("/")[0]
-            try:
-                mc_int = int(val)
-            except (ValueError, TypeError):
-                mc_int = None
-    # Metascore is also available directly; use it when the Ratings array didn't supply MC.
-    if mc_int is None:
+            out["mc"] = int(val) if val.isdigit() else None
+    if out["mc"] is None:
         ms = (d.get("Metascore") or "")
-        if ms and ms != "N/A":
-            try:
-                mc_int = int(ms)
-            except (ValueError, TypeError):
-                mc_int = None
-    return rating, votes, rt_int, mc_int, None
+        if ms.isdigit():
+            out["mc"] = int(ms)
+    t = d.get("Title")
+    out["title"] = t.strip() if isinstance(t, str) and t.strip() and t != "N/A" else None
+    y = re.match(r"\s*(\d{4})", str(d.get("Year") or ""))
+    out["year"] = int(y.group(1)) if y else None
+    out["runtime"] = _omdb_int(d.get("Runtime"))
+    ty = d.get("Type")
+    out["type"] = ty.strip().lower() if isinstance(ty, str) and ty.strip() else None
+    return out
+
+
+def omdb_rating(imdb_id):
+    """Genuine IMDb rating + vote count + RT critics % + Metacritic score via OMDb,
+    keyed by the film's imdb_id. Returns
+    (rating_float, votes_compact, rt_int, mc_int, error_text): omdb_lookup() without
+    the film's facts. error_text is None on success, a string on any failure."""
+    o = omdb_lookup(imdb_id)
+    return o["rating"], o["votes"], o["rt"], o["mc"], o["err"]
+
+
+# How a rating reached a film TMDB could not give it: the venue's own page names the
+# film's IMDb id (Cine Grand: /m/zvart-imdbtt29256561) and OMDb's facts for that id
+# agree with the venue's (omdb_identity). The record stays unmatched (no TMDB art,
+# title or synopsis); art_record emits only the scores.
+OMDB_VIA = "omdb-venue-imdb"
+
+
+def omdb_identity(facts, o, tmdb_year=None, imdb_id=None):
+    """Why OMDb's film o (omdb_lookup) cannot be the film the venue lists, or None.
+    A venue's IMDb id is not proof by itself (Cine Grand has printed placeholder ids
+    such as tt1234654 for a 2026 film), so OMDb's own year, runtime and title go
+    through contradiction() like a TMDB candidate, and something the venue (or the
+    TMDB match, tmdb_year) prints must confirm it: its year (±1) or a Latin title."""
+    if not o or o.get("err") is not None:
+        return "no OMDb answer"
+    if o.get("type") and o["type"] != "movie":
+        return f"OMDb lists a {o['type']}, not a film"
+    cand = {"tmdb_year": o.get("year"), "runtime": o.get("runtime"),
+            "en": o.get("title"), "original_title": None}
+    why = contradiction(facts, cand)
+    if why:
+        return why.replace("TMDB", "OMDb")
+    yr = facts.get("year") or tmdb_year
+    # a keyboard-run id (tt1234654, tt12345871: find_by_venue_imdb) needs the title too
+    keyboard = str(imdb_id or "").lower().startswith("tt1234")
+    try:
+        if yr and o.get("year") and abs(int(yr) - int(o["year"])) <= 1 and not keyboard:
+            return None
+    except (TypeError, ValueError):
+        pass
+    if o.get("title") and any(titles_agree(t, o["title"]) for t in facts.get("titles") or ()):
+        return None
+    return (f"nothing the venue prints confirms OMDb's {o.get('title') or '?'} "
+            f"({o.get('year') or '?'})")
+
+
+def omdb_only_record(fid, en, facts, urls, prev):
+    """The record of a film TMDB did not match, rated through the IMDb id its venue
+    names (OMDB_VIA), or None. Exactly one venue IMDb id, OMDb's facts confirmed by
+    the venue's (omdb_identity). On an OMDb error, last run's record for the same id
+    is kept; an id the venue stopped naming, or one OMDb now contradicts, drops it."""
+    ids = sorted(venue_imdb_ids(urls))
+    if len(ids) != 1:
+        return None
+    iid = ids[0]
+    pv = (prev or {}).get(fid) or {}
+    same = pv.get("via") == OMDB_VIA and pv.get("imdb_id") == iid
+    o = omdb_lookup(iid)
+    if o["err"] is not None:
+        return dict(pv) if same else None
+    why = omdb_identity(facts, o, imdb_id=iid)
+    if why:
+        print(f"      (venue IMDb {iid}: {why} — no rating taken)")
+        return None
+    rec = {"matched": False, "en": en, "via": OMDB_VIA, "imdb_id": iid,
+           "omdb": {k: v for k, v in (("t", o["title"]), ("y", o["year"]), ("rn", o["runtime"])) if v}}
+    rating, votes, rt, mc = o["rating"], o["votes"], o["rt"], o["mc"]
+    if same and rating is None:            # an IMDb rating does not disappear (keep-previous)
+        rating = pv.get("imdb")
+        votes = votes or pv.get("imdbVotes")
+        rt = rt if rt is not None else pv.get("rt")
+        mc = mc if mc is not None else pv.get("mc")
+    for k, v in (("imdb", rating), ("imdbVotes", votes), ("rt", rt), ("mc", mc)):
+        if v is not None and v != "":
+            rec[k] = v
+    print(f"      rated through the venue's IMDb id {iid}: {o['title']} ({o['year']})"
+          f" imdb={rec.get('imdb')} rt={rec.get('rt')} mc={rec.get('mc')}")
+    return rec
 
 
 def ascii_url(url):
@@ -1214,6 +1371,14 @@ def main():
                         match_source = "original" if _en_is_original else "en"
                         match_query = clean
                         print(f"      (matched after declutter: {en!r} -> {clean!r})")
+            # Nothing for the Latin title (a festival's working title, a transliteration
+            # TMDB does not carry): the venue's Bulgarian title, with every guard below
+            # (the year printed in the title, year_ok, contradiction) still applying.
+            if not best and bg and _has_cyrillic(bg) and norm(bg) != norm(en):
+                best, match_source, match_query = search_bg(bg, syear, blocked)
+                if best:
+                    via_bg = True
+                    print(f"      (matched by the Bulgarian title {bg!r}: nothing for {en!r})")
             # When a year was embedded in the title, REQUIRE the match's release
             # year to be within ±1 so a retrospective can't pick up a remake.
             if best:
@@ -1227,48 +1392,7 @@ def main():
                         match_source = None
         elif bg:
             via_bg = True
-            # Always search with the FULL Bulgarian title first.
-            res = search_api({"query": bg, "language": "bg",
-                                       "include_adult": "false"})
-            results = [r for r in (res or {}).get("results", []) if r.get("id") not in blocked]
-            best = pick_bg(results, bg, syear)
-            if best:
-                match_source = "bg"
-                match_query = bg
-            # Fallback: if full title found nothing, try decluttered form
-            # (strips "Director: Title (Year)" and festival prefixes).
-            clean_bg, extracted_yr_bg = declutter(bg)
-            if not best and clean_bg and clean_bg.lower() != bg.lower():
-                use_year_bg = extracted_yr_bg if extracted_yr_bg is not None else syear
-                res2 = search_api({"query": clean_bg, "language": "bg",
-                                            "include_adult": "false"})
-                results2 = [r for r in (res2 or {}).get("results", []) if r.get("id") not in blocked]
-                best = pick_bg(results2, clean_bg, use_year_bg)
-                # The decluttered query lost words that were the title, not clutter:
-                # Влайкова prints every title in capitals, so "ЕВЕРЕСТ:" looked like a
-                # series prefix and "ОТ ДРУГАТА СТРАНА" found The Departed. Such a match
-                # stands only when the result keeps those words or the year confirms it.
-                lost = stripped_words(strip_rerelease(bg), clean_bg)
-                ry_b = ((best or {}).get("release_date") or "")[:4]
-                if best and lost and not keeps_dropped(best, lost) and not (
-                        use_year_bg and ry_b.isdigit() and abs(int(ry_b) - int(use_year_bg)) <= 1):
-                    print(f"      (bg match rests on part of the title: {clean_bg!r} without "
-                          f"{', '.join(sorted(lost))} — rejected)")
-                    best = None
-                if best:
-                    match_source = "bg-BG"
-                    match_query = clean_bg
-                    print(f"      (bg matched after declutter: {bg!r} -> {clean_bg!r})")
-            else:
-                extracted_yr_bg = None  # full-title matched; no embedded year to enforce
-            # Year mismatch guard — only when the decluttered year was used
-            if best and extracted_yr_bg is not None:
-                tmdb_yr_str = (best.get("release_date") or "")[:4]
-                if tmdb_yr_str and abs(int(tmdb_yr_str) - extracted_yr_bg) > 1:
-                    print(f"      (bg year mismatch: title year {extracted_yr_bg} "
-                          f"vs TMDB {tmdb_yr_str} — rejected)")
-                    best = None
-                    match_source = None
+            best, match_source, match_query = search_bg(bg, syear, blocked)
         else:
             best = None
         if best and hint:
@@ -1303,7 +1427,11 @@ def main():
             continue
         if not best:
             print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
-            out[fid] = {"matched": False, "en": en}
+            # TMDB has no film for it, but the venue may name its IMDb id: the IMDb,
+            # RT and Metacritic scores of that id, when OMDb's facts agree with the venue's
+            out[fid] = (omdb_only_record(fid, en, venue_facts(f, fi, film_urls.get(fid)),
+                                         film_urls.get(fid), prev)
+                        or {"matched": False, "en": en})
             img = og_image(links.get(fid))
             if img:
                 film_links[fid] = img
@@ -1365,7 +1493,9 @@ def main():
         if why:
             print(f"[{i+1}/{len(films)}] {fid:24s} REJECTED {rec['en'] or rec['original_title']} "
                   f"({rec['tmdb_year']}) id={rec['tmdb_id']}: {why}")
-            out[fid] = {"matched": False, "en": en}
+            out[fid] = (omdb_only_record(fid, en, venue_facts(f, fi, film_urls.get(fid)),
+                                         film_urls.get(fid), prev)
+                        or {"matched": False, "en": en})
             img = og_image(links.get(fid))
             if img:
                 film_links[fid] = img
@@ -1399,9 +1529,31 @@ def main():
             # The detail call failed: last run's IMDb id of this same TMDB film, so its
             # rating is looked up (or kept) instead of dropped until the next run.
             imdb_id = pv["imdb_id"]
+        # TMDB's film carries no IMDb id, but the venue names one (Cine Grand): it is
+        # used when OMDb's facts for it agree with the venue's and with this TMDB film's
+        # year (omdb_identity); an outage keeps last run's id for this same TMDB film.
+        omdb_pre = None
+        if not imdb_id:
+            _vids = sorted(venue_imdb_ids(film_urls.get(fid)))
+            if len(_vids) == 1:
+                omdb_pre = omdb_lookup(_vids[0])
+                if omdb_pre["err"] is not None:
+                    if pv.get("tmdb_id") == rec["tmdb_id"] and pv.get("imdb_id") == _vids[0]:
+                        imdb_id = _vids[0]
+                else:
+                    _why_o = omdb_identity(venue_facts(f, fi, film_urls.get(fid)), omdb_pre,
+                                           tmdb_year=rec.get("tmdb_year"), imdb_id=_vids[0])
+                    if _why_o:
+                        print(f"      (venue IMDb {_vids[0]}: {_why_o} — not used)")
+                        omdb_pre = None
+                    else:
+                        imdb_id = _vids[0]
+                        print(f"      (IMDb id {imdb_id} from the venue: TMDB lists none)")
         if imdb_id:
             rec["imdb_id"] = imdb_id
-        rating, votes, rt_score, mc_score, omdb_err = omdb_rating(imdb_id)
+        _o = (omdb_pre if (omdb_pre and omdb_pre["err"] is None) else omdb_lookup(imdb_id) if imdb_id
+              else {"rating": None, "votes": None, "rt": None, "mc": None, "err": None})
+        rating, votes, rt_score, mc_score, omdb_err = _o["rating"], _o["votes"], _o["rt"], _o["mc"], _o["err"]
         # Last run's values are inherited only for the SAME IMDb id (a film matched to
         # another TMDB entry this run never shows the old film's score), on an OMDb error
         # or when OMDb answers without a number it had before (an IMDb rating does not
@@ -1472,7 +1624,8 @@ def main():
     omdb_fail = omdb_tried - omdb_ok
     print(f"\nDONE: {matched}/{len(films)} matched, {posters} with posters, "
           f"{len(film_links)} og:image fallbacks, {rated} with IMDb ratings, "
-          f"{rt_count} with RT, {mc_count} with MC "
+          f"{rt_count} with RT, {mc_count} with MC, "
+          f"{sum(1 for v in out.values() if v.get('via') == OMDB_VIA)} rated through the venue's IMDb id "
           f"(OMDb {'on' if OMDB_TOKEN else 'OFF — ratings inherited'}, "
           f"{omdb_ok} ok / {omdb_fail} missing) -> {OUT.name}")
     # Append a health entry to health.json (created by P1A; create if absent).

@@ -1334,6 +1334,17 @@ if _tart4:
                      "dir": _r.get("dir"), "nb": _r.get("nb"), "imdb_id": _sd.get("imdb_id")}
             _facts = _FT.venue_facts(_f, _fi, _urls4.get(_k))
             _why = _FT.contradiction(_facts, _cand)
+            # rated without a TMDB match, through the IMDb id the venue names
+            # (fetch_tmdb.OMDB_VIA): that id must still be the venue's, and OMDb's facts
+            # stored with it must still agree with the venue's (omdb_identity)
+            if _sd.get("via") == getattr(_FT, "OMDB_VIA", None) and not _sd.get("matched"):
+                _om = _sd.get("omdb") if isinstance(_sd.get("omdb"), dict) else {}
+                if str(_sd.get("imdb_id") or "").lower() not in (_facts.get("imdb") or set()):
+                    _why = f"rated through IMDb {_sd.get('imdb_id')}, which the venue does not name"
+                else:
+                    _why = _FT.omdb_identity(_facts, {"err": None, "type": "movie", "title": _om.get("t"),
+                                                      "year": _om.get("y"), "runtime": _om.get("rn")},
+                                               imdb_id=_sd.get("imdb_id"))
             _own_y = _facts.get("year") or _title_year(_f.get("bg") or "")
             _ty = int(_r["y"]) if str(_r.get("y") or "").isdigit() else None
             _pd = [d for d in (_prem4.get("film:" + _k) or []) if isinstance(d, str) and d[:4].isdigit()]
@@ -1725,6 +1736,57 @@ try:
          + (": " + "; ".join(f"{_t} ({_kd})" for _kd, _i, _t, _v in _bgt[:8]) if _bgt else ""))
 except Exception as _e3:                                           # pragma: no cover
     note(f"5c3 BG-mode title report skipped: {_e3}")
+
+# ----------------------------------------- 5c4. ratings coverage (films with a genuine score)
+# Owner, 2026-11-04: "Оценки от IMDb" read 47.1 % on the dashboard. The number is now
+# scripts/ratings_coverage.py's: real films only (live broadcasts, events and short-
+# film blocks counted on their own, one film's two records once), per source (IMDb,
+# TMDB from TMDB_SHOW_MIN votes, Rotten Tomatoes, Metacritic) and "any", against a
+# 95 % target. It goes out as one "RATINGS_COVERAGE {json}" line, which refresh_all.py
+# keeps in build_report.json["ratings_coverage"]. Nothing here fails the gate (owner:
+# warn, never block publishing; a score cannot be invented). A loss the build can be
+# blamed for is a WARNING: three or more films, still listed and matched to the same
+# TMDB film as in the last build, that lost one source's score (ratings_coverage.
+# lost_scores: fetch_tmdb keeps last run's ratings on an outage, so such a loss is a
+# fetch that broke).
+try:
+    import ratings_coverage as _RC                                 # noqa: E402
+    try:
+        import listing_window as _LW4
+        _today4 = _LW4.sofia_today().isoformat()
+    except Exception:
+        _today4 = datetime.date.today().isoformat()
+    try:
+        _side5 = json.loads((_FILE_ROOT / "tmdb_films.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        _side5 = {}
+    _rcv = _RC.ratings_coverage(data.get("FILMS") or [], data.get("SHOWTIMES") or [],
+                                _tart if isinstance(_tart, dict) else (_const_obj_tr("TMDBART") or {}),
+                                _today4, _side5)
+    print("RATINGS_COVERAGE " + json.dumps(_rcv, ensure_ascii=False, sort_keys=True))
+    try:
+        _prev_rc = (json.loads(pathlib.Path(os.environ.get("SOFIA_PREV_REPORT")
+                                            or (_FILE_ROOT / "build_report.json")).read_text(encoding="utf-8"))
+                    .get("ratings_coverage") or {})
+    except (OSError, ValueError, AttributeError):
+        _prev_rc = {}
+    _ps = _rcv["per_source"]
+    _rc_msg = (f"5c4 ratings: {_rcv['any']['with']}/{_rcv['films']} films ({_rcv['any']['pct']:.1f} %) show a "
+               f"genuine score (target {_rcv['target']:g} %): IMDb {_ps['imdb']['with']}, TMDB "
+               f"{_ps['tmdb']['with']}, RT {_ps['rt']['with']}, MC {_ps['mc']['with']}; not films: "
+               + ", ".join(f"{len(v)} {k}" for k, v in _rcv["non_films"].items())
+               + f"; {_rcv['ratable']['pct']:.1f} % of the {_rcv['ratable']['films']} films rated anywhere")
+    _lost = _RC.lost_scores(_prev_rc, _rcv) if (isinstance(_prev_rc, dict)
+                                                and _prev_rc.get("metric") == _rcv["metric"]) else {}
+    if _lost:
+        note("5c4 ratings WARNING: " + "; ".join(f"{len(v)} film(s) lost their {k} score since the last build, "
+                                         f"matched to the same TMDB film ({', '.join(v[:6])})"
+                                         for k, v in sorted(_lost.items()))
+             + ": a rating fetch broke and its previous values were not kept (fetch_tmdb.py keep-previous)")
+    else:
+        note(_rc_msg + ("" if _prev_rc.get("metric") == _rcv["metric"] else " (no previous coverage to compare)"))
+except Exception as _e4:                                           # pragma: no cover
+    note(f"5c4 ratings coverage skipped: {_e4}")
 
 # ----------------------------------------- 5d. no non-http(s) URLs in data constants (CODE-12)
 # Every URL that ends up in an href or window.open must be http(s).

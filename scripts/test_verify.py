@@ -1968,6 +1968,97 @@ _rc, _out = _run_out(_ec_page([], ec_fields=', "maps": "https://www.google.com/m
 check("a festival cinema without an address exits non-zero", _rc != 0 and "has no address" in _out)
 
 # ---------------------------------------------------------------------------
+# 5c4: ratings coverage (owner, 2026-11-04: "Оценки от IMDb" at 47.1 %)
+# ---------------------------------------------------------------------------
+print("5c4: ratings coverage (films with a genuine score)")
+sys.path.insert(0, str(ROOT / "scripts"))
+import re as _re_rc
+import ratings_coverage as _RC
+_src_rc = (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-8")
+_m_rc = _re_rc.search(r"const TMDB_SHOW_MIN=(\d+);", _src_rc)
+check("the page's TMDB_SHOW_MIN equals ratings_coverage.TMDB_SHOW_MIN (the coverage counts what the page shows)",
+      bool(_m_rc) and int(_m_rc.group(1)) == _RC.TMDB_SHOW_MIN)
+_m_rci = _re_rc.search(r"const IMDB_SHOW_MIN=(\d+);", _src_rc)
+check("the page's IMDB_SHOW_MIN equals ratings_coverage.IMDB_SHOW_MIN (an IMDb rating from fewer votes is neither shown nor counted)",
+      bool(_m_rci) and int(_m_rci.group(1)) == _RC.IMDB_SHOW_MIN)
+check("imdb_votes reads the dataset's counts (7, 950, 12,500, 1.2K, 2.0M; unknown is None)",
+      [_RC.imdb_votes(v) for v in ("7", "950", "12,500", "1.2K", "2.0M", "", None, "N/A")]
+      == [7, 950, 12500, 1200, 2000000, None, None, None])
+check("scores: IMDb from 7 votes is not a score; from 10 it is; with no vote count (curated seed) it is",
+      [("imdb" in _RC.scores(f, a)) for f, a in (({}, {"imdb": 8.5, "imdbVotes": "7"}),
+                                                  ({}, {"imdb": 3.6, "imdbVotes": "10"}),
+                                                  ({"imdb": 7.2}, {}))] == [False, True, True])
+for _t, _g, _want in (("Rammstein - Live in Mexico City", [], "live"),
+                      ("GEORGE MICHAEL: THE FAITH TOUR", [], "live"),
+                      ("Stray Kids World Tour <RUN IT> LIVE VIEWING", ["Музикален"], "live"),
+                      ("КОЛЕДЕН КОНЦЕРТ НА АНДРЕ РИЙО 2026", [], "live"),
+                      ("Royal Ballet: Манон", [], "live"),
+                      ("CS2: PGL Major Singapore ФИНАЛ | На живо", ["Спорт"], "live"),
+                      ("League of Legends Worlds 26 | Finals", ["Спорт"], "live"),
+                      ("Церемония по награждаване на символите на Софийските квартали", [], "event"),
+                      ("Майсторския клас на проф. Георги Дюлгеров", [], "event"),
+                      ("Secret Screening", ["Екшън"], "event"),
+                      ("„СОФИЙСКИТЕ КВАРТАЛИ” И ПРОЖЕКЦИЯ НА “НАШИЯТ КВАРТАЛ”", [], "event"),
+                      ("Внимавай какво си пожелаваш - къси филми (блок 3)", [], "shorts"),
+                      ("Късометражен конкурс", [], "shorts"),
+                      ("Безсмъртният и красавицата 2: Еликсир на живота", ["Анимация"], "film"),
+                      ("Оста на живота", ["Драма"], "film"),
+                      ("Нирванна - Бандата. Шоуто. Филмът.", [], "film"),
+                      ("Шведското торпедо", ["Биографичен", "Спорт"], "film"),
+                      ("Финалът", ["Драма"], "film"),
+                      ("Синьото е топъл цвят", [], "film"),
+                      ("It’s Alive! Хорър Филм Фест Част IV: LIVE ЕКШЪН ДУБЛАЖ - Жени кечистки срещу ацтешката мумия - с Драго Симеонов и Самуил Петканов", ["Екшън"], "film"),
+                      ("Носферату - live score", [], "film"),
+                      ("Метрополис с музикален съпровод на живо", [], "film"),
+                      ("Rammstein - Live in Mexico City (live dubbing night)", [], "live"),
+                      ("Концерт с LIVE дублаж", [], "live")):
+    check(f"classify({_t!r}) is {_want}", _RC.classify({"bg": _t, "genres": _g})[0] == _want)
+_d = "2026-11-04"
+_films_rc = [{"id": "a", "bg": "А", "genres": [], "imdb": 7.0},
+             {"id": "b", "bg": "Б", "genres": []},
+             {"id": "b2", "bg": "Б 2", "genres": []},
+             {"id": "c", "bg": "В", "genres": []},
+             {"id": "d", "bg": "Г", "genres": []},
+             {"id": "e", "bg": "Rammstein - Live", "genres": []},
+             {"id": "old", "bg": "Стар", "genres": [], "imdb": 8.0}]
+_st_rc = [[i, "v", "2026-11-05", ["10:00"]] for i in ("a", "b", "b2", "c", "d", "e")] + [["old", "v", "2026-11-01", ["10:00"]]]
+_art_rc = {"b": {"tv": 6.4, "tc": 32}, "b2": {"tv": 6.4, "tc": 32}, "c": {"tv": 9.0, "tc": 1, "rt": 96},
+           "d": {"tv": 5.0, "tc": 4}}
+_side_rc = {"b": {"matched": True, "tmdb_id": 9}, "b2": {"matched": True, "tmdb_id": 9},
+            "c": {"matched": True, "tmdb_id": 3, "imdb_id": "tt3"}, "d": {"matched": True, "tmdb_id": 4, "vote_count": 4}}
+_r = _RC.ratings_coverage(_films_rc, _st_rc, _art_rc, _d, _side_rc)
+check("coverage: only films with a screening from today; a concert is counted apart; one film's two records once",
+      (_r["titles"], _r["films"], _r["records"], _r["non_films"]["live"]) == (6, 4, 5, ["e"]))
+check("coverage: per source as the page shows it (TMDB from 10 votes only; a 1-vote 9.0 is not a score)",
+      {k: v["with"] for k, v in _r["per_source"].items()} == {"imdb": 1, "tmdb": 1, "rt": 1, "mc": 0})
+check("coverage: any score 3 of 4 films (75 %); ratable counts the 4-vote film, so 3 of 4 there too",
+      (_r["any"]["with"], _r["any"]["pct"], _r["ratable"]["films"]) == (3, 75.0, 4))
+check("coverage: the film without a score is listed with the reason",
+      [(w["id"], "below 10" in w["why"]) for w in _r["without"]] == [("d", True)])
+_prev_rc = {"metric": _r["metric"], "scored": {"a": ["i", None], "b": ["t", 9], "c": ["r", 3]}}
+_cur_rc = {"scored": {"a": ["", None], "b": ["", 9], "c": ["", 99]}}
+check("lost_scores: a film matched to the same TMDB film that lost a score is counted; a rematched one is not",
+      _RC.lost_scores(_prev_rc, _cur_rc, min_films=1) == {"imdb": ["a"], "tmdb": ["b"]})
+check("lost_scores: below the minimum of films nothing is blamed", _RC.lost_scores(_prev_rc, _cur_rc) == {})
+# the gate: 5c4 never fails (warn, never block publishing); a loss is a WARNING
+_art5 = {f"f{i}": {"imdb": 7.0 + i / 10} for i in range(3)}
+_rc, _out = _run_out(_tr_page(_art5))
+check("the gate prints RATINGS_COVERAGE and notes 3/20 films (15 %), without failing on coverage",
+      _rc == 0 and "RATINGS_COVERAGE " in _out and "5c4 ratings: 3/20 films" in _out)
+_rep_dir = pathlib.Path(tempfile.mkdtemp(prefix="sg5c4-"))
+_rcl = [l for l in _out.splitlines() if l.startswith("RATINGS_COVERAGE ")]
+_prev_rep = {"ratings_coverage": _json.loads(_rcl[-1].split(" ", 1)[1])} if _rcl else {}
+(_rep_dir / "build_report.json").write_text(_json.dumps(_prev_rep), encoding="utf-8")
+_env5 = {"SOFIA_PREV_REPORT": str(_rep_dir / "build_report.json")}
+_rc, _out = _run_out(_tr_page(_art5), _env5)
+check("…the same scores as the last build pass", _rc == 0)
+_rc, _out = _run_out(_tr_page({}), _env5)
+check("…three films that lost their IMDb rating since the last build (same match) are a 5c4 WARNING, not a failure",
+      _rc == 0 and "5c4 ratings WARNING: 3 film(s) lost their imdb score" in _out)
+_rc, _out = _run_out(_tr_page({"f0": {"imdb": 7.0}, "f1": {"imdb": 7.1}}), _env5)
+check("…one lost rating is no warning (RT can leave OMDb)", _rc == 0 and "5c4 ratings WARNING" not in _out)
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()
