@@ -1525,13 +1525,48 @@ _cov_root = pathlib.Path(tempfile.mkdtemp(prefix="sg5c2-"))
 (_cov_root / "poster_sources.json").write_text(_json.dumps({"shows": {
     k: {"img": v, "page": f"https://theatre.art.bg/x_{i}_14_20", "kind": "poster"}
     for i, (k, v) in enumerate(_all_art.items())}}), encoding="utf-8")
-_cov_env = {"SOFIA_POSTER_SOURCES": str(_cov_root / "poster_sources.json")}
+_cov_env = {"SOFIA_POSTER_SOURCES": str(_cov_root / "poster_sources.json"),
+            "SOFIA_BUILD_REPORT": str(_cov_root / "no-build-report.json")}   # no comparison point
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"), _cov_env)
 check("every upcoming show with its own-page poster on record passes and prints POSTER_COVERAGE 120/120",
       _rc == 0 and '"upcoming": 120' in _out and '"with": 120' in _out and '"metric": "own-page"' in _out)
-_some_art = dict(list(_all_art.items())[:100])
+_some_art = dict(list(_all_art.items())[:112])
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_some_art) + ";"), _cov_env)
-check("coverage below the bar (100/120) fails 5c2", _rc != 0 and "below 95 %" in _out)
+check("coverage below the bar, above the 90 % floor (112/120) is a 5c2 WARNING, not a failure: posters never "
+      "block fresh programmes",
+      _rc == 0 and "warning: 5c2 poster coverage (plays, own image): 112/120" in _out
+      and "below 95 %" in _out and "NOT safe to publish" not in _out)
+# Regression, the nightly refresh of 2026-11-05 (run 41957621867): plays at 505/532
+# (94.9 %), 0.1 point under the bar, failed the gate and held back every venue's
+# fresh programme. The same shortfall must publish, with the warning.
+_cov_shows_r = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
+                for i in range(532)]
+_cov_perfs_r = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 20)).isoformat(),
+                 f"{10 + i % 12:02d}:{(i // 12) % 60:02d}", "Основна сцена", ""] for i in range(532)]
+_cov_base_r = (_minimal_html(performances_override=_json.dumps(_cov_perfs_r))
+               .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows_r) + ";"))
+_art_r = {f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}PLAKAT.jpg" for i in range(505)}
+_cov_root_r = pathlib.Path(tempfile.mkdtemp(prefix="sg5c2r-"))
+(_cov_root_r / "poster_sources.json").write_text(_json.dumps({"shows": {
+    k: {"img": v, "page": f"https://theatre.art.bg/x_{i}_14_20", "kind": "poster"}
+    for i, (k, v) in enumerate(_art_r.items())}}), encoding="utf-8")
+_rc, _out = _run_out(_cov_base_r.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_art_r) + ";"),
+                     {"SOFIA_POSTER_SOURCES": str(_cov_root_r / "poster_sources.json"),
+                      "SOFIA_BUILD_REPORT": str(_cov_root_r / "no-build-report.json")})
+check("regression 2026-11-05: plays 505/532 (94.9 %) pass the gate with a 5c2 warning",
+      _rc == 0 and "505/532 (94.9 %)" in _out and "warning: 5c2" in _out)
+if _rc != 0:
+    print("\n".join(l for l in _out.splitlines() if "✗" in l)[:600])
+check("…refresh_all copies the gate's warning lines into health.json (level warning) and build_report",
+      _RF.gate_warnings_of(_out) and all("5c2" in w for w in _RF.gate_warnings_of(_out)))
+_hj_r = _cov_root_r / "health.json"
+_hj_r.write_text(_json.dumps([{"level": "warning", "venue": "publish-gate", "message": "old"},
+                              {"level": "error", "venue": "cineland", "message": "x"}]), encoding="utf-8")
+_RF.add_gate_warnings(_hj_r, _RF.gate_warnings_of(_out))
+_hj_rd = _json.loads(_hj_r.read_text(encoding="utf-8"))
+check("…health.json: the old gate entry replaced, the venue entries kept",
+      [(e["level"], e["venue"]) for e in _hj_rd] == [("error", "cineland"), ("warning", "publish-gate")]
+      and "505/532" in _hj_rd[-1]["message"])
 _bad_art = dict(_all_art, show5="posters/show5 x.jpg")
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_bad_art) + ";"), _cov_env)
 check("…a path the browser refuses counts as missing", '"with": 119' in _out)
@@ -1539,8 +1574,126 @@ _unrec = dict(_all_art, **{f"show{i}": f"https://theatre.peakview.bg/theatre/pho
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_unrec) + ";"), _cov_env)
 check("…an image with no record of the title's page it came from does not count, though it displays "
       "(the 2026-11-04 bug: 521/526 counted, stage photos and another play's photo included)",
-      _rc != 0 and '"with": 110' in _out and "120/120 display some image" in _out
-      and "unverified" in _out)
+      _rc == 0 and '"with": 110' in _out and "120/120 display some image" in _out
+      and "unverified" in _out and "warning: 5c2" in _out)
+
+# The hard floor and the collapse rule (owner 2026-11-05: only a collapse blocks).
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART="
+                                       + _json.dumps(dict(list(_all_art.items())[:84])) + ";"), _cov_env)
+check("coverage of 84/120 (70 %) is below the 90 % floor: 5c2 FAILS the gate (a dead poster source)",
+      _rc != 0 and "84/120 (70.0 %)" in _out and "below the 90 % floor" in _out)
+# Owner 2026-11-05: the hard floor is 90 %. 89 % fails; 90.0 % and 94.9 % warn and publish.
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART="
+                                       + _json.dumps(dict(list(_all_art.items())[:107])) + ";"), _cov_env)
+check("coverage of 107/120 (89.2 %) is below the 90 % floor: 5c2 FAILS the gate",
+      _rc != 0 and "107/120 (89.2 %)" in _out and "below the 90 % floor" in _out)
+_rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART="
+                                       + _json.dumps(dict(list(_all_art.items())[:108])) + ";"), _cov_env)
+check("coverage of 108/120 (exactly 90.0 %) is on the floor: a 5c2 WARNING, the page publishes",
+      _rc == 0 and "108/120 (90.0 %)" in _out and "warning: 5c2" in _out and "below 95 %" in _out
+      and "floor" not in _out)
+# A 150-show page: steps of 3 shows are 2 points.
+_cov_shows_b = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
+                for i in range(150)]
+_cov_perfs_b = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 6)).isoformat(),
+                 ["10:00", "14:00", "18:00", "20:00"][i % 4], "Основна сцена", ""] for i in range(150)]
+_cov_base_b = (_minimal_html(performances_override=_json.dumps(_cov_perfs_b))
+               .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows_b) + ";"))
+_art_b = {f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}PLAKAT.jpg" for i in range(150)}
+_cov_root_b = pathlib.Path(tempfile.mkdtemp(prefix="sg5c2b-"))
+(_cov_root_b / "poster_sources.json").write_text(_json.dumps({"shows": {
+    k: {"img": v, "page": f"https://theatre.art.bg/x_{i}_14_20", "kind": "poster"}
+    for i, (k, v) in enumerate(_art_b.items())}}), encoding="utf-8")
+_br_b = _cov_root_b / "build_report.json"
+
+
+def _cov_run_b(n_with, report):
+    """The 150-show page with `n_with` own posters against build_report["posters"] = report."""
+    _br_b.write_text(_json.dumps({"posters": report}), encoding="utf-8")
+    return _run_out(_cov_base_b.replace("const SHOWART={};", "const SHOWART="
+                                        + _json.dumps(dict(list(_art_b.items())[:n_with])) + ";"),
+                    {"SOFIA_POSTER_SOURCES": str(_cov_root_b / "poster_sources.json"),
+                     "SOFIA_BUILD_REPORT": str(_br_b)})
+
+
+_rc, _out = _cov_run_b(126, {"metric": "own-page", "upcoming": 150, "with": 126, "baseline": {"plays": 100.0}})
+check("a 16-point drop against the baseline (100 % -> 84 %) FAILS the gate, though the last build "
+      "had the same 84 % (the comparison point no longer slides down)",
+      _rc != 0 and "126/150 (84.0 %)" in _out and "down 16.0 points against the baseline" in _out)
+_rc, _out = _cov_run_b(126, {"metric": "own-page", "upcoming": 150, "with": 150})
+check("…an older build_report.json without \"baseline\" falls back to its previous numbers (150/150 -> 126/150 fails)",
+      _rc != 0 and "down 16.0 points against the last build" in _out)
+_rc, _out = _cov_run_b(135, {"metric": "own-page", "upcoming": 150, "with": 150, "baseline": {"plays": 100.0}})
+check("…a 10-point drop (100 % -> 90 %, on the floor) is only a warning",
+      _rc == 0 and "warning: 5c2" in _out and "down 10.0 points against the baseline" in _out)
+_rc, _out = _cov_run_b(132, {"metric": "own-page", "upcoming": 150, "with": 150, "baseline": {"plays": 100.0}})
+check("…a 12-point drop to 88 % fails: under the 90 % floor", _rc != 0 and "below the 90 % floor" in _out)
+# A slow decline: 100 % -> 98 % -> 96 %, 2 points a run, the baseline kept by
+# refresh_all.poster_baseline() between runs. Against the previous run alone it
+# never drops 3 points; against the baseline the run that crosses 3 points warns.
+_prev_b, _seen_b, _ok_b = {"metric": "own-page", "upcoming": 150, "with": 150}, [], True
+_prev_b["baseline"] = _RF.poster_baseline({}, _prev_b, True)
+for _n in (147, 144):
+    _rc, _out = _cov_run_b(_n, _prev_b)
+    _cur_b = _RF.poster_coverage_of(_out) or {}
+    _pct_b = 100.0 * _n / 150
+    _crossed = _prev_b["baseline"]["plays"] - _pct_b >= 3.0
+    _warned = any("5c2" in w for w in _RF.gate_warnings_of(_out))
+    _seen_b.append((_n, round(_prev_b["baseline"]["plays"], 2), _warned))
+    _ok_b = _ok_b and _rc == 0 and _warned == _crossed and _cur_b.get("with") == _n
+    _cur_b["baseline"] = _RF.poster_baseline(_prev_b, _cur_b, _rc == 0)
+    _prev_b = _cur_b
+check(f"a slow decline of 2 points a run warns on the run that is 3+ points under the baseline "
+      f"(runs: {_seen_b})", _ok_b and [w for _, _, w in _seen_b] == [False, True])
+check("…poster_baseline: rises with a better run, decays 0.5 a passed run, never on a failed one, "
+      "and starts from an older report's numbers",
+      _RF.poster_baseline({"metric": "own-page", "baseline": {"plays": 96.0}}, {"upcoming": 150, "with": 150}, True)
+      == {"plays": 100.0}
+      and _RF.poster_baseline({"metric": "own-page", "baseline": {"plays": 99.0}}, {"upcoming": 150, "with": 126}, True)
+      == {"plays": 98.5}
+      and _RF.poster_baseline({"metric": "own-page", "baseline": {"plays": 99.0}}, {"upcoming": 150, "with": 126}, False)
+      == {"plays": 99.0}
+      and _RF.poster_baseline({"metric": "own-page", "upcoming": 100, "with": 90}, {"upcoming": 100, "with": 85}, True)
+      == {"plays": 89.5}
+      and _RF.poster_baseline({"metric": None, "upcoming": 100, "with": 99}, {"upcoming": 100, "with": 85}, True)
+      == {"plays": 85.0})
+_vb_src = (ROOT / "scripts" / "verify_build.py").read_text(encoding="utf-8")
+check("…refresh_all.POSTER_BASELINE_MIN equals verify_build's COVERAGE_MIN_SHOWS / COVERAGE_MIN_FILMS",
+      f"COVERAGE_MIN_SHOWS = {_RF.POSTER_BASELINE_MIN['plays']}\n" in _vb_src
+      and f"COVERAGE_MIN_FILMS = {_RF.POSTER_BASELINE_MIN['films']}\n" in _vb_src)
+# Owner 2026-11-05: under the 95 % bar the refresh runs the poster diagnostic and fix
+# pass (poster_fix.py) right after poster health; at or above it the step is skipped.
+_pf_root = pathlib.Path(tempfile.mkdtemp(prefix="sgpf-"))
+(_pf_root / "a.json").write_text(_json.dumps({"shows": {"with": 505, "upcoming": 532, "pct": 94.9},
+                                              "films": {"with": 196, "upcoming": 204, "pct": 96.1}}), encoding="utf-8")
+(_pf_root / "b.json").write_text(_json.dumps({"shows": {"with": 95, "upcoming": 100, "pct": 95.0},
+                                              "films": {"with": 196, "upcoming": 204, "pct": 96.1}}), encoding="utf-8")
+check("refresh_all.poster_fix_needed: plays at 94.9 % (505/532) run the poster fix pass, 95.0 % does not",
+      _RF.poster_fix_needed(_pf_root / "a.json") is True and _RF.poster_fix_needed(_pf_root / "b.json") is False)
+_rf_names = [s[1] for s in _RF.STEPS]
+check("…the poster fix step comes right after poster health, before the share pages and the CSP",
+      _rf_names.index("poster_fix.py") == _rf_names.index("poster_health.py") + 1
+      and _rf_names.index("poster_fix.py") < _rf_names.index("gen_share_pages.py"))
+_pf_saved, _pf_ran, _pf_dropped = (_RF.poster_fix_needed, _RF.run, _RF.drop_health_entries), [], []
+try:
+    _RF.drop_health_entries = lambda path, venue: _pf_dropped.append(venue)
+    _RF.poster_fix_needed = lambda path=None: False
+    _RF.run = lambda *a: _pf_ran.append(a[1]) or {"step": a[0], "script": a[1], "ok": True}
+    _pf_res = _RF.run_steps([("poster health", "poster_health.py", []), ("poster fix", "poster_fix.py", [])])
+    _RF.poster_fix_needed = lambda path=None: True
+    _RF.run_steps([("poster fix", "poster_fix.py", [])])
+finally:
+    _RF.poster_fix_needed, _RF.run, _RF.drop_health_entries = _pf_saved
+check("…run_steps skips poster_fix.py at or above the bar (recorded as skipped, ok, an earlier night's "
+      "poster-fix note dropped from health.json) and runs it under",
+      _pf_ran == ["poster_health.py", "poster_fix.py"] and _pf_res[1].get("skipped") and _pf_res[1]["ok"]
+      and _pf_dropped == ["poster-fix"])
+_hj_pf = _pf_root / "health.json"
+_hj_pf.write_text(_json.dumps([{"level": "warning", "venue": "poster-fix", "message": "old"},
+                               {"level": "error", "venue": "cineland", "message": "x"}]), encoding="utf-8")
+_RF.drop_health_entries(_hj_pf, "poster-fix")
+check("…drop_health_entries keeps the other venues' entries",
+      [e["venue"] for e in _json.loads(_hj_pf.read_text(encoding="utf-8"))] == ["cineland"])
 
 # ---------------------------------------------------------------------------
 # 4c2a: BOXONLY — performances a theatre sells only at its box office

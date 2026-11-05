@@ -38,10 +38,17 @@ FLOORS = {"FILMS": 20, "SHOWTIMES": 80, "CINEMAS": 8,
 
 problems: list[str] = []
 notes: list[str] = []
+# Coverage shortfalls (posters below the bar, a drop since the last build): they
+# never block fresh programme data from going live (2026-11-05: plays at 505/532,
+# 94.9 %, held back the whole nightly refresh). Printed as "warning:" lines, which
+# refresh_all.py copies into health.json (annotations, dashboard). Only real data
+# problems go through fail().
+warnings_: list[str] = []
 
 
 def fail(msg): problems.append(msg)
 def note(msg): notes.append(msg)
+def warn(msg): warnings_.append(msg)
 
 
 src = HTML.read_text(encoding="utf-8")
@@ -1518,13 +1525,33 @@ except Exception as e:
 # poster" while stage photos matched by title on aggregators, another play's photo
 # and site images stood in for the posters the theatres' own pages show. That
 # number is still printed ("displayed") for comparison.
-# A failure below the bar (posterpolicy.TRUE_BAR, one bar for the gate and test_parsers) or 3+ points
-# down against the previous build_report.json of the same metric: a poster source
-# that died, not churn. The numbers go out as one "POSTER_COVERAGE {json}" line,
-# which refresh_all.py keeps in build_report.json["posters"]. A page with fewer than
-# COVERAGE_MIN_SHOWS upcoming shows (a test fixture) is only noted.
+# Owner rule 2026-11-05: coverage shortfalls warn, never block fresh programmes;
+# only a collapse blocks. Per metric (plays, films), once there are at least
+# COVERAGE_MIN_* upcoming titles:
+#   fail()  own-image coverage below COVERAGE_FLOOR_PCT (90 %, owner 2026-11-05:
+#           a poster source is dead), or COVERAGE_COLLAPSE_DROP+ points down
+#           against the comparison point in one run (checked first, so a collapse
+#           is named as one; with a 90 % floor and coverage capped at 100 % it can
+#           no longer fail a page the floor passes, it labels the failure);
+#   warn()  below the bar (posterpolicy.TRUE_BAR, 95 %, one bar for the gate and
+#           test_parsers), or COVERAGE_WARN_DROP+ points down;
+#   note()  otherwise.
+# Under the bar, refresh_all.py also runs poster_fix.py (the diagnostic and fix
+# pass) before this gate; it never blocks publishing either.
+# The comparison point is build_report.json["posters"]["baseline"][plays|films]
+# when present: the highest coverage seen, lowered by refresh_all.py only slowly
+# and only on runs the gate passed (POSTER_BASELINE_DECAY), so a source that dies
+# 2 points a night cannot slide past the warning. An older build_report.json
+# without "baseline" falls back to its previous numbers of the same metric.
+# The numbers go out as one "POSTER_COVERAGE {json}" line, which refresh_all.py
+# keeps in build_report.json["posters"]. A page with fewer than COVERAGE_MIN_*
+# upcoming titles (a test fixture) is only noted. SOFIA_BUILD_REPORT names another
+# build_report.json (test_verify's fixtures).
 COVERAGE_MIN_SHOWS = 100
 COVERAGE_MIN_FILMS = 40
+COVERAGE_FLOOR_PCT = 90.0       # below this: fail (a dead poster source)
+COVERAGE_COLLAPSE_DROP = 15.0   # this many points down vs the baseline: fail
+COVERAGE_WARN_DROP = 3.0        # this many points down vs the baseline: warn
 try:
     from posterpolicy import poster_coverage, true_coverage, load_sources, TRUE_BAR, LOGO_MD5  # noqa: E402
     import hashlib as _hl
@@ -1558,8 +1585,9 @@ try:
                       "missing": sorted(_tf["missing"]), "causes": _tf["missing"]}}
     print("POSTER_COVERAGE " + json.dumps(_cov, ensure_ascii=False, sort_keys=True))
     try:
-        _prev_cov = (json.loads((_FILE_ROOT / "build_report.json").read_text(encoding="utf-8"))
-                     .get("posters") or {})
+        _report_file = (pathlib.Path(os.environ["SOFIA_BUILD_REPORT"]) if os.environ.get("SOFIA_BUILD_REPORT")
+                        else _FILE_ROOT / "build_report.json")
+        _prev_cov = (json.loads(_report_file.read_text(encoding="utf-8")).get("posters") or {})
     except (OSError, ValueError, AttributeError):
         _prev_cov = {}
     if not (isinstance(_prev_cov, dict) and _prev_cov.get("metric") == "own-page"):
@@ -1572,18 +1600,33 @@ try:
                 + (f"; missing: {', '.join(sorted(_c['missing'])[:12])}" if _c["missing"] else ""))
         if _label == "plays":
             _msg += f"; {_disp['with']}/{_disp['upcoming']} display some image"
-        _prev_pct = (100.0 * _prev["with"] / _prev["upcoming"]
-                     if isinstance(_prev, dict) and _prev.get("upcoming") else None)
+        _base = _prev_cov.get("baseline")
+        _base = _base.get(_label) if isinstance(_base, dict) else None
+        if isinstance(_base, (int, float)) and not isinstance(_base, bool):
+            _ref, _ref_what = float(_base), "the baseline (best recent coverage)"
+        elif isinstance(_prev, dict) and _prev.get("upcoming"):
+            _ref, _ref_what = 100.0 * _prev["with"] / _prev["upcoming"], "the last build"
+        else:
+            _ref, _ref_what = None, ""
+        _drop = (_ref - _pct) if _ref is not None else 0.0
         if _c["upcoming"] < _min:
             note(_msg + f" (fewer than {_min} upcoming: not judged)")
+        elif _drop >= COVERAGE_COLLAPSE_DROP:
+            fail(f"5c2 {_msg} — down {_drop:.1f} points against {_ref_what} ({_ref:.1f} %) "
+                 f"in one run ({COVERAGE_COLLAPSE_DROP:g}+ is a collapse): a poster source has stopped working")
+        elif _pct < COVERAGE_FLOOR_PCT:
+            fail(f"5c2 {_msg} — below the {COVERAGE_FLOOR_PCT:g} % floor: a poster source has "
+                 "stopped working (poster_health.md lists every title and its cause)")
         elif _pct < _bar:
-            fail(f"5c2 {_msg} — below {_bar:g} %: a poster source has probably stopped "
-                 "working (poster_health.md lists every title and its cause)")
-        elif _prev_pct is not None and _prev_pct - _pct >= 3.0:
-            fail(f"5c2 {_msg} — down {_prev_pct - _pct:.1f} points since the last build "
-                 f"({_prev_pct:.1f} %): a poster source has probably stopped working")
+            warn(f"5c2 {_msg} — below {_bar:g} %: a poster source has probably stopped "
+                 "working (poster_health.md lists every title and its cause)"
+                 + (f"; down {_drop:.1f} points against {_ref_what} ({_ref:.1f} %)"
+                    if _drop >= COVERAGE_WARN_DROP else ""))
+        elif _drop >= COVERAGE_WARN_DROP:
+            warn(f"5c2 {_msg} — down {_drop:.1f} points against {_ref_what} "
+                 f"({_ref:.1f} %): a poster source has probably stopped working")
         else:
-            note(_msg + ("" if _prev_pct is not None else " (no previous coverage to compare)"))
+            note(_msg + ("" if _ref is not None else " (no previous coverage to compare)"))
     # One logo file standing in as the "poster" of several plays (the theatre.art.bg
     # logo on two Сфумато shows, 2026-10-08) is a scrape that went wrong.
     _by_md5 = {}
@@ -2491,6 +2534,8 @@ if os.environ.get("SOFIA_SKIP_SMOKE") != "1":
 print(f"verify_build: {HTML} ({HTML.stat().st_size:,} bytes)")
 for n in notes:
     print("  note:", n)
+for w in warnings_:
+    print("  warning:", w)
 if problems:
     print(f"\n  {len(problems)} problem(s) — NOT safe to publish:\n")
     for p in problems:
