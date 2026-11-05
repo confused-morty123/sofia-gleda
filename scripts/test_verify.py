@@ -1825,6 +1825,16 @@ _src_rc = (ROOT / "src" / "sofia-screen.artifact.html").read_text(encoding="utf-
 _m_rc = _re_rc.search(r"const TMDB_SHOW_MIN=(\d+);", _src_rc)
 check("the page's TMDB_SHOW_MIN equals ratings_coverage.TMDB_SHOW_MIN (the coverage counts what the page shows)",
       bool(_m_rc) and int(_m_rc.group(1)) == _RC.TMDB_SHOW_MIN)
+_m_rci = _re_rc.search(r"const IMDB_SHOW_MIN=(\d+);", _src_rc)
+check("the page's IMDB_SHOW_MIN equals ratings_coverage.IMDB_SHOW_MIN (an IMDb rating from fewer votes is neither shown nor counted)",
+      bool(_m_rci) and int(_m_rci.group(1)) == _RC.IMDB_SHOW_MIN)
+check("imdb_votes reads the dataset's counts (7, 950, 12,500, 1.2K, 2.0M; unknown is None)",
+      [_RC.imdb_votes(v) for v in ("7", "950", "12,500", "1.2K", "2.0M", "", None, "N/A")]
+      == [7, 950, 12500, 1200, 2000000, None, None, None])
+check("scores: IMDb from 7 votes is not a score; from 10 it is; with no vote count (curated seed) it is",
+      [("imdb" in _RC.scores(f, a)) for f, a in (({}, {"imdb": 8.5, "imdbVotes": "7"}),
+                                                  ({}, {"imdb": 3.6, "imdbVotes": "10"}),
+                                                  ({"imdb": 7.2}, {}))] == [False, True, True])
 for _t, _g, _want in (("Rammstein - Live in Mexico City", [], "live"),
                       ("GEORGE MICHAEL: THE FAITH TOUR", [], "live"),
                       ("Stray Kids World Tour <RUN IT> LIVE VIEWING", ["Музикален"], "live"),
@@ -1843,7 +1853,12 @@ for _t, _g, _want in (("Rammstein - Live in Mexico City", [], "live"),
                       ("Нирванна - Бандата. Шоуто. Филмът.", [], "film"),
                       ("Шведското торпедо", ["Биографичен", "Спорт"], "film"),
                       ("Финалът", ["Драма"], "film"),
-                      ("Синьото е топъл цвят", [], "film")):
+                      ("Синьото е топъл цвят", [], "film"),
+                      ("It’s Alive! Хорър Филм Фест Част IV: LIVE ЕКШЪН ДУБЛАЖ - Жени кечистки срещу ацтешката мумия - с Драго Симеонов и Самуил Петканов", ["Екшън"], "film"),
+                      ("Носферату - live score", [], "film"),
+                      ("Метрополис с музикален съпровод на живо", [], "film"),
+                      ("Rammstein - Live in Mexico City (live dubbing night)", [], "live"),
+                      ("Концерт с LIVE дублаж", [], "live")):
     check(f"classify({_t!r}) is {_want}", _RC.classify({"bg": _t, "genres": _g})[0] == _want)
 _d = "2026-11-04"
 _films_rc = [{"id": "a", "bg": "А", "genres": [], "imdb": 7.0},

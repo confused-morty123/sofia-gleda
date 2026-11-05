@@ -2232,6 +2232,20 @@ const votesOf=o=>{
   if(art.imdbVotes)return art.imdbVotes;
   return o.imdbVotes||"";
 };
+/* IMDb's vote floor (skeptic, 2026-11-05): the same rule as TMDB's. An IMDb rating
+   from fewer than IMDB_SHOW_MIN votes is one or two people (Стъклено море: 8.5 from 7
+   votes) and is neither shown nor counted: the chip falls through to TMDB / RT / MC
+   and the sheet has no IMDb tile. A rating whose vote count is unknown (a curated
+   seed value without one) is shown as before. imdbShown is the one helper every
+   IMDb read goes through (chip, sheet, ranking); scripts/ratings_coverage.py
+   applies the same floor (test_verify checks the two minimums agree). */
+const IMDB_SHOW_MIN=10;
+/* IMDb's vote count as a number: "7", "950", "12,500", "1.2K", "2.0M"; null if unknown */
+const imdbVoteN=o=>{const m=/^(\d+(?:\.\d+)?)([KM]?)$/i.exec(String(votesOf(o)).replace(/[,\s]/g,""));
+  return m?Math.round(parseFloat(m[1])*(m[2]?(m[2].toUpperCase()==="M"?1e6:1e3):1)):null;};
+/* IMDb's rating as the page shows it: a number, not from fewer than IMDB_SHOW_MIN votes. */
+const imdbShown=o=>{const v=imdbOf(o);if(typeof v!=="number"||!isFinite(v))return null;
+  const n=imdbVoteN(o);return (n!=null&&n<IMDB_SHOW_MIN)?null:v;};
 /* Rotten Tomatoes critics' score (integer %). Fresh TMDBART (daily OMDb) wins over
    the seed's frozen snapshot. Returns null when neither source has a value. */
 const rtOf=o=>{
@@ -2269,9 +2283,9 @@ const tmdbShown=o=>{const v=tmdbOf(o),c=tmdbVotesOf(o);
 /* a vote count as the dataset writes IMDb's: 950, 1.2K, 2.0M */
 const votesCompact=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":String(n);
 const isScore=v=>typeof v==="number"&&isFinite(v);
-/* For ranking: IMDb rating if available, else TMDB if it has ≥TMDB_VOTE_MIN votes. */
+/* For ranking: IMDb rating if shown (imdbShown), else TMDB if it has ≥TMDB_VOTE_MIN votes. */
 const ratingOf=o=>{
-  const im=imdbOf(o); if(im!=null)return im;
+  const im=imdbShown(o); if(im!=null)return im;
   const tv=tmdbOf(o); if(tv!=null&&tmdbVotesOf(o)>=TMDB_VOTE_MIN)return tv;
   return null;
 };
@@ -2933,14 +2947,19 @@ function datesWith(){
 
 /* ===================== cards ===================== */
 const scoreCls=v=>v==null?"na":v>=7.5?"hi":"";
-/* scoreBadge: ONE chip per card, the first genuine score of IMDb > TMDB (≥TMDB_SHOW_MIN
+/* scoreBadge: ONE chip per card, the first genuine score of IMDb (from IMDB_SHOW_MIN
+   votes; under 1,000 with the count) > TMDB (≥TMDB_SHOW_MIN
    votes, with the count) > Rotten Tomatoes > Metacritic, each labelled with its source.
    The IMDb label only ever carries an IMDb number. No score, no chip (never "—").
    The visible text is short ("TMDB 6.4 · 32"); screen readers get the whole sentence. */
 function scoreBadge(f){
   const L=t(),chip=(cls,lab,val,desc)=>`<span class="score ${cls}" title="${esc(desc)}"><i aria-hidden="true">${lab}</i><span aria-hidden="true">${val}</span><span class="vh">${esc(desc)}</span></span>`;
-  const im=imdbOf(f);
-  if(isScore(im))return chip(scoreCls(im),"IMDb",fx1(im),L.scImdb.replace("{v}",fx1(im)));
+  const im=imdbShown(f);
+  if(im!=null){const n=imdbVoteN(f);
+    /* under 1,000 votes the count is part of the chip, as TMDB's ("IMDb 7.9 · 11") */
+    return (n!=null&&n<1000)
+      ?chip(scoreCls(im),"IMDb",`${fx1(im)}<small>· ${esc(String(n))}</small>`,L.scImdb.replace("{v}",fx1(im))+", "+plural(n,L.plVote))
+      :chip(scoreCls(im),"IMDb",fx1(im),L.scImdb.replace("{v}",fx1(im)));}
   const tv=tmdbShown(f);
   if(tv!=null){const n=tmdbVotesOf(f);
     return chip("tmdb "+scoreCls(tv),"TMDB",`${fx1(tv)}<small>· ${esc(votesCompact(n))}</small>`,
@@ -4361,10 +4380,10 @@ function sheetFilm(f){
   const selNote=filtered?`<div class="why" style="font-size:12px;opacity:.8;margin-bottom:10px">${esc(L.showSelCinemasOnly)}
     <button class="btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" data-sheetshowallcin>${esc(L.showAllCinemas)}</button></div>`:"";
   const rt=[];
-  /* every genuine score, each tile labelled with its source: IMDb (its own vote count
-     under it), TMDB (from TMDB_SHOW_MIN votes, its count under it), Rotten Tomatoes
+  /* every genuine score, each tile labelled with its source: IMDb (from IMDB_SHOW_MIN
+     votes, its own vote count under it), TMDB (from TMDB_SHOW_MIN votes, its count under it), Rotten Tomatoes
      (critics), Metacritic. A source without a number has no tile. */
-  {const im=imdbOf(f);if(isScore(im))rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${fx1(im)+"<small>/10</small>"}</div>${votesOf(f)?`<div class="rc">${esc(votesOf(f))} ${esc(L.votes)}</div>`:""}</div>`);}
+  {const im=imdbShown(f);if(im!=null)rt.push(`<div class="rtile imdb"><div class="rl">IMDb</div><div class="rv">${fx1(im)+"<small>/10</small>"}</div>${votesOf(f)?`<div class="rc">${esc(votesOf(f))} ${esc(L.votes)}</div>`:""}</div>`);}
   {const tv=tmdbShown(f);if(tv!=null)rt.push(`<div class="rtile tmdb"><div class="rl">TMDB</div><div class="rv">${fx1(tv)}<small>/10</small></div><div class="rc">${esc(plural(tmdbVotesOf(f),L.plVote))}</div></div>`);}
   {const rv=rtOf(f);if(isScore(rv))rt.push(`<div class="rtile rt"><div class="rl">Rotten Tomatoes</div><div class="rv">${esc(Math.round(rv))}<small>%</small></div></div>`);}
   {const mv=mcOf(f);if(isScore(mv))rt.push(`<div class="rtile mc"><div class="rl">Metacritic</div><div class="rv">${esc(Math.round(mv))}<small>/100</small></div></div>`);}

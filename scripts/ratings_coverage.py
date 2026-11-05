@@ -15,7 +15,8 @@ Definition (the dashboard and verify_build check 5c4 both read it from here):
             Those are counted on their own, never in the denominator. Two records of
             one film (the same TMDB match) count once.
   a score   what the page shows (src/sofia-screen.artifact.html): a genuine IMDb
-            rating (OMDb, or the curated seed), TMDB's vote_average with at least
+            rating (OMDb, or the curated seed) from at least IMDB_SHOW_MIN votes (or
+            an unknown vote count), TMDB's vote_average with at least
             TMDB_SHOW_MIN votes, Rotten Tomatoes' critics' score, Metacritic's score.
             Nothing is estimated and TMDB's number is never counted as IMDb.
   any       films with at least one of the four; the target is TARGET %.
@@ -29,12 +30,20 @@ ratings_coverage() returns a JSON-able dict; verify_build prints it as one line
 import re
 
 TMDB_SHOW_MIN = 10   # = TMDB_SHOW_MIN in src/sofia-screen.artifact.html (test_verify checks they agree)
+IMDB_SHOW_MIN = 10   # = IMDB_SHOW_MIN in src/sofia-screen.artifact.html (test_verify checks they agree)
 TARGET = 95.0
 SOURCES = ("imdb", "tmdb", "rt", "mc")
 FLAG = {"imdb": "i", "tmdb": "t", "rt": "r", "mc": "m"}
 
 # What is not a film, from the title the venue prints (BG and EN). Checked on the
 # 2026-11-04 listings: 15 such titles among 210, no film among them.
+# A screening of a feature with live dubbing or a live score ("LIVE ЕКШЪН ДУБЛАЖ - Жени
+# кечистки срещу ацтешката мумия", "live score", "съпровод на живо") is a film: the
+# phrase is taken out of the title before _LIVE looks for a broadcast or concert
+# (skeptic, 2026-11-05; on the 2026-11-04 listings it changes that one title only).
+_LIVE_TO_FILM = re.compile(r"\blive[\s-]+(?:[а-яa-z]+\s+)?(?:дублаж|dub(?:bing|bed)?|score)\b"
+                           r"|\bдублаж на живо\b|\bозвучаване на живо\b"
+                           r"|\b(?:музикален\s+)?съпровод на живо\b|\blive (?:musical )?accompaniment\b", re.I)
 _LIVE = re.compile(r"\blive\b|\bна живо\b|концерт|concert|\bworld tour\b|\bthe [a-z]+ tour\b"
                    r"|royal ballet|royal opera|\bmet opera\b|\bnt live\b|national theatre live"
                    r"|\bбалет\b|\bопера\b|\bcs2\b|counter-strike|league of legends|\bdota ?2\b|\bvalorant\b",
@@ -53,7 +62,7 @@ def classify(film):
         return "shorts", "short films"
     if _EVENT.search(t):
         return "event", "event"
-    if _LIVE.search(t) or ("Спорт" in genres and _SPORT_FINAL.search(t)):
+    if _LIVE.search(_LIVE_TO_FILM.sub(" ", t)) or ("Спорт" in genres and _SPORT_FINAL.search(t)):
         return "live", "live broadcast / concert / e-sports"
     return "film", ""
 
@@ -62,13 +71,23 @@ def _num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v
 
 
+def imdb_votes(v):
+    """IMDb's vote count as a number ("7", "950", "12,500", "1.2K", "2.0M"); None if
+    unknown (= imdbVoteN in src/)."""
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)([KM]?)", re.sub(r"[,\s]", "", str(v or "")), re.I)
+    if not m:
+        return None
+    return round(float(m.group(1)) * {"": 1, "K": 1e3, "M": 1e6}[m.group(2).upper()])
+
+
 def scores(film, art):
     """{source: value} for the scores the page shows for this film (same rules as
-    imdbOf / tmdbShown / rtOf / mcOf in src/): TMDBART first, the seed second."""
+    imdbShown / tmdbShown / rtOf / mcOf in src/): TMDBART first, the seed second."""
     a = art if isinstance(art, dict) else {}
     out = {}
     im = a.get("imdb") if a.get("imdb") is not None else film.get("imdb")
-    if _num(im):
+    n = imdb_votes(a.get("imdbVotes") or film.get("imdbVotes"))      # = votesOf in src/
+    if _num(im) and (n is None or n >= IMDB_SHOW_MIN):
         out["imdb"] = im
     tv, tc = a.get("tv"), a.get("tc")
     if _num(tv) and _num(tc) and tc >= TMDB_SHOW_MIN:
@@ -200,9 +219,17 @@ if __name__ == "__main__":                   # python3 scripts/ratings_coverage.
         side = json.loads((root / "tmdb_films.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         side = {}
-    rep = ratings_coverage(const("FILMS"), const("SHOWTIMES"), const("TMDBART"),
-                           (snap.get("window") or {}).get("from") or "0000", side)
-    print(f"{rep['films']} films ({rep['records']} records; not films: "
+    # "today" as verify_build 5c4 takes it (Sofia's date), not the snapshot's window
+    # start: a build made yesterday counts yesterday's last screenings otherwise
+    # (2026-11-05: 192 films here against the gate's 187 from one index.html).
+    try:
+        sys.path.insert(0, str(root / "scripts"))
+        import listing_window
+        today = listing_window.sofia_today().isoformat()
+    except Exception:                                   # pragma: no cover
+        today = (snap.get("window") or {}).get("from") or "0000"
+    rep = ratings_coverage(const("FILMS"), const("SHOWTIMES"), const("TMDBART"), today, side)
+    print(f"{rep['films']} films on {today} ({rep['records']} records; not films: "
           + ", ".join(f"{k} {len(v)}" for k, v in rep["non_films"].items()) + ")")
     for k in SOURCES:
         print(f"  {k:5s} {rep['per_source'][k]['with']:4d}  {rep['per_source'][k]['pct']:5.1f} %")
