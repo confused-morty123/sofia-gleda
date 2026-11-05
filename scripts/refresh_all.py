@@ -204,6 +204,50 @@ def poster_coverage_of(out):
     return None
 
 
+# verify_build 5c2 compares poster coverage with a BASELINE, kept here in
+# build_report.json["posters"]["baseline"] = {"plays": pct, "films": pct}: the
+# highest own-image coverage seen. Comparing only with the previous run let a
+# poster source that dies slowly (2 points a night) slide past the 3-point warning
+# for ever. The baseline rises with every better run and falls by
+# POSTER_BASELINE_DECAY points per run, but only on a run the gate passed: an
+# accepted, lasting change stops warning after a few runs, while a collapse that
+# failed the gate keeps failing until the posters are back (or the owner deletes
+# "baseline"). A run with fewer upcoming titles than verify_build's COVERAGE_MIN_*
+# (POSTER_BASELINE_MIN, kept equal by test_verify) does not move it. An older
+# build_report.json without "baseline" starts from its previous numbers.
+POSTER_BASELINE_DECAY = 0.5
+POSTER_BASELINE_MIN = {"plays": 100, "films": 40}
+
+
+def _own_pct(cov):
+    """Own-image coverage in % of a POSTER_COVERAGE block (or its "films" part)."""
+    try:
+        return 100.0 * cov["with"] / cov["upcoming"] if cov.get("upcoming") else None
+    except (AttributeError, KeyError, TypeError, ZeroDivisionError):
+        return None
+
+
+def poster_baseline(prev, cur, published):
+    """The baseline to store with this run's coverage `cur`, given the previous
+    build_report.json["posters"] `prev` and whether the gate passed."""
+    prev = prev if isinstance(prev, dict) and prev.get("metric") == "own-page" else {}
+    cur = cur if isinstance(cur, dict) else {}
+    old = prev.get("baseline") if isinstance(prev.get("baseline"), dict) else {}
+    out = {}
+    for label, p, c in (("plays", prev, cur),
+                        ("films", prev.get("films") or {}, cur.get("films") or {})):
+        b = old.get(label)
+        if not isinstance(b, (int, float)) or isinstance(b, bool):
+            b = _own_pct(p)
+        now = _own_pct(c) if (c.get("upcoming") or 0) >= POSTER_BASELINE_MIN[label] else None
+        if b is not None and published and now is not None:
+            b -= POSTER_BASELINE_DECAY
+        best = max(x for x in (b, now, -1.0) if x is not None)
+        if best >= 0:
+            out[label] = round(best, 2)
+    return out
+
+
 def bg_titles_of(out):
     """The "BG_TITLES {json}" line verify_build.py prints (report 5c3): the titles
     shown in BG mode without a Bulgarian form."""
@@ -257,8 +301,13 @@ def main(argv=None):
         "official": official,
         "festivals": festivals,
     }
+    baseline = poster_baseline(prev_report.get("posters"), posters, verdict["ok"])
     if posters:
         report["posters"] = posters               # verify_build 5c2 compares with it next run
+        if baseline:
+            posters["baseline"] = baseline
+    elif baseline:                                # no numbers this run: keep the comparison point
+        report["posters"] = {"metric": "own-page", "baseline": baseline}
     try:                                          # poster_health.py's notes (the dashboard reads them)
         report["poster_health"] = json.loads((ROOT / "poster_health.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
