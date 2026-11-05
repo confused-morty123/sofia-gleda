@@ -62,6 +62,7 @@ VENUE = "poster-fix"            # its health.json entries
 NO_LINK = "no own page linked"
 TICKET_ONLY = "only a ticket page linked, not the title's page"
 BLOCKED = "own page blocked (robots.txt or a bot challenge; not bypassed)"
+ROBOTS_UNREACHABLE = "robots.txt unreachable (5xx or no answer): the host is not read this run"
 FETCH_FAILED = "own page or its image could not be fetched"
 NOT_TITLES_PAGE = "the linked page is not the title's (redirect, home page or another title)"
 NO_IMAGE = "own page has no usable image"
@@ -110,7 +111,8 @@ def needed(path=None):
 def make_net(budget, max_requests, cache_dir=None):
     """own_page_posters.Net that also stops at max_requests and remembers, per
     URL, how a request ended: "ok", "robots", "blocked: …", "gone: HTTP 404",
-    "failed: …" or "budget"."""
+    "failed: …", "budget", or "robots: robots.txt unreachable (…)" when the host's
+    robots.txt answered 5xx or not at all (RFC 9309: the host is not read this run)."""
     import own_page_posters as OPP
 
     class FixNet(OPP.Net):
@@ -125,7 +127,9 @@ def make_net(budget, max_requests, cache_dir=None):
         def get(self, url, kind="page"):
             if not self._allowed(url):
                 self.refused += 1
-                self.outcome[url] = "robots"
+                host = (OPP.urllib.parse.urlsplit(url).hostname or "").lower()
+                why = self.robots_unreachable.get(host)
+                self.outcome[url] = f"robots: {why}" if why else "robots"
                 return None
             if self.over_budget():
                 self.outcome[url] = "budget"
@@ -179,7 +183,10 @@ def diagnose(key, true_cause, links, srcs, outcome, today):
         return TICKET_ONLY, "; ".join(n for _, n in pages if n)[:200]
     outs = [outcome.get(pg) for pg in readable if outcome.get(pg)]
     if outs and not any(o == "ok" for o in outs):
-        if any(o == "robots" or o.startswith("blocked") for o in outs):
+        if any(o.startswith("robots: robots.txt unreachable") for o in outs):
+            return ROBOTS_UNREACHABLE, "; ".join(f"{pg[:70]}: {outcome[pg]}" for pg in readable
+                                                 if outcome.get(pg))[:240]
+        if any(o.startswith("robots") or o.startswith("blocked") for o in outs):
             return BLOCKED, "; ".join(f"{pg[:70]}: {outcome[pg]}" for pg in readable if outcome.get(pg))[:240]
         return FETCH_FAILED, "; ".join(f"{pg[:70]}: {outcome[pg]}" for pg in readable if outcome.get(pg))[:240]
     miss = (srcs.get("misses") or {}).get(key)
@@ -224,7 +231,7 @@ def broken_parsers(by_group, causes, min_titles=BROKEN_MIN):
         cc = Counter(causes.get(i, OTHER) for i in g.get("missing") or [])
         if cc and set(cc) == {NO_LINK}:
             why = "the programme parser returned no own-page link for any of its titles"
-        elif cc and set(cc) <= {BLOCKED, FETCH_FAILED}:
+        elif cc and set(cc) <= {BLOCKED, FETCH_FAILED, ROBOTS_UNREACHABLE}:
             why = "none of its pages could be read"
         else:
             why = "its poster source returned nothing for the whole theatre: a parser has probably broken"
@@ -293,7 +300,7 @@ def _retryable(key, srcs, outcome, links):
         return False
     outs = [outcome.get(pg) for pg in pages if pg]
     return any(o is None or o.startswith("failed") for o in outs) and \
-        not any(o and (o == "robots" or o.startswith(("blocked", "gone"))) for o in outs)
+        not any(o and o.startswith(("robots", "blocked", "gone")) for o in outs)
 
 
 def fix_titles(todo, titles, links, net, srcs, today, film_need=None,

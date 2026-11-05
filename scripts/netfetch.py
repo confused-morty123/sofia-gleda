@@ -523,3 +523,26 @@ class Fetcher:
                 note = f"CLOSED ({v['closed']}) " + note
             print(f"  {host:34s} {v['ok']:>4d} {v['fail']:>5d} {v.get('skipped', 0):>5d} "
                   f"{v['seconds']:>8.1f}  {note[:90]}", file=stream)
+
+
+# ------------------------------------------------------------ robots.txt (RFC 9309)
+ROBOTS_UNREACHABLE = "robots.txt unreachable"
+
+
+def robots_verdict(resp, log_entry):
+    """(robots.txt text, None) when the file counts, else ("", why) when the host
+    must not be read this run. RFC 9309 §2.3.1.3-4: a 4xx answer (404, 410, 403 …)
+    means no rules (allow all) except 429; a 429 or 5xx answer or no answer at all means disallow
+    all. A challenge page (bot protection) is no answer: never bypassed.
+    resp: the fetch's Response or None; log_entry: netfetch's log record of it."""
+    if resp is not None and getattr(resp, "content", None) is not None:
+        return resp.content.decode("utf-8", "replace"), None
+    e = log_entry or {}
+    status = e.get("status")
+    if e.get("blocked") and "challenge" in str(e.get("blocked")):
+        return "", f"{ROBOTS_UNREACHABLE} ({e['blocked']})"
+    if isinstance(status, int) and 400 <= status < 500 and status != 429:
+        return "", None                    # 429 (rate limited) is treated as a 5xx: no answer yet
+    if isinstance(status, int):
+        return "", f"{ROBOTS_UNREACHABLE} (HTTP {status})"
+    return "", f"{ROBOTS_UNREACHABLE} ({str(e.get('error') or 'no answer')[:60]})"
