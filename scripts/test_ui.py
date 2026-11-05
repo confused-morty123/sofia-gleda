@@ -21395,7 +21395,10 @@ def wave_hs1(browser):
 # seed) shows as before. A chip is the source and the score only, never a vote count
 # (owner, 2026-11-05: "IMDb 7.9", "TMDB 7.0"); the counts are on the sheet: TMDB's under
 # its tile, IMDb's in its own "гласа" tile, last, as on the live site.
-RT1_SHOT_DIR = Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/ratings")
+# The owner's notes folder on the Mac; elsewhere (GitHub's Linux runners, where /Users
+# cannot be created) a temporary folder, as GA1 does.
+RT1_SHOT_DIR = (Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/ratings")
+                if Path("/Users/I589592/Downloads/Sofia Gleda/notes").is_dir() else Path("/tmp/sg-shots/RT1"))
 
 RT1_SYNTH_JS = """(today) => {
   let f = null;
