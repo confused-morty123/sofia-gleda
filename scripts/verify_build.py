@@ -1790,42 +1790,111 @@ try:
 except Exception as _e4:                                           # pragma: no cover
     note(f"5c4 ratings coverage skipped: {_e4}")
 
-# ----------------------------------------- 5c5. no frozen scores in the sheet's box row
-# FILM_EXTRA[id].box / .boxEn is the sheet's "Каса и прием" / "Box office & reception"
-# row: hand-written text that never refreshes. Scores written there contradicted the
-# live, source-labelled chips (2026-11-05: Insidious "58% критика" beside an RT chip of
-# 57 %). The row keeps box-office takings, awards, festivals and records; a rating
-# number in it is a data-integrity failure (scores come only from TMDBART).
+# ----------------------------------------- 5c5. no frozen scores in sheet-rendered text
+# Every hand-written or scraped text a film/show/event sheet or card renders (FILM_EXTRA
+# box, why, facts, fmt; FILMS note and synopses; FILMINFO and TMDBART synopses; SHOWS
+# synopses, badges and review quotes; SHOW_EXTRA why/facts/season/premiere; SHOWSYN;
+# EVENTS blurbs; BG and EN) never refreshes. Scores written there contradicted the live,
+# source-labelled chips (2026-11-05: Insidious "58% критика" beside an RT chip of 57 %;
+# Rashomon's note "98% при критиката и 98 в Metacritic" with no source label). Those texts
+# keep takings, awards, festivals, records ("IMDb Top 250"); a rating number in any of them
+# is a data-integrity failure (scores come only from TMDBART / FILMS rating fields).
+# Ambiguous fractions ("10/10 номинации") fail on purpose: reword them ("10 номинации").
+_SCORE_SITES = r"(IMDb|Metacritic|Metascore|TMDB|RT|Rotten\s+Tomatoes|MyAnimeList|Letterboxd)"
 BOX_SCORE_RES = (
-    re.compile(r"\d+\s?%.{0,30}?(критик|публик|зрител|critic|audience|\bRT\b|rotten)"
-               r"|(критик|публик|зрител|critic|audience|\bRT\b|rotten).{0,30}?\d+\s?%", re.I | re.S),
-    re.compile(r"\b(IMDb|Metacritic|Metascore|TMDB|MyAnimeList|Letterboxd)\b\s*[:\-–—]?\s*\d"
-               r"|\d\s*(IMDb|Metacritic|Metascore|TMDB|MyAnimeList|Letterboxd)\b", re.I),
-    re.compile(r"(?<![\d.,/])\d(?:[.,]\d)?\s?/\s?10(?![\d/.])"),
+    # a percentage beside critics / audience / viewers / RT, either order ("39% критика",
+    # "при критиката 90%", "Critics were harsh (39%)", "98% audience score")
+    re.compile(r"\d+\s?%.{0,30}?(критик|публик|зрител|critic|audience|fresh|\bRT\b|rotten)"
+               r"|(критик|публик|зрител|critic|audience|fresh|\bRT\b|rotten).{0,30}?\d+\s?%", re.I | re.S),
+    # a number right after a rating site ("IMDb 7.1", "TMDB: 7.4", "RT 57 %")
+    re.compile(r"\b" + _SCORE_SITES + r"\b\s*[:\-–—]?\s*\d", re.I),
+    # a number right before one ("67 Metacritic", "8.4 в IMDb", "98 on Metacritic")
+    re.compile(r"\d[\d.,]*\s*(?:(?:в|на|on|in|at)\s+)?" + _SCORE_SITES + r"\b", re.I),
+    # the named score meters with a number or a CinemaScore grade
+    re.compile(r"\b(Tomatometer|Popcornmeter|CinemaScore|Томатометър)\b\W{0,12}\d"
+               r"|\d[\d.,]*\s?%?\W{0,12}(Tomatometer|Popcornmeter|CinemaScore|Томатометър)\b"
+               r"|\bCinemaScore\b\W{0,12}[A-F][+\-]?(?![\w])", re.I),
+    # "x/10", "x/5", "8,5 / 10", "10/10" (not a date such as 1/10/2021)
+    re.compile(r"(?<![\d.,/])\d{1,2}(?:[.,]\d)?\s*/\s*(?:10|5)(?![\d/.,])"),
+    # "оценка 8", "rating: 7.5", "audience score of 92"
+    re.compile(r"\b(оценк[аи]|rating|(?:critics?|audience|user)\s+score)\s*(?:of\s+)?[:\-–—]?\s*\d", re.I),
 )
 
+# constant -> the text fields its sheet / card renders (strings or lists of strings;
+# "reviews" is a list of {src, text} quotes)
+SHEET_TEXT_FIELDS = {
+    "FILM_EXTRA": ("box", "boxEn", "why", "whyEn", "facts", "factsEn", "fmt", "fmtEn"),
+    "FILMS": ("note", "noteEn", "synBg", "synEn"),
+    "FILMINFO": ("synBg", "synEn"),
+    "TMDBART": ("ov",),
+    "SHOWS": ("synBg", "synEn", "badge", "reviews"),
+    "SHOW_EXTRA": ("why", "whyEn", "facts", "factsEn", "season", "seasonEn", "premiere", "premiereEn"),
+    "EVENTS": ("blurbBg", "blurbEn"),
+    "EVENTS_AUTO": ("blurbBg", "blurbEn"),
+}
 
-def box_score_problems(film_extra):
-    """'id.box: text' for every FILM_EXTRA box/boxEn text carrying a score."""
+
+def _sheet_texts(val):
+    if isinstance(val, str):
+        yield val
+    elif isinstance(val, list):
+        for _v in val:
+            if isinstance(_v, str):
+                yield _v
+            elif isinstance(_v, dict) and isinstance(_v.get("text"), str):
+                yield _v["text"]
+
+
+def text_score_problems(name, data, fields=None):
+    """'NAME.id.field: text' for every sheet-rendered text of constant NAME carrying a score."""
+    fields = fields or SHEET_TEXT_FIELDS.get(name, ())
+    rows = (data.items() if isinstance(data, dict)
+            else ((r.get("id") if isinstance(r, dict) else i, r) for i, r in enumerate(data or [])))
     bad = []
-    for _fid, _x in (film_extra or {}).items():
+    for _fid, _x in rows:
         if not isinstance(_x, dict):
             continue
-        for _k in ("box", "boxEn"):
-            _t = _x.get(_k)
-            if isinstance(_t, str) and any(r.search(_t) for r in BOX_SCORE_RES):
-                bad.append(f"{_fid}.{_k}: {_t!r}")
+        for _k in fields:
+            for _t in _sheet_texts(_x.get(_k)):
+                if any(r.search(_t) for r in BOX_SCORE_RES):
+                    bad.append(f"{name}.{_fid}.{_k}: {_t!r}")
     return bad
 
 
-_bx_fe = _const_any("FILM_EXTRA")
-if _bx_fe is None and re.search(r"^const FILM_EXTRA\s*=", js, flags=re.M):
-    fail("5c5 FILM_EXTRA is declared but is not one parseable JSON line: its box rows went unchecked")
-_bx_bad = box_score_problems(_bx_fe)
-if _bx_bad:
-    fail(f"5c5 FILM_EXTRA box row carries {len(_bx_bad)} frozen score(s) that can contradict the "
-         "live rating chips (keep takings, awards, festivals, records; scores come from TMDBART): "
-         + "; ".join(_bx_bad[:8]))
+def box_score_problems(film_extra):
+    """'id.box: text' for every FILM_EXTRA box/boxEn text carrying a score (kept for callers)."""
+    return [p.split(".", 1)[1] for p in text_score_problems("FILM_EXTRA", film_extra, ("box", "boxEn"))]
+
+
+def _showsyn_const(name):
+    """SHOWSYN / SHOWSYN_EN are hand-written multi-line {id: synopsis} objects."""
+    _m = re.search(r"^const %s\s*=\s*\{(.*?)^\};" % name, js, flags=re.M | re.S)
+    if not _m:
+        return None
+    _body = re.sub(r",\s*$", "", _m.group(1).strip())
+    return json.loads("{" + _body + "}")
+
+
+_ts_bad = []
+for _tn in SHEET_TEXT_FIELDS:
+    _tv = _const_any(_tn)
+    if _tv is None and re.search(r"^const %s\s*=" % _tn, js, flags=re.M):
+        fail(f"5c5 {_tn} is declared but is not one parseable JSON line: its sheet texts went unchecked")
+        continue
+    _ts_bad += text_score_problems(_tn, _tv)
+for _tn in ("SHOWSYN", "SHOWSYN_EN"):
+    try:
+        _sv = _showsyn_const(_tn)
+    except Exception:
+        fail(f"5c5 {_tn} is declared but is not a parseable object: its synopses went unchecked")
+        continue
+    for _sid, _st in (_sv or {}).items():
+        if isinstance(_st, str) and any(r.search(_st) for r in BOX_SCORE_RES):
+            _ts_bad.append(f"{_tn}.{_sid}: {_st!r}")
+if _ts_bad:
+    fail(f"5c5 sheet text carries {len(_ts_bad)} frozen score(s) that can contradict the live rating "
+         "chips (keep takings, awards, festivals, records; scores come from the rating fields): "
+         + "; ".join(_ts_bad[:8]))
 
 # ----------------------------------------- 5d. no non-http(s) URLs in data constants (CODE-12)
 # Every URL that ends up in an href or window.open must be http(s).
