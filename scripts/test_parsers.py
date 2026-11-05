@@ -4910,7 +4910,7 @@ check("pick_bg: an exact Bulgarian title still matches without a year",
 def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, film_info=None, links="[]",
              vlinks="[]", finds=None, prev=None, omdb=None, details_bg=None):
     """finds: {imdb id: [TMDB results]} for find/<id>; prev: last run's tmdb_films.json;
-    omdb: a stand-in for omdb_rating; details_bg: {tmdb id: bg-BG detail record}."""
+    omdb: a stand-in for omdb_rating (see _lookup below); details_bg: {tmdb id: bg-BG detail record}."""
     calls = []
     def _api(path, params):
         calls.append((path, dict(params)))
@@ -4924,7 +4924,7 @@ def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, fil
             return details.get(int(path.split("/")[1]), {})
         return {"results": []}
     saved = (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.TMDB_BLOCKLIST_PATH,
-             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image, TMDB.omdb_rating, TMDB.SEARCH_ERRORS)
+             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image, TMDB.omdb_lookup, TMDB.SEARCH_ERRORS)
     with _tmp.TemporaryDirectory() as td:
         td = _pl.Path(td)
         (td / "index.html").write_text("/* SOFIA-DATA-START */\nconst FILMS=" + _json.dumps(films, ensure_ascii=False)
@@ -4933,7 +4933,16 @@ def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, fil
         if prev is not None:
             (td / "t.json").write_text(_json.dumps(prev, ensure_ascii=False), encoding="utf-8")
         if omdb is not None:
-            TMDB.omdb_rating = omdb
+            # omdb: omdb_rating's tuple (rating, votes, rt, mc, error), optionally a 6th
+            # item {title, year, runtime, type} for the identity check
+            def _lookup(i, _o=omdb):
+                r = _o(i)
+                d = {"rating": r[0], "votes": r[1], "rt": r[2], "mc": r[3], "err": r[4],
+                     "title": None, "year": None, "runtime": None, "type": None}
+                if len(r) > 5 and isinstance(r[5], dict):
+                    d.update(r[5])
+                return d
+            TMDB.omdb_lookup = _lookup
         (td / "bl.json").write_text(_json.dumps({"blocked": blocklist or {}}), encoding="utf-8")
         (td / "al.json").write_text(_json.dumps(aliases or {"groups": []}), encoding="utf-8")
         (td / "fi.json").write_text(_json.dumps(film_info or {}), encoding="utf-8")
@@ -4948,7 +4957,7 @@ def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, fil
             out = _json.loads((td / "t.json").read_text(encoding="utf-8")) if (td / "t.json").exists() else {}
         finally:
             (TMDB.api, TMDB.TOKEN, TMDB.HTML, TMDB.OUT, TMDB.LINKS_OUT, TMDB.HEALTH, TMDB.TMDB_BLOCKLIST_PATH,
-             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image, TMDB.omdb_rating, TMDB.SEARCH_ERRORS) = saved
+             TMDB.ALIASES_PATH, TMDB.FILM_INFO_PATH, TMDB.og_image, TMDB.omdb_lookup, TMDB.SEARCH_ERRORS) = saved
     return out, calls
 
 _departed = {"id": 1422, "title": "От другата страна", "original_title": "The Departed", "original_language": "en",
@@ -5110,6 +5119,111 @@ _out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "ye
                    {77: None}, prev=_prev, omdb=lambda i: (None, None, None, None, "Request limit reached!") if i else _na(i))
 check("main(): a failed detail call keeps last run's IMDb id and rating for the same TMDB film",
       {k: (_out.get("nov") or {}).get(k) for k in ("imdb_id", "imdb")}, {"imdb_id": "tt0000077", "imdb": 7.1})
+
+# Ratings coverage, 2026-11-04 (owner: "Оценки от IMDb" at 47.1 %): OMDb's own facts,
+# one in-run retry, films TMDB cannot match rated through the IMDb id their venue
+# names (only when OMDb's facts agree with the venue's), the Bulgarian title tried
+# when the Latin one finds nothing.
+print("ratings coverage: OMDb facts and retry, venue IMDb ids, Bulgarian-title fallback")
+_orig_tok_rc, _orig_sleep_rc = TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP
+TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = "fake-key-for-test", 0
+class _RcResp(_io.BytesIO):
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+try:
+    import unittest.mock as _um_rc
+    _facts_omdb = {"Response": "True", "Title": "Kina & Yuk", "Year": "2023", "Runtime": "85 min",
+                   "Type": "movie", "imdbRating": "6.6", "imdbVotes": "1,234",
+                   "Ratings": [{"Source": "Rotten Tomatoes", "Value": "80%"}], "Metascore": "N/A"}
+    with _um_rc.patch("urllib.request.urlopen", return_value=_RcResp(_json_mod.dumps(_facts_omdb).encode())):
+        _o = TMDB.omdb_lookup("tt0000010")
+    check("omdb_lookup: the film's own facts (title, year, runtime, type) and its scores",
+          {k: _o[k] for k in ("title", "year", "runtime", "type", "rating", "votes", "rt", "mc", "err")},
+          {"title": "Kina & Yuk", "year": 2023, "runtime": 85, "type": "movie", "rating": 6.6,
+           "votes": "1.2K", "rt": 80, "mc": None, "err": None})
+    _seq = [OSError("timed out"), _RcResp(_json_mod.dumps(_facts_omdb).encode())]
+    with _um_rc.patch("urllib.request.urlopen", side_effect=_seq) as _m:
+        _o2 = TMDB.omdb_lookup("tt0000010")
+    check("omdb_lookup: a network error is retried once in the run, and the retry's answer used",
+          (_m.call_count, _o2["rating"], _o2["err"]), (2, 6.6, None))
+    with _um_rc.patch("urllib.request.urlopen",
+                      return_value=_RcResp(_json_mod.dumps({"Response": "False", "Error": "Request limit reached!"}).encode())) as _m:
+        _o3 = TMDB.omdb_lookup("tt0000010")
+    check("omdb_lookup: an answer OMDb gives on purpose (the daily limit) is not retried",
+          (_m.call_count, _o3["err"]), (1, "Request limit reached!"))
+finally:
+    TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = _orig_tok_rc, _orig_sleep_rc
+
+_ok_o = {"err": None, "type": "movie", "title": "Kina & Yuk", "year": 2023, "runtime": 85}
+check("omdb_identity: the venue's year (±1) confirms OMDb's film",
+      TMDB.omdb_identity({"year": 2023, "runtime": 80}, _ok_o), None)
+check("omdb_identity: …or the venue's Latin title does, with no year",
+      TMDB.omdb_identity({"titles": ["KINA & YUK"]}, _ok_o), None)
+check("omdb_identity: nothing the venue prints to confirm it -> no rating",
+      bool(TMDB.omdb_identity({}, _ok_o)), True)
+check("omdb_identity: OMDb's year far from the venue's (a placeholder id's film) -> rejected",
+      bool(TMDB.omdb_identity({"year": 2026}, dict(_ok_o, year=2008))), True)
+check("omdb_identity: OMDb's runtime contradicts the venue's -> rejected",
+      bool(TMDB.omdb_identity({"year": 2023, "runtime": 150}, _ok_o)), True)
+check("omdb_identity: a series is not the film",
+      bool(TMDB.omdb_identity({"year": 2023}, dict(_ok_o, type="series"))), True)
+check("omdb_identity: a keyboard-run id (tt1234…) needs the title, the year alone is not enough",
+      (bool(TMDB.omdb_identity({"year": 2023}, _ok_o, imdb_id="tt1234654")),
+       TMDB.omdb_identity({"year": 2023, "titles": ["Kina & Yuk"]}, _ok_o, imdb_id="tt1234654")), (True, None))
+check("omdb_identity: the TMDB match's year confirms it when the venue prints none",
+      TMDB.omdb_identity({}, _ok_o, tmdb_year="2023"), None)
+_orec = {"matched": False, "en": "", "via": TMDB.OMDB_VIA, "imdb_id": "tt0000010", "imdb": 6.6,
+         "imdbVotes": "1.2K", "rt": 80, "omdb": {"t": "Kina & Yuk", "y": 2023, "rn": 85}}
+check("art_record: a film rated through its venue's IMDb id ships only its scores",
+      TMDB.art_record(_orec), {"imdb": 6.6, "imdbVotes": "1.2K", "rt": 80})
+check("art_record: …any other unmatched record ships nothing",
+      (TMDB.art_record({"matched": False, "en": "", "imdb": 7.0}),
+       TMDB.art_record(dict(_orec, via="bg"))), ({}, {}))
+
+# (a second, matched film with a poster: a run without any poster keeps last run's file)
+_kina = [{"id": "kina", "bg": "Кина и Юк, лисиците от далечния север", "en": "", "year": 2023, "runtime": 80},
+         {"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}]
+_kl = '[["kina", "https://www.cinegrand.bg/m/kina-i-yuk-imdbtt0000010"]]'
+_kina_omdb = lambda i: (6.6, "1.2K", 80, None, None, {"title": "Kina & Yuk", "year": 2023, "runtime": 85, "type": "movie"})
+_out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links=_kl, omdb=_kina_omdb)
+check("main(): no TMDB match, but the venue names the IMDb id and OMDb's facts agree -> its scores, kept unmatched",
+      {k: (_out.get("kina") or {}).get(k) for k in ("matched", "via", "imdb_id", "imdb", "rt")},
+      {"matched": False, "via": TMDB.OMDB_VIA, "imdb_id": "tt0000010", "imdb": 6.6, "rt": 80})
+_out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links=_kl,
+                   omdb=lambda i: (7.9, "50K", 90, 70, None, {"title": "Another Film", "year": 2009, "runtime": 85, "type": "movie"}))
+check("main(): …OMDb's film of another year (the venue printed a wrong id) gives no score",
+      _out.get("kina"), {"matched": False, "en": ""})
+_out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links=_kl, prev={"kina": _orec},
+                   omdb=lambda i: (None, None, None, None, "network: timed out"))
+check("main(): …an OMDb outage keeps last run's scores for the same venue id",
+      {k: (_out.get("kina") or {}).get(k) for k in ("via", "imdb", "rt")}, {"via": TMDB.OMDB_VIA, "imdb": 6.6, "rt": 80})
+_out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links="[]", prev={"kina": _orec}, omdb=_kina_omdb)
+check("main(): …and a venue that no longer names the id drops them",
+      _out.get("kina"), {"matched": False, "en": ""})
+_nmv = {"id": 78, "title": "Топки", "original_title": "Topki", "original_language": "bg",
+        "release_date": "2026-03-01", "poster_path": "/t.jpg", "vote_count": 3}
+_tl = '[["topki", "https://www.cinegrand.bg/m/topki-imdbtt0000078"]]'
+_out, _ = _tm_main([{"id": "topki", "bg": "Топки", "en": "", "year": 2026}], {"Топки": [_nmv]}, {78: {}},
+                   links=_tl, omdb=lambda i: (5.9, "120", None, None, None, {"title": "Topki", "year": 2026, "type": "movie"}) if i == "tt0000078" else _na(i))
+check("main(): TMDB's film has no IMDb id, the venue's (confirmed by OMDb's year) fills it",
+      {k: (_out.get("topki") or {}).get(k) for k in ("matched", "imdb_id", "imdb")},
+      {"matched": True, "imdb_id": "tt0000078", "imdb": 5.9})
+_out, _ = _tm_main([{"id": "topki", "bg": "Топки", "en": "", "year": 2026}], {"Топки": [_nmv]}, {78: {}},
+                   links=_tl, omdb=lambda i: (8.1, "900K", 95, 80, None, {"title": "Old Film", "year": 2008, "type": "movie"}))
+check("main(): …but not when OMDb's film for it is another year's",
+      {k: (_out.get("topki") or {}).get(k) for k in ("matched", "imdb_id", "imdb")},
+      {"matched": True, "imdb_id": None, "imdb": None})
+_ariety = {"id": 51739, "title": "Тайният свят на Ариети", "original_title": "借りぐらしのアリエッティ",
+           "original_language": "ja", "release_date": "2010-07-17", "poster_path": "/a.jpg", "vote_count": 3500}
+_out, _ = _tm_main([{"id": "arieti", "bg": "Тайният свят на Ариети", "en": "Arrietty Festival Cut", "year": 2010}],
+                   {"Тайният свят на Ариети": [_ariety]}, {51739: {"runtime": 94}})
+check("main(): the Latin title finds nothing, the Bulgarian title is tried next (all guards kept)",
+      {k: (_out.get("arieti") or {}).get(k) for k in ("matched", "tmdb_id", "via", "en")},
+      {"matched": True, "tmdb_id": 51739, "via": "bg", "en": "Arrietty Festival Cut"})
+_out, _ = _tm_main([{"id": "arieti", "bg": "Тайният свят на Ариети", "en": "Arrietty Festival Cut", "year": 1990}],
+                   {"Тайният свят на Ариети": [_ariety]}, {51739: {"runtime": 94}})
+check("main(): …and a Bulgarian-title match 20 years from the venue's year is still rejected",
+      (_out.get("arieti") or {}).get("matched"), False)
 # TMDB's bg-BG title of a verified match (tbg -> TMDBART tb)
 _out, _ = _tm_main([{"id": "nov", "bg": "Нов филм", "en": "New Film", "year": 2026}], {"New Film": [_mv]},
                    {77: {"imdb_id": "tt0000077"}}, details_bg={77: {"title": "Нов филм", "overview": "Сюжет."}})

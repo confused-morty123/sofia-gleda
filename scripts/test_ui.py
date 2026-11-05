@@ -8667,11 +8667,14 @@ def wave_p2c(browser):
         const hasImdbTmdbClass = scoreImdb ? scoreImdb.classList.contains("tmdb") : false;
         const numImdb = scoreImdb ? scoreImdb.textContent.replace(labelImdb,"").trim() : "";
 
-        // --- Test 3: neither (no IMDb, no TMDB / low votes) ---
+        // --- Test 3: neither (no IMDb, TMDB below TMDB_SHOW_MIN=10 votes, no RT / MC) ---
         testFilm.imdb = undefined;
+        const origFrt3 = testFilm.rt, origFmc3 = testFilm.mc;
+        testFilm.rt = undefined; testFilm.mc = undefined;
         if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
             TMDBART[fid].tv = 6.5;
-            TMDBART[fid].tc = 10;  // below TMDB_VOTE_MIN=50
+            TMDBART[fid].tc = 9;  // below TMDB_SHOW_MIN=10
+            delete TMDBART[fid].rt; delete TMDBART[fid].mc;
         }}
         const htmlNone = filmCard(testFilm, true);
         const divNone = document.createElement("div");
@@ -8681,7 +8684,7 @@ def wave_p2c(browser):
         const textNone = scoreNone ? scoreNone.textContent.trim() : "";
 
         // Restore
-        testFilm.imdb = origImdb;
+        testFilm.imdb = origImdb; testFilm.rt = origFrt3; testFilm.mc = origFmc3;
         if (typeof TMDBART === "object" && TMDBART && TMDBART[fid]) {{
             Object.assign(TMDBART[fid], origArt);
         }}
@@ -21223,6 +21226,210 @@ def wave_hs1(browser):
     print(f"  engine: {eng}")
 
 
+# ── RT1: ratings chips on cards and in the sheet (owner, 2026-11-04) ─────────────
+# "Оценки от IMDb" read 47.1 %; the owner wants every genuine score shown. A card shows
+# ONE chip, the first of IMDb > TMDB (from TMDB_SHOW_MIN=10 votes, with its count) >
+# Rotten Tomatoes > Metacritic, labelled with its source; the sheet shows every score
+# as a labelled tile. The IMDb label only ever carries an IMDb number, never TMDB's,
+# and no chip or tile ever shows "—" as a score.
+RT1_SHOT_DIR = Path("/Users/I589592/Downloads/Sofia Gleda/notes/design_options/ratings")
+
+RT1_SYNTH_JS = """(today) => {
+  let f = null;
+  for (const r of SHOWTIMES) { if (r[2] >= today) { f = filmById[r[0]]; if (f) break; } }
+  if (!f) return {found: false};
+  const fid = f.id, hadArt = !!TMDBART[fid];
+  const origArt = JSON.parse(JSON.stringify(TMDBART[fid] || {}));
+  const orig = {imdb: f.imdb, imdbVotes: f.imdbVotes, rt: f.rt, mc: f.mc};
+  const set = (o) => {
+    const a = Object.assign({}, origArt);
+    for (const k of ["imdb", "imdbVotes", "tv", "tc", "rt", "mc"]) delete a[k];
+    Object.assign(a, o); TMDBART[fid] = a;
+    f.imdb = undefined; f.imdbVotes = undefined; f.rt = undefined; f.mc = undefined;
+  };
+  const card = () => {
+    const d = document.createElement("div"); d.innerHTML = filmCard(f, true);
+    const c = d.querySelector(".p-top .score");
+    if (!c) return null;
+    const vis = c.querySelector("span[aria-hidden]");
+    return {label: (c.querySelector("i") || {}).textContent || "", cls: c.className,
+            vis: vis ? vis.textContent.replace(/\\s+/g, " ").trim() : "",
+            vh: (c.querySelector(".vh") || {}).textContent || "", title: c.getAttribute("title") || "",
+            text: c.textContent};
+  };
+  const sheet = () => {
+    const d = document.createElement("div"); d.innerHTML = sheetFilm(f);
+    return Array.from(d.querySelectorAll(".rtile")).map(t => ({
+      l: (t.querySelector(".rl") || {}).textContent || "",
+      v: ((t.querySelector(".rv") || {}).textContent || "").replace(/\\s+/g, ""),
+      c: ((t.querySelector(".rc") || {}).textContent || "").trim()}));
+  };
+  const out = {found: true, fid};
+  const cases = {
+    all:   {imdb: 7.4, imdbVotes: "12.5K", tv: 8.1, tc: 320, rt: 88, mc: 72},
+    tmdb:  {tv: 6.4, tc: 32},
+    tmdb10:{tv: 6.0, tc: 10},
+    tmdb9: {tv: 6.0, tc: 9},
+    rt:    {tv: 9.0, tc: 5, rt: 96},
+    mc:    {mc: 71},
+    none:  {tv: 10.0, tc: 1},
+  };
+  try {
+    for (const [k, o] of Object.entries(cases)) { set(o); out[k] = {card: card(), sheet: sheet()}; }
+  } finally {
+    if (hadArt) TMDBART[fid] = origArt; else delete TMDBART[fid];
+    Object.assign(f, orig);
+  }
+  return out;
+}"""
+
+# every upcoming film's card against the rule, re-implemented here from the raw data
+RT1_REAL_JS = """(today) => {
+  const ids = [...new Set(SHOWTIMES.filter(r => r[2] >= today).map(r => r[0]))];
+  const num = v => typeof v === "number" && isFinite(v);
+  let bad = [], shown = 0, total = 0, imdbOk = 0, labels = {};
+  for (const id of ids) {
+    const f = filmById[id]; if (!f) continue; total++;
+    const a = TMDBART[id] || {};
+    const im = a.imdb != null ? a.imdb : f.imdb, rt = a.rt != null ? a.rt : f.rt, mc = a.mc != null ? a.mc : f.mc;
+    let want = null;
+    if (num(im)) want = ["IMDb", im.toFixed(1)];
+    else if (num(a.tv) && num(a.tc) && a.tc >= 10) want = ["TMDB", a.tv.toFixed(1)];
+    else if (num(rt)) want = ["RT", Math.round(rt) + "%"];
+    else if (num(mc)) want = ["MC", String(Math.round(mc))];
+    const d = document.createElement("div"); d.innerHTML = filmCard(f, true);
+    const c = d.querySelector(".p-top .score");
+    const got = c ? [(c.querySelector("i") || {}).textContent, ((c.querySelector("span[aria-hidden]") || {}).textContent || "").trim()] : null;
+    if (got) { shown++; labels[got[0]] = (labels[got[0]] || 0) + 1; }
+    const ok = want ? (got && got[0] === want[0] && got[1].startsWith(want[1])) : !got;
+    if (!ok || (got && /—/.test(c.textContent))) bad.push(id + ": want " + JSON.stringify(want) + " got " + JSON.stringify(got));
+    if (got && got[0] === "IMDb" && num(im) && got[1] === im.toFixed(1)) imdbOk++;
+  }
+  // the cards the page itself rendered: an IMDb chip carries the film's IMDb number
+  let domBad = [], domN = 0;
+  document.querySelectorAll("#app .card[data-film]").forEach(el => {
+    const c = el.querySelector(".p-top .score"); if (!c) return;
+    const lab = (c.querySelector("i") || {}).textContent;
+    const v = ((c.querySelector("span[aria-hidden]") || {}).textContent || "").trim();
+    const f = filmById[el.dataset.film]; if (!f) return; domN++;
+    const a = TMDBART[f.id] || {}; const im = a.imdb != null ? a.imdb : f.imdb;
+    if (lab === "IMDb" && !(num(im) && v === im.toFixed(1))) domBad.push(f.id + " IMDb " + v);
+    if (lab !== "IMDb" && num(im)) domBad.push(f.id + " has IMDb but shows " + lab);
+  });
+  return {total, shown, bad, labels, domN, domBad, imdbOk};
+}"""
+
+# films for the screenshots: one per chip kind, with a poster; a sheet with all four
+RT1_PICK_JS = """(today) => {
+  const ids = [...new Set(SHOWTIMES.filter(r => r[2] >= today).map(r => r[0]))];
+  const num = v => typeof v === "number" && isFinite(v);
+  const kind = id => { const f = filmById[id] || {}, a = TMDBART[id] || {};
+    const im = a.imdb != null ? a.imdb : f.imdb, rt = a.rt != null ? a.rt : f.rt, mc = a.mc != null ? a.mc : f.mc;
+    if (num(im)) return (num(a.tv) && a.tc >= 10 && num(rt) && num(mc)) ? "all" : "imdb";
+    if (num(a.tv) && a.tc >= 10) return "tmdb"; if (num(rt)) return "rt"; if (num(mc)) return "mc"; return ""; };
+  const out = {};
+  for (const id of ids) { const k = kind(id), a = TMDBART[id] || {};
+    if (!a.p || !filmById[id]) continue;
+    if (k === "all" && !out.all) out.all = id;
+    if ((k === "imdb" || k === "all") && !out.imdb && id !== out.all) out.imdb = id;
+    if (k === "tmdb" && !out.tmdb) out.tmdb = id;
+    if (k === "rt" && !out.rt) out.rt = id; }
+  return out;
+}"""
+
+
+def _rt1_shots(page, pick, lang):
+    """3 cards (IMDb, TMDB, RT chip) and the sheet's tiles, phone 393 BG."""
+    ids = [pick.get(k) for k in ("imdb", "tmdb", "rt") if pick.get(k)]
+    page.evaluate("""(ids) => {
+      const g = document.createElement("div"); g.id = "rt1-grid"; g.className = "grid";
+      g.style.cssText = "position:fixed;left:0;top:0;right:0;z-index:2147483000;padding:16px;background:var(--ink,#0c0a0f)";
+      g.innerHTML = ids.map(id => filmCard(filmById[id], true)).join("");
+      (document.querySelector("main") || document.body).appendChild(g);
+    }""", ids)
+    page.wait_for_timeout(700)
+    RT1_SHOT_DIR.mkdir(parents=True, exist_ok=True)
+    saved = []
+    for k, el in zip([k for k in ("imdb", "tmdb", "rt") if pick.get(k)], page.query_selector_all("#rt1-grid .card")):
+        path = RT1_SHOT_DIR / f"card_{k}_393_{lang}.png"
+        el.screenshot(path=str(path))
+        saved.append(path.name)
+    page.evaluate("() => { const g = document.getElementById('rt1-grid'); if (g) g.remove(); }")
+    if pick.get("all"):
+        page.evaluate("(id) => { location.hash = 'film=' + id; }", pick["all"])
+        page.wait_for_timeout(1200)
+        r = page.query_selector(".sheet .ratings")
+        if r:
+            r.scroll_into_view_if_needed()
+            page.wait_for_timeout(400)
+            path = RT1_SHOT_DIR / f"sheet_all_scores_393_{lang}.png"
+            page.screenshot(path=str(path))
+            saved.append(path.name)
+    return saved
+
+
+def wave_rt1(browser):
+    """RT1: one labelled chip per card (IMDb > TMDB with its vote count > RT > MC), every
+    score as a labelled tile in the sheet, BG and EN; TMDB only from 10 votes; never a
+    TMDB number under the IMDb label; no "—" as a score. Real data: every upcoming film's
+    card follows the rule. Chromium and WebKit (SOFIA_BROWSER=webkit)."""
+    print("\n=== RT1: ratings chips on cards, tiles in the sheet ===")
+    eng = _hf_engine(browser)
+    ensure_shot_dir("RT1")
+    for lang in ("bg", "en"):
+        ctx, page, errs = open_page(browser, 393, 852, lang=lang, mode="cinema")
+        page.wait_for_timeout(500)
+        r = page.evaluate(RT1_SYNTH_JS, CLOCK_TODAY_ISO)
+        tag = f"rt1_{eng}_{lang}"
+        if not r.get("found"):
+            skip(tag, "no upcoming film")
+            ctx.close()
+            continue
+        vote, out10 = ("гласа", "от 10") if lang == "bg" else ("votes", "out of 10")
+        a, b = r["all"], r["tmdb"]
+        check(f"{tag}_all_card_is_imdb", a["card"] and a["card"]["label"] == "IMDb" and a["card"]["vis"] == "7.4"
+              and "tmdb" not in a["card"]["cls"], f"{a['card']}")
+        check(f"{tag}_all_card_imdb_label_never_tmdb_value", a["card"] and "8.1" not in a["card"]["text"], f"{a['card']}")
+        check(f"{tag}_all_card_sr_text", a["card"] and f"IMDb: 7.4 {out10}" in a["card"]["vh"]
+              and a["card"]["title"] == a["card"]["vh"], f"{a['card'] and a['card']['vh']!r}")
+        labels = [t["l"] for t in a["sheet"]]
+        check(f"{tag}_all_sheet_four_tiles_in_order", labels == ["IMDb", "TMDB", "Rotten Tomatoes", "Metacritic"],
+              f"{a['sheet']}")
+        check(f"{tag}_all_sheet_values", [t["v"] for t in a["sheet"]] == ["7.4/10", "8.1/10", "88%", "72/100"],
+              f"{a['sheet']}")
+        check(f"{tag}_all_sheet_vote_counts", len(a["sheet"]) == 4 and a["sheet"][0]["c"] == f"12.5K {vote}"
+              and a["sheet"][1]["c"] == f"320 {vote}", f"{a['sheet']}")
+        check(f"{tag}_tmdb_only_card", b["card"] and b["card"]["label"] == "TMDB" and "tmdb" in b["card"]["cls"]
+              and b["card"]["vis"].startswith("6.4") and b["card"]["vis"].endswith("32"), f"{b['card']}")
+        check(f"{tag}_tmdb_only_never_imdb_label", b["card"] and b["card"]["label"] != "IMDb"
+              and "IMDb" not in b["card"]["vh"] and f"32 {vote}" in b["card"]["vh"], f"{b['card']}")
+        check(f"{tag}_tmdb_only_sheet", [t["l"] for t in b["sheet"]] == ["TMDB"], f"{b['sheet']}")
+        check(f"{tag}_tmdb_10_votes_shown_9_not",
+              (r["tmdb10"]["card"] or {}).get("label") == "TMDB" and r["tmdb9"]["card"] is None
+              and not r["tmdb9"]["sheet"], f"10: {r['tmdb10']['card']}, 9: {r['tmdb9']['card']} {r['tmdb9']['sheet']}")
+        c = r["rt"]
+        check(f"{tag}_rt_when_no_imdb_and_tmdb_under_10", c["card"] and c["card"]["label"] == "RT"
+              and c["card"]["vis"] == "96%" and [t["l"] for t in c["sheet"]] == ["Rotten Tomatoes"], f"{c}")
+        m = r["mc"]
+        check(f"{tag}_mc_last", m["card"] and m["card"]["label"] == "MC" and m["card"]["vis"] == "71"
+              and [t["l"] for t in m["sheet"]] == ["Metacritic"], f"{m}")
+        check(f"{tag}_none_no_chip_no_tile", r["none"]["card"] is None and not r["none"]["sheet"], f"{r['none']}")
+        dash = [k for k, v in r.items() if isinstance(v, dict) and v.get("card") and "—" in v["card"]["text"]]
+        dash += [k for k, v in r.items() if isinstance(v, dict) and any("—" in t["v"] for t in v.get("sheet") or [])]
+        check(f"{tag}_no_dash_as_score", not dash, f"{dash}")
+        real = page.evaluate(RT1_REAL_JS, CLOCK_TODAY_ISO)
+        check(f"{tag}_real_every_card_follows_the_rule", not real["bad"],
+              f"{len(real['bad'])} of {real['total']}: {real['bad'][:4]}; chips {real['shown']}/{real['total']} {real['labels']}")
+        check(f"{tag}_real_rendered_imdb_chips_are_imdb", not real["domBad"] and real["domN"] > 0,
+              f"{real['domN']} rendered card chips; {real['domBad'][:4]}")
+        check(f"{tag}_no_js_errors", not errs, f"{errs[:2]}")
+        if lang == "bg" and eng == "chromium" and os.environ.get("SOFIA_HTML"):
+            pick = page.evaluate(RT1_PICK_JS, CLOCK_TODAY_ISO)
+            saved = _rt1_shots(page, pick, lang)
+            check(f"{tag}_screenshots", len(saved) == 4, f"{pick} -> {saved} in {RT1_SHOT_DIR}")
+        ctx.close()
+    print(f"  engine: {eng}")
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -21263,6 +21470,7 @@ WAVES = {
     "DM1": wave_dm1,
     "GA1": wave_ga1,
     "HS1": wave_hs1,
+    "RT1": wave_rt1,
 }
 
 def main():

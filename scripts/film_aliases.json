@@ -361,6 +361,44 @@
    "year": 2013,
    "director": "Абделлатиф Кешиш",
    "reason": "Дом на киното's own page (https://domnakinoto.com/sinyoto-e-topal-tsvyat-movie7336.html) prints 'Франция - Белгия - Испания, 2013 | Реж. Абделлатиф Кешиш' and the 2013 Palme d'Or: the 2013 film, shown with the Bulgarian edition of the graphic novel. The page prints no original title, so only the year (±1) and director are given. Verified 2026-11-04."
+  },
+  {
+   "titles": [
+    "Котаракът с шапка",
+    "Котаракът с шапката"
+   ],
+   "film": "kotarakat-s-shapkata",
+   "reason": "Кино Арена's own page (https://www.kinoarena.com/bg/movie/kotarakut-s-shapka) prints 'Котаракът с шапка', 107 мин., premiere 06.11.2026, directors Erica Rivinoja and Alessandro Carloni: The Cat in the Hat (2026). Cinema City lists the same premiere as /films/cat-in-the-hat, Cine Grand as 'Котаракът с шапката' (imdb tt2321555, 2026, 107 min); both records matched the same TMDB film. Verified 2026-11-04."
+  },
+  {
+   "titles": [
+    "Безсмъртният и красавицата 2",
+    "Безсмъртният и красавицата 2: Еликсир на живота"
+   ],
+   "film": "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota",
+   "reason": "One film, How to Save the Immortal 2: Elixir of Life (2026, 80 min, animation): Cinema City's page for the short title is /films/how-to-save-the-immortal-2, Cineland's cineland.bg/bg/movie/how-to-save-the-immortal-2-elexir-of-life/, and Кино Арена lists the long title as /bg/movie/how-to-save-the-immortal-2-elixir-of-life. Verified 2026-11-04."
+  },
+  {
+   "titles": [
+    "Обетована земя",
+    "Обетованата земя",
+    "40.Киномания: Обетованата земя"
+   ],
+   "film": "obetovana-zemya",
+   "venues": [
+    "dom-kino"
+   ],
+   "year": 1974,
+   "director": "Анджей Вайда",
+   "reason": "One screening, Дом на киното 10.11.2026 19:00: Киномания's own page (https://www.kinomania.bg/bg_BG/film/obetovana-zemya-3911.html) prints 'Обетована земя, Режисьор: Анджей Вайда, 1974, 179 минути' and Дом на киното's (https://domnakinoto.com/40kinomaniya-obetovanata-zemya-movie7374.html) '40.Киномания: Обетованата земя, 179', Полша, 1974, Реж. Анджей Вайда'. Neither prints the original title, so only the year (±1) and director are given. Verified 2026-11-04."
+  },
+  {
+   "titles": [
+    "Тайният свят на Ариети",
+    "ТАЙНИЯТ СВЯТ НА АРИЕТИ"
+   ],
+   "film": "tayniyat-svyat-na-arieti",
+   "reason": "One film, The Secret World of Arrietty (Studio Ghibli, 2010): Cinema City lists 'Тайният свят на Ариети' (93 min), matched to TMDB 51739 Arrietty (2010) with IMDb 7.6; Cineland's listing (scraped into cinema_films.json; page https://cineland.bg/bg/movie/the-secret-world-of-arriety/, og:title 'ТАЙНИЯТ СВЯТ НА АРИЕТИ') gives 94 min, 2010 and the original title 'THE SECRET WORLD OF ARRIETY', which TMDB's search does not find with that spelling). Verified 2026-11-05."
   }
  ]
 }
