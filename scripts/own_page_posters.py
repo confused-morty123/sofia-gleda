@@ -19,7 +19,9 @@ another production's image (the hard rule after the 23 wrong posters of
      poster slot) in portrait shape;
   2. the theatre's key image for the show in another shape (still its own art);
   3. a production photo from the page's own gallery: the most poster-like one
-     (closest to portrait, at least 600 px on the long side, croppable); never
+     (closest to portrait, at least 600 px on the long side, croppable), and only
+     with positive evidence (photo_evidence: the main article's first image, or a
+     gallery / lightbox link of the page with no link to another of its pages); never
      one from a site-wide popup, <nav> or <footer> (2026-11-04: Cineland's
      "лев → €" banner sat in a popup and was attached to a film);
   4. nothing: the app keeps its generated art.
@@ -330,7 +332,7 @@ _LOCALE_SEG_RE = re.compile(r"^(?:bg|en|de|fr|ru|bg_bg|en_us|en_gb)$", re.I)
 RELATED_HEAD_RE = re.compile(
     r"^(?:още от репертоара|още спектакли|още представления|още заглавия|още филми|още събития|"
     r"други спектакли|други представления|други заглавия|други филми|други събития|"
-    r"вижте още|виж още|предстоящи|предстоящо|репертоар|може да харесате|"
+    r"вижте още|виж още|предстоящи|предстоящо|репертоар|може да харесате|свързани \w+|подобни \w+|"
     r"може да ви харесат?|препоръч\w*|подобни|"
     r"repertoire|related|you may also like|you might also like|see also|similar|"
     r"other (?:shows|performances|plays|events|films|movies)|upcoming|recommended)\b|"
@@ -561,11 +563,14 @@ def foreign_images(html, base, other_titles=()):
                 out.add(_abs(m.group(1), base))
                 out.add(_abs(bigger(m.group(1)), base))
                 break
-    others = {t for t in other_titles if len(t) >= 4}
+    # an <img> whose alt names another listed title (4+ letters) as words:
+    # "Сцена от „Ревизор“" is Ревизор's, not the page's
+    others = [t for t in other_titles if len(t) >= 4]
     if others:
         for tag in _IMG_TAG_RE.findall(html):
             a, sm = _ALT_RE.search(tag), _SRC_RE.search(tag)
-            if a and sm and norm_title(a.group(1)) in others:
+            alt = norm_title(a.group(1)) if a else ""
+            if alt and sm and any(re.search(r"(?<!\w)" + re.escape(t) + r"(?!\w)", alt) for t in others):
                 out.add(_abs(sm.group(1), base))
                 out.add(_abs(bigger(sm.group(1)), base))
     for u in _adjacent_foreign(html, base, other_titles) | _related_foreign(html, base, other_titles):
@@ -602,6 +607,180 @@ def strip_site_blocks(html):
                           '[data-elementor-type="footer"], footer, nav'):
         el.decompose()
     return str(soup)
+
+
+# ---- tier-2 photos: POSITIVE evidence only (owner 2026-11-05, poster fix 3) ----
+# Excluding the blocks that are known to be another production's (above) still let
+# through whatever no rule had named yet: a list item with an empty alt and a link
+# to Ревизор, a lazy swiper (data-bg / data-srcset), WordPress "Свързани публикации"
+# with root-level permalinks (/revizor/) and background thumbnails, Jetpack's
+# jp-relatedposts. Now an image that is not the page's key image (tier 1) is a
+# photo of the title only with positive evidence:
+#   (a) it is the main article's first content image, above any repeated-card,
+#       slider or related block (main_content: <main>, role=main, its one <article>,
+#       #content / #main, .entry-content), or
+#   (b) it sits in a photo GALLERY of the page: a container whose class / id or
+#       heading marks one (GALLERY_MARK_RE, GALLERY_HEAD_RE), or an <a> wrapping it
+#       that points to an image file (a lightbox link), and that container holds no
+#       link to another HTML page of the same site.
+# Whatever the evidence, an image is refused when its nearest repeated-card
+# container (li, article, .col*, .card, .item, .slide; not one holding the page's
+# <h1>) links to another HTML page of the same site, when it sits in a slider /
+# carousel not marked as a gallery, under a related block, or inside a link to
+# another HTML page of the site.
+GALLERY_MARK_RE = re.compile(
+    r"galler|galeri|галери|снимк|фото|(?:^|[\s_-])photos?(?:$|[\s_-])|lightbox|fancybox|swipebox|"
+    r"magnific|wp-block-gallery|(?:^|\s)ngg-|envira", re.I)
+GALLERY_HEAD_RE = re.compile(
+    r"^(?:галерия|фотогалерия|фото ?галерия|снимки|фото|фотографии|кадри от спектакъла|"
+    r"gallery|photo gallery|photos|pictures)\b", re.I)
+CARD_CLASS_RE = re.compile(r"(?:^|\s)(?:col(?:-[\w-]+)?|[\w-]*card[\w-]*|[\w-]*item[\w-]*|[\w-]*slide[\w-]*)(?=\s|$)", re.I)
+_IMG_ATTRS_RE = re.compile(r"^(?:src|href|poster|data-[\w-]+)$", re.I)
+
+
+def other_page(href, base):
+    """True when href is another HTML page of the page's own site (any path but the
+    page itself, a page under it, the same page in another language, or a file)."""
+    href = (href or "").strip().replace("&amp;", "&")
+    if not href or href.startswith(("#", "javascript:", "mailto:", "tel:", "data:")):
+        return False
+    tgt = urllib.parse.urlsplit(urllib.parse.urljoin(base, href))
+    here = urllib.parse.urlsplit(base)
+    if tgt.scheme not in ("http", "https"):
+        return False
+    if (tgt.hostname or "").lower().removeprefix("www.") != (here.hostname or "").lower().removeprefix("www."):
+        return False
+    if IMG_EXT_RE.search(tgt.path) or re.search(r"\.(?:gif|svg|pdf|mp4|webm|mp3|zip|docx?)$", tgt.path, re.I):
+        return False
+    hs, ts = _segs(here.path), _segs(tgt.path)
+    if ts == hs or (hs and ts[:len(hs)] == hs) or (hs and ts and ts[-1] == hs[-1]):
+        return False
+    return True
+
+
+def _el_image_refs(el):
+    """Image URLs an element names itself (not its children): src, href, poster,
+    data-*, (data-)srcset, a style's url(…)."""
+    out = []
+    for k, v in (el.attrs or {}).items():
+        if isinstance(v, list):
+            v = " ".join(v)
+        if not isinstance(v, str):
+            continue
+        kl = k.lower()
+        if kl.endswith("srcset"):
+            out += [x.strip().split(" ")[0] for x in v.split(",") if x.strip()]
+        elif kl == "style":
+            out += [m.group(1) for m in _URLCSS_RE.finditer(v)]
+        elif _IMG_ATTRS_RE.match(kl):
+            if kl == "href" and el.name != "a":
+                continue
+            out.append(v.strip())
+    return [u for u in out if u and (IMG_EXT_RE.search(u) or "kimo_images" in u)]
+
+
+def photo_evidence(html, base, other_titles=()):
+    """{image URL: "(a) …" | "(b) …"} for the images of the page that are a photo of
+    the title by positive evidence (see GALLERY_MARK_RE above), and the set of image
+    URLs refused on structure (cards linking another page, sliders, related blocks)."""
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(_STYLE_BLOCK_RE.sub(" ", html), "html.parser")
+    for el in soup.find_all(["script", "noscript", "template"]):
+        if el.name != "noscript":
+            el.decompose()
+    h1s = soup.find_all("h1")
+    related = set(map(id, related_blocks(soup, base, other_titles)))
+
+    def holds_h1(el):
+        return any(el is h or el in h.parents for h in h1s)
+
+    def links_other(el):
+        if el.name == "a" and other_page(el.get("href"), base):
+            return True
+        return any(other_page(a.get("href"), base) for a in el.find_all("a", href=True))
+
+    def is_card(el):
+        if holds_h1(el):
+            return False
+        if el.name == "article":          # a repeated one; the page's single <article> is the page
+            return el.find_next_sibling("article") is not None or el.find_previous_sibling("article") is not None
+        return el.name == "li" or bool(CARD_CLASS_RE.search(" ".join(el.get("class") or [])))
+
+    def gallery_marked(el):
+        return bool(GALLERY_MARK_RE.search(_cls(el))) or id(el) in gal_regions
+
+    # regions after a heading such as "Галерия" (up to the next heading of its rank)
+    gal_regions = set()
+    for h in soup.find_all(True):
+        if not _is_heading(h) or not GALLERY_HEAD_RE.match(_head_text(h)):
+            continue
+        rank = int(h.name[1]) if h.name in _HEADING_TAGS else 7
+        for sib in h.find_next_siblings(True):
+            first = sib if _is_heading(sib) else None
+            if first is not None and (int(first.name[1]) if first.name in _HEADING_TAGS else 7) <= rank:
+                break
+            gal_regions.add(id(sib))
+
+    def chain(el):
+        node = el
+        while node is not None and getattr(node, "name", None) not in (None, "[document]", "body", "html"):
+            yield node
+            node = node.parent
+
+    def refused(el):
+        """Why an element's image is not this title's on structure, or None."""
+        anc = list(chain(el))
+        for i, a in enumerate(anc):
+            if id(a) in related or RELATED_CLASS_RE.search(_cls(a)):
+                return "a related block"
+            if a.name == "a" and other_page(a.get("href"), base):
+                return "inside a link to another page"
+            if SLIDER_CLASS_RE.search(_cls(a)) and not any(gallery_marked(x) for x in anc[i:]):
+                return "a slider not marked as a gallery"
+        card = next((a for a in anc if is_card(a)), None)
+        if card is not None and links_other(card):
+            return "a card linking another page"
+        return None
+
+    ev, bad = {}, set()
+    # (b) galleries and lightbox links
+    for el in soup.find_all(True):
+        refs = _el_image_refs(el)
+        if not refs:
+            continue
+        why = refused(el)
+        if why:
+            bad.update(refs)
+            continue
+        anc = list(chain(el))
+        g = next((a for a in anc if gallery_marked(a)
+                  or (a.name == "a" and IMG_EXT_RE.search(a.get("href") or ""))), None)
+        if g is None or links_other(g):
+            continue
+        how = "(b) a lightbox link" if g.name == "a" and not gallery_marked(g) else "(b) the page's gallery"
+        for u in refs:
+            ev.setdefault(u, how)
+    # (a) the main article's first content image, above any card / slider / related block
+    main = None
+    for sel in ("main", '[role="main"]', "article", "#content", "#main", ".entry-content", ".post-content"):
+        found = soup.select(sel)
+        if len(found) == 1:
+            main = found[0]
+            break
+    if main is not None:
+        for el in main.find_all(True):
+            if el is not main and (is_card(el) or SLIDER_CLASS_RE.search(_cls(el)) or id(el) in related
+                                   or RELATED_CLASS_RE.search(_cls(el))
+                                   or (_is_heading(el) and RELATED_HEAD_RE.match(_head_text(el)))):
+                break
+            if el.name != "img":
+                continue
+            refs = _el_image_refs(el)
+            if refs:
+                if not refused(el):
+                    ev.setdefault(refs[0], "(a) the main article's first image")
+                break
+    return ev, bad
 
 
 def candidates(html, base, other_titles=()):
@@ -691,12 +870,33 @@ def candidates(html, base, other_titles=()):
                 add(a, 1, "the theatre's poster slot")
     if host in ("theatre.art.bg",):
         return out                    # its other images are the cast's headshots
-    # tier 2 (a photo) only from the page's main content area, when it marks one;
-    # images of other productions (foreign_images) are already in `seen`
+    # tier 2 (a photo) ONLY with positive evidence (photo_evidence): the main
+    # article's first image (a) or the page's own gallery / a lightbox link (b).
+    # A file named after the page's slug (or as a poster, POSTER_NAME_HOSTS) is the
+    # title's art (tier 1) unless its place on the page says another's.
+    def key(u):
+        return _abs(bigger(u) if "kimo_images" not in (u or "") else u, base)
+    ev, bad = photo_evidence(html, base, other_titles)
+    ev = {key(u): how for u, how in ev.items() if key(u)}
+    bad = {key(u) for u in bad} - {None}
+    tier2 = []
     main = main_content(html)
     for a in attrs_of(main if main is not None else html):
-        add(a, 2, "gallery")
-    return [c for c in out if c[1] == 1] + [c for c in out if c[1] == 2]
+        if key(a) in bad:
+            continue
+        n = len(out)
+        add(a, 2, ev.get(key(a), "a file on the page"))
+        if len(out) > n and out[-1][1] == 2:
+            tier2.append(out.pop())
+    for a, how in ev.items():
+        if a not in bad:
+            n = len(out)
+            add(a, 2, how)
+            if len(out) > n and out[-1][1] == 2:
+                tier2.append(out.pop())
+    # (a) before (b), each in page order; never one without evidence
+    tier2 = [c for c in tier2 if c[2].startswith("(a)")] + [c for c in tier2 if c[2].startswith("(b)")]
+    return [c for c in out if c[1] == 1] + tier2
 
 
 # ------------------------------------------------------------ title sanity check
