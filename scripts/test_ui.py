@@ -16076,9 +16076,13 @@ def wave_lg1(browser):
     check("lg1_no_layout_shift", all(abs(a - b) < 0.5 for a, b in zip(shift, shift2)), f"{shift} -> {shift2}")
 
     print("\n=== LG1: the choice persists; the footer ===")
+    rec_before = _lg_record(page)
+    wait_settled(page)                  # the notice's exit has finished before the reload
     page.reload()
     page.wait_for_selector(".bar", timeout=20000)
-    check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"], "")
+    wait_page_idle(page)
+    check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"],
+          f"record before the reload={rec_before} after={_lg_record(page)} url={page.url[-40:]}")
     _lg_scroll_to_footer(page)
     ft = page.evaluate(_LG_FOOTER)
     save_shot(page, wave, "desktop_bg_footer")
