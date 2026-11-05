@@ -4181,6 +4181,190 @@ with __import__("tempfile").TemporaryDirectory() as _dpf:
                       _netR.outcome, _dtb2.date(2026, 11, 5))[0], PF.BLOCKED)
 OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_pf
 
+# ---- poster fix 2 (skeptic findings 2026-11-05): another production's image, robots.txt ----
+print("poster fix: another production's images on a title's page are never its photo; robots.txt per RFC 9309")
+_save_pf2 = (OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store)
+with __import__("tempfile").TemporaryDirectory() as _dpf2:
+    _dpf2p = pathlib.Path(_dpf2)
+    OPP.THEATRE_JSON, OPP.POSTERS_DIR = _dpf2p / "tp.json", _dpf2p / "posters"
+    OPP.store = lambda data, name: (f"posters/{name}.jpg", __import__("hashlib").md5(data).hexdigest())
+    _ch = "https://teatar.example.bg/spektakli/chayka"
+    _chT, _chL = {"show:chayka": "Чайка"}, {"show:chayka": [_ch]}
+    _bn = [f"https://teatar.example.bg/uploads/banners/sezon-{i}.jpg" for i in range(6)]
+    _rev = "https://teatar.example.bg/uploads/repertoar/revizor-scena.jpg"
+    _hamlet = "https://teatar.example.bg/uploads/repertoar/hamlet.jpg"
+    _own_ph = "https://teatar.example.bg/uploads/gallery/chayka-scena-01.jpg"
+    _head = ("<html><head><title>Чайка | Театър</title>"
+             + "".join(f'<meta property="og:image" content="{b}">' for b in _bn) + "</head><body><h1>Чайка</h1>"
+             "<p>Пиеса в четири действия.</p>")
+    _imgs2 = {**{b: _jpgb2(1200, 300, "gray") for b in _bn}, _rev: _jpgb2(1200, 800, "red"),
+              _hamlet: _jpgb2(900, 1300, "blue"), _own_ph: _jpgb2(1200, 800, "green")}
+
+    def _deep(page, titles=_chT):
+        _s = {"shows": {}, "films": {}, "misses": {}}
+        _n = _NetPF({_ch: page}, _imgs2)
+        _sum, _ = PF.fix_titles(["show:chayka"], titles, _chL, _n, _s, _dtb2.date(2026, 11, 5), sleep=lambda s: None)
+        return (_s["shows"].get("chayka") or {}).get("img"), PF.attached(_sum), _n.requested
+
+    # 1. the "Още от репертоара" slide: a CSS background-image, then a link to Ревизор (not on stage)
+    _slide = (_head + '<h2>Още от репертоара</h2><div class="slides">'
+              f"<div class=\"slide\" style=\"background-image:url('{_rev}')\"></div>"
+              '<a href="/spektakli/revizor">Ревизор</a></div></body></html>')
+    _rD = _deep(_slide)
+    check("poster fix: Чайка's page with six 1200x300 banners and a 'more from the repertoire' slide "
+          "(a CSS background-image of Ревизор, a title not on stage) → nothing attached, Ревизор's photo never requested",
+          (_rD[0], _rD[1], _rev in _rD[2]), (None, 0, False))
+    # the same slide with no heading and no class: the link right after the image alone decides
+    _bare = (_head + f"<div style=\"background-image:url('{_rev}')\"></div>"
+             '<a href="/spektakli/revizor">Ревизор</a></body></html>')
+    check("…the same slide with no heading and no class: the image right before a link to another show page is that show's",
+          [u for u, _, _ in OPP.candidates(_bare, _ch, set())], _bn)
+    # 2. a plain <img alt=""> followed by a link naming a title not on stage
+    _plain = (_head + f'<div class="item"><img src="{_hamlet}" alt=""><br>'
+              '<a href="/spektakli/hamlet">Хамлет</a></div></body></html>')
+    _rP = _deep(_plain)
+    check("poster fix: a plain <img alt=\"\"> followed by a link to Хамлет (not on stage) → not Чайка's, never requested",
+          (_rP[0], _rP[1], _hamlet in _rP[2]), (None, 0, False))
+    check("…and the other direction: a link to another show, then its image right after",
+          [u for u, _, _ in OPP.candidates(_head + '<a href="/spektakli/hamlet">Хамлет</a><span>'
+                                           f'<img src="{_hamlet}"></span></body></html>', _ch, set())], _bn)
+    # 3. a title not on stage, on a site whose show pages sit at the root (/name___id, sfumato.info's shape)
+    _sf = "https://sfumato.example.bg/антитъга___7187"
+    _sfp = ("<html><head><title>Антитъга</title></head><body><h1>Антитъга</h1>"
+            f'<img src="https://sfumato.example.bg/img/photos/BIGrevizor.jpg"><a href="/ревизор___4321">Ревизор</a>'
+            '<div class="gallery"><img src="https://sfumato.example.bg/img/photos/BIG7187a.jpg"></div></body></html>')
+    check("…on a site whose show pages are root-level (/антитъга___7187), a link of the same id shape is "
+          "another show page; a link to /kontakti is not",
+          ([u.rsplit("/", 1)[-1] for u, _, _ in OPP.candidates(_sfp, _sf, set())],
+           OPP.show_link("/ревизор___4321", _sf), OPP.show_link("/kontakti", _sf),
+           OPP.show_link("/repertoires/109/revizor", "https://t.bg/repertoires/10/chayka"),
+           OPP.show_link("/spektakli", _ch), OPP.show_link("/spektakli/chayka/galeria", _ch),
+           OPP.show_link("/uploads/x.jpg", _ch), OPP.show_link("https://drug.bg/spektakli/x", _ch)),
+          (["BIG7187a.jpg"], True, False, True, False, False, False, False))
+    # related containers: by class (no link at all), a slider of other shows, a heading
+    _rel = (_head + f'<section class="related-shows"><img src="{_hamlet}"></section>'
+            f'<div class="owl-carousel"><div class="item"><img src="{_rev}"></div><p>…</p>'
+            '<a href="/spektakli/revizor" class="btn">Виж</a></div></body></html>')
+    check("…a block whose class says related (no link inside) and a carousel that links another show page: "
+          "none of their images",
+          [u for u, _, _ in OPP.candidates(_rel, _ch, set())], _bn)
+    _hd = (_head + '<div class="box"><div class="box-title"><h3>Вижте още</h3></div>'
+           f'<div class="grid"><img src="{_hamlet}"><p>Хамлет</p></div></div></body></html>')
+    check("…everything after a heading 'Вижте още' (up to the next heading of its rank), even with no link",
+          [u for u, _, _ in OPP.candidates(_hd, _ch, set())], _bn)
+    # 4. positive: the production's own gallery on its page still yields a photo, with a related slider after it
+    _gal = (_head + '<div class="gallery owl-carousel">'
+            f'<a href="{_own_ph}"><img src="{_own_ph}"></a></div>'
+            '<h2>Още от репертоара</h2><div class="slides">'
+            f"<div class=\"slide\" style=\"background-image:url('{_rev}')\"></div>"
+            '<a href="/spektakli/revizor">Ревизор</a></div></body></html>')
+    _rG = _deep(_gal)
+    check("poster fix: a real gallery of the production on its page (a carousel marked as a gallery, no link to "
+          "another show) still yields a photo; the repertoire slide after it does not",
+          (_rG[0], _rG[1], _rev in _rG[2]), (_own_ph, 1, False))
+    # tier-2 photos only from the page's main content area
+    _mn = (_head.replace("<body><h1>Чайка</h1>", "<body><aside>" f'<img src="{_hamlet}"></aside><main><h1>Чайка</h1>')
+           + f'<figure><img src="{_own_ph}"></figure></main></body></html>')
+    check("…a page that marks its main content: a photo only from inside it (not an aside's picture)",
+          [u for u, t, _ in OPP.candidates(_mn, _ch, set()) if u not in _bn], [_own_ph])
+    # the nightly harvest applies the same exclusion
+    _sNN = {"shows": {}, "films": {}, "misses": {}}
+    _nNN = _NetPF({_ch: _slide.replace('<h2>Още от репертоара</h2>', '')}, _imgs2)
+    _saveMI, OPP.MAX_IMAGES_PER_TITLE = OPP.MAX_IMAGES_PER_TITLE, 12
+    try:
+        OPP.harvest({"show:chayka"}, _chT, _chL, _nNN, _sNN, _dtb2.date(2026, 11, 5))
+    finally:
+        OPP.MAX_IMAGES_PER_TITLE = _saveMI
+    check("…the nightly own-page harvest applies it too (even with 12 images allowed): nothing for Чайка, "
+          "Ревизор's photo never requested", ("chayka" in _sNN["shows"], _rev in _nNN.requested), (False, False))
+OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_pf2
+
+# robots.txt (RFC 9309 §2.3.1): 4xx allows everything, 5xx / no answer disallows the host for the run
+
+
+class _FakeFetch:
+    """netfetch.Fetcher stand-in: answers by URL, keeps netfetch's log records."""
+
+    def __init__(self, answers, calls):
+        self.answers, self.calls, self.log = answers, calls, []
+
+    def get(self, url, attempts=None, accept=None, **kw):
+        self.calls.append(url)
+        a = self.answers.get(url, ("ok", b"PAGE"))
+        if a[0] == "ok":
+            self.log.append({"url": url, "status": 200, "error": None, "blocked": None})
+            return OPP._Resp(a[1])
+        if a[0] == "status":
+            self.log.append({"url": url, "status": a[1], "error": f"HTTP {a[1]}",
+                             "blocked": a[2] if len(a) > 2 else None})
+            return None
+        self.log.append({"url": url, "status": None, "error": a[1], "blocked": None})
+        return None
+
+
+_save_gap = OPP.HOST_GAP
+OPP.HOST_GAP = 0.0
+try:
+    _rcalls = []
+    _ans = {"https://r503.bg/robots.txt": ("status", 503), "https://r404.bg/robots.txt": ("status", 404),
+            "https://rnet.bg/robots.txt": ("err", "ConnectionError: refused"),
+            "https://r403.bg/robots.txt": ("status", 403, "HTTP 403"),
+            "https://r429.bg/robots.txt": ("status", 429),
+            "https://rcf.bg/robots.txt": ("status", 403, "challenge page (cloudflare, HTTP 403)"),
+            "https://rok.bg/robots.txt": ("ok", b"User-agent: *\nDisallow: /private\n")}
+    _rnet = OPP.Net(budget=60)
+    _rnet._mk = lambda: _FakeFetch(_ans, _rcalls)
+    _got = {h: _rnet.get(f"https://{h}/show/a") is not None
+            for h in ("r503.bg", "r404.bg", "rnet.bg", "r403.bg", "r429.bg", "rcf.bg", "rok.bg")}
+    _got["rok.bg/private"] = _rnet.get("https://rok.bg/private/x") is not None
+    _rnet.get("https://r503.bg/show/b")
+    check("robots.txt: 404 or 403 allows everything; 5xx, 429, a challenge page or no answer disallows the host "
+          "for the run (RFC 9309); a robots.txt that loads is obeyed",
+          _got, {"r503.bg": False, "r404.bg": True, "rnet.bg": False, "r403.bg": True, "r429.bg": False,
+                 "rcf.bg": False, "rok.bg": True, "rok.bg/private": False})
+    check("…no page of an unreachable host is requested, robots.txt is asked once per host, and the cause is recorded",
+          ([u for u in _rcalls if "r503.bg" in u], sorted(_rnet.robots_unreachable),
+           _rnet.robots_unreachable.get("r503.bg"), _rnet.robots_unreachable.get("rnet.bg", "")[:40]),
+          (["https://r503.bg/robots.txt"], ["r429.bg", "r503.bg", "rcf.bg", "rnet.bg"],
+           "robots.txt unreachable (HTTP 503)", "robots.txt unreachable (ConnectionError:"))
+    # the deep pass: how the request ended, its cause, not retried
+    _fnet = PF.make_net(60, 50)
+    _fnet._mk = lambda: _FakeFetch(_ans, [])
+    _fnet.get("https://r503.bg/show/a")
+    _lk5 = {"show:a": ["https://r503.bg/show/a"]}
+    _src5 = {"shows": {}, "films": {}, "misses": {"show:a": {"why": ["page not read: https://r503.bg/show/a"]}}}
+    check("poster fix: a host whose robots.txt answered 503 → outcome 'robots: robots.txt unreachable (HTTP 503)', "
+          "cause ROBOTS_UNREACHABLE, not retried",
+          (_fnet.outcome.get("https://r503.bg/show/a"),
+           PF.diagnose("show:a", "no image: the generated art shows", _lk5, _src5, _fnet.outcome, _dtb2.date(2026, 11, 5))[0],
+           PF._retryable("show:a", _src5, _fnet.outcome, _lk5)),
+          ("robots: robots.txt unreachable (HTTP 503)", PF.ROBOTS_UNREACHABLE, False))
+finally:
+    OPP.HOST_GAP = _save_gap
+
+# the nightly theatre-poster step's PoliteFetcher follows the same rule
+_pcalls, _p_orig = [], _NF.Fetcher.get
+
+
+def _p_get(self, url, *a, **k):
+    _pcalls.append(url)
+    st = {"https://p503.bg/robots.txt": 503, "https://p404.bg/robots.txt": 404}.get(url)
+    if st:
+        self.log.append({"url": url, "status": st, "error": f"HTTP {st}", "blocked": None})
+        return None
+    return "PAGE"
+
+
+try:
+    _NF.Fetcher.get = _p_get
+    _pf2 = FTP.PoliteFetcher(verbose=False)
+    check("PoliteFetcher: robots.txt 503 → the host is not read this run (recorded); 404 → everything allowed",
+          (_pf2.get("https://p503.bg/a"), _pf2.get("https://p503.bg/b"), _pf2.get("https://p404.bg/a"),
+           [u for u in _pcalls if "p503" in u], _pf2.robots_unreachable),
+          (None, None, "PAGE", ["https://p503.bg/robots.txt"], {"p503.bg": "robots.txt unreachable (HTTP 503)"}))
+finally:
+    _NF.Fetcher.get = _p_orig
+
 _dd = _dtb2.date(2026, 11, 5)
 _srcD = {"shows": {"held": {"img": "x", "pending": {"img": "https://a.bg/new.jpg", "on": "2026-11-04"}},
                    "ripe": {"img": "y", "pending": {"img": "https://a.bg/ripe.jpg", "on": "2026-11-01"}}},

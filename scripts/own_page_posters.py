@@ -137,6 +137,7 @@ class Net:
         self.t_end = time.monotonic() + budget
         self.verbose = verbose
         self.fetched = self.cached = self.refused = 0
+        self.robots_unreachable = {}           # host -> why its robots.txt did not count
 
     def _fetcher(self):
         f = getattr(self._local, "f", None)
@@ -155,20 +156,36 @@ class Net:
         return d / hashlib.sha1(url.encode("utf-8")).hexdigest()
 
     def _allowed(self, url):
+        """robots.txt per host, read once per run (RFC 9309 §2.3.1): a 4xx answer
+        (404 included) allows everything; a 5xx, a challenge page or no answer at all
+        disallows the whole host for this run (self.robots_unreachable records why)."""
         import urllib.robotparser
         p = urllib.parse.urlsplit(url)
         host = (p.hostname or "").lower()
         with self._robots_lock:
             rp = self._robots.get(host)
         if rp is None:
+            if self.over_budget():
+                return True                 # no request will be made anyway; robots.txt not judged
+            robots_url = f"{p.scheme or 'https'}://{p.hostname}/robots.txt"
+            f = self._fetcher()
+            n = len(getattr(f, "log", []) or [])
+            r = self._raw(robots_url, "robots")
+            body, why = robots_verdict(r, (f.log[-1] if len(getattr(f, "log", []) or []) > n else {}))
             rp = urllib.robotparser.RobotFileParser()
-            r = self._raw(f"{p.scheme or 'https'}://{p.hostname}/robots.txt", "robots")
-            rp.parse((r.content.decode("utf-8", "replace") if r is not None else "").splitlines())
-            delay = rp.crawl_delay("*")
+            if why:
+                rp.disallow_all = True
+            else:
+                rp.parse(body.splitlines())
+            delay = None if why else rp.crawl_delay("*")
             with self._robots_lock:
                 self._robots[host] = rp
+                if why:
+                    self.robots_unreachable[host] = why
                 if delay:
                     self._robots[host + "#delay"] = float(delay)
+            if why and self.verbose:
+                print(f"  {host}: {why}; not read this run", file=sys.stderr)
         return rp.can_fetch("*", url)
 
     def _gap(self, host):
@@ -202,6 +219,9 @@ class Net:
                 print(f"  robots.txt disallows {url[:90]}", file=sys.stderr)
             return None
         return self._raw(url, kind)
+
+
+from netfetch import ROBOTS_UNREACHABLE, robots_verdict   # noqa: E402,F401  (shared with PoliteFetcher)
 
 
 def decode(content):
@@ -248,6 +268,7 @@ _CONTENT_RE = re.compile(r"""content=["']([^"']+)["']""", re.I)
 _JSONLD_IMG_RE = re.compile(r'"image"\s*:\s*(?:\[\s*)?"([^"]+)"')
 _QUOTED_IMG_RE = re.compile(r"""\(\s*['"](https?://[^'"\s]+?\.(?:jpe?g|png|webp))['"]""", re.I)
 _SRCSET_RE = re.compile(r"""srcset=["']([^"']+)["']""", re.I)
+_STYLE_BLOCK_RE = re.compile(r"<style\b.*?</style\s*>", re.I | re.S)
 
 
 def _abs(u, base):
@@ -284,12 +305,236 @@ _ALT_RE = re.compile(r"""\balt=["']([^"']*)["']""", re.I)
 _SRC_RE = re.compile(r"""\b(?:src|data-src|data-lazy-src)=["']([^"']+)["']""", re.I)
 
 
+# ---- images that are another production's (2026-11-05 skeptic findings) ----
+# A show page's "Още от репертоара" slider: <div class="slide" style="background-
+# image:url('…/revizor-scena.jpg')"></div><a href="/spektakli/revizor">Ревизор</a>
+# put Ревизор's scene photo on Чайка. Rules (a missing image is acceptable, a wrong
+# one is not): an image inside a link to another show page of the same site, or
+# with nothing link-like or image-like between it and such a link (ADJACENT_MAX
+# characters at most, either side; a block marked as a gallery opening between
+# them separates them), is that show's; so is every image under a
+# related / teaser block (its class or id, or a heading such as "Още от
+# репертоара" before it).
+ADJACENT_MAX = 300
+_IMG_REF_RES = (
+    re.compile(r"""\b(?:src|data-[\w-]+|href|content|poster)\s*=\s*["']([^"']+)["']""", re.I),
+    re.compile(r"""url\(\s*(?:&quot;|["'])?([^"')&]+?)(?:&quot;|["'])?\s*\)""", re.I),
+    re.compile(r"""\(\s*['"](https?://[^'"\s]+?\.(?:jpe?g|png|webp))['"]""", re.I),
+)
+_SRCSET_ANY_RE = re.compile(r"""\b(?:data-)?srcset\s*=\s*["']([^"']+)["']""", re.I)
+_A_SPAN_RE = re.compile(r"""<a\b[^>]*?\bhref\s*=\s*["']([^"'#]*)["'][^>]*>(.{0,3000}?)</a\s*>""", re.I | re.S)
+_LINKISH_RE = re.compile(r"<a\b|</a\s*>", re.I)
+# a block marked as a gallery opening between an image and a link separates them
+_GALLERY_OPEN_RE = re.compile(r"""<\w+\b[^>]*\b(?:class|id)\s*=\s*["'][^"']*(?:galler|galeri|снимк)""", re.I)
+_LOCALE_SEG_RE = re.compile(r"^(?:bg|en|de|fr|ru|bg_bg|en_us|en_gb)$", re.I)
+RELATED_HEAD_RE = re.compile(
+    r"^(?:още от репертоара|още спектакли|още представления|още заглавия|още филми|още събития|"
+    r"други спектакли|други представления|други заглавия|други филми|други събития|"
+    r"вижте още|виж още|предстоящи|предстоящо|репертоар|може да харесате|"
+    r"може да ви харесат?|препоръч\w*|подобни|"
+    r"repertoire|related|you may also like|you might also like|see also|similar|"
+    r"other (?:shows|performances|plays|events|films|movies)|upcoming|recommended)\b|"
+    r"^(?:още|more|още от \w+|more from \w+)$", re.I)
+RELATED_CLASS_RE = re.compile(
+    r"related|teaser|similar|recommend|see-?also|you-?may|others?(?:$|[-_])|"
+    r"(?:^|[-_])other[-_]|(?:^|[-_])more[-_](?:shows|events|plays|performances|films)", re.I)
+SLIDER_CLASS_RE = re.compile(r"slider|carousel|swiper|slick|owl|splide|glide", re.I)
+GALLERY_CLASS_RE = re.compile(r"galler|galeri|photos?(?:$|[-_])|снимк", re.I)
+_HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
+_PSEUDO_HEAD_RE = re.compile(r"(?:^|[-_])(?:title|heading|headline)(?:$|[-_])", re.I)
+
+
+def _image_refs(fragment):
+    """[(start, end, url)] of the image URLs a fragment of HTML names: src, data-*,
+    href, content, poster, srcset, CSS url(…) and openPhoto('…') — every place a
+    theme puts a picture."""
+    out = []
+    for rx in _IMG_REF_RES:
+        for m in rx.finditer(fragment):
+            u = m.group(1)
+            if IMG_EXT_RE.search(u) or "kimo_images" in u:
+                out.append((m.start(1), m.end(1), u))
+    for m in _SRCSET_ANY_RE.finditer(fragment):
+        for part in m.group(1).split(","):
+            u = part.strip().split(" ")[0]
+            if u and (IMG_EXT_RE.search(u) or "kimo_images" in u):
+                out.append((m.start(1), m.end(1), u))
+    return sorted(set(out))
+
+
+def _segs(path):
+    return [x for x in urllib.parse.unquote(path).split("/") if x]
+
+
+def _slug_shape(slug):
+    """The id-bearing tail of a root-level slug: "антитъга___7187" -> "___#",
+    "x_7891_4_20" -> "_#_#_#", "dom-dobar-movie7378.html" -> "#"; None without digits."""
+    stem = re.sub(r"\.[a-z]{2,5}$", "", slug, flags=re.I)
+    tail = re.sub(r"^.*[^\W\d_]", "", stem)
+    return re.sub(r"\d+", "#", tail) if re.search(r"\d", tail) else None
+
+
+def show_link(href, base, other_titles=(), text=""):
+    """True when href is another show page of the page's own site: a sibling of
+    the page (/spektakli/revizor next to /spektakli/chayka; numeric segments may
+    differ: /repertoires/109/x next to /repertoires/10/y), a root-level page of the
+    same id shape (/x___7187 next to /y___2972), or a link whose text is another
+    title of the listing."""
+    tgt = urllib.parse.urlsplit(urllib.parse.urljoin(base, (href or "").replace("&amp;", "&")))
+    here = urllib.parse.urlsplit(base)
+    if (tgt.hostname or "").lower().removeprefix("www.") != (here.hostname or "").lower().removeprefix("www."):
+        return False
+    if IMG_EXT_RE.search(tgt.path):
+        return False                       # a gallery thumbnail linking to its big image
+    hs, ts = _segs(here.path), _segs(tgt.path)
+    if not ts or ts == hs or ts[:len(hs)] == hs or (hs and ts[-1] == hs[-1]):
+        return False                       # the page itself (another language too), or a page under it
+    txt = norm_title(re.sub(r"<[^>]+>", " ", text or ""))
+    if txt and len(txt) >= 3 and txt in other_titles:
+        return True
+    if len(hs) >= 2 and len(ts) == len(hs):
+        return all(a == b or (a.isdigit() and b.isdigit()) or (_LOCALE_SEG_RE.match(a) and _LOCALE_SEG_RE.match(b))
+                   for a, b in zip(hs[:-1], ts[:-1]))
+    if len(hs) == 1 and len(ts) == 1:
+        sh = _slug_shape(hs[0])
+        return sh is not None and sh == _slug_shape(ts[0])
+    return False
+
+
+def _adjacent_foreign(html, base, other_titles=()):
+    """Image URLs inside, or right before / after, a link to another show page."""
+    links = [(m.start(), m.end()) for m in _A_SPAN_RE.finditer(html)
+             if show_link(m.group(1), base, other_titles, m.group(2))]
+    if not links:
+        return set()
+    head_end = re.search(r"</head\s*>|<body\b", html, re.I)
+    body_at = head_end.start() if head_end else 0
+    refs = [r for r in _image_refs(html) if r[0] >= body_at]     # <head>'s meta tags are the page's own
+    out = set()
+    import bisect
+    starts = [a for a, _ in links]
+    for s, e, u in refs:
+        i = bisect.bisect_right(starts, s) - 1
+        hit = False
+        if i >= 0:
+            ls, le = links[i]
+            if ls <= s < le:
+                hit = True                 # inside the other show's link
+            elif le <= s and s - le <= ADJACENT_MAX:
+                gap = html[le:s]
+                hit = not _LINKISH_RE.search(gap) and not _GALLERY_OPEN_RE.search(gap) and not _image_refs(gap)
+        if not hit and i + 1 < len(links):
+            ls, _ = links[i + 1]
+            if ls >= e and ls - e <= ADJACENT_MAX:
+                gap = html[e:ls]
+                hit = not _LINKISH_RE.search(gap) and not _GALLERY_OPEN_RE.search(gap) and not _image_refs(gap)
+        if hit:
+            out.add(u)
+    return out
+
+
+def _cls(el):
+    return " ".join(list(el.get("class") or []) + [el.get("id") or ""])
+
+
+def _is_heading(el):
+    if el.name in _HEADING_TAGS:
+        return True
+    return el.name in ("div", "p", "span", "strong", "header") and bool(_PSEUDO_HEAD_RE.search(_cls(el))) \
+        and len(el.get_text(" ", strip=True)) <= 60
+
+
+def _head_text(el):
+    import html as _html
+    return re.sub(r"\s+", " ", _html.unescape(el.get_text(" ", strip=True))).strip().rstrip(":").lower()
+
+
+def related_blocks(soup, base, other_titles=()):
+    """The page's related / teaser blocks (bs4 elements): a container whose class or
+    id says so, a slider / carousel that links to another show page (one that does
+    not, inside a block marked as a gallery, is this production's own gallery), and
+    whatever follows a heading such as "Още от репертоара" up to the next heading of
+    the same rank. A block holding the page's <h1> is the page itself: never."""
+    h1s = soup.find_all("h1")
+    out = []
+
+    def holds_h1(el):
+        return any(el is h or el in h.parents for h in h1s)
+
+    def links_other(el):
+        return any(show_link(a.get("href") or "", base, other_titles, a.get_text(" ", strip=True))
+                   for a in el.find_all("a", href=True))
+
+    for el in soup.find_all(True):
+        if el.name in ("html", "body", "head", "main") or holds_h1(el):
+            continue
+        c = _cls(el)
+        if not c.strip():
+            continue
+        if RELATED_CLASS_RE.search(c):
+            out.append(el)
+        elif SLIDER_CLASS_RE.search(c):
+            gallery = GALLERY_CLASS_RE.search(c) or any(GALLERY_CLASS_RE.search(_cls(p)) for p in el.parents
+                                                         if getattr(p, "name", None) not in (None, "body", "html"))
+            if not gallery or links_other(el):
+                out.append(el)
+    for h in soup.find_all(True):
+        if not _is_heading(h) or not RELATED_HEAD_RE.match(_head_text(h)):
+            continue
+        rank = int(h.name[1]) if h.name in _HEADING_TAGS else 7
+        node = h
+        while node.find_next_sibling(True) is None and node.parent is not None \
+                and node.parent.name not in ("body", "html", "main", "article", "[document]"):
+            node = node.parent
+        for sib in node.find_next_siblings(True):
+            first = sib if _is_heading(sib) else next((x for x in sib.find_all(True) if _is_heading(x)), None)
+            if first is not None and not RELATED_HEAD_RE.match(_head_text(first)):
+                r2 = int(first.name[1]) if first.name in _HEADING_TAGS else 7
+                if r2 <= rank:
+                    break
+            if holds_h1(sib):
+                break
+            out.append(sib)
+    return out
+
+
+def _related_foreign(html, base, other_titles=()):
+    """Image URLs under the page's related / teaser blocks."""
+    if not re.search(r"(?:class|id)\s*=|<h[1-6]\b", html, re.I):
+        return set()
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    out = set()
+    for el in related_blocks(soup, base, other_titles):
+        out |= {u for _, _, u in _image_refs(str(el))}
+    return out
+
+
+def main_content(html):
+    """The page's main content area as HTML (<main>, role="main", its one <article>,
+    #content / #main, a single .entry-content / .post-content), or None when the
+    page marks none: then the whole page, minus the excluded blocks, is read."""
+    if not re.search(r"<main\b|role=[\"']main|<article\b|id=[\"'](?:content|main)[\"']|entry-content|post-content",
+                     html, re.I):
+        return None
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    for sel in ("main", '[role="main"]', "article", "#content", "#main", ".entry-content", ".post-content"):
+        found = soup.select(sel)
+        if len(found) == 1:
+            return str(found[0])
+    return None
+
+
 def foreign_images(html, base, other_titles=()):
     """Image URLs on the page that belong to ANOTHER title: a teaser (the image
     sits inside a link to another page of the site: "you may also like",
     the season's other plays) or an <img> whose alt text is another title of
-    the listing. The 2026-11-04 harvest put НОРА's teaser image, shown on the
-    СЕДЕМ НОЩИ НА ВИОЛА КАРАВЕЛОВА page, on both plays."""
+    the listing, or an image inside / right next to a link to another show page,
+    or under a related block (_adjacent_foreign, _related_foreign). The 2026-11-04
+    harvest put НОРА's teaser image, shown on the СЕДЕМ НОЩИ НА ВИОЛА КАРАВЕЛОВА
+    page, on both plays; the 2026-11-05 deep pass a "more from the repertoire"
+    slide's scene photo on the play whose page showed it."""
     out = set()
     here = urllib.parse.urlsplit(base)
     here_path = urllib.parse.unquote(here.path).rstrip("/")
@@ -323,6 +568,9 @@ def foreign_images(html, base, other_titles=()):
             if a and sm and norm_title(a.group(1)) in others:
                 out.add(_abs(sm.group(1), base))
                 out.add(_abs(bigger(sm.group(1)), base))
+    for u in _adjacent_foreign(html, base, other_titles) | _related_foreign(html, base, other_titles):
+        out.add(_abs(u, base))
+        out.add(_abs(bigger(u), base))
     out.discard(None)
     return out
 
@@ -428,18 +676,25 @@ def candidates(html, base, other_titles=()):
         "bnf.bg": r"/uploads/(?!s_)",          # Одеон: the full poster behind its thumbnail
     }
     slot = slots.get(host)
-    attrs = [m.group(1) for m in _ATTR_RE.finditer(html)] + \
-            [m.group(1) for m in _URLCSS_RE.finditer(html)] + \
-            [m.group(1) for m in _QUOTED_IMG_RE.finditer(html)]   # javascript: openPhoto('…')
-    for m in _SRCSET_RE.finditer(html):
-        attrs += [p.strip().split(" ")[0] for p in m.group(1).split(",")]
+    def attrs_of(fragment):
+        fragment = _STYLE_BLOCK_RE.sub(" ", fragment)          # the site's CSS, not the page's pictures
+        got = [m.group(1) for m in _ATTR_RE.finditer(fragment)] + \
+              [m.group(1) for m in _URLCSS_RE.finditer(fragment)] + \
+              [m.group(1) for m in _QUOTED_IMG_RE.finditer(fragment)]   # javascript: openPhoto('…')
+        for m in _SRCSET_RE.finditer(fragment):
+            got += [p.strip().split(" ")[0] for p in m.group(1).split(",")]
+        return got
+
     if slot:
-        for a in attrs:
+        for a in attrs_of(html):
             if re.search(slot, a, re.I):
                 add(a, 1, "the theatre's poster slot")
     if host in ("theatre.art.bg",):
         return out                    # its other images are the cast's headshots
-    for a in attrs:
+    # tier 2 (a photo) only from the page's main content area, when it marks one;
+    # images of other productions (foreign_images) are already in `seen`
+    main = main_content(html)
+    for a in attrs_of(main if main is not None else html):
         add(a, 2, "gallery")
     return [c for c in out if c[1] == 1] + [c for c in out if c[1] == 2]
 
@@ -960,6 +1215,8 @@ def main(argv=None):
     save_sources(sources)
     print(f"own-page posters: {json.dumps(summary, ensure_ascii=False, sort_keys=True)}; "
           f"{net.fetched} fetched, {net.cached} from cache, {net.refused} refused by robots.txt")
+    for host, why in sorted(net.robots_unreachable.items()):
+        print(f"own-page posters: {host} not read this run: {why}")
     return 0
 
 

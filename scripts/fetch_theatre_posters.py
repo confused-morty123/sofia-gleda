@@ -1180,24 +1180,34 @@ def from_own_pages(net, html_src, matcher, wanted, verbose=False):
 
 # ------------------------------------------------------------ polite fetching
 class PoliteFetcher(Fetcher):
-    """Fetcher that obeys each host's robots.txt: read once per host (a missing or
-    unreadable robots.txt allows everything), a disallowed URL is not requested
-    (None, logged), and a Crawl-delay longer than the 2 s gap is honoured."""
+    """Fetcher that obeys each host's robots.txt, read once per host (RFC 9309
+    §2.3.1: a 4xx answer, 404 included, allows everything; a 5xx answer, a
+    challenge page or no answer disallows the whole host for this run, recorded
+    in self.robots_unreachable), a disallowed URL is not requested (None,
+    logged), and a Crawl-delay longer than the 2 s gap is honoured."""
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self._robots = {}
+        self.robots_unreachable = {}
 
     def _robots_for(self, scheme, host):
         if host not in self._robots:
             import urllib.robotparser, netfetch
+            from netfetch import robots_verdict
             rp = urllib.robotparser.RobotFileParser()
+            n = len(self.log)
             resp = super().get(f"{scheme}://{host}/robots.txt", attempts=1)
-            body = resp.content.decode("utf-8", "replace") if resp is not None else ""
-            rp.parse(body.splitlines())
-            delay = rp.crawl_delay("*")
-            if delay and float(delay) > self.host_delay:
-                netfetch.CRAWL_DELAY[host] = float(delay)
+            body, why = robots_verdict(resp, self.log[-1] if len(self.log) > n else {})
+            if why:
+                rp.disallow_all = True
+                self.robots_unreachable[host] = why
+                print(f"  {host}: {why}; not read this run", file=sys.stderr)
+            else:
+                rp.parse(body.splitlines())
+                delay = rp.crawl_delay("*")
+                if delay and float(delay) > self.host_delay:
+                    netfetch.CRAWL_DELAY[host] = float(delay)
             self._robots[host] = rp
         return self._robots[host]
 
