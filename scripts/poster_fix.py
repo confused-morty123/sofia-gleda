@@ -18,7 +18,10 @@ always exits 0, and the gate decides as before.
      re-reads the own pages of the missing titles now instead of waiting for the
      retry schedule (own_page_posters.harvest: the official poster, then the
      theatre's key image, then a production photo from the title's OWN page:
-     owner rule, no poster but photos from the play -> one of the photos), with
+     owner rule, no poster but photos from the play -> one of the photos; a
+     photo ONLY with positive evidence, own_page_posters.photo_evidence: the main
+     article's first image (a) or the page's own gallery / a lightbox link (b),
+     never a list item, card, slider or related block that links another page), with
      more of each page's images tried than the nightly step does (DEEP_MAX_IMAGES);
      retries pages that failed to load with a backoff (never one that is blocked
      or gone); rechecks pending holds whose time has come. It never searches by

@@ -3862,8 +3862,8 @@ check("candidates: the poster slot first, then the gallery; no icon, logo, cast 
       "play's teaser (НОРА's on the ВИОЛА page, 2026-11-04) or an image named as another title",
       [(u.rsplit("/", 1)[-1], t) for u, t, _ in _cands],
       [("322c0198ff.jpg", 1), ("3229a0big.jpg", 2), ("3229a0.jpg", 2)])
-_zk = OPP.candidates('<img src="https://zadkanala.bg/sites/default/files/styles/magnific_popup_thumbnail/public/FITZROY-web-01_0.png?itok=1">'
-                     '<img src="https://zadkanala.bg/sites/default/files/styles/magnific_popup_thumbnail/public/DSC001.jpg">',
+_zk = OPP.candidates('<div class="field-gallery"><img src="https://zadkanala.bg/sites/default/files/styles/magnific_popup_thumbnail/public/FITZROY-web-01_0.png?itok=1">'
+                     '<img src="https://zadkanala.bg/sites/default/files/styles/magnific_popup_thumbnail/public/DSC001.jpg"></div>',
                      "https://zadkanala.bg/spektakli/fitzroy")
 check("candidates: a gallery file named after the page's own slug is the title's art (tier 1), at full size",
       [(u.rsplit("/", 1)[-1], t) for u, t, _ in _zk], [("FITZROY-web-01_0.png?itok=1", 1), ("DSC001.jpg", 2)])
@@ -3887,7 +3887,7 @@ _tc_pg = ('<img src="https://toplocentrala.bg/attachments/Event/1221/gallery/vib
 check("candidates: a theme's resize suffix (_fit-detail) is not the title's name; the file's own name still is",
       [(u.rsplit("/", 1)[-1], t) for u, t, _ in OPP.candidates(
           _tc_pg, "https://toplocentrala.bg/events/let-s-not-get-lost-in-a-detail-now")],
-      [("let-s-not-get-lost-detail-now_fit-detail.jpg", 1), ("viber-image-2026-10-28_fit-detail.jpg", 2)])
+      [("let-s-not-get-lost-detail-now_fit-detail.jpg", 1)])   # the bare viber image: no evidence, no photo (poster fix 3)
 _nfx = (pathlib.Path(__file__).resolve().parent / "fixtures")
 check("candidates (НАТФИЗ): the event page's own picture only, not its related events; the curtain stand-in is none",
       [OPP.candidates((_nfx / "theatre_natfiz_event_vaal.html").read_text(encoding="utf-8"),
@@ -3916,7 +3916,7 @@ check("candidates: a placeholder („Очаквайте“) or a funder's mark, 
       [u.rsplit("/", 1)[-1] for u, _, _ in OPP.candidates(
           '<meta property="og:image" content="https://theatre.peakview.bg/theatre/photos/BIG1 KOLEDA V SKT OCHAKVAYTE.jpg" />'
           '<img src="https://zadkanala.bg/a/logo-mk.jpg" alt="Министерство на културата">'
-          '<img src="https://zadkanala.bg/a/scene.jpg" alt="Сцена">', "https://zadkanala.bg/spektakli/x")],
+          '<div class="gallery"><img src="https://zadkanala.bg/a/scene.jpg" alt="Сцена"></div>', "https://zadkanala.bg/spektakli/x")],
       ["scene.jpg"])
 check("posterpolicy: a placeholder file name is refused from any host",
       bool(PP.reject_reason("x", "https://theatre.peakview.bg/theatre/photos/BIG1%20OCHAKVAYTE.jpg")), True)
@@ -4277,6 +4277,92 @@ with __import__("tempfile").TemporaryDirectory() as _dpf2:
         OPP.MAX_IMAGES_PER_TITLE = _saveMI
     check("…the nightly own-page harvest applies it too (even with 12 images allowed): nothing for Чайка, "
           "Ревизор's photo never requested", ("chayka" in _sNN["shows"], _rev in _nNN.requested), (False, False))
+    # ---- poster fix 3 (owner 2026-11-05): a tier-2 photo ONLY with positive evidence ----
+    # (a) the main article's first image above any card / slider / related block, or
+    # (b) a photo gallery of the page (class / id / heading) or a lightbox link to an image
+    # file, with no link to another HTML page of the site; everything else is not a photo.
+    _rev2 = "https://teatar.example.bg/uploads/repertoar/revizor-800.jpg"
+    _wp = "https://blog.example.bg/chayka/"
+    _wpimg = "https://blog.example.bg/wp-content/uploads/2026/10/revizor-scena.jpg"
+    _jpimg = "https://blog.example.bg/wp-content/uploads/2026/10/hamlet-scena.jpg"
+    _gph = [f"https://teatar.example.bg/uploads/gallery/chayka-g{i}.jpg" for i in range(3)]
+    _lbx = "https://teatar.example.bg/uploads/chayka-1.jpg"
+    _key = "https://teatar.example.bg/uploads/chayka-key.jpg"
+    _imgs3 = {**_imgs2, _rev2: _jpgb2(800, 1100, "red"), _wpimg: _jpgb2(1200, 800, "red"),
+              _jpimg: _jpgb2(1200, 800, "blue"), _lbx: _jpgb2(1200, 800, "green"), _key: _jpgb2(1200, 800, "green"),
+              **{u: _jpgb2(1200, 800, "green") for u in _gph}}
+    _T3 = {"show:chayka": "Чайка", "show:revizor": "Ревизор", "show:hamlet": "Хамлет"}
+
+    def _deep3(page, url=_ch, nightly=False):
+        _s = {"shows": {}, "films": {}, "misses": {}}
+        _n = _NetPF({url: page}, _imgs3)
+        if nightly:
+            OPP.harvest({"show:chayka"}, _T3, {"show:chayka": [url]}, _n, _s, _dtb2.date(2026, 11, 5))
+            _sum = {}
+        else:
+            _sum, _ = PF.fix_titles(["show:chayka"], _T3, {"show:chayka": [url]}, _n, _s, _dtb2.date(2026, 11, 5),
+                                    sleep=lambda s: None)
+        _r = _s["shows"].get("chayka") or {}
+        return _r.get("img"), _r.get("how"), PF.attached(_sum) if _sum else None, _n.requested
+
+    _neg = {
+        "banners + repertoire slide": (_slide, _ch),
+        "lazy swiper (data-bg, data-srcset)": (
+            _head + '<div class="swiper"><div class="swiper-wrapper">'
+            f'<div class="swiper-slide" data-bg="{_rev}"><img data-srcset="{_rev2} 800w" alt=""></div>'
+            '</div></div></body></html>', _ch),
+        "<ul class=list><li> img alt='' + ticket + Ревизор link": (
+            _head + f'<ul class="list"><li><img src="{_rev}" alt=""> 12.11 19:00 '
+            '<a href="https://bileti.example.com/e/1">Билети</a> <a href="/spektakli/revizor">Ревизор</a></li></ul>'
+            "</body></html>", _ch),
+        "…the same list inside <main>": (
+            _head.replace("<body><h1>Чайка</h1>", "<body><main><h1>Чайка</h1>")
+            + f'<ul class="list"><li><img src="{_rev}" alt=""> 12.11 19:00 '
+            '<a href="https://bileti.example.com/e/1">Билети</a> <a href="/spektakli/revizor">Ревизор</a></li></ul>'
+            "</main></body></html>", _ch),
+        "alt 'Сцена от „Ревизор“' in a gallery": (
+            _head + f'<div class="gallery"><img src="{_rev}" alt="Сцена от „Ревизор“"></div></body></html>', _ch),
+        "WordPress 'Свързани публикации', root-slug permalinks, background thumbs": (
+            '<html><head><title>Чайка – Блог</title></head><body><article class="post"><h1>Чайка</h1>'
+            '<div class="entry-content"><p>Рецензия.</p></div><div class="crp"><h3>Свързани публикации</h3>'
+            f'<div class="grid"><div class="grid-cell"><a href="/revizor/"><span class="thumb" '
+            f"style=\"background-image:url('{_wpimg}')\"></span></a></div>"
+            f'<div class="grid-cell"><span style="background-image:url({_jpimg})"></span>'
+            '<a href="/hamlet/">Хамлет</a></div></div></div></article></body></html>', _wp),
+        "Jetpack jp-relatedposts": (
+            '<html><head><title>Чайка – Блог</title></head><body><article class="post"><h1>Чайка</h1>'
+            '<div class="entry-content"><p>Рецензия.</p></div>'
+            '<div id="jp-relatedposts" class="jp-relatedposts"><h3 class="jp-relatedposts-headline"><em>Подобни</em></h3>'
+            '<div class="jp-relatedposts-items jp-relatedposts-items-visual"><div class="jp-relatedposts-post">'
+            f'<a class="jp-relatedposts-post-a" href="https://blog.example.bg/hamlet/"><img src="{_jpimg}" alt=""></a>'
+            '</div></div></div></article></body></html>', _wp),
+    }
+    _negR = {k: _deep3(pg, url)[:3] for k, (pg, url) in _neg.items()}
+    check("poster fix 3: banners + repertoire slide, a lazy swiper, a list item with a ticket and a Ревизор link, "
+          "an alt naming Ревизор, WordPress related posts, Jetpack related posts → NOTHING attached",
+          _negR, {k: (None, None, 0) for k in _neg})
+    check("…and none of those other productions' images is even requested",
+          [k for k, (pg, url) in _neg.items()
+           if any(u in _deep3(pg, url)[3] for u in (_rev, _rev2, _wpimg, _jpimg))], [])
+    check("…the nightly harvest attaches nothing from them either (the list item, the related posts)",
+          [_deep3(_neg[k][0], _neg[k][1], nightly=True)[0] for k in
+           ("<ul class=list><li> img alt='' + ticket + Ревизор link", "Jetpack jp-relatedposts")], [None, None])
+    _pos_gal = (_head + '<figure class="wp-block-gallery has-nested-images">'
+                + "".join(f'<figure class="wp-block-image"><img src="{u}" alt=""></figure>' for u in _gph)
+                + "</figure></body></html>")
+    _pos_lbx = (_head + f'<p><a href="{_lbx}"><img src="https://teatar.example.bg/uploads/chayka-1-300x200.jpg"></a></p>'
+                "</body></html>")
+    _pos_key = (_head.replace('<meta property="og:image"', '<meta property="og:imagex"')
+                .replace("</head>", f'<meta property="og:image" content="{_key}"></head>') + "</body></html>")
+    _pR = [_deep3(_pos_gal)[:3], _deep3(_pos_lbx)[:3], _deep3(_pos_key)[:3]]
+    check("poster fix 3: a wp-block-gallery of 3 photos on Чайка's own page, a lightbox-linked img (→ chayka-1.jpg), "
+          "a 1200x800 og:image → each attached, with the evidence recorded",
+          [(r[0] in _gph if i == 0 else r[0], (r[1] or "").split(" (named")[0], r[2]) for i, r in enumerate(_pR)],
+          [(True, "(b) the page's gallery", 1), (_lbx, "(b) a lightbox link", 1), (_key, "og:image", 1)])
+    check("poster fix 3: alt containment is word-bounded and needs 4+ letters ('Ревизорът' is not 'Ревизор')",
+          sorted(u.rsplit("/", 1)[-1] for u, _, _ in OPP.candidates(
+              _head + f'<div class="gallery"><img src="{_own_ph}" alt="Ревизорът на Чайка"></div></body></html>',
+              _ch, {PP.norm_title("Ревизор")}) if u not in _bn), ["chayka-scena-01.jpg"])
 OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_pf2
 
 # robots.txt (RFC 9309 §2.3.1): 4xx allows everything, 5xx / no answer disallows the host for the run
