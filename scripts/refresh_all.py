@@ -168,6 +168,30 @@ def run(name, script, extra):
                 "seconds": round(time.time() - start, 1), "tail": scrub(e)}
 
 
+def gate_warnings_of(out):
+    """The "  warning: ..." lines verify_build.py prints: coverage shortfalls that do
+    not block publishing (check 5c2 below its bar, 2026-11-05)."""
+    return [line.split("warning:", 1)[1].strip() for line in str(out or "").splitlines()
+            if line.startswith("  warning: ")]
+
+
+def add_gate_warnings(path, warnings):
+    """Replace the "publish-gate" entries of health.json with this run's gate
+    warnings, so the workflow annotates them and the dashboard shows them."""
+    try:
+        items = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    except (OSError, ValueError):
+        items = []
+    if not isinstance(items, list):
+        items = []
+    items = [e for e in items if not (isinstance(e, dict) and e.get("venue") == "publish-gate")]
+    items += [{"level": "warning", "venue": "publish-gate", "message": scrub(w)} for w in warnings]
+    try:
+        path.write_text(json.dumps(items, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except OSError as e:
+        print(f"  (could not update health.json: {scrub(e)})", file=sys.stderr)
+
+
 def poster_coverage_of(out):
     """The "POSTER_COVERAGE {json}" line verify_build.py prints (check 5c2)."""
     for line in reversed(str(out or "").splitlines()):
@@ -220,6 +244,8 @@ def main(argv=None):
     results.append(verdict)
     posters = poster_coverage_of(verdict.get("_out", ""))
     bg_titles = bg_titles_of(verdict.get("_out", ""))
+    gate_warnings = gate_warnings_of(verdict.get("_out", ""))
+    add_gate_warnings(ROOT / "health.json", gate_warnings)
     for r in results:
         r.pop("_out", None)
 
@@ -237,6 +263,8 @@ def main(argv=None):
         report["poster_health"] = json.loads((ROOT / "poster_health.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         pass
+    if gate_warnings:
+        report["gate_warnings"] = gate_warnings   # published anyway: coverage, not data integrity
     if bg_titles is not None:
         report["bg_titles"] = bg_titles           # titles shown in BG mode without a Bulgarian form
     if aborted:

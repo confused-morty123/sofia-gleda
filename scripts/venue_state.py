@@ -412,7 +412,9 @@ def venue_health(v):
         out.append({"level": level, "venue": name, "message": msg})
 
     for url, host, why in v.get("blocked") or []:
-        add("error", f"blocked from this network: {why} at {url}"
+        # read from its designed fallback (Младежки: tickets.mlt.bg when mlt.bg's
+        # Cloudflare challenges the runner): the programme is fresh, so a warning
+        add("warning" if status == "official" else "error", f"blocked from this network: {why} at {url}"
             + (f" — read from {v.get('source')} instead" if status == "official" else ""))
         break                                          # one line per venue is enough
     for p in (v.get("selfcheck") or [])[:2]:

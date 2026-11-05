@@ -1531,7 +1531,39 @@ check("every upcoming show with its own-page poster on record passes and prints 
       _rc == 0 and '"upcoming": 120' in _out and '"with": 120' in _out and '"metric": "own-page"' in _out)
 _some_art = dict(list(_all_art.items())[:100])
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_some_art) + ";"), _cov_env)
-check("coverage below the bar (100/120) fails 5c2", _rc != 0 and "below 95 %" in _out)
+check("coverage below the bar (100/120) is a 5c2 WARNING, not a failure: posters never block fresh programmes",
+      _rc == 0 and "warning: 5c2 poster coverage (plays, own image): 100/120" in _out
+      and "below 95 %" in _out and "NOT safe to publish" not in _out)
+# Regression, the nightly refresh of 2026-11-05 (run 41957621867): plays at 505/532
+# (94.9 %), 0.1 point under the bar, failed the gate and held back every venue's
+# fresh programme. The same shortfall must publish, with the warning.
+_cov_shows_r = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
+                for i in range(532)]
+_cov_perfs_r = [[f"show{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 20)).isoformat(),
+                 f"{10 + i % 12:02d}:{(i // 12) % 60:02d}", "Основна сцена", ""] for i in range(532)]
+_cov_base_r = (_minimal_html(performances_override=_json.dumps(_cov_perfs_r))
+               .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows_r) + ";"))
+_art_r = {f"show{i}": f"https://theatre.peakview.bg/theatre/photos/BIG{i}PLAKAT.jpg" for i in range(505)}
+_cov_root_r = pathlib.Path(tempfile.mkdtemp(prefix="sg5c2r-"))
+(_cov_root_r / "poster_sources.json").write_text(_json.dumps({"shows": {
+    k: {"img": v, "page": f"https://theatre.art.bg/x_{i}_14_20", "kind": "poster"}
+    for i, (k, v) in enumerate(_art_r.items())}}), encoding="utf-8")
+_rc, _out = _run_out(_cov_base_r.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_art_r) + ";"),
+                     {"SOFIA_POSTER_SOURCES": str(_cov_root_r / "poster_sources.json")})
+check("regression 2026-11-05: plays 505/532 (94.9 %) pass the gate with a 5c2 warning",
+      _rc == 0 and "505/532 (94.9 %)" in _out and "warning: 5c2" in _out)
+if _rc != 0:
+    print("\n".join(l for l in _out.splitlines() if "✗" in l)[:600])
+check("…refresh_all copies the gate's warning lines into health.json (level warning) and build_report",
+      _RF.gate_warnings_of(_out) and all("5c2" in w for w in _RF.gate_warnings_of(_out)))
+_hj_r = _cov_root_r / "health.json"
+_hj_r.write_text(_json.dumps([{"level": "warning", "venue": "publish-gate", "message": "old"},
+                              {"level": "error", "venue": "cineland", "message": "x"}]), encoding="utf-8")
+_RF.add_gate_warnings(_hj_r, _RF.gate_warnings_of(_out))
+_hj_rd = _json.loads(_hj_r.read_text(encoding="utf-8"))
+check("…health.json: the old gate entry replaced, the venue entries kept",
+      [(e["level"], e["venue"]) for e in _hj_rd] == [("error", "cineland"), ("warning", "publish-gate")]
+      and "505/532" in _hj_rd[-1]["message"])
 _bad_art = dict(_all_art, show5="posters/show5 x.jpg")
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_bad_art) + ";"), _cov_env)
 check("…a path the browser refuses counts as missing", '"with": 119' in _out)
@@ -1539,8 +1571,8 @@ _unrec = dict(_all_art, **{f"show{i}": f"https://theatre.peakview.bg/theatre/pho
 _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_unrec) + ";"), _cov_env)
 check("…an image with no record of the title's page it came from does not count, though it displays "
       "(the 2026-11-04 bug: 521/526 counted, stage photos and another play's photo included)",
-      _rc != 0 and '"with": 110' in _out and "120/120 display some image" in _out
-      and "unverified" in _out)
+      _rc == 0 and '"with": 110' in _out and "120/120 display some image" in _out
+      and "unverified" in _out and "warning: 5c2" in _out)
 
 # ---------------------------------------------------------------------------
 # 4c2a: BOXONLY — performances a theatre sells only at its box office

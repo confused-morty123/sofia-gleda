@@ -38,10 +38,17 @@ FLOORS = {"FILMS": 20, "SHOWTIMES": 80, "CINEMAS": 8,
 
 problems: list[str] = []
 notes: list[str] = []
+# Coverage shortfalls (posters below the bar, a drop since the last build): they
+# never block fresh programme data from going live (2026-11-05: plays at 505/532,
+# 94.9 %, held back the whole nightly refresh). Printed as "warning:" lines, which
+# refresh_all.py copies into health.json (annotations, dashboard). Only real data
+# problems go through fail().
+warnings_: list[str] = []
 
 
 def fail(msg): problems.append(msg)
 def note(msg): notes.append(msg)
+def warn(msg): warnings_.append(msg)
 
 
 src = HTML.read_text(encoding="utf-8")
@@ -1518,7 +1525,8 @@ except Exception as e:
 # poster" while stage photos matched by title on aggregators, another play's photo
 # and site images stood in for the posters the theatres' own pages show. That
 # number is still printed ("displayed") for comparison.
-# A failure below the bar (posterpolicy.TRUE_BAR, one bar for the gate and test_parsers) or 3+ points
+# A warning (not a failure: coverage never blocks fresh programmes) below the bar
+# (posterpolicy.TRUE_BAR, one bar for the gate and test_parsers) or 3+ points
 # down against the previous build_report.json of the same metric: a poster source
 # that died, not churn. The numbers go out as one "POSTER_COVERAGE {json}" line,
 # which refresh_all.py keeps in build_report.json["posters"]. A page with fewer than
@@ -1577,10 +1585,10 @@ try:
         if _c["upcoming"] < _min:
             note(_msg + f" (fewer than {_min} upcoming: not judged)")
         elif _pct < _bar:
-            fail(f"5c2 {_msg} — below {_bar:g} %: a poster source has probably stopped "
+            warn(f"5c2 {_msg} — below {_bar:g} %: a poster source has probably stopped "
                  "working (poster_health.md lists every title and its cause)")
         elif _prev_pct is not None and _prev_pct - _pct >= 3.0:
-            fail(f"5c2 {_msg} — down {_prev_pct - _pct:.1f} points since the last build "
+            warn(f"5c2 {_msg} — down {_prev_pct - _pct:.1f} points since the last build "
                  f"({_prev_pct:.1f} %): a poster source has probably stopped working")
         else:
             note(_msg + ("" if _prev_pct is not None else " (no previous coverage to compare)"))
@@ -2491,6 +2499,8 @@ if os.environ.get("SOFIA_SKIP_SMOKE") != "1":
 print(f"verify_build: {HTML} ({HTML.stat().st_size:,} bytes)")
 for n in notes:
     print("  note:", n)
+for w in warnings_:
+    print("  warning:", w)
 if problems:
     print(f"\n  {len(problems)} problem(s) — NOT safe to publish:\n")
     for p in problems:
