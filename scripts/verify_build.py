@@ -1818,6 +1818,13 @@ BOX_SCORE_RES = (
     re.compile(r"(?<![\d.,/])\d{1,2}(?:[.,]\d)?\s*/\s*(?:10|5)(?![\d/.,])"),
     # "оценка 8", "rating: 7.5", "audience score of 92"
     re.compile(r"\b(оценк[аи]|rating|(?:critics?|audience|user)\s+score)\s*(?:of\s+)?[:\-–—]?\s*\d", re.I),
+    # "рейтинг 8,1", "оценка от 7.9", "rated 8.4 by viewers", "score: 81"
+    re.compile(r"(?<![^\W\d_])(оценк[аи]|рейтинг|rating|rated|score)(?![^\W\d_])\W{0,3}"
+               r"(?:(?:от|of)\s*|by\s+\w+\s*)?\d", re.I),
+    # "4,5 звезди"
+    re.compile(r"\d[\d.,]*\s*звезд", re.I),
+    # "IMDb рейтинг 8,1", "Metacritic score: 81"
+    re.compile(r"\b(IMDb|Metacritic|TMDB)\s+(рейтинг|rating|score)\s*:?\s*\d", re.I),
 )
 
 # constant -> the text fields its sheet / card renders (strings or lists of strings;
@@ -1826,7 +1833,7 @@ SHEET_TEXT_FIELDS = {
     "FILM_EXTRA": ("box", "boxEn", "why", "whyEn", "facts", "factsEn", "fmt", "fmtEn"),
     "FILMS": ("note", "noteEn", "synBg", "synEn"),
     "FILMINFO": ("synBg", "synEn"),
-    "TMDBART": ("ov",),
+    "TMDBART": ("ov", "ovBg"),
     "SHOWS": ("synBg", "synEn", "badge", "reviews"),
     "SHOW_EXTRA": ("why", "whyEn", "facts", "factsEn", "season", "seasonEn", "premiere", "premiereEn"),
     "EVENTS": ("blurbBg", "blurbEn"),
@@ -1882,6 +1889,13 @@ for _tn in SHEET_TEXT_FIELDS:
         fail(f"5c5 {_tn} is declared but is not one parseable JSON line: its sheet texts went unchecked")
         continue
     _ts_bad += text_score_problems(_tn, _tv)
+# SYN_EN ({id: EN synopsis}, injected by inject_data.py) is the EN sheets' last fallback
+_syn_en = _const_any("SYN_EN")
+if _syn_en is None and re.search(r"^const SYN_EN\s*=", js, flags=re.M):
+    fail("5c5 SYN_EN is declared but is not one parseable JSON line: its synopses went unchecked")
+for _sid, _st in (_syn_en if isinstance(_syn_en, dict) else {}).items():
+    if isinstance(_st, str) and any(r.search(_st) for r in BOX_SCORE_RES):
+        _ts_bad.append(f"SYN_EN.{_sid}: {_st!r}")
 for _tn in ("SHOWSYN", "SHOWSYN_EN"):
     try:
         _sv = _showsyn_const(_tn)

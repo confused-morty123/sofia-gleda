@@ -376,6 +376,23 @@ def _slug_shape(slug):
     return re.sub(r"\d+", "#", tail) if re.search(r"\d", tail) else None
 
 
+# a query parameter that names the page (/show.php?id=12 and ?id=99 are two pages)
+PAGE_QUERY_KEYS = ("id", "show", "event", "p", "page_id", "post")
+
+
+def _page_qid(query):
+    q = urllib.parse.parse_qs(query or "", keep_blank_values=True)
+    return tuple(sorted((k.lower(), tuple(v)) for k, v in q.items() if k.lower() in PAGE_QUERY_KEYS))
+
+
+def _other_query_page(tgt, here):
+    """True when tgt is the page's own path with a query naming another page."""
+    if _segs(tgt.path) != _segs(here.path):
+        return False
+    t = _page_qid(tgt.query)
+    return bool(t) and t != _page_qid(here.query)
+
+
 def show_link(href, base, other_titles=(), text=""):
     """True when href is another show page of the page's own site: a sibling of
     the page (/spektakli/revizor next to /spektakli/chayka; numeric segments may
@@ -388,6 +405,8 @@ def show_link(href, base, other_titles=(), text=""):
         return False
     if IMG_EXT_RE.search(tgt.path):
         return False                       # a gallery thumbnail linking to its big image
+    if _other_query_page(tgt, here):
+        return True                        # /show.php?id=99 next to /show.php?id=12
     hs, ts = _segs(here.path), _segs(tgt.path)
     if not ts or ts == hs or ts[:len(hs)] == hs or (hs and ts[-1] == hs[-1]):
         return False                       # the page itself (another language too), or a page under it
@@ -652,6 +671,8 @@ def other_page(href, base):
         return False
     if IMG_EXT_RE.search(tgt.path) or re.search(r"\.(?:gif|svg|pdf|mp4|webm|mp3|zip|docx?)$", tgt.path, re.I):
         return False
+    if _other_query_page(tgt, here):
+        return True
     hs, ts = _segs(here.path), _segs(tgt.path)
     if ts == hs or (hs and ts[:len(hs)] == hs) or (hs and ts and ts[-1] == hs[-1]):
         return False
@@ -679,6 +700,33 @@ def _el_image_refs(el):
     return [u for u in out if u and (IMG_EXT_RE.search(u) or "kimo_images" in u)]
 
 
+# rule (a)'s refusals: a promo container, a file named as a banner / season promo
+PROMO_CLASS_RE = re.compile(r"promo|banner|(?:^|[\s_])ad-|advert|sezon|season|hero-slider", re.I)
+PROMO_NAME_RE = re.compile(r"premiera|banner|sezon|season|promo", re.I)
+_TRANSLIT_BG = dict(zip("абвгдезийклмнопрстуфхцчшщъьюя",
+                        ["a", "b", "v", "g", "d", "e", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p", "r",
+                         "s", "t", "u", "f", "h", "ts", "ch", "sh", "sht", "a", "y", "yu", "ya"]))
+
+
+def _latin_slug(title):
+    """"Вишнева градина" -> "vishneva-gradina" (Streamlined System, as theatres' slugs)."""
+    t = "".join(_TRANSLIT_BG.get(ch, ch) for ch in (title or "").lower())
+    return re.sub(r"[^a-z0-9]+", "-", t).strip("-")
+
+
+def _fname(u):
+    return urllib.parse.unquote(urllib.parse.urlsplit(u or "").path.rsplit("/", 1)[-1]).lower()
+
+
+def _names_other(u, slugs):
+    """True when the image's file name carries another listed title's latin slug."""
+    if not slugs:
+        return False
+    f = "-" + re.sub(r"[^a-z0-9]+", "-", _fname(u)) + "-"
+    return any(("-" + sl + "-") in f or (len(sl) >= 6 and sl.replace("-", "") in f.replace("-", ""))
+               for sl in slugs)
+
+
 def photo_evidence(html, base, other_titles=()):
     """{image URL: "(a) …" | "(b) …"} for the images of the page that are a photo of
     the title by positive evidence (see GALLERY_MARK_RE above), and the set of image
@@ -690,6 +738,7 @@ def photo_evidence(html, base, other_titles=()):
             el.decompose()
     h1s = soup.find_all("h1")
     related = set(map(id, related_blocks(soup, base, other_titles)))
+    other_slugs = {sl for sl in map(_latin_slug, other_titles or ()) if len(sl.replace("-", "")) >= 4}
 
     def holds_h1(el):
         return any(el is h or el in h.parents for h in h1s)
@@ -753,9 +802,14 @@ def photo_evidence(html, base, other_titles=()):
             bad.update(refs)
             continue
         anc = list(chain(el))
-        g = next((a for a in anc if gallery_marked(a)
-                  or (a.name == "a" and IMG_EXT_RE.search(a.get("href") or ""))), None)
-        if g is None or links_other(g):
+        marked = [a for a in anc if gallery_marked(a)
+                  or (a.name == "a" and IMG_EXT_RE.search(a.get("href") or ""))]
+        g = marked[0] if marked else None
+        # any gallery / lightbox container up to the outermost one linking another
+        # page of the site (a caption "Кадър от <a>следващата ни премиера</a>") refuses it
+        if g is None or any(links_other(a) for a in marked):
+            continue
+        if any(_names_other(u, other_slugs) for u in refs):
             continue
         how = "(b) a lightbox link" if g.name == "a" and not gallery_marked(g) else "(b) the page's gallery"
         for u in refs:
@@ -767,17 +821,26 @@ def photo_evidence(html, base, other_titles=()):
         if len(found) == 1:
             main = found[0]
             break
-    if main is not None:
+    # only an image AFTER the page's <h1> (the first inside the main area, else the
+    # page's first), outside any promo / banner container, its file not named after
+    # another title or as a banner / premiere / season promo
+    order = {id(x): i for i, x in enumerate(soup.find_all(True))}
+    h1 = (main.find("h1") if main is not None else None) or (h1s[0] if h1s else None)
+    if main is not None and h1 is not None:
         for el in main.find_all(True):
             if el is not main and (is_card(el) or SLIDER_CLASS_RE.search(_cls(el)) or id(el) in related
                                    or RELATED_CLASS_RE.search(_cls(el))
                                    or (_is_heading(el) and RELATED_HEAD_RE.match(_head_text(el)))):
-                break
-            if el.name != "img":
+                if order[id(el)] > order[id(h1)]:
+                    break
+                continue
+            if el.name != "img" or order[id(el)] < order[id(h1)]:
                 continue
             refs = _el_image_refs(el)
             if refs:
-                if not refused(el):
+                promo = any(PROMO_CLASS_RE.search(_cls(a)) for a in chain(el) if not holds_h1(a))
+                if not refused(el) and not promo and not PROMO_NAME_RE.search(_fname(refs[0])) \
+                        and not _names_other(refs[0], other_slugs):
                     ev.setdefault(refs[0], "(a) the main article's first image")
                 break
     return ev, bad
@@ -1287,6 +1350,35 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
                 results[k] = (best, notes, okpages or [pg for pg, _ in pages[k] if pg])
     _run(work_titles, by_img_host)
 
+    # One image (by URL or by the downloaded bytes' md5) chosen for 2+ different titles
+    # of one host in this run, or already recorded for another title of that host, is
+    # a season / site share image ("/uploads/sezon-2026-27.jpg" as every show's
+    # og:image): no title's poster.
+    def _host(u):
+        return (urllib.parse.urlsplit(u or "").hostname or "").lower().removeprefix("www.")
+    shared = defaultdict(set)                    # (host, "url"|"md5", value) -> titles
+    for k, (best, _, _) in results.items():
+        if best:
+            t = norm_title(titles.get(k, "")) or k
+            best["src_md5"] = hashlib.md5(best["data"]).hexdigest()
+            shared[(_host(best["page"]), "url", best["img"])].add(t)
+            shared[(_host(best["page"]), "md5", best["src_md5"])].add(t)
+    for bucket, pre in (("shows", "show:"), ("films", "film:")):
+        for ident, rec in sources[bucket].items():
+            if not isinstance(rec, dict) or not rec.get("page"):
+                continue
+            t = norm_title(titles.get(pre + ident, "")) or pre + ident
+            h = _host(rec["page"])
+            if rec.get("img"):
+                shared[(h, "url", rec["img"])].add(t)
+            for m in {rec.get("src_md5"), rec.get("md5")} - {None, ""}:
+                shared[(h, "md5", m)].add(t)
+    for k, (best, notes, tried) in list(results.items()):
+        if best and (len(shared[(_host(best["page"]), "url", best["img"])]) >= 2
+                     or len(shared[(_host(best["page"]), "md5", best["src_md5"])]) >= 2):
+            notes = notes + [f"{best['img'][:80]}: the same image is another title's of this site: not used"]
+            results[k] = (None, notes, tried)
+
     summary = defaultdict(int)
     shows_json = {}
     try:
@@ -1331,7 +1423,7 @@ def harvest(keys, titles, links, net, sources, today, verbose=False, film_need=N
             sources[bucket][ident] = {"page": best["page"], "img": best["img"],
                                       "kind": best["kind"], "w": best["w"], "h": best["h"],
                                       "how": best["how"], "path": path, "md5": md5,
-                                      "checked": today.isoformat()}
+                                      "src_md5": best["src_md5"], "checked": today.isoformat()}
             if prev.get("md5") and prev.get("md5") != md5:
                 # a recheck that found another image (the page's headings still name
                 # the title): kept for review in poster_health.md
