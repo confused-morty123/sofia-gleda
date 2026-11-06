@@ -516,9 +516,11 @@ BG_DATE_SUB = re.compile(r"\b\d{1,2}\s+(?:" + "|".join(BG_MONTHS) + r")\b", re.I
 # "digits, colons, whitespace and pipes" runs past the end of the line and eats
 # the day number of the NEXT date ("… 13:45\n  16 септември …"), which silently
 # drops every date after the first whenever a venue puts two days in one node.
+# A time may carry a short format tag, "18:30 (3D) | 19:40 (2D)" (Cinema City,
+# 2026-11-06): without the optional (...) the run stopped at "(3D)" and lost 19:40.
 PROGRAMATA_LINE = re.compile(
     r"\b(\d{1,2})\s+(" + "|".join(BG_MONTHS) + r")\b[^:\n]*:\s*"
-    r"((?:\d{1,2}:\d{2}(?:[ \t]*\|[ \t]*|[ \t]+)?)+)")
+    r"((?:\d{1,2}:\d{2}(?:[ \t]*\([^()\n]{1,12}\))?(?:[ \t]*\|[ \t]*|[ \t]+)?)+)")
 
 
 def find_date(text, window, default_year=None):

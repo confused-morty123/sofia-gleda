@@ -150,6 +150,18 @@ check("one row per (film, date) after the merge", len(_ccg), len(_cc))
 check("films without IMAX screenings are untouched",
       _ccg.get(("Одисея", "2026-11-06")), ["16:00"])
 check("merged stats count the merged rows", _st["cc-sofia"]["rows"], len(_cc))
+# Cinema City tags a format after a time; the run of times must not stop there
+# (cinema-city-paradise/?date=2026-11-06, Котаракът с шапката).
+_TAGGED = """<div class="program-item">
+<div><a href="https://programata.bg/kino/filmi/kotarakat-s-shapkata/"><strong>Котаракът с шапката</strong></a></div>
+<div>06 ноември |петък|: 13:50 | 14:50 | 16:10 | 17:10 | 18:30 (3D) | 19:40 (2D)</div>
+<div>07 ноември |събота|: 11:00 | 11:30 | 12:30 | 13:45 | 14:50 | 16:10 | 17:40 | 18:30 (3D) | 20:00 (2D)</div>
+</div>"""
+_tg = {d: x for _t, _, d, x, _ in S.scrape_cinema("cc-paradise", "https://programata.bg/x/", _Fixed(_TAGGED), _W6)}
+check("a (3D)/(2D) tag does not end the times: 19:40 (2D) is kept",
+      _tg.get("2026-11-06"), ["13:50", "14:50", "16:10", "17:10", "18:30", "19:40"])
+check("…and the next day still parses after a tagged last time",
+      _tg.get("2026-11-07"), ["11:00", "11:30", "12:30", "13:45", "14:50", "16:10", "17:40", "18:30", "20:00"])
 _sess = _ByUrl()
 S.scrape_programata_venue("arena-mega", _sess, _W6, {})
 check("a venue without extra pages makes exactly one request", len(_sess.urls), 1)
