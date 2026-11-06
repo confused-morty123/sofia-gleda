@@ -188,11 +188,36 @@
   }
  },
  "misses": {
+  "film:fresh-water-for-flowers-cinelibri": {
+   "last": "2026-11-06",
+   "tried": [],
+   "why": [
+    "epaygo.bg is a ticket page, not the title's page"
+   ]
+  },
   "film:kasometrazhen-konkurs": {
    "last": "2026-11-04",
    "tried": [],
    "why": [
     "epaygo.bg is a ticket page, not the title's page"
+   ]
+  },
+  "film:polyusi": {
+   "last": "2026-11-06",
+   "tried": [
+    "https://domnakinoto.com/polyusi-movie7436.html?a="
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
+  "film:prodavach-na-nadezhda": {
+   "last": "2026-11-06",
+   "tried": [
+    "https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/"
+   ],
+   "why": [
+    "no usable image on the page"
    ]
   },
   "film:sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-": {
@@ -218,18 +243,17 @@
     "embed.urboapp.com is a ticket page, not the title's page"
    ]
   },
-  "show:5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w": {
-   "last": "2026-11-04",
+  "film:velopohodat-kam-cop-31": {
+   "last": "2026-11-06",
    "tried": [
-    "https://toplocentrala.bg/program/performance/let-s-not-get-lost-in-a-detail-now-workshop-w-maarten-seghers-needcompany"
+    "https://vlaikovacinema.com/screening/%d0%b2%d0%b5%d0%bb%d0%be%d0%bf%d0%be%d1%85%d0%be%d0%b4%d1%8a%d1%82-%d0%ba%d1%8a%d0%bc-cop-31/"
    ],
    "why": [
-    "removed 2026-11-04: a funder's notice (Министерство на културата), matched only by the theme's _fit-detail suffix",
-    "the image before 2026-11-04 (the title's art, from the listing, not its own page) is kept"
+    "no usable image on the page"
    ]
   },
   "show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden"
    ],
@@ -238,7 +262,7 @@
    ]
   },
   "show:az-foyerbah": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_5097_4_20"
    ],
@@ -247,7 +271,7 @@
    ]
   },
   "show:az-se-kazvah": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://toplocentrala.bg/program/performance/az-se-kazvah"
    ],
@@ -256,7 +280,7 @@
    ]
   },
   "show:bai-ganyo": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_5509_4_20"
    ],
@@ -266,7 +290,7 @@
    ]
   },
   "show:bremenskite-muzikanti": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_4248_4_20"
    ],
@@ -275,7 +299,7 @@
    ]
   },
   "show:buratino-2": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_7714_4_20"
    ],
@@ -291,7 +315,7 @@
    ]
   },
   "show:dalgiyat-pat-na-denya-kam-noshtta": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20"
    ],
@@ -300,7 +324,7 @@
    ]
   },
   "show:dekameron-lyubov-i-smart-po-bokacho": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
    ],
@@ -309,7 +333,7 @@
    ]
   },
   "show:dnevnikat-na-edin-lud-2": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097"
    ],
@@ -318,9 +342,18 @@
    ]
   },
   "show:igra-na-kotki": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://zadkanala.bg/spektakli/igra-na-kotki"
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
+  "show:insert-coin-player-one": {
+   "last": "2026-11-06",
+   "tried": [
+    "https://toplocentrala.bg/program/performance/insert-coin-player-one"
    ],
    "why": [
     "no usable image on the page"
@@ -341,7 +374,7 @@
    ]
   },
   "show:kiki-i-bozo": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/кики-и-бозо_7339_8_20"
    ],
@@ -350,7 +383,7 @@
    ]
   },
   "show:kotarakat-v-chizmi": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/котаракът-в-чизми_640_8_20"
    ],
@@ -372,6 +405,15 @@
     "no own page linked"
    ]
   },
+  "show:magichna-nosht-predi-koleda": {
+   "last": "2026-11-06",
+   "tried": [
+    "https://theatre.art.bg/x_8103_10_20"
+   ],
+   "why": [
+    "sofiapuppet.com not read (robots.txt blocks ClaudeBot): the same production on theatre.art.bg"
+   ]
+  },
   "show:magichnata-nosht-predi-koleda": {
    "last": "2026-11-04",
    "tried": [
@@ -382,7 +424,7 @@
    ]
   },
   "show:malkata-rusalka": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_7020_4_20"
    ],
@@ -398,7 +440,7 @@
    ]
   },
   "show:mezhdunaroden-simpozium-melba": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://toplocentrala.bg/program/performance/mejdunaroden-simpozium-melba"
    ],
@@ -407,7 +449,7 @@
    ]
   },
   "show:nordost": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_366_4_20"
    ],
@@ -416,7 +458,7 @@
    ]
   },
   "show:pepelyashka": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_6765_4_20"
    ],
@@ -425,7 +467,7 @@
    ]
   },
   "show:razdelyam-dvoyki-po-domovete": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_4099_4_20"
    ],
@@ -434,7 +476,7 @@
    ]
   },
   "show:sablechi-se-za-vecherya": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_5963_4_20"
    ],
@@ -443,13 +485,78 @@
    ]
   },
   "show:spetsialni-povodi": {
-   "last": "2026-11-04",
+   "last": "2026-11-06",
    "tried": [
     "https://theatre.art.bg/x_4673_4_20"
    ],
    "why": [
     "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg"
    ]
+  }
+ },
+ "og_seen": {
+  "https://g8cinema.com/bg/movie_images/1769100546-Kina-i-Yuk--lisitsite-ot-dalechniya-sever.jpg": {
+   "https://g8cinema.com/bg/kina-i-yuk-lisitsite-ot-dalechniya-sever": "кина и юк лисиците от далечния север"
+  },
+  "https://g8cinema.com/bg/movie_images/1780408486-Kotki-v-muzeya-2---Sykrovischata-na-Egipet.jpg": {
+   "https://g8cinema.com/bg/kotki-v-muzeya-2-sykrovischata-na-egipet": "котки в музея 2 съкровищата на египет"
+  },
+  "https://iamstudio.bg/wp-content/uploads/2024/02/screenshot_20261105_112127_drive.jpg": {
+   "https://iamstudio.bg/produkt/tri-versii-na-jivota/": "три версии на живота"
+  },
+  "https://softwareforcinema.com/f/movies/m/7/3f35d1e5b53405d412827e0349415572.png": {
+   "https://domnakinoto.com/hroniki-za-neudobnata-istina-movie7182.html?a=": "хроники за неудобната истина истината за българският чернобил"
+  },
+  "https://softwareforcinema.com/f/movies/m/7/50e139353acf31b3cc94b512b022a545.jpeg": {
+   "https://domnakinoto.com/naza-movie7212.html?a=": "наза"
+  },
+  "https://softwareforcinema.com/f/movies/m/7/fa7e6755cef7b61d958e255239db886b.jpeg": {
+   "https://domnakinoto.com/polyusi-movie7436.html?a=": "полюси"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png": {
+   "https://theatre.art.bg/котаракът-в-чизми_640_8_20": "котаракът в чизми"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG14437749981rep_pics_pic_1323918002.jpg": {
+   "https://theatre.art.bg/x_438_10_20": "огнивото"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG1576240600178985808_10159064354069307_1538155774428053504_o.jpg": {
+   "https://theatre.art.bg/x_5509_4_20": "bai ganyo"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg": {
+   "https://theatre.art.bg/кики-и-бозо_7339_8_20": "кики и бозо"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG1793887192108.08.26 LIW Sofia (444 x 444 px) Eventim .png": {
+   "https://theatre.art.bg/любов-във-война-мултимедиен-спектакъл-по-романа-аз-още-броя-дните_7924_173_20": "любов във война мултимедиен спектакъл по романа аз още броя дните"
+  },
+  "https://toplocentrala.bg/attachments/Event/1004/main/Horizontal_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/insert-coin-player-one": "insert coin player one"
+  },
+  "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/az-se-kazvah": "аз се казвах"
+  },
+  "https://toplocentrala.bg/attachments/Event/1213/main/Melba-14-11-2026_thumb-detail.png": {
+   "https://toplocentrala.bg/program/performance/mejdunaroden-simpozium-melba": "международен симпозиум мелба"
+  },
+  "https://toplocentrala.bg/attachments/Event/1221/main/Black-Closed-Sign-Landscape-Poster-Facebook-Cover_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/let-s-not-get-lost-in-a-detail-now-workshop-w-maarten-seghers-needcompany": "5 години топлоцентрала let s not get lost in a detail now workshop with maarten seghers needcompany"
+  },
+  "https://toplocentrala.bg/attachments/Event/1225/main/Acoustic-live-2_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden": "5 години топлоцентрала владо михайлов акустичен вход свободен"
+  },
+  "https://toplocentrala.bg/attachments/Event/1230/main/landscape-lia-pavlova_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parformans": "литературна гостна с лия среща разговор и театрален пърформанс"
+  },
+  "https://toplocentrala.bg/attachments/Event/975/main/AIDB-ticket-1366x768_thumb-detail.png": {
+   "https://toplocentrala.bg/program/performance/treta-natsionalna-konferentsiya-za-interioren-dizayn": "четвърта национална конференция за интериорен дизайн"
+  },
+  "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/69a97a721f8d2d2acccb02822e9df8d9b37441b4.jpeg": {
+   "https://www.kinoarena.com/bg/movie/how-to-save-the-immortal-2-elixir-of-life": "безсмъртният и красавицата 2 еликсир на живота"
+  },
+  "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/7b07b93f31d3fade4f1688b8c10631e79ad19089.png": {
+   "https://www.kinoarena.com/bg/movie/khroniki-za-neudobnata-istina": "хроники за неудобната истина истината за българският чернобил"
+  },
+  "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/ed6ef7335dafacbfa37ee374723733c83264b3d0.jpeg": {
+   "https://www.kinoarena.com/bg/movie/dzhumbo-magicheskoto-priklyuchenie": "джъмбо магическото приключение"
   }
  },
  "shows": {
@@ -528,6 +635,18 @@
    "md5": "5b108df9f8dd5f8b21293170c4913dc9",
    "page": "https://toplocentrala.bg/program/performance/di-shtraus-tehnik",
    "path": "posters/5-godini-toplotsentrala-di-shtraus-tehnik-ideya-tekst-i-hore.jpg",
+   "w": 970
+  },
+  "5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w": {
+   "checked": "2026-11-06",
+   "h": 550,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/1221/main/Black-Closed-Sign-Landscape-Poster-Facebook-Cover_thumb-detail.jpg",
+   "kind": "key",
+   "md5": "f0899f050f3a934582cbda19f460b12f",
+   "page": "https://toplocentrala.bg/program/performance/let-s-not-get-lost-in-a-detail-now-workshop-w-maarten-seghers-needcompany",
+   "path": "posters/5-godini-toplotsentrala-let-s-not-get-lost-in-a-detail-now-w.jpg",
+   "src_md5": "16e0df315e2da1afe8a78cc64f62f233",
    "w": 970
   },
   "5-godini-toplotsentrala-songs-of-disconnection": {
@@ -1343,6 +1462,18 @@
    "page": "https://theatrevazrajdane.bg/portfolio/%d1%87%d0%b5%d1%81%d1%82%d0%bd%d0%b0-%d0%bc%d1%83%d1%81%d0%ba%d0%b5%d1%82%d0%b0%d1%80%d1%81%d0%ba%d0%b0/",
    "path": "posters/chestna-musketarska.jpg",
    "w": 1362
+  },
+  "chetvarta-natsionalna-konferentsiya-za-interioren-dizayn": {
+   "checked": "2026-11-06",
+   "h": 550,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/975/main/AIDB-ticket-1366x768_thumb-detail.png",
+   "kind": "key",
+   "md5": "9c207d05edc30957fed6cf0213101e71",
+   "page": "https://toplocentrala.bg/program/performance/treta-natsionalna-konferentsiya-za-interioren-dizayn",
+   "path": "posters/chetvarta-natsionalna-konferentsiya-za-interioren-dizayn.jpg",
+   "src_md5": "74ba1d3a762a4a36c5fa56ce2ae199ae",
+   "w": 970
   },
   "chovekoyadkata": {
    "checked": "2026-11-04",
@@ -2939,6 +3070,18 @@
    "path": "posters/lisicheta.jpg",
    "w": 220
   },
+  "literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parfo": {
+   "checked": "2026-11-06",
+   "h": 550,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/1230/main/landscape-lia-pavlova_thumb-detail.jpg",
+   "kind": "key",
+   "md5": "203b21a682ef4263170fa4a872927d13",
+   "page": "https://toplocentrala.bg/program/performance/literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parformans",
+   "path": "posters/literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parfo.jpg",
+   "src_md5": "572f5bd4b1f9aadf809e21741209defa",
+   "w": 970
+  },
   "live-4head-collective-in-toplocentrala": {
    "checked": "2026-11-04",
    "h": 550,
@@ -3026,6 +3169,18 @@
    "page": "https://www.salzaismyah.bg/site/play/585",
    "path": "posters/lyubov-po-stsenariy-v-hollywood.jpg",
    "w": 600
+  },
+  "lyubov-vav-voyna-multimedien-spektakal-po-romana-az-oshte-br": {
+   "checked": "2026-11-06",
+   "h": 800,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG1793887192108.08.26 LIW Sofia (444 x 444 px) Eventim .png",
+   "kind": "key",
+   "md5": "b017b0b81543c041d25bdc5c45524253",
+   "page": "https://theatre.art.bg/любов-във-война-мултимедиен-спектакъл-по-романа-аз-още-броя-дните_7924_173_20",
+   "path": "posters/lyubov-vav-voyna-multimedien-spektakal-po-romana-az-oshte-br.jpg",
+   "src_md5": "17e0ebc1b7ef2256586c145063b47be5",
+   "w": 800
   },
   "lyubovni-pisma": {
    "checked": "2026-11-04",
@@ -3785,6 +3940,18 @@
    "page": "https://artvent.bg/event/ogledalce-ogledalce",
    "path": "posters/ogledalce-ogledalce.jpg",
    "w": 1920
+  },
+  "ognivoto": {
+   "checked": "2026-11-06",
+   "h": 624,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG14437749981rep_pics_pic_1323918002.jpg",
+   "kind": "key",
+   "md5": "1630c2984713d53bcea9d81e3dcd2664",
+   "page": "https://theatre.art.bg/x_438_10_20",
+   "path": "posters/ognivoto.jpg",
+   "src_md5": "8736690e7c040004ad848d1b7288d5b4",
+   "w": 800
   },
   "opasen-char": {
    "checked": "2026-11-04",
@@ -5435,6 +5602,18 @@
    "page": "https://theatrevazrajdane.bg/portfolio/%d1%82%d1%80%d0%b8-%d1%81%d0%b5%d1%81%d1%82%d1%80%d0%b8/",
    "path": "posters/tri-sestri.jpg",
    "w": 5671
+  },
+  "tri-versii-na-zhivota": {
+   "checked": "2026-11-06",
+   "h": 1523,
+   "how": "og:image",
+   "img": "https://iamstudio.bg/wp-content/uploads/2024/02/screenshot_20261105_112127_drive.jpg",
+   "kind": "poster",
+   "md5": "defdbd6d463cbd8f5d8da6d16c96b155",
+   "page": "https://iamstudio.bg/produkt/tri-versii-na-jivota/",
+   "path": "posters/tri-versii-na-zhivota.jpg",
+   "src_md5": "fe8e4751c2c1c37b46de025331397260",
+   "w": 1080
   },
   "trimata-snezhkovtsi": {
    "checked": "2026-11-04",

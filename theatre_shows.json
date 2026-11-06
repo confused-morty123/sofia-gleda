@@ -6946,5 +6946,113 @@
   "synBg": "",
   "synEn": "",
   "source": "natfiz"
+ },
+ "magichna-nosht-predi-koleda": {
+  "id": "magichna-nosht-predi-koleda",
+  "title": "Магична нощ преди Коледа",
+  "titleEn": "",
+  "theatre": "kuklen",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "kuklen"
+ },
+ "insert-coin-player-one": {
+  "id": "insert-coin-player-one",
+  "title": "INSERT COIN / PLAYER ONE",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parfo": {
+  "id": "literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parfo",
+  "title": "Литературна гостна с Лия: среща-разговор и театрален пърформанс",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "chetvarta-natsionalna-konferentsiya-za-interioren-dizayn": {
+  "id": "chetvarta-natsionalna-konferentsiya-za-interioren-dizayn",
+  "title": "Четвърта национална конференция за интериорен дизайн",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "lyubov-vav-voyna-multimedien-spektakal-po-romana-az-oshte-br": {
+  "id": "lyubov-vav-voyna-multimedien-spektakal-po-romana-az-oshte-br",
+  "title": "\"ЛЮБОВ ВЪВ ВОЙНА\" - МУЛТИМЕДИЕН СПЕКТАКЪЛ ПО РОМАНА \"АЗ ОЩЕ БРОЯ ДНИТЕ\"",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "tri-versii-na-zhivota": {
+  "id": "tri-versii-na-zhivota",
+  "title": "Три версии на живота",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
  }
 }

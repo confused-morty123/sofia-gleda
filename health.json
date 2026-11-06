@@ -1,18 +1,28 @@
 [
  {
-  "level": "error",
+  "level": "warning",
+  "venue": "cc-paradise",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "cc-sofia",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "cg-park",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
+  "venue": "cg-ring",
+  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
+ },
+ {
+  "level": "warning",
   "venue": "mladezhki",
   "message": "blocked from this network: challenge page (Cloudflare challenge, HTTP 403) at https://mlt.bg/programa.php?year=2026&month=11 — read from tickets.mlt.bg public list (the theatre's own ticket centre) instead"
- },
- {
-  "level": "warning",
-  "venue": "zad-kanala",
-  "message": "official source unreachable (zad-kanala: date text disagrees with 2027-01-08T19:00:00+02:00); last read 2026-11-04, 0 days ago — 53 performances kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
-  "venue": "natfiz",
-  "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
  {
   "level": "warning",
@@ -27,16 +37,26 @@
  {
   "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 25 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 24 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 202/277 ok, 75 missing IMDb ratings"
+  "message": "OMDb: 211/283 ok, 72 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 521/526 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (13 days), karnaval (13 days)"
+  "message": "theatre posters: 526/530 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (15 days)"
+ },
+ {
+  "level": "warning",
+  "venue": "poster-fix",
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.9 % -> 95.1 %, films 92.2 % -> 92.2 %; attached 1; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, only an aggregator's image (the film does not link that page) 10, own page has no usable image 8, own page's images rejected by the poster policy 5 (poster_health.md)"
+ },
+ {
+  "level": "warning",
+  "venue": "publish-gate",
+  "message": "5c2 poster coverage (films, own image): 190/206 (92.2 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, fresh-water-for-flowers-cinelibri, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kasometrazhen-konkurs, kina-i-yuk-lisitsite-ot-dalechniya-sever, kodat-na-balgarite, kotki-v-muzeya-2-sakrovishtata-na-egipet, kucheto-na-zlatyu, naza, polyusi, prodavach-na-nadezhda — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

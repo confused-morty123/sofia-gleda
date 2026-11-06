@@ -374,6 +374,28 @@
     "runtime": 121
    }
   },
+  "bezsmartniyat-i-krasavitsata-2": {
+   "into": "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota",
+   "rule": "prefix",
+   "reason": "'безсмъртният и красавицата 2' begins 'безсмъртният и красавицата 2 еликсир на живота'; runtime [80]≈[80] min and year 2026",
+   "since": "2026-11-06",
+   "record": {
+    "id": "bezsmartniyat-i-krasavitsata-2",
+    "bg": "Безсмъртният и красавицата 2",
+    "en": "",
+    "genres": [
+     "Анимация",
+     "Семеен"
+    ],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "cc-sofia",
+    "runtime": 80,
+    "year": 2026
+   }
+  },
   "everest-ot-drugata-strana": {
    "into": "everest-drugata-strana",
    "rule": "function-word",
