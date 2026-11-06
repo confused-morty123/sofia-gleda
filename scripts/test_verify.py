@@ -1984,10 +1984,26 @@ check("the page's IMDB_SHOW_MIN equals ratings_coverage.IMDB_SHOW_MIN (an IMDb r
 check("imdb_votes reads the dataset's counts (7, 950, 12,500, 1.2K, 2.0M; unknown is None)",
       [_RC.imdb_votes(v) for v in ("7", "950", "12,500", "1.2K", "2.0M", "", None, "N/A")]
       == [7, 950, 12500, 1200, 2000000, None, None, None])
-check("scores: IMDb from 7 votes is not a score; from 10 it is; with no vote count (curated seed) it is",
+check("scores: IMDb from 7, 10 or 99 votes is not a score; from 100 it is; with no vote count (curated seed) it is",
       [("imdb" in _RC.scores(f, a)) for f, a in (({}, {"imdb": 8.5, "imdbVotes": "7"}),
                                                   ({}, {"imdb": 3.6, "imdbVotes": "10"}),
-                                                  ({"imdb": 7.2}, {}))] == [False, True, True])
+                                                  ({}, {"imdb": 7.0, "imdbVotes": "99"}),
+                                                  ({}, {"imdb": 7.0, "imdbVotes": "100"}),
+                                                  ({"imdb": 7.2}, {}))] == [False, False, False, True, True])
+for _k in ("IMDB_STALE_BELOW", "IMDB_STALE_TMDB_MIN", "IMDB_STALE_GAP"):
+    _m_st = _re_rc.search(r"\b%s=([\d.]+)" % _k, _src_rc)
+    check(f"the page's {_k} equals ratings_coverage.{_k}",
+          bool(_m_st) and float(_m_st.group(1)) == float(getattr(_RC, _k)))
+check("scores: Историите на нощта's shape (IMDb 3.6 from 10 votes, TMDB 6.3 from 22) shows TMDB only",
+      _RC.scores({}, {"imdb": 3.6, "imdbVotes": "10", "tv": 6.3, "tc": 22}) == {"tmdb": 6.3})
+check("imdb_shown: under 1000 votes, 2.0 or more from TMDB (from 20 votes) is stale and hidden; 1.9 away, "
+      "TMDB from 19 votes or IMDb from 1000 votes is kept",
+      [_RC.imdb_shown({}, a) for a in ({"imdb": 8.5, "imdbVotes": "500", "tv": 6.3, "tc": 22},
+                                       {"imdb": 7.1, "imdbVotes": "999", "tv": 5.1, "tc": 20},
+                                       {"imdb": 8.2, "imdbVotes": "500", "tv": 6.3, "tc": 22},
+                                       {"imdb": 8.5, "imdbVotes": "500", "tv": 6.3, "tc": 19},
+                                       {"imdb": 8.5, "imdbVotes": "1.0K", "tv": 6.3, "tc": 22})]
+      == [None, None, 8.2, 8.5, 8.5])
 for _t, _g, _want in (("Rammstein - Live in Mexico City", [], "live"),
                       ("GEORGE MICHAEL: THE FAITH TOUR", [], "live"),
                       ("Stray Kids World Tour <RUN IT> LIVE VIEWING", ["Музикален"], "live"),
@@ -2040,6 +2056,8 @@ _cur_rc = {"scored": {"a": ["", None], "b": ["", 9], "c": ["", 99]}}
 check("lost_scores: a film matched to the same TMDB film that lost a score is counted; a rematched one is not",
       _RC.lost_scores(_prev_rc, _cur_rc, min_films=1) == {"imdb": ["a"], "tmdb": ["b"]})
 check("lost_scores: below the minimum of films nothing is blamed", _RC.lost_scores(_prev_rc, _cur_rc) == {})
+check("lost_scores: IMDb ratings hidden by a change of the display rules are not a broken fetch; TMDB still compared",
+      _RC.lost_scores(dict(_prev_rc, rules="imdb>=10"), dict(_cur_rc, rules=_RC.RULES), min_films=1) == {"tmdb": ["b"]})
 # the gate: 5c4 never fails (warn, never block publishing); a loss is a WARNING
 _art5 = {f"f{i}": {"imdb": 7.0 + i / 10} for i in range(3)}
 _rc, _out = _run_out(_tr_page(_art5))

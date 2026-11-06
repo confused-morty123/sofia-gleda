@@ -16,7 +16,9 @@ Definition (the dashboard and verify_build check 5c4 both read it from here):
             one film (the same TMDB match) count once.
   a score   what the page shows (src/sofia-screen.artifact.html): a genuine IMDb
             rating (OMDb, or the curated seed) from at least IMDB_SHOW_MIN votes (or
-            an unknown vote count), TMDB's vote_average with at least
+            an unknown vote count) that TMDB does not contradict (imdb_shown: under
+            IMDB_STALE_BELOW votes, a gap of IMDB_STALE_GAP or more to a TMDB score
+            from IMDB_STALE_TMDB_MIN votes is a stale OMDb copy), TMDB's vote_average with at least
             TMDB_SHOW_MIN votes, Rotten Tomatoes' critics' score, Metacritic's score.
             Nothing is estimated and TMDB's number is never counted as IMDb.
   any       films with at least one of the four; the target is TARGET %.
@@ -30,7 +32,15 @@ ratings_coverage() returns a JSON-able dict; verify_build prints it as one line
 import re
 
 TMDB_SHOW_MIN = 10   # = TMDB_SHOW_MIN in src/sofia-screen.artifact.html (test_verify checks they agree)
-IMDB_SHOW_MIN = 10   # = IMDB_SHOW_MIN in src/sofia-screen.artifact.html (test_verify checks they agree)
+IMDB_SHOW_MIN = 100  # = IMDB_SHOW_MIN in src/sofia-screen.artifact.html (test_verify checks they agree)
+# The staleness guard (owner, 2026-11-06; = IMDB_STALE_* in src/): OMDb lags IMDb, and a
+# low-vote rating moves fast (Синелибри: Историите на нощта, OMDb 3.6 from 10 votes, IMDb 6.4).
+IMDB_STALE_BELOW = 1000
+IMDB_STALE_TMDB_MIN = 20
+IMDB_STALE_GAP = 2.0
+# Identifies the display rules in the report, so lost_scores() never mistakes a rule
+# change (scores hidden on purpose) for a rating fetch that broke.
+RULES = f"imdb>={IMDB_SHOW_MIN};stale<{IMDB_STALE_BELOW}:tmdb>={IMDB_STALE_TMDB_MIN}:gap>={IMDB_STALE_GAP:g};tmdb>={TMDB_SHOW_MIN}"
 TARGET = 95.0
 SOURCES = ("imdb", "tmdb", "rt", "mc")
 FLAG = {"imdb": "i", "tmdb": "t", "rt": "r", "mc": "m"}
@@ -80,14 +90,34 @@ def imdb_votes(v):
     return round(float(m.group(1)) * {"": 1, "K": 1e3, "M": 1e6}[m.group(2).upper()])
 
 
+def imdb_shown(film, art):
+    """IMDb's rating as the page shows it, or None (= imdbShown in src/): TMDBART first,
+    the seed second; none from fewer than IMDB_SHOW_MIN votes; none under
+    IMDB_STALE_BELOW votes when TMDB (from IMDB_STALE_TMDB_MIN votes) differs by
+    IMDB_STALE_GAP or more; an unknown vote count (curated seed) is shown."""
+    a = art if isinstance(art, dict) else {}
+    im = a.get("imdb") if a.get("imdb") is not None else film.get("imdb")
+    if not _num(im):
+        return None
+    n = imdb_votes(a.get("imdbVotes") or film.get("imdbVotes"))      # = votesOf in src/
+    if n is None:
+        return im
+    if n < IMDB_SHOW_MIN:
+        return None
+    tv, tc = a.get("tv"), a.get("tc")
+    if (n < IMDB_STALE_BELOW and _num(tv) and _num(tc) and tc >= IMDB_STALE_TMDB_MIN
+            and abs(im - tv) >= IMDB_STALE_GAP - 1e-9):
+        return None
+    return im
+
+
 def scores(film, art):
     """{source: value} for the scores the page shows for this film (same rules as
     imdbShown / tmdbShown / rtOf / mcOf in src/): TMDBART first, the seed second."""
     a = art if isinstance(art, dict) else {}
     out = {}
-    im = a.get("imdb") if a.get("imdb") is not None else film.get("imdb")
-    n = imdb_votes(a.get("imdbVotes") or film.get("imdbVotes"))      # = votesOf in src/
-    if _num(im) and (n is None or n >= IMDB_SHOW_MIN):
+    im = imdb_shown(film, a)
+    if im is not None:
         out["imdb"] = im
     tv, tc = a.get("tv"), a.get("tc")
     if _num(tv) and _num(tc) and tc >= TMDB_SHOW_MIN:
@@ -172,7 +202,7 @@ def ratings_coverage(films, showtimes, tmdbart, today, sidecar=None):
     n = len(groups)
     return {
         "metric": "films-any-genuine-score", "today": today, "target": TARGET,
-        "tmdb_min_votes": TMDB_SHOW_MIN,
+        "tmdb_min_votes": TMDB_SHOW_MIN, "imdb_min_votes": IMDB_SHOW_MIN, "rules": RULES,
         "titles": len(up), "films": n, "records": sum(len(v) for v in groups.values()),
         "non_films": {k: sorted(v) for k, v in non.items()},
         "per_source": {k: {"with": per[k], "pct": _pct(per[k], n)} for k in SOURCES},
@@ -193,6 +223,9 @@ def lost_scores(prev, cur, min_films=3):
     c = (cur or {}).get("scored") if isinstance(cur, dict) else None
     if not isinstance(p, dict) or not isinstance(c, dict):
         return {}
+    # a report made under other display rules (or before they were recorded) hid or
+    # showed IMDb ratings on purpose: its IMDb flags are not comparable
+    srcs = SOURCES if prev.get("rules") == cur.get("rules") else tuple(k for k in SOURCES if k != "imdb")
     lost = {k: [] for k in SOURCES}
     for fid, now in c.items():
         was = p.get(fid)
@@ -200,7 +233,7 @@ def lost_scores(prev, cur, min_films=3):
             continue
         if was[1] != now[1]:
             continue                         # matched to another film (or unmatched): not comparable
-        for k in SOURCES:
+        for k in srcs:
             if FLAG[k] in (was[0] or "") and FLAG[k] not in (now[0] or ""):
                 lost[k].append(fid)
     return {k: sorted(v) for k, v in lost.items() if len(v) >= min_films}

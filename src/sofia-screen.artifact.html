@@ -2240,14 +2240,28 @@ const votesOf=o=>{
    and the sheet has no IMDb tile. A rating whose vote count is unknown (a curated
    seed value without one) is shown as before. imdbShown is the one helper every
    IMDb read goes through (chip, sheet, ranking); scripts/ratings_coverage.py
-   applies the same floor (test_verify checks the two minimums agree). */
-const IMDB_SHOW_MIN=10;
+   applies the same floor (test_verify checks the two minimums agree).
+   Floor raised to 100 and a staleness guard added (owner, 2026-11-06): OMDb, read
+   nightly, lags IMDb, and a low-vote IMDb rating moves fast (Синелибри: Историите на
+   нощта showed OMDb's 3.6 from 10 votes while IMDb read 6.4). Below IMDB_SHOW_MIN votes
+   there is no IMDb chip, tile or vote tile. From IMDB_SHOW_MIN up to IMDB_STALE_BELOW
+   votes, a rating that differs from TMDB's (TMDB from IMDB_STALE_TMDB_MIN votes) by
+   IMDB_STALE_GAP or more is taken as stale and hidden the same way. A missing score is
+   acceptable, a wrong one is not. */
+const IMDB_SHOW_MIN=100;
+const IMDB_STALE_BELOW=1000,IMDB_STALE_TMDB_MIN=20,IMDB_STALE_GAP=2.0;
 /* IMDb's vote count as a number: "7", "950", "12,500", "1.2K", "2.0M"; null if unknown */
 const imdbVoteN=o=>{const m=/^(\d+(?:\.\d+)?)([KM]?)$/i.exec(String(votesOf(o)).replace(/[,\s]/g,""));
   return m?Math.round(parseFloat(m[1])*(m[2]?(m[2].toUpperCase()==="M"?1e6:1e3):1)):null;};
-/* IMDb's rating as the page shows it: a number, not from fewer than IMDB_SHOW_MIN votes. */
+/* IMDb's rating as the page shows it: a number, not from fewer than IMDB_SHOW_MIN votes,
+   and not a low-vote rating TMDB contradicts (the staleness guard above). */
 const imdbShown=o=>{const v=imdbOf(o);if(typeof v!=="number"||!isFinite(v))return null;
-  const n=imdbVoteN(o);return (n!=null&&n<IMDB_SHOW_MIN)?null:v;};
+  const n=imdbVoteN(o);if(n==null)return v;if(n<IMDB_SHOW_MIN)return null;
+  if(n<IMDB_STALE_BELOW){const art=(typeof TMDBART==="object"&&TMDBART&&TMDBART[o.id])||{};
+    const tv=art.tv,tc=art.tc;
+    if(typeof tv==="number"&&isFinite(tv)&&typeof tc==="number"&&tc>=IMDB_STALE_TMDB_MIN
+       &&Math.abs(v-tv)>=IMDB_STALE_GAP-1e-9)return null;}
+  return v;};
 /* Rotten Tomatoes critics' score (integer %). Fresh TMDBART (daily OMDb) wins over
    the seed's frozen snapshot. Returns null when neither source has a value. */
 const rtOf=o=>{
