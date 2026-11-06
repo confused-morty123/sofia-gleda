@@ -2989,7 +2989,10 @@ def wave_d1(browser):
         // Find any film that has upcoming showings at ANY inPerson venue
         const inPersonVids = Object.keys(BOOKING).filter(v => BOOKING[v].inPerson);
         const upcomingByFilm = {{}};
-        SHOWTIMES.filter(r => r[2] >= today && inPersonVids.includes(r[1])).forEach(r => {{
+        // UPCOMING on the test's fixed clock (today 14:45): a screening earlier today is
+        // past, the sheet shows no pill for it (2026-11-06: cheburashka at G8 only at 13:50)
+        const up = r => (r[3]||[]).filter(t => timeIsUpcoming(r[2], t));
+        SHOWTIMES.filter(r => r[2] >= today && inPersonVids.includes(r[1]) && up(r).length).forEach(r => {{
             if (!upcomingByFilm[r[0]]) upcomingByFilm[r[0]] = new Set();
             upcomingByFilm[r[0]].add(r[1]);
         }});
@@ -3000,15 +3003,15 @@ def wave_d1(browser):
         let inPersonFilmId = null;
         let inPersonVenueId = null;
         for (const [fid, vids] of Object.entries(upcomingByFilm)) {{
-            const all = SHOWTIMES.filter(r => r[0] === fid && r[2] >= today);
-            if (!all.every(r => inPersonVids.includes(r[1]) && (r[3]||[]).every(t => boxOnly("film", fid, r[1], r[2], t)))) continue;
+            const all = SHOWTIMES.filter(r => r[0] === fid && r[2] >= today && up(r).length);
+            if (!all.every(r => inPersonVids.includes(r[1]) && up(r).every(t => boxOnly("film", fid, r[1], r[2], t)))) continue;
             inPersonFilmId = fid;
             inPersonVenueId = [...vids][0];
             break;
         }}
-        if (!inPersonFilmId) return {{found: false, reason: "no upcoming screening at an in-person cinema",
+        if (!inPersonFilmId) return {{found: false, reason: "no screening still to come (after 14:45 today) at an in-person cinema",
                                       vids: inPersonVids}};
-        const row = SHOWTIMES.find(r => r[0] === inPersonFilmId && r[1] === inPersonVenueId && r[2] >= today && (r[3]||[]).length);
+        const row = SHOWTIMES.find(r => r[0] === inPersonFilmId && r[1] === inPersonVenueId && r[2] >= today && up(r).length);
         const f = filmById[inPersonFilmId];
         if (!f) return {{found: false, reason: "filmById miss for " + inPersonFilmId}};
         // P3E: film sheet renders .p3e-pill[data-sspill] buttons (not a.time links)
@@ -3025,7 +3028,7 @@ def wave_d1(browser):
             venueId: inPersonVenueId,
             pillCount: pills.length,
             inPersonBuyAnchorCount: inPersonBuyAnchors.length,
-            pillKey: row ? "film:" + inPersonFilmId + "|" + inPersonVenueId + "|" + row[2] + "|" + row[3][0] : null
+            pillKey: row ? "film:" + inPersonFilmId + "|" + inPersonVenueId + "|" + row[2] + "|" + up(row)[0] : null
         }};
     }}""")
 
@@ -10525,13 +10528,29 @@ def wave_p3a(browser):
     check("p3a_5_theatre_prem_badge_class_exists",
           True,
           f"badge.prem count on theatre cards: {theatre_prem_badges}")
-    # Verify static ПРЕМИЕРА badge is NOT rendered on any show card
+    # Verify static ПРЕМИЕРА badge is NOT rendered on any show card. The static seed badge is
+    # a plain .badge reading "ПРЕМИЕРА"; the dynamic one (showPremBadge) is .badge.prem and
+    # reads "Премиера" on the premiere day itself (2026-11-06: vaal premieres today, and the
+    # old upper-cased comparison counted its dynamic badge as the static one). Counted on the
+    # live cards AND on a card rendered for a show given the static seed badge, so the check
+    # is never vacuous on a day when no show carries that seed.
     static_prem = page.evaluate("""() => {
-        const badges = Array.from(document.querySelectorAll('.card[data-show] .badge'));
-        return badges.filter(b => b.textContent.trim().toUpperCase() === 'ПРЕМИЕРА').length;
+        const isStatic = b => !b.classList.contains('prem') && b.textContent.trim().toUpperCase() === 'ПРЕМИЕРА';
+        const live = Array.from(document.querySelectorAll('.card[data-show] .badge')).filter(isStatic)
+            .map(b => b.closest('.card').dataset.show);
+        const seeded = SHOWS.filter(sh => sh.badge === 'ПРЕМИЕРА').length;
+        const sh = SHOWS.find(sh => showPerfs(sh.id).length) || SHOWS[0];
+        let synth = null;
+        if (sh) { const d = document.createElement('div'); d.innerHTML = showCard(Object.assign({}, sh, {badge: 'ПРЕМИЕРА'}), false);
+            synth = {id: sh.id, n: Array.from(d.querySelectorAll('.badge')).filter(isStatic).length}; }
+        return {live, seeded, synth};
     }""")
-    check("p3a_5_no_static_premiera_on_show_cards", static_prem == 0,
-          f"{static_prem} card(s) still show static uppercase ПРЕМИЕРА badge")
+    _sp_synth = static_prem.get("synth") or {}
+    check("p3a_5_no_static_premiera_on_show_cards",
+          not static_prem["live"] and _sp_synth.get("n") == 0,
+          f"live cards with the static ПРЕМИЕРА badge: {static_prem['live'][:5]} "
+          f"({static_prem['seeded']} show(s) seeded with it); "
+          f"synthetic card {_sp_synth.get('id')} given badge ПРЕМИЕРА shows it {_sp_synth.get('n')} time(s)")
     save_shot(page, wave, "p3a_5_theatre_prem_badges")
     ctx.close()
 
@@ -11587,7 +11606,6 @@ def wave_p3e(browser):
 
     if not opened:
         skip("p3e_6_desk_grid", "no film card (desktop)")
-        skip("p3e_7_desk_fn", "no film card (desktop)")
     else:
         page.wait_for_timeout(500)
         grid_info = page.evaluate("""() => {
@@ -11604,11 +11622,15 @@ def wave_p3e(browser):
                 gt: !!gt,
                 gtFn: !!gtFn,
                 gtFnText: gtFn ? gtFn.textContent.trim().slice(0, 80) : null,
+                // the footnote explains the dashed (preliminary) times: the app renders it
+                // only for a film with one (anyPrelim), so whether it is due depends on the film
+                filmId: (typeof curSheet === 'object' && curSheet) ? curSheet.id : null,
+                prelim: (typeof curSheet === 'object' && curSheet && filmById[curSheet.id])
+                    ? upcomingRows(SHOWTIMES).some(r => r[0] === curSheet.id && isPrelimListing('film', r[0], r[1], r[2])) : null,
             };
         }""")
         if not grid_info.get("found"):
             skip("p3e_6_desk_grid", "no sheet")
-            skip("p3e_7_desk_fn", "no sheet")
         else:
             check("p3e_6_grid_wrap",
                   grid_info.get("gridWrap"),
@@ -11619,11 +11641,31 @@ def wave_p3e(browser):
             check("p3e_6_gt_table",
                   grid_info.get("gt"),
                   ".p3e-gt table present")
-            check("p3e_7_desk_fn",
-                  grid_info.get("gtFn"),
-                  f".p3e-gt-fn text={grid_info.get('gtFnText','')!r}")
+            # P3E-7 (2026-11-06): the first card's film used to carry preliminary times;
+            # today's (kotarakat-s-shapkata) has none, so no footnote is due on it. Check the
+            # footnote on a film that has a preliminary time, and its absence on one without.
+            if grid_info.get("prelim") is False:
+                check("p3e_7_desk_fn_absent_without_prelim", not grid_info.get("gtFn"),
+                      f"{grid_info.get('filmId')} has no preliminary time; .p3e-gt-fn text={grid_info.get('gtFnText')!r}")
 
     save_shot(page, wave, "p3e_6_desk_grid")
+    if opened:
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(400)
+    pre_fid = page.evaluate("""() => {
+        const r = upcomingRows(SHOWTIMES).find(r => filmById[r[0]] && isPrelimListing('film', r[0], r[1], r[2]));
+        if (!r) return null;
+        _sheetShowAllCinemas = false; curSheet = {kind: 'film', id: r[0]}; openSheet(sheetFilm(filmById[r[0]]), null);
+        return r[0]; }""")
+    if not pre_fid:
+        skip("p3e_7_desk_fn", "no film with an upcoming preliminary time in this build")
+    else:
+        page.wait_for_timeout(500)
+        fn = page.evaluate("""() => { const s = document.querySelector('.sheet'); const e = s && s.querySelector('.p3e-gt-fn');
+            return {grid: !!(s && s.querySelector('.p3e-grid-wrap')), fn: !!e, text: e ? e.textContent.trim().slice(0, 80) : null}; }""")
+        check("p3e_7_desk_fn", fn["grid"] and fn["fn"] and bool(fn["text"]),
+              f"{pre_fid} (has a preliminary time): grid={fn['grid']} .p3e-gt-fn text={fn['text']!r}")
+        save_shot(page, wave, "p3e_7_desk_fn")
     ctx.close()
 
     # ── P3E-8: Screening sheet opens on pill click; close button works ────────
@@ -18123,9 +18165,14 @@ def _ux_rails_offsnap(browser, base, eng):
                 touch_swipe(page, int(rr[0] + rr[2] / 2), int(rr[1] + rr[3] / 3), dx=-230, speed=900)
                 again = "a touch swipe"
             else:       # mobile WebKit here has neither touch scrolling nor a wheel: a smooth scroll onto a card
-                page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i], c = t.children[6];"
-                              " t.scrollTo({left: c.getBoundingClientRect().left - t.getBoundingClientRect().left + t.scrollLeft, behavior: 'smooth'}); }", i)
-                again = "a smooth scroll onto a card"
+                # a card ahead of where the rail rests (the 7th used to be hard-coded; on
+                # 2026-11-06 a phone rail held 6 cards and children[6] was undefined), else
+                # back to the first card: either way a smooth scroll that ends on a card
+                tgt = page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i], l0 = t.getBoundingClientRect().left,"
+                                    " max = t.scrollWidth - t.clientWidth, x = c => c.getBoundingClientRect().left - l0 + t.scrollLeft;"
+                                    " const cs = [...t.children], j = cs.findIndex(c => x(c) > t.scrollLeft + 100 && x(c) <= max + 1),"
+                                    " k = j < 0 ? 0 : j; t.scrollTo({left: Math.min(max, x(cs[k])), behavior: 'smooth'}); return [k, cs.length]; }", i)
+                again = f"a smooth scroll onto card {tgt[0] + 1} of {tgt[1]}"
             _ux_rail_settle(page, i)
             page.wait_for_timeout(200)
             st2 = page.evaluate(UX_RAIL_SNAP_JS, i)
@@ -19215,7 +19262,7 @@ def wave_bo1(browser):
     info = page.evaluate("""([ex,ex2,pinned,pair])=>{
       const today=TODAY, bx=(typeof BOXONLY!=='undefined'&&Array.isArray(BOXONLY))?BOXONLY:[];
       const perfOn=new Set(PERFORMANCES.map(p=>p[0]+'|'+p[1]+'|'+p[2]));
-      const row=id=>{const r=bx.find(r=>r[0]===id&&r[1]>=today);return r?[r[0],r[1],r[2],!!r[3],isPrelimListing('show',id,'salzaismyah',r[1])]:null};
+      const row=id=>{const r=bx.find(r=>r[0]===id&&timeIsUpcoming(r[1],r[2]));return r?[r[0],r[1],r[2],!!r[3],isPrelimListing('show',id,'salzaismyah',r[1])]:null};
       // a normal online show on a confirmed date: an official link, no box-office time, not inPerson
       let online=null;
       for(const p of PERFORMANCES){
@@ -19226,9 +19273,9 @@ def wave_bo1(browser):
         online=[sh.id,sh.theatre,p[1],p[2]]; break;}
       // a preliminary time sold online (the tag is for every preliminary showing)
       let prelimOnline=null;
-      for(const r of SHOWTIMES){ if(r[2]<today||!(r[3]||[]).length||!filmById[r[0]])continue;
-        if(isPrelimListing('film',r[0],r[1],r[2])&&!boxOnly('film',r[0],r[1],r[2],r[3][0])){prelimOnline=['film',r[0],r[1],r[2],r[3][0]];break;}}
-      if(!prelimOnline)for(const p of PERFORMANCES){ if(p[1]<today)continue; const sh=showById[p[0]]; if(!sh)continue;
+      for(const r of SHOWTIMES){ const t0=(r[3]||[]).find(t=>timeIsUpcoming(r[2],t)); if(r[2]<today||!t0||!filmById[r[0]])continue;
+        if(isPrelimListing('film',r[0],r[1],r[2])&&!boxOnly('film',r[0],r[1],r[2],t0)){prelimOnline=['film',r[0],r[1],r[2],t0];break;}}
+      if(!prelimOnline)for(const p of PERFORMANCES){ if(!timeIsUpcoming(p[1],p[2]))continue; const sh=showById[p[0]]; if(!sh)continue;
         if(isPrelimListing('show',sh.id,sh.theatre,p[1])&&!boxOnly('show',sh.id,sh.theatre,p[1],p[2])){prelimOnline=['show',sh.id,sh.theatre,p[1],p[2]];break;}}
       // a film at a cinema that sells its own programme only at its box office (a regular
       // screening there) and a festival screening at one (sold online), per cinema
@@ -19239,11 +19286,13 @@ def wave_bo1(browser):
       for(const r of ((typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[]))festFilm.add(r[0]);
       const pick=(v,fest,after)=>{for(const r of SHOWTIMES){if(r[1]!==v||!(r[2]>after)||!filmById[r[0]])continue;
         if(!fest&&festFilm.has(r[0]))continue;
-        for(const t of (r[3]||[])){const u=festSaleUrl(r[0],v,r[2],t);
+        // a time still to come on the test's clock (today 14:45): a past time has no pill
+        // to tap (2026-11-06: cheburashka at G8 13:50 today was picked and had 'no panel')
+        for(const t of (r[3]||[])){if(!timeIsUpcoming(r[2],t))continue;const u=festSaleUrl(r[0],v,r[2],t);
           const shut=typeof festSaleState==='function'&&festSaleState(r[0],v,r[2],t);
           if(fest?(u&&hostLabel(u)==='epaygo.bg'&&!shut):!!boxOnly('film',r[0],v,r[2],t))return [r[0],v,r[2],t];}}return null;};
       const pin=v=>{for(const [f,d,t] of (pinned[v]||[])){const r=SHOWTIMES.find(r=>r[0]===f&&r[1]===v&&r[2]===d&&(r[3]||[]).includes(t));
-        if(r&&d>=today&&filmById[f]&&!festFilm.has(f)&&boxOnly('film',f,v,d,t))return [f,v,d,t];}return null;};
+        if(r&&timeIsUpcoming(d,t)&&filmById[f]&&!festFilm.has(f)&&boxOnly('film',f,v,d,t))return [f,v,d,t];}return null;};
       const cin=pick('g8',false,today)||pick('odeon',false,today)||pick('g8',false,'0')||pick('odeon',false,'0');
       const reg={}, fest={}, pinnedUsed={};
       for(const v of ['g8','odeon']){const pv=pin(v);pinnedUsed[v]=!!pv;reg[v]=pv||pick(v,false,'0');fest[v]=pick(v,true,'0');}
