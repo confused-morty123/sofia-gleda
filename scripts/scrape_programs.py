@@ -165,6 +165,7 @@ VENUE_LINK_ALLOWLIST = {
     "cc-paradise":  ["cinemacity.bg"],
     "arena-mega":   ["kinoarena.com"],
     "arena-mall":   ["kinoarena.com"],
+    "arena-serdika": ["kinoarena.com"],
     "cg-ring":      ["cinegrand.bg"],
     "cg-park":      ["cinegrand.bg"],
     "cineland":     ["cineland.bg"],
@@ -975,7 +976,9 @@ AGGREGATOR_VENUES = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "cg-
                      "cg-park", "cineland", "odeon", "g8", "dom-kino")
 # Order in which official titles are resolved and minted: proper-case sources
 # before Cine Grand's ALL-CAPS titles, so a minted card reads "Паяци", not "ПАЯЦИ".
-CINEMA_ORDER = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "odeon", "g8",
+# arena-serdika (Кино Арена DELUXE Сердика) has no programata venue page: its own
+# programme only (kinoarena.com), so it is not in AGGREGATOR_VENUES.
+CINEMA_ORDER = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "arena-serdika", "odeon", "g8",
                 "dom-kino", "vlaikova", "lumiere", "cg-ring", "cg-park", "cineland")
 
 

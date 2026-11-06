@@ -1493,6 +1493,36 @@ check("a date served with TODAY's programme ends coverage (never mislabelled)",
       (_res.covered_from, _res.covered_to), ("2026-10-08", "2026-10-08"))
 check("rows of the fallback page are not re-dated", {x[1] for x in _res.rows}, {"2026-10-08"})
 
+print("official: Кино Арена DELUXE Сердика (arena-serdika, trimmed)")
+# The new cinema (2026-11) has no programata venue page: kinoarena.com only.
+_kas = (FIXTURES / "kinoarena_serdika_day.html").read_text(encoding="utf-8")
+_sel, _tabs, _r = OS.parse_kinoarena_page(_kas, OS.ARENA_SLUGS["arena-serdika"])
+check("serdika: the selected day tab is read", _sel, "2026-11-06")
+check("serdika: day tabs incl. an advance-sale date", _tabs, ["2026-11-06", "2026-11-07", "2026-11-08", "2026-12-23"])
+check("serdika: every time of a film, 2D and 3D",
+      sorted((t, tuple(m.get("fmt_std") or ())) for ti, _, t, m in _r if ti == "Котаракът с шапка"),
+      [("13:20", ()), ("14:50", ("3d",)), ("17:00", ()), ("19:15", ("3d",))])
+check("serdika: language versions", sorted({(ti, m.get("lang_ver")) for ti, _, _t, m in _r}),
+      [("Godzilla Minus Zero", "sub"), ("Котаракът с шапка", "dub"), ("Немигранти", "dub")])
+check("serdika: the film page is the link and it is allowed for the venue",
+      [(_r[0][3]["url"], S.allowed_vlink("arena-serdika", _r[0][3]["url"]))],
+      [("https://www.kinoarena.com/bg/movie/godzilla-minus-zero", True)])
+check("serdika: another Arena's page is refused", _raises(OS.parse_kinoarena_page, _kas, "kino-arena-the-mall"), True)
+check("serdika: a Serdika page is not read as The Mall's",
+      _raises(OS.parse_kinoarena_page, _ka, OS.ARENA_SLUGS["arena-serdika"]), True)
+_kasp = _Pages({"arena-serdika/": _kas})
+_res = OS.fetch_kinoarena(_kasp, "arena-serdika", "2026-11-06", "2026-12-31")
+check("serdika: its own programme URL is read", _kasp.asked[0],
+      "https://www.kinoarena.com/bg/program/view/arena-serdika/06-11-2026")
+check("serdika: a date served with TODAY's programme ends coverage",
+      ((_res.covered_from, _res.covered_to), {x[1] for x in _res.rows}),
+      (("2026-11-06", "2026-11-06"), {"2026-11-06"}))
+check("serdika: an official source, own programme only (no aggregator page)",
+      ("arena-serdika" in OS.OFFICIAL, "arena-serdika" in S.CINEMA_ORDER,
+       "arena-serdika" in S.AGGREGATOR_VENUES, "arena-serdika" in S.CINEMA_SOURCES),
+      (True, True, False, False))
+check("serdika: programata never a venue link", S.allowed_vlink("arena-serdika", "https://programata.bg/x"), False)
+
 print("official: Кино Арена film page poster (og:image)")
 _ka_movie_html = (FIXTURES / "kinoarena_movie.html").read_text(encoding="utf-8")
 _ka_movie_soup = BeautifulSoup(_ka_movie_html, "lxml")
@@ -2420,6 +2450,8 @@ for fest, name, want in [
     ("cinelibri", "Кино Арена Mega Mall", ("app", "arena-mega")),
     ("kinomania", "Кино Арена West Mall", ("app", "arena-mega")),
     ("kinomania", "Кино Арена Mega Mall", ("app", "arena-mega")),
+    ("cinelibri", "Кино Арена DELUXE Сердика Център", ("app", "arena-serdika")),
+    ("kinomania", "Кино Арена DELUXE Сердика Център", ("app", "arena-serdika")),
     ("kinomania", "Euro Cinema", ("app", "euro-cinema")),
     ("kinomania", "Lucky Пловдив", ("outside", None)),
     ("kinomania", "Стара Загора - Регионална библиотека", ("outside", None)),

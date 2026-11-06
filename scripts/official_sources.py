@@ -286,7 +286,9 @@ def fetch_cinemacity(session, venue, today, last_day):
 # ------------------------------------------------------- Кино Арена (HTML)
 ARENA_URL = "https://www.kinoarena.com/bg/program/view/{slug}/{dmy}"
 ARENA_BASE = "https://www.kinoarena.com"
-ARENA_SLUGS = {"arena-mega": "arena-mega-mol", "arena-mall": "kino-arena-the-mall"}
+ARENA_SLUGS = {"arena-mega": "arena-mega-mol", "arena-mall": "kino-arena-the-mall",
+               # Кино Арена DELUXE Сердика Център (opened 2026-11; no programata venue page)
+               "arena-serdika": "arena-serdika"}
 
 # Кино Арена: map data-title values to (lang_ver, fmt_std) tokens.
 # Language values seen on live pages (2026-10-13, both venues, today+tomorrow):
@@ -1119,7 +1121,7 @@ def fetch_cineland(session, venue, today, last_day):
 
 OFFICIAL = {
     "cc-sofia": fetch_cinemacity, "cc-paradise": fetch_cinemacity,
-    "arena-mega": fetch_kinoarena, "arena-mall": fetch_kinoarena,
+    "arena-mega": fetch_kinoarena, "arena-mall": fetch_kinoarena, "arena-serdika": fetch_kinoarena,
     "cg-ring": fetch_cinegrand, "cg-park": fetch_cinegrand,
     "g8": fetch_g8, "odeon": fetch_odeon, "dom-kino": fetch_domkino,
     "vlaikova": fetch_vlaikova, "lumiere": fetch_lumiere,

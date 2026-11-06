@@ -155,6 +155,7 @@ VENUE_LINK_ALLOWLIST = {
     "cc-paradise":  ["cinemacity.bg"],
     "arena-mega":   ["kinoarena.com"],
     "arena-mall":   ["kinoarena.com"],
+    "arena-serdika": ["kinoarena.com"],
     "cg-ring":      ["cinegrand.bg"],
     "cg-park":      ["cinegrand.bg"],
     "cineland":     ["cineland.bg"],
