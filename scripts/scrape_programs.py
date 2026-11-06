@@ -87,6 +87,8 @@ CINEMA_SOURCES = {
     "cc-paradise": "https://programata.bg/kino/kino-saloni/sofia/cinema-city-paradise/",
     "arena-mega":  "https://programata.bg/kino/kino-saloni/arena-mega-mall/",
     "arena-mall":  "https://programata.bg/kino/kino-saloni/sofia/arena-the-mall/",
+    # Serdika's programata page is an "opening" article that carries the programme (owner, 2026-11-06)
+    "arena-serdika": "https://programata.bg/kino/kino-saloni/kino-arena-deluxe-otvarya-v-serdika-czentar-prez-esenta/",
     "cg-ring":     "https://programata.bg/kino/kino-saloni/sofia/cine-grand-sofia-ring-mall-2/",
     "cg-park":     "https://programata.bg/kino/kino-saloni/sofia/cine-grand-park-center/",
     "cineland":    "https://programata.bg/kino/kino-saloni/cineland-bulgaria-mall/",
@@ -972,12 +974,12 @@ def grad_for(fid):
 # aggregator rows were preliminary.)
 
 # programata pages per venue: the aggregator, used only where the venue is silent.
-AGGREGATOR_VENUES = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "cg-ring",
+AGGREGATOR_VENUES = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "arena-serdika", "cg-ring",
                      "cg-park", "cineland", "odeon", "g8", "dom-kino")
 # Order in which official titles are resolved and minted: proper-case sources
 # before Cine Grand's ALL-CAPS titles, so a minted card reads "Паяци", not "ПАЯЦИ".
-# arena-serdika (Кино Арена DELUXE Сердика) has no programata venue page: its own
-# programme only (kinoarena.com), so it is not in AGGREGATOR_VENUES.
+# arena-serdika (Кино Арена DELUXE Сердика Център): its own programme (kinoarena.com)
+# first, programata's opening-article page as the fallback, like Mega and The Mall.
 CINEMA_ORDER = ("cc-sofia", "cc-paradise", "arena-mega", "arena-mall", "arena-serdika", "odeon", "g8",
                 "dom-kino", "vlaikova", "lumiere", "cg-ring", "cg-park", "cineland")
 

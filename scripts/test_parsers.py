@@ -1517,10 +1517,10 @@ check("serdika: its own programme URL is read", _kasp.asked[0],
 check("serdika: a date served with TODAY's programme ends coverage",
       ((_res.covered_from, _res.covered_to), {x[1] for x in _res.rows}),
       (("2026-11-06", "2026-11-06"), {"2026-11-06"}))
-check("serdika: an official source, own programme only (no aggregator page)",
+check("serdika: an official source first, programata's opening-article page as the fallback (owner, 2026-11-06)",
       ("arena-serdika" in OS.OFFICIAL, "arena-serdika" in S.CINEMA_ORDER,
        "arena-serdika" in S.AGGREGATOR_VENUES, "arena-serdika" in S.CINEMA_SOURCES),
-      (True, True, False, False))
+      (True, True, True, True))
 check("serdika: programata never a venue link", S.allowed_vlink("arena-serdika", "https://programata.bg/x"), False)
 
 print("official: Кино Арена film page poster (og:image)")
