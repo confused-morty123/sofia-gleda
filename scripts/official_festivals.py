@@ -124,6 +124,8 @@ VENUES = {
         # 2026-10-24), and the old one a programme may still print
         "Кино Арена West Mall": "arena-mega",
         "Кино Арена Mega Mall": "arena-mega",
+        # the cinema's own name (kinoarena.com/bg/cinema/arena-serdika, 2026-11-06)
+        "Кино Арена DELUXE Сердика Център": "arena-serdika",
         "Cineland Bulgaria Mall": "cineland",
         "Casa Libri": "casa-libri",
         "Евросинема": "euro-cinema",
@@ -146,6 +148,7 @@ VENUES = {
         "Синема Сити Парадайс Център": "cc-paradise",
         "Кино Арена West Mall": "arena-mega",
         "Кино Арена Mega Mall": "arena-mega",
+        "Кино Арена DELUXE Сердика Център": "arena-serdika",
         "Euro Cinema": "euro-cinema",
         "Евросинема": "euro-cinema",
         "Кино Euro Cinema": "euro-cinema",

@@ -2661,6 +2661,7 @@ def wave_d1(browser):
             "cc-paradise": ["www.cinemacity.bg"],
             "arena-mega": ["www.kinoarena.com"],
             "arena-mall": ["www.kinoarena.com"],
+            "arena-serdika": ["www.kinoarena.com"],
             "cg-ring": ["cinegrand.bg"],
             "cg-park": ["cinegrand.bg"],
             "cineland": ["cineland.bg"],

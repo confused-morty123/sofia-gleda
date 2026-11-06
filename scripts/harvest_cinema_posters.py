@@ -53,7 +53,8 @@ CC_CINEMAS = {"cc-sofia": "1261", "cc-paradise": "1266"}
 # ---------------------------------------- KA constants
 ARENA_URL = "https://www.kinoarena.com/bg/program/view/{slug}/{dmy}"
 ARENA_BASE = "https://www.kinoarena.com"
-ARENA_SLUGS = {"arena-mega": "arena-mega-mol", "arena-mall": "kino-arena-the-mall"}
+ARENA_SLUGS = {"arena-mega": "arena-mega-mol", "arena-mall": "kino-arena-the-mall",
+               "arena-serdika": "arena-serdika"}
 
 
 # ---------------------------------------- helpers
