@@ -4363,6 +4363,64 @@ with __import__("tempfile").TemporaryDirectory() as _dpf2:
           sorted(u.rsplit("/", 1)[-1] for u, _, _ in OPP.candidates(
               _head + f'<div class="gallery"><img src="{_own_ph}" alt="Ревизорът на Чайка"></div></body></html>',
               _ch, {PP.norm_title("Ревизор")}) if u not in _bn), ["chayka-scena-01.jpg"])
+    # ---- edge fixes (2026-11-06) ----
+    _T3s = {PP.norm_title(t) for t in ("Ревизор", "Хамлет")}
+    _cands = lambda pg, url=_ch, ot=_T3s: [u for u, _, _ in OPP.candidates(pg, url, ot) if u not in _bn]
+    # 1. a gallery whose caption links another show page (the nearest container is a lightbox <a>)
+    _e1img = "https://teatar.example.bg/uploads/repertoar/IMG_5521.jpg"
+    _e1 = (_head + f'<div class="gallery"><a href="/uploads/repertoar/IMG_5521.jpg"><img src="{_e1img}"></a>'
+           '<p class="cap">Кадър от <a href="/spektakli/revizor">следващата ни премиера</a></p></div></body></html>')
+    check("edge 1: a lightbox image inside a gallery whose caption links /spektakli/revizor → nothing "
+          "(every gallery-marked ancestor is checked, not only the nearest)", _cands(_e1, ot=set()), [])
+    # 2. rule (a): a banner file named after another title / as a premiere, a promo block above the <h1>
+    _hm = "<html><head><title>Чайка | Театър</title></head><body>"
+    _e2a = _hm + '<main><h1>Чайка</h1><p><img src="/uploads/banners/revizor-premiera.jpg" alt=""></p></main></body></html>'
+    _e2b = (_hm + '<main><div class="promo"><img src="/uploads/premiera-noemvri.jpg"></div><h1>Чайка</h1>'
+            "<p>Пиеса в четири действия.</p></main></body></html>")
+    _e2c = _hm + '<main><img src="/uploads/scena-01.jpg"><h1>Чайка</h1><p>Текст.</p></main></body></html>'
+    _e2d = _hm + '<main><h1>Чайка</h1><p><img src="/uploads/scena-01.jpg"></p></main></body></html>'
+    check("edge 2: rule (a) refuses revizor-premiera.jpg after the <h1>, an image in a promo block or anywhere "
+          "before the <h1>; the first image after the <h1> is still (a)",
+          [_cands(_e2a), _cands(_e2b), _cands(_e2c), [(u.rsplit("/", 1)[-1], h) for u, _, h in
+                                                       OPP.candidates(_e2d, _ch, _T3s)]],
+          [[], [], [], [("scena-01.jpg", "(a) the main article's first image")]])
+    # 4. the same path with another ?id= is another page
+    _q = "https://teatar.example.bg/show.php?id=12"
+    _e4 = (_hm + '<main><h1>Чайка</h1><a href="/show.php?id=99"><img src="/uploads/revizor-scena.jpg"></a>'
+           "</main></body></html>")
+    check("edge 4: on /show.php?id=12 an image linked to /show.php?id=99 → nothing; ?id=12&lang=en is the page itself",
+          (_cands(_e4, _q, set()), OPP.other_page("/show.php?id=99", _q), OPP.show_link("/show.php?id=99", _q),
+           OPP.other_page("/show.php?id=12&lang=en", _q), OPP.other_page("/show.php?lang=en", _q)),
+          ([], True, True, False, False))
+    # 3. one og:image for two titles of one host (by URL, and by the bytes under two URLs)
+    _nora = "https://teatar.example.bg/spektakli/nora"
+    _sez = "https://teatar.example.bg/uploads/sezon-2026-27.jpg"
+    _sez2 = "https://teatar.example.bg/uploads/sezon-2026-27-copy.jpg"
+    _sezb = _jpgb2(800, 1100, "purple")
+    _ogp = lambda t, u: (f'<html><head><title>{t} | Театър</title><meta property="og:image" content="{u}">'
+                         f"</head><body><h1>{t}</h1><p>Текст.</p></body></html>")
+    _TN = {"show:chayka": "Чайка", "show:nora": "Нора"}
+    _LN = {"show:chayka": [_ch], "show:nora": [_nora]}
+
+    def _e3(u1, u2, srcs=None, keys=("show:chayka", "show:nora")):
+        _s = srcs or {"shows": {}, "films": {}, "misses": {}}
+        _n = _NetPF({_ch: _ogp("Чайка", u1), _nora: _ogp("Нора", u2)}, {_sez: _sezb, _sez2: _sezb})
+        OPP.harvest(set(keys), _TN, _LN, _n, _s, _dtb2.date(2026, 11, 6))
+        return sorted(k for k in ("chayka", "nora") if _s["shows"].get(k, {}).get("img"))
+    _rec = {"page": _nora, "img": _sez2, "kind": "poster", "w": 800, "h": 1100, "how": "og:image",
+            "path": "posters/nora.jpg", "md5": "0" * 32, "src_md5": __import__("hashlib").md5(_sezb).hexdigest(),
+            "checked": "2026-11-01"}
+    check("edge 3: two shows of one host with og:image sezon-2026-27.jpg → neither; the same bytes under two URLs "
+          "→ neither; the bytes already recorded for Нора → not Чайка's (Нора's record stays)",
+          [_e3(_sez, _sez), _e3(_sez, _sez2),
+           _e3(_sez, _sez2, {"shows": {"nora": dict(_rec)}, "films": {}, "misses": {}}, keys=("show:chayka",))],
+          [[], [], ["nora"]])
+    _sF = {"shows": {}, "films": {}, "misses": {}}
+    OPP.harvest({"show:chayka"}, _TN, _LN, _NetPF({_ch: _ogp("Чайка", _sez)}, {_sez: _sezb}), _sF,
+                _dtb2.date(2026, 11, 6))
+    check("edge 3: …one show alone with that og:image still gets it (its raw md5 recorded)",
+          (_sF["shows"].get("chayka", {}).get("img"), len(_sF["shows"].get("chayka", {}).get("src_md5", ""))),
+          (_sez, 32))
 OPP.THEATRE_JSON, OPP.POSTERS_DIR, OPP.store = _save_pf2
 
 # robots.txt (RFC 9309 §2.3.1): 4xx allows everything, 5xx / no answer disallows the host for the run

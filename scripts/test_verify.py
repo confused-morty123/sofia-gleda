@@ -2161,6 +2161,32 @@ for _name, _page, _where in (
          _bx_page({}, show_extra={"s1": {"factsEn": ["Rated 9/10 by critics"]}}), "SHOW_EXTRA.s1.factsEn")):
     _rc, _out = _run_out(_page)
     check(_name, _rc != 0 and _BAD in _out and _where in _out)
+# edge fixes 2026-11-06: rating words beside a number, stars, the TMDB BG overview (ovBg)
+for _name, _bad in (("'IMDb рейтинг 8,1' fails", {"facts": ["IMDb рейтинг 8,1"]}),
+                    ("'рейтинг 8,1' fails", {"why": "Висок рейтинг 8,1 сред зрителите"}),
+                    ("'оценка от 7.9' fails", {"facts": ["Средна оценка от 7.9"]}),
+                    ("'Metacritic score: 81' fails", {"factsEn": ["Metacritic score: 81"]}),
+                    ("'rated 8.4 by viewers' fails", {"whyEn": "A thriller rated 8.4 by viewers"}),
+                    ("'4,5 звезди' fails", {"box": "4,5 звезди от критиката"})):
+    _rc, _out = _run_out(_bx_page({"f0": {"age": "12+"}, "f1": _bad}))
+    check("edge 5c5: " + _name, _rc != 0 and _BAD in _out and "FILM_EXTRA.f1." in _out)
+_edge_ok = {"f0": {"box": "Рекорд: IMDb Top 250", "facts": ["10 номинации за Оскар", "Кан 2025"]},
+            "f1": {"box": "Спечели 96 млн. долара", "boxEn": "Приходи $1.2 млрд", "whyEn": "Rated R for violence"}}
+_rc, _out = _run_out(_bx_page(_edge_ok))
+check("edge 5c5: award / box-office texts (IMDb Top 250, 10 номинации за Оскар, 96 млн. долара, $1.2 млрд, "
+      "Кан 2025) still pass", _rc == 0 and "5c5" not in _out)
+
+
+def _art_page(art):
+    return _minimal_html().replace("const FILMINFO={};", "const FILMINFO={};\nconst TMDBART=" + _json.dumps(
+        art, ensure_ascii=False) + ";", 1)
+
+
+_rc, _out = _run_out(_art_page({"f1": {"ovBg": "Филмът има 8.4 в IMDb.", "ov": "A film."}}))
+check("edge 5c5: a score in TMDBART ovBg (the BG sheet's fallback synopsis) fails",
+      _rc != 0 and _BAD in _out and "TMDBART.f1.ovBg" in _out)
+_rc, _out = _run_out(_art_page({"f1": {"ovBg": "Драма за едно семейство.", "ov": "A family drama."}}))
+check("edge 5c5: a score-free TMDBART ovBg passes", _rc == 0 and "5c5" not in _out)
 _rc, _out = _run_out(_minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA={\"f0\":{\"box\":1,};", 1))
 check("an unparseable FILM_EXTRA fails (its sheet texts would go unchecked)",
       _rc != 0 and "5c5 FILM_EXTRA is declared but is not one parseable JSON line" in _out)
