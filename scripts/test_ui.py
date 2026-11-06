@@ -21390,9 +21390,12 @@ def wave_hs1(browser):
 # ONE chip, the first of IMDb > TMDB (from TMDB_SHOW_MIN=10 votes) > Rotten Tomatoes >
 # Metacritic, labelled with its source; the sheet shows every score as a labelled tile. The IMDb label only ever carries an IMDb number, never TMDB's,
 # and no chip or tile ever shows "—" as a score. IMDb has the same floor as TMDB
-# (skeptic, 2026-11-05): fewer than IMDB_SHOW_MIN=10 votes is no IMDb chip and no tile
-# (the chip falls through to TMDB / RT / MC); a rating without a vote count (curated
-# seed) shows as before. A chip is the source and the score only, never a vote count
+# (skeptic, 2026-11-05), raised to IMDB_SHOW_MIN=100 (owner, 2026-11-06): fewer votes is
+# no IMDb chip, no tile and no vote tile (the chip falls through to TMDB / RT / MC); from
+# 100 to 999 votes an IMDb rating 2.0 or more away from TMDB's (TMDB from 20 votes) is a
+# stale OMDb copy and hidden the same way (Синелибри: Историите на нощта, OMDb 3.6 from
+# 10 votes beside TMDB 6.3 from 22, while IMDb read 6.4); a rating without a vote count
+# (curated seed) shows as before. A chip is the source and the score only, never a vote count
 # (owner, 2026-11-05: "IMDb 7.9", "TMDB 7.0"); the counts are on the sheet: TMDB's under
 # its tile, IMDb's in its own tile labelled "IMDb вот" / "IMDb votes" (owner, 2026-11-05), last.
 # The owner's notes folder on the Mac; elsewhere (GitHub's Linux runners, where /Users
@@ -21441,7 +21444,14 @@ RT1_SYNTH_JS = """(today) => {
     none:  {tv: 10.0, tc: 1},
     imdb7tmdb: {imdb: 8.5, imdbVotes: "7", tv: 6.3, tc: 22},
     imdb7only: {imdb: 8.5, imdbVotes: "7"},
-    imdb11:    {imdb: 7.9, imdbVotes: "11", tv: 6.3, tc: 22},
+    imdb99:    {imdb: 7.9, imdbVotes: "99", tv: 6.3, tc: 22},
+    imdb100:   {imdb: 7.9, imdbVotes: "100", tv: 6.3, tc: 22},
+    nosht:     {imdb: 3.6, imdbVotes: "10", tv: 6.3, tc: 22},
+    stale:     {imdb: 8.5, imdbVotes: "500", tv: 6.3, tc: 22},
+    stale2:    {imdb: 7.1, imdbVotes: "999", tv: 5.1, tc: 20},
+    gap19:     {imdb: 8.2, imdbVotes: "500", tv: 6.3, tc: 22},
+    tmdb19:    {imdb: 8.5, imdbVotes: "500", tv: 6.3, tc: 19},
+    stale1k:   {imdb: 8.5, imdbVotes: "1.0K", tv: 6.3, tc: 22},
     imdb999:   {imdb: 7.0, imdbVotes: "999"},
     imdb1k:    {imdb: 7.0, imdbVotes: "1.0K"},
     imdbSeed:  {imdb: 7.2},
@@ -21466,7 +21476,7 @@ RT1_REAL_JS = """(today) => {
     const f = filmById[id]; if (!f) continue; total++;
     const a = TMDBART[id] || {};
     const im0 = a.imdb != null ? a.imdb : f.imdb, rt = a.rt != null ? a.rt : f.rt, mc = a.mc != null ? a.mc : f.mc;
-    const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || n >= 10)) ? im0 : null;
+    const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || (n >= 100 && !(n < 1000 && num(a.tv) && num(a.tc) && a.tc >= 20 && Math.abs(im0 - a.tv) >= 2 - 1e-9)))) ? im0 : null;
     if (num(im0) && im == null) floored.push(id);
     let want = null;
     if (num(im)) want = ["IMDb", im.toFixed(1)];
@@ -21491,7 +21501,7 @@ RT1_REAL_JS = """(today) => {
     const v = ((c.querySelector("span[aria-hidden]") || {}).textContent || "").trim();
     const f = filmById[el.dataset.film]; if (!f) return; domN++;
     const a = TMDBART[f.id] || {}; const im0 = a.imdb != null ? a.imdb : f.imdb;
-    const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || n >= 10)) ? im0 : null;
+    const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || (n >= 100 && !(n < 1000 && num(a.tv) && num(a.tc) && a.tc >= 20 && Math.abs(im0 - a.tv) >= 2 - 1e-9)))) ? im0 : null;
     if (lab === "IMDb" && !(num(im) && v.startsWith(im.toFixed(1)))) domBad.push(f.id + " IMDb " + v);
     if (lab !== "IMDb" && num(im)) domBad.push(f.id + " has IMDb but shows " + lab);
   });
@@ -21506,7 +21516,7 @@ RT1_PICK_JS = """(today) => {
     return m ? Math.round(parseFloat(m[1]) * (m[2] ? (m[2].toUpperCase() === "M" ? 1e6 : 1e3) : 1)) : null; };
   const kind = id => { const f = filmById[id] || {}, a = TMDBART[id] || {};
     const im0 = a.imdb != null ? a.imdb : f.imdb, rt = a.rt != null ? a.rt : f.rt, mc = a.mc != null ? a.mc : f.mc;
-    const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || n >= 10)) ? im0 : null;
+    const n = voteN(a.imdbVotes || f.imdbVotes), im = (num(im0) && (n == null || (n >= 100 && !(n < 1000 && num(a.tv) && num(a.tc) && a.tc >= 20 && Math.abs(im0 - a.tv) >= 2 - 1e-9)))) ? im0 : null;
     if (num(im0) && im == null) return "floor";
     if (num(im)) return (num(a.tv) && a.tc >= 10 && num(rt) && num(mc)) ? "all" : "imdb";
     if (num(a.tv) && a.tc >= 10) return "tmdb"; if (num(rt)) return "rt"; if (num(mc)) return "mc"; return ""; };
@@ -21561,7 +21571,7 @@ def _rt1_shots(page, pick, lang):
 
 
 def _rt1_floor_shots(page, fid, lang):
-    """A film whose IMDb rating has fewer than 10 votes (Стъклено море): its card (no
+    """A film whose IMDb rating is hidden (under 100 votes, or stale): its card (no
     IMDb chip) and its sheet (no IMDb tile), phone 393."""
     page.evaluate("() => { location.hash = ''; }")
     page.wait_for_timeout(600)
@@ -21595,8 +21605,9 @@ def _rt1_floor_shots(page, fid, lang):
 def wave_rt1(browser):
     """RT1: one labelled chip per card (IMDb > TMDB > RT > MC), source and score only, no
     vote count; every score as a labelled tile in the sheet with the vote counts (TMDB's
-    under its tile, IMDb's in its own tile), BG and EN; IMDb and TMDB only from 10 votes; never a
-    TMDB number under the IMDb label; no "—" as a score. Real data: every upcoming film's
+    under its tile, IMDb's in its own tile), BG and EN; TMDB only from 10 votes; never a
+    TMDB number under the IMDb label; no "—" as a score. IMDb from 100 votes, and not a
+    low-vote (under 1000) rating 2.0 or more away from TMDB's (from 20 votes). Real data: every upcoming film's
     card follows the rule. Chromium and WebKit (SOFIA_BROWSER=webkit)."""
     print("\n=== RT1: ratings chips on cards, tiles in the sheet ===")
     eng = _hf_engine(browser)
@@ -21650,12 +21661,30 @@ def wave_rt1(browser):
               and [t["l"] for t in x["sheet"]] == ["TMDB"], f"{x}")
         x = r["imdb7only"]
         check(f"{tag}_imdb_under_10_votes_alone_no_chip_no_tile", x["card"] is None and not x["sheet"], f"{x}")
-        x = r["imdb11"]
-        check(f"{tag}_imdb_10plus_votes_chip_score_only_sheet_has_count", x["card"] and x["card"]["label"] == "IMDb"
-              and x["card"]["vis"] == "7.9" and "11" not in x["card"]["text"]
+        x = r["imdb99"]
+        check(f"{tag}_imdb_99_votes_falls_through_to_tmdb", x["card"] and x["card"]["label"] == "TMDB"
+              and x["card"]["vis"] == "6.3" and "7.9" not in x["card"]["text"]
+              and [t["l"] for t in x["sheet"]] == ["TMDB"], f"{x}")
+        x = r["imdb100"]
+        check(f"{tag}_imdb_100_votes_chip_score_only_sheet_has_count", x["card"] and x["card"]["label"] == "IMDb"
+              and x["card"]["vis"] == "7.9" and "100" not in x["card"]["text"]
               and x["card"]["vh"] == f"IMDb: 7.9 {out10}"
               and [t["l"] for t in x["sheet"]] == ["IMDb", "TMDB", "IMDb вот" if lang == "bg" else "IMDb votes"]
-              and [t["v"] for t in x["sheet"]][2] == "11" and x["sheet"][1]["c"] == f"22 {vote}", f"{x}")
+              and [t["v"] for t in x["sheet"]][2] == "100" and x["sheet"][1]["c"] == f"22 {vote}", f"{x}")
+        # Синелибри: Историите на нощта on 2026-11-06: OMDb 3.6 from 10 votes, TMDB 6.3 from 22
+        x = r["nosht"]
+        check(f"{tag}_istoriite_na_noshtta_shape_chip_is_tmdb", x["card"] and x["card"]["label"] == "TMDB"
+              and x["card"]["vis"] == "6.3" and "3.6" not in x["card"]["text"]
+              and [t["l"] for t in x["sheet"]] == ["TMDB"] and not any(t["v"] == "3.6/10" for t in x["sheet"]), f"{x}")
+        # staleness guard: under 1000 votes, 2.0+ away from TMDB (from 20 votes) is hidden
+        for k in ("stale", "stale2"):
+            x = r[k]
+            check(f"{tag}_imdb_{k}_disagrees_with_tmdb_hidden", x["card"] and x["card"]["label"] == "TMDB"
+                  and [t["l"] for t in x["sheet"]] == ["TMDB"], f"{x}")
+        for k, want in (("gap19", "8.2"), ("tmdb19", "8.5"), ("stale1k", "8.5")):
+            x = r[k]
+            check(f"{tag}_imdb_{k}_kept", x["card"] and x["card"]["label"] == "IMDb" and x["card"]["vis"] == want
+                  and [t["l"] for t in x["sheet"]][:2] == ["IMDb", "TMDB"], f"{x}")
         check(f"{tag}_imdb_chip_never_a_count",
               (r["imdb999"]["card"] or {}).get("vis") == "7.0" and (r["imdb1k"]["card"] or {}).get("vis") == "7.0"
               and [t["v"] for t in r["imdb999"]["sheet"]] == ["7.0/10", "999"]
