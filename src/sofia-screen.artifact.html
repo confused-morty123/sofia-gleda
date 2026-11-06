@@ -410,6 +410,9 @@ a{color:inherit}
 .fest-mark{font-family:var(--f-ui); font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
 /* a festival mark and a premiere badge stack in the poster's top-right corner */
 .p-tags{display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:0}
+/* A long tag ("Премиера на 6 ное") next to the score chip: the chip keeps its size and the tags
+   wrap onto their own line, right-aligned, instead of covering the chip (owner, 2026-11-06). */
+.p-top{flex-wrap:wrap} .p-top>.score{flex:none} .p-top>.p-tags{margin-left:auto; max-width:100%}
 .badge{font-size:8px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; padding:3px 7px;
   border-radius:5px; background:var(--accent); color:var(--on-accent); white-space:nowrap}
 .badge.lim{background:linear-gradient(135deg,#E0163A,#7E0C1F); color:#fff}
@@ -2986,7 +2989,7 @@ function premBadgeFor(fid){
   const L=t();
   /* find earliest date in array */
   const d=dates.slice().sort()[0];
-  if(d<TODAY){/* released in last 7 days */
+  if(d<=TODAY){/* premiere today or in the last 7 days: "Премиера", not "Премиера на <today>" */
     return`<span class="badge prem">${esc(L.premBadgeOn||"Премиера")}</span>`;}
   /* upcoming — format "Премиера на DD мес" */
   const parts=d.split("-");
@@ -6853,7 +6856,9 @@ document.addEventListener("click",e=>{
 
   const sw=q("[data-switch]");
   if(sw){switchMode(sw.dataset.switch);return;}
-  if(q("[data-more]")){S.limit+=30;render();return;}
+  /* "Покажи още": the list grows in place; the page keeps its offset (the rebuild
+     would otherwise put it back at the top of the category, owner 2026-11-06) */
+  if(q("[data-more]")){const _y=window.scrollY||0;S.limit+=30;render();_keepPageY(_y);return;}
   if(q("[data-drawer]")){
     /* Store a selector string (not a DOM ref) so focus still works after render() recreates the FAB */
     const _opener=q("[data-drawer]");
