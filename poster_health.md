@@ -1,8 +1,8 @@
 # Poster health, 2026-11-06
 
-- Films: 190/206 (92.2 %) show their own poster.
-- Plays: 504/530 (95.1 %) show their own poster or a production photo from their own page (527 display some image).
-- Target: 95 % each. This run attached: film already has a poster 7, film nothing 4, poster fix: show key 1, poster fix: show nothing 19, show key 4, show nothing 2, show poster 1.
+- Films: 196/211 (92.9 %) show their own poster.
+- Plays: 504/531 (94.9 %) show their own poster or a production photo from their own page (527 display some image).
+- Target: 95 % each. This run attached: film already has a poster 7, film poster 1, poster fix: show nothing 1, show nothing 1.
 
 ## Plays per theatre
 
@@ -20,7 +20,7 @@
 | satira | 41/41 | 0 |
 | sfumato | 27/28 | 1 |
 | sofia-th | 16/16 | 0 |
-| tba | 37/38 | 1 |
+| tba | 37/39 | 2 |
 | th199 | 39/42 | 3 |
 | toplo | 52/56 | 4 |
 | vazrazhdane | 28/28 | 0 |
@@ -53,8 +53,9 @@
 - `sablechi-se-za-vecherya`: tried https://theatre.art.bg/x_5963_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `spetsialni-povodi`: tried https://theatre.art.bg/x_4673_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 
-### no image: the generated art shows (3)
+### no image: the generated art shows (4)
 - `dalgiyat-pat-na-denya-kam-noshtta`: tried https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20 (no usable image on the page)
+- `ekaterina-karavelova-vik-ot-istoriyata`: tried no own page linked (no own page linked)
 - `igra-na-kotki`: tried https://zadkanala.bg/spektakli/igra-na-kotki (no usable image on the page)
 - `magichna-nosht-predi-koleda`: tried https://theatre.art.bg/x_8103_10_20 (sofiapuppet.com not read (robots.txt blocks ClaudeBot): the same production on theatre.art.bg)
 
@@ -73,8 +74,7 @@
 - `smisal-film-za-ikonomikata-na-blagosastoyanieto`: tried no own page linked
 - `vlyavo-ot-patya-london-kalkuta`: tried no own page linked
 
-### no image: the generated art shows (6)
-- `fresh-water-for-flowers-cinelibri`: tried no own page linked (epaygo.bg is a ticket page, not the title's page)
+### no image: the generated art shows (5)
 - `kasometrazhen-konkurs`: tried no own page linked (epaygo.bg is a ticket page, not the title's page)
 - `polyusi`: tried https://domnakinoto.com/polyusi-movie7436.html?a= (no usable image on the page)
 - `prodavach-na-nadezhda`: tried https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/ (no usable image on the page)
@@ -84,8 +84,8 @@
 ## Diagnostic and fix pass
 
 - Triggered by: shows, films under 95 %.
-- Coverage before -> after: shows 94.9 % -> 95.1 %; films 92.2 % -> 92.2 %.
-- Read 20 title(s), attached 1, retried 0; 33 request(s), 0 refused by robots.txt, 61.0 s.
+- Coverage before -> after: shows 94.9 % -> 94.9 %; films 92.9 % -> 92.9 %.
+- Read 1 title(s), attached 0, retried 0; 4 request(s), 0 refused by robots.txt, 7.1 s.
 - Network: ok.
 
 ### Missing titles by cause
@@ -95,12 +95,13 @@
 | only an aggregator's image (the film does not link that page) | 0 | 10 |
 | own page blocked (robots.txt or a bot challenge; not bypassed) | 10 | 0 |
 | own page has no usable image | 5 | 3 |
+| no own page linked | 6 | 0 |
 | own page's images rejected by the poster policy | 5 | 0 |
-| no own page linked | 5 | 0 |
-| only a ticket page linked, not the title's page | 0 | 3 |
+| only a ticket page linked, not the title's page | 0 | 2 |
 | own page or its image could not be fetched | 1 | 0 |
 
 - `show:clean-girl-fat-festival`: no own page linked (the programme links no page for this title)
+- `show:ekaterina-karavelova-vik-ot-istoriyata`: no own page linked (the programme links no page for this title)
 - `show:ivanovden`: no own page linked (the programme links no page for this title)
 - `show:kuche-na-ime-kote`: no own page linked (the programme links no page for this title)
 - `show:lazaritsa`: no own page linked (the programme links no page for this title)
@@ -126,7 +127,6 @@
 - `show:bai-ganyo`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG1576240600178985808_10159064354069: 800x304, not usable as a key image)
 - `show:kotarakat-v-chizmi`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image)
 - `show:mezhdunaroden-simpozium-melba`: own page's images rejected by the poster policy (https://toplocentrala.bg/attachments/Event/1213/main/Melba-14-11-2026_thumb-deta: 900x342, not usable as a key image)
-- `film:fresh-water-for-flowers-cinelibri`: only a ticket page linked, not the title's page (epaygo.bg is a ticket page, not the title's page)
 - `film:kasometrazhen-konkurs`: only a ticket page linked, not the title's page (epaygo.bg is a ticket page, not the title's page)
 - `film:sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-`: only a ticket page linked, not the title's page (embed.urboapp.com is a ticket page, not the title's page)
 - `film:bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)

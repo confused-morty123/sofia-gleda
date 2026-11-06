@@ -4261,5 +4261,69 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "dyun-chast-parva": {
+  "id": "dyun-chast-parva",
+  "bg": "Дюн: Част първа",
+  "en": "",
+  "genres": [
+   "Фентъзи"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 155
+ },
+ "dyun-chast-vtora": {
+  "id": "dyun-chast-vtora",
+  "bg": "Дюн: Част втора",
+  "en": "",
+  "genres": [
+   "Фантастика"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 166
+ },
+ "umiray-trudno": {
+  "id": "umiray-trudno",
+  "bg": "Умирай трудно",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 132
+ },
+ "detska-kinomaniya": {
+  "id": "detska-kinomaniya",
+  "bg": "Детска Киномания",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "lumiere"
+ },
+ "tseremoniya-po-nagrazhdavane-v-konkursa-detstvoto-e-za-smyah": {
+  "id": "tseremoniya-po-nagrazhdavane-v-konkursa-detstvoto-e-za-smyah",
+  "bg": "Церемония по награждаване в конкурса ДЕТСТВОТО Е ЗА СМЯХ, НЕ ЗА СТРАХ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
  }
 }

@@ -1,26 +1,6 @@
 [
  {
   "level": "warning",
-  "venue": "cc-paradise",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cc-sofia",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cg-park",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cg-ring",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
   "venue": "mladezhki",
   "message": "blocked from this network: challenge page (Cloudflare challenge, HTTP 403) at https://mlt.bg/programa.php?year=2026&month=11 — read from tickets.mlt.bg public list (the theatre's own ticket centre) instead"
  },
@@ -42,21 +22,26 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 211/283 ok, 72 missing IMDb ratings"
+  "message": "OMDb: 213/285 ok, 72 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 526/530 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (15 days)"
+  "message": "theatre posters: 527/531 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (15 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.9 % -> 95.1 %, films 92.2 % -> 92.2 %; attached 1; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, only an aggregator's image (the film does not link that page) 10, own page has no usable image 8, own page's images rejected by the poster policy 5 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.9 % -> 94.9 %, films 92.9 % -> 92.9 %; attached 0; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, only an aggregator's image (the film does not link that page) 10, own page has no usable image 8, no own page linked 6 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 190/206 (92.2 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, fresh-water-for-flowers-cinelibri, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kasometrazhen-konkurs, kina-i-yuk-lisitsite-ot-dalechniya-sever, kodat-na-balgarite, kotki-v-muzeya-2-sakrovishtata-na-egipet, kucheto-na-zlatyu, naza, polyusi, prodavach-na-nadezhda — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 504/531 (94.9 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, clean-girl-fat-festival, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, igra-na-kotki; 527/531 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+ },
+ {
+  "level": "warning",
+  "venue": "publish-gate",
+  "message": "5c2 poster coverage (films, own image): 196/211 (92.9 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kasometrazhen-konkurs, kina-i-yuk-lisitsite-ot-dalechniya-sever, kodat-na-balgarite, kotki-v-muzeya-2-sakrovishtata-na-egipet, kucheto-na-zlatyu, naza, polyusi, prodavach-na-nadezhda, smisal-film-za-ikonomikata-na-blagosastoyanieto — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

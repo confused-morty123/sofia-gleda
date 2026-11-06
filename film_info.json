@@ -3072,5 +3072,43 @@
   "src": "https://vlaikovacinema.com/events/%d1%86%d0%b5%d1%80%d0%b5%d0%bc%d0%be%d0%bd%d0%b8%d1%8f-%d0%bf%d0%be-%d0%bd%d0%b0%d0%b3%d1%80%d0%b0%d0%b6%d0%b4%d0%b0%d0%b2%d0%b0%d0%bd%d0%b5-%d0%bd%d0%b0-%d1%81%d0%b8%d0%bc%d0%b2%d0%be%d0%bb%d0%b8/",
   "pv": 6,
   "img": "https://static.xx.fbcdn.net/images/emoji.php/v9/t2b/1/16/1f399.png"
+ },
+ "detska-kinomaniya": {
+  "title_bg": "Детска Киномания",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/11/06/detska-kinomania-0x450.jpg",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/detska-kinomaniya-3976.html"
+ },
+ "tseremoniya-po-nagrazhdavane-v-konkursa-detstvoto-e-za-smyah": {
+  "title_bg": "Церемония по награждаване в конкурса ДЕТСТВОТО Е ЗА СМЯХ, НЕ ЗА СТРАХ",
+  "img": "https://www.kinomania.bg/public/uploads/gallery/2026/11/06/copy-of-tzotzorkov_flc_kinomania_vision-0x450.png",
+  "fsrc": "https://www.kinomania.bg/bg_BG/film/tzeremoniya-po-nagrazhdavane-v-konkyrsa-detstvoto-e-za-smyah-ne-za-strah-vhod-svoboden-3982.html"
+ },
+ "prodavach-na-nadezhda": {
+  "genres": [
+   "Документален"
+  ],
+  "runtime": 50,
+  "src": "https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/",
+  "pv": 6
+ },
+ "poslednite-dni-na-sofi-shol": {
+  "synBg": "Организирано от Германско посолство София и Гьоте-институт.\n\nФилмът разказва за последните дни от живота на 21-годишната Софи Шол, член на студентското движение „Бялата роза“, която се противопоставя на националсоциалистическата диктатура и войната. През февруари 1943 г. Софи и брат ѝ Ханс са арестувани в Мюнхенския университет, след като разпространяват листовки срещу нацисткия режим. Филмът проследява Софи по време на разпитите от Гестапо, процеса пред националсоциалистическия Народен съд и до самата ѝ екзекуция.",
+  "dir": "Марк Ротемунд",
+  "runtime": 114,
+  "src": "https://vlaikovacinema.com/screening/%d0%bf%d0%be%d1%81%d0%bb%d0%b5%d0%b4%d0%bd%d0%b8%d1%82%d0%b5-%d0%b4%d0%bd%d0%b8-%d0%bd%d0%b0-%d1%81%d0%be%d1%84%d0%b8-%d1%88%d0%be%d0%bb/",
+  "pv": 6
+ },
+ "velopohodat-kam-cop-31": {
+  "genres": [
+   "Документален"
+  ],
+  "runtime": 40,
+  "src": "https://vlaikovacinema.com/screening/%d0%b2%d0%b5%d0%bb%d0%be%d0%bf%d0%be%d1%85%d0%be%d0%b4%d1%8a%d1%82-%d0%ba%d1%8a%d0%bc-cop-31/",
+  "pv": 6
+ },
+ "fresh-water-for-flowers-cinelibri": {
+  "src": "https://www.ndk.bg/en/event/voda-za-cvetiata-sinelibri",
+  "pv": 6,
+  "img": "https://ndk.bg/storage/thumbnails/2026/10/21/38498/9197-preview-20261021-072719_resize1000x1000.jpg?v=1792570854"
  }
 }

@@ -1,44 +1,45 @@
 {
  "before": {
-  "films": 92.2,
-  "shows": 94.0
+  "films": 92.4,
+  "shows": 94.9
  },
  "below_target": [
-  "films"
+  "films",
+  "shows"
  ],
  "date": "2026-11-06",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 152,
+   "TMDB poster": 154,
    "own page: key": 2,
-   "own page: poster": 5,
-   "the film's programme page": 31
+   "own page: poster": 6,
+   "the film's programme page": 34
   },
-  "pct": 92.2,
-  "upcoming": 206,
-  "with": 190
+  "pct": 92.9,
+  "upcoming": 211,
+  "with": 196
  },
  "fix": {
   "after": {
-   "films": 92.2,
-   "shows": 95.1
+   "films": 92.9,
+   "shows": 94.9
   },
-  "attached": 1,
-  "attempted": 20,
+  "attached": 0,
+  "attempted": 1,
   "before": {
-   "films": 92.2,
+   "films": 92.9,
    "shows": 94.9
   },
   "broken_parsers": [],
   "causes": {
    "films": {
-    "only a ticket page linked, not the title's page": 3,
+    "only a ticket page linked, not the title's page": 2,
     "only an aggregator's image (the film does not link that page)": 10,
     "own page has no usable image": 3
    },
    "shows": {
-    "no own page linked": 5,
+    "no own page linked": 6,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
     "own page has no usable image": 5,
     "own page or its image could not be fetched": 1,
@@ -47,38 +48,37 @@
   },
   "causes_before": {
    "films": {
-    "only a ticket page linked, not the title's page": 3,
+    "only a ticket page linked, not the title's page": 2,
     "only an aggregator's image (the film does not link that page)": 10,
     "own page has no usable image": 3
    },
    "shows": {
-    "no own page linked": 5,
+    "no own page linked": 6,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
     "own page has no usable image": 5,
     "own page or its image could not be fetched": 1,
-    "own page's images rejected by the poster policy": 6
+    "own page's images rejected by the poster policy": 5
    }
   },
   "counts": {
    "films": {
-    "after": "190/206",
-    "before": "190/206"
+    "after": "196/211",
+    "before": "196/211"
    },
    "shows": {
-    "after": "504/530",
-    "before": "503/530"
+    "after": "504/531",
+    "before": "504/531"
    }
   },
   "date": "2026-11-06",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 33,
+  "requests": 4,
   "retried": [],
-  "seconds": 61.0,
+  "seconds": 7.1,
   "summary": {
-   "show key": 1,
-   "show nothing": 19
+   "show nothing": 1
   },
   "titles": {
    "films": {
@@ -89,10 +89,6 @@
     "dzhambo-magicheskoto-priklyuchenie": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "fresh-water-for-flowers-cinelibri": [
-     "only a ticket page linked, not the title's page",
-     "epaygo.bg is a ticket page, not the title's page"
     ],
     "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": [
      "only an aggregator's image (the film does not link that page)",
@@ -188,6 +184,10 @@
      "own page has no usable image",
      "no usable image on the page"
     ],
+    "ekaterina-karavelova-vik-ot-istoriyata": [
+     "no own page linked",
+     "the programme links no page for this title"
+    ],
     "igra-na-kotki": [
      "own page has no usable image",
      "no usable image on the page"
@@ -262,18 +262,14 @@
  },
  "fixed_this_run": {
   "film already has a poster": 7,
-  "film nothing": 4,
-  "poster fix: show key": 1,
-  "poster fix: show nothing": 19,
-  "show key": 4,
-  "show nothing": 2,
-  "show poster": 1
+  "film poster": 1,
+  "poster fix: show nothing": 1,
+  "show nothing": 1
  },
  "missing": {
   "films": {
    "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": "unverified: an aggregator's image, and the film does not link its page",
    "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
-   "fresh-water-for-flowers-cinelibri": "no image: the generated art shows",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
    "kasometrazhen-konkurs": "no image: the generated art shows",
    "kina-i-yuk-lisitsite-ot-dalechniya-sever": "unverified: an aggregator's image, and the film does not link its page",
@@ -299,6 +295,7 @@
    "dalgiyat-pat-na-denya-kam-noshtta": "no image: the generated art shows",
    "dekameron-lyubov-i-smart-po-bokacho": "unverified: no record of the page this file came from",
    "dnevnikat-na-edin-lud-2": "unverified: no record of the page this file came from",
+   "ekaterina-karavelova-vik-ot-istoriyata": "no image: the generated art shows",
    "igra-na-kotki": "no image: the generated art shows",
    "insert-coin-player-one": "unverified: no record of the page this file came from",
    "ivanovden": "unverified: no record of the page this file came from",
@@ -330,7 +327,7 @@
   "satira": "41/41",
   "sfumato": "27/28",
   "sofia-th": "16/16",
-  "tba": "37/38",
+  "tba": "37/39",
   "th199": "39/42",
   "toplo": "52/56",
   "vazrazhdane": "28/28",
@@ -343,8 +340,8 @@
    "own page: photo": 1,
    "own page: poster": 293
   },
-  "pct": 95.1,
-  "upcoming": 530,
+  "pct": 94.9,
+  "upcoming": 531,
   "with": 504
  },
  "shows_displayed": 527,

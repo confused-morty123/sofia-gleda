@@ -7054,5 +7054,41 @@
   "synBg": "",
   "synEn": "",
   "source": "iam"
+ },
+ "gnyav-po-stivan-king": {
+  "id": "gnyav-po-stivan-king",
+  "title": "ГНЯВ по Стивън Кинг",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "ekaterina-karavelova-vik-ot-istoriyata": {
+  "id": "ekaterina-karavelova-vik-ot-istoriyata",
+  "title": "ЕКАТЕРИНА КАРАВЕЛОВА. ВИК ОТ ИСТОРИЯТА",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
  }
 }

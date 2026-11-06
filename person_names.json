@@ -24,6 +24,11 @@
 "bg": "Алън Силвестри",
 "t": "2026-10-23"
 },
+"62": {
+"n": "Bruce Willis",
+"bg": "Брус Уилис",
+"t": "2026-11-06"
+},
 "64": {
 "n": "Gary Oldman",
 "bg": "Гари Олдман",
@@ -509,6 +514,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"1090": {
+"n": "John McTiernan",
+"bg": null,
+"t": "2026-11-06"
+},
 "1100": {
 "n": "Arnold Schwarzenegger",
 "bg": "Арнолд Шварценегер",
@@ -819,6 +829,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"1726": {
+"n": "Steven E. de Souza",
+"bg": null,
+"t": "2026-11-06"
+},
 "1729": {
 "n": "James Horner",
 "bg": null,
@@ -943,6 +958,11 @@
 "n": "Lambert Wilson",
 "bg": "Ламбер Уилсън",
 "t": "2026-10-23"
+},
+"2209": {
+"n": "Jan de Bont",
+"bg": null,
+"t": "2026-11-06"
 },
 "2227": {
 "n": "Nicole Kidman",
@@ -1833,6 +1853,31 @@
 "n": "Ron Fortunato",
 "bg": null,
 "t": "2026-11-04"
+},
+"7671": {
+"n": "Jeb Stuart",
+"bg": null,
+"t": "2026-11-06"
+},
+"7672": {
+"n": "Reginald VelJohnson",
+"bg": null,
+"t": "2026-11-06"
+},
+"7673": {
+"n": "Bonnie Bedelia",
+"bg": null,
+"t": "2026-11-06"
+},
+"7674": {
+"n": "Alexander Godunov",
+"bg": null,
+"t": "2026-11-06"
+},
+"7714": {
+"n": "Michael Kamen",
+"bg": null,
+"t": "2026-11-06"
 },
 "7750": {
 "n": "Anthony Shaffer",
@@ -4089,6 +4134,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"67113": {
+"n": "Greig Fraser",
+"bg": null,
+"t": "2026-11-06"
+},
 "67248": {
 "n": "Vladimir Mihaylov",
 "bg": null,
@@ -6054,6 +6104,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"564940": {
+"n": "Jon Spaihts",
+"bg": null,
+"t": "2026-11-06"
+},
 "565312": {
 "n": "Klara Rumyanova",
 "bg": null,
@@ -6548,6 +6603,11 @@
 "n": "Bertrand Mandico",
 "bg": null,
 "t": "2026-10-24"
+},
+"1058071": {
+"n": "Bastián Bodenhöfer",
+"bg": null,
+"t": "2026-11-06"
 },
 "1058728": {
 "n": "Paul Giovanni",
@@ -11808,6 +11868,11 @@
 "n": "Mina Rahimzadeh",
 "bg": null,
 "t": "2026-11-04"
+},
+"6430427": {
+"n": "Luciano Reinoso",
+"bg": null,
+"t": "2026-11-06"
 },
 "6435021": {
 "n": "Georgi Gidikov",

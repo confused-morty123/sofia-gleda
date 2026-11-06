@@ -54,6 +54,18 @@
    "path": "posters/film-40-kinomaniya-obetovanata-zemya.jpg",
    "w": 341
   },
+  "dyun-chast-parva": {
+   "checked": "2026-11-06",
+   "h": 500,
+   "how": "og:image",
+   "img": "https://softwareforcinema.com/f/movies/m/7/3c9263716b2bda62cae4e7b67c7c4a88.jpeg",
+   "kind": "poster",
+   "md5": "16fd3a7dc92dca76ff4cc289989784a4",
+   "page": "https://domnakinoto.com/dyun-chast-parva-movie7435.html?a=",
+   "path": "posters/film-dyun-chast-parva.jpg",
+   "src_md5": "9dd9f0b460a22e0900503ed15379e378",
+   "w": 346
+  },
   "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete": {
    "checked": "2026-11-04",
    "h": 500,
@@ -341,6 +353,13 @@
     "no usable image on the page"
    ]
   },
+  "show:ekaterina-karavelova-vik-ot-istoriyata": {
+   "last": "2026-11-06",
+   "tried": [],
+   "why": [
+    "no own page linked"
+   ]
+  },
   "show:igra-na-kotki": {
    "last": "2026-11-06",
    "tried": [
@@ -503,6 +522,9 @@
   },
   "https://iamstudio.bg/wp-content/uploads/2024/02/screenshot_20261105_112127_drive.jpg": {
    "https://iamstudio.bg/produkt/tri-versii-na-jivota/": "три версии на живота"
+  },
+  "https://softwareforcinema.com/f/movies/m/7/3c9263716b2bda62cae4e7b67c7c4a88.jpeg": {
+   "https://domnakinoto.com/dyun-chast-parva-movie7435.html?a=": "дюн част първа"
   },
   "https://softwareforcinema.com/f/movies/m/7/3f35d1e5b53405d412827e0349415572.png": {
    "https://domnakinoto.com/hroniki-za-neudobnata-istina-movie7182.html?a=": "хроники за неудобната истина истината за българският чернобил"
