@@ -3105,18 +3105,6 @@
   "source": "dom-kino",
   "runtime": 100
  },
- "40-kinomaniya-obetovanata-zemya": {
-  "id": "40-kinomaniya-obetovanata-zemya",
-  "bg": "40.Киномания: Обетованата земя",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#1B3330",
-   "#275F57"
-  ],
-  "source": "dom-kino",
-  "runtime": 179
- },
  "40-kinomaniya-nyama-duhove-v-zhilishteto-na-ul-dobra": {
   "id": "40-kinomaniya-nyama-duhove-v-zhilishteto-na-ul-dobra",
   "bg": "40.Киномания: Няма духове в жилището на ул. „Добра“",
@@ -3269,22 +3257,6 @@
   ],
   "source": "lumiere",
   "runtime": 115,
-  "year": 2026
- },
- "bezsmartniyat-i-krasavitsata-2": {
-  "id": "bezsmartniyat-i-krasavitsata-2",
-  "bg": "Безсмъртният и красавицата 2",
-  "en": "",
-  "genres": [
-   "Анимация",
-   "Семеен"
-  ],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "cc-sofia",
-  "runtime": 80,
   "year": 2026
  },
  "sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-1-sab": {
@@ -3919,7 +3891,8 @@
    "#2A331B",
    "#4A5F27"
   ],
-  "source": "dom-kino"
+  "source": "dom-kino",
+  "runtime": 179
  },
  "the-journeys-of-dostoevsky-sinelibri": {
   "id": "the-journeys-of-dostoevsky-sinelibri",
@@ -3991,17 +3964,6 @@
   "runtime": 107,
   "year": 2026,
   "originalTitle": "THE CAT IN THE HAT"
- },
- "kotarakat-s-shapka": {
-  "id": "kotarakat-s-shapka",
-  "bg": "Котаракът с шапка",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#332A1B",
-   "#5F4527"
-  ],
-  "source": "arena-mega"
  },
  "ramayana-razhdaneto-na-edna-legenda": {
   "id": "ramayana-razhdaneto-na-edna-legenda",
@@ -4168,5 +4130,136 @@
   "source": "cc-sofia",
   "runtime": 90,
   "year": 2026
+ },
+ "bts-world-tour-arirang-in-kaohsiung-live-viewing": {
+  "id": "bts-world-tour-arirang-in-kaohsiung-live-viewing",
+  "bg": "BTS WORLD TOUR 'ARIRANG' IN KAOHSIUNG: LIVE VIEWING",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 195,
+  "year": 2026
+ },
+ "bts-world-tour-arirang-in-jakarta-live-viewing": {
+  "id": "bts-world-tour-arirang-in-jakarta-live-viewing",
+  "bg": "BTS WORLD TOUR 'ARIRANG' IN JAKARTA: LIVE VIEWING",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "cc-sofia",
+  "runtime": 195,
+  "year": 2026
+ },
+ "sin-pelikan": {
+  "id": "sin-pelikan",
+  "bg": "Син пеликан",
+  "en": "",
+  "genres": [
+   "Анимация",
+   "Документален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "g8",
+  "runtime": 80,
+  "country": "Унгария"
+ },
+ "prodavach-na-nadezhda": {
+  "id": "prodavach-na-nadezhda",
+  "bg": "ПРОДАВАЧ НА НАДЕЖДА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "vlaikova"
+ },
+ "poslednite-dni-na-sofi-shol": {
+  "id": "poslednite-dni-na-sofi-shol",
+  "bg": "ПОСЛЕДНИТЕ ДНИ НА СОФИ ШОЛ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "vlaikova"
+ },
+ "polyusi": {
+  "id": "polyusi",
+  "bg": "Полюси",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
+ },
+ "loshi-stihove": {
+  "id": "loshi-stihove",
+  "bg": "Лоши стихове",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "g8",
+  "runtime": 100,
+  "country": "Унгария"
+ },
+ "leviatan": {
+  "id": "leviatan",
+  "bg": "Левиатан",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 140
+ },
+ "velopohodat-kam-cop-31": {
+  "id": "velopohodat-kam-cop-31",
+  "bg": "ВЕЛОПОХОДЪТ КЪМ COP 31",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "vlaikova"
+ },
+ "fresh-water-for-flowers-cinelibri": {
+  "id": "fresh-water-for-flowers-cinelibri",
+  "bg": "FRESH WATER FOR FLOWERS - CINELIBRI",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
  }
 }
