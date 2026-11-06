@@ -81,7 +81,10 @@ HEALTH = ROOT / "health.json"
 # self-identifying bot User-Agent plus a single 25s attempt is what turned one slow
 # programata.bg response into "13 sources unreachable" for a fortnight.
 
-# programata.bg is the cinema spine; append ?date= or you get a weeks-old cache.
+# programata.bg is the cinema spine; scrape_cinema() appends ?date=<today> to every
+# programata page or you get a stale cache. 2026-11-06: the bare Cinema City and
+# Cine Grand pages still served Thursday 05 Nov only (their new week Fri 06..Thu 12
+# was published, but only under ?date=), so all four parsed to 0 in-window rows.
 CINEMA_SOURCES = {
     "cc-sofia":    "https://programata.bg/kino/kino-saloni/sofia/cinema-city-sofia/",
     "cc-paradise": "https://programata.bg/kino/kino-saloni/sofia/cinema-city-paradise/",
@@ -103,6 +106,16 @@ CINEMA_SOURCES = {
     # NDK's own programme and keep only the "Люмиер" hall. Parsed by parse_lumiere().
     # Coverage is partial (NDK highlights a subset of screenings) — a known limit.
     "lumiere":     "https://www.ndk.bg/en/program",
+}
+
+# Extra programata hall pages of the same cinema, merged into the venue's rows by
+# (film, date) with the times unioned. programata lists the IMAX and 4DX halls as
+# separate venue pages whose screenings are NOT repeated on the main page
+# (2026-11-06: Godzilla Minus Zero IMAX 21:00 only on -imax, Клейфейс 4DX 21:20
+# only on -4dx); Cinema City's own programme counts them as the same cinema.
+PROGRAMATA_EXTRA_PAGES = {
+    "cc-sofia":    ["https://programata.bg/kino/kino-saloni/sofia/cinema-city-sofia-imax/"],
+    "cc-paradise": ["https://programata.bg/kino/kino-saloni/sofia/cinema-city-paradise-4dx/"],
 }
 # theatre.art.bg aggregates Sofia theatres; city 20 = Sofia. It silently falls
 # back to *today* for a date it has no data for, so we trust only rows whose
@@ -310,7 +323,11 @@ def scrape_cinema(venue_id, url, session, window, stats=None):
     st = {"fetched": False, "rows": 0, "dates": 0}
     if stats is not None:
         stats[venue_id] = st
-    soup = fetch(url, session)
+    fetch_url = url
+    if "programata.bg" in url and window:
+        # without ?date= programata serves a stale page cache (see CINEMA_SOURCES)
+        fetch_url = url + ("&" if "?" in url else "?") + "date=" + window[0]
+    soup = fetch(fetch_url, session)
     if soup is None:
         return []
     st["fetched"] = True
@@ -386,6 +403,30 @@ def scrape_cinema(venue_id, url, session, window, stats=None):
             if 2 < len(title) < 120:
                 out.append((title, venue_id, current_date, sorted(set(times)), None))
     st["rows"], st["dates"] = len(out), len({r[2] for r in out})
+    return out
+
+
+def scrape_programata_venue(venue_id, session, window, stats=None):
+    """scrape_cinema() on the venue's programata page plus its extra hall pages
+    (PROGRAMATA_EXTRA_PAGES), merged: one row per (film, date), times unioned,
+    so a screening listed on two pages is never doubled. stats[venue_id] is the
+    main page's fetch flag with the merged row/date counts."""
+    rows = scrape_cinema(venue_id, CINEMA_SOURCES[venue_id], session, window, stats)
+    extras = PROGRAMATA_EXTRA_PAGES.get(venue_id) or []
+    if not extras:
+        return rows
+    merged, order = {}, []
+    for url in [None] + extras:
+        part = rows if url is None else scrape_cinema(venue_id, url, session, window, {})
+        for title, vid, d, times, link in part:
+            key = ((link or "").rstrip("/") or title, d)
+            if key not in merged:
+                merged[key] = [title, vid, d, set(), link]
+                order.append(key)
+            merged[key][3].update(times)
+    out = [(t, v, d, sorted(ts), l) for t, v, d, ts, l in (merged[k] for k in order)]
+    if stats is not None and venue_id in stats:
+        stats[venue_id]["rows"], stats[venue_id]["dates"] = len(out), len({r[2] for r in out})
     return out
 
 
@@ -3443,7 +3484,7 @@ def diagnose(session, window, index, stats, floor, end):
             print("               new: " + ", ".join(unmatched[:8]))
     print("\n=== diagnose: aggregator (programata.bg) ===")
     for vid in AGGREGATOR_VENUES:
-        rows = scrape_cinema(vid, CINEMA_SOURCES[vid], session, window, stats)
+        rows = scrape_programata_venue(vid, session, window, stats)
         stats[vid]["matched"] = sum(1 for title, *_ in rows if index.resolve(title, vid, fuzzy=False)[0])
     print_venue_table(stats)
     session.print_report()
@@ -3711,7 +3752,7 @@ def main():
             continue
         print(f"aggregator {vid}")
         with session.deadline(AGG_VENUE_SECONDS):
-            rows = scrape_cinema(vid, url, session, window, venue_stats)
+            rows = scrape_programata_venue(vid, session, window, venue_stats)
         agg[vid] = {"fetched": bool(venue_stats.get(vid, {}).get("fetched")), "rows": rows}
 
     blocked["programata.bg"] = session.blocked_since(n_agg0)

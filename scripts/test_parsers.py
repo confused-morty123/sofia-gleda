@@ -95,6 +95,65 @@ check("dates are not all collapsed onto day one", len({d for _, d, _ in got}), 3
 check("the film's own page is captured as the deep link",
       all(r[4] and "/kino/filmi/" in r[4] for r in rows), True)
 
+# --------------------------- programata: stale bare page, ?date=, IMAX/4DX halls
+print("programata cinema page: ?date= and extra hall pages (fixtures from 2026-11-06)")
+# The bare Cinema City / Cine Grand pages served a stale cache listing Thursday
+# 05 Nov only, so a refresh on 06 Nov parsed 0 in-window rows for all four venues;
+# the same page under ?date=2026-11-06 lists Fri 06 .. Thu 12. The IMAX hall's
+# screenings are on their own page only (Godzilla Minus Zero 21:00).
+_PG = {name: (FIXTURES / f"programata_cinema_{name}.html").read_text(encoding="utf-8")
+       for name in ("stale", "dated", "imax")}
+
+
+class _ByUrl:
+    """A main programata page answers stale without ?date=, dated with it."""
+    def __init__(self): self.urls = []
+    def soup(self, url, attempts=None):
+        self.urls.append(url)
+        name = "imax" if "-imax/" in url else ("dated" if "?date=" in url else "stale")
+        return BeautifulSoup(_PG[name], "lxml")
+
+
+_W6 = window("2026-11-06", 30)
+check("the stale bare page has no in-window rows (the 0-row refresh)",
+      S.scrape_cinema("cc-sofia", "https://programata.bg/kino/kino-saloni/sofia/cinema-city-sofia/",
+                      _Fixed(_PG["stale"]), _W6), [])
+_sess = _ByUrl()
+_st = {}
+_one = S.scrape_cinema("cg-ring", S.CINEMA_SOURCES["cg-ring"], _sess, _W6, _st)
+check("scrape_cinema asks programata for ?date=<first window day>",
+      _sess.urls, [S.CINEMA_SOURCES["cg-ring"] + "?date=2026-11-06"])
+check("the dated page parses: 4 films x their days", (len(_one), _st["cg-ring"]["rows"]), (28, 28))
+_got = {(t, d): x for t, _, d, x, _ in _one}
+check("Одисея 06 Nov 16:00", _got.get(("Одисея", "2026-11-06")), ["16:00"])
+check("Godzilla Minus Zero 12 Nov", _got.get(("Godzilla Minus Zero", "2026-11-12")),
+      ["13:40", "19:30", "22:15"])
+check("row shape unchanged (title, venue, date, [times], film link)",
+      all(len(r) == 5 and r[1] == "cg-ring" and r[4].startswith("https://programata.bg/kino/filmi/")
+          for r in _one), True)
+_s2 = _ByUrl()
+S.scrape_cinema("vlaikova", "https://vlaikovacinema.com/", _s2, _W6)
+check("a non-programata source gets no ?date=", _s2.urls, ["https://vlaikovacinema.com/"])
+
+_sess = _ByUrl()
+_st = {}
+_cc = S.scrape_programata_venue("cc-sofia", _sess, _W6, _st)
+check("cc-sofia reads its main page and its IMAX page, each with ?date=",
+      _sess.urls, [S.CINEMA_SOURCES["cc-sofia"] + "?date=2026-11-06",
+                   S.PROGRAMATA_EXTRA_PAGES["cc-sofia"][0] + "?date=2026-11-06"])
+_ccg = {(t, d): x for t, _, d, x, _ in _cc}
+check("IMAX times are merged into the same (film, date) row",
+      _ccg.get(("Godzilla Minus Zero", "2026-11-06")), ["19:30", "21:00", "22:15"])
+check("an IMAX-only day of a film adds no duplicate row",
+      sum(1 for t, _, d, *_ in _cc if (t, d) == ("Тайният свят на Ариети", "2026-11-07")), 1)
+check("one row per (film, date) after the merge", len(_ccg), len(_cc))
+check("films without IMAX screenings are untouched",
+      _ccg.get(("Одисея", "2026-11-06")), ["16:00"])
+check("merged stats count the merged rows", _st["cc-sofia"]["rows"], len(_cc))
+_sess = _ByUrl()
+S.scrape_programata_venue("arena-mega", _sess, _W6, {})
+check("a venue without extra pages makes exactly one request", len(_sess.urls), 1)
+
 # -------------------------------------------------------- theatre venue page
 print("theatre venue page")
 THEATRE = """<ul>
