@@ -5513,6 +5513,11 @@ check("pick_bg: an exact Bulgarian title still matches without a year",
       (TMDB.pick_bg([{"id": 1, "title": "Сиянието", "release_date": "1980-05-23"}], "Сиянието", None) or {}).get("id"), 1)
 
 # main(), mocked TMDB: the Влайкова listing that found The Departed
+def _nomiss(rec):
+    """An unmatched record without its "miss" note (why nothing matched: ratings_coverage)."""
+    return {k: v for k, v in rec.items() if k != "miss"} if isinstance(rec, dict) else rec
+
+
 def _tm_main(films, results_by_query, details, blocklist=None, aliases=None, film_info=None, links="[]",
              vlinks="[]", finds=None, prev=None, omdb=None, details_bg=None):
     """finds: {imdb id: [TMDB results]} for find/<id>; prev: last run's tmdb_films.json;
@@ -5576,7 +5581,7 @@ _out, _ = _tm_main([{"id": "everest-ot-drugata-strana", "bg": "ЕВЕРЕСТ: �
                     {"id": "odiseya", "bg": "Одисея", "en": ""}],
                    {"ОТ ДРУГАТА СТРАНА": [_departed], "Одисея": [_odyssey]}, _det)
 check("main(): 'ЕВЕРЕСТ:' lost from the query and absent from The Departed's title -> no match",
-      _out.get("everest-ot-drugata-strana"), {"matched": False, "en": ""})
+      _nomiss(_out.get("everest-ot-drugata-strana")), {"matched": False, "en": ""})
 check("main(): …a full-title BG match still matches, and records how it was found",
       {k: (_out.get("odiseya") or {}).get(k) for k in ("matched", "tmdb_id", "via", "q")},
       {"matched": True, "tmdb_id": 9, "via": "bg", "q": "Одисея"})
@@ -5597,7 +5602,7 @@ check("main(): the venue's director (film_info) rejects a same-title match (Об
 _out, _calls = _tm_main([{"id": "obich", "bg": "Обич", "en": ""}], {"Обич": [_loving]},
                         {339419: {"runtime": 123}}, blocklist={"obich": {"tmdb_ids": [339419]}})
 check("main(): a blocklisted TMDB id is never matched again for that film, details never fetched",
-      (_out.get("obich"), [p for p, _q in _calls if p.startswith("movie/")]), ({"matched": False, "en": ""}, []))
+      (_nomiss(_out.get("obich")), [p for p, _q in _calls if p.startswith("movie/")]), ({"matched": False, "en": ""}, []))
 _out, _ = _tm_main([{"id": "nebesa", "bg": "Небеса", "en": ""}],
                    {"Heaven": [{"id": 10575, "title": "Heaven", "original_title": "Heaven", "release_date": "2002-02-07",
                                 "poster_path": "/h.jpg", "vote_count": 300},
@@ -5798,14 +5803,14 @@ check("main(): no TMDB match, but the venue names the IMDb id and OMDb's facts a
 _out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links=_kl,
                    omdb=lambda i: (7.9, "50K", 90, 70, None, {"title": "Another Film", "year": 2009, "runtime": 85, "type": "movie"}))
 check("main(): …OMDb's film of another year (the venue printed a wrong id) gives no score",
-      _out.get("kina"), {"matched": False, "en": ""})
+      _nomiss(_out.get("kina")), {"matched": False, "en": ""})
 _out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links=_kl, prev={"kina": _orec},
                    omdb=lambda i: (None, None, None, None, "network: timed out"))
 check("main(): …an OMDb outage keeps last run's scores for the same venue id",
       {k: (_out.get("kina") or {}).get(k) for k in ("via", "imdb", "rt")}, {"via": TMDB.OMDB_VIA, "imdb": 6.6, "rt": 80})
 _out, _ = _tm_main(_kina, {"New Film": [_mv]}, {77: {}}, links="[]", prev={"kina": _orec}, omdb=_kina_omdb)
 check("main(): …and a venue that no longer names the id drops them",
-      _out.get("kina"), {"matched": False, "en": ""})
+      _nomiss(_out.get("kina")), {"matched": False, "en": ""})
 _nmv = {"id": 78, "title": "Топки", "original_title": "Topki", "original_language": "bg",
         "release_date": "2026-03-01", "poster_path": "/t.jpg", "vote_count": 3}
 _tl = '[["topki", "https://www.cinegrand.bg/m/topki-imdbtt0000078"]]'
@@ -5895,6 +5900,185 @@ _km_films = {"obich": {"id": "obich", "bg": "Обич", "en": "", "source": "lum
 check("'40.Киномания: Обич' is merged into 'Обич', and the film's own title is the one kept",
       _DD(_km_films, _dr("obich", "lumiere", _W2[:1]) + _dr("40-kinomaniya-obich", "dom-kino", _W2)),
       [("40-kinomaniya-obich", "obich", "same-key")])
+
+# ---------------------------------------------------------------------------------------------
+print("fetch_tmdb: more lookups for uncovered films (director, near title, OMDb by title)")
+# Fixtures in the shape TMDB's search/person, person/{id}/movie_credits, movie/{id} and
+# OMDb's t=&y= answers take, for films with no score on the 2026-11-07 listings (FILMINFO
+# gives the Bulgarian title, the director and often the runtime). Every id, runtime,
+# rating and vote count below is a FIXTURE PLACEHOLDER (not the real TMDB/IMDb value):
+# the tests check the identity rules, never a real number.
+import datetime as _dt_lk
+_LK_TODAY = _dt_lk.date(2026, 11, 7)
+
+
+def _lk_api(people, credits, details, searches=None):
+    calls = []
+    def _api(path, params):
+        calls.append((path, dict(params)))
+        if path == "search/person":
+            return {"results": [dict(p) for p in people.get(params.get("query"), [])]}
+        if path.startswith("person/"):
+            return {"crew": [dict(c) for c in credits.get(int(path.split("/")[1]), [])]}
+        if path == "search/movie":
+            return {"results": [dict(r) for r in (searches or {}).get(params.get("query"), [])]}
+        if path.startswith("movie/"):
+            return details.get(int(path.split("/")[1]), {})
+        return {"results": []}
+    return _api, calls
+
+
+def _lk_run(fn, api_, *a, **kw):
+    saved = TMDB.api
+    TMDB.api = api_
+    try:
+        return fn(*a, **kw)
+    finally:
+        TMDB.api = saved
+
+
+def _crew(i, title, orig, date):   # a movie_credits crew row (fixture ids)
+    return {"id": i, "job": "Director", "title": title, "original_title": orig, "release_date": date,
+            "poster_path": f"/fx{i}.jpg", "vote_count": 0, "vote_average": 0}
+
+# 1. Обетована земя (Дом на киното: Анджей Вайда, 179 min, no year): the title agrees and the runtime confirms it
+_api1, _ = _lk_api({"Анджей Вайда": [{"id": 9001, "name": "Andrzej Wajda", "known_for_department": "Directing"}]},
+                   {9001: [_crew(101, "Обетована земя", "Ziemia obiecana", "1975-02-21"),
+                           _crew(102, "Пан Тадеуш", "Pan Tadeusz", "1999-10-22")]},
+                   {101: {"runtime": 179}, 102: {"runtime": 154}})
+_f1 = {"director": "Анджей Вайда", "runtime": 179, "year": None}
+_r1, _n1 = _lk_run(TMDB.director_lookup, _api1, _f1, ["Обетована земя"], today=_LK_TODAY)
+check("director_lookup: Обетована земя (Wajda, 179 min, no year) -> his film whose title and runtime agree",
+      (_r1 or {}).get("id"), 101)
+# NEGATIVE: TMDB's runtime of that title far from the venue's -> nothing
+_api1b, _ = _lk_api({"Анджей Вайда": [{"id": 9001, "name": "Andrzej Wajda"}]},
+                    {9001: [_crew(101, "Обетована земя", "Ziemia obiecana", "1975-02-21")]}, {101: {"runtime": 138}})
+check("director_lookup: …NEGATIVE: same title, runtime 138 vs 179 -> rejected",
+      _lk_run(TMDB.director_lookup, _api1b, _f1, ["Обетована земя"], today=_LK_TODAY)[0], None)
+# 2. Дом добър (Киномания: Войчех Смажовски, 107 min, no year, no Bulgarian title on TMDB):
+#    his only recent film with that runtime
+_people2 = {"Войчех Смажовски": [], "Voycheh Smazhovski": [],
+            "Войчех Смажовски ": []}
+_people2["Voycheh Smazhovski"] = [{"id": 9002, "name": "Wojciech Smarzowski"},
+                                  {"id": 9003, "name": "Bartosz Smarzowski"}]
+_api2, _ = _lk_api(_people2, {9002: [_crew(201, "Dom dobry", "Dom dobry", "2025-11-07"),
+                                     _crew(202, "Wesele", "Wesele", "2021-10-01")],
+                              9003: [_crew(203, "Inny", "Inny", "2025-01-01")]},
+                   {201: {"runtime": 107}, 202: {"runtime": 104}, 203: {"runtime": 106}})
+_f2 = {"director": "Войчех Смажовски", "runtime": 107}
+_r2, _ = _lk_run(TMDB.director_lookup, _api2, _f2, ["Дом добър"], today=_LK_TODAY)
+check("director_lookup: Дом добър (Smarzowski, no year): the Latin-letter query finds him, not a namesake;"
+      " his one recent film of 107 min", (_r2 or {}).get("id"), 201)
+# NEGATIVE: two recent films of his both fit the runtime -> ambiguous, nothing taken
+_api2b, _ = _lk_api(_people2, {9002: [_crew(201, "Dom dobry", "Dom dobry", "2025-11-07"),
+                                      _crew(204, "Kler 2", "Kler 2", "2024-09-01")]},
+                    {201: {"runtime": 107}, 204: {"runtime": 112}})
+_r2b, _n2b = _lk_run(TMDB.director_lookup, _api2b, _f2, ["Дом добър"], today=_LK_TODAY)
+check("director_lookup: …NEGATIVE: two recent films of his within 10 min -> ambiguous, rejected",
+      (_r2b, "ambiguous" in (_n2b or "")), (None, True))
+# 3. Безсмъртният и красавицата 2 (programata: Roman Artemyev, 2026, 80 min): year + runtime + director
+_api3, _ = _lk_api({"Roman Artemyev": [{"id": 9004, "name": "Roman Artemyev"}]},
+                   {9004: [_crew(301, "Бессмертный и красавица 2", "Бессмертный и красавица 2", "2026-01-01"),
+                           _crew(302, "Бессмертный и красавица", "Бессмертный и красавица", "2019-01-01")]},
+                   {301: {"runtime": 78}, 302: {"runtime": 80}})
+_f3 = {"director": "Roman Artemyev", "year": 2026, "runtime": 80}
+check("director_lookup: Безсмъртният и красавицата 2 (2026, 80 min): the 2026 film, not the 2019 first part",
+      (_lk_run(TMDB.director_lookup, _api3, _f3, ["Безсмъртният и красавицата 2: Еликсир на живота"],
+               today=_LK_TODAY)[0] or {}).get("id"), 301)
+# 4. Всички обичат Бил Евънс (Одеон: Грант Джи, 2026, 102 min) — NEGATIVE: TMDB's 2026 film of his runs 75 min
+_api4, _ = _lk_api({"Грант Джи": [{"id": 9005, "name": "Grant Gee"}]},
+                   {9005: [_crew(401, "Everybody Digs Bill Evans", "Everybody Digs Bill Evans", "2026-02-15")]},
+                   {401: {"runtime": 75}})
+_f4 = {"director": "Грант Джи", "year": 2026, "runtime": 102}
+check("director_lookup: Всички обичат Бил Евънс — NEGATIVE: runtime 75 vs 102 -> rejected",
+      _lk_run(TMDB.director_lookup, _api4, _f4, ["Всички обичат Бил Евънс"], today=_LK_TODAY)[0], None)
+_api4b, _ = _lk_api({"Грант Джи": [{"id": 9005, "name": "Grant Gee"}]},
+                    {9005: [_crew(401, "Everybody Digs Bill Evans", "Everybody Digs Bill Evans", "2026-02-15")]},
+                    {401: {"runtime": 102}})
+check("director_lookup: …and accepted with year, runtime and director all agreeing (no title in common)",
+      (_lk_run(TMDB.director_lookup, _api4b, _f4, ["Всички обичат Бил Евънс"], today=_LK_TODAY)[0] or {}).get("id"), 401)
+# 5. Смисъл (Мартин Йотинг, 2024): NEGATIVE — a person search hit that is another Martin
+_api5, _calls5 = _lk_api({"Мартин Йотинг": [{"id": 9006, "name": "Martin Scorsese"}]},
+                         {9006: [_crew(501, "Killers", "Killers", "2024-05-01")]}, {501: {"runtime": 96}})
+_r5, _n5 = _lk_run(TMDB.director_lookup, _api5, {"director": "Мартин Йотинг, Ян-Петер Хойзерман", "year": 2024,
+                                                 "runtime": 96}, ["Смисъл"], today=_LK_TODAY)
+check("director_lookup: Смисъл — NEGATIVE: TMDB's 'Martin Scorsese' is not Мартин Йотинг, his films never read",
+      (_r5, any(p.startswith("person/9006") for p, _ in _calls5)), (None, False))
+# 6. ДЖЪМБО (Райън Адрианди, 2025, 102 min; TMDB 100): the Latin query finds Ryan Adriandhy
+_api6, _ = _lk_api({"Rayan Adriandi": [{"id": 9007, "name": "Ryan Adriandhy"}]},
+                   {9007: [_crew(601, "Jumbo", "Jumbo", "2025-03-31")]}, {601: {"runtime": 100}})
+check("director_lookup: ДЖЪМБО (Адрианди, 2025, 102 vs TMDB 100 min) -> Jumbo",
+      (_lk_run(TMDB.director_lookup, _api6, {"director": "Райън Адрианди", "year": 2025, "runtime": 102},
+               ["ДЖЪМБО: Магическото приключение"], today=_LK_TODAY)[0] or {}).get("id"), 601)
+# NEGATIVE: same director, a film of another year
+check("director_lookup: …NEGATIVE: his film of 2021 for a 2025 listing -> rejected",
+      _lk_run(TMDB.director_lookup, _lk_api({"Rayan Adriandi": [{"id": 9007, "name": "Ryan Adriandhy"}]},
+                                            {9007: [_crew(602, "Jumbo", "Jumbo", "2021-03-31")]},
+                                            {602: {"runtime": 100}})[0],
+              {"director": "Райън Адрианди", "year": 2025, "runtime": 102}, ["ДЖЪМБО"], today=_LK_TODAY)[0], None)
+# 7. Дюн: Част първа (Арена, 155 min, no year): TMDB's Bulgarian title is 'Дюн'; the runtime confirms it
+_s7 = {"Дюн: Част първа": [{"id": 701, "title": "Дюн: Част втора", "original_title": "Dune: Part Two",
+                            "release_date": "2024-02-27"}],
+       "Дюн": [{"id": 702, "title": "Дюн", "original_title": "Dune", "release_date": "2021-09-15"},
+               {"id": 703, "title": "Дюн", "original_title": "Dune", "release_date": "1984-12-14"}]}
+_api7, _ = _lk_api({}, {}, {701: {"runtime": 166}, 702: {"runtime": 155}, 703: {"runtime": 137}}, _s7)
+check("runtime_title_lookup: Дюн: Част първа (155 min) -> TMDB's 'Дюн' of 155 min, not Part Two or the 1984 film",
+      (_lk_run(TMDB.runtime_title_lookup, _api7, "Дюн: Част първа", {"runtime": 155})[0] or {}).get("id"), 702)
+# 8. Полюси (Одеон, 100 min, no year): a one-word title with no year is never taken this way
+check("runtime_title_lookup: Полюси — NEGATIVE: one word and no year -> not tried",
+      _lk_run(TMDB.runtime_title_lookup, _api7, "Полюси", {"runtime": 100})[0], None)
+# 9. Мъжът, когото обичам / The Man I Love (Айра Закс, 2026, 95 min): OMDb by title + year
+_o9 = TMDB.omdb_parse({"Response": "True", "Title": "The Man I Love", "Year": "2026", "Runtime": "95 min",
+                       "Director": "Ira Sachs", "Type": "movie", "imdbID": "tt0000901",
+                       "imdbRating": "7.0", "imdbVotes": "1,000", "Ratings": [], "Metascore": "N/A"})
+_f9 = {"director": "Айра Закс", "year": 2026, "runtime": 95, "titles": ["The Man I Love"]}
+check("omdb_title_identity: The Man I Love (Sachs, 2026, 95 min) -> accepted",
+      TMDB.omdb_title_identity(_f9, _o9, "The Man I Love"), None)
+_o9b = TMDB.omdb_parse({"Response": "True", "Title": "The Man I Love", "Year": "1946", "Runtime": "96 min",
+                        "Director": "Raoul Walsh", "Type": "movie", "imdbID": "tt0000902", "imdbRating": "6.9"})
+check("omdb_title_identity: …NEGATIVE: the same title of 1946 by Raoul Walsh -> rejected",
+      bool(TMDB.omdb_title_identity(_f9, _o9b, "The Man I Love")), True)
+check("omdb_title_identity: …NEGATIVE: same title and year, another director -> rejected",
+      bool(TMDB.omdb_title_identity(_f9, dict(_o9, director="Raoul Walsh"), "The Man I Love")), True)
+check("omdb_title_identity: …NEGATIVE: a series of that name -> rejected",
+      bool(TMDB.omdb_title_identity(_f9, dict(_o9, type="series"), "The Man I Love")), True)
+# 10. Masters / Големите майстори на киното (Паоло Чивати, 2025, 73 min): OMDb answers without a director
+_o10 = TMDB.omdb_parse({"Response": "True", "Title": "Masters", "Year": "2025", "Runtime": "73 min",
+                        "Director": "N/A", "Type": "movie", "imdbID": "tt0000903", "imdbRating": "N/A"})
+check("omdb_title_identity: Masters — NEGATIVE: the venue names a director, OMDb none -> not confirmed",
+      bool(TMDB.omdb_title_identity({"director": "Паоло Чивати", "year": 2025, "runtime": 73}, _o10, "Masters")), True)
+check("omdb_title_identity: …NEGATIVE: no year printed (История на документалния филм) -> never by title",
+      bool(TMDB.omdb_title_identity({"director": "Марк Казънс"}, dict(_o9, title="The Story of Documentary Film"),
+                                    "The Story of Documentary Film")), True)
+# omdb_title_record end to end, OMDb stubbed: scores kept unmatched, source labels stay IMDb/RT/MC
+_saved_otl = TMDB.omdb_title_lookup
+try:
+    TMDB.omdb_title_lookup = lambda t, y: _o9 if (t, y) == ("The Man I Love", 2026) else TMDB.omdb_parse({})
+    import io as _io_lk, contextlib as _cl_lk
+    with _cl_lk.redirect_stdout(_io_lk.StringIO()):
+        _rec9 = TMDB.omdb_title_record("mazhat-kogoto-obicham", "The Man I Love", _f9, {})
+        _rec9n = TMDB.omdb_title_record("mazhat-kogoto-obicham", "The Man I Love", dict(_f9, year=2020), {})
+    check("omdb_title_record: rated through OMDb by title, unmatched, with OMDb's own facts stored",
+          {k: _rec9.get(k) for k in ("matched", "via", "imdb_id", "imdb", "imdbVotes")},
+          {"matched": False, "via": TMDB.OMDB_TITLE_VIA, "imdb_id": "tt0000901", "imdb": 7.0, "imdbVotes": "1.0K"})
+    check("omdb_title_record: …NEGATIVE: another year -> no record", _rec9n, None)
+    check("art_record: an OMDb-by-title record ships only its scores",
+          TMDB.art_record(_rec9), {"imdb": 7.0, "imdbVotes": "1.0K"})
+finally:
+    TMDB.omdb_title_lookup = _saved_otl
+# lookup_identity on its own
+check("lookup_identity: a title in common plus the year -> accepted",
+      TMDB.lookup_identity({"year": 2026}, {"year": 2026, "titles": ["Бог се смее"]}, ["Бог се смее"]), None)
+check("lookup_identity: …NEGATIVE: the title alone, nothing to confirm it -> rejected",
+      bool(TMDB.lookup_identity({}, {"year": 2026, "titles": ["Бог се смее"]}, ["Бог се смее"])), True)
+# ratings_coverage: the per-film reason the dashboard shows
+import ratings_coverage as _RCw
+check("ratings_coverage reasons: no match (with the lookups tried) / matched, no votes / below the floor",
+      [_RCw._why_none({}, {"matched": False, "miss": "no match: director X: not on TMDB"}),
+       _RCw._why_none({}, {"matched": True, "imdb_id": "tt1"}),
+       _RCw._why_none({}, {"matched": True, "imdb_id": "tt1", "imdbVotes": "68", "vote_count": 1})],
+      ["no match: director X: not on TMDB", "matched, no votes yet (unreleased or brand new)",
+       "matched, below the floor: IMDb 68 vote(s), below 100, TMDB 1 vote(s), below 10"])
 
 print()
 if fails:
