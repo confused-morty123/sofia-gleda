@@ -132,20 +132,31 @@ def scores(film, art):
 
 
 def _why_none(art, side):
-    """Why a film shows no score, from what the sidecar knows."""
+    """Why a film shows no score, from what the sidecar knows: "no match: …" (with the
+    lookups fetch_tmdb tried, its "miss" note), "matched, no votes yet", or the votes
+    below a display floor (owner, 2026-11-07: the dashboard shows what is left)."""
     a, s = art or {}, side or {}
+    iv = imdb_votes(s.get("imdbVotes"))
+    below = (f"IMDb {s['imdbVotes']} vote(s), below {IMDB_SHOW_MIN}"
+             if iv is not None and iv < IMDB_SHOW_MIN else
+             "IMDb rating hidden: under the staleness rule" if s.get("imdb") is not None else "")
     if not s.get("matched"):
-        return "no TMDB match" + ("" if not s.get("imdb_id") else ", OMDb has no rating for the venue's IMDb id")
+        if s.get("via") in ("omdb-venue-imdb", "omdb-title"):
+            return "no TMDB match; OMDb film found: " + (below or "OMDb has no rating for it yet")
+        if s.get("imdb_id"):
+            return "no TMDB match, OMDb has no rating for the venue's IMDb id"
+        return s.get("miss") or "no match: no TMDB or OMDb film agrees with the venue's"
     tc = a.get("tc") if _num(a.get("tc")) else s.get("vote_count")
+    tmdb_below = f"TMDB {tc} vote(s), below {TMDB_SHOW_MIN}" if tc else ""
     if s.get("imdb_id"):
+        if below or tmdb_below:
+            return "matched, below the floor: " + ", ".join(x for x in (below, tmdb_below) if x)
         if s.get("imdbVotes"):
-            return f"IMDb publishes no rating yet ({s['imdbVotes']} votes)"
-        if not tc:
-            return "no votes anywhere yet (unreleased or brand new)"
-        return f"OMDb has no IMDb rating; TMDB {tc} vote(s), below {TMDB_SHOW_MIN}"
+            return f"matched, IMDb publishes no rating yet ({s['imdbVotes']} votes)"
+        return "matched, no votes yet (unreleased or brand new)"
     if not tc:
-        return "TMDB match without an IMDb id, no votes yet"
-    return f"TMDB match without an IMDb id; {tc} TMDB vote(s), below {TMDB_SHOW_MIN}"
+        return "matched (TMDB, no IMDb id), no votes yet"
+    return f"matched (TMDB, no IMDb id), below the floor: {tmdb_below}"
 
 
 def _pct(a, b):

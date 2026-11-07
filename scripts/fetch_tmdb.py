@@ -988,7 +988,7 @@ def art_record(v, film_year=None):
     inject_data.py writes these; film_year is the year FILMS prints, for the trailer's
     year guard. Returns {} for an unmatched record, except one rated through the IMDb
     id its venue names (OMDB_VIA): only its IMDb / RT / Metacritic scores."""
-    if v and not v.get("matched") and v.get("via") == OMDB_VIA and v.get("imdb_id"):
+    if v and not v.get("matched") and v.get("via") in (OMDB_VIA, OMDB_TITLE_VIA) and v.get("imdb_id"):
         return {k: v[k] for k in ("imdb", "imdbVotes", "rt", "mc") if v.get(k) is not None and v.get(k) != ""}
     if not v or not v.get("matched"):
         return {}
@@ -1205,6 +1205,348 @@ def omdb_only_record(fid, en, facts, urls, prev):
     return rec
 
 
+# ---- More lookups for the films the title searches miss (owner, 2026-11-07) -------------
+# Ratings coverage 85-90 % with clean matching: TMDB and OMDb only, every lookup below
+# behind a strict identity check (year ±1, runtime ±IDENT_RUNTIME, the director when the
+# venue names one, a title that agrees in BG / EN / original). A missing value is fine,
+# a wrong one is not: when the check cannot be made, nothing is taken.
+IDENT_RUNTIME = 10           # minutes, both runtimes known
+DIRECTOR_PEOPLE = 3          # TMDB people tried per credited director name
+DIRECTOR_DETAILS = 4         # candidate films whose runtime is fetched, per director
+OMDB_TITLE_VIA = "omdb-title"
+_PART_ONE_RE = re.compile(r"\s*[:\-–—]?\s*(?:част\s+(?:първа|1)|part\s+(?:one|1|i))\s*$", re.I)
+
+
+def _bg_latin(s):
+    """A Bulgarian name in Latin letters, the official way ('Анджей Вайда' -> 'Andzhey Vayda'),
+    as a second person-search query: TMDB's people carry Latin names."""
+    from film_identity import _TRANSLIT
+    out = "".join(_TRANSLIT.get(ch.lower(), ch) if ch.lower() in _TRANSLIT else ch for ch in (s or ""))
+    return " ".join(w[:1].upper() + w[1:] for w in out.split())
+
+
+def title_close(a, b):
+    """Two titles in the same script name the same film: equal once folded (cnorm, a
+    trailing 'Част първа' / 'Part One' ignored), one most of the other (6+ letters, at
+    least 60 %), or nearly the same spelling (ratio >= 0.8)."""
+    import difflib
+    na, nb_ = cnorm(_PART_ONE_RE.sub("", a or "")), cnorm(_PART_ONE_RE.sub("", b or ""))
+    if not na or not nb_:
+        return False
+    if na == nb_:
+        return True
+    short, long_ = sorted((na, nb_), key=len)
+    if len(short) >= 6 and short in long_ and len(short) >= 0.6 * len(long_):
+        return True
+    return difflib.SequenceMatcher(None, na, nb_).ratio() >= 0.8
+
+
+def runtime_close(a, b, slack=IDENT_RUNTIME):
+    """True / False when both runtimes are known, None when either is not."""
+    try:
+        a, b = int(a or 0), int(b or 0)
+    except (TypeError, ValueError):
+        return None
+    if a <= 0 or b <= 0:
+        return None
+    return abs(a - b) <= slack
+
+
+def lookup_identity(facts, cand, titles):
+    """Why `cand` cannot be the venue's film for a lookup that is not a plain title search
+    (director's filmography, OMDb by title), or None. cand: {year, runtime, titles,
+    director (TMDB/OMDb, or None), director_known (True when cand came from the
+    director's own credits)}. The rule:
+      - the venue's year, when it prints one, within ±1 of the candidate's (which must be known);
+      - both runtimes, when known, within IDENT_RUNTIME;
+      - the venue's director, when it names one, agrees with the candidate's;
+      - and the candidate is confirmed twice over: a title that agrees (title_close, either
+        script) plus the year or the runtime; or, with no title in common, the director,
+        the year AND the runtime all at once."""
+    facts, cand = facts or {}, cand or {}
+    vy, cy = facts.get("year"), cand.get("year")
+    year_ok_ = None
+    if vy:
+        try:
+            if not cy or abs(int(vy) - int(cy)) > 1:
+                return f"year {vy} vs {cy or '?'}"
+            year_ok_ = True
+        except (TypeError, ValueError):
+            return f"year {vy} vs {cy}"
+    rt = runtime_close(facts.get("runtime"), cand.get("runtime"))
+    if rt is False:
+        return f"runtime {facts.get('runtime')} vs {cand.get('runtime')} min"
+    vd = facts.get("director") or ""
+    dir_ok = bool(cand.get("director_known"))
+    if vd and cand.get("director"):
+        agree = names_agree(vd, cand["director"])
+        if agree is False:
+            return f"director {vd} vs {cand['director']}"
+        dir_ok = dir_ok or bool(agree)
+    if vd and not dir_ok:
+        return f"director {vd} not confirmed"
+    t_ok = any(title_close(a, b) for a in titles or () for b in cand.get("titles") or ())
+    if t_ok and (year_ok_ or rt):
+        return None
+    if dir_ok and year_ok_ and rt:
+        return None
+    # a festival page with no year (Киномания's film pages): a new film of the director's
+    # (released within FIND_RECENT_YEARS), its runtime agreeing, stands in for the year;
+    # director_lookup still needs it to be the director's only such film
+    if dir_ok and not vy and rt and cand.get("recent"):
+        return None
+    return ("title, year and runtime do not confirm it" if not t_ok
+            else "the title alone, no year or runtime to confirm it")
+
+
+def _api_counted(path, params):
+    global SEARCH_ERRORS
+    res = api(path, params)
+    if res is None:
+        SEARCH_ERRORS += 1
+    return res
+
+
+def person_agrees(venue, tmdb):
+    """A stricter names_agree for one person: the surnames (last words) agree, and the
+    first names too when both carry one ('Мартин Йотинг' is not 'Martin Scorsese')."""
+    v, t = (venue or "").split(), (tmdb or "").split()
+    if not v or not t:
+        return False
+    sur = names_agree(v[-1], t[-1])
+    if sur is None and len(v) >= 2 and len(t) >= 2:
+        # a surname too short to compare across scripts (Джи / Gee): the first names
+        # must then agree outright
+        return bool(names_agree(v[0], t[0]))
+    if not sur:
+        return False
+    if len(v) < 2 or len(t) < 2 or names_agree(v[0], t[0]):
+        return True
+    a, b = _name_tokens(v[0]), _name_tokens(t[0])     # transliterations differ (Войчех / Wojciech):
+    return bool(a and b and a[0][:1] == b[0][:1])     # the initial must still be the same
+
+
+def director_people(name):
+    """TMDB people ids for a credited director ('Анджей Вайда', 'Roman Artemyev'): the name
+    as printed and in Latin letters, kept only when TMDB's own name agrees (names_agree)."""
+    ids = []
+    for q in dict.fromkeys(x for x in (name.strip(), _bg_latin(name.strip())) if x):
+        res = _api_counted("search/person", {"query": q, "include_adult": "false"}) or {}
+        for p in (res.get("results") or [])[:5]:
+            if (isinstance(p, dict) and isinstance(p.get("id"), int) and p["id"] not in ids
+                    and person_agrees(name, p.get("name") or "") and len(ids) < DIRECTOR_PEOPLE):
+                ids.append(p["id"])
+        if ids:
+            break
+    return ids
+
+
+def director_lookup(facts, titles, blocked=(), today=None):
+    """The TMDB film among the venue's director's own directing credits that passes
+    lookup_identity, as a search-like result (id, title, original_title, release_date,
+    poster_path, vote_average, vote_count, "_q": the director), and a note why not
+    otherwise: (result | None, note). Festival pages (Киномания, Синелибри, Дом на киното)
+    print a Bulgarian title and the director only; TMDB often has no Bulgarian title for
+    such a film, but it has the director. Exactly one candidate must pass."""
+    vd = (facts or {}).get("director") or ""
+    if not vd:
+        return None, "no director to look up"
+    import datetime as _dt
+    this_year = (today or _dt.date.today()).year
+    names = [n.strip() for n in re.split(r",|\s+и\s+|&|/", vd) if len(n.strip()) > 3]
+    passed, seen, notes = {}, set(), []
+    for name in names[:2]:
+        people = director_people(name)
+        if not people:
+            notes.append(f"director {name}: not on TMDB")
+            continue
+        for pid in people:
+            cr = _api_counted(f"person/{pid}/movie_credits", {"language": "bg-BG"}) or {}
+            films = [c for c in (cr.get("crew") or []) if isinstance(c, dict) and c.get("job") == "Director"
+                     and isinstance(c.get("id"), int) and c["id"] not in (blocked or ()) and c["id"] not in seen]
+            for c in films:
+                seen.add(c["id"])
+            # cheap filters first: the year (when printed), else the title; runtime needs a call
+            def pre(c):
+                y = _release_year(c)
+                if facts.get("year"):
+                    return y is not None and abs(y - int(facts["year"])) <= 1
+                return (any(title_close(t, x) for t in titles for x in (c.get("title"), c.get("original_title")))
+                        or (y is not None and y >= this_year - FIND_RECENT_YEARS))
+            short = [c for c in films if pre(c)][:DIRECTOR_DETAILS]
+            if not short:
+                notes.append(f"director {name}: no film of {facts.get('year') or 'that title'} among {len(films)}")
+            for c in short:
+                d = _api_counted(f"movie/{c['id']}", {"language": "en-US"}) or {}
+                _y = _release_year(c)
+                cand = {"year": _y, "runtime": d.get("runtime"), "director_known": True,
+                        "recent": _y is not None and _y >= this_year - FIND_RECENT_YEARS,
+                        "titles": [c.get("title"), c.get("original_title"), d.get("title")]}
+                why = lookup_identity(facts, cand, titles)
+                if why:
+                    notes.append(f"director {name}: TMDB {c['id']} {why}")
+                else:
+                    passed[c["id"]] = dict(c, _q=name)
+    if len(passed) == 1:
+        return next(iter(passed.values())), None
+    if len(passed) > 1:
+        return None, f"director lookup ambiguous: {len(passed)} films fit"
+    return None, "; ".join(notes[:3]) or "director lookup found nothing"
+
+
+def runtime_title_lookup(bg, facts, blocked=()):
+    """The TMDB film for a Bulgarian title TMDB spells a little differently ('Дюн: Част
+    първа' / 'Дюн'), confirmed by the runtime: (result | None, note). Only with the venue's
+    runtime known; the BG title must be 2+ words (a one-word title also needs the venue's
+    year); each candidate must pass lookup_identity; exactly one may."""
+    rt = (facts or {}).get("runtime")
+    if not bg or not rt:
+        return None, "no runtime to confirm a near title"
+    if len(bg.split()) < 2 and not facts.get("year"):
+        return None, "a one-word title with no year"
+    passed, seen = {}, set()
+    for q in dict.fromkeys((bg, _PART_ONE_RE.sub("", bg).strip())):
+        res = search_api({"query": q, "language": "bg", "include_adult": "false"}) or {}
+        cands = [r for r in (res.get("results") or []) if isinstance(r, dict) and isinstance(r.get("id"), int)
+                 and r["id"] not in (blocked or ()) and r["id"] not in seen
+                 and any(title_close(bg, x) for x in (r.get("title"), r.get("original_title")))]
+        for r in cands[:3]:
+            seen.add(r["id"])
+            d = _api_counted(f"movie/{r['id']}", {"language": "en-US", "append_to_response": "credits"}) or {}
+            dirs = ", ".join(c.get("name") for c in ((d.get("credits") or {}).get("crew") or [])
+                             if isinstance(c, dict) and c.get("job") == "Director" and c.get("name"))
+            cand = {"year": _release_year(r), "runtime": d.get("runtime"), "director": dirs or None,
+                    "titles": [r.get("title"), r.get("original_title")]}
+            if lookup_identity(facts, cand, [bg]) is None:
+                passed[r["id"]] = dict(r, _q=q)
+    if len(passed) == 1:
+        return next(iter(passed.values())), None
+    return None, ("near-title lookup ambiguous" if passed else "no near title with that runtime")
+
+
+def _omdb_query(params):
+    """One OMDb answer for params (i= or t=&y=) as a dict, or raises (network errors
+    retried once, like _omdb_get)."""
+    q = urllib.parse.urlencode(dict(params, apikey=OMDB_TOKEN))
+    last = None
+    for attempt in (1, 2):
+        try:
+            req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
+                                         headers={"User-Agent": UA, "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
+                return json.load(r)
+        except Exception as e:
+            last = e
+            if attempt == 1:
+                time.sleep(OMDB_RETRY_SLEEP)
+    raise last
+
+
+def omdb_parse(d):
+    """omdb_lookup's dict from one OMDb answer d, plus director and imdb_id."""
+    out = {"rating": None, "votes": None, "rt": None, "mc": None, "err": None, "title": None,
+           "year": None, "runtime": None, "type": None, "director": None, "imdb_id": None}
+    if not isinstance(d, dict) or d.get("Response") == "False":
+        out["err"] = (d.get("Error") if isinstance(d, dict) else None) or "Response=False"
+        return out
+    try:
+        r = d.get("imdbRating")
+        out["rating"] = float(r) if r and r != "N/A" else None
+    except (TypeError, ValueError):
+        pass
+    vr = (d.get("imdbVotes") or "").replace(",", "")
+    out["votes"] = _votes_compact(int(vr)) if vr.isdigit() else None
+    for src in (d.get("Ratings") or []):
+        if src.get("Source") == "Rotten Tomatoes":
+            v = (src.get("Value") or "").rstrip("%")
+            out["rt"] = int(v) if v.isdigit() else None
+        elif src.get("Source") == "Metacritic":
+            v = (src.get("Value") or "").split("/")[0]
+            out["mc"] = int(v) if v.isdigit() else None
+    if out["mc"] is None and str(d.get("Metascore") or "").isdigit():
+        out["mc"] = int(d["Metascore"])
+    t = d.get("Title")
+    out["title"] = t.strip() if isinstance(t, str) and t.strip() and t != "N/A" else None
+    y = re.match(r"\s*(\d{4})", str(d.get("Year") or ""))
+    out["year"] = int(y.group(1)) if y else None
+    out["runtime"] = _omdb_int(d.get("Runtime"))
+    ty = d.get("Type")
+    out["type"] = ty.strip().lower() if isinstance(ty, str) and ty.strip() else None
+    dr = d.get("Director")
+    out["director"] = dr.strip() if isinstance(dr, str) and dr.strip() and dr != "N/A" else None
+    iid = str(d.get("imdbID") or "")
+    out["imdb_id"] = iid if re.fullmatch(r"tt\d{6,10}", iid) else None
+    return out
+
+
+def omdb_title_lookup(title, year):
+    """OMDb's film for a Latin title and year (t=&y=), as omdb_parse gives it."""
+    if not OMDB_TOKEN:
+        return dict(omdb_parse({}), err="OMDB_TOKEN not set")
+    try:
+        return omdb_parse(_omdb_query({"t": title, "y": str(year), "type": "movie"}))
+    except Exception as e:
+        return dict(omdb_parse({}), err=f"network: {e}")
+
+
+def omdb_title_identity(facts, o, title):
+    """Why OMDb's film o (found by title + year) cannot be the venue's, or None: a film,
+    its title agreeing with the venue's Latin title, the year ±1, the runtime when both
+    known, the venue's director when it names one (OMDb must name an agreeing one); a
+    venue with no director needs both runtimes known."""
+    if not o or o.get("err") is not None:
+        return "no OMDb answer"
+    if o.get("type") and o["type"] != "movie":
+        return f"OMDb lists a {o['type']}, not a film"
+    if not o.get("imdb_id"):
+        return "no IMDb id"
+    if not (o.get("title") and titles_agree(title, o["title"])):
+        return f"title {title} vs OMDb {o.get('title')}"
+    if not facts.get("year"):
+        return "the venue prints no year"
+    if not facts.get("director") and runtime_close(facts.get("runtime"), o.get("runtime")) is None:
+        return "no director and no runtime to confirm it"
+    return lookup_identity(facts, {"year": o.get("year"), "runtime": o.get("runtime"),
+                                   "director": o.get("director"), "titles": [o.get("title")]}, [title])
+
+
+def omdb_title_record(fid, en, facts, prev):
+    """The record of a film neither TMDB nor a venue IMDb id rates, rated through OMDb's
+    film for its Latin title and year (OMDB_TITLE_VIA) when omdb_title_identity passes,
+    or None. An OMDb error keeps last run's record of this kind."""
+    pv = (prev or {}).get(fid) or {}
+    titles = [t for t in dict.fromkeys([en] + list(facts.get("titles") or ()))
+              if isinstance(t, str) and norm(t) and not _has_cyrillic(t)]
+    if not titles or not facts.get("year"):
+        return None
+    for t in titles[:2]:
+        o = omdb_title_lookup(t, facts["year"])
+        if o["err"] is not None and not str(o["err"]).lower().startswith("movie not found"):
+            return dict(pv) if pv.get("via") == OMDB_TITLE_VIA else None
+        why = omdb_title_identity(facts, o, t)
+        if why:
+            print(f"      (OMDb by title {t!r} {facts['year']}: {why} — no rating taken)")
+            continue
+        rec = {"matched": False, "en": en, "via": OMDB_TITLE_VIA, "imdb_id": o["imdb_id"],
+               "omdb": {k: v for k, v in (("t", o["title"]), ("y", o["year"]), ("rn", o["runtime"]),
+                                          ("d", o["director"]), ("q", t)) if v}}
+        same = pv.get("via") == OMDB_TITLE_VIA and pv.get("imdb_id") == o["imdb_id"]
+        for k, v, pk in (("imdb", o["rating"], "imdb"), ("imdbVotes", o["votes"], "imdbVotes"),
+                         ("rt", o["rt"], "rt"), ("mc", o["mc"], "mc")):
+            if v is None and same:
+                v = pv.get(pk)
+            if v is not None and v != "":
+                rec[k] = v
+        print(f"      rated through OMDb by title: {o['title']} ({o['year']}) {o['imdb_id']}")
+        return rec
+    return None
+
+
+def miss_reason(notes):
+    """The per-film reason a record has no match, for build_report / ratings_coverage."""
+    return "no match: " + "; ".join(n for n in notes if n)[:300]
+
+
 def ascii_url(url):
     """`url` with every non-ASCII character (and space) percent-encoded as UTF-8:
     urllib sends ASCII only, and Дом на киното's film pages carry a typographic
@@ -1415,6 +1757,31 @@ def main():
             print(f"      (year {year} vs TMDB {(best.get('release_date') or '')[:4]}: more than "
                   f"{MAX_YEAR_GAP} years apart, another film — rejected)")
             best = None
+        # The title searches found nothing: the director's own filmography (festival pages
+        # print a Bulgarian title and the director only), then a Bulgarian title TMDB spells
+        # a little differently, confirmed by the runtime (owner, 2026-11-07). Each passes
+        # lookup_identity; contradiction() below checks the match like any other.
+        _miss = []
+        if not best:
+            _miss.append("title search: " + "/".join(repr(t) for t in dict.fromkeys(x for x in (en, bg) if x)))
+            _lf = venue_facts(f, fi, film_urls.get(fid))
+            _titles = [t for t in dict.fromkeys((bg, strip_series_prefix(fi.get("title_bg") or "") or fi.get("title_bg"),
+                                                 en, *(_lf.get("titles") or ()))) if t]
+            best, _note = director_lookup(_lf, _titles, blocked)
+            if best:
+                via_bg, match_source, match_query = True, "director", best.get("_q")
+                print(f"      (found in the director's filmography: {best.get('_q')})")
+            else:
+                _miss.append(_note)
+                if bg and _has_cyrillic(bg):
+                    best, _note = runtime_title_lookup(bg, _lf, blocked)
+                    if best:
+                        via_bg, match_source, match_query = True, "bg-runtime", best.get("_q")
+                        print(f"      (near Bulgarian title confirmed by the runtime: {best.get('_q')!r})")
+                    else:
+                        _miss.append(_note)
+            if best and not year_ok(year, best, rerel):
+                best = None
         _pv = prev.get(fid) or {}
         if (not best and SEARCH_ERRORS > _search_err0 and _pv.get("matched")
                 and _pv.get("tmdb_id") not in blocked
@@ -1428,10 +1795,14 @@ def main():
         if not best:
             print(f"[{i+1}/{len(films)}] {fid:24s} NO MATCH ({en or bg} {year})")
             # TMDB has no film for it, but the venue may name its IMDb id: the IMDb,
-            # RT and Metacritic scores of that id, when OMDb's facts agree with the venue's
-            out[fid] = (omdb_only_record(fid, en, venue_facts(f, fi, film_urls.get(fid)),
-                                         film_urls.get(fid), prev)
+            # RT and Metacritic scores of that id, when OMDb's facts agree with the venue's;
+            # else OMDb's film for its Latin title and year, when omdb_title_identity passes
+            _vf = venue_facts(f, fi, film_urls.get(fid))
+            out[fid] = (omdb_only_record(fid, en, _vf, film_urls.get(fid), prev)
+                        or omdb_title_record(fid, en, _vf, prev)
                         or {"matched": False, "en": en})
+            if not out[fid].get("via"):
+                out[fid]["miss"] = miss_reason(_miss)
             img = og_image(links.get(fid))
             if img:
                 film_links[fid] = img

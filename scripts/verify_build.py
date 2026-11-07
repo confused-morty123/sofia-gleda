@@ -1346,6 +1346,14 @@ if _tart4:
                     _why = _FT.omdb_identity(_facts, {"err": None, "type": "movie", "title": _om.get("t"),
                                                       "year": _om.get("y"), "runtime": _om.get("rn")},
                                                imdb_id=_sd.get("imdb_id"))
+            # rated without a TMDB match through OMDb's film for the venue's Latin title and
+            # year (fetch_tmdb.OMDB_TITLE_VIA): the stored OMDb facts must still pass
+            if _sd.get("via") == getattr(_FT, "OMDB_TITLE_VIA", None) and not _sd.get("matched"):
+                _om = _sd.get("omdb") if isinstance(_sd.get("omdb"), dict) else {}
+                _why = _FT.omdb_title_identity(_facts, {"err": None, "type": "movie", "title": _om.get("t"),
+                                                        "year": _om.get("y"), "runtime": _om.get("rn"),
+                                                        "director": _om.get("d"), "imdb_id": _sd.get("imdb_id")},
+                                               _om.get("q") or _om.get("t") or "")
             _own_y = _facts.get("year") or _title_year(_f.get("bg") or "")
             _ty = int(_r["y"]) if str(_r.get("y") or "").isdigit() else None
             _pd = [d for d in (_prem4.get("film:" + _k) or []) if isinstance(d, str) and d[:4].isdigit()]
