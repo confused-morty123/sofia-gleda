@@ -109,6 +109,34 @@ check("…a seed FILMS record missing from the page fails (a new seed film not b
           built, set_line(night, "FILMS", "const FILMS=" + json.dumps([f for f in films if f["id"] != seed0],
                                                                     ensure_ascii=False) + ";"))))
 
+# A seed SHOWS record whose synopsis the refresh's synopses step replaced (synopses.apply,
+# from synopsis_overrides.json / synopsis_fills.json) is not a code change; any other
+# synopsis change still is.
+shows = json.loads(line_of(night, "SHOWS").split("=", 1)[1].rstrip(";"))
+sseed = json.loads(line_of(built, "SHOWS").split("=", 1)[1].rstrip(";"))[0]
+FILL = "Пълното описание от theatre.art.bg за теста, достатъчно дълго, за да мине като попълване."
+def _shows_page(syn_bg, syn_en=None):
+    recs = [dict(x, synBg=syn_bg, **({"synEn": syn_en} if syn_en else {})) if x.get("id") == sseed["id"] else x
+            for x in shows]
+    return set_line(night, "SHOWS", "const SHOWS=" + json.dumps(recs, ensure_ascii=False) + ";")
+fills = {sseed["id"]: ({FILL}, set())}
+check("…a seed SHOWS record carrying its synopsis_fills.json text passes",
+      PS.compare(built, _shows_page(FILL), synopsis_texts=fills) == [])
+check("…a seed SHOWS record carrying its override (bg + en) passes",
+      PS.compare(built, _shows_page(FILL, "The owner's English text."),
+                 synopsis_texts={sseed["id"]: ({FILL}, {"The owner's English text."})}) == [])
+check("…a seed SHOWS record with any other synopsis still fails",
+      any("seed record(s) of SHOWS differ" in p
+          for p in PS.compare(built, _shows_page(FILL + " (променено)"), synopsis_texts=fills)))
+check("…a fill for another show does not excuse it",
+      any("seed record(s) of SHOWS differ" in p
+          for p in PS.compare(built, _shows_page(FILL), synopsis_texts={"another-show": ({FILL}, set())})))
+check("…the fill text excuses only the synopsis: another field changed with it still fails",
+      any("seed record(s) of SHOWS differ" in p for p in PS.compare(
+          built, set_line(night, "SHOWS", "const SHOWS=" + json.dumps(
+              [dict(x, synBg=FILL, title=(x.get("title") or "") + " (стар)") if x.get("id") == sseed["id"] else x
+               for x in shows], ensure_ascii=False) + ";"), synopsis_texts=fills)))
+
 # What a refresh changes is not code: new listings, new synthesised records, a new
 # poster block and new CSP hashes.
 refreshed = set_line(night, "SHOWTIMES", 'const SHOWTIMES=[["x-film","cineland","2099-01-01",["20:00"]]];')

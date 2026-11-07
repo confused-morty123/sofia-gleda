@@ -12,7 +12,9 @@ and this check fails a page whose code is not what src/ builds.
   * the listings the scraper writes (dev_build.SCRAPED: SNAPSHOT, SHOWTIMES, ...);
   * FILMS and SHOWS beyond their seed records (the seed records of src/data.html
     must be there unchanged; a merged-away id may be missing, film_merges.json /
-    show_aliases.json);
+    show_aliases.json). One exception: a seed SHOWS record's synBg / synEn may carry
+    the text scripts/synopsis_overrides.json or synopsis_fills.json gives for that id
+    (the refresh's synopses step writes it, synopses.apply); any other change still fails;
   * the SOFIA-POSTERS block, regenerated wholesale by inject_data.py;
   * the CSP script hashes (they follow the data).
 The CSS, every other script (SOFIA-APP, SOFIA-PRICES, ...), the head, and the
@@ -99,9 +101,46 @@ def _merged_ids():
     return {"FILMS": films, "SHOWS": shows}
 
 
-def compare(built, page, label="index.html"):
+def _synopsis_texts():
+    """{show id: ({allowed synBg texts}, {allowed synEn texts})} from the owner's overrides
+    and the nightly fills: the only synopsis edits a seed SHOWS record may carry."""
+    try:
+        import synopses
+        ov, fills = synopses.load_overrides(), synopses.load_fills()
+    except Exception:            # unreadable files: nothing is allowed, the check stays strict
+        return {}
+    out = {}
+    for sid, rec in (ov or {}).items():
+        bg, en = out.setdefault(sid, (set(), set()))
+        if rec.get("bg"):
+            bg.add(rec["bg"])
+        if rec.get("en"):
+            en.add(rec["en"])
+    for sid, rec in (fills or {}).items():
+        if isinstance(rec, dict) and isinstance(rec.get("bg"), str) and rec["bg"]:
+            out.setdefault(sid, (set(), set()))[0].add(rec["bg"])
+    return out
+
+
+def _with_seed_synopsis(rec, seed, allowed):
+    """rec with synBg / synEn put back to the seed's when they hold a text the overrides
+    or fills give for this show (allowed: (bg texts, en texts))."""
+    if not allowed:
+        return rec
+    rec = dict(rec)
+    for key, texts in (("synBg", allowed[0]), ("synEn", allowed[1])):
+        if rec.get(key) != seed.get(key) and rec.get(key) in texts:
+            if key in seed:
+                rec[key] = seed[key]
+            else:
+                rec.pop(key, None)
+    return rec
+
+
+def compare(built, page, label="index.html", synopsis_texts=None):
     """Problems (plain sentences) where `page`'s code differs from `built`, the page
-    build_index.py makes from src/. Empty when the page is built from src/."""
+    build_index.py makes from src/. Empty when the page is built from src/.
+    synopsis_texts: as _synopsis_texts() (read from the files when None)."""
     code_b, data_b = code_of(built)
     code_p, data_p = code_of(page)
     out = []
@@ -113,6 +152,7 @@ def compare(built, page, label="index.html"):
         out.append(f"{label}: its code differs from src/ from line {i + 1}, in {_section(lb, i)}: "
                    f"src/ builds {_short(a)!r}, the page has {_short(b)!r}")
     merged = _merged_ids()
+    syn = _synopsis_texts() if synopsis_texts is None else synopsis_texts
     for name in SEEDED:
         if name not in data_b or name not in data_p:
             continue
@@ -123,7 +163,8 @@ def compare(built, page, label="index.html"):
             continue
         got = {r.get("id"): r for r in have if isinstance(r, dict)}
         changed = [r.get("id") for r in seed if isinstance(r, dict) and r.get("id") in got
-                   and got[r.get("id")] != r]
+                   and (got[r.get("id")] if name != "SHOWS"
+                        else _with_seed_synopsis(got[r.get("id")], r, syn.get(r.get("id")))) != r]
         missing = [r.get("id") for r in seed if isinstance(r, dict) and r.get("id") not in got
                    and r.get("id") not in merged[name]]
         if changed:
