@@ -18993,12 +18993,12 @@ BO_SHOTS = webapp_root.parent / "notes" / "design_options" / "box_office_v2" / "
 BO_COPY = {
     "bg": {"buy": "Купи билет", "head": "Билети само на касата", "headAlt": "Билети на касата",
            "online": "Купи онлайн от Priceless Tickets", "opens": "Отваря pricelesstickets.bg",
-           "siteT": "Отвори сайта на театъра ↗", "siteC": "Отвори сайта на киното ↗",
+           "siteT": "Отвори сайта на театъра ↗", "siteC": "Отвори сайта на киното ↗", "newTab": "(отваря се в нов раздел)",
            "tag": "непотвърден час", "tagSr": "Часът не е потвърден. Провери го при покупката.",
            "only": "само", "oldPrelim": "Предварителна програма"},
     "en": {"buy": "Buy a ticket", "head": "Tickets at the box office only", "headAlt": "Tickets at the box office",
            "online": "Buy online from Priceless Tickets", "opens": "Opens pricelesstickets.bg",
-           "siteT": "Open the theatre website ↗", "siteC": "Open the cinema website ↗",
+           "siteT": "Open the theatre website ↗", "siteC": "Open the cinema website ↗", "newTab": "(opens in a new tab)",
            "tag": "time not confirmed", "tagSr": "This time is not confirmed yet. Check before buying.",
            "only": "only", "oldPrelim": "Preliminary programme"},
 }
@@ -19010,7 +19010,8 @@ BO_COLOR_JS = r"""
   const lum=a=>{const c=a.map(x=>{x/=255;return x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]};
   const cr=(a,b)=>{const x=lum(a),y=lum(b);return Math.round((Math.max(x,y)+.05)/(Math.min(x,y)+.05)*100)/100};
   const root=getComputedStyle(document.documentElement);
-  const txt=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  // the visible text: an outbound link's visually hidden "(opens in a new tab)" left out
+  const txt=e=>{if(!e)return '';const c=e.cloneNode(true);c.querySelectorAll('.newtab').forEach(x=>x.remove());return c.textContent.replace(/\s+/g,' ').trim();};
   const stubInfo=(stub,pre)=>{ if(!stub)return null;
     const cs=getComputedStyle(stub),bg=rgb(cs.backgroundColor);
     const a=stub.querySelector('.'+pre+'-a'),b=stub.querySelector('.'+pre+'-b');
@@ -19048,7 +19049,8 @@ BO_PANEL_JS = r"""(phone)=>{
              dashed:getComputedStyle(tag).borderTopStyle,
              beside:Math.abs(tag.getBoundingClientRect().top+tag.getBoundingClientRect().height/2
                     -(ss.querySelector('.ss-time').getBoundingClientRect().top+ss.querySelector('.ss-time').getBoundingClientRect().height/2))<20}:null,
-    oldHead, site:site?{t:txt(site),href:site.getAttribute('href'),cls:site.className}:null,
+    oldHead, site:site?{t:txt(site),href:site.getAttribute('href'),cls:site.className,
+      sr:(site.querySelector('.newtab')||{}).textContent||'',arrowHidden:!!site.querySelector('[aria-hidden="true"]')}:null,
     pri:[...ss.querySelectorAll('.ss-btn.pri')].map(txt), sec:[...ss.querySelectorAll('.ss-btn.sec')].map(txt),
     help:[...ss.querySelectorAll('.ss-help')].map(txt),
     gap:last?Math.round(r.bottom-parseFloat(scs.paddingBottom)-parseFloat(scs.borderBottomWidth||0)-last.getBoundingClientRect().bottom):null,
@@ -19172,7 +19174,8 @@ def _bo_panel_problems(r, lang, phone, cinema, alt, prelim):
         p.append(f"an online button without a seller: {r['sec']}")
     if len(r["sec"]) != (3 if alt else 2):
         p.append(f"secondary buttons {r['sec']}")
-    if r["site"] and r["site"]["t"] != (c["siteC"] if cinema else c["siteT"]):
+    if r["site"] and (r["site"]["t"] != (c["siteC"] if cinema else c["siteT"])
+                      or r["site"]["sr"].strip() != c["newTab"] or not r["site"]["arrowHidden"]):
         p.append(f"site line {r['site']}")
     if r["site"] and "ss-btn" in r["site"]["cls"]:
         p.append("the site line is a button")
@@ -19807,7 +19810,7 @@ BO_SHUT = {"bg": {"soldout": "Билетите са изчерпани", "notyet
 BO_SHUT_JS = r"""(phone)=>{
   const ss=document.querySelector(phone?'#ss-wrap .ss-sheet':'#ss-pop .ss-sheet'); if(!ss)return null;
   const n=ss.querySelector('[data-festsale]'), p=n&&n.querySelector('p'), a=n&&n.querySelector('a.ss-site');
-  const d=ss.querySelector('#ss-d'), txt=e=>e?e.textContent.replace(/\s+/g,' ').trim():'';
+  const d=ss.querySelector('#ss-d'), txt=e=>{if(!e)return '';const c=e.cloneNode(true);c.querySelectorAll('.newtab').forEach(x=>x.remove());return c.textContent.replace(/\s+/g,' ').trim();};
   const was=document.activeElement; if(n){n.tabIndex; n.focus&&n.focus();} const nf=!!n&&document.activeElement===n; if(was&&was.focus)was.focus();
   return {state:n?n.dataset.festsale:null, role:n?n.getAttribute('role'):null, note:txt(p), noteFocus:nf,
     noteCtl:n?!!(p&&p.closest('a,button')):false, ctlInNote:n?n.querySelectorAll('button,.ss-btn').length:0,

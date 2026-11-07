@@ -9,6 +9,8 @@
 :root{
   --ink:#0C0A0F; --ink-2:#141018; --ink-3:#1C1622; --ink-4:#28202F;
   --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.17);
+  /* the quiet underline of the sheets' outbound text links (.ss-site, .syn-full) */
+  --link-underline:rgba(255,255,255,.35);
   /* --fg-3 was #7E7386 (3.5-4.4:1, below WCAG AA on every surface): #958A9C keeps the hue
      and the step below --fg-2, at 6.0:1 on ink, 5.7 on ink-2, 5.4 on ink-3, 4.8 on ink-4 */
   --fg:#F4EFF6; --fg-1:var(--fg); --fg-2:#B6ABBC; --fg-3:#958A9C;
@@ -570,9 +572,12 @@ a{color:inherit}
   transition:opacity var(--motion-dur-sm) var(--motion-ease-out)}
 @media (hover:hover){.readmore:hover{text-decoration:underline}}
 /* the sheet's link to a play's full description on its theatre's site: same quiet
-   underlined style as .ss-site, a 44 px tap target on phones, 32 px with a mouse */
+   underlined style as .ss-site (one --link-underline token), a 44 px tap target on
+   phones, 32 px with a mouse */
 .syn-full{display:inline-flex;align-items:center;min-height:44px;margin-top:2px;font-size:15px;color:var(--fg);
-  text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px}
+  text-decoration:underline;text-decoration-color:var(--link-underline);text-underline-offset:3px}
+/* a "Read more" under a synopsis that is not cut is hidden (synFit) */
+.readmore[hidden]{display:none}
 @media (hover:hover){.syn-full:hover{text-decoration-color:currentColor}}
 @media (min-width:761px){.syn-full{min-height:32px;font-size:14px}}
 .toast{position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,14px); z-index:300;
@@ -957,7 +962,7 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
   border:1.5px dashed rgba(217,194,122,.65);color:#D9C27A;font-family:var(--f-ui);font-size:15px;font-weight:500;line-height:1.2}
 /* the venue's own page: one quiet line under the address */
 .ss-site{display:inline-flex;align-self:flex-start;align-items:center;min-height:44px;margin-top:2px;font-size:15px;color:var(--fg);
-  text-decoration:underline;text-decoration-color:rgba(255,255,255,.35);text-underline-offset:3px}
+  text-decoration:underline;text-decoration-color:var(--link-underline);text-underline-offset:3px}
 @media (hover:hover){.ss-site:hover{text-decoration-color:var(--fg)}}
 /* the compact stub in a show's or film's "Билети от" box, beside the online pills */
 .buystub{position:relative;display:inline-flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;
@@ -1737,6 +1742,7 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  ssBoxOfficeAltBody:"Театърът не продава билети онлайн за това представление. За онлайн билети страницата на постановката посочва {alt}.",
  ssSiteOpenT:"Отвори сайта на театъра ↗",
  synFullT:"Пълно описание на сайта на театъра ↗",
+ newTab:"(отваря се в нов раздел)",
  ssSiteOpenC:"Отвори сайта на киното ↗",
  ssFestSoldOut:"Билетите са изчерпани",
  ssFestNotYet:"Билетите още не са в продажба",
@@ -1850,7 +1856,8 @@ lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMon
  ssBoxOfficeHeadAlt:"Tickets at the box office",
  ssBoxOfficeAltBody:"This theatre does not sell tickets online for this performance. For online tickets, the production's own page names {alt}.",
  ssSiteOpenT:"Open the theatre website ↗",
- synFullT:"Full description on the theatre's site ↗",
+ synFullT:"Full description on the theatre's website ↗",
+ newTab:"(opens in a new tab)",
  ssSiteOpenC:"Open the cinema website ↗",
  ssFestSoldOut:"Sold out",
  ssFestNotYet:"Tickets not on sale yet",
@@ -1997,6 +2004,14 @@ const synShow=sh=>{
 };
 /* hasBGSynShow: true when a BG synopsis exists for this show */
 const hasBGSynShow=sh=>!!(notEmpty(SHOWSYN[sh.id])||notEmpty(sh.synBg));
+/* extLabel: an outbound link's label with its trailing ↗ hidden from screen readers and
+   "(opens in a new tab)" said instead (visually hidden): "Open the theatre website ↗".
+   The space before ↗ is a no-break one: the links are inline-flex, where a plain leading
+   space in a child is dropped */
+const extLabel=label=>{
+  const m=String(label||"").match(/^(.*?)\s*↗\s*$/);
+  return`${esc(m?m[1]:label)}${m?'<span aria-hidden="true">&nbsp;↗</span>':""}<span class="vh newtab"> ${esc(t().newTab)}</span>`;
+};
 /* synFullLink: a short (or missing) synopsis and the show's own page on its theatre's
    site (LINKS, not an aggregator's AGGLINKS listing) -> a quiet link to the full
    description there (owner spec 2026-11-07). SYN_THIN matches scripts/synopses.py THIN. */
@@ -2005,7 +2020,7 @@ const synFullLink=sh=>{
   const u=safeUrl(LINK_MAP[sh.id]);
   if(!u||(typeof AGGLINKS==="object"&&AGGLINKS&&AGGLINKS[sh.id]))return"";
   if(((synShow(sh)||"").trim()).length>=SYN_THIN)return"";
-  return`<a class="syn-full" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t().synFullT)}</a>`;
+  return`<a class="syn-full" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${extLabel(t().synFullT)}</a>`;
 };
 /* director / cast with FILMINFO + TMDBART fallback */
 const _hasCyr=s=>s&&/[Ѐ-ӿ]/.test(s);
@@ -3147,12 +3162,14 @@ function heroSyn(text){
 }
 /* after every render or resize, and again once the webfont arrives or the text box changes
    width (a synopsis measured in the fallback font fitted 3 lines, in Geologica 4): the button
-   only under a synopsis that is cut (an open one stays open) */
+   only under a synopsis that is cut (an open one stays open). The hero's and the open
+   sheet's (decorateSheet, also after a language switch): a one-line synopsis never shows
+   „Прочети повече“ above the full-description link. */
 let _heroFitRaf=0,_heroSynRO=null;const _heroSynSeen=new Set();
 function heroSynFitSoon(){if(!_heroFitRaf)_heroFitRaf=requestAnimationFrame(()=>{_heroFitRaf=0;heroSynFit();});}
 function heroSynFit(root){
   _heroSynSeen.forEach(b=>{if(!b.isConnected){_heroSynRO.unobserve(b);_heroSynSeen.delete(b);}});
-  (root||document).querySelectorAll(".hero .synwrap").forEach(w=>{
+  (root||document).querySelectorAll(".hero .synwrap, .sheet .synwrap").forEach(w=>{
     const body=w.querySelector(".synbody"),btn=w.querySelector(".readmore");
     if(!body||!btn)return;
     if(_heroSynRO&&body.isConnected&&!_heroSynSeen.has(body)){_heroSynSeen.add(body);_heroSynRO.observe(body);}
@@ -5187,10 +5204,10 @@ function decorateSheet(s){
     sheet.insertBefore(grab,sheet.firstChild);
     swipeToClose(sheet);
   }
-  s.querySelectorAll(".synwrap").forEach(w=>{
-    const body=w.querySelector(".synbody"),btn=w.querySelector(".readmore");
-    if(body&&btn&&body.scrollHeight<=body.clientHeight+2){btn.style.display="none";w.classList.remove("clamp");}
-  });
+  /* the synopsis' „Прочети повече“ only when the text is cut: measured now, on the next
+     frame (layout settled), after the opening animation and whenever the box or the font
+     changes (heroSynFit's ResizeObserver) */
+  heroSynFit(s);heroSynFitSoon();setTimeout(heroSynFitSoon,450);
 }
 /* ---- one open sheet at a time, and no stale close can touch a newer one ----
    Every open bumps _sheetGen. A close finalises (hides and empties the scrim, unlocks the
@@ -6436,7 +6453,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
   /* Box office only: the venue's own page under the address, and in the buy slot the ticket
      stub ("само" unless a third party sells it online: then that seller's button under it) */
   const siteHtml=isBoxOfficeOnly&&siteUrl
-    ?`<a class="ss-site" href="${esc(siteUrl)}" target="_blank" rel="noopener noreferrer">${esc(kind==="film"?L.ssSiteOpenC:L.ssSiteOpenT)}</a>`:"";
+    ?`<a class="ss-site" href="${esc(siteUrl)}" target="_blank" rel="noopener noreferrer">${extLabel(kind==="film"?L.ssSiteOpenC:L.ssSiteOpenT)}</a>`:"";
   let boHtml="";
   if(isBoxOfficeOnly){
     const alt=bo&&bo.alt?bo.alt:"";
@@ -6449,7 +6466,7 @@ function screeningSheetHtml(kind,id,venueId,dateStr,timeStr,step){
      FESTROWS url null): a plain note where
      "Купи билет" would be, in the panel's own quiet text, and the festival's page as a
      quiet link; never the ticket stub (it is not a box-office sale), never a button */
-  const festHtml=festSale?`<div class="ss-fsale" role="note" data-festsale="${esc(festSale)}"><p class="ss-date">${esc(festSale==="soldout"?L.ssFestSoldOut:festSale==="via"?L.ssFestVia:L.ssFestNotYet)}</p>${festPage?`<a class="ss-site" href="${esc(festPage)}" target="_blank" rel="noopener noreferrer">${esc(L.ssFestPage)}</a>`:""}</div>`:"";
+  const festHtml=festSale?`<div class="ss-fsale" role="note" data-festsale="${esc(festSale)}"><p class="ss-date">${esc(festSale==="soldout"?L.ssFestSoldOut:festSale==="via"?L.ssFestVia:L.ssFestNotYet)}</p>${festPage?`<a class="ss-site" href="${esc(festPage)}" target="_blank" rel="noopener noreferrer">${extLabel(L.ssFestPage)}</a>`:""}</div>`:"";
 
   /* SHOWATTR chips */
   let chipsHtml="";
