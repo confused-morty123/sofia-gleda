@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-Imebr3JxOGsFbSG9Bf4TrbvFpahk0qxNYt0VdaeyjYk=' 'sha256-Lwvk4wcPj+e0c+KZWscjxjeee6tRbGHk3jsFRzlwoxw=' 'sha256-cmVJZBBW6knv3OWnWAt0EgLqaV0ROmennqrYV7fDsqA=' 'sha256-wa41YEyyq3KE+mN6u+4JKLjGI/GRxSy9fP7WDck0ka8=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-Imebr3JxOGsFbSG9Bf4TrbvFpahk0qxNYt0VdaeyjYk=' 'sha256-MJgUHgl56+ZLyYAcEamnmdJ8r+HBOgvtpkFjrUwf4wg=' 'sha256-cmVJZBBW6knv3OWnWAt0EgLqaV0ROmennqrYV7fDsqA=' 'sha256-wa41YEyyq3KE+mN6u+4JKLjGI/GRxSy9fP7WDck0ka8=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -612,6 +612,12 @@ a{color:inherit}
   color:var(--accent); font:inherit; font-size:13px; font-weight:600; letter-spacing:.02em;
   transition:opacity var(--motion-dur-sm) var(--motion-ease-out)}
 @media (hover:hover){.readmore:hover{text-decoration:underline}}
+/* the sheet's link to a play's full description on its theatre's site: same quiet
+   underlined style as .ss-site, a 44 px tap target on phones, 32 px with a mouse */
+.syn-full{display:inline-flex;align-items:center;min-height:44px;margin-top:2px;font-size:15px;color:var(--fg);
+  text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px}
+@media (hover:hover){.syn-full:hover{text-decoration-color:currentColor}}
+@media (min-width:761px){.syn-full{min-height:32px;font-size:14px}}
 .toast{position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,14px); z-index:300;
   background:var(--ink-2); border:1px solid var(--line-2); color:var(--fg); border-radius:10px;
   padding:11px 18px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none;
@@ -1924,6 +1930,7 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  ssBoxOfficeHeadAlt:"Билети на касата",
  ssBoxOfficeAltBody:"Театърът не продава билети онлайн за това представление. За онлайн билети страницата на постановката посочва {alt}.",
  ssSiteOpenT:"Отвори сайта на театъра ↗",
+ synFullT:"Пълно описание на сайта на театъра ↗",
  ssSiteOpenC:"Отвори сайта на киното ↗",
  ssFestSoldOut:"Билетите са изчерпани",
  ssFestNotYet:"Билетите още не са в продажба",
@@ -2037,6 +2044,7 @@ lblClose:"Close",closeFilters:"Close filters",clearSearch:"Clear search",prevMon
  ssBoxOfficeHeadAlt:"Tickets at the box office",
  ssBoxOfficeAltBody:"This theatre does not sell tickets online for this performance. For online tickets, the production's own page names {alt}.",
  ssSiteOpenT:"Open the theatre website ↗",
+ synFullT:"Full description on the theatre's site ↗",
  ssSiteOpenC:"Open the cinema website ↗",
  ssFestSoldOut:"Sold out",
  ssFestNotYet:"Tickets not on sale yet",
@@ -2183,6 +2191,16 @@ const synShow=sh=>{
 };
 /* hasBGSynShow: true when a BG synopsis exists for this show */
 const hasBGSynShow=sh=>!!(notEmpty(SHOWSYN[sh.id])||notEmpty(sh.synBg));
+/* synFullLink: a short (or missing) synopsis and the show's own page on its theatre's
+   site (LINKS, not an aggregator's AGGLINKS listing) -> a quiet link to the full
+   description there (owner spec 2026-11-07). SYN_THIN matches scripts/synopses.py THIN. */
+const SYN_THIN=280;
+const synFullLink=sh=>{
+  const u=safeUrl(LINK_MAP[sh.id]);
+  if(!u||(typeof AGGLINKS==="object"&&AGGLINKS&&AGGLINKS[sh.id]))return"";
+  if(((synShow(sh)||"").trim()).length>=SYN_THIN)return"";
+  return`<a class="syn-full" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t().synFullT)}</a>`;
+};
 /* director / cast with FILMINFO + TMDBART fallback */
 const _hasCyr=s=>s&&/[Ѐ-ӿ]/.test(s);
 const dirOf=f=>{
@@ -4697,7 +4715,7 @@ function sheetShow(sh){
       ${sh.genres.map(g=>`<span class="chip">${esc(genreDisplay(g))}</span>`).join("")}
       ${sh.duration?`<span class="chip">${esc(sh.duration)} ${esc(L.min)}</span>`:""}${festChips("show",sh.id)}</div>
     ${showBoxOnlyBox(sh)||buyBox(sh.theatre,null,false,tixUrl("show",sh.id,sh.theatre),sh.id)}
-    <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}
+    <div class="sec"><h3>${esc(L.syn)}</h3>${(()=>{const st=synShow(sh);if(st)return synBlock(st);return`<p class="no-info-note">${esc(S.lang==="en"&&hasBGSynShow(sh)?L.noEnShow:L.noInfoShow)}</p>`;})()}${synFullLink(sh)}
       ${(()=>{const w=S.lang==="en"?x.whyEn:x.why;return w?`<div class="why">${esc(w)}</div>`:""})()}</div>
     ${(()=>{const fs=S.lang==="en"?x.factsEn:x.facts;return fs?`<div class="sec"><h3>${esc(L.aboutT)}</h3><ul class="facts">${fs.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`:""})()}
     ${sh.reviews&&sh.reviews.length&&S.lang==="bg"?`<div class="sec"><h3>${esc(L.press)}</h3>

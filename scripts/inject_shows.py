@@ -104,14 +104,26 @@ def main():
         have.add(sid)
         added += 1
 
-    if not added:
-        print(f"SHOWS already carries all {len(minted)} theatre shows — no change")
-        return
+    # Longer synopses (scripts/synopses.py): the owner's overrides, then the fills
+    # read from the production's own theatre.art.bg page. Never fails the merge.
+    syn = {"override": 0, "fill": 0}
+    try:
+        import synopses
+        log = []
+        syn = synopses.apply(shows, synopses.load_overrides(log=log), synopses.load_fills())
+        for line in log:
+            print("  " + line, file=sys.stderr)
+    except Exception as e:                       # noqa: BLE001
+        print(f"  synopses not applied: {type(e).__name__}: {e}", file=sys.stderr)
 
     new_literal = json_for_script(shows)
+    if new_literal == literal:
+        print(f"SHOWS already carries all {len(minted)} theatre shows — no change")
+        return
     HTML.write_text(src[:start] + new_literal + src[end:], encoding="utf-8")
     print(f"merged {added} theatre show(s) into SHOWS "
-          f"({len(shows)} total; {len(minted)} synthesised)")
+          f"({len(shows)} total; {len(minted)} synthesised); "
+          f"synopses: {syn['override']} override(s), {syn['fill']} fill(s)")
 
 
 if __name__ == "__main__":
