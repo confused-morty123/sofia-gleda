@@ -5,8 +5,9 @@
 # from the listings already committed (scripts/dev_build.py --from HEAD), exactly as
 # the README's "Making a UI change" build, and then tested.
 #
-#   unit  the offline build + share and legal pages + CSP, the publish gate, and
-#         test_parsers, test_theatres, test_verify, test_schedule.
+#   unit  the committed page is built from src/ (check_page_source.py), the offline
+#         build + share and legal pages + CSP, the publish gate, and
+#         test_parsers, test_theatres, test_verify, test_schedule, test_page_source.
 #         Every test runs even when an earlier one fails, so all failures show.
 #   security  test_security, one runner per engine (Chromium, WebKit), in parallel
 #         with the rest: it is the longest offline suite (~11 min both engines in one).
@@ -166,8 +167,17 @@ jobs:
           path: ~/apt-debs
           key: apt-debs-ubuntu-24.04-${{ hashFiles('requirements.txt') }}-chromium-webkit
 
+      # Before the build below overwrites them: the COMMITTED index.html and home pages
+      # must carry the code src/ builds (the listings a refresh injects are not compared,
+      # scripts/page_source.py). A release that commits src/ without the rebuilt page
+      # fails here (2026-11-06); the build and every test still run, so all failures show.
+      - name: The committed page is built from src/ (check_page_source.py)
+        id: page-source
+        run: python3 scripts/check_page_source.py
+
       - name: Build the page offline (src/ + the committed listings)
         id: build
+        if: ${{ !cancelled() }}
         run: |
           python3 scripts/dev_build.py --from HEAD --out index.html
           python3 scripts/gen_share_pages.py
@@ -201,6 +211,10 @@ jobs:
       - name: test_schedule
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 scripts/test_schedule.py
+
+      - name: test_page_source
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 scripts/test_page_source.py
 
   security:
     # Same skips as unit.
