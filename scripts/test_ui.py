@@ -6699,6 +6699,9 @@ def wave_l(browser):
         // Find a performance with a hall that has an EN mapping
         for (const p of PERFORMANCES) {
             const hall = p[3];
+            // still to come on the test's clock: a past performance has no day chip to open
+            // (2026-11-07: today's 14:00 'Зала 1' row was picked at 14:45 and showed no hall)
+            if (typeof timeIsUpcoming === 'function' && !timeIsUpcoming(p[1], p[2])) continue;
             if (hall && HALL_EN_MAP[hall]) {
                 return {showId: p[0], hallBg: hall, hallEn: HALL_EN_MAP[hall], date: p[1]};
             }
@@ -19846,7 +19849,10 @@ def _bo_festival_shut(browser, eng):
     data = page.evaluate("""()=>{
       const fr=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
       const up=fr.filter(r=>r[2]>=TODAY&&filmById[r[0]]&&(SHOWTIMES.some(s=>s[0]===r[0]&&s[1]===r[1]&&s[2]===r[2]&&(s[3]||[]).includes(r[3]))));
-      const pick=st=>up.filter(r=>r[6]===st).sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
+      // the screenings the test taps: still to come on the test's clock, so a time pill is shown
+      // (2026-11-07: today's 14:15 CineLibri screening was picked at 14:45 and had 'no panel')
+      const upT=up.filter(r=>timeIsUpcoming(r[2],r[3]));
+      const pick=st=>upT.filter(r=>r[6]===st).sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
       // the gate: every upcoming sold-out / not-yet row renders its note, never a buy button or a stub
       const bad=[];let n=0;
       for(const r of up){ if(r[6]!=='soldout'&&r[6]!=='notyet')continue; n++;
@@ -19861,9 +19867,9 @@ def _bo_festival_shut(browser, eng):
         const no=el.querySelector('[data-festsale]');
         if(el.querySelector('.ss-btn.pri')||el.querySelector('[data-boxonly]')||!no||no.dataset.festsale!=='via'
            ||/Купи билет/.test(el.textContent))vbad.push(r.slice(0,4).join('|'));}
-      const via=up.filter(r=>r[6]!=='soldout'&&r[6]!=='notyet'&&!(r.length>5&&r[5])).sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
+      const via=upT.filter(r=>r[6]!=='soldout'&&r[6]!=='notyet'&&!(r.length>5&&r[5])).sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
       const topche=up.find(r=>r[1]==='euro-cinema'&&r[2]==='2026-10-31'&&r[3]==='13:15'&&/topche/.test(r[0]))||null;
-      const any=up.filter(r=>r[6]==='onsale').sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
+      const any=upT.filter(r=>r[6]==='onsale').sort((a,b)=>(a[2]+a[3]).localeCompare(b[2]+b[3]))[0]||null;
       return {soldout:pick('soldout'),notyet:pick('notyet'),via,topche,vn,vbad,any,n,bad,
         counts:{soldout:up.filter(r=>r[6]==='soldout').length,notyet:up.filter(r=>r[6]==='notyet').length,onsale:up.filter(r=>r[6]==='onsale').length,unknown:up.filter(r=>!r[6]).length}};}""")
     print(f"  FESTROWS upcoming sale states: {data['counts']}")
