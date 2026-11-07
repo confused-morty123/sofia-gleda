@@ -1270,7 +1270,11 @@ body{font-size:15px}
 .score.rt{border-color:rgba(255,120,96,.5); color:#FF8A73}
 .score.mc{border-color:rgba(132,214,120,.5); color:#9BE08C}
 /* narrow cards: the tags stack under the score instead of sliding over it */
-/* phones: the same chip-left, tags-right layout as desktop (owner, 2026-11-06) */
+/* phones (owner, 2026-11-07): every pill stacked down the left edge, in reading order: the score
+   chip, then "Премиера", then a festival or other tag; desktop keeps the tags in a column on the right */
+@media (max-width:760px){ .card .p-top{flex-direction:column; align-items:flex-start; gap:4px}
+  .card .p-top>.p-tags{margin-left:0; align-items:flex-start; max-width:100%}
+  .card .p-tags>.badge,.card .p-tags>.fest-mark{text-align:left} }
 /* event cards, variant A */
 .ecard{display:flex; flex-direction:column; gap:0}
 .ecard .ebox{height:auto; aspect-ratio:16/9; padding:0; display:block; background:#000}
@@ -1385,6 +1389,14 @@ body{font-size:15px}
   -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px)}
 .fab-badge{background:var(--fg); color:var(--ink)}
 .badge,.badge.lim,.badge.prem,.badge.free{background:rgba(12,10,15,.78); color:#fff; border:1px solid rgba(255,255,255,.2)}
+/* Design review 2026-11-07 (apple-design): the festival pill on the same dark base as the other
+   pills (it was rgba(0,0,0,.5) at opacity .9: 3.3:1 over a white poster, now 10:1), and one pill
+   geometry for the score, the badges and the festival (padding 3px 7px, radius 5px). RT's coral
+   lifted to 4.5:1 on the chip over white art. */
+.fest-mark{background:rgba(12,10,15,.78); border:1px solid rgba(255,255,255,.2); color:#fff; opacity:1; padding:3px 7px; border-radius:5px}
+.score{border-radius:5px}
+.score.rt{color:#FF9985}
+@media (max-width:760px){ .card .p-top{gap:3px} .card .p-top>span:empty{display:none} }
 .chip.solid{background:var(--ink-4); border-color:var(--line-2); color:var(--fg)}
 .search-icon-btn.expanded{border-color:var(--fg-2); color:var(--fg); background:var(--ink-4)}
 .search input:focus{border-color:var(--fg-2)}
