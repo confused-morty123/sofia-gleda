@@ -3006,6 +3006,41 @@ check("write_plinks inserts after BOXONLY, read_plinks reads it back",
 check("write_plinks replaces an existing declaration",
       _SP.read_plinks(_SP.write_plinks(_pg2, [])), [])
 
+# --- synopses.py: theatre.art.bg production description, owner overrides, apply (2026-11-07)
+import json as _json, tempfile as _tf
+import synopses as _SY
+_art = (FIX / "theatreart_production.html").read_text(encoding="utf-8")
+_t = _SY.parse_art_production(_art, "ПРОБНА ПИЕСА", ["Театър 199 „Валентин Стойчев“"])
+check("synopses: theatre.art.bg lead paragraphs, title-only paragraph and #myanons left out",
+      (_t or "").split("\n\n")[0][:20] + "|" + str((_t or "").count("\n\n")) + "|" + str("ПРОДЪЛЖИТЕЛНОСТ" in (_t or "")),
+      "Синтетичен текст за |1|False")
+check("synopses: another production's title on the page -> no text",
+      _SY.parse_art_production(_art, "Пробна пиеса 2", ["Театър 199 „Валентин Стойчев“"]), None)
+check("synopses: the page names another theatre -> no text",
+      _SY.parse_art_production(_art, "Пробна пиеса", ["Театър „Ателие 313“"]), None)
+check("synopses: a page without the production block -> no text",
+      _SY.parse_art_production("<html><body><p>x</p></body></html>", "Пробна пиеса", ["Театър 199"]), None)
+with _tf.TemporaryDirectory() as _d:
+    _p = pathlib.Path(_d) / "o.json"
+    _p.write_text(_json.dumps({"_doc": "x",
+        "ee": {"bg": "Дълъг текст", "source_url": "https://mlt.bg/ee___8013", "copied_on": "2026-11-07"},
+        "no-src": {"bg": "т", "source_url": "http://x", "copied_on": "2026-11-07"},
+        "no-date": {"bg": "т", "source_url": "https://x", "copied_on": "7.11"},
+        "Bad": {"bg": "т", "source_url": "https://x", "copied_on": "2026-11-07"}}), encoding="utf-8")
+    _log = []
+    _ov = _SY.load_overrides(_p, log=_log)
+check("synopses: overrides load valid entries only, skipped ones reported",
+      (sorted(_ov), len(_log)), (["ee"], 3))
+check("synopses: a missing overrides file is no overrides", _SY.load_overrides(pathlib.Path("/nonexistent/x.json")), {})
+_long = "Д" * 300
+_shows = [{"id": "ee", "synBg": "Кратко.", "synEn": "Short."},
+          {"id": "a", "synBg": "Кратко."}, {"id": "b", "synBg": _long}, {"id": "c", "synBg": ""}]
+_n = _SY.apply(_shows, {"ee": {"bg": "Текст на собственика", "source_url": "https://x", "copied_on": "2026-11-07"}},
+               {"a": {"bg": "Е" * 200}, "b": {"bg": "Ж" * 400}, "c": {"bg": "кратко"}})
+check("synopses: override wins (EN kept without en); fill replaces only a thin text; a tiny fill is ignored",
+      ([s["synBg"][:4] for s in _shows], _shows[0]["synEn"], _n),
+      (["Текс", "ЕЕЕЕ", "ДДДД", ""], "Short.", {"override": 1, "fill": 1}))
+
 print()
 if fails:
     print(f"{len(fails)} FAILED: {', '.join(fails)}")

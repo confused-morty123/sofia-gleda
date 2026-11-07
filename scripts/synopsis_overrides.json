@@ -1,0 +1,3 @@
+{
+ "_doc": "Owner-curated play synopses (scripts/synopses.py). Key = show id; value = {\"bg\": text copied by hand from the theatre's own page, \"en\": optional, \"source_url\": that page (https), \"copied_on\": \"YYYY-MM-DD\"}. Keys starting with _ are comments. Never machine-translate into \"en\"."
+}

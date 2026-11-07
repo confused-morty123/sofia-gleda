@@ -241,6 +241,41 @@ run would get, and `python3 scripts/ci_waves.py run --browser webkit HF1` runs
 waves the way CI does. After a new wave lands, add its time (printed by `run` on
 CI) to `ESTIMATES` in `ci_waves.py`; until then it counts as 2 minutes.
 
+## Play synopses: thin texts, fills and the owner's overrides
+
+Many plays reach the listing with only a line or no synopsis. Each night
+`scripts/synopsis_health.py` counts, per theatre and for films, the titles whose
+Bulgarian synopsis is shorter than 280 characters (`synopses.THIN`) and writes
+`synopsis_health.json` / `synopsis_health.md` (also `build_report.json["synopsis_health"]`).
+It never blocks a publish.
+
+Longer texts come only from the same production's own pages:
+
+- `scripts/synopses.py` reads the production page on **theatre.art.bg** where the
+  show's own link already points there (Театър 199, Ателие 313, Сити Марк). The
+  text is taken only when the page's title equals the show's and the page names the
+  show's theatre; it is kept in `synopsis_fills.json` with `source_url` and
+  `fetched_on`, and replaces the shown text only while that is under 280 characters.
+- **tickets.mlt.bg** (Младежки театър) has no description to read: its event links
+  require sign-in. mlt.bg itself is behind a Cloudflare challenge, which we never bypass.
+- **Owner overrides** — `scripts/synopsis_overrides.json`. For a play whose theatre's
+  page we cannot or may not read, open that page in your own browser, copy the
+  description and add:
+
+  ```json
+  "ee": {"bg": "…the theatre's own text…", "source_url": "https://mlt.bg/ee___8013",
+         "copied_on": "2026-11-07"}
+  ```
+
+  `"en"` is optional (only a real English text, never a machine translation). An
+  override always wins. Entries without `bg`, an https `source_url` or a
+  `YYYY-MM-DD` `copied_on` are skipped and reported. Rebuild (or wait for the
+  nightly refresh) to see it.
+
+On the play's sheet, a synopsis that is still short gets a quiet link under it —
+"Пълно описание на сайта на театъра ↗" / "Full description on the theatre's site ↗" —
+when the show has its own page on its theatre's site (not an aggregator listing).
+
 ---
 
 ## Design notes for whoever works on this next

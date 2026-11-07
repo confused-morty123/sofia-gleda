@@ -15,7 +15,9 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
                                     film details and posters -> film_info.json)
     2. fetch_film_info.py           synopsis/director/cast from the films' own pages -> film_info.json
     3. inject_films.py              merge synthesised arthouse films -> index.html
-    4. inject_shows.py              merge synthesised theatre shows -> index.html
+    4. inject_shows.py              merge synthesised theatre shows (+ synopsis overrides/fills) -> index.html
+   4b. synopses.py --apply          thin play synopses from the production's own theatre.art.bg page
+                                    -> synopsis_fills.json, applied with scripts/synopsis_overrides.json
     5. fetch_tmdb.py                film posters + English titles -> tmdb_films.json
     6. harvest_cinema_posters.py    Cinema City / Кино Арена posters for titles TMDB lacks -> film_info.json
     7. fetch_theatre_posters.py     theatre posters              -> theatre_posters.json
@@ -31,6 +33,8 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
                                     flagged, own pages re-read / failed pages retried / ripe holds
                                     rechecked, re-inline -> poster_health.json["fix"],
                                     build_report.json["poster_fix"], a "poster-fix" health.json warning
+  11d. synopsis_health.py          thin synopses per theatre + films -> synopsis_health.json/.md,
+                                    build_report.json["synopsis_health"] (never blocks)
    12. gen_share_pages.py           the app at /home/ and /home/theatre/, and static /film/<id>/,
                                     /show/<id>/, /event/<id>/ share pages -> home/, film/, show/, event/
    13. csp.py                       the Content-Security-Policy meta (script hashes) of
@@ -97,6 +101,7 @@ STEPS = [
     ("film info",       "fetch_film_info.py",        []),    # best-effort: synopsis/dir/cast from own pages
     ("arthouse films",  "inject_films.py",           []),
     ("theatre shows",   "inject_shows.py",           []),
+    ("synopses",        "synopses.py",               ["--apply"]),  # thin play synopses: theatre.art.bg own pages + owner overrides
     ("film posters",    "fetch_tmdb.py",             []),
     ("cinema posters",  "harvest_cinema_posters.py", []),    # the cinemas' own posters for titles TMDB lacks
     ("theatre posters", "fetch_theatre_posters.py",  []),
@@ -106,12 +111,13 @@ STEPS = [
     ("inline posters",  "inject_data.py",            []),
     ("poster health",   "poster_health.py",          []),    # true coverage; own pages of the titles still missing; re-inlines
     ("poster fix",      "poster_fix.py",             []),    # only under 95 %: diagnosis by cause + deeper fix (poster_fix_needed)
+    ("synopsis health", "synopsis_health.py",        []),    # thin synopses per theatre + films -> synopsis_health.json/.md (never blocks)
     ("share pages",     "gen_share_pages.py",        []),
     ("csp",             "csp.py",                    []),    # LAST edit of the pages: their CSP script hashes
 ]
 
 # Lines of each step's output kept in build_report.json (default 8).
-TAIL_LINES = {"theatre posters": 25, "poster health": 12, "poster fix": 12}
+TAIL_LINES = {"theatre posters": 25, "poster health": 12, "poster fix": 12, "synopses": 6, "synopsis health": 4}
 
 # Run after the steps above, and treated as a gate rather than best-effort.
 VERIFY = ("verify",  "verify_build.py", [])
@@ -372,6 +378,10 @@ def main(argv=None):
         if isinstance(_fix, dict) and _fix.get("date") == dt.date.today().isoformat():
             report["poster_fix"] = report["poster_health"]["fix"]   # poster_fix.py ran this night
     except (OSError, ValueError, AttributeError):
+        pass
+    try:                                          # synopsis_health.py's notes
+        report["synopsis_health"] = json.loads((ROOT / "synopsis_health.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         pass
     if gate_warnings:
         report["gate_warnings"] = gate_warnings   # published anyway: coverage, not data integrity
