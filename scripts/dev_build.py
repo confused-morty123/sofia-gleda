@@ -22,6 +22,12 @@ listings. index.dev.html is gitignored; never deploy it.
     python3 scripts/dev_build.py --from REF              # transplant from another git ref
     python3 scripts/dev_build.py --out index.test.html   # write to a different output file
     python3 scripts/dev_build.py --from REF --out PATH   # combine both options
+    python3 scripts/dev_build.py --from-file index.html --out index.html
+        # listings from a page on disk instead of git (refresh_all.py step 0 rebuilds
+        # the page shell from src/ this way before the night's scrape)
+
+The page is assembled in a temporary file beside PATH and moved onto PATH only
+when every step worked, so a failed build never leaves a half-built PATH.
 """
 import json, os, re, subprocess, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -72,16 +78,37 @@ def festmark_from_report(ref, page):
 
 def main():
     ref = sys.argv[sys.argv.index("--from") + 1] if "--from" in sys.argv else "HEAD"
+    from_file = sys.argv[sys.argv.index("--from-file") + 1] if "--from-file" in sys.argv else None
     out_path = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else "index.dev.html"
-    OUT = ROOT / out_path
-    print(f"dev_build: src/ + listings from {ref}:index.html -> {OUT.name}")
-    run(sys.executable, "scripts/build_index.py", "--out", str(OUT))
+    FINAL = ROOT / out_path
+    # Read the listings' page first: with --from-file it may be FINAL itself.
+    if from_file:
+        try:
+            good = (ROOT / from_file).read_text(encoding="utf-8")
+        except OSError as e:
+            sys.exit(f"cannot read {from_file} — {e}")
+        source = from_file
+    else:
+        good = subprocess.run(["git", "show", f"{ref}:index.html"], cwd=ROOT,
+                              capture_output=True, text=True)
+        if good.returncode:
+            sys.exit(f"cannot read {ref}:index.html — {good.stderr.strip()}")
+        good = good.stdout
+        source = f"{ref}:index.html"
+    OUT = FINAL.with_name(FINAL.name + ".building")
+    print(f"dev_build: src/ + listings from {source} -> {FINAL.name}")
+    try:
+        build(ref, good, OUT)
+        os.replace(OUT, FINAL)
+    finally:
+        OUT.unlink(missing_ok=True)
+    print(f"wrote {FINAL} ({FINAL.stat().st_size:,} bytes) — preview with: open {FINAL.name}")
 
-    good = subprocess.run(["git", "show", f"{ref}:index.html"], cwd=ROOT,
-                          capture_output=True, text=True)
-    if good.returncode:
-        sys.exit(f"cannot read {ref}:index.html — {good.stderr.strip()}")
-    good = good.stdout
+
+def build(ref, good, OUT):
+    """src/ (build_index.py) + the listings of page text `good` -> OUT, injected and
+    CSP-stamped. `ref` is the git ref of the sidecar files read for old pages."""
+    run(sys.executable, "scripts/build_index.py", "--out", str(OUT))
     page = OUT.read_text(encoding="utf-8")  # OUT is now defined in this scope
     moved = []
     # A show id renamed since REF was built (show_aliases.json "renamed") is mapped
@@ -177,7 +204,6 @@ def main():
     # Last: the Content-Security-Policy meta for the page as it now is (script
     # hashes), exactly as refresh_all.py's final csp step does (scripts/csp.py).
     stamp_file(OUT, kind="page")
-    print(f"wrote {OUT} ({OUT.stat().st_size:,} bytes) — preview with: open {OUT.name}")
 
 
 

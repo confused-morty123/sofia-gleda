@@ -9,6 +9,14 @@ switches come from the environment (TMDB_TOKEN, OMDB_TOKEN, DEEPL_AUTH_KEY).
     TMDB_TOKEN=... python3 scripts/refresh_all.py
 
 Steps (all best-effort; a step that fails leaves the previous data in place):
+    0. dev_build.py --from-file index.html --out index.html
+                                    the page shell rebuilt from src/ (build_index.py), the
+                                    committed listings carried over and the sidecar data
+                                    re-injected: the night publishes the code src/ holds,
+                                    even when a release committed src/ without the rebuilt
+                                    page (2026-11-06). Written only when the whole build
+                                    worked; otherwise the committed page stays and the
+                                    page-source gate below blocks the publish
     1. scrape_programs.py           cinema + theatre programmes -> index.html, and the
                                     festivals: official_festivals.py reads CineLibri and
                                     Kinomania (screenings -> SHOWTIMES / PRELIM_ROWS,
@@ -36,12 +44,14 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
    13. csp.py                       the Content-Security-Policy meta (script hashes) of
                                     index.html and every share page, after the last edit
    14. verify_build.py              gate: is the result actually usable?
+   15. check_page_source.py         gate: do index.html and the home pages carry the code
+                                    src/ builds (scripts/page_source.py)?
 
 Every step's output is scrubbed of keys (a URL's apikey=…, a Bearer token, the
 secrets' own values) before it is printed or kept in build_report.json, which is
 committed to the public repository; health.json likewise.
 
-Steps 1-12 are best-effort and never abort the run. Step 13 is not: if the rebuilt
+Steps 0-13 are best-effort and never abort the run. Steps 14 and 15 are not: if the rebuilt
 index.html is broken, this exits non-zero so the workflow stops before the commit
 and the previous, working site stays up. That gate exists because the 2026-09-16
 refresh published a page that rendered perfectly and threw the moment you clicked
@@ -93,6 +103,9 @@ def official_summary(started, previous):
             None)
 
 STEPS = [
+    # FIRST: the page shell from src/, with the committed listings carried over (what
+    # dev_build.py does for a release). The scrape and every later step edit this page.
+    ("page shell",      "dev_build.py",              ["--from-file", "index.html", "--out", "index.html"]),
     ("programmes",      "scrape_programs.py",        []),
     ("film info",       "fetch_film_info.py",        []),    # best-effort: synopsis/dir/cast from own pages
     ("arthouse films",  "inject_films.py",           []),
@@ -115,6 +128,9 @@ TAIL_LINES = {"theatre posters": 25, "poster health": 12, "poster fix": 12}
 
 # Run after the steps above, and treated as a gate rather than best-effort.
 VERIFY = ("verify",  "verify_build.py", [])
+# The second gate: the published page's code is what src/ builds (the listings are
+# not compared). It fails when step 0 could not rebuild the shell.
+PAGE_SOURCE = ("page source", "check_page_source.py", [])
 
 
 SECRET_ENV = ("TMDB_TOKEN", "OMDB_TOKEN", "DEEPL_AUTH_KEY", "GITHUB_TOKEN", "GH_TOKEN")
@@ -343,6 +359,8 @@ def main(argv=None):
     # The gate. Everything above may fail softly; this may not.
     verdict = run(*VERIFY)
     results.append(verdict)
+    page_source = run(*PAGE_SOURCE)
+    results.append(page_source)
     posters = poster_coverage_of(verdict.get("_out", ""))
     bg_titles = bg_titles_of(verdict.get("_out", ""))
     gate_warnings = gate_warnings_of(verdict.get("_out", ""))
@@ -354,7 +372,7 @@ def main(argv=None):
     report = {
         "ran": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "ok": all(r["ok"] for r in results),
-        "publishable": verdict["ok"],
+        "publishable": verdict["ok"] and page_source["ok"],
         "steps": results,
         "official": official,
         "festivals": festivals,
@@ -407,10 +425,15 @@ def main(argv=None):
         for a in aborted:
             print("  ✗ " + a, file=sys.stderr)
 
+    if not page_source["ok"]:
+        print("\nThe refreshed index.html does not carry the code src/ builds (see the "
+              "'page source' output above), so it will NOT be published. The live site "
+              "keeps the last good build.", file=sys.stderr)
     if not verdict["ok"]:
         print("\nThe rebuilt index.html did not pass verification, so it will NOT be "
               "published. The live site keeps the last good build. See the 'verify' "
               "output above for what is wrong.", file=sys.stderr)
+    if not (verdict["ok"] and page_source["ok"]):
         return 1
     # A partial refresh still deploys with whatever data survived, as long as the
     # page itself is sound.
