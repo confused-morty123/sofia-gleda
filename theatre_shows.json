@@ -7090,5 +7090,23 @@
   "synBg": "",
   "synEn": "",
   "source": "tba"
+ },
+ "urok-po-balgarski-po-iv-vazov": {
+  "id": "urok-po-balgarski-po-iv-vazov",
+  "title": "УРОК ПО БЪЛГАРСКИ по Ив. Вазов",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
  }
 }

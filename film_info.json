@@ -2498,7 +2498,16 @@
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/paper-tiger-hartien-tigur-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/hartien-tigur-3704.html",
   "title_en": "Paper Tiger",
-  "country": "САЩ/Бразилия/Италия"
+  "country": "САЩ/Бразилия/Италия",
+  "synBg": "През 80-те години в Ню Йорк двама братя се опитват да изградят бъдещето си, но бързо се оплитат в опасния свят на руската мафия и поставят на карта не само семейните си връзки, но и собствения си живот.\n\n-> Фестивални селекции: Международен филмов фестивал в Кан (2026) – официална състезателна програма.",
+  "genres": [
+   "Криминален",
+   "Трилър"
+  ],
+  "year": 2026,
+  "runtime": 115,
+  "src": "https://vlaikovacinema.com/screening/40-%d0%ba%d0%b8%d0%bd%d0%be%d0%bc%d0%b0%d0%bd%d0%b8%d1%8f-%d1%85%d0%b0%d1%80%d1%82%d0%b8%d0%b5%d0%bd-%d1%82%d0%b8%d0%b3%d1%8a%d1%80/",
+  "pv": 6
  },
  "kinomaniya-nachaloto": {
   "title_bg": "Киномания: Началото",

@@ -1,8 +1,8 @@
-# Poster health, 2026-11-06
+# Poster health, 2026-11-07
 
-- Films: 196/211 (92.9 %) show their own poster.
-- Plays: 504/531 (94.9 %) show their own poster or a production photo from their own page (527 display some image).
-- Target: 95 % each. This run attached: film already has a poster 7, film poster 1, poster fix: show nothing 1, show nothing 1.
+- Films: 189/204 (92.6 %) show their own poster.
+- Plays: 501/529 (94.7 %) show their own poster or a production photo from their own page (524 display some image).
+- Target: 95 % each. This run attached: film already has a poster 7, film nothing 2, poster fix: film nothing 3, poster fix: show nothing 21, show nothing 6.
 
 ## Plays per theatre
 
@@ -17,12 +17,12 @@
 | natfiz | 9/10 | 1 |
 | national | 70/70 | 0 |
 | salzaismyah | 45/45 | 0 |
-| satira | 41/41 | 0 |
-| sfumato | 27/28 | 1 |
+| satira | 40/40 | 0 |
+| sfumato | 26/27 | 1 |
 | sofia-th | 16/16 | 0 |
-| tba | 37/39 | 2 |
+| tba | 37/40 | 3 |
 | th199 | 39/42 | 3 |
-| toplo | 52/56 | 4 |
+| toplo | 51/55 | 4 |
 | vazrazhdane | 28/28 | 0 |
 | zad-kanala | 21/22 | 1 |
 
@@ -53,9 +53,10 @@
 - `sablechi-se-za-vecherya`: tried https://theatre.art.bg/x_5963_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `spetsialni-povodi`: tried https://theatre.art.bg/x_4673_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 
-### no image: the generated art shows (4)
+### no image: the generated art shows (5)
 - `dalgiyat-pat-na-denya-kam-noshtta`: tried https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20 (no usable image on the page)
 - `ekaterina-karavelova-vik-ot-istoriyata`: tried no own page linked (no own page linked)
+- `gnyav-po-stivan-king`: tried no own page linked (no own page linked)
 - `igra-na-kotki`: tried https://zadkanala.bg/spektakli/igra-na-kotki (no usable image on the page)
 - `magichna-nosht-predi-koleda`: tried https://theatre.art.bg/x_8103_10_20 (sofiapuppet.com not read (robots.txt blocks ClaudeBot): the same production on theatre.art.bg)
 
@@ -84,24 +85,25 @@
 ## Diagnostic and fix pass
 
 - Triggered by: shows, films under 95 %.
-- Coverage before -> after: shows 94.9 % -> 94.9 %; films 92.9 % -> 92.9 %.
-- Read 1 title(s), attached 0, retried 0; 4 request(s), 0 refused by robots.txt, 7.1 s.
+- Coverage before -> after: shows 94.7 % -> 94.7 %; films 92.6 % -> 92.6 %.
+- Read 24 title(s), attached 0, retried 0; 38 request(s), 0 refused by robots.txt, 64.1 s.
 - Network: ok.
 
 ### Missing titles by cause
 
 | cause | plays | films |
 |---|---|---|
-| only an aggregator's image (the film does not link that page) | 0 | 10 |
 | own page blocked (robots.txt or a bot challenge; not bypassed) | 10 | 0 |
+| only an aggregator's image (the film does not link that page) | 0 | 10 |
 | own page has no usable image | 5 | 3 |
-| no own page linked | 6 | 0 |
+| no own page linked | 7 | 0 |
 | own page's images rejected by the poster policy | 5 | 0 |
 | only a ticket page linked, not the title's page | 0 | 2 |
 | own page or its image could not be fetched | 1 | 0 |
 
 - `show:clean-girl-fat-festival`: no own page linked (the programme links no page for this title)
 - `show:ekaterina-karavelova-vik-ot-istoriyata`: no own page linked (the programme links no page for this title)
+- `show:gnyav-po-stivan-king`: no own page linked (the programme links no page for this title)
 - `show:ivanovden`: no own page linked (the programme links no page for this title)
 - `show:kuche-na-ime-kote`: no own page linked (the programme links no page for this title)
 - `show:lazaritsa`: no own page linked (the programme links no page for this title)

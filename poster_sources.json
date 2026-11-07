@@ -2,6 +2,7 @@
  "chrome": [
   "https://domnakinoto.com/box/img/close.png",
   "https://domnakinoto.com/box2/img/dk_fav.png",
+  "https://g8cinema.com/bg/assets/img/hero-bg.jpg",
   "https://iamstudio.bg/wp-content/uploads/2022/10/izmereniata.jpg",
   "https://iamstudio.bg/wp-content/uploads/2022/11/i-am-fav2.jpg",
   "https://iamstudio.bg/wp-content/uploads/2023/02/flayer-a51-s-nov-aktor.jpg",
@@ -208,14 +209,14 @@
    ]
   },
   "film:kasometrazhen-konkurs": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "epaygo.bg is a ticket page, not the title's page"
    ]
   },
   "film:polyusi": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://domnakinoto.com/polyusi-movie7436.html?a="
    ],
@@ -224,7 +225,7 @@
    ]
   },
   "film:prodavach-na-nadezhda": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/"
    ],
@@ -233,7 +234,7 @@
    ]
   },
   "film:sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "embed.urboapp.com is a ticket page, not the title's page"
@@ -256,7 +257,7 @@
    ]
   },
   "film:velopohodat-kam-cop-31": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%b2%d0%b5%d0%bb%d0%be%d0%bf%d0%be%d1%85%d0%be%d0%b4%d1%8a%d1%82-%d0%ba%d1%8a%d0%bc-cop-31/"
    ],
@@ -265,7 +266,7 @@
    ]
   },
   "show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden"
    ],
@@ -274,7 +275,7 @@
    ]
   },
   "show:az-foyerbah": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_5097_4_20"
    ],
@@ -283,7 +284,7 @@
    ]
   },
   "show:az-se-kazvah": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://toplocentrala.bg/program/performance/az-se-kazvah"
    ],
@@ -292,7 +293,7 @@
    ]
   },
   "show:bai-ganyo": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_5509_4_20"
    ],
@@ -302,7 +303,7 @@
    ]
   },
   "show:bremenskite-muzikanti": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_4248_4_20"
    ],
@@ -311,7 +312,7 @@
    ]
   },
   "show:buratino-2": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_7714_4_20"
    ],
@@ -320,14 +321,14 @@
    ]
   },
   "show:clean-girl-fat-festival": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "no own page linked"
    ]
   },
   "show:dalgiyat-pat-na-denya-kam-noshtta": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20"
    ],
@@ -336,7 +337,7 @@
    ]
   },
   "show:dekameron-lyubov-i-smart-po-bokacho": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
    ],
@@ -345,7 +346,7 @@
    ]
   },
   "show:dnevnikat-na-edin-lud-2": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097"
    ],
@@ -360,8 +361,15 @@
     "no own page linked"
    ]
   },
+  "show:gnyav-po-stivan-king": {
+   "last": "2026-11-07",
+   "tried": [],
+   "why": [
+    "no own page linked"
+   ]
+  },
   "show:igra-na-kotki": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://zadkanala.bg/spektakli/igra-na-kotki"
    ],
@@ -370,7 +378,7 @@
    ]
   },
   "show:insert-coin-player-one": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://toplocentrala.bg/program/performance/insert-coin-player-one"
    ],
@@ -379,7 +387,7 @@
    ]
   },
   "show:ivanovden": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "no own page linked"
@@ -393,7 +401,7 @@
    ]
   },
   "show:kiki-i-bozo": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/кики-и-бозо_7339_8_20"
    ],
@@ -402,7 +410,7 @@
    ]
   },
   "show:kotarakat-v-chizmi": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/котаракът-в-чизми_640_8_20"
    ],
@@ -411,21 +419,21 @@
    ]
   },
   "show:kuche-na-ime-kote": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "no own page linked"
    ]
   },
   "show:lazaritsa": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "no own page linked"
    ]
   },
   "show:magichna-nosht-predi-koleda": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_8103_10_20"
    ],
@@ -443,7 +451,7 @@
    ]
   },
   "show:malkata-rusalka": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_7020_4_20"
    ],
@@ -452,14 +460,14 @@
    ]
   },
   "show:malkoto-slonche": {
-   "last": "2026-11-04",
+   "last": "2026-11-07",
    "tried": [],
    "why": [
     "no own page linked"
    ]
   },
   "show:mezhdunaroden-simpozium-melba": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://toplocentrala.bg/program/performance/mejdunaroden-simpozium-melba"
    ],
@@ -468,7 +476,7 @@
    ]
   },
   "show:nordost": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_366_4_20"
    ],
@@ -477,7 +485,7 @@
    ]
   },
   "show:pepelyashka": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_6765_4_20"
    ],
@@ -486,7 +494,7 @@
    ]
   },
   "show:razdelyam-dvoyki-po-domovete": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_4099_4_20"
    ],
@@ -495,7 +503,7 @@
    ]
   },
   "show:sablechi-se-za-vecherya": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_5963_4_20"
    ],
@@ -504,7 +512,7 @@
    ]
   },
   "show:spetsialni-povodi": {
-   "last": "2026-11-06",
+   "last": "2026-11-07",
    "tried": [
     "https://theatre.art.bg/x_4673_4_20"
    ],
@@ -514,6 +522,10 @@
   }
  },
  "og_seen": {
+  "https://g8cinema.com/bg/assets/img/hero-bg.jpg": {
+   "https://g8cinema.com/bg/kina-i-yuk-lisitsite-ot-dalechniya-sever": "кина и юк лисиците от далечния север",
+   "https://g8cinema.com/bg/kotki-v-muzeya-2-sykrovischata-na-egipet": "котки в музея 2 съкровищата на египет"
+  },
   "https://g8cinema.com/bg/movie_images/1769100546-Kina-i-Yuk--lisitsite-ot-dalechniya-sever.jpg": {
    "https://g8cinema.com/bg/kina-i-yuk-lisitsite-ot-dalechniya-sever": "кина и юк лисиците от далечния север"
   },
