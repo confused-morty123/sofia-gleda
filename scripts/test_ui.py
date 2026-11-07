@@ -262,6 +262,27 @@ def frames(page, action_js, measure_js, ms):
         return out; }""" % (action_js, measure_js, ms, ms + 2000))
 
 
+def frames_until_settled(page, action_js, measure_js, el_sel, min_ms, max_ms=4000):
+    """frames(), but the recording runs until the animation it watches has ended: at least
+    `min_ms`, then on until `el_sel` has no running animation or transition and the last two
+    values agree (capped at `max_ms`). A slow machine (GitHub's runners, 2026-11) can spend
+    400 ms on the first frame after the action (the page behind the search is rebuilt) and
+    only then start a 220 ms transition, so a fixed 300 ms window saw its first value twice
+    and nothing after it; here such a machine still yields the whole animation, frame by
+    frame. measure_js may return [value, ...]: then value is the one compared. Returns the same
+    list frames() returns."""
+    return page.evaluate("""async () => { const act = (%s), meas = (%s), out = [], t0 = performance.now();
+        const busy = () => { const e = document.querySelector(%s);
+          return !!e && e.getAnimations().some(a => a.playState === 'running' || a.playState === 'pending'); };
+        act(); out.push(meas());
+        await new Promise(res => { const f = () => { out.push(meas()); const dt = performance.now() - t0;
+            const n = out.length, v = x => JSON.stringify(Array.isArray(x) ? x[0] : x),
+                  same = n >= 2 && v(out[n - 1]) === v(out[n - 2]);
+            if (dt >= %d && ((!busy() && same) || dt >= %d)) res(); else requestAnimationFrame(f); };
+          requestAnimationFrame(f); setTimeout(res, %d); });
+        return out; }""" % (action_js, measure_js, json.dumps(el_sel), min_ms, max_ms, max_ms + 2000))
+
+
 PAGE_IDLE_JS = """([ms, anims]) => new Promise(res => { const t0 = performance.now(); let last = t0, calm = 0;
   const done = () => res(Math.round(performance.now() - t0)); setTimeout(done, ms);
   const busy = () => anims && document.getAnimations().some(a => a.playState === 'running'
@@ -338,6 +359,40 @@ def _csp_console(msg):
         CSP_VIOLATIONS.append(t[:240])
 
 
+# SOFIA_SLOW=<n> (a local check, never set on CI): every page runs as on a slow machine, to
+# show that a timing-sensitive test holds where GitHub's runners are slower than a Mac.
+# Chromium: CPU throttled n times (CDP Emulation.setCPUThrottlingRate). WebKit has no
+# throttling: the page's main thread is kept busy ~n/(n+1) of the time by a timer that
+# spins (frames come late and in bursts, as on a loaded runner).
+SLOW_RATE = float(os.environ.get("SOFIA_SLOW", "0") or 0)
+
+
+def _slow_down(ctx, page=None):
+    if SLOW_RATE <= 1 or getattr(ctx, "_sg_slow", False) and page is None:
+        return
+    try:
+        engine = ctx.browser.browser_type.name if ctx.browser else "chromium"
+    except Exception:
+        engine = "chromium"
+    if engine == "chromium":
+        def throttle(pg):
+            try:
+                cdp = pg.context.new_cdp_session(pg)
+                cdp.send("Emulation.setCPUThrottlingRate", {"rate": SLOW_RATE})
+                pg._sg_slow_cdp = cdp   # kept open: the throttling lasts as long as the session
+            except Exception as ex:
+                print(f"  (SOFIA_SLOW: no CPU throttling: {ex})")
+        if page is not None:
+            throttle(page)
+        elif not getattr(ctx, "_sg_slow", False):
+            ctx.on("page", throttle)
+    elif not getattr(ctx, "_sg_slow", False):
+        busy = round(16 * (SLOW_RATE - 1) / SLOW_RATE * 2)
+        (page or ctx).add_init_script("setInterval(()=>{const t=performance.now();while(performance.now()-t<%d){}},%d);"
+                            % (busy, 16 * 2))
+    ctx._sg_slow = True
+
+
 def _watch_csp(browser):
     """Make every context and page this browser creates report CSP violations."""
     if browser is None or getattr(browser, "_sg_csp_watch", False):
@@ -348,12 +403,14 @@ def _watch_csp(browser):
         ctx = orig_ctx(*a, **kw)
         ctx.add_init_script(CSP_WATCH_JS)
         ctx.on("console", _csp_console)
+        _slow_down(ctx)
         return ctx
 
     def new_page(*a, **kw):
         pg = orig_page(*a, **kw)
         pg.add_init_script(CSP_WATCH_JS)
         pg.on("console", _csp_console)
+        _slow_down(pg.context, pg)
         return pg
 
     browser.new_context, browser.new_page = new_context, new_page
@@ -5329,7 +5386,8 @@ def wave_j(browser, webkit_browser=None):
             timed_js = ("() => { const v = (%s)(), e = document.querySelector('%s');"
                         " return [v, Math.round(performance.now()), e ? e.getAnimations().map(a =>"
                         " Math.round(Number(a.effect.getTiming().duration) || 0)) : []]; }" % (measure_js, el_sel))
-            open_rec = frames(page, "() => document.querySelector('[data-search-open]').click()", timed_js, 450)
+            open_rec = frames_until_settled(page, "() => document.querySelector('[data-search-open]').click()",
+                                            timed_js, el_sel, 450)
             open_samples = [x[0] for x in open_rec]
 
             # Check focus
@@ -5340,15 +5398,18 @@ def wave_j(browser, webkit_browser=None):
             # Type a query
             page.keyboard.type("од")
             page.wait_for_timeout(300)
+            wait_settled(page)   # the results for the query are drawn before the close is timed
             still_open = page.evaluate("S.searchOpen")
             q_val = page.evaluate("S.q")
 
             # Click magnifier to close (phones: "Отказ", the magnifier is hidden with the toggle row)
-            close_rec = frames(page, "() => document.querySelector('%s').click()"
-                               % ("[data-search-open]" if is_desktop else "[data-search-cancel]"), timed_js, 300)
+            close_rec = frames_until_settled(page, "() => document.querySelector('%s').click()"
+                                             % ("[data-search-open]" if is_desktop else "[data-search-cancel]"),
+                                             timed_js, el_sel, 300)
             close_samples = [x[0] for x in close_rec]
 
             page.wait_for_timeout(350)  # wait for animation + query clear
+            wait_settled(page)
             q_cleared = page.evaluate("S.q")
             search_open_state = page.evaluate("S.searchOpen")
 
@@ -5416,12 +5477,20 @@ def wave_j(browser, webkit_browser=None):
                 close_monotonic = all(cs_s[i] >= cs_s[i+1] - 1 for i in range(len(cs_s)-1))
                 close_distinct = True
 
-            check(f"j4_search_open_monotonic_{tag}",
-                  open_monotonic and open_distinct,
-                  f"open samples={os_s[:6]} (need monotonic ≥3 distinct); frame gaps/animations {open_info}")
-            check(f"j4_search_close_monotonic_{tag}",
-                  close_monotonic and close_distinct,
-                  f"close samples={cs_s[:6]} (need monotonic ≥3 distinct); frame gaps/animations {close_info}")
+            # the recording runs until the animation has ended (frames_until_settled); only a
+            # machine that drew fewer than 2 frames in all that time cannot show a direction
+            for kind, rec, vals, mono, dist, info in (
+                    ("open", res["open_rec"], os_s, open_monotonic, open_distinct, open_info),
+                    ("close", res["close_rec"], cs_s, close_monotonic, close_distinct, close_info)):
+                drawn = len(rec) - 1   # the first value is read before any frame
+                if drawn < 2:
+                    skip(f"j4_search_{kind}_monotonic_{tag}",
+                         f"the machine drew {drawn} frame(s) in {rec[-1][1] - rec[0][1] if rec else 0} ms; "
+                         f"samples={vals[:6]}")
+                    continue
+                check(f"j4_search_{kind}_monotonic_{tag}", mono and dist,
+                      f"{kind} samples={vals[:8]} over {drawn} frames (need monotonic ≥3 distinct); "
+                      f"frame gaps/animations {info}")
             check(f"j4_search_focused_{tag}",
                   res["focused_ok"],
                   f"active element id={res['active_id']!r} (need 'q' or 'q-m')")
@@ -13116,36 +13185,79 @@ def _hf_special_flows(browser, eng, phone):
     #     under it. The first tap after the close has finished opens that card.
     ctx, page, errs = _hf_open(browser, w, h, phone)
     films = page.evaluate(HF_CANDIDATES_JS, "film")
+    # each tap records whether the sheet was still closing when the engine received it: on a
+    # slow machine (WebKit on GitHub's runners) the 280 ms close can end before a tap sent
+    # "during" it arrives; such a try did not test the swallow and is made again
+    page.evaluate("""()=>{if(window.__hfTapLog)return; window.__hfTapLog=[];
+        for(const k of ['pointerdown','touchstart','mousedown'])
+          addEventListener(k,()=>window.__hfTapLog.push(!!document.querySelector('#scrim.closing')),true);}""")
+    closing_js = "()=>!!document.querySelector('#scrim.closing')"
     for with_pop in (False, True):
-        _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
-        if with_pop:
-            _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
-            _hf_close_popup(page, phone, "x", ctx)
-        y0 = page.evaluate("(typeof _lockY!=='undefined'&&_lockY!==null)?Math.round(_lockY):Math.round(scrollY)")
-        _hf_tap_backbar(page, phone)
-        page.wait_for_timeout(90)
-        card = page.evaluate(HF_VISIBLE_CARD_JS, films[0])
         name = f"{tag}_tap_during_close{'_after_popup' if with_pop else ''}"
+        for attempt in range(3):
+            wait_settled(page)
+            _hf_open_card(page, phone, "film", films[0]); page.wait_for_timeout(650)
+            wait_settled(page)
+            if with_pop:
+                _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+                wait_settled(page)
+                _hf_close_popup(page, phone, "x", ctx)
+            y0 = page.evaluate("(typeof _lockY!=='undefined'&&_lockY!==null)?Math.round(_lockY):Math.round(scrollY)")
+            # the card under the sheet: the page is locked at y0, so its place is known before the close
+            card = page.evaluate(HF_VISIBLE_CARD_JS, films[0])
+            if not card:
+                break
+            exp = page.evaluate(HF_TITLE_JS, ["film", card["id"]])
+            _hf_tap_backbar(page, phone)
+            try:
+                page.wait_for_function(closing_js, timeout=2000, polling="raf")
+            except Exception:
+                pass
+            page.wait_for_timeout(90)
+            page.evaluate("()=>{window.__hfTapLog.length=0;}")
+            _hf_tap(page, phone, card["x"], card["y"])          # during the close
+            during = page.evaluate("()=>window.__hfTapLog.slice()")
+            page.wait_for_timeout(700)
+            # the close has ended (a slow machine is still animating it after the fixed wait)
+            try:
+                page.wait_for_function("()=>!document.querySelector('#scrim.closing')", timeout=4000, polling="raf")
+            except Exception:
+                pass
+            wait_settled(page)
+            s1 = page.evaluate(HF_STATE_JS)
+            late = bool(during) and not during[0]   # no log at all: judged as a tap during the close
+            if not late:
+                break
+            # the tap reached the page after the close had ended: not a tap during the close
+            # (opening the card is then right); close what it opened and try again
+            if s1["film"] or s1["scrimInDom"]:
+                _hf_close_sheet(page, phone, "esc")
         if not card:
             skip(name, "no other card on screen under the closing sheet")
-            page.wait_for_timeout(900)
+            _hf_close_sheet(page, phone, "esc")
             continue
-        exp = page.evaluate(HF_TITLE_JS, ["film", card["id"]])
-        _hf_tap(page, phone, card["x"], card["y"])          # during the close
-        page.wait_for_timeout(700)
-        s1 = page.evaluate(HF_STATE_JS)
+        if late:
+            skip(name, f"in 3 tries the machine never delivered a tap while the sheet was closing (log={during})")
+            continue
         _hf_tap(page, phone, card["x"], card["y"])          # the first tap after it
         page.wait_for_timeout(600)
+        wait_settled(page)
         s2a = page.evaluate(HF_STATE_JS)
         page.wait_for_timeout(1500)
         s2 = page.evaluate(HF_STATE_JS)
         page.keyboard.press("Escape"); page.wait_for_timeout(800)
+        try:
+            page.wait_for_function("()=>!document.querySelector('#scrim.closing')", timeout=4000, polling="raf")
+        except Exception:
+            pass
+        wait_settled(page)
         s3 = page.evaluate(HF_STATE_JS)
         check(name,
               not s1["film"] and not s1["scrimInDom"] and s1["depth"] == 0 and abs(s1["y"] - y0) <= 2
               and s2a["film"] and s2["film"] and (s2["title"] or "").lower() == exp.lower() and s2["depth"] == 1
               and not s3["film"] and s3["depth"] == 0 and abs(s3["y"] - y0) <= 2 and s3["body"] == "",
-              f"tap during close: opened={s1['film'] or s1['scrimInDom']} y={s1['y']} (was {y0}) | first tap after: "
+              f"tap during close (closing at tap={during}, try {attempt + 1}): opened={s1['film'] or s1['scrimInDom']} "
+              f"y={s1['y']} (was {y0}) | first tap after: "
               f"open@0.6={s2a['film']} open@2.1={s2['film']} title={s2['title']!r} exp={exp!r} depth={s2['depth']} | "
               f"after Esc film={s3['film']} y={s3['y']} body='{s3['body']}'")
     check(f"{tag}_fast_tap_no_js_errors", len(errs) == 0, f"errors={errs[:3]}")
@@ -13212,6 +13324,7 @@ def _hf_scroll(browser, eng, phone):
         for route in ("backbar", "back"):
             ctx, page, errs = _hf_open(browser, w, h, phone)
             page.evaluate("window.scrollTo(0,1400)"); page.wait_for_timeout(350)
+            wait_settled(page)
             card = page.evaluate("""()=>{for(const el of document.querySelectorAll('#app .card[data-film]')){const r=el.getBoundingClientRect();
                 if(r.top>100&&r.bottom<innerHeight-120){(el.parentElement||el).setAttribute('data-hf-ref','1');return {x:r.left+r.width/2,y:r.top+Math.min(r.height/2,60)};}}return null;}""")
             if not card:
@@ -13226,6 +13339,7 @@ def _hf_scroll(browser, eng, phone):
             page.wait_for_timeout(100)
             top_early = page.evaluate(ref)
             page.wait_for_timeout(600)
+            wait_settled(page)   # the sheet has finished opening (a slow machine is still drawing it)
             top_open = page.evaluate(ref)
             sc_js = "()=>{const s=document.getElementById('scrim'),sh=s.querySelector('.sheet');return s.scrollTop+sh.scrollTop;}"
             sc0 = page.evaluate(sc_js)
@@ -13239,19 +13353,29 @@ def _hf_scroll(browser, eng, phone):
             if not wheel_ok and not (phone and eng == "chromium"):
                 page.evaluate("()=>{const sh=document.querySelector('#scrim .sheet');sh.scrollTop+=400;}")
             page.keyboard.press("PageDown"); page.wait_for_timeout(250)
+            wait_settled(page)
             sc1 = page.evaluate(sc_js)
             top_locked = page.evaluate(ref)
             if with_pop:
                 _hf_tap_pill(page, phone, 0.5); page.wait_for_timeout(500)
+                wait_settled(page)
                 if wheel_ok and not phone:
                     page.mouse.move(10, h // 2); page.mouse.wheel(0, 400); page.wait_for_timeout(250)
                 page.keyboard.press("Escape"); page.wait_for_timeout(450)
+                wait_settled(page)
             top_locked2 = page.evaluate(ref)
             if route == "backbar":
                 _hf_tap_backbar(page, phone)
             else:
                 page.evaluate("history.back()")
             page.wait_for_timeout(800)
+            # the close has ended: the scrim lost its .closing class and nothing still animates
+            # (WebKit on GitHub's runners was still closing after the fixed 0.8 s)
+            try:
+                page.wait_for_function("()=>!document.querySelector('#scrim.closing')", timeout=4000, polling="raf")
+            except Exception:
+                pass
+            wait_settled(page)
             s = page.evaluate(HF_STATE_JS)
             y_after = s["y"]
             page.evaluate("()=>{document.activeElement&&document.activeElement.blur&&document.activeElement.blur()}")
