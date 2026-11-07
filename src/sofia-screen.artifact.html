@@ -410,9 +410,12 @@ a{color:inherit}
 .fest-mark{font-family:var(--f-ui); font-weight:600; font-size:9px; padding:2px 6px; border-radius:6px; letter-spacing:.06em; opacity:.9; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:#fff}
 /* a festival mark and a premiere badge stack in the poster's top-right corner */
 .p-tags{display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:0}
-/* A long tag ("Премиера на 6 ное") next to the score chip: the chip keeps its size and the tags
-   wrap onto their own line, right-aligned, instead of covering the chip (owner, 2026-11-06). */
-.p-top{flex-wrap:wrap} .p-top>.score{flex:none} .p-top>.p-tags{margin-left:auto; max-width:100%}
+/* One layout for every card (owner, 2026-11-06): the score chip top left, the tags in a column
+   top right on the same row: "Премиера" first, then any other tag (ОГРАНИЧЕНО, БЕЗПЛАТНО, a
+   festival) under it. The chip keeps its size; a tag too long for the space left wraps inside its
+   own pill ("Премиера на / 6 ное") instead of covering the chip or dropping below it. */
+.p-top{flex-wrap:nowrap} .p-top>.score{flex:none} .p-top>.p-tags{margin-left:auto; flex:0 1 auto; min-width:0}
+.p-tags>.badge,.p-tags>.fest-mark{max-width:100%; white-space:normal; text-align:right}
 .badge{font-size:8px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; padding:3px 7px;
   border-radius:5px; background:var(--accent); color:var(--on-accent); white-space:nowrap}
 .badge.lim{background:linear-gradient(135deg,#E0163A,#7E0C1F); color:#fff}
@@ -1267,7 +1270,7 @@ body{font-size:15px}
 .score.rt{border-color:rgba(255,120,96,.5); color:#FF8A73}
 .score.mc{border-color:rgba(132,214,120,.5); color:#9BE08C}
 /* narrow cards: the tags stack under the score instead of sliding over it */
-@media (max-width:760px){ .card .p-top{flex-direction:column; align-items:flex-start; gap:4px} .card .p-tags{align-items:flex-start} }
+/* phones: the same chip-left, tags-right layout as desktop (owner, 2026-11-06) */
 /* event cards, variant A */
 .ecard{display:flex; flex-direction:column; gap:0}
 .ecard .ebox{height:auto; aspect-ratio:16/9; padding:0; display:block; background:#000}
@@ -3028,11 +3031,12 @@ function filmCard(f,all,rowsOverride){
   const meta=[f.runtime?`${esc(f.runtime)} ${esc(t().min)}`:"",
               n?esc(plural(n,t().plScreening)):"",
               (!singleVenue&&n)?esc(plural(v,t().plCinema)):""].filter(Boolean).join(" · ");
-  const _pb=premBadgeFor(f.id),_tags=festMarks("film",f.id)+_pb;
+  const _pb=premBadgeFor(f.id),
+        _tags=_pb+(lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:"")+festMarks("film",f.id);
   return`<button class="card" data-film="${esc(f.id)}">
     <div class="poster">${posterArt(f.id,f.genres,f.g,filmTitle(f))}<div class="p-grain"></div>
       <div class="p-top">${scoreBadge(f)||"<span></span>"}
-        ${lim?`<span class="badge lim">${S.lang==="bg"?"ОГРАНИЧЕНО":"LIMITED"}</span>`:""}${_tags?`<span class="p-tags">${_tags}</span>`:""}</div>
+        ${_tags?`<span class="p-tags">${_tags}</span>`:""}</div>
       <div class="p-title" aria-hidden="true">${esc(filmTitle(f))}</div><div class="p-sub" aria-hidden="true">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
@@ -3040,10 +3044,10 @@ function showCard(sh,all){
   const p=all?showPerfsAll(sh.id):showPerfs(sh.id),th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
   /* P3A item 2: suppress static "ПРЕМИЕРА" seed badge; replace with dynamic PREMIERES-based badge. */
   const staticBadge=sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:"";
-  const _spb=showPremBadge(sh.id),_stags=festMarks("show",sh.id)+_spb;
+  const _spb=showPremBadge(sh.id),_stags=_spb+staticBadge+festMarks("show",sh.id);
   return`<button class="card" data-show="${esc(sh.id)}">
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
-      <div class="p-top"><span></span>${staticBadge}${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
+      <div class="p-top"><span></span>${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
       <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
       <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?esc(plural(p.length,t().plPerf)):sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
