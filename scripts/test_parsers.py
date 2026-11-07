@@ -5956,7 +5956,7 @@ _api1b, _ = _lk_api({"Анджей Вайда": [{"id": 9001, "name": "Andrzej W
 check("director_lookup: …NEGATIVE: same title, runtime 138 vs 179 -> rejected",
       _lk_run(TMDB.director_lookup, _api1b, _f1, ["Обетована земя"], today=_LK_TODAY)[0], None)
 # 2. Дом добър (Киномания: Войчех Смажовски, 107 min, no year, no Bulgarian title on TMDB):
-#    his only recent film with that runtime
+#    the title agrees in Latin letters ('Dom Dobar' / 'Dom dobry') and the runtime confirms it
 _people2 = {"Войчех Смажовски": [], "Voycheh Smazhovski": [],
             "Войчех Смажовски ": []}
 _people2["Voycheh Smazhovski"] = [{"id": 9002, "name": "Wojciech Smarzowski"},
@@ -5968,13 +5968,14 @@ _api2, _ = _lk_api(_people2, {9002: [_crew(201, "Dom dobry", "Dom dobry", "2025-
 _f2 = {"director": "Войчех Смажовски", "runtime": 107}
 _r2, _ = _lk_run(TMDB.director_lookup, _api2, _f2, ["Дом добър"], today=_LK_TODAY)
 check("director_lookup: Дом добър (Smarzowski, no year): the Latin-letter query finds him, not a namesake;"
-      " his one recent film of 107 min", (_r2 or {}).get("id"), 201)
-# NEGATIVE: two recent films of his both fit the runtime -> ambiguous, nothing taken
+      " the title agrees across scripts and the runtime confirms it", (_r2 or {}).get("id"), 201)
+# NEGATIVE: two films of his with that title both fit the runtime -> ambiguous, nothing taken
+# (was: two recent films with no title in common; the director-only 'recent' rule is gone)
 _api2b, _ = _lk_api(_people2, {9002: [_crew(201, "Dom dobry", "Dom dobry", "2025-11-07"),
-                                      _crew(204, "Kler 2", "Kler 2", "2024-09-01")]},
+                                      _crew(204, "Dom dobry", "Dom dobry", "2016-09-01")]},
                     {201: {"runtime": 107}, 204: {"runtime": 112}})
 _r2b, _n2b = _lk_run(TMDB.director_lookup, _api2b, _f2, ["Дом добър"], today=_LK_TODAY)
-check("director_lookup: …NEGATIVE: two recent films of his within 10 min -> ambiguous, rejected",
+check("director_lookup: …NEGATIVE: two films of his with that title both within 10 min -> ambiguous, rejected",
       (_r2b, "ambiguous" in (_n2b or "")), (None, True))
 # 3. Безсмъртният и красавицата 2 (programata: Roman Artemyev, 2026, 80 min): year + runtime + director
 _api3, _ = _lk_api({"Roman Artemyev": [{"id": 9004, "name": "Roman Artemyev"}]},
@@ -5982,8 +5983,19 @@ _api3, _ = _lk_api({"Roman Artemyev": [{"id": 9004, "name": "Roman Artemyev"}]},
                            _crew(302, "Бессмертный и красавица", "Бессмертный и красавица", "2019-01-01")]},
                    {301: {"runtime": 78}, 302: {"runtime": 80}})
 _f3 = {"director": "Roman Artemyev", "year": 2026, "runtime": 80}
-check("director_lookup: Безсмъртният и красавицата 2 (2026, 80 min): the 2026 film, not the 2019 first part",
-      (_lk_run(TMDB.director_lookup, _api3, _f3, ["Безсмъртният и красавицата 2: Еликсир на живота"],
+# No title in common (Bulgarian vs Russian spelling): once accepted on director + year + runtime
+# alone, now NEGATIVE (skeptic 2026-11-07); with TMDB's Bulgarian translation it is accepted
+check("director_lookup: Безсмъртният и красавицата 2 (2026, 80 min) — NEGATIVE: no title in common -> rejected",
+      _lk_run(TMDB.director_lookup, _api3, _f3, ["Безсмъртният и красавицата 2: Еликсир на живота"],
+              today=_LK_TODAY)[0], None)
+_api3t, _ = _lk_api({"Roman Artemyev": [{"id": 9004, "name": "Roman Artemyev"}]},
+                    {9004: [_crew(301, "Бессмертный и красавица 2", "Бессмертный и красавица 2", "2026-01-01"),
+                            _crew(302, "Бессмертный и красавица", "Бессмертный и красавица", "2019-01-01")]},
+                    {301: {"runtime": 78, "translations": {"translations": [
+                        {"iso_639_1": "bg", "data": {"title": "Безсмъртният и красавицата 2: Еликсир на живота"}}]}},
+                     302: {"runtime": 80}})
+check("director_lookup: …accepted when TMDB's Bulgarian translation agrees: the 2026 film, not the 2019 first part",
+      (_lk_run(TMDB.director_lookup, _api3t, _f3, ["Безсмъртният и красавицата 2: Еликсир на живота"],
                today=_LK_TODAY)[0] or {}).get("id"), 301)
 # 4. Всички обичат Бил Евънс (Одеон: Грант Джи, 2026, 102 min) — NEGATIVE: TMDB's 2026 film of his runs 75 min
 _api4, _ = _lk_api({"Грант Джи": [{"id": 9005, "name": "Grant Gee"}]},
@@ -5995,8 +6007,18 @@ check("director_lookup: Всички обичат Бил Евънс — NEGATIVE
 _api4b, _ = _lk_api({"Грант Джи": [{"id": 9005, "name": "Grant Gee"}]},
                     {9005: [_crew(401, "Everybody Digs Bill Evans", "Everybody Digs Bill Evans", "2026-02-15")]},
                     {401: {"runtime": 102}})
-check("director_lookup: …and accepted with year, runtime and director all agreeing (no title in common)",
-      (_lk_run(TMDB.director_lookup, _api4b, _f4, ["Всички обичат Бил Евънс"], today=_LK_TODAY)[0] or {}).get("id"), 401)
+check("director_lookup: …NEGATIVE even with year, runtime and director all agreeing: no title in common"
+      " (was accepted before the skeptic's fix, 2026-11-07)",
+      _lk_run(TMDB.director_lookup, _api4b, _f4, ["Всички обичат Бил Евънс"], today=_LK_TODAY)[0], None)
+check("director_lookup: …accepted with the venue's English title in common",
+      (_lk_run(TMDB.director_lookup, _api4b, _f4, ["Всички обичат Бил Евънс", "Everybody Digs Bill Evans"],
+               today=_LK_TODAY)[0] or {}).get("id"), 401)
+check("director_lookup: …accepted when the venue printed that film's IMDb id",
+      (_lk_run(TMDB.director_lookup,
+               _lk_api({"Грант Джи": [{"id": 9005, "name": "Grant Gee"}]},
+                       {9005: [_crew(401, "Everybody Digs Bill Evans", "Everybody Digs Bill Evans", "2026-02-15")]},
+                       {401: {"runtime": 102, "imdb_id": "tt0000401"}})[0],
+               dict(_f4, imdb={"tt0000401"}), ["Всички обичат Бил Евънс"], today=_LK_TODAY)[0] or {}).get("id"), 401)
 # 5. Смисъл (Мартин Йотинг, 2024): NEGATIVE — a person search hit that is another Martin
 _api5, _calls5 = _lk_api({"Мартин Йотинг": [{"id": 9006, "name": "Martin Scorsese"}]},
                          {9006: [_crew(501, "Killers", "Killers", "2024-05-01")]}, {501: {"runtime": 96}})
@@ -6007,15 +6029,61 @@ check("director_lookup: Смисъл — NEGATIVE: TMDB's 'Martin Scorsese' is n
 # 6. ДЖЪМБО (Райън Адрианди, 2025, 102 min; TMDB 100): the Latin query finds Ryan Adriandhy
 _api6, _ = _lk_api({"Rayan Adriandi": [{"id": 9007, "name": "Ryan Adriandhy"}]},
                    {9007: [_crew(601, "Jumbo", "Jumbo", "2025-03-31")]}, {601: {"runtime": 100}})
-check("director_lookup: ДЖЪМБО (Адрианди, 2025, 102 vs TMDB 100 min) -> Jumbo",
+check("director_lookup: ДЖЪМБО (Адрианди, 2025, 102 vs TMDB 100 min) — NEGATIVE: 'Dzhambo' is not 'Jumbo'"
+      " closely enough, no title in common -> rejected (accepted before the skeptic's fix)",
+      _lk_run(TMDB.director_lookup, _api6, {"director": "Райън Адрианди", "year": 2025, "runtime": 102},
+              ["ДЖЪМБО: Магическото приключение"], today=_LK_TODAY)[0], None)
+check("director_lookup: …accepted with the venue's English title 'Jumbo'",
       (_lk_run(TMDB.director_lookup, _api6, {"director": "Райън Адрианди", "year": 2025, "runtime": 102},
-               ["ДЖЪМБО: Магическото приключение"], today=_LK_TODAY)[0] or {}).get("id"), 601)
+               ["ДЖЪМБО: Магическото приключение", "Jumbo"], today=_LK_TODAY)[0] or {}).get("id"), 601)
 # NEGATIVE: same director, a film of another year
 check("director_lookup: …NEGATIVE: his film of 2021 for a 2025 listing -> rejected",
       _lk_run(TMDB.director_lookup, _lk_api({"Rayan Adriandi": [{"id": 9007, "name": "Ryan Adriandhy"}]},
                                             {9007: [_crew(602, "Jumbo", "Jumbo", "2021-03-31")]},
                                             {602: {"runtime": 100}})[0],
               {"director": "Райън Адрианди", "year": 2025, "runtime": 102}, ["ДЖЪМБО"], today=_LK_TODAY)[0], None)
+# Skeptic's cases (2026-11-07): another film of the same director, or a namesake's, must never be taken
+_pSm = {"Voycheh Smazhovski": [{"id": 9002, "name": "Wojciech Smarzowski"}]}
+# A. Киномания (no year) screens his new 2026 film, on TMDB with no runtime yet; Dom dobry (2025, 107) is recent
+_rA = _lk_run(TMDB.director_lookup, _lk_api(_pSm, {9002: [_crew(205, "Nowy", "Nowy", "2026-10-01"),
+                                                          _crew(201, "Dom dobry", "Dom dobry", "2025-11-07")]},
+                                            {205: {"runtime": 0}, 201: {"runtime": 107}})[0],
+              {"director": "Войчех Смажовски", "runtime": 110}, ["Нов филм"], today=_LK_TODAY)
+check("director_lookup: skeptic A — NEGATIVE: new film with unknown runtime, his recent film within 10 min -> no match",
+      _rA[0], None)
+# A'. the same with a year printed: the in-window credit of unknown runtime makes it ambiguous
+_rA2 = _lk_run(TMDB.director_lookup, _lk_api(_pSm, {9002: [_crew(205, "Nowy dom", "Nowy dom", "2026-10-01"),
+                                                           _crew(201, "Dom dobry", "Dom dobry", "2025-11-07")]},
+                                             {205: {"runtime": 0}, 201: {"runtime": 107}})[0],
+               {"director": "Войчех Смажовски", "year": 2026, "runtime": 110}, ["Дом добър"], today=_LK_TODAY)
+check("director_lookup: skeptic A' — NEGATIVE: an in-window credit with no runtime -> ambiguous, even though"
+      " the other one's title agrees", (_rA2[0], "ambiguous" in (_rA2[1] or "")), (None, True))
+# B. the true new film is not on TMDB at all
+check("director_lookup: skeptic B — NEGATIVE: true film absent from TMDB, his recent film fits the runtime -> no match",
+      _lk_run(TMDB.director_lookup, _lk_api(_pSm, {9002: [_crew(201, "Dom dobry", "Dom dobry", "2025-11-07")]},
+                                            {201: {"runtime": 107}})[0],
+              {"director": "Войчех Смажовски", "runtime": 100}, ["Нов филм"], today=_LK_TODAY)[0], None)
+# C. namesake: another Ivan Petrov directed a 2025 film of 90 min, no title in common
+check("director_lookup: skeptic C — NEGATIVE: namesake director, year and runtime agree, no title -> no match",
+      _lk_run(TMDB.director_lookup, _lk_api({"Иван Петров": [{"id": 7001, "name": "Ivan Petrov"}]},
+                                            {7001: [_crew(801, "Другой фильм", "Другой фильм", "2025-04-01")]},
+                                            {801: {"runtime": 90}})[0],
+              {"director": "Иван Петров", "year": 2025, "runtime": 95}, ["Сбогом, Варна"], today=_LK_TODAY)[0], None)
+# D. prolific director: more credits in the window than are checked
+_crD = [_crew(900 + k, f"F{k}", f"F{k}", f"202{4 + k % 3}-0{k + 1}-01") for k in range(5)]
+_detD = {900: {"runtime": 60}, 901: {"runtime": 130}, 902: {"runtime": 92}, 903: {"runtime": 140}, 904: {"runtime": 95}}
+_apiD = _lk_api({"Hong Sang-soo": [{"id": 6001, "name": "Hong Sang-soo"}]}, {6001: _crD}, _detD)[0]
+check("director_lookup: skeptic D — NEGATIVE: no year, true film the 5th recent credit -> no match",
+      _lk_run(TMDB.director_lookup, _apiD, {"director": "Hong Sang-soo", "runtime": 95}, ["Пътешественик"],
+              today=_LK_TODAY)[0], None)
+_crD2 = [_crew(910 + k, "F4" if k == 4 else f"G{k}", "F4" if k == 4 else f"G{k}", "2025-0%d-01" % (k + 1))
+         for k in range(5)]
+_rD2 = _lk_run(TMDB.director_lookup,
+               _lk_api({"Hong Sang-soo": [{"id": 6001, "name": "Hong Sang-soo"}]}, {6001: _crD2},
+                       {910 + k: {"runtime": 95} for k in range(5)})[0],
+               {"director": "Hong Sang-soo", "year": 2025, "runtime": 95}, ["F4"], today=_LK_TODAY)
+check("director_lookup: skeptic D' — NEGATIVE: 5 credits in the year window, only 4 checked -> ambiguous",
+      (_rD2[0], "ambiguous" in (_rD2[1] or "")), (None, True))
 # 7. Дюн: Част първа (Арена, 155 min, no year): TMDB's Bulgarian title is 'Дюн'; the runtime confirms it
 _s7 = {"Дюн: Част първа": [{"id": 701, "title": "Дюн: Част втора", "original_title": "Dune: Part Two",
                             "release_date": "2024-02-27"}],

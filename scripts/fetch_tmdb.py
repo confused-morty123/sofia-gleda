@@ -1241,6 +1241,20 @@ def title_close(a, b):
     return difflib.SequenceMatcher(None, na, nb_).ratio() >= 0.8
 
 
+def titles_close_any(venue_titles, cand_titles):
+    """title_close for any pair of a venue title and a candidate title, in either script:
+    a Cyrillic venue title is also compared in Latin letters (_bg_latin) with the
+    candidate's Latin titles ('Дом добър' / 'Dom dobry')."""
+    vt = [t for t in (venue_titles or ()) if isinstance(t, str) and t.strip()]
+    ct = [t for t in (cand_titles or ()) if isinstance(t, str) and t.strip()]
+    for a in vt:
+        forms = [a] + ([_bg_latin(a)] if _has_cyrillic(a) else [])
+        for b in ct:
+            if any(title_close(f, b) for f in forms):
+                return True
+    return False
+
+
 def runtime_close(a, b, slack=IDENT_RUNTIME):
     """True / False when both runtimes are known, None when either is not."""
     try:
@@ -1260,9 +1274,12 @@ def lookup_identity(facts, cand, titles):
       - the venue's year, when it prints one, within ±1 of the candidate's (which must be known);
       - both runtimes, when known, within IDENT_RUNTIME;
       - the venue's director, when it names one, agrees with the candidate's;
-      - and the candidate is confirmed twice over: a title that agrees (title_close, either
-        script) plus the year or the runtime; or, with no title in common, the director,
-        the year AND the runtime all at once."""
+      - and the candidate is confirmed twice over: a title that agrees (titles_close_any:
+        either script, original and alternative titles) plus the year or the runtime; or the
+        venue's own printed IMDb id is the candidate's (cand["imdb_match"]).
+    The director, year and runtime alone never confirm a film with no title in common: a
+    director's other film of that year and length, or a namesake's, would pass (skeptic,
+    2026-11-07)."""
     facts, cand = facts or {}, cand or {}
     vy, cy = facts.get("year"), cand.get("year")
     year_ok_ = None
@@ -1285,17 +1302,12 @@ def lookup_identity(facts, cand, titles):
         dir_ok = dir_ok or bool(agree)
     if vd and not dir_ok:
         return f"director {vd} not confirmed"
-    t_ok = any(title_close(a, b) for a in titles or () for b in cand.get("titles") or ())
+    t_ok = titles_close_any(titles, cand.get("titles"))
     if t_ok and (year_ok_ or rt):
         return None
-    if dir_ok and year_ok_ and rt:
+    if cand.get("imdb_match"):
         return None
-    # a festival page with no year (Киномания's film pages): a new film of the director's
-    # (released within FIND_RECENT_YEARS), its runtime agreeing, stands in for the year;
-    # director_lookup still needs it to be the director's only such film
-    if dir_ok and not vy and rt and cand.get("recent"):
-        return None
-    return ("title, year and runtime do not confirm it" if not t_ok
+    return ("no title in common (director, year and runtime alone do not confirm it)" if not t_ok
             else "the title alone, no year or runtime to confirm it")
 
 
@@ -1347,14 +1359,19 @@ def director_lookup(facts, titles, blocked=(), today=None):
     poster_path, vote_average, vote_count, "_q": the director), and a note why not
     otherwise: (result | None, note). Festival pages (Киномания, Синелибри, Дом на киното)
     print a Bulgarian title and the director only; TMDB often has no Bulgarian title for
-    such a film, but it has the director. Exactly one candidate must pass."""
+    such a film, but it has the director. Exactly one candidate must pass, and it must
+    share a title with the venue (any script, original / alternative / translated titles)
+    or carry the venue's printed IMDb id: the director with a year and a runtime is not
+    enough (another film of his, or a namesake's). The credits in the window (the venue's
+    year ±1, or with no year printed the credits whose title agrees) must all be checked:
+    more of them than DIRECTOR_DETAILS, or one whose runtime TMDB does not know, and the
+    lookup is ambiguous - nothing is taken (skeptic, 2026-11-07)."""
     vd = (facts or {}).get("director") or ""
     if not vd:
         return None, "no director to look up"
-    import datetime as _dt
-    this_year = (today or _dt.date.today()).year
+    venue_ids = {str(x).lower() for x in ((facts or {}).get("imdb") or ())}
     names = [n.strip() for n in re.split(r",|\s+и\s+|&|/", vd) if len(n.strip()) > 3]
-    passed, seen, notes = {}, set(), []
+    passed, seen, notes, ambiguous = {}, set(), [], []
     for name in names[:2]:
         people = director_people(name)
         if not people:
@@ -1366,27 +1383,47 @@ def director_lookup(facts, titles, blocked=(), today=None):
                      and isinstance(c.get("id"), int) and c["id"] not in (blocked or ()) and c["id"] not in seen]
             for c in films:
                 seen.add(c["id"])
-            # cheap filters first: the year (when printed), else the title; runtime needs a call
+            # the window: the venue's year ±1 when it prints one, else the credits whose
+            # title agrees (a credit with no title in common can never pass)
             def pre(c):
-                y = _release_year(c)
                 if facts.get("year"):
+                    y = _release_year(c)
                     return y is not None and abs(y - int(facts["year"])) <= 1
-                return (any(title_close(t, x) for t in titles for x in (c.get("title"), c.get("original_title")))
-                        or (y is not None and y >= this_year - FIND_RECENT_YEARS))
-            short = [c for c in films if pre(c)][:DIRECTOR_DETAILS]
-            if not short:
+                return titles_close_any(titles, (c.get("title"), c.get("original_title")))
+            window = [c for c in films if pre(c)]
+            if not window:
                 notes.append(f"director {name}: no film of {facts.get('year') or 'that title'} among {len(films)}")
-            for c in short:
-                d = _api_counted(f"movie/{c['id']}", {"language": "en-US"}) or {}
-                _y = _release_year(c)
-                cand = {"year": _y, "runtime": d.get("runtime"), "director_known": True,
-                        "recent": _y is not None and _y >= this_year - FIND_RECENT_YEARS,
-                        "titles": [c.get("title"), c.get("original_title"), d.get("title")]}
+                continue
+            if len(window) > DIRECTOR_DETAILS:
+                ambiguous.append(f"director {name}: {len(window)} films in the window, only "
+                                 f"{DIRECTOR_DETAILS} could be checked")
+                continue
+            for c in window:
+                d = _api_counted(f"movie/{c['id']}", {"language": "en-US",
+                                                      "append_to_response": "alternative_titles,translations"}) or {}
+                try:
+                    rt_known = int(d.get("runtime") or 0) > 0
+                except (TypeError, ValueError):
+                    rt_known = False
+                if not rt_known:
+                    ambiguous.append(f"director {name}: TMDB {c['id']} has no runtime")
+                    continue
+                alt = [a.get("title") for a in ((d.get("alternative_titles") or {}).get("titles") or [])
+                       if isinstance(a, dict)]
+                tr = [((t.get("data") or {}).get("title")) for t in ((d.get("translations") or {}).get("translations") or [])
+                      if isinstance(t, dict)]
+                iid = str(d.get("imdb_id") or "").lower()
+                cand = {"year": _release_year(c), "runtime": d.get("runtime"), "director_known": True,
+                        "imdb_match": bool(iid and iid in venue_ids),
+                        "titles": [c.get("title"), c.get("original_title"), d.get("title"),
+                                   d.get("original_title"), *alt, *tr]}
                 why = lookup_identity(facts, cand, titles)
                 if why:
                     notes.append(f"director {name}: TMDB {c['id']} {why}")
                 else:
                     passed[c["id"]] = dict(c, _q=name)
+    if ambiguous:
+        return None, "director lookup ambiguous: " + "; ".join(ambiguous[:2])
     if len(passed) == 1:
         return next(iter(passed.values())), None
     if len(passed) > 1:
