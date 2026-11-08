@@ -293,6 +293,12 @@
     "kind": "syn",
     "src": "Миха е собственик на видеотека, която е на ръба на фалит. Жи"
   },
+  "0f4616f5a1cf504e34fcdb583fe39dead1daac1d": {
+    "at": "2026-11-08",
+    "en": "A concert by ‘PIM-PAM’",
+    "kind": "title",
+    "src": "Концерт на \"ПИМ-ПАМ\""
+  },
   "0f99038ed14acfbcee1e08912c70b9d041297eba": {
     "at": "2026-10-09",
     "en": "AND WE’RE PLAYING ROMEO AND JULIET",
@@ -5662,6 +5668,12 @@
     "en": "Sinelibri 2026: MOLIÈRE, CYRANO AND THE YOUNG KING",
     "kind": "title",
     "src": "Синелибри 2026: МОЛИЕР, СИРАНО И МЛАДИЯТ КРАЛ"
+  },
+  "eb66e362b3cd1d50bad784b7ea0e3940e90b4869": {
+    "at": "2026-11-08",
+    "en": "Lazaritsa – guest performance by the Sava Ognyanov Drama Theatre, Ruse",
+    "kind": "title",
+    "src": "Лазарица - гост ДТ \"Сава Огнянов\", Русе"
   },
   "eb9213f3947378f83098f8bad07a46f2c1803f12": {
     "at": "2026-10-09",

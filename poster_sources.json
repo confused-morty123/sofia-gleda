@@ -216,7 +216,7 @@
    ]
   },
   "film:polyusi": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://domnakinoto.com/polyusi-movie7436.html?a="
    ],
@@ -225,7 +225,7 @@
    ]
   },
   "film:prodavach-na-nadezhda": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/"
    ],
@@ -257,7 +257,7 @@
    ]
   },
   "film:velopohodat-kam-cop-31": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%b2%d0%b5%d0%bb%d0%be%d0%bf%d0%be%d1%85%d0%be%d0%b4%d1%8a%d1%82-%d0%ba%d1%8a%d0%bc-cop-31/"
    ],
@@ -266,7 +266,7 @@
    ]
   },
   "show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden"
    ],
@@ -275,7 +275,7 @@
    ]
   },
   "show:az-foyerbah": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_5097_4_20"
    ],
@@ -284,7 +284,7 @@
    ]
   },
   "show:az-se-kazvah": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://toplocentrala.bg/program/performance/az-se-kazvah"
    ],
@@ -293,7 +293,7 @@
    ]
   },
   "show:bai-ganyo": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_5509_4_20"
    ],
@@ -303,7 +303,7 @@
    ]
   },
   "show:bremenskite-muzikanti": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_4248_4_20"
    ],
@@ -312,7 +312,7 @@
    ]
   },
   "show:buratino-2": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_7714_4_20"
    ],
@@ -328,7 +328,7 @@
    ]
   },
   "show:dalgiyat-pat-na-denya-kam-noshtta": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20"
    ],
@@ -337,7 +337,7 @@
    ]
   },
   "show:dekameron-lyubov-i-smart-po-bokacho": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
    ],
@@ -346,7 +346,7 @@
    ]
   },
   "show:dnevnikat-na-edin-lud-2": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097"
    ],
@@ -369,7 +369,7 @@
    ]
   },
   "show:igra-na-kotki": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://zadkanala.bg/spektakli/igra-na-kotki"
    ],
@@ -378,7 +378,7 @@
    ]
   },
   "show:insert-coin-player-one": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://toplocentrala.bg/program/performance/insert-coin-player-one"
    ],
@@ -401,7 +401,7 @@
    ]
   },
   "show:kiki-i-bozo": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/кики-и-бозо_7339_8_20"
    ],
@@ -409,8 +409,17 @@
     "https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg: not fetched"
    ]
   },
+  "show:kontsert-na-pim-pam": {
+   "last": "2026-11-08",
+   "tried": [
+    "https://satirata.bg/program"
+   ],
+   "why": [
+    "the page's headings do not name the title: not used (https://satirata.bg/program)"
+   ]
+  },
   "show:kotarakat-v-chizmi": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/котаракът-в-чизми_640_8_20"
    ],
@@ -433,7 +442,7 @@
    ]
   },
   "show:magichna-nosht-predi-koleda": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_8103_10_20"
    ],
@@ -451,7 +460,7 @@
    ]
   },
   "show:malkata-rusalka": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_7020_4_20"
    ],
@@ -467,7 +476,7 @@
    ]
   },
   "show:mezhdunaroden-simpozium-melba": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://toplocentrala.bg/program/performance/mejdunaroden-simpozium-melba"
    ],
@@ -476,7 +485,7 @@
    ]
   },
   "show:nordost": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_366_4_20"
    ],
@@ -485,7 +494,7 @@
    ]
   },
   "show:pepelyashka": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_6765_4_20"
    ],
@@ -494,7 +503,7 @@
    ]
   },
   "show:razdelyam-dvoyki-po-domovete": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_4099_4_20"
    ],
@@ -503,7 +512,7 @@
    ]
   },
   "show:sablechi-se-za-vecherya": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_5963_4_20"
    ],
@@ -512,12 +521,19 @@
    ]
   },
   "show:spetsialni-povodi": {
-   "last": "2026-11-07",
+   "last": "2026-11-08",
    "tried": [
     "https://theatre.art.bg/x_4673_4_20"
    ],
    "why": [
     "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg"
+   ]
+  },
+  "show:urok-po-balgarski-po-iv-vazov": {
+   "last": "2026-11-08",
+   "tried": [],
+   "why": [
+    "no own page linked"
    ]
   }
  },
@@ -546,6 +562,100 @@
   },
   "https://softwareforcinema.com/f/movies/m/7/fa7e6755cef7b61d958e255239db886b.jpeg": {
    "https://domnakinoto.com/polyusi-movie7436.html?a=": "полюси"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/004/856/image/20221006_154356.jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+",
+   "https://satirata.bg/program": "концерт на пим пам",
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/525/image/PLAKATI 486-686 mm _DA OSTANEM SAMO PRIATELI-KALIN_page-0001.jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/532/image/2023-DOSP WEB (1).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/533/image/2023-DOSP WEB (6).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/534/image/2023-DOSP WEB (2).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/535/image/2023-DOSP WEB (4).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/536/image/2023-DOSP WEB (3).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/537/image/2023-DOSP WEB (5).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/538/image/2023-DOSP WEB (7).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/541/image/2023-DOSP WEB (10).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/542/image/2023-DOSP WEB (11).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/543/image/2023-DOSP WEB (13).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/544/image/2023-DOSP WEB (14).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/545/image/2023-DOSP WEB (15).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/546/image/2023-DOSP WEB (16).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/547/image/2023-DOSP WEB (17).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/548/image/2023-DOSP WEB (20).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/549/image/2023-DOSP WEB (21).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/550/image/2023-DOSP WEB (23).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/553/image/2023-DOSP WEB (27).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/005/554/image/2023-DOSP WEB (28).jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/284/image/SATIRA 67G GREEN.png": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+",
+   "https://satirata.bg/program": "концерт на пим пам",
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/560/image/PLAKATI 486-686 mm _DA OSTANEM SAMO PRIATELI-.jpg": {
+   "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/041/image/Lazaritsa_poster.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/044/image/_YM_8366.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/045/image/1d164d05-4819-4210-8b1e-0fda6341cd23.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/046/image/8e029a4c-3d05-4905-bfb0-2e212d9d557a.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/047/image/_YM_9077.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/048/image/42aed3e7-93b7-4150-930c-d290b99ff5c8.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/008/049/image/_YM_9139.jpg": {
+   "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
   },
   "https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png": {
    "https://theatre.art.bg/котаракът-в-чизми_640_8_20": "котаракът в чизми"
@@ -1596,6 +1706,18 @@
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/cvett",
    "path": "posters/cvetat-na-dalbokite.jpg",
    "w": 220
+  },
+  "da-ostanem-samo-priyateli-16": {
+   "checked": "2026-11-08",
+   "h": 1384,
+   "how": "og:image",
+   "img": "https://storage.googleapis.com/is-satira/images/000/005/525/image/PLAKATI 486-686 mm _DA OSTANEM SAMO PRIATELI-KALIN_page-0001.jpg",
+   "kind": "poster",
+   "md5": "4b2b17374f890bb56fc40a781b499e53",
+   "page": "https://satirata.bg/profile/da-ostanem-priateli",
+   "path": "posters/da-ostanem-samo-priyateli-16.jpg",
+   "src_md5": "8d0a8720395d611732cb60d542314406",
+   "w": 980
   },
   "danceperimental-your-story-moves-us": {
    "checked": "2026-11-04",
@@ -3048,6 +3170,18 @@
    "page": "https://toplocentrala.bg/program/performance/laboratoriya-po-teatar-na-predmetite-fat-festival-2026",
    "path": "posters/laboratoriya-po-teatar-na-predmetite-fat-festival-2026.jpg",
    "w": 970
+  },
+  "lazaritsa-gost-dt-sava-ognyanov-ruse": {
+   "checked": "2026-11-08",
+   "h": 1372,
+   "how": "og:image",
+   "img": "https://storage.googleapis.com/is-satira/images/000/008/041/image/Lazaritsa_poster.jpg",
+   "kind": "poster",
+   "md5": "46935d1e5bf055cb978a405306c86a8e",
+   "page": "https://satirata.bg/show/lazaritza-gost",
+   "path": "posters/lazaritsa-gost-dt-sava-ognyanov-ruse.jpg",
+   "src_md5": "511d7bf42d9e2f2310a5e9fcd2abadc6",
+   "w": 980
   },
   "lekciya-3-za-silata-na-slovoto-gostuva-d": {
    "checked": "2026-11-04",

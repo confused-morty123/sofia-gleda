@@ -7108,5 +7108,41 @@
   "synBg": "",
   "synEn": "",
   "source": "tba"
+ },
+ "kontsert-na-pim-pam": {
+  "id": "kontsert-na-pim-pam",
+  "title": "Концерт на \"ПИМ-ПАМ\"",
+  "titleEn": "",
+  "theatre": "satira",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "satira"
+ },
+ "lazaritsa-gost-dt-sava-ognyanov-ruse": {
+  "id": "lazaritsa-gost-dt-sava-ognyanov-ruse",
+  "title": "Лазарица - гост ДТ \"Сава Огнянов\", Русе",
+  "titleEn": "",
+  "theatre": "satira",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "satira"
  }
 }
