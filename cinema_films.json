@@ -4325,5 +4325,19 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "novo-kino-paradizo": {
+  "id": "novo-kino-paradizo",
+  "bg": "Ново кино \"Парадизо\"",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere",
+  "runtime": 122,
+  "year": 1988,
+  "originalTitle": "Nuovo Cinema Paradiso"
  }
 }
