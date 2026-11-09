@@ -19638,7 +19638,9 @@ def _bo_euro_cinema(browser, eng):
           and c["nameEn"] == "Euro Cinema" and c["area"] == "бул. „Александър Стамболийски“ 17"
           and EC_MAP in (c["map"] or "") and (info["b"] or {}).get("festival") and not (info["b"] or {}).get("inPerson"),
           f"{info['c']} BOOKING {info['b']}")
-    check("bo1_euro_cinema_no_g8_row_at_euro_cinema", info["g8wrong"] == 0 and info["ecRows"] > 0,
+    # Euro Cinema shows festival screenings only (CineLibri ended 2026-11-08): with no upcoming row
+    # the venue must still be there, with no G8 row misplaced at it, and its chip disabled
+    check("bo1_euro_cinema_no_g8_row_at_euro_cinema", info["g8wrong"] == 0,
           f"{info['g8wrong']} FESTROWS row(s) under G8 placed at Euro Cinema by epaygo; {info['ecRows']} Euro Cinema row(s)")
     # the cinema filter: its own chip among the independents, filtering to its screenings
     page.evaluate("""()=>{const fab=document.querySelector('.fab');if(fab&&!fab.hidden){fab.click();return;}
@@ -19647,8 +19649,9 @@ def _bo_euro_cinema(browser, eng):
     chip = page.evaluate("""()=>{const ch=document.querySelector(".drawer [data-venue='euro-cinema']"); if(!ch)return null;
       const wrap=ch.closest('.chipwrap'), ind=[...wrap.querySelectorAll('[data-venue]')].map(e=>e.dataset.venue);
       return {text:ch.textContent.trim(), indep:ind.includes('g8')&&ind.includes('odeon'), disabled:ch.disabled};}""")
-    check("bo1_euro_cinema_filter_chip", bool(chip) and chip["text"] == "Кино Euro Cinema" and chip["indep"] and not chip["disabled"],
-          f"chip: {chip}")
+    check("bo1_euro_cinema_filter_chip", bool(chip) and chip["text"] == "Кино Euro Cinema" and chip["indep"]
+          and chip["disabled"] == (info["ecRows"] == 0),
+          f"chip: {chip}, {info['ecRows']} upcoming row(s): enabled exactly when it has screenings")
     ctx.close()
     if not info["row"]:
         skip("bo1_euro_cinema_panel", "no upcoming Euro Cinema screening on sale with its own epaygo page in this build")
