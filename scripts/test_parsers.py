@@ -5931,6 +5931,7 @@ def _lk_api(people, credits, details, searches=None):
 def _lk_run(fn, api_, *a, **kw):
     saved = TMDB.api
     TMDB.api = api_
+    TMDB._PERSON_CACHE.clear()       # each fixture is its own run
     try:
         return fn(*a, **kw)
     finally:
@@ -6042,6 +6043,72 @@ check("director_lookup: …NEGATIVE: his film of 2021 for a 2025 listing -> reje
                                             {9007: [_crew(602, "Jumbo", "Jumbo", "2021-03-31")]},
                                             {602: {"runtime": 100}})[0],
               {"director": "Райън Адрианди", "year": 2025, "runtime": 102}, ["ДЖЪМБО"], today=_LK_TODAY)[0], None)
+# Romanisation variants (2026-11-09): TMDB found none of these directors under the official
+# transliteration; a bounded set of source-language spellings is tried. Fixture people only
+# answer to their real spelling, so a test passes only if the right variant was generated.
+# Ids, runtimes and dates are FIXTURE PLACEHOLDERS, not TMDB's values.
+check("name_variants: Смажовски -> the Polish spelling 'Wojciech Smarzowski' is among the queries",
+      "Wojciech Smarzowski" in TMDB.name_variants("Войчех Смажовски"), True)
+check("name_variants: printed name first, official transliteration second",
+      TMDB.name_variants("Войчех Смажовски")[:2], ["Войчех Смажовски", "Voycheh Smazhovski"])
+check("name_variants: Веронези -> 'Giovanni Veronesi' (Italian Джо -> Gio, з -> s)",
+      "Giovanni Veronesi" in TMDB.name_variants("Джовани Веронези"), True)
+check("name_variants: Грант Джи -> 'Grant Gee'", "Grant Gee" in TMDB.name_variants("Грант Джи"), True)
+check("name_variants: Шлива -> 'Tadeusz Sliwa' (Polish ś written ш)", "Tadeusz Sliwa" in TMDB.name_variants("Тадеуш Шлива"), True)
+check("name_variants: Бухвалд -> 'Emi Buchwald'", "Emi Buchwald" in TMDB.name_variants("Еми Бухвалд"), True)
+check("name_variants: never more than DIRECTOR_QUERY_CAP queries, and the cap argument is obeyed",
+      (max(len(TMDB.name_variants(n)) for n in ("Войчех Смажовски", "Тадеуш Шлива", "Лиляна Бързева"))
+       <= TMDB.DIRECTOR_QUERY_CAP, len(TMDB.name_variants("Войчех Смажовски", cap=3))), (True, 3))
+check("name_variants: a Latin-letter name is queried as printed only",
+      TMDB.name_variants("Hong Sang-soo"), ["Hong Sang-soo"])
+_rv1, _cv1 = _lk_api({"Wojciech Smarzowski": [{"id": 9102, "name": "Wojciech Smarzowski"}]},
+                     {9102: [_crew(1201, "Dom dobry", "Dom dobry", "2025-11-07")]},
+                     {1201: {"runtime": 107, "translations": {"translations": [
+                         {"iso_639_1": "bg", "data": {"title": "Дом добър"}}]}}})
+check("director_lookup: Дом добър — Smarzowski found only by the Polish variant, matched through the"
+      " common title (TMDB's Bulgarian translation) and the runtime",
+      (_lk_run(TMDB.director_lookup, _rv1, {"director": "Войчех Смажовски", "runtime": 107}, ["Дом добър"],
+               today=_LK_TODAY)[0] or {}).get("id"), 1201)
+_rv2, _cv2 = _lk_api({"Giovanni Veronesi": [{"id": 9103, "name": "Giovanni Veronesi"}]},
+                     {9103: [_crew(1301, "Il Dio che ride", "Il Dio che ride", "2026-03-01")]},
+                     {1301: {"runtime": 100, "translations": {"translations": [
+                         {"iso_639_1": "bg", "data": {"title": "Бог се смее"}}]}}})
+check("director_lookup: Бог се смее — Veronesi found by the Italian variant, common title confirms it",
+      (_lk_run(TMDB.director_lookup, _rv2, {"director": "Джовани Веронези", "year": 2026, "runtime": 100},
+               ["Бог се смее"], today=_LK_TODAY)[0] or {}).get("id"), 1301)
+_rv3, _ = _lk_api({"Grant Gee": [{"id": 9105, "name": "Grant Gee"}]},
+                  {9105: [_crew(1401, "Everybody Digs Bill Evans", "Everybody Digs Bill Evans", "2026-02-15")]},
+                  {1401: {"runtime": 102}})
+check("director_lookup: Грант Джи -> 'Grant Gee' variant; accepted with the venue's English title in common",
+      (_lk_run(TMDB.director_lookup, _rv3, {"director": "Грант Джи", "year": 2026, "runtime": 102},
+               ["Всички обичат Бил Евънс", "Everybody Digs Bill Evans"], today=_LK_TODAY)[0] or {}).get("id"), 1401)
+# NEGATIVE: the variant finds a namesake (same surname, same initial) whose film of that year and
+# runtime shares no title -> nothing taken
+_rv4, _ = _lk_api({"Smarzowski": [{"id": 9106, "name": "Witold Smarzowski"}]},
+                  {9106: [_crew(1501, "Inny dom", "Inny dom", "2025-05-01")]}, {1501: {"runtime": 107}})
+check("director_lookup: …NEGATIVE: a surname-only variant finds a namesake 'Witold Smarzowski', no title in"
+      " common -> no match", _lk_run(TMDB.director_lookup, _rv4, {"director": "Войчех Смажовски", "year": 2025,
+                                                                    "runtime": 107}, ["Дом добър"],
+                                      today=_LK_TODAY)[0], None)
+# NEGATIVE: a short surname (Джи) never lets any 'Grant' through: Grant Heslov is not Grant Gee
+_rv5, _ = _lk_api({"Gee": [{"id": 9107, "name": "Grant Heslov"}], "Grant Gee": [{"id": 9107, "name": "Grant Heslov"}]},
+                  {9107: [_crew(1601, "Everybody Digs Bill Evans", "Everybody Digs Bill Evans", "2026-02-15")]},
+                  {1601: {"runtime": 102}})
+check("director_lookup: …NEGATIVE: TMDB answers 'Grant Heslov' to 'Grant Gee' -> not him, his films never read",
+      _lk_run(TMDB.director_lookup, _rv5, {"director": "Грант Джи", "year": 2026, "runtime": 102},
+              ["Всички обичат Бил Евънс", "Everybody Digs Bill Evans"], today=_LK_TODAY)[0], None)
+# the query cap: nobody found -> exactly DIRECTOR_QUERY_CAP searches, and the per-run cache asks once
+_rv6, _cv6 = _lk_api({}, {}, {})
+_lk_run(TMDB.director_lookup, _rv6, {"director": "Войчех Смажовски", "runtime": 107}, ["Дом добър"], today=_LK_TODAY)
+_n_first = sum(1 for p, _ in _cv6 if p == "search/person")
+TMDB.api, _sv6 = _rv6, TMDB.api
+try:
+    TMDB.director_lookup({"director": "Войчех Смажовски", "runtime": 107}, ["Дом добър"], today=_LK_TODAY)
+finally:
+    TMDB.api = _sv6
+check("director_people: query cap respected (12 searches for an unfound name), cached for the rest of the run",
+      (_n_first, sum(1 for p, _ in _cv6 if p == "search/person")), (TMDB.DIRECTOR_QUERY_CAP, TMDB.DIRECTOR_QUERY_CAP))
+TMDB._PERSON_CACHE.clear()
 # Skeptic's cases (2026-11-07): another film of the same director, or a namesake's, must never be taken
 _pSm = {"Voycheh Smazhovski": [{"id": 9002, "name": "Wojciech Smarzowski"}]}
 # A. Киномания (no year) screens his new 2026 film, on TMDB with no runtime yet; Dom dobry (2025, 107) is recent

@@ -1225,6 +1225,77 @@ def _bg_latin(s):
     return " ".join(w[:1].upper() + w[1:] for w in out.split())
 
 
+# ---- Romanisation variants for the director person search (2026-11-09) -----------------
+# The venue prints a foreign director in Bulgarian letters ('Войчех Смажовски'); the official
+# transliteration ('Voycheh Smazhovski') is not how TMDB spells him ('Wojciech Smarzowski').
+# A bounded set of spellings is tried, each by fixed rules per source-language pattern, never
+# by guessing: every person found must still pass person_agrees, and the film must still share
+# a title with the venue or carry its printed IMDb id (director_lookup), so a spelling that
+# finds a namesake can never attach a film.
+DIRECTOR_QUERY_CAP = 12      # person-search queries per credited name, at most
+# whole words whose original spelling no letter rule reaches (Polish 'ci', English 'ee',
+# an Italian double consonant), shared by every pattern
+_ROMAN_WORDS = {"войчех": "Wojciech", "джи": "Gee", "джовани": "Giovanni", "тадеуш": "Tadeusz",
+                "павел": "Paweł", "кшищоф": "Krzysztof", "анджей": "Andrzej", "йежи": "Jerzy",
+                "ежи": "Jerzy", "джузепе": "Giuseppe", "паоло": "Paolo", "франческо": "Francesco"}
+_ROMAN_BASE = {"а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ж": "zh", "з": "z",
+               "и": "i", "й": "y", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p",
+               "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "ts", "ч": "ch",
+               "ш": "sh", "щ": "sht", "ъ": "a", "ь": "", "ю": "yu", "я": "ya", "ё": "yo"}
+# per pattern: multi-letter units first (word-final ones marked $), then single letters
+_ROMAN_PATTERNS = (
+    ("pl", {"ски$": "ski", "ска$": "ska", "ова$": "owa", "ьо": "io", "йо": "jo", "дж": "dż",
+            "в": "w", "ж": "rz", "ч": "cz", "ш": "sz", "щ": "szcz", "й": "j", "х": "ch", "ц": "c",
+            "ю": "iu", "я": "ia", "ъ": "e"}),
+    ("pl-soft", {"ски$": "ski", "ска$": "ska", "ова$": "owa", "ьо": "io", "йо": "jo", "дж": "dz",
+                 "в": "w", "ж": "z", "ч": "c", "ш": "s", "щ": "sc", "й": "j", "х": "ch", "ц": "c",
+                 "ю": "ju", "я": "ja", "ъ": "e"}),
+    ("it", {"джа": "gia", "джо": "gio", "джу": "giu", "дж": "g", "ча": "cia", "чо": "cio",
+            "чу": "ciu", "ч": "c", "ке": "che", "ки": "chi", "к": "c", "ц": "z", "з": "s",
+            "й": "i", "ш": "sc", "ю": "iu", "я": "ia", "ьо": "io", "йо": "io"}),
+    ("en", {"ски$": "sky", "дж": "j", "ж": "zh", "ч": "ch", "ш": "sh", "й": "y", "х": "h",
+            "ц": "ts", "ю": "yu", "я": "ya", "ьо": "yo", "йо": "yo"}),
+    ("de", {"ски$": "ski", "дж": "dsch", "ж": "sch", "ч": "tsch", "ш": "sch", "й": "j", "х": "ch",
+            "ц": "z", "в": "w", "ю": "ju", "я": "ja", "ьо": "jo", "йо": "jo"}),
+)
+
+
+def _roman_word(word, table):
+    """One Cyrillic word in one pattern's Latin letters ('Смажовски', pl -> 'Smarzowski')."""
+    w = word.lower()
+    if w in _ROMAN_WORDS:
+        return _ROMAN_WORDS[w]
+    keys = sorted(table, key=lambda k: -len(k.rstrip("$")))
+    out, i = [], 0
+    while i < len(w):
+        for k in keys:
+            u = k.rstrip("$")
+            if w.startswith(u, i) and (not k.endswith("$") or i + len(u) == len(w)):
+                out.append(table[k])
+                i += len(u)
+                break
+        else:
+            out.append(_ROMAN_BASE.get(w[i], w[i]))
+            i += 1
+    s = "".join(out)
+    return s[:1].upper() + s[1:]
+
+
+def name_variants(name, cap=DIRECTOR_QUERY_CAP):
+    """The person-search queries for a credited name, at most `cap`, best first: the name as
+    printed (TMDB matches also_known_as), the official transliteration (_bg_latin), then each
+    source-language pattern's spelling of the full name, then of the surname alone."""
+    name = (name or "").strip()
+    out = [name, _bg_latin(name)]
+    words = name.split()
+    if words and _has_cyrillic(name):
+        full = [" ".join(_roman_word(w, t) for w in words) for _, t in _ROMAN_PATTERNS]
+        out += full
+        if len(words) >= 2:
+            out += [_roman_word(words[-1], t) for _, t in _ROMAN_PATTERNS]
+    return [q for q in dict.fromkeys(x for x in out if x)][:cap]
+
+
 def title_close(a, b):
     """Two titles in the same script name the same film: equal once folded (cnorm, a
     trailing 'Част първа' / 'Part One' ignored), one most of the other (6+ letters, at
@@ -1338,18 +1409,41 @@ def person_agrees(venue, tmdb):
     return bool(a and b and a[0][:1] == b[0][:1])     # the initial must still be the same
 
 
+_PERSON_CACHE = {}           # credited name -> TMDB people ids, per run
+
+
+def _fold(s):
+    import unicodedata
+    s = (s or "").lower().replace("ł", "l")
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+
 def director_people(name):
     """TMDB people ids for a credited director ('Анджей Вайда', 'Roman Artemyev'): the name
-    as printed and in Latin letters, kept only when TMDB's own name agrees (names_agree)."""
+    as printed, in official Latin letters, then the source-language spellings of
+    name_variants (at most DIRECTOR_QUERY_CAP queries), kept only when TMDB's own name
+    agrees (person_agrees). A surname too short to compare across scripts ('Джи') must be
+    one of the generated spellings outright ('Gee'), not any surname of a 'Grant'.
+    Cached per run: a name is looked up once."""
+    name = name.strip()
+    if name in _PERSON_CACHE:
+        return list(_PERSON_CACHE[name])
+    words = name.split()
+    short_sur = len(words) >= 2 and not _name_tokens(words[-1])
+    sur_ok = {_fold(words[-1])} | {_fold(_roman_word(words[-1], t)) for _, t in _ROMAN_PATTERNS} \
+        if short_sur else set()
     ids = []
-    for q in dict.fromkeys(x for x in (name.strip(), _bg_latin(name.strip())) if x):
+    for q in name_variants(name):
         res = _api_counted("search/person", {"query": q, "include_adult": "false"}) or {}
         for p in (res.get("results") or [])[:5]:
+            pn = (p.get("name") or "") if isinstance(p, dict) else ""
             if (isinstance(p, dict) and isinstance(p.get("id"), int) and p["id"] not in ids
-                    and person_agrees(name, p.get("name") or "") and len(ids) < DIRECTOR_PEOPLE):
+                    and person_agrees(name, pn) and len(ids) < DIRECTOR_PEOPLE
+                    and (not short_sur or (pn.split() and _fold(pn.split()[-1]) in sur_ok))):
                 ids.append(p["id"])
         if ids:
             break
+    _PERSON_CACHE[name] = list(ids)
     return ids
 
 
