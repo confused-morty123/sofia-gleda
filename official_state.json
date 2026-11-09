@@ -3,36 +3,36 @@
  "venues": {
   "arena-mall": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "arena-mega": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "arena-serdika": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "artvent": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2027-01-13",
+   "last_ok": "2026-11-09",
+   "covered_to": "2027-01-14",
    "failing_since": null,
    "last_error": null,
    "seen": {
     "stages": [
      ""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-12": "19:30/0",
      "2026-10-14": "19:30/0",
@@ -60,49 +60,49 @@
   },
   "atelie313": {
    "source": "theatre.art.bg",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": null,
    "failing_since": null,
    "last_error": null
   },
   "cc-paradise": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "cc-sofia": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "cg-park": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "cg-ring": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "cineland": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "citymark": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-30",
    "failing_since": null,
    "last_error": null,
@@ -110,7 +110,7 @@
     "stages": [
      ""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-12": "19:30/0",
      "2026-10-17": "11:00/0",
@@ -123,21 +123,22 @@
      "2026-11-07": "12:30/0",
      "2026-11-08": "11:00/0",
      "2026-11-14": "11:00/0",
-     "2026-11-15": "11:00/0"
+     "2026-11-15": "11:00/0",
+     "2026-11-16": "19:30/0"
     }
    }
   },
   "derida": {
    "source": "theatre.art.bg",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": null,
    "failing_since": null,
    "last_error": null
   },
   "dom-kino": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2026-11-21",
+   "last_ok": "2026-11-09",
+   "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
@@ -150,21 +151,21 @@
   },
   "frenski-institut": {
    "source": "festival",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-09",
    "failing_since": null,
    "last_error": null
   },
   "g8": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "iam": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-29",
    "failing_since": null,
    "last_error": null,
@@ -172,7 +173,7 @@
     "stages": [
      ""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-12": "19:30/0",
      "2026-10-13": "19:30/0",
@@ -192,7 +193,7 @@
   },
   "kuklen": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-27",
    "failing_since": null,
    "last_error": null,
@@ -202,7 +203,7 @@
      "салон “ген. гурко 14”",
      "салон “я. сакъзов 19”"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-14": "10:30/1 11:30/1",
      "2026-10-17": "11:00/1 11:00/2 17:00/1",
@@ -225,12 +226,8 @@
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 11:00": {
-      "drakoncheto": "Салон “Ген. Гурко 14”",
-      "printsesite-i-zmeyat": "Салон “Я. Сакъзов 19”"
-     },
      "2026-11-10 19:00": {
       "poletat-na-kartitsata": "Салон “Ген. Гурко 14”"
      },
@@ -349,14 +346,14 @@
   },
   "lumiere": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-22",
    "failing_since": null,
    "last_error": null
   },
   "mladezhki": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-29",
    "failing_since": null,
    "last_error": null,
@@ -365,7 +362,7 @@
      "",
      "голяма сцена"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-13": "19:00/1",
      "2026-10-14": "19:00/0",
@@ -399,15 +396,6 @@
    "halls": {
     "read": "2026-10-14",
     "rows": {
-     "2026-11-08 11:00": {
-      "karlson-koyto-zhivee-na-pokriva": "Голяма сцена"
-     },
-     "2026-11-08 12:30": {
-      "malkata-elfa": "В Лунната стая"
-     },
-     "2026-11-08 19:00": {
-      "romeo-i-zhulieta": "Голяма сцена"
-     },
      "2026-11-11 11:00": {
       "pipi-dalgoto-chorapche": "Голяма сцена"
      },
@@ -633,12 +621,12 @@
   },
   "natfiz": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-28",
    "failing_since": null,
    "last_error": null,
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
      "2026-11-12 19:30": {
       "kavkazkiyat-tebeshiren-krag": "Сцена 47"
@@ -671,7 +659,7 @@
      "",
      "сцена 47"
     ],
-    "observed": "2026-11-06..2026-11-15",
+    "observed": "2026-11-06..2026-11-16",
     "days": {
      "2026-11-06": "19:30/1",
      "2026-11-07": "19:30/1",
@@ -681,8 +669,8 @@
   },
   "national": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2027-01-13",
+   "last_ok": "2026-11-09",
+   "covered_to": "2027-01-14",
    "failing_since": null,
    "last_error": null,
    "seen": {
@@ -694,7 +682,7 @@
      "камерна сцена",
      "сцена „апостол карамитев“"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-14": "19:00/1 19:00/4 19:30/5",
      "2026-10-15": "19:00/1 19:00/4",
@@ -728,14 +716,8 @@
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 19:00": {
-      "medeya": "Голяма сцена"
-     },
-     "2026-11-08 19:30": {
-      "vinovniyat": "Сцена „Апостол Карамитев“"
-     },
      "2026-11-10 19:00": {
       "nora-stsenabezgranitsi": "Голяма сцена",
       "o-ti-koyato": "Камерна сцена"
@@ -1149,28 +1131,28 @@
   },
   "ndk1": {
    "source": "festival",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-09",
    "failing_since": null,
    "last_error": null
   },
   "new-ndk": {
    "source": "theatre.art.bg",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": null,
    "failing_since": null,
    "last_error": null
   },
   "odeon": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-12",
    "failing_since": null,
    "last_error": null
   },
   "salzaismyah": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-30",
    "failing_since": null,
    "last_error": null,
@@ -1180,7 +1162,7 @@
      "камерна сцена славянска беседа",
      "открита сцена сълза и смях"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-12": "19:00/2",
      "2026-10-13": "19:00/0",
@@ -1216,15 +1198,13 @@
      "2026-11-12": "19:00/2 19:30/1",
      "2026-11-13": "19:00/2",
      "2026-11-14": "11:00/2 19:00/2",
-     "2026-11-15": "19:00/2"
+     "2026-11-15": "19:00/2",
+     "2026-11-16": "19:00/2 19:30/1"
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 19:00": {
-      "otvorena-brachna-dvoyka": "Открита сцена"
-     },
      "2026-11-09 19:00": {
       "koshmarna-komediya": "Открита сцена"
      },
@@ -1416,7 +1396,7 @@
   },
   "satira": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-23",
    "failing_since": null,
    "last_error": null,
@@ -1427,7 +1407,7 @@
      "камерна зала „методи андонов“",
      "сцена „comedy bar happy сатира“"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-14": "19:30/2 20:00/3",
      "2026-10-15": "19:30/1 20:00/3",
@@ -1461,12 +1441,8 @@
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 17:30": {
-      "mayka-kurazh-i-neynite-deca": "Голяма сцена",
-      "smyah-na-sboguvane": "Камерна зала „Методи Андонов“"
-     },
      "2026-11-10 19:30": {
       "koshnici": "Камерна зала „Методи Андонов“"
      },
@@ -1711,7 +1687,7 @@
   },
   "sfumato": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-12-30",
    "failing_since": null,
    "last_error": null,
@@ -1722,7 +1698,7 @@
      "камерна зала",
      "основна сцена"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-12": "19:00/1",
      "2026-10-13": "19:00/3",
@@ -1751,11 +1727,12 @@
      "2026-11-11": "19:00/3",
      "2026-11-12": "19:00/3 19:30/1",
      "2026-11-13": "19:00/3",
-     "2026-11-14": "19:00/2"
+     "2026-11-14": "19:00/2",
+     "2026-11-16": "19:00/3"
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
      "2026-11-09 19:00": {
       "poema-za-hlebarkite": "Зала Underground"
@@ -1885,8 +1862,8 @@
   },
   "sofia-th": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2027-01-13",
+   "last_ok": "2026-11-09",
+   "covered_to": "2027-01-14",
    "failing_since": null,
    "last_error": null,
    "seen": {
@@ -1895,7 +1872,7 @@
      "голяма сцена",
      "камерна сцена"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-16": "19:00/2",
      "2026-10-17": "19:00/2",
@@ -1914,11 +1891,8 @@
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 19:00": {
-      "ne-svikva-s-tamnoto-okoto-koreni": "Голяма сцена"
-     },
      "2026-11-10 19:00": {
       "uzhasnite-roditeli": "Камерна сцена"
      },
@@ -2101,8 +2075,8 @@
   },
   "tba": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2027-01-13",
+   "last_ok": "2026-11-09",
+   "covered_to": "2027-01-14",
    "failing_since": null,
    "last_error": null,
    "seen": {
@@ -2112,7 +2086,7 @@
      "камерна сцена \"миракъл\"",
      "сцена-клуб \"максим\""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-13": "19:30/2 19:30/3",
      "2026-10-14": "19:00/1 19:30/3",
@@ -2146,15 +2120,13 @@
      "2026-11-12": "19:00/1 19:30/3",
      "2026-11-13": "19:00/1 19:30/3",
      "2026-11-14": "19:00/1",
-     "2026-11-15": "19:00/1"
+     "2026-11-15": "19:00/1",
+     "2026-11-16": "19:00/1"
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 19:00": {
-      "nie-duhovata-muzika-gostuva-rodopski-tea": "Голяма сцена"
-     },
      "2026-11-09 19:00": {
       "priklyucheniyata-na-dobriya-voynik-shvey": "Голяма сцена"
      },
@@ -2208,7 +2180,7 @@
       "seks-narkotici-rokendrol": "Голяма сцена"
      },
      "2026-11-19 19:30": {
-      "vik-ot-istoriyata-ekaterina-karavelova": "Камерна сцена \"МИРАКЪЛ\""
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-11-20 19:00": {
       "pet-zheni-v-ednakvi-rokli": "Голяма сцена"
@@ -2232,7 +2204,7 @@
       "baldahinat": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-11-25 19:30": {
-      "vik-ot-istoriyata-ekaterina-karavelova": "Камерна сцена \"МИРАКЪЛ\""
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-11-26 19:00": {
       "madam-bovari-gostuva-dt-yambol": "Голяма сцена"
@@ -2248,7 +2220,7 @@
       "dve-obikolki": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-11-28 19:00": {
-      "gnyav": "Голяма сцена"
+      "gnyav-po-stivan-king": "Голяма сцена"
      },
      "2026-11-28 19:30": {
       "baseynat": "Камерна сцена \"МИРАКЪЛ\"",
@@ -2273,7 +2245,7 @@
       "hotel-mezhdu-toya-i-onya-svyat": "Голяма сцена"
      },
      "2026-12-03 19:30": {
-      "vik-ot-istoriyata-ekaterina-karavelova": "Камерна сцена \"МИРАКЪЛ\"",
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\"",
       "urok-po-balgarski": "сцена-клуб \"МаксиМ\""
      },
      "2026-12-04 19:00": {
@@ -2304,10 +2276,10 @@
       "baldahinat": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-12-09 19:00": {
-      "gnyav": "Голяма сцена"
+      "gnyav-po-stivan-king": "Голяма сцена"
      },
      "2026-12-09 19:30": {
-      "vik-ot-istoriyata-ekaterina-karavelova": "Камерна сцена \"МИРАКЪЛ\"",
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\"",
       "urok-po-balgarski": "сцена-клуб \"МаксиМ\""
      },
      "2026-12-10 19:00": {
@@ -2349,10 +2321,10 @@
       "baseynat": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-12-18 19:00": {
-      "gnyav": "Голяма сцена"
+      "gnyav-po-stivan-king": "Голяма сцена"
      },
      "2026-12-18 19:30": {
-      "vik-ot-istoriyata-ekaterina-karavelova": "Камерна сцена \"МИРАКЪЛ\""
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\""
      },
      "2026-12-19 19:00": {
       "nozhica-trepach": "Голяма сцена"
@@ -2383,21 +2355,151 @@
      },
      "2026-12-23 19:00": {
       "sirano-dyo-berzherak": "Голяма сцена"
+     },
+     "2027-01-06 19:00": {
+      "seks-narkotici-rokendrol": "Голяма сцена"
+     },
+     "2027-01-06 19:30": {
+      "mizantrop": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-07 19:00": {
+      "cherna-komediya": "Голяма сцена"
+     },
+     "2027-01-07 19:30": {
+      "mechtata-na-idiotkata": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-08 19:00": {
+      "evridika": "Голяма сцена"
+     },
+     "2027-01-08 19:30": {
+      "baldahinat": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-09 19:00": {
+      "hotel-mezhdu-toya-i-onya-svyat": "Голяма сцена"
+     },
+     "2027-01-09 19:30": {
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-10 19:00": {
+      "kafe-s-pretenciya": "Голяма сцена"
+     },
+     "2027-01-10 19:30": {
+      "mizantrop": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-11 19:00": {
+      "rodnini-gostuva-dkt-haskovo": "Голяма сцена"
+     },
+     "2027-01-12 19:00": {
+      "gnyav-po-stivan-king": "Голяма сцена"
+     },
+     "2027-01-12 19:30": {
+      "baseynat": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-13 19:00": {
+      "zhelezniyat-svetilnik": "Голяма сцена"
+     },
+     "2027-01-13 19:30": {
+      "urok-po-balgarski": "сцена-клуб \"МаксиМ\"",
+      "chastna-prozhekciya": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-14 19:00": {
+      "sirano-dyo-berzherak": "Голяма сцена"
+     },
+     "2027-01-14 19:30": {
+      "istinata-ili-se-osmelyavash": "сцена-клуб \"МаксиМ\"",
+      "mechtata-na-idiotkata": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-15 19:30": {
+      "glas": "сцена-клуб \"МаксиМ\"",
+      "dve-obikolki": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-16 19:30": {
+      "chastna-prozhekciya": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-17 19:00": {
+      "pet-zheni-v-ednakvi-rokli": "Голяма сцена"
+     },
+     "2027-01-17 19:30": {
+      "baldahinat": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-19 19:00": {
+      "kafe-s-pretenciya": "Голяма сцена"
+     },
+     "2027-01-19 19:30": {
+      "vremeto": "сцена-клуб \"МаксиМ\""
+     },
+     "2027-01-20 19:00": {
+      "nozhica-trepach": "Голяма сцена"
+     },
+     "2027-01-21 19:30": {
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-22 19:00": {
+      "stapka-po-stapka": "Голяма сцена"
+     },
+     "2027-01-23 19:00": {
+      "mnogo-shum-za-nishto": "Голяма сцена"
+     },
+     "2027-01-23 19:30": {
+      "glas": "сцена-клуб \"МаксиМ\""
+     },
+     "2027-01-24 19:00": {
+      "kolko-e-vazhno-da-badesh-seriozen": "Голяма сцена"
+     },
+     "2027-01-24 19:30": {
+      "ekaterina-karavelova-vik-ot-istoriyata": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-25 19:00": {
+      "seks-narkotici-rokendrol": "Голяма сцена"
+     },
+     "2027-01-26 19:30": {
+      "urok-po-balgarski": "сцена-клуб \"МаксиМ\""
+     },
+     "2027-01-27 19:00": {
+      "solunskite-atentatori": "Голяма сцена"
+     },
+     "2027-01-27 19:30": {
+      "vremeto": "сцена-клуб \"МаксиМ\""
+     },
+     "2027-01-28 19:00": {
+      "hamlet": "Голяма сцена"
+     },
+     "2027-01-28 19:30": {
+      "istinata-ili-se-osmelyavash": "сцена-клуб \"МаксиМ\""
+     },
+     "2027-01-29 19:00": {
+      "pleme": "Голяма сцена"
+     },
+     "2027-01-29 19:30": {
+      "baseynat": "Камерна сцена \"МИРАКЪЛ\"",
+      "urok-po-balgarski": "сцена-клуб \"МаксиМ\""
+     },
+     "2027-01-30 19:00": {
+      "feyk": "Голяма сцена"
+     },
+     "2027-01-30 19:30": {
+      "dve-obikolki": "Камерна сцена \"МИРАКЪЛ\""
+     },
+     "2027-01-31 19:00": {
+      "gnyav-po-stivan-king": "Голяма сцена"
+     },
+     "2027-01-31 19:30": {
+      "mechtata-na-idiotkata": "Камерна сцена \"МИРАКЪЛ\""
      }
     }
    }
   },
   "th199": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2026-11-18",
+   "last_ok": "2026-11-09",
+   "covered_to": "2026-11-20",
    "failing_since": null,
    "last_error": null,
    "seen": {
     "stages": [
      ""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-12": "19:30/0",
      "2026-10-14": "19:30/0",
@@ -2432,13 +2534,14 @@
      "2026-11-12": "19:30/0",
      "2026-11-13": "19:30/0",
      "2026-11-14": "11:30/0 19:30/0",
-     "2026-11-15": "11:30/0 15:00/0 19:30/0"
+     "2026-11-15": "11:30/0 15:00/0 19:30/0",
+     "2026-11-16": "19:30/0"
     }
    }
   },
   "toplo": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-30",
    "failing_since": null,
    "last_error": null,
@@ -2450,7 +2553,7 @@
      "открит театър",
      "сцена бар"
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-13": "19:00/2 20:00/4",
      "2026-10-14": "19:00/2",
@@ -2482,22 +2585,13 @@
      "2026-11-12": "20:00/4",
      "2026-11-13": "19:30/4",
      "2026-11-14": "10:30/1 19:00/2 20:00/4",
-     "2026-11-15": "19:00/2 19:30/1"
+     "2026-11-15": "19:00/2 19:30/1",
+     "2026-11-16": "19:30/1"
     }
    },
    "halls": {
-    "read": "2026-11-08",
+    "read": "2026-11-09",
     "rows": {
-     "2026-11-08 16:30": {
-      "kasometrazhen-konkurs-sinelibri-2026": "Зала 1"
-     },
-     "2026-11-08 19:00": {
-      "pticha-zemya": "Зала 2",
-      "yuli-juli-sinelibri-2026": "Зала 1"
-     },
-     "2026-11-08 20:00": {
-      "kratki-formi-hahaha-impro-teatar": "Сцена бар"
-     },
      "2026-11-10 19:00": {
       "anna-nepopravimata": "Зала 2"
      },
@@ -2705,14 +2799,14 @@
   },
   "tsentralni-hali": {
    "source": "festival",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-17",
    "failing_since": null,
    "last_error": null
   },
   "vazrazhdane": {
    "source": "official",
-   "last_ok": "2026-11-08",
+   "last_ok": "2026-11-09",
    "covered_to": "2026-11-29",
    "failing_since": null,
    "last_error": null,
@@ -2720,7 +2814,7 @@
     "stages": [
      ""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-14": "19:00/0",
      "2026-10-15": "19:00/0",
@@ -2752,22 +2846,22 @@
   },
   "vlaikova": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2026-11-20",
+   "last_ok": "2026-11-09",
+   "covered_to": "2026-11-22",
    "failing_since": null,
    "last_error": null
   },
   "zad-kanala": {
    "source": "official",
-   "last_ok": "2026-11-08",
-   "covered_to": "2027-01-13",
+   "last_ok": "2026-11-09",
+   "covered_to": "2027-01-14",
    "failing_since": null,
    "last_error": null,
    "seen": {
     "stages": [
      ""
     ],
-    "observed": "2026-10-12..2026-11-15",
+    "observed": "2026-10-12..2026-11-16",
     "days": {
      "2026-10-14": "19:00/0",
      "2026-10-15": "19:00/0",
@@ -2798,10 +2892,11 @@
      "2026-11-12": "19:00/0",
      "2026-11-13": "19:00/0",
      "2026-11-14": "19:00/0",
-     "2026-11-15": "19:00/0"
+     "2026-11-15": "19:00/0",
+     "2026-11-16": "19:00/0"
     }
    }
   }
  },
- "updated": "2026-11-08T03:24:53+02:00"
+ "updated": "2026-11-09T03:25:10+02:00"
 }

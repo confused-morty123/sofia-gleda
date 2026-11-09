@@ -17,36 +17,31 @@
  {
   "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 22 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 21 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 213/285 ok, 72 missing IMDb ratings"
+  "message": "OMDb: 213/287 ok, 74 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 517/525 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (17 days)"
+  "message": "theatre posters: 504/508 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (18 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.5 % -> 94.5 %, films 92.6 % -> 92.6 %; attached 0; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, only an aggregator's image (the film does not link that page) 9, own page has no usable image 8, no own page linked 7 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.5 % -> 94.5 %, films 93.3 % -> 93.3 %; attached 0; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, own page has no usable image 10, only an aggregator's image (the film does not link that page) 7, own page's images rejected by the poster policy 5 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 496/525 (94.5 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, clean-girl-fat-festival, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king; 518/525 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 480/508 (94.5 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, clean-girl-fat-festival, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king; 504/508 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 174/188 (92.6 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kasometrazhen-konkurs, kodat-na-balgarite, kotki-v-muzeya-2-sakrovishtata-na-egipet, kucheto-na-zlatyu, naza, polyusi, prodavach-na-nadezhda, smisal-film-za-ikonomikata-na-blagosastoyanieto, sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar- — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
- },
- {
-  "level": "warning",
-  "venue": "publish-gate",
-  "message": "5c4 ratings WARNING: 18 film(s) lost their rt score since the last build, matched to the same TMDB film (fiord, hartien-tigar, it-s-alive-horar-film-fest-chast-iv-koloniya, levit, minoni, minotavar): a rating fetch broke and its previous values were not kept (fetch_tmdb.py keep-previous)"
+  "message": "5c2 poster coverage (films, own image): 153/164 (93.3 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, naza, polyusi, prodavach-na-nadezhda, smisal-film-za-ikonomikata-na-blagosastoyanieto, sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-, velopohodat-kam-cop-31, vlyavo-ot-patya-london-kalkuta — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

@@ -1,34 +1,34 @@
-# Poster health, 2026-11-08
+# Poster health, 2026-11-09
 
-- Films: 174/188 (92.6 %) show their own poster.
-- Plays: 496/525 (94.5 %) show their own poster or a production photo from their own page (518 display some image).
-- Target: 95 % each. This run attached: film already has a poster 6, poster fix: film nothing 3, poster fix: show nothing 21, show nothing 2, show poster 2.
+- Films: 153/164 (93.3 %) show their own poster.
+- Plays: 480/508 (94.5 %) show their own poster or a production photo from their own page (504 display some image).
+- Target: 95 % each. This run attached: film already has a poster 4, poster fix: film nothing 3, poster fix: show nothing 23, show nothing 1.
 
 ## Plays per theatre
 
 | theatre | own image | missing |
 |---|---|---|
 | artvent | 22/22 | 0 |
-| atelie313 | 18/18 | 0 |
-| citymark | 11/11 | 0 |
+| atelie313 | 17/17 | 0 |
+| citymark | 10/10 | 0 |
 | iam | 8/8 | 0 |
-| kuklen | 24/25 | 1 |
-| mladezhki | 34/47 | 13 |
+| kuklen | 22/23 | 1 |
+| mladezhki | 31/44 | 13 |
 | natfiz | 8/9 | 1 |
 | national | 70/70 | 0 |
 | salzaismyah | 44/44 | 0 |
 | satira | 43/44 | 1 |
 | sfumato | 25/26 | 1 |
 | sofia-th | 16/16 | 0 |
-| tba | 37/41 | 4 |
-| th199 | 38/41 | 3 |
-| toplo | 49/53 | 4 |
-| vazrazhdane | 28/28 | 0 |
+| tba | 34/37 | 3 |
+| th199 | 37/40 | 3 |
+| toplo | 46/50 | 4 |
+| vazrazhdane | 26/26 | 0 |
 | zad-kanala | 21/22 | 1 |
 
 ## Plays without their own image
 
-### unverified: no record of the page this file came from (22)
+### unverified: no record of the page this file came from (24)
 - `5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo`: tried https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden (https://toplocentrala.bg/attachments/Event/1225/main/Acoustic-live-2_thumb-detai: 851x315, not usable as a key image)
 - `az-foyerbah`: tried https://theatre.art.bg/x_5097_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `az-se-kazvah`: tried https://toplocentrala.bg/program/performance/az-se-kazvah (https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thum: 900x368, not usable as a key image)
@@ -38,6 +38,8 @@
 - `clean-girl-fat-festival`: tried no own page linked (no own page linked)
 - `dekameron-lyubov-i-smart-po-bokacho`: tried https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/ (no usable image on the page)
 - `dnevnikat-na-edin-lud-2`: tried http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097 (no usable image on the page)
+- `ekaterina-karavelova-vik-ot-istoriyata`: tried https://www.tba.art.bg/екатерина-каравелова-вик-от-историята___8076 (no usable image on the page)
+- `gnyav-po-stivan-king`: tried https://www.tba.art.bg/гняв-по-стивън-кинг___8075 (no usable image on the page)
 - `insert-coin-player-one`: tried https://toplocentrala.bg/program/performance/insert-coin-player-one (no usable image on the page)
 - `ivanovden`: tried no own page linked (no own page linked)
 - `kiki-i-bozo`: tried https://theatre.art.bg/кики-и-бозо_7339_8_20 (https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg: not fetched)
@@ -52,31 +54,25 @@
 - `sablechi-se-za-vecherya`: tried https://theatre.art.bg/x_5963_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `spetsialni-povodi`: tried https://theatre.art.bg/x_4673_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 
-### no image: the generated art shows (7)
+### no image: the generated art shows (4)
 - `dalgiyat-pat-na-denya-kam-noshtta`: tried https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20 (no usable image on the page)
-- `ekaterina-karavelova-vik-ot-istoriyata`: tried no own page linked (no own page linked)
-- `gnyav-po-stivan-king`: tried no own page linked (no own page linked)
 - `igra-na-kotki`: tried https://zadkanala.bg/spektakli/igra-na-kotki (no usable image on the page)
 - `kontsert-na-pim-pam`: tried https://satirata.bg/program (the page's headings do not name the title: not used (https://satirata.bg/program))
 - `magichna-nosht-predi-koleda`: tried https://theatre.art.bg/x_8103_10_20 (sofiapuppet.com not read (robots.txt blocks ClaudeBot): the same production on theatre.art.bg)
-- `urok-po-balgarski-po-iv-vazov`: tried no own page linked (no own page linked)
 
 
 ## Films without their own image
 
-### unverified: an aggregator's image, and the film does not link its page (9)
+### unverified: an aggregator's image, and the film does not link its page (7)
 - `bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: tried no own page linked
-- `dzhambo-magicheskoto-priklyuchenie`: tried no own page linked
 - `hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: tried no own page linked
 - `kodat-na-balgarite`: tried no own page linked
-- `kotki-v-muzeya-2-sakrovishtata-na-egipet`: tried no own page linked
 - `kucheto-na-zlatyu`: tried no own page linked
 - `naza`: tried no own page linked
 - `smisal-film-za-ikonomikata-na-blagosastoyanieto`: tried no own page linked
 - `vlyavo-ot-patya-london-kalkuta`: tried no own page linked
 
-### no image: the generated art shows (5)
-- `kasometrazhen-konkurs`: tried no own page linked (epaygo.bg is a ticket page, not the title's page)
+### no image: the generated art shows (4)
 - `polyusi`: tried https://domnakinoto.com/polyusi-movie7436.html?a= (no usable image on the page)
 - `prodavach-na-nadezhda`: tried https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/ (no usable image on the page)
 - `sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-`: tried no own page linked (embed.urboapp.com is a ticket page, not the title's page)
@@ -85,8 +81,8 @@
 ## Diagnostic and fix pass
 
 - Triggered by: shows, films under 95 %.
-- Coverage before -> after: shows 94.5 % -> 94.5 %; films 92.6 % -> 92.6 %.
-- Read 24 title(s), attached 0, retried 0; 38 request(s), 0 refused by robots.txt, 62.6 s.
+- Coverage before -> after: shows 94.5 % -> 94.5 %; films 93.3 % -> 93.3 %.
+- Read 26 title(s), attached 0, retried 0; 42 request(s), 0 refused by robots.txt, 66.9 s.
 - Network: ok.
 
 ### Missing titles by cause
@@ -94,21 +90,18 @@
 | cause | plays | films |
 |---|---|---|
 | own page blocked (robots.txt or a bot challenge; not bypassed) | 10 | 0 |
-| only an aggregator's image (the film does not link that page) | 0 | 9 |
-| own page has no usable image | 5 | 3 |
-| no own page linked | 7 | 0 |
+| own page has no usable image | 7 | 3 |
+| only an aggregator's image (the film does not link that page) | 0 | 7 |
 | own page's images rejected by the poster policy | 5 | 0 |
-| only a ticket page linked, not the title's page | 0 | 2 |
-| own page or its image could not be fetched | 1 | 0 |
+| no own page linked | 4 | 0 |
+| only a ticket page linked, not the title's page | 0 | 1 |
 | the linked page is not the title's (redirect, home page or another title) | 1 | 0 |
+| own page or its image could not be fetched | 1 | 0 |
 
 - `show:clean-girl-fat-festival`: no own page linked (the programme links no page for this title)
-- `show:ekaterina-karavelova-vik-ot-istoriyata`: no own page linked (the programme links no page for this title)
-- `show:gnyav-po-stivan-king`: no own page linked (the programme links no page for this title)
 - `show:ivanovden`: no own page linked (the programme links no page for this title)
 - `show:kuche-na-ime-kote`: no own page linked (the programme links no page for this title)
 - `show:lazaritsa`: no own page linked (the programme links no page for this title)
-- `show:urok-po-balgarski-po-iv-vazov`: no own page linked (the programme links no page for this title)
 - `show:az-foyerbah`: own page blocked (robots.txt or a bot challenge; not bypassed) (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image)
 - `show:bremenskite-muzikanti`: own page blocked (robots.txt or a bot challenge; not bypassed) (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image)
 - `show:buratino-2`: own page blocked (robots.txt or a bot challenge; not bypassed) (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image)
@@ -122,6 +115,8 @@
 - `show:dalgiyat-pat-na-denya-kam-noshtta`: own page has no usable image (no usable image on the page)
 - `show:dekameron-lyubov-i-smart-po-bokacho`: own page has no usable image (no usable image on the page)
 - `show:dnevnikat-na-edin-lud-2`: own page has no usable image (no usable image on the page)
+- `show:ekaterina-karavelova-vik-ot-istoriyata`: own page has no usable image (no usable image on the page)
+- `show:gnyav-po-stivan-king`: own page has no usable image (no usable image on the page)
 - `show:igra-na-kotki`: own page has no usable image (no usable image on the page)
 - `show:insert-coin-player-one`: own page has no usable image (no usable image on the page)
 - `show:kiki-i-bozo`: own page or its image could not be fetched (https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg: not fetched (gone: HTTP 404))
@@ -131,13 +126,10 @@
 - `show:kotarakat-v-chizmi`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image)
 - `show:mezhdunaroden-simpozium-melba`: own page's images rejected by the poster policy (https://toplocentrala.bg/attachments/Event/1213/main/Melba-14-11-2026_thumb-deta: 900x342, not usable as a key image)
 - `show:kontsert-na-pim-pam`: the linked page is not the title's (redirect, home page or another title) (the page's headings do not name the title: not used (https://satirata.bg/program))
-- `film:kasometrazhen-konkurs`: only a ticket page linked, not the title's page (epaygo.bg is a ticket page, not the title's page)
 - `film:sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-`: only a ticket page linked, not the title's page (embed.urboapp.com is a ticket page, not the title's page)
 - `film:bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:dzhambo-magicheskoto-priklyuchenie`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kodat-na-balgarite`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:kotki-v-muzeya-2-sakrovishtata-na-egipet`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kucheto-na-zlatyu`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:naza`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:smisal-film-za-ikonomikata-na-blagosastoyanieto`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
