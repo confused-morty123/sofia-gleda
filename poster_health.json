@@ -1,7 +1,7 @@
 {
  "before": {
-  "films": 93.3,
-  "shows": 94.5
+  "films": 93.9,
+  "shows": 94.1
  },
  "below_target": [
   "films",
@@ -11,31 +11,31 @@
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 121,
+   "TMDB poster": 123,
    "own page: key": 1,
-   "own page: poster": 4,
+   "own page: poster": 3,
    "the film's programme page": 27
   },
-  "pct": 93.3,
+  "pct": 93.9,
   "upcoming": 164,
-  "with": 153
+  "with": 154
  },
  "fix": {
   "after": {
-   "films": 93.3,
+   "films": 93.9,
    "shows": 94.5
   },
   "attached": 0,
-  "attempted": 26,
+  "attempted": 1,
   "before": {
-   "films": 93.3,
+   "films": 93.9,
    "shows": 94.5
   },
   "broken_parsers": [],
   "causes": {
    "films": {
     "only a ticket page linked, not the title's page": 1,
-    "only an aggregator's image (the film does not link that page)": 7,
+    "only an aggregator's image (the film does not link that page)": 6,
     "own page has no usable image": 3
    },
    "shows": {
@@ -50,14 +50,13 @@
   "causes_before": {
    "films": {
     "only a ticket page linked, not the title's page": 1,
-    "only an aggregator's image (the film does not link that page)": 7,
+    "only an aggregator's image (the film does not link that page)": 6,
     "own page has no usable image": 3
    },
    "shows": {
     "no own page linked": 4,
-    "not read from its own page yet": 1,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
-    "own page has no usable image": 6,
+    "own page has no usable image": 7,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 5,
     "the linked page is not the title's (redirect, home page or another title)": 1
@@ -65,24 +64,23 @@
   },
   "counts": {
    "films": {
-    "after": "153/164",
-    "before": "153/164"
+    "after": "154/164",
+    "before": "154/164"
    },
    "shows": {
-    "after": "480/508",
-    "before": "480/508"
+    "after": "482/510",
+    "before": "482/510"
    }
   },
   "date": "2026-11-09",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 42,
+  "requests": 4,
   "retried": [],
-  "seconds": 66.9,
+  "seconds": 7.5,
   "summary": {
-   "film nothing": 3,
-   "show nothing": 23
+   "show nothing": 1
   },
   "titles": {
    "films": {
@@ -99,10 +97,6 @@
      "unverified: an aggregator's image, and the film does not link its page"
     ],
     "kucheto-na-zlatyu": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "naza": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -253,10 +247,9 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 4,
-  "poster fix: film nothing": 3,
-  "poster fix: show nothing": 23,
-  "show nothing": 1
+  "film already has a poster": 3,
+  "poster fix: show nothing": 1,
+  "show poster": 2
  },
  "missing": {
   "films": {
@@ -264,7 +257,6 @@
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
    "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
    "kucheto-na-zlatyu": "unverified: an aggregator's image, and the film does not link its page",
-   "naza": "unverified: an aggregator's image, and the film does not link its page",
    "polyusi": "no image: the generated art shows",
    "prodavach-na-nadezhda": "no image: the generated art shows",
    "smisal-film-za-ikonomikata-na-blagosastoyanieto": "unverified: an aggregator's image, and the film does not link its page",
@@ -311,8 +303,8 @@
   "kuklen": "22/23",
   "mladezhki": "31/44",
   "natfiz": "8/9",
-  "national": "70/70",
-  "salzaismyah": "44/44",
+  "national": "71/71",
+  "salzaismyah": "45/45",
   "satira": "43/44",
   "sfumato": "25/26",
   "sofia-th": "16/16",
@@ -326,12 +318,12 @@
   "how": {
    "TMDB poster": 1,
    "own page: key": 195,
-   "own page: poster": 284
+   "own page: poster": 286
   },
   "pct": 94.5,
-  "upcoming": 508,
-  "with": 480
+  "upcoming": 510,
+  "with": 482
  },
- "shows_displayed": 504,
+ "shows_displayed": 506,
  "target": 95.0
 }

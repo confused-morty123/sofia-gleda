@@ -22,26 +22,26 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 213/287 ok, 74 missing IMDb ratings"
+  "message": "OMDb: 216/291 ok, 75 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 504/508 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (18 days)"
+  "message": "theatre posters: 506/510 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (18 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.5 % -> 94.5 %, films 93.3 % -> 93.3 %; attached 0; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, own page has no usable image 10, only an aggregator's image (the film does not link that page) 7, own page's images rejected by the poster policy 5 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.5 % -> 94.5 %, films 93.9 % -> 93.9 %; attached 0; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, own page has no usable image 10, only an aggregator's image (the film does not link that page) 6, own page's images rejected by the poster policy 5 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 480/508 (94.5 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, clean-girl-fat-festival, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king; 504/508 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 482/510 (94.5 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, clean-girl-fat-festival, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king; 506/510 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 153/164 (93.3 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, naza, polyusi, prodavach-na-nadezhda, smisal-film-za-ikonomikata-na-blagosastoyanieto, sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-, velopohodat-kam-cop-31, vlyavo-ot-patya-london-kalkuta — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 154/164 (93.9 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, polyusi, prodavach-na-nadezhda, smisal-film-za-ikonomikata-na-blagosastoyanieto, sofiyskite-kvartali-i-prozhektsiya-na-nashiyat-kvartal-tsar-, velopohodat-kam-cop-31, vlyavo-ot-patya-london-kalkuta — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

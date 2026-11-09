@@ -1,8 +1,8 @@
 # Poster health, 2026-11-09
 
-- Films: 153/164 (93.3 %) show their own poster.
-- Plays: 480/508 (94.5 %) show their own poster or a production photo from their own page (504 display some image).
-- Target: 95 % each. This run attached: film already has a poster 4, poster fix: film nothing 3, poster fix: show nothing 23, show nothing 1.
+- Films: 154/164 (93.9 %) show their own poster.
+- Plays: 482/510 (94.5 %) show their own poster or a production photo from their own page (506 display some image).
+- Target: 95 % each. This run attached: film already has a poster 3, poster fix: show nothing 1, show poster 2.
 
 ## Plays per theatre
 
@@ -15,8 +15,8 @@
 | kuklen | 22/23 | 1 |
 | mladezhki | 31/44 | 13 |
 | natfiz | 8/9 | 1 |
-| national | 70/70 | 0 |
-| salzaismyah | 44/44 | 0 |
+| national | 71/71 | 0 |
+| salzaismyah | 45/45 | 0 |
 | satira | 43/44 | 1 |
 | sfumato | 25/26 | 1 |
 | sofia-th | 16/16 | 0 |
@@ -63,12 +63,11 @@
 
 ## Films without their own image
 
-### unverified: an aggregator's image, and the film does not link its page (7)
+### unverified: an aggregator's image, and the film does not link its page (6)
 - `bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: tried no own page linked
 - `hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: tried no own page linked
 - `kodat-na-balgarite`: tried no own page linked
 - `kucheto-na-zlatyu`: tried no own page linked
-- `naza`: tried no own page linked
 - `smisal-film-za-ikonomikata-na-blagosastoyanieto`: tried no own page linked
 - `vlyavo-ot-patya-london-kalkuta`: tried no own page linked
 
@@ -81,8 +80,8 @@
 ## Diagnostic and fix pass
 
 - Triggered by: shows, films under 95 %.
-- Coverage before -> after: shows 94.5 % -> 94.5 %; films 93.3 % -> 93.3 %.
-- Read 26 title(s), attached 0, retried 0; 42 request(s), 0 refused by robots.txt, 66.9 s.
+- Coverage before -> after: shows 94.5 % -> 94.5 %; films 93.9 % -> 93.9 %.
+- Read 1 title(s), attached 0, retried 0; 4 request(s), 0 refused by robots.txt, 7.5 s.
 - Network: ok.
 
 ### Missing titles by cause
@@ -91,12 +90,12 @@
 |---|---|---|
 | own page blocked (robots.txt or a bot challenge; not bypassed) | 10 | 0 |
 | own page has no usable image | 7 | 3 |
-| only an aggregator's image (the film does not link that page) | 0 | 7 |
+| only an aggregator's image (the film does not link that page) | 0 | 6 |
 | own page's images rejected by the poster policy | 5 | 0 |
 | no own page linked | 4 | 0 |
-| only a ticket page linked, not the title's page | 0 | 1 |
-| the linked page is not the title's (redirect, home page or another title) | 1 | 0 |
 | own page or its image could not be fetched | 1 | 0 |
+| the linked page is not the title's (redirect, home page or another title) | 1 | 0 |
+| only a ticket page linked, not the title's page | 0 | 1 |
 
 - `show:clean-girl-fat-festival`: no own page linked (the programme links no page for this title)
 - `show:ivanovden`: no own page linked (the programme links no page for this title)
@@ -131,7 +130,6 @@
 - `film:hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kodat-na-balgarite`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kucheto-na-zlatyu`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:naza`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:smisal-film-za-ikonomikata-na-blagosastoyanieto`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:vlyavo-ot-patya-london-kalkuta`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:polyusi`: own page has no usable image (no usable image on the page)

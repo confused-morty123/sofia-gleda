@@ -705,6 +705,9 @@
   },
   "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/ed6ef7335dafacbfa37ee374723733c83264b3d0.jpeg": {
    "https://www.kinoarena.com/bg/movie/dzhumbo-magicheskoto-priklyuchenie": "джъмбо магическото приключение"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/5bbc5cf7b60d60bd4da0280c07a46321.jpg": {
+   "https://www.salzaismyah.bg/site/play/168": "мъжът на жена ми"
   }
  },
  "shows": {
@@ -1445,6 +1448,18 @@
    "page": "https://theatre.art.bg/буратино_5015_8_20",
    "path": "posters/buratino.jpg",
    "w": 800
+  },
+  "buryata-the-tempest": {
+   "checked": "2026-11-09",
+   "h": 310,
+   "how": "the theatre's poster slot",
+   "img": "https://www.nationaltheatre.bg/storage/shows/1617a47662f196dccfd879b4c0c064673a7.jpg",
+   "kind": "poster",
+   "md5": "9450ebfc69929604c9949148a0a6e881",
+   "page": "https://www.nationaltheatre.bg/bg/predstavlenie/buryata",
+   "path": "posters/buryata-the-tempest.jpg",
+   "src_md5": "50ccffcc87280c3e78087b83a372d342",
+   "w": 220
   },
   "bushon-za-smyana": {
    "checked": "2026-11-04",
@@ -3473,6 +3488,18 @@
    "md5": "2924247a4805d2537b66307e2fd0a05d",
    "page": "https://www.salzaismyah.bg/site/play/740",
    "path": "posters/mazgala-musketar-v-labirinta-na-vremeto.jpg",
+   "w": 600
+  },
+  "mazhat-na-zhena-mi": {
+   "checked": "2026-11-09",
+   "h": 835,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/5bbc5cf7b60d60bd4da0280c07a46321.jpg",
+   "kind": "poster",
+   "md5": "ce312d7a6e46e6838f4c37fb9581c6f8",
+   "page": "https://www.salzaismyah.bg/site/play/168",
+   "path": "posters/mazhat-na-zhena-mi.jpg",
+   "src_md5": "0209f42352fac1dbf2b5b92b5014dcd4",
    "w": 600
   },
   "mazhatmievinoven": {

@@ -14,6 +14,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"27": {
+"n": "Eric Roth",
+"bg": "Ерик Рот",
+"t": "2026-11-09"
+},
 "31": {
 "n": "Tom Hanks",
 "bg": "Том Ханкс",
@@ -1033,6 +1038,21 @@
 "n": "Henri Alekan",
 "bg": null,
 "t": "2026-10-31"
+},
+"2332": {
+"n": "Christian Petzold",
+"bg": null,
+"t": "2026-11-09"
+},
+"2337": {
+"n": "Hans Fromm",
+"bg": null,
+"t": "2026-11-09"
+},
+"2340": {
+"n": "Barbara Auer",
+"bg": null,
+"t": "2026-11-09"
 },
 "2419": {
 "n": "Jean-Pierre Jeunet",
@@ -3104,6 +3124,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"25072": {
+"n": "Oscar Isaac",
+"bg": "Оскар Айзък",
+"t": "2026-11-09"
+},
 "25338": {
 "n": "Nicolas Errèra",
 "bg": null,
@@ -3318,6 +3343,11 @@
 "n": "Gaetano Bruno",
 "bg": null,
 "t": "2026-10-23"
+},
+"35382": {
+"n": "Matthias Brandt",
+"bg": null,
+"t": "2026-11-09"
 },
 "35894": {
 "n": "Julien Frison",
@@ -5334,6 +5364,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"125825": {
+"n": "Benjamin Netanyahu",
+"bg": "Бенямин Нетаняху",
+"t": "2026-11-09"
+},
 "125977": {
 "n": "Marc Fitoussi",
 "bg": null,
@@ -6308,6 +6343,11 @@
 "n": "Bárbara Lennie",
 "bg": null,
 "t": "2026-10-24"
+},
+"894116": {
+"n": "Paula Beer",
+"bg": null,
+"t": "2026-11-09"
 },
 "907352": {
 "n": "Thomas Schubert",
@@ -7459,6 +7499,11 @@
 "bg": null,
 "t": "2026-11-06"
 },
+"1257180": {
+"n": "Roman Kurtsyn",
+"bg": null,
+"t": "2026-11-09"
+},
 "1257335": {
 "n": "Dmitriy Mazurov",
 "bg": null,
@@ -7478,6 +7523,11 @@
 "n": "Christiaan Verbeek",
 "bg": null,
 "t": "2026-10-24"
+},
+"1265147": {
+"n": "Vasily Rovensky",
+"bg": null,
+"t": "2026-11-09"
 },
 "1266996": {
 "n": "Arturo Annecchino",
@@ -8799,6 +8849,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"1597840": {
+"n": "Enno Trebs",
+"bg": null,
+"t": "2026-11-09"
+},
 "1598096": {
 "n": "Tanya Shahova",
 "bg": "Таня Шахова",
@@ -9178,6 +9233,11 @@
 "n": "Naum Doksevski",
 "bg": null,
 "t": "2026-10-29"
+},
+"1754218": {
+"n": "Diomid Vinogradov",
+"bg": null,
+"t": "2026-11-09"
 },
 "1756104": {
 "n": "Pankaj Kumar",
@@ -9743,6 +9803,11 @@
 "n": "Alan Guichaoua",
 "bg": null,
 "t": "2026-10-25"
+},
+"2065763": {
+"n": "Fedor Derevyansky",
+"bg": null,
+"t": "2026-11-09"
 },
 "2072257": {
 "n": "Lidia Kartashova",
@@ -10544,6 +10609,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"2771664": {
+"n": "Anton Gryzlov",
+"bg": null,
+"t": "2026-11-09"
+},
 "2779976": {
 "n": "Nedjim Bouizzoul",
 "bg": null,
@@ -10634,6 +10704,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"2998357": {
+"n": "Snezhana Samokhina",
+"bg": null,
+"t": "2026-11-09"
+},
 "3001518": {
 "n": "Beth de Araújo",
 "bg": null,
@@ -10698,6 +10773,11 @@
 "n": "Kali Reis",
 "bg": null,
 "t": "2026-10-25"
+},
+"3147083": {
+"n": "Philip Froissant",
+"bg": null,
+"t": "2026-11-09"
 },
 "3153596": {
 "n": "Guitarricadelafuente",
@@ -10944,6 +11024,11 @@
 "bg": null,
 "t": "2026-10-25"
 },
+"3579525": {
+"n": "Elvira Bushtets",
+"bg": null,
+"t": "2026-11-09"
+},
 "3593390": {
 "n": "Audrey Ismaël",
 "bg": null,
@@ -11063,6 +11148,11 @@
 "n": "Giacomo Lecchi d'Alessandro",
 "bg": null,
 "t": "2026-11-04"
+},
+"3841008": {
+"n": "Daria Blokhina",
+"bg": null,
+"t": "2026-11-09"
 },
 "3842273": {
 "n": "Shun Zi",
@@ -11258,6 +11348,16 @@
 "n": "Kaisa Biryulina",
 "bg": null,
 "t": "2026-10-29"
+},
+"4487239": {
+"n": "Yuval Abraham",
+"bg": null,
+"t": "2026-11-09"
+},
+"4487240": {
+"n": "Rachel Szor",
+"bg": null,
+"t": "2026-11-09"
 },
 "4487394": {
 "n": "Tetsuhiro Ikeda",
