@@ -4339,5 +4339,38 @@
   "runtime": 122,
   "year": 1988,
   "originalTitle": "Nuovo Cinema Paradiso"
+ },
+ "marsupilami": {
+  "id": "marsupilami",
+  "bg": "МАРСУПИЛАМИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "vlaikova"
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980",
+  "bg": "Европейски кинокласики в кино „Влайкова“: ИЛЮЗИЯ | 1980",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
+ },
+ "avrora": {
+  "id": "avrora",
+  "bg": "АВРОРА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "vlaikova"
  }
 }

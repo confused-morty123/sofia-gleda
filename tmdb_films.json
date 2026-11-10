@@ -2,14 +2,14 @@
  "odiseya": {
   "matched": true,
   "tmdb_id": 1368337,
-  "poster_path": "/5rhTDKUhPYvpdQIijFIs5VoWsON.jpg",
+  "poster_path": "/krVa7rKCQb4OBfsr2LTJv4rTz5q.jpg",
   "backdrop_path": "/iDiTY1wA35YWzTmXLTtqaxtN6tc.jpg",
   "en": "The Odyssey",
   "original_title": "The Odyssey",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.0,
-  "vote_count": 4472,
+  "tmdb_vote": 8.01,
+  "vote_count": 4498,
   "via": "en",
   "q": "The Odyssey",
   "ov": "Odysseus, the legendary King of Ithaca, embarks on a long and perilous journey home following the Trojan War. Throughout his voyage, he is forced to confront the whims of gods, mythological monsters, and trials that stretch both his cunning and his humanity to the breaking point.",
@@ -60,7 +60,7 @@
    "Anne Hathaway": "Ан Хатауей",
    "Robert Pattinson": "Робърт Патинсън"
   },
-  "trend": 1
+  "trend": 2
  },
  "spider-man": {
   "matched": true,
@@ -71,8 +71,8 @@
   "original_title": "Spider-Man: Brand New Day",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.477,
-  "vote_count": 6636,
+  "tmdb_vote": 8.479,
+  "vote_count": 6640,
   "via": "en",
   "q": "Spider-Man: Brand New Day",
   "ov": "Fighting crime full-time as Spider-Man in a world that doesn't remember him—and the pressure of seeing his old friends move on without him—sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
@@ -121,7 +121,7 @@
    "Zendaya": "Зендая",
    "Michael Giacchino": "Майкъл Джакино"
   },
-  "trend": 16
+  "trend": 18
  },
  "koyota": {
   "matched": true,
@@ -132,8 +132,8 @@
   "original_title": "Coyote vs. Acme",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.204,
-  "vote_count": 1415,
+  "tmdb_vote": 8.202,
+  "vote_count": 1418,
   "via": "en",
   "q": "Coyote vs. Acme",
   "ov": "After Acme products fail him one too many times in his dogged pursuit of the Roadrunner, Wile E. Coyote decides to hire a billboard lawyer to sue the Acme Corporation.",
@@ -178,8 +178,7 @@
   "nb": {
    "Lana Condor": "Лана Кондор",
    "Luis Guzmán": "Луис Гусман"
-  },
-  "trend": 49
+  }
  },
  "maykal": {
   "matched": true,
@@ -191,7 +190,7 @@
   "orig_lang": "en",
   "tmdb_year": "2026",
   "tmdb_vote": 8.585,
-  "vote_count": 4692,
+  "vote_count": 4700,
   "via": "en",
   "q": "Michael",
   "ov": "The story of Michael Jackson, one of the most influential artists the world has ever known, and his life beyond the music. His journey from the discovery of his extraordinary talent as the lead of the Jackson Five, to the visionary artist whose creative ambition fueled a relentless pursuit to become the biggest entertainer in the world, highlighting both his life off-stage and some of the most iconic performances from his early solo career.",
@@ -238,7 +237,7 @@
    "Antoine Fuqua": "Антоан Фукуа",
    "Michael Jackson": "Майкъл Джаксън"
   },
-  "trend": 85
+  "trend": 64
  },
  "kurierat": {
   "matched": true,
@@ -299,7 +298,7 @@
    "Alan Ritchson": "Алън Ричсън",
    "Owen Wilson": "Оуен Уилсън"
   },
-  "trend": 65
+  "trend": 66
  },
  "blue-lock": {
   "matched": true,
@@ -358,8 +357,8 @@
   "original_title": "The Dog Stars",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.196,
-  "vote_count": 932,
+  "tmdb_vote": 7.198,
+  "vote_count": 941,
   "via": "en",
   "q": "The Dog Stars",
   "ov": "After the world's population has been ravaged by a pandemic, a man lives a lonesome existence in a Colorado airplane hangar with his dog and a dour gunman he has befriended. When a mysterious transmission comes through on the radio while he’s flying his old Cessna, it sparks a hunt for the provenance of the sound.",
@@ -409,7 +408,7 @@
    "Benedict Wong": "Бенедикт Уонг",
    "Harry Gregson-Williams": "Хари Грегсън-Уилямс"
   },
-  "trend": 21
+  "trend": 25
  },
  "prilozhna-2": {
   "matched": true,
@@ -420,8 +419,8 @@
   "original_title": "Practical Magic 2",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.216,
-  "vote_count": 386,
+  "tmdb_vote": 7.218,
+  "vote_count": 388,
   "via": "en",
   "q": "Practical Magic 2",
   "ov": "The Owens sisters must confront the dark curse that threatens to unravel their family once and for all.",
@@ -469,8 +468,7 @@
    "Nicole Kidman": "Никол Кидман",
    "Joey King": "Джоуи Кинг",
    "Maisie Williams": "Мейзи Уилямс"
-  },
-  "trend": 91
+  }
  },
  "insidious": {
   "matched": true,
@@ -481,8 +479,8 @@
   "original_title": "Insidious: Out of the Further",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.697,
-  "vote_count": 1032,
+  "tmdb_vote": 7.689,
+  "vote_count": 1035,
   "via": "en",
   "q": "Insidious: Out of the Further",
   "ov": "Gemma, a young mother raising her daughter in the house she grew up in, discovers she can travel into The Further, where she possesses an ability to bring what lives there back to the real world.",
@@ -522,7 +520,7 @@
   "imdb": 6.2,
   "imdbVotes": "13.2K",
   "mc": 47,
-  "trend": 57
+  "trend": 68
  },
  "pes-patrul": {
   "matched": true,
@@ -533,8 +531,8 @@
   "original_title": "PAW Patrol: The Dino Movie",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.174,
-  "vote_count": 201,
+  "tmdb_vote": 8.139,
+  "vote_count": 202,
   "via": "imdb",
   "q": "tt29356163",
   "ov": "The Paw Patrol lands on a mysterious dinosaur island after a storm, where they meet Rex, a stranded pup. When Humdinger's reckless mining triggers a volcano, the team faces their biggest rescue mission yet to save the island.",
@@ -635,7 +633,7 @@
   "nb": {
    "Jason Statham": "Джейсън Стейтъм"
   },
-  "trend": 58
+  "trend": 41
  },
  "padane-2": {
   "matched": true,
@@ -646,8 +644,8 @@
   "original_title": "Fall 2: Deadpoint",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.29,
-  "vote_count": 756,
+  "tmdb_vote": 7.3,
+  "vote_count": 758,
   "via": "en",
   "q": "Fall 2: Deadpoint",
   "ov": "On a perilous climb across Thailand's Mount Kwan, two climbers become trapped thousands of feet above the ground, where vertigo-inducing heights, sheer exposure, and impossible odds turn every moment into a fight for survival.",
@@ -701,8 +699,8 @@
   "original_title": "Terminator 2: Judgment Day",
   "orig_lang": "en",
   "tmdb_year": "1991",
-  "tmdb_vote": 8.2,
-  "vote_count": 15156,
+  "tmdb_vote": 8.177,
+  "vote_count": 15162,
   "via": "en",
   "q": "Terminator 2: Judgment Day",
   "ov": "Ten years after the events of the original, a reprogrammed T-800 is sent back in time to protect young John Connor from the shape-shifting T-1000. Together with his mother Sarah, he fights to stop Skynet from triggering a nuclear apocalypse.",
@@ -713,7 +711,7 @@
    "Трилър",
    "Фантастика"
   ],
-  "wr": "William Wisher, James Cameron",
+  "wr": "James Cameron, William Wisher",
   "mu": "Brad Fiedel",
   "dop": "Adam Greenberg",
   "countries": "France / United States of America",
@@ -762,8 +760,8 @@
   "original_title": "Cars",
   "orig_lang": "en",
   "tmdb_year": "2006",
-  "tmdb_vote": 7.063,
-  "vote_count": 15725,
+  "tmdb_vote": 7.1,
+  "vote_count": 15726,
   "via": "en",
   "q": "Cars",
   "ov": "Lightning McQueen, a hotshot rookie race car driven to succeed, discovers that life is about the journey, not the finish line, when he finds himself unexpectedly detoured in the sleepy Route 66 town of Radiator Springs. On route across the country to the big Piston Cup Championship in California to compete against two seasoned pros, McQueen gets to know the town's offbeat characters.",
@@ -774,7 +772,7 @@
    "Приключенски",
    "Комедия"
   ],
-  "wr": "Dan Fogelman, Joe Ranft, John Lasseter",
+  "wr": "John Lasseter, Jørgen Klubien, Dan Fogelman",
   "mu": "Randy Newman",
   "dop": "Jeremy Lasky, Jean-Claude Kalache",
   "countries": "United States of America",
@@ -793,8 +791,8 @@
    "Bonnie Hunt": 5149,
    "Larry the Cable Guy": 15897,
    "Cheech Marin": 11159,
+   "Jørgen Klubien": 958088,
    "Dan Fogelman": 15892,
-   "Joe Ranft": 7911,
    "Randy Newman": 7885,
    "Jeremy Lasky": 7988,
    "Jean-Claude Kalache": 7894
@@ -822,8 +820,8 @@
   "original_title": "The Devil Wears Prada 2",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.0,
-  "vote_count": 2540,
+  "tmdb_vote": 7.02,
+  "vote_count": 2544,
   "via": "en",
   "q": "The Devil Wears Prada 2",
   "ov": "Andy Sachs returns to Runway as Miranda Priestly navigates a new media landscape and Runway's position within. The duo reconnect with former assistant Emily Charlton, now the head of a luxury brand that possesses funding which could ensure Runway's survival.",
@@ -881,8 +879,8 @@
   "original_title": "Minions & Monsters",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.543,
-  "vote_count": 1384,
+  "tmdb_vote": 7.542,
+  "vote_count": 1385,
   "via": "imdb",
   "q": "tt32890033",
   "ov": "This is the rambunctious, ridiculous and totally true story of how the Minions conquered Hollywood, became movie stars, lost everything, unleashed monsters onto the world and then banded together to try and save the planet from the mayhem they had just created.",
@@ -1076,7 +1074,7 @@
   "orig_lang": "en",
   "tmdb_year": "2026",
   "tmdb_vote": 8.27,
-  "vote_count": 2838,
+  "vote_count": 2841,
   "via": "en",
   "q": "Toy Story 5",
   "ov": "When Bonnie receives a Lilypad tablet as a gift and becomes obsessed, Buzz, Woody, Jessie and the rest of the gang's jobs become exponentially harder when they have to go head to head with the all-new threat to playtime.",
@@ -1124,7 +1122,7 @@
    "Tom Hanks": "Том Ханкс",
    "Conan O'Brien": "Конан О'Брайън"
   },
-  "trend": 45
+  "trend": 43
  },
  "vayana": {
   "matched": true,
@@ -1299,8 +1297,8 @@
   "original_title": "The End of Oak Street",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.06,
-  "vote_count": 2342,
+  "tmdb_vote": 7.059,
+  "vote_count": 2345,
   "via": "en",
   "q": "The End of Oak Street",
   "ov": "After a mysterious cosmic event rips Oak Street from suburbia and transports their neighborhood to someplace unknown, the Platt family soon discovers that their very survival depends on them sticking together as they navigate their now unrecognizable surroundings.",
@@ -1347,7 +1345,7 @@
    "Ewan McGregor": "Юън Макгрегър",
    "Michael Giacchino": "Майкъл Джакино"
   },
-  "trend": 55
+  "trend": 42
  },
  "2001": {
   "matched": true,
@@ -1359,7 +1357,7 @@
   "orig_lang": "en",
   "tmdb_year": "1968",
   "tmdb_vote": 8.041,
-  "vote_count": 13123,
+  "vote_count": 13125,
   "via": "en",
   "q": "2001: A Space Odyssey",
   "ov": "Humanity finds a mysterious object buried beneath the lunar surface and sets off to find its origins with the help of HAL 9000, the world's most advanced super computer.",
@@ -1419,7 +1417,7 @@
   "original_title": "Palestine 36",
   "orig_lang": "en",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.626,
+  "tmdb_vote": 7.6,
   "vote_count": 87,
   "via": "en",
   "q": "Palestine 36",
@@ -1480,8 +1478,8 @@
   "original_title": "The Invite",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.207,
-  "vote_count": 932,
+  "tmdb_vote": 7.206,
+  "vote_count": 936,
   "via": "bg",
   "q": "Съседите отгоре",
   "tbg": "Съседите отгоре",
@@ -1526,7 +1524,8 @@
    "Olivia Wilde": "Оливия Уайлд",
    "Seth Rogen": "Сет Роугън",
    "Penélope Cruz": "Пенелопе Крус"
-  }
+  },
+  "trend": 72
  },
  "kristoferite": {
   "matched": true,
@@ -1596,7 +1595,7 @@
   "orig_lang": "es",
   "tmdb_year": "2026",
   "tmdb_vote": 6.2,
-  "vote_count": 159,
+  "vote_count": 160,
   "via": "en",
   "q": "Bitter Christmas",
   "ov": "During a long December holiday weekend, a woman, whose mother has recently died, throws herself into work as a form of escape. Her relentless pace is interrupted when a panic attack forces her to take a break.",
@@ -1766,8 +1765,8 @@
   "original_title": "The Return",
   "orig_lang": "en",
   "tmdb_year": "2024",
-  "tmdb_vote": 6.647,
-  "vote_count": 598,
+  "tmdb_vote": 6.649,
+  "vote_count": 599,
   "via": "en",
   "q": "The Return",
   "ov": "After twenty years away, Odysseus washes up on the shores of Ithaca, haggard and unrecognizable. The king has finally returned home, but much has changed in his kingdom since he left to fight in the Trojan war.",
@@ -1778,7 +1777,7 @@
    "Драма",
    "Приключенски"
   ],
-  "wr": "Edward Bond, John Collee, Uberto Pasolini",
+  "wr": "John Collee, Edward Bond, Uberto Pasolini",
   "mu": "Rachel Portman, Goffredo Gibellini",
   "dop": "Marius Panduru",
   "countries": "Greece / Italy / United Kingdom / France",
@@ -1800,8 +1799,8 @@
    "Charlie Plummer": 1440574,
    "Marwan Kenzari": 935235,
    "Claudio Santamaria": 76339,
-   "Edward Bond": 15205,
    "John Collee": 55474,
+   "Edward Bond": 15205,
    "Rachel Portman": 3562,
    "Goffredo Gibellini": 1574179,
    "Marius Panduru": 931382
@@ -1840,7 +1839,7 @@
    "Драма",
    "Семеен"
   ],
-  "wr": "Aude Py, Eddine Noel, Liane-cho Han",
+  "wr": "Liane-cho Han, Aude Py, Eddine Noel",
   "mu": "Mari Fukuhara",
   "countries": "France",
   "cc": [
@@ -1915,8 +1914,8 @@
   "original_title": "Heart of the Beast",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.293,
-  "vote_count": 516,
+  "tmdb_vote": 7.294,
+  "vote_count": 536,
   "via": "imdb",
   "q": "tt7526136",
   "ov": "After a harrowing plane crash, Special Forces officer James Belmont and his combat dog, Odin, find themselves stranded deep in the Alaskan wilderness. Together, they are forced into a brutal fight for survival against the elements.",
@@ -1960,7 +1959,7 @@
    "Brad Pitt": "Брад Пит",
    "J.K. Simmons": "Джей Кей Симънс"
   },
-  "trend": 3
+  "trend": 4
  },
  "chuzhdenecat": {
   "matched": true,
@@ -2036,8 +2035,8 @@
   "original_title": "نجوم الأمل و الألم",
   "orig_lang": "ar",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.1,
-  "vote_count": 25,
+  "tmdb_vote": 6.885,
+  "vote_count": 26,
   "via": "en",
   "q": "A Sad and Beautiful World",
   "ov": "Across three decades of passion, loss, and hope, Nino and Yasmina are bound by a magnetic relationship. Torn between love and survival, they must decide whether to build a family in Lebanon or leave their home despite tragedies.",
@@ -2190,7 +2189,7 @@
   "genres": [
    "Драма"
   ],
-  "wr": "Eskil Vogt, Joachim Trier",
+  "wr": "Joachim Trier, Eskil Vogt",
   "mu": "Hania Rani",
   "dop": "Kasper Tuxen",
   "countries": "Turkey / Norway / France / Denmark / Sweden / Germany / United Kingdom",
@@ -2362,8 +2361,8 @@
   "original_title": "Le Mage du Kremlin",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.4,
-  "vote_count": 299,
+  "tmdb_vote": 6.393,
+  "vote_count": 300,
   "via": "en",
   "q": "The Wizard of the Kremlin",
   "ov": "In the chaos of post-Soviet Russia, rising KGB officer Vladimir Putin joins forces with master manipulator Vadim Baranov to reshape life behind the Iron Curtain, using violence and deception to change the world forever.",
@@ -2418,8 +2417,8 @@
   "original_title": "Vie privée",
   "orig_lang": "fr",
   "tmdb_year": "2025",
-  "tmdb_vote": 5.495,
-  "vote_count": 293,
+  "tmdb_vote": 5.503,
+  "vote_count": 294,
   "via": "en",
   "q": "A Private Life",
   "ov": "When renowned psychiatrist Lilian Steiner learns of the sudden death of a patient, she suspects murder.  She mounts a private investigation, enlisting an odd assortment of quirky characters.",
@@ -2476,8 +2475,8 @@
   "original_title": "Parthenope",
   "orig_lang": "it",
   "tmdb_year": "2024",
-  "tmdb_vote": 6.669,
-  "vote_count": 803,
+  "tmdb_vote": 6.662,
+  "vote_count": 804,
   "via": "en",
   "q": "Parthenope",
   "ov": "Parthenope, born in the sea near Naples in 1950, is beautiful, enigmatic, and intelligent. She is shamelessly courted by many. However, beauty comes at a cost.",
@@ -2790,7 +2789,7 @@
   "original_title": "Den sidste viking",
   "orig_lang": "da",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.21,
+  "tmdb_vote": 7.2,
   "vote_count": 272,
   "via": "en",
   "q": "The Last Viking",
@@ -3008,7 +3007,7 @@
   "genres": [
    "Комедия"
   ],
-  "wr": "Anne Riitta Ciccone, Lorenzo d'Amico de Carvalho",
+  "wr": "Lorenzo d'Amico de Carvalho, Anne Riitta Ciccone",
   "dop": "Osama Abou El Khair",
   "countries": "Italy / Portugal / Serbia",
   "cc": [
@@ -3214,7 +3213,7 @@
    "Комедия",
    "Драма"
   ],
-  "wr": "Hans Ingemansson, Felix Herngren",
+  "wr": "Felix Herngren, Hans Ingemansson",
   "mu": "Matti Bye",
   "dop": "Göran Hallberg",
   "countries": "Sweden / Hungary / Croatia / Turkey / Denmark / Netherlands / United States of America / France",
@@ -3312,8 +3311,8 @@
   "original_title": "Druk",
   "orig_lang": "da",
   "tmdb_year": "2020",
-  "tmdb_vote": 7.626,
-  "vote_count": 4008,
+  "tmdb_vote": 7.624,
+  "vote_count": 4009,
   "via": "en",
   "q": "Another Round",
   "ov": "Four stagnant high school teachers decide to test out a theory that maintaining a constant level of intoxication will improve their overall lives.",
@@ -3595,7 +3594,7 @@
    "Музикален",
    "Драма"
   ],
-  "wr": "Grand Corps Malade, Mehdi Idir",
+  "wr": "Mehdi Idir, Grand Corps Malade",
   "mu": "Varda Kakon",
   "dop": "Brecht Goyvaerts",
   "countries": "Belgium / France / Bulgaria",
@@ -3610,8 +3609,8 @@
    "t": "Trailer"
   },
   "pid": {
-   "Grand Corps Malade": 1186858,
    "Mehdi Idir": 1562429,
+   "Grand Corps Malade": 1186858,
    "Tahar Rahim": 81051,
    "Bastien Bouillon": 910944,
    "Marie-Julie Baup": 99304,
@@ -3620,7 +3619,7 @@
    "Varda Kakon": 2078987,
    "Brecht Goyvaerts": 1759596
   },
-  "dir": "Grand Corps Malade, Mehdi Idir",
+  "dir": "Mehdi Idir, Grand Corps Malade",
   "cast": "Tahar Rahim, Bastien Bouillon, Marie-Julie Baup, Luc Antoni, Nicolas Chupin",
   "imdb_id": "tt26743414",
   "imdb": 7.2,
@@ -3799,8 +3798,8 @@
   "original_title": "羅生門",
   "orig_lang": "ja",
   "tmdb_year": "1950",
-  "tmdb_vote": 8.021,
-  "vote_count": 2664,
+  "tmdb_vote": 8.02,
+  "vote_count": 2666,
   "via": "en",
   "q": "Rashomon",
   "ov": "Four people recount different versions of the story of a man's murder and the rape of his wife.",
@@ -3853,8 +3852,8 @@
   "original_title": "Lost Highway",
   "orig_lang": "en",
   "tmdb_year": "1997",
-  "tmdb_vote": 7.6,
-  "vote_count": 3119,
+  "tmdb_vote": 7.554,
+  "vote_count": 3121,
   "via": "en",
   "q": "Lost Highway",
   "ov": "A tormented jazz musician finds himself lost in an enigmatic story involving murder, surveillance, gangsters, doppelgängers, and an impossible transformation inside a prison cell.",
@@ -3865,7 +3864,7 @@
    "Трилър",
    "Мистерия"
   ],
-  "wr": "David Lynch, Barry Gifford",
+  "wr": "Barry Gifford, David Lynch",
   "mu": "Angelo Badalamenti",
   "dop": "Peter Deming",
   "countries": "France / United States of America",
@@ -3912,8 +3911,8 @@
   "original_title": "花樣年華",
   "orig_lang": "cn",
   "tmdb_year": "2000",
-  "tmdb_vote": 8.087,
-  "vote_count": 3457,
+  "tmdb_vote": 8.085,
+  "vote_count": 3458,
   "via": "en",
   "q": "In the Mood for Love",
   "ov": "In 1960s Hong Kong, two neighbors form an intimate bond after making a discovery about their spouses in this visually stunning tale of unrequited love.",
@@ -3967,8 +3966,8 @@
   "original_title": "아가씨",
   "orig_lang": "ko",
   "tmdb_year": "2016",
-  "tmdb_vote": 8.179,
-  "vote_count": 4585,
+  "tmdb_vote": 8.2,
+  "vote_count": 4586,
   "via": "en",
   "q": "The Handmaiden",
   "ov": "1930s Korea, in the period of Japanese occupation, a new girl, Sook-hee, is hired as a handmaiden to a Japanese heiress, Hideko, who lives a secluded life on a large countryside estate with her domineering Uncle Kouzuki. But the maid has a secret. She is a pickpocket recruited by a swindler posing as a Japanese Count to help him seduce the Lady to steal her fortune.",
@@ -4068,7 +4067,7 @@
   "original_title": "La montaña sagrada",
   "orig_lang": "es",
   "tmdb_year": "1973",
-  "tmdb_vote": 7.511,
+  "tmdb_vote": 7.5,
   "vote_count": 1082,
   "via": "en",
   "q": "The Holy Mountain",
@@ -4296,7 +4295,7 @@
   "genres": [
    "Комедия"
   ],
-  "wr": "Gregg Araki, Karley Sciortino",
+  "wr": "Karley Sciortino, Gregg Araki",
   "mu": "James Clements",
   "dop": "Tucker Korte",
   "countries": "United States of America",
@@ -4374,8 +4373,8 @@
   "original_title": "Digger",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.498,
-  "vote_count": 506,
+  "tmdb_vote": 7.5,
+  "vote_count": 508,
   "via": "bg",
   "q": "Дигър",
   "tbg": "Дигър",
@@ -4419,8 +4418,7 @@
    "Alejandro G. Iñárritu": "Алехандро Гонсалес Иняриту",
    "Tom Cruise": "Том Круз",
    "Michael Stuhlbarg": "Майкъл Стълбарг"
-  },
-  "trend": 47
+  }
  },
  "tigrite": {
   "matched": true,
@@ -4717,8 +4715,8 @@
   "original_title": "In Bruges",
   "orig_lang": "en",
   "tmdb_year": "2008",
-  "tmdb_vote": 7.5,
-  "vote_count": 6081,
+  "tmdb_vote": 7.501,
+  "vote_count": 6084,
   "via": "bg",
   "q": "В Брюж",
   "tbg": "В Брюж",
@@ -4824,7 +4822,7 @@
   "orig_lang": "en",
   "tmdb_year": "1962",
   "tmdb_vote": 8.002,
-  "vote_count": 3662,
+  "vote_count": 3663,
   "via": "original",
   "q": "Lawrence of Arabia",
   "ov": "During World War I, English officer Thomas Edward 'T.E.' Lawrence sets out to unite and lead the diverse, often warring, Arab tribes to fight the Turks.",
@@ -4883,8 +4881,8 @@
   "original_title": "Forgotten Island",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.947,
-  "vote_count": 228,
+  "tmdb_vote": 7.983,
+  "vote_count": 234,
   "via": "imdb",
   "q": "tt36583977",
   "ov": "While celebrating their last night together, high school graduates and best friends Jo and Raissa stumble upon a mysterious portal that transports them to the fantastical island of Nakali. When they discover that the memories of their entire friendship are the price for returning home, Jo and Raissa must race to find a way to leave the island before they forget each other forever.",
@@ -4927,7 +4925,7 @@
   "nb": {
    "Dave Franco": "Дейв Франко"
   },
-  "trend": 26
+  "trend": 35
  },
  "veriti": {
   "matched": true,
@@ -4938,8 +4936,8 @@
   "original_title": "Verity",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.003,
-  "vote_count": 646,
+  "tmdb_vote": 7.012,
+  "vote_count": 651,
   "via": "imdb",
   "q": "tt32261958",
   "ov": "Lowen Ashleigh, hired to ghostwrite for best-selling author Verity Crawford, uncovers Verity's autobiographical notes, and becomes involved in what may prove to be a lethal conspiracy.",
@@ -4983,7 +4981,7 @@
    "Anne Hathaway": "Ан Хатауей",
    "Josh Hartnett": "Джош Хартнет"
   },
-  "trend": 10
+  "trend": 13
  },
  "zooekspres": {
   "matched": true,
@@ -5007,7 +5005,7 @@
    "Комедия",
    "Приключенски"
   ],
-  "wr": "David Alaux, Eric Tosti, Jean-François Tosti",
+  "wr": "Jean-François Tosti, Eric Tosti, David Alaux",
   "mu": "Leonardo Rizzi, Giacomo Lecchi d'Alessandro",
   "countries": "France / United States of America",
   "cc": [
@@ -5027,9 +5025,9 @@
    "Kaycie Chase": 1643163,
    "Frantz Confiac": 1872006,
    "Emmanuel Garijo": 1497778,
-   "David Alaux": 1049951,
-   "Eric Tosti": 1049952,
    "Jean-François Tosti": 1049953,
+   "Eric Tosti": 1049952,
+   "David Alaux": 1049951,
    "Leonardo Rizzi": 3817334,
    "Giacomo Lecchi d'Alessandro": 3817335
   },
@@ -5496,8 +5494,8 @@
   "original_title": "Donnie Darko",
   "orig_lang": "en",
   "tmdb_year": "2001",
-  "tmdb_vote": 7.8,
-  "vote_count": 13941,
+  "tmdb_vote": 7.759,
+  "vote_count": 13942,
   "via": "bg",
   "q": "Дони Дарко",
   "tbg": "Дони Дарко",
@@ -5554,8 +5552,8 @@
   "original_title": "NAZA",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.052,
-  "vote_count": 134,
+  "tmdb_vote": 8.0,
+  "vote_count": 135,
   "via": "director",
   "q": "Ювал Абрахам",
   "ov": "Filmed at night from Tel Aviv rooftops, this investigative documentary examines the civilian casualties of Israel's military operations in Gaza and the systems behind targeted killings of Palestinians.",
@@ -5589,7 +5587,7 @@
   "nb": {
    "Benjamin Netanyahu": "Бенямин Нетаняху"
   },
-  "trend": 62
+  "trend": 49
  },
  "tayni-i-lazhi": {
   "matched": true,
@@ -5700,8 +5698,8 @@
   "original_title": "호프",
   "orig_lang": "ko",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.7,
-  "vote_count": 537,
+  "tmdb_vote": 6.695,
+  "vote_count": 547,
   "via": "bg",
   "q": "Хоуп",
   "tbg": "Хоуп",
@@ -5757,7 +5755,7 @@
   "orig_lang": "en",
   "tmdb_year": "1970",
   "tmdb_vote": 7.4,
-  "vote_count": 469,
+  "vote_count": 470,
   "via": "bg",
   "q": "Кес",
   "tbg": "Кес",
@@ -5767,7 +5765,7 @@
   "genres": [
    "Драма"
   ],
-  "wr": "Tony Garnett, Ken Loach",
+  "wr": "Ken Loach, Tony Garnett",
   "mu": "John Cameron",
   "dop": "Chris Menges",
   "countries": "United Kingdom",
@@ -6052,8 +6050,8 @@
   "original_title": "어쩔수가없다",
   "orig_lang": "ko",
   "tmdb_year": "2025",
-  "tmdb_vote": 7.503,
-  "vote_count": 1383,
+  "tmdb_vote": 7.501,
+  "vote_count": 1384,
   "via": "original",
   "q": "No Other Choice",
   "ov": "After being laid off and humiliated by a ruthless job market, a veteran paper mill manager descends into violence in a desperate bid to reclaim his dignity.",
@@ -6205,7 +6203,7 @@
    "Драма"
   ],
   "wr": "Carlotta Corradi, Elisa Casseri, Ferzan Özpetek",
-  "mu": "Giuliano Taviani, Carmelo Travia",
+  "mu": "Carmelo Travia, Giuliano Taviani",
   "dop": "Gian Filippo Corticelli",
   "countries": "Italy",
   "cc": [
@@ -6225,8 +6223,8 @@
    "Vanessa Scalera": 1640896,
    "Carlotta Corradi": 3597327,
    "Elisa Casseri": 4501103,
-   "Giuliano Taviani": 24286,
    "Carmelo Travia": 479923,
+   "Giuliano Taviani": 24286,
    "Gian Filippo Corticelli": 550306
   },
   "dir": "Ferzan Özpetek",
@@ -6294,7 +6292,7 @@
   "nb": {
    "Jessica Chastain": "Джесика Частейн"
   },
-  "trend": 61
+  "trend": 46
  },
  "ne-kazvay-na-mama": {
   "matched": true,
@@ -6355,8 +6353,8 @@
   "original_title": "Resident Evil",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.496,
-  "vote_count": 1866,
+  "tmdb_vote": 7.498,
+  "vote_count": 1926,
   "via": "imdb",
   "q": "tt35538033",
   "ov": "Medical courier Bryan unwittingly finds himself fighting for survival as one fateful, horrifying night collapses around him in chaos.",
@@ -6383,7 +6381,7 @@
   },
   "pid": {
    "Zach Cregger": 84833,
-   "Austin AbraDIH": 148992,
+   "Austin Abrams": 148992,
    "Paul Walter Hauser": 1294982,
    "Kali Reis": 3119545,
    "Zach Cherry": 1838225,
@@ -6394,16 +6392,16 @@
    "Dariusz Wolski": 120
   },
   "dir": "Zach Cregger",
-  "cast": "Austin AbraDIH, Paul Walter Hauser, Kali Reis, Zach Cherry, Johnno Wilson",
+  "cast": "Austin Abrams, Paul Walter Hauser, Kali Reis, Zach Cherry, Johnno Wilson",
   "ovBg": "Режисьорът и сценарист Зак Крегър застава начело на нова филмова адаптация с обещание за радикален прочит – интензивен, мрачен и безкомпромисен ужас, по-близък до духа на игрите от всичко, което сме виждали досега. Без да разчита на познати герои и сюжетни линии, Заразно зло разказва оригинална история в добре познатата вселена, фокусирана върху обикновен човек, попаднал в невъобразим кошмар.",
   "tbg": "Заразно зло",
   "imdb_id": "tt35538033",
   "rt": 96,
   "nb": {
-   "Austin AbraDIH": "Остин Ейбрамс",
+   "Austin Abrams": "Остин Ейбрамс",
    "Dariusz Wolski": "Дариуш Волски"
   },
-  "trend": 2
+  "trend": 1
  },
  "otmastitelite-krayat-spetsialno-izdanie": {
   "matched": true,
@@ -6415,7 +6413,7 @@
   "orig_lang": "en",
   "tmdb_year": "2019",
   "tmdb_vote": 8.247,
-  "vote_count": 29250,
+  "vote_count": 29256,
   "via": "bg-BG",
   "q": "Отмъстителите: Краят",
   "tbg": "Отмъстителите: Краят",
@@ -6427,7 +6425,7 @@
    "Фантастика",
    "Екшън"
   ],
-  "wr": "Stephen McFeely, Christopher Markus",
+  "wr": "Christopher Markus, Stephen McFeely",
   "mu": "Alan Silvestri",
   "dop": "Trent Opaloch",
   "countries": "United States of America",
@@ -6447,8 +6445,8 @@
    "Mark Ruffalo": 103,
    "Chris Hemsworth": 74568,
    "Scarlett Johansson": 1245,
-   "Stephen McFeely": 5552,
    "Christopher Markus": 5551,
+   "Stephen McFeely": 5552,
    "Alan Silvestri": 37,
    "Trent Opaloch": 967026
   },
@@ -6517,7 +6515,7 @@
   "imdb_id": "tt32329539",
   "imdb": 4.8,
   "imdbVotes": "72",
-  "trend": 72
+  "trend": 78
  },
  "always-lalisa": {
   "matched": true,
@@ -6571,7 +6569,7 @@
   "orig_lang": "en",
   "tmdb_year": "1971",
   "tmdb_vote": 8.167,
-  "vote_count": 14297,
+  "vote_count": 14299,
   "via": "bg",
   "q": "Портокал с часовников механизъм",
   "tbg": "Портокал с часовников механизъм",
@@ -6637,8 +6635,8 @@
   "original_title": "Shrek",
   "orig_lang": "en",
   "tmdb_year": "2001",
-  "tmdb_vote": 7.782,
-  "vote_count": 19571,
+  "tmdb_vote": 7.781,
+  "vote_count": 19575,
   "via": "bg",
   "q": "Шрек",
   "tbg": "Шрек",
@@ -6870,7 +6868,7 @@
   "orig_lang": "en",
   "tmdb_year": "2013",
   "tmdb_vote": 7.2,
-  "vote_count": 2499,
+  "vote_count": 2500,
   "via": "original",
   "q": "Only Lovers Left Alive",
   "ov": "A depressed musician reunites with his lover. However, their romance, already played over several centuries, is disrupted by the arrival of her uncontrollable younger sister.",
@@ -7141,7 +7139,7 @@
   "orig_lang": "ko",
   "tmdb_year": "2003",
   "tmdb_vote": 8.234,
-  "vote_count": 10396,
+  "vote_count": 10399,
   "via": "original",
   "q": "Oldboy",
   "ov": "With no clue how he came to be imprisoned, drugged and tortured for 15 years, a desperate man seeks revenge on his captors.",
@@ -7151,7 +7149,7 @@
    "Трилър",
    "Мистерия"
   ],
-  "wr": "Hwang Jo-yoon, Im Joon-hyung, Park Chan-wook",
+  "wr": "Im Joon-hyung, Hwang Jo-yoon, Park Chan-wook",
   "mu": "Choi Seung-hyun, Shim Hyun-jung, Lee Ji-soo",
   "dop": "Chung Chung-hoon",
   "countries": "South Korea",
@@ -7170,8 +7168,8 @@
    "Kang Hye-jung": 1299317,
    "Kim Byeong-ok": 77182,
    "Ji Dae-han": 77180,
-   "Hwang Jo-yoon": 10102,
    "Im Joon-hyung": 10103,
+   "Hwang Jo-yoon": 10102,
    "Choi Seung-hyun": 37929,
    "Shim Hyun-jung": 87535,
    "Lee Ji-soo": 1295395,
@@ -7463,8 +7461,8 @@
   "genres": [
    "Драма"
   ],
-  "wr": "Artem Chekh, Iryna Tsilyk",
-  "mu": "Fima Chupakhin, Yukhym Chupakhin",
+  "wr": "Iryna Tsilyk, Artem Chekh",
+  "mu": "Yukhym Chupakhin, Fima Chupakhin",
   "dop": "Viacheslav Tsvietkov",
   "countries": "Ukraine",
   "cc": [
@@ -7478,8 +7476,8 @@
    "Anastasiia Karpenko": 2518718,
    "Halyna Veretelnyk-Stephanova": 4528616,
    "Artem Chekh": 3575544,
-   "Fima Chupakhin": 2250256,
    "Yukhym Chupakhin": 2358977,
+   "Fima Chupakhin": 2250256,
    "Viacheslav Tsvietkov": 2366761
   },
   "dir": "Iryna Tsilyk",
@@ -7496,8 +7494,8 @@
   "original_title": "急に具合が悪くなる",
   "orig_lang": "ja",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.858,
-  "vote_count": 74,
+  "tmdb_vote": 7.849,
+  "vote_count": 76,
   "via": "en",
   "q": "All of a Sudden",
   "ov": "Director of a care facility for the elderly, Marie-Lou strives to introduce an innovative care philosophy based on listening and respecting residents’ dignity, despite resistance from part of her staff. Her encounter with Mari, a Japanese theater director battling cancer, will profoundly reshape her path. By forming a deep, supportive friendship, the two women join forces in a shared struggle to make the impossible possible.",
@@ -7637,8 +7635,8 @@
   "original_title": "ゴジラ-0.0",
   "orig_lang": "ja",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.0,
-  "vote_count": 109,
+  "tmdb_vote": 7.959,
+  "vote_count": 121,
   "via": "imdb",
   "q": "tt34384661",
   "ov": "War reduced Japan to zero, and Godzilla plunged it into minus. Two years have passed since then, and the country has faced agonizing struggles to achieve recovery and finally reclaim its daily life. Just as humanity managed to cling to a hard-won peace, a new threat strikes, crushing hope in an instant. There is no third time. Everything ends here.",
@@ -7678,7 +7676,7 @@
   "tbg": "Годзила минус нула",
   "imdb_id": "tt34384661",
   "rt": 97,
-  "trend": 6
+  "trend": 5
  },
  "rammstein-live-in-mexico-city": {
   "matched": true,
@@ -7763,8 +7761,8 @@
   "original_title": "La bola negra",
   "orig_lang": "es",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.1,
-  "vote_count": 195,
+  "tmdb_vote": 8.033,
+  "vote_count": 200,
   "via": "imdb",
   "q": "tt35511966",
   "ov": "The intertwined lives of three men in three different eras, three lives intimately linked by sexuality and desire, pain, and legacy.",
@@ -7806,7 +7804,7 @@
   "imdb": 7.0,
   "imdbVotes": "820",
   "mc": 86,
-  "trend": 28
+  "trend": 29
  },
  "sinelibri-svatba-s-vkus-na-portokal": {
   "matched": true,
@@ -7861,8 +7859,8 @@
   "original_title": "Les Misérables",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.201,
-  "vote_count": 67,
+  "tmdb_vote": 7.176,
+  "vote_count": 68,
   "via": "en",
   "q": "Les misérables",
   "ov": "After enduring 19 years in prison for stealing a loaf of bread, Jean Valjean emerges a hardened man. He seeks redemption by reinventing himself as a respected dignitary under a new identity. He promises Fantine, a dying factory worker, to rescue and protect her daughter Cosette, who is being exploited and mistreated by the deceitful Thénardier family. As Valjean raises Cosette as his own, he is relentlessly pursued by Inspector Javert. Admist the social unrest shaking France, the fates of Valjean, Cosette, her lover Marius, and Javert become intertwined in a turbulent, revolutionary Paris. Through struggles, sacrifices, and a deep yearning for justice, Valjean strives to complete his journey of redemption and offer Cosette a future of love and freedom.",
@@ -8191,7 +8189,7 @@
   "orig_lang": "en",
   "tmdb_year": "1989",
   "tmdb_vote": 8.295,
-  "vote_count": 13156,
+  "vote_count": 13159,
   "via": "original",
   "q": "Dead Poets Society",
   "ov": "At an elite, old-fashioned boarding school in New England, a passionate English teacher inspires his students to rebel against convention and seize the potential of every day, courting the disdain of the stern headmaster.",
@@ -8506,7 +8504,7 @@
   "orig_lang": "en",
   "tmdb_year": "1980",
   "tmdb_vote": 8.201,
-  "vote_count": 19661,
+  "vote_count": 19663,
   "via": "original",
   "q": "The Shining",
   "ov": "Jack Torrance accepts a caretaker job at the Overlook Hotel, where he, along with his wife Wendy and their son Danny, must live isolated from the rest of the world for the winter. But they aren't prepared for the madness that lurks within.",
@@ -8516,7 +8514,7 @@
    "Хорър",
    "Трилър"
   ],
-  "wr": "Stanley Kubrick, Diane Johnson",
+  "wr": "Diane Johnson, Stanley Kubrick",
   "mu": "Wendy Carlos, Rachel Elkind, Béla Bartók",
   "dop": "John Alcott",
   "countries": "United Kingdom / United States of America",
@@ -8567,7 +8565,7 @@
   "original_title": "The Wicker Man",
   "orig_lang": "en",
   "tmdb_year": "1973",
-  "tmdb_vote": 7.329,
+  "tmdb_vote": 7.3,
   "vote_count": 1769,
   "via": "original",
   "q": "The Wicker Man",
@@ -8638,7 +8636,7 @@
   "orig_lang": "en",
   "tmdb_year": "1982",
   "tmdb_vote": 8.074,
-  "vote_count": 8429,
+  "vote_count": 8430,
   "via": "original",
   "q": "The Thing",
   "ov": "A research team in Antarctica is hunted by a shape-shifting alien that assumes the appearance of its victims.",
@@ -8700,8 +8698,8 @@
   "original_title": "군체",
   "orig_lang": "ko",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.2,
-  "vote_count": 1534,
+  "tmdb_vote": 8.201,
+  "vote_count": 1539,
   "via": "bg",
   "q": "Колония",
   "tbg": "Колония",
@@ -8742,7 +8740,8 @@
   "imdb_id": "tt34385135",
   "imdb": 6.5,
   "imdbVotes": "18.3K",
-  "mc": 57
+  "mc": 57,
+  "trend": 53
  },
  "it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona": {
   "matched": false,
@@ -8764,7 +8763,7 @@
   "orig_lang": "en",
   "tmdb_year": "2001",
   "tmdb_vote": 8.45,
-  "vote_count": 28817,
+  "vote_count": 28824,
   "via": "original",
   "q": "The Lord of the Rings: The Fellowship of the Ring",
   "ov": "Young hobbit Frodo Baggins, after inheriting a mysterious ring from his uncle Bilbo, must leave his home in order to keep it from falling into the hands of its evil creator. Along the way, a fellowship is formed to protect the ringbearer and make sure that the ring arrives at its final destination: Mt. Doom, the only place where it can be destroyed.",
@@ -8775,7 +8774,7 @@
    "Фентъзи",
    "Екшън"
   ],
-  "wr": "Peter Jackson, Fran Walsh, Philippa Boyens",
+  "wr": "Fran Walsh, Philippa Boyens, Peter Jackson",
   "mu": "Howard Shore",
   "dop": "Andrew Lesnie",
   "countries": "New Zealand / United States of America",
@@ -8827,8 +8826,8 @@
   "original_title": "Trois couleurs : Rouge",
   "orig_lang": "fr",
   "tmdb_year": "1994",
-  "tmdb_vote": 7.9,
-  "vote_count": 1625,
+  "tmdb_vote": 7.884,
+  "vote_count": 1626,
   "via": "bg",
   "q": "Три цвята: Червено",
   "tbg": "Три цвята: Червено",
@@ -8840,7 +8839,7 @@
    "Мистерия",
    "Романтика"
   ],
-  "wr": "Krzysztof Piesiewicz, Krzysztof Kieślowski",
+  "wr": "Krzysztof Kieślowski, Krzysztof Piesiewicz",
   "mu": "Zbigniew Preisner",
   "dop": "Piotr Sobociński",
   "countries": "France / Poland / Switzerland",
@@ -8989,8 +8988,8 @@
   "original_title": "No Country for Old Men",
   "orig_lang": "en",
   "tmdb_year": "2007",
-  "tmdb_vote": 7.9,
-  "vote_count": 14045,
+  "tmdb_vote": 7.949,
+  "vote_count": 14049,
   "via": "bg",
   "q": "Няма място за старите кучета",
   "tbg": "Няма място за старите кучета",
@@ -9052,8 +9051,8 @@
   "original_title": "Heaven",
   "orig_lang": "en",
   "tmdb_year": "2002",
-  "tmdb_vote": 6.484,
-  "vote_count": 304,
+  "tmdb_vote": 6.466,
+  "vote_count": 305,
   "via": "original",
   "q": "Heaven",
   "ov": "A woman takes the law into her own hands after police ignore her pleas to arrest the man responsible for her husband's death, and finds herself not only under arrest for murder but falling in love with an officer.",
@@ -9110,8 +9109,8 @@
   "original_title": "Legends of the Fall",
   "orig_lang": "en",
   "tmdb_year": "1994",
-  "tmdb_vote": 7.4,
-  "vote_count": 2988,
+  "tmdb_vote": 7.398,
+  "vote_count": 2989,
   "via": "bg",
   "q": "Легенди за страстта",
   "tbg": "Легенди за страстта",
@@ -9270,7 +9269,7 @@
   "orig_lang": "ja",
   "tmdb_year": "2010",
   "tmdb_vote": 7.688,
-  "vote_count": 3337,
+  "vote_count": 3338,
   "via": "imdb",
   "q": "tt1568921",
   "ov": "14-year-old Arrietty and the rest of the Clock family live in peaceful anonymity as they make their own home from items \"borrowed\" from the house's human inhabitants. However, life changes for the Clocks when a human boy discovers Arrietty.",
@@ -9330,7 +9329,7 @@
   "orig_lang": "en",
   "tmdb_year": "2016",
   "tmdb_vote": 7.638,
-  "vote_count": 20145,
+  "vote_count": 20149,
   "via": "bg",
   "q": "Първи контакт",
   "tbg": "Първи контакт",
@@ -9494,7 +9493,7 @@
    "Paul Rudd": "Пол Ръд",
    "Alan Silvestri": "Алън Силвестри"
   },
-  "trend": 13
+  "trend": 12
  },
  "dyun-chast-treta": {
   "matched": true,
@@ -9554,7 +9553,7 @@
    "Rebecca Ferguson": "Ребека Фъргюсън",
    "Hans Zimmer": "Ханс Цимер"
   },
-  "trend": 25
+  "trend": 28
  },
  "padnali-angeli": {
   "matched": true,
@@ -9578,7 +9577,7 @@
    "Криминален"
   ],
   "wr": "Wong Kar-wai",
-  "mu": "Frankie Chan Fan-kei, Roel A. García",
+  "mu": "Roel A. García, Frankie Chan Fan-kei",
   "dop": "Christopher Doyle",
   "countries": "Hong Kong",
   "cc": [
@@ -9596,8 +9595,8 @@
    "Takeshi Kaneshiro": 43661,
    "Charlie Yeung Choi-nei": 66762,
    "Karen Mok Man-wai": 57831,
-   "Frankie Chan Fan-kei": 1011224,
    "Roel A. García": 68029,
+   "Frankie Chan Fan-kei": 1011224,
    "Christopher Doyle": 1357
   },
   "dir": "Wong Kar-wai",
@@ -10087,8 +10086,8 @@
   "original_title": "Les Rayons et les Ombres",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.372,
-  "vote_count": 145,
+  "tmdb_vote": 7.363,
+  "vote_count": 146,
   "via": "en",
   "q": "Rays and Shadows",
   "ov": "Jean and Otto, a French newspaperman and a young German Francophile, are fighting for peace in Europe. Jean’s daughter, Corinne, is launching a brilliant acting career in the film world, but war breaks out and France is occupied. The two friends have a major role to play in this new France. Jean becomes a big press baron and an ardent advocate of collaboration with the occupying forces, while Otto becomes the Reich’s ambassador in Paris. Corinne, meanwhile, finds herself thrown into the lion’s pit.",
@@ -10179,8 +10178,8 @@
   "original_title": "Sense and Sensibility",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.28,
-  "vote_count": 157,
+  "tmdb_vote": 7.278,
+  "vote_count": 158,
   "via": "en",
   "q": "Sense and Sensibility",
   "ov": "A charming, witty, and deeply relatable story of love and sisterhood.",
@@ -10221,8 +10220,7 @@
   "imdb_id": "tt13609648",
   "imdb": 7.2,
   "imdbVotes": "1.8K",
-  "mc": 72,
-  "trend": 44
+  "mc": 72
  },
  "sitsilianskata-roza": {
   "matched": true,
@@ -11020,7 +11018,7 @@
   "original_title": "Zimna wojna",
   "orig_lang": "pl",
   "tmdb_year": "2018",
-  "tmdb_vote": 7.423,
+  "tmdb_vote": 7.4,
   "vote_count": 1643,
   "via": "en",
   "q": "Cold War",
@@ -11079,8 +11077,8 @@
   "original_title": "Wild Horse Nine",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.122,
-  "vote_count": 94,
+  "tmdb_vote": 8.105,
+  "vote_count": 105,
   "via": "en",
   "q": "Wild Horse Nine",
   "ov": "Shortly before the 1973 Chilean coup, CIA agents Chris and Lee are dispatched from Santiago to Easter Island by their bureau chief, MJ. Amongst the Island's iconic statues, and as the longtime partners wrestle with their dark pasts and present conspiracies, Chris's newfound bond with a pair of rebellious students threatens to send everyone’s trip to this remote paradise sideways.",
@@ -11126,7 +11124,7 @@
    "Sam Rockwell": "Сам Рокуел",
    "Ben Davis": "Бен Дейвис"
   },
-  "trend": 20
+  "trend": 17
  },
  "minotavar": {
   "matched": true,
@@ -11282,7 +11280,8 @@
   "mc": 78,
   "nb": {
    "Sebastian Stan": "Себастиан Стан"
-  }
+  },
+  "trend": 85
  },
  "gepi": {
   "matched": true,
@@ -11293,8 +11292,8 @@
   "original_title": "Snatch",
   "orig_lang": "en",
   "tmdb_year": "2000",
-  "tmdb_vote": 7.831,
-  "vote_count": 10453,
+  "tmdb_vote": 7.8,
+  "vote_count": 10454,
   "via": "bg",
   "q": "Гепи",
   "tbg": "Гепи",
@@ -11408,7 +11407,7 @@
   "genres": [
    "Драма"
   ],
-  "wr": "Teo Chepilov, Georgi Ivanov, Teodora Markova",
+  "wr": "Teo Chepilov, Georgi Ivanov, Nevena Kertova",
   "mu": "Kalin Nikolov",
   "countries": "Bulgaria",
   "cc": [
@@ -11423,7 +11422,7 @@
    "Vladimir Zombori": 1884934,
    "Teo Chepilov": 1638309,
    "Georgi Ivanov": 1597097,
-   "Teodora Markova": 1597099,
+   "Nevena Kertova": 2439124,
    "Kalin Nikolov": 1368886
   },
   "dir": "Stanislav Todorov",
@@ -11457,7 +11456,8 @@
   "runtime": 120,
   "genres": [
    "Екшън",
-   "Фентъзи"
+   "Фентъзи",
+   "Комедия"
   ],
   "wr": "T.J. Fixman, Kitao Sakurai",
   "mu": "Leo Birenberg, Zach Robinson",
@@ -11493,7 +11493,8 @@
   "mc": 46,
   "nb": {
    "Noah Centineo": "Ноа Сентинео"
-  }
+  },
+  "trend": 60
  },
  "v-dalbinite": {
   "matched": true,
@@ -11504,8 +11505,8 @@
   "original_title": "Whalefall",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.6,
-  "vote_count": 141,
+  "tmdb_vote": 6.56,
+  "vote_count": 142,
   "via": "bg",
   "q": "В дълбините",
   "tbg": "В дълбините",
@@ -11529,7 +11530,7 @@
   },
   "pid": {
    "Brian Duffield": 1295292,
-   "Austin AbraDIH": 148992,
+   "Austin Abrams": 148992,
    "Josh Brolin": 16851,
    "Elisabeth Shue": 1951,
    "John Ortiz": 40543,
@@ -11539,15 +11540,15 @@
    "Aaron Morton": 1155982
   },
   "dir": "Brian Duffield",
-  "cast": "Austin AbraDIH, Josh Brolin, Elisabeth Shue, John Ortiz, Jane Levy",
+  "cast": "Austin Abrams, Josh Brolin, Elisabeth Shue, John Ortiz, Jane Levy",
   "ovBg": "Филмът проследява младия гмуркач Джей Гарднър, който се отправя към водите край крайбрежието на Калифорния в търсене на останките на своя баща. Това, което започва като лична мисия, бързо се превръща в кошмар, когато Джей е погълнат от гигантски кашалот. Заклещен в тъмното, враждебно и непознато пространство вътре в създанието, той разполага само с един час кислород, за да намери изход. За да оцелее, Джей трябва да се изправи не само срещу физическата опасност, но и срещу демоните на сложната си връзка с баща си.",
   "imdb_id": "tt28535715",
   "nb": {
-   "Austin AbraDIH": "Остин Ейбрамс",
+   "Austin Abrams": "Остин Ейбрамс",
    "Josh Brolin": "Джош Бролин",
    "Elisabeth Shue": "Елизабет Шу"
   },
-  "trend": 59
+  "trend": 79
  },
  "dzhambo-magicheskoto-priklyuchenie": {
   "matched": false,
@@ -11844,8 +11845,8 @@
   "original_title": "Platoon",
   "orig_lang": "en",
   "tmdb_year": "1986",
-  "tmdb_vote": 7.745,
-  "vote_count": 5383,
+  "tmdb_vote": 7.7,
+  "vote_count": 5384,
   "via": "bg",
   "q": "Взвод",
   "tbg": "Взвод",
@@ -11948,7 +11949,7 @@
   "orig_lang": "en",
   "tmdb_year": "2026",
   "tmdb_vote": 7.4,
-  "vote_count": 408,
+  "vote_count": 409,
   "via": "imdb",
   "q": "tt34890576",
   "ov": "Matt Hagen's meteoric rise from Gotham street kid to Hollywood leading man is tragically cut short when a local crime boss's actions leave him horribly disfigured. Abandoned by his team and with nothing left, Matt seeks out a cutting edge treatment that miraculously returns him to his former self… but also unexpectedly affects his grip on reality, spiraling him down a destructive path of all-consuming revenge.",
@@ -12050,7 +12051,7 @@
   "original_title": "The Doors",
   "orig_lang": "en",
   "tmdb_year": "1991",
-  "tmdb_vote": 7.113,
+  "tmdb_vote": 7.1,
   "vote_count": 1677,
   "via": "original",
   "q": "The Doors",
@@ -12117,8 +12118,8 @@
   "original_title": "Les Misérables",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.201,
-  "vote_count": 67,
+  "tmdb_vote": 7.176,
+  "vote_count": 68,
   "via": "original",
   "q": "Les Misérables",
   "ov": "After enduring 19 years in prison for stealing a loaf of bread, Jean Valjean emerges a hardened man. He seeks redemption by reinventing himself as a respected dignitary under a new identity. He promises Fantine, a dying factory worker, to rescue and protect her daughter Cosette, who is being exploited and mistreated by the deceitful Thénardier family. As Valjean raises Cosette as his own, he is relentlessly pursued by Inspector Javert. Admist the social unrest shaking France, the fates of Valjean, Cosette, her lover Marius, and Javert become intertwined in a turbulent, revolutionary Paris. Through struggles, sacrifices, and a deep yearning for justice, Valjean strives to complete his journey of redemption and offer Cosette a future of love and freedom.",
@@ -12219,7 +12220,7 @@
   "original_title": "You Can See Everything",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 8.921,
+  "tmdb_vote": 8.9,
   "vote_count": 101,
   "via": "en",
   "q": "You Can See Everything",
@@ -12261,7 +12262,7 @@
   "nb": {
    "Amanda Seyfried": "Аманда Сайфред"
   },
-  "trend": 40
+  "trend": 34
  },
  "yarostta-na-svobodata": {
   "matched": false,
@@ -12456,8 +12457,8 @@
   "original_title": "Everest: The Other Side",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.333,
-  "vote_count": 3,
+  "tmdb_vote": 6.5,
+  "vote_count": 4,
   "via": "en",
   "q": "Everest: The Other Side",
   "ov": "An intimate portrait of two people bound by love, ambition, and the pursuit of the impossible. Elite ski mountaineers Jim Morrison and Hilaree Nelson fell deeply in love while reaching the pinnacle of their sport. Their drive sharpened into a shared dream: to climb and ski the direct North Face of Mount Everest—the most difficult and dangerous climb on the mountain and the most coveted ski line on Earth—something only a handful have ever achieved, and no one has successfully skied down.",
@@ -12600,7 +12601,7 @@
   "imdb_id": "tt32329539",
   "imdb": 4.8,
   "imdbVotes": "72",
-  "trend": 72
+  "trend": 78
  },
  "helouin-selektsiya-spider-island": {
   "matched": true,
@@ -12798,8 +12799,8 @@
   "original_title": "Katyń",
   "orig_lang": "pl",
   "tmdb_year": "2007",
-  "tmdb_vote": 6.693,
-  "vote_count": 293,
+  "tmdb_vote": 6.673,
+  "vote_count": 294,
   "via": "bg",
   "q": "Катин",
   "tbg": "Катин",
@@ -12897,7 +12898,8 @@
  },
  "kinomaniya-nachaloto": {
   "matched": false,
-  "en": ""
+  "en": "",
+  "miss": "no match: title search: 'Началото'; no director to look up; no runtime to confirm a near title"
  },
  "obich": {
   "matched": true,
@@ -12964,7 +12966,7 @@
   "q": "Club Kid",
   "ov": "A hard-partying New York City club promoter sees his whirlwind lifestyle upended by the arrival of the 10-year-old son he never knew he had.",
   "country": "United States of America",
-  "runtime": 121,
+  "runtime": 122,
   "genres": [
    "Комедия",
    "Драма"
@@ -13293,8 +13295,8 @@
   "tmdb_year": "2026",
   "tmdb_vote": 0.0,
   "vote_count": 0,
-  "via": "original",
-  "q": "THE HUNGER GAMES: SUNRISE ON THE REAPING",
+  "via": "en",
+  "q": "The Hunger Games: Sunrise on the Reaping",
   "ov": "Return to the world of Panem 24 years before the events of The Hunger Games, starting on the morning of the reaping of the 50th Hunger Games, also known as the Second Quarter Quell.",
   "country": "United States of America",
   "runtime": 159,
@@ -13319,26 +13321,27 @@
   "pid": {
    "Francis Lawrence": 10943,
    "Joseph Zada": 4744857,
+   "Mckenna Grace": 1172108,
    "Ralph Fiennes": 5469,
    "Jesse Plemons": 88124,
-   "Whitney Peak": 1842860,
-   "Elle Fanning": 18050,
+   "Glenn Close": 515,
    "Billy Ray": 21807,
    "Michael Lesslie": 1273117,
    "James Newton Howard": 1213,
    "Jo Willems": 27576
   },
   "dir": "Francis Lawrence",
-  "cast": "Joseph Zada, Ralph Fiennes, Jesse Plemons, Whitney Peak, Elle Fanning",
+  "cast": "Joseph Zada, Mckenna Grace, Ralph Fiennes, Jesse Plemons, Glenn Close",
   "ovBg": "В Окръг 12 младият Хеймич Абърнати мечтае само за тих живот и бъдеще с момичето, което обича, но съдбата е предопределила друго. Откъснат от дома си заедно с още трима трибути, той скоро разбира, че Игрите тази година не са просто изпитание на сила и хитрост, а внимателно подготвен капан, в който оцеляването изглежда невъзможно. Но в Хеймич гори непотушим пламък и борбата му за правото на живот ще се разпространи далеч отвъд арената и завинаги ще бележи бъдещето на цял Панем.",
   "tbg": "Игрите на глада: Изгревът в деня на жътвата",
   "imdb_id": "tt32558705",
   "nb": {
    "Francis Lawrence": "Франсис Лорънс",
    "Ralph Fiennes": "Ралф Файнс",
-   "Jesse Plemons": "Джеси Племънс"
+   "Jesse Plemons": "Джеси Племънс",
+   "Glenn Close": "Глен Клоуз"
   },
-  "trend": 22
+  "trend": 11
  },
  "obsebvane": {
   "matched": true,
@@ -13350,7 +13353,7 @@
   "orig_lang": "en",
   "tmdb_year": "2026",
   "tmdb_vote": 8.2,
-  "vote_count": 6555,
+  "vote_count": 6557,
   "via": "original",
   "q": "OBSESSION",
   "ov": "After breaking the mysterious \"One Wish Willow\" to win his crush's heart, a hopeless romantic finds himself getting exactly what he asked for but soon discovers that some desires come at a dark, sinister price.",
@@ -13391,7 +13394,8 @@
   "imdb": 7.8,
   "imdbVotes": "392.8K",
   "rt": 93,
-  "mc": 77
+  "mc": 77,
+  "trend": 19
  },
  "backrooms": {
   "matched": true,
@@ -13402,8 +13406,8 @@
   "original_title": "Backrooms",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.998,
-  "vote_count": 4052,
+  "tmdb_vote": 6.994,
+  "vote_count": 4065,
   "via": "bg",
   "q": "BACKROOMS",
   "ov": "A strange doorway appears in the basement of a furniture showroom.",
@@ -13449,7 +13453,7 @@
    "Kane Parsons": "Кейн Парсънс",
    "Chiwetel Ejiofor": "Чуетел Еджиофор"
   },
-  "trend": 38
+  "trend": 37
  },
  "pisak-7": {
   "matched": true,
@@ -13460,8 +13464,8 @@
   "original_title": "Scream 7",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.204,
-  "vote_count": 1431,
+  "tmdb_vote": 6.2,
+  "vote_count": 1432,
   "via": "original",
   "q": "SCREAM 7",
   "ov": "When a new Ghostface killer emerges in the quiet town where Sidney Prescott has built a new life, her darkest fears are realized as her daughter becomes the next target. Determined to protect her family, Sidney must face the horrors of her past to put an end to the bloodshed once and for all.",
@@ -13509,7 +13513,8 @@
    "Kevin Williamson": "Кевин Уилямсън",
    "Isabel May": "Изабел Мей",
    "Courteney Cox": "Кортни Кокс"
-  }
+  },
+  "trend": 86
  },
  "vlastelinat-na-prastenite-zadrugata-na-prastena-udalzheno-iz": {
   "matched": true,
@@ -13521,7 +13526,7 @@
   "orig_lang": "en",
   "tmdb_year": "2001",
   "tmdb_vote": 8.45,
-  "vote_count": 28817,
+  "vote_count": 28826,
   "via": "bg",
   "q": "Властелинът на пръстените: Задругата на пръстена (удължено издание)",
   "tbg": "Властелинът на пръстените: Задругата на пръстена",
@@ -13533,7 +13538,7 @@
    "Фентъзи",
    "Екшън"
   ],
-  "wr": "Peter Jackson, Fran Walsh, Philippa Boyens",
+  "wr": "Fran Walsh, Philippa Boyens, Peter Jackson",
   "mu": "Howard Shore",
   "dop": "Andrew Lesnie",
   "countries": "New Zealand / United States of America",
@@ -13584,8 +13589,8 @@
   "original_title": "Leviticus",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 6.84,
-  "vote_count": 648,
+  "tmdb_vote": 6.832,
+  "vote_count": 650,
   "via": "bg",
   "q": "Левит",
   "tbg": "Левит",
@@ -13628,7 +13633,8 @@
   "mc": 83,
   "nb": {
    "Mia Wasikowska": "Миа Васиковска"
-  }
+  },
+  "trend": 83
  },
  "echo-between-us-sinelibri": {
   "matched": false,
@@ -13703,8 +13709,8 @@
   "original_title": "Karma",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.388,
-  "vote_count": 49,
+  "tmdb_vote": 7.36,
+  "vote_count": 50,
   "via": "en",
   "q": "Karma",
   "ov": "In a village in northern Spain, Jeanne tries to rebuild her life with Daniel, who knows nothing about her troubled past. One day, Jeanne's six-year-old godson mysteriously disappears and Jeanne becomes the main suspect.",
@@ -13802,14 +13808,14 @@
   "poster_path": "/l05jDisMYVVpyAH3zgx1bUqPocZ.jpg",
   "backdrop_path": "/tW0ZxAcvLNZiSvHnBS2lpNOGB2S.jpg",
   "en": "Coward",
-  "original_title": "Coward",
+  "original_title": "Les Braves",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.208,
-  "vote_count": 12,
+  "tmdb_vote": 7.4,
+  "vote_count": 13,
   "via": "en",
   "q": "Coward",
-  "ov": "Surrounded by brutality but bound by tenderness, two World War I soldiers find a fragile sanctuary of love and art amid the shadows of the Belgian trenches.",
+  "ov": "Surrounded by brutality but bound by a tender intimacy, two World War I soldiers find a fragile sanctuary of love and art amid the shadows of the Belgian trenches.",
   "country": "Belgium",
   "runtime": 127,
   "genres": [
@@ -13847,8 +13853,7 @@
   "imdb_id": "tt39328391",
   "imdb": 6.9,
   "imdbVotes": "36",
-  "mc": 68,
-  "trend": 88
+  "mc": 68
  },
  "aferata-boyarski": {
   "matched": true,
@@ -14009,8 +14014,8 @@
   "original_title": "L'Abandon",
   "orig_lang": "fr",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.437,
-  "vote_count": 71,
+  "tmdb_vote": 7.444,
+  "vote_count": 72,
   "via": "en",
   "q": "L'abandon",
   "ov": "Everyone knows the name of Samuel Paty, but few people really know his story. On October 16, 2020, Samuel Paty, professor of History-Geography, was murdered at the end of his college. In the light of investigations and trials, this film looks back on his last eleven days, and the gear that led to his tragic death.",
@@ -14305,7 +14310,7 @@
    "Драма",
    "Романтика"
   ],
-  "wr": "Ruggero Maccari, Ettore Scola, Maurizio Costanzo",
+  "wr": "Ettore Scola, Maurizio Costanzo, Ruggero Maccari",
   "mu": "Armando Trovajoli",
   "dop": "Pasqualino De Santis",
   "countries": "Italy / Canada",
@@ -14320,8 +14325,8 @@
    "John Vernon": 17580,
    "Françoise Berd": 548631,
    "Patrizia Basso": 548632,
-   "Ruggero Maccari": 31892,
    "Maurizio Costanzo": 120647,
+   "Ruggero Maccari": 31892,
    "Armando Trovajoli": 30634,
    "Pasqualino De Santis": 36016
   },
@@ -14493,7 +14498,7 @@
   "orig_lang": "en",
   "tmdb_year": "1981",
   "tmdb_vote": 7.928,
-  "vote_count": 14199,
+  "vote_count": 14203,
   "via": "bg",
   "q": "Похитителите на изчезналия кивот",
   "tbg": "Индиана Джоунс и похитителите на изчезналия кивот",
@@ -14678,7 +14683,7 @@
   "orig_lang": "en",
   "tmdb_year": "1990",
   "tmdb_vote": 7.719,
-  "vote_count": 14189,
+  "vote_count": 14191,
   "via": "bg",
   "q": "Едуард Ножиците",
   "tbg": "Едуард Ножиците",
@@ -14767,7 +14772,7 @@
   "original_title": "The Cat in the Hat",
   "orig_lang": "en",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.059,
+  "tmdb_vote": 7.1,
   "vote_count": 17,
   "via": "imdb",
   "q": "tt2321555",
@@ -14812,7 +14817,7 @@
   "nb": {
    "Bill Hader": "Бил Хадър"
   },
-  "trend": 14
+  "trend": 21
  },
  "ramayana-razhdaneto-na-edna-legenda": {
   "matched": true,
@@ -14823,8 +14828,8 @@
   "original_title": "रामायणम्",
   "orig_lang": "hi",
   "tmdb_year": "2026",
-  "tmdb_vote": 7.5,
-  "vote_count": 22,
+  "tmdb_vote": 7.75,
+  "vote_count": 26,
   "via": "imdb",
   "q": "tt27988879",
   "ov": "An ancient epic follows a young prince and princess whose marriage and subsequent exile mark the beginning of a legendary journey. Their story of love, duty and destiny sets the stage for greater challenges ahead.",
@@ -14882,7 +14887,7 @@
   "orig_lang": "ja",
   "tmdb_year": "2010",
   "tmdb_vote": 7.688,
-  "vote_count": 3337,
+  "vote_count": 3338,
   "via": "bg",
   "q": "ТАЙНИЯТ СВЯТ НА АРИЕТИ",
   "tbg": "Тайният свят на Ариети",
@@ -14951,7 +14956,7 @@
   "original_title": "Låt den rätte komma in",
   "orig_lang": "sv",
   "tmdb_year": "2008",
-  "tmdb_vote": 7.544,
+  "tmdb_vote": 7.5,
   "vote_count": 3409,
   "via": "bg",
   "q": "Покани ме да вляза",
@@ -15282,7 +15287,7 @@
    "Криминален"
   ],
   "wr": "Oleg Negin, Andrey Zvyagintsev",
-  "mu": "Andrey Dergachev, Philip Glass",
+  "mu": "Philip Glass, Andrey Dergachev",
   "dop": "Mikhail Krichman",
   "countries": "Russia",
   "cc": [
@@ -15301,8 +15306,8 @@
    "Roman Madyanov": 97368,
    "Anna Ukolova": 393420,
    "Oleg Negin": 1063375,
-   "Andrey Dergachev": 68524,
    "Philip Glass": 1551,
+   "Andrey Dergachev": 68524,
    "Mikhail Krichman": 68525
   },
   "dir": "Andrey Zvyagintsev",
@@ -15333,8 +15338,8 @@
   "original_title": "Dune",
   "orig_lang": "en",
   "tmdb_year": "2021",
-  "tmdb_vote": 7.8,
-  "vote_count": 15915,
+  "tmdb_vote": 7.786,
+  "vote_count": 15918,
   "via": "bg-runtime",
   "q": "Дюн",
   "tbg": "Дюн",
@@ -15397,8 +15402,8 @@
   "original_title": "Dune: Part Two",
   "orig_lang": "en",
   "tmdb_year": "2024",
-  "tmdb_vote": 8.1,
-  "vote_count": 8930,
+  "tmdb_vote": 8.144,
+  "vote_count": 8934,
   "via": "bg",
   "q": "Дюн: Част втора",
   "tbg": "Дюн: Част втора",
@@ -15459,8 +15464,8 @@
   "original_title": "Die Hard",
   "orig_lang": "en",
   "tmdb_year": "1988",
-  "tmdb_vote": 7.8,
-  "vote_count": 12844,
+  "tmdb_vote": 7.818,
+  "vote_count": 12848,
   "via": "bg",
   "q": "Умирай трудно",
   "tbg": "Умирай трудно",
@@ -15570,5 +15575,66 @@
   "imdbVotes": "321.6K",
   "rt": 90,
   "mc": 80
+ },
+ "marsupilami": {
+  "matched": false,
+  "en": "",
+  "miss": "no match: title search: 'МАРСУПИЛАМИ'; no director to look up; no runtime to confirm a near title"
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980": {
+  "matched": false,
+  "en": "",
+  "miss": "no match: title search: 'Европейски кинокласики в кино „Влайкова“: ИЛЮЗИЯ | 1980'; no director to look up; no runtime to confirm a near title"
+ },
+ "avrora": {
+  "matched": true,
+  "tmdb_id": 81527,
+  "poster_path": "/edmR325BbyaP0uMURbDYXejGvnr.jpg",
+  "backdrop_path": "/6zrHO8VCbeVPP0qu8q1JHHAxtxH.jpg",
+  "en": "",
+  "original_title": "Aurora",
+  "orig_lang": "ro",
+  "tmdb_year": "2011",
+  "tmdb_vote": 5.7,
+  "vote_count": 43,
+  "via": "bg",
+  "q": "АВРОРА",
+  "tbg": "Аврора",
+  "ov": "A taciturn Romanian divorcee acquires a hunting rifle and initiates a killing spree.",
+  "country": "France",
+  "runtime": 186,
+  "genres": [
+   "Драма"
+  ],
+  "wr": "Cristi Puiu",
+  "dop": "Viorel Sergovici",
+  "countries": "France / Germany / Romania / Switzerland",
+  "cc": [
+   "FR",
+   "DE",
+   "RO",
+   "CH"
+  ],
+  "trailer": {
+   "k": "LyYcJgUZ7bE",
+   "l": "en",
+   "t": "Trailer"
+  },
+  "pid": {
+   "Cristi Puiu": 107533,
+   "Clara Vodă": 129656,
+   "Ileana Puiu": 3932486,
+   "Valeria Seciu": 1114502,
+   "Valentin Popescu": 1017306,
+   "Viorel Sergovici": 31627
+  },
+  "dir": "Cristi Puiu",
+  "cast": "Cristi Puiu, Clara Vodă, Ileana Puiu, Valeria Seciu, Valentin Popescu",
+  "ovBg": "В предишния си филм Смъртта на господин Лазареску Кристи Пую посвещава два часа и половина на историята на един болен мъж и в края, когато той поема последния си дъх, изпитваме близост и симпатия към него. В новия си филм Аврора режисьорът посвещава три часа на Виорел, но на финала трудно бихме казали, че познаваме героя по-добре, отколкото в началото. Пую играе ролята на Виорел и прави забележително изпълнение като постоянно напрегнатия, но тих мъж с безизразен поглед. Докато наблюдаваме как вяло и бавно извършва ежедневните си задачи, Виорел прекъсва обичайната рутина, за да си купи пушка и патрони.",
+  "imdb_id": "tt1403047",
+  "imdb": 6.5,
+  "imdbVotes": "2.2K",
+  "rt": 77,
+  "mc": 63
  }
 }
