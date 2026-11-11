@@ -2179,6 +2179,48 @@ check("harvest_cinema_posters.py no longer hard-codes the window end",
       "2026-12-14" in (pathlib.Path(__file__).resolve().parent / "harvest_cinema_posters.py").read_text(encoding="utf-8"),
       False)
 
+# T1.6 (audit 2026-11-07, finding 10): one Кино Арена day page that fails must cost
+# that cinema's day only. The date used to move forward inside the cinema loop and
+# again after it: the other cinemas' pages of that day were then thrown away (the
+# page's selected day no longer was "today") and the next day was never asked for.
+print("Arena poster harvest: a failed day page skips nothing else (T1.6)")
+import harvest_cinema_posters as HCP                             # noqa: E402
+
+
+class _KaDays:
+    """A kinoarena.com that answers every cinema's day page but the ones in `fail`."""
+
+    def __init__(self, fail=()):
+        self.fail, self.asked = set(fail), []
+
+    def get(self, url):
+        slug, dmy = url.rstrip("/").split("/")[-2:]
+        self.asked.append((slug, dmy))
+        if (slug, dmy) in self.fail:
+            return None
+        return type("Page", (), {"text": (
+            f'<select id="cinema_choice"><option selected value="/bg/program/view/{slug}">x</option></select>'
+            f'<div class="projectionDays"><a class="tabItem selected" href="/bg/program/view/{slug}/{dmy}">d</a></div>'
+            f'<div class="scheduleRow"><header class="rowHeader"><h5 class="title">'
+            f'<a href="/bg/film/{slug}-{dmy}">{slug} {dmy}</a></h5></header></div>')})()
+
+
+_ka_slugs = list(HCP.ARENA_SLUGS.values())
+_ka_d1, _ka_d2 = "11-11-2026", "12-11-2026"
+_ka_all = [(s, d) for d in (_ka_d1, _ka_d2) for s in _ka_slugs]
+_ka_fail = (HCP.ARENA_SLUGS["arena-mega"], _ka_d1)
+_ka_ok, _ka_bad = _KaDays(), _KaDays([_ka_fail])
+_ka_full = HCP._ka_film_urls(_ka_ok, "2026-11-11", "2026-11-12")
+check("nothing fails: every cinema's page of every day is asked for, and read",
+      (_ka_ok.asked, len(_ka_full)), (_ka_all, 6))
+_ka_got = HCP._ka_film_urls(_ka_bad, "2026-11-11", "2026-11-12")
+check("arena-mega's day 1 fails: day 1 is still asked of the other two cinemas, and day 2 of all three",
+      _ka_bad.asked, _ka_all)
+check("…and every page that arrived is read: the other two on day 1, all three on day 2",
+      sorted(_ka_got), sorted(f"{s} {d}" for s, d in _ka_all if (s, d) != _ka_fail))
+check("…each title with its own film page",
+      _ka_got.get(f"{_ka_slugs[1]} {_ka_d1}"), f"https://www.kinoarena.com/bg/film/{_ka_slugs[1]}-{_ka_d1}")
+
 # CODE-03: netfetch's budgets are real. A fake clock and a fake transport.
 print("netfetch: real time budgets, a closed dead host, blocking recognised (CODE-03)")
 
