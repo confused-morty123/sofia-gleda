@@ -1,12 +1,12 @@
 {
- "date": "2026-11-10",
+ "date": "2026-11-11",
  "threshold": 280,
  "shows": {
-  "titles": 510,
-  "thin": 474,
-  "empty": 384,
-  "thin_en": 475,
-  "linked": 455,
+  "titles": 503,
+  "thin": 465,
+  "empty": 377,
+  "thin_en": 467,
+  "linked": 449,
   "by_theatre": {
    "artvent": {
     "titles": 22,
@@ -41,11 +41,11 @@
     "name": "I AM Studio"
    },
    "kuklen": {
-    "titles": 23,
-    "thin": 23,
-    "empty": 21,
-    "thin_en": 23,
-    "linked": 23,
+    "titles": 22,
+    "thin": 22,
+    "empty": 20,
+    "thin_en": 22,
+    "linked": 22,
     "name": "Столичен куклен театър"
    },
    "mladezhki": {
@@ -53,7 +53,7 @@
     "thin": 44,
     "empty": 40,
     "thin_en": 44,
-    "linked": 41,
+    "linked": 44,
     "name": "Младежки театър „Николай Бинев“"
    },
    "natfiz": {
@@ -65,27 +65,27 @@
     "name": "Учебен театър на НАТФИЗ „Кръстьо Сарафов“"
    },
    "national": {
-    "titles": 71,
-    "thin": 71,
-    "empty": 10,
-    "thin_en": 71,
-    "linked": 71,
+    "titles": 69,
+    "thin": 69,
+    "empty": 9,
+    "thin_en": 69,
+    "linked": 69,
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 46,
-    "thin": 46,
-    "empty": 46,
-    "thin_en": 46,
-    "linked": 46,
+    "titles": 45,
+    "thin": 45,
+    "empty": 45,
+    "thin_en": 45,
+    "linked": 45,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
-    "titles": 44,
-    "thin": 44,
-    "empty": 44,
-    "thin_en": 44,
-    "linked": 44,
+    "titles": 43,
+    "thin": 43,
+    "empty": 43,
+    "thin_en": 43,
+    "linked": 43,
     "name": "Сатиричен театър „Алеко Константинов“"
    },
    "sfumato": {
@@ -113,7 +113,7 @@
     "name": "Театър „Българска армия“"
    },
    "th199": {
-    "titles": 40,
+    "titles": 41,
     "thin": 23,
     "empty": 16,
     "thin_en": 24,
@@ -121,19 +121,19 @@
     "name": "Театър 199 „Валентин Стойчев“"
    },
    "toplo": {
-    "titles": 48,
-    "thin": 48,
-    "empty": 48,
-    "thin_en": 48,
-    "linked": 48,
+    "titles": 46,
+    "thin": 46,
+    "empty": 46,
+    "thin_en": 46,
+    "linked": 46,
     "name": "Топлоцентрала"
    },
    "vazrazhdane": {
-    "titles": 26,
-    "thin": 26,
-    "empty": 23,
-    "thin_en": 26,
-    "linked": 26,
+    "titles": 25,
+    "thin": 24,
+    "empty": 22,
+    "thin_en": 25,
+    "linked": 24,
     "name": "Театър „Възраждане“"
    },
    "zad-kanala": {
@@ -147,14 +147,14 @@
   }
  },
  "films": {
-  "titles": 161,
-  "thin": 91,
-  "empty": 59,
-  "thin_en": 111
+  "titles": 176,
+  "thin": 96,
+  "empty": 56,
+  "thin_en": 117
  },
  "routes": {
   "overrides": 0,
-  "theatre_art_fills": 38,
-  "link_to_theatre": 455
+  "theatre_art_fills": 40,
+  "link_to_theatre": 449
  }
 }

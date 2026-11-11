@@ -198,6 +198,18 @@
    "page": "http://bnf.bg/bg/odeon/movies/6072/",
    "path": "posters/film-vnimavay-kakvo-si-pozhelavash-kasi-filmi-blok-3.jpg",
    "w": 1920
+  },
+  "zhivot-strashen-i-vse-pak-mnogo-hubav": {
+   "checked": "2026-11-11",
+   "h": 726,
+   "how": "the theatre's poster slot",
+   "img": "http://bnf.bg/uploads/fdb5aae6.jpg",
+   "kind": "key",
+   "md5": "004518bc1159cf499819004017bc576a",
+   "page": "http://bnf.bg/bg/odeon/movies/5913/",
+   "path": "posters/film-zhivot-strashen-i-vse-pak-mnogo-hubav.jpg",
+   "src_md5": "45920c41e7525e24a2a04865b090a460",
+   "w": 1290
   }
  },
  "misses": {
@@ -232,7 +244,7 @@
    ]
   },
   "film:polyusi": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://domnakinoto.com/polyusi-movie7436.html?a="
    ],
@@ -241,7 +253,7 @@
    ]
   },
   "film:prodavach-na-nadezhda": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/"
    ],
@@ -273,7 +285,7 @@
    ]
   },
   "film:velopohodat-kam-cop-31": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%b2%d0%b5%d0%bb%d0%be%d0%bf%d0%be%d1%85%d0%be%d0%b4%d1%8a%d1%82-%d0%ba%d1%8a%d0%bc-cop-31/"
    ],
@@ -282,7 +294,7 @@
    ]
   },
   "show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden"
    ],
@@ -291,7 +303,7 @@
    ]
   },
   "show:az-foyerbah": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_5097_4_20"
    ],
@@ -300,7 +312,7 @@
    ]
   },
   "show:az-se-kazvah": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://toplocentrala.bg/program/performance/az-se-kazvah"
    ],
@@ -309,7 +321,7 @@
    ]
   },
   "show:bai-ganyo": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_5509_4_20"
    ],
@@ -319,7 +331,7 @@
    ]
   },
   "show:bremenskite-muzikanti": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_4248_4_20"
    ],
@@ -328,7 +340,7 @@
    ]
   },
   "show:buratino-2": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_7714_4_20"
    ],
@@ -345,15 +357,8 @@
     "page not read: https://www.salzaismyah.bg/site/play/227"
    ]
   },
-  "show:clean-girl-fat-festival": {
-   "last": "2026-11-10",
-   "tried": [],
-   "why": [
-    "no own page linked"
-   ]
-  },
   "show:dalgiyat-pat-na-denya-kam-noshtta": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20"
    ],
@@ -362,7 +367,7 @@
    ]
   },
   "show:dekameron-lyubov-i-smart-po-bokacho": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
    ],
@@ -371,7 +376,7 @@
    ]
   },
   "show:dnevnikat-na-edin-lud-2": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097"
    ],
@@ -380,7 +385,7 @@
    ]
   },
   "show:ekaterina-karavelova-vik-ot-istoriyata": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://www.tba.art.bg/екатерина-каравелова-вик-от-историята___8076"
    ],
@@ -389,7 +394,7 @@
    ]
   },
   "show:gnyav-po-stivan-king": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://www.tba.art.bg/гняв-по-стивън-кинг___8075"
    ],
@@ -398,7 +403,7 @@
    ]
   },
   "show:igra-na-kotki": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://zadkanala.bg/spektakli/igra-na-kotki"
    ],
@@ -407,19 +412,12 @@
    ]
   },
   "show:insert-coin-player-one": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://toplocentrala.bg/program/performance/insert-coin-player-one"
    ],
    "why": [
     "no usable image on the page"
-   ]
-  },
-  "show:ivanovden": {
-   "last": "2026-11-10",
-   "tried": [],
-   "why": [
-    "no own page linked"
    ]
   },
   "show:karnaval": {
@@ -430,7 +428,7 @@
    ]
   },
   "show:kiki-i-bozo": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/кики-и-бозо_7339_8_20"
    ],
@@ -439,7 +437,7 @@
    ]
   },
   "show:kontsert-na-pim-pam": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://satirata.bg/program"
    ],
@@ -448,19 +446,12 @@
    ]
   },
   "show:kotarakat-v-chizmi": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/котаракът-в-чизми_640_8_20"
    ],
    "why": [
     "https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image"
-   ]
-  },
-  "show:kuche-na-ime-kote": {
-   "last": "2026-11-10",
-   "tried": [],
-   "why": [
-    "no own page linked"
    ]
   },
   "show:lazaritsa": {
@@ -471,7 +462,7 @@
    ]
   },
   "show:magichna-nosht-predi-koleda": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_8103_10_20"
    ],
@@ -489,7 +480,7 @@
    ]
   },
   "show:malkata-rusalka": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_7020_4_20"
    ],
@@ -505,7 +496,7 @@
    ]
   },
   "show:mechka-hamletmashina": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "http://sfumato.info/мечка-хамлетмашина___8099"
    ],
@@ -514,7 +505,7 @@
    ]
   },
   "show:mezhdunaroden-simpozium-melba": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://toplocentrala.bg/program/performance/mejdunaroden-simpozium-melba"
    ],
@@ -523,7 +514,7 @@
    ]
   },
   "show:nordost": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_366_4_20"
    ],
@@ -532,7 +523,7 @@
    ]
   },
   "show:pepelyashka": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_6765_4_20"
    ],
@@ -541,7 +532,7 @@
    ]
   },
   "show:razdelyam-dvoyki-po-domovete": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_4099_4_20"
    ],
@@ -550,7 +541,7 @@
    ]
   },
   "show:sablechi-se-za-vecherya": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_5963_4_20"
    ],
@@ -559,7 +550,7 @@
    ]
   },
   "show:spetsialni-povodi": {
-   "last": "2026-11-10",
+   "last": "2026-11-11",
    "tried": [
     "https://theatre.art.bg/x_4673_4_20"
    ],
@@ -707,8 +698,20 @@
   "https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg": {
    "https://theatre.art.bg/кики-и-бозо_7339_8_20": "кики и бозо"
   },
+  "https://theatre.peakview.bg/theatre/photos/BIG17919116382Ola Janczak (1).jpg": {
+   "https://theatre.art.bg/x_8087_4_20": "clean girl fat festival"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG1792145396120260416-A9304463_optimized_1000.jpg": {
+   "https://theatre.art.bg/x_8089_4_20": "ивановден"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG17932036911DSC06894_1000.jpg": {
+   "https://theatre.art.bg/x_8098_4_20": "куче на име коте"
+  },
   "https://theatre.peakview.bg/theatre/photos/BIG1793887192108.08.26 LIW Sofia (444 x 444 px) Eventim .png": {
    "https://theatre.art.bg/любов-във-война-мултимедиен-спектакъл-по-романа-аз-още-броя-дните_7924_173_20": "любов във война мултимедиен спектакъл по романа аз още броя дните"
+  },
+  "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_350/Kotarakut_1024x1024.jpg?f=67417": {
+   "https://theatre199.org/bg/plays/p/350-kotarakat-s-chizmi-theatre199": "котаракът с чизми"
   },
   "https://toplocentrala.bg/attachments/Event/1004/main/Horizontal_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/insert-coin-player-one": "insert coin player one"
@@ -742,6 +745,9 @@
   },
   "https://www.salzaismyah.bg/uploads/events_image/5bbc5cf7b60d60bd4da0280c07a46321.jpg": {
    "https://www.salzaismyah.bg/site/play/168": "мъжът на жена ми"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/8fdabf319fae053be025fa518ca49bf0.jpg": {
+   "https://www.salzaismyah.bg/site/play/743": "епизоди комедиен импро ситком"
   }
  },
  "shows": {
@@ -1727,6 +1733,18 @@
    "path": "posters/chudomirshtini.jpg",
    "w": 600
   },
+  "clean-girl-fat-festival": {
+   "checked": "2026-11-11",
+   "h": 533,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG17919116382Ola Janczak (1).jpg",
+   "kind": "key",
+   "md5": "d05031dec4b0c14934f1c7acadf74946",
+   "page": "https://theatre.art.bg/x_8087_4_20",
+   "path": "posters/clean-girl-fat-festival.jpg",
+   "src_md5": "16841cb8c07a1e5902bd135c558c2335",
+   "w": 800
+  },
   "co-surface-sa-povarhnost": {
    "checked": "2026-11-04",
    "h": 550,
@@ -2112,6 +2130,18 @@
    "page": "https://theatre.art.bg/x_6804_4_20",
    "path": "posters/emil-ot-lyoneberya.jpg",
    "w": 800
+  },
+  "epizodi-komedien-impro-sitkom": {
+   "checked": "2026-11-11",
+   "h": 840,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/8fdabf319fae053be025fa518ca49bf0.jpg",
+   "kind": "poster",
+   "md5": "757694a17ca9a9f964ad657f128c8750",
+   "page": "https://www.salzaismyah.bg/site/play/743",
+   "path": "posters/epizodi-komedien-impro-sitkom.jpg",
+   "src_md5": "3b48f57b93eafced10ce8c211b40b2c8",
+   "w": 600
   },
   "esenna-sonata": {
    "checked": "2026-11-04",
@@ -2696,6 +2726,18 @@
    "path": "posters/ivanov-2.jpg",
    "w": 800
   },
+  "ivanovden": {
+   "checked": "2026-11-11",
+   "h": 533,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG1792145396120260416-A9304463_optimized_1000.jpg",
+   "kind": "key",
+   "md5": "3f411edc5e06ef4bc3ec859b1700fc21",
+   "page": "https://theatre.art.bg/x_8089_4_20",
+   "path": "posters/ivanovden.jpg",
+   "src_md5": "3314e96cb4d4742db4ae1bd7e3cfe2bb",
+   "w": 800
+  },
   "izdishvane": {
    "checked": "2026-11-04",
    "h": 1024,
@@ -3114,6 +3156,18 @@
    "path": "posters/kotarakat-s-chizmi.jpg",
    "w": 1361
   },
+  "kotarakat-s-chizmi-2": {
+   "checked": "2026-11-11",
+   "h": 1024,
+   "how": "og:image",
+   "img": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_350/Kotarakut_1024x1024.jpg?f=67417",
+   "kind": "key",
+   "md5": "572fbbd043f539143d4d8eb9afeaf148",
+   "page": "https://theatre199.org/bg/plays/p/350-kotarakat-s-chizmi-theatre199",
+   "path": "posters/kotarakat-s-chizmi-2.jpg",
+   "src_md5": "d9e216edb496bd4d39468d7a58dc0dd1",
+   "w": 1024
+  },
   "kovarstvo-i-lyubov": {
    "checked": "2026-11-04",
    "h": 310,
@@ -3168,6 +3222,18 @@
    "page": "https://satirata.bg/show/civilizaciq",
    "path": "posters/krivorazbranata-civilizaciya.jpg",
    "w": 980
+  },
+  "kuche-na-ime-kote": {
+   "checked": "2026-11-11",
+   "h": 533,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG17932036911DSC06894_1000.jpg",
+   "kind": "key",
+   "md5": "953e2fda4b5d8db11c21d7a8d7f11965",
+   "page": "https://theatre.art.bg/x_8098_4_20",
+   "path": "posters/kuche-na-ime-kote.jpg",
+   "src_md5": "cfe1e2fb383bda401b947ae7312189a1",
+   "w": 800
   },
   "kuchki": {
    "checked": "2026-11-04",

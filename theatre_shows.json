@@ -5977,7 +5977,7 @@
  },
  "clean-girl-fat-festival": {
   "id": "clean-girl-fat-festival",
-  "title": "Clean girl – FAT FESTIVAL",
+  "title": "Clean girl – Fat Festival",
   "titleEn": "",
   "theatre": "mladezhki",
   "author": "",
@@ -7198,5 +7198,41 @@
   "synBg": "",
   "synEn": "",
   "source": "natfiz"
+ },
+ "kotarakat-s-chizmi-2": {
+  "id": "kotarakat-s-chizmi-2",
+  "title": "КОТАРАКЪТ С ЧИЗМИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "epizodi-komedien-impro-sitkom": {
+  "id": "epizodi-komedien-impro-sitkom",
+  "title": "Епизоди - комедиен импро ситком",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }

@@ -1,31 +1,6 @@
 [
  {
   "level": "warning",
-  "venue": "arena-mega",
-  "message": "self-check failed, this venue alone kept its previous listings as preliminary: implausibly few rows — 10.2 screenings/day now vs 44.8 last run (244 over 24 day(s) vs 179 over 4)"
- },
- {
-  "level": "warning",
-  "venue": "arena-mega",
-  "message": "official source unreachable (implausibly few rows — 10.2 screenings/day now vs 44.8 last run (244 over 24 day(s) vs 179 over 4)); last read 2026-11-09, 1 day ago — 401 screenings kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
-  "venue": "arena-mall",
-  "message": "self-check failed, this venue alone kept its previous listings as preliminary: implausibly few rows — 10.2 screenings/day now vs 44.8 last run (244 over 24 day(s) vs 179 over 4)"
- },
- {
-  "level": "warning",
-  "venue": "arena-mall",
-  "message": "official source unreachable (implausibly few rows — 10.2 screenings/day now vs 44.8 last run (244 over 24 day(s) vs 179 over 4)); last read 2026-11-09, 1 day ago — 401 screenings kept and shown as preliminary (removed after 14 days)"
- },
- {
-  "level": "warning",
-  "venue": "mladezhki",
-  "message": "blocked from this network: challenge page (Cloudflare challenge, HTTP 403) at https://mlt.bg/programa.php?year=2026&month=11 — read from tickets.mlt.bg public list (the theatre's own ticket centre) instead"
- },
- {
-  "level": "warning",
   "venue": "new-ndk",
   "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
@@ -42,26 +17,26 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 217/292 ok, 75 missing IMDb ratings"
+  "message": "OMDb: 220/299 ok, 79 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 505/510 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (19 days)"
+  "message": "theatre posters: 497/503 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (20 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.1 % -> 94.1 %, films 93.8 % -> 93.8 %; attached 0; causes: own page has no usable image 12, own page blocked (robots.txt or a bot challenge; not bypassed) 10, own page's images rejected by the poster policy 5, only an aggregator's image (the film does not link that page) 5 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.2 % -> 94.8 %, films 93.2 % -> 93.2 %; attached 3; causes: own page has no usable image 11, own page blocked (robots.txt or a bot challenge; not bypassed) 10, only an aggregator's image (the film does not link that page) 9, own page's images rejected by the poster policy 5 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 480/510 (94.1 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, chernoto-pile, clean-girl-fat-festival, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata; 505/510 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 477/503 (94.8 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king, igra-na-kotki; 498/503 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 151/161 (93.8 %); missing: bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kucheto-na-zlatyu, marsupilami, polyusi, prodavach-na-nadezhda, smisal-film-za-ikonomikata-na-blagosastoyanieto, velopohodat-kam-cop-31, vlyavo-ot-patya-london-kalkuta — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 164/176 (93.2 %); missing: barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, last, polyusi, prodavach-na-nadezhda, sadiyata-1884-yuliy-avgust, velopohodat-kam-cop-31, vlyavo-ot-patya-london-kalkuta — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]
