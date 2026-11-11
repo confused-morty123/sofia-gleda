@@ -24,7 +24,8 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     2. fetch_film_info.py           synopsis/director/cast from the films' own pages -> film_info.json
     3. inject_films.py              merge synthesised arthouse films -> index.html
     4. inject_shows.py              merge synthesised theatre shows (+ synopsis overrides/fills) -> index.html
-   4b. synopses.py --apply          thin play synopses from the production's own theatre.art.bg page
+   4b. synopses.py --apply          thin play synopses from each play's own production page
+                                    (own_page_synopses.py, bounded) and its theatre.art.bg page
                                     -> synopsis_fills.json, applied with scripts/synopsis_overrides.json
     5. fetch_tmdb.py                film posters + English titles -> tmdb_films.json
     6. harvest_cinema_posters.py    Cinema City / Кино Арена posters for titles TMDB lacks -> film_info.json
@@ -114,7 +115,7 @@ STEPS = [
     ("film info",       "fetch_film_info.py",        []),    # best-effort: synopsis/dir/cast from own pages
     ("arthouse films",  "inject_films.py",           []),
     ("theatre shows",   "inject_shows.py",           []),
-    ("synopses",        "synopses.py",               ["--apply"]),  # thin play synopses: theatre.art.bg own pages + owner overrides
+    ("synopses",        "synopses.py",               ["--apply"]),  # thin play synopses: own production pages + theatre.art.bg + owner overrides
     ("film posters",    "fetch_tmdb.py",             []),
     ("cinema posters",  "harvest_cinema_posters.py", []),    # the cinemas' own posters for titles TMDB lacks
     ("theatre posters", "fetch_theatre_posters.py",  []),

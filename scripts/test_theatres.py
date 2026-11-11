@@ -3039,7 +3039,150 @@ _n = _SY.apply(_shows, {"ee": {"bg": "Текст на собственика", "
                {"a": {"bg": "Е" * 200}, "b": {"bg": "Ж" * 400}, "c": {"bg": "кратко"}})
 check("synopses: override wins (EN kept without en); fill replaces only a thin text; a tiny fill is ignored",
       ([s["synBg"][:4] for s in _shows], _shows[0]["synEn"], _n),
-      (["Текс", "ЕЕЕЕ", "ДДДД", ""], "Short.", {"override": 1, "fill": 1}))
+      (["Текс", "ЕЕЕЕ", "ДДДД", ""], "Short.", {"override": 1, "fill": 1, "own_page": 0}))
+
+# --- own_page_synopses.py: the description from each play's OWN production page (2026-11-09)
+# Fixtures: page structures trimmed from the real theatre pages (2026-11-09), text made up.
+import own_page_synopses as _OPS
+_D1 = ("Пробната пиеса разказва за двама съседи, които цял живот спорят за една ограда. "
+       "Един ден оградата изчезва и те трябва да решат какво всъщност ги разделя.")
+_D2 = "Комедия за упорството, приятелството и малките победи на всеки ден, с много музика."
+_OTHER = ["Чужда пиеса за морето", "Друго заглавие тук"]
+_others = {_SY.norm(t) for t in _OTHER}
+
+
+def _pg(head, body, title="Пробна пиеса"):
+    return (f"<html><head><title>{title} | Театър</title></head><body>"
+            f"<nav><a href='/'>Начало</a><p>Меню с много думи, които не са описание на нищо тук.</p></nav>"
+            f"{head}{body}<footer><p>Работно време на касата: вторник – събота, 11:00–19:00 ч.</p></footer>"
+            f"<div class='cookies-holder'><p>Този уеб сайт използва бисквитки, необходими за работата му.</p></div>"
+            f"</body></html>")
+
+
+_good = {
+    "satirata.bg/show/probna": _pg("<h2 class='title'>Пробна пиеса</h2>",
+        "<div class='show-details'><div><p>от Иван Иванов<br>превод - Петър Петров<br>режисьор - Мария Колева</p>"
+        "<p>Ролите изпълняват:<br>Иван – Георги Георгиев<br>Мария – Ана Петрова</p>"
+        f"<p>Фотограф – Димитър Димов</p><p>{_D1}</p><p>{_D2}</p>"
+        "<p>Иван Иванов – режисьор</p><p>ПРОДЪЛЖИТЕЛНОСТ</p></div></div>"),
+    "toplocentrala.bg/program/performance/probna": _pg("<h1 class='program-detail-title'>Пробна пиеса</h1>",
+        f"<div class='program-description-cms'><p>{_D1}</p><p>{_D2}</p><p>Продължителност: 60 мин.</p></div>"
+        "<div class='related'><p>Чужда пиеса за морето е друга история, която също играем в залата.</p></div>"),
+    "www.nationaltheatre.bg/bg/predstavlenie/probna": _pg("<h1>Пробна пиеса</h1>",
+        "<div class='container'><div class='row'><div class='col-12'><p>от Иван Иванов</p><p>Режисьор:</p><p>Мария Колева</p>"
+        f"<p>{_D1}</p><p>Иван Иванов е български драматург. Завършва НАТФИЗ.</p>"
+        "<p>Носител е на награда „Аскеер“ за „Чужда пиеса за морето“.</p></div></div></div>"),
+    "zadkanala.bg/spektakli/probna": _pg("<h1 class='title'>Пробна пиеса</h1>",
+        f"<div class='field field-name-body'><div class='field-item even'><p>{_D1}</p>"
+        "<p>Интервю с режисьора</p><p>- Какво означава заглавието?</p><p>Означава много неща, които ще видите сами.</p></div></div>"),
+    "www.salzaismyah.bg/site/play/1": _pg("<h1>ПРОБНА ПИЕСА</h1>",
+        f"<div class='mr-md-3'><p>Участват Георги Георгиев, Ана Петрова, Иван Иванов</p><p>{_D1}</p></div>"),
+    "sfumato.info/пробна-пиеса___1": _pg("<h1 class='play-title-detail'>Пробна пиеса</h1>",
+        f"<div class='play-details-col'><div class='play-subject'><span>{_D1}<br><br>{_D2}</span></div></div>"),
+}
+for _u, _h in _good.items():
+    _t = _OPS.parse_own_page(_h, "https://" + _u, "Пробна пиеса", ["Театър"], _others)
+    check(f"own-page synopses: {_u.split('/')[0]} description = lead paragraphs only",
+          ((_t or "").split("\n\n")[0], "ПРОДЪЛЖИТЕЛНОСТ" in (_t or ""), "Завършва" in (_t or ""),
+           "Интервю" in (_t or ""), "бисквит" in (_t or ""), "Ролите" in (_t or "")),
+          (_D1, False, False, False, False, False))
+check("own-page synopses: satirata keeps both description paragraphs, skips the credits before them",
+      _OPS.parse_own_page(_good["satirata.bg/show/probna"], "https://satirata.bg/show/probna",
+                          "Пробна пиеса", [], _others), _D1 + "\n\n" + _D2)
+_U = "https://satirata.bg/show/probna"
+_cast_only = _pg("<h2 class='title'>Пробна пиеса</h2>",
+    "<div class='show-details'><p>от Иван Иванов<br>режисьор - Мария Колева<br>сценография - Ана Петрова</p>"
+    "<p>Ролите изпълняват:<br>Иван – Георги Георгиев<br>Мария – Ана Петрова<br>Петър – Петър Петров</p></div>")
+check("own-page synopses: a cast-list-only page -> no text",
+      _OPS.parse_own_page(_cast_only, _U, "Пробна пиеса", [], _others), None)
+_foreign = _pg("<h2 class='title'>Пробна пиеса</h2>",
+    "<div class='show-details'><p>„Чужда пиеса за морето“ е спектакъл за двама рибари, които всяка сутрин "
+    "излизат в морето и всяка вечер се връщат с нова история за града и за себе си.</p></div>")
+check("own-page synopses: the main text is another listed production's -> no text",
+      _OPS.parse_own_page(_foreign, _U, "Пробна пиеса", [], _others), None)
+_listing = _pg("<h1>Репертоар</h1>",
+    "<div class='show-details'>" + "".join(f"<div class='card'><a href='/show/{i}'><h2>Заглавие {i}</h2></a>"
+                                            f"<p>{_D1}</p></div>" for i in range(3)) + "</div>", title="Репертоар")
+check("own-page synopses: a listing page (its headings do not name the play) -> no text",
+      _OPS.parse_own_page(_listing, _U, "Пробна пиеса", [], _others), None)
+check("own-page synopses: a request that ended on another page (redirect) -> no text",
+      _OPS.parse_own_page(_good["satirata.bg/show/probna"], _U, "Пробна пиеса", [], _others,
+                          final_url="https://satirata.bg/repertoire"), None)
+_soft404 = _good["satirata.bg/show/probna"].replace("<head>", "<head><link rel='canonical' href='https://satirata.bg/'>")
+check("own-page synopses: the site's home page served for the URL (root canonical) -> no text",
+      _OPS.parse_own_page(_soft404, _U, "Пробна пиеса", [], _others), None)
+_epi = _pg("<h1>Пробна пиеса</h1>", "<main><p>„Всичко това писах за вас, за всички вас, които ме чувате сега и после, "
+           "в дълги нощи и кратки дни без край…“</p><p>по едноименната пиеса на Иван Иванов</p></main>")
+check("own-page synopses: an epigraph (a quotation standing alone) is not a description",
+      _OPS.parse_own_page(_epi, "https://example.bg/p", "Пробна пиеса", [], _others), None)
+_en = _pg("<h1>Пробна пиеса</h1>", "<main><p>" + "An English text about the play that is long enough to pass. " * 3 + "</p></main>")
+check("own-page synopses: a text that is not Bulgarian -> no text",
+      _OPS.parse_own_page(_en, "https://example.bg/p", "Пробна пиеса", [], _others), None)
+check("own-page synopses: an unknown host is read only inside its one main content block",
+      (_OPS.parse_own_page(_pg("<h1>Пробна пиеса</h1>", f"<main><p>{_D1}</p></main>"), "https://example.bg/p",
+                           "Пробна пиеса", [], _others),
+       _OPS.parse_own_page(_pg("<h1>Пробна пиеса</h1>", f"<div><p>{_D1}</p></div>"), "https://example.bg/p",
+                           "Пробна пиеса", [], _others)),
+      (_D1, None))
+_eur = _pg("<h1>Пробна пиеса</h1>", "<main><p>" + _D1.replace("съседи", "съсе€и") + "</p></main>")
+check("own-page synopses: a text whose words the site's лв -> € replacement corrupted -> no text",
+      _OPS.parse_own_page(_eur, "https://example.bg/p", "Пробна пиеса", [], _others), None)
+_promo = _pg("<h1>Пробна пиеса</h1>", f"<main><p>{_D1}</p><p>🎟️ Комбинирани билети на промоционални цени за всички.</p>"
+             f"<p>{_D2}</p></main>")
+_award = _pg("<h1>Пробна пиеса</h1>", f"<main><p>Спектакълът има номинация за Аскеер 2025.</p><p>{_D1}</p></main>")
+check("own-page synopses: a ticket / promo line ends the lead; a short awards line before it leaves no text",
+      (_OPS.parse_own_page(_promo, "https://example.bg/p", "Пробна пиеса", [], _others),
+       _OPS.parse_own_page(_award, "https://example.bg/p", "Пробна пиеса", [], _others)), (_D1, None))
+_shows2 = [{"id": "o", "synBg": "Кратко."}, {"id": "t", "synBg": ""}, {"id": "k", "synBg": "Д" * 300},
+           {"id": "v", "synBg": "Кратко."}]
+_n2 = _SY.apply(_shows2, {"v": {"bg": "Текст на собственика", "source_url": "https://x", "copied_on": "2026-11-09"}},
+                {"o": {"bg": "О" * 200, "source": "own-page"}, "t": {"bg": "Т" * 200},
+                 "k": {"bg": "К" * 400, "source": "own-page"}, "v": {"bg": "В" * 400, "source": "own-page"}})
+check("own-page synopses: applied with the owner override first; only over a thin text; counted by route",
+      ([s["synBg"][:3] for s in _shows2], _n2),
+      (["ООО", "ТТТ", "ДДД", "Тек"], {"override": 1, "fill": 1, "own_page": 1}))
+
+
+class _FakeNet:
+    def __init__(self, pages):
+        self.pages, self.asked = pages, []
+
+    def over_budget(self):
+        return len(self.asked) >= 50
+
+    def get(self, url, kind="page"):
+        self.asked.append(url)
+        h = self.pages.get(url)
+        if h is None:
+            return None
+        r = type("R", (), {})()
+        r.content, r.url = h.encode("utf-8"), url
+        return r
+
+
+_src = ("const SHOWS=" + _json.dumps([
+            {"id": "probna", "title": "Пробна пиеса", "theatre": "satira", "synBg": ""},
+            {"id": "chuzhda", "title": "Чужда пиеса за морето", "theatre": "satira", "synBg": ""},
+            {"id": "art", "title": "Пробна пиеса", "theatre": "atelie313", "synBg": ""},
+            {"id": "dalga", "title": "Дълга", "theatre": "satira", "synBg": "Д" * 300}], ensure_ascii=False) + ";\n"
+        "const THEATRES=" + _json.dumps([{"id": "satira", "name": "Сатиричен театър"}], ensure_ascii=False) + ";\n"
+        "const PERFORMANCES=" + _json.dumps([["probna"], ["chuzhda"], ["art"], ["dalga"]]) + ";\n"
+        "const LINKS=" + _json.dumps([["probna", _U], ["chuzhda", "https://satirata.bg/show/chuzhda"],
+                                      ["art", "https://theatre.art.bg/x_1_2_20"],
+                                      ["dalga", "https://satirata.bg/show/dalga"]]) + ";\n")
+check("own-page synopses: candidates = listed thin plays with an own page that is not a theatre.art.bg link",
+      [c[0] for c in _OPS.candidates(_src)], ["probna", "chuzhda"])
+_fills = {"chuzhda": {"bg": "А" * 200, "source_url": "https://theatre.art.bg/x", "fetched_on": "2026-11-08"}}
+_net = _FakeNet({_U: _good["satirata.bg/show/probna"]})
+_st = _OPS.fetch(_src, _fills, _net, dt.date(2026, 11, 9), lambda b: b.decode("utf-8"))
+check("own-page synopses: fetch writes source/source_url/fetched_on; never touches another route's fill",
+      (_fills["probna"]["source"], _fills["probna"]["source_url"], _fills["probna"]["fetched_on"],
+       _fills["chuzhda"]["source_url"], _net.asked, _st["filled"]),
+      ("own-page", _U, "2026-11-09", "https://theatre.art.bg/x", [_U], 1))
+_net2 = _FakeNet({})
+_OPS.fetch(_src, _fills, _net2, dt.date(2026, 11, 10), lambda b: b.decode("utf-8"))
+check("own-page synopses: a fill is not re-read before RECHECK_DAYS, and an unreadable page keeps it",
+      (_net2.asked, bool(_fills["probna"].get("bg"))), ([], True))
 
 print()
 if fails:

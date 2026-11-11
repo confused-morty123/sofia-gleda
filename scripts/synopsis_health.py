@@ -84,7 +84,11 @@ def measure(html=HTML, thin=SY.THIN):
     routes = {
         "overrides": sum(1 for s in up_s if s in ov),
         "theatre_art_fills": sum(1 for s in up_s if (fills.get(s) or {}).get("bg")
+                                 and (fills[s].get("source") or "theatre.art.bg") != "own-page"
                                  and shows[s].get("synBg") == fills[s]["bg"]),
+        "own_page_fills": sum(1 for s in up_s if (fills.get(s) or {}).get("bg")
+                              and fills[s].get("source") == "own-page"
+                              and shows[s].get("synBg") == fills[s]["bg"]),
         "link_to_theatre": sum(1 for r in thin_rows if r[4]),
     }
     tot = {k: sum(p[k] for p in per.values()) for k in ("titles", "thin", "empty", "thin_en", "linked")}
@@ -104,6 +108,7 @@ def write_md(r, path=OUT_MD):
            f"{s['linked']} of them link the theatre's own page under the text.",
            f"- Films: {f['thin']} of {f['titles']} thin ({f['empty']} with none).",
            f"- Routes: {r['routes']['overrides']} owner override(s) (scripts/synopsis_overrides.json), "
+           f"{r['routes']['own_page_fills']} fill(s) from the plays' own production pages, "
            f"{r['routes']['theatre_art_fills']} fill(s) from theatre.art.bg production pages.", "",
            "| Theatre | Plays | Thin | None | Own-page link |", "|---|---:|---:|---:|---:|"]
     for k, v in s["by_theatre"].items():

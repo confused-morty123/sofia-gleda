@@ -14,7 +14,11 @@ nightly refresh and dev_build.py both read them):
      (the owner chose it). An entry missing bg, an https source_url or an ISO
      copied_on is skipped and reported.
 
-  2. synopsis_fills.json — read nightly (`python3 scripts/synopses.py`) from the
+  2. synopsis_fills.json, own pages — read nightly by own_page_synopses.py from
+     the play's OWN production page (the page own_page_posters.py reads), source
+     "own-page"; bounded (--own-max-requests, --own-budget), see that module.
+
+  3. synopsis_fills.json, theatre.art.bg — read nightly (`python3 scripts/synopses.py`) from the
      production's own page on theatre.art.bg, only where SHOWS' LINKS entry
      already points there (Театър 199, Ателие 313, Сити Марк sell through it;
      robots.txt allows it). The lead paragraphs of the page's description are
@@ -111,8 +115,11 @@ def load_fills(path=FILLS):
 
 # ---------------------------------------------------------------------- apply
 def apply(shows, overrides, fills, thin=THIN):
-    """Edit the SHOWS list in place. Returns {"override": n, "fill": n}."""
-    n = {"override": 0, "fill": 0}
+    """Edit the SHOWS list in place. Precedence: owner override > own page
+    (own_page_synopses.py, source "own-page") > theatre.art.bg > the seed text; a
+    fill replaces only a shown text shorter than `thin` and longer than it.
+    Returns {"override": n, "fill": n (theatre.art.bg), "own_page": n}."""
+    n = {"override": 0, "fill": 0, "own_page": 0}
     for sh in shows:
         sid = sh.get("id")
         ov = overrides.get(sid)
@@ -125,12 +132,13 @@ def apply(shows, overrides, fills, thin=THIN):
             continue
         f = fills.get(sid)
         text = (f or {}).get("bg") or ""
+        route = "own_page" if (f or {}).get("source") == "own-page" else "fill"
         if f and slen(text) >= MIN_FILL:
             if sh.get("synBg") == text:
-                n["fill"] += 1                       # applied on an earlier run
+                n[route] += 1                        # applied on an earlier run
             elif slen(sh.get("synBg")) < thin and slen(text) > slen(sh.get("synBg")):
                 sh["synBg"] = text
-                n["fill"] += 1
+                n[route] += 1
     return n
 
 
@@ -212,6 +220,8 @@ def fetch(src, fills, net, today, decode):
     for sid, title, theatre, url in candidates(src):
         stats["candidates"] += 1
         rec = fills.get(sid)
+        if rec and rec.get("bg") and rec.get("source") == "own-page":
+            continue                                 # the play's own page wins over theatre.art.bg
         if not due(rec, url, today):
             continue
         r = net.get(url)
@@ -250,6 +260,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="also apply to index.html")
     ap.add_argument("--budget", type=int, default=240)
+    ap.add_argument("--own-budget", type=int, default=300, help="seconds for the own-page route")
+    ap.add_argument("--own-max-requests", type=int, default=120, help="requests for the own-page route")
     a = ap.parse_args()
     try:
         from official_theatres import decode
@@ -262,6 +274,12 @@ def main():
         except Exception:
             today = dt.date.today()
         stats = fetch(src, fills, Net(budget=a.budget), today, decode)
+        try:                                         # each play's own production page (bounded)
+            import own_page_synopses as OPS
+            own = OPS.fetch(src, fills, OPS.make_net(a.own_budget, a.own_max_requests), today, decode)
+        except Exception as e:                       # noqa: BLE001  never blocks the step
+            own = {"error": f"{type(e).__name__}: {e}"}
+        stats["own_page"] = own
         FILLS.write_text(json.dumps(fills, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
                          encoding="utf-8")
         print("SYNOPSES " + json.dumps(stats))
