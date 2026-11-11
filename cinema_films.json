@@ -9,7 +9,8 @@
    "#5F4527"
   ],
   "source": "odeon",
-  "runtime": 129
+  "runtime": 129,
+  "year": 2026
  },
  "tigrite": {
   "id": "tigrite",
@@ -4339,5 +4340,162 @@
   "runtime": 122,
   "year": 1988,
   "originalTitle": "Nuovo Cinema Paradiso"
+ },
+ "marsupilami": {
+  "id": "marsupilami",
+  "bg": "МАРСУПИЛАМИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "vlaikova",
+  "runtime": 99
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980",
+  "bg": "Европейски кинокласики в кино „Влайкова“: ИЛЮЗИЯ | 1980",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
+ },
+ "avrora": {
+  "id": "avrora",
+  "bg": "АВРОРА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "vlaikova",
+  "runtime": 102
+ },
+ "kak-da-oberesh-banka": {
+  "id": "kak-da-oberesh-banka",
+  "bg": "Как да обереш банка",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Комедия",
+   "Трилър"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 122,
+  "year": 2026
+ },
+ "ebenizar-koledna-pesen": {
+  "id": "ebenizar-koledna-pesen",
+  "bg": "Ебенизър: Коледна песен",
+  "en": "",
+  "genres": [
+   "Комедия",
+   "Драма",
+   "Семеен",
+   "Фентъзи"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 118,
+  "year": 2026
+ },
+ "marsupilami-filmat": {
+  "id": "marsupilami-filmat",
+  "bg": "Марсупилами: Филмът",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "arena-mega"
+ },
+ "pochivkata-re-release": {
+  "id": "pochivkata-re-release",
+  "bg": "Почивката (re-release)",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 111,
+  "year": 2024
+ },
+ "sadiyata-1884-yuliy-avgust": {
+  "id": "sadiyata-1884-yuliy-avgust",
+  "bg": "Съдията 1884 юлий – август",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon"
+ },
+ "opasni-zemi": {
+  "id": "opasni-zemi",
+  "bg": "Опасни земи",
+  "en": "",
+  "genres": [
+   "Криминален"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 94
+ },
+ "zhivot-strashen-i-vse-pak-mnogo-hubav": {
+  "id": "zhivot-strashen-i-vse-pak-mnogo-hubav",
+  "bg": "Живот страшен и все пак много хубав",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon"
+ },
+ "zhena-pod-vliyanie": {
+  "id": "zhena-pod-vliyanie",
+  "bg": "Жена под влияние",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "lumiere",
+  "runtime": 155,
+  "year": 1974,
+  "originalTitle": "A Woman Under the Influence"
+ },
+ "barzo-akuratno-okonchatelno": {
+  "id": "barzo-akuratno-okonchatelno",
+  "bg": "Бързо, акуратно, окончателно",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "odeon"
  }
 }

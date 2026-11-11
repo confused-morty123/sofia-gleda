@@ -5977,7 +5977,7 @@
  },
  "clean-girl-fat-festival": {
   "id": "clean-girl-fat-festival",
-  "title": "Clean girl – FAT FESTIVAL",
+  "title": "Clean girl – Fat Festival",
   "titleEn": "",
   "theatre": "mladezhki",
   "author": "",
@@ -7144,5 +7144,95 @@
   "synBg": "",
   "synEn": "",
   "source": "satira"
+ },
+ "mechka-hamletmashina": {
+  "id": "mechka-hamletmashina",
+  "title": "Мечка - Хамлетмашина",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "chernoto-pile": {
+  "id": "chernoto-pile",
+  "title": "ЧЕРНОТО ПИЛЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "sve-sitka-da-nemash": {
+  "id": "sve-sitka-da-nemash",
+  "title": "Све ситка да немаш",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "kotarakat-s-chizmi-2": {
+  "id": "kotarakat-s-chizmi-2",
+  "title": "КОТАРАКЪТ С ЧИЗМИ",
+  "titleEn": "",
+  "theatre": "th199",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "th199"
+ },
+ "epizodi-komedien-impro-sitkom": {
+  "id": "epizodi-komedien-impro-sitkom",
+  "title": "Епизоди - комедиен импро ситком",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
