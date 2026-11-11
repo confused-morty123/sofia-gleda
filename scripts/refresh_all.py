@@ -221,17 +221,36 @@ def drop_health_entries(path, venue):
             path.write_text(json.dumps(keep, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
+# own_page_posters.RUN_CACHE_ENV: the directory where one step's fetched production
+# pages wait for the next step of the same run (synopses -> poster health -> poster fix).
+RUN_CACHE_ENV = "SOFIA_RUN_CACHE"
+
+
 def run_steps(steps=None):
-    """STEPS in order; the poster fix only when poster_fix_needed()."""
+    """STEPS in order; the poster fix only when poster_fix_needed(). The steps share
+    a page cache that lives for this run only (a temp directory, removed at the end)."""
+    import shutil, tempfile
+    cache = None
+    if not os.environ.get(RUN_CACHE_ENV):
+        try:
+            cache = tempfile.mkdtemp(prefix="sofia-run-")
+            os.environ[RUN_CACHE_ENV] = cache
+        except OSError:
+            cache = None                            # no cache: each step fetches for itself
     results = []
-    for s in steps or STEPS:
-        if s[1] == "poster_fix.py" and not poster_fix_needed():
-            print(f"\n=== {s[0]}: {s[1]} — not needed (own-image coverage at or above 95 %) ===", flush=True)
-            results.append({"step": s[0], "script": s[1], "ok": True, "code": 0, "seconds": 0.0,
-                            "skipped": "coverage at or above 95 %", "tail": ""})
-            drop_health_entries(ROOT / "health.json", "poster-fix")   # no stale note from an earlier night
-            continue
-        results.append(run(*s))
+    try:
+        for s in steps or STEPS:
+            if s[1] == "poster_fix.py" and not poster_fix_needed():
+                print(f"\n=== {s[0]}: {s[1]} — not needed (own-image coverage at or above 95 %) ===", flush=True)
+                results.append({"step": s[0], "script": s[1], "ok": True, "code": 0, "seconds": 0.0,
+                                "skipped": "coverage at or above 95 %", "tail": ""})
+                drop_health_entries(ROOT / "health.json", "poster-fix")   # no stale note from an earlier night
+                continue
+            results.append(run(*s))
+    finally:
+        if cache:
+            os.environ.pop(RUN_CACHE_ENV, None)
+            shutil.rmtree(cache, ignore_errors=True)
     return results
 
 

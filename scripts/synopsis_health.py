@@ -80,7 +80,7 @@ def measure(html=HTML, thin=SY.THIN):
             f["thin"] += 1
             f["empty"] += not bg
             thin_films.append((fid, fl.get("bg") or fid, SY.slen(bg)))
-    ov, fills = SY.load_overrides(), SY.load_fills()
+    ov, fills = SY.load_overrides(SY.OVERRIDES), SY.load_fills(SY.FILLS)
     routes = {
         "overrides": sum(1 for s in up_s if s in ov),
         "theatre_art_fills": sum(1 for s in up_s if (fills.get(s) or {}).get("bg")
@@ -91,6 +91,14 @@ def measure(html=HTML, thin=SY.THIN):
                               and shows[s].get("synBg") == fills[s]["bg"]),
         "link_to_theatre": sum(1 for r in thin_rows if r[4]),
     }
+    # own pages read that gave no text, by reason (own_page_synopses.py records why)
+    misses = {}
+    for s in up_s:
+        f = fills.get(s) or {}
+        if not f.get("bg") and f.get("source") == "own-page" and f.get("tried_on"):
+            why = str(f.get("why") or "no text")
+            misses[why] = misses.get(why, 0) + 1
+    routes["own_page_misses"] = dict(sorted(misses.items(), key=lambda kv: (-kv[1], kv[0])))
     tot = {k: sum(p[k] for p in per.values()) for k in ("titles", "thin", "empty", "thin_en", "linked")}
     return {
         "date": dt.date.today().isoformat(), "threshold": thin,
@@ -109,7 +117,10 @@ def write_md(r, path=OUT_MD):
            f"- Films: {f['thin']} of {f['titles']} thin ({f['empty']} with none).",
            f"- Routes: {r['routes']['overrides']} owner override(s) (scripts/synopsis_overrides.json), "
            f"{r['routes']['own_page_fills']} fill(s) from the plays' own production pages, "
-           f"{r['routes']['theatre_art_fills']} fill(s) from theatre.art.bg production pages.", "",
+           f"{r['routes']['theatre_art_fills']} fill(s) from theatre.art.bg production pages.",
+           *([f"- Own pages read that gave no text: {sum(r['routes']['own_page_misses'].values())} ("
+              + "; ".join(f"{n} {w}" for w, n in r['routes']['own_page_misses'].items()) + ")."]
+             if r['routes'].get('own_page_misses') else []), "",
            "| Theatre | Plays | Thin | None | Own-page link |", "|---|---:|---:|---:|---:|"]
     for k, v in s["by_theatre"].items():
         out.append(f"| {v['name']} | {v['titles']} | {v['thin']} | {v['empty']} | {v['linked']} |")

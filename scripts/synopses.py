@@ -16,7 +16,9 @@ nightly refresh and dev_build.py both read them):
 
   2. synopsis_fills.json, own pages — read nightly by own_page_synopses.py from
      the play's OWN production page (the page own_page_posters.py reads), source
-     "own-page"; bounded (--own-max-requests, --own-budget), see that module.
+     "own-page"; bounded (--own-max-requests, --own-max-per-host, --own-budget),
+     see that module. It wins over route 3: the theatre.art.bg route never writes
+     over an own-page text, an own-page text replaces a theatre.art.bg one.
 
   3. synopsis_fills.json, theatre.art.bg — read nightly (`python3 scripts/synopses.py`) from the
      production's own page on theatre.art.bg, only where SHOWS' LINKS entry
@@ -153,11 +155,11 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
-def parse_art_production(html, title, theatre_names):
-    """The lead description of a theatre.art.bg production page
-    (div.postanovka div.anons: its <p> children before the "Повече" block), or
-    None unless the page's own title (h2 in div.postanovka-people) equals `title`
-    and its venue line names one of `theatre_names` (a name or a list)."""
+def art_anons(html, title, theatre_names):
+    """The description element (div.postanovka div.anons) of a theatre.art.bg
+    production page, or None unless the page's own title (h2 in
+    div.postanovka-people) equals `title` and its venue line names one of
+    `theatre_names` (a name or a list): never another production's page."""
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html, "lxml")
     people = soup.select_one("div.postanovka div.postanovka-people")
@@ -170,6 +172,16 @@ def parse_art_production(html, title, theatre_names):
     venue = norm(" ".join(t for t in people.stripped_strings if t != h2.get_text(strip=True))[:300])
     wants = [norm(n) for n in ([theatre_names] if isinstance(theatre_names, str) else theatre_names)]
     if not any(w and w in venue for w in wants):
+        return None
+    return anons
+
+
+def parse_art_production(html, title, theatre_names):
+    """The lead description of a theatre.art.bg production page
+    (div.postanovka div.anons: its <p> children before the "Повече" block), or
+    None unless the page is this production's (art_anons)."""
+    anons = art_anons(html, title, theatre_names)
+    if anons is None:
         return None
     paras = []
     for ch in anons.children:
@@ -260,8 +272,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="also apply to index.html")
     ap.add_argument("--budget", type=int, default=240)
-    ap.add_argument("--own-budget", type=int, default=300, help="seconds for the own-page route")
-    ap.add_argument("--own-max-requests", type=int, default=120, help="requests for the own-page route")
+    ap.add_argument("--own-budget", type=int, default=None, help="seconds for the own-page route (own_page_synopses.BUDGET_S)")
+    ap.add_argument("--own-max-requests", type=int, default=None, help="requests for the own-page route (MAX_REQUESTS)")
+    ap.add_argument("--own-max-per-host", type=int, default=None, help="pages of one host for the own-page route (MAX_PER_HOST)")
+    ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args()
     try:
         from official_theatres import decode
@@ -273,10 +287,14 @@ def main():
             today = sofia_today()
         except Exception:
             today = dt.date.today()
-        stats = fetch(src, fills, Net(budget=a.budget), today, decode)
+        stats = fetch(src, fills, Net(budget=a.budget, cache_dir=os.environ.get("POSTER_CACHE_DIR")), today, decode)
         try:                                         # each play's own production page (bounded)
             import own_page_synopses as OPS
-            own = OPS.fetch(src, fills, OPS.make_net(a.own_budget, a.own_max_requests), today, decode)
+            net = OPS.make_net(a.own_budget or OPS.BUDGET_S, a.own_max_requests or OPS.MAX_REQUESTS,
+                               os.environ.get("POSTER_CACHE_DIR"))
+            own = OPS.fetch(src, fills, net, today, decode, verbose=a.verbose,
+                            max_per_host=a.own_max_per_host or OPS.MAX_PER_HOST)
+            own["requests"], own["from_run_cache"], own["robots_refused"] = net.fetched, net.cached, net.refused
         except Exception as e:                       # noqa: BLE001  never blocks the step
             own = {"error": f"{type(e).__name__}: {e}"}
         stats["own_page"] = own
