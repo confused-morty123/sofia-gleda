@@ -3199,6 +3199,59 @@ check("own-page synopses: a paragraph that opens with a credited person's name (
       "the same sentence about a character (no such credit) does not",
       (_own(_author, "https://example.bg/p")[0], (_own(_hero, "https://example.bg/p")[0] or "").count("\n\n")), (_D1, 2))
 
+# Театър „София“: the description, then the director's signature, an age note and a casting note
+_US = "https://sofiatheatre.eu/repertoires/1/probna"
+_signed = _pg("<h1>Пробна пиеса</h1>",
+    f"<div class='repertoire-info'><div class='pb-3'><p>{_D1}</p><p>{_D2}</p><p>Мария Колева - режисьор</p>"
+    "<p>Приказен спектакъл за малки и големи деца (над 4 години).</p>"
+    "<p>*В ролята на Мария се редуват актрисите Ана Петрова и Ива Иванова.</p></div></div>")
+check("own-page synopses: sofiatheatre.eu -> the signature, the age note and the casting note under the text are not part of it",
+      _own(_signed, _US), (_D1 + "\n\n" + _D2, ""))
+_fragment = _pg("<h1 class='play-title-detail'>Пробна пиеса</h1>",
+    "<div class='play-details-col'><div class='play-subject'><span>… Да бъде тиха твоята улица, да бъде висока оградата ти и дълъг денят ти,"
+    "<br>съседе мой, защото без теб няма с кого да споря до късно вечер, а това е цялото ми щастие!</span></div></div>")
+check("own-page synopses: a fragment of the source text that opens with an ellipsis is not a description, nor is the rest of its broken line",
+      (_own(_fragment, "https://sfumato.info/пробна-пиеса___1")[0], len("съседе мой, защото без теб няма с кого да споря до късно вечер, а това е цялото ми щастие!") < 120,
+       _own(_fragment.replace("а това е цялото ми щастие!", "а това е цялото ми щастие и цялата ми радост в този дълъг живот!"),
+            "https://sfumato.info/пробна-пиеса___1")[0]), (None, True, None))
+_call = _pg("<h1>Пробна пиеса</h1>", f"<main><p>{_D1}</p><p>Гледайте премиерните представления на „Пробна пиеса“ в театъра през месец март.</p></main>")
+check("own-page synopses: a dated call to come ('Гледайте … през месец март') is not part of the description",
+      _own(_call, "https://example.bg/p")[0], _D1)
+_crew = _pg("<h1 class='antetka-1'>Пробна пиеса</h1>",
+    "<div class='text-content'><div>Комедията „Пробна пиеса“ оживява на сцената с постановката на Мария Колева и актьорите Георги Георгиев, "
+    "Ана Петрова, Иван Иванов и Петър Петров, които със сценографията на Димитър Димов и музиката на Ива Иванова вдъхват хумор.</div></div>")
+check("own-page synopses: the cast and crew written as one sentence are still a cast list -> no text",
+      _own(_crew, "https://www.tba.art.bg/пробна-пиеса___2"), (None, "cast / credits / practical lines only"))
+_said = _pg("<h1>Пробна пиеса</h1>", f"<div class='repertoire-info'><div class='pb-3'><p>{_D1}</p>"
+    "<p>„Разкриват се ситуации около една ограда и двама души, които не могат един без друг.“ Част от екипа са Ана Петрова – сценограф "
+    "и Петър Петров – композитор.</p>"
+    "<p>„На сцената винаги ме учудва как една малка ограда може да раздели цяла улица за години напред.“ – сподели за театъра Иван Иванов.</p>"
+    f"<p>Той е един от най-успешните съвременни драматурзи, с постановки в десетки страни по света.</p><p>{_D2}</p></div></div>")
+check("own-page synopses: crew named with their crafts, a quoted statement with its speaker and the author's biography end the description",
+      _own(_said, _US), (_D1, ""))
+_prizes = _pg("<h1>Пробна пиеса</h1>", f"<main><p>{_D1}</p><p>Спектакълът е носител на наградата на публиката от фестивала във Варна през 2019 "
+              "и 2021 година и е единственият, игран на голямата сцена в Лондон през 2022 година пред пълна зала.</p></main>")
+check("own-page synopses: the production's prizes and tours, year by year, are not part of the description (a 'призрак' is no prize)",
+      (_own(_prizes, "https://example.bg/p")[0], _OPS.is_boiler("Една история за един призрак, един чиновник и един шинел, 1996 и 1997.")),
+      (_D1, False))
+
+# the same night: a show still showing its earlier fill gets the new one (page_source.py allows a seed record only the fills' current text)
+_prev = {"e": {"bg": "С" * 300, "source": "own-page"}, "a": {"bg": "А" * 200}}
+_now = {"e": {"bg": "Н" * 150, "source": "own-page"}, "a": {"bg": "О" * 150, "source": "own-page"}, "x": {"bg": "Х" * 400, "source": "own-page"}}
+_sh3 = [{"id": "e", "synBg": "С" * 300}, {"id": "a", "synBg": "А" * 200}, {"id": "x", "synBg": "Д" * 300}]
+_sh4 = [dict(x) for x in _sh3]
+_SY.apply(_sh3, {}, _now, previous=_prev)
+_SY.apply(_sh4, {}, _now)
+check("own-page synopses: after a re-read the page shows the fills' current text the same night (an edited text; the own page over a "
+      "theatre.art.bg text), never an earlier fill; a long text that is not a fill stays",
+      ([x["synBg"][:1] + str(len(x["synBg"])) for x in _sh3], [x["synBg"][:1] + str(len(x["synBg"])) for x in _sh4]),
+      (["Н150", "О150", "Д300"], ["С300", "А200", "Д300"]))
+import page_source as _PS
+check("own-page synopses: page_source's rule holds for an own-page fill (a seed record may carry the fills' text, nothing else)",
+      (_PS._with_seed_synopsis({"id": "e", "synBg": "Н" * 150}, {"id": "e", "synBg": "кратко"}, ({"Н" * 150}, set())),
+       _PS._with_seed_synopsis({"id": "e", "synBg": "С" * 300}, {"id": "e", "synBg": "кратко"}, ({"Н" * 150}, set()))["synBg"][:1]),
+      ({"id": "e", "synBg": "кратко"}, "С"))
+
 # precedence: owner override > own page > theatre.art.bg > seed; only over a thin shown text
 _shows2 = [{"id": "o", "synBg": "Кратко."}, {"id": "t", "synBg": ""}, {"id": "k", "synBg": "Д" * 300},
            {"id": "v", "synBg": "Кратко."}, {"id": "s", "synBg": "Само началният текст."}]

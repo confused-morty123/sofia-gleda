@@ -104,9 +104,10 @@ def main():
         have.add(sid)
         added += 1
 
-    # Longer synopses (scripts/synopses.py): the owner's overrides, then the fills
-    # read from the production's own theatre.art.bg page. Never fails the merge.
-    syn = {"override": 0, "fill": 0}
+    # Longer synopses (scripts/synopses.py): the owner's overrides, then the fills read
+    # from the play's own production page (own_page_synopses.py), then those from its
+    # theatre.art.bg page. Never fails the merge.
+    syn = {"override": 0, "fill": 0, "own_page": 0}
     try:
         import synopses
         log = []
@@ -123,7 +124,8 @@ def main():
     HTML.write_text(src[:start] + new_literal + src[end:], encoding="utf-8")
     print(f"merged {added} theatre show(s) into SHOWS "
           f"({len(shows)} total; {len(minted)} synthesised); "
-          f"synopses: {syn['override']} override(s), {syn['fill']} fill(s)")
+          f"synopses: {syn['override']} override(s), {syn.get('own_page', 0)} own-page fill(s), "
+          f"{syn['fill']} theatre.art.bg fill(s)")
 
 
 if __name__ == "__main__":

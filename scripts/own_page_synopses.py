@@ -27,6 +27,15 @@ What is accepted (positive evidence only; a missing text is fine, a wrong one is
     heading ends it too, and nothing is read under a heading such as "Участват",
     "Отзиви", "Награди", "Вижте още". A biography, an interview, a review or a
     paragraph whose subject is another listed production ends the reading for good;
+  * checked by reading the live sample of 2026-11-11 and tightened where it let
+    something through: a signature under the text ("Елза Лалева - режисьор"), a
+    casting note ("*В ролята на Дара се редуват …"), an age note in brackets, the
+    cast and crew written as one sentence, crew named with their crafts, a quoted
+    statement with its speaker ("„…“ – сподели авторът"), a sentence about the
+    author ("… е сред най-поставяните съвременни автори"), the production's prizes
+    and tours year by year and a dated call to come ("Гледайте … през месец март")
+    are not description; nor is a fragment of the source text that opens with an
+    ellipsis, or a first line that starts in lower case (the rest of a broken line);
   * the result is Bulgarian (>= 70 % Cyrillic letters), at least synopses.MIN_FILL
     (120) characters, and carries no "€" glued to a Cyrillic letter (a site-side
     "лв" -> "€" replacement that cut through words, 2026-11-09).
@@ -106,6 +115,13 @@ CREDIT_START_RE = re.compile(r"^\W*(?:от\s+[А-ЯA-Z]|по\s+[А-ЯA-Z„\"“
 CREDIT_ANY_RE = re.compile(r"\b" + _CREDIT_WORD + r"\b", re.I)
 # "Г-н Боман – ЯВОР БОРИСОВ", "Иван – Георги Георгиев": a role and its actor
 ROLE_RE = re.compile(r"^[^.!?…]{1,60}\s[-–—]\s+[А-ЯЁA-Z][\w.\-]+(?:\s+[А-ЯЁA-Zи][\w.\-]*){0,5}\W*$")
+# "Елза Лалева - режисьор", "Иван Иванов, сценограф": a signature under the text, or a
+# name with its craft inside a sentence ("… са Ана Петрова – сценограф и Петър Петров – композитор")
+_NAME_ROLE = r"[А-ЯЁA-Z][\w.\-]+(?:\s+[А-ЯЁA-Z][\w.\-]+){1,3}\s*[-–—,]\s*" + _CREDIT_WORD + r"\b"
+SIGN_RE = re.compile(r"^\W*" + _NAME_ROLE + r"\W*$")
+NAME_ROLE_RE = re.compile(_NAME_ROLE)
+# "*В ролята на Дара се редуват актрисите …": a casting note
+CAST_NOTE_RE = re.compile(r"^\W*в\s+рол(?:ята|ите)\b|\bсе\s+редуват\b|\bдублира\w*\b", re.I)
 
 # dates, times, tickets, prices, running time, age notes, house rules, funding, awards
 BOILER_START_RE = re.compile(
@@ -121,12 +137,19 @@ BOILER_ANY_RE = re.compile(
     r"бисквитк|cookies|\bлв\b\.?|€|\beur\b|работно време|продължителност|времетраене|антракт|"
     r"\d{1,2}[.:]\d{2}\s*ч|\bот\s+\d{1,2}[.:]\d{2}\b|\+\s?\d{1,2}\b|\bбилет|\bкаса(?:та)?\b|epay|eventim|"
     r"не се препоръчва|не е подходящ|неподходящ|подходящ\w* за (?:деца|зрители|лица)|(?:лица|деца|зрители) (?:под|над) \d|"
+    r"\(\s*(?:над|под|от|за)\s+\d{1,2}\s*(?:\+|г\.?|год\w*)|"
     r"\d+\s*(?:\+|г\.|години)\s*$|не се допускат|закъснели|мобилни\w* телефон|"
     r"финансов\w+ подкрепа|с подкрепата на|национален фонд|министерство\w* на културата|столична община|"
     r"европейск\w+ съюз|nextgeneration|план за възстановяване|се реализира (?:по|с|в рамките)|съфинансира|"
     r"програма\w* [„\"“]?култура|с любезното съдействие|медиен партньор|"
     r"ще бъде проведена дискусия|след (?:представлението|спектакъла) ще", re.I)
-AWARD_RE = re.compile(r"номинац|номинир|аскеер|икар\b|награда\w*|награди\w*|наградата|отличи\w*|приз\w*", re.I)
+AWARD_RE = re.compile(r"номинац|номинир|аскеер|икар\b|награда\w*|награди\w*|наградата|отличи\w*|"
+                      r"\bприз(?:ът|а|ове|овете)?\b|носител\w*|лауреат\w*", re.I)
+_MONTHS = r"(?:януари|февруари|март|април|май|юни|юли|август|септември|октомври|ноември|декември)"
+# "Гледайте премиерните представления … през месец март": a dated call to come, stale within weeks
+CALL_RE = re.compile(r"^\W*(?:гледайте|очаквайте|заповядайте|елате|не пропускайте|побързайте)\b.*"
+                     r"(?:\bмесец\b|\b" + _MONTHS + r"\b|премиер|\d{1,2}[./]\d{1,2})", re.I | re.S)
+_YEAR_RE = re.compile(r"\b(?:19|20)\d\d\b")
 PROMO_RE = re.compile(r"\bvip\b|meet & greet|промоцион|отстъпк|[\U0001F300-\U0001FAFF☀-➿]", re.I)
 
 # nothing is read under these headings (a cast / crew heading is not one of them:
@@ -147,7 +170,12 @@ _BIO_WORD = (r"(?:драматург\w*|режисьор\w*|писател\w*|а
              r"професор\w*|преподавател\w*|романист\w*|есеист\w*|музикант\w*|певец|певица|художник\w*)")
 BIO_RE = re.compile(r"^\W*" + _NAME + r"\s*,?\s+(?:е|e|са)\s+(?:[\w\-]+,?\s+){0,4}?" + _BIO_WORD + r"|"
                     r"^\W*(?:е|e)\s+(?:[\w\-]+,?\s+){0,4}?" + _BIO_WORD + r"|"
-                    r"^\W*(?:[Рр]оден|[Рр]одена|[Зз]авършва|[Зз]авършил|[Зз]авършила)\b|[Зз]авършва НАТФИЗ")
+                    r"^\W*(?:[Рр]оден|[Рр]одена|[Зз]авършва|[Зз]авършил|[Зз]авършила)\b|[Зз]авършва НАТФИЗ|"
+                    r"^\W*(?:Той|Тя|Те)\s+(?:е|e|са)\s+(?:[\w\-]+,?\s+){0,6}?" + _BIO_WORD)
+# "… е сред най-поставяните съвременни руски автори", "… са едни от най-успешните тандеми
+# в новата френска драматургия": a sentence about the author, wherever it stands in the paragraph
+BIO_ANY_RE = re.compile(r"\b(?:е|e|са)\s+(?:сред|(?:един|една|едни|едно)\s+от)\s+най-[\w\-]+(?:\s+[\w\-,]+){0,8}?\s+"
+                        r"(?:драматур\w*|автор\w*|писател\w*|тандем\w*|режисьор\w*|поет\w*|композитор\w*|творци)", re.I)
 # A site-side "лв" -> "€" replacement that cut through words ("допъ€ат" for "допълват"):
 # the text is corrupted at its source, never copied.
 CORRUPT_RE = re.compile(r"[а-яА-Я]€|€[а-яА-Я]")
@@ -205,6 +233,10 @@ def is_credit(b):
     """A cast / crew line or list: "режисьор Х", "Иван – Георги Георгиев", a run of names."""
     if CREDIT_START_RE.search(b) or (len(b) < 90 and ROLE_RE.search(b)):
         return True
+    if SIGN_RE.search(b) or len(NAME_ROLE_RE.findall(b)) >= 2 or (len(b) < 160 and CAST_NOTE_RE.search(b)):
+        return True                                  # a signature, crew named with their crafts, a casting note
+    if len(b) < 600 and len(_PERSON_RE.findall(b)) >= 5 and len(CREDIT_ANY_RE.findall(b)) >= 2:
+        return True                                  # the cast and crew written as one sentence
     if len(b) < 60 and b.rstrip().endswith(":"):
         return True                                  # a label: "Участват:"
     hits = len(CREDIT_ANY_RE.findall(b))
@@ -223,6 +255,10 @@ def is_boiler(b):
         return True
     if BOILER_ANY_RE.search(b) and len(b) < 400:
         return True
+    if len(b) < 300 and CALL_RE.search(b):
+        return True
+    if len(b) < 600 and AWARD_RE.search(b) and len(set(_YEAR_RE.findall(b))) >= 2:
+        return True                                  # the production's prizes and tours, year by year
     return bool(len(b) < 300 and AWARD_RE.search(b) and re.search(r"\b(?:19|20)\d\d\b|^\W*(?:награ|номинац|носител)", b, re.I))
 
 
@@ -239,7 +275,7 @@ def is_bio(b, people=()):
     """A person's biography: "Ерик-Еманюел Шмит е френски драматург …", "Завършва
     НАТФИЗ …", or a paragraph that opens with "<a name from the page's credits> е …"
     ("Щефан Фьогел е вече познат у нас": the author, not a character)."""
-    if BIO_RE.search(b):
+    if BIO_RE.search(b) or BIO_ANY_RE.search(b):
         return True
     m = _ABOUT_PERSON_RE.match(b)
     return bool(m and people and SY.norm(m.group(1)) in people)
@@ -282,6 +318,10 @@ def is_epigraph(b):
     b = b.strip()
     if re.match(r"^[А-ЯЁA-Z][\w.\- ]{1,30}:\s*[„\"“«]", b) or whole_quote(b):
         return True
+    if re.match(r"^(?:…|\.\.\.)", b):
+        return True                                  # a fragment of the source text ("… Да бъде ясно твоето небе")
+    if b[:1] in "„“«\"" and SAID_RE.search(b):
+        return True                                  # „…“ – сподели авторът: somebody's words, not a description
     if not b or b[0] not in _OPEN_Q:
         return False
     rest = b.lstrip(_OPEN_Q)
@@ -289,6 +329,8 @@ def is_epigraph(b):
     return not hits or min(hits) >= len(rest.rstrip(" .…!?")) - 1
 
 
+SAID_RE = re.compile(r"[“”\"»]\s*[-–—,]\s*(?:сподел\w+|каз\w+|разказ\w+|коментира\w*|пише|отбеляз\w+|обясн\w+|"
+                     r"допъл\w+|призна\w+)\b", re.I)
 _QUOTED_START_RE = re.compile(r"^\s*[„\"“«'‘]\s*([^“”\"»'’]{2,80})[“”\"»'’]")
 
 
@@ -397,8 +439,8 @@ def lead(bl, title, other_titles=()):
             if len(b) < 300:
                 people |= people_of(b)
         if not out:                                  # before the lead: credits, dates, labels, an epigraph
-            if dull or is_epigraph(b) or not is_prose(b, first=True):
-                continue
+            if dull or is_epigraph(b) or not is_prose(b, first=True) or b[:1].islower():
+                continue                             # (a lower-case start: the rest of a line broken above, not a paragraph)
             out, n = [b], len(b)
             continue
         if not dull and not is_epigraph(b) and not is_prose(b) and len(pend) < 2 \

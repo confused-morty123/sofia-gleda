@@ -116,10 +116,15 @@ def load_fills(path=FILLS):
 
 
 # ---------------------------------------------------------------------- apply
-def apply(shows, overrides, fills, thin=THIN):
+def apply(shows, overrides, fills, thin=THIN, previous=None):
     """Edit the SHOWS list in place. Precedence: owner override > own page
     (own_page_synopses.py, source "own-page") > theatre.art.bg > the seed text; a
     fill replaces only a shown text shorter than `thin` and longer than it.
+    previous: the fills as they were when the page was last written (inject_shows.py,
+    earlier the same night). A show still showing its EARLIER fill gets the new one
+    (a re-read found an edited text, or the play's own page replaced a
+    theatre.art.bg text): the page never keeps a text synopsis_fills.json no longer
+    holds, which page_source.py would refuse on a seed record.
     Returns {"override": n, "fill": n (theatre.art.bg), "own_page": n}."""
     n = {"override": 0, "fill": 0, "own_page": 0}
     for sh in shows:
@@ -136,9 +141,11 @@ def apply(shows, overrides, fills, thin=THIN):
         text = (f or {}).get("bg") or ""
         route = "own_page" if (f or {}).get("source") == "own-page" else "fill"
         if f and slen(text) >= MIN_FILL:
+            was = ((previous or {}).get(sid) or {}).get("bg")
             if sh.get("synBg") == text:
                 n[route] += 1                        # applied on an earlier run
-            elif slen(sh.get("synBg")) < thin and slen(text) > slen(sh.get("synBg")):
+            elif (was and sh.get("synBg") == was) or \
+                    (slen(sh.get("synBg")) < thin and slen(text) > slen(sh.get("synBg"))):
                 sh["synBg"] = text
                 n[route] += 1
     return n
@@ -252,14 +259,14 @@ def fetch(src, fills, net, today, decode):
     return stats
 
 
-def apply_to_html(html=HTML):
+def apply_to_html(html=HTML, previous=None):
     from inject_shows import extract_array
     from csp import json_for_script
     src = pathlib.Path(html).read_text(encoding="utf-8")
     start, end, literal = extract_array(src, "SHOWS")
     shows = json.loads(literal)
     log = []
-    n = apply(shows, load_overrides(log=log), load_fills())
+    n = apply(shows, load_overrides(log=log), load_fills(), previous=previous)
     for line in log:
         print("  " + line, file=sys.stderr)
     new = json_for_script(shows)
@@ -282,6 +289,7 @@ def main():
         from own_page_posters import Net
         src = HTML.read_text(encoding="utf-8")
         fills = load_fills()
+        before = json.loads(json.dumps(fills))       # what inject_shows.py applied to the page
         try:
             from listing_window import sofia_today
             today = sofia_today()
@@ -302,7 +310,7 @@ def main():
                          encoding="utf-8")
         print("SYNOPSES " + json.dumps(stats))
         if a.apply:
-            print("applied " + json.dumps(apply_to_html()))
+            print("applied " + json.dumps(apply_to_html(previous=before)))
     except Exception as e:                           # never fails the refresh
         print(f"synopses: {type(e).__name__}: {e}", file=sys.stderr)
     return 0
