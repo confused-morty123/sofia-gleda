@@ -1,61 +1,62 @@
 {
  "before": {
-  "films": 92.6,
-  "shows": 93.8
+  "films": 94.3,
+  "shows": 94.0
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-11",
+ "date": "2026-11-12",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 135,
-   "own page: key": 1,
+   "TMDB poster": 138,
+   "own page: key": 2,
    "own page: poster": 2,
-   "the film's programme page": 26
+   "the film's programme page": 25
   },
-  "pct": 93.2,
+  "pct": 94.9,
   "upcoming": 176,
-  "with": 164
+  "with": 167
  },
  "fix": {
   "after": {
-   "films": 93.2,
+   "films": 94.9,
    "shows": 94.8
   },
-  "attached": 3,
-  "attempted": 31,
+  "attached": 1,
+  "attempted": 26,
   "before": {
-   "films": 93.2,
-   "shows": 94.2
+   "films": 94.9,
+   "shows": 94.6
   },
   "broken_parsers": [],
   "causes": {
    "films": {
-    "only an aggregator's image (the film does not link that page)": 9,
-    "own page has no usable image": 3
+    "only a ticket page linked, not the title's page": 1,
+    "only an aggregator's image (the film does not link that page)": 7,
+    "own page has no usable image": 1
    },
    "shows": {
     "no own page linked": 1,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
-    "own page has no usable image": 8,
+    "own page has no usable image": 9,
     "own page or its image could not be fetched": 1,
-    "own page's images rejected by the poster policy": 5,
+    "own page's images rejected by the poster policy": 4,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "causes_before": {
    "films": {
-    "only an aggregator's image (the film does not link that page)": 9,
-    "own page has no usable image": 3
+    "only a ticket page linked, not the title's page": 1,
+    "only an aggregator's image (the film does not link that page)": 7,
+    "own page has no usable image": 1
    },
    "shows": {
     "no own page linked": 1,
-    "not read from its own page yet": 3,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
-    "own page has no usable image": 8,
+    "own page has no usable image": 9,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 5,
     "the linked page is not the title's (redirect, home page or another title)": 1
@@ -63,28 +64,32 @@
   },
   "counts": {
    "films": {
-    "after": "164/176",
-    "before": "164/176"
+    "after": "167/176",
+    "before": "167/176"
    },
    "shows": {
     "after": "477/503",
-    "before": "474/503"
+    "before": "476/503"
    }
   },
-  "date": "2026-11-11",
+  "date": "2026-11-12",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 50,
+  "requests": 41,
   "retried": [],
-  "seconds": 83.9,
+  "seconds": 61.4,
   "summary": {
-   "film nothing": 3,
-   "show key": 3,
-   "show nothing": 25
+   "film nothing": 1,
+   "show key": 1,
+   "show nothing": 24
   },
   "titles": {
    "films": {
+    "40-kinomaniya-i-ledena-zemya": [
+     "only a ticket page linked, not the title's page",
+     "epaygo.bg is a ticket page, not the title's page"
+    ],
     "barzo-akuratno-okonchatelno": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
@@ -109,27 +114,11 @@
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
-    "last": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
     "polyusi": [
      "own page has no usable image",
      "no usable image on the page"
     ],
-    "prodavach-na-nadezhda": [
-     "own page has no usable image",
-     "no usable image on the page"
-    ],
     "sadiyata-1884-yuliy-avgust": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "velopohodat-kam-cop-31": [
-     "own page has no usable image",
-     "no usable image on the page"
-    ],
-    "vlyavo-ot-patya-london-kalkuta": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ]
@@ -142,10 +131,6 @@
     "az-foyerbah": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
      "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
-    ],
-    "az-se-kazvah": [
-     "own page's images rejected by the poster policy",
-     "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thum: 900x368, not usable as a key image"
     ],
     "bai-ganyo": [
      "own page's images rejected by the poster policy",
@@ -238,6 +223,10 @@
     "spetsialni-povodi": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
      "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
+    ],
+    "vikove-ot-podzemieto-otmenya-se-na-11-11-2026": [
+     "own page has no usable image",
+     "no usable image on the page"
     ]
    }
   },
@@ -248,33 +237,31 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 7,
+  "film already has a poster": 6,
   "film key": 1,
-  "poster fix: film nothing": 3,
-  "poster fix: show key": 3,
-  "poster fix: show nothing": 25,
-  "show key": 1,
+  "film nothing": 1,
+  "poster fix: film nothing": 1,
+  "poster fix: show key": 1,
+  "poster fix: show nothing": 24,
+  "show key": 2,
+  "show nothing": 1,
   "show poster": 1
  },
  "missing": {
   "films": {
+   "40-kinomaniya-i-ledena-zemya": "no image: the generated art shows",
    "barzo-akuratno-okonchatelno": "unverified: an aggregator's image, and the film does not link its page",
    "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": "unverified: an aggregator's image, and the film does not link its page",
    "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
    "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
    "kucheto-na-zlatyu": "unverified: an aggregator's image, and the film does not link its page",
-   "last": "unverified: an aggregator's image, and the film does not link its page",
    "polyusi": "no image: the generated art shows",
-   "prodavach-na-nadezhda": "no image: the generated art shows",
-   "sadiyata-1884-yuliy-avgust": "unverified: an aggregator's image, and the film does not link its page",
-   "velopohodat-kam-cop-31": "no image: the generated art shows",
-   "vlyavo-ot-patya-london-kalkuta": "unverified: an aggregator's image, and the film does not link its page"
+   "sadiyata-1884-yuliy-avgust": "unverified: an aggregator's image, and the film does not link its page"
   },
   "shows": {
    "5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": "unverified: no record of the page this file came from",
    "az-foyerbah": "unverified: no record of the page this file came from",
-   "az-se-kazvah": "unverified: no record of the page this file came from",
    "bai-ganyo": "unverified: no record of the page this file came from",
    "bremenskite-muzikanti": "unverified: no record of the page this file came from",
    "buratino-2": "unverified: no record of the page this file came from",
@@ -297,26 +284,27 @@
    "pepelyashka": "unverified: no record of the page this file came from",
    "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
    "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
-   "spetsialni-povodi": "unverified: no record of the page this file came from"
+   "spetsialni-povodi": "unverified: no record of the page this file came from",
+   "vikove-ot-podzemieto-otmenya-se-na-11-11-2026": "unverified: no record of the page this file came from"
   }
  },
  "per_theatre": {
   "artvent": "22/22",
   "atelie313": "17/17",
-  "citymark": "10/10",
+  "citymark": "11/11",
   "iam": "8/8",
   "kuklen": "21/22",
   "mladezhki": "34/44",
   "natfiz": "9/10",
   "national": "69/69",
-  "salzaismyah": "45/45",
+  "salzaismyah": "43/43",
   "satira": "42/43",
   "sfumato": "25/27",
   "sofia-th": "16/16",
   "tba": "33/36",
-  "th199": "38/41",
+  "th199": "37/40",
   "toplo": "42/46",
-  "vazrazhdane": "25/25",
+  "vazrazhdane": "27/27",
   "zad-kanala": "21/22"
  },
  "shows": {

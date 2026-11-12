@@ -7234,5 +7234,59 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "vikove-ot-podzemieto-otmenya-se-na-11-11-2026": {
+  "id": "vikove-ot-podzemieto-otmenya-se-na-11-11-2026",
+  "title": "Викове от подземието - отменя се на 11.11.2026!",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "predstavlenie-i-nakazanie-otmenya-se-na-11-11-2026": {
+  "id": "predstavlenie-i-nakazanie-otmenya-se-na-11-11-2026",
+  "title": "ПРЕДСТАВЛЕНИЕ И НАКАЗАНИЕ - отменя се на 11.11.2026!",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "maks-i-morits": {
+  "id": "maks-i-morits",
+  "title": "МАКС И МОРИЦ",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
  }
 }
