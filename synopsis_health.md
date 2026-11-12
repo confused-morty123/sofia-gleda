@@ -1,29 +1,29 @@
-# Synopsis health — 2026-11-11
+# Synopsis health — 2026-11-12
 
 Thin = Bulgarian synopsis shorter than 280 characters (or none).
 
-- Plays: 465 of 503 thin (377 with none); 449 of them link the theatre's own page under the text.
-- Films: 96 of 176 thin (56 with none).
-- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 40 fill(s) from theatre.art.bg production pages.
+- Plays: 465 of 503 thin (376 with none); 449 of them link the theatre's own page under the text.
+- Films: 92 of 176 thin (52 with none).
+- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 41 fill(s) from theatre.art.bg production pages.
 
 | Theatre | Plays | Thin | None | Own-page link |
 |---|---:|---:|---:|---:|
 | Театър ARTVENT | 22 | 22 | 22 | 22 |
 | Театър „Ателие 313“ | 17 | 7 | 6 | 0 |
-| Артцентър Сити Марк | 10 | 3 | 2 | 3 |
+| Артцентър Сити Марк | 11 | 4 | 2 | 4 |
 | I AM Studio | 8 | 8 | 8 | 8 |
-| Столичен куклен театър | 22 | 22 | 20 | 22 |
+| Столичен куклен театър | 22 | 22 | 21 | 22 |
 | Младежки театър „Николай Бинев“ | 44 | 44 | 40 | 44 |
 | Учебен театър на НАТФИЗ „Кръстьо Сарафов“ | 10 | 10 | 10 | 10 |
 | Народен театър „Иван Вазов“ | 69 | 69 | 9 | 69 |
-| Театър „Сълза и смях“ | 45 | 45 | 45 | 45 |
+| Театър „Сълза и смях“ | 43 | 43 | 43 | 43 |
 | Сатиричен театър „Алеко Константинов“ | 43 | 43 | 43 | 43 |
 | Театрална работилница „Сфумато“ | 27 | 27 | 23 | 27 |
 | Театър „София“ | 16 | 14 | 14 | 14 |
 | Театър „Българска армия“ | 36 | 36 | 32 | 35 |
-| Театър 199 „Валентин Стойчев“ | 41 | 23 | 16 | 15 |
+| Театър 199 „Валентин Стойчев“ | 40 | 22 | 15 | 14 |
 | Топлоцентрала | 46 | 46 | 46 | 46 |
-| Театър „Възраждане“ | 25 | 24 | 22 | 24 |
+| Театър „Възраждане“ | 27 | 26 | 23 | 26 |
 | МГТ „Зад канала“ | 22 | 22 | 19 | 22 |
 
 ## Thin plays
@@ -48,6 +48,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `albion` (mladezhki) АЛБИОН — 141 chars — https://mlt.bg/албион___7891
 - `alisa-v-stranata-na-chudesata-2` (kuklen) Алиса в страната на чудесата — 0 chars — https://sofiapuppet.com/алиса-в-страната-на-чудесата___7951
 - `alo-alo` (vazrazhdane) Ало, ало! — 0 chars — https://theatrevazrajdane.bg/portfolio/%d0%b0%d0%bb%d0%be-%d0%b0%d0%bb%d0%be/
+- `aneto` (kuklen) АНЕТО — 0 chars — https://sofiapuppet.com/ането___8058
 - `antitaga` (sfumato) #антитъга — 0 chars — http://sfumato.info/антитъга___7187
 - `apartament-19` (natfiz) АПАРТАМЕНТ 19 — 0 chars — https://natfiz.bg/event/
 - `arabska-nosht` (sfumato) Арабска нощ — 0 chars — http://sfumato.info/арабска-нощ-премиера___4321
@@ -116,6 +117,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `dalgiyat-pat-na-denya-kam-noshtta` (th199) ДЪЛГИЯТ ПЪТ НА ДЕНЯ КЪМ НОЩТА — 0 chars
 - `danceperimental-your-story-moves-us` (toplo) Danceperimental - Your Story Moves Us — 0 chars — https://toplocentrala.bg/program/performance/danceperimental-define-your-story
 - `daniil` (iam) Даниил — 0 chars — https://iamstudio.bg/produkt/daniil-2/
+- `daskal` (citymark) Даскал — 186 chars — https://theatre.art.bg/даскал_7938_173_20
 - `de-profundis-po-oskar-uayld` (toplo) DE PROFUNDIS по Оскар Уайлд — 0 chars — https://toplocentrala.bg/program/performance/de-profundis-i-premiera
 - `debelo-prase` (mladezhki) Дебело прасе — 0 chars — https://mlt.bg/дебело-прасе___6541
 - `dekameron-lyubov-i-smart-po-bokacho` (natfiz) Декамерон Любов и Смърт по Бокачо — 0 chars — https://natfiz.bg/event/
@@ -128,6 +130,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `drug-chovek` (sfumato) Друг човек — 0 chars — http://sfumato.info/друг-човек___7886
 - `duhat-na-poeta` (national) Духът на поета — 64 chars — https://www.nationaltheatre.bg/bg/predstavlenie/dukht-na-poeta
 - `dvama-chisto-goli-mazhe` (salzaismyah) ДВАМА ЧИСТО ГОЛИ МЪЖЕ — 0 chars — https://www.salzaismyah.bg/site/play/669
+- `dvama-v-delirium` (vazrazhdane) Двама в делириум — 84 chars — https://theatrevazrajdane.bg/portfolio/%d0%b4%d0%b2%d0%b0%d0%bc%d0%b0-%d0%b2-%d0%b4%d0%b5%d0%bb%d0%b8%d1%80%d0%b8%d1%83%d0%bc/
 - `dve` (national) Две — 43 chars — https://www.nationaltheatre.bg/bg/predstavlenie/dve
 - `dve-obikolki` (tba) Две обиколки на парка — 81 chars — https://www.tba.art.bg/две-обиколки-на-парка___7646
 - `dvuboy` (national) Двубой — 26 chars — https://www.nationaltheatre.bg/bg/predstavlenie/dvuboi
@@ -218,7 +221,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `kolko-e-vazhno` (national) Колко е важно да бъдеш сериозен (Години по-късно) — 40 chars — https://www.nationaltheatre.bg/bg/predstavlenie/kolko-e-vazhno-da-bdesh-seriozen-godini-po-ksno
 - `kolko-e-vazhno-da-badesh-seriozen` (tba) Колко е важно да бъдеш сериозен — 0 chars — https://www.tba.art.bg/колко-е-важно-да-бъдеш-сериозен___13
 - `komediya-ot-greshki` (sofia-th) Комедия от грешки — 0 chars — https://sofiatheatre.eu/repertoires/116/komediya-ot-greski
-- `komediya-za-tenori` (salzaismyah) КОМЕДИЯ ЗА ТЕНОРИ — 0 chars — https://www.salzaismyah.bg/site/play/531
 - `konrad-ili-deteto-ot-konservenata-kutiya` (mladezhki) Конрад или детето от консервената кутия — 0 chars — https://mlt.bg/конрад-или-детето-от-консервената-кутия___8016
 - `kontrabasat` (national) Контрабасът — 68 chars — https://www.nationaltheatre.bg/bg/predstavlenie/kontrabast
 - `kontsert-na-pim-pam` (satira) Концерт на "ПИМ-ПАМ" — 0 chars — https://satirata.bg/program
@@ -252,6 +254,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `lyubov-po-stsenariy-v-hollywood` (salzaismyah) Любов по сценарий в Hollywood — 0 chars — https://www.salzaismyah.bg/site/play/585
 - `madam-bovari-gostuva-dt-yambol` (tba) Мадам Бовари - Гостува ДТ-Ямбол — 0 chars — https://www.tba.art.bg/мадам-бовари-гостува-дт-ямбол___8083
 - `magichna-nosht-predi-koleda` (kuklen) Магична нощ преди Коледа — 0 chars — https://sofiapuppet.com/магична-нощ-преди-коледа___8103
+- `maks-i-morits` (vazrazhdane) МАКС И МОРИЦ — 0 chars — https://theatre.art.bg/макс-и-мориц_709_11_20
 - `malkata-angliya` (national) Малката Англия — 100 chars — https://www.nationaltheatre.bg/bg/predstavlenie/malkata-angliya
 - `malkata-baba-yaga` (mladezhki) Малката Баба Яга — 0 chars — https://mlt.bg/малката-баба-яга___7783
 - `malkata-rusalka` (mladezhki) Малката русалка — 0 chars — https://mlt.bg/малката-русалка___7020
@@ -281,7 +284,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `myuzikalat-spondzh-bob` (kuklen) МЮЗИКЪЛЪТ СПОНДЖ БОБ — 0 chars — https://sofiapuppet.com/мюзикълът-спондж-боб___6914
 - `nablyudatelite-hipoteza-za-otvadnoto` (national) Наблюдателите (Хипотеза за отвъдното) — 0 chars — https://www.nationaltheatre.bg/bg/predstavlenie/nablyudatelite
 - `nachaloto-na-kraya` (satira) Началото на края — 0 chars — https://satirata.bg/show/nachaloto-na-kraia
-- `namereni-neshta-ot-anastasiya-stoeva` (toplo) "Намерени неща" от Анастасия Стоева — 0 chars — https://toplocentrala.bg/program/performance/namereni-neshta-ot-anastasiya-stoeva
 - `narodat-na-vazov` (national) Народът на Вазов — 38 chars — https://www.nationaltheatre.bg/bg/predstavlenie/narodt-na-vazov
 - `nashata-golyama-frenska-svatba` (salzaismyah) НАШАТА ГОЛЯМА ФРЕНСКА СВАТБА — 0 chars — https://www.salzaismyah.bg/site/play/251
 - `ne-svikva-s-tamnoto-okoto-koreni` (sofia-th) НЕ СВИКВА С ТЪМНОТО ОКОТО (КОРЕНИ) — 0 chars — https://sofiatheatre.eu/repertoires/265/ne-svikva-s-tmnoto-okoto-koreni
@@ -298,6 +300,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `nestinari-gostuva-kt-burgas` (tba) Нестинари - Гостува КТ-Бургас — 0 chars — https://www.tba.art.bg/нестинари-гостува-кт-бургас___8061
 - `nevedenie` (national) Неведение — 35 chars — https://www.nationaltheatre.bg/bg/predstavlenie/nevedenie
 - `nevinno-malko-ubiystvo` (sofia-th) Невинно малко убийство — 0 chars — https://sofiatheatre.eu/repertoires/3/nevinno-malko-ubiistvo
+- `nishto-ne-e-kakto-si-go-mislim` (toplo) Нищо не е както си го мислим — 0 chars — https://toplocentrala.bg/program/performance/nishto-ne-e-kakto-si-go-mislim
 - `nordost` (mladezhki) Nordost — 0 chars — https://mlt.bg/nordost___366
 - `noti-rumaniya-fat-festival-2026` (toplo) #NotI| Румъния | ФАТ Фестивал 2026 — 0 chars — https://toplocentrala.bg/program/performance/notl-rumaniya-fat-festival-2026
 - `novata-tantsuvalna-zala` (th199) НОВАТА ТАНЦУВАЛНА ЗАЛА — 0 chars — https://theatre199.org/bg/plays/p/627-novata-tantzuvalna-zala-theatre199
@@ -358,7 +361,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `prashka` (iam) Прашка — 0 chars — https://iamstudio.bg/produkt/prashka-copy2/
 - `prazna-e-stayata-na-udovolstvieto` (toplo) Празна е стаята на удоволствието — 0 chars — https://toplocentrala.bg/program/performance/prazna-e-stayata-na-udovolstvieto
 - `praznikat` (zad-kanala) ПРАЗНИКЪТ — 0 chars — https://zadkanala.bg/spektakli/praznikyt
-- `predstavlenie-i-nakazanie` (toplo) ПРЕДСТАВЛЕНИЕ И НАКАЗАНИЕ — 0 chars — https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie
+- `predstavlenie-i-nakazanie-otmenya-se-na-11-11-2026` (toplo) ПРЕДСТАВЛЕНИЕ И НАКАЗАНИЕ - отменя се на 11.11.2026! — 0 chars — https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie
 - `prelyubodeyci` (satira) Прелюбодейци — 0 chars — https://satirata.bg/show/preliubodeici
 - `prestapleniya-na-sartseto` (mladezhki) Престъпления на сърцето — 0 chars — https://mlt.bg/престъпления-на-сърцето___6647
 - `pretsakani` (salzaismyah) ПРЕЦАКАНИ — 0 chars — https://www.salzaismyah.bg/site/play/621
@@ -439,7 +442,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `this-is-my-truth-tell-me-yours-harvatiya-fat-festival-2026` (toplo) This is my truth, tell me yours | Хърватия | ФАТ Фестивал 2026 — 0 chars — https://toplocentrala.bg/program/performance/this-is-my-truth-tell-me-yours
 - `tigar-i-drakon` (th199) ТИГЪР И ДРАКОН — 0 chars — https://theatre199.org/bg/plays/p/412-tigar-i-drakon
 - `tiramisu` (sofia-th) Тирамису — 0 chars — https://sofiatheatre.eu/repertoires/10/tiramisu
-- `tochka` (kuklen) Точка — 75 chars — https://sofiapuppet.com/точка___7761
 - `tom-soyer-i-hak-fin` (satira) Том Сойер и Хък Фин — 0 chars — https://satirata.bg/show/tom-i-huk
 - `tortila-flet` (th199) Тортила Флет — 80 chars — https://theatre199.org/bg/plays/p/564-tortila-flet
 - `tova-ne-go-kazvay` (artvent) Това не го казвай! — 0 chars — https://artvent.bg/event/tova-ne-go-kazvay
@@ -464,7 +466,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `velikdensko-vino` (national) Великденско вино — 81 chars — https://www.nationaltheatre.bg/bg/predstavlenie/velikdensko-vino
 - `velikiyat-getsbi` (mladezhki) Великият Гетсби — 0 chars — https://mlt.bg/великият-гетсби___7811
 - `venecianskiyat` (national) Венецианският търговец — 62 chars — https://www.nationaltheatre.bg/bg/predstavlenie/venecianskiyat-trgovec
-- `vikove-ot-podzemieto` (toplo) Викове от подземието — 0 chars — https://toplocentrala.bg/program/performance/vikove-ot-podzemieto
+- `vikove-ot-podzemieto-otmenya-se-na-11-11-2026` (toplo) Викове от подземието - отменя се на 11.11.2026! — 0 chars — https://toplocentrala.bg/program/performance/vikove-ot-podzemieto
 - `vino-ot-gluharcheta` (mladezhki) Вино от глухарчета — 0 chars — https://mlt.bg/вино-от-глухарчета___7184
 - `vinovniyat` (national) Виновният — 96 chars — https://www.nationaltheatre.bg/bg/predstavlenie/vinovniyat
 - `virhova-prikazka` (sfumato) Вирхова приказка — 0 chars — http://sfumato.info/вирхова-приказка___7841
@@ -485,24 +487,23 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `zashtoto-na-mama-taka-i-haresva` (vazrazhdane) Защото на мама така ѝ харесва — 0 chars — https://theatrevazrajdane.bg/portfolio/%d0%b7%d0%b0%d1%89%d0%be%d1%82%d0%be-%d0%bd%d0%b0-%d0%bc%d0%b0%d0%bc%d0%b0-%d1%82%d0%b0%d0%ba%d0%b0-%d1%9d-%d1%85%d0%b0%d1%80%d0%b5%d1%81%d0%b2%d0%b0/
 - `zhelezniyat-svetilnik` (tba) Железният светилник — 0 chars — https://www.tba.art.bg/железният-светилник___1059
 - `zhena-mi-se-kazva-boris` (salzaismyah) Жена ми се казва Борис — 0 chars — https://www.salzaismyah.bg/site/play/194
-- `zhena-na-parva-sreshta` (salzaismyah) ЖЕНА НА ПЪРВА СРЕЩА — 0 chars — https://www.salzaismyah.bg/site/play/354
 - `zhenata-konbini` (national) ЖЕНАТА–КОНБИНИ — 99 chars — https://www.nationaltheatre.bg/bg/predstavlenie/zhenata-konbini
 - `zhenata-pita-chatgpt` (satira) Жената пита ChatGPT — 0 chars — https://satirata.bg/show/zhenata-pita-chatgpt
 - `zheni-govoryat-za` (salzaismyah) ЖЕНИ ГОВОРЯТ ЗА... — 0 chars — https://www.salzaismyah.bg/site/play/522
 - `zhivotat-makar-i-kratak` (sfumato) Животът, макар и кратък — 0 chars — http://sfumato.info/животът-макар-и-кратък___7181
 - `zhivotat-makar-i-kratak-2` (salzaismyah) ЖИВОТЪТ, МАКАР И КРАТЪК — 0 chars — https://www.salzaismyah.bg/site/play/696
-- `zhivotat-pred-teb` (th199) ЖИВОТЪТ ПРЕД ТЕБ — 0 chars — https://theatre199.org/bg/plays/p/595-zhivotat-pred-teb-theatre-199
 - `zlatka-zlatnoto-momiche` (kuklen) Златка, златното момиче — 0 chars — https://sofiapuppet.com/златка-златното-момиче___7782
 
 ## Thin films
 
 - `40-kinomaniya-dom-dobar` 40.Киномания: Дом добър — 0 chars
 - `40-kinomaniya-fotochuvstvitelna` 40.Киномания: Фоточувствителна — 0 chars
+- `40-kinomaniya-i-ledena-zemya` 40. КИНОМАНИЯ I ЛЕДЕНА ЗЕМЯ — 0 chars
 - `40-kinomaniya-zhivot-za-nachinaeshti` 40.Киномания: Живот за начинаещи — 0 chars
 - `actually-it-is-rocket-science` Actually, It Is Rocket Science — 0 chars
 - `aferata-boyarski` Аферата Боярски — 0 chars
 - `ana-manyani` Ана Маняни — 0 chars
-- `barzo-akuratno-okonchatelno` Бързо, акуратно, окончателно — 0 chars
+- `barzo-akuratno-okonchatelno` Бързо, акуратно, окончателно — 156 chars
 - `bez-konkurentsiya` Без конкуренция — 268 chars
 - `bez-stsenariy` Без сценарий — 0 chars
 - `bitkata-dyo-gol` Битката дьо Гол — 0 chars
@@ -530,7 +531,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `istoriya-na-dokumentalniya-film` История на документалния филм — 0 chars
 - `it-s-alive-horar-film-fest-chast-iv-koloniya` It’s Alive! Хорър Филм Фест Част IV: Колония — 174 chars
 - `it-s-alive-horar-film-fest-chast-iv-petak-69-i` It’s Alive! Хорър Филм Фест Част IV: Петък 69-и — 0 chars
-- `it-s-alive-horar-film-fest-chast-iv-siyanieto` It’s Alive! Хорър Филм Фест Част IV: Сиянието — 226 chars
 - `izostaven-ot-vsichki` Изоставен от всички — 0 chars
 - `karma` Карма — 0 chars
 - `kateritsata` Катерицата — 0 chars
@@ -556,7 +556,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `minotavar` Минотавър — 242 chars
 - `naslednikat` Наследникът — 184 chars
 - `naza` НАЗА — 173 chars
-- `nepoznata-zhena` Непозната жена — 0 chars
 - `nevidimo` НевиДимо — 0 chars
 - `nevidimo-v-kutiya` Невидимо в кутия — 0 chars
 - `novo-kino-paradizo` Ново кино "Парадизо" — 231 chars
@@ -570,10 +569,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `pogledni-nazad` Погледни назад — 0 chars
 - `polyusi` Полюси — 0 chars
 - `posledniyat-viking` Последният викинг — 119 chars
-- `prodavach-na-nadezhda` ПРОДАВАЧ НА НАДЕЖДА — 0 chars
 - `royal-ballet-manon` Royal Ballet: Манон — 0 chars
-- `sadiyata-1884-yuliy-avgust` Съдията 1884 юлий – август — 0 chars
-- `secret-screening` Secret Screening — 0 chars
 - `sentimentalna` Сантиментална стойност — 187 chars
 - `shopen` Шопен — соната в Париж — 58 chars
 - `sinyoto-e-topal-tsvyat` Синьото е топъл цвят — 0 chars
@@ -585,9 +581,9 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `srednoshtno-slantse` Среднощно слънце — 0 chars
 - `stakleno-more` Стъклено море — 0 chars
 - `tatko-sled-polunosht` Татко след полунощ — 0 chars
+- `tom-i-dzheri-zabraneniyat-kompas` ТОМ И ДЖЕРИ: ЗАБРАНЕНИЯТ КОМПАС — 125 chars
 - `tseremoniya-po-nagrazhdavane-v-konkursa-detstvoto-e-za-smyah` Церемония по награждаване в конкурса ДЕТСТВОТО Е ЗА СМЯХ, НЕ ЗА СТРАХ — 0 chars
-- `velopohodat-kam-cop-31` ВЕЛОПОХОДЪТ КЪМ COP 31 — 0 chars
-- `vlyavo-ot-patya-london-kalkuta` Вляво от пътя Лондон-Калкута — 156 chars
+- `v-sluzhba-na-horata` В СЛУЖБА НА ХОРАТА — 0 chars
 - `vsichki-obichat-bil-evans` Всички обичат Бил Евънс — 274 chars
 - `zhivot-strashen-i-vse-pak-mnogo-hubav` Живот страшен и все пак много хубав — 0 chars
 - `zhozefin` Жозефин — 0 chars
