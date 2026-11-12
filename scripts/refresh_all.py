@@ -24,7 +24,8 @@ Steps (all best-effort; a step that fails leaves the previous data in place):
     2. fetch_film_info.py           synopsis/director/cast from the films' own pages -> film_info.json
     3. inject_films.py              merge synthesised arthouse films -> index.html
     4. inject_shows.py              merge synthesised theatre shows (+ synopsis overrides/fills) -> index.html
-   4b. synopses.py --apply          thin play synopses from the production's own theatre.art.bg page
+   4b. synopses.py --apply          thin play synopses from each play's own production page
+                                    (own_page_synopses.py, bounded) and its theatre.art.bg page
                                     -> synopsis_fills.json, applied with scripts/synopsis_overrides.json
     5. fetch_tmdb.py                film posters + English titles -> tmdb_films.json
     6. harvest_cinema_posters.py    Cinema City / Кино Арена posters for titles TMDB lacks -> film_info.json
@@ -114,7 +115,7 @@ STEPS = [
     ("film info",       "fetch_film_info.py",        []),    # best-effort: synopsis/dir/cast from own pages
     ("arthouse films",  "inject_films.py",           []),
     ("theatre shows",   "inject_shows.py",           []),
-    ("synopses",        "synopses.py",               ["--apply"]),  # thin play synopses: theatre.art.bg own pages + owner overrides
+    ("synopses",        "synopses.py",               ["--apply"]),  # thin play synopses: own production pages + theatre.art.bg + owner overrides
     ("film posters",    "fetch_tmdb.py",             []),
     ("cinema posters",  "harvest_cinema_posters.py", []),    # the cinemas' own posters for titles TMDB lacks
     ("theatre posters", "fetch_theatre_posters.py",  []),
@@ -220,17 +221,36 @@ def drop_health_entries(path, venue):
             path.write_text(json.dumps(keep, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
+# own_page_posters.RUN_CACHE_ENV: the directory where one step's fetched production
+# pages wait for the next step of the same run (synopses -> poster health -> poster fix).
+RUN_CACHE_ENV = "SOFIA_RUN_CACHE"
+
+
 def run_steps(steps=None):
-    """STEPS in order; the poster fix only when poster_fix_needed()."""
+    """STEPS in order; the poster fix only when poster_fix_needed(). The steps share
+    a page cache that lives for this run only (a temp directory, removed at the end)."""
+    import shutil, tempfile
+    cache = None
+    if not os.environ.get(RUN_CACHE_ENV):
+        try:
+            cache = tempfile.mkdtemp(prefix="sofia-run-")
+            os.environ[RUN_CACHE_ENV] = cache
+        except OSError:
+            cache = None                            # no cache: each step fetches for itself
     results = []
-    for s in steps or STEPS:
-        if s[1] == "poster_fix.py" and not poster_fix_needed():
-            print(f"\n=== {s[0]}: {s[1]} — not needed (own-image coverage at or above 95 %) ===", flush=True)
-            results.append({"step": s[0], "script": s[1], "ok": True, "code": 0, "seconds": 0.0,
-                            "skipped": "coverage at or above 95 %", "tail": ""})
-            drop_health_entries(ROOT / "health.json", "poster-fix")   # no stale note from an earlier night
-            continue
-        results.append(run(*s))
+    try:
+        for s in steps or STEPS:
+            if s[1] == "poster_fix.py" and not poster_fix_needed():
+                print(f"\n=== {s[0]}: {s[1]} — not needed (own-image coverage at or above 95 %) ===", flush=True)
+                results.append({"step": s[0], "script": s[1], "ok": True, "code": 0, "seconds": 0.0,
+                                "skipped": "coverage at or above 95 %", "tail": ""})
+                drop_health_entries(ROOT / "health.json", "poster-fix")   # no stale note from an earlier night
+                continue
+            results.append(run(*s))
+    finally:
+        if cache:
+            os.environ.pop(RUN_CACHE_ENV, None)
+            shutil.rmtree(cache, ignore_errors=True)
     return results
 
 

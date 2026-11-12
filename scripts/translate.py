@@ -14,6 +14,15 @@ Cache format: translations.json
     { sha1(normalised_text): {"src": first_60_chars, "en": translation,
                               "kind": "syn|title", "at": "2026-10-08"} }
 Cache entries are never deleted.
+
+Load (2026-11-11). New SYNOPSIS text is sent at most SYN_CHARS_PER_RUN characters
+a run, the texts that have waited longest first (translations.json["_pending"]:
+{cache key: the date the text was first seen untranslated}); the rest waits for the
+next nights. Titles are short and are not capped. A text without English yet is
+simply absent from SYN_EN: the English sheet then says "No English description
+available yet." (never the Bulgarian text). When DeepL refuses (quota used up: HTTP
+456; rate limit: 429; any other failure) the run keeps what it has, exits 0 and
+leaves a "translations" warning in health.json: never a failed refresh.
 """
 import hashlib, json, os, re, sys, pathlib, datetime, unicodedata, time
 
@@ -26,6 +35,14 @@ TMDB_JSON = ROOT / "tmdb_films.json"
 DEEPL_KEY = os.environ.get("DEEPL_AUTH_KEY", "").strip()
 BATCH_SIZE = 50  # DeepL max texts per request
 BATCH_BYTES = 96_000  # …and its request body may not exceed 128 KiB (HTTP 413): stay well under it
+# Characters of NEW synopsis text sent per run (DeepL Free: 500,000 a month). The
+# own-page synopses (own_page_synopses.py) add a few hundred texts of ~600 characters
+# within a few nights; this spreads them out, oldest-missing first.
+SYN_CHARS_PER_RUN = 40_000
+PENDING = "_pending"   # translations.json: {cache key: date first seen untranslated}; not a cache entry
+HEALTH_ITEMS = ROOT / "health.json"
+VENUE = "translations"            # its health.json entries
+LAST_FAILURE: dict = {}           # why translate_batch last failed: {"why": "quota"|"rate"|"error", "detail": str}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -161,11 +178,14 @@ def translate_batch(texts: list[str], kind: str) -> tuple[list[str], bool]:
         if e.code in (429, 456):
             print(f"  DeepL quota/rate-limit ({e.code}) — stopping, keeping results so far.",
                   file=sys.stderr)
+            LAST_FAILURE.update(why="quota" if e.code == 456 else "rate", detail=f"HTTP {e.code}")
         else:
             print(f"  DeepL HTTP {e.code} — stopping.", file=sys.stderr)
+            LAST_FAILURE.update(why="error", detail=f"HTTP {e.code}")
         return [], False
     except Exception as e:
         print(f"  DeepL error: {e} — stopping.", file=sys.stderr)
+        LAST_FAILURE.update(why="error", detail=type(e).__name__)
         return [], False
 
 
@@ -300,6 +320,70 @@ def translate_missing(work: list[tuple[str, str]], kind: str,
     return True
 
 
+def plan_synopses(work, cache, today, limit=None):
+    """Which of the not-yet-translated synopsis texts go to DeepL this run:
+    (allowed cache keys, sent_chars, deferred_texts, deferred_chars). The texts that
+    have been missing longest go first (cache[PENDING] remembers since when), in
+    `work` order within one day, until `limit` characters are reached; the first
+    text always goes. cache[PENDING] is rewritten to the texts missing now."""
+    limit = SYN_CHARS_PER_RUN if limit is None else limit
+    was = cache.get(PENDING) if isinstance(cache.get(PENDING), dict) else {}
+    missing = {}
+    for _id, text in work:
+        k = cache_key(text)
+        if k not in cache and k not in missing:
+            missing[k] = text
+    since = {k: (was.get(k) if isinstance(was.get(k), str) else today) for k in missing}
+    order = sorted(missing, key=lambda k: since[k])          # stable: `work` order within a day
+    allowed, used = set(), 0
+    for k in order:
+        if allowed and used + len(missing[k]) > limit:
+            break
+        allowed.add(k)
+        used += len(missing[k])
+    cache.pop(PENDING, None)
+    if since:
+        cache[PENDING] = since
+    rest = [k for k in missing if k not in allowed]
+    return allowed, used, len(rest), sum(len(missing[k]) for k in rest)
+
+
+def prune_pending(cache):
+    """cache[PENDING] without the texts translated meanwhile."""
+    pend = cache.get(PENDING)
+    if isinstance(pend, dict):
+        left = {k: d for k, d in pend.items() if k not in cache}
+        cache.pop(PENDING, None)
+        if left:
+            cache[PENDING] = left
+
+
+def health_note(message, path=None):
+    """Replace this step's health.json entry with `message` (a warning the workflow
+    annotates the run with; None just removes an earlier one). Never raises."""
+    path = pathlib.Path(path or HEALTH_ITEMS)
+    try:
+        items = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        if not isinstance(items, list):
+            items = []
+        keep = [e for e in items if not (isinstance(e, dict) and e.get("venue") == VENUE)]
+        if message:
+            keep.append({"level": "warning", "venue": VENUE, "message": message})
+        if keep != items:
+            path.write_text(json.dumps(keep, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except (OSError, ValueError) as e:
+        print(f"  (could not update health.json: {e})", file=sys.stderr)
+
+
+def failure_message(failure, waiting_texts, waiting_chars):
+    """The health.json warning for a run DeepL refused."""
+    why = {"quota": "DeepL's character quota is used up",
+           "rate": "DeepL is rate-limiting this key"}.get(failure.get("why"), "DeepL did not answer")
+    return (f"{why} ({failure.get('detail') or 'no detail'}): {waiting_texts} text(s), {waiting_chars} characters, "
+            "still wait for their English translation. The English sheets show 'No English description "
+            "available yet.' for them; the cached translations are served and the next runs try again.")
+
+
 # ---------------------------------------------------------------------------
 # Build output mappings
 # ---------------------------------------------------------------------------
@@ -386,16 +470,38 @@ def main() -> int:
                    + sum(len(t) for _, t in show_title))
     print(f"  total characters to translate: {total_chars}")
 
+    # the per-run cap on NEW synopsis text: oldest-missing first, the rest waits
+    today = datetime.date.today().isoformat()
+    allowed, sent_chars, deferred, deferred_chars = plan_synopses(film_syn + show_syn, cache, today)
+    print(f"  new synopsis text this run: {len(allowed)} text(s), {sent_chars} characters "
+          f"(cap {SYN_CHARS_PER_RUN}); waiting for the next runs: {deferred} text(s), {deferred_chars} characters")
+
+    def _now(work):
+        return [(i, t) for i, t in work if cache_key(t) in cache or cache_key(t) in allowed]
+
     ok = bool(DEEPL_KEY)
+    LAST_FAILURE.clear()
     if not DEEPL_KEY:
         print("  DEEPL_AUTH_KEY not set — no new translations; serving the cached ones.")
-    for work, kind in [(film_syn, "syn"), (film_title, "title"),
-                       (show_syn, "syn"), (show_title, "title")]:
+    for work, kind in [(_now(film_syn), "syn"), (film_title, "title"),
+                       (_now(show_syn), "syn"), (show_title, "title")]:
         if not ok:
             if DEEPL_KEY:
                 print("  stopping further batches (quota/error).", file=sys.stderr)
             break
         ok = translate_missing(work, kind, cache)
+    prune_pending(cache)
+    if DEEPL_KEY:
+        try:
+            save_cache(cache)                    # the waiting list (and nothing else new)
+        except OSError as e:
+            print(f"  (could not save {CACHE_FILE.name}: {e})", file=sys.stderr)
+        if not ok:                               # a warning in health.json, never a failed step
+            waiting = {cache_key(t): t for _, t in film_syn + film_title + show_syn + show_title
+                       if cache_key(t) not in cache}
+            health_note(failure_message(LAST_FAILURE, len(waiting), sum(len(t) for t in waiting.values())))
+        else:
+            health_note(None)
 
     syn_en, title_en = build_mappings(films, shows, tmdb, film_info, cache)
     print(f"  cache now covers SYN_EN: {len(syn_en)} ids, TITLE_EN: {len(title_en)} ids")

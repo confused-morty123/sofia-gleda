@@ -14,7 +14,13 @@ nightly refresh and dev_build.py both read them):
      (the owner chose it). An entry missing bg, an https source_url or an ISO
      copied_on is skipped and reported.
 
-  2. synopsis_fills.json — read nightly (`python3 scripts/synopses.py`) from the
+  2. synopsis_fills.json, own pages — read nightly by own_page_synopses.py from
+     the play's OWN production page (the page own_page_posters.py reads), source
+     "own-page"; bounded (--own-max-requests, --own-max-per-host, --own-budget),
+     see that module. It wins over route 3: the theatre.art.bg route never writes
+     over an own-page text, an own-page text replaces a theatre.art.bg one.
+
+  3. synopsis_fills.json, theatre.art.bg — read nightly (`python3 scripts/synopses.py`) from the
      production's own page on theatre.art.bg, only where SHOWS' LINKS entry
      already points there (Театър 199, Ателие 313, Сити Марк sell through it;
      robots.txt allows it). The lead paragraphs of the page's description are
@@ -110,9 +116,17 @@ def load_fills(path=FILLS):
 
 
 # ---------------------------------------------------------------------- apply
-def apply(shows, overrides, fills, thin=THIN):
-    """Edit the SHOWS list in place. Returns {"override": n, "fill": n}."""
-    n = {"override": 0, "fill": 0}
+def apply(shows, overrides, fills, thin=THIN, previous=None):
+    """Edit the SHOWS list in place. Precedence: owner override > own page
+    (own_page_synopses.py, source "own-page") > theatre.art.bg > the seed text; a
+    fill replaces only a shown text shorter than `thin` and longer than it.
+    previous: the fills as they were when the page was last written (inject_shows.py,
+    earlier the same night). A show still showing its EARLIER fill gets the new one
+    (a re-read found an edited text, or the play's own page replaced a
+    theatre.art.bg text): the page never keeps a text synopsis_fills.json no longer
+    holds, which page_source.py would refuse on a seed record.
+    Returns {"override": n, "fill": n (theatre.art.bg), "own_page": n}."""
+    n = {"override": 0, "fill": 0, "own_page": 0}
     for sh in shows:
         sid = sh.get("id")
         ov = overrides.get(sid)
@@ -125,12 +139,15 @@ def apply(shows, overrides, fills, thin=THIN):
             continue
         f = fills.get(sid)
         text = (f or {}).get("bg") or ""
+        route = "own_page" if (f or {}).get("source") == "own-page" else "fill"
         if f and slen(text) >= MIN_FILL:
+            was = ((previous or {}).get(sid) or {}).get("bg")
             if sh.get("synBg") == text:
-                n["fill"] += 1                       # applied on an earlier run
-            elif slen(sh.get("synBg")) < thin and slen(text) > slen(sh.get("synBg")):
+                n[route] += 1                        # applied on an earlier run
+            elif (was and sh.get("synBg") == was) or \
+                    (slen(sh.get("synBg")) < thin and slen(text) > slen(sh.get("synBg"))):
                 sh["synBg"] = text
-                n["fill"] += 1
+                n[route] += 1
     return n
 
 
@@ -145,11 +162,11 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
-def parse_art_production(html, title, theatre_names):
-    """The lead description of a theatre.art.bg production page
-    (div.postanovka div.anons: its <p> children before the "Повече" block), or
-    None unless the page's own title (h2 in div.postanovka-people) equals `title`
-    and its venue line names one of `theatre_names` (a name or a list)."""
+def art_anons(html, title, theatre_names):
+    """The description element (div.postanovka div.anons) of a theatre.art.bg
+    production page, or None unless the page's own title (h2 in
+    div.postanovka-people) equals `title` and its venue line names one of
+    `theatre_names` (a name or a list): never another production's page."""
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html, "lxml")
     people = soup.select_one("div.postanovka div.postanovka-people")
@@ -162,6 +179,16 @@ def parse_art_production(html, title, theatre_names):
     venue = norm(" ".join(t for t in people.stripped_strings if t != h2.get_text(strip=True))[:300])
     wants = [norm(n) for n in ([theatre_names] if isinstance(theatre_names, str) else theatre_names)]
     if not any(w and w in venue for w in wants):
+        return None
+    return anons
+
+
+def parse_art_production(html, title, theatre_names):
+    """The lead description of a theatre.art.bg production page
+    (div.postanovka div.anons: its <p> children before the "Повече" block), or
+    None unless the page is this production's (art_anons)."""
+    anons = art_anons(html, title, theatre_names)
+    if anons is None:
         return None
     paras = []
     for ch in anons.children:
@@ -212,6 +239,8 @@ def fetch(src, fills, net, today, decode):
     for sid, title, theatre, url in candidates(src):
         stats["candidates"] += 1
         rec = fills.get(sid)
+        if rec and rec.get("bg") and rec.get("source") == "own-page":
+            continue                                 # the play's own page wins over theatre.art.bg
         if not due(rec, url, today):
             continue
         r = net.get(url)
@@ -230,14 +259,14 @@ def fetch(src, fills, net, today, decode):
     return stats
 
 
-def apply_to_html(html=HTML):
+def apply_to_html(html=HTML, previous=None):
     from inject_shows import extract_array
     from csp import json_for_script
     src = pathlib.Path(html).read_text(encoding="utf-8")
     start, end, literal = extract_array(src, "SHOWS")
     shows = json.loads(literal)
     log = []
-    n = apply(shows, load_overrides(log=log), load_fills())
+    n = apply(shows, load_overrides(log=log), load_fills(), previous=previous)
     for line in log:
         print("  " + line, file=sys.stderr)
     new = json_for_script(shows)
@@ -250,23 +279,38 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="also apply to index.html")
     ap.add_argument("--budget", type=int, default=240)
+    ap.add_argument("--own-budget", type=int, default=None, help="seconds for the own-page route (own_page_synopses.BUDGET_S)")
+    ap.add_argument("--own-max-requests", type=int, default=None, help="requests for the own-page route (MAX_REQUESTS)")
+    ap.add_argument("--own-max-per-host", type=int, default=None, help="pages of one host for the own-page route (MAX_PER_HOST)")
+    ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args()
     try:
         from official_theatres import decode
         from own_page_posters import Net
         src = HTML.read_text(encoding="utf-8")
         fills = load_fills()
+        before = json.loads(json.dumps(fills))       # what inject_shows.py applied to the page
         try:
             from listing_window import sofia_today
             today = sofia_today()
         except Exception:
             today = dt.date.today()
-        stats = fetch(src, fills, Net(budget=a.budget), today, decode)
+        stats = fetch(src, fills, Net(budget=a.budget, cache_dir=os.environ.get("POSTER_CACHE_DIR")), today, decode)
+        try:                                         # each play's own production page (bounded)
+            import own_page_synopses as OPS
+            net = OPS.make_net(a.own_budget or OPS.BUDGET_S, a.own_max_requests or OPS.MAX_REQUESTS,
+                               os.environ.get("POSTER_CACHE_DIR"))
+            own = OPS.fetch(src, fills, net, today, decode, verbose=a.verbose,
+                            max_per_host=a.own_max_per_host or OPS.MAX_PER_HOST)
+            own["requests"], own["from_run_cache"], own["robots_refused"] = net.fetched, net.cached, net.refused
+        except Exception as e:                       # noqa: BLE001  never blocks the step
+            own = {"error": f"{type(e).__name__}: {e}"}
+        stats["own_page"] = own
         FILLS.write_text(json.dumps(fills, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
                          encoding="utf-8")
         print("SYNOPSES " + json.dumps(stats))
         if a.apply:
-            print("applied " + json.dumps(apply_to_html()))
+            print("applied " + json.dumps(apply_to_html(previous=before)))
     except Exception as e:                           # never fails the refresh
         print(f"synopses: {type(e).__name__}: {e}", file=sys.stderr)
     return 0

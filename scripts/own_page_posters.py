@@ -113,8 +113,18 @@ RESIZE_SUFFIX_RE = re.compile(r"[_-](?:fit|thumb|resize|crop|scale)[_-][a-z]+$|[
 
 # ------------------------------------------------------------ polite fetching
 class _Resp:
-    def __init__(self, content, ctype=""):
+    def __init__(self, content, ctype="", url=None):
         self.content, self.headers, self.status_code = content, {"Content-Type": ctype}, 200
+        self.url = url                         # the final URL (after redirects) when it is known
+
+
+# A directory that lives for ONE refresh run (refresh_all.py makes it and removes it):
+# a production page fetched by one step is reused by the next, so own_page_synopses.py
+# (the synopses step) and this module (poster health / poster fix) ask a theatre for
+# each page at most once a night. Pages only, with the URL the request ended on (the
+# redirect check needs it); an entry older than RUN_CACHE_HOURS is ignored.
+RUN_CACHE_ENV = "SOFIA_RUN_CACHE"
+RUN_CACHE_HOURS = 20
 
 
 class Net:
@@ -136,6 +146,7 @@ class Net:
         self._robots = {}
         self._robots_lock = threading.Lock()
         self.cache = pathlib.Path(cache_dir) if cache_dir else None
+        self.run_cache = pathlib.Path(os.environ[RUN_CACHE_ENV]) if os.environ.get(RUN_CACHE_ENV) else None
         self.t_end = time.monotonic() + budget
         self.verbose = verbose
         self.fetched = self.cached = self.refused = 0
@@ -193,12 +204,44 @@ class Net:
     def _gap(self, host):
         return max(HOST_GAP, self._robots.get(host + "#delay", 0.0))
 
+    def _run_path(self, url, kind):
+        if self.run_cache is None or kind != "page":
+            return None
+        return self.run_cache / ("page-" + hashlib.sha1(url.encode("utf-8")).hexdigest())
+
+    def _run_read(self, url, kind):
+        """This run's copy of a page another step already fetched, or None."""
+        rp = self._run_path(url, kind)
+        try:
+            if rp is None or time.time() - rp.stat().st_mtime > RUN_CACHE_HOURS * 3600:
+                return None
+            head, _, body = rp.read_bytes().partition(b"\n")
+            return _Resp(body, url=json.loads(head.decode("utf-8")).get("url")) if body else None
+        except (OSError, ValueError, AttributeError):
+            return None
+
+    def _run_write(self, url, kind, r):
+        rp = self._run_path(url, kind)
+        if rp is None or r is None or not getattr(r, "content", None):
+            return
+        try:
+            rp.parent.mkdir(parents=True, exist_ok=True)
+            final = getattr(r, "url", None)
+            head = json.dumps({"url": final if isinstance(final, str) else None})
+            rp.write_bytes(head.encode("utf-8") + b"\n" + r.content)
+        except OSError:
+            pass                               # a cache that cannot be written is only a cache
+
     def _raw(self, url, kind):
         cp = self._cache_path(url, kind)
         if cp is not None and cp.exists():
             self.cached += 1
             data = cp.read_bytes()
             return _Resp(data) if data else None
+        hit = self._run_read(url, kind)
+        if hit is not None:
+            self.cached += 1
+            return hit
         if self.over_budget():
             return None
         host = (urllib.parse.urlsplit(url).hostname or "").lower()
@@ -212,6 +255,7 @@ class Net:
         self.fetched += 1
         if cp is not None and kind != "robots" and r is not None:
             cp.write_bytes(r.content)
+        self._run_write(url, kind, r)
         return r
 
     def get(self, url, kind="page"):
