@@ -358,7 +358,7 @@ def about_other(b, title, other_titles):
         if (nb == o or nb.startswith(o + " ")) and (multi or quoted == o):
             if not (has_mine and nb.startswith(mine)):
                 return True
-        if has_mine or not multi or f" {o} " not in padded:
+        if has_mine or f" {o} " not in padded:   # one-word titles too: the production-noun rule below needs the title right after "Спектакълът"
             continue
         if re.search(r"(?<!по )(?<!по едноименната )\b" + _PROD_NOUN + r"\s+" + re.escape(o) + r"\b", nb):
             return True
