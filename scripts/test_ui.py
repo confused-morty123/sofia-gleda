@@ -16152,6 +16152,28 @@ def _lg_record(page):
     return json.loads(page.evaluate("localStorage.getItem('sofia-consent')") or "null") or {}
 
 
+def _lg_reload_stored(page, timeout_ms=5000):
+    """Reload `page` once the cookie record it just stored is in the context's shared storage.
+    GitHub's Chromium (2026-11-12, run 43242761309) reloaded the app 1 s after the click and
+    the new page found no record (the same commit passed on the test branch, and 50/50
+    locally): the write had not yet reached the storage a new document reads. A second page
+    of the same origin reads that shared storage; it waits until it sees the record, and,
+    still open across the reload, keeps that storage in place. A record that never arrives
+    is not waited for longer: the check after the reload then fails as before."""
+    from urllib.parse import urljoin
+    want = page.evaluate("localStorage.getItem('sofia-consent')")
+    peer = page.context.new_page()
+    try:
+        peer.goto(urljoin(page.url, "legal/cookies/index.html"
+                                       if page.url.startswith("file:") else "legal/cookies/"))
+        peer.wait_for_function("(w) => localStorage.getItem('sofia-consent') === w", arg=want, timeout=timeout_ms)
+    except Exception as ex:
+        print(f"  note: the record was not seen from a second page before the reload ({type(ex).__name__})")
+    page.reload()
+    page.wait_for_selector(".bar", timeout=20000)
+    peer.close()
+
+
 def _lg_scroll_to_footer(page):
     page.evaluate("""async () => { for (let i = 0; i < 60; i++) { window.scrollTo(0, document.documentElement.scrollHeight);
         await new Promise(r => setTimeout(r, 60)); if (!document.getElementById('rail-sentinel')) break; }
@@ -16251,8 +16273,7 @@ def wave_lg1(browser):
     print("\n=== LG1: the choice persists; the footer ===")
     rec_before = _lg_record(page)
     wait_settled(page)                  # the notice's exit has finished before the reload
-    page.reload()
-    page.wait_for_selector(".bar", timeout=20000)
+    _lg_reload_stored(page)
     wait_page_idle(page)
     check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"],
           f"record before the reload={rec_before} after={_lg_record(page)} url={page.url[-40:]}")
@@ -16685,8 +16706,7 @@ def wave_lg3(browser):
         s = state()
         check("lg3_saved_choice_runs_once", not s["shown"] and s["ran"] == 1
               and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": True}, f"ran={s['ran']} rec={s['rec']}")
-        page.reload()
-        page.wait_for_selector(".bar", timeout=20000)
+        _lg_reload_stored(page)
         s = state()
         check("lg3_runs_at_once_next_visit", s["ran"] == 1 and not s["shown"], f"ran={s['ran']}")
         page.click("[data-consent-open]")
