@@ -7,7 +7,8 @@
 #
 #   unit  the committed page is built from src/ (check_page_source.py), the offline
 #         build + share and legal pages + CSP, the publish gate, and
-#         test_parsers, test_theatres, test_verify, test_schedule, test_page_source.
+#         test_parsers, test_theatres, test_verify, test_schedule, test_deploy_guard,
+#         test_page_source.
 #         Every test runs even when an earlier one fails, so all failures show.
 #   security  test_security, one runner per engine (Chromium, WebKit), in parallel
 #         with the rest: it is the longest offline suite (~11 min both engines in one).
@@ -211,6 +212,10 @@ jobs:
       - name: test_schedule
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 scripts/test_schedule.py
+
+      - name: test_deploy_guard
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 scripts/test_deploy_guard.py
 
       - name: test_page_source
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
