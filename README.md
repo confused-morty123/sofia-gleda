@@ -173,7 +173,7 @@ Four jobs:
 
 - **unit**: the offline build, the publish gate (`verify_build.py`, without the
   36-hour freshness check: the data is whatever was last committed), then
-  `test_parsers`, `test_theatres`, `test_verify`, `test_schedule`.
+  `test_parsers`, `test_theatres`, `test_verify`, `test_schedule`, `test_deploy_guard`.
   Every test runs even when an earlier one failed, so one run shows all failures.
   A failure is shown, not hidden: the step goes red and so does the job. Only the
   publish-gate step skips the freshness check (`SOFIA_SKIP_FRESHNESS=1` on that
@@ -240,6 +240,58 @@ time, `python3 scripts/ci_waves.py matrix --waves "HF1 HS1"` shows the shards a
 run would get, and `python3 scripts/ci_waves.py run --browser webkit HF1` runs
 waves the way CI does. After a new wave lands, add its time (printed by `run` on
 CI) to `ESTIMATES` in `ci_waves.py`; until then it counts as 2 minutes.
+
+## The deploy guard
+
+GitHub Pages publishes the site with GitHub's own workflow, **pages build and
+deployment**, after every commit to `main`. Its *build* job turns the committed
+`index.html` into the deployment and almost always works; its *deploy* job then
+hands that to the CDN, and that step has twice stalled with "Timeout reached,
+aborting!" although the build succeeded — on 2026-11-09 (fixed by hand with
+**Re-run failed jobs**) and on 2026-11-10 (nobody re-ran it, so for 24 hours the
+site served the previous day's programme). `.github/workflows/deploy-guard.yml`
+does that re-run itself and then checks that the live site really caught up.
+
+**What it does.** The guard wakes when a Pages run completes, once a day on a
+timer (04:23 Sofia), and from its own **Run workflow** button. Each time it looks
+at how things are *now*, never at the event that woke it, so a lost or late event
+changes nothing:
+
+- if `main` has moved on since, it does nothing — the newer commit's own
+  deployment wakes the guard again (re-running an older commit's deployment would
+  put *old* content live, so this is never allowed);
+- if that commit's deploy job failed or timed out, it asks GitHub to re-run the
+  failed jobs, **at most twice per commit** (whoever asks and however often), and
+  only while that commit is still `main`'s tip — checked right before asking and
+  again right after, so a commit landing mid-ask cancels the re-run;
+- after a deployment succeeds (first try or a re-run), it fetches
+  `https://sofiagleda.com/index.html` (a cache-busting query, politely, over about
+  five minutes) and compares the live page's `SNAPSHOT.generated` stamp with the
+  committed one.
+
+**What the owner sees.** When everything is fine, nothing — the guard's run is
+green and silent. When the guard gives up (both re-runs failed, or the site is
+still stale after five minutes, or GitHub's API could not be read), its run goes
+**red** and GitHub e-mails the person who owns the schedule, with a one-line
+message in the run's summary saying exactly what to click — normally Actions >
+*pages build and deployment* > the **top** run > *Re-run failed jobs*, or Actions
+> *Daily refresh* > *Run workflow* to publish a fresh deployment. The guard holds
+no secrets, installs nothing, reads only `main`'s own `deploy_guard.py` and
+`index.html`, and the only writes it can ask GitHub for are "re-run failed jobs"
+and "cancel". Its decision logic is pure and offline-tested:
+`scripts/deploy_guard.py` (`decide(...)`), `python3 scripts/test_deploy_guard.py`.
+
+**On release.** `workflow_run` only fires for a workflow file that is on the
+default branch, so the guard cannot run at all — and this trigger cannot be
+proven — until `deploy-guard.yml` is merged to `main`. Everything else (the
+decision table, the retry bound, the live-stamp check, the YAML) is proven
+offline by the tests. After the first commit to `main` that follows the release,
+open Actions > **Deploy guard**: a run should appear shortly after that commit's
+*pages build and deployment* finishes, and end green with a summary line like
+"GitHub reports the deployment of `<sha>` as successful; https://sofiagleda.com
+serves its data". If no Deploy guard run appears, check that the Pages workflow
+is named *pages build and deployment* (the `workflows:` list in the trigger must
+match its name) and that Actions are enabled for the repository.
 
 ## Play synopses: thin texts, fills and the owner's overrides
 
