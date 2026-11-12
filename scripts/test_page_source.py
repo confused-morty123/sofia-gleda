@@ -119,23 +119,36 @@ def _shows_page(syn_bg, syn_en=None):
     recs = [dict(x, synBg=syn_bg, **({"synEn": syn_en} if syn_en else {})) if x.get("id") == sseed["id"] else x
             for x in shows]
     return set_line(night, "SHOWS", "const SHOWS=" + json.dumps(recs, ensure_ascii=False) + ";")
-fills = {sseed["id"]: ({FILL}, set())}
+
+# The committed page may already carry real nightly fills / overrides for OTHER seed
+# shows (whatever synopsis_fills.json / synopsis_overrides.json held this run). Those are
+# not code changes, so the checks below start from the repo's own allow-list
+# (PS._synopsis_texts(), the texts the refresh is permitted to substitute) and add only
+# the test's synthetic entry for the one seed show it edits. This keeps every check about
+# that one show (uroci) and independent of the repo's synopsis files — it passes whether
+# those files are empty, hold their usual fills, or hold an entry for the seed show itself.
+_repo_syn = {sid: (set(bg), set(en)) for sid, (bg, en) in PS._synopsis_texts().items()}
+def _allow(bg=None, en=None, sid=None):
+    """The repo allow-list plus one synthetic entry {sid or the seed: (bg texts, en texts)}."""
+    a = {s: (set(x), set(y)) for s, (x, y) in _repo_syn.items()}
+    a[sid or sseed["id"]] = (set(bg or ()), set(en or ()))
+    return a
 check("…a seed SHOWS record carrying its synopsis_fills.json text passes",
-      PS.compare(built, _shows_page(FILL), synopsis_texts=fills) == [])
+      PS.compare(built, _shows_page(FILL), synopsis_texts=_allow(bg={FILL})) == [])
 check("…a seed SHOWS record carrying its override (bg + en) passes",
       PS.compare(built, _shows_page(FILL, "The owner's English text."),
-                 synopsis_texts={sseed["id"]: ({FILL}, {"The owner's English text."})}) == [])
+                 synopsis_texts=_allow(bg={FILL}, en={"The owner's English text."})) == [])
 check("…a seed SHOWS record with any other synopsis still fails",
       any("seed record(s) of SHOWS differ" in p
-          for p in PS.compare(built, _shows_page(FILL + " (променено)"), synopsis_texts=fills)))
+          for p in PS.compare(built, _shows_page(FILL + " (променено)"), synopsis_texts=_allow(bg={FILL}))))
 check("…a fill for another show does not excuse it",
       any("seed record(s) of SHOWS differ" in p
-          for p in PS.compare(built, _shows_page(FILL), synopsis_texts={"another-show": ({FILL}, set())})))
+          for p in PS.compare(built, _shows_page(FILL), synopsis_texts=_allow(bg={FILL}, sid="another-show"))))
 check("…the fill text excuses only the synopsis: another field changed with it still fails",
       any("seed record(s) of SHOWS differ" in p for p in PS.compare(
           built, set_line(night, "SHOWS", "const SHOWS=" + json.dumps(
               [dict(x, synBg=FILL, title=(x.get("title") or "") + " (стар)") if x.get("id") == sseed["id"] else x
-               for x in shows], ensure_ascii=False) + ";"), synopsis_texts=fills)))
+               for x in shows], ensure_ascii=False) + ";"), synopsis_texts=_allow(bg={FILL}))))
 
 # What a refresh changes is not code: new listings, new synthesised records, a new
 # poster block and new CSP hashes.
