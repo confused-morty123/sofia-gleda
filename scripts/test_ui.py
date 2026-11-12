@@ -17738,7 +17738,7 @@ def _ux_urls(browser, base, eng, items):
     s6 = page.evaluate(UX_SHEET_JS)
     check(f"{tag}_app_at_title_path_opens_sheet", s5["open"] and s5["path"] == f"/film/{fq}/" and s5["depth"] == 1 and not s6["open"] and s6["path"] == "/home/",
           f"open={s5['open']} path={s5['path']} depth={s5['depth']} | Back: open={s6['open']} path={s6['path']}")
-    check(f"{tag}_base_href_resolves_from_root", (res["logo"] or 0) > 0 and res["logoSrc"] == base + "/logo.svg" and res["base"] == base + "/",
+    check(f"{tag}_base_href_resolves_from_root", (res["logo"] or 0) > 0 and res["logoSrc"] == base + "/logo.webp" and res["base"] == base + "/",
           f"logo {res['logoSrc']} naturalWidth={res['logo']} baseURI={res['base']}")
     page.goto(base + "/film/zz-no-such-film/")
     page.wait_for_selector(".bar")
@@ -21910,6 +21910,213 @@ def wave_rt1(browser):
         ctx.close()
     print(f"  engine: {eng}")
 
+
+# ============================================================================
+# WAVE NOW1 (11 Nov 2026): "now" catches up when a tab comes back
+#   A tab left open kept the clock reading it was drawn with: in the evening it still
+#   offered the afternoon's screenings, and after midnight it called yesterday "Днес".
+#   The page now reads the Sofia clock again when it is shown again (visibilitychange,
+#   or pageshow from the back-forward cache): another minute redraws the listing in
+#   place, another date reloads the page.
+# The wave builds its own context WITHOUT the frozen CLOCK script: Playwright's clock
+# (page.clock) starts at 18:00 Sofia on the listing's first day and is moved with
+# set_system_time, which shifts the time and fires no timers, exactly what a tab that
+# slept sees. Chromium and WebKit (SOFIA_BROWSER=webkit).
+# ============================================================================
+NOW1_PICK_JS = """(today) => {
+  let best = null;
+  for (const r of SHOWTIMES) {
+    if (r[2] !== today || !filmById[r[0]] || !cinById[r[1]]) continue;
+    for (const tm of r[3]) if (tm >= '18:01' && tm <= '20:59' && (!best || tm < best.tm)) best = {fid: r[0], venue: r[1], tm};
+  }
+  if (!best) return null;
+  best.today = []; best.later = 0;
+  for (const r of SHOWTIMES) { if (r[0] !== best.fid || r[1] !== best.venue) continue;
+    if (r[2] === today) best.today.push(...r[3]); else if (r[2] > today) best.later += r[3].length; }
+  best.key = 'film:' + best.fid + '|' + best.venue + '|' + today + '|' + best.tm;
+  best.title = filmTitle(filmById[best.fid]);
+  return best; }"""
+
+# the listing of one cinema on one day: the film's card and the number of screenings it states
+NOW1_CARD_JS = """(fid) => { const c = document.querySelector('main [data-film="' + CSS.escape(fid) + '"] .cf2');
+  if (!c) return {card: false, n: null, text: ''};
+  const m = c.textContent.match(/(\\d+)\\s+прожекци/);
+  return {card: true, n: m ? +m[1] : null, text: c.textContent.trim()}; }"""
+
+# the film's card opened (as wave TR2 opens one): how many time buttons it shows for that screening
+NOW1_SHEET_JS = """async ([fid, key]) => { curSheet = {kind: 'film', id: fid}; openSheet(sheetFilm(filmById[fid]));
+  await new Promise(r => setTimeout(r, 350));
+  const s = document.getElementById('scrim');
+  const n = s ? s.querySelectorAll('[data-sspill="' + CSS.escape(key) + '"]').length : -1;
+  const all = s ? s.querySelectorAll('[data-sspill]').length : -1;
+  closeSheet(); await new Promise(r => setTimeout(r, 500));
+  return {n, all}; }"""
+
+NOW1_BACK_JS = "() => { document.dispatchEvent(new Event('visibilitychange')); }"
+
+
+def wave_now1(browser):
+    """NOW1: a tab that comes back reads the Sofia clock again. 18:00 -> 21:00 on the same
+    day: nothing changes while the tab sleeps, and on visibilitychange the screening that
+    started meanwhile is gone from the listing and from the film's card, the page keeps its
+    place and its posters; pageshow (persisted) does the same; a hidden page does nothing; under
+    an open card the listing waits for the card to close. Past midnight the page reloads and
+    "Днес" is the new date."""
+    print("\n=== NOW1: \"now\" catches up when a tab comes back ===")
+    eng = _hf_engine(browser)
+    tag = f"now1_{eng}"
+    ensure_shot_dir("NOW1")
+    y, m, d = (int(x) for x in CLOCK_TODAY_ISO.split("-"))
+    at = lambda hh, mm, days=0: (datetime.datetime(y, m, d, hh, mm, tzinfo=SOFIA_TZ)
+                                 + datetime.timedelta(days=days))
+    ctx = browser.new_context(viewport={"width": 1280, "height": 900}, timezone_id="Europe/Sofia", locale="bg-BG")
+    # no add_init_script(CLOCK) here: the clock below is the only one, and it can be moved
+    ctx.add_init_script("""try { localStorage.setItem('sofia-screen-v2', JSON.stringify({prefs:{track:'both',
+        genres:[],mood:[],with:'',when:'any',taste:[]}, lang:'bg', mode:'cinema'})); } catch(e) {}""")
+    page = ctx.new_page()
+    errs = []
+    page.on("pageerror", lambda e: errs.append(str(e)))
+    try:
+        page.clock.install(time=at(18, 0))
+        page.goto(HTML)
+        page.wait_for_selector(".bar", timeout=20000)
+        wait_page_idle(page)
+        now0 = page.evaluate("({d: NOW_DATE, t: NOW_TIME, fn: typeof sofiaNow})")
+        check(f"{tag}_clock_is_18_00_sofia", now0["d"] == CLOCK_TODAY_ISO and "18:00" <= now0["t"] <= "18:01"
+              and now0["fn"] == "function", f"{now0}")
+        pick = page.evaluate(NOW1_PICK_JS, CLOCK_TODAY_ISO)
+        if not pick or not (now0["t"] < pick["tm"]):
+            skip(f"{tag}_screening", f"no screening between 18:01 and 20:59 on {CLOCK_TODAY_ISO} (picked {pick}, clock {now0})")
+            return
+        # the numbers the listing must state, counted here from the raw rows
+        left = lambda t: sum(1 for tm in pick["today"] if tm >= t)
+        n18, n21 = left(now0["t"]), left("21:00")
+        want21 = n21 if n21 else pick["later"]      # nothing left today: the card counts the later days, or goes
+        print(f"  picked {pick['title']!r} at {pick['venue']} {CLOCK_TODAY_ISO} {pick['tm']}: "
+              f"{n18} screening(s) left at {now0['t']}, {n21} at 21:00, {pick['later']} on later days")
+        # one cinema, today: its films as cards, each with the number of screenings left
+        page.evaluate("([v, day]) => { S.fVenues = [v]; S.day = day; S.limit = 500; render(); window.scrollTo(0, 0); }",
+                      [pick["venue"], CLOCK_TODAY_ISO])
+        wait_settled(page)
+        c18 = page.evaluate(NOW1_CARD_JS, pick["fid"])
+        s18 = page.evaluate(NOW1_SHEET_JS, [pick["fid"], pick["key"]])
+        check(f"{tag}_at_18_the_screening_is_offered", c18["card"] and c18["n"] == n18 and s18["n"] >= 1,
+              f"card {c18} (want {n18}); time buttons for {pick['key']}: {s18['n']} of {s18['all']}")
+        save_shot(page, "NOW1", f"{eng}_18_00")
+
+        # the tab sleeps until 21:00: the time moves, no timer fires, the page is as it was
+        page.clock.set_system_time(at(21, 0))
+        page.wait_for_timeout(300)
+        asleep = page.evaluate("([fid]) => ({t: NOW_TIME, clock: sofiaNow().time})", [pick["fid"]])
+        c_asleep = page.evaluate(NOW1_CARD_JS, pick["fid"])
+        check(f"{tag}_nothing_changes_until_the_tab_is_back", asleep["clock"] == "21:00" and asleep["t"] == now0["t"]
+              and c_asleep == c18, f"clock {asleep['clock']}, page drawn at {asleep['t']}, card {c_asleep}")
+        # ...and comes back
+        marks = page.evaluate("""() => { window.__now1 = 1; const b = document.querySelector('.bar'); b.__now1 = 1;
+            const ims = [...document.querySelectorAll('main img.p-real')].filter(i => i.complete && i.naturalWidth);
+            ims.forEach(i => i.__now1 = 1); return ims.length; }""")
+        page.evaluate(NOW1_BACK_JS)
+        page.wait_for_function("NOW_TIME === '21:00'", timeout=5000)
+        page.wait_for_timeout(500)
+        wait_settled(page)
+        c21 = page.evaluate(NOW1_CARD_JS, pick["fid"])
+        s21 = page.evaluate(NOW1_SHEET_JS, [pick["fid"], pick["key"]])
+        gone = (not c21["card"] and not n21) or (c21["card"] and c21["n"] == want21)
+        check(f"{tag}_at_21_the_screening_is_gone", gone and s21["n"] == 0 and (c21 != c18),
+              f"card {c21} (want {want21 if (n21 or c21['card']) else 'no card'}); time buttons for {pick['key']}: "
+              f"{s21['n']} of {s21['all']}")
+        kept = page.evaluate("""() => ({page: window.__now1 === 1, bar: document.querySelector('.bar').__now1 === 1,
+            posters: [...document.querySelectorAll('main img.p-real')].filter(i => i.__now1 === 1).length,
+            now: [...document.querySelectorAll('main img.p-real')].length})""")
+        check(f"{tag}_listing_redrawn_in_place", kept["page"] and kept["bar"] and (kept["posters"] > 0 or not marks or not kept["now"]),
+              f"no reload: {kept['page']}; same header: {kept['bar']}; loaded posters carried over: {kept['posters']} "
+              f"of {marks} (the listing now has {kept['now']})")
+        save_shot(page, "NOW1", f"{eng}_21_00")
+
+        # Back/Forward from the browser's cache: pageshow with persisted
+        page.clock.set_system_time(at(21, 7))
+        page.evaluate("() => { window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: false})); }")
+        page.wait_for_timeout(200)
+        t_first = page.evaluate("NOW_TIME")
+        page.evaluate("() => { window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true})); }")
+        page.wait_for_function("NOW_TIME === '21:07'", timeout=5000)
+        check(f"{tag}_pageshow_from_the_cache_catches_up", t_first == "21:00" and page.evaluate("NOW_TIME") == "21:07",
+              f"first load's pageshow (not persisted): {t_first}; persisted: {page.evaluate('NOW_TIME')}")
+        # a page that is being hidden does nothing; shown again, it catches up
+        page.clock.set_system_time(at(21, 9))
+        page.evaluate("""() => { Object.defineProperty(document, 'visibilityState', {value: 'hidden', configurable: true});
+            document.dispatchEvent(new Event('visibilitychange')); }""")
+        page.wait_for_timeout(200)
+        t_hidden = page.evaluate("NOW_TIME")
+        page.evaluate("() => { delete document.visibilityState; document.dispatchEvent(new Event('visibilitychange')); }")
+        page.wait_for_function("NOW_TIME === '21:09'", timeout=5000)
+        check(f"{tag}_only_when_the_page_is_shown", t_hidden == "21:07" and page.evaluate("document.visibilityState") == "visible",
+              f"hidden: {t_hidden}; visible again: {page.evaluate('NOW_TIME')}")
+
+        # the whole programme, scrolled well down: the page keeps its place (a full render() does not)
+        page.evaluate("() => { S.fVenues = []; S.day = 'week'; S.limit = 30; render(); window.scrollTo(0, 0); }")
+        wait_settled(page)
+        for _ in range(12):
+            page.mouse.wheel(0, 900)
+            page.wait_for_timeout(120)
+        wait_settled(page)
+        y0 = page.evaluate("Math.round(window.scrollY)")
+        page.clock.set_system_time(at(21, 11))
+        page.evaluate(NOW1_BACK_JS)
+        page.wait_for_function("NOW_TIME === '21:11'", timeout=5000)
+        page.wait_for_timeout(500)
+        wait_settled(page)
+        y1 = page.evaluate("Math.round(window.scrollY)")
+        check(f"{tag}_page_keeps_its_place", y0 > 900 and abs(y1 - y0) <= 2, f"scrolled to {y0} px, after catching up {y1} px")
+        y2 = page.evaluate("() => { render(); return Math.round(window.scrollY); }")
+        print(f"  for comparison, a full render() from {y1} px leaves the page at {y2} px")
+        page.evaluate("window.scrollTo(0, 0)")
+
+        # under an open card the listing waits (the page is pinned there) and is redrawn when the card closes
+        page.evaluate("([fid]) => { curSheet = {kind: 'film', id: fid}; openSheet(sheetFilm(filmById[fid])); }", [pick["fid"]])
+        page.wait_for_timeout(500)
+        page.clock.set_system_time(at(21, 13))
+        page.evaluate(NOW1_BACK_JS)
+        page.wait_for_function("NOW_TIME === '21:13'", timeout=5000)
+        held = page.evaluate("({open: sheetOpen, waiting: _refreshLater !== null})")
+        page.evaluate("closeSheet()")
+        page.wait_for_timeout(900)
+        wait_settled(page)
+        after = page.evaluate("({open: sheetOpen, waiting: _refreshLater !== null})")
+        check(f"{tag}_under_an_open_card_the_listing_waits", held == {"open": True, "waiting": True}
+              and after == {"open": False, "waiting": False}, f"card open: {held}; closed: {after}")
+
+        # past midnight: another date, so the page loads again and "Днес" is the new day
+        tomorrow = CLOCK_TOMORROW_ISO
+        page.clock.set_system_time(at(0, 5, days=1))
+        try:
+            with page.expect_navigation(wait_until="load", timeout=20000):
+                page.evaluate(NOW1_BACK_JS)
+        except Exception as ex:
+            print(f"  (no navigation seen: {str(ex)[:120]})")
+        page.wait_for_selector(".bar", timeout=20000)
+        wait_page_idle(page)
+        day = page.evaluate("""(iso) => { const reloaded = window.__now1 !== 1;
+            S.day = TODAY; render();
+            const dd = new Date(iso + 'T00:00:00Z'), L = T[S.lang];
+            const pill = document.querySelector('.dspill .ds-today');
+            return {reloaded, now: NOW_DATE, today: TODAY, time: NOW_TIME, last: LASTDAY,
+                    title: (document.querySelector('.phead-title') || {}).textContent || '',
+                    want: L.dows[dd.getUTCDay()] + ' ' + dd.getUTCDate() + ' ' + L.months[dd.getUTCMonth()],
+                    word: L.pheadToday || 'Днес',
+                    pill: pill ? pill.closest('.dspill').dataset.day : null}; }""", tomorrow)
+        title = " ".join(day["title"].split())
+        check(f"{tag}_past_midnight_the_page_reloads", day["reloaded"] and day["now"] == tomorrow and day["today"] == tomorrow
+              and day["time"] == "00:05", f"reloaded={day['reloaded']} NOW_DATE={day['now']} TODAY={day['today']} at {day['time']}")
+        check(f"{tag}_past_midnight_dnes_is_the_new_date", title.startswith(day["word"]) and day["want"] in title
+              and day["pill"] == tomorrow, f"banner {title!r} (want {day['word']!r} + {day['want']!r}); the strip's 'днес' pill: {day['pill']}")
+        save_shot(page, "NOW1", f"{eng}_past_midnight")
+        check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
+    finally:
+        ctx.close()
+    print(f"  engine: {eng}")
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -21951,6 +22158,7 @@ WAVES = {
     "GA1": wave_ga1,
     "HS1": wave_hs1,
     "RT1": wave_rt1,
+    "NOW1": wave_now1,
 }
 
 # Chromium on Linux (GitHub's runners) hints glyph outlines to whole pixels by default, so

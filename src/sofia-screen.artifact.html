@@ -1900,16 +1900,19 @@ const LS="sofia-screen-v2";
    Europe/Sofia date and time (Intl resolves EET/EEST automatically) instead of
    trusting the snapshot's start date — otherwise the app forever thinks "today"
    is the day the data was captured and keeps showing screenings that have long
-   since passed. Date maths elsewhere stays UTC/ISO-string based (see dUTC). */
-const NOW_SOFIA=(()=>{
+   since passed. Date maths elsewhere stays UTC/ISO-string based (see dUTC).
+   sofiaNow() reads the clock; NOW_SOFIA/NOW_DATE/NOW_TIME hold the reading the page was
+   drawn with. A tab that comes back reads it again ("now catches up", near the end). */
+function sofiaNow(){
   try{const p={};
     new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Sofia",year:"numeric",month:"2-digit",
       day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false})
       .formatToParts(new Date()).forEach(x=>p[x.type]=x.value);
     return{date:`${p.year}-${p.month}-${p.day}`,time:`${p.hour==="24"?"00":p.hour}:${p.minute}`};
   }catch(e){return{date:SNAPSHOT.window.from,time:"00:00"};}
-})();
-const NOW_DATE=NOW_SOFIA.date, NOW_TIME=NOW_SOFIA.time;
+}
+let NOW_SOFIA=sofiaNow();
+let NOW_DATE=NOW_SOFIA.date, NOW_TIME=NOW_SOFIA.time;
 /* Lower bound clamped into the snapshot so the month/day helpers never run off
    the front of the data; if "now" is already past the window the app simply
    shows an empty, honest programme rather than stale past dates. */
@@ -2624,10 +2627,10 @@ function realPoster(id,size){
   if(SHOWIMG[base])return SHOWIMG[base];
   return null;}
 function posterArt(id,genres,g,altText){
-  const big=/^(hero|sh)-/.test(String(id));
-  /* Full-res on the hero and the open sheet — upscaled w780 looked pixelated on
-     wide and retina screens; w342 is plenty for the small grid cards and lighter
-     to decode while scrolling. */
+  const sid=String(id),hero=sid.startsWith("hero-"),big=hero||sid.startsWith("sh-");
+  /* Full-res on the open sheet — upscaled w780 looked pixelated on wide and retina
+     screens; w342 is plenty for the small grid cards and lighter to decode while
+     scrolling. The hero has its own sizes, below. */
   const real=realPoster(id,big?"original":"w342");
   /* Generated SVG is always built as the base layer. When a real poster
      exists it is overlaid on top; onerror removes the <img> and the SVG
@@ -2636,8 +2639,22 @@ function posterArt(id,genres,g,altText){
   /* a poster that fails to load is removed by the capture-phase "error" listener
      in the failure trap (no inline onerror: the CSP allows no inline handlers) */
   const src=safeImg(real);
-  if(src) return svg+`<img class="p-art p-real" src="${esc(src)}" alt="${esc(altText||"")}" loading="lazy" decoding="async">`;
-  return svg;
+  if(!src)return svg;
+  if(hero){
+    /* The "На фокус" picture is the largest thing on the page, so it is fetched first
+       (eager, high priority; as a lazy image it was the last to arrive) and, when it is a
+       TMDB backdrop, at the size the screen needs: TMDB's 780 px or 1280 px wide file
+       instead of the original (1.4 MB for one film in November 2026, 28 times the 780 px
+       file). Any other hero picture (a theatre's own poster, an event's key art, a film
+       with only a portrait poster) keeps its address and only loads first. */
+    let base=sid.slice(5);
+    if(POSTER_ALIAS[base])base=POSTER_ALIAS[base];
+    const m=ART[base],bd=m&&m.b&&real===TMDB_IMG+"original"+m.b?m.b:null;
+    const w780=bd&&safeImg(TMDB_IMG+"w780"+bd),w1280=bd&&safeImg(TMDB_IMG+"w1280"+bd);
+    const from=w780&&w1280?`src="${esc(w780)}" srcset="${esc(w780)} 780w, ${esc(w1280)} 1280w" sizes="100vw"`:`src="${esc(src)}"`;
+    return svg+`<img class="p-art p-real" ${from} alt="${esc(altText||"")}" loading="eager" fetchpriority="high" decoding="async">`;
+  }
+  return svg+`<img class="p-art p-real" src="${esc(src)}" alt="${esc(altText||"")}" loading="lazy" decoding="async">`;
 }
 function genPoster(id,genres,g){
   const r=rng(id),fam=family(genres),W=300,H=450;
@@ -4775,7 +4792,7 @@ function render(){
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
-      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.webp" width="648" height="126" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
@@ -4787,7 +4804,7 @@ function render(){
     </div>`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
     <div class="bar-in">
-      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.svg" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
+      <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.webp" width="648" height="126" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
         ${deskSearchHTML}${searchIconBtn}
@@ -7470,6 +7487,26 @@ function _keepPageY(y){
   }
   if(Math.abs((window.scrollY||0)-y)>1)window.scrollTo(0,y);
 }
+/* ===================== "now" catches up =====================
+   A tab left open kept the clock reading it was drawn with: in the evening it still offered
+   the afternoon's screenings, and after midnight it called yesterday "Днес". When the page is
+   shown again (the tab or the browser comes back: visibilitychange; Back/Forward restores it
+   from the browser's cache: pageshow, persisted) the Sofia clock is read again.
+   Another date: the page is loaded again, because TODAY, the week and the months are built
+   once from the date. Only another minute: NOW_TIME moves on and the listing is drawn again in
+   place (refreshPage: the header, the scroll position and the loaded posters stay; under an
+   open card it waits until the card closes; an open filter drawer is refreshed with it; with
+   no listing on the page it is a full render()). There is no ticking clock: nothing changes
+   under a page that is being read. */
+function _nowCatchUp(){
+  const n=sofiaNow();
+  if(n.date!==NOW_DATE){location.reload();return;}
+  if(n.time===NOW_TIME)return;
+  NOW_SOFIA=n;NOW_TIME=n.time;
+  if(document.querySelector("#app > .drawer"))renderKeepDrawer();else refreshPage();
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")_nowCatchUp();});
+window.addEventListener("pageshow",e=>{if(e.persisted)_nowCatchUp();});
 try{ _routeSurface(); boot(); _routeBoot(); }catch(e){ fatal(e); }
 try{ gaBoot(); }catch(e){}
 try{ consentBoot(); }catch(e){}
