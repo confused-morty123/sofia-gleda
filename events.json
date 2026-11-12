@@ -2,6 +2,57 @@
  "events": [
   {
    "auto": true,
+   "blurbBg": "Фестивал, 30 ноември – 7 декември 2026.",
+   "blurbEn": "Festival, 30 November – 7 December 2026.",
+   "dates_from": "date field",
+   "from": "2026-11-30",
+   "g": [
+    "#95233F",
+    "#23060D"
+   ],
+   "id": "rodopskiyat-mezhdunaroden-dokumentalen-p189284",
+   "kind": "festival",
+   "missed": 0,
+   "modified": "2026-11-11T12:50:28",
+   "post": 189284,
+   "scope": "cinema",
+   "source": "programata.bg",
+   "status": "upcoming",
+   "tag": "СЛЕД 18 ДНИ",
+   "title": "Родопският международен документален филмов фестивал RIFE гостува за първи път в София със специално издание",
+   "titleEn": "The RIFE Rhodope International Documentary Film Festival is coming to Sofia for the first time with a special edition",
+   "titles": [
+    {
+     "t": "В търсене на Сатир Ефенди",
+     "v": []
+    },
+    {
+     "t": "Спектакъл Политика",
+     "v": []
+    },
+    {
+     "t": "Голямото патриотично пътуване",
+     "v": []
+    },
+    {
+     "t": "За няколко бучки сирене",
+     "v": []
+    },
+    {
+     "t": "Христо в машината на времето – Берлин 93",
+     "v": []
+    },
+    {
+     "t": "Входът за всички прожекции е свободен",
+     "v": []
+    }
+   ],
+   "to": "2026-12-07",
+   "url": "https://programata.bg/kino/rodopskiyat-mezhdunaroden-dokumentalen-filmov-festival-rife-gostuva-za-parvi-pat-v-sofiya-sas-speczialno-izdanie/",
+   "venues": []
+  },
+  {
+   "auto": true,
    "blurbBg": "Фестивал, 31 октомври – 14 ноември 2026. Сред местата: Дом на киното.",
    "blurbEn": "Festival, 31 October – 14 November 2026. Venues include Cinema House.",
    "dates_from": "date field",
@@ -156,8 +207,8 @@
    "post": 186611,
    "scope": "cinema",
    "source": "programata.bg",
-   "status": "upcoming",
-   "tag": "СЛЕД 1 ДЕН",
+   "status": "active",
+   "tag": "СЛЕД 0 ДНИ",
    "title": "Киномания",
    "titleEn": "Cinema Mania",
    "titles": [
@@ -195,14 +246,9 @@
    ]
   }
  ],
- "generated": "2026-11-11T01:40:18+00:00",
+ "generated": "2026-11-12T01:43:47+00:00",
  "ok": true,
  "posts": {
-  "180884": {
-   "date": "2026-05-15T14:33:57",
-   "modified": "2026-05-15T14:34:04",
-   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
-  },
   "181238": {
    "date": "2026-05-20T17:35:38",
    "modified": "2026-09-23T13:07:09",
@@ -334,11 +380,17 @@
    "date": "2026-11-02T15:09:44",
    "modified": "2026-11-02T15:09:45",
    "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "189284": {
+   "date": "2026-11-11T12:50:08",
+   "id": "rodopskiyat-mezhdunaroden-dokumentalen-p189284",
+   "modified": "2026-11-11T12:50:28",
+   "verdict": "event"
   }
  },
  "read": {
   "listed": 27,
-  "pages": 0,
+  "pages": 1,
   "unreadable": 0
  },
  "source": "programata.bg"

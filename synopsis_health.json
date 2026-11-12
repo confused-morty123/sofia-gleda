@@ -1,10 +1,10 @@
 {
- "date": "2026-11-11",
+ "date": "2026-11-12",
  "threshold": 280,
  "shows": {
   "titles": 503,
   "thin": 465,
-  "empty": 377,
+  "empty": 376,
   "thin_en": 467,
   "linked": 449,
   "by_theatre": {
@@ -25,11 +25,11 @@
     "name": "Театър „Ателие 313“"
    },
    "citymark": {
-    "titles": 10,
-    "thin": 3,
+    "titles": 11,
+    "thin": 4,
     "empty": 2,
-    "thin_en": 3,
-    "linked": 3,
+    "thin_en": 4,
+    "linked": 4,
     "name": "Артцентър Сити Марк"
    },
    "iam": {
@@ -43,7 +43,7 @@
    "kuklen": {
     "titles": 22,
     "thin": 22,
-    "empty": 20,
+    "empty": 21,
     "thin_en": 22,
     "linked": 22,
     "name": "Столичен куклен театър"
@@ -73,11 +73,11 @@
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 45,
-    "thin": 45,
-    "empty": 45,
-    "thin_en": 45,
-    "linked": 45,
+    "titles": 43,
+    "thin": 43,
+    "empty": 43,
+    "thin_en": 43,
+    "linked": 43,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
@@ -113,11 +113,11 @@
     "name": "Театър „Българска армия“"
    },
    "th199": {
-    "titles": 41,
-    "thin": 23,
-    "empty": 16,
-    "thin_en": 24,
-    "linked": 15,
+    "titles": 40,
+    "thin": 22,
+    "empty": 15,
+    "thin_en": 23,
+    "linked": 14,
     "name": "Театър 199 „Валентин Стойчев“"
    },
    "toplo": {
@@ -129,11 +129,11 @@
     "name": "Топлоцентрала"
    },
    "vazrazhdane": {
-    "titles": 25,
-    "thin": 24,
-    "empty": 22,
-    "thin_en": 25,
-    "linked": 24,
+    "titles": 27,
+    "thin": 26,
+    "empty": 23,
+    "thin_en": 27,
+    "linked": 26,
     "name": "Театър „Възраждане“"
    },
    "zad-kanala": {
@@ -148,13 +148,13 @@
  },
  "films": {
   "titles": 176,
-  "thin": 96,
-  "empty": 56,
-  "thin_en": 117
+  "thin": 92,
+  "empty": 52,
+  "thin_en": 116
  },
  "routes": {
   "overrides": 0,
-  "theatre_art_fills": 40,
+  "theatre_art_fills": 41,
   "link_to_theatre": 449
  }
 }

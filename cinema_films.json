@@ -4420,7 +4420,8 @@
    "#1B3330",
    "#275F57"
   ],
-  "source": "arena-mega"
+  "source": "arena-mega",
+  "runtime": 100
  },
  "pochivkata-re-release": {
   "id": "pochivkata-re-release",
@@ -4497,5 +4498,58 @@
    "#275F3A"
   ],
   "source": "odeon"
+ },
+ "pochivkata-povtorenie": {
+  "id": "pochivkata-povtorenie",
+  "bg": "ПОЧИВКАТА (ПОВТОРЕНИЕ)",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cg-park",
+  "runtime": 112
+ },
+ "pochivkata": {
+  "id": "pochivkata",
+  "bg": "ПОЧИВКАТА",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cg-ring",
+  "runtime": 112
+ },
+ "v-sluzhba-na-horata": {
+  "id": "v-sluzhba-na-horata",
+  "bg": "В СЛУЖБА НА ХОРАТА",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 70
+ },
+ "40-kinomaniya-i-ledena-zemya": {
+  "id": "40-kinomaniya-i-ledena-zemya",
+  "bg": "40. КИНОМАНИЯ I ЛЕДЕНА ЗЕМЯ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "lumiere"
  }
 }

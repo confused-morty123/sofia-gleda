@@ -177,6 +177,18 @@
    "path": "posters/film-svrahestestveno-i-supernaturalno-kasi-filmi-blok-2.jpg",
    "w": 1920
   },
+  "v-sluzhba-na-horata": {
+   "checked": "2026-11-12",
+   "h": 334,
+   "how": "og:image",
+   "img": "https://softwareforcinema.com/f/movies/m/7/1ea0152c88f6e9cd694f8425a4724020.png",
+   "kind": "key",
+   "md5": "cc3090d9f54b3614d2dfec86042c20c1",
+   "page": "https://domnakinoto.com/v-sluzhba-na-horata-movie7494.html?a=",
+   "path": "posters/film-v-sluzhba-na-horata.png",
+   "src_md5": "aef87ad08be956f03266d9020ad280a3",
+   "w": 500
+  },
   "vlyavo-ot-patya-london-kalkuta": {
    "checked": "2026-11-04",
    "h": 281,
@@ -213,6 +225,13 @@
   }
  },
  "misses": {
+  "film:40-kinomaniya-i-ledena-zemya": {
+   "last": "2026-11-12",
+   "tried": [],
+   "why": [
+    "epaygo.bg is a ticket page, not the title's page"
+   ]
+  },
   "film:evropeyski-kinoklasiki-v-kino-vlaykova-ilyuziya-1980": {
    "last": "2026-11-10",
    "tried": [
@@ -244,7 +263,7 @@
    ]
   },
   "film:polyusi": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://domnakinoto.com/polyusi-movie7436.html?a="
    ],
@@ -294,7 +313,7 @@
    ]
   },
   "show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden"
    ],
@@ -303,7 +322,7 @@
    ]
   },
   "show:az-foyerbah": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_5097_4_20"
    ],
@@ -311,17 +330,8 @@
     "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg"
    ]
   },
-  "show:az-se-kazvah": {
-   "last": "2026-11-11",
-   "tried": [
-    "https://toplocentrala.bg/program/performance/az-se-kazvah"
-   ],
-   "why": [
-    "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thum: 900x368, not usable as a key image"
-   ]
-  },
   "show:bai-ganyo": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_5509_4_20"
    ],
@@ -331,7 +341,7 @@
    ]
   },
   "show:bremenskite-muzikanti": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_4248_4_20"
    ],
@@ -340,7 +350,7 @@
    ]
   },
   "show:buratino-2": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_7714_4_20"
    ],
@@ -358,7 +368,7 @@
    ]
   },
   "show:dalgiyat-pat-na-denya-kam-noshtta": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20"
    ],
@@ -367,7 +377,7 @@
    ]
   },
   "show:dekameron-lyubov-i-smart-po-bokacho": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
    ],
@@ -376,7 +386,7 @@
    ]
   },
   "show:dnevnikat-na-edin-lud-2": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097"
    ],
@@ -385,7 +395,7 @@
    ]
   },
   "show:ekaterina-karavelova-vik-ot-istoriyata": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://www.tba.art.bg/екатерина-каравелова-вик-от-историята___8076"
    ],
@@ -394,7 +404,7 @@
    ]
   },
   "show:gnyav-po-stivan-king": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://www.tba.art.bg/гняв-по-стивън-кинг___8075"
    ],
@@ -403,7 +413,7 @@
    ]
   },
   "show:igra-na-kotki": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://zadkanala.bg/spektakli/igra-na-kotki"
    ],
@@ -412,7 +422,7 @@
    ]
   },
   "show:insert-coin-player-one": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://toplocentrala.bg/program/performance/insert-coin-player-one"
    ],
@@ -428,7 +438,7 @@
    ]
   },
   "show:kiki-i-bozo": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/кики-и-бозо_7339_8_20"
    ],
@@ -437,7 +447,7 @@
    ]
   },
   "show:kontsert-na-pim-pam": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://satirata.bg/program"
    ],
@@ -446,7 +456,7 @@
    ]
   },
   "show:kotarakat-v-chizmi": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/котаракът-в-чизми_640_8_20"
    ],
@@ -462,7 +472,7 @@
    ]
   },
   "show:magichna-nosht-predi-koleda": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_8103_10_20"
    ],
@@ -480,7 +490,7 @@
    ]
   },
   "show:malkata-rusalka": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_7020_4_20"
    ],
@@ -496,7 +506,7 @@
    ]
   },
   "show:mechka-hamletmashina": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "http://sfumato.info/мечка-хамлетмашина___8099"
    ],
@@ -505,7 +515,7 @@
    ]
   },
   "show:mezhdunaroden-simpozium-melba": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://toplocentrala.bg/program/performance/mejdunaroden-simpozium-melba"
    ],
@@ -514,7 +524,7 @@
    ]
   },
   "show:nordost": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_366_4_20"
    ],
@@ -523,7 +533,7 @@
    ]
   },
   "show:pepelyashka": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_6765_4_20"
    ],
@@ -532,7 +542,7 @@
    ]
   },
   "show:razdelyam-dvoyki-po-domovete": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_4099_4_20"
    ],
@@ -541,7 +551,7 @@
    ]
   },
   "show:sablechi-se-za-vecherya": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_5963_4_20"
    ],
@@ -550,7 +560,7 @@
    ]
   },
   "show:spetsialni-povodi": {
-   "last": "2026-11-11",
+   "last": "2026-11-12",
    "tried": [
     "https://theatre.art.bg/x_4673_4_20"
    ],
@@ -563,6 +573,15 @@
    "tried": [],
    "why": [
     "no own page linked"
+   ]
+  },
+  "show:vikove-ot-podzemieto-otmenya-se-na-11-11-2026": {
+   "last": "2026-11-12",
+   "tried": [
+    "https://toplocentrala.bg/program/performance/vikove-ot-podzemieto"
+   ],
+   "why": [
+    "no usable image on the page"
    ]
   }
  },
@@ -579,6 +598,9 @@
   },
   "https://iamstudio.bg/wp-content/uploads/2024/02/screenshot_20261105_112127_drive.jpg": {
    "https://iamstudio.bg/produkt/tri-versii-na-jivota/": "три версии на живота"
+  },
+  "https://softwareforcinema.com/f/movies/m/7/1ea0152c88f6e9cd694f8425a4724020.png": {
+   "https://domnakinoto.com/v-sluzhba-na-horata-movie7494.html?a=": "в служба на хората"
   },
   "https://softwareforcinema.com/f/movies/m/7/3c9263716b2bda62cae4e7b67c7c4a88.jpeg": {
    "https://domnakinoto.com/dyun-chast-parva-movie7435.html?a=": "дюн част първа"
@@ -698,6 +720,12 @@
   "https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg": {
    "https://theatre.art.bg/кики-и-бозо_7339_8_20": "кики и бозо"
   },
+  "https://theatre.peakview.bg/theatre/photos/BIG17458420621Instagram_MaxMoriz.jpg": {
+   "https://theatre.art.bg/макс-и-мориц_709_11_20": "макс и мориц"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG178238765510-02-05-0a8d2df25140589aacd2bcadc319d536e66049e842e1217cd7d4c49a960cc393_598bead5f70e3d30.jpg": {
+   "https://theatre.art.bg/даскал_7938_173_20": "даскал"
+  },
   "https://theatre.peakview.bg/theatre/photos/BIG17919116382Ola Janczak (1).jpg": {
    "https://theatre.art.bg/x_8087_4_20": "clean girl fat festival"
   },
@@ -716,6 +744,12 @@
   "https://toplocentrala.bg/attachments/Event/1004/main/Horizontal_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/insert-coin-player-one": "insert coin player one"
   },
+  "https://toplocentrala.bg/attachments/Event/1008/main/vikove_thumb-detail.jpeg": {
+   "https://toplocentrala.bg/program/performance/vikove-ot-podzemieto": "викове от подземието отменя се на 11 11 2026"
+  },
+  "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_2_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/az-se-kazvah": "аз се казвах"
+  },
   "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/az-se-kazvah": "аз се казвах"
   },
@@ -730,6 +764,18 @@
   },
   "https://toplocentrala.bg/attachments/Event/1230/main/landscape-lia-pavlova_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/literaturna-gostna-s-liya-sreshta-razgovor-i-teatralen-parformans": "литературна гостна с лия среща разговор и театрален пърформанс"
+  },
+  "https://toplocentrala.bg/attachments/Event/764/main/novi-zui-14_thumb-detail.JPG": {
+   "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie": "представление и наказание отменя се на 11 11 2026"
+  },
+  "https://toplocentrala.bg/attachments/Event/764/main/novi-zui-24_thumb-detail.JPG": {
+   "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie": "представление и наказание отменя се на 11 11 2026"
+  },
+  "https://toplocentrala.bg/attachments/Event/764/main/novi-zui-28_thumb-detail.JPG": {
+   "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie": "представление и наказание отменя се на 11 11 2026"
+  },
+  "https://toplocentrala.bg/attachments/Event/764/main/novi-zui-pn_thumb-detail.JPG": {
+   "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie": "представление и наказание отменя се на 11 11 2026"
   },
   "https://toplocentrala.bg/attachments/Event/975/main/AIDB-ticket-1366x768_thumb-detail.png": {
    "https://toplocentrala.bg/program/performance/treta-natsionalna-konferentsiya-za-interioren-dizayn": "четвърта национална конференция за интериорен дизайн"
@@ -1147,6 +1193,18 @@
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/az-plasham",
    "path": "posters/az-plashtam.jpg",
    "w": 220
+  },
+  "az-se-kazvah": {
+   "checked": "2026-11-12",
+   "h": 506,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_2_thumb-detail.jpg",
+   "kind": "key",
+   "md5": "a44d0a6a47a6692ec0ccb4be6ea82a64",
+   "page": "https://toplocentrala.bg/program/performance/az-se-kazvah",
+   "path": "posters/az-se-kazvah.jpg",
+   "src_md5": "44e1f4605d2b441fe4afef8b6fba944f",
+   "w": 900
   },
   "baldahinat": {
    "checked": "2026-11-04",
@@ -1811,6 +1869,18 @@
    "page": "https://iamstudio.bg/produkt/daniil-2/",
    "path": "posters/daniil.jpg",
    "w": 1434
+  },
+  "daskal": {
+   "checked": "2026-11-12",
+   "h": 1202,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG178238765510-02-05-0a8d2df25140589aacd2bcadc319d536e66049e842e1217cd7d4c49a960cc393_598bead5f70e3d30.jpg",
+   "kind": "poster",
+   "md5": "ed2810806a78fd0172f04990656c8d90",
+   "page": "https://theatre.art.bg/даскал_7938_173_20",
+   "path": "posters/daskal.jpg",
+   "src_md5": "ab15b2f602d694c924917f3c7b8ceb33",
+   "w": 800
   },
   "de-profundis-po-oskar-uayld": {
    "checked": "2026-11-04",
@@ -3491,6 +3561,18 @@
    "path": "posters/madam-bovari-gostuva-dt-yambol.jpg",
    "w": 800
   },
+  "maks-i-morits": {
+   "checked": "2026-11-12",
+   "h": 800,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG17458420621Instagram_MaxMoriz.jpg",
+   "kind": "key",
+   "md5": "23155fe52a92d48d7ddaf26c4ef23d5d",
+   "page": "https://theatre.art.bg/макс-и-мориц_709_11_20",
+   "path": "posters/maks-i-morits.jpg",
+   "src_md5": "67583943ccee8f53888b5b5bc43cd53b",
+   "w": 800
+  },
   "malkata-angliya": {
    "checked": "2026-11-04",
    "h": 310,
@@ -4822,6 +4904,18 @@
    "md5": "ae51dd8e52a6ee3d0e4d3aa44ea3b6a5",
    "page": "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie",
    "path": "posters/predstavlenie-i-nakazanie.jpg",
+   "w": 970
+  },
+  "predstavlenie-i-nakazanie-otmenya-se-na-11-11-2026": {
+   "checked": "2026-11-12",
+   "h": 550,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/764/main/novi-zui-pn_thumb-detail.JPG",
+   "kind": "key",
+   "md5": "cbfa60256faf68178675b28f355075ce",
+   "page": "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie",
+   "path": "posters/predstavlenie-i-nakazanie-otmenya-se-na-11-11-2026.jpg",
+   "src_md5": "4d8cc9a88068f574be2ad6d35480a38e",
    "w": 970
   },
   "prelestite-na-iznevyarata": {
