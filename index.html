@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-+MGMDhHsXz9YHzdFz6uv1dbhLAxwNtjcFd9J6l3j3AM=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-WPumOr4wlIDM/7Rh0Kx7+Mtci1L3oGllEvAcIvl/ynU=' 'sha256-Z1MSG6jkOenes59Za2AuhuGKfQKZT9oCAgbARGHIG1E=' 'sha256-cmVJZBBW6knv3OWnWAt0EgLqaV0ROmennqrYV7fDsqA=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-+MGMDhHsXz9YHzdFz6uv1dbhLAxwNtjcFd9J6l3j3AM=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-WPumOr4wlIDM/7Rh0Kx7+Mtci1L3oGllEvAcIvl/ynU=' 'sha256-sVKQg6VoR5k8gEIhZGnRLuDTVmYmfLXX5pLKZlzt5wA=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -1768,6 +1768,11 @@ const FILM_REDIRECT = {"40-kinomaniya-aferata-boyarski":"aferata-boyarski","40-k
    A venue with no entry simply shows no price;
    theatre prices are per-performance (PERFORMANCES p[4]) and come from the scraper. */
 const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","arena-mall":"9 €","cg-ring":"7,50 €","cg-park":"7,50 €","cineland":"8 €","dom-kino":"7,50 €","g8":"5 €","vlaikova":"7 €","odeon":"10 €","arena-serdika":"~9 €"};
+/* Hand-picked hero ("На фокус") for a date range, Sofia dates inclusive (owner, 2026-11-12:
+   the Hunger Games premiere leads the cinema page from next week to the end of the month).
+   It applies only while the film is in the shown period and filters; otherwise the usual
+   ranking decides. Remove an entry once its range has passed. */
+const HERO_PINS = [{"mode":"cinema","id":"igrite-na-glada-izgrevat-v-denya-na-zhatvata","from":"2026-11-16","to":"2026-11-30"}];
 </script>
 <script>/* SOFIA-APP */
 /* ---- clickjacking guard: a meta CSP cannot send frame-ancestors, so a page that
@@ -3355,7 +3360,12 @@ function focusFilms(){
   const rank=f=>{const a=ART2(f.id).tr;return a>0?a:1e9;};
   return visibleFilms().map(f=>{const rows=filmTimes(f.id);
       return{f,tr:rank(f),sv:rows.reduce((n,r)=>n+r[3].length,0)*new Set(rows.map(r=>r[1])).size,r:ratingOf(f)||0};})
-    .sort((a,b)=>a.tr-b.tr||b.sv-a.sv||b.r-a.r||a.f.id.localeCompare(b.f.id));
+    .sort((a,b)=>a.tr-b.tr||b.sv-a.sv||b.r-a.r||a.f.id.localeCompare(b.f.id))
+    .sort((a,b)=>heroPinned("cinema",b.f.id)-heroPinned("cinema",a.f.id));
+}
+/* 1 when HERO_PINS puts this title first today (Sofia date), else 0 */
+function heroPinned(mode,id){
+  return (typeof HERO_PINS!=="undefined"?HERO_PINS:[]).some(p=>p.mode===mode&&p.id===id&&p.from<=NOW_DATE&&NOW_DATE<=p.to)?1:0;
 }
 function focusShows(){
   const prem=s=>(PREMIERES["show:"+s.id]||[]).some(d=>d>=NOW_DATE&&inRange(d))?1:0;

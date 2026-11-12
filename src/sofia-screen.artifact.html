@@ -1574,6 +1574,11 @@ button,a{-webkit-tap-highlight-color:transparent}
    A venue with no entry simply shows no price;
    theatre prices are per-performance (PERFORMANCES p[4]) and come from the scraper. */
 const PRICES = {"cc-sofia":"6 €","cc-paradise":"6 €","arena-mega":"9 €","arena-mall":"9 €","cg-ring":"7,50 €","cg-park":"7,50 €","cineland":"8 €","dom-kino":"7,50 €","g8":"5 €","vlaikova":"7 €","odeon":"10 €","arena-serdika":"~9 €"};
+/* Hand-picked hero ("На фокус") for a date range, Sofia dates inclusive (owner, 2026-11-12:
+   the Hunger Games premiere leads the cinema page from next week to the end of the month).
+   It applies only while the film is in the shown period and filters; otherwise the usual
+   ranking decides. Remove an entry once its range has passed. */
+const HERO_PINS = [{"mode":"cinema","id":"igrite-na-glada-izgrevat-v-denya-na-zhatvata","from":"2026-11-16","to":"2026-11-30"}];
 </script>
 <script>/* SOFIA-APP */
 /* ---- clickjacking guard: a meta CSP cannot send frame-ancestors, so a page that
@@ -3161,7 +3166,12 @@ function focusFilms(){
   const rank=f=>{const a=ART2(f.id).tr;return a>0?a:1e9;};
   return visibleFilms().map(f=>{const rows=filmTimes(f.id);
       return{f,tr:rank(f),sv:rows.reduce((n,r)=>n+r[3].length,0)*new Set(rows.map(r=>r[1])).size,r:ratingOf(f)||0};})
-    .sort((a,b)=>a.tr-b.tr||b.sv-a.sv||b.r-a.r||a.f.id.localeCompare(b.f.id));
+    .sort((a,b)=>a.tr-b.tr||b.sv-a.sv||b.r-a.r||a.f.id.localeCompare(b.f.id))
+    .sort((a,b)=>heroPinned("cinema",b.f.id)-heroPinned("cinema",a.f.id));
+}
+/* 1 when HERO_PINS puts this title first today (Sofia date), else 0 */
+function heroPinned(mode,id){
+  return (typeof HERO_PINS!=="undefined"?HERO_PINS:[]).some(p=>p.mode===mode&&p.id===id&&p.from<=NOW_DATE&&NOW_DATE<=p.to)?1:0;
 }
 function focusShows(){
   const prem=s=>(PREMIERES["show:"+s.id]||[]).some(d=>d>=NOW_DATE&&inRange(d))?1:0;
