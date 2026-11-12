@@ -152,8 +152,7 @@ def _ka_film_urls(session, today, last_day):
             url = ARENA_URL.format(slug=slug, dmy=dmy)
             r = session.get(url)
             if r is None:
-                d += datetime.timedelta(days=1)
-                continue
+                continue   # this cinema's day failed; the other cinemas and the next day still count
             soup = BeautifulSoup(r.text, "lxml")
             # Verify this page is for the right cinema
             opt = soup.select_one("#cinema_choice option[selected]")

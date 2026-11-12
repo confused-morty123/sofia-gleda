@@ -25,6 +25,14 @@ A year conflict (both known, more than a year apart) vetoes any candidate, of
 every rule, curated aliases included ("Сънища" at Люмиер is Kurosawa's 1990
 film, not a 2024 "Сънища" the same hall might show).
 
+A tie is never broken by guessing. When a rule's candidates are two or more
+films and nothing decides between them — not a lone catalogue film among minted
+records, not the year, not an identical title — the title is placed on NONE of
+them: resolve() answers (None, "ambiguous") ("Франкенщайн" with no year, when the
+index holds the 2025 film and the 1931 one). The pipeline then neither attaches
+the title's screenings to a film nor mints one for it; it holds them back and
+health.json asks a human for the alias that decides (2026-11-07 audit, finding 7).
+
 Duplicate RECORDS — a title minted on a day no rule could place it, which from
 then on matched its own record — are merged by detect_duplicates() (below) at the
 start of every scrape: the same normalised title, the same IMDb / confirmed TMDB
@@ -301,6 +309,7 @@ class FilmIndex:
         self.groups = []                     # alias groups
         self.log = []                        # every non-trivial decision, with its reason
         self.suspects = {}                   # (title, fid) -> reason
+        self.ambiguous = {}                  # (title, venue) -> the films tied at its last "ambiguous" answer
         self.merged = {}                     # merged-away duplicate id -> the id kept
         self.merge_reason = {}
         for rec in films:
@@ -389,14 +398,26 @@ class FilmIndex:
                     return f"runtime {runtime} vs {fr} min"
         return None
 
+    def _pool(self, cands):
+        """The candidates that compete for a title: the catalogue films among them
+        (a minted record never beats a catalogue film), else all of them."""
+        cands = sorted(cands)
+        return [c for c in cands if c not in self.minted] or cands
+
     def _choose(self, cands, title, year):
+        """(film id, why) among one rule's candidates — or (None, why) when two or
+        more are left and nothing decides between them: not a lone catalogue film
+        among minted records, not the year, not an identical title. A tie is never
+        broken by guessing (2026-11-07 audit, finding 7: Одеон's yearless
+        "Франкенщайн" went to whichever of the 2025 and the 1931 film sorted first,
+        marked AMBIGUOUS only in a log nobody read)."""
         cands = sorted(cands)
         if len(cands) == 1:
             return cands[0], ""
         seeds = [c for c in cands if c not in self.minted]
         if len(seeds) == 1:
             return seeds[0], f"preferred catalogue film over minted {', '.join(c for c in cands if c != seeds[0])}"
-        pool = seeds or cands
+        pool = self._pool(cands)
         if year:
             same = [c for c in pool if self.film_year(c) == year]
             if len(same) == 1:
@@ -405,7 +426,24 @@ class FilmIndex:
         same_t = [c for c in pool if (self.films[c].get("bg") or "").casefold() == cf]
         if len(same_t) == 1:
             return same_t[0], f"identical title among {', '.join(pool)}"
-        return pool[0], f"AMBIGUOUS among {', '.join(pool)} — picked the first"
+        return None, f"AMBIGUOUS among {', '.join(pool)} — not placed, a human decides"
+
+    def _pick(self, cands, title, venue, year, rule):
+        """_choose for one rule's candidates. On a tie the answer is (None, why) and
+        the tie is written down for a human: every tied film in self.suspects (the
+        run report), the candidates in self.ambiguous[(title, venue)] (the pipeline
+        holds the title's screenings back and asks in health.json) and one line in
+        the decision log."""
+        fid, why = self._choose(cands, title, year)
+        if fid is None:
+            tied = self._pool(cands)
+            for c in tied:
+                others = ", ".join(x for x in tied if x != c)
+                self.suspects[(title, c)] = (f"ambiguous ({rule}): fits this film and {others}, "
+                                             "nothing decides — not placed")
+            self.ambiguous[(title, venue)] = tied
+            self._record(title, venue, None, "ambiguous", f"{rule}: {why}")
+        return fid, why
 
     def _filter(self, cands, title, year, runtime=None, runtime_tol=None, rule=""):
         keep = []
@@ -424,7 +462,10 @@ class FilmIndex:
     # ------------------------------------------------------------- resolve
     def resolve(self, title, venue=None, meta=None, corroborate=None, fuzzy=True):
         """(film id or None, rule) — see _resolve. A title that resolves to a
-        merged-away duplicate answers with the film it was merged into."""
+        merged-away duplicate answers with the film it was merged into. (None,
+        "ambiguous"): the title fits two or more films and nothing decides between
+        them (_choose) — the caller must neither attach it to one of them nor mint
+        a film for it; self.ambiguous[(title, venue)] lists the candidates."""
         fid, rule = self._resolve(title, venue, meta, corroborate, fuzzy)
         if fid and fid in self.merged:
             fid = self.canonical(fid)
@@ -434,7 +475,8 @@ class FilmIndex:
         """Return (film_id or None, rule). `corroborate(fid)` answers whether
         another source lists THIS venue/date/time under that film. With
         fuzzy=False only alias / exact / original / translit apply (used for
-        aggregator rows that only feed a comparison)."""
+        aggregator rows that only feed a comparison). The first rule with
+        candidates answers: one film, or (None, "ambiguous") when they tie."""
         meta = meta or {}
         k = key(title)
         if not k:
@@ -458,7 +500,9 @@ class FilmIndex:
                         self.suspects[(title, g["film"])] = (
                             f"alias candidate vetoed ({self._veto(g['film'], year)})")
                     continue
-                fid, _ = self._choose(cands, title, year)
+                fid, _ = self._pick(cands, title, venue, year, "alias")
+                if fid is None:
+                    return None, "ambiguous"
                 if self.by_key.get(k) and fid in self.by_key[k]:
                     return fid, "exact"
                 self._record(title, venue, fid, "alias", g["reason"])
@@ -467,7 +511,9 @@ class FilmIndex:
         # 2. exact key
         cands = self._filter(self.by_key.get(k, set()), title, year, rule="exact")
         if cands:
-            fid, why = self._choose(cands, title, year)
+            fid, why = self._pick(cands, title, venue, year, "exact")
+            if fid is None:
+                return None, "ambiguous"
             if why:
                 self._record(title, venue, fid, "exact", why)
             return fid, "exact"
@@ -477,7 +523,9 @@ class FilmIndex:
         if ot and key(ot):
             cands = self._filter(self.by_key.get(key(ot), set()), title, year, rule="original")
             if cands:
-                fid, why = self._choose(cands, title, year)
+                fid, why = self._pick(cands, title, venue, year, "original")
+                if fid is None:
+                    return None, "ambiguous"
                 self._record(title, venue, fid, "original",
                              f"source's original title {ot!r} equals the film's title" + (f"; {why}" if why else ""))
                 return fid, "original"
@@ -490,7 +538,9 @@ class FilmIndex:
             cross = {f for f, f_cyr in self.by_tkey.get(translit(k), set()) if f_cyr != cyr}
             cands = self._filter(cross, title, year, rule="translit")
             if cands:
-                fid, why = self._choose(cands, title, year)
+                fid, why = self._pick(cands, title, venue, year, "translit")
+                if fid is None:
+                    return None, "ambiguous"
                 self._record(title, venue, fid, "translit",
                              f"{title!r} and {self.films[fid].get('bg')!r} transliterate alike" + (f"; {why}" if why else ""))
                 return fid, "translit"
@@ -533,7 +583,9 @@ class FilmIndex:
                     continue
                 cands = self._filter(ids, title, year, runtime, runtime_tol=20, rule="spelling")
                 if cands:
-                    fid, why = self._choose(cands, title, year)
+                    fid, why = self._pick(cands, title, venue, year, "spelling")
+                    if fid is None:
+                        return None, "ambiguous"
                     self._record(title, venue, fid, "spelling",
                                  f"{title!r} is one letter from {self.films[fid].get('bg')!r}" + (f"; {why}" if why else ""))
                     return fid, "spelling"

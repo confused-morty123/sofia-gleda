@@ -1077,12 +1077,61 @@ def choose_display(titles):
     return FI.clean_title(best, keep_prefix=True) or best
 
 
+def held_title(index, title, venue, slots):
+    """A title held back because it fits two or more films and nothing decides
+    between them (FilmIndex.resolve(title, venue) answered "ambiguous" just now):
+    what health.json needs to ask a human (ambiguous_flags). slots: its
+    screenings, (venue, date, time) each — shown under no film meanwhile."""
+    return {"title": title, "venue": venue,
+            "candidates": list(index.ambiguous.get((title, venue)) or ()),
+            "slots": sorted({tuple(s) for s in slots})}
+
+
+def ambiguous_flags(held, index=None):
+    """health.json warnings, one per title held back because it fits two or more
+    films and nothing decides between them: the title, where it is listed, the
+    candidate film ids (with their years, when `index` knows them) and the alias
+    line that would place it. A person decides; the pipeline never picks one, and
+    nothing here writes scripts/film_aliases.json. held: held_title() entries of
+    the venues' own programmes, the festivals and the aggregator — the spellings
+    and venues of one title (the same key, the same candidates) share a warning."""
+    groups = {}
+    for h in held or ():
+        cands = tuple(h.get("candidates") or ())
+        g = groups.setdefault((FI.key(h["title"]), cands), {"titles": [], "venues": set(), "slots": set()})
+        if h["title"] not in g["titles"]:
+            g["titles"].append(h["title"])
+        g["venues"].add(h["venue"])
+        g["slots"].update(tuple(s) for s in h.get("slots") or ())
+    out = []
+    for (_k, cands), g in sorted(groups.items()):
+        venues = sorted(g["venues"] | {s[0] for s in g["slots"]})
+
+        def named(fid):
+            y = index.film_year(fid) if index is not None and fid in index.films else None
+            return f"{fid} ({y})" if y else fid
+
+        alias = json.dumps({"titles": g["titles"], "film": "ONE OF: " + " | ".join(cands),
+                            "venues": venues, "reason": "…"}, ensure_ascii=False)
+        out.append({"level": "warning", "venue": ", ".join(venues),
+                    "message": (" / ".join(f"„{t}“" for t in g["titles"])
+                                + f" fits {len(cands)} films and nothing decides between them: "
+                                + ", ".join(named(c) for c in cands)
+                                + f". Its {len(g['slots'])} screening(s) are held back (shown under no film) "
+                                  "until a person decides: add to \"groups\" in scripts/film_aliases.json "
+                                + alias)})
+    return out
+
+
 def resolve_official_rows(index, results, agg_strict, mint):
     """Map every official row to a film id, minting a film for a title no rule
     can place. results: {venue: OfficialResult}; agg_strict: {(venue, date,
     time): {fid}} from the aggregator (corroborates subtitle variants); mint:
-    callable(display_title, venue, meta) -> fid. Returns ({venue: [(fid, date,
-    time, meta, title)]}, [minted fid])."""
+    callable(display_title, venue, meta) -> fid. A title that fits two or more
+    films with nothing to decide between them (FilmIndex.resolve: "ambiguous")
+    is neither placed nor minted: its rows are left out, and it is returned for
+    a human to decide. Returns ({venue: [(fid, date, time, meta, title)]},
+    [minted fid], [held title (held_title)])."""
     from collections import defaultdict
     slots, metas = defaultdict(list), {}
     for v, res in results.items():
@@ -1097,11 +1146,13 @@ def resolve_official_rows(index, results, agg_strict, mint):
         v, sl = tv[1], slots[tv]
         return lambda fid: any(fid in agg_strict.get((v, d, t), ()) for d, t in sl)
 
-    resolved, pending = {}, []
+    resolved, pending, held = {}, [], {}
     for tv in order:
-        fid, _rule = index.resolve(tv[0], tv[1], identity_meta(metas[tv]), corroborator(tv))
+        fid, rule = index.resolve(tv[0], tv[1], identity_meta(metas[tv]), corroborator(tv))
         if fid:
             resolved[tv] = fid
+        elif rule == "ambiguous":                     # two films fit: never guessed, never minted
+            held[tv] = held_title(index, tv[0], tv[1], [(tv[1], d, t) for d, t in slots[tv]])
         else:
             pending.append(tv)
     minted = []
@@ -1124,17 +1175,41 @@ def resolve_official_rows(index, results, agg_strict, mint):
         for tv in pending:
             if tv in members:
                 continue
-            fid2, _ = index.resolve(tv[0], tv[1], identity_meta(metas[tv]), corroborator(tv))
+            fid2, rule2 = index.resolve(tv[0], tv[1], identity_meta(metas[tv]), corroborator(tv))
             if fid2:
                 resolved[tv] = fid2
+            elif rule2 == "ambiguous":                # the film just minted made it a tie
+                held[tv] = held_title(index, tv[0], tv[1], [(tv[1], d, t) for d, t in slots[tv]])
             else:
                 still.append(tv)
         pending = still
     out = defaultdict(list)
     for v, res in results.items():
         for title, d, t, meta in res.rows:
+            if (title, v) in held:
+                continue                              # shown under no film until a human decides
             out[v].append((resolved[(title, v)], d, t, meta or {}, title))
-    return dict(out), minted
+    return dict(out), minted, [held[tv] for tv in order if tv in held]
+
+
+def place_kept(index, venue, title, slots, link, independent, mint, held=None):
+    """The film of an aggregator row that survives a venue's merge and that no
+    strict rule placed (merge_cinema_venue's resolve_kept): the identity rules;
+    else, at an independent cinema (`independent`: their ids) and with a link, a
+    film minted for it — an arthouse title only the aggregator lists, after the
+    venue's own programme ends (preliminary rows only). A title that fits two or
+    more films with nothing to decide between them (FilmIndex: "ambiguous") gets
+    None: never one of them, never a minted film; `held` ({(title, venue):
+    held_title}) notes it with its `slots` [(venue, date, time)] for health.json."""
+    fid, rule = index.resolve(title, venue)
+    if rule == "ambiguous":
+        if held is not None:
+            h = held.setdefault((title, venue), held_title(index, title, venue, ()))
+            h["slots"] = sorted(set(h["slots"]) | {tuple(s) for s in slots})
+        return None
+    if not fid and venue in independent and link:
+        fid = mint(FI.clean_title(title, keep_prefix=True) or title, venue)
+    return fid
 
 
 def merge_cinema_venue(venue, status, official_rows, coverage, agg_rows, agg_fetched,
@@ -1307,10 +1382,14 @@ def resolve_festival_films(index, films, slots, own_slots, mint, festival):
     a one-letter spelling variant); then SLOT — a venue's own programme lists
     exactly one film in one of the festival's slots and the two titles differ only
     by added words; else a film is minted from the festival page. A merge is never
-    forced: a wrong merge is worse than a second card. Returns ({title: fid},
-    decisions), a decision being {festival, title, film, rule, detail, unsure};
-    every rule but an exact match or a curated alias, and a match whose runtime
-    is more than 10 minutes off, is marked unsure for the run report."""
+    forced: a wrong merge is worse than a second card. A title that fits two or
+    more films with nothing to decide between them (FilmIndex: "ambiguous") gets
+    no film at all — no SLOT rule, no minting: it is left out of the map, and its
+    decision (film None, rule "ambiguous") carries the held title (held_title) for
+    health.json. Returns ({title: fid}, decisions), a decision being {festival,
+    title, film, rule, detail, unsure}; every rule but an exact match or a curated
+    alias, and a match whose runtime is more than 10 minutes off, is marked unsure
+    for the run report."""
     out, decisions = {}, []
     for title in sorted(slots, key=lambda t: (-len(slots[t]), t)):
         f = films.get(title) or {}
@@ -1321,6 +1400,11 @@ def resolve_festival_films(index, films, slots, own_slots, mint, festival):
         fid, rule = index.resolve(title, sl[0][0], meta,
                                   lambda c, sl=sl: any(c in own_slots.get(s, ()) for s in sl))
         detail = index.log[-1]["detail"] if len(index.log) > n_log else ""
+        if rule == "ambiguous":                       # two films fit: never guessed, never minted
+            decisions.append({"festival": festival, "title": title, "film": None, "rule": rule,
+                              "detail": detail, "unsure": False,
+                              "held": held_title(index, title, sl[0][0], sl)})
+            continue
         unsure = bool(fid) and rule not in ("exact", "alias")   # an alias is a human's decision
         if fid:
             fr, rr = index.film_runtime(fid), _pos_int(f.get("runtime"))
@@ -3792,19 +3876,28 @@ def main():
             # only rows the app can show: a weekly page also lists days already past
             res.rows = [r for r in res.rows if floor <= r[1] <= end]
             official[vid] = res
+    # Titles that fit two or more films with nothing to decide between them
+    # (FilmIndex.resolve: "ambiguous"): shown under no film, minted as none, and
+    # listed in health.json for a person to decide (ambiguous_flags).
+    held_films = []
     try:
-        resolved, minted_official = resolve_official_rows(index, official, agg_strict, mint_film)
+        resolved, minted_official, held_v = resolve_official_rows(index, official, agg_strict, mint_film)
+        held_films += held_v
     except Exception as e:                         # isolate: resolve venue by venue
         print(f"  ! resolving official titles crashed ({type(e).__name__}: {e}) — venue by venue")
         resolved, minted_official = {}, []
         for vid in list(official):
             try:
-                got, minted_v = resolve_official_rows(index, {vid: official[vid]}, agg_strict, mint_film)
+                got, minted_v, held_v = resolve_official_rows(index, {vid: official[vid]}, agg_strict, mint_film)
                 resolved.update(got)
                 minted_official += minted_v
+                held_films += held_v
             except Exception as e2:
                 official_errors[vid] = f"title resolution crashed: {type(e2).__name__}: {e2}"
                 official.pop(vid)
+    for h in held_films:
+        print(f"  ? {h['venue']}: {h['title']!r} fits {', '.join(h['candidates'])} and nothing decides — "
+              f"{len(h['slots'])} screening(s) held back")
 
     filled = fill_minted_facts(cinema_films, resolved)
     if filled:
@@ -3827,14 +3920,12 @@ def main():
     vlinks.update(fresh_vlinks)
 
     # 3) merge, venue by venue
+    held_kept = {}                                 # (title, venue) -> aggregator rows held the same way
+
     def resolve_kept(v):
         def place(title, d, times, link):
-            fid, _ = index.resolve(title, v)
-            if not fid and v in independent_venues and link:
-                # an arthouse title only the aggregator lists, after the venue's
-                # own programme ends — minted as before (preliminary rows only)
-                fid = mint_film(FI.clean_title(title, keep_prefix=True) or title, v)
-            return fid
+            return place_kept(index, v, title, [(v, d, t) for t in times], link,
+                              independent_venues, mint_film, held_kept)
         return place
 
     new_showtimes, seen_venues, venue_report = [], set(), {}
@@ -3998,7 +4089,9 @@ def main():
                     kind, vid = OF.venue_id(fest, vname)
                     if kind != "app" or vid not in cinema_ids:
                         continue
-                    fid = title_fid[title]
+                    fid = title_fid.get(title)
+                    if not fid:                    # fits two films, nothing decides: held back
+                        continue                   # (health.json asks a person), never guessed
                     fest_titles[fid].add(title)
                     rows_f.append((fid, vid, d, t))
                     if (title, d, t, vname) in sold_now:
@@ -4019,7 +4112,7 @@ def main():
                 rep.update(status="official", covered=cov,
                            films=len(res["films"]), sofia_screenings=len(res["screenings"]),
                            films_at_app_venues=len(slots),
-                           matched=sum(1 for x in decisions if x["rule"] != "minted"),
+                           matched=sum(1 for x in decisions if x["rule"] not in ("minted", "ambiguous")),
                            minted=sorted({x["film"] for x in decisions if x["rule"] == "minted"}),
                            kept_tail=len(tail), last_ok=today_iso, failing_since=None)
                 fest_rows[fest] = rows_f + tail
@@ -4514,7 +4607,10 @@ def main():
     suspects = index.suspected_duplicates({r[0] for r in new_showtimes} | {m[0] for m in minted_log})
     show_suspects = show_index.suspected_duplicates({r[0] for r in new_performances}
                                                     | {m[0] for m in minted_show_log})
+    held_all = (held_films + list(held_kept.values())
+                + [x["held"] for x in fest_decisions if x.get("held")])
     identity_report = {"decisions": index.log, "minted": minted_log,
+                       "held_ambiguous": held_all,
                        "merged_films": {m["drop"]: [m["into"], m["rule"], m["reason"]] for m in new_merges},
                        "suspected_duplicates": suspects,
                        "retired_films": {k: list(v) for k, v in retired_films.items()},
@@ -4532,7 +4628,8 @@ def main():
                upcoming_counts(new_showtimes, new_performances, show_index.theatre_of, floor),
                upcoming_counts(old_showtimes, old_performances, show_index.theatre_of, floor),
                blocked, selfcheck, policy, agg, art_dates, problems,
-               run_flags(secondary, th_official, venue_report) + festival_flags(fest_report))
+               run_flags(secondary, th_official, venue_report) + festival_flags(fest_report)
+               + ambiguous_flags(held_all, index))
     if problems:
         print("\nOFFICIAL-SOURCE SELF-CHECK FAILED — index.html left untouched:")
         for p_ in problems:
@@ -4980,7 +5077,8 @@ def main():
           f"({sum(len(x) for x in minted_from_agg.values())} show(s) from theatre.art.bg preliminary rows), "
           f"{len(retitled)} minted show title(s) respelled; "
           f"{len(retired_films)} film(s) and {len(retired_shows)} show(s) retired; "
-          f"{len(suspects)} + {len(show_suspects)} suspected duplicate(s)")
+          f"{len(suspects)} + {len(show_suspects)} suspected duplicate(s); "
+          f"{len(ambiguous_flags(held_all))} film title(s) held back as ambiguous")
     print("festivals: " + "; ".join(
         f"{f} {r['status']} ({r.get('confirmed', 0)} confirmed, {r.get('prelim_row', 0)} preliminary "
         f"per row, {r.get('prelim_date', 0)} by date, {len(r.get('contradicted') or [])} contradicted)"

@@ -1905,6 +1905,166 @@ check("…and still applies with the right year, or none", (_R("Сънища", "
       ("akira-kurosava-sanishta-1990", "akira-kurosava-sanishta-1990"))
 check("…a vetoed alias is listed for a human", any(t == "Сънища" for t, _c in _idx.suspects), True)
 
+# T1.2 (2026-11-07 audit, finding 7): two films with one title and a listing with
+# no year. The resolver used to return whichever id sorted first ("AMBIGUOUS …
+# picked the first", in a log nobody read), so Одеон's yearless "Франкенщайн"
+# could put its screenings on the wrong film's card. A tie is now no match: the
+# screenings are held back, no film is minted, and health.json asks a person.
+print("film identity: a tie between two films is never guessed (T1.2)")
+import json as _j12, tempfile as _tf12, types as _ty12            # noqa: E402,E401
+
+_fr_cat = [{"id": "frankenshtayn", "bg": "Франкенщайн", "en": "Frankenstein", "year": 2025, "runtime": 150},
+           {"id": "frankenshtayn-1931", "bg": "Франкенщайн", "en": "Frankenstein", "year": 1931, "runtime": 70},
+           {"id": "odiseya", "bg": "Одисея", "en": "The Odyssey", "year": 2026, "runtime": 173}]
+_fr_both = ["frankenshtayn", "frankenshtayn-1931"]
+_fr = FID.FilmIndex(_fr_cat, aliases={})
+check("'Франкенщайн' (2025) and (1931), a row with no year: no film, rule 'ambiguous'",
+      _fr.resolve("Франкенщайн", "odeon"), (None, "ambiguous"))
+check("…both candidates are written down: the run report's suspects, and self.ambiguous for the pipeline",
+      (sorted(c for (t, c), w in _fr.suspects.items() if t == "Франкенщайн" and w.startswith("ambiguous")),
+       _fr.ambiguous[("Франкенщайн", "odeon")], _fr.log[-1]["film"], _fr.log[-1]["rule"]),
+      (_fr_both, _fr_both, None, "ambiguous"))
+check("…the same for the aggregator's strict lookup, and whatever the capitals",
+      (_fr.resolve("Франкенщайн", "odeon", fuzzy=False), _fr.resolve("ФРАНКЕНЩАЙН", "cg-ring")),
+      ((None, "ambiguous"), (None, "ambiguous")))
+check("with the year 2025 the 2025 film wins; with 1931 (or a year beside it) the 1931 one",
+      [_fr.resolve("Франкенщайн", "cc-sofia", {"year": y}) for y in (2025, 1931, 1932)],
+      [("frankenshtayn", "exact"), ("frankenshtayn-1931", "exact"), ("frankenshtayn-1931", "exact")])
+check("…a year in the title itself decides too", _fr.resolve("Франкенщайн (1931)", "odeon"),
+      ("frankenshtayn-1931", "exact"))
+check("_choose answers a tie with no film and says why; one candidate, or the year, still answers",
+      (_fr._choose(_fr_both[::-1], "Франкенщайн", None)[0],
+       "AMBIGUOUS among frankenshtayn, frankenshtayn-1931" in _fr._choose(_fr_both, "Франкенщайн", None)[1],
+       _fr._choose(["odiseya"], "Одисея", None), _fr._choose(_fr_both, "Франкенщайн", 1931)[0]),
+      (None, True, ("odiseya", ""), "frankenshtayn-1931"))
+check("a tie under the other rules is no match either: the source's original title, Latin for Cyrillic",
+      (_fr.resolve("Чудовището", "g8", {"original_title": "Frankenstein"}), _fr.resolve("Frankenshtayn", "g8")),
+      ((None, "ambiguous"), (None, "ambiguous")))
+_fr_min = FID.FilmIndex(_fr_cat[:1] + [{"id": "frankenshtayn-2", "bg": "ФРАНКЕНЩАЙН", "en": "", "source": "cg-ring"},
+                                       {"id": "payatsi", "bg": "Паяци", "en": "", "source": "cc-sofia"},
+                                       {"id": "helouin-payatsi", "bg": "Хелоуин Селекция: Паяци", "en": "",
+                                        "source": "cc-sofia"}],
+                        {"frankenshtayn-2", "payatsi", "helouin-payatsi"}, aliases={})
+check("unchanged: one catalogue film among minted records wins, and an identical title decides",
+      (_fr_min.resolve("Франкенщайн", "odeon"), _fr_min.resolve("Паяци", "cc-sofia"),
+       _fr_min.resolve("Хелоуин Селекция: Паяци", "cc-sofia")),
+      (("frankenshtayn", "exact"), ("payatsi", "exact"), ("helouin-payatsi", "exact")))
+check("…two minted records and a spelling that is neither's: ambiguous, not the first in the alphabet",
+      _fr_min.resolve("ПАЯЦИ (дублиран)", "arena-mega"), (None, "ambiguous"))
+_fr_alias = {"titles": ["Франкенщайн"], "film": "frankenshtayn-1931", "venues": ["odeon"], "reason": "t"}
+_fr_al = FID.FilmIndex(_fr_cat, aliases={"groups": [_fr_alias]})
+check("an alias a person adds decides it, at the venues it names only; the year veto still holds",
+      (_fr_al.resolve("Франкенщайн", "odeon"), _fr_al.resolve("Франкенщайн", "g8"),
+       _fr_al.resolve("Франкенщайн", "odeon", {"year": 2025})),
+      (("frankenshtayn-1931", "exact"), (None, "ambiguous"), ("frankenshtayn", "exact")))
+
+# …in the pipeline: the venues' own programmes
+_fr_x = FID.FilmIndex(_fr_cat, aliases={})
+_fr_mints = []
+
+
+def _fr_mint(title, venue, meta=None):
+    _fr_mints.append((title, venue))
+    _fr_x.add({"id": f"minted-{len(_fr_mints)}", "bg": title, "en": "", "source": venue}, minted=True)
+    return f"minted-{len(_fr_mints)}"
+
+
+_fr_res = {"odeon": _ty12.SimpleNamespace(rows=[("Франкенщайн", "2026-11-12", "19:00", {}),
+                                                ("Франкенщайн", "2026-11-13", "21:30", {}),
+                                                ("Одисея", "2026-11-12", "16:00", {}),
+                                                ("Съвсем нов филм", "2026-11-12", "18:00", {"runtime": 90})]),
+           "cc-sofia": _ty12.SimpleNamespace(rows=[("Франкенщайн", "2026-11-12", "20:00", {"year": 2025})])}
+_fr_out, _fr_minted, _fr_held = S.resolve_official_rows(_fr_x, _fr_res, {}, _fr_mint)
+check("resolve_official_rows: the tied title's rows are left out (no KeyError), the others are placed",
+      ([(fid, d, t, title) for fid, d, t, _m, title in _fr_out["odeon"]],
+       [(fid, title) for fid, _d, _t, _m, title in _fr_out["cc-sofia"]]),
+      ([("odiseya", "2026-11-12", "16:00", "Одисея"), ("minted-1", "2026-11-12", "18:00", "Съвсем нов филм")],
+       [("frankenshtayn", "Франкенщайн")]))
+check("…no film is minted for the tied title (only for the title no film fits)",
+      (_fr_mints, _fr_minted), ([("Съвсем нов филм", "odeon")], ["minted-1"]))
+check("…and it comes back as held: title, venue, candidate ids, its screenings",
+      _fr_held, [{"title": "Франкенщайн", "venue": "odeon", "candidates": _fr_both,
+                  "slots": [("odeon", "2026-11-12", "19:00"), ("odeon", "2026-11-13", "21:30")]}])
+check("…a venue whose every row is held has no rows at all",
+      S.resolve_official_rows(FID.FilmIndex(_fr_cat, aliases={}),
+                              {"odeon": _ty12.SimpleNamespace(rows=_fr_res["odeon"].rows[:2])}, {}, _fr_mint)[0], {})
+
+# …the festival matcher: neither its slot rule nor a minted film
+_fr_f, _fr_fm = FID.FilmIndex(_fr_cat, aliases={}), []
+_fr_map, _fr_dec = S.resolve_festival_films(
+    _fr_f, {"Франкенщайн": {"runtime": 150}, "Одисея": {"year": 2026}},
+    {"Франкенщайн": [("odeon", "2026-11-14", "19:00"), ("g8", "2026-11-15", "21:00")],
+     "Одисея": [("odeon", "2026-11-14", "16:00")]},
+    {("odeon", "2026-11-14", "19:00"): {"frankenshtayn"}},      # the venue lists the 2025 film in that very slot
+    lambda t, v, m: _fr_fm.append(t) or "minted-f", "kinomania")
+_fr_fd = next(d for d in _fr_dec if d["title"] == "Франкенщайн")
+check("resolve_festival_films: the tied title gets no film — not by the slot rule, not by minting",
+      (_fr_map, _fr_fm, _fr_fd["film"], _fr_fd["rule"], _fr_fd["unsure"]),
+      ({"Одисея": "odiseya"}, [], None, "ambiguous", False))
+check("…its decision carries the held title with every screening",
+      _fr_fd["held"], {"title": "Франкенщайн", "venue": "odeon", "candidates": _fr_both,
+                       "slots": [("g8", "2026-11-15", "21:00"), ("odeon", "2026-11-14", "19:00")]})
+
+# …an aggregator row that survives a venue's merge (resolve_kept)
+_fr_k, _fr_km, _fr_kh = FID.FilmIndex(_fr_cat, aliases={}), [], {}
+
+
+def _fr_place(title, d, times, link, venue="odeon"):
+    return S.place_kept(_fr_k, venue, title, [(venue, d, t) for t in times], link, {"odeon"},
+                        lambda t, v: _fr_km.append((t, v)) or "minted-k", _fr_kh)
+
+
+check("place_kept: the tied title is None and nothing is minted, even at an independent cinema with a link",
+      (_fr_place("Франкенщайн", "2026-11-20", ["19:00"], "https://programata.bg/kino/filmi/x/"), _fr_km), (None, []))
+check("…unchanged: a known title is placed; a title no film fits is minted there, and only with a link",
+      (_fr_place("Одисея", "2026-11-20", ["16:00"], None), _fr_place("Нов арт филм", "2026-11-20", ["18:00"], None),
+       _fr_place("Нов арт филм", "2026-11-20", ["18:00"], "https://programata.bg/kino/filmi/y/"), _fr_km),
+      ("odiseya", None, "minted-k", [("Нов арт филм", "odeon")]))
+_fr_rows, _pf12, _fr_info = S.merge_cinema_venue(
+    "odeon", "none", [], None,
+    [(None, "Франкенщайн", "2026-11-20", ["19:00", "21:00"], "https://programata.bg/kino/filmi/x/")], True,
+    [], None, "2026-11-11", "2027-01-16", resolve_kept=_fr_place)
+check("…so the merge shows the row under no film, and reports it as unplaced",
+      (_fr_rows, _fr_info["unplaced"]), ([], [["2026-11-20", "Франкенщайн", ["19:00", "21:00"]]]))
+check("…its screenings are noted once, however often the merge asks",
+      list(_fr_kh.values()), [{"title": "Франкенщайн", "venue": "odeon", "candidates": _fr_both,
+                               "slots": [("odeon", "2026-11-20", "19:00"), ("odeon", "2026-11-20", "21:00")]}])
+
+# …and health.json: one warning per held title
+_fr_all = _fr_held + [_fr_fd["held"]] + list(_fr_kh.values()) + [dict(_fr_held[0], title="ФРАНКЕНЩАЙН", venue="cg-ring",
+                                                                      slots=[("cg-ring", "2026-11-12", "22:00")])]
+_fr_flags = S.ambiguous_flags(_fr_all, _fr_x)
+check("health.json: ONE warning for the title, whatever the source, venue or capitals",
+      [(e["level"], e["venue"]) for e in _fr_flags], [("warning", "cg-ring, g8, odeon")])
+_fr_msg = _fr_flags[0]["message"]
+check("…it names the title, the candidate ids with their years, and the screenings held back",
+      [x in _fr_msg for x in ("„Франкенщайн“ / „ФРАНКЕНЩАЙН“ fits 2 films",
+                              "frankenshtayn (2025), frankenshtayn-1931 (1931)", "Its 7 screening(s) are held back")],
+      [True, True, True])
+_fr_line = _j12.loads(_fr_msg[_fr_msg.index('{"titles"'):])
+check("…and ends with the alias line a person could add: the titles, the venues, the film left to choose",
+      _fr_line, {"titles": ["Франкенщайн", "ФРАНКЕНЩАЙН"], "film": "ONE OF: frankenshtayn | frankenshtayn-1931",
+                 "venues": ["cg-ring", "g8", "odeon"], "reason": "…"})
+check("…that line with the film a person chose places the title; pasted as it is, it decides nothing",
+      (FID.FilmIndex(_fr_cat, aliases={"groups": [dict(_fr_line, film="frankenshtayn")]}).resolve("Франкенщайн", "g8"),
+       FID.FilmIndex(_fr_cat, aliases={"groups": [_fr_line]}).resolve("Франкенщайн", "g8")),
+      (("frankenshtayn", "exact"), (None, "ambiguous")))
+check("…nothing held, nothing reported", S.ambiguous_flags([], _fr_x), [])
+with _tf12.TemporaryDirectory() as _fr_td:
+    _fr_hold, S.HEALTH = S.HEALTH, pathlib.Path(_fr_td) / "health.json"
+    try:
+        S.run_health({}, [], {}, {}, {}, {}, {}, {}, True, flags=_fr_flags)
+        _fr_health = _j12.loads(S.HEALTH.read_text(encoding="utf-8"))
+    finally:
+        S.HEALTH = _fr_hold
+check("run_health(flags=…) writes it to health.json as {level, venue, message}", _fr_health, _fr_flags)
+check("an off-screen minted record whose title ties with another is not retired on a guess",
+      S.superseded_films({"dubal-2": {"id": "dubal-2", "bg": "Дубъл", "source": "g8"}},
+                         FID.FilmIndex([{"id": "dubal", "bg": "Дубъл", "source": "odeon"},
+                                        {"id": "dubal-2", "bg": "Дубъл", "source": "g8"}],
+                                       {"dubal", "dubal-2"}, aliases={}),
+                         [["dubal", "odeon", "2026-11-12", ["19:00"]]]), {})
+
 # Duplicate film RECORDS (2026-10-23): a title minted on the day no rule could
 # place it matched its own record from then on. Cine Grand's "НЕУДОБНАТА ИСТИНА"
 # stood beside "Хроники за неудобната истина – Истината за българският Чернобил"
@@ -2178,6 +2338,48 @@ check("…a SNAPSHOT that is not strict JSON still gets both (regex fallback)",
 check("harvest_cinema_posters.py no longer hard-codes the window end",
       "2026-12-14" in (pathlib.Path(__file__).resolve().parent / "harvest_cinema_posters.py").read_text(encoding="utf-8"),
       False)
+
+# T1.6 (audit 2026-11-07, finding 10): one Кино Арена day page that fails must cost
+# that cinema's day only. The date used to move forward inside the cinema loop and
+# again after it: the other cinemas' pages of that day were then thrown away (the
+# page's selected day no longer was "today") and the next day was never asked for.
+print("Arena poster harvest: a failed day page skips nothing else (T1.6)")
+import harvest_cinema_posters as HCP                             # noqa: E402
+
+
+class _KaDays:
+    """A kinoarena.com that answers every cinema's day page but the ones in `fail`."""
+
+    def __init__(self, fail=()):
+        self.fail, self.asked = set(fail), []
+
+    def get(self, url):
+        slug, dmy = url.rstrip("/").split("/")[-2:]
+        self.asked.append((slug, dmy))
+        if (slug, dmy) in self.fail:
+            return None
+        return type("Page", (), {"text": (
+            f'<select id="cinema_choice"><option selected value="/bg/program/view/{slug}">x</option></select>'
+            f'<div class="projectionDays"><a class="tabItem selected" href="/bg/program/view/{slug}/{dmy}">d</a></div>'
+            f'<div class="scheduleRow"><header class="rowHeader"><h5 class="title">'
+            f'<a href="/bg/film/{slug}-{dmy}">{slug} {dmy}</a></h5></header></div>')})()
+
+
+_ka_slugs = list(HCP.ARENA_SLUGS.values())
+_ka_d1, _ka_d2 = "11-11-2026", "12-11-2026"
+_ka_all = [(s, d) for d in (_ka_d1, _ka_d2) for s in _ka_slugs]
+_ka_fail = (HCP.ARENA_SLUGS["arena-mega"], _ka_d1)
+_ka_ok, _ka_bad = _KaDays(), _KaDays([_ka_fail])
+_ka_full = HCP._ka_film_urls(_ka_ok, "2026-11-11", "2026-11-12")
+check("nothing fails: every cinema's page of every day is asked for, and read",
+      (_ka_ok.asked, len(_ka_full)), (_ka_all, 6))
+_ka_got = HCP._ka_film_urls(_ka_bad, "2026-11-11", "2026-11-12")
+check("arena-mega's day 1 fails: day 1 is still asked of the other two cinemas, and day 2 of all three",
+      _ka_bad.asked, _ka_all)
+check("…and every page that arrived is read: the other two on day 1, all three on day 2",
+      sorted(_ka_got), sorted(f"{s} {d}" for s, d in _ka_all if (s, d) != _ka_fail))
+check("…each title with its own film page",
+      _ka_got.get(f"{_ka_slugs[1]} {_ka_d1}"), f"https://www.kinoarena.com/bg/film/{_ka_slugs[1]}-{_ka_d1}")
 
 # CODE-03: netfetch's budgets are real. A fake clock and a fake transport.
 print("netfetch: real time budgets, a closed dead host, blocking recognised (CODE-03)")
