@@ -18739,10 +18739,17 @@ def _b24_grid(browser, base, eng):
                 for where, js in B24_GRID_SCROLL.items():
                     page.evaluate("()=>{if(sheetOpen)closeSheet();}")
                     page.wait_for_timeout(500)
+                    wait_settled(page)
                     page.evaluate("([k,id])=>{curSheet={kind:k,id};openSheet(k==='film'?sheetFilm(filmById[id]):sheetShow(showById[id]),null);}", [kind, it["id"]])
                     page.wait_for_timeout(600)
+                    # the sheet's entrance (220 ms) and its focus move (420 ms) have ended before
+                    # the reference state is read: WebKit on GitHub's runners (2026-11-12, run
+                    # 43242761309) can start them late, and a reference read mid-entrance made
+                    # every later page look "moved"
+                    wait_settled(page)
                     page.evaluate(js)
                     page.wait_for_timeout(200)
+                    wait_settled(page)
                     s0 = page.evaluate(B24_GRID_JS)
                     if not s0:
                         bad.append(f"{it['id']}: no pager")
@@ -18756,6 +18763,7 @@ def _b24_grid(browser, base, eng):
                         if r:
                             page.mouse.click(*r)
                         page.wait_for_timeout(200)
+                        wait_settled(page)
                         return page.evaluate(B24_GRID_JS)
                     guard = 0
                     while not states[-1]["next"] and guard < 15:
@@ -18777,6 +18785,7 @@ def _b24_grid(browser, base, eng):
                     page.wait_for_timeout(150)
                     page.evaluate("()=>{document.getElementById('scrim').dispatchEvent(new Event('scroll'));}")
                     page.wait_for_timeout(100)
+                    wait_settled(page)
                     up = page.evaluate(B24_GRID_JS)
                     if up["spare"] > 1:
                         bad.append(f"{it['id']} from {where}: at the top the scroll end kept is {up['pad']} px, {up['spare']} more than needed")
