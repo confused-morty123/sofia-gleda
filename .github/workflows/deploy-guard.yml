@@ -1,0 +1,83 @@
+# Sofia Gleda — deploy guard.
+#
+# GitHub Pages publishes the site with GitHub's own workflow, "pages build and
+# deployment", on every push to main. Its deploy job sometimes fails with "Timeout
+# reached, aborting!" although the build job passed (2026-11-09, fixed by hand with
+# "Re-run failed jobs"; 2026-11-10, not re-run: the site showed the previous day's
+# programme for 24 hours). This workflow does that click itself, at most twice per
+# commit, and then checks that https://sofiagleda.com really serves the new data.
+# All the logic is in scripts/deploy_guard.py (tests: scripts/test_deploy_guard.py);
+# README, "The deploy guard", says what the owner sees.
+#
+# Safety, in short:
+#   - it runs main's script and reads main's page, nothing else: the checkout below
+#     takes exactly two files from main and never the commit of the run that started it;
+#   - it only ever touches the deployment of the commit that IS main's tip (re-running
+#     an older one could put old content live), checked before and after asking;
+#   - no secrets, nothing installed, one action (pinned), no value pasted into a shell;
+#   - no endless loop: it is started only by a Pages run completing, by its one
+#     daily timer and by the button, never by its own runs, and it asks for a re-run
+#     only while GitHub counts 1 or 2 attempts for the commit: at most 2 re-runs
+#     per commit, and at most 2 in one guard run.
+
+name: Deploy guard
+
+on:
+  workflow_run:
+    # GitHub's Pages workflow is named "pages-build-deployment" in the workflow list
+    # and "pages build and deployment" on its runs: both are given, and a name that
+    # matches nothing is ignored. "completed" covers success and failure alike.
+    workflows: ["pages-build-deployment", "pages build and deployment"]
+    types: [completed]
+  schedule:
+    # A second look once a day, whatever happened to the events above (GitHub starts
+    # this repository's scheduled runs hours late: fine, any hour will do). GitHub
+    # e-mails a failed scheduled run to the person who set the schedule up; a run
+    # started by the Pages robot may have nobody to e-mail.
+    - cron: "23 4 * * *"
+      timezone: "Europe/Sofia"
+  workflow_dispatch: {}          # "Run workflow": check now (and retry a failed deployment)
+
+# No permission by default; the one job names its own two below.
+permissions: {}
+
+# One guard at a time. A run that is working is never cancelled; of the runs that
+# wait, GitHub keeps the newest, which is enough: each run looks at how things are
+# when it starts, not at the event that started it.
+concurrency:
+  group: sofia-gleda-deploy-guard
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    # Only ever for main (a manual run started from another branch does nothing).
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45           # two re-runs (GitHub's deploy gives up after 10 min) + 5 min of live checks
+    permissions:
+      contents: read              # check out the guard script and the committed page
+      actions: write              # read the Pages runs; re-run the failed jobs of one (or cancel that re-run)
+    steps:
+      # Pinned to a full commit SHA, as in refresh.yml and tests.yml (a tag can be
+      # moved to other code; a SHA cannot). To update: take the release's commit from
+      # `git ls-remote --tags https://github.com/actions/checkout` and change both
+      # the SHA and the version comment.
+      - name: Check out the guard script and the committed page, from main only
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /scripts/deploy_guard.py
+            /index.html
+
+      - name: Guard the deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # What started this run: printed only, never decided on (empty for the
+          # timer and the button).
+          WOKEN_BY_SHA: ${{ github.event.workflow_run.head_sha }}
+          WOKEN_BY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WOKEN_BY_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: python3 scripts/deploy_guard.py
