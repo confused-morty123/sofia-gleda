@@ -17,26 +17,26 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 220/299 ok, 79 missing IMDb ratings"
+  "message": "OMDb: 221/303 ok, 82 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 497/503 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (20 days)"
+  "message": "theatre posters: 498/503 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (21 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.2 % -> 94.8 %, films 93.2 % -> 93.2 %; attached 3; causes: own page has no usable image 11, own page blocked (robots.txt or a bot challenge; not bypassed) 10, only an aggregator's image (the film does not link that page) 9, own page's images rejected by the poster policy 5 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.6 % -> 94.8 %, films 94.9 % -> 94.9 %; attached 1; causes: own page blocked (robots.txt or a bot challenge; not bypassed) 10, own page has no usable image 10, only an aggregator's image (the film does not link that page) 7, own page's images rejected by the poster policy 4 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 477/503 (94.8 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, az-se-kazvah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king, igra-na-kotki; 498/503 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 477/503 (94.8 %); missing: 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king, igra-na-kotki, insert-coin-player-one; 498/503 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 164/176 (93.2 %); missing: barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, last, polyusi, prodavach-na-nadezhda, sadiyata-1884-yuliy-avgust, velopohodat-kam-cop-31, vlyavo-ot-patya-london-kalkuta — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 167/176 (94.9 %); missing: 40-kinomaniya-i-ledena-zemya, barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, polyusi, sadiyata-1884-yuliy-avgust — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

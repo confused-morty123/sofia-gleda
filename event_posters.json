@@ -19,14 +19,28 @@
    "to": "2026-11-29",
    "via": "programata",
    "w": 1920
+  },
+  "rodopskiyat-mezhdunaroden-dokumentalen-p189284": {
+   "at": "2026-11-12",
+   "file": "posters/ev-rodopskiyat-mezhdunaroden-dokumentalen-p189284.jpg",
+   "h": 1690,
+   "page": "https://programata.bg/kino/rodopskiyat-mezhdunaroden-dokumentalen-filmov-festival-rife-gostuva-za-parvi-pat-v-sofiya-sas-speczialno-izdanie/",
+   "src": "https://programata.bg/wp-content/uploads/2026/11/261105_rife_pressfacebook-scaled.jpg",
+   "to": "2026-12-07",
+   "via": "programata",
+   "w": 2560
   }
  },
- "generated": "2026-11-11T01:40:23+00:00",
+ "generated": "2026-11-12T01:43:59+00:00",
  "refused": {},
  "sizes": {
   "https://programata.bg/wp-content/uploads/2026/10/825267183_1050670621261254_3387294159955412668_n-1024x379.png": [
    1024,
    379
+  ],
+  "https://programata.bg/wp-content/uploads/2026/11/261105_rife_pressfacebook-scaled.jpg": [
+   2560,
+   1690
   ]
  }
 }
