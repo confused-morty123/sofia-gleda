@@ -746,6 +746,46 @@
     "runtime": 91
    }
   },
+  "pochivkata": {
+   "into": "pochivkata-re-release",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1385028; the same TMDB id tmdb:1385028",
+   "since": "2026-11-13",
+   "record": {
+    "id": "pochivkata",
+    "bg": "ПОЧИВКАТА",
+    "en": "",
+    "genres": [
+     "Комедия"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "cg-ring",
+    "runtime": 112
+   }
+  },
+  "pochivkata-povtorenie": {
+   "into": "pochivkata-re-release",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1385028; the same TMDB id tmdb:1385028",
+   "since": "2026-11-13",
+   "record": {
+    "id": "pochivkata-povtorenie",
+    "bg": "ПОЧИВКАТА (ПОВТОРЕНИЕ)",
+    "en": "",
+    "genres": [
+     "Комедия"
+    ],
+    "g": [
+     "#331B1B",
+     "#5F2727"
+    ],
+    "source": "cg-park",
+    "runtime": 112
+   }
+  },
   "rays-and-shadows-sinelibri": {
    "into": "lachi-i-senki",
    "rule": "prefix",

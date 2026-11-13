@@ -3628,7 +3628,8 @@
    "#2A331B",
    "#4A5F27"
   ],
-  "source": "g8"
+  "source": "g8",
+  "runtime": 100
  },
  "krasavitsata-i-zvyara": {
   "id": "krasavitsata-i-zvyara",
@@ -4499,34 +4500,6 @@
   ],
   "source": "odeon"
  },
- "pochivkata-povtorenie": {
-  "id": "pochivkata-povtorenie",
-  "bg": "ПОЧИВКАТА (ПОВТОРЕНИЕ)",
-  "en": "",
-  "genres": [
-   "Комедия"
-  ],
-  "g": [
-   "#331B1B",
-   "#5F2727"
-  ],
-  "source": "cg-park",
-  "runtime": 112
- },
- "pochivkata": {
-  "id": "pochivkata",
-  "bg": "ПОЧИВКАТА",
-  "en": "",
-  "genres": [
-   "Комедия"
-  ],
-  "g": [
-   "#1B2733",
-   "#27485F"
-  ],
-  "source": "cg-ring",
-  "runtime": 112
- },
  "v-sluzhba-na-horata": {
   "id": "v-sluzhba-na-horata",
   "bg": "В СЛУЖБА НА ХОРАТА",
@@ -4551,5 +4524,114 @@
    "#4A5F27"
   ],
   "source": "lumiere"
+ },
+ "dyun-chast-vtora-re-reliyz": {
+  "id": "dyun-chast-vtora-re-reliyz",
+  "bg": "Дюн: Част втора Ре-релийз",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "arena-mega"
+ },
+ "dyun-re-reliyz": {
+  "id": "dyun-re-reliyz",
+  "bg": "Дюн Ре-релийз",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "arena-mega"
+ },
+ "dyun-chast-parva-povtorenie": {
+  "id": "dyun-chast-parva-povtorenie",
+  "bg": "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Приключенски"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cg-ring",
+  "runtime": 166
+ },
+ "dyun-chast-vtora-povtorenie": {
+  "id": "dyun-chast-vtora-povtorenie",
+  "bg": "ДЮН: ЧАСТ ВТОРА (ПОВТОРЕНИЕ)",
+  "en": "",
+  "genres": [
+   "Драма",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cg-ring",
+  "runtime": 167
+ },
+ "tazi-vecher-shte-ubivame": {
+  "id": "tazi-vecher-shte-ubivame",
+  "bg": "Тази вечер ще убиваме",
+  "en": "",
+  "genres": [
+   "Комедия",
+   "Криминален"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "g8",
+  "runtime": 90,
+  "country": "Унгария"
+ },
+ "menar-uikend-prorokat": {
+  "id": "menar-uikend-prorokat",
+  "bg": "МЕНАР уикенд: Пророкът",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 75
+ },
+ "menar-uikend-priroda": {
+  "id": "menar-uikend-priroda",
+  "bg": "МЕНАР уикенд: Природа",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 106
+ },
+ "menar-uikend-mevlyana-opiyaneni-ot-lyubov": {
+  "id": "menar-uikend-mevlyana-opiyaneni-ot-lyubov",
+  "bg": "МЕНАР уикенд : Мевляна - Опиянени от любов",
+  "en": "",
+  "genres": [
+   "Исторически"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 118
  }
 }

@@ -7288,5 +7288,59 @@
   "synBg": "",
   "synEn": "",
   "source": "vazrazhdane"
+ },
+ "100-godini-zhiva-svetlina-nch-petar-beron-1926": {
+  "id": "100-godini-zhiva-svetlina-nch-petar-beron-1926",
+  "title": "100 години ЖИВА СВЕТЛИНА - НЧ \"Петър Берон\" 1926",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "dokato-chakame-godo-dobrich": {
+  "id": "dokato-chakame-godo-dobrich",
+  "title": "Докато чакаме Годо – Добрич",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "dokato-chakame-godo-smolyan": {
+  "id": "dokato-chakame-godo-smolyan",
+  "title": "Докато чакаме Годо – Смолян",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
  }
 }
