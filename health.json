@@ -32,26 +32,26 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 222/302 ok, 80 missing IMDb ratings"
+  "message": "OMDb: 223/304 ok, 81 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 492/499 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (22 days)"
+  "message": "theatre posters: 495/505 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (23 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.4 % -> 94.4 %, films 92.7 % -> 92.7 %; attached 0; causes: own page has no usable image 13, only an aggregator's image (the film does not link that page) 11, own page blocked (robots.txt or a bot challenge; not bypassed) 10, own page's images rejected by the poster policy 4 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.9 % -> 94.1 %, films 91.7 % -> 91.7 %; attached 1; causes: own page has no usable image 17, only an aggregator's image (the film does not link that page) 11, own page blocked (robots.txt or a bot challenge; not bypassed) 9, own page's images rejected by the poster policy 4 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 471/499 (94.4 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, ekaterina-karavelova-vik-ot-istoriyata; 492/499 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 475/505 (94.1 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 495/505 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 166/179 (92.7 %); missing: actually-it-is-rocket-science, avrora, barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dyun-chast-parva-povtorenie, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kina-i-yuk-lisitsite-ot-dalechniya-sever, kodat-na-balgarite, kucheto-na-zlatyu, polyusi, sadiyata-1884-yuliy-avgust — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 166/181 (91.7 %); missing: 40-kinomaniya-i-cherni-pari-za-beli-noshti, actually-it-is-rocket-science, avrora, barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dyun-chast-parva-povtorenie, dzhambo-magicheskoto-priklyuchenie, evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kina-i-yuk-lisitsite-ot-dalechniya-sever, kodat-na-balgarite, kucheto-na-zlatyu — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

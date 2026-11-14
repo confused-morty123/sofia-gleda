@@ -4278,20 +4278,6 @@
   "source": "dom-kino",
   "runtime": 155
  },
- "dyun-chast-vtora": {
-  "id": "dyun-chast-vtora",
-  "bg": "Дюн: Част втора",
-  "en": "",
-  "genres": [
-   "Фантастика"
-  ],
-  "g": [
-   "#1B2733",
-   "#27485F"
-  ],
-  "source": "dom-kino",
-  "runtime": 166
- },
  "umiray-trudno": {
   "id": "umiray-trudno",
   "bg": "Умирай трудно",
@@ -4633,5 +4619,104 @@
   ],
   "source": "dom-kino",
   "runtime": 118
+ },
+ "george-michael-the-faith-tour-no-subtitles-english-audio": {
+  "id": "george-michael-the-faith-tour-no-subtitles-english-audio",
+  "bg": "GEORGE MICHAEL: THE FAITH TOUR - NO SUBTITLES ENGLISH AUDIO",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cg-ring",
+  "runtime": 113
+ },
+ "dyun-chast-parva-re-release": {
+  "id": "dyun-chast-parva-re-release",
+  "bg": "Дюн: Част първа (re-release)",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 166,
+  "year": 2021
+ },
+ "dyun-chast-vtora-re-release": {
+  "id": "dyun-chast-vtora-re-release",
+  "bg": "Дюн: Част втора (re-release)",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "cc-sofia",
+  "runtime": 177,
+  "year": 2024
+ },
+ "maraton-dyun-1-i-2": {
+  "id": "maraton-dyun-1-i-2",
+  "bg": "Маратон Дюн 1 и 2",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-sofia",
+  "runtime": 350,
+  "year": 2021
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Проклятие (1988)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "animatritsata": {
+  "id": "animatritsata",
+  "bg": "Аниматрицата",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 102
+ },
+ "40-kinomaniya-i-cherni-pari-za-beli-noshti": {
+  "id": "40-kinomaniya-i-cherni-pari-za-beli-noshti",
+  "bg": "40. КИНОМАНИЯ I ЧЕРНИ ПАРИ ЗА БЕЛИ НОЩИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "lumiere"
  }
 }

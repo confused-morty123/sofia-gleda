@@ -1,20 +1,26 @@
 {
  "dalgiyat-pat-na-denya-kam-noshtta": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-13",
+  "last_try": "2026-11-14",
   "link": "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20",
-  "tries": 1
+  "tries": 2
  },
  "dokato-chakame-godo-dobrich": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-13",
+  "last_try": "2026-11-14",
   "link": "https://iamstudio.bg/produkt/dokato-chakame-godo-dobrich/",
-  "tries": 1
+  "tries": 2
  },
  "dokato-chakame-godo-smolyan": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-13",
+  "last_try": "2026-11-14",
   "link": "https://iamstudio.bg/produkt/dokato-chakame-godo-smolyan/",
+  "tries": 2
+ },
+ "dokato-smartta": {
+  "first_missing": "2026-11-14",
+  "last_try": "2026-11-14",
+  "link": "https://satirata.bg/show/dokato-smurtta",
   "tries": 1
  },
  "igra-na-kotki": {
@@ -25,20 +31,32 @@
  },
  "kontsert-na-pim-pam": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-13",
+  "last_try": "2026-11-14",
   "link": "https://satirata.bg/program",
-  "tries": 1
+  "tries": 2
  },
  "magichna-nosht-predi-koleda": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-13",
+  "last_try": "2026-11-14",
   "link": "https://sofiapuppet.com/магична-нощ-преди-коледа___8103",
-  "tries": 1
+  "tries": 2
  },
  "mechka-hamletmashina": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-13",
+  "last_try": "2026-11-14",
   "link": "http://sfumato.info/мечка-хамлетмашина___8099",
+  "tries": 2
+ },
+ "vanyo-sonya-masha-i-spayk": {
+  "first_missing": "2026-11-14",
+  "last_try": "2026-11-14",
+  "link": "https://satirata.bg/show/vanio-sonia-masha-i-spaik",
+  "tries": 1
+ },
+ "vsichko-za-zhenite": {
+  "first_missing": "2026-11-14",
+  "last_try": "2026-11-14",
+  "link": "https://satirata.bg/show/vsichko-za-zhenite",
   "tries": 1
  }
 }

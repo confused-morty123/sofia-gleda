@@ -7273,7 +7273,7 @@
  },
  "maks-i-morits": {
   "id": "maks-i-morits",
-  "title": "МАКС И МОРИЦ",
+  "title": "Макс и Мориц",
   "titleEn": "",
   "theatre": "vazrazhdane",
   "author": "",
@@ -7342,5 +7342,149 @@
   "synBg": "",
   "synEn": "",
   "source": "iam"
+ },
+ "5-godini-toplotsentrala": {
+  "id": "5-godini-toplotsentrala",
+  "title": "5 Години Топлоцентрала!",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "5-godini-toplotsentrala-hayner-gyobels-teoriya-i-praktika-v-": {
+  "id": "5-godini-toplotsentrala-hayner-gyobels-teoriya-i-praktika-v-",
+  "title": "5 години Топлоцентрала! Хайнер Гьобелс - Теория и практика в съвременните перформативни изкуства",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "l-addition": {
+  "id": "l-addition",
+  "title": "L'addition",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "opashka": {
+  "id": "opashka",
+  "title": "Опашка",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "razgovor-bezkraen-proektat-makedoniya": {
+  "id": "razgovor-bezkraen-proektat-makedoniya",
+  "title": "Разговор безкраен. Проектът: Македония",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "vanyo-sonya-masha-i-spayk": {
+  "id": "vanyo-sonya-masha-i-spayk",
+  "title": "Ваньо, Соня, Маша и Спайк",
+  "titleEn": "",
+  "theatre": "satira",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "satira"
+ },
+ "vsichko-za-zhenite": {
+  "id": "vsichko-za-zhenite",
+  "title": "Всичко за жените",
+  "titleEn": "",
+  "theatre": "satira",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "satira"
+ },
+ "dokato-smartta": {
+  "id": "dokato-smartta",
+  "title": "Докато смъртта...",
+  "titleEn": "",
+  "theatre": "satira",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "satira"
  }
 }

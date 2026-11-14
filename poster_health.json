@@ -1,46 +1,47 @@
 {
  "before": {
-  "films": 91.1,
-  "shows": 94.4
+  "films": 91.7,
+  "shows": 92.7
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-13",
+ "date": "2026-11-14",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 136,
+   "TMDB poster": 135,
    "own page: key": 2,
-   "own page: poster": 5,
-   "the film's programme page": 23
+   "own page: poster": 4,
+   "the film's programme page": 25
   },
-  "pct": 92.7,
-  "upcoming": 179,
+  "pct": 91.7,
+  "upcoming": 181,
   "with": 166
  },
  "fix": {
   "after": {
-   "films": 92.7,
-   "shows": 94.4
+   "films": 91.7,
+   "shows": 94.1
   },
-  "attached": 0,
-  "attempted": 25,
+  "attached": 1,
+  "attempted": 29,
   "before": {
-   "films": 92.7,
-   "shows": 94.4
+   "films": 91.7,
+   "shows": 93.9
   },
   "broken_parsers": [],
   "causes": {
    "films": {
+    "only a ticket page linked, not the title's page": 1,
     "only an aggregator's image (the film does not link that page)": 11,
-    "own page has no usable image": 2
+    "own page has no usable image": 3
    },
    "shows": {
     "no own page linked": 1,
-    "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
-    "own page has no usable image": 11,
+    "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
+    "own page has no usable image": 14,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 4,
     "the linked page is not the title's (redirect, home page or another title)": 1
@@ -48,13 +49,14 @@
   },
   "causes_before": {
    "films": {
+    "only a ticket page linked, not the title's page": 1,
     "only an aggregator's image (the film does not link that page)": 11,
-    "own page has no usable image": 2
+    "own page has no usable image": 3
    },
    "shows": {
     "no own page linked": 1,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
-    "own page has no usable image": 11,
+    "own page has no usable image": 14,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 4,
     "the linked page is not the title's (redirect, home page or another title)": 1
@@ -62,27 +64,32 @@
   },
   "counts": {
    "films": {
-    "after": "166/179",
-    "before": "166/179"
+    "after": "166/181",
+    "before": "166/181"
    },
    "shows": {
-    "after": "471/499",
-    "before": "471/499"
+    "after": "475/505",
+    "before": "474/505"
    }
   },
-  "date": "2026-11-13",
+  "date": "2026-11-14",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 34,
+  "requests": 38,
   "retried": [],
-  "seconds": 51.3,
+  "seconds": 49.7,
   "summary": {
-   "film nothing": 1,
-   "show nothing": 24
+   "film nothing": 2,
+   "show key": 1,
+   "show nothing": 26
   },
   "titles": {
    "films": {
+    "40-kinomaniya-i-cherni-pari-za-beli-noshti": [
+     "only a ticket page linked, not the title's page",
+     "epaygo.bg is a ticket page, not the title's page"
+    ],
     "actually-it-is-rocket-science": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
@@ -106,6 +113,10 @@
     "dzhambo-magicheskoto-priklyuchenie": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
+    ],
+    "evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988": [
+     "own page has no usable image",
+     "no usable image on the page"
     ],
     "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": [
      "only an aggregator's image (the film does not link that page)",
@@ -181,6 +192,10 @@
      "own page has no usable image",
      "no usable image on the page"
     ],
+    "dokato-smartta": [
+     "own page has no usable image",
+     "no usable image on the page"
+    ],
     "ekaterina-karavelova-vik-ot-istoriyata": [
      "own page has no usable image",
      "no usable image on the page"
@@ -229,10 +244,6 @@
      "own page's images rejected by the poster policy",
      "https://toplocentrala.bg/attachments/Event/1213/main/Melba-14-11-2026_thumb-deta: 900x342, not usable as a key image"
     ],
-    "nordost": [
-     "own page blocked (robots.txt or a bot challenge; not bypassed)",
-     "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
-    ],
     "pepelyashka": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
      "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
@@ -248,6 +259,14 @@
     "spetsialni-povodi": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
      "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
+    ],
+    "vanyo-sonya-masha-i-spayk": [
+     "own page has no usable image",
+     "no usable image on the page"
+    ],
+    "vsichko-za-zhenite": [
+     "own page has no usable image",
+     "no usable image on the page"
     ]
    }
   },
@@ -260,19 +279,23 @@
  "fixed_this_run": {
   "film already has a poster": 9,
   "film nothing": 2,
-  "film poster": 3,
-  "poster fix: film nothing": 1,
-  "poster fix: show nothing": 24,
-  "show nothing": 4
+  "poster fix: film nothing": 2,
+  "poster fix: show key": 1,
+  "poster fix: show nothing": 26,
+  "show key": 5,
+  "show nothing": 3,
+  "show photo": 1
  },
  "missing": {
   "films": {
+   "40-kinomaniya-i-cherni-pari-za-beli-noshti": "no image: the generated art shows",
    "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
    "avrora": "unverified: an aggregator's image, and the film does not link its page",
    "barzo-akuratno-okonchatelno": "unverified: an aggregator's image, and the film does not link its page",
    "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": "unverified: an aggregator's image, and the film does not link its page",
    "dyun-chast-parva-povtorenie": "no image: the generated art shows",
    "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
+   "evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988": "no image: the generated art shows",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
    "kina-i-yuk-lisitsite-ot-dalechniya-sever": "unverified: an aggregator's image, and the film does not link its page",
    "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
@@ -293,6 +316,7 @@
    "dnevnikat-na-edin-lud-2": "unverified: no record of the page this file came from",
    "dokato-chakame-godo-dobrich": "no image: the generated art shows",
    "dokato-chakame-godo-smolyan": "no image: the generated art shows",
+   "dokato-smartta": "no image: the generated art shows",
    "ekaterina-karavelova-vik-ot-istoriyata": "unverified: no record of the page this file came from",
    "gnyav-po-stivan-king": "unverified: no record of the page this file came from",
    "igra-na-kotki": "no image: the generated art shows",
@@ -305,42 +329,44 @@
    "malkata-rusalka": "unverified: no record of the page this file came from",
    "mechka-hamletmashina": "no image: the generated art shows",
    "mezhdunaroden-simpozium-melba": "unverified: no record of the page this file came from",
-   "nordost": "unverified: no record of the page this file came from",
    "pepelyashka": "unverified: no record of the page this file came from",
    "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
    "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
-   "spetsialni-povodi": "unverified: no record of the page this file came from"
+   "spetsialni-povodi": "unverified: no record of the page this file came from",
+   "vanyo-sonya-masha-i-spayk": "no image: the generated art shows",
+   "vsichko-za-zhenite": "no image: the generated art shows"
   }
  },
  "per_theatre": {
   "artvent": "22/22",
   "atelie313": "17/17",
   "citymark": "11/11",
-  "iam": "8/10",
+  "iam": "7/9",
   "kuklen": "20/21",
-  "mladezhki": "34/44",
-  "natfiz": "8/9",
+  "mladezhki": "35/44",
+  "natfiz": "7/8",
   "national": "68/68",
-  "salzaismyah": "42/42",
-  "satira": "42/43",
-  "sfumato": "24/26",
+  "salzaismyah": "43/43",
+  "satira": "42/46",
+  "sfumato": "23/25",
   "sofia-th": "16/16",
   "tba": "33/37",
   "th199": "36/39",
-  "toplo": "43/46",
+  "toplo": "48/51",
   "vazrazhdane": "26/26",
   "zad-kanala": "21/22"
  },
  "shows": {
   "how": {
    "TMDB poster": 1,
-   "own page: key": 193,
-   "own page: poster": 277
+   "own page: key": 198,
+   "own page: photo": 1,
+   "own page: poster": 275
   },
-  "pct": 94.4,
-  "upcoming": 499,
-  "with": 471
+  "pct": 94.1,
+  "upcoming": 505,
+  "with": 475
  },
- "shows_displayed": 492,
+ "shows_displayed": 495,
  "target": 95.0
 }

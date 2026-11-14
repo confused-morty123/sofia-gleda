@@ -396,6 +396,26 @@
     "year": 2026
    }
   },
+  "dyun-chast-vtora": {
+   "into": "dyun-chast-vtora-povtorenie",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:693134",
+   "since": "2026-11-14",
+   "record": {
+    "id": "dyun-chast-vtora",
+    "bg": "Дюн: Част втора",
+    "en": "",
+    "genres": [
+     "Фантастика"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "dom-kino",
+    "runtime": 166
+   }
+  },
   "everest-ot-drugata-strana": {
    "into": "everest-drugata-strana",
    "rule": "function-word",
