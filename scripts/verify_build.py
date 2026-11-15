@@ -2582,6 +2582,16 @@ def smoke():
                     if (page.is_visible("#sg-consent")
                             or not page.evaluate("!!localStorage.getItem('sofia-consent')")):
                         fail(f"[{tz}] the cookie notice's button did not close it and keep the choice")
+            # late on the last day of the shown week (a Sunday evening) nothing is left in
+            # "Тази седмица": the page says "Всичко за днес приключи." and offers tomorrow
+            # (2026-11-15, 22:30: the gate failed "no film cards" on a correct page). The
+            # journey then goes on from tomorrow, as a visitor would, and still needs cards.
+            def _past_late_day():
+                btn = page.query_selector(".late-day-card button[data-day]")
+                if btn:
+                    btn.click(); page.wait_for_timeout(500)
+                    note(f"[{tz}] today is over: the journey continues from tomorrow")
+            _past_late_day()
             cards = page.query_selector_all("[data-film]")
             if google_hits:
                 fail(f"[{tz}] the page contacted Google Analytics without consent: {google_hits[0][:80]}")
@@ -2609,6 +2619,7 @@ def smoke():
             sw = page.query_selector_all("[data-switch]")
             if len(sw) > 1:
                 sw[1].click(); page.wait_for_timeout(500)
+                _past_late_day()
                 shows = page.query_selector_all("[data-show]")
                 if not shows:
                     fail(f"[{tz}] no theatre listings rendered")

@@ -5613,9 +5613,20 @@ def wave_j(browser, webkit_browser=None):
     # P3A item 8 renamed "Утре вечер" → "Утре в София" / "Tomorrow in Sofia"
     tomorrow_rail_2350 = next((t for t in rail_titles_2350
                                if "Утре" in t or "Tomorrow" in t), None)
-    check("j5_2350_tomorrow_night_present",
-          tomorrow_rail_2350 is not None,
-          f"'Утре в София' not found at 23:50; rails={rail_titles_2350[:10]}")
+    if CLOCK_TODAY_ISO == CLOCK_WEEK_END:
+        # the clock's day ends the shown week (a Sunday listing, 2026-11-15): at 23:50
+        # "Тази седмица" holds nothing more, and tomorrow is next week, so the page shows
+        # the late-day card ("Всичко за днес приключи.") with tomorrow's button, not a rail
+        late = page_t.evaluate("() => { const c = document.querySelector('.late-day-card');"
+                               " const b = c && c.querySelector('button[data-day]');"
+                               " return c ? {btn: b ? b.dataset.day : null} : null; }")
+        check("j5_2350_tomorrow_night_present",
+              late is not None and late["btn"] == CLOCK_TOMORROW_ISO,
+              f"week ends {CLOCK_WEEK_END}: late-day card {late}, tomorrow {CLOCK_TOMORROW_ISO}; rails={rail_titles_2350[:10]}")
+    else:
+        check("j5_2350_tomorrow_night_present",
+              tomorrow_rail_2350 is not None,
+              f"'Утре в София' not found at 23:50; rails={rail_titles_2350[:10]}")
     ctx_t.close()
 
     # J5d: "Този уикенд" — should list shows with perfs on 2026-10-09..11 (Fri-Sun)
