@@ -396,6 +396,26 @@
     "year": 2026
    }
   },
+  "dyun-chast-vtora": {
+   "into": "dyun-chast-vtora-povtorenie",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:693134",
+   "since": "2026-11-14",
+   "record": {
+    "id": "dyun-chast-vtora",
+    "bg": "Дюн: Част втора",
+    "en": "",
+    "genres": [
+     "Фантастика"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "dom-kino",
+    "runtime": 166
+   }
+  },
   "everest-ot-drugata-strana": {
    "into": "everest-drugata-strana",
    "rule": "function-word",
@@ -430,6 +450,24 @@
     "source": "cineland",
     "runtime": 113,
     "year": 2026
+   }
+  },
+  "george-michael-the-faith-tour-no-subtitles-english-audio": {
+   "into": "george-michael-the-faith-tour",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1649403",
+   "since": "2026-11-15",
+   "record": {
+    "id": "george-michael-the-faith-tour-no-subtitles-english-audio",
+    "bg": "GEORGE MICHAEL: THE FAITH TOUR - NO SUBTITLES ENGLISH AUDIO",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#2A331B",
+     "#4A5F27"
+    ],
+    "source": "cg-ring",
+    "runtime": 113
    }
   },
   "haos-v-komedi-fransez-sinelibri": {
@@ -744,6 +782,46 @@
     ],
     "source": "cg-park",
     "runtime": 91
+   }
+  },
+  "pochivkata": {
+   "into": "pochivkata-re-release",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1385028; the same TMDB id tmdb:1385028",
+   "since": "2026-11-13",
+   "record": {
+    "id": "pochivkata",
+    "bg": "ПОЧИВКАТА",
+    "en": "",
+    "genres": [
+     "Комедия"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "cg-ring",
+    "runtime": 112
+   }
+  },
+  "pochivkata-povtorenie": {
+   "into": "pochivkata-re-release",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1385028; the same TMDB id tmdb:1385028",
+   "since": "2026-11-13",
+   "record": {
+    "id": "pochivkata-povtorenie",
+    "bg": "ПОЧИВКАТА (ПОВТОРЕНИЕ)",
+    "en": "",
+    "genres": [
+     "Комедия"
+    ],
+    "g": [
+     "#331B1B",
+     "#5F2727"
+    ],
+    "source": "cg-park",
+    "runtime": 112
    }
   },
   "rays-and-shadows-sinelibri": {

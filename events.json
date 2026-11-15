@@ -18,7 +18,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 18 ДНИ",
+   "tag": "СЛЕД 15 ДНИ",
    "title": "Родопският международен документален филмов фестивал RIFE гостува за първи път в София със специално издание",
    "titleEn": "The RIFE Rhodope International Documentary Film Festival is coming to Sofia for the first time with a special edition",
    "titles": [
@@ -50,145 +50,6 @@
    "to": "2026-12-07",
    "url": "https://programata.bg/kino/rodopskiyat-mezhdunaroden-dokumentalen-filmov-festival-rife-gostuva-za-parvi-pat-v-sofiya-sas-speczialno-izdanie/",
    "venues": []
-  },
-  {
-   "auto": true,
-   "blurbBg": "Фестивал, 31 октомври – 14 ноември 2026. Сред местата: Дом на киното.",
-   "blurbEn": "Festival, 31 October – 14 November 2026. Venues include Cinema House.",
-   "dates_from": "date field",
-   "from": "2026-10-31",
-   "g": [
-    "#237395",
-    "#061A23"
-   ],
-   "id": "chetvartoto-izdanie-na-horror-film-fest-p188286",
-   "kind": "festival",
-   "missed": 0,
-   "modified": "2026-10-28T14:03:05",
-   "post": 188286,
-   "scope": "cinema",
-   "source": "programata.bg",
-   "status": "active",
-   "tag": "СЛЕД 0 ДНИ",
-   "title": "Четвъртото издание на Horror Film Fest",
-   "titleEn": "The fourth edition of the Horror Film Fest",
-   "titles": [
-    {
-     "t": "…Отново е това време на годината…",
-     "v": []
-    },
-    {
-     "t": "четвърта част на It’s Alive",
-     "v": []
-    },
-    {
-     "t": "Дом на киното",
-     "v": [
-      "dom-kino"
-     ]
-    },
-    {
-     "t": "Тийн секс и смърт в камп Миазма",
-     "v": []
-    },
-    {
-     "t": "наградата на публиката",
-     "v": []
-    },
-    {
-     "t": "срещи с част от режисьорите",
-     "v": []
-    },
-    {
-     "t": "Wrath of the Gods",
-     "v": []
-    },
-    {
-     "t": "отвъд хоръра",
-     "v": []
-    },
-    {
-     "t": "документален филм на Джон Уилсън The History of Concrete",
-     "v": []
-    },
-    {
-     "t": "канадското мокюментари Nirvanna the Band the Show the Moviе",
-     "v": []
-    },
-    {
-     "t": "Дом на киното и Филмотечно кино Одеон",
-     "v": []
-    },
-    {
-     "t": "7Arts",
-     "v": []
-    },
-    {
-     "t": "31.10 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "01.11 КАФЕ-КЛУБ КОМПАС",
-     "v": []
-    },
-    {
-     "t": "02.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "03.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "04.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "05.11 КИНО ОДЕОН",
-     "v": []
-    },
-    {
-     "t": "06.11 КИНО ОДЕОН",
-     "v": []
-    },
-    {
-     "t": "07.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "08.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "08.11 КИНО ОДЕОН",
-     "v": []
-    },
-    {
-     "t": "09.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "10.11 КИНО ОДЕОН",
-     "v": []
-    },
-    {
-     "t": "11.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "13.11 ДОМ НА КИНОТО",
-     "v": []
-    },
-    {
-     "t": "14.11 ДОМ НА КИНОТО",
-     "v": []
-    }
-   ],
-   "to": "2026-11-14",
-   "url": "https://programata.bg/kino/its-alive-chetvartoto-izdanie-na-horror-film-fest/",
-   "venues": [
-    "dom-kino"
-   ]
   },
   {
    "auto": true,
@@ -246,7 +107,7 @@
    ]
   }
  ],
- "generated": "2026-11-12T01:43:47+00:00",
+ "generated": "2026-11-15T01:46:48+00:00",
  "ok": true,
  "posts": {
   "181238": {
@@ -390,7 +251,7 @@
  },
  "read": {
   "listed": 27,
-  "pages": 1,
+  "pages": 0,
   "unreadable": 0
  },
  "source": "programata.bg"
