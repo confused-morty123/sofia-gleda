@@ -1,35 +1,35 @@
 {
  "before": {
-  "films": 91.7,
-  "shows": 92.7
+  "films": 91.2,
+  "shows": 94.0
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-14",
+ "date": "2026-11-15",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 135,
+   "TMDB poster": 129,
    "own page: key": 2,
    "own page: poster": 4,
-   "the film's programme page": 25
+   "the film's programme page": 21
   },
-  "pct": 91.7,
-  "upcoming": 181,
-  "with": 166
+  "pct": 91.2,
+  "upcoming": 171,
+  "with": 156
  },
  "fix": {
   "after": {
-   "films": 91.7,
-   "shows": 94.1
+   "films": 91.2,
+   "shows": 94.4
   },
   "attached": 1,
-  "attempted": 29,
+  "attempted": 31,
   "before": {
-   "films": 91.7,
-   "shows": 93.9
+   "films": 91.2,
+   "shows": 94.2
   },
   "broken_parsers": [],
   "causes": {
@@ -41,9 +41,9 @@
    "shows": {
     "no own page linked": 1,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
-    "own page has no usable image": 14,
+    "own page has no usable image": 13,
     "own page or its image could not be fetched": 1,
-    "own page's images rejected by the poster policy": 4,
+    "own page's images rejected by the poster policy": 3,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
@@ -55,38 +55,38 @@
    },
    "shows": {
     "no own page linked": 1,
-    "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
+    "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
     "own page has no usable image": 14,
     "own page or its image could not be fetched": 1,
-    "own page's images rejected by the poster policy": 4,
+    "own page's images rejected by the poster policy": 3,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "counts": {
    "films": {
-    "after": "166/181",
-    "before": "166/181"
+    "after": "156/171",
+    "before": "156/171"
    },
    "shows": {
-    "after": "475/505",
-    "before": "474/505"
+    "after": "469/497",
+    "before": "468/497"
    }
   },
-  "date": "2026-11-14",
+  "date": "2026-11-15",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 38,
+  "requests": 48,
   "retried": [],
-  "seconds": 49.7,
+  "seconds": 64.0,
   "summary": {
-   "film nothing": 2,
+   "film nothing": 3,
    "show key": 1,
-   "show nothing": 26
+   "show nothing": 27
   },
   "titles": {
    "films": {
-    "40-kinomaniya-i-cherni-pari-za-beli-noshti": [
+    "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv": [
      "only a ticket page linked, not the title's page",
      "epaygo.bg is a ticket page, not the title's page"
     ],
@@ -204,10 +204,6 @@
      "own page has no usable image",
      "no usable image on the page"
     ],
-    "igra-na-kotki": [
-     "own page has no usable image",
-     "no usable image on the page"
-    ],
     "insert-coin-player-one": [
      "own page has no usable image",
      "no usable image on the page"
@@ -239,10 +235,6 @@
     "mechka-hamletmashina": [
      "own page has no usable image",
      "no usable image on the page"
-    ],
-    "mezhdunaroden-simpozium-melba": [
-     "own page's images rejected by the poster policy",
-     "https://toplocentrala.bg/attachments/Event/1213/main/Melba-14-11-2026_thumb-deta: 900x342, not usable as a key image"
     ],
     "pepelyashka": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
@@ -278,17 +270,15 @@
  },
  "fixed_this_run": {
   "film already has a poster": 9,
-  "film nothing": 2,
-  "poster fix: film nothing": 2,
+  "film nothing": 1,
+  "poster fix: film nothing": 3,
   "poster fix: show key": 1,
-  "poster fix: show nothing": 26,
-  "show key": 5,
-  "show nothing": 3,
-  "show photo": 1
+  "poster fix: show nothing": 27,
+  "show key": 1
  },
  "missing": {
   "films": {
-   "40-kinomaniya-i-cherni-pari-za-beli-noshti": "no image: the generated art shows",
+   "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv": "no image: the generated art shows",
    "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
    "avrora": "unverified: an aggregator's image, and the film does not link its page",
    "barzo-akuratno-okonchatelno": "unverified: an aggregator's image, and the film does not link its page",
@@ -319,7 +309,6 @@
    "dokato-smartta": "no image: the generated art shows",
    "ekaterina-karavelova-vik-ot-istoriyata": "unverified: no record of the page this file came from",
    "gnyav-po-stivan-king": "unverified: no record of the page this file came from",
-   "igra-na-kotki": "no image: the generated art shows",
    "insert-coin-player-one": "unverified: no record of the page this file came from",
    "kiki-i-bozo": "unverified: no record of the page this file came from",
    "kontsert-na-pim-pam": "no image: the generated art shows",
@@ -328,7 +317,6 @@
    "magichna-nosht-predi-koleda": "no image: the generated art shows",
    "malkata-rusalka": "unverified: no record of the page this file came from",
    "mechka-hamletmashina": "no image: the generated art shows",
-   "mezhdunaroden-simpozium-melba": "unverified: no record of the page this file came from",
    "pepelyashka": "unverified: no record of the page this file came from",
    "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
    "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
@@ -338,11 +326,11 @@
   }
  },
  "per_theatre": {
-  "artvent": "22/22",
-  "atelie313": "17/17",
+  "artvent": "21/21",
+  "atelie313": "16/16",
   "citymark": "11/11",
   "iam": "7/9",
-  "kuklen": "20/21",
+  "kuklen": "19/20",
   "mladezhki": "35/44",
   "natfiz": "7/8",
   "national": "68/68",
@@ -351,22 +339,22 @@
   "sfumato": "23/25",
   "sofia-th": "16/16",
   "tba": "33/37",
-  "th199": "36/39",
-  "toplo": "48/51",
-  "vazrazhdane": "26/26",
-  "zad-kanala": "21/22"
+  "th199": "34/37",
+  "toplo": "47/49",
+  "vazrazhdane": "25/25",
+  "zad-kanala": "22/22"
  },
  "shows": {
   "how": {
    "TMDB poster": 1,
-   "own page: key": 198,
+   "own page: key": 195,
    "own page: photo": 1,
-   "own page: poster": 275
+   "own page: poster": 272
   },
-  "pct": 94.1,
-  "upcoming": 505,
-  "with": 475
+  "pct": 94.4,
+  "upcoming": 497,
+  "with": 469
  },
- "shows_displayed": 495,
+ "shows_displayed": 488,
  "target": 95.0
 }

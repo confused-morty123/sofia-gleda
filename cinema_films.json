@@ -195,7 +195,8 @@
    "#50275F"
   ],
   "source": "vlaikova",
-  "runtime": 103
+  "runtime": 103,
+  "year": 2026
  },
  "evropeyski-kinoklasiki-alis-v-gradovete-1974": {
   "id": "evropeyski-kinoklasiki-alis-v-gradovete-1974",
@@ -4620,18 +4621,6 @@
   "source": "dom-kino",
   "runtime": 118
  },
- "george-michael-the-faith-tour-no-subtitles-english-audio": {
-  "id": "george-michael-the-faith-tour-no-subtitles-english-audio",
-  "bg": "GEORGE MICHAEL: THE FAITH TOUR - NO SUBTITLES ENGLISH AUDIO",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#2A331B",
-   "#4A5F27"
-  ],
-  "source": "cg-ring",
-  "runtime": 113
- },
  "dyun-chast-parva-re-release": {
   "id": "dyun-chast-parva-re-release",
   "bg": "Дюн: Част първа (re-release)",
@@ -4716,6 +4705,17 @@
   "g": [
    "#331B24",
    "#5F2745"
+  ],
+  "source": "lumiere"
+ },
+ "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv": {
+  "id": "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv",
+  "bg": "40. КИНОМАНИЯ | ЦЕРЕМОНИЯ ПО НАГРАЖДАВАНЕ В КОНКУРСА \"ДЕТСТВОТО Е ЗА СМЯХ, НЕ ЗА СТРАХ\". ВХОД СВОБОДЕН",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
   ],
   "source": "lumiere"
  }

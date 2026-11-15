@@ -452,6 +452,24 @@
     "year": 2026
    }
   },
+  "george-michael-the-faith-tour-no-subtitles-english-audio": {
+   "into": "george-michael-the-faith-tour",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1649403",
+   "since": "2026-11-15",
+   "record": {
+    "id": "george-michael-the-faith-tour-no-subtitles-english-audio",
+    "bg": "GEORGE MICHAEL: THE FAITH TOUR - NO SUBTITLES ENGLISH AUDIO",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#2A331B",
+     "#4A5F27"
+    ],
+    "source": "cg-ring",
+    "runtime": 113
+   }
+  },
   "haos-v-komedi-fransez-sinelibri": {
    "into": "haos-v-komedi-fransez",
    "rule": "same-key",
