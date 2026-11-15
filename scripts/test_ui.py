@@ -16162,16 +16162,29 @@ def _lg_reload_stored(page, timeout_ms=5000):
     is not waited for longer: the check after the reload then fails as before."""
     from urllib.parse import urljoin
     want = page.evaluate("localStorage.getItem('sofia-consent')")
+    info = {"peer_before": None, "peer_after": None}
     peer = page.context.new_page()
+    probe = "() => ({rec: localStorage.getItem('sofia-consent') !== null, keys: Object.keys(localStorage), origin: location.origin})"
     try:
         peer.goto(urljoin(page.url, "legal/cookies/index.html"
                                        if page.url.startswith("file:") else "legal/cookies/"))
         peer.wait_for_function("(w) => localStorage.getItem('sofia-consent') === w", arg=want, timeout=timeout_ms)
     except Exception as ex:
         print(f"  note: the record was not seen from a second page before the reload ({type(ex).__name__})")
+    try:
+        info["peer_before"] = peer.evaluate(probe)
+    except Exception as ex:
+        info["peer_before"] = type(ex).__name__
     page.reload()
     page.wait_for_selector(".bar", timeout=20000)
+    try:
+        info["peer_after"] = peer.evaluate(probe)
+        info["page_after"] = page.evaluate(probe)
+        info["nav"] = page.evaluate("(performance.getEntriesByType('navigation')[0] || {}).type")
+    except Exception as ex:
+        info["page_after"] = type(ex).__name__
     peer.close()
+    return info
 
 
 def _lg_scroll_to_footer(page):
@@ -16273,10 +16286,10 @@ def wave_lg1(browser):
     print("\n=== LG1: the choice persists; the footer ===")
     rec_before = _lg_record(page)
     wait_settled(page)                  # the notice's exit has finished before the reload
-    _lg_reload_stored(page)
+    seen = _lg_reload_stored(page)
     wait_page_idle(page)
     check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"],
-          f"record before the reload={rec_before} after={_lg_record(page)} url={page.url[-40:]}")
+          f"record before the reload={rec_before} after={_lg_record(page)} url={page.url[-40:]} storage={seen}")
     _lg_scroll_to_footer(page)
     ft = page.evaluate(_LG_FOOTER)
     save_shot(page, wave, "desktop_bg_footer")
