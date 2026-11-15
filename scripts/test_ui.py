@@ -16152,6 +16152,9 @@ def _lg_record(page):
     return json.loads(page.evaluate("localStorage.getItem('sofia-consent')") or "null") or {}
 
 
+_LG_NAV = "(performance.getEntriesByType('navigation')[0] || {}).type"
+
+
 def _lg_reload_stored(page, timeout_ms=5000):
     """Reload `page` once the cookie record it just stored is in the context's shared storage.
     GitHub's Chromium (2026-11-12, run 43242761309) reloaded the app 1 s after the click and
@@ -16730,7 +16733,7 @@ def wave_lg3(browser):
         page.wait_for_selector(".bar", timeout=20000)
         s = state()
         check("lg3_withdrawal_reloads", s["ran"] == 0 and json.loads(s["rec"] or "{}").get("opt") == {"lgtest": False},
-              f"ran={s['ran']} rec={s['rec']}")
+              f"ran={s['ran']} rec={s['rec']} keys={page.evaluate('Object.keys(localStorage)')} nav={page.evaluate(_LG_NAV)}")
         page.click("[data-consent-open]")
         page.click("[data-consent-all]")
         s = state()
