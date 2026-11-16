@@ -17969,7 +17969,12 @@ def _ux_focus(browser, base, eng):
                 id: (h.querySelector('.acts .btn[data-film], .acts .btn[data-show]') || {dataset: {}}).dataset.film
                     || (h.querySelector('.acts .btn[data-show]') || {dataset: {}}).dataset.show}; }"""
     # the fallback ranking, computed here from the data (no film carries a rank in a build without TMDB)
+    # HERO_PINS override trending/screenings: a pinned film with screenings wins unconditionally.
     exp = page.evaluate("""() => { const vis = visibleFilms(); if (!vis.length) return null;
+        const pins = (typeof HERO_PINS !== 'undefined' ? HERO_PINS : [])
+            .filter(p => p.mode === 'cinema' && p.from <= NOW_DATE && NOW_DATE <= p.to);
+        const pinned = pins.map(p => vis.find(f => f.id === p.id)).filter(Boolean);
+        if (pinned.length) return {how: 'hero_pin', id: pinned[0].id};
         const ranked = vis.filter(f => (TMDBART[f.id] || {}).tr > 0);
         if (ranked.length) return {how: 'trending', id: ranked.sort((a, b) => TMDBART[a.id].tr - TMDBART[b.id].tr)[0].id};
         const sc = f => { const rows = upcomingRows((SHOWTIMES.filter(r => r[0] === f.id)).filter(r => r[2] >= TODAY && r[2] <= WEEK_END));
@@ -17979,14 +17984,14 @@ def _ux_focus(browser, base, eng):
     h = page.evaluate(hero_js)
     check(f"{tag}_cinema_bg", bool(h) and h["eyebrow"].startswith("На фокус") and "за теб" not in h["text"].lower() and exp and h["id"] == exp["id"],
           f"eyebrow={h and h['eyebrow']!r} hero={h and h['id']} expected={exp} ({exp and exp['how']})")
-    # a trending rank wins over the screenings count
-    if exp and exp.get("second"):
+    # a trending rank wins over the screenings count (skip when a HERO_PIN is active)
+    if exp and exp.get("second") and exp.get("how") != "hero_pin":
         page.evaluate("(id) => { TMDBART[id] = Object.assign({}, TMDBART[id] || {}, {tr: 3}); render(); }", exp["second"])
         page.wait_for_timeout(400)
         h2 = page.evaluate(hero_js)
         check(f"{tag}_trending_rank_first", h2 and h2["id"] == exp["second"], f"rank 3 given to {exp['second']}: hero={h2 and h2['id']}")
     else:
-        skip(f"{tag}_trending_rank_first", "no second film with screenings this week")
+        skip(f"{tag}_trending_rank_first", "no second film with screenings this week" if not (exp and exp.get("how") == "hero_pin") else "hero_pin active")
     page.wait_for_timeout(400)
     _ux_tap_sel(page, False, "[data-lang]", scroll=False)
     page.wait_for_timeout(600)
