@@ -1,29 +1,29 @@
-# Poster health, 2026-11-15
+# Poster health, 2026-11-16
 
-- Films: 156/171 (91.2 %) show their own poster.
-- Plays: 469/497 (94.4 %) show their own poster or a production photo from their own page (488 display some image).
-- Target: 95 % each. This run attached: film already has a poster 9, film nothing 1, poster fix: film nothing 3, poster fix: show key 1, poster fix: show nothing 27, show key 1.
+- Films: 147/158 (93.0 %) show their own poster.
+- Plays: 460/488 (94.3 %) show their own poster or a production photo from their own page (479 display some image).
+- Target: 95 % each. This run attached: film already has a poster 6, film nothing 2, poster fix: film nothing 2, poster fix: show nothing 27, show nothing 1.
 
 ## Plays per theatre
 
 | theatre | own image | missing |
 |---|---|---|
 | artvent | 21/21 | 0 |
-| atelie313 | 16/16 | 0 |
+| atelie313 | 15/15 | 0 |
 | citymark | 11/11 | 0 |
 | iam | 7/9 | 2 |
-| kuklen | 19/20 | 1 |
-| mladezhki | 35/44 | 9 |
+| kuklen | 17/18 | 1 |
+| mladezhki | 34/43 | 9 |
 | natfiz | 7/8 | 1 |
-| national | 68/68 | 0 |
+| national | 67/67 | 0 |
 | salzaismyah | 43/43 | 0 |
 | satira | 42/46 | 4 |
 | sfumato | 23/25 | 2 |
 | sofia-th | 16/16 | 0 |
-| tba | 33/37 | 4 |
-| th199 | 34/37 | 3 |
-| toplo | 47/49 | 2 |
-| vazrazhdane | 25/25 | 0 |
+| tba | 32/36 | 4 |
+| th199 | 33/36 | 3 |
+| toplo | 46/48 | 2 |
+| vazrazhdane | 24/24 | 0 |
 | zad-kanala | 22/22 | 0 |
 
 ## Plays without their own image
@@ -63,44 +63,39 @@
 
 ## Films without their own image
 
-### unverified: an aggregator's image, and the film does not link its page (11)
+### unverified: an aggregator's image, and the film does not link its page (9)
 - `actually-it-is-rocket-science`: tried no own page linked (no own page linked)
 - `avrora`: tried no own page linked
 - `barzo-akuratno-okonchatelno`: tried no own page linked
-- `bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: tried no own page linked
-- `dzhambo-magicheskoto-priklyuchenie`: tried no own page linked
+- `bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: tried https://www.cinegrand.bg/m/bezsmrtniat-i-krasavicata-2-eliksir-na-zivota-imdbtt12345871?ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB (no usable image on the page)
 - `hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: tried no own page linked
-- `kina-i-yuk-lisitsite-ot-dalechniya-sever`: tried no own page linked
 - `kodat-na-balgarite`: tried no own page linked
 - `kucheto-na-zlatyu`: tried no own page linked
 - `sadiyata-1884-yuliy-avgust`: tried no own page linked
 - `skoti`: tried no own page linked
 
-### no image: the generated art shows (4)
-- `40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv`: tried no own page linked (epaygo.bg is a ticket page, not the title's page)
+### no image: the generated art shows (2)
 - `dyun-chast-parva-povtorenie`: tried https://www.cinegrand.bg/m/dun-cast-prva-povtorenie-imdbtt1160419?ignoreMissing=1&cinema_slug=%D0%BF%D0%B0%D1%80%D0%BA-%D1%86%D0%B5%D0%BD%D1%82%D1%8A%D1%80-%D1%81%D0%BE%D1%84%D0%B8%D1%8F, https://www.cinegrand.bg/m/dun-cast-prva-povtorenie-imdbtt1160419?ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB (no usable image on the page)
-- `evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988`: tried https://vlaikovacinema.com/screening/%d0%b5%d0%b2%d1%80%d0%be%d0%bf%d0%b5%d0%b9%d1%81%d0%ba%d0%b8-%d0%ba%d0%b8%d0%bd%d0%be%d0%ba%d0%bb%d0%b0%d1%81%d0%b8%d0%ba%d0%b8-%d0%b2-%d0%ba%d0%b8%d0%bd%d0%be-%d0%b2%d0%bb%d0%b0%d0%b9%d0%ba%d0%be-2/ (no usable image on the page)
 - `polyusi`: tried https://domnakinoto.com/polyusi-movie7436.html?a= (no usable image on the page)
 
 ## Diagnostic and fix pass
 
 - Triggered by: shows, films under 95 %.
-- Coverage before -> after: shows 94.2 % -> 94.4 %; films 91.2 % -> 91.2 %.
-- Read 31 title(s), attached 1, retried 0; 48 request(s), 0 refused by robots.txt, 64.0 s.
+- Coverage before -> after: shows 94.3 % -> 94.3 %; films 93.0 % -> 93.0 %.
+- Read 29 title(s), attached 0, retried 0; 36 request(s), 0 refused by robots.txt, 36.8 s.
 - Network: ok.
 
 ### Missing titles by cause
 
 | cause | plays | films |
 |---|---|---|
-| own page has no usable image | 13 | 3 |
-| only an aggregator's image (the film does not link that page) | 0 | 11 |
+| own page has no usable image | 13 | 2 |
 | own page blocked (robots.txt or a bot challenge; not bypassed) | 9 | 0 |
+| only an aggregator's image (the film does not link that page) | 0 | 9 |
 | own page's images rejected by the poster policy | 3 | 0 |
-| no own page linked | 1 | 0 |
 | the linked page is not the title's (redirect, home page or another title) | 1 | 0 |
 | own page or its image could not be fetched | 1 | 0 |
-| only a ticket page linked, not the title's page | 0 | 1 |
+| no own page linked | 1 | 0 |
 
 - `show:lazaritsa`: no own page linked (the programme links no page for this title)
 - `show:az-foyerbah`: own page blocked (robots.txt or a bot challenge; not bypassed) (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image)
@@ -130,18 +125,14 @@
 - `show:bai-ganyo`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG1576240600178985808_10159064354069: 800x304, not usable as a key image)
 - `show:kotarakat-v-chizmi`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image)
 - `show:kontsert-na-pim-pam`: the linked page is not the title's (redirect, home page or another title) (the page's headings do not name the title: not used (https://satirata.bg/program))
-- `film:40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv`: only a ticket page linked, not the title's page (epaygo.bg is a ticket page, not the title's page)
 - `film:actually-it-is-rocket-science`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:avrora`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:barzo-akuratno-okonchatelno`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:dzhambo-magicheskoto-priklyuchenie`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:kina-i-yuk-lisitsite-ot-dalechniya-sever`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kodat-na-balgarite`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kucheto-na-zlatyu`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:sadiyata-1884-yuliy-avgust`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:skoti`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:dyun-chast-parva-povtorenie`: own page has no usable image (no usable image on the page)
-- `film:evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988`: own page has no usable image (no usable image on the page)
 - `film:polyusi`: own page has no usable image (no usable image on the page)

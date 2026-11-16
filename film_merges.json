@@ -334,6 +334,23 @@
     "runtime": 126
    }
   },
+  "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv": {
+   "into": "tseremoniya-po-nagrazhdavane-v-konkursa-detstvoto-e-za-smyah",
+   "rule": "prefix",
+   "reason": "'церемония по награждаване в конкурса детството е за смях не за страх' begins 'церемония по награждаване в конкурса детството е за смях не за страх вход свободен'; the same screening is listed under both",
+   "since": "2026-11-16",
+   "record": {
+    "id": "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv",
+    "bg": "40. КИНОМАНИЯ | ЦЕРЕМОНИЯ ПО НАГРАЖДАВАНЕ В КОНКУРСА \"ДЕТСТВОТО Е ЗА СМЯХ, НЕ ЗА СТРАХ\". ВХОД СВОБОДЕН",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "lumiere"
+   }
+  },
   "40-kinomaniya-vsichki-obichat-bil-evans": {
    "into": "vsichki-obichat-bil-evans",
    "rule": "same-key",

@@ -1,42 +1,41 @@
 {
  "before": {
-  "films": 91.2,
-  "shows": 94.0
+  "films": 93.0,
+  "shows": 94.3
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-15",
+ "date": "2026-11-16",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 129,
+   "TMDB poster": 121,
    "own page: key": 2,
    "own page: poster": 4,
-   "the film's programme page": 21
+   "the film's programme page": 20
   },
-  "pct": 91.2,
-  "upcoming": 171,
-  "with": 156
+  "pct": 93.0,
+  "upcoming": 158,
+  "with": 147
  },
  "fix": {
   "after": {
-   "films": 91.2,
-   "shows": 94.4
+   "films": 93.0,
+   "shows": 94.3
   },
-  "attached": 1,
-  "attempted": 31,
+  "attached": 0,
+  "attempted": 29,
   "before": {
-   "films": 91.2,
-   "shows": 94.2
+   "films": 93.0,
+   "shows": 94.3
   },
   "broken_parsers": [],
   "causes": {
    "films": {
-    "only a ticket page linked, not the title's page": 1,
-    "only an aggregator's image (the film does not link that page)": 11,
-    "own page has no usable image": 3
+    "only an aggregator's image (the film does not link that page)": 9,
+    "own page has no usable image": 2
    },
    "shows": {
     "no own page linked": 1,
@@ -49,14 +48,13 @@
   },
   "causes_before": {
    "films": {
-    "only a ticket page linked, not the title's page": 1,
-    "only an aggregator's image (the film does not link that page)": 11,
-    "own page has no usable image": 3
+    "only an aggregator's image (the film does not link that page)": 9,
+    "own page has no usable image": 2
    },
    "shows": {
     "no own page linked": 1,
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
-    "own page has no usable image": 14,
+    "own page has no usable image": 13,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 3,
     "the linked page is not the title's (redirect, home page or another title)": 1
@@ -64,32 +62,27 @@
   },
   "counts": {
    "films": {
-    "after": "156/171",
-    "before": "156/171"
+    "after": "147/158",
+    "before": "147/158"
    },
    "shows": {
-    "after": "469/497",
-    "before": "468/497"
+    "after": "460/488",
+    "before": "460/488"
    }
   },
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 48,
+  "requests": 36,
   "retried": [],
-  "seconds": 64.0,
+  "seconds": 36.8,
   "summary": {
-   "film nothing": 3,
-   "show key": 1,
+   "film nothing": 2,
    "show nothing": 27
   },
   "titles": {
    "films": {
-    "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv": [
-     "only a ticket page linked, not the title's page",
-     "epaygo.bg is a ticket page, not the title's page"
-    ],
     "actually-it-is-rocket-science": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
@@ -110,19 +103,7 @@
      "own page has no usable image",
      "no usable image on the page"
     ],
-    "dzhambo-magicheskoto-priklyuchenie": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988": [
-     "own page has no usable image",
-     "no usable image on the page"
-    ],
     "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "kina-i-yuk-lisitsite-ot-dalechniya-sever": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -269,25 +250,20 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 9,
-  "film nothing": 1,
-  "poster fix: film nothing": 3,
-  "poster fix: show key": 1,
+  "film already has a poster": 6,
+  "film nothing": 2,
+  "poster fix: film nothing": 2,
   "poster fix: show nothing": 27,
-  "show key": 1
+  "show nothing": 1
  },
  "missing": {
   "films": {
-   "40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv": "no image: the generated art shows",
    "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
    "avrora": "unverified: an aggregator's image, and the film does not link its page",
    "barzo-akuratno-okonchatelno": "unverified: an aggregator's image, and the film does not link its page",
    "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": "unverified: an aggregator's image, and the film does not link its page",
    "dyun-chast-parva-povtorenie": "no image: the generated art shows",
-   "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
-   "evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988": "no image: the generated art shows",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
-   "kina-i-yuk-lisitsite-ot-dalechniya-sever": "unverified: an aggregator's image, and the film does not link its page",
    "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
    "kucheto-na-zlatyu": "unverified: an aggregator's image, and the film does not link its page",
    "polyusi": "no image: the generated art shows",
@@ -327,34 +303,34 @@
  },
  "per_theatre": {
   "artvent": "21/21",
-  "atelie313": "16/16",
+  "atelie313": "15/15",
   "citymark": "11/11",
   "iam": "7/9",
-  "kuklen": "19/20",
-  "mladezhki": "35/44",
+  "kuklen": "17/18",
+  "mladezhki": "34/43",
   "natfiz": "7/8",
-  "national": "68/68",
+  "national": "67/67",
   "salzaismyah": "43/43",
   "satira": "42/46",
   "sfumato": "23/25",
   "sofia-th": "16/16",
-  "tba": "33/37",
-  "th199": "34/37",
-  "toplo": "47/49",
-  "vazrazhdane": "25/25",
+  "tba": "32/36",
+  "th199": "33/36",
+  "toplo": "46/48",
+  "vazrazhdane": "24/24",
   "zad-kanala": "22/22"
  },
  "shows": {
   "how": {
    "TMDB poster": 1,
-   "own page: key": 195,
+   "own page: key": 189,
    "own page: photo": 1,
-   "own page: poster": 272
+   "own page: poster": 269
   },
-  "pct": 94.4,
-  "upcoming": 497,
-  "with": 469
+  "pct": 94.3,
+  "upcoming": 488,
+  "with": 460
  },
- "shows_displayed": 488,
+ "shows_displayed": 479,
  "target": 95.0
 }
