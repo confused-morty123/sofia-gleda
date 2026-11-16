@@ -3476,9 +3476,11 @@ function body(){
   }else{
     /* ---- theatre mode ---- */
     const vis=visibleShows();
-    /* the late-day card, as on the cinema side: today is selected and no performance is
-       left on it (filters aside); the empty sections below are left out */
-    const isLateDayEmptyT=S.day===TODAY&&!vis.length&&
+    /* the late-day card, as on the cinema side: today (or the whole week, which late on its
+       last day is only today) is selected and no performance is left on it (filters aside);
+       the empty sections below are left out. With "week" alone it never showed on a Sunday
+       evening: the theatre page was an empty "Всичко в програмата 0" (2026-11-15). */
+    const isLateDayEmptyT=(S.day===TODAY||S.day==="week")&&!vis.length&&
       !upcomingPerfs(PERFORMANCES.filter(p=>p[1]===NOW_DATE)).length;
     if(isLateDayEmptyT)out.push(lateDayCard(L));
     /* Item 4: "Препоръчани" — scored over the full period (not just today).

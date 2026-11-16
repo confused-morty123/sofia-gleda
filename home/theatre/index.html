@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-fsbEhG6ZlrGnZiJI8b7Nk6UzWxbGKAVjvMKjc9UbHBI=' 'sha256-jL/moewjdTx9tlMf1sTyWitfMWgLFkPMdJ++BLmrXzw=' 'sha256-sVKQg6VoR5k8gEIhZGnRLuDTVmYmfLXX5pLKZlzt5wA=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-Jh+714dfpwLMU7HbpztaiTegGF/Sv43HWBf9AUo0TbI=' 'sha256-fsbEhG6ZlrGnZiJI8b7Nk6UzWxbGKAVjvMKjc9UbHBI=' 'sha256-jL/moewjdTx9tlMf1sTyWitfMWgLFkPMdJ++BLmrXzw=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
      and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -3670,9 +3670,11 @@ function body(){
   }else{
     /* ---- theatre mode ---- */
     const vis=visibleShows();
-    /* the late-day card, as on the cinema side: today is selected and no performance is
-       left on it (filters aside); the empty sections below are left out */
-    const isLateDayEmptyT=S.day===TODAY&&!vis.length&&
+    /* the late-day card, as on the cinema side: today (or the whole week, which late on its
+       last day is only today) is selected and no performance is left on it (filters aside);
+       the empty sections below are left out. With "week" alone it never showed on a Sunday
+       evening: the theatre page was an empty "Всичко в програмата 0" (2026-11-15). */
+    const isLateDayEmptyT=(S.day===TODAY||S.day==="week")&&!vis.length&&
       !upcomingPerfs(PERFORMANCES.filter(p=>p[1]===NOW_DATE)).length;
     if(isLateDayEmptyT)out.push(lateDayCard(L));
     /* Item 4: "Препоръчани" — scored over the full period (not just today).
