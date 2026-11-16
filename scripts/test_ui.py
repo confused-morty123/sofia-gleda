@@ -13547,11 +13547,24 @@ def _hf_geometry(browser, eng):
                 kept = bool(g0 and g2) and abs((g2["pop"][1] - g2["time"][1]) - (g0["pop"][1] - g0["time"][1])) <= 2 if g2 and g0 and g2["place"] == g0["place"] else bool(g2)
                 check("hf1_popover_follows_scroll", moved and kept,
                       f"time moved {g0['time'][1] if g0 else None}->{g2['time'][1] if g2 else None}, popover-to-time offset kept={kept} place {g0 and g0['place']}->{g2 and g2['place']}")
+                # the time leaves the viewport: down by 2400, or, when the sheet is too short for
+                # that (2026-11-16: a 2213 px sheet kept the time 20 px from the top at its end),
+                # back to the top, which takes it out below; read only once it is really out
+                vis_time = ("(k)=>[...document.querySelectorAll('#scrim [data-sspill]')].filter(e=>e.dataset.sspill===k"
+                            "&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').some(e=>{"
+                            "const r=e.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight})")
                 page.evaluate("()=>{document.getElementById('scrim').scrollTop+=2400;}")
                 page.wait_for_timeout(300)
+                if page.evaluate(vis_time, got["key"]):
+                    page.evaluate("()=>{document.getElementById('scrim').scrollTop=0;}")
+                    page.wait_for_timeout(300)
+                out_of_view = not page.evaluate(vis_time, got["key"])
                 s = page.evaluate(HF_STATE_JS)
-                check("hf1_popover_closes_when_time_leaves_view", not s["pop"] and not s["ssVar"] and s["film"] and s["depth"] == 1,
-                      f"popup={s['pop']} ssVar={s['ssVar']} film={s['film']} depth={s['depth']}")
+                if not out_of_view:
+                    skip("hf1_popover_closes_when_time_leaves_view", "the sheet cannot scroll this time out of the viewport either way")
+                else:
+                    check("hf1_popover_closes_when_time_leaves_view", not s["pop"] and not s["ssVar"] and s["film"] and s["depth"] == 1,
+                          f"popup={s['pop']} ssVar={s['ssVar']} film={s['film']} depth={s['depth']}")
                 for how in ("esc", "outside", "x"):
                     r = _hf_place_pill(page, films, 0.5, h)
                     _hf_tap(page, False, r["x"], r["y"]); page.wait_for_timeout(400)
@@ -17969,7 +17982,13 @@ def _ux_focus(browser, base, eng):
                 id: (h.querySelector('.acts .btn[data-film], .acts .btn[data-show]') || {dataset: {}}).dataset.film
                     || (h.querySelector('.acts .btn[data-show]') || {dataset: {}}).dataset.show}; }"""
     # the fallback ranking, computed here from the data (no film carries a rank in a build without TMDB)
+    # a hand-maintained HERO_PINS entry (owner, next to PRICES) leads while its dates hold and
+    # the film is showing (2026-11-16: the Hunger Games premiere pinned to 2026-11-30)
     exp = page.evaluate("""() => { const vis = visibleFilms(); if (!vis.length) return null;
+        const pins = typeof HERO_PINS !== 'undefined' ? HERO_PINS : [];
+        const pinned = vis.find(f => pins.some(p => p.mode === 'cinema' && p.id === f.id && p.from <= NOW_DATE && NOW_DATE <= p.to));
+        if (pinned) return {how: 'pinned', id: pinned.id,
+                            second: (vis.find(f => f.id !== pinned.id) || {}).id || null};
         const ranked = vis.filter(f => (TMDBART[f.id] || {}).tr > 0);
         if (ranked.length) return {how: 'trending', id: ranked.sort((a, b) => TMDBART[a.id].tr - TMDBART[b.id].tr)[0].id};
         const sc = f => { const rows = upcomingRows((SHOWTIMES.filter(r => r[0] === f.id)).filter(r => r[2] >= TODAY && r[2] <= WEEK_END));
@@ -17984,7 +18003,11 @@ def _ux_focus(browser, base, eng):
         page.evaluate("(id) => { TMDBART[id] = Object.assign({}, TMDBART[id] || {}, {tr: 3}); render(); }", exp["second"])
         page.wait_for_timeout(400)
         h2 = page.evaluate(hero_js)
-        check(f"{tag}_trending_rank_first", h2 and h2["id"] == exp["second"], f"rank 3 given to {exp['second']}: hero={h2 and h2['id']}")
+        if exp["how"] == "pinned":
+            check(f"{tag}_trending_rank_first", h2 and h2["id"] == exp["id"],
+                  f"rank 3 given to {exp['second']}: the pinned {exp['id']} must still lead; hero={h2 and h2['id']}")
+        else:
+            check(f"{tag}_trending_rank_first", h2 and h2["id"] == exp["second"], f"rank 3 given to {exp['second']}: hero={h2 and h2['id']}")
     else:
         skip(f"{tag}_trending_rank_first", "no second film with screenings this week")
     page.wait_for_timeout(400)
