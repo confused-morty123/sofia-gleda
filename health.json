@@ -27,7 +27,7 @@
  {
   "level": "warning",
   "venue": "atelie313",
-  "message": "no official programme: all 19 performances are preliminary, from theatre.art.bg"
+  "message": "no official programme: all 18 performances are preliminary, from theatre.art.bg"
  },
  {
   "level": "warn",
@@ -35,23 +35,23 @@
   "message": "OMDb: 223/303 ok, 80 missing IMDb ratings"
  },
  {
-  "level": "warning",
+  "level": "ok",
   "venue": "theatre-posters",
-  "message": "theatre posters: 487/497 upcoming shows have a poster; missing for more than 7 days: igra-na-kotki (24 days)"
+  "message": "theatre posters: 479/488 upcoming shows have a poster; recently missing: dalgiyat-pat-na-denya-kam-noshtta, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, kontsert-na-pim-pam, magichna-nosht-predi-koleda, mechka-hamletmashina, vanyo-sonya-masha-i-spayk, vsichko-za-zhenite"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.2 % -> 94.4 %, films 91.2 % -> 91.2 %; attached 1; causes: own page has no usable image 16, only an aggregator's image (the film does not link that page) 11, own page blocked (robots.txt or a bot challenge; not bypassed) 9, own page's images rejected by the poster policy 3 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.3 % -> 94.3 %, films 93.0 % -> 93.0 %; attached 0; causes: own page has no usable image 15, own page blocked (robots.txt or a bot challenge; not bypassed) 9, only an aggregator's image (the film does not link that page) 9, own page's images rejected by the poster policy 3 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 469/497 (94.4 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 488/497 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 460/488 (94.3 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, 5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo, az-foyerbah, bai-ganyo, bremenskite-muzikanti, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 479/488 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 156/171 (91.2 %); missing: 40-kinomaniya-tseremoniya-po-nagrazhdavane-v-konkursa-detstv, actually-it-is-rocket-science, avrora, barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dyun-chast-parva-povtorenie, dzhambo-magicheskoto-priklyuchenie, evropeyski-kinoklasiki-v-kino-vlaykova-proklyatie-1988, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kina-i-yuk-lisitsite-ot-dalechniya-sever, kodat-na-balgarite, kucheto-na-zlatyu — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 147/158 (93.0 %); missing: actually-it-is-rocket-science, avrora, barzo-akuratno-okonchatelno, bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota, dyun-chast-parva-povtorenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, kucheto-na-zlatyu, polyusi, sadiyata-1884-yuliy-avgust, skoti — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]
