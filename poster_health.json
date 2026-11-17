@@ -1,85 +1,88 @@
 {
  "before": {
-  "films": 93.0,
-  "shows": 94.3
+  "films": 92.9,
+  "shows": 93.9
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-16",
+ "date": "2026-11-17",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 121,
+   "TMDB poster": 118,
    "own page: key": 2,
    "own page: poster": 4,
    "the film's programme page": 20
   },
-  "pct": 93.0,
-  "upcoming": 158,
-  "with": 147
+  "pct": 92.9,
+  "upcoming": 155,
+  "with": 144
  },
  "fix": {
   "after": {
-   "films": 93.0,
-   "shows": 94.3
+   "films": 92.9,
+   "shows": 93.9
   },
   "attached": 0,
-  "attempted": 29,
+  "attempted": 30,
   "before": {
-   "films": 93.0,
-   "shows": 94.3
+   "films": 92.9,
+   "shows": 93.9
   },
   "broken_parsers": [],
   "causes": {
    "films": {
-    "only an aggregator's image (the film does not link that page)": 9,
+    "only a ticket page linked, not the title's page": 2,
+    "only an aggregator's image (the film does not link that page)": 7,
     "own page has no usable image": 2
    },
    "shows": {
     "no own page linked": 1,
-    "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
+    "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
     "own page has no usable image": 13,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 3,
+    "robots.txt unreachable (5xx or no answer): the host is not read this run": 1,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "causes_before": {
    "films": {
-    "only an aggregator's image (the film does not link that page)": 9,
+    "only a ticket page linked, not the title's page": 2,
+    "only an aggregator's image (the film does not link that page)": 7,
     "own page has no usable image": 2
    },
    "shows": {
     "no own page linked": 1,
-    "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
+    "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
     "own page has no usable image": 13,
-    "own page or its image could not be fetched": 1,
+    "own page or its image could not be fetched": 2,
     "own page's images rejected by the poster policy": 3,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "counts": {
    "films": {
-    "after": "147/158",
-    "before": "147/158"
+    "after": "144/155",
+    "before": "144/155"
    },
    "shows": {
-    "after": "460/488",
-    "before": "460/488"
+    "after": "458/488",
+    "before": "458/488"
    }
   },
-  "date": "2026-11-16",
+  "date": "2026-11-17",
   "errors": [],
   "network": "ok",
-  "refused": 0,
-  "requests": 36,
+  "refused": 1,
+  "requests": 45,
   "retried": [],
-  "seconds": 36.8,
+  "seconds": 52.5,
   "summary": {
    "film nothing": 2,
-   "show nothing": 27
+   "show nothing": 28
   },
   "titles": {
    "films": {
@@ -107,21 +110,21 @@
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
-    "kodat-na-balgarite": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
+    "koledni-agenti": [
+     "only a ticket page linked, not the title's page",
+     "embed.urboapp.com is a ticket page, not the title's page"
     ],
     "kucheto-na-zlatyu": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
+    "pastir": [
+     "only a ticket page linked, not the title's page",
+     "embed.urboapp.com is a ticket page, not the title's page"
+    ],
     "polyusi": [
      "own page has no usable image",
      "no usable image on the page"
-    ],
-    "sadiyata-1884-yuliy-avgust": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
     ],
     "skoti": [
      "only an aggregator's image (the film does not link that page)",
@@ -205,11 +208,19 @@
      "no own page linked",
      "the programme links no page for this title"
     ],
+    "luksozen-mazh-za-ezhednevna-upotreba": [
+     "robots.txt unreachable (5xx or no answer): the host is not read this run",
+     "https://www.salzaismyah.bg/site/play/632: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
+    ],
     "magichna-nosht-predi-koleda": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
      "sofiapuppet.com not read (robots.txt blocks ClaudeBot): the same production on theatre.art.bg; that page has no usable image"
     ],
     "malkata-rusalka": [
+     "own page blocked (robots.txt or a bot challenge; not bypassed)",
+     "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
+    ],
+    "maystora-i-margarita": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
      "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
     ],
@@ -250,11 +261,11 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 6,
+  "film already has a poster": 5,
   "film nothing": 2,
   "poster fix: film nothing": 2,
-  "poster fix: show nothing": 27,
-  "show nothing": 1
+  "poster fix: show nothing": 28,
+  "show nothing": 2
  },
  "missing": {
   "films": {
@@ -264,10 +275,10 @@
    "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": "unverified: an aggregator's image, and the film does not link its page",
    "dyun-chast-parva-povtorenie": "no image: the generated art shows",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
-   "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
+   "koledni-agenti": "no image: the generated art shows",
    "kucheto-na-zlatyu": "unverified: an aggregator's image, and the film does not link its page",
+   "pastir": "no image: the generated art shows",
    "polyusi": "no image: the generated art shows",
-   "sadiyata-1884-yuliy-avgust": "unverified: an aggregator's image, and the film does not link its page",
    "skoti": "unverified: an aggregator's image, and the film does not link its page"
   },
   "shows": {
@@ -290,8 +301,10 @@
    "kontsert-na-pim-pam": "no image: the generated art shows",
    "kotarakat-v-chizmi": "unverified: no record of the page this file came from",
    "lazaritsa": "unverified: no record of the page this file came from",
+   "luksozen-mazh-za-ezhednevna-upotreba": "unverified: no record of the page this file came from",
    "magichna-nosht-predi-koleda": "no image: the generated art shows",
    "malkata-rusalka": "unverified: no record of the page this file came from",
+   "maystora-i-margarita": "unverified: no record of the page this file came from",
    "mechka-hamletmashina": "no image: the generated art shows",
    "pepelyashka": "unverified: no record of the page this file came from",
    "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
@@ -304,32 +317,31 @@
  "per_theatre": {
   "artvent": "21/21",
   "atelie313": "15/15",
-  "citymark": "11/11",
+  "citymark": "10/10",
   "iam": "7/9",
   "kuklen": "17/18",
-  "mladezhki": "34/43",
+  "mladezhki": "36/46",
   "natfiz": "7/8",
   "national": "67/67",
-  "salzaismyah": "43/43",
+  "salzaismyah": "42/43",
   "satira": "42/46",
   "sfumato": "23/25",
   "sofia-th": "16/16",
   "tba": "32/36",
   "th199": "33/36",
-  "toplo": "46/48",
+  "toplo": "45/47",
   "vazrazhdane": "24/24",
-  "zad-kanala": "22/22"
+  "zad-kanala": "21/21"
  },
  "shows": {
   "how": {
-   "TMDB poster": 1,
-   "own page: key": 189,
+   "own page: key": 190,
    "own page: photo": 1,
-   "own page: poster": 269
+   "own page: poster": 267
   },
-  "pct": 94.3,
+  "pct": 93.9,
   "upcoming": 488,
-  "with": 460
+  "with": 458
  },
  "shows_displayed": 479,
  "target": 95.0

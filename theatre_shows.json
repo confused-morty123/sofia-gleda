@@ -7486,5 +7486,59 @@
   "synBg": "",
   "synEn": "",
   "source": "satira"
+ },
+ "divite-lebedi": {
+  "id": "divite-lebedi",
+  "title": "Дивите лебеди",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "maystora-i-margarita": {
+  "id": "maystora-i-margarita",
+  "title": "Майстора и Маргарита",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "luksozen-mazh-za-ezhednevna-upotreba": {
+  "id": "luksozen-mazh-za-ezhednevna-upotreba",
+  "title": "ЛУКСОЗЕН МЪЖ ЗА ЕЖЕДНЕВНА УПОТРЕБА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }

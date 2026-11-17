@@ -4707,5 +4707,27 @@
    "#5F2745"
   ],
   "source": "lumiere"
+ },
+ "koledni-agenti": {
+  "id": "koledni-agenti",
+  "bg": "КОЛЕДНИ АГЕНТИ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "vlaikova"
+ },
+ "pastir": {
+  "id": "pastir",
+  "bg": "ПАСТИР",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
  }
 }
