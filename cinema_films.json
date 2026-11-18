@@ -4717,11 +4717,95 @@
    "#2A331B",
    "#4A5F27"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 85
  },
  "pastir": {
   "id": "pastir",
   "bg": "ПАСТИР",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova",
+  "runtime": 129
+ },
+ "toni": {
+  "id": "toni",
+  "bg": "Тони",
+  "en": "",
+  "genres": [
+   "Биографичен",
+   "Комедия",
+   "Драма"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 106,
+  "year": 2026
+ },
+ "prestori-se-na-umryal": {
+  "id": "prestori-se-na-umryal",
+  "bg": "Престори се на умрял",
+  "en": "",
+  "genres": [
+   "Криминален",
+   "Трилър"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "arena-mega",
+  "runtime": 96,
+  "year": 2026,
+  "originalTitle": "JUST PLAY DEAD"
+ },
+ "fantomat-ot-operata": {
+  "id": "fantomat-ot-operata",
+  "bg": "Фантомът от Операта",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "arena-mega"
+ },
+ "spetsialno-mozhesh-da-vidish-vsichko": {
+  "id": "spetsialno-mozhesh-da-vidish-vsichko",
+  "bg": "Специално: Можеш да видиш всичко",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "cc-paradise",
+  "runtime": 174,
+  "year": 2026
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Червената пустиня (1964)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Пчеларят (1986)",
   "en": "",
   "genres": [],
   "g": [

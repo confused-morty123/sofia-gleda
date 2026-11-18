@@ -7540,5 +7540,149 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "da-zhivee-balgariya-6-to-izdanie": {
+  "id": "da-zhivee-balgariya-6-to-izdanie",
+  "title": "Да живее България | 6-то издание",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "kake-live-friends-the-be-positives": {
+  "id": "kake-live-friends-the-be-positives",
+  "title": "КАКЕ? LIVE! & FRIENDS + THE BE POSITIVES",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "mish-mash-improvizator-na-godinata-blagotvoritelno-shou": {
+  "id": "mish-mash-improvizator-na-godinata-blagotvoritelno-shou",
+  "title": "Миш-Маш: Импровизатор на Годината | Благотворително шоу",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "otgore-hahaha-impro-teatar": {
+  "id": "otgore-hahaha-impro-teatar",
+  "title": "Отгоре - ХаХаХа ИмПро театър",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "prichini-da-badesh-shtastliv-ruse": {
+  "id": "prichini-da-badesh-shtastliv-ruse",
+  "title": "Причини да бъдеш щастлив Русе",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "prichini-da-badesh-shtastliv-sofiya": {
+  "id": "prichini-da-badesh-shtastliv-sofiya",
+  "title": "Причини да бъдеш щастлив София",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "lyubovartezh": {
+  "id": "lyubovartezh",
+  "title": "ЛЮБОВЪРТЕЖ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "mazhe-pod-chehal": {
+  "id": "mazhe-pod-chehal",
+  "title": "МЪЖЕ ПОД ЧЕХЪЛ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
