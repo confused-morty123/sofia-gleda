@@ -1783,7 +1783,7 @@
  },
  "lazaritsa": {
   "id": "lazaritsa",
-  "title": "ЛАЗАРИЦА",
+  "title": "Лазарица",
   "titleEn": "",
   "theatre": "tba",
   "author": "",
@@ -7679,6 +7679,114 @@
   "g": [
    "#332A1B",
    "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "hrabriyat-oloven-voynik-2": {
+  "id": "hrabriyat-oloven-voynik-2",
+  "title": "Храбрият оловен войник",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
+ },
+ "melba-sreshti": {
+  "id": "melba-sreshti",
+  "title": "МЕЛБА СРЕЩИ",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "palavoto-nosle-i-valshebnata-yabalka": {
+  "id": "palavoto-nosle-i-valshebnata-yabalka",
+  "title": "Палавото Носле и Вълшебната ябълка",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "palavoto-nosle-i-devata-na-ezeroto": {
+  "id": "palavoto-nosle-i-devata-na-ezeroto",
+  "title": "Палавото носле и девата на езерото",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "10-godini-chernoto-pile": {
+  "id": "10-godini-chernoto-pile",
+  "title": "10 ГОДИНИ ЧЕРНОТО ПИЛЕ ''",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "kradtsi-v-budoara": {
+  "id": "kradtsi-v-budoara",
+  "title": "КРАДЦИ В БУДОАРА",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
   ],
   "duration": null,
   "synBg": "",

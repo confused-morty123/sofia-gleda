@@ -56,6 +56,30 @@
    "path": "posters/film-40-kinomaniya-obetovanata-zemya.jpg",
    "w": 341
   },
+  "art-rezidentsiya-posoka-silna": {
+   "checked": "2026-11-19",
+   "h": 1330,
+   "how": "the theatre's poster slot",
+   "img": "http://bnf.bg/uploads/e924150d.jpg",
+   "kind": "poster",
+   "md5": "b598d11b27e240f1195a993fb7e47149",
+   "page": "http://bnf.bg/bg/odeon/movies/6107/",
+   "path": "posters/film-art-rezidentsiya-posoka-silna.jpg",
+   "src_md5": "678941822be46281e6c75be5a8747cc9",
+   "w": 940
+  },
+  "best-of-annecy-2026": {
+   "checked": "2026-11-19",
+   "h": 500,
+   "how": "og:image",
+   "img": "https://softwareforcinema.com/f/movies/m/7/0432ecf26789469c6f53f5c4ba9b29dd.jpeg",
+   "kind": "poster",
+   "md5": "88d535498304df9b42cfe73353be4603",
+   "page": "https://domnakinoto.com/best-of-annecy-2026-movie7520.html?a=",
+   "path": "posters/film-best-of-annecy-2026.jpg",
+   "src_md5": "eb940c403ea0bf2b8c2286a6efa42a1f",
+   "w": 333
+  },
   "dyun-chast-parva": {
    "checked": "2026-11-06",
    "h": 500,
@@ -67,6 +91,18 @@
    "path": "posters/film-dyun-chast-parva.jpg",
    "src_md5": "9dd9f0b460a22e0900503ed15379e378",
    "w": 346
+  },
+  "istoriya-na-dokumentalniya-film-80-te": {
+   "checked": "2026-11-19",
+   "h": 399,
+   "how": "the theatre's poster slot",
+   "img": "http://bnf.bg/uploads/161947a1.jpg",
+   "kind": "key",
+   "md5": "74676d894fe7f4a34909ec46e336f754",
+   "page": "http://bnf.bg/bg/odeon/movies/6085/",
+   "path": "posters/film-istoriya-na-dokumentalniya-film-80-te.jpg",
+   "src_md5": "ccef1fc71ce7e3da79190f8dafcfb039",
+   "w": 710
   },
   "it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete": {
    "checked": "2026-11-04",
@@ -291,7 +327,7 @@
    ]
   },
   "film:actually-it-is-rocket-science": {
-   "last": "2026-11-16",
+   "last": "2026-11-19",
    "tried": [],
    "why": [
     "no own page linked"
@@ -307,7 +343,7 @@
    ]
   },
   "film:dyun-chast-parva-povtorenie": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://www.cinegrand.bg/m/dun-cast-prva-povtorenie-imdbtt1160419?ignoreMissing=1&cinema_slug=%D0%BF%D0%B0%D1%80%D0%BA-%D1%86%D0%B5%D0%BD%D1%82%D1%8A%D1%80-%D1%81%D0%BE%D1%84%D0%B8%D1%8F",
     "https://www.cinegrand.bg/m/dun-cast-prva-povtorenie-imdbtt1160419?ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB"
@@ -317,7 +353,7 @@
    ]
   },
   "film:evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%b5%d0%b2%d1%80%d0%be%d0%bf%d0%b5%d0%b9%d1%81%d0%ba%d0%b8-%d0%ba%d0%b8%d0%bd%d0%be%d0%ba%d0%bb%d0%b0%d1%81%d0%b8%d0%ba%d0%b8-%d0%b2-%d0%ba%d0%b8%d0%bd%d0%be-%d0%b2%d0%bb%d0%b0%d0%b9%d0%ba%d0%be-5/"
    ],
@@ -335,7 +371,7 @@
    ]
   },
   "film:evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%b5%d0%b2%d1%80%d0%be%d0%bf%d0%b5%d0%b9%d1%81%d0%ba%d0%b8-%d0%ba%d0%b8%d0%bd%d0%be%d0%ba%d0%bb%d0%b0%d1%81%d0%b8%d0%ba%d0%b8-%d0%b2-%d0%ba%d0%b8%d0%bd%d0%be-%d0%b2%d0%bb%d0%b0%d0%b9%d0%ba%d0%be-4/"
    ],
@@ -357,6 +393,22 @@
    "tried": [],
    "why": [
     "epaygo.bg is a ticket page, not the title's page"
+   ]
+  },
+  "film:gradat-na-zhivite": {
+   "last": "2026-11-19",
+   "tried": [
+    "http://bnf.bg/bg/odeon/movies/6105/"
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
+  "film:improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e-": {
+   "last": "2026-11-19",
+   "tried": [],
+   "why": [
+    "embed.urboapp.com is a ticket page, not the title's page"
    ]
   },
   "film:kasometrazhen-konkurs": {
@@ -388,7 +440,7 @@
    ]
   },
   "film:polyusi": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://domnakinoto.com/polyusi-movie7436.html?a="
    ],
@@ -400,6 +452,15 @@
    "last": "2026-11-11",
    "tried": [
     "https://vlaikovacinema.com/screening/%d0%bf%d1%80%d0%be%d0%b4%d0%b0%d0%b2%d0%b0%d1%87-%d0%bd%d0%b0-%d0%bd%d0%b0%d0%b4%d0%b5%d0%b6%d0%b4%d0%b0/"
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
+  "film:schupeni-obuvki": {
+   "last": "2026-11-19",
+   "tried": [
+    "http://bnf.bg/bg/odeon/movies/6106/"
    ],
    "why": [
     "no usable image on the page"
@@ -438,7 +499,7 @@
    ]
   },
   "show:100-godini-zhiva-svetlina-nch-petar-beron-1926": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://www.tba.art.bg/100-години-жива-светлина-нч-петър-берон-1926___8105"
    ],
@@ -447,7 +508,7 @@
    ]
   },
   "show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden"
    ],
@@ -456,7 +517,7 @@
    ]
   },
   "show:az-foyerbah": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_5097_4_20"
    ],
@@ -465,7 +526,7 @@
    ]
   },
   "show:bai-ganyo": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_5509_4_20"
    ],
@@ -475,7 +536,7 @@
    ]
   },
   "show:bremenskite-muzikanti": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_4248_4_20"
    ],
@@ -484,7 +545,7 @@
    ]
   },
   "show:buratino-2": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_7714_4_20"
    ],
@@ -502,7 +563,7 @@
    ]
   },
   "show:dalgiyat-pat-na-denya-kam-noshtta": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20"
    ],
@@ -511,7 +572,7 @@
    ]
   },
   "show:dekameron-lyubov-i-smart-po-bokacho": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/"
    ],
@@ -520,7 +581,7 @@
    ]
   },
   "show:dnevnikat-na-edin-lud-2": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097"
    ],
@@ -528,8 +589,17 @@
     "no usable image on the page"
    ]
   },
+  "show:dokato-chakame-godo": {
+   "last": "2026-11-19",
+   "tried": [
+    "https://iamstudio.bg/produkt/dokato-chakame-godo/"
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
   "show:dokato-chakame-godo-dobrich": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://iamstudio.bg/produkt/dokato-chakame-godo-dobrich/"
    ],
@@ -538,7 +608,7 @@
    ]
   },
   "show:dokato-chakame-godo-smolyan": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://iamstudio.bg/produkt/dokato-chakame-godo-smolyan/"
    ],
@@ -547,7 +617,7 @@
    ]
   },
   "show:dokato-smartta": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://satirata.bg/show/dokato-smurtta"
    ],
@@ -556,7 +626,7 @@
    ]
   },
   "show:ekaterina-karavelova-vik-ot-istoriyata": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://www.tba.art.bg/екатерина-каравелова-вик-от-историята___8076"
    ],
@@ -565,7 +635,7 @@
    ]
   },
   "show:gnyav-po-stivan-king": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://www.tba.art.bg/гняв-по-стивън-кинг___8075"
    ],
@@ -574,21 +644,12 @@
    ]
   },
   "show:insert-coin-player-one": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://toplocentrala.bg/program/performance/insert-coin-player-one"
    ],
    "why": [
     "no usable image on the page"
-   ]
-  },
-  "show:kak-se-tarsi-nov-saprug": {
-   "last": "2026-11-18",
-   "tried": [
-    "https://www.salzaismyah.bg/site/play/535"
-   ],
-   "why": [
-    "page not read: https://www.salzaismyah.bg/site/play/535"
    ]
   },
   "show:karnaval": {
@@ -599,7 +660,7 @@
    ]
   },
   "show:kiki-i-bozo": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/кики-и-бозо_7339_8_20"
    ],
@@ -608,7 +669,7 @@
    ]
   },
   "show:kontsert-na-pim-pam": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://satirata.bg/program"
    ],
@@ -617,7 +678,7 @@
    ]
   },
   "show:kotarakat-v-chizmi": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/котаракът-в-чизми_640_8_20"
    ],
@@ -625,33 +686,26 @@
     "https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image"
    ]
   },
+  "show:kradtsi-v-budoara": {
+   "last": "2026-11-19",
+   "tried": [
+    "https://www.salzaismyah.bg/site/play/721"
+   ],
+   "why": [
+    "no usable image on the page"
+   ]
+  },
   "show:lazaritsa": {
-   "last": "2026-11-16",
-   "tried": [],
-   "why": [
-    "no own page linked"
-   ]
-  },
-  "show:luksozen-mazh-za-ezhednevna-upotreba": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
-    "https://www.salzaismyah.bg/site/play/632"
+    "https://www.tba.art.bg/лазарица-гостува-одт-димитровград___8108"
    ],
    "why": [
-    "page not read: https://www.salzaismyah.bg/site/play/632"
-   ]
-  },
-  "show:lyubovartezh": {
-   "last": "2026-11-18",
-   "tried": [
-    "https://www.salzaismyah.bg/site/play/725"
-   ],
-   "why": [
-    "page not read: https://www.salzaismyah.bg/site/play/725"
+    "no usable image on the page"
    ]
   },
   "show:magichna-nosht-predi-koleda": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_8103_10_20"
    ],
@@ -669,7 +723,7 @@
    ]
   },
   "show:malkata-rusalka": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_7020_4_20"
    ],
@@ -685,7 +739,7 @@
    ]
   },
   "show:maystora-i-margarita": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_6386_4_20"
    ],
@@ -693,17 +747,8 @@
     "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg"
    ]
   },
-  "show:mazhe-pod-chehal": {
-   "last": "2026-11-18",
-   "tried": [
-    "https://www.salzaismyah.bg/site/play/167"
-   ],
-   "why": [
-    "page not read: https://www.salzaismyah.bg/site/play/167"
-   ]
-  },
   "show:mechka-hamletmashina": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "http://sfumato.info/мечка-хамлетмашина___8099"
    ],
@@ -721,7 +766,7 @@
    ]
   },
   "show:pepelyashka": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_6765_4_20"
    ],
@@ -730,7 +775,7 @@
    ]
   },
   "show:razdelyam-dvoyki-po-domovete": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_4099_4_20"
    ],
@@ -739,7 +784,7 @@
    ]
   },
   "show:sablechi-se-za-vecherya": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_5963_4_20"
    ],
@@ -748,7 +793,7 @@
    ]
   },
   "show:spetsialni-povodi": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://theatre.art.bg/x_4673_4_20"
    ],
@@ -764,7 +809,7 @@
    ]
   },
   "show:vanyo-sonya-masha-i-spayk": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://satirata.bg/show/vanio-sonia-masha-i-spaik"
    ],
@@ -782,7 +827,7 @@
    ]
   },
   "show:vsichko-za-zhenite": {
-   "last": "2026-11-18",
+   "last": "2026-11-19",
    "tried": [
     "https://satirata.bg/show/vsichko-za-zhenite"
    ],
@@ -809,14 +854,26 @@
   "https://iamstudio.bg/wp-content/uploads/2024/02/screenshot_20261105_112127_drive.jpg": {
    "https://iamstudio.bg/produkt/tri-versii-na-jivota/": "три версии на живота"
   },
+  "https://iamstudio.bg/wp-content/uploads/2024/05/fb_img_1714647345421.jpg": {
+   "https://iamstudio.bg/produkt/az_maqkovski/": "аз маяковски"
+  },
+  "https://iamstudio.bg/wp-content/uploads/2024/12/screenshot_20241219_094634_microsoft-365-office.jpg": {
+   "https://iamstudio.bg/produkt/dobroto_tqlo-2/": "доброто тяло"
+  },
   "https://iamstudio.bg/wp-content/uploads/2026/01/dsc08816-scaled.jpg": {
    "https://iamstudio.bg/produkt/asansiorat/": "асансьорът"
   },
   "https://iamstudio.bg/wp-content/uploads/2026/03/613580755_1381819756969937_355747353820956811_n.jpg": {
    "https://iamstudio.bg/produkt/prichini-da-badesh-shtastliv-sofiya/": "причини да бъдеш щастлив софия"
   },
+  "https://iamstudio.bg/wp-content/uploads/2026/05/693304556_1479919403826638_3921218033277410354_n.jpg": {
+   "https://iamstudio.bg/produkt/palavoto_nosle/": "палавото носле и девата на езерото"
+  },
   "https://iamstudio.bg/wp-content/uploads/2026/10/poster_1794320345_6af327d968827.jpg": {
    "https://iamstudio.bg/produkt/prichini-da-badesh-shtastliv-ruse/": "причини да бъдеш щастлив русе"
+  },
+  "https://iamstudio.bg/wp-content/uploads/2026/11/425853be-1e9c-4143-8b3e-6f8cfb585028.jpeg": {
+   "https://iamstudio.bg/produkt/palavoto-nosle-i-valshebnata-yabalka/": "палавото носле и вълшебната ябълка"
   },
   "https://softwareforcinema.com/f/movies/m/2/4494ff31b6b1eb175db0121c79cc52f1.png": {
    "https://domnakinoto.com/menar-uikend-prorokat-movie2614.html?a=": "менар уикенд пророкът"
@@ -826,6 +883,9 @@
   },
   "https://softwareforcinema.com/f/movies/m/5/c11b19d56b99dcf2d53245d23c2f3ddd.jpeg": {
    "https://domnakinoto.com/menar-uikend-mevlyana-opiyaneni-ot-lyubov-movie5870.html?a=": "менар уикенд мевляна опиянени от любов"
+  },
+  "https://softwareforcinema.com/f/movies/m/7/0432ecf26789469c6f53f5c4ba9b29dd.jpeg": {
+   "https://domnakinoto.com/best-of-annecy-2026-movie7520.html?a=": "best of annecy 2026"
   },
   "https://softwareforcinema.com/f/movies/m/7/1ea0152c88f6e9cd694f8425a4724020.png": {
    "https://domnakinoto.com/v-sluzhba-na-horata-movie7494.html?a=": "в служба на хората"
@@ -850,6 +910,10 @@
    "https://satirata.bg/program": "концерт на пим пам",
    "https://satirata.bg/show/100-godini-georgi-parcalev": "100 години георги парцалев",
    "https://satirata.bg/show/ah-tezi-prividenia": "ах тези привидения",
+   "https://satirata.bg/show/bezopasni": "безопасни връзки",
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня",
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна",
+   "https://satirata.bg/show/chovekoiadkata": "човекоядката",
    "https://satirata.bg/show/dokato-smurtta": "докато смъртта",
    "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе",
    "https://satirata.bg/show/vanio-sonia-masha-i-spaik": "ваньо соня маша и спайк",
@@ -920,10 +984,194 @@
    "https://satirata.bg/program": "концерт на пим пам",
    "https://satirata.bg/show/100-godini-georgi-parcalev": "100 години георги парцалев",
    "https://satirata.bg/show/ah-tezi-prividenia": "ах тези привидения",
+   "https://satirata.bg/show/bezopasni": "безопасни връзки",
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня",
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна",
+   "https://satirata.bg/show/chovekoiadkata": "човекоядката",
    "https://satirata.bg/show/dokato-smurtta": "докато смъртта",
    "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе",
    "https://satirata.bg/show/vanio-sonia-masha-i-spaik": "ваньо соня маша и спайк",
    "https://satirata.bg/show/vsichko-za-zhenite": "всичко за жените"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/771/image/PLAKATI 686-986 mm _BUSHON ZA SMQNA_2.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/774/image/468879235_899563825639078_9043900955586367799_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/775/image/468915371_899564022305725_8904581520209058952_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/776/image/468970560_899564202305707_8023748653177068256_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/777/image/468955840_899564055639055_5401528876835564613_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/778/image/468976481_899563735639087_2978450844862463384_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/779/image/469039368_899564205639040_7612832578730071696_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/780/image/469069198_899563832305744_3028059539244767785_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/781/image/469122877_899563645639096_3087180310293976791_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/782/image/469096134_899563662305761_5493983949679034199_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/783/image/469069792_899563475639113_8822081557294403449_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/006/784/image/469145741_899564078972386_8100271649699896176_n.jpg": {
+   "https://satirata.bg/show/bushon-za-smiana": "бушон за смяна"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/437/image/PLAKATI 686-986 mm _BEZOPASNI_VRAZKI_FINAL.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/438/image/574373182_1145796827682442_9149941374770006149_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/439/image/574564229_1145796361015822_9003959480264003824_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/440/image/574926020_1145796811015777_1293554491669649737_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/441/image/574903382_1145796767682448_5288330558963015373_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/442/image/575070631_1145796537682471_3470095443137285374_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/447/image/575190695_1145796451015813_2608192815665510995_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/448/image/576379105_1145796534349138_5877967904972479321_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/449/image/577812837_1145796817682443_5025902305945167518_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/450/image/575102421_1145796437682481_8026175118187167533_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/451/image/575102423_1145796991015759_288286038326529047_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/455/image/575187048_1145796737682451_2713518882720316675_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/456/image/576402869_1145796331015825_7036911976512298524_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/457/image/576995434_1145796311015827_7538512224789277922_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/458/image/576996418_1145796951015763_7969200309339235195_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/459/image/577013570_1145796381015820_5128977142431280831_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/460/image/577015925_1145797037682421_331182256797206912_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/461/image/577414067_1145796814349110_7072971765795423775_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/462/image/577467347_1145797031015755_9092358833105296238_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/463/image/577652029_1145796324349159_589975032861170787_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/466/image/577615581_1145796444349147_692095429414209930_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/467/image/577887431_1145796547682470_4814028585235753665_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/468/image/575109098_1145796281015830_887173030274702613_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/469/image/575086426_1145796384349153_7554823954956032623_n.jpg": {
+   "https://satirata.bg/show/bezopasni": "безопасни връзки"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/470/image/PLAKATI 486-686 mm _BRADATATA_GRAFINIA_V2.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/472/image/578539558_1150104257251699_6791743171614353308_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/473/image/578197226_1150103800585078_2618893172734141225_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/474/image/577955143_1150103913918400_6299183868581505894_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/475/image/578197226_1150104503918341_3747285597982661953_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/477/image/577690365_1150104177251707_1323376782193282468_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/478/image/578620972_1150103963918395_5658912071761554499_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/480/image/578848197_1150103713918420_8888179173611503906_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/481/image/578992128_1150103697251755_8287891999772403527_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/482/image/579002816_1150104487251676_8994262855669773091_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/483/image/579349906_1150103867251738_6063458253363709075_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/484/image/579004053_1150104233918368_6962226340694117452_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/485/image/579087566_1150104040585054_7158372858199318430_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/486/image/579353752_1150103877251737_1766957329831973287_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/487/image/580077736_1150103880585070_5611378333542978925_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/488/image/580509408_1150103777251747_3925108066544553633_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/489/image/580694802_1150104087251716_1840132395367544180_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/490/image/579443991_1150104053918386_7846264312286089159_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/491/image/579619868_1150103920585066_4222136326030327290_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/492/image/580113003_1150104180585040_4726364236515268569_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/493/image/579593386_1150103797251745_5274630431633009186_n (1).jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/494/image/579932094_1150104127251712_8371732971748812740_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/495/image/578076351_1150103980585060_1504709596211157767_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
+  },
+  "https://storage.googleapis.com/is-satira/images/000/007/496/image/580701317_1150104230585035_5273732154228696712_n.jpg": {
+   "https://satirata.bg/show/bradata-grafinia": "брадатата графиня"
   },
   "https://storage.googleapis.com/is-satira/images/000/007/560/image/PLAKATI 486-686 mm _DA OSTANEM SAMO PRIATELI-.jpg": {
    "https://satirata.bg/profile/da-ostanem-priateli": "да останем само приятели 16+"
@@ -1029,6 +1277,9 @@
   "https://storage.googleapis.com/is-satira/images/000/007/872/image/728745162_1004038785327100_3777563235676554681_n.jpg": {
    "https://satirata.bg/show/100-godini-georgi-parcalev": "100 години георги парцалев"
   },
+  "https://storage.googleapis.com/is-satira/images/000/008/040/image/888450682_10236292483315775_780042095939881718_n.jpg": {
+   "https://satirata.bg/show/chovekoiadkata": "човекоядката"
+  },
   "https://storage.googleapis.com/is-satira/images/000/008/041/image/Lazaritsa_poster.jpg": {
    "https://satirata.bg/show/lazaritza-gost": "лазарица гост дт сава огнянов русе"
   },
@@ -1056,11 +1307,24 @@
   "https://theatre.peakview.bg/theatre/photos/BIG13305376402Munchauzen5.jpg": {
    "https://theatre.art.bg/барон-мюнхаузен_177_22_20": "барон мюнхаузен"
   },
+  "https://theatre.peakview.bg/theatre/photos/BIG13685338951rep_pics_pic_1324434261.jpg": {
+   "https://theatre.art.bg/x_447_10_20": "боризмейко"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG144225998514.jpg": {
+   "https://theatre.art.bg/x_2292_10_20": "бебешка пиеса"
+  },
   "https://theatre.peakview.bg/theatre/photos/BIG14437749981rep_pics_pic_1323918002.jpg": {
    "https://theatre.art.bg/x_438_10_20": "огнивото"
   },
   "https://theatre.peakview.bg/theatre/photos/BIG14866344461003.jpg": {
    "https://theatre.art.bg/x_3853_10_20": "авеню q"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG15504411711Red_Hood_Damianova_12_hd.jpg": {
+   "https://theatre.art.bg/червената-шапчица_3262_22_20": "червената шапчица",
+   "https://theatre.art.bg/червената-шапчица_3262_8_20": "червената шапчица"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG15750297831DSC_1486.jpg": {
+   "https://theatre.art.bg/x_5541_10_20": "бисквитко спасява коледа"
   },
   "https://theatre.peakview.bg/theatre/photos/BIG1576240600178985808_10159064354069307_1538155774428053504_o.jpg": {
    "https://theatre.art.bg/x_5509_4_20": "bai ganyo"
@@ -1071,8 +1335,17 @@
   "https://theatre.peakview.bg/theatre/photos/BIG16756130961321641461_1368890856982796_603446972320745381_n.jpg": {
    "https://theatre.art.bg/x_6893_4_20": "арт"
   },
+  "https://theatre.peakview.bg/theatre/photos/BIG16999993771DSC_4112 (2).jpg": {
+   "https://theatre.art.bg/блажени-са-блажените_7189_8_20": "блажени са блажените"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG17048933461415983940_792897302877521_385052829462777973_n.jpg": {
+   "https://theatre.art.bg/x_7329_4_20": "червената шапчица"
+  },
   "https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg": {
    "https://theatre.art.bg/кики-и-бозо_7339_8_20": "кики и бозо"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG17429994201Divite_lebedi_Damianova_51_web.jpg": {
+   "https://theatre.art.bg/x_7745_4_20": "дивите лебеди"
   },
   "https://theatre.peakview.bg/theatre/photos/BIG17458420621Instagram_MaxMoriz.jpg": {
    "https://theatre.art.bg/макс-и-мориц_709_11_20": "макс и мориц"
@@ -1082,6 +1355,9 @@
   },
   "https://theatre.peakview.bg/theatre/photos/BIG17726295391MIL_3367-min.JPG": {
    "https://theatre.art.bg/x_7951_10_20": "алиса в страната на чудесата"
+  },
+  "https://theatre.peakview.bg/theatre/photos/BIG17754762911662814894_1429623932538185_1955586284068719430_n.jpg": {
+   "https://theatre.art.bg/x_7946_4_20": "чайка"
   },
   "https://theatre.peakview.bg/theatre/photos/BIG178238765510-02-05-0a8d2df25140589aacd2bcadc319d536e66049e842e1217cd7d4c49a960cc393_598bead5f70e3d30.jpg": {
    "https://theatre.art.bg/даскал_7938_173_20": "даскал"
@@ -1107,8 +1383,17 @@
   "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_350/Kotarakut_1024x1024.jpg?f=67417": {
    "https://theatre199.org/bg/plays/p/350-kotarakat-s-chizmi-theatre199": "котаракът с чизми"
   },
+  "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_401/Buratino_Damianova_2.jpg?f=40851": {
+   "https://theatre199.org/bg/plays/p/401-buratino": "буратино"
+  },
   "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_403/Baron_M_1024x1024.jpg?f=72534": {
    "https://theatre199.org/bg/plays/p/403-baron-myunhauzen": "барон мюнхаузен"
+  },
+  "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_405/chest_1024x1024.jpg?f=69946": {
+   "https://theatre199.org/bg/plays/p/405-chest": "чест"
+  },
+  "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_435/DSC04799.JPG?f=68753": {
+   "https://theatre199.org/bg/plays/p/435-bokluk": "боклук"
   },
   "https://theatrevazrajdane.bg/wp-content/uploads/2024/01/ah-tezi-roditeli-web-2.jpg": {
    "https://theatrevazrajdane.bg/portfolio/%d0%b0%d1%85-%d1%82%d0%b5%d0%b7%d0%b8-%d1%80%d0%be%d0%b4%d0%b8%d1%82%d0%b5%d0%bb%d0%b8/": "ах тези родители"
@@ -1118,6 +1403,15 @@
   },
   "https://theatrevazrajdane.bg/wp-content/uploads/2024/01/barkotii-po-koleda-web.jpg": {
    "https://theatrevazrajdane.bg/portfolio/%d0%b1%d1%8a%d1%80%d0%ba%d0%be%d1%82%d0%b8%d0%b8-%d0%bf%d0%be-%d0%ba%d0%be%d0%bb%d0%b5%d0%b4%d0%b0/": "бъркотии по коледа"
+  },
+  "https://theatrevazrajdane.bg/wp-content/uploads/2025/02/tv-bremenskite-muzikanti-web-1.png": {
+   "https://theatrevazrajdane.bg/portfolio/%d0%b1%d1%80%d0%b5%d0%bc%d0%b5%d0%bd%d1%81%d0%ba%d0%b8%d1%82%d0%b5-%d0%bc%d1%83%d0%b7%d0%b8%d0%ba%d0%b0%d0%bd%d1%82%d0%b8/": "бременските музиканти"
+  },
+  "https://theatrevazrajdane.bg/wp-content/uploads/2026/05/chestna-musketarska-web-1.png": {
+   "https://theatrevazrajdane.bg/portfolio/%d1%87%d0%b5%d1%81%d1%82%d0%bd%d0%b0-%d0%bc%d1%83%d1%81%d0%ba%d0%b5%d1%82%d0%b0%d1%80%d1%81%d0%ba%d0%b0/": "честна мускетарска"
+  },
+  "https://theatrevazrajdane.bg/wp-content/uploads/2026/05/tv-premiera-banner-web-3-scaled.jpg": {
+   "https://theatrevazrajdane.bg/portfolio/%d1%85%d1%80%d0%b0%d0%b1%d1%80%d0%b8%d1%8f%d1%82-%d0%be%d0%bb%d0%be%d0%b2%d0%b5%d0%bd-%d0%b2%d0%be%d0%b9%d0%bd%d0%b8%d0%ba/": "храбрият оловен войник"
   },
   "https://toplocentrala.bg/attachments/Event/1004/main/Horizontal_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/insert-coin-player-one": "insert coin player one"
@@ -1143,11 +1437,20 @@
   "https://toplocentrala.bg/attachments/Event/1098/main/internet_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/taken-from-the-web-or-a-user-s-manual-on-dance": "5 години топлоцентрала взето от интернет или кратко ръководство за употребата на танца i вход свободен"
   },
+  "https://toplocentrala.bg/attachments/Event/1151/main/5sola-landscape_thumb-detail.jpeg": {
+   "https://toplocentrala.bg/program/performance/5sola": "5сола"
+  },
   "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_2_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/az-se-kazvah": "аз се казвах"
   },
   "https://toplocentrala.bg/attachments/Event/1182/main/az-se-kazvah-landscape_thumb-detail.jpg": {
    "https://toplocentrala.bg/program/performance/az-se-kazvah": "аз се казвах"
+  },
+  "https://toplocentrala.bg/attachments/Event/1206/main/Chaika-FB-cover-01_thumb-detail.png": {
+   "https://toplocentrala.bg/program/performance/chayka-sled-samoubiystvoto": "чайка след самоубийството"
+  },
+  "https://toplocentrala.bg/attachments/Event/1210/main/Brecht-website_thumb-detail.jpg": {
+   "https://toplocentrala.bg/program/performance/choveshka-greshka": "човешка грешка"
   },
   "https://toplocentrala.bg/attachments/Event/1212/main/Daniel-Avery-1920x710-FB-event-cover_thumb-detail.png": {
    "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-daniel-avery-dj-set": "5 години топлоцентрала daniel avery dj set"
@@ -1209,8 +1512,14 @@
   "https://toplocentrala.bg/attachments/Event/1240/main/KAKE-Live-and-Friends-The-Be-Positives_thumb-detail.png": {
    "https://toplocentrala.bg/program/performance/kake-live-friends-the-be-positives": "каке live & friends + the be positives"
   },
+  "https://toplocentrala.bg/attachments/Event/1241/main/melba-sreshti-website_thumb-detail.png": {
+   "https://toplocentrala.bg/program/performance/melba-sreshti-2": "мелба срещи"
+  },
   "https://toplocentrala.bg/attachments/Event/668/main/AjvarIliLjutenkaEventCover-02_2_thumb-detail.png": {
    "https://toplocentrala.bg/program/performance/aivar-or-lyutenitsa": "айвар или лютеница"
+  },
+  "https://toplocentrala.bg/attachments/Event/706/main/StoryCatchers-CHERVEN-FLAG-Cover_thumb-detail.png": {
+   "https://toplocentrala.bg/program/performance/stsenariyat-si-ti": "червен флаг интерактивен театър на ръба на психологията"
   },
   "https://toplocentrala.bg/attachments/Event/764/main/novi-zui-14_thumb-detail.JPG": {
    "https://toplocentrala.bg/program/performance/predstavlenie-i-nakazanie": "представление и наказание отменя се на 11 11 2026"
@@ -1257,14 +1566,47 @@
   "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/17/a3124be1238b7dd5313be5c6ef2470f7eccce3da.jpeg": {
    "https://www.kinoarena.com/bg/movie/avrora": "аврора"
   },
+  "https://www.salzaismyah.bg/uploads/events_image/52f28d45f4fbe6860fd45af9436c1353.jpg": {
+   "https://www.salzaismyah.bg/site/play/227": "10 години черното пиле"
+  },
   "https://www.salzaismyah.bg/uploads/events_image/5bbc5cf7b60d60bd4da0280c07a46321.jpg": {
    "https://www.salzaismyah.bg/site/play/168": "мъжът на жена ми"
   },
+  "https://www.salzaismyah.bg/uploads/events_image/823388145bd5a3e9915e57f10f6340d7.JPG": {
+   "https://www.salzaismyah.bg/site/play/632": "луксозен мъж за ежедневна употреба"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/8471f84f0a5dc908217620f8afcc4963.jpg": {
+   "https://www.salzaismyah.bg/site/play/719": "bg мариус"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/8b74032df1e6dbe0eeeb5cac1d96ce16.jpg": {
+   "https://www.salzaismyah.bg/site/play/525": "благуните приятели завинаги"
+  },
   "https://www.salzaismyah.bg/uploads/events_image/8fdabf319fae053be025fa518ca49bf0.jpg": {
    "https://www.salzaismyah.bg/site/play/743": "епизоди комедиен импро ситком"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/9da1e0ec66a35cbc9e22ff60112de927.jpg": {
+   "https://www.salzaismyah.bg/site/play/725": "любовъртеж"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/efc4e7faca1161b2a00e036ff22f95e8.jpg": {
+   "https://www.salzaismyah.bg/site/play/535": "как се търси нов съпруг"
+  },
+  "https://www.salzaismyah.bg/uploads/events_image/men.jpg": {
+   "https://www.salzaismyah.bg/site/play/167": "мъже под чехъл"
   }
  },
  "shows": {
+  "10-godini-chernoto-pile": {
+   "checked": "2026-11-19",
+   "h": 835,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/52f28d45f4fbe6860fd45af9436c1353.jpg",
+   "kind": "poster",
+   "md5": "1a8f087a873efd323c80863ae20fe0a7",
+   "page": "https://www.salzaismyah.bg/site/play/227",
+   "path": "posters/10-godini-chernoto-pile.jpg",
+   "src_md5": "d676ca3dbca2c2fb6424c6e35fd94474",
+   "w": 600
+  },
   "100-godini-georgi-parcalev": {
    "checked": "2026-11-04",
    "h": 1389,
@@ -1489,6 +1831,18 @@
     "on": "2026-11-18"
    },
    "w": 1080
+  },
+  "5sola": {
+   "checked": "2026-11-19",
+   "h": 510,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/1151/main/5sola-landscape_thumb-detail.jpeg",
+   "kind": "key",
+   "md5": "ea9fb47608f3ac1a8791064ceed29f59",
+   "page": "https://toplocentrala.bg/program/performance/5sola",
+   "path": "posters/5sola.jpg",
+   "src_md5": "8502b30b04bee30b00bc352ddc143927",
+   "w": 900
   },
   "8-eseta-za-identichnostta": {
    "checked": "2026-11-04",
@@ -1850,6 +2204,13 @@
    "md5": "f76b757e15b9cc9b43d53d25f00a3c13",
    "page": "https://iamstudio.bg/produkt/az_maqkovski/",
    "path": "posters/az-mayakovski.jpg",
+   "pending": {
+    "img": "https://iamstudio.bg/wp-content/uploads/2024/05/fb_img_1714647345421.jpg",
+    "kind": "poster",
+    "md5": "02a11cac53537ab2c2d37cfc2fa0558a",
+    "on": "2026-11-19",
+    "page": "https://iamstudio.bg/produkt/az_maqkovski/"
+   },
    "w": 1080
   },
   "az-obicham-ti-obichash-tya-obicha": {
@@ -2047,6 +2408,13 @@
    "md5": "d15adbd22c017ab83674cc226b3e3ed7",
    "page": "https://theatre.art.bg/x_2292_10_20",
    "path": "posters/bebeshka-piesa.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG144225998514.jpg",
+    "kind": "poster",
+    "md5": "3229029e355b9426c9291882a83d8abb",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/x_2292_10_20"
+   },
    "w": 800
   },
   "beket": {
@@ -2058,6 +2426,13 @@
    "md5": "dd50f728bb58732456485d61ffcd75db",
    "page": "http://sfumato.info/програма-„бекет”-последната-лента-не-аз___7097",
    "path": "posters/beket.jpg",
+   "pending": {
+    "img": "https://theatre.art.bg/img/photos/BIG16977942351394359146_3654890174830858_4834048547935270464_n.jpg",
+    "kind": "key",
+    "md5": "0a7988ee0c8127175f8e7cbe1780400c",
+    "on": "2026-11-19",
+    "page": "http://sfumato.info/програма-„бекет”-последната-лента-не-аз___7097"
+   },
    "w": 800
   },
   "belezhkite": {
@@ -2069,6 +2444,13 @@
    "md5": "bcdd96cec3f9222a2e2e59d2bdc8284b",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/belezhkite-pod-liniya",
    "path": "posters/belezhkite.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/1342cf8335f4de0391935a4ded9424156ca.jpg",
+    "kind": "poster",
+    "md5": "b1eaa9622686d2a0e01864356197c79c",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/belezhkite-pod-liniya"
+   },
    "w": 220
   },
   "beli-noshti": {
@@ -2080,6 +2462,13 @@
    "md5": "3de74ba991856e5b3e0a0030226d4cd3",
    "page": "http://sfumato.info/бели-нощи___6064",
    "path": "posters/beli-noshti.jpg",
+   "pending": {
+    "img": "https://theatre.art.bg/img/photos/BIG16129507475_DSC9278s.jpg",
+    "kind": "poster",
+    "md5": "f5ab41930de1a48b29216a4b5d6622fd",
+    "on": "2026-11-19",
+    "page": "http://sfumato.info/бели-нощи___6064"
+   },
    "w": 800
   },
   "bella-donna": {
@@ -2102,6 +2491,13 @@
    "md5": "d0c931b17179826b48b0d5a2a7414db1",
    "page": "https://artvent.bg/event/bez-garanciia",
    "path": "posters/bez-garanciia.jpg",
+   "pending": {
+    "img": "https://artvent.bg/images/events/XL6ADwK7UnsziQk2LagWFNufcjbQ4lx63iafjmES.png",
+    "kind": "key",
+    "md5": "aa0bb68273fcfef33a3a280287b35047",
+    "on": "2026-11-19",
+    "page": "https://artvent.bg/event/bez-garanciia"
+   },
    "w": 1920
   },
   "bezkraynite-sceni": {
@@ -2113,6 +2509,13 @@
    "md5": "f344f5320e6977e34d2435bcd9ebc7eb",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bezkrainite-sceni",
    "path": "posters/bezkraynite-sceni.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/270c39921ed36ba07d58d3fa60876019dc8.jpg",
+    "kind": "poster",
+    "md5": "c2e8e0c70f7e3b0251e3b5c1ce9aa5b5",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bezkrainite-sceni"
+   },
    "w": 220
   },
   "bezopasni-vrazki": {
@@ -2124,6 +2527,13 @@
    "md5": "04a8f4ab4d6b533b3a11a21ac15fd7d5",
    "page": "https://satirata.bg/show/bezopasni",
    "path": "posters/bezopasni-vrazki.jpg",
+   "pending": {
+    "img": "https://storage.googleapis.com/is-satira/images/000/007/437/image/PLAKATI 686-986 mm _BEZOPASNI_VRAZKI_FINAL.jpg",
+    "kind": "poster",
+    "md5": "48a8ff2e6ba0c9233d7d4e57587bd016",
+    "on": "2026-11-19",
+    "page": "https://satirata.bg/show/bezopasni"
+   },
    "w": 980
   },
   "bg-marius": {
@@ -2135,6 +2545,13 @@
    "md5": "c2efa4971a66249720d79464d8bfee58",
    "page": "https://www.salzaismyah.bg/site/play/719",
    "path": "posters/bg-marius.jpg",
+   "pending": {
+    "img": "https://www.salzaismyah.bg/uploads/events_image/8471f84f0a5dc908217620f8afcc4963.jpg",
+    "kind": "poster",
+    "md5": "20dcca6a920054be2299d4ce2b214b9c",
+    "on": "2026-11-19",
+    "page": "https://www.salzaismyah.bg/site/play/719"
+   },
    "w": 600
   },
   "biologichen-otpadak": {
@@ -2146,6 +2563,13 @@
    "md5": "4903c3768fa48233133c251fa3b9bb70",
    "page": "http://sfumato.info/биологичен-отпадък___7703",
    "path": "posters/biologichen-otpadak.jpg",
+   "pending": {
+    "img": "https://theatre.art.bg/img/photos/BIG17570573993481702627_10227142027367746_4187715706622476904_n.jpg",
+    "kind": "poster",
+    "md5": "d51493ed0ab29d46105d34fdfbf8573d",
+    "on": "2026-11-19",
+    "page": "http://sfumato.info/биологичен-отпадък___7703"
+   },
    "w": 800
   },
   "biskvitko-spasyava-koleda": {
@@ -2157,6 +2581,13 @@
    "md5": "8c8c3f908bd3e9a8351243582408b7b2",
    "page": "https://theatre.art.bg/x_5541_10_20",
    "path": "posters/biskvitko-spasyava-koleda.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG15750297831DSC_1486.jpg",
+    "kind": "key",
+    "md5": "9b65c6cf47251401f62518ebcf892742",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/x_5541_10_20"
+   },
    "w": 800
   },
   "blagunite-priyateli-zavinagi": {
@@ -2168,6 +2599,13 @@
    "md5": "424f5a0530bd7de60779173862db4222",
    "page": "https://www.salzaismyah.bg/site/play/525",
    "path": "posters/blagunite-priyateli-zavinagi.jpg",
+   "pending": {
+    "img": "https://www.salzaismyah.bg/uploads/events_image/8b74032df1e6dbe0eeeb5cac1d96ce16.jpg",
+    "kind": "poster",
+    "md5": "195c18c80dea08e1a8d8f3a11cb9b58d",
+    "on": "2026-11-19",
+    "page": "https://www.salzaismyah.bg/site/play/525"
+   },
    "w": 600
   },
   "blazheni-sa-blazhenite": {
@@ -2179,6 +2617,13 @@
    "md5": "a7bb2cb9ccdca28d3ed563c0b11e6842",
    "page": "https://theatre.art.bg/блажени-са-блажените_7189_8_20",
    "path": "posters/blazheni-sa-blazhenite.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG16999993771DSC_4112 (2).jpg",
+    "kind": "key",
+    "md5": "93fc103ee6f033b39c1b796bf7180f5f",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/блажени-са-блажените_7189_8_20"
+   },
    "w": 800
   },
   "bogat-na-kasapnicata": {
@@ -2190,6 +2635,13 @@
    "md5": "e5bbfd1638f70f2f71032a559a6e2687",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bogt-na-kasapnicata",
    "path": "posters/bogat-na-kasapnicata.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/27f50f3c6292c4a6d24e0ed261b4a7af41.jpg",
+    "kind": "poster",
+    "md5": "775ca6d4e39c860ceedd4fa09c43a72f",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bogt-na-kasapnicata"
+   },
    "w": 220
   },
   "bokluk": {
@@ -2201,6 +2653,13 @@
    "md5": "0d3b81b30ab4e86f802cc19569422f4c",
    "page": "https://theatre.art.bg/боклук_5993_8_20",
    "path": "posters/bokluk.jpg",
+   "pending": {
+    "img": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_435/DSC04799.JPG?f=68753",
+    "kind": "key",
+    "md5": "62e0e1091bd79a637f8a9d446b496625",
+    "on": "2026-11-19",
+    "page": "https://theatre199.org/bg/plays/p/435-bokluk"
+   },
    "w": 800
   },
   "borizmeyko": {
@@ -2212,6 +2671,13 @@
    "md5": "ab4c0d13b9365e4ede663816c5cef508",
    "page": "https://theatre.art.bg/x_447_10_20",
    "path": "posters/borizmeyko.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG13685338951rep_pics_pic_1324434261.jpg",
+    "kind": "key",
+    "md5": "8e4742107054c2da84ceaaa321a892f7",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/x_447_10_20"
+   },
    "w": 800
   },
   "bozhe-moy": {
@@ -2223,6 +2689,13 @@
    "md5": "5b80eb749c7b0340eceb53a5e597940d",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bozhe-moi",
    "path": "posters/bozhe-moy.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/228e9a44e0b5ae7f065a4d01f40f437aae5.jpg",
+    "kind": "poster",
+    "md5": "98b6e910b449fdd59cf0601e293eb07c",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bozhe-moi"
+   },
    "w": 220
   },
   "bradatata-grafinya": {
@@ -2234,6 +2707,13 @@
    "md5": "71678c6a814ceb5d0fb1016d47872659",
    "page": "https://satirata.bg/show/bradata-grafinia",
    "path": "posters/bradatata-grafinya.jpg",
+   "pending": {
+    "img": "https://storage.googleapis.com/is-satira/images/000/007/470/image/PLAKATI 486-686 mm _BRADATATA_GRAFINIA_V2.jpg",
+    "kind": "poster",
+    "md5": "61ced628ea5f7beb8e2b0f83119067dd",
+    "on": "2026-11-19",
+    "page": "https://satirata.bg/show/bradata-grafinia"
+   },
    "w": 980
   },
   "bremenskite": {
@@ -2245,6 +2725,13 @@
    "md5": "706b13f0e095bc3639bb5fe70a5de3ef",
    "page": "https://theatrevazrajdane.bg/portfolio/%d0%b1%d1%80%d0%b5%d0%bc%d0%b5%d0%bd%d1%81%d0%ba%d0%b8%d1%82%d0%b5-%d0%bc%d1%83%d0%b7%d0%b8%d0%ba%d0%b0%d0%bd%d1%82%d0%b8/",
    "path": "posters/bremenskite.png",
+   "pending": {
+    "img": "https://theatrevazrajdane.bg/wp-content/uploads/2025/02/tv-bremenskite-muzikanti-web-1.png",
+    "kind": "poster",
+    "md5": "cc086ada1cbd5d32646a61213500f6f5",
+    "on": "2026-11-19",
+    "page": "https://theatrevazrajdane.bg/portfolio/%d0%b1%d1%80%d0%b5%d0%bc%d0%b5%d0%bd%d1%81%d0%ba%d0%b8%d1%82%d0%b5-%d0%bc%d1%83%d0%b7%d0%b8%d0%ba%d0%b0%d0%bd%d1%82%d0%b8/"
+   },
    "w": 1418
   },
   "bremenskite-muzikanti-2": {
@@ -2267,6 +2754,13 @@
    "md5": "79d51203fc264a34e95a6984d2521c17",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bul-terier",
    "path": "posters/bul-terier.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/301e9dc7c16fa8de39ea2dfd994d13c052b.jpg",
+    "kind": "poster",
+    "md5": "32c38273fc041d3ca9f10055dcc2c995",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/bul-terier"
+   },
    "w": 220
   },
   "buratino": {
@@ -2278,6 +2772,13 @@
    "md5": "916c55b3e1b78d3f1031692b28a3650d",
    "page": "https://theatre.art.bg/буратино_5015_8_20",
    "path": "posters/buratino.jpg",
+   "pending": {
+    "img": "https://theatre199.org/data/kimo_images/kimo_gallery_unit_401/big_Buratino_Damianova_1.jpg?f=3359417",
+    "kind": "poster",
+    "md5": "bdc3701e940c6fa562d6db54b9542e0f",
+    "on": "2026-11-19",
+    "page": "https://theatre199.org/bg/plays/p/401-buratino"
+   },
    "w": 800
   },
   "buryata-the-tempest": {
@@ -2301,10 +2802,17 @@
    "md5": "585017fb41cc11f0a4feb1d116e8f310",
    "page": "https://satirata.bg/show/bushon-za-smiana",
    "path": "posters/bushon-za-smyana.jpg",
+   "pending": {
+    "img": "https://storage.googleapis.com/is-satira/images/000/006/771/image/PLAKATI 686-986 mm _BUSHON ZA SMQNA_2.jpg",
+    "kind": "poster",
+    "md5": "f636a22520c795f3caff12c4e856ac74",
+    "on": "2026-11-19",
+    "page": "https://satirata.bg/show/bushon-za-smiana"
+   },
    "w": 980
   },
   "chamokria": {
-   "checked": "2026-11-04",
+   "checked": "2026-11-19",
    "h": 800,
    "how": "the theatre's poster slot",
    "img": "https://artvent.bg/images/events/160ce4f4a48a34.jpg",
@@ -2312,6 +2820,11 @@
    "md5": "14c944af3bcef6540706442bb31e78e9",
    "page": "https://artvent.bg/event/chamokria",
    "path": "posters/chamokria.jpg",
+   "recheck_lesser": {
+    "img": "https://artvent.bg/images/events/eHCgH31LqKXXQdxQF8WpUiDPbS0TcI13PqnVFcFR.jpg",
+    "kind": "key",
+    "on": "2026-11-19"
+   },
    "w": 534
   },
   "chastici-zhena": {
@@ -2323,10 +2836,17 @@
    "md5": "6aa9ccd9044a084df8d46a2e629ff7d5",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/chastici-zhena",
    "path": "posters/chastici-zhena.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/184760182c2015b3b856a5b5efc5c1c7728.jpg",
+    "kind": "poster",
+    "md5": "a2e2bca11f9d5e4c0c30a12fdf37f2f6",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/chastici-zhena"
+   },
    "w": 220
   },
   "chastna-prozhekciya": {
-   "checked": "2026-11-04",
+   "checked": "2026-11-19",
    "h": 1000,
    "how": "the theatre's poster slot",
    "img": "https://www.tba.art.bg/img/photos/BIG17592987041POST_v1 - Copy.jpg",
@@ -2334,6 +2854,7 @@
    "md5": "740a4a266831958298a96845101d5a4f",
    "page": "https://www.tba.art.bg/частна-прожекция___7834",
    "path": "posters/chastna-prozhekciya.jpg",
+   "recheck_found_nothing": "2026-11-19",
    "w": 800
   },
   "chayka": {
@@ -2345,6 +2866,13 @@
    "md5": "5be57505c530e3e8740f12ccb404a65d",
    "page": "https://theatre.art.bg/x_7946_4_20",
    "path": "posters/chayka.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG17754762911662814894_1429623932538185_1955586284068719430_n.jpg",
+    "kind": "key",
+    "md5": "6ddc87ea77a876d44659d3615a9ed5df",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/x_7946_4_20"
+   },
    "w": 800
   },
   "chayka-2": {
@@ -2367,6 +2895,13 @@
    "md5": "4ad7b039ca2f88889ae8c2ef30910a87",
    "page": "https://toplocentrala.bg/program/performance/chayka-sled-samoubiystvoto",
    "path": "posters/chayka-sled-samoubiystvoto.jpg",
+   "pending": {
+    "img": "https://toplocentrala.bg/attachments/Event/1206/main/Chaika-FB-cover-01_thumb-detail.png",
+    "kind": "key",
+    "md5": "de4864ce7fc7fb06ed23b540a3a5f12f",
+    "on": "2026-11-19",
+    "page": "https://toplocentrala.bg/program/performance/chayka-sled-samoubiystvoto"
+   },
    "w": 970
   },
   "chehov-uzhas": {
@@ -2381,7 +2916,7 @@
    "w": 980
   },
   "cherna-komediya": {
-   "checked": "2026-11-04",
+   "checked": "2026-11-19",
    "h": 1149,
    "how": "the theatre's poster slot",
    "img": "https://www.tba.art.bg/img/photos/BIG15712192181Cherna komedia-Plakat-69x99-final.jpg",
@@ -2389,6 +2924,7 @@
    "md5": "b77e731703958a9a6c150b5e29d5ad33",
    "page": "https://www.tba.art.bg/черна-комедия___4174",
    "path": "posters/cherna-komediya.jpg",
+   "recheck_found_nothing": "2026-11-19",
    "w": 800
   },
   "cherven-flag-interaktiven-teatar-na-raba-na-psihologiyata": {
@@ -2400,6 +2936,13 @@
    "md5": "e88dcc02205b7bec1d850bef28030b9a",
    "page": "https://toplocentrala.bg/program/performance/stsenariyat-si-ti",
    "path": "posters/cherven-flag-interaktiven-teatar-na-raba-na-psihologiyata.png",
+   "pending": {
+    "img": "https://toplocentrala.bg/attachments/Event/706/main/StoryCatchers-CHERVEN-FLAG-Cover_thumb-detail.png",
+    "kind": "key",
+    "md5": "4a1010c4ad0a0c5fa8dbfa8334406bd8",
+    "on": "2026-11-19",
+    "page": "https://toplocentrala.bg/program/performance/stsenariyat-si-ti"
+   },
    "w": 970
   },
   "chervenata-shapchitsa": {
@@ -2411,6 +2954,13 @@
    "md5": "3ac0df6b8850a782337bdd5b42d20d41",
    "page": "https://theatre.art.bg/x_7329_4_20",
    "path": "posters/chervenata-shapchitsa.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG17048933461415983940_792897302877521_385052829462777973_n.jpg",
+    "kind": "key",
+    "md5": "e5fdcd0a66f281b22023788c68206ae5",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/x_7329_4_20"
+   },
    "w": 800
   },
   "chervenata-shapchitsa-2": {
@@ -2422,6 +2972,13 @@
    "md5": "a03fffe70c6883433471728bf253e932",
    "page": "https://theatre.art.bg/червената-шапчица_3262_8_20",
    "path": "posters/chervenata-shapchitsa-2.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG15504411711Red_Hood_Damianova_12_hd.jpg",
+    "kind": "key",
+    "md5": "80ded40c7a00d4768543049dcfd2ccc7",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/червената-шапчица_3262_8_20"
+   },
    "w": 800
   },
   "chervenata-shapchitsa-3": {
@@ -2433,6 +2990,13 @@
    "md5": "a03fffe70c6883433471728bf253e932",
    "page": "https://theatre.art.bg/червената-шапчица_3262_22_20",
    "path": "posters/chervenata-shapchitsa-3.jpg",
+   "pending": {
+    "img": "https://theatre.peakview.bg/theatre/photos/BIG15504411711Red_Hood_Damianova_12_hd.jpg",
+    "kind": "key",
+    "md5": "80ded40c7a00d4768543049dcfd2ccc7",
+    "on": "2026-11-19",
+    "page": "https://theatre.art.bg/червената-шапчица_3262_22_20"
+   },
    "w": 800
   },
   "chest": {
@@ -2444,6 +3008,13 @@
    "md5": "f4054e1cb1feaac1f073ff34b1ad4291",
    "page": "https://theatre.art.bg/чест_6896_8_20",
    "path": "posters/chest.jpg",
+   "pending": {
+    "img": "https://theatre199.org/data/kimo_images/kimo_grid2_image_unit_405/chest_1024x1024.jpg?f=69946",
+    "kind": "key",
+    "md5": "490195e3816da33784b52e258aeada0c",
+    "on": "2026-11-19",
+    "page": "https://theatre199.org/bg/plays/p/405-chest"
+   },
    "w": 800
   },
   "chestna-musketarska": {
@@ -2455,6 +3026,13 @@
    "md5": "4ef10a404e30f7cd703e97bee0d6f00d",
    "page": "https://theatrevazrajdane.bg/portfolio/%d1%87%d0%b5%d1%81%d1%82%d0%bd%d0%b0-%d0%bc%d1%83%d1%81%d0%ba%d0%b5%d1%82%d0%b0%d1%80%d1%81%d0%ba%d0%b0/",
    "path": "posters/chestna-musketarska.jpg",
+   "pending": {
+    "img": "https://theatrevazrajdane.bg/wp-content/uploads/2026/05/chestna-musketarska-web-1.png",
+    "kind": "poster",
+    "md5": "6089a83bb2b7b8574bcefc050e493a08",
+    "on": "2026-11-19",
+    "page": "https://theatrevazrajdane.bg/portfolio/%d1%87%d0%b5%d1%81%d1%82%d0%bd%d0%b0-%d0%bc%d1%83%d1%81%d0%ba%d0%b5%d1%82%d0%b0%d1%80%d1%81%d0%ba%d0%b0/"
+   },
    "w": 1362
   },
   "chetvarta-natsionalna-konferentsiya-za-interioren-dizayn": {
@@ -2478,6 +3056,13 @@
    "md5": "a1fafd2f103b18d435aca8d28da83367",
    "page": "https://satirata.bg/show/chovekoiadkata",
    "path": "posters/chovekoyadkata.jpg",
+   "pending": {
+    "img": "https://storage.googleapis.com/is-satira/images/000/008/040/image/888450682_10236292483315775_780042095939881718_n.jpg",
+    "kind": "poster",
+    "md5": "99c0ef0e23a34f255ace002c2fb6fafb",
+    "on": "2026-11-19",
+    "page": "https://satirata.bg/show/chovekoiadkata"
+   },
    "w": 980
   },
   "choveshka-greshka": {
@@ -2489,10 +3074,17 @@
    "md5": "431d239c59cb11773766e0be58779f78",
    "page": "https://toplocentrala.bg/program/performance/choveshka-greshka",
    "path": "posters/choveshka-greshka.jpg",
+   "pending": {
+    "img": "https://toplocentrala.bg/attachments/Event/1210/main/Brecht-website_thumb-detail.jpg",
+    "kind": "key",
+    "md5": "61091df8158c14dbb6eb9dc8ae567d5f",
+    "on": "2026-11-19",
+    "page": "https://toplocentrala.bg/program/performance/choveshka-greshka"
+   },
    "w": 900
   },
   "chudnite-priklyucheniya-na-pinokio": {
-   "checked": "2026-11-04",
+   "checked": "2026-11-19",
    "h": 1050,
    "how": "the theatre's poster slot",
    "img": "https://sofiatheatre.eu/uploads/repertoires/2zjojMTsNUqWYf9YfKtNWpl9hk3MYuHBSfyU5n76.jpg",
@@ -2500,10 +3092,11 @@
    "md5": "9ddb3c4c07659543e39f0f18cc19a241",
    "page": "https://sofiatheatre.eu/repertoires/109/cudnite-priklyuceniya-na-pinokio",
    "path": "posters/chudnite-priklyucheniya-na-pinokio.jpg",
+   "recheck_found_nothing": "2026-11-19",
    "w": 735
   },
   "chudnite-priklyucheniya-na-pinokio-2": {
-   "checked": "2026-11-04",
+   "checked": "2026-11-19",
    "h": 860,
    "how": "JSON-LD image",
    "img": "https://www.salzaismyah.bg/uploads/events_image/6ce216db7c72f2a78975584b96b3763a.jpg",
@@ -2511,6 +3104,7 @@
    "md5": "6659fe6200a8f971f0f7b68e0d9ef136",
    "page": "https://www.salzaismyah.bg/site/play/565",
    "path": "posters/chudnite-priklyucheniya-na-pinokio-2.jpg",
+   "recheck_found_nothing": "2026-11-19",
    "w": 600
   },
   "chudomirshtini": {
@@ -2556,6 +3150,13 @@
    "md5": "440fc46e96846092d1be23b2ca2040f6",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/chudesna-nedelya-za-creve-coeur",
    "path": "posters/creve-coeur.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/1799688cd8ab0a90d683711f82ede27d29c.jpg",
+    "kind": "poster",
+    "md5": "6bb3ba57e82d93ed09f91066ead3b4eb",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/chudesna-nedelya-za-creve-coeur"
+   },
    "w": 220
   },
   "cvetat-na-dalbokite": {
@@ -2567,6 +3168,13 @@
    "md5": "b47be2516dd0817de0d46d8372bd0f0b",
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/cvett",
    "path": "posters/cvetat-na-dalbokite.jpg",
+   "pending": {
+    "img": "https://www.nationaltheatre.bg/storage/shows/560c77f9d22c89d9ebe98356b90a3b2ca9.jpg",
+    "kind": "poster",
+    "md5": "dec13369f35c34c91e6fef92b048659e",
+    "on": "2026-11-19",
+    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/cvett"
+   },
    "w": 220
   },
   "da-ostanem-samo-priyateli-16": {
@@ -2693,6 +3301,18 @@
    "path": "posters/dishay.jpg",
    "w": 800
   },
+  "divite-lebedi": {
+   "checked": "2026-11-19",
+   "h": 533,
+   "how": "og:image",
+   "img": "https://theatre.peakview.bg/theatre/photos/BIG17429994201Divite_lebedi_Damianova_51_web.jpg",
+   "kind": "key",
+   "md5": "7fe960d7214476a8f40e5edccc5feb03",
+   "page": "https://theatre.art.bg/x_7745_4_20",
+   "path": "posters/divite-lebedi.jpg",
+   "src_md5": "05d53d055f327db3e345775881c3177f",
+   "w": 800
+  },
   "dnevnikat-na-edin-lud": {
    "checked": "2026-11-04",
    "h": 1024,
@@ -2703,6 +3323,18 @@
    "page": "https://theatre199.org/bg/plays/p/426-dnevnikat-na-edin-lud",
    "path": "posters/dnevnikat-na-edin-lud.jpg",
    "w": 1024
+  },
+  "dobroto-tyalo": {
+   "checked": "2026-11-19",
+   "h": 1502,
+   "how": "og:image",
+   "img": "https://iamstudio.bg/wp-content/uploads/2024/12/screenshot_20241219_094634_microsoft-365-office.jpg",
+   "kind": "poster",
+   "md5": "c589a216a1307ce9baff083d425d1153",
+   "page": "https://iamstudio.bg/produkt/dobroto_tqlo-2/",
+   "path": "posters/dobroto-tyalo.jpg",
+   "src_md5": "d4207fdce4f4bdf587fab339d6af2088",
+   "w": 1080
   },
   "dokato-smartta-me-razdeli": {
    "checked": "2026-11-04",
@@ -3389,6 +4021,18 @@
    "path": "posters/hrabriyat-oloven-voynik.jpg",
    "w": 800
   },
+  "hrabriyat-oloven-voynik-2": {
+   "checked": "2026-11-19",
+   "h": 2560,
+   "how": "og:image",
+   "img": "https://theatrevazrajdane.bg/wp-content/uploads/2026/05/tv-premiera-banner-web-3-scaled.jpg",
+   "kind": "poster",
+   "md5": "6e7f13ebb677c80cef9467012eb545dc",
+   "page": "https://theatrevazrajdane.bg/portfolio/%d1%85%d1%80%d0%b0%d0%b1%d1%80%d0%b8%d1%8f%d1%82-%d0%be%d0%bb%d0%be%d0%b2%d0%b5%d0%bd-%d0%b2%d0%be%d0%b9%d0%bd%d0%b8%d0%ba/",
+   "path": "posters/hrabriyat-oloven-voynik-2.jpg",
+   "src_md5": "79fb6b25c1c2cb046b7a21356f7acaac",
+   "w": 1728
+  },
   "hrabriyat-shivach": {
    "checked": "2026-11-04",
    "h": 1024,
@@ -3654,6 +4298,18 @@
    "page": "https://theatre.art.bg/как-хубаво-лошо-живяхме_7642_22_20",
    "path": "posters/kak-hubavo-losho-zhivyahme.jpg",
    "w": 800
+  },
+  "kak-se-tarsi-nov-saprug": {
+   "checked": "2026-11-19",
+   "h": 800,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/efc4e7faca1161b2a00e036ff22f95e8.jpg",
+   "kind": "poster",
+   "md5": "b23e20c0c635cc1832ed0b98268f8b97",
+   "page": "https://www.salzaismyah.bg/site/play/535",
+   "path": "posters/kak-se-tarsi-nov-saprug.jpg",
+   "src_md5": "538243eb5aa6cc9712a19caa1ade3cb6",
+   "w": 600
   },
   "kake-live-friends-the-be-positives": {
    "checked": "2026-11-18",
@@ -4288,6 +4944,18 @@
    "path": "posters/ludi-za-vrazvane-16.jpg",
    "w": 980
   },
+  "luksozen-mazh-za-ezhednevna-upotreba": {
+   "checked": "2026-11-19",
+   "h": 969,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/823388145bd5a3e9915e57f10f6340d7.JPG",
+   "kind": "poster",
+   "md5": "82cd8737a32b3bc0d5a18ebebe33be10",
+   "page": "https://www.salzaismyah.bg/site/play/632",
+   "path": "posters/luksozen-mazh-za-ezhednevna-upotreba.jpg",
+   "src_md5": "db90c218183aba066d5d8d4668a2087e",
+   "w": 600
+  },
   "lyubopitnoto-slonche": {
    "checked": "2026-11-04",
    "h": 624,
@@ -4343,6 +5011,18 @@
    "path": "posters/lyubov-vav-voyna-multimedien-spektakal-po-romana-az-oshte-br.jpg",
    "src_md5": "17e0ebc1b7ef2256586c145063b47be5",
    "w": 800
+  },
+  "lyubovartezh": {
+   "checked": "2026-11-19",
+   "h": 845,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/9da1e0ec66a35cbc9e22ff60112de927.jpg",
+   "kind": "poster",
+   "md5": "5f8afb0ae381d49a3c4fa7839ac340c1",
+   "page": "https://www.salzaismyah.bg/site/play/725",
+   "path": "posters/lyubovartezh.jpg",
+   "src_md5": "56d159b093d44254b51627f8f3f56441",
+   "w": 600
   },
   "lyubovni-pisma": {
    "checked": "2026-11-04",
@@ -4500,6 +5180,18 @@
    "path": "posters/mazhatmievinoven.jpg",
    "w": 980
   },
+  "mazhe-pod-chehal": {
+   "checked": "2026-11-19",
+   "h": 861,
+   "how": "JSON-LD image",
+   "img": "https://www.salzaismyah.bg/uploads/events_image/men.jpg",
+   "kind": "poster",
+   "md5": "59ca211f8a258cfa67c1252bcfd7ac34",
+   "page": "https://www.salzaismyah.bg/site/play/167",
+   "path": "posters/mazhe-pod-chehal.jpg",
+   "src_md5": "a427aa85dba4ccf0184e62822da79d6b",
+   "w": 600
+  },
   "mechtata-na-idiotkata": {
    "checked": "2026-11-04",
    "h": 1142,
@@ -4521,6 +5213,18 @@
    "page": "https://www.nationaltheatre.bg/bg/predstavlenie/medeya",
    "path": "posters/medeya.jpg",
    "w": 220
+  },
+  "melba-sreshti": {
+   "checked": "2026-11-19",
+   "h": 550,
+   "how": "og:image",
+   "img": "https://toplocentrala.bg/attachments/Event/1241/main/melba-sreshti-website_thumb-detail.png",
+   "kind": "key",
+   "md5": "819731eed80eb11f17dcaacf0559cca7",
+   "page": "https://toplocentrala.bg/program/performance/melba-sreshti-2",
+   "path": "posters/melba-sreshti.png",
+   "src_md5": "a38b4dd22c65a0142204d7c4ea2b8f3a",
+   "w": 900
   },
   "merilin": {
    "checked": "2026-11-04",
@@ -5364,6 +6068,30 @@
    "path": "posters/p-osveti.jpg",
    "w": 600
   },
+  "palavoto-nosle-i-devata-na-ezeroto": {
+   "checked": "2026-11-19",
+   "h": 2048,
+   "how": "og:image",
+   "img": "https://iamstudio.bg/wp-content/uploads/2026/05/693304556_1479919403826638_3921218033277410354_n.jpg",
+   "kind": "poster",
+   "md5": "9bca379e8349ac7dc2089591756fbf1e",
+   "page": "https://iamstudio.bg/produkt/palavoto_nosle/",
+   "path": "posters/palavoto-nosle-i-devata-na-ezeroto.jpg",
+   "src_md5": "6d561c2dc54378f9d80e905c41c4d9be",
+   "w": 1442
+  },
+  "palavoto-nosle-i-valshebnata-yabalka": {
+   "checked": "2026-11-19",
+   "h": 503,
+   "how": "og:image",
+   "img": "https://iamstudio.bg/wp-content/uploads/2026/11/425853be-1e9c-4143-8b3e-6f8cfb585028.jpeg",
+   "kind": "key",
+   "md5": "f01c274d809ece52937ce68f987ebc12",
+   "page": "https://iamstudio.bg/produkt/palavoto-nosle-i-valshebnata-yabalka/",
+   "path": "posters/palavoto-nosle-i-valshebnata-yabalka.jpg",
+   "src_md5": "c6d7c611c91832ce1c3d540a522b679c",
+   "w": 960
+  },
   "parad-na-ostroumieto-igrata-shake-speare": {
    "checked": "2026-11-04",
    "h": 848,
@@ -6203,6 +6931,18 @@
    "page": "https://theatre.art.bg/x_7647_4_20",
    "path": "posters/rozhdeniyat-den-na-rupart.jpg",
    "w": 800
+  },
+  "rusalka": {
+   "checked": "2026-11-19",
+   "h": 310,
+   "how": "the theatre's poster slot",
+   "img": "https://www.nationaltheatre.bg/storage/shows/2160c16712145ac2ff806df8e5f618e8c5a.jpg",
+   "kind": "poster",
+   "md5": "60ff88567640c77061a695a20d350934",
+   "page": "https://www.nationaltheatre.bg/bg/predstavlenie/rusalka",
+   "path": "posters/rusalka.jpg",
+   "src_md5": "23e39fd75e480c962922a86a78ae329e",
+   "w": 220
   },
   "sabuzhdane-na-martvite": {
    "checked": "2026-11-04",

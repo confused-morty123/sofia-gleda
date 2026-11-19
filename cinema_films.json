@@ -2947,7 +2947,8 @@
    "#275F3A"
   ],
   "source": "dom-kino",
-  "runtime": 110
+  "runtime": 110,
+  "year": 2026
  },
  "puk": {
   "id": "puk",
@@ -4813,5 +4814,99 @@
    "#5F2745"
   ],
   "source": "vlaikova"
+ },
+ "mis-moksi": {
+  "id": "mis-moksi",
+  "bg": "МИС МОКСИ",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cg-ring",
+  "runtime": 88
+ },
+ "schupeni-obuvki": {
+  "id": "schupeni-obuvki",
+  "bg": "Счупени обувки",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "odeon"
+ },
+ "spirka-za-nepoznati": {
+  "id": "spirka-za-nepoznati",
+  "bg": "Спирка за непознати",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "odeon"
+ },
+ "istoriya-na-dokumentalniya-film-80-te": {
+  "id": "istoriya-na-dokumentalniya-film-80-te",
+  "bg": "История на документалния филм, 80-те",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "odeon"
+ },
+ "gradat-na-zhivite": {
+  "id": "gradat-na-zhivite",
+  "bg": "Градът на живите",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "odeon"
+ },
+ "art-rezidentsiya-posoka-silna": {
+  "id": "art-rezidentsiya-posoka-silna",
+  "bg": "Арт резиденция \"Посока СИЛНА\"",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "odeon"
+ },
+ "improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e-": {
+  "id": "improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e-",
+  "bg": "Improduce Me theatre представя в Нощта на театрите „КОЙ Е УБИЕЦЪТ?“ Кралско издание в кино „Влайкова“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "vlaikova"
+ },
+ "best-of-annecy-2026": {
+  "id": "best-of-annecy-2026",
+  "bg": "BEST OF ANNECY 2026",
+  "en": "",
+  "genres": [
+   "Анимация"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 72
  }
 }
