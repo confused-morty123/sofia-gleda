@@ -2921,7 +2921,8 @@
    "#4A5F27"
   ],
   "source": "arena-mega",
-  "runtime": 80
+  "runtime": 80,
+  "year": 2026
  },
  "topki": {
   "id": "topki",
@@ -4363,7 +4364,8 @@
    "#50275F"
   ],
   "source": "vlaikova",
-  "runtime": 102
+  "runtime": 102,
+  "year": 2026
  },
  "kak-da-oberesh-banka": {
   "id": "kak-da-oberesh-banka",
@@ -4908,5 +4910,39 @@
   ],
   "source": "dom-kino",
   "runtime": 72
+ },
+ "ubiystvoto-na-dzhesi-dzheyms-ot-merzavetsa-robart-ford": {
+  "id": "ubiystvoto-na-dzhesi-dzheyms-ot-merzavetsa-robart-ford",
+  "bg": "Убийството на Джеси Джеймс от мерзавеца Робърт Форд",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 160
+ },
+ "posledniyat-prometey-na-donbas": {
+  "id": "posledniyat-prometey-na-donbas",
+  "bg": "ПОСЛЕДНИЯТ ПРОМЕТЕЙ НА ДОНБАС",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "vlaikova"
+ },
+ "vnimavayte-detsa": {
+  "id": "vnimavayte-detsa",
+  "bg": "ВНИМАВАЙТЕ: ДЕЦА!",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
  }
 }

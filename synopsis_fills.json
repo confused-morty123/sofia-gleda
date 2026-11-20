@@ -10,14 +10,14 @@
   "source": "own-page",
   "source_url": "https://satirata.bg/show/100-godini-georgi-parcalev",
   "title": "100 ГОДИНИ ГЕОРГИ ПАРЦАЛЕВ",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "no description paragraph"
  },
  "100-godini-zhiva-svetlina-nch-petar-beron-1926": {
   "source": "own-page",
   "source_url": "https://www.tba.art.bg/100-години-жива-светлина-нч-петър-берон-1926___8105",
   "title": "100 години ЖИВА СВЕТЛИНА - НЧ \"Петър Берон\" 1926",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "description under 120 characters"
  },
  "2-sqm-ungariya-fat-festival-2026": {
@@ -85,11 +85,12 @@
   "title": "5 години Топлоцентрала! LET’S NOT GET LOST IN A DETAIL NOW Workshop with Maarten Seghers/NEEDCOMPANY"
  },
  "5-godini-toplotsentrala-songs-of-disconnection": {
+  "bg": "Тези нови песни са объркан изблик, защото всичко „би могло да бъде“, а нищо „не е“; те са възторжено изявление, родено от възбудена илюзия за недостижими места и непостижими времена; те са генератор, който излюпва абсурдната идея, позната като „заедно“.“\n\nОсвен с виртуозното си умение да разбират и изпълняват музикални текстове, Ая Сузуки, Симон Ленски, Джордж ван Дам и Михаел Шмид са и самостоятелни творци, които — всеки в собствената си работа и по свой начин — поставят под въпрос самата музика, за да стигнат до звука и музиката като физическа материя. Движещият импулс за Сегерс е да превърне в материя не само професията им, но и самите тях и телата им.",
+  "fetched_on": "2026-11-20",
   "source": "own-page",
   "source_url": "https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-songs-of-disconnection",
-  "title": "5 години Топлоцентрала! Songs of disconnection",
-  "tried_on": "2026-11-13",
-  "why": "cast / credits / practical lines only"
+  "theatre": "Топлоцентрала",
+  "title": "5 години Топлоцентрала! Songs of disconnection"
  },
  "5-godini-toplotsentrala-tela-na-vlastta-ikar-2026-za-savreme": {
   "bg": "Ако свързвате властта преди всичко с парите, влиянието, корупцията, злоупотребите, незаконността, чуйте това: “Властта идва бавно. Първо влиза през порите, в стойката, в гръдния кош, в ъгъла на устата, докато не превземе цялото тяло.“\n\nДумите са част от най-новото представление на Ива Свещарова и Вили Прагер, което ни повежда в мисъл за властта през тялото – тяло, в чиято памет тя пулсира, но не като идея, а като мускул, навик, дъх. От инструмент на насилието двамата хореографи превръщат тялото в територия на уязвимост, а властта трансформират в нови, привидно безобидни форми. Тя става театър - грандиозен, безмилостен, абсурден. В „Тела на властта“ телата са реквизит, хорът е народа, а сцената - живота.\n\nГледайки представлението непременно ще се запитате: не съм ли виждал това и преди? Да, най-вероятно сте го виждали – в архивни снимки, интервюта и репортажи от институции, в съдебни зали и съдебни решения, законопроекти, наредби.\n\nПредставлението не е смешно, въпреки забавните моменти в него. Остава неясно, с какво се забавлява то – с тялото или с властта, с политиката или обществото. Ясно е само, че всичко започва с един разстрел.",
@@ -215,7 +216,7 @@
   "source": "own-page",
   "source_url": "http://sfumato.info/арабска-нощ-премиера___4321",
   "title": "Арабска нощ",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "ariya-na-sapernicata": {
@@ -285,21 +286,21 @@
   "source": "own-page",
   "source_url": "https://iamstudio.bg/produkt/az_maqkovski/",
   "title": "Аз, Маяковски",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "description under 120 characters"
  },
  "az-obicham-ti-obichash-tya-obicha": {
   "source": "own-page",
   "source_url": "https://zadkanala.bg/spektakli/az-obicham-ti-obichash-tya-obicha",
   "title": "Аз обичам, ти обичаш, тя обича",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "biography / interview / reviews, no description before it"
  },
  "az-plashtam": {
   "source": "own-page",
   "source_url": "https://www.nationaltheatre.bg/bg/predstavlenie/az-plasham",
   "title": "Аз плащам",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "reviews / interview only"
  },
  "az-se-kazvah": {
@@ -352,7 +353,7 @@
   "source": "own-page",
   "source_url": "https://www.tba.art.bg/басейнът___5199",
   "title": "Басейнът",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "biography / interview / reviews, no description before it"
  },
  "bashta-mi-se-kazva-mariya": {
@@ -415,7 +416,7 @@
   "source": "own-page",
   "source_url": "http://sfumato.info/бели-нощи___6064",
   "title": "Бели нощи",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "bez-garanciia": {
@@ -430,7 +431,7 @@
   "source": "own-page",
   "source_url": "https://www.nationaltheatre.bg/bg/predstavlenie/bezkrainite-sceni",
   "title": "Безкрайните сцени",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "the text is about another listed production"
  },
  "bezopasni-vrazki": {
@@ -513,7 +514,7 @@
   "source": "own-page",
   "source_url": "https://satirata.bg/show/bradata-grafinia",
   "title": "Брадатата графиня",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "bremenskite": {
@@ -580,7 +581,7 @@
   "source": "own-page",
   "source_url": "https://artvent.bg/event/chamokria",
   "title": "Чамкория",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "chastici-zhena": {
@@ -756,7 +757,7 @@
   "source": "own-page",
   "source_url": "https://satirata.bg/profile/da-ostanem-priateli",
   "title": "Да останем само приятели 16+",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "description under 120 characters"
  },
  "da-zhivee-balgariya-6-to-izdanie": {
@@ -814,7 +815,7 @@
   "source": "own-page",
   "source_url": "https://natfiz.bg/event/dekameron-lyubov-i-smart-po-bokacho/",
   "title": "Декамерон Любов и Смърт по Бокачо",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "the text is about another listed production"
  },
  "denyat-na-glarusa": {
@@ -837,8 +838,8 @@
   "source": "own-page",
   "source_url": "https://www.salzaismyah.bg/site/play/703",
   "title": "ДИАГНОЗА КРОКОДИЛ",
-  "tried_on": "2026-11-13",
-  "why": "cast / credits / practical lines only"
+  "tried_on": "2026-11-20",
+  "why": "page not read (robots.txt, an HTTP error or no answer)"
  },
  "dishay": {
   "bg": "Както казва сам авторът за пиесата си, “Дишай” е един “разговор, който продължава цял живот”.\n\nРазговор за нас, за Планетата и за нейната катастрофа.\n\nЗа това как се живее в постоянна тревога от близкия край.\n\nИ ако не раждаме само спасители, защо да искаме да продължим Човешкия род.\n\nИли е просто инстинкт, по-силен от нас, с който не спираме да се борим.\n\n“Дишай” е последният разговор, който ни е останал.\n\nРазговор, който започва с “бебе” и завършва с “обичам те”.",
@@ -872,7 +873,7 @@
   "source": "own-page",
   "source_url": "http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097",
   "title": "Дневникът на един луд",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "dobroto-tyalo": {
@@ -1028,7 +1029,7 @@
   "source": "own-page",
   "source_url": "https://zadkanala.bg/spektakli/edna-ispanska-piesa",
   "title": "ЕДНА ИСПАНСКА ПИЕСА",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "edna-istoriya-s-dve-mishki": {
@@ -1151,7 +1152,7 @@
   "source": "own-page",
   "source_url": "https://zadkanala.bg/spektakli/fitzroy",
   "title": "ФИЦРОЙ",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "description under 120 characters"
  },
  "fizika-na-tagata": {
@@ -1405,6 +1406,22 @@
   "theatre": "Театър ARTVENT",
   "title": "И това ще мине"
  },
+ "icc-shows-obicham-kogato-me-gledash": {
+  "bg": "На 20 декември в РЦСИ „Топлоцентрала“ хореографката Жана Пенчева представя своето соло „Обичам, когато ме гледаш“. В него Пенчева е в интимна връзка с тишината, музиката, танца, себе си и публиката, родена от желанието да отвори пространства на игрива интимност и ефимерност.\n\n“Обичам, когато ме гледаш“ е резултат от продължителния артистичен проект „Тела в удоволствие, тела, които се грижат, танцуващи тела“ (Bodies in Pleasure, Bodies That Care, Dancing Bodies). Проектът изследва сетивността, перформативните идентичности, които носи танцьорът, и еротичното присъствие на танцуващото тяло. Спектакълът разглежда динамиката на взаимоотношенията между тялото и неговата среда – музиката, погледите, другите тела, емоциите, усещанията и несигурността на непознатото.",
+  "fetched_on": "2026-11-20",
+  "source": "own-page",
+  "source_url": "https://toplocentrala.bg/program/performance/i-love-when-you-re-watching-me",
+  "theatre": "Топлоцентрала",
+  "title": "ICC Shows: Обичам, когато ме гледаш"
+ },
+ "icc-shows-phantom": {
+  "bg": "PHANTOM извиква един невъзможен жест: да се премахне дистанцията между танца и музиката. Провалът на този опит призовава трето присъствие, съставено от ритми, фигури и следи, които нямат постоянен притежател. В пространството, което отказва да изчезне, се оформя призрак. Танцът и музиката се превръщат в медиуми един за друг. Нито един от тях не води, нито съпровожда. PHANTOM е спиритически сеанс между двете: фолклор на обсебването и омагьосването, в който удоволствието се превръща във форма на преследване от дух.",
+  "fetched_on": "2026-11-20",
+  "source": "own-page",
+  "source_url": "https://toplocentrala.bg/program/performance/phantom",
+  "theatre": "Топлоцентрала",
+  "title": "ICC Shows: PHANTOM"
+ },
  "idealniyat-mazh": {
   "bg": "Животът е прекалено важен, за да говорим сериозно за него, обичал да казва с присъщото си остроумие Оскар Уайлд. А как стои въпросът с идеала? С идеала за живот? С идеала на мъжа, с идеала на жената? Във великолепната си комедия „Идеалният мъж” Оскар Уайлд заплита сложна интрига от изнудване, бляскаво настояще и тъмно минало, приятелство и любов, вярност и предателство, за да докаже, че истината рядко е чиста и никога проста. Всички в английското висше общество са убедени, че сър Робърт Чилтърн е образец за почтеност, идеалният съпруг и идеалният мъж. Но обстоятелствата изпречват на пътя му красивата мисис Чивли, която по най-очарователен начин иска от него да извърши доста неочарователни неща. „Идеалният мъж” представя всичко това и още много забавни интриги и комични ситуации с блестящ хумор и проницателност.\n\n„Идеалният мъж“ – лека комедия със сериозно съдържание\n\nИдеалът. Идеалът за живот. Идеалът на мъжа, идеалът на жената. Способността да различиш собствената си амбиция и амбицията на близките си от скования облик на невъзможния стремеж на всяка цена да се съхрани Идеалът!",
   "fetched_on": "2026-11-15",
@@ -1417,7 +1434,7 @@
   "source": "own-page",
   "source_url": "https://zadkanala.bg/spektakli/igra-na-kotki",
   "title": "ИГРА НА КОТКИ",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "biography / interview / reviews, no description before it"
  },
  "ilyuziyata-v-braka": {
@@ -1633,7 +1650,7 @@
   "source": "own-page",
   "source_url": "https://zadkanala.bg/spektakli/kapan-za-samoten-myzh-0",
   "title": "Капан за самотен мъж",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "no description paragraph"
  },
  "karakondzhul": {
@@ -2041,6 +2058,14 @@
   "title": "ЛЮБОВЪРТЕЖ",
   "tried_on": "2026-11-18",
   "why": "page not read (robots.txt, an HTTP error or no answer)"
+ },
+ "lyubovartezh-2": {
+  "bg": "„Любовъртеж“ (LOVERTIGO) е автоиронична комедийна драма за страха от любовта и хаоса, който сами създаваме в живота си. Вдъхновено от щафетния принцип на действието, заглавието преплита любовта и световъртежа - онова емоционално залитане, в което всички понякога попадаме.\n\nПиесата задава болезнено честни въпроси: Какво си причиняваме сами? Защо държим любовта далеч от сърцата си? Каква е цената на собствената ни глупост? И защо толкова често се страхуваме именно от щастието? „Любовъртеж“ е история за хората, които бягат от възможността да бъдат щастливи, защото знаят колко кратък и крехък е този миг. Смях, самоирония и емоционални сблъсъци се преплитат в спектакъл, който напомня колко трудно е да се оставим да обичаме - и колко човешко е това. Режисьорът Деян Донков поема към сценичен прочит, вдъхновен от „Хоровод на любовта“ на Артур Шницлер и „Синята стая“ на Дейвид Хеър.",
+  "fetched_on": "2026-11-20",
+  "source": "own-page",
+  "source_url": "https://toplocentrala.bg/program/performance/lyubovartej",
+  "theatre": "Топлоцентрала",
+  "title": "Любовъртеж"
  },
  "lyubovni-pisma": {
   "bg": "Писмата от него до нея, и обратно от нея до него. В рамката на цял един живот. Бесен екшън, в който с изумителна скорост преминават събития, възрасти, чувства, настроения... Лентата се забавя за миг, рисува ни конкретна случка, наивна, тъжна, страшна или страшно смешна и литва през зъбчатките на времето към следващата. Един чат, който в задъханите си редове прескача всичко маловажно и незначително, за да ни потопи в гъстото вино на една любов, която все не може да се случи и категорично отказва да умре. Яна Маринова и Теодор Папазов ще ви разкажат една история, която няма нищо общо с вас и в която няма да спрете да се откривате.\n\nПредставлението се разпространява, благодарение на Национален Фонд Култура по \"Програма за възстановяване и развитие на частни културни организации\".",
@@ -2701,6 +2726,13 @@
   "source_url": "https://theatrevazrajdane.bg/portfolio/%d0%be%d1%82%d0%bc%d1%8f%d0%bd%d0%b0/",
   "theatre": "Театър „Възраждане“",
   "title": "ОТМЯНА"
+ },
+ "otnasya-se-do-vsichki": {
+  "source": "own-page",
+  "source_url": "https://www.salzaismyah.bg/site/play/697",
+  "title": "Отнася се до всички",
+  "tried_on": "2026-11-20",
+  "why": "page not read (robots.txt, an HTTP error or no answer)"
  },
  "otvorena-brachna-dvoyka": {
   "source": "own-page",
@@ -3470,7 +3502,7 @@
   "source": "own-page",
   "source_url": "https://iamstudio.bg/produkt/sofiya-i-hvarchasthoto-krevatche-2/",
   "title": "София и хвърчащото креватче",
-  "tried_on": "2026-11-13",
+  "tried_on": "2026-11-20",
   "why": "cast / credits / practical lines only"
  },
  "solunskite-atentatori": {

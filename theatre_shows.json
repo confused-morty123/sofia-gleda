@@ -7792,5 +7792,77 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "talanti": {
+  "id": "talanti",
+  "title": "ТАЛАНТИ",
+  "titleEn": "",
+  "theatre": "national",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "national"
+ },
+ "icc-shows-phantom": {
+  "id": "icc-shows-phantom",
+  "title": "ICC Shows: PHANTOM",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "icc-shows-obicham-kogato-me-gledash": {
+  "id": "icc-shows-obicham-kogato-me-gledash",
+  "title": "ICC Shows: Обичам, когато ме гледаш",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "lyubovartezh-2": {
+  "id": "lyubovartezh-2",
+  "title": "Любовъртеж",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }
