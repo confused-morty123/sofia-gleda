@@ -4944,5 +4944,47 @@
    "#275F3A"
   ],
   "source": "vlaikova"
+ },
+ "spaydar-men-nov-nov-den-re-release": {
+  "id": "spaydar-men-nov-nov-den-re-release",
+  "bg": "СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН (Re-release)",
+  "en": "",
+  "genres": [
+   "Екшън",
+   "Приключенски",
+   "Фантастика"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cc-sofia",
+  "runtime": 154,
+  "year": 2026
+ },
+ "tya": {
+  "id": "tya",
+  "bg": "ТЯ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "vlaikova"
+ },
+ "gataka": {
+  "id": "gataka",
+  "bg": "Гатака",
+  "en": "",
+  "genres": [
+   "Фантастика"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 106
  }
 }

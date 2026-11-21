@@ -53,6 +53,18 @@
     "kind": "title",
     "src": "Синелибри 2026: ГЕРОЯТ ОТ ГАРА „ФРИДРИХЩРАСЕ\""
   },
+  "01e85fbc70498b85fb1c1d4c1718f3e80b0667c6": {
+    "at": "2026-11-21",
+    "en": "Description: You put on your favourite sitcom (‘Friends’, ‘How I Met Your Mother’, ‘The Big Bang Theory’) and it already warms your heart. You catch up with your favourite TV mates, have a laugh with them and wonder how on earth they’ve got themselves into this mess. Now you can experience all this in the theatre too! ‘ShiZi Impro Theatre’ invites you to watch a series unlike anything you’ve seen before (literally). What can you expect from this comedy improv sitcom? You’ll spend your evening with colourful characters, following romantic escapades and absurd misunderstandings – absolutely hilarious when they’re not happening to you. You give us the title of the series and our actors will improvise episodes from the characters’ lives just for you. You’ll see a one-of-a-kind series! Seriously, we make it all up on the spot. Come and enjoy it live, because you can’t watch the next episode at home. Let’s laugh together with genuine (unrecorded) laughter! ‘ShiZi Pro’ is a professional improvisational theatre group. It was founded in 2013 by Zlatin Tsvetkov. The cast consists of: Desislava Vuleva, Evelina Vaseva, Zlatin Tsvetkov, Ivan Kolev, Ilian Ilkov, Katya Brambarova, Kole Kitanov, Martin Kostadinov, Mirela Krasteva, Simona Dimitrova and Todor Kotsov. In every performance, we perform with a different line-up, and it is possible that some actors may be absent.",
+    "kind": "syn",
+    "src": "Описание: Пускаш любимия си ситком („Приятели“, „Как се запо"
+  },
+  "01fa96b7d31e71b74c99f33fbb4805c948d71377": {
+    "at": "2026-11-21",
+    "en": "Freight transport remains excluded from Sofia’s clean air measures, whilst there are suspicions that it accounts for a significant proportion of pollution. However, there is no comprehensive, data-driven expert analysis of the issue.",
+    "kind": "syn",
+    "src": "Товарният транспорт остава скрит от мерките за чист въздух в"
+  },
   "025f5a4dccf412f63a82beac990f325a48c13eda": {
     "at": "2026-11-09",
     "en": "The country mouse and the city mouse take us on a journey through a series of trials, prompting us to reflect on friendship, freedom, responsibility and the choices we make\n\nAwards and nominations:",
@@ -94,6 +106,12 @@
     "en": "The Flight of the Mole",
     "kind": "title",
     "src": "Полетът на къртицата"
+  },
+  "0301eb6b5eb3a41fdd4455403a609dc2dc584c93": {
+    "at": "2026-11-21",
+    "en": "There are weeks when the only thing that gives them meaning is the anticipation of Friday night. There are days spent entirely planning for it. There are people for whom Friday night is like a religious festival.\n\nBut there are also quite a few who can only celebrate it in their wildest dreams. Take the ‘dads’, for example. Four young men, who find themselves with fewer and fewer opportunities to let their hair down, tell us how a Friday night might unfold as they slip into different roles. They show us which is the right key and which is the right door, and then demonstrate how a Friday night bender can throw the whole puzzle into disarray. They lead us towards a dream ending to the evening, but a trip to the loo suddenly changes everything.",
+    "kind": "syn",
+    "src": "Има седмици, в които единственият смисъл е очакването на пет"
   },
   "03711f4409e3f995b040517f42656c378d3f70d8": {
     "at": "2026-10-09",
@@ -1061,6 +1079,12 @@
     "kind": "syn",
     "src": "„Чест“ е безпощадно честна пиеса, написана с остро перо, с х"
   },
+  "1fe23e067cf5be016266f5d79eee7e8c3db78e9b": {
+    "at": "2026-11-21",
+    "en": "Urban freight transport in Sofia – the potential for transformation",
+    "kind": "title",
+    "src": "Градският товарен транспорт в София - потенциалът за трасфор"
+  },
   "1fe56dccc03cf65af9a4cac56d1694fe9a0c2ab1": {
     "at": "2026-10-09",
     "en": "THE MOON’S PIANO",
@@ -1156,6 +1180,12 @@
     "en": "Loneliness in old age affects two-thirds of people. What do we do when the only dialogue left is the one we have with ourselves?\n\nDancer and choreographer Rita Gobi and puppeteer Tamás Somogyi join forces to explore the process of remembering, ageing and confronting one’s own memories. Constructed through movement without dialogue, using gestures and elements of puppetry, the performance approaches the subject with profound humanity and subtle humour.\n\nIt prompts the audience to ask themselves: when we see an elderly person, can we imagine what they were like in their youth, what dreams they had, and whether the ageing of the body also takes the soul with it?",
     "kind": "syn",
     "src": "Самотата в напреднала възраст засяга две трети от хората. Ка"
+  },
+  "225faf8ac911f270c5ea859a6d24ea01ab0e7fb4": {
+    "at": "2026-11-21",
+    "en": "A comedy that sets off from Broadway, undergoes Balkan metamorphoses and arrives at ‘Rakovska’, courtesy of the Tetris Foundation.\n\nAn adventure between two very different souls, which evolves from a simple casting call into a whirlwind love story, seasoned with local humour, Hollywood-style professionalism and a light sprinkling of classic drama.",
+    "kind": "syn",
+    "src": "Една комедия, която тръгва от Бродуей, преминава през балкан"
   },
   "22665076eb9522b06fa36f8250f47e9e03d9aceb": {
     "at": "2026-10-09",
@@ -1474,6 +1504,12 @@
     "en": "5 years of Toplozentralna! Vlado Mihaylov – acoustic concert. FREE ENTRY",
     "kind": "title",
     "src": "5 години Топлоцентрала! Владо Михайлов - акустичен ВХОД СВОБ"
+  },
+  "2bc2d92b2e3a49ef9bead700a909dc7ad432eba6": {
+    "at": "2026-11-21",
+    "en": "‘The Gramophone’ is a journey through the years, filled with nostalgia, humour and love, in which the audience will share in a dream come true.\n\nThe show is based on the actor’s personal stories and popular songs by Bulgarian artists.",
+    "kind": "syn",
+    "src": "„Грамофонът\" е едно пътешествие през годините, заредено с но"
   },
   "2bc5c0dd36472f98af0106695a0616de983f9683": {
     "at": "2026-11-19",
@@ -2956,6 +2992,12 @@
     "en": "Halloween Selection: Contagious Evil",
     "kind": "title",
     "src": "Хелоуин Селекция Заразно зло"
+  },
+  "554aa024425161626faa9664f883e77604cd3411": {
+    "at": "2026-11-21",
+    "en": "This is a story about heroic people who risk their lives to bring light to the Ukrainian people – just like Prometheus. This is a story about the last operational power station in eastern Ukraine, situated in the free part of the Donetsk region. The power station is situated 10 km from the front line and, as a result, is subjected to constant and intense shelling by Russian forces.\n\nThe pattern is quite simple: as soon as the power station starts operating and smoke appears, Russia immediately begins shelling the facility. Despite this, the brave power station workers continue to work until the very last possible moment, but Russia nevertheless destroys vital parts of the plant. Ultimately, the plant ceases operations. A forced evacuation of personnel and equipment begins.\n\nStrange as it may sound, history recalls similar moments from the past: in 1941, the plant was also forcibly evacuated, but on that occasion the evacuation was to the east – far from Nazi Germany. Today, the evacuation is in the opposite direction – away from the imperial invaders from Russia.",
+    "kind": "syn",
+    "src": "Това е история за героични хора, които рискуват живота си, з"
   },
   "55c071445ca40a395160505217003aa6463728df": {
     "at": "2026-11-16",
@@ -5615,6 +5657,12 @@
     "kind": "title",
     "src": "Специални поводи"
   },
+  "9d1d129c8c2e7c88d431aef6a97c21c2ec9240c0": {
+    "at": "2026-11-21",
+    "en": "Today in Bulgaria, two scenes preserve the image of the great artist Stoycho Mazgalov. Two portraits by the artist Nikolay Yanakiev, situated 300 kilometres apart, greet viewers and whisper a story. The film’s camera gives voice to these whispers, wanders through the ‘Theatrical Labyrinth’ of his autobiographical book, captures the memories of his contemporaries and preserves their resonance.In 2006, on National Revival Day, one of those for whom Theatre and Honour stood above all else passed away. Twenty years later, in the sanctuary of his life, on the stage of the ‘Tears and Laughter’ Theatre, we shall applaud him once more with the premiere of Niki Shumanova’s film ‘MAZGALA – A Musketeer in the Labyrinth of Time’. 23 November will be a special evening that will never be repeated. Time will stand still in memories – as we pay tribute to a figure whose story deserves to be told.",
+    "kind": "syn",
+    "src": "Днес в България две сцени пазят лика на големия артист Стойч"
+  },
   "9d62b20252ed0f1a745934d5da8e2988e34771e4": {
     "at": "2026-11-17",
     "en": "Two performers, armed with a single scene — or trapped within it: a customer orders a drink from a waiter. And then things go awry.\n\nThe scene plays out again and again — with ceaseless dialogue or in complete silence — until the familiar situation begins to spiral out of control. A nightmarish spiral or a grotesque farce? Roles and power dynamics are constantly reversed, until we no longer know who is the target and who is the attacker, who is serving and who is being served.\n\nDirected by Tim Echels, artistic director of Forced Entertainment, and created in collaboration with the brilliant performing duo Bert and Nasi, ‘L’Addition’ constructs a complex, entertaining and explosive performance from simple elements. The three of them play with both the mechanisms of theatre and power dynamics — but in the end, someone still has to foot the bill.",
@@ -5800,6 +5848,24 @@
     "en": "CHAOS AT THE COMÉDIE FRANÇAISE – SINELIBRI",
     "kind": "title",
     "src": "ХАОС В КОМЕДИ ФРАНСЕЗ - СИНЕЛИБРИ"
+  },
+  "a2309d6d8e57131a56fd86fe955904edd2bccd57": {
+    "at": "2026-11-21",
+    "en": "What happens when a 22-year-old falls in love with his mum’s best friend? And what happens when his mum catches them together?\n\nGet ready for a whirlwind of misunderstandings, unexpected twists, romantic disasters and laughter until you cry.In a world where age is just a number and feelings know no rules, the characters will find themselves in situations that nobody could have foreseen.\n\nA comedy that will make you laugh, surprise you and ask yourself: does love have an age?",
+    "kind": "syn",
+    "src": "Каквосеслучва,когатоедин22-годишенмладежсевлюбвавнай-добрата"
+  },
+  "a2489c6bf0849e6c38a0af3bb9769248a6247c40": {
+    "at": "2026-11-21",
+    "en": "SPIDER-MAN: (NEW) A NEW DAY (Re-release)",
+    "kind": "title",
+    "src": "СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН (Re-release)"
+  },
+  "a275f62c15e9073925b00915c77c814cb942728d": {
+    "at": "2026-11-21",
+    "en": "Bulgaria’s biggest beatbox event is back!\n\nFollowing a series of qualifying rounds, the country’s best beatbox artists will gather in Sofia for the grand final of the Bulgarian Beatbox Championship 2026 – Grand Final.\n\nThis year, the championship will offer even more challenges, new opportunities and spectacular battles! As well as the traditional Solo and Tag Team categories, you can look forward to new competition categories, which will be announced very soon.\n\nWe can look forward to head-to-head beatbox clashes, in which the participants will go head-to-head in a battle for the top spot and the title of Bulgarian champion.\n\nThe stage will bring together some of the finest representatives of the Bulgarian beatbox scene, ready to showcase their skills, creativity and individual style.\n\nOne stage. One community. One goal – to crown Bulgaria’s new champions!",
+    "kind": "syn",
+    "src": "Най-голямото бийтбокс събитие в България се завръща!\n\nСлед п"
   },
   "a289b6fa76229015e3eb4f26457321e32ca6e199": {
     "at": "2026-10-29",
@@ -6179,6 +6245,12 @@
     "kind": "title",
     "src": "8 есета за любовта"
   },
+  "aea56ad27a02dad0e343640aeaaa6ad1fe5a6795": {
+    "at": "2026-11-21",
+    "en": "The documentary film ‘WARNING: CHILDREN!’ brings together the stories of Ukrainian children whose lives have been transformed since the start of the full-scale Russian invasion of Ukraine. Through their memories, emotions and dreams, the film shows how war intrudes on childhood and alters perceptions of home, safety, family and the future.",
+    "kind": "syn",
+    "src": "Документалният филм „ВНИМАВАЙТЕ: ДЕЦА!“ обединява историите "
+  },
   "af0f2ad1d592fbbeffa3a06330078a986a868878": {
     "at": "2026-10-09",
     "en": "IVA IS ONLINE",
@@ -6406,6 +6478,12 @@
     "en": "Minotaur",
     "kind": "title",
     "src": "Минотавър"
+  },
+  "b63b0bb535c7cc3b03cae5b0d146504375298150": {
+    "at": "2026-11-21",
+    "en": "What happens when a wife comes home unexpectedly?\n\nAfter the scene she finds, everyone is in shock. No one has any idea how or why they ended up in this situation, and despite their efforts, the truth seems to be slipping further and further out of their grasp.\n\nBut where is the truth? Are the ‘Germans’ to blame, is it voodoo magic, or is it part of someone’s diabolical plan?\n\nCritics describe Sébastien Thiery’s plays as ‘elegant boulevard theatre’ and compare them to the works of Ionesco and Beckett.",
+    "kind": "syn",
+    "src": "Какво се случва, когато една съпруга се прибере неочаквано в"
   },
   "b666556179e71a3615cf9aabf98e016c148eb29a": {
     "at": "2026-10-13",
@@ -6797,6 +6875,12 @@
     "kind": "title",
     "src": "Огледалце, огледалце"
   },
+  "c1c43006844d39f7c3bffa8f60de3eeef55b483c": {
+    "at": "2026-11-21",
+    "en": "Bulgarian Beatbox Championship 2026 | Grand Final",
+    "kind": "title",
+    "src": "Bulgarian Beatbox Championship 2026 | Grand Final"
+  },
   "c1d232db6b21c873adfda5f72857bdb262b8755d": {
     "at": "2026-10-09",
     "en": "The Geometry of the Soul",
@@ -7018,6 +7102,12 @@
     "en": "Pinocchio",
     "kind": "title",
     "src": "Пинокио"
+  },
+  "c7db7fc02fe38009953dbb56cbc909e73a3f89a3": {
+    "at": "2026-11-21",
+    "en": "ICE AND WORDS",
+    "kind": "title",
+    "src": "ЛЕДА И ДУМИТЕ"
   },
   "c8387d3d571f6699e48854487902a15159e0596d": {
     "at": "2026-10-13",
@@ -8081,6 +8171,12 @@
     "kind": "title",
     "src": "Резиденцията: Минало, Настояще, Бъдеще"
   },
+  "e2fc6bed279cc8ed3140e44d3a25ee8489051c5f": {
+    "at": "2026-11-21",
+    "en": "A story about chance encounters that change everything.\n\nA stranger finds himself in a world alien to him, but it turns out he has arrived amongst ‘his own kind’ and begins to share in the problems and feelings of an unfamiliar family. Thus, the anecdote develops into a tender and wise parable. ‘All People Are Brothers’ — this is not just the title of Sarafanov’s unfinished oratorio, but also something in which the playwright Alexander Vampilov truly believed.",
+    "kind": "syn",
+    "src": "Една история за случайните срещи, които променят всичко.\n\nСл"
+  },
   "e301e85952853e304af1590c8b4d418b88fd359d": {
     "at": "2026-11-16",
     "en": "“The whole world is a stage and we are all actors – we enter, we exit, and in our own time each of us plays different roles. ”Man’s inability to find his true self is a theme I explored in Luigi Pirandello’s *Henry IV*. On the one hand, everyone sees you in their own way; on the other, you lose yourself behind the social masks you impose on yourself. In the constant shifting of one’s self-image, it becomes increasingly difficult to discover one’s true self.\n\nThe play *Because Mum Likes It That Way*, through an exaggerated, comedic lens, helps us realise that our pretence of a life distances us from our true selves – or from the life we long to have.\n\nIn the aristocratic home of the Gianutri family in Bergamo, the family has gathered to honour the memory of Salvatore, Mrs Maria’s youngest son. But a mysterious stranger arrives who exposes the lie in which they are all living.",
@@ -8194,6 +8290,12 @@
     "en": "It’s Alive! Horror Film Fest Part IV: Colony",
     "kind": "title",
     "src": "It’s Alive! Хорър Филм Фест Част IV: Колония"
+  },
+  "e671524a6ae92bb2c27c9b9ade05872673c265cf": {
+    "at": "2026-11-21",
+    "en": "\"Leda and the Words\" is a multimedia project marking the 100th anniversary of the birth of the actress Leda Taseva. It combines Georgi Toshev’s documentary film *The Mystery of Leda Taseva* with the book *Leda and the Words*, which brings together poems, biographical excerpts, memoirs and photographs that reveal the actress’s personal and creative world.",
+    "kind": "syn",
+    "src": "\"Леда и думите\" е мултимедиен проект, посветен на 100-годишн"
   },
   "e687828431b40b1af1911c691fb122951d4dbdf3": {
     "at": "2026-11-15",
@@ -8327,6 +8429,12 @@
     "kind": "title",
     "src": "Кръстниците от Токио"
   },
+  "eac05e9b9b96086f56439f86b3e215d96567913d": {
+    "at": "2026-11-21",
+    "en": "Jean Poiret’s *A Nightmare Comedy* is an entertaining and deeply human play that tells the story of five adults whose lives become entangled in a labyrinth of lies and twists. An attempted affair places the protagonist between three women – his wife, his mistress and the mistress’s mother. They turn his life into a nightmare from which he longs to wake up, but his wife has other plans…\n\nThe first lie sets off a chain reaction of deceptions and comical situations in which the mistress and the wife will ensnare the unfaithful husband.\n\nJean Poiret crafts a rich plot, brimming with passion, laughter and human frailties. ‘A Nightmarish Comedy’ takes the audience on a spectacular and entertaining journey through the unpredictability of love, fidelity and family ties.",
+    "kind": "syn",
+    "src": "„Кошмарна комедия“ от Жан Поаре е забавна и истински човешка"
+  },
   "eaeb6e698f60c8db0be44b560e53dd8f186cb9b0": {
     "at": "2026-10-21",
     "en": "Applies to everyone",
@@ -8356,6 +8464,12 @@
     "en": "Grandad’s glove",
     "kind": "title",
     "src": "Дядовата ръкавичка"
+  },
+  "ebc472df8c04b4b9c9108f383285095430d4ca28": {
+    "at": "2026-11-21",
+    "en": "In the dark underworld of 18th-century Paris, money reigns supreme. Nothing is sacred – even love can be bought for the right price. Having grown up in this world of pleasure and vice, Manon finds herself torn between two desires when she falls in love with the student Des Grieux. Unwavering and devoted, he offers her the chance of a respectable life. But the promise of wealth and luxury in Parisian high society remains an irresistible temptation…",
+    "kind": "syn",
+    "src": "В мрачните потайности на Париж от XVIII век парите властват "
   },
   "ebd5d5669769bfc92de0c4ae43daaf9a98612fd1": {
     "at": "2026-10-09",

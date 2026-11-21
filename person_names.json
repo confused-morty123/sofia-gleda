@@ -149,6 +149,11 @@
 "bg": "Джейк Джилънхол",
 "t": "2026-10-23"
 },
+"139": {
+"n": "Uma Thurman",
+"bg": "Ума Търман",
+"t": "2026-11-21"
+},
 "149": {
 "n": "Robert Richardson",
 "bg": "Робърт Ричардсън",
@@ -918,6 +923,11 @@
 "n": "Dianne Wiest",
 "bg": "Даян Уийст",
 "t": "2026-11-03"
+},
+"1903": {
+"n": "Alan Arkin",
+"bg": "Алън Аркин",
+"t": "2026-11-21"
 },
 "1904": {
 "n": "Anthony Michael Hall",
@@ -1694,6 +1704,11 @@
 "bg": "Горан Вишнич",
 "t": "2026-10-23"
 },
+"5953": {
+"n": "Spike Jonze",
+"bg": null,
+"t": "2026-11-21"
+},
 "6012": {
 "n": "Daniel Auteuil",
 "bg": null,
@@ -2059,6 +2074,11 @@
 "bg": "Миранда Ричардсън",
 "t": "2026-11-18"
 },
+"8685": {
+"n": "Andrew Niccol",
+"bg": null,
+"t": "2026-11-21"
+},
 "8734": {
 "n": "Göte Lovén",
 "bg": null,
@@ -2379,6 +2399,11 @@
 "bg": null,
 "t": "2026-10-23"
 },
+"10759": {
+"n": "Michael Nyman",
+"bg": null,
+"t": "2026-11-21"
+},
 "10777": {
 "n": "Maria Grazia Cucinotta",
 "bg": null,
@@ -2483,6 +2508,11 @@
 "n": "Michael Imperioli",
 "bg": null,
 "t": "2026-10-23"
+},
+"11628": {
+"n": "Loren Dean",
+"bg": null,
+"t": "2026-11-21"
 },
 "11770": {
 "n": "John Carpenter",
@@ -4759,6 +4789,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"73421": {
+"n": "Joaquin Phoenix",
+"bg": "Хоакин Финикс",
+"t": "2026-11-21"
+},
 "73598": {
 "n": "Frédéric Chopin",
 "bg": null,
@@ -6109,6 +6144,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"154798": {
+"n": "Lisa Renee Pitts",
+"bg": null,
+"t": "2026-11-21"
+},
 "167640": {
 "n": "Mayim Bialik",
 "bg": null,
@@ -6563,6 +6603,11 @@
 "n": "Aliocha Schneider",
 "bg": null,
 "t": "2026-10-24"
+},
+"549831": {
+"n": "Lynn Adrianna",
+"bg": null,
+"t": "2026-11-21"
 },
 "550305": {
 "n": "Maurizio Filardo",
@@ -7299,6 +7344,11 @@
 "bg": null,
 "t": "2026-10-24"
 },
+"1087906": {
+"n": "Régine Chassagne",
+"bg": null,
+"t": "2026-11-21"
+},
 "1088197": {
 "n": "Alban Aumard",
 "bg": null,
@@ -7328,6 +7378,16 @@
 "n": "Yoana Bukovska-Davidova",
 "bg": null,
 "t": "2026-10-24"
+},
+"1091340": {
+"n": "Richard Reed Parry",
+"bg": null,
+"t": "2026-11-21"
+},
+"1091344": {
+"n": "Tim Kingsbury",
+"bg": null,
+"t": "2026-11-21"
 },
 "1096458": {
 "n": "Koo Kyo-hwan",
@@ -9073,6 +9133,11 @@
 "n": "Jasmin Savoy Brown",
 "bg": null,
 "t": "2026-10-29"
+},
+"1509453": {
+"n": "Gabe Gomez",
+"bg": null,
+"t": "2026-11-21"
 },
 "1509659": {
 "n": "Toko Miura",

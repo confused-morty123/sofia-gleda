@@ -7864,5 +7864,59 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "leda-i-dumite": {
+  "id": "leda-i-dumite",
+  "title": "ЛЕДА И ДУМИТЕ",
+  "titleEn": "",
+  "theatre": "sofia-th",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sofia-th"
+ },
+ "bulgarian-beatbox-championship-2026-grand-final": {
+  "id": "bulgarian-beatbox-championship-2026-grand-final",
+  "title": "Bulgarian Beatbox Championship 2026 | Grand Final",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-trasfo": {
+  "id": "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-trasfo",
+  "title": "Градският товарен транспорт в София - потенциалът за трасформация",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
  }
 }

@@ -1,20 +1,20 @@
 {
  "before": {
-  "films": 90.2,
-  "shows": 92.9
+  "films": 91.4,
+  "shows": 92.7
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-20",
+ "date": "2026-11-21",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 127,
+   "TMDB poster": 128,
    "own page: key": 3,
    "own page: poster": 6,
-   "the film's programme page": 23
+   "the film's programme page": 22
   },
   "pct": 91.4,
   "upcoming": 174,
@@ -23,40 +23,39 @@
  "fix": {
   "after": {
    "films": 91.4,
-   "shows": 93.5
+   "shows": 93.9
   },
   "attached": 2,
-  "attempted": 38,
+  "attempted": 35,
   "before": {
-   "films": 90.2,
+   "films": 91.4,
    "shows": 93.5
   },
   "broken_parsers": [],
   "causes": {
    "films": {
     "only a ticket page linked, not the title's page": 3,
-    "only an aggregator's image (the film does not link that page)": 8,
-    "own page has no usable image": 4
+    "only an aggregator's image (the film does not link that page)": 9,
+    "own page has no usable image": 3
    },
    "shows": {
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
     "own page has no usable image": 15,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 3,
-    "robots.txt unreachable (5xx or no answer): the host is not read this run": 2,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "causes_before": {
    "films": {
     "only a ticket page linked, not the title's page": 3,
-    "only an aggregator's image (the film does not link that page)": 8,
-    "own page has no usable image": 6
+    "only an aggregator's image (the film does not link that page)": 9,
+    "own page has no usable image": 3
    },
    "shows": {
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 10,
-    "own page has no usable image": 16,
-    "own page or its image could not be fetched": 2,
+    "own page has no usable image": 15,
+    "own page or its image could not be fetched": 3,
     "own page's images rejected by the poster policy": 3,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
@@ -64,34 +63,30 @@
   "counts": {
    "films": {
     "after": "159/174",
-    "before": "157/174"
+    "before": "159/174"
    },
    "shows": {
-    "after": "463/495",
+    "after": "465/495",
     "before": "463/495"
    }
   },
-  "date": "2026-11-20",
+  "date": "2026-11-21",
   "errors": [],
   "network": "ok",
-  "refused": 2,
-  "requests": 53,
+  "refused": 0,
+  "requests": 50,
   "retried": [],
-  "seconds": 64.4,
+  "seconds": 61.1,
   "summary": {
-   "film key": 2,
-   "film nothing": 4,
-   "show nothing": 32
+   "film nothing": 3,
+   "show nothing": 30,
+   "show poster": 2
   },
   "titles": {
    "films": {
     "actually-it-is-rocket-science": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "dyun-chast-parva-povtorenie": [
-     "own page has no usable image",
-     "no usable image on the page"
     ],
     "dzhambo-magicheskoto-priklyuchenie": [
      "only an aggregator's image (the film does not link that page)",
@@ -121,6 +116,10 @@
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
+    "koledni-agenti": [
+     "only an aggregator's image (the film does not link that page)",
+     "unverified: an aggregator's image, and the film does not link its page"
+    ],
     "pastir": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
@@ -133,11 +132,11 @@
      "only a ticket page linked, not the title's page",
      "embed.urboapp.com is a ticket page, not the title's page"
     ],
-    "skoti": [
+    "royal-ballet-manon": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
-    "v-sluzhba-na-horata": [
+    "skoti": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -223,10 +222,6 @@
      "own page's images rejected by the poster policy",
      "https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image"
     ],
-    "kradtsi-v-budoara": [
-     "robots.txt unreachable (5xx or no answer): the host is not read this run",
-     "https://www.salzaismyah.bg/site/play/721: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
-    ],
     "lazaritsa": [
      "own page has no usable image",
      "no usable image on the page"
@@ -246,10 +241,6 @@
     "mechka-hamletmashina": [
      "own page has no usable image",
      "no usable image on the page"
-    ],
-    "otnasya-se-do-vsichki": [
-     "robots.txt unreachable (5xx or no answer): the host is not read this run",
-     "https://www.salzaismyah.bg/site/play/697: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
     ],
     "pepelyashka": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
@@ -284,20 +275,20 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 6,
-  "film nothing": 2,
-  "poster fix: film key": 2,
-  "poster fix: film nothing": 4,
-  "poster fix: show nothing": 32,
-  "show kept (page has nothing now)": 7,
-  "show key": 3,
-  "show nothing": 1,
-  "show replacement held for review": 33
+  "film already has a poster": 8,
+  "film poster": 1,
+  "poster fix: film nothing": 3,
+  "poster fix: show nothing": 30,
+  "poster fix: show poster": 2,
+  "show kept (page has nothing now)": 1,
+  "show key": 20,
+  "show poster": 15,
+  "show replaced on recheck": 5,
+  "show replacement held for review": 7
  },
  "missing": {
   "films": {
    "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
-   "dyun-chast-parva-povtorenie": "no image: the generated art shows",
    "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
    "evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1": "no image: the generated art shows",
    "evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986": "no image: the generated art shows",
@@ -305,11 +296,12 @@
    "improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e-": "no image: the generated art shows",
    "kina-i-yuk-lisitsite-ot-dalechniya-sever": "unverified: an aggregator's image, and the film does not link its page",
    "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
+   "koledni-agenti": "unverified: an aggregator's image, and the film does not link its page",
    "pastir": "unverified: an aggregator's image, and the film does not link its page",
    "polyusi": "no image: the generated art shows",
    "posledniyat-prometey-na-donbas": "no image: the generated art shows",
+   "royal-ballet-manon": "unverified: an aggregator's image, and the film does not link its page",
    "skoti": "unverified: an aggregator's image, and the film does not link its page",
-   "v-sluzhba-na-horata": "unverified: an aggregator's image, and the film does not link its page",
    "vnimavayte-detsa": "no image: the generated art shows"
   },
   "shows": {
@@ -332,13 +324,11 @@
    "kiki-i-bozo": "unverified: no record of the page this file came from",
    "kontsert-na-pim-pam": "no image: the generated art shows",
    "kotarakat-v-chizmi": "unverified: no record of the page this file came from",
-   "kradtsi-v-budoara": "unverified: no record of the page this file came from",
    "lazaritsa": "unverified: no record of the page this file came from",
    "magichna-nosht-predi-koleda": "no image: the generated art shows",
    "malkata-rusalka": "unverified: no record of the page this file came from",
    "maystora-i-margarita": "unverified: no record of the page this file came from",
    "mechka-hamletmashina": "no image: the generated art shows",
-   "otnasya-se-do-vsichki": "unverified: no record of the page this file came from",
    "pepelyashka": "unverified: no record of the page this file came from",
    "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
    "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
@@ -348,33 +338,34 @@
   }
  },
  "per_theatre": {
-  "artvent": "21/21",
+  "artvent": "22/22",
   "atelie313": "15/15",
-  "citymark": "11/11",
+  "citymark": "10/10",
   "iam": "10/13",
-  "kuklen": "15/16",
+  "kuklen": "16/17",
   "mladezhki": "38/48",
-  "natfiz": "5/6",
-  "national": "65/65",
-  "salzaismyah": "45/47",
+  "natfiz": "4/5",
+  "national": "63/63",
+  "salzaismyah": "46/46",
   "satira": "40/44",
   "sfumato": "22/24",
-  "sofia-th": "15/15",
+  "sofia-th": "16/16",
   "tba": "32/36",
   "th199": "32/35",
-  "toplo": "52/54",
+  "toplo": "53/55",
   "vazrazhdane": "24/24",
-  "zad-kanala": "21/21"
+  "zad-kanala": "22/22"
  },
  "shows": {
   "how": {
-   "own page: key": 196,
+   "TMDB poster": 1,
+   "own page: key": 199,
    "own page: photo": 1,
-   "own page: poster": 266
+   "own page: poster": 264
   },
-  "pct": 93.5,
+  "pct": 93.9,
   "upcoming": 495,
-  "with": 463
+  "with": 465
  },
  "shows_displayed": 486,
  "target": 95.0

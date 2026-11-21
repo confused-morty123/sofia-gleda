@@ -1,34 +1,34 @@
-# Poster health, 2026-11-20
+# Poster health, 2026-11-21
 
 - Films: 159/174 (91.4 %) show their own poster.
-- Plays: 463/495 (93.5 %) show their own poster or a production photo from their own page (486 display some image).
-- Target: 95 % each. This run attached: film already has a poster 6, film nothing 2, poster fix: film key 2, poster fix: film nothing 4, poster fix: show nothing 32, show kept (page has nothing now) 7, show key 3, show nothing 1, show replacement held for review 33.
+- Plays: 465/495 (93.9 %) show their own poster or a production photo from their own page (486 display some image).
+- Target: 95 % each. This run attached: film already has a poster 8, film poster 1, poster fix: film nothing 3, poster fix: show nothing 30, poster fix: show poster 2, show kept (page has nothing now) 1, show key 20, show poster 15, show replaced on recheck 5, show replacement held for review 7.
 
 ## Plays per theatre
 
 | theatre | own image | missing |
 |---|---|---|
-| artvent | 21/21 | 0 |
+| artvent | 22/22 | 0 |
 | atelie313 | 15/15 | 0 |
-| citymark | 11/11 | 0 |
+| citymark | 10/10 | 0 |
 | iam | 10/13 | 3 |
-| kuklen | 15/16 | 1 |
+| kuklen | 16/17 | 1 |
 | mladezhki | 38/48 | 10 |
-| natfiz | 5/6 | 1 |
-| national | 65/65 | 0 |
-| salzaismyah | 45/47 | 2 |
+| natfiz | 4/5 | 1 |
+| national | 63/63 | 0 |
+| salzaismyah | 46/46 | 0 |
 | satira | 40/44 | 4 |
 | sfumato | 22/24 | 2 |
-| sofia-th | 15/15 | 0 |
+| sofia-th | 16/16 | 0 |
 | tba | 32/36 | 4 |
 | th199 | 32/35 | 3 |
-| toplo | 52/54 | 2 |
+| toplo | 53/55 | 2 |
 | vazrazhdane | 24/24 | 0 |
-| zad-kanala | 21/21 | 0 |
+| zad-kanala | 22/22 | 0 |
 
 ## Plays without their own image
 
-### unverified: no record of the page this file came from (23)
+### unverified: no record of the page this file came from (21)
 - `100-godini-zhiva-svetlina-nch-petar-beron-1926`: tried https://www.tba.art.bg/100-години-жива-светлина-нч-петър-берон-1926___8105 (no usable image on the page)
 - `5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo`: tried https://toplocentrala.bg/program/performance/5-godini-toplotsentrala-vladimir-mihaylov-live-vhod-svoboden (https://toplocentrala.bg/attachments/Event/1225/main/Acoustic-live-2_thumb-detai: 851x315, not usable as a key image)
 - `az-foyerbah`: tried https://theatre.art.bg/x_5097_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
@@ -43,11 +43,9 @@
 - `insert-coin-player-one`: tried https://toplocentrala.bg/program/performance/insert-coin-player-one (no usable image on the page)
 - `kiki-i-bozo`: tried https://theatre.art.bg/кики-и-бозо_7339_8_20 (https://theatre.peakview.bg/theatre/photos/BIG17086295041kiki.jpg: not fetched)
 - `kotarakat-v-chizmi`: tried https://theatre.art.bg/котаракът-в-чизми_640_8_20 (https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image)
-- `kradtsi-v-budoara`: tried https://www.salzaismyah.bg/site/play/721 (page not read: https://www.salzaismyah.bg/site/play/721)
 - `lazaritsa`: tried https://www.tba.art.bg/лазарица-гостува-одт-димитровград___8108 (no usable image on the page)
 - `malkata-rusalka`: tried https://theatre.art.bg/x_7020_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `maystora-i-margarita`: tried https://theatre.art.bg/x_6386_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
-- `otnasya-se-do-vsichki`: tried https://www.salzaismyah.bg/site/play/697 (page not read: https://www.salzaismyah.bg/site/play/697)
 - `pepelyashka`: tried https://theatre.art.bg/x_6765_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `razdelyam-dvoyki-po-domovete`: tried https://theatre.art.bg/x_4099_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
 - `sablechi-se-za-vecherya`: tried https://theatre.art.bg/x_5963_4_20 (mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg)
@@ -67,18 +65,18 @@
 
 ## Films without their own image
 
-### unverified: an aggregator's image, and the film does not link its page (8)
+### unverified: an aggregator's image, and the film does not link its page (9)
 - `actually-it-is-rocket-science`: tried no own page linked (no own page linked)
 - `dzhambo-magicheskoto-priklyuchenie`: tried no own page linked
 - `hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: tried no own page linked
 - `kina-i-yuk-lisitsite-ot-dalechniya-sever`: tried no own page linked
 - `kodat-na-balgarite`: tried no own page linked
+- `koledni-agenti`: tried no own page linked (embed.urboapp.com is a ticket page, not the title's page)
 - `pastir`: tried no own page linked (embed.urboapp.com is a ticket page, not the title's page)
+- `royal-ballet-manon`: tried no own page linked
 - `skoti`: tried no own page linked
-- `v-sluzhba-na-horata`: tried no own page linked
 
-### no image: the generated art shows (7)
-- `dyun-chast-parva-povtorenie`: tried https://www.cinegrand.bg/m/dun-cast-prva-povtorenie-imdbtt1160419?ignoreMissing=1&cinema_slug=%D0%BF%D0%B0%D1%80%D0%BA-%D1%86%D0%B5%D0%BD%D1%82%D1%8A%D1%80-%D1%81%D0%BE%D1%84%D0%B8%D1%8F, https://www.cinegrand.bg/m/dun-cast-prva-povtorenie-imdbtt1160419?ignoreMissing=1&cinema_slug=%D1%81%D0%BE%D1%84%D0%B8%D1%8F-%D1%80%D0%B8%D0%BD%D0%B3-%D0%BC%D0%BE%D0%BB (no usable image on the page)
+### no image: the generated art shows (6)
 - `evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1`: tried https://vlaikovacinema.com/screening/%d0%b5%d0%b2%d1%80%d0%be%d0%bf%d0%b5%d0%b9%d1%81%d0%ba%d0%b8-%d0%ba%d0%b8%d0%bd%d0%be%d0%ba%d0%bb%d0%b0%d1%81%d0%b8%d0%ba%d0%b8-%d0%b2-%d0%ba%d0%b8%d0%bd%d0%be-%d0%b2%d0%bb%d0%b0%d0%b9%d0%ba%d0%be-5/ (no usable image on the page)
 - `evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986`: tried https://vlaikovacinema.com/screening/%d0%b5%d0%b2%d1%80%d0%be%d0%bf%d0%b5%d0%b9%d1%81%d0%ba%d0%b8-%d0%ba%d0%b8%d0%bd%d0%be%d0%ba%d0%bb%d0%b0%d1%81%d0%b8%d0%ba%d0%b8-%d0%b2-%d0%ba%d0%b8%d0%bd%d0%be-%d0%b2%d0%bb%d0%b0%d0%b9%d0%ba%d0%be-4/ (no usable image on the page)
 - `improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e-`: tried no own page linked (embed.urboapp.com is a ticket page, not the title's page)
@@ -89,20 +87,19 @@
 ## Diagnostic and fix pass
 
 - Triggered by: shows, films under 95 %.
-- Coverage before -> after: shows 93.5 % -> 93.5 %; films 90.2 % -> 91.4 %.
-- Read 38 title(s), attached 2, retried 0; 53 request(s), 2 refused by robots.txt, 64.4 s.
+- Coverage before -> after: shows 93.5 % -> 93.9 %; films 91.4 % -> 91.4 %.
+- Read 35 title(s), attached 2, retried 0; 50 request(s), 0 refused by robots.txt, 61.1 s.
 - Network: ok.
 
 ### Missing titles by cause
 
 | cause | plays | films |
 |---|---|---|
-| own page has no usable image | 15 | 4 |
+| own page has no usable image | 15 | 3 |
 | own page blocked (robots.txt or a bot challenge; not bypassed) | 10 | 0 |
-| only an aggregator's image (the film does not link that page) | 0 | 8 |
+| only an aggregator's image (the film does not link that page) | 0 | 9 |
 | own page's images rejected by the poster policy | 3 | 0 |
 | only a ticket page linked, not the title's page | 0 | 3 |
-| robots.txt unreachable (5xx or no answer): the host is not read this run | 2 | 0 |
 | the linked page is not the title's (redirect, home page or another title) | 1 | 0 |
 | own page or its image could not be fetched | 1 | 0 |
 
@@ -135,8 +132,6 @@
 - `show:5-godini-toplotsentrala-vlado-mihaylov-akustichen-vhod-svobo`: own page's images rejected by the poster policy (https://toplocentrala.bg/attachments/Event/1225/main/Acoustic-live-2_thumb-detai: 851x315, not usable as a key image)
 - `show:bai-ganyo`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG1576240600178985808_10159064354069: 800x304, not usable as a key image)
 - `show:kotarakat-v-chizmi`: own page's images rejected by the poster policy (https://theatre.peakview.bg/theatre/photos/BIG13235023561kotarak.png: 310x213, not usable as a key image)
-- `show:kradtsi-v-budoara`: robots.txt unreachable (5xx or no answer): the host is not read this run (https://www.salzaismyah.bg/site/play/721: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma))
-- `show:otnasya-se-do-vsichki`: robots.txt unreachable (5xx or no answer): the host is not read this run (https://www.salzaismyah.bg/site/play/697: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma))
 - `show:kontsert-na-pim-pam`: the linked page is not the title's (redirect, home page or another title) (the page's headings do not name the title: not used (https://satirata.bg/program))
 - `film:improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e-`: only a ticket page linked, not the title's page (embed.urboapp.com is a ticket page, not the title's page)
 - `film:posledniyat-prometey-na-donbas`: only a ticket page linked, not the title's page (embed.urboapp.com is a ticket page, not the title's page)
@@ -146,10 +141,10 @@
 - `film:hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kina-i-yuk-lisitsite-ot-dalechniya-sever`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:kodat-na-balgarite`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
+- `film:koledni-agenti`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:pastir`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
+- `film:royal-ballet-manon`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
 - `film:skoti`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:v-sluzhba-na-horata`: only an aggregator's image (the film does not link that page) (unverified: an aggregator's image, and the film does not link its page)
-- `film:dyun-chast-parva-povtorenie`: own page has no usable image (no usable image on the page)
 - `film:evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1`: own page has no usable image (no usable image on the page)
 - `film:evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986`: own page has no usable image (no usable image on the page)
 - `film:polyusi`: own page has no usable image (no usable image on the page)
