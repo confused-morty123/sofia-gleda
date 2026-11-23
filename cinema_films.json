@@ -4986,5 +4986,27 @@
   ],
   "source": "dom-kino",
   "runtime": 106
+ },
+ "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": {
+  "id": "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl",
+  "bg": "ОМАРЪТ | THE LOBSTER | 2015 | „Нощ на европейското кино“ в кино „Влайкова“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "vlaikova"
+ },
+ "40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh": {
+  "id": "40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh",
+  "bg": "40. КИНОМАНИЯ | ИСТОРИЯ НА ДОКУМЕНТАЛНИЯ ФИЛМ. СРЕЩА С РЕЖИСЬОРА МАРК КАЗЪНС",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "lumiere"
  }
 }
