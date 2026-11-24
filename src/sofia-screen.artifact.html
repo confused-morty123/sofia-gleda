@@ -1268,6 +1268,9 @@ body{font-size:15px}
   /* the longer motto that names the opera (OPERA_ON, DESIGN_SPEC §14.2) runs under both buttons
      across the whole row at 12.5 px, wrapping (balanced) only when it must */
   .bar-row-logo.op3 .brand .brand-sub{align-self:stretch; margin:8px -44px 0; font-size:12.5px; white-space:normal; text-wrap:balance}
+  /* its own line box: it wraps to two lines at 320-351 px (and at large text), where the site's fixed
+     14 px box would print the lines over each other; --logo-row-h is measured, so the sticky offset follows */
+  .bar-row-logo.op3 .brand .brand-sub{line-height:1.45}
 }
 /* ≤260 px (200% page zoom on a 390 phone): the motto wraps inside the logo column, clear of both buttons */
 @media(max-width:260px){ .bar-row-logo .brand .brand-sub,.bar-row-logo.op3 .brand .brand-sub{margin-inline:0; white-space:normal; text-wrap:balance} }
@@ -1616,6 +1619,13 @@ button,a{-webkit-tap-highlight-color:transparent}
   [data-opera] .phead .phead-title{grid-column:1 / -1; grid-row:2}
   [data-opera] .phead .phead-other{grid-column:2; grid-row:1; align-self:center; margin-block:-14px}
   [data-opera] .phead-tools .daystrip{grid-row:3; margin-top:12px}
+  [data-opera] .phead{container-type:inline-size}
+}
+/* a narrow head (320 px at 200% text): "Друг период ›" drops under the dates instead of running over the
+   kicker (final_tpl.html's 15.2em fallback) */
+@container (max-width:15.2em){
+  [data-opera] .phead .phead-other{grid-column:1 / -1; grid-row:3; justify-self:start; padding-left:0; margin-block:2px -6px}
+  [data-opera] .phead-tools .daystrip{grid-row:4}
 }
 /* hero: focusShows' pick, the art right on a black ground, one button (no "Или …") */
 [data-opera] .ophero{background:var(--hero-ground,#000); align-items:center; color:var(--hero-fg,#F4EFF6)}
@@ -1638,6 +1648,12 @@ button,a{-webkit-tap-highlight-color:transparent}
   [data-opera] .ophero{display:block; min-height:0; margin-block:14px 24px}
   [data-opera] .ophero .hero-art{position:relative; height:128px}
   [data-opera] .ophero .hero-art.baked{height:96px}
+  /* no picture: the H1 below already says the title, so the art shrinks to a 40 px kicker strip (genre and
+     glyph), or goes when there is no genre to show; cards and the desktop hero keep the full art */
+  [data-opera] .ophero .hero-art.noimg{height:40px}
+  [data-opera] .ophero .hero-art.noimg.nok{display:none}
+  [data-opera] .ophero .hero-art.noimg .gp{justify-content:center; padding:0 18px}
+  [data-opera] .ophero .hero-art.noimg .gp-t{display:none}
   [data-opera] .ophero .hero-art img{object-position:center}
   [data-opera] .ophero .hero-scrim{display:none}
   [data-opera] .ophero .hero-body{padding:14px 18px 18px}
@@ -1700,7 +1716,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 .gp-k{display:flex; align-items:center; gap:.5em; font-family:var(--f-ui); font-weight:600; font-size:clamp(10px,7.5cqh,15px); line-height:1;
   letter-spacing:.08em; text-transform:uppercase; color:var(--art-k,#D1B5FC)}
 .gp-k svg{width:1.05em; height:1.5em; flex:0 0 auto}
-.gp-t{font-family:"Source Serif 4",Georgia,serif; font-weight:700; font-size:clamp(17px,24cqh,60px); line-height:1.02; letter-spacing:-.012em;
+/* sized by the art's height AND its width: --gl is the title's longest word (set inline), so a long word
+   is never split mid-word; overflow-wrap:anywhere stays only as the last resort */
+.gp-t{font-family:"Source Serif 4",Georgia,serif; font-weight:700; font-size:min(clamp(17px,24cqh,60px),calc(100cqi*1.55/var(--gl,8))); line-height:1.02; letter-spacing:-.012em;
   overflow-wrap:anywhere; text-wrap:balance; display:block; max-height:2.06em; overflow:hidden}
 /* late-day card: no rows, or nothing bookable */
 [data-opera] .late-day-card{padding:34px 22px; margin-block:18px 34px}
@@ -1718,8 +1736,12 @@ button,a{-webkit-tap-highlight-color:transparent}
 .shero.shero-op{display:block; min-height:0; padding:0; aspect-ratio:2.02/1; max-height:260px; width:100%; background:#000}
 .shero.shero-op img,.shero.shero-op .p-real{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; filter:none}
 .shero.shero-op.compact{aspect-ratio:auto; height:96px; max-height:none}
+.shero.shero-op.compact.noimg .gp-t{display:none}
 @media(max-width:620px){ .shero.shero-op{max-height:170px} }
 .sh-ophead{padding:20px 22px 0}
+.opsheet h2{overflow-wrap:anywhere}
+/* the p3e day tiles grow with their text (large text: "дек" stays inside); 44 px minimum (Театър too) */
+@media(max-width:760px){ .p3e-days .p3e-day{min-width:44px; width:auto; padding-inline:4px} }
 .sh-ophead .eyebrow{color:var(--fg); margin-bottom:8px}
 .slede{margin:8px 0 0; color:var(--fg-2); font-size:14.5px}
 [data-opera] .chip.solid{background:var(--ink-4); border-color:var(--line-2); color:var(--fg)}
@@ -3582,10 +3604,18 @@ const opPerfs=sid=>upcomingPerfs(_prows(sid)).slice().sort(opByDT);
 const opPremDates=sid=>PREMIERES["show:"+sid]||[];
 const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
 /* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
-const opSub=sh=>{const s=String(sh.subtitle||"").trim();
-  return opPremAhead(sh.id)?s.replace(/(^|\s)ПРЕМИЕРА(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
-const opStage=p=>p[3]||opT().stageUnknown;
-const opHallArea=stage=>{const th=thById.opera||THEATRES.find(x=>x.kind==="opera")||{};return stage&&th.hallAreas&&own(th.hallAreas,stage)?th.hallAreas[stage]:"";};
+const opSubText=(s,prem)=>{s=String(s||"").replace(/\s+/g," ").trim();
+  return prem?s.replace(/(^|\s)ПРЕМИЕРА(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
+const opSub=sh=>opSubText(sh.subtitle,opPremAhead(sh.id));
+const opTh=()=>thById.opera||THEATRES.find(x=>x.kind==="opera")||{};
+/* a stage as the page shows it: in EN the opera's own English name (its /en calendar: "Main Hall"), else
+   the Bulgarian one as published */
+const opStageName=st=>{if(!st)return opT().stageUnknown;const en=opTh().hallEn;return S.lang==="en"&&en&&own(en,st)&&en[st]?en[st]:st;};
+const opStage=p=>opStageName(p[3]);
+/* the address under a stage (by its Bulgarian or shown name), in EN the /en calendar's own */
+const opHallArea=label=>{const th=opTh(),a=th.hallAreas||{};
+  const k=Object.keys(a).find(k=>k===label||((th.hallEn||{})[k]===label));
+  return k?(S.lang==="en"&&th.hallAreasEn&&th.hallAreasEn[k]||a[k]):"";};
 const opYear=d=>d.slice(0,4)!==TODAY.slice(0,4)?" "+d.slice(0,4):"";
 const opShortDate=d=>{const x=dUTC(d),L=t();return`${L.dows[x.getUTCDay()]} ${x.getUTCDate()} ${(L.monthsShort||L.months)[x.getUTCMonth()]}`;};
 const opLongDate=d=>{const x=dUTC(d);return`${x.getUTCDate()} ${t().months[x.getUTCMonth()]}`;};
@@ -3617,10 +3647,15 @@ const OP_SHOES=`<svg class="shoes" viewBox="68.288 -12 360 520.576" fill="curren
 /* The typographic art is always drawn; a picture goes over it and hides it (.gp under :has(img), CSS).
    A picture that fails to load is removed by the failure trap, and the type shows instead of an
    empty black box, as on every other card of the site. */
+const opImg=sh=>safeImg(realPoster(sh.id,"original"));
+/* the classes of an art box with no picture: noimg (the phone hero and the compact sheet banner then
+   drop the title, which the heading under them says), nok (no genre kicker either) */
+const opNoImg=sh=>opImg(sh)?"":" noimg"+(opGenreOf(sh)?"":" nok");
 function opArt(sh){
-  const src=safeImg(realPoster(sh.id,"original"));
-  const r=rng(sh.id),gx=Math.round(18+r()*70),g=opGenreOf(sh);
-  const gp=`<div class="gp" style="--gx:${gx}%" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(titleOf(sh))}</span></div>`;
+  const src=opImg(sh);
+  const r=rng(sh.id),gx=Math.round(18+r()*70),g=opGenreOf(sh),tt=titleOf(sh);
+  const gl=Math.max(4,...tt.split(/\s+/).map(w=>[...w].length));
+  const gp=`<div class="gp" style="--gx:${gx}%;--gl:${gl}" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(tt)}</span></div>`;
   return gp+(src?`<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
 
 /* hero slot: the hero when the period has a bookable row, else the late-day card (§5.4/§5.7) */
@@ -3634,7 +3669,7 @@ function opHeroSlot(){
   const sh=rk[0].s,mine=rows.filter(p=>p[0]===sh.id),go=mine.find(p=>opStatus(p)==="buy")||mine[0];
   const stages=[...new Set(mine.map(opStage))],prem=mine.some(p=>opPremDates(sh.id).includes(p[1]));
   const sub=opSub(sh);
-  return`<div class="hero ophero"><div class="hero-art${sh.baked?" baked":""}">${opArt(sh)}</div><div class="hero-scrim"></div>
+  return`<div class="hero ophero"><div class="hero-art${sh.baked?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
     <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
     <div class="hero-meta"><span>${esc(stages.join(", "))}</span><span>${esc(plural(mine.length,L.plPerf))}</span></div>
@@ -3659,7 +3694,7 @@ function opLateCard(rows){
     :`<button class="btn" data-show="${esc(sh.id)}" data-pd="${esc(nx[1])}" data-pt="${esc(nx[2])}">${esc(fillT(O.lateSeeTitle,{t:titleOf(sh)}))}</button>`;
   const when=S.lang==="bg"?`${opWeekday(nx[1])}, ${opLongDate(nx[1])}${opYear(nx[1])}`:`${opWeekday(nx[1])} ${opLongDate(nx[1])}${opYear(nx[1])}`;
   return`<div class="late-day-card"><h3>${esc(h)}</h3>
-    <p>${esc(`${lead}${bk?O.lateNearest:O.lateNext}: ${titleOf(sh)}, ${when}, ${nx[2]}${nx[3]?", "+nx[3]:""}.`)}</p>
+    <p>${esc(`${lead}${bk?O.lateNearest:O.lateNext}: ${titleOf(sh)}, ${when}, ${nx[2]}${nx[3]?", "+opStage(nx):""}.`)}</p>
     <div class="acts">${btn}${reset}</div></div>`;}
 /* "Програмата по дни": every performance a row, the action names its status (§5.5) */
 function opAgenda(rows){
@@ -3676,7 +3711,7 @@ function opAgenda(rows){
         :opProdUrl(sh.id)?`<a class="ag-act more" href="${esc(opProdUrl(sh.id))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.moreAria,{t:tt}))}">${esc(O.seeMore)}</a>`:"";
       const pm=st!=="so"?opPriceMin(sh):null,sub=opSub(sh);
       return`<div class="agrow${st==="so"?" so":""}"><span class="ag-t">${esc(p[2])}</span>
-        <button class="ag-main" data-show="${esc(sh.id)}" data-pd="${esc(p[1])}" data-pt="${esc(p[2])}"><b>${opTitleHtml(sh,dup,p[3])}${opPremDates(sh.id).includes(p[1])?`<span class="badge-g">${esc(O.premiere)}</span>`:""}</b>${sub?`<span class="ag-sub">${esc(sub)}</span>`:""}
+        <button class="ag-main" data-show="${esc(sh.id)}" data-pd="${esc(p[1])}" data-pt="${esc(p[2])}"><b>${opTitleHtml(sh,dup,p[3]?opStage(p):"")}${opPremDates(sh.id).includes(p[1])?`<span class="badge-g">${esc(O.premiere)}</span>`:""}</b>${sub?`<span class="ag-sub">${esc(sub)}</span>`:""}
         <span class="ag-st">${esc(opStage(p))}${pm!=null?" · "+esc(fillT(O.fromPrice,{p:opNum(pm)})):""}</span></button>${act}</div>`;}).join("");
     const head=`${opCap(opWeekday(d))}, ${opLongDate(d)}${opYear(d)}`;
     return`<section class="agday" aria-label="${esc(head)}"><h3>${esc(head)}${d===TODAY?`<small>${esc(O.today)}</small>`:""}</h3><div class="agrows">${rs}</div></section>`;}).join("");
@@ -3691,7 +3726,7 @@ function opCard(sh,ps,dup){
   const tags=(opPremAhead(sh.id)?`<span class="badge-g">${esc(O.premiere)}</span>`:"")+(allSo?`<span class="badge-s">${esc(O.soldBadge)}</span>`:"");
   const go=ps.find(p=>opStatus(p)==="buy")||a,sub=opSub(sh);
   return`<button class="ecard opcard" data-show="${esc(sh.id)}" data-pd="${esc(go[1])}" data-pt="${esc(go[2])}"><span class="ebox">${opArt(sh)}</span>
-    <span class="cf1">${opTitleHtml(sh,dup,a[3])}${tags}</span>${sub?`<span class="cf2">${esc(sub)}</span>`:""}
+    <span class="cf1">${opTitleHtml(sh,dup,a[3]?opStage(a):"")}${tags}</span>${sub?`<span class="cf2">${esc(sub)}</span>`:""}
     <span class="cf3">${when}</span></button>`;}
 /* the "По жанр" rails over the look-ahead, open: no exclusion, at most 10 cards, a rail of one
    card is not drawn; "Спектакли за деца" last, with "Само за деца ›" (§5.6) */
@@ -3777,7 +3812,7 @@ function sheetOpera(sh,fc){
   const fd=fc&&fc.pd,ft=fc&&fc.pt,fp=fd?perfs.find(p=>p[1]===fd&&(!ft||p[2]===ft))||null:null;
   const stages=[...new Set(perfs.map(opStage))],g=opGenreOf(sh),sub=opSub(sh),syn=synShow(sh);
   const chips=(g?`<span class="chip solid">${esc(opGenreLabel(g))}</span>`:"")+(opPremAhead(sh.id)?`<span class="chip prem">${esc(O.premiere)}</span>`:"");
-  return`<div class="sheet opsheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-op${fp?" compact":""}">${opArt(sh)}
+  return`<div class="sheet opsheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-op${fp?" compact":""}${opNoImg(sh)}">${opArt(sh)}
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button></div>
    <div class="sh-ophead"><div class="eyebrow">${esc(stages.join(" · "))}</div><h2 id="sg-sheet-title">${esc(titleOf(sh))}</h2>${sub?`<p class="slede">${esc(sub)}</p>`:""}</div>
@@ -5963,7 +5998,7 @@ function _surfaceEntry(push){
 function _syncSheetUrl(){
   if(!_PATH_URLS||_histPending||!sheetOpen||_histDepth<1)return;
   const path=_sheetPath(curSheet);
-  if(path&&location.pathname!==path){try{history.replaceState(history.state,"",path);}catch(e){}}
+  if(path&&location.pathname!==path){try{history.replaceState(history.state,"",path+OPERA_Q);}catch(e){}}
 }
 /* The browser restores the page's saved scroll offset after every popstate. The page is
    pinned (scrollY 0) while a sheet is open, so with "auto" that restore could land after
@@ -5990,7 +6025,7 @@ function _syncHistory(){
     while(_histDepth<want){
       const st={ss:_histDepth?"pop":"sheet",d:_histDepth+1,k:_HK},path=_sheetPath(curSheet);
       if(path){st.kind=curSheet.kind;st.id=curSheet.id;st.m=S.mode;if(_histDepth&&_ss)st.p=_ss.key;}
-      if(path)history.pushState(st,"",path);else history.pushState(st,"");
+      if(path)history.pushState(st,"",path+OPERA_Q);else history.pushState(st,"");   /* ?opera=1 stays: a reload or a shared address keeps the surface */
       _histDepth++;
     }
     if(_histDepth>want){
@@ -6255,7 +6290,7 @@ function _arrive(c){
   try{
     const st=history.state,path=_sheetPath(c);
     if(path&&st&&st.kind===c.kind&&st.id===c.id&&location.pathname===path){
-      history.replaceState(Object.assign({},st,{ss:"sheet",d:1,k:_HK,m:S.mode}),"",path);_histDepth=1;return;}
+      history.replaceState(Object.assign({},st,{ss:"sheet",d:1,k:_HK,m:S.mode}),"",path+OPERA_Q);_histDepth=1;return;}
     _surfaceEntry(false);
   }catch(e){}
 }
@@ -6273,7 +6308,10 @@ function _openById(kind,id,arrive){
     if(own(filmById,id))html=sheetFilm(filmById[id]);
     else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="show"){
-    if(own(showById,id))html=sheetShow(showById[id]);
+    /* an opera production opens only with the surface shown (OPERA_ON): while it is hidden a deep link
+       to one (an old share page, a typed /show/<id>/) gets the not-in-programme note, never a sheet
+       on a surface that does not list it */
+    if(own(showById,id)&&(OPERA_ON||surfOf(showById[id])!=="opera"))html=sheetShow(showById[id]);
     else if(id){if(arrive)_arrive(null);toast(t().notInProgramme);return true;}
   }else if(kind==="event"){const ev=EVENTS.find(x=>x.id===id);if(ev)html=sheetEvent(ev);}
   if(html){if(arrive)_arrive({kind,id});curSheet={kind,id};openSheet(html,null);return true;}

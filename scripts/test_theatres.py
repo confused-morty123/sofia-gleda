@@ -1953,6 +1953,9 @@ with _tf_r.TemporaryDirectory() as _d:
           True)
 check("REDIRECT_JS: a reload whose state says opera returns to /home/opera/",
       '/^(theatre|opera)$/.test(s.m)?"/home/"+s.m+"/":"/home/"' in _GSP.REDIRECT_JS, True)
+check("REDIRECT_JS: ?opera=1 (the hidden surface's flag) goes on with the redirect",
+      ("o=/[?&]opera=1(?:&|$)/.test(location.search)" in _GSP.REDIRECT_JS, '(o?"opera=1"+(m?"&":""):"")' in _GSP.REDIRECT_JS),
+      (True, True))
 with _tf_r.TemporaryDirectory() as _d:
     _root = pathlib.Path(_d)
     _app = ('<link rel="canonical" href="https://sofiagleda.com/home/">\n'
@@ -1974,13 +1977,33 @@ with _tf_r.TemporaryDirectory() as _d:
     def _rd(rel):
         p = _root / rel
         return p.read_text(encoding="utf-8") if p.is_file() else ""
-    check("gen_share_pages main(): an opera show's page links /home/opera/?show=<id>, a theatre's /home/theatre/",
-          ('href="/home/opera/?show=lebedovo-ezero"' in _rd("show/lebedovo-ezero/index.html"),
-           'href="/home/theatre/?show=hamlet-nat"' in _rd("show/hamlet-nat/index.html")), (True, True))
+    check("gen_share_pages main(), surface hidden (no OPERA_ON true): an opera show's page leads to /home/theatre/ "
+          "and is noindex; a theatre's page is indexable",
+          ('href="/home/theatre/?show=lebedovo-ezero"' in _rd("show/lebedovo-ezero/index.html"),
+           '<meta name="robots" content="noindex">' in _rd("show/lebedovo-ezero/index.html"),
+           'href="/home/theatre/?show=hamlet-nat"' in _rd("show/hamlet-nat/index.html"),
+           'name="robots"' in _rd("show/hamlet-nat/index.html")), (True, True, True, False))
     _hop = _rd("home/opera/index.html")
-    check("…writes home/opera/index.html with its own canonical and og:url",
-          ('rel="canonical" href="https://sofiagleda.com/home/opera/"' in _hop,
-           'property="og:url" content="https://sofiagleda.com/home/opera/"' in _hop), (True, True))
+    check("…while hidden, home/opera/index.html keeps /home/'s canonical and og:url (no indexable opera address)",
+          ('rel="canonical" href="https://sofiagleda.com/home/"' in _hop,
+           'property="og:url" content="https://sofiagleda.com/home/"' in _hop), (True, True))
+    (_root / "index.html").write_text(_app + "const OPERA_ON=/[?&]opera=1\\b/.test(location.search)||true;\n",
+                                      encoding="utf-8")
+    _GSP.ROOT, _GSP.HTML_PATH = _root, _root / "index.html"
+    try:
+        _GSP.main()
+    finally:
+        _GSP.ROOT, _GSP.HTML_PATH = _saved
+    _hop = _rd("home/opera/index.html")
+    check("gen_share_pages main(), surface shown (OPERA_ON true): an opera show's page links /home/opera/?show=<id>, "
+          "indexable; home/opera/ has its own canonical and og:url",
+          ('href="/home/opera/?show=lebedovo-ezero"' in _rd("show/lebedovo-ezero/index.html"),
+           'name="robots"' in _rd("show/lebedovo-ezero/index.html"),
+           'rel="canonical" href="https://sofiagleda.com/home/opera/"' in _hop,
+           'property="og:url" content="https://sofiagleda.com/home/opera/"' in _hop), (True, False, True, True))
+    check("opera_shown: only OPERA_ON true in the page counts (not the ?opera=1 flag)",
+          (_GSP.opera_shown("const OPERA_ON=!!OPERA_Q;"), _GSP.opera_shown("const OPERA_ON=true;"),
+           _GSP.opera_shown("")), (False, True, False))
     check("…and home/ and home/theatre/ keep theirs",
           ('property="og:url" content="https://sofiagleda.com/home/"' in _rd("home/index.html"),
            'property="og:url" content="https://sofiagleda.com/home/theatre/"' in _rd("home/theatre/index.html")),
