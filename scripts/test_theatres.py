@@ -3899,6 +3899,26 @@ check("fetch_opera: ...and it does not end the reading (January asked, its rows 
 _net_ke = FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _op_empty("декември", 2026),
                                O.OPERA_CAL_KIDS.format(y=2026, m=12): _op_empty("декември", 2026)}))
 _res_ke = O.fetch_opera(_net_ke, OP_TODAY)
+# review-r2 #4b: finish de-duplicates a SOURCE_ID_KEY venue's rows per production id, so two
+# productions with one title in one slot both survive (synthetic: the 20 Dec 11:00 section of
+# /repertoire/1108 twice, the copy pointing at /repertoire/1088 in the Камерна зала)
+_sec20 = fx("opera_children_2026-12-20_section.html")
+_art = _sec20[_sec20.index("<article"):_sec20.index("</article>") + len("</article>")]
+_art88 = _art.replace("/repertoire/1108", "/repertoire/1088").replace("Голяма зрителна зала", "Камерна зала")
+_kids12_both = fx("opera_children_2026-12.html").replace(
+    "</div></body></html>", _sec20.replace(_art, _art + _art88) + "</div></body></html>", 1).encode()
+_res_cl = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12): _kids12_both})), OP_TODAY)
+check("fetch_opera: two productions with one title in one slot both survive (keyed on the repertoire id)",
+      sorted((r[3].get("rep_id"), r[3].get("hall")) for r in _res_cl["rows"] + _res_cl["extra_rows"]
+             if (r[0], r[1], r[2]) == ("КАРНАВАЛЪТ НА ЖИВОТНИТЕ", "2026-12-20", "11:00")),
+      [("1088", "Камерна зала"), ("1108", "Голяма зрителна зала")])
+_cl_rows = [O.mkrow("Х", dt.date(2026, 12, 20), "11:00", rep_id="1"), O.mkrow("Х", dt.date(2026, 12, 20), "11:00", rep_id="2"),
+            O.mkrow("Х", dt.date(2026, 12, 20), "11:00", rep_id="1")]
+check("finish: the production id is the key for a SOURCE_ID_KEY venue only (the same row twice is still one; "
+      "another venue keeps (title, date, time))",
+      ([r[3].get("rep_id") for r in O.finish("opera", "s", _cl_rows, OP_TODAY, month_check=False)["rows"]],
+       [r[3].get("rep_id") for r in O.finish("national", "s", _cl_rows, OP_TODAY, month_check=False)["rows"]],
+       _SPO.SOURCE_ID_KEY is O.SOURCE_ID_KEY), (["1", "2"], ["1"], True))
 check("fetch_opera: a later month empty in both views ends the reading (January not asked)",
       (O.OPERA_CAL.format(y=2027, m=1) in _net_ke.asked, sorted({r[1][:7] for r in _res_ke["rows"] + _res_ke["extra_rows"]})),
       (False, ["2026-11"]))

@@ -506,15 +506,24 @@ def complete_until(rows, today, why=None, history=None):
     return last
 
 
+# A theatre whose productions are told apart by the source's own id (meta key), not by the
+# title: operasofia.bg lists two productions as КАРНАВАЛЪТ НА ЖИВОТНИТЕ (/repertoire/1088 in
+# the Chamber hall, /repertoire/1108 on the main stage). finish() keeps one row per
+# (title, date, time, id) for it; scrape_programs gives each id its own show.
+SOURCE_ID_KEY = {"opera": "rep_id"}
+
+
 def finish(venue, source, rows, today, *, excluded=(), notes=(), covered_from=None,
            covered_to=None, month_check=True, history=None):
     """Assemble the contract dict, or raise Unavailable when nothing usable is
-    left. Rows are de-duplicated, past rows dropped, and split into `rows`
-    (inside the covered range) and `extra_rows` (outside it)."""
+    left. Rows are de-duplicated (on title, date and time, plus the production id
+    for a SOURCE_ID_KEY venue), past rows dropped, and split into `rows` (inside
+    the covered range) and `extra_rows` (outside it)."""
     t0 = today.isoformat()
     uniq = OrderedDict()
+    idk = SOURCE_ID_KEY.get(venue)
     for r in rows:
-        uniq.setdefault((r[0], r[1], r[2]), r)
+        uniq.setdefault((r[0], r[1], r[2]) + (((r[3] or {}).get(idk),) if idk else ()), r)
     listed = list(uniq.values())                 # past days too: the completeness reference
     rows = sorted((r for r in listed if r[1] >= t0), key=lambda r: (r[1], r[2], r[0]))
     if not rows:
