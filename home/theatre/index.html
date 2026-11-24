@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-1s0tzNpO2adyerYdKWeBEWqHRM0FBZR6sxL+m7GEAyY=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-7BcudBzoM6U9tofdbbva7jQz8e4AeqKPT0uQTxV60zo=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-fvlSMCcahIph5HG4ETjrMRNtN9CNeHq79oJZxwzRBkE=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-/KGvpyaWV2/WX/YufoYZWxvvOYjeCQqzCKKD7pkRjLU=' 'sha256-1s0tzNpO2adyerYdKWeBEWqHRM0FBZR6sxL+m7GEAyY=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-fvlSMCcahIph5HG4ETjrMRNtN9CNeHq79oJZxwzRBkE=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/,
      /home/opera/ and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -1704,7 +1704,7 @@ button,a{-webkit-tap-highlight-color:transparent}
   [data-opera] .ophero .hero-title{font-size:27px; margin-bottom:6px}
   [data-opera] .ophero .hero-syn{margin-bottom:14px; -webkit-line-clamp:1}
   [data-opera] .ophero .acts{flex-direction:column; align-items:stretch}
-  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px}
+  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px; white-space:normal; text-wrap:balance}
 }
 /* "Програмата по дни": one row per performance; the action names the status */
 .agenda{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; margin-bottom:44px; overflow:hidden}
@@ -1783,6 +1783,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 @media(max-width:620px){ .shero.shero-op{max-height:170px} }
 .sh-ophead{padding:20px 22px 0}
 .opsheet h2{overflow-wrap:anywhere}
+/* "За спектакъла": the value column may shrink below its longest word (large text), never past the sheet */
+.opsheet .credits{grid-template-columns:auto minmax(0,1fr)}
+.opsheet .credits dd{overflow-wrap:anywhere}
 /* the p3e day tiles grow with their text (large text: "дек" stays inside); 44 px minimum (Театър too) */
 @media(max-width:760px){ .p3e-days .p3e-day{min-width:44px; width:auto; padding-inline:4px} }
 .sh-ophead .eyebrow{color:var(--fg); margin-bottom:8px}
@@ -3863,7 +3866,7 @@ function opHeroSlot(){
   const sh=rk[0].s,mine=rows.filter(p=>p[0]===sh.id),go=mine.find(p=>opStatus(p)==="buy")||mine[0];
   const stages=[...new Set(mine.map(opStage))],prem=mine.some(p=>opPremDates(sh.id).includes(p[1]));
   const sub=opSub(sh);
-  return`<div class="hero ophero"><div class="hero-art${sh.baked?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
+  return`<div class="hero ophero"><div class="hero-art${sh.baked&&opImg(sh)?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
     <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
     <div class="hero-meta"><span>${esc(stages.join(", "))}</span><span>${esc(plural(mine.length,L.plPerf))}</span></div>

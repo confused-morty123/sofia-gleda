@@ -2579,6 +2579,11 @@ OPERA_MONTHS = 4             # the current month + 3 (DESIGN_SPEC §2.1.1: 4 × 
 # "event" and any class not listed: no genre (never guessed).
 OPERA_GENRE = {"opera": "Опера", "ballet": "Балет", "musical": "Мюзикъл", "behind": "Концерт",
                "children": "Детски"}
+# Productions whose own banner prints the title (DESIGN_SPEC §2.2 "poster has baked-in title": the
+# phone hero banner is then 96 px, not 128). The manual list the spec allows until the poster
+# pass marks it: research 2026-11-24 (research/sample_data.json poster_kind "…baked-in…"):
+# АГРИПИНА 1067, КОНЦЕРТ ГАЛА РОСИНИ 1069, МАТИЛДА 1114.
+OPERA_BAKED = frozenset({"1067", "1069", "1114"})
 OPERA_KIDS = "Детски"        # every row of the children's view carries it (the UI's "За деца")
 # The Opera's own halls: Голяма зрителна зала (ул. „Врабча“ 1) and Камерна зала (бул. „Княз
 # Александър Дондуков“ 30, most children's shows). Any other published address is off-site

@@ -1867,7 +1867,8 @@ def refresh_source_shows(records, resolved, today_iso):
         they all print before a closing conductor/director credit (only the conductor
         changes by night); else none (a missing value beats one night's line);
       * facts: the production pass's meta "facts" (official_theatres.opera_production_pass),
-        as they are; none when no row carries them.
+        as they are; none when no row carries them;
+      * baked: true for a production whose banner prints its title (OT.OPERA_BAKED).
     resolved: resolve_theatre_rows' {theatre: {"rows"/"extra_rows": [(sid, date, time,
     meta, title)]}}. A show with no upcoming row tonight is left as it is. Returns the
     ids whose record changed."""
@@ -1905,6 +1906,10 @@ def refresh_source_shows(records, resolved, today_iso):
             rec["facts"] = dict(facts)
         else:
             rec.pop("facts", None)
+        if str(rec.get("source_id") or "") in OT.OPERA_BAKED:
+            rec["baked"] = True
+        else:
+            rec.pop("baked", None)
         if json.dumps(rec, sort_keys=True, ensure_ascii=False) != before:
             changed.append(sid)
     return changed

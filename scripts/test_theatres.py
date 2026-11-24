@@ -3997,6 +3997,12 @@ check("refresh_source_shows: the production pass's facts become SHOWS.facts (con
       ((_rs_by["АГРИПИНА"].get("facts") or {}).get("conductor"), (_rs_by["АГРИПИНА"].get("facts") or {}).get("prices_eur")),
       ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"]))
 check("refresh_source_shows: every refreshed show reported changed", sorted(_rs_changed) == sorted(_rs_recs), True)
+_rs_srcid = {sid: (m or {}).get("source_id") for sid, _t, _u, m in _rs_log}
+for _sid, _r in _rs_recs.items():
+    _r["source_id"] = _rs_srcid.get(_sid)
+_SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat())
+check("refresh_source_shows: baked only for the productions whose banner prints the title (АГРИПИНА 1067)",
+      (_rs_by["АГРИПИНА"].get("baked"), "baked" in _rs_by["ЖИЗЕЛ"]), (True, False))
 check("refresh_source_shows: a second run with the same rows changes nothing",
       _SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat()), [])
 
@@ -4043,7 +4049,7 @@ check("inject_shows: subtitle and facts reach SHOWS when present; absent (not em
       (_IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("subtitle"),
        _IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("facts"),
        sorted(set(_IS.normalise({"id": "b"})) - set(_IS.SHOW_FIELDS)),
-       sorted(set(_IS.normalise({"id": "c", "subtitle": "", "facts": "x"})) - set(_IS.SHOW_FIELDS))),
+       sorted(set(_IS.normalise({"id": "c", "subtitle": "", "facts": "x", "baked": "yes"})) - set(_IS.SHOW_FIELDS))),
       ("Опера от Хендел", {"conductor": "К"}, [], []))
 
 # a future performance whose sales have not opened (only 'виж повече': the Gala of 2 Dec)

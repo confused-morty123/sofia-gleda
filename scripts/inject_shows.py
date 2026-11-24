@@ -36,8 +36,9 @@ SHOW_FIELDS = ("id", "title", "titleEn", "theatre", "author", "director", "cast"
                "genres", "g", "duration", "synBg", "synEn")
 # Fields only some sources print (the opera: scrape_programs.refresh_source_shows), carried
 # only when present and of their type, so the other ~500 shows stay as they are:
-# subtitle (the calendar's line, verbatim) and facts (the production page's labelled fields).
-OPTIONAL_FIELDS = {"subtitle": str, "facts": dict}
+# subtitle (the calendar's line, verbatim), facts (the production page's labelled fields) and
+# baked (its banner prints the title: the 96 px phone hero).
+OPTIONAL_FIELDS = {"subtitle": str, "facts": dict, "baked": bool}
 
 
 def extract_array(src, name):

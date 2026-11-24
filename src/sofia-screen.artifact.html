@@ -1661,7 +1661,7 @@ button,a{-webkit-tap-highlight-color:transparent}
   [data-opera] .ophero .hero-title{font-size:27px; margin-bottom:6px}
   [data-opera] .ophero .hero-syn{margin-bottom:14px; -webkit-line-clamp:1}
   [data-opera] .ophero .acts{flex-direction:column; align-items:stretch}
-  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px}
+  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px; white-space:normal; text-wrap:balance}
 }
 /* "Програмата по дни": one row per performance; the action names the status */
 .agenda{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; margin-bottom:44px; overflow:hidden}
@@ -1740,6 +1740,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 @media(max-width:620px){ .shero.shero-op{max-height:170px} }
 .sh-ophead{padding:20px 22px 0}
 .opsheet h2{overflow-wrap:anywhere}
+/* "За спектакъла": the value column may shrink below its longest word (large text), never past the sheet */
+.opsheet .credits{grid-template-columns:auto minmax(0,1fr)}
+.opsheet .credits dd{overflow-wrap:anywhere}
 /* the p3e day tiles grow with their text (large text: "дек" stays inside); 44 px minimum (Театър too) */
 @media(max-width:760px){ .p3e-days .p3e-day{min-width:44px; width:auto; padding-inline:4px} }
 .sh-ophead .eyebrow{color:var(--fg); margin-bottom:8px}
@@ -3669,7 +3672,7 @@ function opHeroSlot(){
   const sh=rk[0].s,mine=rows.filter(p=>p[0]===sh.id),go=mine.find(p=>opStatus(p)==="buy")||mine[0];
   const stages=[...new Set(mine.map(opStage))],prem=mine.some(p=>opPremDates(sh.id).includes(p[1]));
   const sub=opSub(sh);
-  return`<div class="hero ophero"><div class="hero-art${sh.baked?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
+  return`<div class="hero ophero"><div class="hero-art${sh.baked&&opImg(sh)?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
     <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
     <div class="hero-meta"><span>${esc(stages.join(", "))}</span><span>${esc(plural(mine.length,L.plPerf))}</span></div>
