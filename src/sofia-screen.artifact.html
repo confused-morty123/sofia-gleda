@@ -1666,12 +1666,20 @@ const HERO_PINS = [{"mode":"cinema","id":"igrite-na-glada-izgrevat-v-denya-na-zh
   });
 })();
 
+/* Опера и балет (third surface): the toggle segment shows only with ?opera=1 until the owner
+   flips it; the opera/theatre partition (surfOf) is always on, so opera rows never reach Театър.
+   shortcut: flag in the query, flip to true on owner approval, then drop the query check */
+const OPERA_Q=/[?&]opera=1\b/.test(location.search)?"?opera=1":"";
+const OPERA_ON=!!OPERA_Q;
+/* a mode the page can show: "opera" only with the flag, anything else is cinema */
+const okMode=m=>m==="theatre"||(m==="opera"&&OPERA_ON)?m:"cinema";
+
 /* ===================== i18n ===================== */
 const T={
 bg:{tagline:"кино и театър в софия",
  siteTagline:"Програмата на кината и театрите в София, обновявана всеки ден от сайтовете им.",
- listingLine:"Афишът на кината и театрите в София",
- cinema:"Кино",theatre:"Театър",all:"Цялата седмица",
+ listingLine:OPERA_ON?"Афишът на кината, театрите и операта в София":"Афишът на кината и театрите в София",
+ cinema:"Кино",theatre:"Театър",opera:"Опера и балет",all:"Цялата седмица",
  dows:["нд","пн","вт","ср","чт","пт","сб"],
  dowsLong:["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"],
  months:["януари","февруари","март","април","май","юни","юли","август","септември","октомври","ноември","декември"],
@@ -1784,8 +1792,8 @@ lblClose:"Затвори",closeFilters:"Затвори филтрите",clearSe
  legalNav:"Правна информация",legalTerms:"Общи условия",legalPrivacy:"Поверителност",legalCookies:"Бисквитки"},
 en:{tagline:"cinema & theatre in sofia",
  siteTagline:"What's on at Sofia's cinemas and theatres, updated daily from their own sites.",
- listingLine:"Sofia's cinema and theatre listings",
- cinema:"Cinema",theatre:"Theatre",all:"Whole week",
+ listingLine:OPERA_ON?"Cinema, theatre and opera listings in Sofia":"Sofia's cinema and theatre listings",
+ cinema:"Cinema",theatre:"Theatre",opera:"Opera & Ballet",all:"Whole week",
  dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
  dowsLong:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
  months:["January","February","March","April","May","June","July","August","September","October","November","December"],
@@ -1973,7 +1981,7 @@ try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);
     P.genres=ids(q.genres);P.mood=ids(q.mood);
     P.taste=ids(q.taste).map(x=>hasS(rd,x)?rd[x]:hasS(fr,x)?fr[x]:x);
     S.onb=false;S.lang=p.lang==="en"?"en":"bg";
-    S.mode=p.mode==="cinema"||p.mode==="theatre"?p.mode:(P.track==="theatre"?"theatre":"cinema");}
+    S.mode=p.mode==="cinema"||p.mode==="theatre"||p.mode==="opera"?okMode(p.mode):(P.track==="theatre"?"theatre":"cinema");}
   /* P3A item 7: restore favourites */
   if(p&&p.fav&&Array.isArray(p.fav.venues))S.fav={venues:ids(p.fav.venues)};
   if(p&&p.onlyFav)S.onlyFav=!!p.onlyFav;
@@ -2175,7 +2183,7 @@ const GENRE_EN={
  /* Theatre genres */
  "Биографичен":"Biographical","Българска драматургия":"Bulgarian drama","Гостуване":"Guest production",
  "Детски":"Children's","Експериментален":"Experimental","Камерна":"Chamber",
- "Концерт":"Concert","Куклен":"Puppet","Международен":"International","Моноспектакъл":"One-person show",
+ "Концерт":"Concert","Опера":"Opera","Балет":"Ballet","Мюзикъл":"Musical","Куклен":"Puppet","Международен":"International","Моноспектакъл":"One-person show",
  "Премиера":"Premiere","Приказка":"Fairy tale","Пърформанс":"Performance","Работилница":"Workshop",
  "Съвременен танц":"Contemporary dance","Съвременна":"Contemporary","Състезание":"Competition",
  "Танц":"Dance","Трагедия":"Tragedy","Улична култура":"Street culture","Улично":"Street",
@@ -2464,6 +2472,11 @@ const filmById=Object.fromEntries(FILMS.map(f=>[f.id,f]));
 const showById=Object.fromEntries(SHOWS.map(s=>[s.id,s]));
 const cinById=Object.fromEntries(CINEMAS.map(c=>[c.id,c]));
 const thById=Object.fromEntries(THEATRES.map(x=>[x.id,x]));
+/* the surface a show belongs to: its venue's kind decides (Sofia Opera is kind "opera") */
+const surfOf=sh=>sh&&(thById[sh.theatre]||{}).kind==="opera"?"opera":"theatre";
+const inSurf=sh=>surfOf(sh)===S.mode;
+/* the venues of the current theatre-side surface */
+const surfTheatres=()=>THEATRES.filter(th=>(th.kind==="opera")===(S.mode==="opera"));
 const fmtDay=(iso,long)=>{const d=dUTC(iso);
   return long?`${d.getUTCDate()} ${t().months[d.getUTCMonth()]}`
              :`${t().dows[d.getUTCDay()]} ${d.getUTCDate()}`;};
@@ -2718,9 +2731,15 @@ const GENRES=[
  {id:"doc",    t:"cinema", bg:"Документално",           en:"Documentary",        m:["Документален"]},
  {id:"music",  t:"both",   bg:"Музика и мюзикъли",     en:"Music & musicals",   m:["Музикален","Мюзикъл","Концерт","Концертен"]},
  {id:"bgwork", t:"both",   bg:"Българско",             en:"Bulgarian work",     m:["Български","Българска драматургия"]},
- {id:"fest",   t:"both",   bg:"Фестивали и гостувания",en:"Festivals & guests", m:["Фестивал","Гостуване","Международен","Юбилейно"]}
+ {id:"fest",   t:"both",   bg:"Фестивали и гостувания",en:"Festivals & guests", m:["Фестивал","Гостуване","Международен","Юбилейно"]},
+ /* Опера и балет: the operasofia.bg calendar's own categories (no "both" groups there) */
+ {id:"opera",  t:"opera",  bg:"Опера",                 en:"Opera",              m:["Опера"]},
+ {id:"ballet", t:"opera",  bg:"Балет",                 en:"Ballet",             m:["Балет"]},
+ {id:"concert",t:"opera",  bg:"Концерт",               en:"Concert",            m:["Концерт"]},
+ {id:"musical",t:"opera",  bg:"Мюзикъл",               en:"Musical",            m:["Мюзикъл"]},
+ {id:"kids",   t:"opera",  bg:"За деца",               en:"For children",       m:["Детски"]}
 ];
-const genresFor=track=>GENRES.filter(g=>g.t==="both"||g.t===track||track==="both");
+const genresFor=track=>GENRES.filter(g=>g.t===track||(g.t==="both"&&track!=="opera")||(track==="both"&&g.t!=="opera"));
 const MOODS={
  cinema:[{id:"intense",bg:"Да ме разтърси",en:"Shake me up",m:["Екшън","Трилър","Хорър","Криминален"]},
    {id:"laugh",bg:"Да се посмея",en:"Make me laugh",m:["Комедия","Анимация"]},
@@ -2794,6 +2813,7 @@ function visibleFilms(){const day=dayOrAll();
     return true;});}
 function visibleShows(){const day=dayOrAll();
   return SHOWS.filter(s=>{
+    if(!inSurf(s))return false;
     if(!showPerfs(s.id,day).length)return false;
     if(S.fVenues.length&&!venueOk(s.theatre))return false;
     if(S.fGenres.length&&!genreHit(s.genres))return false;
@@ -3029,7 +3049,7 @@ function datesWith(){
   const set=new Set();
   /* only days that still lie ahead become selectable in the calendar */
   if(S.mode==="cinema")SHOWTIMES.forEach(r=>{if(r[2]>=NOW_DATE)set.add(r[2]);});
-  else PERFORMANCES.forEach(p=>{if(p[1]>=NOW_DATE)set.add(p[1]);});
+  else PERFORMANCES.forEach(p=>{if(p[1]>=NOW_DATE&&inSurf(showById[p[0]]))set.add(p[1]);});
   return set;}
 
 /* ===================== cards ===================== */
@@ -3481,7 +3501,7 @@ function body(){
        the empty sections below are left out. With "week" alone it never showed on a Sunday
        evening: the theatre page was an empty "Всичко в програмата 0" (2026-11-15). */
     const isLateDayEmptyT=(S.day===TODAY||S.day==="week")&&!vis.length&&
-      !upcomingPerfs(PERFORMANCES.filter(p=>p[1]===NOW_DATE)).length;
+      !upcomingPerfs(PERFORMANCES.filter(p=>p[1]===NOW_DATE&&inSurf(showById[p[0]]))).length;
     if(isLateDayEmptyT)out.push(lateDayCard(L));
     /* Item 4: "Препоръчани" — scored over the full period (not just today).
        scoreShow uses showPerfs(sid) which already respects inRange. */
@@ -3581,7 +3601,7 @@ function body(){
     const visSet=new Set(vis.map(s=>s.id));
     /* Section A: По жанр — collapsible, CLOSED by default. */
     const genreRails=[];
-    genresFor("theatre").forEach(g=>{
+    genresFor(S.mode).forEach(g=>{
       if(S.fGenres.length&&!S.fGenres.includes(g.id))return;
       const ss=vis.filter(s=>s.genres.some(x=>g.m.includes(x)));
       if(ss.length)genreRails.push({t:S.lang==="bg"?g.bg:g.en,s:`${ss.length}`,items:ss,fn:s=>showCard(s,day)});});
@@ -3590,13 +3610,13 @@ function body(){
       return secToggleHTML("Genres",L.secByGenre||"По жанр",genreRails.length,S.secGenres)
         +`<div id="sec-Genres-content" class="sec-body"${S.secGenres?"":" hidden"}>${inner}</div>`;
     }});
-    /* Section B: По театър — closed by default; theatre sub-grouping. */
-    out.push({html:()=>{
+    /* Section B: По театър — closed by default; theatre sub-grouping (not on Опера и балет: one venue). */
+    if(S.mode==="theatre")out.push({html:()=>{
       let inner="";
       if(S.secVenues){
         const STATE_KINDS=["national","state","municipal"];
-        const allState=THEATRES.filter(th=>STATE_KINDS.includes(th.kind));
-        const allIndie=THEATRES.filter(th=>!STATE_KINDS.includes(th.kind));
+        const allState=surfTheatres().filter(th=>STATE_KINDS.includes(th.kind));
+        const allIndie=surfTheatres().filter(th=>!STATE_KINDS.includes(th.kind));
         const thFilter=th=>S.fVenues.length?venueOk(th.id):true;
         const stateTheatres=allState.filter(thFilter),indieTheatres=allIndie.filter(thFilter);
         const stateRails=[],indieRails=[];
@@ -3722,8 +3742,8 @@ function secToggleInPlace(key){
         }else{
           const visSet=new Set(vis.map(s=>s.id));
           const STATE_KINDS=["national","state","municipal"];
-          const allState=THEATRES.filter(th=>STATE_KINDS.includes(th.kind));
-          const allIndie=THEATRES.filter(th=>!STATE_KINDS.includes(th.kind));
+          const allState=surfTheatres().filter(th=>STATE_KINDS.includes(th.kind));
+          const allIndie=surfTheatres().filter(th=>!STATE_KINDS.includes(th.kind));
           let inner="";
           const stateRails=[],indieRails=[];
           allState.forEach(th=>{const ss=showsAtTheatre(th.id).filter(s=>visSet.has(s.id));if(ss.length)stateRails.push({th,ss});});
@@ -4666,7 +4686,7 @@ function drawerHTML(){
       ? SHOWTIMES.filter(r=>r[1]===id&&r[2]>=NOW_DATE).map(r=>r[2])
       : PERFORMANCES.filter(p=>{const sh=showById[p[0]];return sh&&sh.theatre===id&&p[1]>=NOW_DATE;}).map(p=>p[1]);
     return ds.length?ds.reduce((a,b)=>b>a?b:a):null;};
-  const untilList=(S.mode==="cinema"?CINEMAS:THEATRES).map(v=>{
+  const untilList=(S.mode==="cinema"?CINEMAS:surfTheatres()).map(v=>{
       const u=untilFor(v.id); return u?`${v.name}, ${fmtDay(u,true)}`:null;}).filter(Boolean);
   /* grey out venues with no listings in this snapshot */
   const cinemaHasListings=c=>filmsAtCinema(c.id).length>0;
@@ -4694,7 +4714,7 @@ function drawerHTML(){
     <div class="sec-subhead" style="margin-top:8px">${esc(L.subIndepCinemas)}</div>
     <div class="chipwrap">${independents.map(mkChip).join("")}</div>`;
   }else{
-    const theatres=THEATRES.map(th=>({id:th.id,name:thName(th)}));
+    const theatres=surfTheatres().map(th=>({id:th.id,name:thName(th)}));
     const hasFavT=S.fav.venues.length>0;
     venueSection=`<h3>${esc(L.theatresH)}</h3>
     <div class="chipwrap" style="margin-bottom:8px">
@@ -4751,17 +4771,21 @@ function searchView(sr){
    <div class="note">${esc(L.searchHint)}</div>
    ${sr.films.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inFilms)}</h2><span class="sub">${sr.films.length}</span></div>
      <div class="grid">${sr.films.map(f=>filmCard(f,true)).join("")}</div></section>`:""}
-   ${sr.shows.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inShows)}</h2><span class="sub">${sr.shows.length}</span></div>
-     <div class="grid">${sr.shows.map(x=>showCard(x,true)).join("")}</div></section>`:""}
+   ${[["theatre",L.inShows],["opera",L.opera]].map(([k,h])=>{const ss=sr.shows.filter(x=>surfOf(x)===k);
+     return ss.length?`<section class="rail"><div class="rhead"><h2>${esc(h)}</h2><span class="sub">${ss.length}</span></div>
+     <div class="grid">${ss.map(x=>showCard(x,true)).join("")}</div></section>`:"";}).join("")}
    ${total?"":`<div class="empty">${esc(L.srNoHits.replace("{q}",S.q.trim()))}. ${esc(L.noHitsHelp)}
       <div style="margin-top:12px"><button class="btn sm" data-qclear>${esc(L.clearSearch)}</button></div></div>`}`;
 }
+/* Опера и балет keeps the theatre's type family (data-surface="theatre") and adds only its tokens */
+function surfaceAttrs(){const r=document.documentElement;
+  r.setAttribute("data-surface",S.mode==="cinema"?"cinema":"theatre");r.toggleAttribute("data-opera",S.mode==="opera");}
 function render(){
   const L=t();
   /* a full rebuild supersedes an in-place update still waiting for its posters */
   _pageGen++;_refreshLater=null;
   document.querySelectorAll(".sg-probe").forEach(p=>p.remove());
-  document.documentElement.setAttribute("data-surface",S.mode);
+  surfaceAttrs();
   /* the page language follows the BG/EN switch (WCAG 3.1.1): screen readers pick their
      voice and pronunciation from it, and hyphenation and translation read it too */
   document.documentElement.lang=S.lang;
@@ -5128,7 +5152,7 @@ function _swapMain(main,fresh,now,toY,dip,surface){
   const y=toY!==null?toY:(window.scrollY||0);
   const mainY=main.getBoundingClientRect().top+(window.scrollY||0);
   /* the switch restyles the page (fonts, accent) together with the new content */
-  if(surface)document.documentElement.setAttribute("data-surface",S.mode);
+  if(surface)surfaceAttrs();
   main.replaceChildren(...fresh.childNodes);
   heroSynFit(main);
   main.__sgView=now;
@@ -5341,13 +5365,13 @@ function _histWant(){return sheetOpen?(_ss?2:1):0;}
    listing (m); the popup's entry its time too (p). Only over http(s): a file:// page
    may change only its query and hash (the tests and local previews run from files). */
 const _PATH_URLS=/^https?:$/.test(location.protocol);
-const _surfacePath=m=>m==="theatre"?"/home/theatre/":"/home/";
+const _surfacePath=m=>m==="cinema"?"/home/":"/home/"+m+"/";
 function _sheetPath(c){
   return _PATH_URLS&&c&&/^(film|show|event)$/.test(c.kind)&&c.id?"/"+c.kind+"/"+encodeURIComponent(c.id)+"/":null;
 }
 /* the listing a card belongs to when nothing says where it was opened */
 function _itemSurface(c){
-  if(c&&c.kind==="show")return"theatre";
+  if(c&&c.kind==="show")return okMode(surfOf(showById[c.id]));
   if(c&&c.kind==="event"){const ev=EVENTS.find(x=>x.id===c.id);return ev&&ev.scope==="theatre"?"theatre":"cinema";}
   return"cinema";
 }
@@ -5356,8 +5380,8 @@ function _surfaceEntry(push){
   if(!_PATH_URLS)return;
   const path=_surfacePath(S.mode),st={v:1,m:S.mode};
   try{
-    if(push&&location.pathname!==path)history.pushState(st,"",path);
-    else history.replaceState(st,"",path+(/^#(film|show|event)=/.test(location.hash)?"":location.hash));   /* #cookies stays for the notice */
+    if(push&&location.pathname!==path)history.pushState(st,"",path+OPERA_Q);
+    else history.replaceState(st,"",path+OPERA_Q+(/^#(film|show|event)=/.test(location.hash)?"":location.hash));   /* #cookies stays for the notice */
   }catch(e){}
 }
 /* the open sheet's entry shows the open sheet's address (one sheet opened over another,
@@ -5611,7 +5635,7 @@ window.addEventListener("popstate",()=>{
        card opens it again, here, on its own entry; an entry from an earlier page load
        counts as the card's) */
     const st=history.state,card=st&&st.kind&&st.id?{kind:st.kind,id:st.id}:null;
-    const m=(st&&st.m)||_surfaceOfPath()||S.mode;
+    const m=okMode((st&&st.m)||_surfaceOfPath()||S.mode);
     _histDepth=card?((st.k===_HK&&st.d)||1):0;
     if(m!==S.mode)switchMode(m,true);
     if(card&&!(sheetOpen&&curSheet&&curSheet.kind===card.kind&&curSheet.id===card.id)){
@@ -5633,10 +5657,11 @@ window.addEventListener("popstate",()=>{
   if(!_histDepth&&!_histPending)_scrollRestoreAutoLater();
   _syncSheetUrl();
 });
-/* the listing an address names: /home/theatre/ theatre, /home/ and / cinema */
+/* the listing an address names: /home/theatre/ theatre, /home/opera/ opera (cinema without
+   the flag), /home/ and / cinema */
 function _surfaceOfPath(){
-  const p=location.pathname;
-  if(/^\/home\/theatre\/(index\.html)?$/.test(p))return"theatre";
+  const p=location.pathname,m=/^\/home\/(theatre|opera)\/(index\.html)?$/.exec(p);
+  if(m)return okMode(m[1]);
   if(/^\/(home\/)?(index\.html)?$/.test(p))return"cinema";
   return null;
 }
@@ -5719,7 +5744,8 @@ function _cardOfAddress(){
 function _routeSurface(){
   if(!_PATH_URLS)return;
   const st=history.state,c=_cardOfAddress();
-  const m=_surfaceOfPath()==="theatre"?"theatre":c?((st&&st.m)||_itemSurface(c)):(_surfaceOfPath()||(st&&st.m)||"cinema");
+  const sp=_surfaceOfPath();
+  const m=okMode(sp==="theatre"||sp==="opera"?sp:c?((st&&st.m)||_itemSurface(c)):(sp||(st&&st.m)||"cinema"));
   if(m!==S.mode){S.mode=m;save();}
 }
 /* After it: the card the address names, or the listing's own entry. */
@@ -7391,7 +7417,7 @@ function gaEvent(name,params){
   if(!_gaOn||!GA_ID)return;
   try{
     if(_gaLang!==S.lang){_gaLang=S.lang;window.gtag("set","user_properties",{site_language:S.lang});}
-    window.gtag("event",name,Object.assign({site_language:S.lang,surface:S.mode==="theatre"?"theatre":"cinema"},params||{},{sg_src:"app"}));
+    window.gtag("event",name,Object.assign({site_language:S.lang,surface:S.mode},params||{},{sg_src:"app"}));
   }catch(e){}
 }
 function _gaView(){
@@ -7400,8 +7426,7 @@ function _gaView(){
     const h=document.getElementById("sg-sheet-title");
     return{path:"/"+c.kind+"/"+encodeURIComponent(c.id)+"/",title:(h?h.textContent.trim()+" | ":"")+"Sofia Gleda"};
   }
-  const th=S.mode==="theatre";
-  return{path:_surfacePath(S.mode),title:(S.lang==="en"?(th?"Theatre":"Cinema"):(th?"Театър":"Кино"))+" | Sofia Gleda"};
+  return{path:_surfacePath(S.mode),title:t()[S.mode]+" | Sofia Gleda"};
 }
 function _gaPage(){
   if(!_gaOn)return;
