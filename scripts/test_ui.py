@@ -548,20 +548,19 @@ def wave_a1(browser):
         check("seg_below_logo", seg_below,
               f"brand: y={brand_box['y']:.0f}+h={brand_box['height']:.0f}, seg: y={seg_box['y']:.0f}" if not seg_below else "")
 
-    # Wave H: seg + search_icon on one row (within 4px center_y); lang is on logo row
-    controls = []
-    if seg_box:
-        controls.append(("seg", seg_box["y"] + seg_box["height"]/2))
-    if search_box:
-        controls.append(("search", search_box["y"] + search_box["height"]/2))
-
-    if len(controls) >= 2:
-        centres = [c[1] for c in controls]
-        max_spread = max(centres) - min(centres)
-        aligned = max_spread <= 4
+    # c-searchup (opera DESIGN_SPEC §14.2/§15.1, every surface): search sits on the logo row,
+    # left of the logo, mirroring EN (within 4px center_y); the toggle row holds the toggle alone
+    logo_img = box(page, ".bar-row-logo .brand-logo")
+    if search_box and lang_box and logo_img:
+        spread = abs((search_box["y"] + search_box["height"] / 2) - (lang_box["y"] + lang_box["height"] / 2))
+        aligned = spread <= 4 and search_box["x"] + search_box["width"] <= logo_img["x"] + 0.5
         check("controls_aligned", aligned,
-              f"spread={max_spread:.1f}px (seg+search only; lang on logo row per Wave H)" if not aligned else "")
+              f"search/EN centre spread={spread:.1f}px; search right {search_box['x'] + search_box['width']:.1f}, "
+              f"logo left {logo_img['x']:.1f} (search mirrors EN on the logo row)" if not aligned else "")
+    else:
+        check("controls_aligned", False, f"search={search_box} lang={lang_box} logo={logo_img}")
 
+    if seg_box and search_box:
         # All inside 0..375
         inside = all(c["x"] >= 0 and c["x"] + c["width"] <= 375
                      for c in [seg_box, search_box] if c)
@@ -14566,8 +14565,15 @@ def _hf2_search(browser, eng):
         ctx, page, errs = _hf2_open(browser, w, h, True)
         page.evaluate("window.scrollTo(0,1500)")
         page.wait_for_timeout(500)
+        # c-searchup (opera DESIGN_SPEC §14.2/§15.1): search lives in the logo row, which scrolls
+        # away with the page; a scroll up brings the row back (.bar--reveal) and search is tapped there
+        page.evaluate("window.scrollTo(0,1440)")
+        page.wait_for_timeout(500)
+        rv = page.evaluate("""()=>{const b=document.querySelector('.bar'),s=document.querySelector('.bar-row-logo [data-search-open]');
+          const r=s&&s.getBoundingClientRect();return {reveal:b.classList.contains('bar--reveal'),top:r?Math.round(r.top):null};}""")
+        check(f"{tag}_scroll_up_reveals_search", rv["reveal"] and rv["top"] is not None and rv["top"] >= 0, f"{rv}")
         y0 = page.evaluate("Math.round(scrollY)")
-        _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
+        _hf_tap_el(page, True, "()=>document.querySelector('.bar-row-logo [data-search-open]')")
         page.wait_for_timeout(600)
         # how far into the listing the screen is, with the search row open (a browser with
         # scroll anchoring keeps the listing still as the row opens; one without moves it)
@@ -15620,12 +15626,16 @@ def wave_ev2(browser):
         play = next((s["id"] for s in info["shows"] if s["id"] not in cl_s), None)
         th_names = ("Театрален фестивал Тест", "Theatre Test Festival")
         run_to = "2026-11-05" if now < "2026-11-01" else (d(now) + datetime.timedelta(days=5)).isoformat()
+        # the coming November event: 20-22 Nov, or two days ahead once that has passed (the
+        # clock moves; a fixed date stopped being "coming" on 23 Nov 2026), inside November
+        nov_from = max("2026-11-20", (d(now) + datetime.timedelta(days=2)).isoformat())
+        nov_to = (d(nov_from) + datetime.timedelta(days=2)).isoformat()
         synth_ev = [
             {"id": "ev2-th-run", "kind": "festival", "scope": "theatre", "status": "upcoming", "tag": "СЛЕД 9 ДНИ",
              "from": (d(now) - datetime.timedelta(days=3)).isoformat(), "to": run_to, "g": ["#333333", "#111111"],
              "title": "Тест текущ", "titleEn": "Test running", "blurbBg": "", "blurbEn": "", "source": "test"},
             {"id": "ev2-th-nov", "kind": "festival", "scope": "theatre", "status": "active", "tag": "СЛЕД 9 ДНИ",
-             "from": "2026-11-20", "to": "2026-11-22", "g": ["#333333", "#111111"],
+             "from": nov_from, "to": nov_to, "g": ["#333333", "#111111"],
              "title": "Тест ноември", "titleEn": "Test November", "blurbBg": "", "blurbEn": "", "source": "test"}]
         html = _ev2_patched({"kinomania": {"bg": "Киномания", "en": "Kinomania", "films": pick + ([both] if both else [])},
                              "ev2-teatar": {"bg": th_names[0], "en": th_names[1], "films": [],
@@ -15685,10 +15695,12 @@ def wave_ev2(browser):
                       and [c["badge"].lower() for c in dom["cards"]] == [b.lower() for b in badges]
                       and dom["sub"] == sub_lim,
                       f"{dom}; expected {badges}")
-            if tag == "november":
+            if tag == "november" and nov_from > hi:
+                skip(f"ev2_theatre_november_running_then_coming_{lang}", f"no November day after {now} for a coming event")
+            elif tag == "november":
                 check(f"ev2_theatre_november_running_then_coming_{lang}",
                       (r["lim"] or {}).get("ids", [])[-2:] == ["ev2-th-run", "ev2-th-nov"],
-                      f"{(r['lim'] or {}).get('ids')}")
+                      f"{(r['lim'] or {}).get('ids')} (coming event {nov_from}..{nov_to})")
                 save_shot(page, wave, f"ev2_theatre_november_{lang}")
         check(f"ev2_synth_no_js_errors_theatre_{lang}", not errs, "; ".join(errs[:3]))
         ctx.close()
@@ -22712,6 +22724,16 @@ def _op2_force_all(page):
     _force_mount(page)
 
 
+def _op2_drawer(page, phone):
+    """Open the filter drawer as a user does: "Друг период ›" in the period head (the FAB
+    steps aside while an agenda action is under it, DESIGN_SPEC §5.3), else the FAB."""
+    page.evaluate("() => window.scrollTo(0, 0)")
+    page.wait_for_timeout(200)
+    if not _op_tap(page, phone, "#app main .phead-other", scroll=False):
+        _op_tap(page, phone, "#app > .fab", scroll=False)
+    return page.evaluate("() => !!document.querySelector('#app > .drawer') && S.drawer")
+
+
 def _op2_range(page, a, b):
     page.evaluate("([a, b]) => { S.day = 'range'; S.rFrom = a; S.rTo = b; render(); window.scrollTo(0, 0); }", [a, b])
     page.wait_for_timeout(500)
@@ -22750,14 +22772,13 @@ def _op2_partition(browser, base, eng, op_id):
             leak = sorted(set(v["any"]) & OP2_IDS)
             check(f"{tag}_theatre_{day}_no_opera_{sz}", not leak and not venues and len(set(v["any"])) > 5,
                   f"opera on Театър: {leak}; opera venue rail: {venues}; {len(set(v['any']))} theatre items")
-        page.evaluate("() => window.scrollTo(0, 0)")
-        _op_tap(page, phone, "#app > .fab", scroll=False)
+        _op2_drawer(page, phone)
         chips = page.evaluate("""() => [...document.querySelectorAll('#app > .drawer .fchip[data-venue]')].map(c => c.dataset.venue)""")
         check(f"{tag}_theatre_drawer_no_opera_venue_{sz}", op_id not in chips and len(chips) > 5, f"{len(chips)} venue chips, opera among them: {op_id in chips}")
         check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
         ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
-        _op_tap(page, phone, "#app > .fab", scroll=False)
+        _op2_drawer(page, phone)
         dr = page.evaluate("""() => ({venues: document.querySelectorAll('#app > .drawer [data-venue]').length,
             genres: [...document.querySelectorAll('#app > .drawer .fchip[data-genre]')].map(c => c.dataset.genre)})""")
         check(f"{tag}_opera_drawer_{sz}", dr["venues"] == 0 and {"opera", "ballet", "concert", "kids"} <= set(dr["genres"]),
@@ -22781,7 +22802,7 @@ def _op2_calendar(browser, base, eng):
     d = _op_dates()
     rows = _op2_rows()
     ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, 1280, 900, mode="opera")
-    _op_tap(page, phone, "#app > .fab", scroll=False)
+    _op2_drawer(page, phone)
     for kids in (False, True):
         if kids:
             page.evaluate("() => { S.fGenres = ['kids']; }")
@@ -22790,7 +22811,7 @@ def _op2_calendar(browser, base, eng):
         check(f"{tag}_opera{'_kids' if kids else ''}_dots", c["has"] == want, f"{c['month']}: dots {c['has']} (want {want})")
     ctx.close()
     ctx, page, errs, phone = _op_open(browser, base, "/home/theatre/" + OP_Q, 1280, 900, mode="theatre")
-    _op_tap(page, phone, "#app > .fab", scroll=False)
+    _op2_drawer(page, phone)
     c = page.evaluate(OP2_CAL_JS, d[6])
     check(f"{tag}_theatre_dots", c["has"] == c["theatre"] and d[6] not in c["has"],
           f"{c['month']}: {len(c['has'])} dots, theatre days {len(c['theatre'])}; the opera-only day {d[6]} dotted: {d[6] in c['has']}")
