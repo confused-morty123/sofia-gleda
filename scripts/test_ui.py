@@ -23027,6 +23027,96 @@ def _op2_search(browser, base, eng):
                   f"groups {[(hd, len(ids)) for hd, ids in g]}")
         check(f"{tag}_no_js_errors{'_flag' if flag else ''}", not errs, f"errors={errs[:3]}")
         ctx.close()
+    _op2_search_announce(browser, base, eng)
+    _op2_search_dup(browser, base, eng)
+    _op2_show_gate(browser, base, eng)
+
+
+OP2_LIVE_JS = r"""(q) => { const sr = searchAll(q), L = t();
+  const opera = sr.shows.filter(x => surfOf(x) === 'opera').length, other = sr.films.length + sr.shows.length - opera;
+  const shown = [...document.querySelectorAll('#app main section.rail [data-show], #app main section.rail [data-film]')].length;
+  return {live: (document.getElementById('sg-live') || {}).textContent || '', opera, other, shown,
+          one: plural(1, L.plResult) + ' ' + L.srFor.replace('{q}', q), none: L.srNoHits.replace('{q}', q)}; }"""
+
+
+def _op2_search_announce(browser, base, eng):
+    """review-r2-correctness #3: the live region counts what the results show. A query that
+    matches only an opera title announces no results while the surface is hidden (searchView
+    shows none) and one result with ?opera=1."""
+    tag = f"op2_{eng}_search_announce"
+    q = "Травиата"
+    for flag in ("", OP_Q):
+        nm = f"{tag}{'_flag' if flag else '_flag_off'}"
+        ctx, page, errs, phone = _op_open(browser, base, "/home/theatre/" + flag, 1280, 900, mode="theatre")
+        _op_tap(page, phone, ".bar [data-search-open]", scroll=False)
+        page.keyboard.type(q, delay=60)
+        page.wait_for_timeout(1000)
+        r = page.evaluate(OP2_LIVE_JS, q)
+        want = r["one"] if flag else r["none"]
+        check(nm, r["opera"] == 1 and r["other"] == 0 and r["live"] == want and r["shown"] == (1 if flag else 0),
+              f"query {q!r}: {r['opera']} opera / {r['other']} other hits, {r['shown']} shown; live region {r['live']!r} (want {want!r})")
+        check(f"{nm}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _op2_search_dup(browser, base, eng):
+    """review-r2-correctness #6: two productions with one title in the search results get the
+    stage, as in the agenda and the rails (opDupSet)."""
+    tag = f"op2_{eng}_search_dup"
+    for w, h in ((1280, 900), (390, 844)):
+        sz = "desk" if w > 760 else "phone"
+        ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+        _op_tap(page, phone, ".bar [data-search-open]", scroll=False)
+        page.keyboard.type("Карнавалът", delay=60)
+        page.wait_for_timeout(1000)
+        st = page.evaluate("""() => [...document.querySelectorAll('#app main section.rail [data-show^="op2-karnaval"]')]
+            .map(c => [c.dataset.show, ((c.querySelector('.cf1 .stg') || {}).textContent || '')])""")
+        got = sorted(s for _i, s in st)
+        check(f"{tag}_{sz}", got == sorted([f" · {OP2_HALL}", f" · {OP2_CHAMBER}"]), f"cards {st}")
+        one = page.evaluate("""() => { S.q = 'Жизел'; refreshPage({search: true});
+            return [...document.querySelectorAll('#app main section.rail [data-show="op2-zhizel"] .stg')].length; }""")
+        check(f"{tag}_single_title_no_stage_{sz}", one == 0, f"{one} stage suffix(es) on the one Жизел")
+        check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
+def _op2_show_gate(browser, base, eng):
+    """review-r2-correctness #6: the [data-show] handler opens an opera production as _openById
+    does. With ?opera=1, from any surface (Кино included) the page goes to Опера и балет first
+    (data-opera, the history entry m:"opera"); without the flag an opera card refuses with the
+    not-in-programme note and no sheet."""
+    tag = f"op2_{eng}_show_gate"
+    for mode, path in (("cinema", "/home/"), ("theatre", "/home/theatre/")):
+        ctx, page, errs, phone = _op_open(browser, base, path + OP_Q, 1280, 900, mode=mode)
+        _op_tap(page, phone, ".bar [data-search-open]", scroll=False)
+        page.keyboard.type("Аида", delay=60)
+        page.wait_for_timeout(1000)
+        _op_tap(page, phone, '#app main [data-show="op2-aida"]')
+        v = page.evaluate(OP_VIEW_JS)
+        s = page.evaluate(OP2_SHEET_JS)
+        acc = page.evaluate(OP_TOKEN_JS, "--accent")
+        check(f"{tag}_from_{mode}_goes_to_opera", v["open"] and v["card"] == "show:op2-aida" and v["mode"] == "opera" and v["opera"]
+              and v["st"] == "opera" and acc == OP_VIOLET and bool(s) and s["op"],
+              f"open={v['open']} card={v['card']} mode={v['mode']} data-opera={v['opera']} history m={v['st']} --accent={acc}")
+        page.go_back(); page.wait_for_timeout(800)
+        b = page.evaluate(OP_VIEW_JS)
+        check(f"{tag}_from_{mode}_back_closes", not b["open"], f"Back: open={b['open']} {b['path']} mode={b['mode']}")
+        check(f"{tag}_from_{mode}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+    for mode, path in (("cinema", "/home/"), ("theatre", "/home/theatre/")):
+        ctx, page, errs, phone = _op_open(browser, base, path, 1280, 900, mode=mode)
+        page.evaluate("""() => { const b = document.createElement('button'); b.className = 'card op2-probe'; b.dataset.show = 'op2-aida';
+            b.textContent = 'Аида'; b.style.cssText = 'position:fixed;left:200px;top:300px;z-index:9;width:200px;height:60px';
+            document.querySelector('#app main').appendChild(b); }""")
+        page.click(".op2-probe")
+        page.wait_for_timeout(700)
+        v = page.evaluate(OP_VIEW_JS)
+        note = page.evaluate("() => (document.getElementById('sg-toast') || {}).textContent || ''")
+        check(f"{tag}_flag_off_{mode}_refuses", not v["open"] and v["card"] is None and v["mode"] == mode and not v["opera"]
+              and note == page.evaluate("() => t().notInProgramme"),
+              f"open={v['open']} card={v['card']} mode={v['mode']} data-opera={v['opera']} note={note!r}")
+        check(f"{tag}_flag_off_{mode}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
 
 
 def _op2_bridge(browser, base, eng):
