@@ -1683,7 +1683,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 @media(max-width:760px){ [data-opera] .ecard.opcard{width:288px} }
 [data-opera] .opcard .ebox{aspect-ratio:2/1; height:auto; padding:0; background:#000; display:block; margin-bottom:2px}
 [data-opera] .opcard .ebox img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
-[data-opera] .opcard .cf1{display:block; font-size:14px; font-weight:600; line-height:1.25; color:var(--fg)}
+[data-opera] .opcard .ebox > .gp,[data-opera] .opcard .ebox > img{position:absolute; inset:0; z-index:1}
+[data-opera] .opcard .cf1{display:block; font-size:14px; font-weight:600; line-height:1.25; color:var(--fg); min-height:0;
+  -webkit-line-clamp:unset; overflow:visible; white-space:normal}
 [data-opera] .opcard .cf2{display:block; font-size:12px; line-height:1.35; color:var(--fg-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 [data-opera] .opcard .cf3{display:block; font-size:12px; line-height:1.4; color:var(--fg-3); font-variant-numeric:tabular-nums}
 [data-opera] .opcard .cf3 b{color:var(--fg); font-weight:600}
@@ -5693,6 +5695,7 @@ function _swapMain(main,fresh,now,toY,dip,surface){
   main.style.minHeight=now==="search"?Math.max(0,Math.ceil(innerHeight-(mainY-y)))+"px":"";
   mountProgressive();
   _keepPageY(y);
+  opDodgeSoon();
   /* ...and the new programme comes up from the dimmed state, with a slight rise (also
      when this update overtook a switch that had dimmed the content) */
   const dimmed=main.getAnimations().length>0;
