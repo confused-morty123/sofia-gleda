@@ -22196,6 +22196,48 @@ def wave_now1(browser):
     print(f"  engine: {eng}")
 
 
+OP2_CONTRACT_JS = """() => {
+  const th = THEATRES.find(t => t.kind === "opera");
+  if (!th) return {venue: false};
+  const shows = SHOWS.filter(s => s.theatre === th.id);
+  const ids = new Set(shows.map(s => s.id));
+  const rows = PERFORMANCES.filter(p => ids.has(p[0]));
+  const stages = [...new Set(rows.map(p => p[3]).filter(Boolean))];
+  const ha = th.hallAreas && typeof th.hallAreas === "object" ? th.hallAreas : {};
+  return {venue: true, shows: shows.length, rows: rows.length,
+          subtitled: shows.filter(s => typeof s.subtitle === "string" && s.subtitle.trim()).length,
+          withFacts: shows.filter(s => s.facts && typeof s.facts === "object" && Object.keys(s.facts).length).length,
+          stray: shows.filter(s => "sub" in s).map(s => s.id).slice(0, 5),
+          stages, noArea: stages.filter(st => !(typeof ha[st] === "string" && ha[st].trim()))};
+}"""
+
+
+def wave_op2(browser):
+    """OP2 (data contract part): the fields the opera UI reads exist under the names it reads
+    (src/sofia-screen.artifact.html, the comment over OPT). Each field is optional in the UI and
+    a missing one is hidden in silence, so a writer that drops or renames one would empty the
+    subtitle, the credits, the prices or the stage address with no error. On a real build with
+    opera rows: at least one opera show has a non-empty `subtitle` (DESIGN_SPEC §2.2), at least
+    one has `facts`, no show carries the old name `sub`, and the opera venue's `hallAreas` names
+    every stage its rows use. A build without opera rows (before the data track lands) is a SKIP.
+    The rest of DESIGN_SPEC §9's OP2 list joins this wave with the release."""
+    print("\n=== OP2: the opera data contract ===")
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    try:
+        r = page.evaluate(OP2_CONTRACT_JS)
+        if not r.get("venue") or not r.get("rows"):
+            skip("op2_contract", f"no opera rows in this build ({r})")
+            return
+        print(f"  {r['shows']} opera shows, {r['rows']} rows, stages {r['stages']}")
+        check("op2_some_show_has_subtitle", r["subtitled"] > 0, f"{r['subtitled']} of {r['shows']} shows")
+        check("op2_some_show_has_facts", r["withFacts"] > 0, f"{r['withFacts']} of {r['shows']} shows")
+        check("op2_no_show_uses_old_sub_key", not r["stray"], f"{r['stray']}")
+        check("op2_every_stage_has_hall_area", not r["noArea"], f"missing: {r['noArea']}")
+        check("op2_no_page_errors", not errs, f"{errs[:3]}")
+    finally:
+        ctx.close()
+
+
 WAVES = {
     "A1": wave_a1,
     "B1": wave_b1,
@@ -22238,6 +22280,7 @@ WAVES = {
     "HS1": wave_hs1,
     "RT1": wave_rt1,
     "NOW1": wave_now1,
+    "OP2": wave_op2,
 }
 
 # Chromium on Linux (GitHub's runners) hints glyph outlines to whole pixels by default, so

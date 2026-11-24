@@ -1684,6 +1684,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 [data-opera] .opcard .ebox{aspect-ratio:2/1; height:auto; padding:0; background:#000; display:block; margin-bottom:2px}
 [data-opera] .opcard .ebox img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
 [data-opera] .opcard .ebox > .gp,[data-opera] .opcard .ebox > img{position:absolute; inset:0; z-index:1}
+/* a picture hides the typographic art under it; when the failure trap removes the picture, the art shows */
+[data-opera] .ophero .hero-art:has(> img.p-real) > .gp,[data-opera] .opcard .ebox:has(> img.p-real) > .gp,
+.shero.shero-op:has(> img.p-real) > .gp{visibility:hidden}
 [data-opera] .opcard .cf1{display:block; font-size:14px; font-weight:600; line-height:1.25; color:var(--fg); min-height:0;
   -webkit-line-clamp:unset; overflow:visible; white-space:normal}
 [data-opera] .opcard .cf2{display:block; font-size:12px; line-height:1.35; color:var(--fg-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -3191,6 +3194,27 @@ function buildDayStrip(){
     pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}" aria-label="${esc(dsName)}">${esc(label)}${todayMark}</button>`);
   }
   return`<div class="daystrip">${pills.join("")}</div>`;}
+/* Опера и балет, a custom range of 2-7 days (§5.2, state #sparse): "Всички дни" and only the days
+   with a row under the filter (today too when inside), so "Всички дни · пт 29 · нд 31". A day pill
+   keeps S.rFrom/S.rTo (the [data-day] handler sets only S.day), so "Всички дни" (data-day="range")
+   brings the range back. null when the strip does not apply. */
+function opRangeDays(){
+  if(S.mode!=="opera"||!S.rFrom||!S.rTo||S.rTo<=S.rFrom||addDays(S.rFrom,6)<S.rTo)return null;
+  if(S.day!=="range"&&!(/^\d{4}-\d{2}-\d{2}$/.test(S.day)&&S.day>=S.rFrom&&S.day<=S.rTo))return null;
+  const days=[];for(let d=S.rFrom;d<=S.rTo;d=addDays(d,1))days.push(d);
+  return days;}
+function opRangeStrip(days){
+  const L=t(),hasData=datesWith(),shown=days.filter(d=>hasData.has(d)||d===TODAY);
+  if(!shown.some(d=>hasData.has(d)))return"";
+  const pills=[`<button class="dspill" data-day="range" aria-pressed="${S.day==="range"}">${esc(opT().stripAll)}</button>`];
+  for(const d of shown){
+    const isToday=d===TODAY,label=fmtDay(d,false);
+    const mon=!inThisWeek(d)||d.slice(8,10)==="01"?monShortOf(d):"";
+    const mark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:mon?` <span class="ds-mon">${esc(mon)}</span>`:"";
+    const name=`${label}${isToday?" "+(L.dsToday||"днес"):mon?" "+mon:""}, ${fmtDayDow(d)}`;
+    pills.push(`<button class="dspill" data-day="${esc(d)}" aria-pressed="${S.day===d}" aria-label="${esc(name)}">${esc(label)}${mark}</button>`);
+  }
+  return`<div class="daystrip">${pills.join("")}</div>`;}
 
 function periodBanner(){
   const L=t();
@@ -3228,7 +3252,8 @@ function periodBanner(){
     dateStr=fmtRange(TODAY,WEEK_END);
     showStrip=true;
   }
-  const strip=showStrip?buildDayStrip():"";
+  const rDays=opRangeDays();
+  const strip=rDays?opRangeStrip(rDays):showStrip?buildDayStrip():"";
   /* P3A item 7: "Only my favourites" toggle near period header, shown when fav venues exist */
   const starSVGsm=`<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
   const favToggleBtn=S.fav.venues.length>0
@@ -3463,21 +3488,31 @@ function hero(){
     </div></div>`;}
 
 /* ===================== Опера и балет: the content (DESIGN_SPEC §5) =====================
-   Data the opera rows carry (the data track's fetch_opera + inject_shows; every field may be
-   missing, and a missing field is simply not shown):
+   Data the opera rows carry: the contract between this UI and the data track (fetch_opera,
+   scrape_programs mint_show, inject_shows, src/data.html). Every field may be missing, and a
+   missing field is simply not shown, so a field the data track does not write disappears in
+   silence: the names below are the contract, and they use the data track's own meta keys.
      PERFORMANCES [id, date, time, stage, price, sale]  sale "soldout" | "notyet" | absent
      PLINKS       the performance's /buy-tickets/<n> link (only when the button said "купи билет")
      LINKS        the production page /repertoire/<id>
      SHOWS        title, titleEn (the opera's own EN calendar only), genres (the calendar icon;
-                  children's view = "Детски"), sub (the published subtitle, verbatim), baked (the
-                  poster prints its title), facts {conductor, director, duration, language, age,
-                  prices, prices_eur} (the production page's labelled fields, verbatim)
-     THEATRES     the opera entry, hallAreas {stage: address as published}
+                  children's view = "Детски"),
+                  subtitle  fetch_opera meta "subtitle", verbatim (DESIGN_SPEC §2.1.7): hero lede,
+                            agenda line, card line, sheet lede;
+                  facts     fetch_opera meta "facts" as it is: {conductor, director, duration,
+                            language, age, prices, prices_eur} (the production page's labelled
+                            fields, verbatim): "За спектакъла", "от N €";
+                  baked     true when the poster prints its own title (the poster pass, or a
+                            manual list until then): the 96 px phone hero banner
+     THEATRES     the opera entry, hallAreas {stage: address as published} (fetch_opera meta
+                  "address" per stage): the sheet's stage address
+   As of opera-data ae3398d9 mint_show persists only titleEn and genres, and the THEATRES entry
+   has no hallAreas: subtitle, facts, baked and hallAreas still need their writer before release.
    Status comes from `sale` and the link, never from a guess: a row with neither says
    "виж повече ↗", never "разпродадено". */
 const OPT={
  bg:{agendaH:"Програмата по дни",agendaSub:"по реда на календара на операта",buy:"Купи ↗",seeMore:"виж повече ↗",
-  soldWord:"разпродадено",fromPrice:"от {p} €",allDays:"Покажи всички дни ({n})",stageUnknown:"Сцената не е обявена",
+  soldWord:"разпродадено",fromPrice:"от {p} €",allDays:"Покажи всички дни ({n})",stripAll:"Всички дни",stageUnknown:"Сцената не е обявена",
   buyAria:"Купи билет: {t}, {d}, {h}",moreAria:"{t}: още без онлайн билети, виж повече на operasofia.bg",
   soldAria:"{d} {h}, разпродадено",preAria:"{d} {h}, още без онлайн билети, виж повече на operasofia.bg",
   railH:{opera:"Опера",ballet:"Балет",concert:"Концерти",musical:"Мюзикъли",kids:"Спектакли за деца"},kidsOnly:"Само за деца ›",
@@ -3499,7 +3534,7 @@ const OPT={
   bridge:{ballet:"Балетите на Софийската опера са в „Опера и балет“ ›",musical:"Мюзикълите на Софийската опера са в „Опера и балет“ ›"},
   footer:"Източник · operasofia.bg, календарът (за възрастни и за деца) и страниците на спектаклите на Софийската опера и балет."},
  en:{agendaH:"Day by day",agendaSub:"in the Opera's calendar order",buy:"Buy ↗",seeMore:"see more ↗",
-  soldWord:"sold out",fromPrice:"from €{p}",allDays:"Show all days ({n})",stageUnknown:"Stage not announced",
+  soldWord:"sold out",fromPrice:"from €{p}",allDays:"Show all days ({n})",stripAll:"All days",stageUnknown:"Stage not announced",
   buyAria:"Buy tickets: {t}, {d}, {h}",moreAria:"{t}: no online tickets yet, see more on operasofia.bg",
   soldAria:"{d} {h}, sold out",preAria:"{d} {h}, no online tickets yet, see more on operasofia.bg",
   railH:{opera:"Opera",ballet:"Ballet",concert:"Concerts",musical:"Musicals",kids:"Children's shows"},kidsOnly:"Children's only ›",
@@ -3547,7 +3582,7 @@ const opPerfs=sid=>upcomingPerfs(_prows(sid)).slice().sort(opByDT);
 const opPremDates=sid=>PREMIERES["show:"+sid]||[];
 const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
 /* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
-const opSub=sh=>{const s=String(sh.sub||"").trim();
+const opSub=sh=>{const s=String(sh.subtitle||"").trim();
   return opPremAhead(sh.id)?s.replace(/(^|\s)ПРЕМИЕРА(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
 const opStage=p=>p[3]||opT().stageUnknown;
 const opHallArea=stage=>{const th=thById.opera||THEATRES.find(x=>x.kind==="opera")||{};return stage&&th.hallAreas&&own(th.hallAreas,stage)?th.hallAreas[stage]:"";};
@@ -3579,11 +3614,14 @@ const opDupSet=ids=>{const c={};new Set(ids).forEach(id=>{const sh=showById[id];
 const opTitleHtml=(sh,dup,stage)=>esc(titleOf(sh))+(dup&&dup.has(titleOf(sh))&&stage?`<span class="stg"> · ${esc(stage)}</span>`:"");
 /* the art: the opera's own picture fitted on black, else the title set in type on the violet ground */
 const OP_SHOES=`<svg class="shoes" viewBox="68.288 -12 360 520.576" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M236.24,232.576c-4.432-56-11.04-112.92-11.912-120.088l7.944-111.28l-15.96-1.168l-3.528,49.336 c-2.512,0.944-20,7.216-44.496,7.216c-19.736,0-35.2-4.184-41.688-6.272l-1.352-49.96L109.256,0.8l3,110.848 c-3.456,13.16-31.968,124.432-31.968,208.928c0,60.032,11.168,116.712,17.832,145.16c4.256,18.16,20.272,30.84,38.952,30.84 h46.032c18.88,0,34.936-12.88,39.056-31.32c6.768-30.352,16.144-89.504,16.144-144.68c0-26.163,1.983-57.573-6.012-88H236.24z M168.288,72.576c19.152,0,34.568-3.48,43.264-6.016l-2.264,31.672c-7.96,2.024-26.232,5.824-51.928,6.28L127.504,83.84 l-0.448-16.704C136.024,69.584,150.552,72.576,168.288,72.576z M211.656,142.096l-32.808-22.712 c12.816-1.168,22.848-2.984,29.664-4.512C208.92,118.208,210.104,128.032,211.656,142.096z M128.016,114.64l0.296-1.128 l-0.264-9.832l24.24,16.784v0.112c0.056,0,0.104,0,0.16,0l61.448,42.544c1.24,11.984,2.56,25.472,3.84,39.744l-96.168-61.824 C125.288,124.976,127.92,114.984,128.016,114.64z M117.848,157.656l38.288,24.616l-46.04,13.816 C112.704,182.056,115.376,169,117.848,157.656z M103.592,234.896c1.056-7.176,2.192-14.248,3.368-21.176l66.888-20.064 l45.6,29.32c0.28,3.416,0.544,6.856,0.808,10.312c0.128,6.952,0.824,90.04-31.008,122.76c-8.2,8.424-17.68,12.528-28.96,12.528 c-11.312,0-20.688-4.088-28.68-12.504C101.24,324.128,103.256,244.088,103.592,234.896z M206.544,461.768 c-2.472,11.072-12.112,18.808-23.44,18.808h-46.032c-11.208,0-20.824-7.6-23.368-18.488C107.2,434.32,96.288,379,96.288,320.576 c0-0.144,0.008-0.288,0.008-0.432c4.864,17.92,12.312,34.952,23.704,46.944c11.016,11.608,24.576,17.488,40.288,17.488 c15.616,0,29.224-5.848,40.448-17.392c10.752-11.056,18.256-26.424,23.504-42.848 C223.744,376.904,213.016,432.76,206.544,461.768z"/><path d="M384.312,111.648l3-110.848l-15.984-0.44l-1.352,49.96c-6.448,2.08-21.816,6.256-41.688,6.256 c-24.264,0-41.92-6.264-44.496-7.232L280.272,0l-15.96,1.144l7.944,111.336c-0.88,7.176-7.488,64.096-11.92,120.096h3.948 c-7.995,30.427-6.012,61.837-6.012,88c0,55.176,10.368,114.328,17.136,144.68c4.12,18.44,19.184,31.32,38.064,31.32h46.032 c18.68,0,34.696-12.68,38.952-30.84c6.664-28.448,17.832-85.128,17.832-145.16C416.288,236.08,387.776,124.808,384.312,111.648z M386.488,196.08l-46.04-13.816l38.288-24.616C381.208,168.992,383.88,182.048,386.488,196.08z M328.288,72.576 c17.736,0,32.264-2.992,41.232-5.44l-0.456,16.712l-29.856,20.672c-25.688-0.456-43.96-4.256-51.928-6.28l-2.264-31.672 C293.72,69.096,309.136,72.576,328.288,72.576z M288.064,114.872c6.816,1.528,16.848,3.344,29.664,4.512l-32.808,22.712 C286.472,128.032,287.656,118.208,288.064,114.872z M282.68,163.12l61.448-42.544c0.056,0,0.104,0,0.16,0v-0.112l24.24-16.784 l-0.264,9.84l0.296,1.12c0.088,0.336,2.728,10.336,6.448,26.4l-96.168,61.824C280.12,188.592,281.44,175.112,282.68,163.12z M276.312,233.304c0.264-3.456,0.536-6.896,0.808-10.32l45.6-29.312l66.896,20.072c1.168,6.92,2.304,13.984,3.36,21.144 c0.336,9.024,2.392,89.208-28.008,121.192c-7.992,8.408-17.368,12.496-28.68,12.496c-11.28,0-20.76-4.104-28.96-12.528 C275.512,323.344,276.192,240.296,276.312,233.304z M382.88,462.08c-2.552,10.896-12.16,18.496-23.376,18.496h-46.032 c-11.328,0-20.968-7.736-23.44-18.808c-6.472-29.016-17.2-84.872-17.696-137.44c5.248,16.424,12.76,31.8,23.504,42.848 c11.224,11.552,24.832,17.4,40.448,17.4c15.712,0,29.272-5.88,40.296-17.488c11.392-11.992,15.704-29.024,23.704-46.944 c0,0.144,0,0.288,0,0.432C400.288,379,389.376,434.32,382.88,462.08z"/></svg>`;
+/* The typographic art is always drawn; a picture goes over it and hides it (.gp under :has(img), CSS).
+   A picture that fails to load is removed by the failure trap, and the type shows instead of an
+   empty black box, as on every other card of the site. */
 function opArt(sh){
   const src=safeImg(realPoster(sh.id,"original"));
-  if(src)return`<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`;
   const r=rng(sh.id),gx=Math.round(18+r()*70),g=opGenreOf(sh);
-  return`<div class="gp" style="--gx:${gx}%" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(titleOf(sh))}</span></div>`;}
+  const gp=`<div class="gp" style="--gx:${gx}%" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(titleOf(sh))}</span></div>`;
+  return gp+(src?`<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
 
 /* hero slot: the hero when the period has a bookable row, else the late-day card (§5.4/§5.7) */
 function opHeroSlot(){
