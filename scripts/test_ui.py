@@ -23175,6 +23175,65 @@ def _op2_fab(browser, base, eng):
           "; ".join(bad[:3]) if bad else f"over {seen[True]}x, clear {seen[False]}x")
     check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
     ctx.close()
+    _op2_fab_end(browser, base, eng)
+
+
+# every scroll position at which an agenda action crosses the FAB's resting box, and the page end
+OP2_FAB_YS_JS = r"""() => { const f = document.querySelector('#app > .fab'), ft = f.offsetTop, fb = ft + f.offsetHeight;
+  const mx = document.scrollingElement.scrollHeight - innerHeight, out = new Set([mx]);
+  for (const e of document.querySelectorAll('#app > main .ag-act')) { const r = e.getBoundingClientRect(), t = r.top + scrollY, b = r.bottom + scrollY;
+    for (const y of [t - fb + 2, (t + b - ft - fb) / 2, b - ft - 2]) out.add(Math.max(0, Math.min(mx, Math.round(y)))); }
+  return [...out].sort((a, b) => a - b); }"""
+# the FAB as drawn (its transformed box, its opacity), and the agenda actions under it
+OP2_FAB_COVER_JS = r"""() => { const f = document.querySelector('#app > .fab'), cs = getComputedStyle(f), fr = f.getBoundingClientRect();
+  const shown = cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0.05 && fr.top < innerHeight;
+  const acts = [...document.querySelectorAll('#app > main .ag-act')];
+  const under = acts.filter(e => { const r = e.getBoundingClientRect(); return r.right > fr.left && r.left < fr.right && r.bottom > fr.top && r.top < fr.bottom; });
+  const buys = acts.filter(e => e.classList.contains('buy')), last = buys[buys.length - 1], lr = last && last.getBoundingClientRect();
+  return {y: scrollY, shown, under: under.map(e => e.textContent.trim()), fabTop: f.offsetTop, lastText: last && last.textContent.trim(),
+          lastBottom: lr && lr.bottom, max: document.scrollingElement.scrollHeight - innerHeight}; }"""
+
+
+def _op2_fab_end(browser, base, eng):
+    """The floating Филтри button never covers a ticket action, in a real viewport (not a
+    full-page capture) at 390x844 and 1280x800: at every scroll position where an agenda action
+    passes the FAB's spot, and at the end of the page, with the rails after the agenda and with
+    the agenda as the listing's last section (the rails taken out). At the end the last Купи sits
+    above the FAB (main's bottom padding and the footer), so the dodge is not needed
+    there; in between, the dodge has the FAB out of the way."""
+    tag = f"op2_{eng}_fab_end"
+    d = _op_dates()
+    for w, h in ((390, 844), (1280, 800)):
+        sz = "desk" if w > 760 else "phone"
+        for last in (False, True):
+            nm = f"{tag}_{sz}{'_agenda_last' if last else ''}"
+            ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+            _op2_range(page, d[0], d[6])
+            page.evaluate("() => { const b = document.querySelector('[data-opalldays]'); if (b) b.click(); }")
+            page.wait_for_timeout(400)
+            _force_mount(page)
+            if last:
+                page.evaluate("() => document.querySelectorAll('#app main section.rail:not(.opagenda)').forEach(e => e.remove())")
+            bad, n = [], 0
+            for y in page.evaluate(OP2_FAB_YS_JS):
+                _op_scroll(page, y)
+                st = page.evaluate(OP2_FAB_COVER_JS)
+                n += 1
+                if st["shown"] and st["under"]:
+                    bad.append(f"at {st['y']}: the FAB over {st['under']}")
+            for _i in range(5):        # the real end, once nothing mounts any more
+                _op_scroll(page, page.evaluate("() => document.scrollingElement.scrollHeight"))
+                end = page.evaluate(OP2_FAB_COVER_JS)
+                if abs(end["y"] - end["max"]) <= 1:
+                    break
+            check(nm, not bad and n >= 10 and abs(end["y"] - end["max"]) <= 1 and end["lastText"] == "Купи ↗" and end["lastBottom"] <= end["fabTop"],
+                  "; ".join(bad[:3]) if bad else f"{n} positions clear; at the end the last {end['lastText']!r} ends at "
+                  f"{end['lastBottom']:.0f}, the FAB starts at {end['fabTop']} (gap {end['fabTop'] - end['lastBottom']:.0f} px); "
+                  f"scrolled to {end['y']} of {end['max']}")
+            if sz == "phone" and not last:
+                save_shot(page, "OP2", f"{eng}_fab_end_phone")
+            check(f"{nm}_no_js_errors", not errs, f"errors={errs[:3]}")
+            ctx.close()
 
 
 def _op2_share(browser, eng, page_file, flipped_file):
