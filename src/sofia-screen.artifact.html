@@ -1258,14 +1258,19 @@ body{font-size:15px}
 @media(min-width:761px) and (max-width:1120px){
   .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
-/* Phones (c-searchup, DESIGN_SPEC §14.2): search and EN flank the logo, so the brand fills its
-   column (the logo scales down rather than run under them at 200% page zoom) and the motto runs
-   under both buttons across the whole row at 12.5 px, wrapping (balanced) only when it must */
 @media(max-width:760px){
+  .brand .brand-sub{--motto-ph:21.29; font-size:min(12.5px,max(10px,calc((100vw - 144px)/var(--motto-ph))))}
+  .brand .brand-sub:lang(en){--motto-ph:16.37}
+  /* c-searchup: search and EN flank the logo, so the brand fills its column (the logo scales down
+     rather than run under the magnifier at 200% page zoom) */
   .bar-row-logo .brand{justify-self:stretch; min-width:0}
   .bar-row-logo .brand-logo{height:auto; width:min(154px,100%)}
-  .bar-row-logo .brand .brand-sub{align-self:stretch; margin:8px -44px 0; font-size:12.5px; white-space:normal; text-wrap:balance}
+  /* the longer motto that names the opera (OPERA_ON, DESIGN_SPEC §14.2) runs under both buttons
+     across the whole row at 12.5 px, wrapping (balanced) only when it must */
+  .bar-row-logo.op3 .brand .brand-sub{align-self:stretch; margin:8px -44px 0; font-size:12.5px; white-space:normal; text-wrap:balance}
 }
+/* ≤260 px (200% page zoom on a 390 phone): the motto wraps inside the logo column, clear of both buttons */
+@media(max-width:260px){ .bar-row-logo .brand .brand-sub,.bar-row-logo.op3 .brand .brand-sub{margin-inline:0; white-space:normal; text-wrap:balance} }
 
 /* footer links: the UI face is wide, so a long label ("Настройки за бисквитки") may wrap in its
    phone column; the items of a row share its top edge */
@@ -4881,7 +4886,7 @@ function render(){
     </div></div>`;
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
-    <div class="bar-row-logo">
+    <div class="bar-row-logo${OPERA_ON?" op3":""}">
       ${searchIconBtn}
       <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.webp" width="648" height="126" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
