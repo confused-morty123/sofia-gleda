@@ -23067,8 +23067,11 @@ def _op2_fab(browser, base, eng):
 
 def _op2_share(browser, eng, page_file, flipped_file):
     """A shared opera production's page (/show/<id>/, gen_share_pages.py) hands a browser on to
-    the app, which opens the sheet; Back returns to /home/opera/ once OPERA_ON is on (the
-    flipped copy); with the flag still off the listing falls back to /home/ (§6.6)."""
+    the app. Once OPERA_ON is on (the flipped copy) the sheet opens and Back returns to
+    /home/opera/. With the surface still hidden, no opera sheet opens without ?opera=1 (the
+    not-in-programme note on Кино), and with ?opera=1 it opens on Опера и балет. An open opera
+    sheet keeps ?opera=1 in its address, so a reload brings back the sheet on the opera surface
+    and Back the opera listing (OPERA_ON stays on)."""
     import gen_share_pages as GSP
     tag = f"op2_{eng}_share"
     tmp = Path(_ux_tempfile.mkdtemp(prefix="op2_share_"))
@@ -23086,18 +23089,74 @@ def _op2_share(browser, eng, page_file, flipped_file):
                 page, errs = _ux_page(ctx, base + "/show/op2-aida/")
                 page.wait_for_timeout(900)
                 v = page.evaluate(OP_VIEW_JS)
+                if flipped:
+                    page.go_back(); page.wait_for_timeout(900)
+                    b = page.evaluate(OP_VIEW_JS)
+                    check(f"{tag}_flag_on", v["open"] and v["card"] == "show:op2-aida" and v["path"] == "/show/op2-aida/"
+                          and not b["open"] and (b["path"], b["mode"]) == ("/home/opera/", "opera"),
+                          f"open={v['open']} {v['card']} at {v['path']} | Back: open={b['open']} {b['path']} {b['mode']}")
+                else:
+                    note = page.evaluate("() => (document.getElementById('sg-toast') || {}).textContent || ''")
+                    check(f"{tag}_flag_off_no_opera_sheet", not v["open"] and (v["path"], v["mode"]) == ("/home/", "cinema")
+                          and not v["opera"] and note == page.evaluate("() => t().notInProgramme"),
+                          f"open={v['open']} {v['card']} at {v['path']} mode={v['mode']} data-opera={v['opera']} note={note!r}")
+                check(f"{tag}_no_js_errors{'_flag' if flipped else ''}", not errs, f"errors={errs[:3]}")
+                ctx.close()
+                if flipped:
+                    continue
+                # the hidden surface with its flag: the share page carries ?opera=1 on
+                ctx = _ux_ctx(browser, base, 1280, 900, mode="cinema")
+                page, errs = _ux_page(ctx, base + "/show/op2-aida/" + OP_Q)
+                page.wait_for_timeout(900)
+                v = page.evaluate(OP_VIEW_JS)
+                check(f"{tag}_flag_query_opens_on_opera", v["open"] and v["card"] == "show:op2-aida" and v["path"] == "/show/op2-aida/"
+                      and v["search"] == OP_Q and v["mode"] == "opera" and v["opera"],
+                      f"open={v['open']} {v['card']} at {v['path']}{v['search']} mode={v['mode']} data-opera={v['opera']}")
+                ctx.close()
+                # an opera sheet opened from the listing, then reloaded
+                ctx = _ux_ctx(browser, base, 1280, 900, mode="opera")
+                page, errs = _ux_page(ctx, base + "/home/opera/" + OP_Q)
+                page.wait_for_timeout(700)
+                page.evaluate("() => { S.day = 'range'; S.rFrom = TODAY; S.rTo = addDays(TODAY, 7); render(); }")
+                page.wait_for_timeout(400)
+                _op_tap(page, False, '.opagenda .ag-main[data-show="op2-aida"]')
+                o = page.evaluate(OP_VIEW_JS)
+                page.reload(); page.wait_for_timeout(1200)
+                r = page.evaluate(OP_VIEW_JS)
                 page.go_back(); page.wait_for_timeout(900)
                 b = page.evaluate(OP_VIEW_JS)
-                want = ("/home/opera/", "opera") if flipped else ("/home/", "cinema")
-                check(f"{tag}_{'flag_on' if flipped else 'flag_off'}", v["open"] and v["card"] == "show:op2-aida" and v["path"] == "/show/op2-aida/"
-                      and not b["open"] and (b["path"], b["mode"]) == want,
-                      f"open={v['open']} {v['card']} at {v['path']} | Back: open={b['open']} {b['path']} {b['mode']} (want {want})")
-                check(f"{tag}_no_js_errors{'_flag' if flipped else ''}", not errs, f"errors={errs[:3]}")
+                check(f"{tag}_open_sheet_address_keeps_flag", o["open"] and o["path"] == "/show/op2-aida/" and o["search"] == OP_Q,
+                      f"open={o['open']} at {o['path']}{o['search']}")
+                check(f"{tag}_reload_open_sheet_keeps_opera", r["open"] and r["card"] == "show:op2-aida" and r["mode"] == "opera"
+                      and r["opera"] and r["segs"][-1:] == ["opera"] and r["search"] == OP_Q,
+                      f"after reload: open={r['open']} {r['card']} {r['path']}{r['search']} mode={r['mode']} "
+                      f"data-opera={r['opera']} segments={r['segs']}")
+                check(f"{tag}_reload_then_back_to_opera_listing", not b["open"] and b["path"] == "/home/opera/" and b["mode"] == "opera"
+                      and b["opera"] and b["segs"][-1:] == ["opera"],
+                      f"Back: open={b['open']} {b['path']}{b['search']} mode={b['mode']} segments={b['segs']}")
+                check(f"{tag}_no_js_errors_reload", not errs, f"errors={errs[:3]}")
                 ctx.close()
             finally:
                 srv.shutdown()
     finally:
         _ux_shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _op2_subtitle_cases(browser):
+    """The subtitle's display rule lives in the page alone (opSubText, DESIGN_SPEC §2.3): the 42
+    approved cases (scripts/fixtures/opera_subtitle_cases.json), each display exactly as approved
+    from its verbatim line, ПРЕМИЕРА dropped only next to the badge."""
+    cases = json.loads((webapp_root / "scripts" / "fixtures" / "opera_subtitle_cases.json").read_text(encoding="utf-8"))
+    todo = [(k.split("|", 2)[2], bool(v.get("premiere")), v.get("display")) for k, v in cases.items() if not v.get("skip")]
+    ctx, page, errs = open_page(browser, 1280, 800, lang="bg", mode="theatre")
+    try:
+        got = page.evaluate("cs => cs.map(([s, p]) => opSubText(s, p))", [[s, p] for s, p, _d in todo])
+        bad = [f"{s!r} -> {g!r} (want {d!r})" for (s, p, d), g in zip(todo, got) if g != d]
+        check("op2_subtitle_cases_opSubText", len(cases) == 42 and not bad, f"{len(cases)} cases; {len(bad)} wrong: {bad[:3]}")
+        check("op2_subtitle_no_premiere_token_next_to_badge", not [g for (s, p, d), g in zip(todo, got) if p and "ПРЕМИЕРА" in g.split()],
+              "a displayed subtitle still holds ПРЕМИЕРА")
+    finally:
+        ctx.close()
 
 
 OP2_CONTRACT_JS = """() => {
@@ -23152,6 +23211,10 @@ def wave_op2(browser):
         _op2_contract(browser)
     except Exception as _ex:
         check("op2_contract_ran", False, f"{type(_ex).__name__}: {str(_ex)[:200]}")
+    try:
+        _op2_subtitle_cases(browser)
+    except Exception as _ex:
+        check("op2_subtitle_cases_ran", False, f"{type(_ex).__name__}: {str(_ex)[:200]}")
     src = html_path.read_text(encoding="utf-8")
     page_html, op_id = _op2_page(src)
     flipped_html, _ = _op2_page(src, flip=True)
