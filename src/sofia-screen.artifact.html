@@ -3610,7 +3610,7 @@ const opPremDates=sid=>PREMIERES["show:"+sid]||[];
 const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
 /* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
 const opSubText=(s,prem)=>{s=String(s||"").replace(/\s+/g," ").trim();
-  return prem?s.replace(/(^|\s)(?:ПРЕМИЕРА|PREMIERE)(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
+  return prem?s.replace(/(^|\s)(?:PREMIERE|ПРЕМИЕРА)(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
 /* in EN the English calendar's own line (subtitleEn), else the Bulgarian one: never a translation */
 const opSub=sh=>opSubText(S.lang==="en"&&sh.subtitleEn||sh.subtitle,opPremAhead(sh.id));
 const opTh=()=>thById.opera||THEATRES.find(x=>x.kind==="opera")||{};
