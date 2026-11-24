@@ -1805,7 +1805,7 @@ check("changed markup → None", O.fetch_venue("toplo", FakeNet({O.TOPLO_URL: br
 check("every theatre id is accounted for", sorted(list(O.FETCHERS) + list(O.NO_OFFICIAL_SOURCE)),
       sorted(["national", "sofia-th", "th199", "tba", "zad-kanala", "vazrazhdane", "mladezhki", "kuklen",
               "satira", "salzaismyah", "toplo", "iam", "artvent", "sfumato", "citymark",
-              "atelie313", "natfiz", "new-ndk", "derida"]))
+              "atelie313", "natfiz", "new-ndk", "derida", "opera"]))
 
 # ================================================================ wave M3: merge
 # scrape_programs.py wires the programmes above into the app: each theatre's own
@@ -3701,13 +3701,16 @@ check("fetch_opera: no past row, no row twice",
 check("fetch_opera: the children's view is merged in (and only it is 'Детски')",
       sorted({(bool(r[3].get("genres")) and "Детски" in r[3]["genres"], r[0]) for r in _all if r[1] == "2026-11-28"}),
       [(False, "ЖИЗЕЛ"), (True, "РЕЙНСКО ЗЛАТО за деца"), (True, "ЧЕРВЕНАТА ШАПЧИЦА")])
+# (complete_until: a covered month runs to its last listed day — 19 Dec in the trimmed fixture)
 check("fetch_opera: a thin January is not covered (its rows are extra rows), December is",
-      (_res["covered_to"], sorted({r[1][:7] for r in _res["extra_rows"]})), ("2026-12-31", ["2027-01"]))
-check("fetch_opera: English titles by repertoire id; none where the English page was not read",
+      (_res["covered_to"], sorted({r[1][:7] for r in _res["extra_rows"]})), ("2026-12-19", ["2027-01"]))
+check("fetch_opera: English titles by repertoire id, from any month read (ТРАВИАТА in January from November's "
+      "English page); none for a production no English page lists (НОРМА)",
       (_op_by(_all)[("2026-11-27", "19:00")][3].get("title_en"),
        _op_by(_all)[("2026-12-02", "19:00")][3].get("title_en"),
-       _op_by(_all)[("2027-01-15", "19:00")][3].get("title_en")),
-      ("AGRIPPINA", "CONCERT GALA ROSSINI – SVETLINA STOYANOVA", None))
+       _op_by(_all)[("2027-01-15", "19:00")][3].get("title_en"),
+       _op_by(_all)[("2027-01-29", "19:00")][3].get("title_en")),
+      ("AGRIPPINA", "CONCERT GALA ROSSINI – SVETLINA STOYANOVA", "LA TRAVIATA", None))
 check("fetch_opera: the missing English page is a note", any("2027-01" in n and "English" in n for n in _res["notes"]), True)
 check("fetch_opera: the excluded rows (TV broadcast, West Mall Sofia) from today on",
       [(e[0], e[1]) for e in _res["excluded"]],
@@ -3763,11 +3766,11 @@ _res_k = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12
 check("fetch_opera: a later children's page unreachable -> coverage ends before that month; its adult rows are extra rows",
       (_res_k["covered_to"], sorted({r[1][:7] for r in _res_k["extra_rows"]}),
        any("Детски" in (r[3].get("genres") or ()) for r in _res_k["extra_rows"])),
-      ("2026-11-30", ["2026-12"], False))
+      ("2026-11-29", ["2026-12"], False))         # (the current month: to its last listed day)
 _res_m = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): raw("opera_calendar_2027-01.html")})),
                        OP_TODAY)
 check("fetch_opera: a later month page that names another month stops the reading, with a note",
-      (_res_m["covered_to"], any("2026-12" in n for n in _res_m["notes"])), ("2026-11-30", True))
+      (_res_m["covered_to"], any("2026-12" in n for n in _res_m["notes"])), ("2026-11-29", True))
 check("fetch_opera: registered as a theatre fetcher, and 2 s between requests to operasofia.bg",
       ("opera" in O.FETCHERS, __import__("netfetch").CRAWL_DELAY.get("www.operasofia.bg", 0) >= 2.0), (True, True))
 O.OPERA_FACTS = {}

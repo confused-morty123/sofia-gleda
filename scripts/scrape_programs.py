@@ -1720,7 +1720,7 @@ THEATRE_ART_IDS = {
 # Order in which official theatre titles are resolved and minted (stable ids).
 THEATRE_ORDER = ("national", "sofia-th", "th199", "sfumato", "tba", "zad-kanala", "vazrazhdane",
                  "mladezhki", "kuklen", "toplo", "citymark", "satira", "iam", "artvent",
-                 "salzaismyah", "atelie313", "natfiz", "new-ndk", "derida")
+                 "salzaismyah", "atelie313", "natfiz", "new-ndk", "derida", "opera")
 _EURO = re.compile(r"(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€|евро|eur)", re.I)
 # "от 6.00 до 7.00 €" (theatre.art.bg): the currency is printed after the upper bound only
 _EURO_RANGE = re.compile(r"(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€\s*)?(?:до|[-–—])\s*"
@@ -1759,8 +1759,8 @@ def resolve_theatre_rows(index, results, mint):
     """Map every official theatre row (inside and outside the covered range) to
     a show of the SAME theatre, minting a show for a production no rule can
     place. results: {theatre: official_theatres result}; mint: callable(
-    display_title, theatre, url) -> show id (it must also add the show to
-    `index`). Returns ({theatre: {"rows": [(sid, date, time, meta, title)],
+    display_title, theatre, url, meta) -> show id (it must also add the show to
+    `index`; meta: {"title_en", "genres"} as the source gives them, else None). Returns ({theatre: {"rows": [(sid, date, time, meta, title)],
     "extra_rows": [...]}}, [minted ids])."""
     slots = defaultdict(list)                       # (title, theatre) -> [(date, time, meta)]
     for v, res in results.items():
@@ -1782,7 +1782,10 @@ def resolve_theatre_rows(index, results, mint):
         members = [tv for tv in pending if tv[1] == v and OT.normalise_show_title(tv[0]) == k]
         first = min((s for m in members for s in slots[m]), key=lambda s: (s[0], s[1]))
         spellings = [m[0] for m in members for _ in slots[m]]
-        sid = mint(SI.choose_display(spellings), v, first[2].get("url"))
+        # the source's English title and genres (operasofia.bg), from the first row that has them
+        ordered = sorted((s for m in members for s in slots[m]), key=lambda s: (s[0], s[1]))
+        meta = {k: next((s[2][k] for s in ordered if s[2].get(k)), None) for k in ("title_en", "genres")}
+        sid = mint(SI.choose_display(spellings), v, first[2].get("url"), meta)
         minted.append(sid)
         for m in members:
             resolved[m] = sid
@@ -2240,7 +2243,7 @@ def plink_matches(date, time_, url):
     return all(x == date for x in _PLINK_DATE.findall(u))
 
 
-def performance_links(performances, official_rows, art_rows, prev, boxonly, read=()):
+def performance_links(performances, official_rows, art_rows, prev, boxonly, read=(), no_carry=()):
     """PLINKS rows [[show, date, time, url], …], sorted.
 
     performances   this run's PERFORMANCES rows ([show, date, time, …])
@@ -2257,7 +2260,9 @@ def performance_links(performances, official_rows, art_rows, prev, boxonly, read
     performance per link (a link given for two performances names neither alone: none),
     and only when the date and time it spells are the row's own (plink_matches). Last
     run's link is kept only for a performance that still exists, is not box office only
-    and that no source listed this run (its theatre unreachable)."""
+    and that no source listed this run (its theatre unreachable) — and never for a show
+    in no_carry (the opera's: its link stands for "on sale" tonight, DESIGN_SPEC §2.1.5,
+    so a kept row shows "виж повече", never a stale "Купи")."""
     perf = {tuple(p[:3]) for p in performances if isinstance(p, (list, tuple)) and len(p) >= 3}
     box = {tuple(b[:3]) for b in boxonly}
     own, art, users = defaultdict(set), defaultdict(set), defaultdict(set)
@@ -2284,6 +2289,7 @@ def performance_links(performances, official_rows, art_rows, prev, boxonly, read
     for e in prev or []:
         k = tuple(e[:3])
         if (k in perf and k not in box and k not in out and k not in read and len(e) > 3
+                and k[0] not in no_carry
                 and e[3] not in used and e[3] not in users and plink_matches(k[1], k[2], e[3])):
             out[k] = e[3]
             used.add(e[3])
@@ -3660,20 +3666,23 @@ def main():
     existing_show_ids = set(show_index.shows) | set(theatre_shows)
     minted_show_log = []                     # [sid, theatre, title, official url]
 
-    def mint_show(title, venue, url=None):
+    def mint_show(title, venue, url=None, meta=None):
         """A minimal, source-faithful record for a production no rule can place:
         the title as the theatre publishes it (decorations removed), the theatre
         and a stable placeholder gradient. No invented author, director, cast,
         genres, synopsis or duration — the UI guards for each being absent. The
-        official page becomes its LINKS entry (set by the caller)."""
+        official page becomes its LINKS entry (set by the caller). meta: the
+        English title and genres the source itself prints (operasofia.bg's English
+        calendar and icon classes), used as given."""
         base = safe_base(slugify(title), "show", title)
         cand, i = base, 2
         while cand in existing_show_ids:
             cand, i = f"{base}-{i}", i + 1
         existing_show_ids.add(cand)
-        rec = {"id": cand, "title": title, "titleEn": "",
+        meta = meta or {}
+        rec = {"id": cand, "title": title, "titleEn": meta.get("title_en") or "",
                "theatre": venue, "author": "", "director": "",
-               "cast": "", "genres": [], "g": grad_for(cand),
+               "cast": "", "genres": list(meta.get("genres") or []), "g": grad_for(cand),
                "duration": None, "synBg": "", "synEn": "",
                "source": venue}
         theatre_shows[cand] = rec
@@ -4251,6 +4260,9 @@ def main():
     OT.BOX_PREV = defaultdict(set)
     for e in old_boxonly:
         OT.BOX_PREV[show_index.theatre_of(show_index.canonical(e[0]))].add((e[1], e[2]))
+    # the opera's production facts, read at most weekly (OT.opera_production_pass)
+    _ofacts = (state["venues"].get("opera") or {}).get("facts")
+    OT.OPERA_FACTS = dict(_ofacts) if isinstance(_ofacts, dict) else {}
     for v in theatre_ids:
         if v not in OT.FETCHERS:
             continue
@@ -4273,6 +4285,8 @@ def main():
                 sec_dates[v] = {r[1] for r in secondary[v]["rows"]}
         else:
             th_official[v] = res
+    if OT.OPERA_FACTS or "opera" in state["venues"]:
+        state["venues"].setdefault("opera", {})["facts"] = OT.OPERA_FACTS
     # A listing one theatre stages at another theatre the app lists is the
     # host's performance; a day a theatre's own list may cut short is covered
     # when theatre.art.bg's verified page for it lists nothing more.
@@ -4803,7 +4817,8 @@ def main():
     new_performances.sort(key=lambda r: (r[1], r[2], r[0]))
     # each performance's own purchase page, where its theatre links one (PLINKS)
     old_plinks = [[show_index.canonical(e[0])] + e[1:] for e in read_plinks(src)]
-    plinks = performance_links(new_performances, plink_own, plink_art, old_plinks, boxonly, plink_read)
+    plinks = performance_links(new_performances, plink_own, plink_art, old_plinks, boxonly, plink_read,
+                               no_carry={p[0] for p in new_performances if show_index.theatre_of(p[0]) == "opera"})
 
     out = src[:st_s] + emit_rows(new_showtimes) + src[st_e:]
     pf_s2, pf_e2, _ = extract_array(out, "PERFORMANCES")
