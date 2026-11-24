@@ -3081,7 +3081,7 @@ function searchIndex(){
       return ent(f,"film",[f.bg,f.en,fi.title_bg,fi.title_en,(ART[f.id]||{}).en,TE[f.id]],
         [f.director,f.cast,fi.dir,fi.cast,ctry,ctry&&ctryTranslate(ctry),(ART[f.id]||{}).country,...gen(f.genres)]);}),
     shows:SHOWS.map(s=>{const th=thById[s.theatre]||{};
-      return ent(s,"show",[s.title,s.titleEn,TE[s.id]],
+      return ent(s,"show",[s.title,s.titleEn,surfOf(s)==="opera"?"":TE[s.id]],   /* never an opera machine title (titleOf) */
         [s.author,s.director,s.cast,...gen(s.genres),th.name,th.nameEn]);})};
   return _SEARCH_IDX;}
 function searchAll(q){

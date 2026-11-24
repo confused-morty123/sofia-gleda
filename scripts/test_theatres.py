@@ -3917,6 +3917,18 @@ _opn.get("https://www.operasofia.bg/repertoire/1067")
 check("netfetch: the own-page poster / synopsis fetcher (own_page_posters.Net) sends the honest UA to operasofia.bg, "
       "robots.txt included", [(u.rsplit("/", 1)[-1], ua) for u, ua in _sent],
       [("robots.txt", _NF2.HONEST_UA), ("1067", _NF2.HONEST_UA)])
+_c67 = _OPP.candidates(fx("opera_production_1067.html"), "https://www.operasofia.bg/repertoire/1067")
+check("own_page_posters: the Opera's production page (no og:image) gives its own /uploads/events/<id> banner, tier 1",
+      [(u.split("?")[0], t) for u, t, _h in _c67 if t == 1][:1], [("https://operasofia.bg/uploads/events/1067.png", 1)])
+_c67x = _OPP.candidates(fx("opera_production_1067.html").replace("uploads/events/1067.png", "uploads/events/1068.png"),
+                        "https://www.operasofia.bg/repertoire/1067")
+check("own_page_posters: another production's banner on that page is never its tier-1 poster",
+      [u for u, t, _h in _c67x if t == 1 and "/uploads/events/" in u], [])
+_c_all = {rid: [u for u, t, _h in _OPP.candidates(fx(f"opera_production_{rid}.html"),
+                                                   f"https://www.operasofia.bg/repertoire/{rid}") if t == 1][:1]
+          for rid in ("1067", "1068", "1086", "1087", "1107")}
+check("own_page_posters: every opera production fixture yields its own banner (offline proof of the opera poster pass)",
+      sorted(rid for rid, u in _c_all.items() if u and f"/uploads/events/{rid}." in u[0]), sorted(_c_all))
 import fetch_theatre_posters as _FTP
 _NF2, _sent, _fake = _ua_capture()
 _pf = _fake(_FTP.PoliteFetcher(verbose=False, host_delay=0.0))
@@ -4013,6 +4025,20 @@ _SPO.refresh_source_shows({"n": _rs_nat}, {"national": {"rows": [("n", "2026-12-
                                                          "extra_rows": []}}, "2026-11-24")
 check("refresh_source_shows: only SOURCE_ID_KEY theatres (the opera)", _rs_nat["genres"], [])
 import inject_shows as _IS
+import translate as _TR, tempfile as _tf_tr
+with _tf_tr.TemporaryDirectory() as _d:
+    _hp = pathlib.Path(_d) / "index.html"
+    _hp.write_text('const FILMS=[];\nconst SHOWS=[{"id":"bebotsi","title":"КОНЦЕРТ ЗА БЕБОЦИ","titleEn":"","theatre":"opera"},'
+                   '{"id":"hamlet","title":"Хамлет","titleEn":"","theatre":"national"}];\n'
+                   'const THEATRES=[{"id":"national","kind":"national"},{"id":"opera","kind":"opera"}];\n', encoding="utf-8")
+    _keep_html, _TR.HTML = _TR.HTML, _hp
+    try:
+        _tr_shows = _TR.load_html_consts()[1]
+    finally:
+        _TR.HTML = _keep_html
+check("translate.py: no machine title is made for an opera production without the opera's own EN title "
+      "(TITLE_EN, which search indexes); other shows still get one",
+      [sid for sid, _t in _TR.shows_needing_translation(_tr_shows)[1]], ["hamlet"])
 check("inject_shows: subtitle and facts reach SHOWS when present; absent (not empty) on every other show",
       (_IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("subtitle"),
        _IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("facts"),

@@ -1597,6 +1597,36 @@ _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART="
 check("coverage of 108/120 (exactly 90.0 %) is on the floor: a 5c2 WARNING, the page publishes",
       _rc == 0 and "108/120 (90.0 %)" in _out and "warning: 5c2" in _out and "below 95 %" in _out
       and "floor" not in _out)
+# Опера и балет: its productions are their own 5c2 metric, never the plays' floor (a hidden
+# surface must not stop Кино and Театър publishing), and the DESIGN_SPEC §5.6 rail gate.
+_op_cov_shows = [{"id": f"opera{i}", "title": f"Опера {i}", "titleEn": "", "theatre": "opera", "genres": ["Опера"]}
+                 for i in range(40)]
+_op_cov_perfs = [[f"opera{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 4)).isoformat(),
+                  ["11:00", "16:00", "19:00", "19:30"][i % 4], "Голяма зрителна зала", ""] for i in range(40)]
+_op_cov_page = (_minimal_html(performances_override=_json.dumps(_cov_perfs + _op_cov_perfs))
+                .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows + _op_cov_shows) + ";")
+                .replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"))
+_rc, _out = _run_out(_op_cov_page, _cov_env)
+check("5c2: 40 opera productions with no image leave the plays' metric alone (120/120) and do not fail the gate "
+      "(Опера и балет hidden)",
+      _rc == 0 and "poster coverage (plays, own image): 120/120" in _out
+      and "warning: 5c2 poster coverage (opera, own image): 0/40" in _out and "NOT safe to publish" not in _out)
+check("…the opera's own number is in POSTER_COVERAGE", '"opera": {"missing": [' in _out and '"upcoming": 40' in _out)
+check("…hidden, the §5.6 rail gate is a note naming the rail, not a failure",
+      'opera rail "opera": 10 of 10 cards would be typographic art' in _out
+      and "must pass before OPERA_ON is flipped" in _out and "✗" not in "".join(
+          l for l in _out.splitlines() if "opera rail" in l))
+_op_shown_page = _minimal_html(extra_js=r"const OPERA_ON=/[?&]opera=1\b/.test(location.search)||true;", performances_override=_json.dumps(_cov_perfs + _op_cov_perfs)).replace(
+    "const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows + _op_cov_shows) + ";").replace(
+    "const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";")
+_rc, _out = _run_out(_op_shown_page, _cov_env)
+check("…shown (OPERA_ON true), a rail with more than 25 % typographic cards FAILS the gate",
+      _rc != 0 and 'opera rail "opera": 10 of 10 cards would be typographic art (over 25 %' in _out)
+_op_art = dict(_all_art, **{f"opera{i}": f"https://www.operasofia.bg/uploads/events/{1000 + i}.png" for i in range(8)})
+_rc, _out = _run_out(_op_shown_page.replace("const SHOWART=" + _json.dumps(_all_art) + ";",
+                                            "const SHOWART=" + _json.dumps(_op_art) + ";"), _cov_env)
+check("…8 of the rail's first 10 with an image (2 typographic = 20 %) pass the rail gate",
+      "opera rail" not in _out)
 # A 150-show page: steps of 3 shows are 2 points.
 _cov_shows_b = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
                 for i in range(150)]
@@ -2300,6 +2330,27 @@ _past_perfs = _json.loads(_bulk_performances()) + [["lebedovo-ezero", "2025-01-0
 _rc, _out = _run_out(_opera_page.replace(_json.dumps(_opera_perfs, ensure_ascii=False),
                                          _json.dumps(_past_perfs, ensure_ascii=False), 1))
 check("opera: a past opera performance does not count as upcoming (the warning stays)", _OPERA_WARN in _out)
+
+
+# What the surface reads beyond the rows: genres, hallAreas, subtitle, facts (warnings when shown)
+_rc, _out = _run_out(_opera_page)
+check("opera shown: a production without genres, a stage without hallAreas, no subtitle and no facts are "
+      "health warnings, never a failure",
+      _rc == 0 and "warning: opera: 1 of 1 productions on stage carry no genre" in _out
+      and "warning: opera: stage(s) without an address in THEATRES opera hallAreas" in _out
+      and "warning: opera: none of 1 productions on stage has a subtitle" in _out
+      and "warning: opera: none of 1 productions on stage has facts" in _out)
+_rc, _out = _run_out(_opera_page.replace(_FLAG_ON, _FLAG_OFF, 1))
+check("opera hidden: the same are notes (the flag flip's readiness), not warnings",
+      _rc == 0 and "productions on stage carry no genre" in _out and "warning: opera:" not in _out)
+_full = [dict(x, genres=["Балет"], subtitle="Балет от Адолф Адам", facts={"conductor": "Андрей Галанов"})
+         if x.get("id") == "lebedovo-ezero" else x for x in _opera_shows]
+_rc, _out = _run_out(_opera_page.replace(_json.dumps(_opera_shows, ensure_ascii=False), _json.dumps(_full, ensure_ascii=False), 1)
+                     .replace(_json.dumps(_OPERA_VENUE, ensure_ascii=False).rstrip("}"),
+                              _json.dumps(_OPERA_VENUE, ensure_ascii=False).rstrip("}")
+                              + ', "hallAreas": {"Голяма сцена": "ул. „Врабча“ 1"}', 1))
+check("opera shown: genres, hallAreas, subtitle and facts present -> none of those warnings",
+      _rc == 0 and "warning: opera:" not in _out)
 
 
 def _home_root(opera_page):
