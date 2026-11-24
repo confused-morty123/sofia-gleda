@@ -3537,6 +3537,55 @@ check("synopsis health: fills counted by route (override / own page / theatre.ar
       {k: _rt.get(k) for k in ("overrides", "own_page_fills", "theatre_art_fills", "own_page_misses")},
       {"overrides": 1, "own_page_fills": 1, "theatre_art_fills": 1, "own_page_misses": {"cast / credits / practical lines only": 1}})
 
+# review-r2 #5: poster_health and synopsis_health count the shows of THEATRES kind "opera" in their
+# own bucket (as verify_build 5c2 does), so the plays' numbers do not move when opera rows land
+import poster_health as _PH                                         # noqa: E402
+with _tf.TemporaryDirectory() as _d:
+    _hp = pathlib.Path(_d) / "index.html"
+    _oh = [{"id": "p1", "title": "П", "theatre": "satira", "synBg": "П" * 300},
+           {"id": "p2", "title": "Р", "theatre": "satira", "synBg": ""},
+           {"id": "o1", "title": "ЖИЗЕЛ", "theatre": "opera", "synBg": ""},
+           {"id": "o2", "title": "НОРМА", "theatre": "opera", "synBg": "Н" * 300}]
+    _hp.write_text("const SHOWS=" + _json.dumps(_oh, ensure_ascii=False) + ";\n"
+                   "const THEATRES=" + _json.dumps([{"id": "satira", "name": "Сатиричен театър"},
+                                                    {"id": "opera", "name": "Софийска опера и балет", "kind": "opera"}],
+                                                   ensure_ascii=False) + ";\n"
+                   "const PERFORMANCES=" + _json.dumps([[x["id"], "2999-01-01", "19:00", "", ""] for x in _oh]
+                                                       + [["o1", "2999-01-02", "19:00", "", "", "soldout"]]) + ";\n"
+                   "const POSTERS=" + _json.dumps({"p1": "https://satirata.bg/p1.jpg"}) + ";\n"
+                   "const LINKS=[];\nconst FILMS=[];\nconst SHOWTIMES=[];\nconst AGGLINKS={};\n", encoding="utf-8")
+    _keep_ps = _os_env.get("SOFIA_POSTER_SOURCES")
+    _os_env["SOFIA_POSTER_SOURCES"] = str(pathlib.Path(_d) / "none.json")
+    try:
+        _pm = _PH.measure(_hp, pathlib.Path(_d))
+        _prec = _PH.health_record(_pm, _pm, {}, [], "2026-11-25")
+        _pmd = _PH.report_md(_pm, {"shows": {}, "films": {}, "misses": {}}, {}, "2026-11-25")
+    finally:
+        if _keep_ps is None:
+            _os_env.pop("SOFIA_POSTER_SOURCES", None)
+        else:
+            _os_env["SOFIA_POSTER_SOURCES"] = _keep_ps
+    _keep_sy = (_SY.FILLS, _SY.OVERRIDES)
+    _SY.FILLS, _SY.OVERRIDES = pathlib.Path(_d) / "f.json", pathlib.Path(_d) / "o.json"
+    try:
+        _sh = _SH.measure(_hp)
+    finally:
+        _SY.FILLS, _SY.OVERRIDES = _keep_sy
+check("poster health: the opera's productions are their own bucket, never the plays' (plays 2 titles, opera 2)",
+      (_pm["shows"]["upcoming"], sorted(_pm["shows"]["by_group"]), _pm["opera"]["upcoming"], sorted(_pm["opera"]["missing"]),
+       _pm["ids"]["shows"], _pm["ids"]["opera"]),
+      (2, ["satira"], 2, ["o1", "o2"], ["p1", "p2"], ["o1", "o2"]))
+check("poster health: poster_health.json keeps plays and opera apart (no opera in per_theatre or below_target), "
+      "and the .md names the opera line",
+      (_prec["shows"]["upcoming"], sorted(_prec["per_theatre"]), _prec["opera"]["upcoming"], _prec["opera"]["with"],
+       "opera" in _prec["below_target"], sorted(_prec["missing"]["opera"]), "Opera" in _pmd),
+      (2, ["satira"], 2, 0, False, ["o1", "o2"], True))
+check("synopsis health: the opera's productions are their own bucket, never the plays'",
+      ({k: _sh["shows"][k] for k in ("titles", "thin")}, sorted(_sh["shows"]["by_theatre"]),
+       {k: _sh["opera"][k] for k in ("titles", "thin")}, [r[1] for r in _sh["_rows"]["shows"]],
+       [r[1] for r in _sh["_rows"]["opera"]]),
+      ({"titles": 2, "thin": 1}, ["satira"], {"titles": 2, "thin": 1}, ["p2"], ["o1"]))
+
 # translate.py: the per-run cap on new synopsis text, and a used-up quota as a warning
 import translate as _TR
 _tc = {}
