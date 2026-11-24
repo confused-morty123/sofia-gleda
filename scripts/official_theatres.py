@@ -17,7 +17,11 @@ markup no longer has the shape the parser expects, or it is implausibly empty
      "rows": [(title_as_published, "YYYY-MM-DD", "HH:MM",
                {"hall": str|None, "price": str|None, "url": str|None,
                 "premiere": bool, ...optional: "preview", "guest", "kind",
-                "sold_out", "sources", "tickets_title"})],
+                "sold_out", "sources", "tickets_title",
+                # operasofia.bg (fetch_opera): "buy", "page", "rep_id", "genres",
+                # "sale" ("soldout" | "notyet"), "subtitle", "conductor", "director",
+                # "address", "title_en", "facts" (the production page's labelled fields)
+                })],
      "covered_from": "YYYY-MM-DD", "covered_to": "YYYY-MM-DD",
      "source": label,
      # informational extras (always present, possibly empty):
