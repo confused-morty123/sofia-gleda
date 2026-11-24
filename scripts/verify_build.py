@@ -1088,13 +1088,19 @@ if data["SHOWS"] and data["THEATRES"]:
     if _bad_th:
         fail(f"shows filed under unknown theatres: {', '.join(_bad_th[:6])}")
 if data["PERFORMANCES"]:
+    # A 6th column is the sale state of an opera performance (DESIGN_SPEC §2.1.5:
+    # "soldout" | "notyet"), on rows of a kind:"opera" venue's shows only.
+    _kind_of = {t.get("id"): t.get("kind") for t in (data["THEATRES"] or []) if isinstance(t, dict)}
+    _show_kind = {s.get("id"): _kind_of.get(s.get("theatre")) for s in (data["SHOWS"] or []) if isinstance(s, dict)}
     _bad_rows = [p for p in data["PERFORMANCES"]
-                 if not (isinstance(p, list) and len(p) == 5 and isinstance(p[0], str)
+                 if not (isinstance(p, list) and isinstance(p[0] if p else None, str)
+                         and (len(p) == 5 or (len(p) == 6 and _show_kind.get(p[0]) == "opera"
+                                              and p[5] in ("soldout", "notyet")))
                          and re.fullmatch(r"\d{4}-\d\d-\d\d", str(p[1]))
                          and re.fullmatch(r"\d\d:\d\d", str(p[2])))]
     if _bad_rows:
-        fail(f"{len(_bad_rows)} PERFORMANCES row(s) are not [showId, date, time, hall, price], "
-             f"e.g. {str(_bad_rows[0])[:80]}")
+        fail(f"{len(_bad_rows)} PERFORMANCES row(s) are not [showId, date, time, hall, price] "
+             f"(+ \"soldout\" | \"notyet\" on an opera row), e.g. {str(_bad_rows[0])[:80]}")
     _dup = len(data["PERFORMANCES"]) - len({tuple(p[:3]) for p in data["PERFORMANCES"] if isinstance(p, list)})
     if _dup:
         fail(f"{_dup} duplicate performance(s) (same show, date and time)")

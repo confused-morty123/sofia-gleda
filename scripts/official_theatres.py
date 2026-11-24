@@ -17,7 +17,11 @@ markup no longer has the shape the parser expects, or it is implausibly empty
      "rows": [(title_as_published, "YYYY-MM-DD", "HH:MM",
                {"hall": str|None, "price": str|None, "url": str|None,
                 "premiere": bool, ...optional: "preview", "guest", "kind",
-                "sold_out", "sources", "tickets_title"})],
+                "sold_out", "sources", "tickets_title",
+                # operasofia.bg (fetch_opera): "buy", "page", "rep_id", "genres",
+                # "sale" ("soldout" | "notyet"), "subtitle", "conductor", "director",
+                # "address", "title_en", "facts" (the production page's labelled fields)
+                })],
      "covered_from": "YYYY-MM-DD", "covered_to": "YYYY-MM-DD",
      "source": label,
      # informational extras (always present, possibly empty):
@@ -252,7 +256,8 @@ PERFORMANCE_LINK_RE = re.compile(
     r"|salzaismyah\.bg/site/selector/\d+"                                 # Сълза и смях: a selector
     r"|theatre\.art\.bg/kupi-bilet\.php\?"                                # theatre.art.bg purchase (Sfumato)
     r"|toplocentrala\.bg/[^?#]*\?day=\d+"                                # Топлоцентрала: dated page
-    r"|//natfiz\.bg/event/[^/?#]+", re.I)                                # НАТФИЗ: one performance's page
+    r"|//natfiz\.bg/event/[^/?#]+"                                      # НАТФИЗ: one performance's page
+    r"|operasofia\.bg/buy-tickets/\d+", re.I)                            # Опера: one performance's checkout
 _LINK_DATE_TIME = re.compile(r"/(\d{4}-\d{2}-\d{2})(?:\||%7C)(\d{2}):(\d{2})", re.I)
 
 
@@ -543,6 +548,11 @@ def _get(net, url, **kw):
     if r is None:
         raise Unavailable(f"unreachable: {url}")
     return decode(r.content)
+
+
+def _oget(net, url):
+    """_get for operasofia.bg: with the honest User-Agent (OPERA_HEADERS)."""
+    return _get(net, url, headers=dict(OPERA_HEADERS))
 
 
 # ===================================================================== national
@@ -2550,6 +2560,396 @@ def fetch_tba(net, today):
     return finish("tba", TBA_SOURCE, rows, today, covered_to=last, month_check=False, notes=notes)
 
 
+# ======================================================================= opera
+# Софийска опера и балет (operasofia.bg): the third surface "Опера и балет" (THEATRES
+# kind "opera"; notes/OPERA_ARCHITECTURE.md §4, notes/design_options/opera/mockups/final/
+# DESIGN_SPEC.md §2). Laravel, server-rendered; robots.txt allows everything. A month is
+# TWO calendar views that share no rows — the default one (adult performances) and the
+# children's (?categories[]=5) — plus the English month page, read for titles only (keyed
+# by the /repertoire/<id> both link to: ПЕЕМ ЗАЕДНО is PAZZIA D’AMORE in English, never
+# derived). Each day is a `.section` (`.day-number`, `.week` = month word, `.day-words`
+# = weekday), each performance an `article.item`.
+OPERA_HOST = "https://www.operasofia.bg"
+OPERA_CAL = OPERA_HOST + "/calendar/{y}-{m:02d}"
+OPERA_CAL_KIDS = OPERA_HOST + "/calendar/{y}-{m:02d}?categories[]=5"
+OPERA_CAL_EN = OPERA_HOST + "/en/calendar/{y}-{m:02d}"
+OPERA_REP = OPERA_HOST + "/repertoire/{id}"
+OPERA_BUY = OPERA_HOST + "/buy-tickets/{n}"
+OPERA_SOURCE = "operasofia.bg/calendar (month pages: default + children's view; English titles)"
+OPERA_MONTHS = 4             # the current month + 3 (DESIGN_SPEC §2.1.1: 4 × 3 pages a night)
+OPERA_DELAY = 2.0            # seconds between requests to the host (our own floor; no Crawl-delay asked)
+# An honest User-Agent for this host (owner rule for the opera surface; the research fetched
+# it as SofiaGleda/1.0): every operasofia.bg GET goes through _oget, never netfetch's browser UA.
+OPERA_HEADERS = {"User-Agent": "SofiaGleda/1.0 (+https://sofiagleda.com)"}
+# the site's icon class -> genre; "behind" is its concerts and galas (research, 2026-11-24).
+# "event" and any class not listed: no genre (never guessed).
+OPERA_GENRE = {"opera": "Опера", "ballet": "Балет", "musical": "Мюзикъл", "behind": "Концерт",
+               "children": "Детски"}
+OPERA_KIDS = "Детски"        # every row of the children's view carries it (the UI's "За деца")
+# The Opera's own halls: Голяма зрителна зала (ул. „Врабча“ 1) and Камерна зала (бул. „Княз
+# Александър Дондуков“ 30, most children's shows). Any other published address is off-site
+# (West Mall Sofia, the BNT 2 studio) and excluded in v1 (DESIGN_SPEC §11.1).
+_OPERA_HOUSE = re.compile(r"врабча|дондуков\D{0,6}30", re.I)
+_OPERA_REP_ID = re.compile(r"/repertoire/(\d+)(?:[/?#]|$)")
+_OPERA_BUY_ID = re.compile(r"^https?://(?:www\.)?operasofia\.bg/buy-tickets/(\d+)$")
+# the exact whitespace token (DESIGN_SPEC §2.3), never a word that contains it
+_OPERA_PREMIERE = re.compile(r"(^|\s)ПРЕМИЕРА(?=\s|$)")
+# a conductor's / director's credit closing the subtitle: "… Диригент Константин Тринкс",
+# "… /Режисьор Пламен Карталов/". Read into its own field (meta conductor / director) as an
+# extra; the subtitle itself is stored verbatim with the credit in it (DESIGN_SPEC §2.1.7):
+# no output shows the credit elsewhere yet, so it must not leave the shown text.
+_OPERA_CREDIT = re.compile(r"(?:^|\s)(/?)(Диригент|Режисьор)\s+([^/]+?)\1\s*$")
+_OPERA_CREDIT_KEY = {"Диригент": "conductor", "Режисьор": "director"}
+EN_MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august",
+             "september", "october", "november", "december")
+
+
+def opera_subtitle(raw):
+    """(display, premiere, credits) of a calendar subtitle (`.item__description__author`).
+    premiere: the exact token ПРЕМИЕРА is in it; display: the line as published (spaces
+    collapsed) without that token when premiere — the UI's own rule (DESIGN_SPEC §2.3),
+    the cases of opera_subtitle_cases.json; credits: a closing conductor/director credit
+    ({"conductor"|"director": name, verbatim}), read as an extra and left in the line.
+    What is stored is the verbatim line (parse_opera), never display."""
+    s = clean(raw)
+    premiere = "ПРЕМИЕРА" in s.split()
+    if premiere:
+        s = clean(_OPERA_PREMIERE.sub(" ", s))
+    credits = {}
+    m = _OPERA_CREDIT.search(s)
+    if m:
+        credits[_OPERA_CREDIT_KEY[m.group(2)]] = clean(m.group(3))
+    return s, premiere, credits
+
+
+def opera_place(view, icon, subtitle, has_buy):
+    """How one calendar row is placed (the 42 cases of DESIGN_SPEC §2.4): skip (the TV
+    broadcast: icon "event" without a ticket link), audience ("adults" | "children": the
+    calendar view), genres (the icon's, plus "Детски" for the children's view), premiere,
+    display (the subtitle shown) and credits."""
+    display, premiere, credits = opera_subtitle(subtitle)
+    genres = [OPERA_GENRE[icon]] if icon in OPERA_GENRE else []
+    if view == "children" and OPERA_KIDS not in genres:
+        genres.append(OPERA_KIDS)
+    return {"skip": icon == "event" and not has_buy, "audience": view, "genres": genres,
+            "premiere": premiere, "display": display, "credits": credits}
+
+
+def _opera_heading(soup, year, month, names, venue):
+    """The month heading (`#calendarDates`: "януари <span>2027</span>", printed on an
+    empty month too) must name year-month, else the page is not the one asked for."""
+    h = soup.select_one("#calendarDates")
+    text = clean(h.get_text(" ", strip=True)) if h else ""
+    m = re.fullmatch(r"(\S+)\s+(\d{4})", text)
+    if not m or m.group(1).lower() != names[month - 1] or int(m.group(2)) != year:
+        raise MarkupError(f"{venue}: month heading {text[:40]!r} is not {year}-{month:02d}")
+
+
+def _opera_status(item, notes, where):
+    """(sale, buy) from the buttons' text (DESIGN_SPEC §2.1.5), never from whether a link
+    exists: 'купи билети' -> ("", its /buy-tickets/<n> link); 'разпродаден' -> ("soldout",
+    None); only 'виж повече' -> ("notyet", None): sales not open, which is NOT sold out.
+    Any other text: ("", None) — no status, no link — and a note."""
+    texts = []
+    for b in item.select(".item__buttons > *"):
+        t = clean(b.get_text(" ", strip=True)).lower()
+        if t:
+            texts.append((t, b.get("href") or ""))
+    others = [(t, h) for t, h in texts if t != "виж повече"]
+    if not others:
+        return "notyet", None
+    if len(others) == 1 and others[0][0].startswith("купи билет"):
+        m = _OPERA_BUY_ID.match(others[0][1].strip())
+        if m:
+            return "", OPERA_BUY.format(n=m.group(1))
+    if len(others) == 1 and others[0][0].startswith("разпродаден"):
+        return "soldout", None
+    notes.append(f"{where}: button(s) {', '.join(repr(t) for t, _ in others)} not understood — no status shown")
+    return "", None
+
+
+def parse_opera(html, year, month, kids=False, notes=None):
+    """One calendar month (the default view, or with kids=True the children's) ->
+    (rows, excluded). A row: mkrow(title as published, date, time, hall=stage,
+    url=the production's /repertoire/<id> page, buy=this performance's /buy-tickets/<n>
+    (tickets on sale only), page=the production page, premiere=the ПРЕМИЕРА token,
+    rep_id, genres, sale ("soldout" | "notyet", absent when on sale), subtitle (verbatim,
+    spaces collapsed: ПРЕМИЕРА and any credit kept), conductor / director (a credit closing
+    the subtitle, also left in it), address). The past
+    days of the month are rows too (finish drops them; they are the completeness
+    reference). Excluded: the TV broadcast (icon "event", no ticket link) and every
+    off-site address. A heading, day block or weekday of another month raises
+    MarkupError; an empty month is ([], [])."""
+    notes = [] if notes is None else notes
+    soup = soup_of(html)
+    _opera_heading(soup, year, month, BG_MONTHS, "opera")
+    view = "children" if kids else "adults"
+    rows, excluded = [], []
+    for sec in soup.select(".section"):
+        dn, wk = sec.select_one(".day-number"), sec.select_one(".week")
+        items = sec.select("article.item")
+        if not items and not dn:
+            continue
+        try:
+            day = dt.date(year, month, int(clean(dn.get_text()) if dn else ""))
+        except ValueError:
+            raise MarkupError(f"opera: unreadable day number in {year}-{month:02d}")
+        if not wk or bg_month(clean(wk.get_text())) != month:
+            raise MarkupError(f"opera: day {day} sits under month {clean(wk.get_text()) if wk else None!r}")
+        wd = sec.select_one(".day-words")
+        if weekday_conflict(day, wd.get_text(" ", strip=True) if wd else ""):
+            raise MarkupError(f"opera: {day} is not a {clean(wd.get_text())}")
+        for it in items:
+            name = it.select_one(".item__description__name")
+            title = clean(name.get_text(" ", strip=True)) if name else ""
+            tm = it.select_one(".start-time__hour")
+            time_ = hhmm(tm.get_text(" ", strip=True)) if tm else None
+            if not title or not time_:
+                raise MarkupError(f"opera: a performance on {day} without a title or a time")
+            icon = next((c[len("icon-performance-"):] for c in (it.select_one("i.icon") or {}).get("class", [])
+                         if c.startswith("icon-performance-")), "")
+            rep = next((m.group(1) for a in it.select(".item__description a[href]")
+                        for m in [_OPERA_REP_ID.search(a["href"])] if m), None)
+            page = OPERA_REP.format(id=rep) if rep else None
+            sub = it.select_one(".item__description__author")
+            stage = it.select_one(".item__location__scene")
+            addr = it.select_one(".item__location__address")
+            stage = clean(stage.get_text(" ", strip=True)) if stage else ""
+            addr = clean(addr.get_text(" ", strip=True)) if addr else ""
+            sale, buy = _opera_status(it, notes, f"{day} {time_} {title}")
+            sub = clean(sub.get_text(" ", strip=True)) if sub else ""
+            p = opera_place(view, icon, sub, bool(buy))
+            if p["skip"]:
+                excluded.append((title, day.isoformat(), time_, "a TV broadcast, no tickets (icon 'event')"))
+                continue
+            if addr and not _OPERA_HOUSE.search(addr):
+                excluded.append((title, day.isoformat(), time_,
+                                 f"not at the Opera house: {stage or '?'}, {addr}"))
+                continue
+            rows.append(mkrow(title, day, time_, hall=stage or None, url=page, buy=buy, page=page,
+                              premiere=p["premiere"], rep_id=rep, genres=p["genres"], sale=sale,
+                              subtitle=sub or None, address=addr or None, **p["credits"]))
+    return rows, excluded
+
+
+def parse_opera_en_titles(html, year, month):
+    """{repertoire id: English title as published} from /en/calendar/YYYY-MM. Raises
+    MarkupError for a page of another month; an id printed with two different titles
+    is left out (a missing value beats a wrong one)."""
+    soup = soup_of(html)
+    _opera_heading(soup, year, month, EN_MONTHS, "opera EN")
+    seen = defaultdict(set)
+    for it in soup.select("article.item"):
+        name = it.select_one(".item__description__name")
+        rep = next((m.group(1) for a in it.select(".item__description a[href]")
+                    for m in [_OPERA_REP_ID.search(a["href"])] if m), None)
+        title = clean(name.get_text(" ", strip=True)) if name else ""
+        if rep and title:
+            seen[rep].add(title)
+    return {rep: next(iter(ts)) for rep, ts in seen.items() if len(ts) == 1}
+
+
+# ----------------------------------------------------- the production pages (§2.1.8)
+# Labelled fields only, each verbatim, each simply absent when its label is: the
+# duration ("Времетраене"), the language line, the age line (children's productions
+# only: no comparison with the house rule printed on every adult page), the team's
+# Диригент and Режисьор, and the price sentence children's pages print. Adult prices
+# come from one /buy-tickets/<n> page (its "Ценови категории EUR" list).
+OPERA_PAGE_CAP = 6           # production pages read per run (soonest performance first)
+OPERA_PRICE_CAP = 3          # /buy-tickets/<n> pages read per run, one per production
+OPERA_FACTS_DAYS = 7         # a production page (and its prices) is read again after a week
+OPERA_FACTS_KEEP = 60        # a production unread for this long leaves the cache
+# shortcut: the production pass stays OFF until a consumer of its facts lands (SHOWS fields
+# or a sidecar the verify gate checks). Nothing written today reads meta "facts", and the
+# pass costs up to OPERA_PAGE_CAP + OPERA_PRICE_CAP extra GETs a night (checkout pages
+# included, which the source register asks to keep rare). With it off a night is the
+# calendar alone: at most OPERA_MONTHS × 3 GETs. Turn on together with the consumer.
+OPERA_FACTS_ON = False
+# {repertoire id: {"read": "YYYY-MM-DD", "prices_read": "YYYY-MM-DD", facts…}}: set by the
+# caller (scrape_programs.py, from official_state.json) and updated in place by fetch_opera.
+OPERA_FACTS: dict = {}
+_OPERA_FACT_KEYS = ("duration", "language", "age", "conductor", "director", "prices", "prices_eur")
+_OPERA_AGE = re.compile(r"Подходящо\s+за\s+деца[^!\n]*!?")
+_OPERA_PRICES = re.compile(r"Цени\b[^\n]*€\.?")
+
+
+def _opera_team(soup, role):
+    """Names (in page order, each once) on the staff cards labelled `role` — the label
+    itself, or its first comma-separated part ("Режисьор, сценограф и художник на
+    костюми"); a different label ("Помощник-режисьор", "Хореография и режисура") is not it."""
+    out = []
+    for card in soup.select("#staff .card .inner"):
+        lab, nm = card.select_one("span"), card.select_one("h2")
+        if lab and nm and clean(lab.get_text()).split(",")[0].strip() == role:
+            n = clean(nm.get_text(" ", strip=True))
+            if n and n not in out:
+                out.append(n)
+    return ", ".join(out) or None
+
+
+def parse_opera_production(html, kids=False):
+    """The labelled facts of one /repertoire/<id> page, {key: verbatim text}."""
+    soup = soup_of(html)
+    facts = {}
+    for span in soup.select(".info__detailed .hour"):
+        m = re.match(r"\s*Времетраене\s*:?\s*(.+)", clean(span.get_text(" ", strip=True)))
+        if m:
+            facts["duration"] = clean(m.group(1))
+            break
+    lang = soup.select_one(".info__detailed .icon-language")
+    lang = lang.find_next_sibling("span") if lang else None
+    if lang and clean(lang.get_text()):
+        facts["language"] = clean(lang.get_text(" ", strip=True))
+    for role, key in (("Диригент", "conductor"), ("Режисьор", "director")):
+        v = _opera_team(soup, role)
+        if v:
+            facts[key] = v
+    review = soup.select_one("#review .info")
+    text = "\n".join(clean(x) for x in review.get_text("\n").split("\n")) if review else ""
+    if kids:
+        m = _OPERA_AGE.search(text)
+        if m:
+            facts["age"] = clean(m.group(0))
+    m = _OPERA_PRICES.search(text)
+    if m:
+        facts["prices"] = clean(m.group(0))
+    return facts
+
+
+def parse_opera_prices(html):
+    """The EUR price categories of a /buy-tickets/<n> page, as printed, in page order
+    (["50", "60", …]); [] without the "Ценови категории EUR" heading."""
+    soup = soup_of(html)
+    head = soup.find(string=re.compile(r"Ценови\s+категории\s+EUR"))
+    box = soup.select_one("#ticketPriceDiv")
+    if not head or not box:
+        return []
+    return [clean(d.get_text()) for d in box.find_all("div", recursive=False)
+            if re.fullmatch(r"\d{1,4}(?:[.,]\d{1,2})?", clean(d.get_text()))]
+
+
+def _fresh(entry, key, today, days=OPERA_FACTS_DAYS):
+    try:
+        return (today - dt.date.fromisoformat(entry.get(key) or "")).days < days
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+
+def opera_production_pass(net, rows, today, notes, cache=None):
+    """Attach each production's facts (meta "facts") to its rows, reading at most
+    OPERA_PAGE_CAP production pages (a production not read in OPERA_FACTS_DAYS days,
+    soonest performance first) and at most OPERA_PRICE_CAP buy-tickets pages (an adult
+    production on sale whose prices are older than a week: one page each). `cache`
+    (OPERA_FACTS when not given) is updated in place. A page that cannot be read or
+    parsed is a note: the calendar never depends on it."""
+    cache = OPERA_FACTS if cache is None else cache
+    t0 = today.isoformat()
+    first, kids, buy = {}, set(), {}
+    for t, d, tm, m in sorted(rows, key=lambda r: (r[1], r[2])):
+        rep = m.get("rep_id")
+        if not rep or d < t0:
+            continue
+        first.setdefault(rep, (d, tm))
+        if OPERA_KIDS in (m.get("genres") or ()):
+            kids.add(rep)
+        if m.get("buy"):
+            buy.setdefault(rep, m["buy"])
+    for rep in list(cache):                             # malformed, or long unread: forgotten
+        v = cache[rep]
+        if not isinstance(v, dict) or (rep not in first and not _fresh(v, "read", today, OPERA_FACTS_KEEP)):
+            del cache[rep]
+    pages = prices = 0
+    for rep in sorted(first, key=lambda r: first[r]):
+        e = cache.get(rep) if isinstance(cache.get(rep), dict) else {}
+        if not _fresh(e, "read", today) and pages < OPERA_PAGE_CAP:
+            pages += 1
+            try:
+                got = parse_opera_production(_oget(net, OPERA_REP.format(id=rep)), kids=rep in kids)
+                e = dict(got, read=t0, **{k: e[k] for k in ("prices_eur", "prices_read") if k in e})
+                cache[rep] = e
+            except Exception as ex:                     # a broken page never costs the calendar
+                notes.append(f"production page {rep} not read: {type(ex).__name__}: {ex}"[:200])
+        if (rep not in kids and buy.get(rep) and isinstance(cache.get(rep), dict)
+                and not _fresh(cache[rep], "prices_read", today) and prices < OPERA_PRICE_CAP):
+            prices += 1
+            try:
+                eur = parse_opera_prices(_oget(net, buy[rep]))
+                cache[rep] = {k: v for k, v in cache[rep].items() if k != "prices_eur"}
+                cache[rep]["prices_read"] = t0
+                if eur:
+                    cache[rep]["prices_eur"] = eur
+            except Exception as ex:
+                notes.append(f"prices of production {rep} not read: {type(ex).__name__}: {ex}"[:200])
+    for t, d, tm, m in rows:
+        e = cache.get(m.get("rep_id"))
+        facts = {k: e[k] for k in _OPERA_FACT_KEYS if isinstance(e, dict) and e.get(k)}
+        if facts:
+            m["facts"] = facts
+    return cache
+
+
+def _opera_delay():
+    """2 s between requests to operasofia.bg (netfetch reads CRAWL_DELAY per request)."""
+    try:
+        import netfetch
+    except ImportError:                                 # pragma: no cover
+        return
+    for h in ("www.operasofia.bg", "operasofia.bg"):
+        if netfetch.CRAWL_DELAY.get(h, 0) < OPERA_DELAY:
+            netfetch.CRAWL_DELAY[h] = OPERA_DELAY
+
+
+def fetch_opera(net, today):
+    """The Opera's own calendar: for each of OPERA_MONTHS months the default view and
+    the children's view (both, or that month is not covered), plus the English page for
+    titles (optional). The first month must read, list something and name itself;
+    a later month that fails or is empty ends the reading. Then the production pass,
+    only while OPERA_FACTS_ON."""
+    _opera_delay()
+    rows, excluded, notes, en, covered_to = [], [], [], {}, None
+    en_seen = defaultdict(set)
+    for i, (y, m) in enumerate(months_from(today, OPERA_MONTHS)):
+        ym = f"{y}-{m:02d}"
+        try:
+            r, x = parse_opera(_oget(net, OPERA_CAL.format(y=y, m=m)), y, m, notes=notes)
+        except Unavailable as e:                        # MarkupError included
+            if i == 0:
+                raise
+            notes.append(f"{ym}: calendar not read ({e}) — coverage ends before it")
+            break
+        if not r and not x:
+            if i == 0:
+                raise Unavailable(f"{ym}: the calendar lists nothing (implausibly empty)")
+            break
+        try:
+            kr, kx = parse_opera(_oget(net, OPERA_CAL_KIDS.format(y=y, m=m)), y, m, kids=True, notes=notes)
+        except Unavailable as e:
+            if i == 0:
+                raise Unavailable(f"{ym}: children's calendar not read ({e})")
+            # the adult rows stand (extra rows); the month's days cannot be vouched for
+            notes.append(f"{ym}: children's calendar not read ({e}) — coverage ends before it")
+            rows += r
+            excluded += x
+            covered_to = (dt.date(y, m, 1) - dt.timedelta(days=1)).isoformat()
+            break
+        rows += r + kr
+        excluded += x + kx
+        try:
+            for rep, title in parse_opera_en_titles(_oget(net, OPERA_CAL_EN.format(y=y, m=m)), y, m).items():
+                en_seen[rep].add(title)
+        except Unavailable as e:
+            notes.append(f"{ym}: English calendar not read ({e}) — no English titles from it")
+    en = {rep: next(iter(ts)) for rep, ts in en_seen.items() if len(ts) == 1}
+    for row in rows:
+        t_en = en.get(row[3].get("rep_id"))
+        if t_en:
+            row[3]["title_en"] = t_en
+    if OPERA_FACTS_ON:
+        opera_production_pass(net, rows, today, notes)
+    return finish("opera", OPERA_SOURCE, rows, today, excluded=excluded, notes=notes,
+                  covered_to=covered_to)
+
+
 # ========================================================== no official source
 NO_OFFICIAL_SOURCE = {
     "atelie313": "atelie313.com is a JavaScript-only super.website app (no programme in the "
@@ -2566,7 +2966,7 @@ FETCHERS = OrderedDict([
     ("mladezhki", fetch_mladezhki), ("kuklen", fetch_kuklen), ("satira", fetch_satira),
     ("salzaismyah", fetch_salzaismyah), ("toplo", fetch_toplo), ("iam", fetch_iam),
     ("artvent", fetch_artvent), ("sfumato", fetch_sfumato), ("citymark", fetch_citymark),
-    ("natfiz", fetch_natfiz),
+    ("natfiz", fetch_natfiz), ("opera", fetch_opera),
 ])
 
 # why the last fetch_* of each venue returned None (for the run report)

@@ -2210,6 +2210,54 @@ check("an unparseable FILM_EXTRA fails (its sheet texts would go unchecked)",
       _rc != 0 and "5c5 FILM_EXTRA is declared but is not one parseable JSON line" in _out)
 
 # ---------------------------------------------------------------------------
+# Опера и балет, data track: the sale column of an opera row (DESIGN_SPEC §2.1.5)
+# and PRELIM_FROM naming the opera (OPERA_ARCHITECTURE.md §4.4).
+# ---------------------------------------------------------------------------
+print("\nOpera data: the 6th PERFORMANCES column, PRELIM_FROM")
+import re as _re_op                                                     # noqa: E402
+
+
+def _opera_data_page(extra_perfs, prelim=None):
+    """The minimal page plus the opera venue (kind "opera", unless the bulk venues
+    already have one), one opera show and `extra_perfs`; prelim: PRELIM_FROM, else {}."""
+    page = _minimal_html(performances_override=_json.dumps(_json.loads(_bulk_performances()) + extra_perfs,
+                                                           ensure_ascii=False))
+    m = _re_op.search(r"const THEATRES=(\[.*?\]);", page)
+    ths = _json.loads(m.group(1))
+    if not any(t.get("kind") == "opera" for t in ths):
+        ths.append({"id": "opera", "name": "Софийска опера и балет", "nameEn": "Sofia Opera and Ballet",
+                    "kind": "opera"})
+    opera_id = next(t["id"] for t in ths if t.get("kind") == "opera")
+    m2 = _re_op.search(r"const SHOWS=(\[.*?\]);", page)
+    shows = _json.loads(m2.group(1)) + [{"id": "lebedovo-ezero", "title": "Лебедово езеро",
+                                         "titleEn": "Swan Lake", "theatre": opera_id}]
+    page = (page.replace(m.group(0), "const THEATRES=" + _json.dumps(ths, ensure_ascii=False) + ";", 1)
+                .replace(m2.group(0), "const SHOWS=" + _json.dumps(shows, ensure_ascii=False) + ";", 1))
+    if prelim is not None:
+        page = page.replace("const PRELIM_FROM={};", "const PRELIM_FROM=" + _json.dumps(prelim) + ";", 1)
+    return page, opera_id
+
+
+_ROW_MSG = "PERFORMANCES row(s) are not [showId, date, time, hall, price]"
+_op_day = (datetime.date.today() + datetime.timedelta(days=3)).isoformat()
+for _st in ("soldout", "notyet"):
+    _rc, _out = _run_out(_opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None, _st]])[0])
+    check(f"opera data: an opera row with the sale state {_st!r} as a 6th column passes", _rc == 0 and _ROW_MSG not in _out)
+_rc, _out = _run_out(_opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None, "cancelled"]])[0])
+check("opera data: any other 6th value fails", _rc != 0 and _ROW_MSG in _out)
+_rc, _out = _run_out(_opera_data_page([["show0", _op_day, "23:00", "Основна сцена", "", "soldout"]])[0])
+check("opera data: a 6th column on a row of a theatre that is not the opera fails", _rc != 0 and _ROW_MSG in _out)
+_far = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+_prelim_th = {f"th{i}": _far for i in range(6)}
+_pg, _oid = _opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None]], prelim=_prelim_th)
+_rc, _out = _run_out(_pg)
+check("opera data: an opera show with performances but no PRELIM_FROM entry fails, naming the opera",
+      _rc != 0 and "theatres with performances but no PRELIM_FROM entry" in _out and _oid in _out)
+_rc, _out = _run_out(_opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None]],
+                                      prelim=dict(_prelim_th, **{_oid: _far}))[0])
+check("opera data: ...and passes once PRELIM_FROM names it", _rc == 0 and "no PRELIM_FROM entry" not in _out)
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 print()
