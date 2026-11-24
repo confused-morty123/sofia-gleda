@@ -1603,6 +1603,148 @@ button,a{-webkit-tap-highlight-color:transparent}
 }
 /* ≤350 px: the glyphs go (rule near .seg), all three labels stay on one line */
 @media(max-width:350px){ .seg button,.seg button[data-switch="opera"]{font-size:13px; padding:0 8px} }
+
+/* ===================== Опера и балет: content (DESIGN_SPEC §4-§5, ported from
+   notes/design_options/opera/mockups/final/build/final_tpl.html). Everything is scoped to
+   [data-opera] (only the opera surface sets it) or uses class names no other surface has. ===================== */
+/* phone kicker: the violet surface name over the period title; "Друг период ›" shares its row */
+.phead-kick{display:none}
+@media(max-width:760px){
+  [data-opera] .phead{row-gap:0; align-items:baseline}
+  [data-opera] .phead-kick{display:block; grid-column:1; grid-row:1; font-size:12.5px; font-weight:600; color:var(--accent-text);
+    margin-bottom:3px; letter-spacing:.01em; white-space:nowrap}
+  [data-opera] .phead .phead-title{grid-column:1 / -1; grid-row:2}
+  [data-opera] .phead .phead-other{grid-column:2; grid-row:1; align-self:center; margin-block:-14px}
+  [data-opera] .phead-tools .daystrip{grid-row:3; margin-top:12px}
+}
+/* hero: focusShows' pick, the art right on a black ground, one button (no "Или …") */
+[data-opera] .ophero{background:var(--hero-ground,#000); align-items:center; color:var(--hero-fg,#F4EFF6)}
+[data-opera] .ophero .hero-art{background:#000}
+[data-opera] .ophero .hero-art img{width:100%; height:100%; object-fit:contain; object-position:right center; display:block}
+[data-opera] .ophero .hero-scrim{background:linear-gradient(100deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.74) 34%,rgba(0,0,0,.18) 62%,rgba(0,0,0,0) 100%)}
+[data-opera] .ophero .eyebrow{color:#CFC5D3}
+[data-opera] .eyebrow .ey{display:inline-flex; align-items:center; gap:8px}
+[data-opera] .eyebrow .ey::before{content:""; flex:0 0 5px; width:5px; height:5px; border-radius:50%; background:currentColor}
+[data-opera] .badge.prem,[data-opera] .badge.prem.opb{background:var(--ink-4); color:var(--hero-accent,var(--accent-text)); border:1px solid var(--line-2); text-transform:none}
+[data-opera] .ophero .hero-title{overflow-wrap:anywhere; margin-bottom:10px}
+[data-opera] .ophero .hero-syn{margin:0 0 16px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+@media(min-width:761px){
+  [data-opera] .ophero .hero-art img{position:absolute; top:0; right:0; width:auto; max-width:100%; height:100%;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22%); mask-image:linear-gradient(90deg,transparent 0,#000 22%)}
+  [data-opera] .ophero .hero-art .gp{left:auto; width:62%; align-items:flex-end; text-align:right;
+    -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%); mask-image:linear-gradient(90deg,transparent 0,#000 30%)}
+}
+@media(max-width:760px){
+  [data-opera] .ophero{display:block; min-height:0; margin-block:14px 24px}
+  [data-opera] .ophero .hero-art{position:relative; height:128px}
+  [data-opera] .ophero .hero-art.baked{height:96px}
+  [data-opera] .ophero .hero-art img{object-position:center}
+  [data-opera] .ophero .hero-scrim{display:none}
+  [data-opera] .ophero .hero-body{padding:14px 18px 18px}
+  [data-opera] .ophero .eyebrow{margin-bottom:8px}
+  [data-opera] .ophero .hero-title{font-size:27px; margin-bottom:6px}
+  [data-opera] .ophero .hero-syn{margin-bottom:14px; -webkit-line-clamp:1}
+  [data-opera] .ophero .acts{flex-direction:column; align-items:stretch}
+  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px}
+}
+/* "Програмата по дни": one row per performance; the action names the status */
+.agenda{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; margin-bottom:44px; overflow:hidden}
+.agday{padding:4px 16px; border-top:1px solid var(--line); min-width:0}
+.agday:first-child{border-top:0}
+.agday h3{font-size:13px; font-weight:600; color:var(--fg-2); padding:12px 0 2px; margin:0}
+.agday h3 small{display:block; font-size:11.5px; font-weight:500; color:var(--fg-3)}
+.agrow{display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; padding:10px 0; border-top:1px solid var(--line)}
+.agrows .agrow:first-child{border-top:0}
+.ag-t{flex:0 0 50px; font-family:var(--f-display); font-weight:600; font-size:17px; font-variant-numeric:tabular-nums; color:var(--fg)}
+.ag-main{flex:1 1 170px; min-width:0; display:flex; flex-direction:column; gap:1px; min-height:44px; justify-content:center; text-align:left; color:var(--fg)}
+.ag-main b{font-size:14px; font-weight:600; line-height:1.25; overflow-wrap:anywhere}
+.ag-main .ag-sub,.ag-main .ag-st{font-size:12px; color:var(--fg-2); line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ag-main .ag-st{color:var(--fg-3)}
+.ag-act{flex:0 0 auto; margin-left:auto; display:inline-flex; align-items:center; min-height:40px; padding:0 14px; border-radius:999px;
+  font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap}
+.ag-act.buy{background:var(--fg); color:var(--ink)}
+.ag-act.more{border:1px dashed var(--line-2); color:var(--fg-2); font-weight:500}
+.ag-act.so{color:var(--fg-3); font-weight:500; padding:0 4px}
+.agrow.so .ag-t,.agrow.so .ag-main b{color:var(--fg-2)}
+.ag-more{display:flex; justify-content:center; padding:12px; border-top:1px solid var(--line)}
+.btn.line{background:transparent; border-color:var(--line-2); color:var(--fg)}
+/* badges: 11 px (the site's floor); scoped so no row or card text rule can turn them grey */
+.badge-g,.ag-main .badge-g,.cf1 .badge-g{display:inline-block; font-size:11px; font-weight:700; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--accent-text); vertical-align:1px; margin-left:6px; line-height:1.4; letter-spacing:0; text-transform:none}
+.badge-o,.ag-main .badge-o,.cf1 .badge-o{display:inline-block; font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; border:1px solid var(--line-2); color:var(--fg); vertical-align:1px; margin-left:6px; line-height:1.4}
+.badge-s,.cf1 .badge-s{display:inline-block; font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--fg-2); vertical-align:1px; margin-left:6px; line-height:1.4}
+.stg{font-weight:500; color:var(--fg-2)}
+@media(min-width:761px){
+  .agday{display:grid; grid-template-columns:190px minmax(0,1fr); column-gap:24px; padding:4px 20px}
+  .agday h3{padding:20px 0 10px}
+}
+@media(max-width:760px){ .ag-act{min-height:44px} .ag-main{flex-basis:120px} .ag-main .ag-st{white-space:normal} }
+/* genre rails: the theatre's .ecard with 2:1 art fitted on black; nothing is drawn on the art */
+[data-opera] .ecard.opcard{width:330px; display:flex; flex-direction:column; gap:6px; text-align:left}
+@media(max-width:760px){ [data-opera] .ecard.opcard{width:288px} }
+[data-opera] .opcard .ebox{aspect-ratio:2/1; height:auto; padding:0; background:#000; display:block; margin-bottom:2px}
+[data-opera] .opcard .ebox img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
+[data-opera] .opcard .cf1{display:block; font-size:14px; font-weight:600; line-height:1.25; color:var(--fg)}
+[data-opera] .opcard .cf2{display:block; font-size:12px; line-height:1.35; color:var(--fg-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+[data-opera] .opcard .cf3{display:block; font-size:12px; line-height:1.4; color:var(--fg-3); font-variant-numeric:tabular-nums}
+[data-opera] .opcard .cf3 b{color:var(--fg); font-weight:600}
+.rlink{font-size:13px; font-weight:600; color:var(--fg-2); min-height:44px; display:inline-flex; align-items:center; margin-left:auto; padding:0 2px}
+/* typographic art when the opera publishes no picture: the title in Source Serif on the --art-* ground */
+.gp{position:absolute; inset:0; container-type:size; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding:6%;
+  background:radial-gradient(130% 150% at var(--gx,82%) -10%, var(--art-hi,#47287C) 0%, var(--art-mid,#1F1335) 46%, var(--art-lo,#0F0B15) 100%);
+  color:var(--art-fg,#F3ECFE); text-align:left}
+.gp-k{display:flex; align-items:center; gap:.5em; font-family:var(--f-ui); font-weight:600; font-size:clamp(10px,7.5cqh,15px); line-height:1;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--art-k,#D1B5FC)}
+.gp-k svg{width:1.05em; height:1.5em; flex:0 0 auto}
+.gp-t{font-family:"Source Serif 4",Georgia,serif; font-weight:700; font-size:clamp(17px,24cqh,60px); line-height:1.02; letter-spacing:-.012em;
+  overflow-wrap:anywhere; text-wrap:balance; display:block; max-height:2.06em; overflow:hidden}
+/* late-day card: no rows, or nothing bookable */
+[data-opera] .late-day-card{padding:34px 22px; margin-block:18px 34px}
+[data-opera] .late-day-card h3{font-family:var(--f-display); font-size:22px; font-weight:700; margin:0; text-wrap:balance}
+[data-opera] .late-day-card p{max-width:46ch}
+[data-opera] .late-day-card .acts{justify-content:center}
+/* Театър: the bridge card to the opera's ballets / musicals (OPERA_ON only) */
+.opbridge{display:flex; align-items:center; min-height:48px; width:100%; margin-block:14px 6px; padding:10px 16px; border-radius:14px;
+  border:1px solid var(--line-2); background:var(--ink-2); color:var(--fg); font-size:14px; font-weight:600; text-align:left}
+/* the FAB steps aside while a ticket action, page button or rail link passes under it */
+.fab{transition:transform .22s var(--ease-sheet,cubic-bezier(.32,.72,0,1)),opacity .18s ease,visibility 0s linear 0s}
+.fab.dodge{transform:translateY(calc(100% + 28px)); opacity:0; visibility:hidden; pointer-events:none;
+  transition:transform .22s var(--ease-sheet,cubic-bezier(.32,.72,0,1)),opacity .18s ease,visibility 0s linear .22s}
+/* the sheet: banner fitted on black, the title block under it, pills as the purchase */
+.shero.shero-op{display:block; min-height:0; padding:0; aspect-ratio:2.02/1; max-height:260px; width:100%; background:#000}
+.shero.shero-op img,.shero.shero-op .p-real{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; filter:none}
+.shero.shero-op.compact{aspect-ratio:auto; height:96px; max-height:none}
+@media(max-width:620px){ .shero.shero-op{max-height:170px} }
+.sh-ophead{padding:20px 22px 0}
+.sh-ophead .eyebrow{color:var(--fg); margin-bottom:8px}
+.slede{margin:8px 0 0; color:var(--fg-2); font-size:14.5px}
+[data-opera] .chip.solid{background:var(--ink-4); border-color:var(--line-2); color:var(--fg)}
+.chip.prem{background:var(--ink-4); color:var(--accent-text); font-weight:600}
+.sstate{margin:0 0 12px; font-size:14px; font-weight:600; color:var(--fg)}
+.sfoot{display:flex; flex-direction:column; gap:6px; margin-top:12px}
+.sheet .sfoot .cta-fn{margin:0; font-size:12px; color:var(--fg-3)}
+.prodlink{align-self:flex-start; display:inline-block; padding-block:12px; min-height:44px; font-size:13.5px; font-weight:500; color:var(--fg-2);
+  text-decoration:underline; text-decoration-color:var(--link-underline); text-underline-offset:3px}
+.nolist{list-style:none; margin:0 0 4px; padding:0; background:var(--ink-3); border-radius:14px}
+.nolist li{display:flex; flex-wrap:wrap; gap:2px 12px; align-items:baseline; padding:11px 14px; border-top:1px solid var(--line); font-size:13.5px; color:var(--fg-2)}
+.nolist li:first-child{border-top:0}
+.nolist b{font-family:var(--f-display); font-weight:600; font-size:16px; color:var(--fg); font-variant-numeric:tabular-nums; min-width:9.5em}
+.nomore{display:inline-flex; align-items:center; min-height:44px; padding:0 16px; border-radius:999px; border:1px dashed var(--line-2);
+  font-size:13.5px; font-weight:600; color:var(--fg); text-decoration:none; align-self:flex-start; margin-top:12px}
+/* the opera's time pills are links (the purchase), labelled by status */
+a.p3e-pill.oppill,span.p3e-pill.oppill{display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:84px; min-height:50px;
+  padding:4px 12px; border-radius:10px; text-decoration:none; line-height:1.15; font-variant-numeric:tabular-nums}
+@media(min-width:761px){ a.p3e-pill.oppill,span.p3e-pill.oppill{min-height:44px; padding:3px 8px; margin:2px} }
+.p3e-pill.oppill small{font-family:var(--f-ui); font-weight:500; font-size:11px; color:var(--fg-2); white-space:nowrap; letter-spacing:0}
+a.p3e-pill.oppill.buy{background:var(--ink-4); border:1px solid var(--fg-2); color:var(--fg)}
+@media(hover:hover){ a.p3e-pill.oppill.buy:hover{border-color:var(--fg)} }
+.p3e-pill.oppill.buy small{color:var(--accent-text); font-weight:600}
+.p3e-pill.oppill.so{background:transparent; border:1px solid var(--fg-3); color:var(--fg-3)}
+.p3e-pill.oppill.so small{color:var(--fg-3)}
+.p3e-pill.oppill.pre{background:transparent; border:1px dashed var(--fg-3)}
+.p3e-pill.oppill.focus{box-shadow:0 0 0 2px var(--ink-3),0 0 0 4px var(--fg)}
+.p3e-pill.oppill.so.focus{box-shadow:0 0 0 2px var(--ink-3),0 0 0 4px var(--fg-3)}
+footer .opsrc{display:none; margin:10px 0 0; max-width:80ch}
+[data-opera] footer .opsrc{display:block}
 </style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">
@@ -2323,7 +2465,9 @@ function synBlock(text){
     +`<button type="button" class="readmore" data-readmore aria-expanded="false" data-more-label="${esc(more)}" data-less-label="${esc(less)}">${esc(more)}</button></div>`;
 }
 function _readMoreLabels(){return S.lang==="bg"?["Прочети повече","Скрий"]:["Read more","Read less"];}
-const titleOf=o=>S.lang==="bg"?o.title:(o.titleEn||(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[o.id])||o.title);
+/* Опера и балет (OPERA_ARCHITECTURE §8): the opera's own EN calendar title, else the BG one; never an
+   unmarked machine translation from TITLE_EN */
+const titleOf=o=>S.lang==="bg"?o.title:(o.titleEn||(o.theatre&&surfOf(o)==="opera"?"":(typeof TITLE_EN==="object"&&TITLE_EN&&TITLE_EN[o.id]))||o.title);
 /* Country in the active language (owner's choice: authoritative English where it
    exists, Bulgarian fallback otherwise). The dataset country is Bulgarian; TMDB
    supplies an English country name (ART[id].country) for matched films. */
@@ -2867,7 +3011,8 @@ function visibleShows(){const day=dayOrAll();
     if(!inSurf(s))return false;
     if(!showPerfs(s.id,day).length)return false;
     if(S.fVenues.length&&!venueOk(s.theatre))return false;
-    if(S.fGenres.length&&!genreHit(s.genres))return false;
+    /* opera: the "Детски" rule (opGenreOk) */
+    if(S.mode==="opera"?!opGenreOk(s):(S.fGenres.length&&!genreHit(s.genres)))return false;
     return true;});}
 /* task 6 — which films/shows a given venue is playing inside the current
    date filter (before the strand/genre/venue drawer filters, which are applied
@@ -3016,6 +3161,8 @@ function buildDayStrip(){
   if(S.day!=="week"&&!days.includes(S.day))return"";
   /* Gather which days have screenings/performances */
   const hasData=datesWith();
+  /* Опера и балет (§5.2): no strip when none of its days has a row under the filter; today is never disabled */
+  if(S.mode==="opera"&&!days.some(d=>hasData.has(d)))return"";
   const pills=[];
   /* "Whole week" pill */
   const allPill=`<button class="dspill" data-day="week" aria-pressed="${S.day==="week"}">${esc(L.dsAllWeek||"Цялата седмица")}</button>`;
@@ -3030,8 +3177,8 @@ function buildDayStrip(){
       pills.push(`<span class="ds-next">${esc(nextLabel)}</span>`);
     }
     const active=S.day===d;
-    const hasSc=hasData.has(d);
     const isToday=d===TODAY;
+    const hasSc=hasData.has(d)||(S.mode==="opera"&&isToday);
     const label=fmtDay(d,false); /* e.g. "ср 7" */
     /* a next-week day names its month ("пн 2" + "ное"), as every pill outside this week does;
        so does a day of this week that starts a new month ("нд 1 ное"), as the film sheet's
@@ -3090,7 +3237,7 @@ function periodBanner(){
      title's line on desktop (CSS). No eyebrow. */
   /* a long strip (a full week, or the roll into next week) gets its own row below 1280 px (CSS) */
   const longStrip=(strip.match(/class="dspill"/g)||[]).length>5;
-  return`<div class="phead${longStrip?" phead-long":""}">
+  return`<div class="phead${longStrip?" phead-long":""}">${S.mode==="opera"?`<div class="phead-kick">${esc(L.opera)}</div>`:""}
     <h1 class="phead-title">${esc(mainTitle)} <span class="phead-dates">${esc(dateStr)}</span></h1>
     <div class="phead-tools">${strip}<button class="phead-other" data-drawer aria-label="${esc(L.pheadOtherDates||"Друг период")}">${esc(L.pheadOtherDates||"Друг период ›")}</button></div>
     ${favToggleBtn?`<div class="phead-fav">${favToggleBtn}</div>`:""}
@@ -3100,7 +3247,7 @@ function datesWith(){
   const set=new Set();
   /* only days that still lie ahead become selectable in the calendar */
   if(S.mode==="cinema")SHOWTIMES.forEach(r=>{if(r[2]>=NOW_DATE)set.add(r[2]);});
-  else PERFORMANCES.forEach(p=>{if(p[1]>=NOW_DATE&&inSurf(showById[p[0]]))set.add(p[1]);});
+  else PERFORMANCES.forEach(p=>{const sh=showById[p[0]];if(p[1]>=NOW_DATE&&inSurf(sh)&&(S.mode!=="opera"||opGenreOk(sh)))set.add(p[1]);});
   return set;}
 
 /* ===================== cards ===================== */
@@ -3284,6 +3431,7 @@ if(document.fonts){
 }
 function hero(){
   const L=t(),day=dayOrAll();
+  if(S.mode==="opera")return opHeroSlot();
   if(S.mode==="cinema"){
     const rk=focusFilms();
     if(!rk.length)return"";
@@ -3311,6 +3459,294 @@ function hero(){
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}">${esc(L.seePerf)}</button>
     ${rk[1]?`<button class="btn ghost" data-show="${esc(rk[1].s.id)}">${S.lang==="bg"?"Или":"Or"} ${esc(titleOf(rk[1].s))}</button>`:""}</div>
     </div></div>`;}
+
+/* ===================== Опера и балет: the content (DESIGN_SPEC §5) =====================
+   Data the opera rows carry (the data track's fetch_opera + inject_shows; every field may be
+   missing, and a missing field is simply not shown):
+     PERFORMANCES [id, date, time, stage, price, sale]  sale "soldout" | "notyet" | absent
+     PLINKS       the performance's /buy-tickets/<n> link (only when the button said "купи билет")
+     LINKS        the production page /repertoire/<id>
+     SHOWS        title, titleEn (the opera's own EN calendar only), genres (the calendar icon;
+                  children's view = "Детски"), sub (the published subtitle, verbatim), baked (the
+                  poster prints its title), facts {conductor, director, duration, language, age,
+                  prices, prices_eur} (the production page's labelled fields, verbatim)
+     THEATRES     the opera entry, hallAreas {stage: address as published}
+   Status comes from `sale` and the link, never from a guess: a row with neither says
+   "виж повече ↗", never "разпродадено". */
+const OPT={
+ bg:{agendaH:"Програмата по дни",agendaSub:"по реда на календара на операта",buy:"Купи ↗",seeMore:"виж повече ↗",
+  soldWord:"разпродадено",fromPrice:"от {p} €",allDays:"Покажи всички дни ({n})",stageUnknown:"Сцената не е обявена",
+  buyAria:"Купи билет: {t}, {d}, {h}",moreAria:"{t}: още без онлайн билети, виж повече на operasofia.bg",
+  soldAria:"{d} {h}, разпродадено",preAria:"{d} {h}, още без онлайн билети, виж повече на operasofia.bg",
+  railH:{opera:"Опера",ballet:"Балет",concert:"Концерти",musical:"Мюзикъли",kids:"Спектакли за деца"},kidsOnly:"Само за деца ›",
+  noun:{opera:"опери",ballet:"балети",concert:"концерти",musical:"мюзикъли",kids:"спектакли за деца"},nounAll:"представления в операта",
+  whenToday:"Днес",whenDay:"В този ден",whenWeek:"Тази седмица",whenPeriod:"През тези дни",
+  lateNone:"{w} няма {n}",lateNoTix:"{w} няма {n} с билети",lateAllSold:"Всичко по-долу е разпродадено.",lateNotYet:"Още няма онлайн билети.",
+  lateNearest:"Най-близкото с билети",lateNext:"Следващото",lateSeeDay:"Виж {d} ›",lateSeeTitle:"Виж {t}",
+  noMore:"В данните няма следващи дати.",clearGenres:"Всички жанрове",
+  pillsFn:"„билети ↗“ отваря избора на места на operasofia.bg.",
+  notYetFn:"„виж повече ↗“: продажбата за тази дата още не е отворена, не значи „разпродадено“.",
+  dataAsOf:"Данни към {d}.",allSoldN:"Всички {n} представления са разпродадени.",oneSold:"Представлението е разпродадено.",
+  soldFn:"Ако се освободят места, „билети ↗“ се появява след нощното обновяване.",
+  notYetMore:"Още без онлайн билети · виж повече ↗",
+  notYetListFn:"В календара на операта тези дати са само с „виж повече“: продажбата още не е отворена. Това не значи „разпродадено“.",
+  prodLink:"Страницата на спектакъла на operasofia.bg ↗",pillBuy:"билети ↗",pillSold:"разпродадено",pillMore:"виж повече ↗",
+  secTimes:"Представления",secAbout:"За спектакъла",secSyn:"Резюме",
+  cred:{conductor:"Диригент",director:"Режисьор",duration:"Времетраене",language:"Език",age:"Възраст",prices:"Цени"},
+  priceRange:"{a} € · {n} категории",priceOne:"{a} €",premiere:"Премиера",soldBadge:"Разпродадено",today:"днес",
+  bridge:{ballet:"Балетите на Софийската опера са в „Опера и балет“ ›",musical:"Мюзикълите на Софийската опера са в „Опера и балет“ ›"},
+  footer:"Източник · operasofia.bg, календарът (за възрастни и за деца) и страниците на спектаклите на Софийската опера и балет."},
+ en:{agendaH:"Day by day",agendaSub:"in the Opera's calendar order",buy:"Buy ↗",seeMore:"see more ↗",
+  soldWord:"sold out",fromPrice:"from €{p}",allDays:"Show all days ({n})",stageUnknown:"Stage not announced",
+  buyAria:"Buy tickets: {t}, {d}, {h}",moreAria:"{t}: no online tickets yet, see more on operasofia.bg",
+  soldAria:"{d} {h}, sold out",preAria:"{d} {h}, no online tickets yet, see more on operasofia.bg",
+  railH:{opera:"Opera",ballet:"Ballet",concert:"Concerts",musical:"Musicals",kids:"Children's shows"},kidsOnly:"Children's only ›",
+  noun:{opera:"operas",ballet:"ballets",concert:"concerts",musical:"musicals",kids:"children's shows"},nounAll:"performances at the Opera",
+  whenToday:"Today",whenDay:"On this day",whenWeek:"This week",whenPeriod:"In these days",
+  lateNone:"{w} there are no {n}",lateNoTix:"{w} there are no {n} with tickets",lateAllSold:"Everything below is sold out.",lateNotYet:"No online tickets yet.",
+  lateNearest:"Soonest with tickets",lateNext:"Next",lateSeeDay:"See {d} ›",lateSeeTitle:"See {t}",
+  noMore:"No later dates in the data.",clearGenres:"All genres",
+  pillsFn:"“tickets ↗” opens seat selection on operasofia.bg.",
+  notYetFn:"“see more ↗”: sales for this date have not opened; it does not mean sold out.",
+  dataAsOf:"Data as of {d}.",allSoldN:"All {n} performances are sold out.",oneSold:"This performance is sold out.",
+  soldFn:"If seats are released, “tickets ↗” appears after the nightly update.",
+  notYetMore:"No online tickets yet · see more ↗",
+  notYetListFn:"The Opera's calendar shows only “see more” for these dates: sales have not opened. That does not mean sold out.",
+  prodLink:"The production page on operasofia.bg ↗",pillBuy:"tickets ↗",pillSold:"sold out",pillMore:"see more ↗",
+  secTimes:"Performances",secAbout:"About the production",secSyn:"Synopsis",
+  cred:{conductor:"Conductor",director:"Director",duration:"Duration",language:"Language",age:"Age",prices:"Prices"},
+  priceRange:"€{a} · {n} categories",priceOne:"€{a}",premiere:"Premiere",soldBadge:"Sold out",today:"today",
+  bridge:{ballet:"Sofia Opera's ballets are in “Opera & Ballet” ›",musical:"Sofia Opera's musicals are in “Opera & Ballet” ›"},
+  footer:"Source · operasofia.bg, the Sofia Opera and Ballet's calendars (adults and children) and production pages."}};
+const opT=()=>OPT[S.lang]||OPT.bg;
+const fillT=(s,o)=>String(s).replace(/\{(\w+)\}/g,(m,k)=>o[k]!=null?o[k]:m);
+const OP_KIDS="Детски";
+const opKid=sh=>!!sh&&(sh.genres||[]).includes(OP_KIDS);
+const opKidsOn=()=>S.fGenres.includes("kids");
+/* the "Детски" rule (§5.3): a children's production passes only with "За деца" pressed, and with
+   it pressed only children's productions pass */
+function opGenreOk(sh){
+  if(opKidsOn())return opKid(sh);
+  if(opKid(sh))return false;
+  return !S.fGenres.length||genreHit(sh.genres||[]);}
+/* the rail / chip group of a production: children's first, else the calendar icon's genre */
+const OP_GORDER=["opera","ballet","concert","musical","kids"];
+const opGenreOf=sh=>opKid(sh)?"kids":((GENRES.find(g=>g.t==="opera"&&g.id!=="kids"&&g.m.some(m=>(sh.genres||[]).includes(m)))||{}).id||"");
+const opGenreLabel=id=>{const g=GENRES.find(x=>x.id===id&&x.t==="opera");return g?(S.lang==="bg"?g.bg:g.en):"";};
+const opByDT=(a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]);
+/* a performance's status, in words on the page: "buy" (a /buy-tickets/ link), "so" (the calendar
+   said sold out), "pre" (only "виж повече": not on sale yet, or not known) */
+function opStatus(p){
+  if(p[5]==="soldout")return"so";
+  if(p[5]!=="notyet"&&perfTixUrl(p[0],p[1],p[2]))return"buy";
+  return"pre";}
+const opProdUrl=sid=>safeUrl(LINK_MAP[sid])||"";
+const opPerfs=sid=>upcomingPerfs(_prows(sid)).slice().sort(opByDT);
+const opPremDates=sid=>PREMIERES["show:"+sid]||[];
+const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
+/* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
+const opSub=sh=>{const s=String(sh.sub||"").trim();
+  return opPremAhead(sh.id)?s.replace(/(^|\s)ПРЕМИЕРА(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
+const opStage=p=>p[3]||opT().stageUnknown;
+const opHallArea=stage=>{const th=thById.opera||THEATRES.find(x=>x.kind==="opera")||{};return stage&&th.hallAreas&&own(th.hallAreas,stage)?th.hallAreas[stage]:"";};
+const opYear=d=>d.slice(0,4)!==TODAY.slice(0,4)?" "+d.slice(0,4):"";
+const opShortDate=d=>{const x=dUTC(d),L=t();return`${L.dows[x.getUTCDay()]} ${x.getUTCDate()} ${(L.monthsShort||L.months)[x.getUTCMonth()]}`;};
+const opLongDate=d=>{const x=dUTC(d);return`${x.getUTCDate()} ${t().months[x.getUTCMonth()]}`;};
+const opCap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const opWeekday=d=>t().dowsLong[dUTC(d).getUTCDay()];
+/* EUR numbers: the buy-tickets categories, else the children's price sentence ("8 €", "6.50 €") */
+function opPriceNums(sh){const f=sh.facts||{};
+  if(Array.isArray(f.prices_eur)&&f.prices_eur.length)return f.prices_eur.map(x=>parseFloat(String(x).replace(",","."))).filter(isFinite);
+  return(String(f.prices||"").match(/\d+(?:[.,]\d+)?(?=\s*(?:€|&euro;))/g)||[]).map(x=>parseFloat(x.replace(",",".")));}
+const opNum=n=>{const s=String(Math.round(n*100)/100);return S.lang==="bg"?s.replace(".",","):s;};
+const opPriceMin=sh=>{const n=opPriceNums(sh);return n.length?Math.min(...n):null;};
+/* the date the listing was built (the refresh); the opera's rows are as of then */
+function opAsOf(){const iso=String((SNAPSHOT&&(SNAPSHOT.generated||SNAPSHOT.lastValidated))||"").slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso)?fillT(opT().dataAsOf,{d:`${opLongDate(iso)} ${iso.slice(0,4)}`}):"";}
+/* the period's performances under the filters, in calendar order */
+function opRows(){const ids=new Set(visibleShows().map(s=>s.id));
+  return upcomingPerfs(PERFORMANCES.filter(p=>ids.has(p[0])&&inRange(p[1]))).sort(opByDT);}
+/* the look-ahead the rails and the drawer's chips share: the period's first day (or the day)
+   to the end of the data */
+function opAhead(){const a=rangeBounds()[0],from=a<NOW_DATE?NOW_DATE:a;
+  return upcomingPerfs(PERFORMANCES.filter(p=>p[1]>=from&&surfOf(showById[p[0]])==="opera")).sort(opByDT);}
+const opByShow=rows=>{const m=new Map();rows.forEach(p=>{let a=m.get(p[0]);if(!a)m.set(p[0],a=[]);a.push(p);});return m;};
+/* two productions with one title in one list get their stage (§2.3) */
+const opDupSet=ids=>{const c={};new Set(ids).forEach(id=>{const sh=showById[id];if(sh){const k=titleOf(sh);c[k]=(c[k]||0)+1;}});
+  return new Set(Object.keys(c).filter(k=>c[k]>1));};
+const opTitleHtml=(sh,dup,stage)=>esc(titleOf(sh))+(dup&&dup.has(titleOf(sh))&&stage?`<span class="stg"> · ${esc(stage)}</span>`:"");
+/* the art: the opera's own picture fitted on black, else the title set in type on the violet ground */
+const OP_SHOES=`<svg class="shoes" viewBox="68.288 -12 360 520.576" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M236.24,232.576c-4.432-56-11.04-112.92-11.912-120.088l7.944-111.28l-15.96-1.168l-3.528,49.336 c-2.512,0.944-20,7.216-44.496,7.216c-19.736,0-35.2-4.184-41.688-6.272l-1.352-49.96L109.256,0.8l3,110.848 c-3.456,13.16-31.968,124.432-31.968,208.928c0,60.032,11.168,116.712,17.832,145.16c4.256,18.16,20.272,30.84,38.952,30.84 h46.032c18.88,0,34.936-12.88,39.056-31.32c6.768-30.352,16.144-89.504,16.144-144.68c0-26.163,1.983-57.573-6.012-88H236.24z M168.288,72.576c19.152,0,34.568-3.48,43.264-6.016l-2.264,31.672c-7.96,2.024-26.232,5.824-51.928,6.28L127.504,83.84 l-0.448-16.704C136.024,69.584,150.552,72.576,168.288,72.576z M211.656,142.096l-32.808-22.712 c12.816-1.168,22.848-2.984,29.664-4.512C208.92,118.208,210.104,128.032,211.656,142.096z M128.016,114.64l0.296-1.128 l-0.264-9.832l24.24,16.784v0.112c0.056,0,0.104,0,0.16,0l61.448,42.544c1.24,11.984,2.56,25.472,3.84,39.744l-96.168-61.824 C125.288,124.976,127.92,114.984,128.016,114.64z M117.848,157.656l38.288,24.616l-46.04,13.816 C112.704,182.056,115.376,169,117.848,157.656z M103.592,234.896c1.056-7.176,2.192-14.248,3.368-21.176l66.888-20.064 l45.6,29.32c0.28,3.416,0.544,6.856,0.808,10.312c0.128,6.952,0.824,90.04-31.008,122.76c-8.2,8.424-17.68,12.528-28.96,12.528 c-11.312,0-20.688-4.088-28.68-12.504C101.24,324.128,103.256,244.088,103.592,234.896z M206.544,461.768 c-2.472,11.072-12.112,18.808-23.44,18.808h-46.032c-11.208,0-20.824-7.6-23.368-18.488C107.2,434.32,96.288,379,96.288,320.576 c0-0.144,0.008-0.288,0.008-0.432c4.864,17.92,12.312,34.952,23.704,46.944c11.016,11.608,24.576,17.488,40.288,17.488 c15.616,0,29.224-5.848,40.448-17.392c10.752-11.056,18.256-26.424,23.504-42.848 C223.744,376.904,213.016,432.76,206.544,461.768z"/><path d="M384.312,111.648l3-110.848l-15.984-0.44l-1.352,49.96c-6.448,2.08-21.816,6.256-41.688,6.256 c-24.264,0-41.92-6.264-44.496-7.232L280.272,0l-15.96,1.144l7.944,111.336c-0.88,7.176-7.488,64.096-11.92,120.096h3.948 c-7.995,30.427-6.012,61.837-6.012,88c0,55.176,10.368,114.328,17.136,144.68c4.12,18.44,19.184,31.32,38.064,31.32h46.032 c18.68,0,34.696-12.68,38.952-30.84c6.664-28.448,17.832-85.128,17.832-145.16C416.288,236.08,387.776,124.808,384.312,111.648z M386.488,196.08l-46.04-13.816l38.288-24.616C381.208,168.992,383.88,182.048,386.488,196.08z M328.288,72.576 c17.736,0,32.264-2.992,41.232-5.44l-0.456,16.712l-29.856,20.672c-25.688-0.456-43.96-4.256-51.928-6.28l-2.264-31.672 C293.72,69.096,309.136,72.576,328.288,72.576z M288.064,114.872c6.816,1.528,16.848,3.344,29.664,4.512l-32.808,22.712 C286.472,128.032,287.656,118.208,288.064,114.872z M282.68,163.12l61.448-42.544c0.056,0,0.104,0,0.16,0v-0.112l24.24-16.784 l-0.264,9.84l0.296,1.12c0.088,0.336,2.728,10.336,6.448,26.4l-96.168,61.824C280.12,188.592,281.44,175.112,282.68,163.12z M276.312,233.304c0.264-3.456,0.536-6.896,0.808-10.32l45.6-29.312l66.896,20.072c1.168,6.92,2.304,13.984,3.36,21.144 c0.336,9.024,2.392,89.208-28.008,121.192c-7.992,8.408-17.368,12.496-28.68,12.496c-11.28,0-20.76-4.104-28.96-12.528 C275.512,323.344,276.192,240.296,276.312,233.304z M382.88,462.08c-2.552,10.896-12.16,18.496-23.376,18.496h-46.032 c-11.328,0-20.968-7.736-23.44-18.808c-6.472-29.016-17.2-84.872-17.696-137.44c5.248,16.424,12.76,31.8,23.504,42.848 c11.224,11.552,24.832,17.4,40.448,17.4c15.712,0,29.272-5.88,40.296-17.488c11.392-11.992,15.704-29.024,23.704-46.944 c0,0.144,0,0.288,0,0.432C400.288,379,389.376,434.32,382.88,462.08z"/></svg>`;
+function opArt(sh){
+  const src=safeImg(realPoster(sh.id,"original"));
+  if(src)return`<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`;
+  const r=rng(sh.id),gx=Math.round(18+r()*70),g=opGenreOf(sh);
+  return`<div class="gp" style="--gx:${gx}%" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(titleOf(sh))}</span></div>`;}
+
+/* hero slot: the hero when the period has a bookable row, else the late-day card (§5.4/§5.7) */
+function opHeroSlot(){
+  const L=t(),O=opT(),rows=opRows();
+  if(!rows.some(p=>opStatus(p)==="buy"))return opLateCard(rows);
+  /* focusShows unchanged; its first production with a bookable row in the period. No "Или …":
+     every other production of the period is one tap away in the agenda below */
+  const rk=focusShows().filter(x=>rows.some(p=>p[0]===x.s.id&&opStatus(p)==="buy"));
+  if(!rk.length)return opLateCard(rows);
+  const sh=rk[0].s,mine=rows.filter(p=>p[0]===sh.id),go=mine.find(p=>opStatus(p)==="buy")||mine[0];
+  const stages=[...new Set(mine.map(opStage))],prem=mine.some(p=>opPremDates(sh.id).includes(p[1]));
+  const sub=opSub(sh);
+  return`<div class="hero ophero"><div class="hero-art${sh.baked?" baked":""}">${opArt(sh)}</div><div class="hero-scrim"></div>
+    <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
+    <h2 class="hero-title">${esc(titleOf(sh))}</h2>
+    <div class="hero-meta"><span>${esc(stages.join(", "))}</span><span>${esc(plural(mine.length,L.plPerf))}</span></div>
+    ${sub?`<p class="hero-syn">${esc(sub)}</p>`:""}
+    <div class="acts"><button class="btn" data-show="${esc(sh.id)}" data-pd="${esc(go[1])}" data-pt="${esc(go[2])}">${esc(L.seePerf)}</button></div>
+    </div></div>`;}
+/* the late-day card: no rows, or none bookable; names the nearest bookable date (§5.7) */
+function opLateCard(rows){
+  const O=opT(),g=S.fGenres[0]||"",noun=g?(O.noun[g]||O.nounAll):O.nounAll;
+  const single=/^\d{4}-\d{2}-\d{2}$/.test(S.day);
+  const w=single?(S.day===TODAY?O.whenToday:O.whenDay):S.day==="week"?O.whenWeek:O.whenPeriod;
+  const h=fillT(rows.length?O.lateNoTix:O.lateNone,{w,n:noun});
+  const lead=rows.length?(rows.every(p=>opStatus(p)==="so")?O.lateAllSold:O.lateNotYet)+" ":"";
+  const after=rangeBounds()[1];
+  const pool=upcomingPerfs(PERFORMANCES.filter(p=>p[1]>after&&inSurf(showById[p[0]])&&opGenreOk(showById[p[0]]))).sort(opByDT);
+  const nx=pool.find(p=>opStatus(p)==="buy")||pool[0];
+  const reset=S.fGenres.length?`<button class="btn line" data-genre="">${esc(O.clearGenres)}</button>`:"";
+  if(!nx)return`<div class="late-day-card"><h3>${esc(h)}</h3><p>${esc(lead+O.noMore)}</p>${reset?`<div class="acts">${reset}</div>`:""}</div>`;
+  const sh=showById[nx[0]],bk=opStatus(nx)==="buy";
+  const btn=stripDays().days.includes(nx[1])&&(S.day==="week"||single)
+    ?`<button class="btn" data-day="${esc(nx[1])}">${esc(fillT(O.lateSeeDay,{d:opShortDate(nx[1])}))}</button>`
+    :`<button class="btn" data-show="${esc(sh.id)}" data-pd="${esc(nx[1])}" data-pt="${esc(nx[2])}">${esc(fillT(O.lateSeeTitle,{t:titleOf(sh)}))}</button>`;
+  const when=S.lang==="bg"?`${opWeekday(nx[1])}, ${opLongDate(nx[1])}${opYear(nx[1])}`:`${opWeekday(nx[1])} ${opLongDate(nx[1])}${opYear(nx[1])}`;
+  return`<div class="late-day-card"><h3>${esc(h)}</h3>
+    <p>${esc(`${lead}${bk?O.lateNearest:O.lateNext}: ${titleOf(sh)}, ${when}, ${nx[2]}${nx[3]?", "+nx[3]:""}.`)}</p>
+    <div class="acts">${btn}${reset}</div></div>`;}
+/* "Програмата по дни": every performance a row, the action names its status (§5.5) */
+function opAgenda(rows){
+  if(!rows.length)return"";
+  const L=t(),O=opT(),days=[...new Set(rows.map(p=>p[1]))],key=[S.day,S.rFrom,S.rTo,S.fGenres.join()].join("|");
+  const shown=S.opAllDays===key?days:days.slice(0,8);
+  const shownRows=rows.filter(p=>shown.includes(p[1])),dup=opDupSet(shownRows.map(p=>p[0]));
+  const g=S.fGenres[0];
+  const html=shown.map(d=>{
+    const rs=shownRows.filter(p=>p[1]===d).map(p=>{
+      const sh=showById[p[0]],st=opStatus(p),tt=titleOf(sh),dl=`${opWeekday(d)} ${opLongDate(d)}`;
+      const act=st==="buy"?`<a class="ag-act buy" href="${esc(perfTixUrl(p[0],p[1],p[2]))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.buyAria,{t:tt,d:dl,h:p[2]}))}">${esc(O.buy)}</a>`
+        :st==="so"?`<span class="ag-act so">${esc(O.soldWord)}</span>`
+        :opProdUrl(sh.id)?`<a class="ag-act more" href="${esc(opProdUrl(sh.id))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.moreAria,{t:tt}))}">${esc(O.seeMore)}</a>`:"";
+      const pm=st!=="so"?opPriceMin(sh):null,sub=opSub(sh);
+      return`<div class="agrow${st==="so"?" so":""}"><span class="ag-t">${esc(p[2])}</span>
+        <button class="ag-main" data-show="${esc(sh.id)}" data-pd="${esc(p[1])}" data-pt="${esc(p[2])}"><b>${opTitleHtml(sh,dup,p[3])}${opPremDates(sh.id).includes(p[1])?`<span class="badge-g">${esc(O.premiere)}</span>`:""}</b>${sub?`<span class="ag-sub">${esc(sub)}</span>`:""}
+        <span class="ag-st">${esc(opStage(p))}${pm!=null?" · "+esc(fillT(O.fromPrice,{p:opNum(pm)})):""}</span></button>${act}</div>`;}).join("");
+    const head=`${opCap(opWeekday(d))}, ${opLongDate(d)}${opYear(d)}`;
+    return`<section class="agday" aria-label="${esc(head)}"><h3>${esc(head)}${d===TODAY?`<small>${esc(O.today)}</small>`:""}</h3><div class="agrows">${rs}</div></section>`;}).join("");
+  const more=days.length>shown.length?`<div class="ag-more"><button class="btn line sm" data-opalldays="${esc(key)}">${esc(fillT(O.allDays,{n:days.length}))}</button></div>`:"";
+  return`<section class="rail opagenda"><div class="rhead"><h2>${esc(O.agendaH)}</h2><span class="sub">${esc(plural(rows.length,L.plPerf)+(g?" · "+opGenreLabel(g):"")+" · "+O.agendaSub)}</span></div>
+    <div class="agenda">${html}${more}</div></section>`;}
+/* a rail card: opens the sheet at the next bookable date (§5.6) */
+function opCard(sh,ps,dup){
+  const O=opT(),L=t(),a=ps[0],b=ps[ps.length-1],allSo=ps.every(p=>opStatus(p)==="so");
+  const when=ps.length===1?`<b>${esc(opShortDate(a[1])+opYear(a[1]))}</b> · ${esc(a[2])}`
+    :`<b>${esc((a[1]===b[1]?opLongDate(a[1]):a[1].slice(0,7)===b[1].slice(0,7)?`${dUTC(a[1]).getUTCDate()} – ${opLongDate(b[1])}`:`${opLongDate(a[1])} – ${opLongDate(b[1])}`)+opYear(b[1]))}</b> · ${esc(plural(ps.length,L.plPerf))}`;
+  const tags=(opPremAhead(sh.id)?`<span class="badge-g">${esc(O.premiere)}</span>`:"")+(allSo?`<span class="badge-s">${esc(O.soldBadge)}</span>`:"");
+  const go=ps.find(p=>opStatus(p)==="buy")||a,sub=opSub(sh);
+  return`<button class="ecard opcard" data-show="${esc(sh.id)}" data-pd="${esc(go[1])}" data-pt="${esc(go[2])}"><span class="ebox">${opArt(sh)}</span>
+    <span class="cf1">${opTitleHtml(sh,dup,a[3])}${tags}</span>${sub?`<span class="cf2">${esc(sub)}</span>`:""}
+    <span class="cf3">${when}</span></button>`;}
+/* the "По жанр" rails over the look-ahead, open: no exclusion, at most 10 cards, a rail of one
+   card is not drawn; "Спектакли за деца" last, with "Само за деца ›" (§5.6) */
+function opRails(){
+  const O=opT(),L=t(),m=opByShow(opAhead()),g=S.fGenres[0];
+  return OP_GORDER.filter(k=>!g||k===g).map(k=>{
+    const items=[...m].filter(([id])=>showById[id]&&opGenreOf(showById[id])===k).slice(0,10);
+    if(items.length<2)return null;
+    const dup=opDupSet(items.map(i=>i[0]));
+    const link=k==="kids"&&g!=="kids"?`<button class="rlink" data-opkids>${esc(O.kidsOnly)}</button>`:"";
+    return{html:()=>`<section class="rail"><div class="rhead"><h2>${esc(O.railH[k])}</h2><span class="sub">${items.length}</span>${link}</div>
+   <div class="rscroll"><button class="rarrow prev" data-scroll="-1" aria-label="${esc(L.railBack)}"><span aria-hidden="true">‹</span></button>
+   <div class="rtrack">${items.map(([id,ps])=>opCard(showById[id],ps,dup)).join("")}</div>
+   <button class="rarrow next" data-scroll="1" aria-label="${esc(L.railFwd)}"><span aria-hidden="true">›</span></button></div></section>`};
+  }).filter(Boolean);}
+function opBody(){
+  const rows=opRows();
+  return finishBody([{html:()=>opAgenda(rows)},...opRails()]);}
+/* the drawer's opera chips: genres with a row in the look-ahead, plus the pressed one; no counts */
+function opChipIds(){const present=new Set(opAhead().map(p=>opGenreOf(showById[p[0]]||{})));
+  return OP_GORDER.filter(k=>present.has(k)||S.fGenres.includes(k));}
+/* Театър, with "Танц и движение" or "Музика и мюзикъли" pressed: the opera's ballets / musicals
+   are on the other surface; one card says so and goes there with that genre (§5.1) */
+function opBridge(){
+  if(!OPERA_ON||S.mode!=="theatre"||S.q)return"";
+  const want=S.fGenres.includes("dance")?"ballet":S.fGenres.includes("music")?"musical":"";
+  if(!want)return"";
+  const has=upcomingPerfs(PERFORMANCES.filter(p=>p[1]>=NOW_DATE&&surfOf(showById[p[0]])==="opera"&&opGenreOf(showById[p[0]])===want)).length;
+  return has?`<button class="opbridge" data-switch="opera" data-opgenre="${want}">${esc(opT().bridge[want])}</button>`:"";}
+/* the FAB steps aside while an agenda action, a page button or a rail link is under it (§5.3) */
+function _opDodge(){
+  const fab=document.querySelector("#app > .fab");if(!fab)return;
+  let hit=false;
+  if(S.mode==="opera"){
+    const x0=fab.offsetLeft-10,y0=fab.offsetTop-10,x1=fab.offsetLeft+fab.offsetWidth+10,y1=fab.offsetTop+fab.offsetHeight+10;
+    for(const el of document.querySelectorAll("#app > main .ag-act, #app > main .btn, #app > main .rlink")){
+      const r=el.getBoundingClientRect();if(r.right>x0&&r.left<x1&&r.bottom>y0&&r.top<y1){hit=true;break;}}}
+  fab.classList.toggle("dodge",hit);}
+let _opDodgeRaf=0;
+function opDodgeSoon(){if(!_opDodgeRaf)_opDodgeRaf=requestAnimationFrame(()=>{_opDodgeRaf=0;_opDodge();});}
+window.addEventListener("scroll",opDodgeSoon,{passive:true});
+window.addEventListener("resize",opDodgeSoon);
+/* ---- the sheet (§5.9): banner, title block, chips, the pills as the purchase, labelled facts ---- */
+function opPill(sh,p,focus){
+  const O=opT(),st=opStatus(p),f=focus?" focus":"",cur=focus?' aria-current="true"':"",dl=opShortDate(p[1]);
+  if(st==="buy")return`<a class="p3e-pill oppill buy${f}"${cur} href="${esc(perfTixUrl(p[0],p[1],p[2]))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.buyAria,{t:titleOf(sh),d:`${opWeekday(p[1])} ${opLongDate(p[1])}`,h:p[2]}))}"><span>${esc(p[2])}</span><small>${esc(O.pillBuy)}</small></a>`;
+  if(st==="so")return`<span class="p3e-pill oppill so${f}"${cur} role="note" aria-label="${esc(fillT(O.soldAria,{d:dl,h:p[2]}))}"><span>${esc(p[2])}</span><small>${esc(O.pillSold)}</small></span>`;
+  const u=opProdUrl(sh.id);
+  return u?`<a class="p3e-pill oppill pre${f}"${cur} href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.preAria,{d:dl,h:p[2]}))}"><span>${esc(p[2])}</span><small>${esc(O.pillMore)}</small></a>`
+    :`<span class="p3e-pill oppill pre${f}"${cur} role="note" aria-label="${esc(fillT(O.preAria,{d:dl,h:p[2]}))}"><span>${esc(p[2])}</span><small>${esc(O.pillMore)}</small></span>`;}
+function opTimesHtml(sh,perfs,fp){
+  const O=opT(),asOf=opAsOf(),u=opProdUrl(sh.id);
+  if(!perfs.length)return`<div class="empty">${esc(t().noData)}</div>`;
+  const prodLink=u?`<a class="prodlink" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${extLabel(O.prodLink)}</a>`:"";
+  if(perfs.every(p=>opStatus(p)==="pre")){
+    return`<ul class="nolist">${perfs.map(p=>`<li><b>${esc(opShortDate(p[1])+opYear(p[1])+" · "+p[2])}</b><span>${esc(opStage(p))}</span></li>`).join("")}</ul>
+      ${u?`<a class="nomore" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${extLabel(O.notYetMore)}</a>`:""}
+      <div class="sfoot"><p class="cta-fn">${esc(O.notYetListFn+(asOf?" "+asOf:""))}</p></div>`;}
+  const allSo=perfs.every(p=>opStatus(p)==="so"),mixPre=perfs.some(p=>opStatus(p)==="pre");
+  /* the stage is the p3e "venue": one row per stage, its address under it */
+  const by={};perfs.forEach(p=>{const k=opStage(p)+"|"+p[1];(by[k]=by[k]||{venueId:opStage(p),dateStr:p[1],times:[],price:""}).times.push(p[2]);});
+  const norm=Object.values(by);norm.forEach(r=>r.times.sort());
+  const vmap=v=>({name:v,area:opHallArea(v),price:""});
+  const pillFn=(v,d,tm)=>{const p=perfs.find(x=>opStage(x)===v&&x[1]===d&&x[2]===tm);return p?opPill(sh,p,p===fp):"";};
+  const firstBk=perfs.find(p=>opStatus(p)==="buy");
+  const sel=fp?fp[1]:(firstBk?firstBk[1]:perfs[0][1]);
+  const dates=[...new Set(perfs.map(p=>p[1]))].sort();
+  _gridPage["show:"+sh.id]=Math.floor(Math.max(0,dates.indexOf(sel))/7);
+  const state=allSo?`<p class="sstate">${esc(perfs.length===1?O.oneSold:fillT(O.allSoldN,{n:perfs.length}))}</p>`:"";
+  const fn=allSo?`${asOf} ${O.soldFn}`:`${O.pillsFn} ${mixPre?O.notYetFn+" ":""}${asOf}`;
+  return`${state}${p3eShowtimesHtml("show",sh.id,norm,vmap,()=>false,sel,pillFn)}
+    <div class="sfoot"><p class="cta-fn">${esc(fn.trim())}</p>${prodLink}</div>`;}
+function opCredits(sh){
+  const O=opT(),f=sh.facts||{},nums=Array.isArray(f.prices_eur)?f.prices_eur.map(x=>parseFloat(String(x).replace(",","."))).filter(isFinite):[];
+  let price=notEmpty(f.prices)||"";
+  if(!price&&nums.length){const lo=Math.min(...nums),hi=Math.max(...nums);
+    price=lo===hi?fillT(O.priceOne,{a:opNum(lo)}):fillT(O.priceRange,{a:`${opNum(lo)}–${opNum(hi)}`,n:nums.length});}
+  const rows=[["conductor",f.conductor],["director",f.director],["duration",f.duration],["language",f.language],["age",opKid(sh)?f.age:""],["prices",price]]
+    .filter(r=>notEmpty(r[1]||""));
+  return rows.length?`<div class="sec"><h3>${esc(O.secAbout)}</h3><dl class="credits">${rows.map(([k,v])=>`<dt>${esc(O.cred[k])}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`:"";}
+function sheetOpera(sh,fc){
+  const L=t(),O=opT(),perfs=opPerfs(sh.id);
+  const fd=fc&&fc.pd,ft=fc&&fc.pt,fp=fd?perfs.find(p=>p[1]===fd&&(!ft||p[2]===ft))||null:null;
+  const stages=[...new Set(perfs.map(opStage))],g=opGenreOf(sh),sub=opSub(sh),syn=synShow(sh);
+  const chips=(g?`<span class="chip solid">${esc(opGenreLabel(g))}</span>`:"")+(opPremAhead(sh.id)?`<span class="chip prem">${esc(O.premiere)}</span>`:"");
+  return`<div class="sheet opsheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-op${fp?" compact":""}">${opArt(sh)}
+    <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
+    <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button></div>
+   <div class="sh-ophead"><div class="eyebrow">${esc(stages.join(" · "))}</div><h2 id="sg-sheet-title">${esc(titleOf(sh))}</h2>${sub?`<p class="slede">${esc(sub)}</p>`:""}</div>
+   <div class="sbody">
+    ${chips?`<div class="chips">${chips}</div>`:""}
+    <div class="sec" id="op-times"><h3>${esc(O.secTimes)}</h3>${opTimesHtml(sh,perfs,fp)}</div>
+    ${opCredits(sh)}
+    ${syn?`<div class="sec"><h3>${esc(O.secSyn)}</h3>${synBlock(syn)}</div>`:""}
+   </div></div>`;}
 
 /* ===================== body ===================== */
 /* progressive loading — render the first few rails, stream the rest in on scroll
@@ -3403,6 +3839,8 @@ function body(){
   const L=t(),day=dayOrAll(),out=[];
   /* VENUE MODE: S.fVenues non-empty → bypass all curated rails */
   if(S.fVenues.length) return[venueModeBody()];
+  /* Опера и балет: hero slot (hero()) -> the agenda -> the open genre rails */
+  if(S.mode==="opera")return opBody();
   /* Events (owner, 15 Oct 2026: Киномания must be in "Лимитирано и ексклузивно" when
      the period is November). That rail lists every event not yet ended that overlaps
      the selected period: the running ones first (soonest end first), then the coming
@@ -4327,7 +4765,9 @@ function p3eRowHtml(itemKind,v,r,prelim,pills){
    isP: function(venueId, dateStr) → bool
    normalizedRows: [{venueId, dateStr, times:[str], price}]
 */
-function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defaultDate){
+/* pillFn (Опера и балет): (venueId,dateStr,time) -> the pill's own HTML (a status-labelled link);
+   without it every time is the usual button that opens the time popup */
+function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defaultDate, pillFn){
   const L=t();
   if(!normalizedRows||!normalizedRows.length)return`<div class="empty">${esc(L.noData)}</div>`;
 
@@ -4383,6 +4823,7 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
       const v=venueMap(r.venueId)||{};
       const prelim=isP(r.venueId,dateStr);
       const pills=r.times.map(tm=>{
+        if(pillFn)return pillFn(r.venueId,dateStr,tm);
         const pillKey=`${itemKind}:${itemId}|${r.venueId}|${dateStr}|${tm}`;
         return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||r.venueId,dateStr,prelim,boxOnly(itemKind,itemId,r.venueId,dateStr,tm)))}">${esc(tm)}</button>`;
       }).join("");
@@ -4443,13 +4884,14 @@ function p3eShowtimesHtml(itemKind, itemId, normalizedRows, venueMap, isP, defau
   };
   const rowFor=(vid,pd)=>{
     const v=venueMap(vid)||{};
-    const price=v.price||"";
+    const price=v.price||(pillFn?v.area||"":"");
     const vcell=`<th scope="row" class="p3e-vcol">${esc(v.name||vid)}${price?`<small>${esc(price)}</small>`:""}</th>`;
     const dayCells=pd.map(d=>{
       const rr=gridMap[vid]&&gridMap[vid][d];
       if(!rr||!rr.times.length)return`<td></td>`;
       const prelim=isP(vid,d);
       const pillsD=rr.times.map(tm=>{
+        if(pillFn)return pillFn(vid,d,tm);
         const pillKey=`${itemKind}:${itemId}|${vid}|${d}|${tm}`;
         return`<button class="p3e-pill${prelim?" prelim":""}" type="button" data-sspill="${esc(pillKey)}" aria-label="${esc(_pillName(tm,v.name||vid,d,prelim,boxOnly(itemKind,itemId,vid,d,tm)))}">${esc(tm)}</button>`;
       }).join(" ");
@@ -4591,7 +5033,8 @@ function sheetFilm(f){
       ${timesHtml}</div>
    </div></div>`;}
 
-function sheetShow(sh){
+function sheetShow(sh,fc){
+  if(surfOf(sh)==="opera")return sheetOpera(sh,fc);
   const L=t(),th=thById[sh.theatre],x=SHOW_EXTRA[sh.id]||{};
   const perfs=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id)).sort((a,b)=>(a[1]+a[2]).localeCompare(b[1]+b[2]));
   const thId=sh.theatre;
@@ -4732,7 +5175,7 @@ function calView(){
 }
 function drawerHTML(){
   const L=t();
-  const gset=genresFor(S.mode);
+  const gset=S.mode==="opera"?OP_GORDER.filter(k=>opChipIds().includes(k)).map(k=>GENRES.find(g=>g.id===k&&g.t==="opera")):genresFor(S.mode);
   /* "Programme verified until" — derived live from the furthest upcoming date
      we actually hold for each venue, so it can never show a stale past date the
      way a hand-kept VENUE_UNTIL map did (every cinema was pinned to 17 Sep). */
@@ -4820,6 +5263,8 @@ function drawerHTML(){
   </div>`;
 }
 function searchView(sr){
+  /* without OPERA_ON the opera surface does not exist yet: its rows stay out of the results */
+  if(!OPERA_ON)sr={...sr,shows:sr.shows.filter(x=>surfOf(x)!=="opera")};
   const L=t(),total=sr.films.length+sr.shows.length;
   const qq=S.lang==="bg"?`„${S.q}“`:`“${S.q}”`;
   return `<div class="sechead" style="padding-top:20px"><h1 class="sechead-h">${esc(L.results)} ${esc(qq)}</h1><span class="n">${total}</span></div>
@@ -4926,8 +5371,8 @@ function render(){
     <span>programata.bg</span><span>theatre.art.bg</span><span>nationaltheatre.bg</span><span>ndk.bg</span>
     <span>vlaikovacinema.com</span><span>domnakinoto.com</span><span>toplocentrala.bg</span>
     <span>cinemacity.bg</span><span>kinoarena.com</span><span>cinegrand.bg</span>
-    <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>
-  </div>${legalFootHTML()}</footer>
+    <span>ticket.bg</span><span>eventim.bg</span><span>mdblist.com</span><span>rottentomatoes.com</span>${OPERA_ON?"<span>operasofia.bg</span>":""}
+  </div>${OPERA_ON?`<p class="opsrc">${esc(opT().footer+(opAsOf()?" "+opAsOf():""))}</p>`:""}${legalFootHTML()}</footer>
   ${S.drawer&&!keptDr?drawerHTML():""}
   ${fabHTML()}`;
   const mainEl=app.querySelector(":scope > main");
@@ -4957,6 +5402,7 @@ function render(){
      shrink the toggle: their search opens in its own row below it. */
   if(S.searchOpen&&!isMob)requestAnimationFrame(_segFit);
   _barObserve();
+  opDodgeSoon();
 }
 /* Phone header (c-searchup): only the toggle row pins, so --logo-row-h is the MEASURED logo row
    (20 px top padding + the row + its 18 px margin; 87 px stays the CSS fallback). A pinned part
@@ -5016,7 +5462,7 @@ function mainHTML(sr){
   const bodyHTML=Array.isArray(bodyContent)?bodyContent[0]:bodyContent;
   return `
     ${periodBanner()}
-    ${S.fVenues.length?"":hero()}
+    ${S.fVenues.length?"":opBridge()+hero()}
     ${bodyHTML}`;
 }
 /* The floating filters button: not shown while the drawer is open or a search is typed. */
@@ -5038,8 +5484,9 @@ function _syncFab(){
   if(!html){if(cur)cur.remove();return;}
   const tmp=document.createElement("div");tmp.innerHTML=html;
   const fresh=tmp.firstElementChild;
-  if(cur&&cur.isEqualNode(fresh))return;
+  if(cur&&cur.isEqualNode(fresh)){opDodgeSoon();return;}
   if(cur)cur.replaceWith(fresh);else app.appendChild(fresh);
+  opDodgeSoon();
 }
 /* A drawer just put on the page: the iOS backdrop tap, the slide-in, then focus inside. */
 function _drawerEnter(app){
@@ -5301,9 +5748,10 @@ function clearSearch(){
    dips out (SWITCH_OUT ms, the drawer's closing curve), the other programme is put in
    place with its posters decoded, and it comes back up (SWITCH_IN ms, the drawer's
    opening curve) at the top of the page. Reduced motion: an instant switch. */
-function switchMode(mode,fromHistory){
+function switchMode(mode,fromHistory,genres){
+  mode=okMode(mode);
   const changed=S.mode!==mode;
-  S.mode=mode;S.fGenres=[];S.fVenues=[];S.fStrands=[];S.limit=30;save();
+  S.mode=mode;S.fGenres=genres||[];S.fVenues=[];S.fStrands=[];S.limit=30;save();
   if(changed&&!fromHistory)_surfaceEntry(true);
   const app=document.getElementById("app");
   if(!app||!app.querySelector(":scope > main")||S.drawer||sheetOpen){render();window.scrollTo({top:0});return;}
@@ -5319,7 +5767,7 @@ let curSheet=null;
 function sheetHTMLFor(c){
   if(!c)return null;
   if(c.kind==="film"&&filmById[c.id])return sheetFilm(filmById[c.id]);
-  if(c.kind==="show"&&showById[c.id])return sheetShow(showById[c.id]);
+  if(c.kind==="show"&&showById[c.id])return sheetShow(showById[c.id],c);
   if(c.kind==="event"){const ev=EVENTS.find(x=>x.id===c.id);if(ev)return sheetEvent(ev);}
   return null;
 }
@@ -7046,7 +7494,7 @@ document.addEventListener("click",e=>{
     save();render();window.scrollTo({top:0,behavior:"smooth"});return;}
 
   const sw=q("[data-switch]");
-  if(sw){switchMode(sw.dataset.switch);return;}
+  if(sw){switchMode(sw.dataset.switch,false,sw.dataset.opgenre?[sw.dataset.opgenre]:null);return;}
   /* "Покажи още": the list grows in place; the page keeps its offset (the rebuild
      would otherwise put it back at the top of the category, owner 2026-11-06) */
   if(q("[data-more]")){const _y=window.scrollY||0;S.limit+=30;render();_keepPageY(_y);return;}
@@ -7079,7 +7527,12 @@ document.addEventListener("click",e=>{
   if(q("[data-qclear]")){S.qFocus=false;clearSearch();
     const qd=document.getElementById("q");if(qd&&S.searchOpen){try{qd.focus({preventScroll:true});}catch(e){}}return;}
   const d=q("[data-day]"); if(d){S.day=d.dataset.day;(S.drawer?renderKeepDrawer():render());return;}
-  const gf=q("[data-genre]"); if(gf){const v=gf.dataset.genre;S.fGenres=v?toggleArr(S.fGenres,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
+  const gf=q("[data-genre]"); if(gf){const v=gf.dataset.genre;
+    S.fGenres=!v?[]:S.mode==="opera"?(S.fGenres.length===1&&S.fGenres[0]===v?[]:[v]):toggleArr(S.fGenres,v);
+    S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
+  /* Опера и балет: "Само за деца ›" presses "За деца" and goes to the top; "Покажи всички дни (N)" */
+  if(q("[data-opkids]")){S.fGenres=["kids"];render();window.scrollTo({top:0});return;}
+  const oad=q("[data-opalldays]"); if(oad){S.opAllDays=oad.dataset.opalldays;render();return;}
   const vf=q("[data-venue]"); if(vf){const v=vf.dataset.venue;S.fVenues=v?toggleArr(S.fVenues,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   /* P3A item 7: star a venue / toggle only-favourites */
   const fvs=q("[data-fav-venue]");
@@ -7184,7 +7637,10 @@ document.addEventListener("click",e=>{
      moving the viewport while the sheet was being used. */
   if(q("[data-film]")||q("[data-show]")||q("[data-event]"))_releaseSearchField();
   const fc=q("[data-film]"); if(fc){_sheetShowAllCinemas=false;curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
-  const shc=q("[data-show]"); if(shc){curSheet={kind:"show",id:shc.dataset.show};openSheet(sheetShow(showById[shc.dataset.show]),shc);return;}
+  const shc=q("[data-show]"); if(shc){const sh0=showById[shc.dataset.show];
+    /* a search hit on the other side of Театър / Опера и балет takes the page there first (§5.1) */
+    if(OPERA_ON&&sh0&&S.mode!=="cinema"&&surfOf(sh0)!==S.mode){switchMode(surfOf(sh0));surfaceAttrs();}
+    curSheet={kind:"show",id:shc.dataset.show,pd:shc.dataset.pd||"",pt:shc.dataset.pt||""};openSheet(sheetShow(sh0,curSheet),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
 });
 /* html.sg-kbd: the visitor is on the keyboard (Tab or Escape pressed) until the next pointer
