@@ -23064,9 +23064,17 @@ def _op2_fab(browser, base, eng):
     _op2_range(page, d[0], d[6])
     seen = {True: 0, False: 0}
     bad = []
-    tops = page.evaluate("""() => { const f = document.querySelector('#app > .fab'); const fy = f.offsetTop + f.offsetHeight / 2;
-        return [...document.querySelectorAll('#app > main .ag-act')].map(e => e.getBoundingClientRect().top + scrollY - fy + e.offsetHeight / 2); }""")
-    for y in [0] + [max(0, round(t)) for t in tops[:4]] + [max(0, round(t) + 70) for t in tops[:2]]:
+    # scroll positions picked from the layout (not fixed offsets, which a denser agenda fills with
+    # actions): up to four with an agenda action under the FAB and up to four with nothing it dodges
+    ys = page.evaluate("""() => { const f = document.querySelector('#app > .fab'), y0 = f.offsetTop - 10, y1 = f.offsetTop + f.offsetHeight + 10;
+        const box = sel => [...document.querySelectorAll(sel)].map(e => { const r = e.getBoundingClientRect(); return [r.top + scrollY, r.bottom + scrollY]; });
+        const act = box('#app > main .ag-act'), any = box('#app > main .ag-act, #app > main .btn, #app > main .rlink');
+        const hits = (bs, y) => bs.some(([t, b]) => b > y + y0 && t < y + y1);
+        const max = document.scrollingElement.scrollHeight - innerHeight, over = [], clear = [];
+        for (let y = 0; y <= max; y += 24) { if (hits(act, y)) { if (over.length < 4 && (!over.length || y - over[over.length - 1] > 120)) over.push(y); }
+          else if (!hits(any, y) && clear.length < 4 && (!clear.length || y - clear[clear.length - 1] > 120)) clear.push(y); }
+        return over.concat(clear); }""")
+    for y in ys:
         _op_scroll(page, y)
         page.wait_for_timeout(150)
         st = page.evaluate(OP2_FAB_JS)
