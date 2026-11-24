@@ -1620,7 +1620,11 @@ _op_shown_page = _minimal_html(extra_js=r"const OPERA_ON=/[?&]opera=1\b/.test(lo
     "const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows + _op_cov_shows) + ";").replace(
     "const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";")
 _rc, _out = _run_out(_op_shown_page, _cov_env)
-check("…shown (OPERA_ON true), a rail with more than 25 % typographic cards FAILS the gate",
+check("…shown (OPERA_ON true), a rail with more than 25 % typographic cards is a WARNING (health.json): "
+      "one rail without posters never freezes the nightly refresh",
+      _rc == 0 and 'warning: 5c2 opera rail "opera": 10 of 10 cards would be typographic art (over 25 %' in _out)
+_rc, _out = _run_out(_op_cov_page, dict(_cov_env, SOFIA_OPERA_READINESS="1"))
+check("…the pre-flip readiness check (SOFIA_OPERA_READINESS=1) FAILS on that rail",
       _rc != 0 and 'opera rail "opera": 10 of 10 cards would be typographic art (over 25 %' in _out)
 _op_art = dict(_all_art, **{f"opera{i}": f"https://www.operasofia.bg/uploads/events/{1000 + i}.png" for i in range(8)})
 _rc, _out = _run_out(_op_shown_page.replace("const SHOWART=" + _json.dumps(_all_art) + ";",

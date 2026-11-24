@@ -1631,6 +1631,7 @@ COVERAGE_FLOOR_PCT = 90.0       # below this: fail (a dead poster source)
 COVERAGE_COLLAPSE_DROP = 15.0   # this many points down vs the baseline: fail
 COVERAGE_WARN_DROP = 3.0        # this many points down vs the baseline: warn
 OPERA_TYPO_MAX_PCT = 25.0       # DESIGN_SPEC §5.6: at most this share of typographic cards per opera rail
+_OPERA_READINESS = os.environ.get("SOFIA_OPERA_READINESS") == "1"   # the pre-flip check: the rail gate fails
 # the rail a production sits in (opGenreOf in src/): children's first, else the first of the
 # opera genres in GENRES order its calendar genres name; "" (no rail) without one
 _OPERA_RAILS = (("opera", "Опера"), ("ballet", "Балет"), ("concert", "Концерт"), ("musical", "Мюзикъл"))
@@ -1724,8 +1725,10 @@ try:
     # Опера и балет: own-image coverage of its productions (warn under the bar, shown or not:
     # the flag flip waits for it), and the DESIGN_SPEC §5.6 gate: a genre rail (its first 10
     # productions by first date, rails of 2+ cards, as opRails draws them) where more than
-    # OPERA_TYPO_MAX_PCT of the cards would be typographic art (no image the browser shows)
-    # fails once the surface is shown; hidden, it is a note.
+    # OPERA_TYPO_MAX_PCT of the cards would be typographic art (no image the browser shows).
+    # Shown, it is a warning (health.json): one rail of new productions without a poster
+    # must never freeze the whole site's nightly refresh. Hidden, a note; it fails only in
+    # the pre-flip readiness check (SOFIA_OPERA_READINESS=1, DESIGN_SPEC §5.6/§10).
     if _top["upcoming"]:
         _omsg = (f"poster coverage (opera, own image): {_top['with']}/{_top['upcoming']} ({_top['pct']:.1f} %)"
                  + (f"; missing: {', '.join(sorted(_top['missing'])[:12])}" if _top["missing"] else ""))
@@ -1746,7 +1749,7 @@ try:
                 continue
             _typo = [i for i in _ids if i not in _shown_img]
             if 100.0 * len(_typo) / len(_ids) > OPERA_TYPO_MAX_PCT:
-                (fail if _opera_shown else note)(
+                (fail if _OPERA_READINESS else warn if _opera_shown else note)(
                     f"5c2 opera rail \"{_k}\": {len(_typo)} of {len(_ids)} cards would be typographic art "
                     f"(over {OPERA_TYPO_MAX_PCT:g} %, DESIGN_SPEC §5.6): {', '.join(_typo[:8])}"
                     + ("" if _opera_shown else " — must pass before OPERA_ON is flipped"))

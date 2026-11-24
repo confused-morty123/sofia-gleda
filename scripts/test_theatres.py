@@ -3632,15 +3632,14 @@ check("opera: the Chamber hall (бул. Дондуков 30) is the Opera's own:
 check("opera: the TV broadcast (icon 'event', no tickets) is skipped and logged under excluded",
       [(e[0], e[1], e[2]) for e in _x12], [("ОТ ПЪРВИЯ РЕД - БНТ 2", "2026-12-19", "16:00")])
 _ag = _op_by(_r12)[("2026-12-04", "19:00")][3]
-check("opera: ПРЕМИЕРА (the exact token) sets premiere; the subtitle is stored verbatim (DESIGN_SPEC §2.1.7), "
-      "the closing conductor's credit also read into its own field",
-      (_ag["premiere"], _ag["subtitle"], _ag["conductor"], _ag.get("director")),
-      (True, "Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс", "Константин Тринкс", None))
-check("opera: a credit read into its own field never leaves the subtitle (no output shows it elsewhere yet)",
-      [r[0] for r in _r12 if r[3].get("conductor") and r[3]["conductor"] not in (r[3].get("subtitle") or "")], [])
+check("opera: ПРЕМИЕРА (the exact token) sets premiere; the subtitle is stored verbatim with its credit "
+      "(DESIGN_SPEC §2.1.7)",
+      (_ag["premiere"], _ag["subtitle"]),
+      (True, "Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс"))
 check("opera: a subtitle that is only the conductor's credit stays the subtitle (Гала Росини keeps its conductor)",
-      (_g.get("subtitle"), _g["conductor"]), ("Диригент Жан-Кристоф Спинози", "Жан-Кристоф Спинози"))
-check("opera: address kept as published (mixed quotes)", _g["address"], 'София 1000, ул. „Врабча" №1')
+      _g.get("subtitle"), "Диригент Жан-Кристоф Спинози")
+check("opera: no row meta nothing reads (conductor, director, address)",
+      sorted({k for r in _r12 for k in r[3]} & {"conductor", "director", "address"}), [])
 
 _r11, _x11 = O.parse_opera(fx("opera_calendar_2026-11.html"), 2026, 11)
 _tr = _op_by(_r11)[("2026-11-06", "19:00")][3]
@@ -3695,26 +3694,21 @@ _ic = O.parse_opera(fx("opera_calendar_2026-12.html").replace("icon-performance-
 check("opera: an unknown icon gives no genre", _op_by(_ic)[("2026-12-02", "19:00")][3].get("genres"), None)
 
 # --- English titles
-_en11 = O.parse_opera_en_titles(fx("opera_calendar_en_2026-11.html"), 2026, 11)
+_en11, _ens11 = O.parse_opera_en(fx("opera_calendar_en_2026-11.html"), 2026, 11)
 check("opera EN: the English title by repertoire id, as published (ПЕЕМ ЗАЕДНО is PAZZIA D’AMORE)",
       (_en11["1101"], _en11["1067"], _en11["1062"]), ("PAZZIA D’AMORE", "AGRIPPINA", "LA TRAVIATA"))
-raises("opera EN: another month's English page is refused", O.MarkupError, O.parse_opera_en_titles,
+check("opera EN: the English subtitle by (repertoire id, date, time), verbatim with its credit",
+      _ens11.get(("1067", "2026-11-27", "19:00")),
+      "Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks")
+raises("opera EN: another month's English page is refused", O.MarkupError, O.parse_opera_en,
        fx("opera_calendar_en_2026-11.html"), 2026, 12)
 check("opera EN: one id with two different English titles gives none (a missing value beats a wrong one)",
-      "1067" in O.parse_opera_en_titles(fx("opera_calendar_en_2026-11.html").replace("AGRIPPINA", "AGRIPPINA II", 1),
-                                        2026, 11), False)
+      "1067" in O.parse_opera_en(fx("opera_calendar_en_2026-11.html").replace("AGRIPPINA", "AGRIPPINA II", 1),
+                                 2026, 11)[0], False)
 
-# --- the 42 subtitle cases (DESIGN_SPEC §2.4), exactly as approved: skip, genre, premiere and the
-# closing credit read as an extra field. The displayed line is the UI's rule (opSubText), checked
-# against the same 42 cases by the OP2 wave.
+# --- the 42 subtitle cases (DESIGN_SPEC §2.4), exactly as approved: skip, genre and premiere. The
+# displayed line is the UI's rule (opSubText), checked against the same 42 cases by the OP2 wave.
 _cases = json.loads((FIX / "opera_subtitle_cases.json").read_text(encoding="utf-8"))
-_CREDITS = {
-    "adults|opera|Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс":
-        {"conductor": "Константин Тринкс"},
-    "adults|behind|Диригент Жан-Кристоф Спинози": {"conductor": "Жан-Кристоф Спинози"},
-    "adults|musical|Музика и текст Бени Андершон и Бьорн Улвеус /Режисьор Пламен Карталов/":
-        {"director": "Пламен Карталов"},
-}
 _bad = []
 for _k, _want in _cases.items():
     _view, _icon, _sub = _k.split("|", 2)
@@ -3723,29 +3717,31 @@ for _k, _want in _cases.items():
         if not _got["skip"]:
             _bad.append(_k)
         continue
-    _cred = _CREDITS.get(_k, {})
-    _g2 = (_got["skip"], _view, _got["genres"], _got["premiere"], _got["credits"])
-    _w2 = (False, _want["audience"], [_want["genre"]] if _want["genre"] else [], _want["premiere"], _cred)
+    _g2 = (_got["skip"], _view, _got["genres"], _got["premiere"])
+    _w2 = (False, _want["audience"], [_want["genre"]] if _want["genre"] else [], _want["premiere"])
     if _g2 != _w2:
         _bad.append(f"{_k}: {_g2} != {_w2}")
-check(f"opera: all {len(_cases)} subtitle cases (skip, audience, genre, premiere, credits)", _bad, [])
+check(f"opera: all {len(_cases)} subtitle cases (skip, audience, genre, premiere)", _bad, [])
 check("opera: opera_place returns only what is stored (no display rule in Python)",
-      sorted(O.opera_place("adults", "opera", "x", has_buy=True)), ["credits", "genres", "premiere", "skip"])
+      sorted(O.opera_place("adults", "opera", "x", has_buy=True)), ["genres", "premiere", "skip"])
 check("opera: 42 cases", len(_cases), 42)
 check("opera: children's view <=> Детски, across the cases",
       all(v["skip"] or (k.split("|", 1)[0] == "children")
           == ("Детски" in O.opera_place(*k.split("|", 2), has_buy=False)["genres"])
           for k, v in _cases.items()), True)
-check("opera: ПРЕМИЕРА inside a word is not the token", O.opera_subtitle("Опера ПРЕМИЕРАТА"), (False, {}))
+check("opera: ПРЕМИЕРА inside a word is not the token",
+      O.opera_place("adults", "opera", "Опера ПРЕМИЕРАТА", has_buy=True)["premiere"], False)
 check("opera: an 'event' row WITH a ticket link is kept (only the broadcast without tickets is skipped)",
       O.opera_place("adults", "event", "Събитие", has_buy=True)["skip"], False)
-check("opera: a credit in the middle of the line is left in the subtitle (not split, not lost)",
-      O.opera_subtitle("Диригент Иван Иванов /Спектакъл за деца/"), (False, {}))
 check("opera: the subtitle base drops only a closing credit",
       (O.opera_subtitle_base("Опера от Хендел ПРЕМИЕРА Диригент Константин Тринкс"),
        O.opera_subtitle_base("Музика Бени Андершон /Режисьор Пламен Карталов/"),
        O.opera_subtitle_base("Диригент Иван Иванов /Спектакъл за деца/")),
       ("Опера от Хендел ПРЕМИЕРА", "Музика Бени Андершон", "Диригент Иван Иванов /Спектакъл за деца/"))
+check("opera: the subtitle base drops the English page's closing credit too (with or without a colon)",
+      (O.opera_subtitle_base("Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks"),
+       O.opera_subtitle_base("Conductor: Jean-Christophe Spinosi")),
+      ("Opera by George Frideric Handel PREMIERE", ""))
 
 # --- the production page's labelled fields (§2.1.8), verbatim, absent when the label is
 _f67 = O.parse_opera_production(fx("opera_production_1067.html"))
@@ -3819,6 +3815,12 @@ _f67r = _op_by(_all)[("2026-11-27", "19:00")][3].get("facts") or {}
 check("fetch_opera: the production facts reach every row of the production, adult prices from one buy-tickets page",
       (_f67r.get("conductor"), _f67r.get("prices_eur"), _op_by(_all)[("2026-12-04", "19:00")][3].get("facts") == _f67r),
       ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"], True))
+check("fetch_opera: the prices are one performance's: they carry its buy-tickets link and the read date",
+      (_f67r.get("prices_url"), _f67r.get("prices_read"), _op_by(_all)[("2026-11-27", "19:00")][3].get("buy")),
+      (O.OPERA_BUY.format(n=3545), "2026-11-24", O.OPERA_BUY.format(n=3545)))
+check("fetch_opera: the English calendar's subtitle reaches the row (meta subtitle_en, no extra GET)",
+      (_op_by(_all)[("2026-11-27", "19:00")][3].get("subtitle_en"), _op_by(_all)[("2027-01-29", "19:00")][3].get("subtitle_en")),
+      ("Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks", None))
 _rep_asked = [u for u in _net.asked if "/repertoire/" in u]
 _buy_asked = [u for u in _net.asked if "/buy-tickets/" in u]
 check("fetch_opera: production pages bounded per run, soonest first", (len(_rep_asked), _rep_asked[:2]),
@@ -3836,6 +3838,15 @@ _net3 = FakeNet(_op_pages())
 O.fetch_opera(_net3, OP_TODAY + dt.timedelta(days=8))
 check("fetch_opera: a week later the production page and its prices are read again",
       (O.OPERA_REP.format(id=1067) in _net3.asked, O.OPERA_BUY.format(n=3549) in _net3.asked), (True, True))
+O.OPERA_FACTS = {"1067": {"read": "2026-11-24", "prices_read": "2026-11-24", "prices_url": O.OPERA_BUY.format(n=1),
+                          "prices_eur": ["99"]}}
+_net_px = FakeNet(_op_pages(**{O.OPERA_BUY.format(n=3545): None}))
+_res_px = O.fetch_opera(_net_px, OP_TODAY)
+check("fetch_opera: prices read from a performance no longer in the calendar are shown nowhere, and the first "
+      "bookable performance's page is asked instead (unreachable here: still no price)",
+      (O.OPERA_BUY.format(n=3545) in _net_px.asked,
+       [r[1] for r in _res_px["rows"] + _res_px["extra_rows"] if "prices_eur" in (r[3].get("facts") or {})]),
+      (True, []))
 O.OPERA_FACTS = {"1067": "broken", "1068": {"read": "not a date"}}
 _res_b = O.fetch_opera(FakeNet(_op_pages()), OP_TODAY)
 check("fetch_opera: a malformed cache entry is read afresh, never trusted",
@@ -3996,6 +4007,9 @@ check("refresh_source_shows: the subtitle verbatim (ПРЕМИЕРА and the cre
 check("refresh_source_shows: the production pass's facts become SHOWS.facts (conductor, the EUR categories)",
       ((_rs_by["АГРИПИНА"].get("facts") or {}).get("conductor"), (_rs_by["АГРИПИНА"].get("facts") or {}).get("prices_eur")),
       ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"]))
+check("refresh_source_shows: subtitleEn from the English calendar's lines, by the same rule (verbatim)",
+      (_rs_by["АГРИПИНА"].get("subtitleEn"), "subtitleEn" in _rs_by["ЧЕРВЕНАТА ШАПЧИЦА"]),
+      ("Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks", False))
 check("refresh_source_shows: every refreshed show reported changed", sorted(_rs_changed) == sorted(_rs_recs), True)
 _rs_srcid = {sid: (m or {}).get("source_id") for sid, _t, _u, m in _rs_log}
 for _sid, _r in _rs_recs.items():
@@ -4020,6 +4034,17 @@ check("refresh_source_shows: only the conductor changes by night -> the words ev
 check("refresh_source_shows: nights that print different lines -> no subtitle (a missing value beats one night's)",
       "subtitle" in _rs_one(["Опера от Верди", "Балет от Адам"]), False)
 check("refresh_source_shows: a night without a subtitle -> none", "subtitle" in _rs_one(["Опера от Верди", None]), False)
+_rs_en = {"id": "x", "titleEn": "", "genres": [], "subtitleEn": "stale"}
+_SPO.refresh_source_shows({"x": _rs_en}, {"opera": {"rows": [
+    ("x", "2026-12-01", "19:00", {"subtitle_en": "Opera by Verdi Conductor A B"}, "T"),
+    ("x", "2026-12-02", "19:00", {"subtitle_en": "Opera by Verdi Conductor C D"}, "T")], "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: subtitleEn, only the English conductor credit changes -> the shared words",
+      _rs_en.get("subtitleEn"), "Opera by Verdi")
+_SPO.refresh_source_shows({"x": _rs_en}, {"opera": {"rows": [
+    ("x", "2026-12-01", "19:00", {"subtitle_en": "Opera by Verdi"}, "T"),
+    ("x", "2026-12-02", "19:00", {}, "T")], "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: a row the English page did not give -> no subtitleEn (the UI falls back to BG)",
+      "subtitleEn" in _rs_en, False)
 check("refresh_source_shows: no EN title / no genres / no facts tonight: titleEn and genres kept, facts dropped",
       (lambda r: (r["titleEn"], r["genres"], "facts" in r))(_rs_one(["x"])), ("OLD", ["Опера"], False))
 _rs_past = {"id": "x", "titleEn": "", "genres": [], "subtitle": "kept"}

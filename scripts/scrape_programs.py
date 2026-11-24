@@ -1866,6 +1866,8 @@ def refresh_source_shows(records, resolved, today_iso):
       * subtitle: verbatim, when every upcoming row prints the same one; else the words
         they all print before a closing conductor/director credit (only the conductor
         changes by night); else none (a missing value beats one night's line);
+      * subtitleEn: the same rule over the English calendar's lines (meta "subtitle_en", the
+        pages fetch_opera already reads); a row without one counts as a different line;
       * facts: the production pass's meta "facts" (official_theatres.opera_production_pass),
         as they are; none when no row carries them;
       * baked: true for a production whose banner prints its title (OT.OPERA_BAKED).
@@ -1894,13 +1896,14 @@ def refresh_source_shows(records, resolved, today_iso):
         genres = next((list(m["genres"]) for m in metas if isinstance(m.get("genres"), list) and m["genres"]), None)
         if genres:
             rec["genres"] = genres
-        subs = {(m.get("subtitle") or "").strip() for m in metas}
-        bases = {OT.opera_subtitle_base(x) for x in subs}
-        sub = next(iter(subs)) if len(subs) == 1 else (next(iter(bases)) if len(bases) == 1 else "")
-        if sub:
-            rec["subtitle"] = sub
-        else:
-            rec.pop("subtitle", None)
+        for key, field in (("subtitle", "subtitle"), ("subtitle_en", "subtitleEn")):
+            subs = {(m.get(key) or "").strip() for m in metas}
+            bases = {OT.opera_subtitle_base(x) for x in subs}
+            sub = next(iter(subs)) if len(subs) == 1 else (next(iter(bases)) if len(bases) == 1 else "")
+            if sub:
+                rec[field] = sub
+            else:
+                rec.pop(field, None)
         facts = next((m["facts"] for m in metas if isinstance(m.get("facts"), dict) and m["facts"]), None)
         if facts:
             rec["facts"] = dict(facts)
