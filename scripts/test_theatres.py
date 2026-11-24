@@ -3945,6 +3945,58 @@ def _fresh_minter(prefix):
     return ix, log, mint
 
 
+# --- refresh_source_shows: the opera's titleEn, genres, subtitle and facts follow its calendar every night
+_rs_res = O.fetch_opera(FakeNet(_op_pages()), OP_TODAY)
+O.OPERA_FACTS = {}
+_rs_ix, _rs_log, _rs_mint = _fresh_minter("rs")
+_rs_rr, _ = _SPO.resolve_theatre_rows(_rs_ix, {"opera": _rs_res}, _rs_mint, {})
+_rs_recs = {sid: {"id": sid, "title": t, "titleEn": "", "theatre": "opera", "genres": []} for sid, t, _u, _m in _rs_log}
+_rs_changed = _SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat())
+_rs_by = {r["title"]: r for r in _rs_recs.values()}
+check("refresh_source_shows: a show minted without them gets its EN title and genres from tonight's rows",
+      (_rs_by["АГРИПИНА"]["titleEn"], _rs_by["АГРИПИНА"]["genres"], _rs_by["ЖИЗЕЛ"]["genres"]),
+      ("AGRIPPINA", ["Опера"], ["Балет"]))
+check("refresh_source_shows: the subtitle verbatim (ПРЕМИЕРА and the credit kept: the display rule is the UI's)",
+      _rs_by["АГРИПИНА"].get("subtitle"), "Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс")
+check("refresh_source_shows: the production pass's facts become SHOWS.facts (conductor, the EUR categories)",
+      ((_rs_by["АГРИПИНА"].get("facts") or {}).get("conductor"), (_rs_by["АГРИПИНА"].get("facts") or {}).get("prices_eur")),
+      ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"]))
+check("refresh_source_shows: every refreshed show reported changed", sorted(_rs_changed) == sorted(_rs_recs), True)
+check("refresh_source_shows: a second run with the same rows changes nothing",
+      _SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat()), [])
+
+
+def _rs_one(subs, metas_extra=None, rec=None):
+    rec = rec if rec is not None else {"id": "x", "titleEn": "OLD", "genres": ["Опера"], "subtitle": "stale", "facts": {"a": 1}}
+    rows = [("x", f"2026-12-0{i + 1}", "19:00", dict({"subtitle": s} if s is not None else {}, **(metas_extra or {})), "T")
+            for i, s in enumerate(subs)]
+    _SPO.refresh_source_shows({"x": rec}, {"opera": {"rows": rows, "extra_rows": []}}, "2026-11-24")
+    return rec
+
+
+check("refresh_source_shows: only the conductor changes by night -> the words every night prints before the credit",
+      _rs_one(["Опера от Верди Диригент А Б", "Опера от Верди Диригент В Г"]).get("subtitle"), "Опера от Верди")
+check("refresh_source_shows: nights that print different lines -> no subtitle (a missing value beats one night's)",
+      "subtitle" in _rs_one(["Опера от Верди", "Балет от Адам"]), False)
+check("refresh_source_shows: a night without a subtitle -> none", "subtitle" in _rs_one(["Опера от Верди", None]), False)
+check("refresh_source_shows: no EN title / no genres / no facts tonight: titleEn and genres kept, facts dropped",
+      (lambda r: (r["titleEn"], r["genres"], "facts" in r))(_rs_one(["x"])), ("OLD", ["Опера"], False))
+_rs_past = {"id": "x", "titleEn": "", "genres": [], "subtitle": "kept"}
+_SPO.refresh_source_shows({"x": _rs_past}, {"opera": {"rows": [("x", "2026-11-01", "19:00", {"subtitle": "new"}, "T")],
+                                                       "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: a show with no upcoming row tonight is left as it is", _rs_past["subtitle"], "kept")
+_rs_nat = {"id": "n", "genres": []}
+_SPO.refresh_source_shows({"n": _rs_nat}, {"national": {"rows": [("n", "2026-12-01", "19:00", {"genres": ["Драма"]}, "T")],
+                                                         "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: only SOURCE_ID_KEY theatres (the opera)", _rs_nat["genres"], [])
+import inject_shows as _IS
+check("inject_shows: subtitle and facts reach SHOWS when present; absent (not empty) on every other show",
+      (_IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("subtitle"),
+       _IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("facts"),
+       sorted(set(_IS.normalise({"id": "b"})) - set(_IS.SHOW_FIELDS)),
+       sorted(set(_IS.normalise({"id": "c", "subtitle": "", "facts": "x"})) - set(_IS.SHOW_FIELDS))),
+      ("Опера от Хендел", {"conductor": "К"}, [], []))
+
 # a future performance whose sales have not opened (only 'виж повече': the Gala of 2 Dec)
 _dec_notyet = re.sub(rb'<a class="btn bg-red" href="https://www.operasofia.bg/buy-tickets/3548">.*?</a>', b"",
                      raw("opera_calendar_2026-12.html"), count=1, flags=re.S)

@@ -1857,6 +1857,59 @@ def resolve_theatre_rows(index, results, mint, source_ids=None):
     return out, minted
 
 
+def refresh_source_shows(records, resolved, today_iso):
+    """Every night, what a SOURCE_ID_KEY theatre (the opera) prints for its productions,
+    copied onto their minted records (theatre_shows.json, merged into SHOWS by
+    inject_shows.py), so a show minted on an earlier night follows its source:
+      * titleEn, genres: from the first upcoming row that has them (the mint rule); kept
+        when no row has them tonight (an English page that failed is not "no title");
+      * subtitle: verbatim, when every upcoming row prints the same one; else the words
+        they all print before a closing conductor/director credit (only the conductor
+        changes by night); else none (a missing value beats one night's line);
+      * facts: the production pass's meta "facts" (official_theatres.opera_production_pass),
+        as they are; none when no row carries them.
+    resolved: resolve_theatre_rows' {theatre: {"rows"/"extra_rows": [(sid, date, time,
+    meta, title)]}}. A show with no upcoming row tonight is left as it is. Returns the
+    ids whose record changed."""
+    by = defaultdict(list)
+    for v, parts in (resolved or {}).items():
+        if v not in SOURCE_ID_KEY:
+            continue
+        for part in ("rows", "extra_rows"):
+            for sid, d, t, meta, _title in parts.get(part) or []:
+                if d >= today_iso:
+                    by[sid].append((d, t, meta or {}))
+    changed = []
+    for sid, rows in by.items():
+        rec = records.get(sid)
+        if not isinstance(rec, dict):
+            continue
+        rows.sort(key=lambda r: (r[0], r[1]))
+        before = json.dumps(rec, sort_keys=True, ensure_ascii=False)
+        metas = [m for _d, _t, m in rows]
+        t_en = next((m["title_en"] for m in metas if isinstance(m.get("title_en"), str) and m["title_en"]), None)
+        if t_en:
+            rec["titleEn"] = t_en
+        genres = next((list(m["genres"]) for m in metas if isinstance(m.get("genres"), list) and m["genres"]), None)
+        if genres:
+            rec["genres"] = genres
+        subs = {(m.get("subtitle") or "").strip() for m in metas}
+        bases = {OT.opera_subtitle_base(x) for x in subs}
+        sub = next(iter(subs)) if len(subs) == 1 else (next(iter(bases)) if len(bases) == 1 else "")
+        if sub:
+            rec["subtitle"] = sub
+        else:
+            rec.pop("subtitle", None)
+        facts = next((m["facts"] for m in metas if isinstance(m.get("facts"), dict) and m["facts"]), None)
+        if facts:
+            rec["facts"] = dict(facts)
+        else:
+            rec.pop("facts", None)
+        if json.dumps(rec, sort_keys=True, ensure_ascii=False) != before:
+            changed.append(sid)
+    return changed
+
+
 # Where an official programme says a listing it excludes is staged — the host
 # part of the reason, in the wording official_theatres.py uses.
 _HOST_PATTERNS = (re.compile(r"^staged at (.+?)\s*\(co-production", re.I),     # Театър София
@@ -4413,6 +4466,12 @@ def main():
         theatre_shows[sid]["title"] = new
         if sid in show_index.shows:
             show_index.shows[sid]["title"] = new
+    # the opera's titleEn, genres, subtitle and facts follow its calendar every night
+    for sid in refresh_source_shows({k: r for k, r in theatre_shows.items() if k not in show_index.merged},
+                                    th_resolved, today_iso):
+        if sid in show_index.shows and show_index.shows[sid] is not theatre_shows[sid]:
+            show_index.shows[sid].update({k: theatre_shows[sid][k] for k in ("titleEn", "genres")
+                                          if k in theatre_shows[sid]})
 
     # Owner's rule: what a theatre has not published yet is SHOWN, marked
     # preliminary. A theatre.art.bg title in a theatre's preliminary range (after
