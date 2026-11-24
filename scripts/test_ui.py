@@ -12792,7 +12792,10 @@ HF_STATE_JS = r"""() => {
           scrimInDom:!!(s&&!s.hidden&&sheet),
           pop:!!((w&&!w.hidden&&w.querySelector('.ss-sheet *')&&vis(w.querySelector('.ss-sheet')))||(p&&vis(p))),
           ssVar:(typeof _ss!=='undefined')&&!!_ss, sheetVar:(typeof sheetOpen!=='undefined')&&sheetOpen,
-          y:Math.round(scrollY), body:document.body.getAttribute('style')||'', html:document.documentElement.getAttribute('style')||'',
+          y:Math.round(scrollY), body:document.body.getAttribute('style')||'',
+          /* the root's measured --logo-row-h (the c-searchup phone header, opera DESIGN_SPEC §15.1 item 3)
+             is the header's, not the scroll lock's: anything else left on <html> is */
+          html:(document.documentElement.getAttribute('style')||'').replace(/--logo-row-h:\s*[^;]*;?/g,'').trim(),
           hd:(history.state&&history.state.d)||0, depth:(typeof _histDepth!=='undefined')?_histDepth:-1,
           active:document.activeElement?(document.activeElement.className||document.activeElement.tagName).toString().slice(0,40):''};
 }"""
@@ -13347,7 +13350,7 @@ def _hf_scroll(browser, eng, phone):
             ref = "()=>Math.round(document.querySelector('[data-hf-ref]').getBoundingClientRect().top)"
             y0 = page.evaluate("Math.round(scrollY)")
             top0 = page.evaluate(ref)
-            styles0 = page.evaluate("[document.body.getAttribute('style')||'',document.documentElement.getAttribute('style')||'']")
+            styles0 = page.evaluate("[document.body.getAttribute('style')||'',(document.documentElement.getAttribute('style')||'').replace(/--logo-row-h:\\s*[^;]*;?/g,'').trim()]")
             _hf_tap(page, phone, card["x"], card["y"])
             page.wait_for_timeout(100)
             top_early = page.evaluate(ref)
