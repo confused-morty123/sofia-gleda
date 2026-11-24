@@ -550,6 +550,11 @@ def _get(net, url, **kw):
     return decode(r.content)
 
 
+def _oget(net, url):
+    """_get for operasofia.bg: with the honest User-Agent (OPERA_HEADERS)."""
+    return _get(net, url, headers=dict(OPERA_HEADERS))
+
+
 # ===================================================================== national
 NATIONAL_URL = "https://www.nationaltheatre.bg/bg/programa?day=&month={m}&year={y}"
 NATIONAL_SOURCE = "nationaltheatre.bg/bg/programa (month pages)"
@@ -2573,6 +2578,9 @@ OPERA_BUY = OPERA_HOST + "/buy-tickets/{n}"
 OPERA_SOURCE = "operasofia.bg/calendar (month pages: default + children's view; English titles)"
 OPERA_MONTHS = 4             # the current month + 3 (DESIGN_SPEC §2.1.1: 4 × 3 pages a night)
 OPERA_DELAY = 2.0            # seconds between requests to the host (our own floor; no Crawl-delay asked)
+# An honest User-Agent for this host (owner rule for the opera surface; the research fetched
+# it as SofiaGleda/1.0): every operasofia.bg GET goes through _oget, never netfetch's browser UA.
+OPERA_HEADERS = {"User-Agent": "SofiaGleda/1.0 (+https://sofiagleda.com)"}
 # the site's icon class -> genre; "behind" is its concerts and galas (research, 2026-11-24).
 # "event" and any class not listed: no genre (never guessed).
 OPERA_GENRE = {"opera": "Опера", "ballet": "Балет", "musical": "Мюзикъл", "behind": "Концерт",
@@ -2587,8 +2595,9 @@ _OPERA_BUY_ID = re.compile(r"^https?://(?:www\.)?operasofia\.bg/buy-tickets/(\d+
 # the exact whitespace token (DESIGN_SPEC §2.3), never a word that contains it
 _OPERA_PREMIERE = re.compile(r"(^|\s)ПРЕМИЕРА(?=\s|$)")
 # a conductor's / director's credit closing the subtitle: "… Диригент Константин Тринкс",
-# "… /Режисьор Пламен Карталов/". Shown as its own field, so it leaves the subtitle;
-# a credit anywhere else in the line stays where it is (nothing is lost, nothing doubled).
+# "… /Режисьор Пламен Карталов/". Read into its own field (meta conductor / director) as an
+# extra; the subtitle itself is stored verbatim with the credit in it (DESIGN_SPEC §2.1.7):
+# no output shows the credit elsewhere yet, so it must not leave the shown text.
 _OPERA_CREDIT = re.compile(r"(?:^|\s)(/?)(Диригент|Режисьор)\s+([^/]+?)\1\s*$")
 _OPERA_CREDIT_KEY = {"Диригент": "conductor", "Режисьор": "director"}
 EN_MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august",
@@ -2598,8 +2607,10 @@ EN_MONTHS = ("january", "february", "march", "april", "may", "june", "july", "au
 def opera_subtitle(raw):
     """(display, premiere, credits) of a calendar subtitle (`.item__description__author`).
     premiere: the exact token ПРЕМИЕРА is in it; display: the line as published (spaces
-    collapsed) without that token when premiere, and without a closing conductor/director
-    credit, which goes to credits ({"conductor"|"director": name, verbatim})."""
+    collapsed) without that token when premiere — the UI's own rule (DESIGN_SPEC §2.3),
+    the cases of opera_subtitle_cases.json; credits: a closing conductor/director credit
+    ({"conductor"|"director": name, verbatim}), read as an extra and left in the line.
+    What is stored is the verbatim line (parse_opera), never display."""
     s = clean(raw)
     premiere = "ПРЕМИЕРА" in s.split()
     if premiere:
@@ -2608,7 +2619,6 @@ def opera_subtitle(raw):
     m = _OPERA_CREDIT.search(s)
     if m:
         credits[_OPERA_CREDIT_KEY[m.group(2)]] = clean(m.group(3))
-        s = clean(s[:m.start()])
     return s, premiere, credits
 
 
@@ -2663,8 +2673,9 @@ def parse_opera(html, year, month, kids=False, notes=None):
     (rows, excluded). A row: mkrow(title as published, date, time, hall=stage,
     url=the production's /repertoire/<id> page, buy=this performance's /buy-tickets/<n>
     (tickets on sale only), page=the production page, premiere=the ПРЕМИЕРА token,
-    rep_id, genres, sale ("soldout" | "notyet", absent when on sale), subtitle (shown
-    form), conductor / director (a credit closing the subtitle), address). The past
+    rep_id, genres, sale ("soldout" | "notyet", absent when on sale), subtitle (verbatim,
+    spaces collapsed: ПРЕМИЕРА and any credit kept), conductor / director (a credit closing
+    the subtitle, also left in it), address). The past
     days of the month are rows too (finish drops them; they are the completeness
     reference). Excluded: the TV broadcast (icon "event", no ticket link) and every
     off-site address. A heading, day block or weekday of another month raises
@@ -2706,7 +2717,8 @@ def parse_opera(html, year, month, kids=False, notes=None):
             stage = clean(stage.get_text(" ", strip=True)) if stage else ""
             addr = clean(addr.get_text(" ", strip=True)) if addr else ""
             sale, buy = _opera_status(it, notes, f"{day} {time_} {title}")
-            p = opera_place(view, icon, sub.get_text(" ", strip=True) if sub else "", bool(buy))
+            sub = clean(sub.get_text(" ", strip=True)) if sub else ""
+            p = opera_place(view, icon, sub, bool(buy))
             if p["skip"]:
                 excluded.append((title, day.isoformat(), time_, "a TV broadcast, no tickets (icon 'event')"))
                 continue
@@ -2716,7 +2728,7 @@ def parse_opera(html, year, month, kids=False, notes=None):
                 continue
             rows.append(mkrow(title, day, time_, hall=stage or None, url=page, buy=buy, page=page,
                               premiere=p["premiere"], rep_id=rep, genres=p["genres"], sale=sale,
-                              subtitle=p["display"], address=addr or None, **p["credits"]))
+                              subtitle=sub or None, address=addr or None, **p["credits"]))
     return rows, excluded
 
 
@@ -2747,6 +2759,12 @@ OPERA_PAGE_CAP = 6           # production pages read per run (soonest performanc
 OPERA_PRICE_CAP = 3          # /buy-tickets/<n> pages read per run, one per production
 OPERA_FACTS_DAYS = 7         # a production page (and its prices) is read again after a week
 OPERA_FACTS_KEEP = 60        # a production unread for this long leaves the cache
+# shortcut: the production pass stays OFF until a consumer of its facts lands (SHOWS fields
+# or a sidecar the verify gate checks). Nothing written today reads meta "facts", and the
+# pass costs up to OPERA_PAGE_CAP + OPERA_PRICE_CAP extra GETs a night (checkout pages
+# included, which the source register asks to keep rare). With it off a night is the
+# calendar alone: at most OPERA_MONTHS × 3 GETs. Turn on together with the consumer.
+OPERA_FACTS_ON = False
 # {repertoire id: {"read": "YYYY-MM-DD", "prices_read": "YYYY-MM-DD", facts…}}: set by the
 # caller (scrape_programs.py, from official_state.json) and updated in place by fetch_opera.
 OPERA_FACTS: dict = {}
@@ -2846,7 +2864,7 @@ def opera_production_pass(net, rows, today, notes, cache=None):
         if not _fresh(e, "read", today) and pages < OPERA_PAGE_CAP:
             pages += 1
             try:
-                got = parse_opera_production(_get(net, OPERA_REP.format(id=rep)), kids=rep in kids)
+                got = parse_opera_production(_oget(net, OPERA_REP.format(id=rep)), kids=rep in kids)
                 e = dict(got, read=t0, **{k: e[k] for k in ("prices_eur", "prices_read") if k in e})
                 cache[rep] = e
             except Exception as ex:                     # a broken page never costs the calendar
@@ -2855,7 +2873,7 @@ def opera_production_pass(net, rows, today, notes, cache=None):
                 and not _fresh(cache[rep], "prices_read", today) and prices < OPERA_PRICE_CAP):
             prices += 1
             try:
-                eur = parse_opera_prices(_get(net, buy[rep]))
+                eur = parse_opera_prices(_oget(net, buy[rep]))
                 cache[rep] = {k: v for k, v in cache[rep].items() if k != "prices_eur"}
                 cache[rep]["prices_read"] = t0
                 if eur:
@@ -2885,14 +2903,15 @@ def fetch_opera(net, today):
     """The Opera's own calendar: for each of OPERA_MONTHS months the default view and
     the children's view (both, or that month is not covered), plus the English page for
     titles (optional). The first month must read, list something and name itself;
-    a later month that fails or is empty ends the reading. Then the production pass."""
+    a later month that fails or is empty ends the reading. Then the production pass,
+    only while OPERA_FACTS_ON."""
     _opera_delay()
     rows, excluded, notes, en, covered_to = [], [], [], {}, None
     en_seen = defaultdict(set)
     for i, (y, m) in enumerate(months_from(today, OPERA_MONTHS)):
         ym = f"{y}-{m:02d}"
         try:
-            r, x = parse_opera(_get(net, OPERA_CAL.format(y=y, m=m)), y, m, notes=notes)
+            r, x = parse_opera(_oget(net, OPERA_CAL.format(y=y, m=m)), y, m, notes=notes)
         except Unavailable as e:                        # MarkupError included
             if i == 0:
                 raise
@@ -2903,7 +2922,7 @@ def fetch_opera(net, today):
                 raise Unavailable(f"{ym}: the calendar lists nothing (implausibly empty)")
             break
         try:
-            kr, kx = parse_opera(_get(net, OPERA_CAL_KIDS.format(y=y, m=m)), y, m, kids=True, notes=notes)
+            kr, kx = parse_opera(_oget(net, OPERA_CAL_KIDS.format(y=y, m=m)), y, m, kids=True, notes=notes)
         except Unavailable as e:
             if i == 0:
                 raise Unavailable(f"{ym}: children's calendar not read ({e})")
@@ -2916,7 +2935,7 @@ def fetch_opera(net, today):
         rows += r + kr
         excluded += x + kx
         try:
-            for rep, title in parse_opera_en_titles(_get(net, OPERA_CAL_EN.format(y=y, m=m)), y, m).items():
+            for rep, title in parse_opera_en_titles(_oget(net, OPERA_CAL_EN.format(y=y, m=m)), y, m).items():
                 en_seen[rep].add(title)
         except Unavailable as e:
             notes.append(f"{ym}: English calendar not read ({e}) — no English titles from it")
@@ -2925,7 +2944,8 @@ def fetch_opera(net, today):
         t_en = en.get(row[3].get("rep_id"))
         if t_en:
             row[3]["title_en"] = t_en
-    opera_production_pass(net, rows, today, notes)
+    if OPERA_FACTS_ON:
+        opera_production_pass(net, rows, today, notes)
     return finish("opera", OPERA_SOURCE, rows, today, excluded=excluded, notes=notes,
                   covered_to=covered_to)
 

@@ -1721,6 +1721,17 @@ THEATRE_ART_IDS = {
 THEATRE_ORDER = ("national", "sofia-th", "th199", "sfumato", "tba", "zad-kanala", "vazrazhdane",
                  "mladezhki", "kuklen", "toplo", "citymark", "satira", "iam", "artvent",
                  "salzaismyah", "atelie313", "natfiz", "new-ndk", "derida", "opera")
+# A theatre whose rows carry a sale status as a 6th PERFORMANCES column (DESIGN_SPEC §2.1.5:
+# the opera's "soldout" / "notyet", the shape FESTROWS uses). Every other row is 5 long, and
+# so is an opera row on sale or of unknown status. Only this run's official rows carry it:
+# a kept (previous) row never does.
+SALE_THEATRES = {"opera"}
+SALE_STATES = ("soldout", "notyet")
+# A theatre whose productions are told apart by the source's own id (meta key), not by the
+# title: operasofia.bg lists two productions as КАРНАВАЛЪТ НА ЖИВОТНИТЕ (/repertoire/1088 in
+# the Chamber hall, /repertoire/1108 on the main stage). Each id gets its own show (the
+# minted record keeps the id as "source_id" in theatre_shows.json, never in SHOWS).
+SOURCE_ID_KEY = {"opera": "rep_id"}
 _EURO = re.compile(r"(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€|евро|eur)", re.I)
 # "от 6.00 до 7.00 €" (theatre.art.bg): the currency is printed after the upper bound only
 _EURO_RANGE = re.compile(r"(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€\s*)?(?:до|[-–—])\s*"
@@ -1755,53 +1766,92 @@ def theatre_price(price):
     return p if 0 < len(p) <= 24 and "лв" not in p else None
 
 
-def resolve_theatre_rows(index, results, mint):
+def resolve_theatre_rows(index, results, mint, source_ids=None):
     """Map every official theatre row (inside and outside the covered range) to
     a show of the SAME theatre, minting a show for a production no rule can
     place. results: {theatre: official_theatres result}; mint: callable(
     display_title, theatre, url, meta) -> show id (it must also add the show to
-    `index`; meta: {"title_en", "genres"} as the source gives them, else None). Returns ({theatre: {"rows": [(sid, date, time, meta, title)],
-    "extra_rows": [...]}}, [minted ids])."""
-    slots = defaultdict(list)                       # (title, theatre) -> [(date, time, meta)]
+    `index`; meta: {"title_en", "genres"} as the source gives them, else None, plus
+    "source_id" for a SOURCE_ID_KEY theatre). Returns ({theatre: {"rows": [(sid, date,
+    time, meta, title)], "extra_rows": [...]}}, [minted ids]).
+
+    A SOURCE_ID_KEY theatre (the opera) is resolved per (title, source id): source_ids
+    {(theatre, source id): show id} (the minted records' "source_id"; updated in place
+    with this run's mints) names a production's show first; a title match is taken only
+    when that show belongs to no other source id; else the production is minted, so two
+    productions with one title are two shows, each with its own page."""
+    source_ids = {} if source_ids is None else source_ids
+    slots = defaultdict(list)                       # (title, theatre, source id) -> [(date, time, meta)]
     for v, res in results.items():
+        key = SOURCE_ID_KEY.get(v)
         for part in ("rows", "extra_rows"):
             for title, d, t, meta in res.get(part) or []:
-                slots[(title, v)].append((d, t, meta or {}))
+                sid_ = str((meta or {}).get(key) or "") or None if key else None
+                slots[(title, v, sid_)].append((d, t, meta or {}))
     rank = {v: i for i, v in enumerate(THEATRE_ORDER)}
-    order = sorted(slots, key=lambda tv: (rank.get(tv[1], 99), tv[1], tv[0]))
-    resolved, pending = {}, []
+    order = sorted(slots, key=lambda tv: (rank.get(tv[1], 99), tv[1], tv[0], tv[2] or ""))
+    resolved = {}
+
+    def claimed(sid, v, src):
+        """Another production (source id) of theatre v already has this show."""
+        return any(th == v and s2 != src and index.canonical(x) == sid
+                   for (th, s2), x in source_ids.items()) or any(
+            k[1] == v and k[2] != src and k[2] is not None and x == sid for k, x in resolved.items())
+
+    def place(tv):
+        title, v, src = tv
+        if src is not None:
+            known = source_ids.get((v, src))
+            if known and index.canonical(known) in index.shows:
+                return index.canonical(known)
+        sid, _rule = index.resolve(title, v)
+        if sid and src is not None and claimed(sid, v, src):
+            return None
+        return sid
+
+    pending = []
     for tv in order:
-        sid, _rule = index.resolve(tv[0], tv[1])
+        sid = place(tv)
         if sid:
             resolved[tv] = sid
+            if tv[2] is not None:
+                source_ids.setdefault((tv[1], tv[2]), sid)
         else:
             pending.append(tv)
     minted = []
     while pending:
-        v, k = pending[0][1], OT.normalise_show_title(pending[0][0])
-        members = [tv for tv in pending if tv[1] == v and OT.normalise_show_title(tv[0]) == k]
+        v, k, src = pending[0][1], OT.normalise_show_title(pending[0][0]), pending[0][2]
+        members = [tv for tv in pending if tv[1] == v and tv[2] == src and OT.normalise_show_title(tv[0]) == k]
         first = min((s for m in members for s in slots[m]), key=lambda s: (s[0], s[1]))
         spellings = [m[0] for m in members for _ in slots[m]]
         # the source's English title and genres (operasofia.bg), from the first row that has them
         ordered = sorted((s for m in members for s in slots[m]), key=lambda s: (s[0], s[1]))
         meta = {k: next((s[2][k] for s in ordered if s[2].get(k)), None) for k in ("title_en", "genres")}
+        if src is not None:
+            meta["source_id"] = src
         sid = mint(SI.choose_display(spellings), v, first[2].get("url"), meta)
         minted.append(sid)
         for m in members:
             resolved[m] = sid
+        if src is not None:
+            source_ids[(v, src)] = sid
         still = []
         for tv in pending:
             if tv in members:
                 continue
-            sid2, _ = index.resolve(tv[0], tv[1])
+            sid2 = place(tv)
             if sid2:
                 resolved[tv] = sid2
+                if tv[2] is not None:
+                    source_ids.setdefault((tv[1], tv[2]), sid2)
             else:
                 still.append(tv)
         pending = still
     out = {}
     for v, res in results.items():
-        out[v] = {part: [(resolved[(title, v)], d, t, meta or {}, title)
+        key = SOURCE_ID_KEY.get(v)
+        out[v] = {part: [(resolved[(title, v, (str((meta or {}).get(key) or "") or None) if key else None)],
+                          d, t, meta or {}, title)
                          for title, d, t, meta in res.get(part) or []]
                   for part in ("rows", "extra_rows")}
     return out, minted
@@ -1971,7 +2021,7 @@ def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_
                                 venue_state.KEEP_DAYS days): theatre.art.bg alone.
                   "none"        no official source: aggregator rows only, all
                                 preliminary from today
-    official_rows, extra_rows   [(show, date, time, hall, price)]; extra rows are
+    official_rows, extra_rows   [(show, date, time, hall, price[, sale])]; extra rows are
                   official performances outside the covered range (a month the
                   theatre has only partly entered, the edge of a paginated
                   window) — they confirm themselves but never remove anything
@@ -1984,13 +2034,15 @@ def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_
                   performances at this venue (touring, off-site, cancelled):
                   never shown, whichever source repeats them
     Returns (rows, prelim_from, info). Rows are [show, date, time, hall, price],
-    never dated before `floor` or after `end`."""
+    never dated before `floor` or after `end`; an official row of this run with a sale
+    state (SALE_STATES, a SALE_THEATRES venue) adds it as a 6th column. A kept or
+    aggregator row never has one: a stale "sold out" / "not yet" is never shown."""
     info = {"status": status, "discarded": [], "added": 0, "prelim_rows": 0,
             "unplaced": [], "excluded_blocked": 0}
     cells = {}
     excluded_keys = set(excluded_keys or ())
 
-    def put(sid, d, t, hall=None, price=None, official=False):
+    def put(sid, d, t, hall=None, price=None, official=False, sale=None):
         k = (sid, d, t)
         if not sid or not (floor <= d <= end) or k in cells:
             return False
@@ -1998,6 +2050,8 @@ def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_
             info["excluded_blocked"] += 1
             return False
         cells[k] = [sid, d, t, hall, price]
+        if official and venue in SALE_THEATRES and sale in SALE_STATES:
+            cells[k].append(sale)
         return True
 
     def finish(prelim):
@@ -2044,20 +2098,20 @@ def merge_theatre_venue(venue, status, official_rows, coverage, extra_rows, agg_
 
     cf, ct = max(coverage[0], floor), min(coverage[1], end)
     official = set()
-    for sid, d, t, hall, price in official_rows:
+    for sid, d, t, hall, price, *sale in official_rows:
         if cf <= d <= ct:
             official.add((sid, d, t))
-            put(sid, d, t, hall, price, official=True)
+            put(sid, d, t, hall, price, official=True, sale=sale[0] if sale else None)
     extras = set()                                    # (show, date) the theatre itself lists after ct
-    for sid, d, t, hall, price in extra_rows:
+    for sid, d, t, hall, price, *sale in extra_rows:
         if ct < d <= end:
             extras.add((sid, d))
-            if put(sid, d, t, hall, price, official=True):
+            if put(sid, d, t, hall, price, official=True, sale=sale[0] if sale else None):
                 info["prelim_rows"] += 1
         elif floor <= d < cf:
             # official, but on a day the source does not vouch for completely
             # (Театър 199's "today" card sits outside its list)
-            put(sid, d, t, hall, price, official=True)
+            put(sid, d, t, hall, price, official=True, sale=sale[0] if sale else None)
     agg_seen, agg_days = set(), set()
     for sid, title, d, t, hall, *_price in agg_rows:
         if cf <= d <= ct:
@@ -3382,9 +3436,36 @@ def theatre_venue_problems(venue, status, rows, want, covered, prev_stat, stub, 
     unmerged = sorted(i for i in ids if shows.canonical(i) != i)
     if unmerged:
         out.append(f"performances still filed under a merged-away show: {', '.join(unmerged[:5])}")
-    if any(len(r) != 5 or not re.fullmatch(r"\d\d:\d\d", r[2] or "") for r in rows):
+    if any(not performance_row_ok(r, venue) for r in rows):
         out.append("a performance row is not [show, date, HH:MM, hall, price]")
     return out
+
+
+def official_perf_rows(venue, resolved_rows):
+    """merge_theatre_venue's official rows from resolve_theatre_rows' [(show, date,
+    time, meta, title)]: (show, date, time, hall, price), plus meta "sale" as a 6th
+    field for a SALE_THEATRES venue when it is one of SALE_STATES."""
+    out = []
+    for sid, d, t, m, _title in resolved_rows:
+        r = (sid, d, t, m.get("hall"), theatre_price(m.get("price")))
+        out.append(r + (m["sale"],) if venue in SALE_THEATRES and m.get("sale") in SALE_STATES else r)
+    return out
+
+
+def kept_perf_rows(old_performances, venue, shows):
+    """Last run's PERFORMANCES rows of one theatre, as merge_theatre_venue's prev_rows:
+    [show (canonical), date, time, hall, price] — never a 6th column, so a kept row
+    carries no stale sale state (DESIGN_SPEC §2.1.5)."""
+    return [[shows.canonical(r[0])] + list(r[1:5]) for r in old_performances
+            if shows.theatre_of(r[0]) == venue]
+
+
+def performance_row_ok(r, venue):
+    """[show, date, HH:MM, hall, price], plus a 6th column only for a SALE_THEATRES
+    venue and only a SALE_STATES value."""
+    if not re.fullmatch(r"\d\d:\d\d", (r[2] if len(r) > 2 else None) or ""):
+        return False
+    return len(r) == 5 or (len(r) == 6 and venue in SALE_THEATRES and r[5] in SALE_STATES)
 
 
 def upcoming_counts(showtimes, performances, theatre_of, floor):
@@ -3685,6 +3766,8 @@ def main():
                "cast": "", "genres": list(meta.get("genres") or []), "g": grad_for(cand),
                "duration": None, "synBg": "", "synEn": "",
                "source": venue}
+        if meta.get("source_id"):
+            rec["source_id"] = str(meta["source_id"])   # theatre_shows.json only (not a SHOW_FIELDS key)
         theatre_shows[cand] = rec
         show_index.add(rec, minted=True)
         minted_show_log.append([cand, venue, title, url])
@@ -4285,7 +4368,7 @@ def main():
                 sec_dates[v] = {r[1] for r in secondary[v]["rows"]}
         else:
             th_official[v] = res
-    if OT.OPERA_FACTS or "opera" in state["venues"]:
+    if OT.OPERA_FACTS_ON and (OT.OPERA_FACTS or "opera" in state["venues"]):
         state["venues"].setdefault("opera", {})["facts"] = OT.OPERA_FACTS
     # A listing one theatre stages at another theatre the app lists is the
     # host's performance; a day a theatre's own list may cut short is covered
@@ -4303,14 +4386,17 @@ def main():
         got = confirm_cut_days(res, art_rows.get(v, []), art_dates, same_show)
         if got:
             confirmed_days[v] = got
+    # each SOURCE_ID_KEY production's show, from the source id its minted record keeps
+    th_source_ids = {(r.get("theatre"), str(r["source_id"])): k for k, r in theatre_shows.items()
+                     if isinstance(r, dict) and r.get("source_id") and r.get("theatre") in SOURCE_ID_KEY}
     try:
-        th_resolved, minted_shows = resolve_theatre_rows(show_index, th_official, mint_show)
+        th_resolved, minted_shows = resolve_theatre_rows(show_index, th_official, mint_show, th_source_ids)
     except Exception as e:                         # isolate: resolve theatre by theatre
         print(f"  ! resolving theatre titles crashed ({type(e).__name__}: {e}) — theatre by theatre")
         th_resolved, minted_shows = {}, []
         for v in list(th_official):
             try:
-                got, minted_v = resolve_theatre_rows(show_index, {v: th_official[v]}, mint_show)
+                got, minted_v = resolve_theatre_rows(show_index, {v: th_official[v]}, mint_show, th_source_ids)
                 th_resolved.update(got)
                 minted_shows += minted_v
             except Exception as e2:
@@ -4386,18 +4472,15 @@ def main():
     prev_unknown = sorted({r[0] for r in old_performances if not show_index.theatre_of(r[0])})
     for v in theatre_ids:
         res = th_official.get(v)
-        prev = [[show_index.canonical(r[0])] + list(r[1:5]) for r in old_performances
-                if show_index.theatre_of(r[0]) == v]
+        prev = kept_perf_rows(old_performances, v, show_index)
         agg_full = [(show_index.resolve(t, v)[0], t, d, tm, hall, link, page, price)
                     for t, d, tm, hall, link, page, price in art_rows.get(v, [])]
         agg_rows = [(a[0], a[1], a[2], a[3], a[4], a[7]) for a in agg_full]
         rr, excl_keys = th_resolved.get(v, {}), set()
         if res is not None:
             status, cov, source = "official", (res["covered_from"], res["covered_to"]), res["source"]
-            orows = [(sid, d, t, m.get("hall"), theatre_price(m.get("price")))
-                     for sid, d, t, m, _ in rr.get("rows", [])]
-            xrows = [(sid, d, t, m.get("hall"), theatre_price(m.get("price")))
-                     for sid, d, t, m, _ in rr.get("extra_rows", [])]
+            orows = official_perf_rows(v, rr.get("rows", []))
+            xrows = official_perf_rows(v, rr.get("extra_rows", []))
             # Collect premiere-flagged dates from official rows (status=="official").
             # premiere=True is set by official_theatres.py mkrow when the title
             # contains "премиер" but not "предпремиер".
@@ -4411,10 +4494,10 @@ def main():
             if orows and all(r[3] is None for r in orows):
                 hall_map = VS.read_halls(state.get("venues", {}).get(v), today_iso)
                 if hall_map:
-                    orows = [(sid, d, t, hall_map.get((f"{d} {t}", sid)), pr)
-                             for sid, d, t, _hall, pr in orows]
-                    xrows = [(sid, d, t, hall_map.get((f"{d} {t}", sid)), pr)
-                             for sid, d, t, _hall, pr in xrows]
+                    orows = [(sid, d, t, hall_map.get((f"{d} {t}", sid)), pr, *more)
+                             for sid, d, t, _hall, pr, *more in orows]
+                    xrows = [(sid, d, t, hall_map.get((f"{d} {t}", sid)), pr, *more)
+                             for sid, d, t, _hall, pr, *more in xrows]
             for t, d, tm, _why in res.get("excluded") or []:
                 sid = show_index.resolve(t, v)[0]
                 if sid:
@@ -4614,7 +4697,7 @@ def main():
     unmerged = sorted({r[0] for r in new_performances if show_index.canonical(r[0]) != r[0]})
     if unmerged:
         problems.append(f"performances still filed under a merged-away show: {', '.join(unmerged[:5])}")
-    if any(len(r) != 5 or not re.fullmatch(r"\d\d:\d\d", r[2] or "") for r in new_performances):
+    if any(not performance_row_ok(r, show_index.theatre_of(r[0])) for r in new_performances):
         problems.append("a performance row is not [show, date, HH:MM, hall, price]")
     print_official_table(venue_report)
     print_festival_table(fest_report)

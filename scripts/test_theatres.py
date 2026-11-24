@@ -77,10 +77,11 @@ class FakeResponse:
 class FakeNet:
     """url → bytes; any other url is unreachable (None), like netfetch.Fetcher.get."""
     def __init__(self, pages):
-        self.pages, self.asked = pages, []
+        self.pages, self.asked, self.kw = pages, [], []
 
     def get(self, url, **kw):
         self.asked.append(url)
+        self.kw.append(kw)
         body = self.pages.get(url)
         return FakeResponse(body) if body is not None else None
 
@@ -3495,6 +3496,7 @@ check("translate: a used-up DeepL quota is one 'translations' warning in health.
 # performances excluded; the production page's labelled fields, bounded and cached.
 print("\nopera (operasofia.bg)")
 import scrape_programs as _SPO                                     # noqa: E402
+import collections                                                 # noqa: E402
 
 OP_TODAY = dt.date(2026, 11, 24)                 # a Tuesday
 
@@ -3553,13 +3555,14 @@ check("opera: the Chamber hall (бул. Дондуков 30) is the Opera's own:
 check("opera: the TV broadcast (icon 'event', no tickets) is skipped and logged under excluded",
       [(e[0], e[1], e[2]) for e in _x12], [("ОТ ПЪРВИЯ РЕД - БНТ 2", "2026-12-19", "16:00")])
 _ag = _op_by(_r12)[("2026-12-04", "19:00")][3]
-check("opera: ПРЕМИЕРА (the exact token) sets premiere and leaves the subtitle; the conductor is its own field",
+check("opera: ПРЕМИЕРА (the exact token) sets premiere; the subtitle is stored verbatim (DESIGN_SPEC §2.1.7), "
+      "the closing conductor's credit also read into its own field",
       (_ag["premiere"], _ag["subtitle"], _ag["conductor"], _ag.get("director")),
-      (True, "Опера от Георг Фридрих Хендел", "Константин Тринкс", None))
-check("opera: no shown subtitle repeats the conductor shown separately",
-      [r[0] for r in _r12 if r[3].get("conductor") and r[3]["conductor"] in (r[3].get("subtitle") or "")], [])
-check("opera: a subtitle that is only the conductor's credit leaves no subtitle",
-      (_g.get("subtitle"), _g["conductor"]), (None, "Жан-Кристоф Спинози"))
+      (True, "Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс", "Константин Тринкс", None))
+check("opera: a credit read into its own field never leaves the subtitle (no output shows it elsewhere yet)",
+      [r[0] for r in _r12 if r[3].get("conductor") and r[3]["conductor"] not in (r[3].get("subtitle") or "")], [])
+check("opera: a subtitle that is only the conductor's credit stays the subtitle (Гала Росини keeps its conductor)",
+      (_g.get("subtitle"), _g["conductor"]), ("Диригент Жан-Кристоф Спинози", "Жан-Кристоф Спинози"))
 check("opera: address kept as published (mixed quotes)", _g["address"], 'София 1000, ул. „Врабча" №1')
 
 _r11, _x11 = O.parse_opera(fx("opera_calendar_2026-11.html"), 2026, 11)
@@ -3621,16 +3624,15 @@ check("opera EN: one id with two different English titles gives none (a missing 
       "1067" in O.parse_opera_en_titles(fx("opera_calendar_en_2026-11.html").replace("AGRIPPINA", "AGRIPPINA II", 1),
                                         2026, 11), False)
 
-# --- the 42 subtitle cases (DESIGN_SPEC §2.4), plus the credit split (conductor / director)
+# --- the 42 subtitle cases (DESIGN_SPEC §2.4), exactly as approved; the closing credit is
+# read as an extra field and left in the displayed line
 _cases = json.loads((FIX / "opera_subtitle_cases.json").read_text(encoding="utf-8"))
-# The case file shows the conductor inside the subtitle; the build shows it as its own field,
-# so these three subtitles lose the credit (and only the credit).
-_CREDIT_SPLIT = {
+_CREDITS = {
     "adults|opera|Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс":
-        ("Опера от Георг Фридрих Хендел", {"conductor": "Константин Тринкс"}),
-    "adults|behind|Диригент Жан-Кристоф Спинози": ("", {"conductor": "Жан-Кристоф Спинози"}),
+        {"conductor": "Константин Тринкс"},
+    "adults|behind|Диригент Жан-Кристоф Спинози": {"conductor": "Жан-Кристоф Спинози"},
     "adults|musical|Музика и текст Бени Андершон и Бьорн Улвеус /Режисьор Пламен Карталов/":
-        ("Музика и текст Бени Андершон и Бьорн Улвеус", {"director": "Пламен Карталов"}),
+        {"director": "Пламен Карталов"},
 }
 _bad = []
 for _k, _want in _cases.items():
@@ -3640,7 +3642,7 @@ for _k, _want in _cases.items():
         if not _got["skip"]:
             _bad.append(_k)
         continue
-    _disp, _cred = _CREDIT_SPLIT.get(_k, (_want["display"], {}))
+    _disp, _cred = _want["display"], _CREDITS.get(_k, {})
     _g2 = (_got["skip"], _got["audience"], _got["genres"], _got["premiere"], _got["display"], _got["credits"])
     _w2 = (False, _want["audience"], [_want["genre"]] if _want["genre"] else [], _want["premiere"], _disp, _cred)
     if _g2 != _w2:
@@ -3691,6 +3693,16 @@ check("opera buy-tickets: no 'Ценови категории EUR' heading, no p
 
 # --- fetch_opera with a fake net
 O.OPERA_FACTS = {}
+_net0 = FakeNet(_op_pages())
+_res0 = O.fetch_opera(_net0, OP_TODAY)
+check("fetch_opera: the production pass is off until a consumer of its facts lands (no /repertoire, "
+      "no /buy-tickets GET; at most OPERA_MONTHS × 3 calendar GETs a night; no facts on a row)",
+      (O.OPERA_FACTS_ON, [u for u in _net0.asked if "/calendar/" not in u], len(_net0.asked) <= O.OPERA_MONTHS * 3,
+       any("facts" in r[3] for r in _res0["rows"] + _res0["extra_rows"])), (False, [], True, False))
+check("fetch_opera: every operasofia.bg GET carries the honest User-Agent, never netfetch's browser one",
+      ({(k.get("headers") or {}).get("User-Agent") for k in _net0.kw}, len(_net0.kw) == len(_net0.asked)),
+      ({"SofiaGleda/1.0 (+https://sofiagleda.com)"}, True))
+O.OPERA_FACTS_ON = True                          # the production pass's own tests (kept for when it is on)
 _net = FakeNet(_op_pages())
 _res = O.fetch_opera(_net, OP_TODAY)
 _all = _res["rows"] + _res["extra_rows"]
@@ -3753,6 +3765,13 @@ finally:
 check("fetch_opera: a production page that cannot be parsed never costs the calendar (a note, no facts)",
       (len(_res_p["rows"]) > 0, any("ZeroDivisionError" in n for n in _res_p["notes"]),
        any(r[3].get("facts") for r in _res_p["rows"])), (True, True, False))
+_net_ua = FakeNet(_op_pages())
+O.fetch_opera(_net_ua, OP_TODAY)
+check("fetch_opera: the production and buy-tickets pages carry the honest User-Agent too",
+      ({(k.get("headers") or {}).get("User-Agent") for u, k in zip(_net_ua.asked, _net_ua.kw)
+        if "/repertoire/" in u or "/buy-tickets/" in u}, any("/repertoire/" in u for u in _net_ua.asked)),
+      ({"SofiaGleda/1.0 (+https://sofiagleda.com)"}, True))
+O.OPERA_FACTS_ON = False
 O.OPERA_FACTS = {}
 check("fetch_opera: the current month's page unreachable -> None (keep previous)",
       O.fetch_venue("opera", FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=11): None})), OP_TODAY), None)
@@ -3775,13 +3794,7 @@ check("fetch_opera: registered as a theatre fetcher, and 2 s between requests to
       ("opera" in O.FETCHERS, __import__("netfetch").CRAWL_DELAY.get("www.operasofia.bg", 0) >= 2.0), (True, True))
 O.OPERA_FACTS = {}
 
-# --- keep-previous never carries a status or a ticket link forward (DESIGN_SPEC §2.1.5)
-_kp_rows, _, _ = _SPO.merge_theatre_venue(
-    "opera", "unreachable", [], None, [], [], set(),
-    [["agripina", "2026-12-04", "19:00", "Голяма зрителна зала", None, "soldout"]], None,
-    "2026-11-24", "2027-02-28")
-check("keep-previous: a kept opera row loses its sale column (shows 'виж повече', never a stale state)",
-      _kp_rows, [["agripina", "2026-12-04", "19:00", "Голяма зрителна зала", None]])
+# --- keep-previous never carries a ticket link forward (DESIGN_SPEC §2.1.5); the sale column: below
 _kp_prev = [["agripina", "2026-12-04", "19:00", "https://www.operasofia.bg/buy-tickets/3549"],
             ["medeya", "2026-12-05", "19:00", "https://www.nationaltheatre.bg/bg/x/2026-12-05|19:00:00"]]
 _kp_perf = [["agripina", "2026-12-04", "19:00"], ["medeya", "2026-12-05", "19:00"]]
@@ -3809,6 +3822,107 @@ _SPO.resolve_theatre_rows(_op_ix, {"opera": {"rows": [r for r in _all if r[3].ge
 check("resolve_theatre_rows: a minted opera show gets the English title and the genres of its rows",
       [(t, (m or {}).get("title_en"), (m or {}).get("genres")) for _s, t, _v, _u, m in _op_minted],
       [("АГРИПИНА", "AGRIPPINA", ["Опера"]), ("ЛЕШНИКОТРОШАЧКАТА", "THE NUTCRACKER", ["Балет"])])
+
+# --- the sale state end to end (DESIGN_SPEC §2.1.5): fetch_opera's rows go through
+# resolve_theatre_rows, official_perf_rows and merge_theatre_venue into PERFORMANCES (the
+# path scrape_programs.main takes); then a keep-previous run of those very rows.
+def _fresh_minter(prefix):
+    ix, log = SI.ShowIndex([], aliases={}), []
+
+    def mint(title, theatre, url, meta=None):
+        sid = f"{prefix}-{len(log) + 1}"
+        ix.add({"id": sid, "title": title, "theatre": theatre}, minted=True)
+        log.append((sid, title, url, meta or {}))
+        return sid
+    return ix, log, mint
+
+
+# a future performance whose sales have not opened (only 'виж повече': the Gala of 2 Dec)
+_dec_notyet = re.sub(rb'<a class="btn bg-red" href="https://www.operasofia.bg/buy-tickets/3548">.*?</a>', b"",
+                     raw("opera_calendar_2026-12.html"), count=1, flags=re.S)
+_e2e_res = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _dec_notyet})), OP_TODAY)
+_e2e_ix, _e2e_log, _e2e_mint = _fresh_minter("e2e")
+_e2e_rr = _SPO.resolve_theatre_rows(_e2e_ix, {"opera": _e2e_res}, _e2e_mint, {})[0]["opera"]
+_e2e_rows, _e2e_pf, _ = _SPO.merge_theatre_venue(
+    "opera", "official", _SPO.official_perf_rows("opera", _e2e_rr["rows"]),
+    (_e2e_res["covered_from"], _e2e_res["covered_to"]),
+    _SPO.official_perf_rows("opera", _e2e_rr["extra_rows"]), [], set(), [], None, "2026-11-24", "2027-02-28")
+_src_sale = {(r[1], r[2], r[0]): r[3].get("sale") or "" for r in _e2e_res["rows"] + _e2e_res["extra_rows"]}
+_e2e_title = {sid: t for sid, t, _u, _m in _e2e_log}
+_got_sale = {(r[1], r[2], _e2e_title[r[0]]): (r[5] if len(r) > 5 else "") for r in _e2e_rows}
+check("sale end to end: every PERFORMANCES row carries fetch_opera's own status (6th column), "
+      "and every source row is written",
+      (_got_sale == _src_sale, sorted(collections.Counter(_got_sale.values()).items())),
+      (True, [("", 11), ("notyet", 1), ("soldout", 9)]))
+check("sale end to end: sold out and not yet are told apart; a row on sale stays 5 long",
+      (_got_sale[("2026-12-05", "19:00", "ЖИЗЕЛ")], _got_sale[("2026-12-02", "19:00", "КОНЦЕРТ ГАЛА РОСИНИ – СВЕТЛИНА СТОЯНОВА")],
+       {len(r) for r in _e2e_rows if len(r) < 6 or r[5] not in ("soldout", "notyet")}),
+      ("soldout", "notyet", {5}))
+check("sale end to end: the row-shape checks accept them (opera only); a 6th column elsewhere or another "
+      "value is refused",
+      (all(_SPO.performance_row_ok(r, "opera") for r in _e2e_rows),
+       _SPO.performance_row_ok(["x", "2026-12-05", "19:00", None, None, "soldout"], "national"),
+       _SPO.performance_row_ok(["x", "2026-12-05", "19:00", None, None, "cancelled"], "opera")),
+      (True, False, False))
+check("sale end to end: no other theatre gets a sale column from its meta",
+      _SPO.official_perf_rows("national", [("s", "2026-12-05", "19:00", {"sale": "soldout"}, "t")]),
+      [("s", "2026-12-05", "19:00", None, None)])
+_e2e_own = [(sid, d, t, m) for sid, d, t, m, _ti in _e2e_rr["rows"] + _e2e_rr["extra_rows"]]
+_e2e_links = _SPO.performance_links(_e2e_rows, _e2e_own, [], [], [], {tuple(x[:3]) for x in _e2e_own})
+_linked = {tuple(x[:3]) for x in _e2e_links}
+check("sale end to end: PLINKS only for a performance on sale; none for a sold-out or not-yet one",
+      (sorted({len(r) for r in _e2e_rows if tuple(r[:3]) in _linked}), any(len(r) > 5 and tuple(r[:3]) in _linked
+                                                                           for r in _e2e_rows), len(_linked) > 0),
+      ([5], False, True))
+# the next run cannot read the Opera: last run's rows are kept (as scrape_programs.main reads them)
+_kp_prev_rows = _SPO.kept_perf_rows(_e2e_rows, "opera", _e2e_ix)
+_kp_rows, _, _ = _SPO.merge_theatre_venue("opera", "unreachable", [], None, [], [], set(), _kp_prev_rows,
+                                          _e2e_pf, "2026-11-24", "2027-02-28")
+check("keep-previous: every opera row is kept, and none keeps its sale column (it shows 'виж повече', "
+      "never a stale 'разпродадено' / 'продажбата не е открита')",
+      ({tuple(r[:3]) for r in _kp_rows} == {tuple(r[:3]) for r in _e2e_rows}, {len(r) for r in _kp_rows}),
+      (True, {5}))
+check("keep-previous: ...and no ticket link either (no_carry)",
+      _SPO.performance_links(_kp_rows, [], [], _e2e_links, [], (), no_carry={r[0] for r in _kp_rows}), [])
+
+# --- two productions with one title are two shows (КАРНАВАЛЪТ НА ЖИВОТНИТЕ: /repertoire/1088 in the
+# Chamber hall, /repertoire/1108 on the main stage, 20 Dec 11:00 — DESIGN_SPEC §2.3)
+_kids12_1108 = fx("opera_children_2026-12.html").replace(
+    "</div></body></html>", fx("opera_children_2026-12-20_section.html") + "</div></body></html>", 1).encode()
+_kv_res = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12): _kids12_1108})), OP_TODAY)
+_kv_ix, _kv_log, _kv_mint = _fresh_minter("kv")
+_kv_ids = {}
+_kv_rr = _SPO.resolve_theatre_rows(_kv_ix, {"opera": _kv_res}, _kv_mint, _kv_ids)[0]["opera"]
+_kv_all = _kv_rr["rows"] + _kv_rr["extra_rows"]
+_kv_sid = {(d, t): sid for sid, d, t, m, ti in _kv_all if ti == "КАРНАВАЛЪТ НА ЖИВОТНИТЕ"}
+check("same title, two repertoire ids: two shows, each minted with its own id and page",
+      (len(set(_kv_sid.values())), sorted((m.get("source_id"), u) for sid, ti, u, m in _kv_log
+                                          if ti == "КАРНАВАЛЪТ НА ЖИВОТНИТЕ")),
+      (2, [("1088", "https://www.operasofia.bg/repertoire/1088"), ("1108", "https://www.operasofia.bg/repertoire/1108")]))
+_kv_links, _ = _SPO.theatre_link_choices("official", _kv_rr["rows"], _kv_rr["extra_rows"], [],
+                                         {sid for sid, *_ in _kv_all}, window=("2026-11-24", "2027-02-28"))
+check("same title, two repertoire ids: the 20 Dec performance's 'виж повече' opens /repertoire/1108, "
+      "the Chamber hall's /repertoire/1088",
+      (_kv_links[_kv_sid[("2026-12-20", "11:00")]], _kv_links[_kv_sid[("2026-11-27", "10:00")]]),
+      ("https://www.operasofia.bg/repertoire/1108", "https://www.operasofia.bg/repertoire/1088"))
+check("same title, two repertoire ids: the minted ids are remembered by repertoire id",
+      (_kv_ids[("opera", "1088")], _kv_ids[("opera", "1108")]),
+      (_kv_sid[("2026-11-27", "10:00")], _kv_sid[("2026-12-20", "11:00")]))
+# a later run: both records known (theatre_shows.json keeps "source_id"), only 1108 listed
+_kv2_ix = SI.ShowIndex([{"id": sid, "title": ti, "theatre": "opera"} for sid, ti, _u, _m in _kv_log],
+                       minted_ids={sid for sid, *_ in _kv_log}, aliases={})
+_kv2_res = dict(_kv_res, rows=[r for r in _kv_res["rows"] if r[3].get("rep_id") != "1088"],
+                extra_rows=[r for r in _kv_res["extra_rows"] if r[3].get("rep_id") != "1088"])
+_kv2_rr, _kv2_new = _SPO.resolve_theatre_rows(_kv2_ix, {"opera": _kv2_res},
+                                              lambda *a, **k: 1 / 0,      # nothing may be minted
+                                              {("opera", m["source_id"]): sid for sid, _t, _u, m in _kv_log
+                                               if m.get("source_id")})
+check("same title, two repertoire ids: a later run files 1108 under its own show, never under 1088's "
+      "(which a title match would pick)",
+      ({sid for sid, d, t, m, ti in _kv2_rr["opera"]["rows"] + _kv2_rr["opera"]["extra_rows"]
+        if ti == "КАРНАВАЛЪТ НА ЖИВОТНИТЕ"}, _kv2_new),
+      ({_kv_sid[("2026-12-20", "11:00")]}, []))
+check("source ids: other theatres are still resolved by title alone", set(_SPO.SOURCE_ID_KEY), {"opera"})
 
 # --- src/data.html: the venue, once, of kind "opera"
 _dh = (HERE.parent / "src" / "data.html").read_text(encoding="utf-8")
