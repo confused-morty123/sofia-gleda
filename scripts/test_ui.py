@@ -22386,7 +22386,7 @@ def _op1_routes(browser, base, eng):
           f"{v['path']} mode={v['mode']} state={v['st']} history={v['len']} (fresh /home/: {lens['/home/']['len']})")
 
 
-OP1_SIZES = ((320, 568), (350, 700), (351, 700), (360, 740), (375, 812), (390, 844), (393, 852),
+OP1_SIZES = ((320, 568), (350, 700), (351, 700), (360, 740), (375, 812), (380, 844), (384, 844), (388, 844), (390, 844), (393, 852),
              (761, 900), (820, 900), (1280, 800), (1440, 900))
 
 
@@ -22422,10 +22422,13 @@ def _op1_seg_problems(g, w, lang, want_pressed):
             bad.append(f"{n} aria-pressed={b['pressed']}")
     if len({round(b["y"]) for b in btns}) != 1:
         bad.append(f"segments on more than one row: tops {[round(b['y'], 1) for b in btns]}")
-    # equal (flex:1 1 0); the site's 3 px track sets each segment 1-2 px off the mockup's
-    # measurements (DESIGN_SPEC §14.2), so at 390 px BG Театър's one-line minimum can win by 1.7 px
-    if abs(btns[0]["w"] - btns[1]["w"]) > 2:
-        bad.append(f"Кино {btns[0]['w']:.1f} and Театър {btns[1]['w']:.1f} not equal")
+    # equal (flex:1 1 0; DESIGN_SPEC §14.2 "Кино and Театър stay equal"): within 1 px on the
+    # phones where BG Театър's one-line minimum used to win (375-393 px: 88.4 vs 100.1 at 380,
+    # 98.4 vs 100.1 at 390, before its side padding was trimmed there); 2 px elsewhere, the
+    # site's 3 px track against the mockup's measurements
+    tol = 1 if 375 <= w <= 393 else 2
+    if abs(btns[0]["w"] - btns[1]["w"]) > tol:
+        bad.append(f"Кино {btns[0]['w']:.1f} and Театър {btns[1]['w']:.1f} not equal (> {tol} px)")
     sel = next(b for b in btns if b["m"] == want_pressed)
     if sel["glyph"] and sel["glyphColor"] != sel["labelColor"]:
         bad.append(f"selected glyph {sel['glyphColor']} is not the label's ink {sel['labelColor']}")
@@ -22456,9 +22459,9 @@ def _op1_toggle_fit(browser, base, eng):
             bad = _op1_seg_problems(g, w, lang, "opera")
             check(f"{tag}_{lang}_{w}_opera_selected", not bad, "; ".join(bad) if bad else
                   "widths " + " / ".join(f"{b['w']:.1f}" for b in g["btns"]) + f", track {g['seg']['w']:.1f}")
-            if w in (320, 360, 390) and lang == "bg":
+            if w in (320, 360, 380, 390) and lang == "bg":
                 save_shot(page, "OP1", f"{eng}_toggle_{w}_opera")
-            if w in (320, 360, 390, 1280):
+            if w in (320, 360, 380, 390, 1280):
                 _op_tap(page, w <= 760, '.bar [data-switch="cinema"]', scroll=False)
                 g2 = page.evaluate(OP_SEG_JS)
                 bad2 = _op1_seg_problems(g2, w, lang, "cinema")

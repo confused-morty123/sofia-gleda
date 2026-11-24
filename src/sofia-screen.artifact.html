@@ -1598,6 +1598,14 @@ button,a{-webkit-tap-highlight-color:transparent}
 @media(max-width:760px) and (prefers-reduced-motion:reduce){
   .bar-row-toggle,.bar-row-toggle.sr-hide,.bar-row-search,.sr-cancel,.bar{transition:none!important}
 }
+/* 380-392 px: the 14.5 px labels stay, but BG "Театър" with its glyph needs 84 px of ink, so
+   with 8 px sides its one-line minimum (100 px) outgrew Кино's share (88.4 vs 100.1 at 380).
+   Trimming Кино's and Театър's sides to 4 px lets flex share the row equally again (§14.2:
+   the two stay equal); the ink is centred, so it keeps >= 5 px from each edge. Опера и балет
+   keeps its 8 px. From 393 px the 8 px fit. */
+@media(min-width:380px) and (max-width:392px){
+  .seg button:not([data-switch="opera"]){padding:0 4px}
+}
 @media(max-width:379px){
   .seg button{font-size:13.5px; padding:0 4px; gap:4px}
   .seg button[data-switch="opera"]{padding:0 7px}
