@@ -1741,9 +1741,11 @@ button,a{-webkit-tap-highlight-color:transparent}
 .shero.shero-op.compact.noimg .gp-t{display:none}
 @media(max-width:620px){ .shero.shero-op{max-height:170px} }
 .sh-ophead{padding:20px 22px 0; container-type:inline-size}
-/* the title's longest word (--gl, set inline) fits the column on one line (1.38: the capitals' ~0.69 em
-   a letter, as .gp-t), never under 18 px; overflow-wrap:anywhere stays only as the last resort */
-.opsheet h2{font-size:min(clamp(24px,3.6vw,32px),max(18px,calc(100cqi*1.38/var(--gl,8)))); overflow-wrap:anywhere}
+/* the title's longest word (--gl, set inline) fits the column on one line, never under 18 px. 1.3, not
+   .gp-t's 1.38: measured in the sheet at 18-20 px, Source Serif 4 700 capitals run 0.72-0.73 em a letter
+   (ЛЕШНИКОТРОШАЧКАТА at 1.38 filled 242 of 242 px and wrapped its last letter); 1.3 leaves ~6 % for
+   the wide ones (М, Ж). overflow-wrap:anywhere stays only as the last resort */
+.opsheet h2{font-size:min(clamp(24px,3.6vw,32px),max(18px,calc(100cqi*1.3/var(--gl,8)))); overflow-wrap:anywhere}
 /* "За спектакъла": the value column may shrink below its longest word (large text), never past the sheet */
 .opsheet .credits{grid-template-columns:auto minmax(0,1fr)}
 .opsheet .credits dd{overflow-wrap:anywhere}
