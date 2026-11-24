@@ -18641,31 +18641,34 @@ def _b24_fonts(browser, base, eng):
 
 B24_SEG_JS = r"""() => { const seg = document.querySelector('.bar .seg'); if (!seg) return null; const sr = seg.getBoundingClientRect();
   return [...seg.querySelectorAll('button')].map(b => { const r = b.getBoundingClientRect(), c = getComputedStyle(b);
+    const k = parseFloat((c.boxShadow.match(/([\d.]+)px$/) || [0, 2])[1]);      /* the ring's spread */
     return {sw: b.dataset.switch, on: b.getAttribute('aria-pressed') === 'true', shadow: c.boxShadow,
-      inside: r.left - 2 >= sr.left - 0.5 && r.right + 2 <= sr.right + 0.5 && r.top - 2 >= sr.top - 0.5 && r.bottom + 2 <= sr.bottom + 0.5,
+      inside: r.left - k >= sr.left - 0.5 && r.right + k <= sr.right + 0.5 && r.top - k >= sr.top - 0.5 && r.bottom + k <= sr.bottom + 0.5,
       clip: getComputedStyle(seg).overflow}; }); }"""
 
 
 def _b24_toggle(browser, base, eng):
-    def ring_ok(btns, mode):
+    def ring_ok(btns, mode, phone):
         on = [b for b in btns if b["on"]]
         off = [b for b in btns if not b["on"]]
         colour = B24_CRIMSON if mode == "cinema" else B24_GOLD
-        return (len(on) == 1 and on[0]["sw"] == mode and colour in on[0]["shadow"] and "0px 0px 0px 2px" in on[0]["shadow"]
+        # 2 px on desktop, 2.5 px on the phone's full-width toggle (opera DESIGN_SPEC §14.2 item 3)
+        spread = "0px 0px 0px 2.5px" if phone else "0px 0px 0px 2px"
+        return (len(on) == 1 and on[0]["sw"] == mode and colour in on[0]["shadow"] and spread in on[0]["shadow"]
                 and on[0]["inside"] and all(b["shadow"] == "none" for b in off))
     for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900))):
         dev = "phone" if phone else "desktop"
         for mode in ("cinema", "theatre"):
             ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, mode=mode)
             btns = page.evaluate(B24_SEG_JS)
-            check(f"b24_{eng}_toggle_{dev}_{mode}_ring", bool(btns) and ring_ok(btns, mode),
+            check(f"b24_{eng}_toggle_{dev}_{mode}_ring", bool(btns) and ring_ok(btns, mode, phone),
                   f"{[(b['sw'], b['on'], b['shadow'], b['inside']) for b in (btns or [])]}")
             # switching moves the ring with the surface
             other = "theatre" if mode == "cinema" else "cinema"
             _ux_tap_sel(page, phone, f'.bar [data-switch="{other}"]', scroll=False)
             page.wait_for_timeout(900)
             btns2 = page.evaluate(B24_SEG_JS)
-            check(f"b24_{eng}_toggle_{dev}_{mode}_to_{other}", bool(btns2) and ring_ok(btns2, other),
+            check(f"b24_{eng}_toggle_{dev}_{mode}_to_{other}", bool(btns2) and ring_ok(btns2, other, phone),
                   f"{[(b['sw'], b['on'], b['shadow']) for b in (btns2 or [])]}")
             if mode == "cinema":
                 save_shot(page, "B24", f"toggle_{dev}_{eng}")
