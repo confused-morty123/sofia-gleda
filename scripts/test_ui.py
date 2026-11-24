@@ -22956,6 +22956,55 @@ def _op2_agenda(browser, base, eng):
         ctx.close()
 
 
+OP2_LEDE_SUBS = [  # (subtitle as a calendar could print it, the hero lede wanted with the premiere ahead)
+    ("ПРЕМИЕРА Опера в четири действия по либрето на Антонио Гисланцони, с хора и оркестъра на Софийската опера",
+     "Опера в четири действия по либрето на Антонио Гисланцони, с хора и оркестъра на Софийската опера"),
+    ("Опера в четири действия по либрето на Антонио ПРЕМИЕРА Гисланцони, с хора и оркестъра на Софийската опера",
+     "Опера в четири действия по либрето на Антонио Гисланцони, с хора и оркестъра на Софийската опера"),
+    ("ПРЕМИЕРАТА на сезона ПРЕМИЕРА Опера в четири действия по либрето на Антонио Гисланцони",
+     "ПРЕМИЕРАТА на сезона Опера в четири действия по либрето на Антонио Гисланцони"),
+]
+OP2_LEDE_JS = r"""([sub, day]) => { showById['op2-aida'].subtitle = sub; S.day = day; render(); window.scrollTo(0, 0);
+  const h = document.querySelector('#app main .ophero'), p = h && h.querySelector('.hero-syn');
+  if (!p) return {hero: !!h, show: h && ((h.querySelector('[data-show]') || {dataset: {}}).dataset.show || null)};
+  const cs = getComputedStyle(p), rng = document.createRange(); rng.selectNodeContents(p);
+  const lh = parseFloat(cs.lineHeight) || 20, top = p.getBoundingClientRect().top;
+  // the words drawn on the lede's visible lines (the clamp hides the rest)
+  const words = [], tn = p.firstChild, txt = tn ? tn.textContent : '';
+  const clampN = parseInt(cs.webkitLineClamp || cs.getPropertyValue('-webkit-line-clamp')) || 99;
+  let re = /\S+/g, m;
+  while ((m = re.exec(txt))) { const r = document.createRange(); r.setStart(tn, m.index); r.setEnd(tn, m.index + m[0].length);
+    const q = r.getClientRects()[0]; if (q && q.top - top < clampN * lh - 1) words.push(m[0]); }
+  return {hero: true, show: (h.querySelector('[data-show]') || {dataset: {}}).dataset.show, badge: !!h.querySelector('.badge.prem'),
+    text: p.textContent, clamp: clampN, lines: Math.round(p.getBoundingClientRect().height / lh), words}; }"""
+
+
+def _op2_hero_lede(browser, base, eng):
+    """The phone hero's one-line lede (the subtitle; two lines on desktop): when the production
+    is a premiere (the hero's Премиера badge, or its premiere still ahead) the exact token
+    ПРЕМИЕРА is gone, wherever it stood in a long subtitle, so the clamp can never end the line
+    in "ПРЕМИЕР…"; a word that only contains the letters (ПРЕМИЕРАТА) stays whole."""
+    tag = f"op2_{eng}_hero_lede"
+    d = _op_dates()
+    for w, h in ((390, 844), (1280, 800)):
+        sz = "desk" if w > 760 else "phone"
+        ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+        for i, (sub, want) in enumerate(OP2_LEDE_SUBS):
+            for day, badge in (("week", True), (d[0], False)):
+                r = page.evaluate(OP2_LEDE_JS, [sub, day])
+                vis = " ".join(r.get("words") or [])
+                ok = (r.get("show") == "op2-aida" and r.get("badge") == badge and r.get("text") == want
+                      and "ПРЕМИЕРА" not in (r.get("text") or "").split() and r.get("lines") == (1 if phone else 2)
+                      and not any(x.startswith("ПРЕМИЕР") and x not in ("ПРЕМИЕРАТА",) for x in (r.get("words") or [])))
+                check(f"{tag}_{sz}_{i}_{'week' if badge else 'today'}", ok,
+                      f"hero {r.get('show')} badge={r.get('badge')} lede {r.get('text')!r} on {r.get('lines')} line(s); visible words: {vis!r}")
+            if phone and i == 0:
+                page.evaluate(OP2_LEDE_JS, [sub, "week"])
+                save_shot(page, "OP2", f"{eng}_hero_lede_phone")
+        check(f"{tag}_{sz}_no_js_errors", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
 OP2_SHEET_JS = r"""() => { const sc = document.getElementById('scrim'), sh = sc && !sc.hidden && sc.querySelector('.sheet'); if (!sh) return null;
   const buy = [...sh.querySelectorAll('a[href*="/buy-tickets/"]')];
   return {op: sh.classList.contains('opsheet'), compact: !!sh.querySelector('.shero.shero-op.compact'), sstate: !!sh.querySelector('.sstate'),
@@ -23403,6 +23452,7 @@ def wave_op2(browser):
                          ("calendar", lambda: _op2_calendar(browser, base, eng)),
                          ("late", lambda: _op2_late(browser, base, eng)),
                          ("agenda", lambda: _op2_agenda(browser, base, eng)),
+                         ("hero_lede", lambda: _op2_hero_lede(browser, base, eng)),
                          ("sheet", lambda: _op2_sheet(browser, base, eng)),
                          ("search", lambda: _op2_search(browser, base, eng)),
                          ("bridge", lambda: _op2_bridge(browser, base, eng)),

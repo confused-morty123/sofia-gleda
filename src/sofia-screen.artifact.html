@@ -3613,8 +3613,10 @@ const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
 /* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
 const opSubText=(s,prem)=>{s=String(s||"").replace(/\s+/g," ").trim();
   return prem?s.replace(/(^|\s)(?:PREMIERE|ПРЕМИЕРА)(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
-/* in EN the English calendar's own line (subtitleEn), else the Bulgarian one: never a translation */
-const opSub=sh=>opSubText(S.lang==="en"&&sh.subtitleEn||sh.subtitle,opPremAhead(sh.id));
+/* in EN the English calendar's own line (subtitleEn), else the Bulgarian one: never a translation.
+   prem: the card shows the Премиера badge itself (the hero's period badge), so the token goes even
+   where the production's own premiere test would not say so: never "ПРЕМИЕР…" under a badge */
+const opSub=(sh,prem)=>opSubText(S.lang==="en"&&sh.subtitleEn||sh.subtitle,!!prem||opPremAhead(sh.id));
 const opTh=()=>thById.opera||THEATRES.find(x=>x.kind==="opera")||{};
 /* a stage as the page shows it: in EN the opera's own English name (its /en calendar: "Main Hall"), else
    the Bulgarian one as published */
@@ -3686,7 +3688,7 @@ function opHeroSlot(){
   if(!rk.length)return opLateCard(rows);
   const sh=rk[0].s,mine=rows.filter(p=>p[0]===sh.id),go=mine.find(p=>opStatus(p)==="buy")||mine[0];
   const stages=[...new Set(mine.map(opStage))],prem=mine.some(p=>opPremDates(sh.id).includes(p[1]));
-  const sub=opSub(sh);
+  const sub=opSub(sh,prem);
   return`<div class="hero ophero"><div class="hero-art${sh.baked&&opImg(sh)?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
     <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
