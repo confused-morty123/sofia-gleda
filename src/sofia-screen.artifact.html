@@ -1243,6 +1243,9 @@ body{font-size:15px}
   font-variation-settings:normal; --motto-em:21.29;
   line-height:14px}  /* a fixed line box: the header's height stays the same in BG and EN, whose sizes differ */
 .brand .brand-sub:lang(en){--motto-em:16.37}
+/* the motto that names the opera (OPERA_ON): 26.29 em in BG, 20.28 in EN */
+.op3 .brand .brand-sub{--motto-em:26.29}
+.op3 .brand .brand-sub:lang(en){--motto-em:20.28}
 @media(min-width:761px){
   .brand .brand-sub,.brand .brand-sub:lang(en){font-size:min(15px,max(10px,calc(100cqi*.98/var(--motto-em))))}
 }
@@ -1255,9 +1258,13 @@ body{font-size:15px}
 @media(min-width:761px) and (max-width:1120px){
   .bar:has(.desk-search-wrap.open) .brand .brand-sub{white-space:normal; width:100cqi; line-height:13px}
 }
+/* Phones (c-searchup, DESIGN_SPEC §14.2): search and EN flank the logo, so the brand fills its
+   column (the logo scales down rather than run under them at 200% page zoom) and the motto runs
+   under both buttons across the whole row at 12.5 px, wrapping (balanced) only when it must */
 @media(max-width:760px){
-  .brand .brand-sub{--motto-ph:21.29; font-size:min(12.5px,max(10px,calc((100vw - 144px)/var(--motto-ph))))}
-  .brand .brand-sub:lang(en){--motto-ph:16.37}
+  .bar-row-logo .brand{justify-self:stretch; min-width:0}
+  .bar-row-logo .brand-logo{height:auto; width:min(154px,100%)}
+  .bar-row-logo .brand .brand-sub{align-self:stretch; margin:8px -44px 0; font-size:12.5px; white-space:normal; text-wrap:balance}
 }
 
 /* footer links: the UI face is wide, so a long label ("Настройки за бисквитки") may wrap in its
