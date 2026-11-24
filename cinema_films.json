@@ -4998,15 +4998,160 @@
   ],
   "source": "vlaikova"
  },
- "40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh": {
-  "id": "40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh",
-  "bg": "40. КИНОМАНИЯ | ИСТОРИЯ НА ДОКУМЕНТАЛНИЯ ФИЛМ. СРЕЩА С РЕЖИСЬОРА МАРК КАЗЪНС",
+ "veshteriya-kralstvoto-na-magiyata": {
+  "id": "veshteriya-kralstvoto-na-magiyata",
+  "bg": "ВЕЩЕРИЯ: КРАЛСТВОТО НА МАГИЯТА",
   "en": "",
   "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
+ },
+ "zapoznay-se-s-tehnite": {
+  "id": "zapoznay-se-s-tehnite",
+  "bg": "ЗАПОЗНАЙ СЕ С ТЕХНИТЕ",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
+ },
+ "magiyata-na-gorata": {
+  "id": "magiyata-na-gorata",
+  "bg": "Магията на гората",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 95
+ },
+ "chay-v-pustinyata": {
+  "id": "chay-v-pustinyata",
+  "bg": "Чай в пустинята",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
   "g": [
    "#331B1B",
    "#5F2727"
   ],
-  "source": "lumiere"
+  "source": "dom-kino",
+  "runtime": 138
+ },
+ "pol-bouls-i-dzheyn-v-tanzher": {
+  "id": "pol-bouls-i-dzheyn-v-tanzher",
+  "bg": "Пол Боулс и Джейн в Танжер",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 75
+ },
+ "piperlivi-lazhi": {
+  "id": "piperlivi-lazhi",
+  "bg": "Пиперливи лъжи",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 100
+ },
+ "40-kinomaniya-nepozna-zhena": {
+  "id": "40-kinomaniya-nepozna-zhena",
+  "bg": "40. Киномания: НЕПОЗНА ЖЕНА",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "vlaikova"
+ },
+ "kashta-bez-badeshte": {
+  "id": "kashta-bez-badeshte",
+  "bg": "Къща без бъдеще",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 124
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-strukturata-na-krista": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-strukturata-na-krista",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Структурата на кристала (1969)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "vlaikova"
+ },
+ "bunt-za-dvama": {
+  "id": "bunt-za-dvama",
+  "bg": "Бунт за двама",
+  "en": "",
+  "genres": [
+   "Романтика"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "dom-kino",
+  "runtime": 105
+ },
+ "bolni-mozatsi": {
+  "id": "bolni-mozatsi",
+  "bg": "Болни мозъци",
+  "en": "",
+  "genres": [
+   "Криминален"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 101
+ },
+ "benzinostantsiya-za-zheni": {
+  "id": "benzinostantsiya-za-zheni",
+  "bg": "Бензиностанция за жени",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 112
  }
 }

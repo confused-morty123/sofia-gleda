@@ -158,6 +158,23 @@
     "runtime": 115
    }
   },
+  "40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh": {
+   "into": "istoriya-na-dokumentalniya-film",
+   "rule": "prefix",
+   "reason": "'история на документалния филм' begins 'история на документалния филм среща с режисьора марк казънс'; the same screening is listed under both",
+   "since": "2026-11-24",
+   "record": {
+    "id": "40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh",
+    "bg": "40. КИНОМАНИЯ | ИСТОРИЯ НА ДОКУМЕНТАЛНИЯ ФИЛМ. СРЕЩА С РЕЖИСЬОРА МАРК КАЗЪНС",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#331B1B",
+     "#5F2727"
+    ],
+    "source": "lumiere"
+   }
+  },
   "40-kinomaniya-karma": {
    "into": "karma",
    "rule": "same-key",

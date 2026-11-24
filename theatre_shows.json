@@ -7918,5 +7918,131 @@
   "synBg": "",
   "synEn": "",
   "source": "toplo"
+ },
+ "danceperimental-your-story-moves-us-na-angliyski-ezik": {
+  "id": "danceperimental-your-story-moves-us-na-angliyski-ezik",
+  "title": "Danceperimental - Your Story Moves Us | на английски език",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "v-tarsene-na-izgubeniya-most-predstavyane-na-dvata-toma-nevr": {
+  "id": "v-tarsene-na-izgubeniya-most-predstavyane-na-dvata-toma-nevr",
+  "title": "В търсене на изгубения мост. Представяне на двата тома „Невросоциология“",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf": {
+  "id": "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf",
+  "title": "Градският товарен транспорт в София - потенциалът за трансформация",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "moyat-svyat-koleden-spektakal": {
+  "id": "moyat-svyat-koleden-spektakal",
+  "title": "\"МОЯТ СВЯТ\" | КОЛЕДЕН СПЕКТАКЪЛ",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "meko-kazano": {
+  "id": "meko-kazano",
+  "title": "МЕКО КАЗАНО",
+  "titleEn": "",
+  "theatre": "citymark",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "citymark"
+ },
+ "katya-i-zlatin-muzikalno-impro-shou": {
+  "id": "katya-i-zlatin-muzikalno-impro-shou",
+  "title": "Катя и Златин - музикално импро шоу",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "hrabriyat-oloven-voynik-3": {
+  "id": "hrabriyat-oloven-voynik-3",
+  "title": "ХРАБРИЯТ ОЛОВЕН ВОЙНИК",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }

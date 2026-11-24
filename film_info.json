@@ -1673,7 +1673,12 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/ostainica3.jpg",
   "fsrc": "https://www.cinelibri.com/ostainitsa/",
   "title_bg": "Остайница",
-  "title_en": "She Who Remains"
+  "title_en": "She Who Remains",
+  "country": "България, Италия, Албания",
+  "year": 2026,
+  "runtime": 116,
+  "src": "https://vlaikovacinema.com/screening/%d0%be%d1%81%d1%82%d0%b0%d0%b9%d0%bd%d0%b8%d1%86%d0%b0/",
+  "pv": 6
  },
  "otechestvo": {
   "synBg": "„Отечество“ изследва отношенията между Томас Ман, прославения писател и лауреат на Нобелова награда, и неговата дъщеря Ерика – писателка, актриса, автомобилна състезателка. През лятото на 1949 г., в разгара на Студената война, двамата се отправят на трудно и емоционално пътуване из страната, която са напуснали шестнадесет години по-рано, при идването на нацистката партия на власт. От Франкфурт, който е под американски контрол, до Ваймар, контролиран от Съветите, баща и дъщеря прекосяват една разрушена Германия, разсечена на две от Студената война. Пътуването изправя Ман пред въпроса за цената на изгнанието и (не)възможното завръщане, както и пред истината за разцеплението в собственото му семейство. Носителят на „Оскар“ за „Ида“ (2013) Павел Павликовски продължава да разнищва темите за паметта, семейството, вината, идентичността и чувството за принадлежност на фона на моралните сътресения и хаоса в следвоенна Европа. Приветстван и от критиката, и от широката публика, „Отечество“ затвърждава позицията на полско-британския сценарист и режисьор като един от най-изявените стилисти на съвременното европейско кино — автор, чийто визуален почерк и концентриран драматургичен език превръщат историческата драма в интимно и почти поетично преживяване.",
@@ -1831,7 +1836,10 @@
   "img": "https://www.cinelibri.com/wp-content/uploads/2026/09/ehoto-mezhdu-nas2.jpg",
   "fsrc": "https://www.cinelibri.com/ehoto-mezhdu-nas/",
   "title_bg": "Ехото между нас",
-  "title_en": "The Echochamber"
+  "title_en": "The Echochamber",
+  "runtime": 123,
+  "src": "https://vlaikovacinema.com/screening/%d0%b5%d1%85%d0%be%d1%82%d0%be-%d0%bc%d0%b5%d0%b6%d0%b4%d1%83-%d0%bd%d0%b0%d1%81/",
+  "pv": 6
  },
  "sinelibri-2026-epohata-l-europeo": {
   "synBg": "80 години от създаването на легендарното списание Заснет в Милано и София, филмът проследява съдбата на една от най-влиятелните печатни медии в европейската история, чиито традиции днес пази единствено българската ѝ редакция.",
@@ -2251,7 +2259,9 @@
   "title_en": "Black Money for White Nights",
   "country": "България/Гърция",
   "year": 2026,
-  "runtime": 94
+  "runtime": 94,
+  "src": "https://www.ndk.bg/en/event/40-kinomaniia-cerni-pari-za-beli-noshhi",
+  "pv": 6
  },
  "kinomaniya-2026-golishar": {
   "title_bg": "голишар",
@@ -2777,7 +2787,9 @@
   "dir": "Марк Казънс",
   "img": "https://www.kinomania.bg/public/uploads/gallery/2026/10/26/istoriya-na-dokymentalniya-film_the_story_of_documentary_film-still-0x450.jpg",
   "fsrc": "https://www.kinomania.bg/bg_BG/film/istoriya-na-dokymentalniya-film-sreshta-s-rezhisyora-mark-kazuns-3731.html",
-  "title_en": "The Story of Documentary Film"
+  "title_en": "The Story of Documentary Film",
+  "src": "https://www.ndk.bg/en/event/40-kinomaniia-istoriia-na-dokumentalniia-film-sreshha-s-rezisora-mark-kaziens",
+  "pv": 6
  },
  "izostaven-ot-vsichki": {
   "title_bg": "Изоставен от всички",
@@ -3567,6 +3579,14 @@
   ],
   "runtime": 84,
   "src": "https://vlaikovacinema.com/screening/%d1%82%d1%8f/",
+  "pv": 6
+ },
+ "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": {
+  "synBg": "От 30 ноември до 4 декември 2026 г. около 100 кина в цяла Европа ще се включат в това специално издание на “Нощ на европейското кино“ (European Cinema Night) , отбелязващо важен етап – 35 години от създаването на програма „Творческа Европа – МЕДИА“, предоставяйки на зрителите възможност да открият или преоткрият награждавани европейски филми.",
+  "dir": "Йоргос Лантимос",
+  "cast": "Колин Фарел, Рейчъл Уайз, Леа Сейду",
+  "runtime": 119,
+  "src": "https://vlaikovacinema.com/screening/%d0%be%d0%bc%d0%b0%d1%80%d1%8a%d1%82-the-lobster-2015-%d0%bd%d0%be%d1%89-%d0%bd%d0%b0-%d0%b5%d0%b2%d1%80%d0%be%d0%bf%d0%b5%d0%b9%d1%81%d0%ba%d0%be%d1%82%d0%be-%d0%ba%d0%b8%d0%bd%d0%be-%d0%b2/",
   "pv": 6
  }
 }

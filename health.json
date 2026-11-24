@@ -17,26 +17,31 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 230/312 ok, 82 missing IMDb ratings"
+  "message": "OMDb: 231/314 ok, 83 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 457/466 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (10 days), dokato-chakame-godo-dobrich (10 days), dokato-chakame-godo-smolyan (10 days), dokato-smartta (9 days), kontsert-na-pim-pam (10 days), magichna-nosht-predi-koleda (10 days), mechka-hamletmashina (10 days), vanyo-sonya-masha-i-spayk (9 days), vsichko-za-zhenite (9 days)"
+  "message": "theatre posters: 462/470 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (11 days), dokato-chakame-godo-dobrich (11 days), dokato-chakame-godo-smolyan (11 days), dokato-smartta (10 days), kontsert-na-pim-pam (11 days), mechka-hamletmashina (11 days), vanyo-sonya-masha-i-spayk (10 days), vsichko-za-zhenite (10 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 94.4 % -> 94.4 %, films 90.6 % -> 90.6 %; attached 24; causes: own page has no usable image 17, own page blocked (robots.txt or a bot challenge; not bypassed) 9, only an aggregator's image (the film does not link that page) 6, only a ticket page linked, not the title's page 4 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.6 % -> 93.8 %, films 91.0 % -> 91.0 %; attached 1; causes: own page has no usable image 20, own page blocked (robots.txt or a bot challenge; not bypassed) 8, only an aggregator's image (the film does not link that page) 5, only a ticket page linked, not the title's page 4 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 440/466 (94.4 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, ekaterina-karavelova-vik-ot-istoriyata, gnyav-po-stivan-king; 457/466 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 441/470 (93.8 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, ekaterina-karavelova-vik-ot-istoriyata; 462/470 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 135/149 (90.6 %); missing: 40-kinomaniya-istoriya-na-dokumentalniya-film-sreshta-s-rezh, actually-it-is-rocket-science, evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1, evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 141/155 (91.0 %); missing: 40-kinomaniya-nepozna-zhena, actually-it-is-rocket-science, evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1, evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986, evropeyski-kinoklasiki-v-kino-vlaykova-strukturata-na-krista, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+ },
+ {
+  "level": "warning",
+  "venue": "publish-gate",
+  "message": "5c4 ratings WARNING: 36 film(s) lost their rt score since the last build, matched to the same TMDB film (animatritsata, bez-konkurentsiya, chunkin-ekspres, cvetovete-na-vremeto, doors, dyun-chast-parva): a rating fetch broke and its previous values were not kept (fetch_tmdb.py keep-previous)"
  }
 ]
