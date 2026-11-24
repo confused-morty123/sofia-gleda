@@ -2905,7 +2905,7 @@ def fetch_opera(net, today):
     """The Opera's own calendar: for each of OPERA_MONTHS months the default view and
     the children's view (both, or that month is not covered), plus the English page for
     titles (optional). The first month must read, list something and name itself;
-    a later month that fails or is empty ends the reading. Then the production pass,
+    a later month that fails, or is empty in both views, ends the reading. Then the production pass,
     only while OPERA_FACTS_ON."""
     rows, excluded, notes, en, covered_to = [], [], [], {}, None
     en_seen, en_subs = defaultdict(set), {}
@@ -2918,10 +2918,10 @@ def fetch_opera(net, today):
                 raise
             notes.append(f"{ym}: calendar not read ({e}) — coverage ends before it")
             break
-        if not r and not x:
-            if i == 0:
-                raise Unavailable(f"{ym}: the calendar lists nothing (implausibly empty)")
-            break
+        if not r and not x and i == 0:
+            raise Unavailable(f"{ym}: the calendar lists nothing (implausibly empty)")
+        # a later month's children's view is read even when its default view is empty: the
+        # default view does not list children's shows, so a month of them only is not empty
         try:
             kr, kx = parse_opera(_get(net, OPERA_CAL_KIDS.format(y=y, m=m)), y, m, kids=True, notes=notes)
         except Unavailable as e:
@@ -2932,6 +2932,8 @@ def fetch_opera(net, today):
             rows += r
             excluded += x
             covered_to = (dt.date(y, m, 1) - dt.timedelta(days=1)).isoformat()
+            break
+        if not (r or x or kr or kx):                    # empty in both views: the reading ends
             break
         rows += r + kr
         excluded += x + kx

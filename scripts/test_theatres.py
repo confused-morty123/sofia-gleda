@@ -3881,6 +3881,27 @@ _res_m = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): ra
                        OP_TODAY)
 check("fetch_opera: a later month page that names another month stops the reading, with a note",
       (_res_m["covered_to"], any("2026-12" in n for n in _res_m["notes"])), ("2026-11-29", True))
+# review-r2 #4a: a later month whose default view is empty but whose children's view lists
+# performances is read (its children's rows kept) and does not end the reading
+_net_ko = FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _op_empty("декември", 2026)}))
+_res_ko = O.fetch_opera(_net_ko, OP_TODAY)
+_ko_all = _res_ko["rows"] + _res_ko["extra_rows"]
+check("fetch_opera: a month listing only children's shows keeps them (its children's page is read before "
+      "the empty-month break)",
+      (O.OPERA_CAL_KIDS.format(y=2026, m=12) in _net_ko.asked,
+       sorted(((r[0], r[1], r[2]) for r in _ko_all if r[1][:7] == "2026-12"), key=lambda r: (r[1], r[2]))),
+      (True, [("ПЕПЕЛЯШКА", "2026-12-04", "10:00"), ("ПЕПЕЛЯШКА", "2026-12-04", "11:00"),
+              ("КОНЦЕРТ ЗА БЕБОЦИ", "2026-12-06", "11:00"), ("ТРИТЕ ПРАСЕНЦА", "2026-12-19", "11:00"),
+              ("СНЕЖАНКА", "2026-12-19", "19:00")]))
+check("fetch_opera: ...and it does not end the reading (January asked, its rows listed, no note ends coverage)",
+      (O.OPERA_CAL.format(y=2027, m=1) in _net_ko.asked, any(r[1][:7] == "2027-01" for r in _ko_all),
+       any("2026-12" in n and "coverage ends" in n for n in _res_ko["notes"])), (True, True, False))
+_net_ke = FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _op_empty("декември", 2026),
+                               O.OPERA_CAL_KIDS.format(y=2026, m=12): _op_empty("декември", 2026)}))
+_res_ke = O.fetch_opera(_net_ke, OP_TODAY)
+check("fetch_opera: a later month empty in both views ends the reading (January not asked)",
+      (O.OPERA_CAL.format(y=2027, m=1) in _net_ke.asked, sorted({r[1][:7] for r in _res_ke["rows"] + _res_ke["extra_rows"]})),
+      (False, ["2026-11"]))
 check("fetch_opera: registered as a theatre fetcher, and 2 s between requests to operasofia.bg",
       ("opera" in O.FETCHERS, __import__("netfetch").CRAWL_DELAY.get("www.operasofia.bg", 0) >= 2.0), (True, True))
 
