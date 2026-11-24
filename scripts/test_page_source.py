@@ -165,7 +165,8 @@ check("…the listings, synthesised records, poster block and CSP hashes a refre
 # The home pages: index.html with their own address (gen_share_pages.py).
 home = tmp / "root"
 (home / "home" / "theatre").mkdir(parents=True)
-for rel, path in (("home", "/home/"), ("home/theatre", "/home/theatre/")):
+(home / "home" / "opera").mkdir(parents=True)
+for rel, path in (("home", "/home/"), ("home/theatre", "/home/theatre/"), ("home/opera", "/home/opera/")):
     page = night.replace(f'href="{PS.SITE_URL}/home/"', f'href="{PS.SITE_URL}{path}"', 1).replace(
         f'property="og:url" content="{PS.SITE_URL}/home/"', f'property="og:url" content="{PS.SITE_URL}{path}"', 1)
     (home / rel / "index.html").write_text(page, encoding="utf-8")
@@ -173,6 +174,15 @@ check("home pages rebuilt with index.html pass", PS.check_files(tmp / "night.htm
 (home / "home" / "theatre" / "index.html").write_text(stale, encoding="utf-8")
 check("…a stale home/theatre/index.html fails, by name",
       any(p.startswith("home/theatre/index.html") for p in
+          PS.check_files(tmp / "night.html", home_root=home, built=built)))
+(home / "home" / "theatre" / "index.html").write_text(
+    night.replace(f'href="{PS.SITE_URL}/home/"', f'href="{PS.SITE_URL}/home/theatre/"', 1).replace(
+        f'property="og:url" content="{PS.SITE_URL}/home/"', f'property="og:url" content="{PS.SITE_URL}/home/theatre/"', 1),
+    encoding="utf-8")
+check("…the theatre copy restored passes again", PS.check_files(tmp / "night.html", home_root=home, built=built) == [])
+(home / "home" / "opera" / "index.html").write_text(stale, encoding="utf-8")
+check("…a stale home/opera/index.html fails, by name",
+      any(p.startswith("home/opera/index.html") for p in
           PS.check_files(tmp / "night.html", home_root=home, built=built)))
 
 print("dev_build: a failed build leaves the output untouched")

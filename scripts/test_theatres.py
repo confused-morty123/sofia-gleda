@@ -1931,6 +1931,60 @@ with _tf_r.TemporaryDirectory() as _d:
           ('property="og:url" content="https://sofiagleda.com/film/hroniki/"' in _txt,
            "<title>Хроники за неудобната истина | Sofia Gleda</title>" in _txt,
            'href="/home/?film=hroniki"' in _txt, _GSP.REDIRECT_JS in _txt), (True, True, True, True))
+# Опера и балет: a show at a kind:"opera" venue goes on to /home/opera/ — its own share
+# page, a renamed opera show's old page, and the home/opera copy main() writes
+_VK = {"opera": "opera", "national": "national"}
+check("show_home: an opera venue's show -> /home/opera/, a theatre's or none -> /home/theatre/",
+      (_GSP.show_home({"theatre": "opera"}, _VK), _GSP.show_home({"theatre": "national"}, _VK),
+       _GSP.show_home({"theatre": "nowhere"}, _VK), _GSP.show_home(None, _VK)),
+      ("/home/opera/", "/home/theatre/", "/home/theatre/", "/home/theatre/"))
+with _tf_r.TemporaryDirectory() as _d:
+    _done, _bad = _GSP.write_redirects(
+        _d, [{"id": "lebedovo-ezero", "title": "Лебедово езеро", "theatre": "opera"},
+             {"id": "skapernikat", "title": "Скъперникът", "theatre": "national"}],
+        {"lebedovo-staro": "lebedovo-ezero", "skaperniкat": "skapernikat"},
+        lambda i: (f"https://sofiagleda.com/posters/{i}.jpg", None, None), venue_kinds=_VK)
+    _op = (pathlib.Path(_d) / "show" / "lebedovo-staro" / "index.html").read_text(encoding="utf-8")
+    _th = (pathlib.Path(_d) / "show" / "skaperniкat" / "index.html").read_text(encoding="utf-8")
+    check("gen_share_pages: a renamed opera show's page links /home/opera/?show=<new id>",
+          ('href="/home/opera/?show=lebedovo-ezero"' in _op, "/home/theatre/" in _op,
+           'property="og:url" content="https://sofiagleda.com/show/lebedovo-ezero/"' in _op), (True, False, True))
+    check("…a renamed theatre show's page still links /home/theatre/", 'href="/home/theatre/?show=skapernikat"' in _th,
+          True)
+check("REDIRECT_JS: a reload whose state says opera returns to /home/opera/",
+      '/^(theatre|opera)$/.test(s.m)?"/home/"+s.m+"/":"/home/"' in _GSP.REDIRECT_JS, True)
+with _tf_r.TemporaryDirectory() as _d:
+    _root = pathlib.Path(_d)
+    _app = ('<link rel="canonical" href="https://sofiagleda.com/home/">\n'
+            '<meta property="og:url" content="https://sofiagleda.com/home/">\n'
+            'const FILMS = [];\n'
+            'const SHOWS = [{"id":"lebedovo-ezero","title":"Лебедово езеро","theatre":"opera"},'
+            '{"id":"hamlet-nat","title":"Хамлет","theatre":"national"}];\n'
+            'const THEATRES=[{"id":"national","name":"Народен театър","kind":"national"},'
+            '{"id":"opera","name":"Софийска опера и балет","kind":"opera"}];\n')
+    (_root / "index.html").write_text(_app, encoding="utf-8")
+    _saved = (_GSP.ROOT, _GSP.HTML_PATH)
+    _GSP.ROOT, _GSP.HTML_PATH = _root, _root / "index.html"
+    try:
+        check("_venue_kinds reads THEATRES' kinds", _GSP._venue_kinds(), {"national": "national", "opera": "opera"})
+        _GSP.main()
+    finally:
+        _GSP.ROOT, _GSP.HTML_PATH = _saved
+
+    def _rd(rel):
+        p = _root / rel
+        return p.read_text(encoding="utf-8") if p.is_file() else ""
+    check("gen_share_pages main(): an opera show's page links /home/opera/?show=<id>, a theatre's /home/theatre/",
+          ('href="/home/opera/?show=lebedovo-ezero"' in _rd("show/lebedovo-ezero/index.html"),
+           'href="/home/theatre/?show=hamlet-nat"' in _rd("show/hamlet-nat/index.html")), (True, True))
+    _hop = _rd("home/opera/index.html")
+    check("…writes home/opera/index.html with its own canonical and og:url",
+          ('rel="canonical" href="https://sofiagleda.com/home/opera/"' in _hop,
+           'property="og:url" content="https://sofiagleda.com/home/opera/"' in _hop), (True, True))
+    check("…and home/ and home/theatre/ keep theirs",
+          ('property="og:url" content="https://sofiagleda.com/home/"' in _rd("home/index.html"),
+           'property="og:url" content="https://sofiagleda.com/home/theatre/"' in _rd("home/theatre/index.html")),
+          (True, True))
 check("the same title at ANOTHER theatre is not that show", ix.resolve("Трите прасенца", "mladezhki"), (None, "unmatched"))
 check("…but it is at its own theatre", ix.resolve("ТРИТЕ ПРАСЕНЦА", "vazrazhdane")[0], "prasenca-vaz")
 check("a sequel number keeps productions apart", ix.resolve("Отчаяни съпрузи", "satira")[0], "suprugi")
