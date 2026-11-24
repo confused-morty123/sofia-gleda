@@ -39,6 +39,10 @@
 }
 :root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; --accent-text:var(--gild);
   --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; --f-sharp:normal; }
+/* Опера и балет (DESIGN_SPEC §3): violet over the theatre's type family; #A670F3 is 5.85:1 on ink,
+   4.66 on ink-4, #150B26 on it 5.63 */
+:root[data-opera]{ --accent:#A670F3; --on-accent:#150B26; --accent-text:#A670F3; --hero-accent:#A670F3;
+  --art-hi:#47287C; --art-mid:#1F1335; --art-lo:#0F0B15; --art-fg:#F3ECFE; --art-k:#D1B5FC; }
 /* Dark mode is forced — there is no light theme. The former
    `@media (prefers-color-scheme: light)` and `:root[data-theme="light"]` blocks
    were removed so a device set to light does not recolour the app; `color-scheme:dark`
@@ -140,6 +144,16 @@ a{color:inherit}
 .seg{display:grid; grid-template-columns:1fr 1fr; background:var(--ink-3); border:1px solid var(--line); border-radius:999px; padding:4px; gap:2px; flex:0 0 auto; width:300px; justify-self:center}
 .seg button{display:flex; align-items:center; justify-content:center; gap:6px; height:42px; border-radius:999px; font-size:13.5px; font-weight:600; color:var(--fg-2); white-space:nowrap; transition:background .18s,color .18s; padding:0 10px; overflow:hidden}
 .seg button svg{flex:0 0 20px; width:20px; height:20px}
+.seg button svg.shoes{flex:0 0 15px; width:15px; height:21px}
+/* bold-width reservation: the label is as wide as its 700 weight (an invisible bold copy under it) */
+.seg .seg-l[data-t]{display:inline-flex; flex-direction:column; align-items:center}
+.seg [data-t]::after{content:attr(data-t); content:attr(data-t) / ""; font-weight:700; height:0; overflow:hidden; visibility:hidden; pointer-events:none}
+/* Кино / Театър / Опера и балет (DESIGN_SPEC §14.2): 470 px equal columns from 900 px; 761-899 the
+   430 px track gives the one-line opera label its own width; the motto under the logo would run
+   under the wider toggle below 1120 px, so the logo stands alone there */
+.seg.seg3{grid-template-columns:repeat(3,1fr); width:470px}
+@media(min-width:761px) and (max-width:899px){ .seg.seg3{width:430px; grid-template-columns:1fr 1fr auto} }
+@media(min-width:761px) and (max-width:1119px){ .op3 .brand span{display:none} }
 .seg button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent); font-weight:700}
 /* mobile: seg fills remaining width (must come AFTER the base width rule) */
 @media(max-width:760px){ .seg{flex:1 1 0!important; min-width:0; width:auto!important} }
@@ -149,15 +163,16 @@ a{color:inherit}
    JS sets .seg-q only when getBoundingClientRect detects a collision; removed when no collision. */
 .seg{transition:width .22s ease-out}
 .seg button{transition:background .18s,color .18s,gap .22s ease-out}
-.seg .seg-l{display:inline-block; max-width:7em; overflow:hidden; transition:max-width .22s ease-out, opacity .22s ease-out}
+.seg .seg-l{display:inline-block; max-width:10em; overflow:hidden; transition:max-width .22s ease-out, opacity .22s ease-out}
 .seg.seg-q{width:100px}
+.seg.seg3.seg-q{width:146px}
 .seg.seg-q button{gap:0}
 .seg.seg-q .seg-l{max-width:0; opacity:0}
 /* phones: the search opens in its own row below the toggle, so nothing collides and the
    toggle keeps its icons and names while the search opens and closes (JS never sets
    .seg-q there; these rules hold the look even if it did) */
 @media(max-width:760px){.seg.seg-q{width:auto!important} .seg.seg-q button{gap:6px}
-  .seg.seg-q .seg-l{max-width:7em; opacity:1}}
+  .seg.seg-q .seg-l{max-width:10em; opacity:1}}
 .iconb{width:42px; height:42px; flex:0 0 42px; border-radius:999px; border:1px solid var(--line);
   background:var(--ink-3); color:var(--fg-2); font-size:13px; font-weight:700; display:grid; place-items:center}
 @media (hover:hover){.iconb:hover{border-color:var(--line-2); color:var(--fg)}}
@@ -1383,6 +1398,7 @@ body{font-size:15px}
 .seg button{transition:background .18s,color .18s,gap .22s ease-out,box-shadow .18s}
 .seg button[data-switch="cinema"][aria-pressed="true"]{box-shadow:0 0 0 2px var(--crimson)}
 .seg button[data-switch="theatre"][aria-pressed="true"]{box-shadow:0 0 0 2px var(--gild)}
+.seg button[data-switch="opera"][aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
 .fchip[aria-pressed="true"]:not([data-range]){background:var(--fg); border-color:var(--fg); color:var(--ink)}
 .fav-toggle.on{background:var(--fg); border-color:var(--fg); color:var(--ink)}
 .fav-star.on{color:var(--fg)}
@@ -1516,7 +1532,8 @@ button,a{-webkit-tap-highlight-color:transparent}
    reduced motion the swap is instant. The hidden row is inert (out of the Tab order and the
    accessibility tree); JS sets that. Every control is 44 px tall or has a 44 px hit area. */
 @media(max-width:760px){
-  .bar-row-controls{display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:44px; align-items:center}
+  /* the row grows when the toggle wraps (large text, page zoom); the search row shares its cell */
+  .bar-row-controls{display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto; min-height:44px; align-items:center}
   .bar-row-toggle,.bar-row-search{grid-area:1/1; min-width:0}
   .bar-row-toggle{display:flex; align-items:center; gap:12px;
     transition:opacity var(--dur-fade) var(--ease-std), transform var(--dur-out) var(--ease-std), visibility 0s}
@@ -1524,9 +1541,23 @@ button,a{-webkit-tap-highlight-color:transparent}
     transition:opacity var(--dur-fade) var(--ease-std), transform var(--dur-out) var(--ease-std), visibility 0s linear var(--dur-fade)}
   /* the toggle: 44 px tall in all (the mockup); its 2 px ring stays inside its 3 px padding. The
      buttons are 36 px tall, their hit area (::after) runs over the padding and the border: 44 px */
-  .seg{height:44px; padding:3px; gap:3px}
+  .seg{height:auto; min-height:44px; padding:3px; gap:3px}
   .seg button{height:36px; font-size:14.5px; position:relative; overflow:visible}
   .seg button::after{content:""; position:absolute; inset:-4px -1.5px}
+  /* "c-searchup" (DESIGN_SPEC §14.2/§15.1, every surface): search sits left of the logo, mirroring
+     EN, so the toggle is the whole row. A wrapping flex track: Кино and Театър share what the
+     one-line "Опера и балет" leaves; text too big for one row wraps instead of clipping */
+  .bar-row-logo .search-icon-btn{grid-column:1; grid-row:1; justify-self:start; margin-top:-7px}
+  .seg{display:flex; flex-wrap:wrap; border-radius:27px}
+  .seg button{flex:1 1 0; min-width:max-content; height:auto; min-height:36px; padding:0 8px}
+  .seg button[data-switch="cinema"][aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--crimson)}
+  .seg button[data-switch="theatre"][aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--gild)}
+  .seg button[data-switch="opera"][aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--accent)}
+  /* the logo row slides back over the page on a scroll up (JS: .bar--reveal), so search is near */
+  .bar{transition:top .28s var(--ease-sheet)}
+  .bar.bar--reveal{top:0}
+  /* a toggle row too tall to pin (200% page zoom): nothing sticks */
+  .bar.bar--static{position:static}
   .iconb{width:44px; height:44px; flex:0 0 44px}
   /* the search row: shown (display:flex) only while open or closing; #q-m is out of layout when shut */
   .bar-row-search{display:none; align-items:center; gap:12px; opacity:0; transition:opacity var(--dur-fade) var(--ease-std)}
@@ -1550,8 +1581,16 @@ button,a{-webkit-tap-highlight-color:transparent}
   html.sg-kbd .bar-row-search .search input:focus-visible{outline:2px solid var(--fg); outline-offset:-2px}
 }
 @media(max-width:760px) and (prefers-reduced-motion:reduce){
-  .bar-row-toggle,.bar-row-toggle.sr-hide,.bar-row-search,.sr-cancel{transition:none!important}
+  .bar-row-toggle,.bar-row-toggle.sr-hide,.bar-row-search,.sr-cancel,.bar{transition:none!important}
 }
+@media(max-width:379px){
+  .seg button{font-size:13.5px; padding:0 4px; gap:4px}
+  .seg button[data-switch="opera"]{padding:0 7px}
+  .seg button svg{flex-basis:18px; width:18px; height:18px}
+  .seg button svg.shoes{flex-basis:13px; width:13px; height:19px}
+}
+/* ≤350 px: the glyphs go (rule near .seg), all three labels stay on one line */
+@media(max-width:350px){ .seg button,.seg button[data-switch="opera"]{font-size:13px; padding:0 8px} }
 </style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">
@@ -3879,8 +3918,12 @@ function searchToggleInPlace(){
       mr.classList.remove("open");
       if(tr){tr.classList.remove("sr-hide");_setInert(tr,false);}
       if(hadFocus&&document.documentElement.classList.contains("sg-kbd")){
-        const mag=tr&&tr.querySelector("[data-search-open]");
-        if(mag){try{mag.focus({preventScroll:true});}catch(e){}}
+        /* the magnifier sits in the logo row (c-searchup): bring that row back first if it has
+           scrolled away, so focus lands on a visible control */
+        const mag=document.querySelector(".bar-row-logo [data-search-open]"),bar=mag&&mag.closest(".bar");
+        if(mag){const st=bar.classList.contains("bar--static");
+          if(!st&&mag.getBoundingClientRect().bottom<=0)bar.classList.add("bar--reveal");
+          try{mag.focus({preventScroll:!st});}catch(e){}}
       }
       /* display:none again once the row has faded: on its transitionend, not on a timer
          that could cut the end of the closing animation short */
@@ -4796,9 +4839,13 @@ function render(){
   const iconTheatre=`<svg viewBox="0 0 473.194 473.194" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M464.653,167.757c-0.824-3.273-2.996-6.037-5.969-7.633c-2.965-1.586-6.47-1.855-9.65-0.738c-27.88,9.795-70.896,16.098-119.276,16.098c-11.762,0-23.098-0.449-34.089-1.156c-5.683,25.676-14.764,49.252-26.363,70.016c0.564-0.023,1.103-0.115,1.672-0.115c15.034,0,27.218-1.254,27.218,8.873c0,10.127-12.185,27.803-27.218,27.803c-8.757,0-16.467-2.834-21.442-7.162c-15.025,18.654-32.578,33.363-51.909,43.09c21.795,73.361,72.751,124.824,132.131,124.824c79.219,0,143.437-91.584,143.437-204.559C473.194,212.728,470.151,189.408,464.653,167.757z M386.92,381.927c-0.254,1.078-1.056,1.957-2.11,2.303c-1.056,0.353-2.218,0.131-3.066-0.586c-11.174-9.389-30.182-15.627-51.985-15.627c-21.805,0-40.813,6.238-51.986,15.627c-0.849,0.709-2.012,0.932-3.066,0.586c-1.055-0.354-1.856-1.225-2.11-2.303c-0.925-3.936-1.494-7.994-1.494-12.215c0-32.395,26.263-58.656,58.657-58.656c32.394,0,58.655,26.262,58.655,58.656C388.413,373.933,387.844,377.992,386.92,381.927z M388.537,280.904c-15.034,0-27.218-17.676-27.218-27.803c0-10.127,12.185-8.873,27.218-8.873c15.033,0,27.218,8.211,27.218,18.338C415.754,272.693,403.57,280.904,388.537,280.904z"/><path d="M286.874,109.925c0-24.367-3.043-47.688-8.541-69.338c-0.824-3.273-2.996-6.039-5.969-7.633c-1.756-0.939-3.705-1.416-5.669-1.416c-1.341,0-2.688,0.221-3.981,0.678c-27.88,9.795-70.895,16.096-119.276,16.096c-48.382,0-91.397-6.301-119.277-16.096c-1.286-0.457-2.626-0.678-3.966-0.678c-1.963,0-3.921,0.482-5.685,1.424c-2.965,1.594-5.144,4.359-5.969,7.625C3.043,62.238,0,85.558,0,109.925c0,112.977,64.217,204.559,143.438,204.559C222.657,314.484,286.874,222.902,286.874,109.925z M57.439,135.349c0-10.129,12.185-18.338,27.219-18.338c15.033,0,27.218,17.674,27.218,27.803c0,10.127-12.185,8.873-27.218,8.873C69.624,153.687,57.439,145.476,57.439,135.349z M143.438,275.812c-32.395,0-58.656-26.262-58.656-58.654c0-4.221,0.569-8.281,1.493-12.217c0.254-1.076,1.056-1.947,2.11-2.303c1.056-0.346,2.218-0.123,3.066,0.586c11.174,9.389,30.182,15.627,51.986,15.627c21.804,0,40.812-6.238,51.985-15.627c0.849-0.717,2.011-0.939,3.066-0.586c1.055,0.348,1.856,1.227,2.11,2.303c0.924,3.936,1.494,7.996,1.494,12.217C202.093,249.55,175.831,275.812,143.438,275.812z M174.998,144.814c0-10.129,12.185-27.803,27.219-27.803c15.033,0,27.218,8.209,27.218,18.338c0,10.127-12.185,18.338-27.218,18.338C187.183,153.687,174.998,154.941,174.998,144.814z"/></svg>`;
   /* .seg-q while the search is open: a windowed desktop shows only the two icons
      (CSS below); the buttons keep their names for screen readers and a tooltip */
-  const segHTML=`<div class="seg">
-        <button data-switch="cinema" aria-pressed="${S.mode==="cinema"}" aria-label="${esc(L.cinema)}" title="${esc(L.cinema)}">${iconCinema}<span class="seg-l">${esc(L.cinema)}</span></button>
-        <button data-switch="theatre" aria-pressed="${S.mode==="theatre"}" aria-label="${esc(L.theatre)}" title="${esc(L.theatre)}">${iconTheatre}<span class="seg-l">${esc(L.theatre)}</span></button>
+  /* the owner's pointe shoes (notes/design_options/opera/mockups/final/build/ballet-icon.svg, paths unchanged) */
+  const iconOpera=`<svg class="shoes" viewBox="68.288 -12 360 520.576" width="15" height="21" fill="currentColor" stroke="currentColor" stroke-width="24" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M236.24,232.576c-4.432-56-11.04-112.92-11.912-120.088l7.944-111.28l-15.96-1.168l-3.528,49.336 c-2.512,0.944-20,7.216-44.496,7.216c-19.736,0-35.2-4.184-41.688-6.272l-1.352-49.96L109.256,0.8l3,110.848 c-3.456,13.16-31.968,124.432-31.968,208.928c0,60.032,11.168,116.712,17.832,145.16c4.256,18.16,20.272,30.84,38.952,30.84 h46.032c18.88,0,34.936-12.88,39.056-31.32c6.768-30.352,16.144-89.504,16.144-144.68c0-26.163,1.983-57.573-6.012-88H236.24z M168.288,72.576c19.152,0,34.568-3.48,43.264-6.016l-2.264,31.672c-7.96,2.024-26.232,5.824-51.928,6.28L127.504,83.84 l-0.448-16.704C136.024,69.584,150.552,72.576,168.288,72.576z M211.656,142.096l-32.808-22.712 c12.816-1.168,22.848-2.984,29.664-4.512C208.92,118.208,210.104,128.032,211.656,142.096z M128.016,114.64l0.296-1.128 l-0.264-9.832l24.24,16.784v0.112c0.056,0,0.104,0,0.16,0l61.448,42.544c1.24,11.984,2.56,25.472,3.84,39.744l-96.168-61.824 C125.288,124.976,127.92,114.984,128.016,114.64z M117.848,157.656l38.288,24.616l-46.04,13.816 C112.704,182.056,115.376,169,117.848,157.656z M103.592,234.896c1.056-7.176,2.192-14.248,3.368-21.176l66.888-20.064 l45.6,29.32c0.28,3.416,0.544,6.856,0.808,10.312c0.128,6.952,0.824,90.04-31.008,122.76c-8.2,8.424-17.68,12.528-28.96,12.528 c-11.312,0-20.688-4.088-28.68-12.504C101.24,324.128,103.256,244.088,103.592,234.896z M206.544,461.768 c-2.472,11.072-12.112,18.808-23.44,18.808h-46.032c-11.208,0-20.824-7.6-23.368-18.488C107.2,434.32,96.288,379,96.288,320.576 c0-0.144,0.008-0.288,0.008-0.432c4.864,17.92,12.312,34.952,23.704,46.944c11.016,11.608,24.576,17.488,40.288,17.488 c15.616,0,29.224-5.848,40.448-17.392c10.752-11.056,18.256-26.424,23.504-42.848 C223.744,376.904,213.016,432.76,206.544,461.768z"/><path d="M384.312,111.648l3-110.848l-15.984-0.44l-1.352,49.96c-6.448,2.08-21.816,6.256-41.688,6.256 c-24.264,0-41.92-6.264-44.496-7.232L280.272,0l-15.96,1.144l7.944,111.336c-0.88,7.176-7.488,64.096-11.92,120.096h3.948 c-7.995,30.427-6.012,61.837-6.012,88c0,55.176,10.368,114.328,17.136,144.68c4.12,18.44,19.184,31.32,38.064,31.32h46.032 c18.68,0,34.696-12.68,38.952-30.84c6.664-28.448,17.832-85.128,17.832-145.16C416.288,236.08,387.776,124.808,384.312,111.648z M386.488,196.08l-46.04-13.816l38.288-24.616C381.208,168.992,383.88,182.048,386.488,196.08z M328.288,72.576 c17.736,0,32.264-2.992,41.232-5.44l-0.456,16.712l-29.856,20.672c-25.688-0.456-43.96-4.256-51.928-6.28l-2.264-31.672 C293.72,69.096,309.136,72.576,328.288,72.576z M288.064,114.872c6.816,1.528,16.848,3.344,29.664,4.512l-32.808,22.712 C286.472,128.032,287.656,118.208,288.064,114.872z M282.68,163.12l61.448-42.544c0.056,0,0.104,0,0.16,0v-0.112l24.24-16.784 l-0.264,9.84l0.296,1.12c0.088,0.336,2.728,10.336,6.448,26.4l-96.168,61.824C280.12,188.592,281.44,175.112,282.68,163.12z M276.312,233.304c0.264-3.456,0.536-6.896,0.808-10.32l45.6-29.312l66.896,20.072c1.168,6.92,2.304,13.984,3.36,21.144 c0.336,9.024,2.392,89.208-28.008,121.192c-7.992,8.408-17.368,12.496-28.68,12.496c-11.28,0-20.76-4.104-28.96-12.528 C275.512,323.344,276.192,240.296,276.312,233.304z M382.88,462.08c-2.552,10.896-12.16,18.496-23.376,18.496h-46.032 c-11.328,0-20.968-7.736-23.44-18.808c-6.472-29.016-17.2-84.872-17.696-137.44c5.248,16.424,12.76,31.8,23.504,42.848 c11.224,11.552,24.832,17.4,40.448,17.4c15.712,0,29.272-5.88,40.296-17.488c11.392-11.992,15.704-29.024,23.704-46.944 c0,0.144,0,0.288,0,0.432C400.288,379,389.376,434.32,382.88,462.08z"/></svg>`;
+  /* data-t: each label reserves its bold width, so selecting a segment never shifts the row */
+  const segBtn=(m,icon)=>`<button data-switch="${m}" aria-pressed="${S.mode===m}" aria-label="${esc(L[m])}" title="${esc(L[m])}">${icon}<span class="seg-l" data-t="${esc(L[m])}">${esc(L[m])}</span></button>`;
+  const segHTML=`<div class="seg${OPERA_ON?" seg3":""}">
+        ${segBtn("cinema",iconCinema)}
+        ${segBtn("theatre",iconTheatre)}${OPERA_ON?segBtn("opera",iconOpera):""}
       </div>`;
   /* search icon button — TOGGLE on all sizes; aria-expanded reflects open state */
   const searchAriaLabel=S.searchOpen?(L.searchClose||"Затвори търсенето"):(L.searchOpen||"Търсене");
@@ -4828,18 +4875,18 @@ function render(){
   const headerHTML=isMob
     ?`<!-- Mobile: stacked rows -->
     <div class="bar-row-logo">
+      ${searchIconBtn}
       <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.webp" width="648" height="126" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       <span class="lang-right">${langBtn}</span>
     </div>
     <div class="bar-row-controls">
       <div class="bar-row-toggle${S.searchOpen?" sr-hide":""}"${S.searchOpen?" inert":""}>
         ${segHTML}
-        ${searchIconBtn}
       </div>
       ${searchMobileOpenHTML}
     </div>`
     :`<!-- Desktop: brand left | toggle CENTRE | search-field+icon+lang right (P3A item 1) -->
-    <div class="bar-in">
+    <div class="bar-in${OPERA_ON?" op3":""}">
       <button class="brand" data-home aria-label="Sofia Gleda${L.listingLine?", "+esc(L.listingLine):""}, ${esc(L.home||"начало")}"><img class="brand-logo" src="logo.webp" width="648" height="126" alt="Sofia Gleda" decoding="async">${L.listingLine?`<span class="brand-sub" aria-hidden="true" lang="${S.lang}">${esc(L.listingLine)}</span>`:""}</button>
       ${segHTML}
       <div class="bar-controls">
@@ -4897,7 +4944,33 @@ function render(){
      open, so language switches and other re-renders don't leave .seg-q stale. Phones never
      shrink the toggle: their search opens in its own row below it. */
   if(S.searchOpen&&!isMob)requestAnimationFrame(_segFit);
+  _barObserve();
 }
+/* Phone header (c-searchup): only the toggle row pins, so --logo-row-h is the MEASURED logo row
+   (20 px top padding + the row + its 18 px margin; 87 px stays the CSS fallback). A pinned part
+   over 30% of the screen does not pin at all (.bar--static, 200% page zoom); a scroll up of 6 px
+   or more past the logo row slides it back with search (.bar--reveal) unless the whole header
+   would cover over 40% of the screen. While the search is open the bar keeps its state. */
+let _barCanReveal=false,_barLastY=0;
+function _barFit(){
+  const bar=document.querySelector(".bar"),lr=bar&&bar.querySelector(".bar-row-logo"),r=document.documentElement;
+  if(!lr||window.innerWidth>760){r.style.removeProperty("--logo-row-h");_barCanReveal=false;
+    if(bar)bar.classList.remove("bar--static","bar--reveal");return;}
+  const h=20+lr.offsetHeight+18,full=bar.offsetHeight;
+  r.style.setProperty("--logo-row-h",h+"px");
+  bar.classList.toggle("bar--static",full-(h-8)>.3*window.innerHeight);
+  _barCanReveal=!bar.classList.contains("bar--static")&&full<=.4*window.innerHeight;
+  if(!_barCanReveal)bar.classList.remove("bar--reveal");
+}
+const _barRO=typeof ResizeObserver==="function"?new ResizeObserver(()=>_barFit()):null;
+function _barObserve(){const bar=document.querySelector(".bar");
+  if(_barRO){_barRO.disconnect();if(bar)_barRO.observe(bar);}_barFit();}
+window.addEventListener("resize",_barFit);
+window.addEventListener("scroll",()=>{
+  const y=window.scrollY||0,dy=y-_barLastY;if(Math.abs(dy)<6)return;_barLastY=y;
+  const bar=document.querySelector(".bar"),lr=bar&&bar.querySelector(".bar-row-logo");
+  if(!lr||S.searchOpen)return;
+  bar.classList.toggle("bar--reveal",_barCanReveal&&dy<0&&y>lr.offsetHeight);},{passive:true});
 /* With the desktop search open, the toggle drops its labels when the field would run
    into it; checked after every render and, since the logo and its line now scale with
    the window, on every resize too. */
