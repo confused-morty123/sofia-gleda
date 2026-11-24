@@ -1673,7 +1673,7 @@ button,a{-webkit-tap-highlight-color:transparent}
 .agrow{display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; padding:10px 0; border-top:1px solid var(--line)}
 .agrows .agrow:first-child{border-top:0}
 .ag-t{flex:0 0 50px; font-family:var(--f-display); font-weight:600; font-size:17px; font-variant-numeric:tabular-nums; color:var(--fg)}
-.ag-main{flex:1 1 170px; min-width:0; display:flex; flex-direction:column; gap:1px; min-height:44px; justify-content:center; text-align:left; color:var(--fg)}
+.ag-main{flex:1 1 170px; min-width:0; display:flex; flex-direction:column; gap:1px; min-height:44px; justify-content:center; text-align:left; color:var(--fg); padding:0}
 .ag-main b{font-size:14px; font-weight:600; line-height:1.25; overflow-wrap:anywhere}
 .ag-main .ag-sub,.ag-main .ag-st{font-size:12px; color:var(--fg-2); line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .ag-main .ag-st{color:var(--fg-3)}
@@ -1740,8 +1740,10 @@ button,a{-webkit-tap-highlight-color:transparent}
 .shero.shero-op.compact{aspect-ratio:auto; height:96px; max-height:none}
 .shero.shero-op.compact.noimg .gp-t{display:none}
 @media(max-width:620px){ .shero.shero-op{max-height:170px} }
-.sh-ophead{padding:20px 22px 0}
-.opsheet h2{overflow-wrap:anywhere}
+.sh-ophead{padding:20px 22px 0; container-type:inline-size}
+/* the title's longest word (--gl, set inline) fits the column on one line (1.38: the capitals' ~0.69 em
+   a letter, as .gp-t), never under 18 px; overflow-wrap:anywhere stays only as the last resort */
+.opsheet h2{font-size:min(clamp(24px,3.6vw,32px),max(18px,calc(100cqi*1.38/var(--gl,8)))); overflow-wrap:anywhere}
 /* "За спектакъла": the value column may shrink below its longest word (large text), never past the sheet */
 .opsheet .credits{grid-template-columns:auto minmax(0,1fr)}
 .opsheet .credits dd{overflow-wrap:anywhere}
@@ -3208,19 +3210,19 @@ function buildDayStrip(){
       const nextLabel=S.lang==="bg"?"Следващата седмица":"Next week";
       pills.push(`<span class="ds-next">${esc(nextLabel)}</span>`);
     }
-    const active=S.day===d;
-    const isToday=d===TODAY;
-    const hasSc=hasData.has(d)||(S.mode==="opera"&&isToday);
-    const label=fmtDay(d,false); /* e.g. "ср 7" */
-    /* a next-week day names its month ("пн 2" + "ное"), as every pill outside this week does;
-       so does a day of this week that starts a new month ("нд 1 ное"), as the film sheet's
-       day picker does */
-    const mon=!inThisWeek(d)||d.slice(8,10)==="01"?monShortOf(d):"";
-    const todayMark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:mon?` <span class="ds-mon">${esc(mon)}</span>`:"";
-    const dsName=`${label}${isToday?" "+(L.dsToday||"днес"):mon?" "+mon:""}, ${fmtDayDow(d)}`;
-    pills.push(`<button class="dspill"${hasSc?"":' disabled'} data-day="${esc(d)}" aria-pressed="${active}" aria-label="${esc(dsName)}">${esc(label)}${todayMark}</button>`);
+    pills.push(dsPill(d,{enabled:hasData.has(d)||(S.mode==="opera"&&d===TODAY)}));
   }
   return`<div class="daystrip">${pills.join("")}</div>`;}
+/* One day pill of a strip (buildDayStrip, opRangeStrip): "ср 7", the today mark, or the month for a
+   next-week day ("пн 2" + "ное"), as every pill outside this week does, and for a day of this week
+   that starts a new month ("нд 1 ное"), as the film sheet's day picker does; its spoken name says
+   the weekday in full. Disabled when the day has no row. */
+function dsPill(d,{enabled=true}={}){
+  const L=t(),isToday=d===TODAY,label=fmtDay(d,false);
+  const mon=!inThisWeek(d)||d.slice(8,10)==="01"?monShortOf(d):"";
+  const mark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:mon?` <span class="ds-mon">${esc(mon)}</span>`:"";
+  const name=`${label}${isToday?" "+(L.dsToday||"днес"):mon?" "+mon:""}, ${fmtDayDow(d)}`;
+  return`<button class="dspill"${enabled?"":" disabled"} data-day="${esc(d)}" aria-pressed="${S.day===d}" aria-label="${esc(name)}">${esc(label)}${mark}</button>`;}
 /* Опера и балет, a custom range of 2-7 days (§5.2, state #sparse): "Всички дни" and only the days
    with a row under the filter (today too when inside), so "Всички дни · пт 29 · нд 31". A day pill
    keeps S.rFrom/S.rTo (the [data-day] handler sets only S.day), so "Всички дни" (data-day="range")
@@ -3231,17 +3233,9 @@ function opRangeDays(){
   const days=[];for(let d=S.rFrom;d<=S.rTo;d=addDays(d,1))days.push(d);
   return days;}
 function opRangeStrip(days){
-  const L=t(),hasData=datesWith(),shown=days.filter(d=>hasData.has(d)||d===TODAY);
+  const hasData=datesWith(),shown=days.filter(d=>hasData.has(d)||d===TODAY);
   if(!shown.some(d=>hasData.has(d)))return"";
-  const pills=[`<button class="dspill" data-day="range" aria-pressed="${S.day==="range"}">${esc(opT().stripAll)}</button>`];
-  for(const d of shown){
-    const isToday=d===TODAY,label=fmtDay(d,false);
-    const mon=!inThisWeek(d)||d.slice(8,10)==="01"?monShortOf(d):"";
-    const mark=isToday?` <span class="ds-today">${esc(L.dsToday||"днес")}</span>`:mon?` <span class="ds-mon">${esc(mon)}</span>`:"";
-    const name=`${label}${isToday?" "+(L.dsToday||"днес"):mon?" "+mon:""}, ${fmtDayDow(d)}`;
-    pills.push(`<button class="dspill" data-day="${esc(d)}" aria-pressed="${S.day===d}" aria-label="${esc(name)}">${esc(label)}${mark}</button>`);
-  }
-  return`<div class="daystrip">${pills.join("")}</div>`;}
+  return`<div class="daystrip"><button class="dspill" data-day="range" aria-pressed="${S.day==="range"}">${esc(opT().stripAll)}</button>${shown.map(d=>dsPill(d)).join("")}</div>`;}
 
 function periodBanner(){
   const L=t();
@@ -3526,15 +3520,19 @@ function hero(){
                   children's view = "Детски"),
                   subtitle  fetch_opera meta "subtitle", verbatim (DESIGN_SPEC §2.1.7): hero lede,
                             agenda line, card line, sheet lede;
+                  subtitleEn the English calendar's line by the same rule (EN; else subtitle);
                   facts     fetch_opera meta "facts" as it is: {conductor, director, duration,
-                            language, age, prices, prices_eur} (the production page's labelled
-                            fields, verbatim): "За спектакъла", "от N €";
-                  baked     true when the poster prints its own title (the poster pass, or a
-                            manual list until then): the 96 px phone hero banner
-     THEATRES     the opera entry, hallAreas {stage: address as published} (fetch_opera meta
-                  "address" per stage): the sheet's stage address
-   As of opera-data ae3398d9 mint_show persists only titleEn and genres, and the THEATRES entry
-   has no hallAreas: subtitle, facts, baked and hallAreas still need their writer before release.
+                            language, age, prices} (the production page's labelled fields,
+                            verbatim; values stay Bulgarian in EN, DESIGN_SPEC §7), and
+                            {prices_eur, prices_url, prices_read}: one performance's buy-tickets
+                            categories, shown on that performance's row only ("от N €") and
+                            dated in "За спектакъла";
+                  baked     true when the poster prints its own title (OT.OPERA_BAKED until the
+                            poster pass marks it): the 96 px phone hero banner
+                  scrape_programs.refresh_source_shows writes subtitle, subtitleEn, facts and baked
+                  onto the minted records every night (inject_shows carries them into SHOWS).
+     THEATRES     the opera entry: hallAreas {stage: address as published}, hallEn and hallAreasEn
+                  (the /en calendar's), static in src/data.html: the sheet's stage address
    Status comes from `sale` and the link, never from a guess: a row with neither says
    "виж повече ↗", never "разпродадено". */
 const OPT={
@@ -3610,8 +3608,9 @@ const opPremDates=sid=>PREMIERES["show:"+sid]||[];
 const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
 /* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
 const opSubText=(s,prem)=>{s=String(s||"").replace(/\s+/g," ").trim();
-  return prem?s.replace(/(^|\s)ПРЕМИЕРА(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
-const opSub=sh=>opSubText(sh.subtitle,opPremAhead(sh.id));
+  return prem?s.replace(/(^|\s)(?:ПРЕМИЕРА|PREMIERE)(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
+/* in EN the English calendar's own line (subtitleEn), else the Bulgarian one: never a translation */
+const opSub=sh=>opSubText(S.lang==="en"&&sh.subtitleEn||sh.subtitle,opPremAhead(sh.id));
 const opTh=()=>thById.opera||THEATRES.find(x=>x.kind==="opera")||{};
 /* a stage as the page shows it: in EN the opera's own English name (its /en calendar: "Main Hall"), else
    the Bulgarian one as published */
@@ -3626,12 +3625,21 @@ const opShortDate=d=>{const x=dUTC(d),L=t();return`${L.dows[x.getUTCDay()]} ${x.
 const opLongDate=d=>{const x=dUTC(d);return`${x.getUTCDate()} ${t().months[x.getUTCMonth()]}`;};
 const opCap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const opWeekday=d=>t().dowsLong[dUTC(d).getUTCDay()];
-/* EUR numbers: the buy-tickets categories, else the children's price sentence ("8 €", "6.50 €") */
-function opPriceNums(sh){const f=sh.facts||{};
-  if(Array.isArray(f.prices_eur)&&f.prices_eur.length)return f.prices_eur.map(x=>parseFloat(String(x).replace(",","."))).filter(isFinite);
-  return(String(f.prices||"").match(/\d+(?:[.,]\d+)?(?=\s*(?:€|&euro;))/g)||[]).map(x=>parseFloat(x.replace(",",".")));}
+/* The buy-tickets categories belong to the one performance whose page was read (facts.prices_url):
+   {row, nums} while that performance is still in the data, else null. Matinées, premieres and later
+   runs can be priced differently, so no other row borrows them. */
+function opBuyPrices(sh){const f=sh.facts||{},u=f.prices_url;
+  const nums=Array.isArray(f.prices_eur)?f.prices_eur.map(x=>parseFloat(String(x).replace(",","."))).filter(isFinite):[];
+  const row=u&&nums.length?opPerfs(sh.id).find(p=>perfTixUrl(p[0],p[1],p[2])===u):null;
+  return row?{row,nums}:null;}
+/* the production page's own price sentence ("8 €", "6.50 €"; the children's pages): every row of it */
+const opSentenceNums=sh=>(String((sh.facts||{}).prices||"").match(/\d+(?:[.,]\d+)?(?=\s*(?:€|&euro;))/g)||[]).map(x=>parseFloat(x.replace(",",".")));
 const opNum=n=>{const s=String(Math.round(n*100)/100);return S.lang==="bg"?s.replace(".",","):s;};
-const opPriceMin=sh=>{const n=opPriceNums(sh);return n.length?Math.min(...n):null;};
+/* "от N €" of one performance p: its own read prices, else the production's sentence, else none */
+function opPriceMin(sh,p){const b=opBuyPrices(sh);
+  const n=b?(b.row[1]===p[1]&&b.row[2]===p[2]?b.nums:[]):opSentenceNums(sh);
+  return n.length?Math.min(...n):null;}
+const opDayMon=d=>`${dUTC(d).getUTCDate()} ${monShortOf(d)}`;
 /* the date the listing was built (the refresh); the opera's rows are as of then */
 function opAsOf(){const iso=String((SNAPSHOT&&(SNAPSHOT.generated||SNAPSHOT.lastValidated))||"").slice(0,10);
   return /^\d{4}-\d{2}-\d{2}$/.test(iso)?fillT(opT().dataAsOf,{d:`${opLongDate(iso)} ${iso.slice(0,4)}`}):"";}
@@ -3656,11 +3664,12 @@ const opImg=sh=>safeImg(realPoster(sh.id,"original"));
 /* the classes of an art box with no picture: noimg (the phone hero and the compact sheet banner then
    drop the title, which the heading under them says), nok (no genre kicker either) */
 const opNoImg=sh=>opImg(sh)?"":" noimg"+(opGenreOf(sh)?"":" nok");
+/* the title's longest word in letters (at least 4): --gl, so a type size can fit it on one line */
+const opGl=tt=>Math.max(4,...String(tt).split(/\s+/).map(w=>[...w].length));
 function opArt(sh){
   const src=opImg(sh);
   const r=rng(sh.id),gx=Math.round(18+r()*70),g=opGenreOf(sh),tt=titleOf(sh);
-  const gl=Math.max(4,...tt.split(/\s+/).map(w=>[...w].length));
-  const gp=`<div class="gp" style="--gx:${gx}%;--gl:${gl}" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(tt)}</span></div>`;
+  const gp=`<div class="gp" style="--gx:${gx}%;--gl:${opGl(tt)}" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(tt)}</span></div>`;
   return gp+(src?`<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
 
 /* hero slot: the hero when the period has a bookable row, else the late-day card (§5.4/§5.7) */
@@ -3714,7 +3723,7 @@ function opAgenda(rows){
       const act=st==="buy"?`<a class="ag-act buy" href="${esc(perfTixUrl(p[0],p[1],p[2]))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.buyAria,{t:tt,d:dl,h:p[2]}))}">${esc(O.buy)}</a>`
         :st==="so"?`<span class="ag-act so">${esc(O.soldWord)}</span>`
         :opProdUrl(sh.id)?`<a class="ag-act more" href="${esc(opProdUrl(sh.id))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.moreAria,{t:tt}))}">${esc(O.seeMore)}</a>`:"";
-      const pm=st!=="so"?opPriceMin(sh):null,sub=opSub(sh);
+      const pm=st!=="so"?opPriceMin(sh,p):null,sub=opSub(sh);
       return`<div class="agrow${st==="so"?" so":""}"><span class="ag-t">${esc(p[2])}</span>
         <button class="ag-main" data-show="${esc(sh.id)}" data-pd="${esc(p[1])}" data-pt="${esc(p[2])}"><b>${opTitleHtml(sh,dup,p[3]?opStage(p):"")}${opPremDates(sh.id).includes(p[1])?`<span class="badge-g">${esc(O.premiere)}</span>`:""}</b>${sub?`<span class="ag-sub">${esc(sub)}</span>`:""}
         <span class="ag-st">${esc(opStage(p))}${pm!=null?" · "+esc(fillT(O.fromPrice,{p:opNum(pm)})):""}</span></button>${act}</div>`;}).join("");
@@ -3805,13 +3814,15 @@ function opTimesHtml(sh,perfs,fp){
   return`${state}${p3eShowtimesHtml("show",sh.id,norm,vmap,()=>false,sel,pillFn)}
     <div class="sfoot"><p class="cta-fn">${esc(fn.trim())}</p>${prodLink}</div>`;}
 function opCredits(sh){
-  const O=opT(),f=sh.facts||{},nums=Array.isArray(f.prices_eur)?f.prices_eur.map(x=>parseFloat(String(x).replace(",","."))).filter(isFinite):[];
-  let price=notEmpty(f.prices)||"";
-  if(!price&&nums.length){const lo=Math.min(...nums),hi=Math.max(...nums);
-    price=lo===hi?fillT(O.priceOne,{a:opNum(lo)}):fillT(O.priceRange,{a:`${opNum(lo)}–${opNum(hi)}`,n:nums.length});}
+  const O=opT(),f=sh.facts||{},b=opBuyPrices(sh);
+  let price=notEmpty(f.prices)||"",priceLabel=O.cred.prices;
+  /* the read performance's categories, labelled with its date: "Цени (27 ное)" */
+  if(!price&&b){const lo=Math.min(...b.nums),hi=Math.max(...b.nums);
+    price=lo===hi?fillT(O.priceOne,{a:opNum(lo)}):fillT(O.priceRange,{a:`${opNum(lo)}–${opNum(hi)}`,n:b.nums.length});
+    priceLabel=`${O.cred.prices} (${opDayMon(b.row[1])})`;}
   const rows=[["conductor",f.conductor],["director",f.director],["duration",f.duration],["language",f.language],["age",opKid(sh)?f.age:""],["prices",price]]
     .filter(r=>notEmpty(r[1]||""));
-  return rows.length?`<div class="sec"><h3>${esc(O.secAbout)}</h3><dl class="credits">${rows.map(([k,v])=>`<dt>${esc(O.cred[k])}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`:"";}
+  return rows.length?`<div class="sec"><h3>${esc(O.secAbout)}</h3><dl class="credits">${rows.map(([k,v])=>`<dt>${esc(k==="prices"?priceLabel:O.cred[k])}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`:"";}
 function sheetOpera(sh,fc){
   const L=t(),O=opT(),perfs=opPerfs(sh.id);
   const fd=fc&&fc.pd,ft=fc&&fc.pt,fp=fd?perfs.find(p=>p[1]===fd&&(!ft||p[2]===ft))||null:null;
@@ -3820,7 +3831,7 @@ function sheetOpera(sh,fc){
   return`<div class="sheet opsheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-op${fp?" compact":""}${opNoImg(sh)}">${opArt(sh)}
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button></div>
-   <div class="sh-ophead"><div class="eyebrow">${esc(stages.join(" · "))}</div><h2 id="sg-sheet-title">${esc(titleOf(sh))}</h2>${sub?`<p class="slede">${esc(sub)}</p>`:""}</div>
+   <div class="sh-ophead"><div class="eyebrow">${esc(stages.join(" · "))}</div><h2 id="sg-sheet-title" style="--gl:${opGl(titleOf(sh))}">${esc(titleOf(sh))}</h2>${sub?`<p class="slede">${esc(sub)}</p>`:""}</div>
    <div class="sbody">
     ${chips?`<div class="chips">${chips}</div>`:""}
     <div class="sec" id="op-times"><h3>${esc(O.secTimes)}</h3>${opTimesHtml(sh,perfs,fp)}</div>

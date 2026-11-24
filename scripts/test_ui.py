@@ -22695,7 +22695,9 @@ def _op2_page(src, flip=False):
     vals["SHOWS"] = [s for s in vals["SHOWS"] if s["id"] not in old] + [
         {"id": i, "title": t, "titleEn": te, "theatre": op_id, "author": "", "director": "", "cast": "", "genres": g,
          "g": ["#1F1335", "#47287C"], "duration": "", "synBg": "", "synEn": "", "subtitle": sub,
-         **({"facts": {"prices_eur": ["20", "40"]}} if i == "op2-aida" else {})}
+         # one performance's buy-tickets page read (T+1, 9002): its prices, never the T 19:00 row's
+         **({"facts": {"prices_eur": ["20", "40"], "prices_url": f"{OP2_BUY}9002", "prices_read": d[0]}}
+            if i == "op2-aida" else {})}
         for i, t, te, g, sub in OP2_SHOWS]
     keep = lambda p: p[0] not in old and not (p[1] == d[6])      # theatre rows on T+6 go too
     vals["PERFORMANCES"] = [p for p in vals["PERFORMANCES"] if keep(p)] + [
@@ -22880,7 +22882,9 @@ def _op2_late(browser, base, eng):
 
 OP2_AGENDA_JS = r"""() => { const rows = [...document.querySelectorAll('#app main .opagenda .agrow')].map(r => {
     const b = r.querySelector('.ag-main'), a = r.querySelector('.ag-act'), g = r.querySelector('.badge-g'), gs = g && getComputedStyle(g);
+    const bs = getComputedStyle(b);
     return {id: b.dataset.show, d: b.dataset.pd, t: b.dataset.pt, text: r.textContent, so: r.classList.contains('so'),
+      pad: [bs.paddingTop, bs.paddingRight, bs.paddingBottom, bs.paddingLeft].join(' '), h: b.getBoundingClientRect().height,
       act: a ? {tag: a.tagName, cls: a.className, href: a.getAttribute('href'), text: a.textContent, links: a.querySelectorAll('a').length} : null,
       badge: g ? {text: g.textContent, color: gs.color, fs: gs.fontSize} : null,
       sub: (r.querySelector('.ag-sub') || {}).textContent || '', stg: (r.querySelector('.stg') || {}).textContent || ''}; });
@@ -22932,6 +22936,12 @@ def _op2_agenda(browser, base, eng):
         check(f"{tag}_premiere_word_out_of_subtitle_{sz}", subs and all(s == "Опера в четири действия" for s in subs), f"subtitles {subs}")
         others = [r for r in a["rows"] if r["badge"] and not (r["id"] == "op2-aida" and r["d"] == d[1])]
         check(f"{tag}_badge_only_on_premiere_date_{sz}", not others, f"{[(r['id'], r['d']) for r in others]}")
+        priced = [(r["id"], r["d"], r["t"]) for r in a["rows"] if "20 €" in r["text"]]
+        check(f"{tag}_price_only_on_the_read_performance_{sz}", priced == [("op2-aida", d[1], "19:00")]
+              and len([r for r in a["rows"] if r["id"] == "op2-aida" and rows[(r["id"], r["d"], r["t"])]["url"]]) == 2,
+              f"rows with a price: {priced}")
+        badpad = [(r["id"], r["d"], r["pad"], r["h"]) for r in a["rows"] if r["pad"] != "0px 0px 0px 0px" or r["h"] < 44]
+        check(f"{tag}_title_column_on_the_grid_{sz}", not badpad, f"padding/height off: {badpad[:3]}")
         kar = [r["stg"] for r in a["rows"] if r["id"].startswith("op2-karnaval")]
         check(f"{tag}_one_title_two_stages_{sz}", sorted(kar) == sorted([f" · {OP2_HALL}", f" · {OP2_CHAMBER}"]), f"stage suffixes {kar}")
         page.evaluate("() => { S.fGenres = ['kids']; render(); }")
@@ -22950,7 +22960,8 @@ OP2_SHEET_JS = r"""() => { const sc = document.getElementById('scrim'), sh = sc 
   const buy = [...sh.querySelectorAll('a[href*="/buy-tickets/"]')];
   return {op: sh.classList.contains('opsheet'), compact: !!sh.querySelector('.shero.shero-op.compact'), sstate: !!sh.querySelector('.sstate'),
     nolist: !!sh.querySelector('.nolist'), pills: sh.querySelectorAll('.p3e-pill').length, buy: buy.length,
-    buyOutsidePills: buy.filter(a => !a.matches('.p3e-pill.buy')).length, path: location.pathname, title: (sh.querySelector('h2') || {}).textContent}; }"""
+    buyOutsidePills: buy.filter(a => !a.matches('.p3e-pill.buy')).length, path: location.pathname, title: (sh.querySelector('h2') || {}).textContent,
+    cred: [...sh.querySelectorAll('.credits dt')].map(x => [x.textContent, x.nextElementSibling ? x.nextElementSibling.textContent : ''])}; }"""
 
 
 def _op2_sheet(browser, base, eng):
@@ -22969,6 +22980,9 @@ def _op2_sheet(browser, base, eng):
         s = page.evaluate(OP2_SHEET_JS)
         check(f"{tag}_dated_open_{sz}", bool(s) and s["op"] and s["compact"] and s["path"] == "/show/op2-aida/" and s["buy"] >= 2
               and s["buyOutsidePills"] == 0, f"{s}")
+        dm = page.evaluate("d => opDayMon(d)", d[1])
+        check(f"{tag}_prices_dated_by_their_performance_{sz}", bool(s) and [f"Цени ({dm})", "20–40 € · 2 категории"] in s["cred"],
+              f"credits {s and s['cred']} (want Цени ({dm}))")
         save_shot(page, "OP2", f"{eng}_sheet_{sz}")
         page.go_back(); page.wait_for_timeout(900)
         v = page.evaluate(OP_VIEW_JS)
