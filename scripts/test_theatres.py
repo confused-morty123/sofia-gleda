@@ -3641,9 +3641,12 @@ check("opera children: one production sold out at 10:00, tickets at 11:00",
 check("opera children: Bulgarian quotes kept verbatim in the subtitle",
       _op_by(_k12)[("2026-12-19", "19:00")][3]["subtitle"], "Балетна приказка с участието на танцова школа „Маша Илиева“")
 _k11, _ = O.parse_opera(fx("opera_children_2026-11.html"), 2026, 11, kids=True)
-_shego = _op_by(_k11)[("2026-11-18", "10:00")][3]
-check("opera children: a row with no stage and no address is kept, its hall unknown (not off-site)",
-      (_shego.get("hall"), _shego.get("address")), (None, None))
+_k11x = O.parse_opera(fx("opera_children_2026-11.html"), 2026, 11, kids=True)[1]
+check("opera children: a row with no stage and no address is excluded, never implied to be at the Opera "
+      "(ШЕГОБИШКО 18 Nov 10:00 and 11:00, live markup; the title also plays off-site)",
+      (("2026-11-18", "10:00") in _op_by(_k11), sorted((e[1], e[2], e[3]) for e in _k11x if e[0].startswith("ШЕГОБИШКО"))),
+      (False, [("2026-11-18", "10:00", "no venue published (no stage, no address)"),
+               ("2026-11-18", "11:00", "no venue published (no stage, no address)")]))
 check("opera children: an empty month page is no rows, not an error",
       O.parse_opera(fx("opera_children_2027-01.html"), 2027, 1, kids=True), ([], []))
 
@@ -3678,8 +3681,9 @@ check("opera EN: one id with two different English titles gives none (a missing 
       "1067" in O.parse_opera_en_titles(fx("opera_calendar_en_2026-11.html").replace("AGRIPPINA", "AGRIPPINA II", 1),
                                         2026, 11), False)
 
-# --- the 42 subtitle cases (DESIGN_SPEC §2.4), exactly as approved; the closing credit is
-# read as an extra field and left in the displayed line
+# --- the 42 subtitle cases (DESIGN_SPEC §2.4), exactly as approved: skip, genre, premiere and the
+# closing credit read as an extra field. The displayed line is the UI's rule (opSubText), checked
+# against the same 42 cases by the OP2 wave.
 _cases = json.loads((FIX / "opera_subtitle_cases.json").read_text(encoding="utf-8"))
 _CREDITS = {
     "adults|opera|Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс":
@@ -3696,24 +3700,29 @@ for _k, _want in _cases.items():
         if not _got["skip"]:
             _bad.append(_k)
         continue
-    _disp, _cred = _want["display"], _CREDITS.get(_k, {})
-    _g2 = (_got["skip"], _got["audience"], _got["genres"], _got["premiere"], _got["display"], _got["credits"])
-    _w2 = (False, _want["audience"], [_want["genre"]] if _want["genre"] else [], _want["premiere"], _disp, _cred)
+    _cred = _CREDITS.get(_k, {})
+    _g2 = (_got["skip"], _view, _got["genres"], _got["premiere"], _got["credits"])
+    _w2 = (False, _want["audience"], [_want["genre"]] if _want["genre"] else [], _want["premiere"], _cred)
     if _g2 != _w2:
         _bad.append(f"{_k}: {_g2} != {_w2}")
-check(f"opera: all {len(_cases)} subtitle cases (skip, audience, genre, premiere, display, credits)", _bad, [])
+check(f"opera: all {len(_cases)} subtitle cases (skip, audience, genre, premiere, credits)", _bad, [])
+check("opera: opera_place returns only what is stored (no display rule in Python)",
+      sorted(O.opera_place("adults", "opera", "x", has_buy=True)), ["credits", "genres", "premiere", "skip"])
 check("opera: 42 cases", len(_cases), 42)
 check("opera: children's view <=> Детски, across the cases",
-      all(v["skip"] or (O.opera_place(*k.split("|", 2), has_buy=False)["audience"] == "children")
+      all(v["skip"] or (k.split("|", 1)[0] == "children")
           == ("Детски" in O.opera_place(*k.split("|", 2), has_buy=False)["genres"])
           for k, v in _cases.items()), True)
-check("opera: no displayed subtitle still holds ПРЕМИЕРА",
-      [k for k in _cases if "ПРЕМИЕРА" in O.opera_place(*k.split("|", 2), has_buy=False)["display"].split()], [])
-check("opera: ПРЕМИЕРА inside a word is not the token", O.opera_subtitle("Опера ПРЕМИЕРАТА")[:2], ("Опера ПРЕМИЕРАТА", False))
+check("opera: ПРЕМИЕРА inside a word is not the token", O.opera_subtitle("Опера ПРЕМИЕРАТА"), (False, {}))
 check("opera: an 'event' row WITH a ticket link is kept (only the broadcast without tickets is skipped)",
       O.opera_place("adults", "event", "Събитие", has_buy=True)["skip"], False)
 check("opera: a credit in the middle of the line is left in the subtitle (not split, not lost)",
-      O.opera_subtitle("Диригент Иван Иванов /Спектакъл за деца/"), ("Диригент Иван Иванов /Спектакъл за деца/", False, {}))
+      O.opera_subtitle("Диригент Иван Иванов /Спектакъл за деца/"), (False, {}))
+check("opera: the subtitle base drops only a closing credit",
+      (O.opera_subtitle_base("Опера от Хендел ПРЕМИЕРА Диригент Константин Тринкс"),
+       O.opera_subtitle_base("Музика Бени Андершон /Режисьор Пламен Карталов/"),
+       O.opera_subtitle_base("Диригент Иван Иванов /Спектакъл за деца/")),
+      ("Опера от Хендел ПРЕМИЕРА", "Музика Бени Андершон", "Диригент Иван Иванов /Спектакъл за деца/"))
 
 # --- the production page's labelled fields (§2.1.8), verbatim, absent when the label is
 _f67 = O.parse_opera_production(fx("opera_production_1067.html"))
@@ -3749,14 +3758,13 @@ check("opera buy-tickets: no 'Ценови категории EUR' heading, no p
 O.OPERA_FACTS = {}
 _net0 = FakeNet(_op_pages())
 _res0 = O.fetch_opera(_net0, OP_TODAY)
-check("fetch_opera: the production pass is off until a consumer of its facts lands (no /repertoire, "
-      "no /buy-tickets GET; at most OPERA_MONTHS × 3 calendar GETs a night; no facts on a row)",
-      (O.OPERA_FACTS_ON, [u for u in _net0.asked if "/calendar/" not in u], len(_net0.asked) <= O.OPERA_MONTHS * 3,
-       any("facts" in r[3] for r in _res0["rows"] + _res0["extra_rows"])), (False, [], True, False))
-check("fetch_opera: every operasofia.bg GET carries the honest User-Agent, never netfetch's browser one",
-      ({(k.get("headers") or {}).get("User-Agent") for k in _net0.kw}, len(_net0.kw) == len(_net0.asked)),
-      ({"SofiaGleda/1.0 (+https://sofiagleda.com)"}, True))
-O.OPERA_FACTS_ON = True                          # the production pass's own tests (kept for when it is on)
+check("fetch_opera: the production pass is on (its consumer: SHOWS.facts), bounded: at most OPERA_MONTHS × 3 "
+      "calendar GETs plus OPERA_PAGE_CAP production and OPERA_PRICE_CAP buy-tickets GETs a night",
+      (O.OPERA_FACTS_ON, len([u for u in _net0.asked if "/calendar/" in u]) <= O.OPERA_MONTHS * 3,
+       len([u for u in _net0.asked if "/repertoire/" in u]) <= O.OPERA_PAGE_CAP,
+       len([u for u in _net0.asked if "/buy-tickets/" in u]) <= O.OPERA_PRICE_CAP,
+       any("facts" in r[3] for r in _res0["rows"] + _res0["extra_rows"])), (True, True, True, True, True))
+O.OPERA_FACTS = {}
 _net = FakeNet(_op_pages())
 _res = O.fetch_opera(_net, OP_TODAY)
 _all = _res["rows"] + _res["extra_rows"]
@@ -3819,13 +3827,6 @@ finally:
 check("fetch_opera: a production page that cannot be parsed never costs the calendar (a note, no facts)",
       (len(_res_p["rows"]) > 0, any("ZeroDivisionError" in n for n in _res_p["notes"]),
        any(r[3].get("facts") for r in _res_p["rows"])), (True, True, False))
-_net_ua = FakeNet(_op_pages())
-O.fetch_opera(_net_ua, OP_TODAY)
-check("fetch_opera: the production and buy-tickets pages carry the honest User-Agent too",
-      ({(k.get("headers") or {}).get("User-Agent") for u, k in zip(_net_ua.asked, _net_ua.kw)
-        if "/repertoire/" in u or "/buy-tickets/" in u}, any("/repertoire/" in u for u in _net_ua.asked)),
-      ({"SofiaGleda/1.0 (+https://sofiagleda.com)"}, True))
-O.OPERA_FACTS_ON = False
 O.OPERA_FACTS = {}
 check("fetch_opera: the current month's page unreachable -> None (keep previous)",
       O.fetch_venue("opera", FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=11): None})), OP_TODAY), None)
@@ -3839,13 +3840,66 @@ _res_k = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12
 check("fetch_opera: a later children's page unreachable -> coverage ends before that month; its adult rows are extra rows",
       (_res_k["covered_to"], sorted({r[1][:7] for r in _res_k["extra_rows"]}),
        any("Детски" in (r[3].get("genres") or ()) for r in _res_k["extra_rows"])),
-      ("2026-11-29", ["2026-12"], False))         # (the current month: to its last listed day)
+      ("2026-11-30", ["2026-12"], False))         # (the day before December: the venue-less ШЕГОБИШКО rows of
+                                                  # 18 Nov are excluded now, so December's density passes against
+                                                  # its reference and the end is fetch_opera's own month cut)
 _res_m = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): raw("opera_calendar_2027-01.html")})),
                        OP_TODAY)
 check("fetch_opera: a later month page that names another month stops the reading, with a note",
       (_res_m["covered_to"], any("2026-12" in n for n in _res_m["notes"])), ("2026-11-29", True))
 check("fetch_opera: registered as a theatre fetcher, and 2 s between requests to operasofia.bg",
       ("opera" in O.FETCHERS, __import__("netfetch").CRAWL_DELAY.get("www.operasofia.bg", 0) >= 2.0), (True, True))
+
+
+# --- the honest User-Agent lives in netfetch: every netfetch GET to operasofia.bg carries it (the
+# programme, and the poster / synopsis passes reading its production pages), other hosts keep theirs
+def _ua_capture():
+    import netfetch as _NF2
+    sent = []
+
+    class _R:
+        status_code, content, headers, url = 200, b"User-agent: *\nDisallow:\n", {"Content-Type": "text/plain"}, ""
+
+    def _fake(f):
+        def get(url, headers=None, **kw):
+            eff = dict(f.session.headers)
+            eff.update(headers or {})
+            sent.append((url, eff.get("User-Agent")))
+            return _R()
+        f.session.get = get
+        f.session.post = lambda url, data=None, headers=None, **kw: (sent.append((url, dict(f.session.headers, **(headers or {})).get("User-Agent"))), _R())[1]
+        return f
+    return _NF2, sent, _fake
+
+
+_NF2, _sent, _fake = _ua_capture()
+_f = _fake(_NF2.Fetcher(verbose=False, host_delay=0.0))
+_f.get("https://www.operasofia.bg/repertoire/1067")
+_f.get("https://operasofia.bg/uploads/events/1067.png", headers={"User-Agent": "Mozilla/5.0 caller"})
+_f.post("https://www.operasofia.bg/x", data={})
+_f.get("https://natfiz.bg/event/")
+check("netfetch: a Fetcher GET/POST to operasofia.bg (www or bare, any caller's headers) sends the honest UA; "
+      "other hosts keep the browser UA",
+      [ua for _u, ua in _sent],
+      [_NF2.HONEST_UA, _NF2.HONEST_UA, _NF2.HONEST_UA, _NF2.BROWSER_HEADERS["User-Agent"]])
+check("netfetch: the honest UA names the site", _NF2.HONEST_UA, "SofiaGleda/1.0 (+https://sofiagleda.com)")
+check("netfetch: 2 s floor for both operasofia hosts, static in CRAWL_DELAY (no run-time patch)",
+      (_NF2.CRAWL_DELAY.get("www.operasofia.bg"), _NF2.CRAWL_DELAY.get("operasofia.bg"),
+       hasattr(O, "_opera_delay"), hasattr(O, "_oget")), (2.0, 2.0, False, False))
+import own_page_posters as _OPP
+_NF2, _sent, _fake = _ua_capture()
+_opn = _OPP.Net(budget=60)
+_opn._local.f = _fake(_NF2.Fetcher(verbose=False, host_delay=0.0))
+_opn.get("https://www.operasofia.bg/repertoire/1067")
+check("netfetch: the own-page poster / synopsis fetcher (own_page_posters.Net) sends the honest UA to operasofia.bg, "
+      "robots.txt included", [(u.rsplit("/", 1)[-1], ua) for u, ua in _sent],
+      [("robots.txt", _NF2.HONEST_UA), ("1067", _NF2.HONEST_UA)])
+import fetch_theatre_posters as _FTP
+_NF2, _sent, _fake = _ua_capture()
+_pf = _fake(_FTP.PoliteFetcher(verbose=False, host_delay=0.0))
+_pf.get("https://www.operasofia.bg/repertoire/1068")
+check("netfetch: fetch_theatre_posters' PoliteFetcher sends the honest UA to operasofia.bg",
+      {ua for _u, ua in _sent}, {_NF2.HONEST_UA})
 O.OPERA_FACTS = {}
 
 # --- keep-previous never carries a ticket link forward (DESIGN_SPEC §2.1.5); the sale column: below
