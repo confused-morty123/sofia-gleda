@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-1s0tzNpO2adyerYdKWeBEWqHRM0FBZR6sxL+m7GEAyY=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-OCh5KUQ7R/vTEYcL31ZSYlg7QQaIhCkiX2CBfTKhrR4=' 'sha256-fvlSMCcahIph5HG4ETjrMRNtN9CNeHq79oJZxwzRBkE=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-1s0tzNpO2adyerYdKWeBEWqHRM0FBZR6sxL+m7GEAyY=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-e4BHSj8BV0SIfqbFa0XWoXIU8bGhrh4nhvk9b+taXWI=' 'sha256-fvlSMCcahIph5HG4ETjrMRNtN9CNeHq79oJZxwzRBkE=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/,
      /home/opera/ and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -3714,7 +3714,7 @@ function hero(){
      LINKS        the production page /repertoire/<id>
      SHOWS        title, titleEn (the opera's own EN calendar only), genres (the calendar icon;
                   children's view = "Детски"),
-                  subtitle  fetch_opera meta "subtitle", verbatim (DESIGN_SPEC §2.1.7): hero lede,
+                  subtitle  fetch_opera meta "subtitle" minus a closing credit (opera_subtitle_base): hero lede,
                             agenda line, card line, sheet lede;
                   subtitleEn the English calendar's line by the same rule (EN; else subtitle);
                   facts     fetch_opera meta "facts" as it is: {conductor, director, duration,

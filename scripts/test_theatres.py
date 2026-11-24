@@ -4002,14 +4002,14 @@ _rs_by = {r["title"]: r for r in _rs_recs.values()}
 check("refresh_source_shows: a show minted without them gets its EN title and genres from tonight's rows",
       (_rs_by["АГРИПИНА"]["titleEn"], _rs_by["АГРИПИНА"]["genres"], _rs_by["ЖИЗЕЛ"]["genres"]),
       ("AGRIPPINA", ["Опера"], ["Балет"]))
-check("refresh_source_shows: the subtitle verbatim (ПРЕМИЕРА and the credit kept: the display rule is the UI's)",
-      _rs_by["АГРИПИНА"].get("subtitle"), "Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс")
+check("refresh_source_shows: the subtitle without its closing credit (ПРЕМИЕРА kept: the UI drops it next to the badge; the conductor is in facts)",
+      _rs_by["АГРИПИНА"].get("subtitle"), "Опера от Георг Фридрих Хендел ПРЕМИЕРА")
 check("refresh_source_shows: the production pass's facts become SHOWS.facts (conductor, the EUR categories)",
       ((_rs_by["АГРИПИНА"].get("facts") or {}).get("conductor"), (_rs_by["АГРИПИНА"].get("facts") or {}).get("prices_eur")),
       ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"]))
-check("refresh_source_shows: subtitleEn from the English calendar's lines, by the same rule (verbatim)",
+check("refresh_source_shows: subtitleEn from the English calendar's lines, by the same rule (closing credit dropped)",
       (_rs_by["АГРИПИНА"].get("subtitleEn"), "subtitleEn" in _rs_by["ЧЕРВЕНАТА ШАПЧИЦА"]),
-      ("Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks", False))
+      ("Opera by George Frideric Handel PREMIERE", False))
 check("refresh_source_shows: every refreshed show reported changed", sorted(_rs_changed) == sorted(_rs_recs), True)
 _rs_srcid = {sid: (m or {}).get("source_id") for sid, _t, _u, m in _rs_log}
 for _sid, _r in _rs_recs.items():

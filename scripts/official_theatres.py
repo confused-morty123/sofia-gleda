@@ -2593,8 +2593,8 @@ _OPERA_REP_ID = re.compile(r"/repertoire/(\d+)(?:[/?#]|$)")
 _OPERA_BUY_ID = re.compile(r"^https?://(?:www\.)?operasofia\.bg/buy-tickets/(\d+)$")
 # a conductor's / director's credit closing the subtitle: "… Диригент Константин Тринкс",
 # "… /Режисьор Пламен Карталов/", on the English page "… Conductor Konstantin Trinks",
-# "Conductor: Jean-Christophe Spinosi". The subtitle is stored verbatim with the credit in it
-# (DESIGN_SPEC §2.1.7); opera_subtitle_base drops it only to find the words every night shares.
+# "Conductor: Jean-Christophe Spinosi". SHOWS.subtitle is opera_subtitle_base: the calendar line
+# without that closing credit (the sheet lists the conductor under За спектакъла from facts).
 _OPERA_CREDIT = re.compile(r"(?:^|\s)(/?)(Диригент|Режисьор|Conductor|Director):?\s+([^/]+?)\1\s*$")
 EN_MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august",
              "september", "october", "november", "december")

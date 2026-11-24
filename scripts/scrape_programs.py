@@ -1899,7 +1899,8 @@ def refresh_source_shows(records, resolved, today_iso):
         for key, field in (("subtitle", "subtitle"), ("subtitle_en", "subtitleEn")):
             subs = {(m.get(key) or "").strip() for m in metas}
             bases = {OT.opera_subtitle_base(x) for x in subs}
-            sub = next(iter(subs)) if len(subs) == 1 else (next(iter(bases)) if len(bases) == 1 else "")
+            # shown without a closing conductor/director credit: the sheet lists it under За спектакъла
+            sub = next(iter(bases)) if len(bases) == 1 else ""
             if sub:
                 rec[field] = sub
             else:
