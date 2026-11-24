@@ -1087,6 +1087,30 @@ if data["SHOWS"] and data["THEATRES"]:
     _bad_th = sorted({str(s.get("theatre")) for s in data["SHOWS"]} - _th_ids)
     if _bad_th:
         fail(f"shows filed under unknown theatres: {', '.join(_bad_th[:6])}")
+# The Опера и балет surface is the venue with kind "opera" (OPERA_ARCHITECTURE.md §3):
+# none and its toggle would be empty, two and the surface would be doubled.
+if isinstance(data["THEATRES"], list):
+    _opera_v = [t.get("id") for t in data["THEATRES"] if isinstance(t, dict) and t.get("kind") == "opera"]
+    if len(_opera_v) != 1:
+        fail(f"THEATRES must have exactly one venue with kind \"opera\" (the Опера и балет surface), "
+             f"found {len(_opera_v)}" + (f": {', '.join(map(str, _opera_v))}" if _opera_v else ""))
+    # Shown (OPERA_ON true in the shell, not only behind ?opera=1) with nothing to show:
+    # the source is down past KEEP_DAYS. A warning, not a fail (the rest of the listings
+    # still go out); warn() so refresh_all.py copies it into health.json.
+    _opera_on = re.search(r"\bconst OPERA_ON\s*=\s*([^;\n]*)", js)
+    if _opera_v and _opera_on and re.search(r"\btrue\b", _opera_on.group(1)):
+        try:
+            import listing_window as _LWo
+            _today_o = _LWo.sofia_today().isoformat()
+        except Exception:
+            _today_o = datetime.date.today().isoformat()
+        _opera_shows = {s.get("id") for s in (data["SHOWS"] or [])
+                        if isinstance(s, dict) and s.get("theatre") in _opera_v}
+        _opera_up = [p for p in (data["PERFORMANCES"] or [])
+                     if isinstance(p, list) and len(p) > 1 and p[0] in _opera_shows and str(p[1]) >= _today_o]
+        if not _opera_up:
+            warn("opera: OPERA_ON is true but the Опера и балет surface has 0 upcoming performances "
+                 "(operasofia.bg down or changed past KEEP_DAYS?): the surface shows empty")
 if data["PERFORMANCES"]:
     _bad_rows = [p for p in data["PERFORMANCES"]
                  if not (isinstance(p, list) and len(p) == 5 and isinstance(p[0], str)
@@ -2267,9 +2291,15 @@ try:
     if _share_bad:
         fail(f"CSP: {len(_share_bad)} of {_share_n} share page(s) fail: " + "; ".join(_share_bad[:3])
              + " — run scripts/csp.py")
-    # The listings' own addresses, /home/ and /home/theatre/, are copies of index.html
-    # (gen_share_pages.py): each must be today's page, apart from its canonical address.
+    # The listings' own addresses, /home/, /home/theatre/ and /home/opera/, are copies of
+    # index.html (gen_share_pages.py): each must be today's page, apart from its canonical
+    # address. Once the copies are written (home/index.html exists), a missing one fails:
+    # its address would answer 404.
     _canon = lambda t: re.sub(r'(rel="canonical" href|property="og:url" content)="[^"]*"', r'\1=""', t)
+    if HTML.resolve() == (_FILE_ROOT / "index.html").resolve() and (_FILE_ROOT / "home" / "index.html").exists():
+        for _rel in ("home/theatre/index.html", "home/opera/index.html"):
+            if not (_FILE_ROOT / _rel).exists():
+                fail(f"{_rel} missing (gen_share_pages.py writes the copies of index.html at the listings' addresses)")
     for _hp in _csp.home_pages(_FILE_ROOT):
         _ht = _hp.read_text(encoding="utf-8")
         _rel = _hp.parent.relative_to(_FILE_ROOT).as_posix() + "/"
