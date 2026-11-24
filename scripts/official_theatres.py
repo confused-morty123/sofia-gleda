@@ -2913,13 +2913,18 @@ def opera_production_pass(net, rows, today, notes, cache=None):
 def fetch_opera(net, today):
     """The Opera's own calendar: for each of OPERA_MONTHS months the default view and
     the children's view (both, or that month is not covered), plus the English page for
-    titles (optional). The first month must read, list something and name itself;
-    a later month that fails, or is empty in both views, ends the reading. Then the production pass,
-    only while OPERA_FACTS_ON."""
+    titles (optional). A month that starts after the listing window's end is not read
+    (none of its rows would be shown). The first month must read, list something and
+    name itself; a later month that fails, or is empty in both views, ends the reading.
+    Then the production pass, only while OPERA_FACTS_ON."""
+    import listing_window
     rows, excluded, notes, en, covered_to = [], [], [], {}, None
     en_seen, en_subs = defaultdict(set), {}
+    w_to = listing_window.listing_window(today)[1]
     for i, (y, m) in enumerate(months_from(today, OPERA_MONTHS)):
         ym = f"{y}-{m:02d}"
+        if i and f"{ym}-01" > w_to:
+            break                           # starts after the listing window: nothing it lists is shown
         try:
             r, x = parse_opera(_get(net, OPERA_CAL.format(y=y, m=m)), y, m, notes=notes)
         except Unavailable as e:                        # MarkupError included

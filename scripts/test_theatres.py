@@ -3808,8 +3808,39 @@ check("fetch_opera: the missing English page is a note", any("2027-01" in n and 
 check("fetch_opera: the excluded rows (TV broadcast, West Mall Sofia) from today on",
       [(e[0], e[1]) for e in _res["excluded"]],
       [("ШЕГОБИШКО НА ОСТРОВА НА ЧУДЕСАТА", "2026-12-06"), ("ОТ ПЪРВИЯ РЕД - БНТ 2", "2026-12-19")])
-check("fetch_opera: an empty month ends the reading (February asked, March not)",
-      (O.OPERA_CAL.format(y=2027, m=2) in _net.asked, O.OPERA_CAL.format(y=2027, m=3) in _net.asked), (True, False))
+# (review-r2 #7 changed this check: February used to be asked here — an empty page that ended the
+# reading — but on 24 Nov it starts after the listing window's end, 29 Jan, so it is not asked at
+# all; the empty-month break is checked below with an empty December)
+check("fetch_opera: a month that starts after the listing window is not asked (February), nor any after it",
+      (O.OPERA_CAL.format(y=2027, m=2) in _net.asked, O.OPERA_CAL.format(y=2027, m=3) in _net.asked), (False, False))
+# review-r2 #7: a month whose first day is after listing_window(today).to costs no GET (calendar,
+# children's, English) and loses no row inside the window
+import listing_window as _LW                                       # noqa: E402
+_w_to = _LW.listing_window(OP_TODAY)[1]
+_feb = {O.OPERA_CAL.format(y=2027, m=2): raw("opera_calendar_2027-02.html"),
+        O.OPERA_CAL_KIDS.format(y=2027, m=2): _op_empty("февруари", 2027)}
+_facts_keep, O.OPERA_FACTS = O.OPERA_FACTS, {}    # (the checks below read the first run's cache)
+_net_w = FakeNet(_op_pages(**_feb))
+_res_w = O.fetch_opera(_net_w, OP_TODAY)
+_want_w = set()
+for _f, _y, _m, _k in [("opera_calendar_2026-11.html", 2026, 11, False), ("opera_children_2026-11.html", 2026, 11, True),
+                       ("opera_calendar_2026-12.html", 2026, 12, False), ("opera_children_2026-12.html", 2026, 12, True),
+                       ("opera_calendar_2027-01.html", 2027, 1, False), ("opera_children_2027-01.html", 2027, 1, True)]:
+    _want_w |= {(r[0], r[1], r[2], r[3].get("rep_id")) for r in O.parse_opera(fx(_f), _y, _m, kids=_k)[0]
+                if OP_TODAY.isoformat() <= r[1] <= _w_to}
+check("fetch_opera: a month after the listing window's end (February on 24 Nov, window to 29 Jan) costs no "
+      "calendar, children's or English GET: 9 calendar GETs, not 12",
+      (_w_to, [u for u in _net_w.asked if "2027-02" in u], len([u for u in _net_w.asked if "/calendar/" in u])),
+      ("2027-01-29", [], 9))
+check("fetch_opera: ...and every row inside the window is still there (each listed performance of Nov–Jan from today)",
+      {(r[0], r[1], r[2], r[3].get("rep_id")) for r in _res_w["rows"] + _res_w["extra_rows"] if r[1] <= _w_to} == _want_w
+      and len(_want_w) > 20, True)
+O.OPERA_FACTS = {}
+_net_w2 = FakeNet(_op_pages(**_feb))
+O.fetch_opera(_net_w2, dt.date(2026, 11, 28))     # window to 2 Feb: February starts inside it
+check("fetch_opera: a month that starts inside the window is read (February on 28 Nov, window to 2 Feb)",
+      O.OPERA_CAL.format(y=2027, m=2) in _net_w2.asked, True)
+O.OPERA_FACTS = _facts_keep
 check("fetch_opera: at most OPERA_MONTHS months", O.OPERA_MONTHS, 4)
 _f67r = _op_by(_all)[("2026-11-27", "19:00")][3].get("facts") or {}
 check("fetch_opera: the production facts reach every row of the production, adult prices from one buy-tickets page",
