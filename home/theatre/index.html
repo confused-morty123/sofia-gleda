@@ -1669,6 +1669,7 @@ button,a{-webkit-tap-highlight-color:transparent}
 @container (max-width:15.2em){
   [data-opera] .phead .phead-other{grid-column:1 / -1; grid-row:3; justify-self:start; padding-left:0; margin-block:2px -6px}
   [data-opera] .phead-tools .daystrip{grid-row:4}
+  [data-opera] .phead .phead-dates{white-space:normal}   /* "вт 24 – нд 29 ноември" wraps rather than widen the page */
 }
 /* hero: focusShows' pick, the art right on a black ground, one button (no "Или …") */
 [data-opera] .ophero{background:var(--hero-ground,#000); align-items:center; color:var(--hero-fg,#F4EFF6)}
@@ -1704,7 +1705,7 @@ button,a{-webkit-tap-highlight-color:transparent}
   [data-opera] .ophero .hero-title{font-size:27px; margin-bottom:6px}
   [data-opera] .ophero .hero-syn{margin-bottom:14px; -webkit-line-clamp:1}
   [data-opera] .ophero .acts{flex-direction:column; align-items:stretch}
-  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px; white-space:normal; text-wrap:balance}
+  [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px; white-space:normal; text-wrap:balance; min-width:0; overflow-wrap:anywhere}
 }
 /* "Програмата по дни": one row per performance; the action names the status */
 .agenda{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; margin-bottom:44px; overflow:hidden}
@@ -1760,8 +1761,9 @@ button,a{-webkit-tap-highlight-color:transparent}
   letter-spacing:.08em; text-transform:uppercase; color:var(--art-k,#D1B5FC)}
 .gp-k svg{width:1.05em; height:1.5em; flex:0 0 auto}
 /* sized by the art's height AND its width: --gl is the title's longest word (set inline), so a long word
-   is never split mid-word; overflow-wrap:anywhere stays only as the last resort */
-.gp-t{font-family:"Source Serif 4",Georgia,serif; font-weight:700; font-size:min(clamp(17px,24cqh,60px),calc(100cqi*1.55/var(--gl,8))); line-height:1.02; letter-spacing:-.012em;
+   is never split mid-word (1.38: Source Serif 4 700 capitals at card sizes run ~0.69 em a letter, its small
+   optical size being wider than at display sizes); overflow-wrap:anywhere stays only as the last resort */
+.gp-t{font-family:"Source Serif 4",Georgia,serif; font-weight:700; font-size:min(clamp(17px,24cqh,60px),calc(100cqi*1.38/var(--gl,8))); line-height:1.02; letter-spacing:-.012em;
   overflow-wrap:anywhere; text-wrap:balance; display:block; max-height:2.06em; overflow:hidden}
 /* late-day card: no rows, or nothing bookable */
 [data-opera] .late-day-card{padding:34px 22px; margin-block:18px 34px}
