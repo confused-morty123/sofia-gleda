@@ -76,11 +76,11 @@ BOT_UA = ("facebookexternalhit|facebot|facebookcatalog|twitterbot|whatsapp|teleg
 # The page's one script (csp.py: first line SHARE_MARK), the same on every page: a
 # browser goes on to the app's listing with the title open, /film/<id>/ -> /home/?film=<id>
 # (the app opens the card and puts /film/<id>/ back in the address bar). A reload keeps
-# the entry's state, so the listing it was opened from comes back: /home/theatre/ when
-# the state says so. Link-preview fetchers stay.
+# the entry's state, so the listing it was opened from comes back: /home/theatre/ or
+# /home/opera/ when the state says so. Link-preview fetchers stay.
 REDIRECT_JS = ('/* SOFIA-SHARE */\n(function(){if(/' + BOT_UA.replace("/", "\\/") + '/i.test(navigator.userAgent||""))return;'
                'var m=/^\\/(film|show|event)\\/([^\\/?#]+)\\/(?:index\\.html)?$/.exec(location.pathname),s=history.state;'
-               'location.replace((s&&s.m==="theatre"?"/home/theatre/":"/home/")+(m?"?"+m[1]+"="+m[2]:""));})();')
+               'location.replace((s&&/^(theatre|opera)$/.test(s.m)?"/home/"+s.m+"/":"/home/")+(m?"?"+m[1]+"="+m[2]:""));})();')
 
 MONTHS_BG = ["януари", "февруари", "март", "април", "май", "юни", "юли", "август",
              "септември", "октомври", "ноември", "декември"]
@@ -160,6 +160,22 @@ def _load_events():
         if isinstance(v, dict) and v.get("id"):
             names[v["id"]] = v.get("name") or ""
     return events, (_const("EVENTART") or {}), venue_of, names
+
+
+def _venue_kinds():
+    """{theatre id: kind} from THEATRES ("opera" for the Опера и балет surface)."""
+    m = re.search(r"^const THEATRES\s*=\s*(\[.*?\]);$", HTML_PATH.read_text(encoding="utf-8"), re.M)
+    try:
+        venues = json.loads(m.group(1)) if m else []
+    except Exception:
+        venues = []
+    return {v["id"]: v.get("kind") or "" for v in venues if isinstance(v, dict) and v.get("id")}
+
+
+def show_home(show, venue_kinds):
+    """The listing a show's share page goes on to: /home/opera/ when its venue's kind is
+    opera, else /home/theatre/."""
+    return "/home/opera/" if venue_kinds.get((show or {}).get("theatre")) == "opera" else "/home/theatre/"
 
 
 def _truncate(text, max_chars):
@@ -248,6 +264,7 @@ def _share_page(
     image_w=None,   # the image's size, when known
     image_h=None,
     line=None,      # a line under the title on the visible page (an event's dates and venue)
+    home=None,      # the listing a browser goes on to; default /home/theatre/ for a show, else /home/
 ):
     """Return the full HTML string for one share page."""
     display_title = title_bg
@@ -263,7 +280,8 @@ def _share_page(
     qid = urllib.parse.quote(item_id, safe="")
     canonical = _e(f"{site_url}/{kind}/{item_id}/")
     # root-relative: the visitor stays on the host that served this page
-    app_url = _e(f"{'/home/theatre/' if kind == 'show' else '/home/'}?{kind}={quote(item_id, safe='')}")
+    home = home or ("/home/theatre/" if kind == "show" else "/home/")
+    app_url = _e(f"{home}?{kind}={quote(item_id, safe='')}")
     page_title = _e(f"{title_bg} | Sofia Gleda")
     sub = line if line is not None else (title_en if title_en and title_en != title_bg else "")
     dims = ""
@@ -343,7 +361,7 @@ def _write(path, content):
     path.write_text(content, encoding="utf-8")
 
 
-def write_redirects(root, shows, renamed, poster_for, kind="show"):
+def write_redirects(root, shows, renamed, poster_for, kind="show", venue_kinds=None):
     """For each renamed show id (old -> new), write show/<old>/index.html as the
     share page of the NEW record: canonical / og:url /show/<new>/. Its script (the
     same REDIRECT_JS as every share page) takes a browser to /home/?show=<old>, and
@@ -352,7 +370,8 @@ def write_redirects(root, shows, renamed, poster_for, kind="show"):
     page written for an id SAFE_ID refuses; the directory name is the exact old id
     from show_aliases.json, never page data. Returns (written paths, refused ids).
     kind="film": the same for a film id merged into another film (film_merges.json;
-    shows = FILMS, the app maps the old id through FILM_REDIRECT)."""
+    shows = FILMS, the app maps the old id through FILM_REDIRECT). venue_kinds
+    ({theatre id: kind}) sends an opera show's page on to /home/opera/."""
     by_id = {s.get("id"): s for s in shows}
     done, bad = [], []
     for old, new in sorted(renamed.items()):
@@ -368,7 +387,8 @@ def write_redirects(root, shows, renamed, poster_for, kind="show"):
         _write(page, _share_page(
             kind=kind, item_id=new, title_bg=rec.get("bg" if film else "title", new),
             title_en=rec.get("en" if film else "titleEn", ""), syn_bg=rec.get("synBg", ""),
-            poster_url=url, site_url=SITE_URL, image_w=w, image_h=h))
+            poster_url=url, site_url=SITE_URL, image_w=w, image_h=h,
+            home=None if film else show_home(rec, venue_kinds or {})))
         done.append(page)
     return done, bad
 
@@ -376,6 +396,7 @@ def write_redirects(root, shows, renamed, poster_for, kind="show"):
 def main():
     films, shows, poster_alias, poster_map, tmdbart, showart, tmdb_base = _load_data()
     events, eventart, venue_of, venue_names = _load_events()
+    venue_kinds = _venue_kinds()
 
     film_ids = {f["id"] for f in films}
     show_ids = {s["id"] for s in shows}
@@ -424,6 +445,7 @@ def main():
             poster_url=url,
             site_url=SITE_URL,
             image_w=w, image_h=h,
+            home=show_home(show, venue_kinds),
         )
         _write(ROOT / "show" / sid / "index.html", content)
         written += 1
@@ -444,7 +466,7 @@ def main():
     except Exception as e:                      # a broken alias file
         print(f"gen_share_pages: could not read renamed ids: {e}", file=sys.stderr)
         renamed = {}
-    done, bad = write_redirects(ROOT, shows, renamed, _img)
+    done, bad = write_redirects(ROOT, shows, renamed, _img, venue_kinds=venue_kinds)
     written += len(done)
     skipped += [f"redirect:{o!r}" for o in bad]
     # --- merged film ids: film/<old>/ becomes the share page of the film kept.
@@ -459,9 +481,10 @@ def main():
     skipped += [f"film redirect:{o!r}" for o in bad]
 
     # The listings' own addresses are the app itself (no redirect): /home/ (cinema) is
-    # index.html as it is, /home/theatre/ the same page with its own canonical address.
+    # index.html as it is, /home/theatre/ and /home/opera/ the same page with its own
+    # canonical address.
     app = HTML_PATH.read_text(encoding="utf-8")
-    for rel, path in (("home", "/home/"), ("home/theatre", "/home/theatre/")):
+    for rel, path in (("home", "/home/"), ("home/theatre", "/home/theatre/"), ("home/opera", "/home/opera/")):
         page = app.replace(f'href="{SITE_URL}/home/"', f'href="{SITE_URL}{path}"', 1).replace(
             f'property="og:url" content="{SITE_URL}/home/"', f'property="og:url" content="{SITE_URL}{path}"', 1)
         d = ROOT / rel
