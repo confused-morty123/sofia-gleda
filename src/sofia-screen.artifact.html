@@ -647,8 +647,10 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
 @media (hover:hover){.dspill:hover:not([disabled]){border-color:var(--line-2); color:var(--fg)}}
 .dspill[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
 .dspill[disabled]{opacity:.32; cursor:default}
-/* Опера и балет: today with no row stays tappable (its late-day card) but looks like the empty days */
-.dspill.empty:not([aria-pressed="true"]){opacity:.32}
+/* Опера и балет: today with no row stays tappable (its late-day card); its day reads as the empty days,
+   its "днес" at the normal strength */
+.dspill.empty:not([aria-pressed="true"]){color:color-mix(in srgb,var(--fg-2) 32%,transparent); border-color:color-mix(in srgb,var(--line) 32%,transparent)}
+.dspill.empty:not([aria-pressed="true"]) .ds-today{color:var(--fg-2)}
 .dspill .ds-today{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; opacity:.8; line-height:1}
 .dspill .ds-mon{display:block; font-size:11px; font-weight:500; line-height:1.1}
 /* keep old .pbanner-btn for any .data-drawer usages */
@@ -1700,6 +1702,10 @@ button,a{-webkit-tap-highlight-color:transparent}
 .ag-act.so{color:var(--fg-3); font-weight:500; padding:0 4px}
 .agrow.so .ag-t,.agrow.so .ag-main b{color:var(--fg-2)}
 .ag-more{display:flex; justify-content:center; padding:12px; border-top:1px solid var(--line)}
+/* "Още N детски представления …": the agenda leaves the children's out (they have their own view) and says so */
+.ag-kids{display:flex; padding:0 16px; border-top:1px solid var(--line)}
+.ag-kids .rlink{margin-left:0; text-align:left}
+@media(min-width:761px){ .ag-kids{padding:0 20px} }
 .btn.line{background:transparent; border-color:var(--line-2); color:var(--fg)}
 /* badges: 11 px (the site's floor); scoped so no row or card text rule can turn them grey */
 .badge-g,.ag-main .badge-g,.cf1 .badge-g{display:inline-block; font-size:11px; font-weight:700; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--accent-text); vertical-align:1px; margin-left:6px; line-height:1.4; letter-spacing:0; text-transform:none}
@@ -1720,18 +1726,28 @@ button,a{-webkit-tap-highlight-color:transparent}
 /* a picture hides the typographic art under it; when the failure trap removes the picture, the art shows */
 [data-opera] .ophero .hero-art:has(> img.p-real) > .gp,[data-opera] .opcard .ebox:has(> img.p-real) > .gp,
 .shero.shero-op:has(> img.p-real) > .gp{visibility:hidden}
-/* the title in capitals (the opera publishes both cases), at most 2 lines and always 2 lines tall, so
-   the lines under it align across a rail; a title two productions share keeps its stage in full */
+/* the title in capitals (the opera publishes both cases), at most 2 lines; the cards of a rail are one
+   height (the track stretches them) and the date line sits at the bottom (.cf3 margin-top:auto), so
+   any spare room is above it, never between the title and the subtitle */
 [data-opera] .opcard .cf1{display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; font-size:14px; font-weight:600;
-  line-height:1.25; color:var(--fg); min-height:2.5em; white-space:normal; text-transform:uppercase; letter-spacing:.02em}
-[data-opera] .opcard .cf1:has(> .stg){display:block; -webkit-line-clamp:unset; overflow:visible}
+  line-height:1.25; color:var(--fg); min-height:0; white-space:normal; text-transform:uppercase; letter-spacing:.02em}
+/* a title two productions share: its stage on a line of its own under it, as published */
+[data-opera] .opcard .cfh{display:block; margin-top:-4px; font-size:12.5px; font-weight:500; line-height:1.3; color:var(--fg-2)}
 [data-opera] .opcard .cf2{display:block; font-size:12px; line-height:1.35; color:var(--fg-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-[data-opera] .opcard .cf3{display:block; font-size:12px; line-height:1.4; color:var(--fg-3); font-variant-numeric:tabular-nums}
+/* the badge (Премиера / Разпродадено) a row of its own, then the date and the count (or the time). The
+   "·" before the count is drawn in the gap and clipped when the count wraps to the start of a line,
+   so no line starts with it */
+[data-opera] .opcard .cf3{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:.9em; overflow:hidden; margin-top:auto;
+  font-size:12px; line-height:1.4; color:var(--fg-3); font-variant-numeric:tabular-nums}
 [data-opera] .opcard .cf3 b{color:var(--fg); font-weight:600; white-space:nowrap}
-[data-opera] .opcard .cf3 .n{white-space:nowrap}
-[data-opera] .opcard .cf3{min-height:2.8em}   /* a badge can push the count to a second line: every card keeps room for it */
-/* Премиера / Разпродадено open the date line: one slot, whatever the title's length */
-[data-opera] .opcard .cf3 .badge-g,[data-opera] .opcard .cf3 .badge-s{margin:0 6px 0 0}
+[data-opera] .opcard .cf3 .n{position:relative; white-space:nowrap}
+[data-opera] .opcard .cf3 .n::before{content:"·"; content:"·"/""; position:absolute; right:100%; width:.9em; text-align:center}
+[data-opera] .opcard .cf3 .tags{flex:0 0 100%; display:flex; flex-wrap:wrap; gap:4px 6px; margin-bottom:3px}
+[data-opera] .opcard .cf3 .badge-g,[data-opera] .opcard .cf3 .badge-s{margin:0}
+/* a capped rail ends with "Всички N ›": the card's height, the one-genre view of that rail */
+[data-opera] .opall{flex:0 0 auto; width:128px; display:flex; align-items:center; justify-content:center; padding:0 12px; text-align:center;
+  border:1px solid var(--line); border-radius:var(--r); background:var(--ink-2); font-size:13px; font-weight:600; color:var(--fg-2); scroll-snap-align:start}
+@media(hover:hover){ [data-opera] .opall:hover{border-color:var(--line-2); color:var(--fg)} }
 /* a closing note of the subtitle ("Спектакъл на Държавна опера – Пловдив"), on its own line */
 .op-tail{color:var(--fg-3)}
 .slede.op-tail{margin-top:2px; font-size:13.5px}
@@ -1741,6 +1757,12 @@ button,a{-webkit-tap-highlight-color:transparent}
    darkened, fills the band behind the fitted one, so no flat black bars (opArt's .p-bg) */
 [data-opera] .opcard .ebox img.p-bg,.shero.shero-op img.p-bg,[data-opera] .ophero .hero-art img.p-bg{position:absolute; inset:0; width:100%; height:100%;
   object-fit:cover; object-position:center; filter:blur(18px) brightness(.45) saturate(1.2); transform:scale(1.2); pointer-events:none; -webkit-mask-image:none; mask-image:none}
+/* a picture narrower than its band (.p-pb, set on load): the element is the picture itself, centred, its
+   left and right edges fading over 24 px into the backdrop, so a near-black edge leaves no seam */
+[data-opera] .opcard .ebox img.p-real.p-pb,.shero.shero-op img.p-real.p-pb{width:auto; max-width:100%; left:0; right:0; margin-inline:auto;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent); mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
+@media(max-width:760px){ [data-opera] .ophero .hero-art img.p-real.p-pb{width:auto; max-width:100%; margin-inline:auto;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent); mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)} }
 .rlink{font-size:13px; font-weight:600; color:var(--fg-2); min-height:44px; display:inline-flex; align-items:center; margin-left:auto; padding:0 2px}
 /* typographic art when the opera publishes no picture: the title in Source Serif on the --art-* ground */
 .gp{position:absolute; inset:0; container-type:size; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding:6%;
@@ -1814,11 +1836,17 @@ a.p3e-pill.oppill.buy{background:var(--ink-4); border:1px solid var(--fg-2); col
 .p3e-pill.oppill.so{background:transparent; border:1px solid var(--fg-3); color:var(--fg-3)}
 .p3e-pill.oppill.so small{color:var(--fg-3)}
 .p3e-pill.oppill.pre{background:transparent; border:1px dashed var(--fg-3)}
-.p3e-pill.oppill.focus{box-shadow:0 0 0 2px var(--ink-3),0 0 0 4px var(--fg)}
-/* a sold-out performance is not marked as the pick: the ring read as a focus ring on a dead pill */
-.p3e-pill.oppill.so.focus{box-shadow:none}
+/* the picked performance: a violet border (a sold-out one is not marked); the double ring is focus only */
+.p3e-pill.oppill.focus:not(.so){border:1.5px solid var(--accent)}
+.p3e-pill.oppill:focus-visible{outline:none; box-shadow:0 0 0 2px var(--ink-3),0 0 0 4px var(--fg)}
 footer .opsrc{display:none; margin:10px 0 0; max-width:80ch}
 [data-opera] footer .opsrc{display:block}
+/* Опера и балет: no empty band under the last rail; the footer's own bottom clears the FAB (its offset,
+   its 48 px, 16 px), so its last link scrolls out from under it */
+[data-opera] main{padding-bottom:0}
+[data-opera] footer{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+@media (hover:none) and (pointer:coarse){ [data-opera] footer{padding-bottom:calc(max(72px,calc(16px + env(safe-area-inset-bottom,0px))) + 64px)} }
+@media (hover:none) and (pointer:coarse) and (display-mode:standalone){ [data-opera] footer{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))} }
 </style>
 
 <div id="app"><div style="padding:64px 20px;text-align:center;color:#958A9C;font:14px system-ui">
@@ -1879,6 +1907,12 @@ const HERO_PINS = [{"mode":"cinema","id":"igrite-na-glada-izgrevat-v-denya-na-zh
   document.addEventListener("error",function(e){
     var el=e.target;
     if(el&&el.tagName==="IMG"&&(el.classList.contains("p-real")||el.classList.contains("p-bg")))el.remove();
+  },true);
+  /* an opera picture over its blurred backdrop (.p-bg) that is narrower than its band: .p-pb (CSS fades its edges) */
+  document.addEventListener("load",function(e){
+    var el=e.target,bg=el&&el.previousElementSibling;
+    if(el&&el.tagName==="IMG"&&el.classList.contains("p-real")&&bg&&bg.classList.contains("p-bg")&&el.naturalHeight&&el.clientHeight)
+      el.classList.toggle("p-pb",el.naturalWidth/el.naturalHeight<el.clientWidth/el.clientHeight-.02);
   },true);
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
@@ -3583,7 +3617,9 @@ const OPT={
   soldWord:"разпродадено",fromPrice:"от {p} €",allDays:"Покажи всички дни ({n})",stripAll:"Всички дни",stageUnknown:"Сцената не е обявена",
   buyAria:"Купи билет: {t}, {d}, {h}",moreAria:"{t}: още без онлайн билети, виж повече на operasofia.bg",
   soldAria:"{d} {h}, разпродадено",preAria:"{d} {h}, още без онлайн билети, виж повече на operasofia.bg",
-  railH:{opera:"Опера",ballet:"Балет",concert:"Концерти",musical:"Мюзикъли",kids:"Спектакли за деца"},kidsOnly:"Само за деца ›",
+  railH:{opera:"Опера",ballet:"Балет",concert:"Концерти",musical:"Мюзикъли",kids:"Спектакли за деца"},kidsOnly:"Само за деца ›",allN:"Всички {n} ›",
+  kidsMore:["Още {n} детско представление {w} ›","Още {n} детски представления {w} ›"],
+  kidsWhen:{week:"тази седмица",today:"днес",day:"в този ден",other:"в този период"},
   noun:{opera:"опери",ballet:"балети",concert:"концерти",musical:"мюзикъли",kids:"спектакли за деца"},nounAll:"представления в операта",
   whenToday:"Днес",whenDay:"В този ден",whenWeek:"Тази седмица",whenPeriod:"През тези дни",
   lateNone:"{w} няма {n}",lateNoTix:"{w} няма {n} с билети",lateAllSold:"Всичко по-долу е разпродадено.",lateNotYet:"Още няма онлайн билети.",
@@ -3605,7 +3641,9 @@ const OPT={
   soldWord:"sold out",fromPrice:"from €{p}",allDays:"Show all days ({n})",stripAll:"All days",stageUnknown:"Stage not announced",
   buyAria:"Buy tickets: {t}, {d}, {h}",moreAria:"{t}: no online tickets yet, see more on operasofia.bg",
   soldAria:"{d} {h}, sold out",preAria:"{d} {h}, no online tickets yet, see more on operasofia.bg",
-  railH:{opera:"Opera",ballet:"Ballet",concert:"Concerts",musical:"Musicals",kids:"Children's shows"},kidsOnly:"Children's only ›",
+  railH:{opera:"Opera",ballet:"Ballet",concert:"Concerts",musical:"Musicals",kids:"Children's shows"},kidsOnly:"Children's only ›",allN:"All {n} ›",
+  kidsMore:["{n} more children's performance {w} ›","{n} more children's performances {w} ›"],
+  kidsWhen:{week:"this week",today:"today",day:"on this day",other:"in this period"},
   noun:{opera:"operas",ballet:"ballets",concert:"concerts",musical:"musicals",kids:"children's shows"},nounAll:"performances at the Opera",
   whenToday:"Today",whenDay:"On this day",whenWeek:"This week",whenPeriod:"In these days",
   lateNone:"{w} there are no {n}",lateNoTix:"{w} there are no {n} with tickets",lateAllSold:"Everything below is sold out.",lateNotYet:"No online tickets yet.",
@@ -3784,35 +3822,44 @@ function opAgenda(rows){
     const head=`${opCap(opWeekday(d))}, ${opLongDate(d)}${opYear(d)}`;
     return`<section class="agday" aria-label="${esc(head)}"><h3>${esc(head)}${d===TODAY?`<small>${esc(O.today)}</small>`:""}</h3><div class="agrows">${rs}</div></section>`;}).join("");
   const more=days.length>shown.length?`<div class="ag-more"><button class="btn line sm" data-opalldays="${esc(key)}">${esc(fillT(O.allDays,{n:days.length}))}</button></div>`:"";
+  /* with no genre pressed the children's performances are left out (§5.3): the last row says how
+     many the period has and opens their view */
+  const kn=g?0:upcomingPerfs(PERFORMANCES.filter(p=>inRange(p[1])&&opKid(showById[p[0]])&&inSurf(showById[p[0]]))).length;
+  const kw=O.kidsWhen[S.day==="week"?"week":S.day===TODAY?"today":/^\d{4}-\d{2}-\d{2}$/.test(S.day)?"day":"other"];
+  const kids=kn?`<div class="ag-kids"><button class="rlink" data-opgenre="kids">${esc(fillT(O.kidsMore[kn===1?0:1],{n:kn,w:kw}))}</button></div>`:"";
   return`<section class="rail opagenda"><div class="rhead"><h2>${esc(O.agendaH)}</h2><span class="sub">${esc(plural(rows.length,L.plPerf)+(g?" · "+opGenreLabel(g):"")+" · "+O.agendaSub)}</span></div>
-    <div class="agenda">${html}${more}</div></section>`;}
+    <div class="agenda">${html}${more}${kids}</div></section>`;}
 /* a rail card: opens the sheet at the next bookable date (§5.6) */
 function opCard(sh,ps,dup){
   const O=opT(),L=t(),a=ps[0],b=ps[ps.length-1],allSo=ps.every(p=>opStatus(p)==="so");
-  const when=ps.length===1?`<b>${esc(opShortDate(a[1])+opYear(a[1]))}</b> · ${esc(a[2])}`
-    :`<b>${esc((a[1]===b[1]?opLongDate(a[1]):a[1].slice(0,7)===b[1].slice(0,7)?`${dUTC(a[1]).getUTCDate()} – ${opLongDate(b[1])}`:`${opLongDate(a[1])} – ${opLongDate(b[1])}`)+opYear(b[1]))}</b> <span class="n">· ${esc(plural(ps.length,L.plPerf))}</span>`;
+  /* the "·" before .n is CSS's (drawn only when the two share a line) */
+  const when=ps.length===1?`<b>${esc(opShortDate(a[1])+opYear(a[1]))}</b><span class="n">${esc(a[2])}</span>`
+    :`<b>${esc((a[1]===b[1]?opLongDate(a[1]):a[1].slice(0,7)===b[1].slice(0,7)?`${dUTC(a[1]).getUTCDate()} – ${opLongDate(b[1])}`:`${opLongDate(a[1])} – ${opLongDate(b[1])}`)+opYear(b[1]))}</b><span class="n">${esc(plural(ps.length,L.plPerf))}</span>`;
   const tags=(opPremAhead(sh.id)?`<span class="badge-g">${esc(O.premiere)}</span>`:"")+(allSo?`<span class="badge-s">${esc(O.soldBadge)}</span>`:"");
-  const go=ps.find(p=>opStatus(p)==="buy")||a,sub=opSub(sh);
+  const go=ps.find(p=>opStatus(p)==="buy")||a,sub=opSub(sh),hall=dup&&dup.has(titleOf(sh))&&a[3]?opStage(a):"";
   return`<button class="ecard opcard" data-show="${esc(sh.id)}" data-pd="${esc(go[1])}" data-pt="${esc(go[2])}"><span class="ebox">${opArt(sh)}</span>
-    <span class="cf1">${opTitleHtml(sh,dup,a[3]?opStage(a):"")}</span>${opSubHtml(sub,"span","cf2")}
-    <span class="cf3">${tags}${when}</span></button>`;}
+    <span class="cf1">${esc(titleOf(sh))}</span>${hall?`<span class="cfh">${esc(hall)}</span>`:""}${opSubHtml(sub,"span","cf2")}
+    <span class="cf3">${tags?`<span class="tags">${tags}</span>`:""}${when}</span></button>`;}
 /* the "По жанр" rails over the look-ahead, open: no exclusion, at most 10 cards (all of them in a
    one-genre view, "Само за деца ›" included), a rail of one card is not drawn; "Спектакли за деца"
-   last, with "Само за деца ›" (§5.6). The 10 are the productions with a date not sold out first, so
-   a sold-out run never takes a bookable one's place, shown in date order; the count is all of them */
+   last, with "Само за деца ›" (§5.6). Order: the productions with a bookable date (by that date),
+   then those with a date not sold out (by it), then the sold-out ones (by their first date), so a
+   sold-out run never takes a bookable one's place or comes before it; the count is all of them, and
+   a capped rail ends with "Всички N ›" (its one-genre view) */
 function opRails(){
   const O=opT(),L=t(),m=opByShow(opAhead()),g=S.fGenres[0];
-  const soldOut=([,ps])=>ps.every(p=>opStatus(p)==="so");
+  const rank=([,ps])=>{const b=ps.find(p=>opStatus(p)==="buy"),o=ps.find(p=>opStatus(p)!=="so"),p=b||o||ps[0];return[b?0:o?1:2,p[1]+p[2]];};
+  const byRank=(x,y)=>{const a=rank(x),b=rank(y);return a[0]-b[0]||a[1].localeCompare(b[1]);};
   return OP_GORDER.filter(k=>!g||k===g).map(k=>{
-    const all=[...m].filter(([id])=>showById[id]&&opGenreOf(showById[id])===k);
-    const pick=g?all:[...all.filter(i=>!soldOut(i)),...all.filter(soldOut)].slice(0,10);
-    const items=all.filter(i=>pick.includes(i));
+    const all=[...m].filter(([id])=>showById[id]&&opGenreOf(showById[id])===k).sort(byRank);
+    const items=g?all:all.slice(0,10);
     if(items.length<2)return null;
     const dup=opDupSet(items.map(i=>i[0]));
-    const link=k==="kids"&&g!=="kids"?`<button class="rlink" data-opkids>${esc(O.kidsOnly)}</button>`:"";
+    const link=k==="kids"&&g!=="kids"?`<button class="rlink" data-opgenre="kids">${esc(O.kidsOnly)}</button>`:"";
+    const end=items.length<all.length?`<button class="opall" data-opgenre="${esc(k)}" aria-label="${esc(O.railH[k]+": "+fillT(O.allN,{n:all.length}).replace(" ›",""))}">${esc(fillT(O.allN,{n:all.length}))}</button>`:"";
     return{html:()=>`<section class="rail"><div class="rhead"><h2>${esc(O.railH[k])}</h2><span class="sub">${all.length}</span>${link}</div>
    <div class="rscroll"><button class="rarrow prev" data-scroll="-1" aria-label="${esc(L.railBack)}"><span aria-hidden="true">‹</span></button>
-   <div class="rtrack">${items.map(([id,ps])=>opCard(showById[id],ps,dup)).join("")}</div>
+   <div class="rtrack">${items.map(([id,ps])=>opCard(showById[id],ps,dup)).join("")}${end}</div>
    <button class="rarrow next" data-scroll="1" aria-label="${esc(L.railFwd)}"><span aria-hidden="true">›</span></button></div></section>`};
   }).filter(Boolean);}
 function opBody(){
@@ -3863,7 +3910,9 @@ function opTimesHtml(sh,perfs,fp){
   const by={};perfs.forEach(p=>{const k=opStage(p)+"|"+p[1];(by[k]=by[k]||{venueId:opStage(p),dateStr:p[1],times:[],price:""}).times.push(p[2]);});
   const norm=Object.values(by);norm.forEach(r=>r.times.sort());
   const vmap=v=>({name:v,area:opHallArea(v),price:""});
-  const pillFn=(v,d,tm)=>{const p=perfs.find(x=>opStage(x)===v&&x[1]===d&&x[2]===tm);return p?opPill(sh,p,p===fp):"";};
+  /* the picked performance is marked only among others of its day (one pill alone is not a choice) */
+  const pick=fp&&perfs.filter(x=>x[1]===fp[1]).length>1?fp:null;
+  const pillFn=(v,d,tm)=>{const p=perfs.find(x=>opStage(x)===v&&x[1]===d&&x[2]===tm);return p?opPill(sh,p,p===pick):"";};
   const firstBk=perfs.find(p=>opStatus(p)==="buy");
   const sel=fp?fp[1]:(firstBk?firstBk[1]:perfs[0][1]);
   const dates=[...new Set(perfs.map(p=>p[1]))].sort();
@@ -3878,7 +3927,11 @@ const opDur=v=>{const s=String(v||"").trim(),m=/^(\d{1,2}):([0-5]\d)(?:\s+(.+))?
   return m?`${+m[1]*60+ +m[2]} ${t().min}${m[3]?" · "+m[3]:""}`:s;};
 function opCredits(sh){
   const O=opT(),f=sh.facts||{},b=opBuyPrices(sh);
+  /* the production page's sentence opens with the label's own word ("Цени за възрастен 8 €…"): shown
+     without it, under the label */
   let price=notEmpty(f.prices)||"",priceLabel=O.cred.prices;
+  const pw=/^(?:Цени|Prices)(?:\s*:\s*|\s+)(?=\S)/i.exec(price);
+  if(pw)price=opCap(price.slice(pw[0].length));
   /* the read performance's categories, labelled with its date: "Цени (27 ное)" */
   if(!price&&b){const lo=Math.min(...b.nums),hi=Math.max(...b.nums);
     price=lo===hi?fillT(O.priceOne,{a:opNum(lo)}):fillT(O.priceRange,{a:`${opNum(lo)}–${opNum(hi)}`,n:b.nums.length});
@@ -7693,8 +7746,9 @@ document.addEventListener("click",e=>{
   const gf=q("[data-genre]"); if(gf){const v=gf.dataset.genre;
     S.fGenres=!v?[]:S.mode==="opera"?(S.fGenres.length===1&&S.fGenres[0]===v?[]:[v]):toggleArr(S.fGenres,v);
     S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
-  /* Опера и балет: "Само за деца ›" presses "За деца" and goes to the top; "Покажи всички дни (N)" */
-  if(q("[data-opkids]")){S.fGenres=["kids"];render();window.scrollTo({top:0});return;}
+  /* Опера и балет: "Само за деца ›", a rail's "Всички N ›" and the agenda's children's row press that
+     genre and go to the top; "Покажи всички дни (N)" */
+  const opg=q("[data-opgenre]"); if(opg){S.fGenres=[opg.dataset.opgenre];render();window.scrollTo({top:0});return;}
   const oad=q("[data-opalldays]"); if(oad){S.opAllDays=oad.dataset.opalldays;render();return;}
   const vf=q("[data-venue]"); if(vf){const v=vf.dataset.venue;S.fVenues=v?toggleArr(S.fVenues,v):[];S.limit=30;(S.drawer?renderKeepDrawer():render());return;}
   /* P3A item 7: star a venue / toggle only-favourites */

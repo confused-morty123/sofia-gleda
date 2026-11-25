@@ -23474,7 +23474,9 @@ OP2_FIX_RAILS_JS = r"""(opId) => {
   const kids = () => { const box = document.createElement('div');
     box.innerHTML = opRails().map(r => r.html()).join('');
     const s = [...box.querySelectorAll('section.rail')].find(x => (x.querySelector('h2') || {}).textContent === opT().railH.kids);
-    return s ? {n: (s.querySelector('.rhead .sub') || {}).textContent, cards: [...s.querySelectorAll('.opcard')].map(c => c.dataset.show)} : null; };
+    const end = s && s.querySelector('.opall');
+    return s ? {n: (s.querySelector('.rhead .sub') || {}).textContent, cards: [...s.querySelectorAll('.opcard')].map(c => c.dataset.show),
+                end: end ? [end.textContent, end.dataset.opgenre, !end.nextElementSibling] : null} : null; };
   S.day = 'week'; S.fGenres = []; const all = kids();
   S.fGenres = ['kids']; const only = kids(); S.fGenres = [];
   return {all, only}; }"""
@@ -23494,8 +23496,9 @@ OP2_FIX_SUBS_JS = r"""(poster) => {
   const lang = S.lang; S.lang = 'en'; const en = [opSub(showById['op2-karmen']), opSub(showById['op2-zhizel'])]; S.lang = lang;
   return {sh: cf2('op2-shapchitsa'), pe: cf2('op2-pepelyashka'), ka: cf2('op2-karmen'), en,
     slashes: [...box.querySelectorAll('.cf2')].filter(e => e.textContent.includes('/')).map(e => e.textContent),
-    badgeFirst: !!(f3 && f3.firstElementChild && f3.firstElementChild.matches('.badge-s')), badgeInTitle: !!(kc && kc.querySelector('.cf1 [class^="badge"]')),
-    art: kc ? [...kc.querySelectorAll('.ebox img')].map(i => [i.className, i.getAttribute('aria-hidden')]) : null,
+    badgeFirst: !!(f3 && f3.firstElementChild && f3.firstElementChild.matches('.tags') && f3.firstElementChild.querySelector('.badge-s')),
+    badgeInTitle: !!(kc && kc.querySelector('.cf1 [class^="badge"]')),
+    art: kc ? [...kc.querySelectorAll('.ebox img')].map(i => [i.classList[0], i.getAttribute('aria-hidden')]) : null,
     dur: [opDur('01:00'), opDur('2:10 Антракти 1'), opDur('около 2 часа')]}; }"""
 
 OP2_FIX_DOM_JS = r"""() => { const m = document.querySelector('#app main');
@@ -23516,8 +23519,64 @@ OP2_FIX_SHEET_JS = r"""() => { const sc = document.getElementById('scrim'), sh =
 OP2_FIX_TODAY_JS = r"""() => { for (let i = PERFORMANCES.length - 1; i >= 0; i--)
     if (PERFORMANCES[i][1] === TODAY && surfOf(showById[PERFORMANCES[i][0]]) === 'opera') PERFORMANCES.splice(i, 1);
   S.day = 'week'; render(); window.scrollTo(0, 0);
-  const b = document.querySelector(`#app .dspill[data-day="${TODAY}"]`), e = [...document.querySelectorAll('#app .dspill[disabled]')][0];
-  return b ? {disabled: b.disabled, empty: b.classList.contains('empty'), op: getComputedStyle(b).opacity, other: e ? getComputedStyle(e).opacity : null} : null; }"""
+  const b = document.querySelector(`#app .dspill[data-day="${TODAY}"]`), tl = b && b.querySelector('.ds-today');
+  const full = document.querySelector('#app .dspill:not(.empty):not([disabled]):not([aria-pressed="true"])');
+  return b ? {disabled: b.disabled, empty: b.classList.contains('empty'), op: getComputedStyle(b).opacity, day: getComputedStyle(b).color,
+              today: tl ? getComputedStyle(tl).color : null, fullDay: full ? getComputedStyle(full).color : null} : null; }"""
+
+# Round 3 (2026-11-25). Every opera card: no text line starts with "·" (the count's separator is a
+# ::before in the gap, clipped by .cf3 when the count wraps); a card squeezed to 150 px shows that
+# wrap. The cards of a rail are one height, the date line at the bottom, no min-heights; a shared
+# title's stage on its own line (.cfh), no "·" in the title.
+OP2_R3_CARDS_JS = r"""() => { const m = document.querySelector('#app main'), out = {textDots: [], lineStart: [], bad: [], rails: [], hall: []};
+  const scan = c => { const f3 = c.querySelector('.cf3'), fr = f3.getBoundingClientRect(), cs = getComputedStyle(f3);
+    const w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT); let t;
+    while ((t = w.nextNode())) { const rg = document.createRange(); rg.selectNodeContents(t);
+      if (/^\s*·/.test(t.textContent)) out.textDots.push(c.dataset.show + ': ' + t.textContent); }
+    for (const n of c.querySelectorAll('.cf3 .n')) { const r = n.getBoundingClientRect(), b = getComputedStyle(n, '::before');
+      const start = r.left - fr.left < 2;
+      if (start) out.lineStart.push(c.dataset.show);
+      if (cs.overflow !== 'hidden' || b.position !== 'absolute' || !b.content.includes('·')) out.bad.push(c.dataset.show + ' sep ' + b.content + ' ' + b.position + ' ' + cs.overflow);
+      if (!start && r.left - fr.left < parseFloat(b.width)) out.bad.push(c.dataset.show + ' sep outside'); } };
+  [...m.querySelectorAll('.opcard')].forEach(scan);
+  const k = m.querySelector('.opcard[data-show="op2-karmen"]');
+  if (k) { k.style.width = '150px'; scan(k); out.squeezed = out.lineStart.includes('op2-karmen'); k.style.width = ''; }
+  for (const s of m.querySelectorAll('section.rail:not(.opagenda)')) { const cs = [...s.querySelectorAll('.opcard')];
+    out.rails.push({h: s.querySelector('h2').textContent, heights: [...new Set(cs.map(c => Math.round(c.getBoundingClientRect().height)))],
+      endH: s.querySelector('.opall') ? Math.round(s.querySelector('.opall').getBoundingClientRect().height) : null,
+      unpinned: cs.filter(c => Math.abs(c.getBoundingClientRect().bottom - c.querySelector('.cf3').getBoundingClientRect().bottom) > 1).map(c => c.dataset.show)}); }
+  const c1 = m.querySelector('.opcard .cf1'), c3 = m.querySelector('.opcard .cf3');
+  out.minH = [getComputedStyle(c1).minHeight, getComputedStyle(c3).minHeight];
+  for (const c of m.querySelectorAll('.opcard[data-show^="op2-karnaval"]')) { const h = c.querySelector('.cfh');
+    out.hall.push([c.dataset.show, c.querySelector('.cf1').textContent, h ? h.textContent : null, h ? getComputedStyle(h).textTransform : null]); }
+  return out; }"""
+
+# the agenda with no genre pressed: its last row "Още N детски представления …" (N the children's
+# performances in the period), which opens the children's view; none with a genre pressed
+OP2_R3_AGENDA_JS = r"""() => { S.day = 'week'; S.fGenres = []; render(); window.scrollTo(0, 0);
+  const a = document.querySelector('#app main .opagenda'), k = a && a.querySelector('.agenda > .ag-kids:last-child button[data-opgenre="kids"]');
+  const [lo, hi] = rangeBounds();
+  return {text: k ? k.textContent : null, lo, hi, today: TODAY}; }"""
+
+# the picked performance among others of its day: a 1.5 px violet border, no ring; alone on its day: not
+# marked; the production page's price sentence without its leading "Цени"
+OP2_R3_SHEET_JS = r"""(d1) => { const sh = showById['op2-aida'], aside = document.createElement('div');
+  const two = [['op2-aida', d1, '15:00', 'Голяма зрителна зала', null, 'notyet'], ['op2-aida', d1, '19:00', 'Голяма зрителна зала', null]];
+  document.body.appendChild(aside); aside.innerHTML = opTimesHtml(sh, two, two[1]);
+  const f = [...aside.querySelectorAll('.p3e-pill.oppill.focus')], cs = f[0] && getComputedStyle(f[0]);
+  const pick = f.map(e => e.textContent), border = cs ? [cs.borderTopWidth, cs.borderTopColor, cs.boxShadow] : null;
+  aside.innerHTML = opTimesHtml(sh, [two[1]], two[1]); const alone = aside.querySelectorAll('.p3e-pill.oppill.focus').length;
+  const price = v => { sh.facts = {prices: v}; aside.innerHTML = opCredits(sh); const dd = aside.querySelector('.credits dd'); return dd ? dd.textContent : null; };
+  const prices = [price('Цени за възрастен 8 €, дете над една година 8 €.'), price('Цени: 10 €'), price('8 € за всички')];
+  sh.facts = {}; aside.remove();
+  return {pick, border, alone, prices}; }"""
+
+# the end of the page on a phone: main has no bottom padding, the footer's last links clear the FAB
+OP2_R3_END_JS = r"""() => { const f = document.querySelector('#app > .fab').getBoundingClientRect();
+  const links = [...document.querySelectorAll('footer a, footer button')].filter(e => e.getClientRects().length);
+  const cov = links.filter(e => { const r = e.getBoundingClientRect(); return r.right > f.left && r.left < f.right && r.bottom > f.top && r.top < f.bottom; });
+  return {pad: getComputedStyle(document.querySelector('#app main')).paddingBottom, covered: cov.map(e => e.textContent.trim()),
+          y: scrollY, max: document.scrollingElement.scrollHeight - innerHeight}; }"""
 
 
 def _op2_design(browser, base, eng, op_id):
@@ -23530,16 +23589,59 @@ def _op2_design(browser, base, eng, op_id):
     with no row is dimmed like the empty days."""
     tag = f"op2_{eng}_design"
     poster = "/posters/" + sorted(p.name for p in (webapp_root / "posters").glob("*.jpg"))[0]
-    for w, h in ((1280, 900), (390, 844)):
+    for w, h in ((1440, 900), (390, 844)):
         sz = "desk" if w > 760 else "phone"
         ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
         r = page.evaluate(OP2_FIX_RAILS_JS, op_id)
         a, o = r["all"] or {}, r["only"] or {}
         cards = a.get("cards") or []
-        check(f"{tag}_rail_keeps_bookable_{sz}", len(cards) == 10 and {"op2-shapchitsa", "op2-pepelyashka"} <= set(cards)
-              and cards[-2:] == ["op2-shapchitsa", "op2-pepelyashka"], f"kids rail {cards}")
+        # bookable first (by their next bookable date), then the sold-out ones (by date)
+        check(f"{tag}_rail_bookable_first_{sz}", len(cards) == 10 and cards[:2] == ["op2-shapchitsa", "op2-pepelyashka"]
+              and all(c.startswith("op2-kso") for c in cards[2:]), f"kids rail {cards}")
         check(f"{tag}_rail_count_is_total_{sz}", a.get("n") == "12", f"heading count {a.get('n')!r} (want '12')")
-        check(f"{tag}_kids_only_uncapped_{sz}", len(o.get("cards") or []) == 12, f"kids-only cards {len(o.get('cards') or [])}")
+        check(f"{tag}_rail_see_all_card_{sz}", a.get("end") == ["Всички 12 ›", "kids", True], f"end card {a.get('end')}")
+        oc = o.get("cards") or []
+        check(f"{tag}_kids_only_uncapped_{sz}", len(oc) == 12 and oc[:2] == ["op2-shapchitsa", "op2-pepelyashka"] and o.get("end") is None,
+              f"kids-only cards {oc}, end {o.get('end')}")
+        ctx.close()
+        ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+        _force_mount(page)
+        c = page.evaluate(OP2_R3_CARDS_JS)
+        check(f"{tag}_no_line_starts_with_dot_{sz}", not c["textDots"] and not c["bad"] and c.get("squeezed"),
+              f"text {c['textDots'][:3]}, separator {c['bad'][:3]}, squeezed card wraps its count: {c.get('squeezed')}")
+        check(f"{tag}_cards_equal_height_meta_bottom_{sz}", all(len(x["heights"]) == 1 and not x["unpinned"] for x in c["rails"]),
+              f"{c['rails']}")
+        check(f"{tag}_no_min_heights_{sz}", c["minH"][0] == "0px" and c["minH"][1] in ("0px", "auto"), f"{c['minH']}")
+        check(f"{tag}_hall_line_{sz}", sorted(c["hall"]) == [["op2-karnaval-g", "Карнавалът на животните", "Голяма зрителна зала", "none"],
+                                                          ["op2-karnaval-k", "Карнавалът на животните", "Камерна зала", "none"]], f"{c['hall']}")
+        ag = page.evaluate(OP2_R3_AGENDA_JS)
+        want = sum(1 for r_ in _op2_rows() if r_["id"] in OP2_KIDS and ag["lo"] <= r_["d"] <= ag["hi"])
+        wtxt = (f"Още {want} детско представление тази седмица ›" if want == 1 else f"Още {want} детски представления тази седмица ›") if want else None
+        check(f"{tag}_agenda_kids_row_{sz}", ag["text"] == wtxt, f"{ag} (want {wtxt!r})")   # none when N is 0
+        if want:
+            _op_tap(page, phone, '#app main .opagenda .ag-kids [data-opgenre="kids"]')
+            kv = page.evaluate("() => ({g: S.fGenres.slice(), row: !!document.querySelector('#app main .ag-kids')})")
+            check(f"{tag}_agenda_kids_row_opens_kids_{sz}", kv == {"g": ["kids"], "row": False}, f"{kv}")
+        sh3 = page.evaluate(OP2_R3_SHEET_JS, _op_dates()[1])
+        # one picked pill per layout (the phone and desktop grids are both in the HTML); 1.5 px computes to
+        # 1 px at device pixel ratio 1
+        b3 = sh3["border"] or ["0", "", ""]
+        check(f"{tag}_picked_pill_border_{sz}", set(sh3["pick"]) == {"19:00билети ↗"} and float(b3[0][:-2]) >= 1 and b3[1:] == [OP_VIOLET, "none"]
+              and sh3["alone"] == 0,
+              f"{sh3}")
+        check(f"{tag}_prices_label_once_{sz}", sh3["prices"] == ["За възрастен 8 €, дете над една година 8 €.", "10 €", "8 € за всички"], f"{sh3['prices']}")
+        if phone:
+            page.evaluate("() => { S.fGenres = []; render(); }")
+            page.wait_for_timeout(300)
+            _force_mount(page)
+            for _i in range(5):
+                _op_scroll(page, page.evaluate("() => document.scrollingElement.scrollHeight"))
+                e = page.evaluate(OP2_R3_END_JS)
+                if abs(e["y"] - e["max"]) <= 1:
+                    break
+            check(f"{tag}_footer_clear_of_fab_{sz}", e["pad"] == "0px" and not e["covered"] and abs(e["y"] - e["max"]) <= 1, f"{e}")
+            save_shot(page, "OP2", f"{eng}_r3_page_end_{sz}")
+        check(f"{tag}_r3_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
         ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
         s = page.evaluate(OP2_FIX_SUBS_JS, poster)
@@ -23570,8 +23672,9 @@ def _op2_design(browser, base, eng, op_id):
         page.evaluate("() => { if (sheetOpen) closeSheet(true); }")
         page.wait_for_timeout(400)
         td = page.evaluate(OP2_FIX_TODAY_JS) or {}
-        check(f"{tag}_today_dimmed_{sz}", td.get("disabled") is False and td.get("empty") and abs(float(td.get("op") or 1) - 0.32) < 0.01
-              and td.get("other") in (None, td.get("op")), f"{td}")
+        # the day part dimmed, "днес" at the full pills' strength, the pill itself not faded
+        check(f"{tag}_today_dimmed_{sz}", td.get("disabled") is False and td.get("empty") and td.get("op") == "1"
+              and td.get("today") == td.get("fullDay") and td.get("day") != td.get("today") and re.search(r"(rgba\(.*,\s*0\.32\)|/ 0\.32\))$", td.get("day") or ""), f"{td}")
         check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
 
