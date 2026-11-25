@@ -23476,7 +23476,9 @@ OP2_FIX_RAILS_JS = r"""(opId) => {
     const s = [...box.querySelectorAll('section.rail')].find(x => (x.querySelector('h2') || {}).textContent === opT().railH.kids);
     const end = s && s.querySelector('.opall');
     return s ? {n: (s.querySelector('.rhead .sub') || {}).textContent, cards: [...s.querySelectorAll('.opcard')].map(c => c.dataset.show),
-                end: end ? [end.textContent, end.dataset.opgenre, !end.nextElementSibling] : null} : null; };
+                end: end ? [end.textContent, end.dataset.opgenre, !end.nextElementSibling] : null,
+                grid: !!s.querySelector('.opgrid') && !s.querySelector('.rtrack') && s.id === 'op-grid',
+                link: (s.querySelector('.rhead .rlink') || {}).textContent || null} : null; };
   S.day = 'week'; S.fGenres = []; const all = kids();
   S.fGenres = ['kids']; const only = kids(); S.fGenres = [];
   return {all, only}; }"""
@@ -23521,8 +23523,13 @@ OP2_FIX_TODAY_JS = r"""() => { for (let i = PERFORMANCES.length - 1; i >= 0; i--
   S.day = 'week'; render(); window.scrollTo(0, 0);
   const b = document.querySelector(`#app .dspill[data-day="${TODAY}"]`), tl = b && b.querySelector('.ds-today');
   const full = document.querySelector('#app .dspill:not(.empty):not([disabled]):not([aria-pressed="true"])');
+  const cv = document.createElement('canvas').getContext('2d'), px = c => { cv.clearRect(0, 0, 1, 1); cv.fillStyle = getComputedStyle(b).backgroundColor;
+    cv.fillRect(0, 0, 1, 1); if (c) { cv.fillStyle = c; cv.fillRect(0, 0, 1, 1); } return [...cv.getImageData(0, 0, 1, 1).data].slice(0, 3); };
+  const lum = a => { const l = a.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
+  const l1 = b && lum(px(getComputedStyle(b).color)), l2 = b && lum(px(null));
   return b ? {disabled: b.disabled, empty: b.classList.contains('empty'), op: getComputedStyle(b).opacity, day: getComputedStyle(b).color,
-              today: tl ? getComputedStyle(tl).color : null, fullDay: full ? getComputedStyle(full).color : null} : null; }"""
+              today: tl ? getComputedStyle(tl).color : null, fullDay: full ? getComputedStyle(full).color : null,
+              bg: getComputedStyle(b).backgroundColor, cr: Math.round((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05) * 100) / 100} : null; }"""
 
 # Round 3 (2026-11-25). Every opera card: no text line starts with "·" (the count's separator is a
 # ::before in the gap, clipped by .cf3 when the count wraps); a card squeezed to 150 px shows that
@@ -23579,6 +23586,48 @@ OP2_R3_END_JS = r"""() => { const f = document.querySelector('#app > .fab').getB
           y: scrollY, max: document.scrollingElement.scrollHeight - innerHeight}; }"""
 
 
+# Round 4 (2026-11-26), over the page OP2_FIX_RAILS_JS left (10 sold-out children's shows on T+1).
+# The one-day view T+1 with "За деца": nothing bookable, a compact card whose lead names the period;
+# the agenda of T+1 with no genre: its children's row says they are all sold out (10, then 2, then 1)
+OP2_R4_KIDS_JS = r"""(d1) => { const box = document.createElement('div'), txt = () => { const k = box.querySelector('.ag-kids'); return k ? k.textContent : null; };
+  for (const p of PERFORMANCES) if (p[0].startsWith('op2-kso')) {     // the page indexes its rows by show once, at load
+    let a = _PERFS_BY_SHOW.get(p[0]); if (!a) _PERFS_BY_SHOW.set(p[0], a = []); if (!a.includes(p)) a.push(p); }
+  S.day = d1; S.fGenres = ['kids']; render(); window.scrollTo(0, 0);
+  const c = document.querySelector('#app main .late-day-card');
+  const late = c ? {h: c.querySelector('h3').textContent, p: c.querySelector('p').textContent, compact: c.classList.contains('compact'),
+                    h3: getComputedStyle(c.querySelector('h3')).fontSize, pad: getComputedStyle(c).paddingTop, btn: (c.querySelector('.acts .btn') || {}).textContent} : null;
+  S.fGenres = []; box.innerHTML = opAgenda(opRows()); const all = txt();
+  const kso = PERFORMANCES.filter(p => p[0].startsWith('op2-kso')), keep = n => { for (const p of kso.slice(n)) { const i = PERFORMANCES.indexOf(p); if (i >= 0) PERFORMANCES.splice(i, 1); } };
+  keep(2); box.innerHTML = opAgenda(opRows()); const two = txt();
+  keep(1); box.innerHTML = opAgenda(opRows()); const one = txt();
+  S.day = 'week'; render(); window.scrollTo(0, 0);
+  return {late, all, two, one}; }"""
+
+# the sheet's state line for 1, 2 and 3 sold-out performances; the hero's count names its period
+OP2_R4_SOLD_JS = r"""(ds) => { const sh = showById['op2-karmen'], aside = document.createElement('div'), st = n => {
+    aside.innerHTML = opTimesHtml(sh, ds.slice(0, n).map((d, i) => ['op2-karmen', d, '11:0' + i, 'Голяма зрителна зала', null, 'soldout']), null);
+    return (aside.querySelector('.sstate') || {}).textContent || null; };
+  const out = {one: st(1), two: st(2), three: st(3)};
+  S.day = 'week'; S.fGenres = []; render(); window.scrollTo(0, 0);
+  const m = document.querySelector('#app main .ophero .hero-meta');
+  out.hero = m ? [...m.children].map(e => e.textContent) : null;
+  out.want = plural(opRows().filter(p => p[0] === 'op2-aida').length, t().plPerf) + ' тази седмица';
+  return out; }"""
+
+# the agenda at 1440 with a genre pressed (the FAB carries its count badge, its widest): every action
+# ends left of the FAB's column
+OP2_R4_INSET_JS = r"""() => { S.day = 'week'; S.fGenres = ['opera']; render(); window.scrollTo(0, 0);
+  const f = document.querySelector('#app > .fab').getBoundingClientRect();
+  const acts = [...document.querySelectorAll('#app main .opagenda .ag-act')].map(e => Math.round(e.getBoundingClientRect().right));
+  S.fGenres = []; render(); return {fabLeft: Math.round(f.left), fabW: Math.round(f.width), acts}; }"""
+
+# the rail's "Всички N ›" end card: the kids' grid, its heading under the header (reduced motion: no smooth scroll)
+OP2_R4_GRID_JS = r"""() => { const g = document.getElementById('op-grid'), bar = document.querySelector('.bar'), h = g && g.querySelector('h2');
+  return {genres: S.fGenres.slice(), y: Math.round(scrollY), h2: h ? Math.round(h.getBoundingClientRect().top) : null,
+          bar: Math.round(bar.getBoundingClientRect().bottom), cards: g ? g.querySelectorAll('.opcard').length : 0,
+          cols: g ? getComputedStyle(g.querySelector('.opgrid')).gridTemplateColumns.split(' ').length : 0}; }"""
+
+
 def _op2_design(browser, base, eng, op_id):
     """The real-data design review (2026-11-25): the kids rail's cap of 10 never drops a production
     with a date on offer for a sold-out one and the count is all of them (the one-genre view shows
@@ -23603,6 +23652,47 @@ def _op2_design(browser, base, eng, op_id):
         oc = o.get("cards") or []
         check(f"{tag}_kids_only_uncapped_{sz}", len(oc) == 12 and oc[:2] == ["op2-shapchitsa", "op2-pepelyashka"] and o.get("end") is None,
               f"kids-only cards {oc}, end {o.get('end')}")
+        # round 4: the one-genre view is a wrapping grid (#op-grid, no horizontal track); the kids rail's
+        # head link and its end card say the same "Всички 12 ›"
+        check(f"{tag}_one_genre_grid_{sz}", o.get("grid") is True, f"kids-only section {o}")
+        check(f"{tag}_rail_link_wording_{sz}", a.get("link") == "Всички 12 ›" == (a.get("end") or [None])[0], f"head link {a.get('link')!r}, end {a.get('end')}")
+        d = _op_dates()
+        k4 = page.evaluate(OP2_R4_KIDS_JS, d[1])
+        lt = k4.get("late") or {}
+        check(f"{tag}_kids_empty_state_wording_{sz}", lt.get("h") == "В този ден няма спектакли за деца с билети"
+              and (lt.get("p") or "").startswith("Всички детски представления в този ден са разпродадени. Най-близкото с билети: ")
+              and "по-долу" not in (lt.get("p") or ""), f"{lt}")
+        check(f"{tag}_kids_empty_state_compact_{sz}", lt.get("compact") and lt.get("h3") == "18px" and lt.get("pad") == "16px", f"{lt}")
+        check(f"{tag}_agenda_kids_sold_suffix_{sz}", [k4.get("all"), k4.get("two"), k4.get("one")] == [
+              "Още 10 детски представления в този ден · всички разпродадени ›",
+              "Още 2 детски представления в този ден · и двете разпродадени ›",
+              "Още 1 детско представление в този ден · разпродадено ›"], f"{k4}")
+        so = page.evaluate(OP2_R4_SOLD_JS, d[1:4])
+        check(f"{tag}_sheet_sold_wording_{sz}", [so.get("one"), so.get("two"), so.get("three")] == [
+              "Представлението е разпродадено.", "И двете представления са разпродадени.", "Всички 3 представления са разпродадени."], f"{so}")
+        check(f"{tag}_hero_count_this_week_{sz}", (so.get("hero") or [""])[-1:] == [so.get("want")] and so.get("want", "").endswith(" тази седмица"),
+              f"hero meta {so.get('hero')} (want {so.get('want')!r})")
+        if not phone:
+            ins = page.evaluate(OP2_R4_INSET_JS)
+            check(f"{tag}_agenda_clear_of_fab_column_{sz}", ins["acts"] and max(ins["acts"]) <= ins["fabLeft"] - 4, f"{ins}")
+        ctx.close()
+        # "Всички 12 ›" at the rail's end: the grid's heading under the header
+        ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+        page.emulate_media(reduced_motion="reduce")
+        page.evaluate(OP2_FIX_RAILS_JS, op_id)
+        page.evaluate("() => { S.day = 'week'; S.fGenres = []; render(); }")
+        page.wait_for_timeout(300)
+        _force_mount(page)
+        page.evaluate("() => { const e = document.querySelector('#app main .opall[data-opgenre=\"kids\"]'); if (e) e.scrollIntoView({block: 'center'}); }")
+        page.wait_for_timeout(400)
+        _op_tap(page, phone, '#app main .opall[data-opgenre="kids"]', scroll=False)
+        page.wait_for_timeout(500)
+        gr = page.evaluate(OP2_R4_GRID_JS)
+        check(f"{tag}_see_all_scrolls_to_grid_{sz}", gr["genres"] == ["kids"] and gr["cards"] == 12 and gr["y"] > 0
+              and gr["h2"] is not None and gr["bar"] <= gr["h2"] <= gr["bar"] + 40
+              and gr["cols"] == (2 if phone else 4), f"{gr}")
+        save_shot(page, "OP2", f"{eng}_r4_kids_grid_{sz}")
+        check(f"{tag}_r4_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
         ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
         _force_mount(page)
@@ -23626,9 +23716,10 @@ def _op2_design(browser, base, eng, op_id):
         # one picked pill per layout (the phone and desktop grids are both in the HTML); 1.5 px computes to
         # 1 px at device pixel ratio 1
         b3 = sh3["border"] or ["0", "", ""]
-        check(f"{tag}_picked_pill_border_{sz}", set(sh3["pick"]) == {"19:00билети ↗"} and float(b3[0][:-2]) >= 1 and b3[1:] == [OP_VIOLET, "none"]
+        check(f"{tag}_picked_pill_border_{sz}", set(sh3["pick"]) == {"19:00билети ↗"} and float(b3[0][:-2]) >= 1 and b3[1] == OP_VIOLET
+              and "inset" in b3[2] and OP_VIOLET in b3[2] and b3[2].replace(OP_VIOLET, "").split()[:4] == ["0px", "0px", "0px", "1px"]
               and sh3["alone"] == 0,
-              f"{sh3}")
+              f"{sh3} (want a 1 px violet border and an inset 0 0 0 1px violet ring: 2 px at any pixel ratio)")
         check(f"{tag}_prices_label_once_{sz}", sh3["prices"] == ["За възрастен 8 €, дете над една година 8 €.", "10 €", "8 € за всички"], f"{sh3['prices']}")
         if phone:
             page.evaluate("() => { S.fGenres = []; render(); }")
@@ -23672,9 +23763,10 @@ def _op2_design(browser, base, eng, op_id):
         page.evaluate("() => { if (sheetOpen) closeSheet(true); }")
         page.wait_for_timeout(400)
         td = page.evaluate(OP2_FIX_TODAY_JS) or {}
-        # the day part dimmed, "днес" at the full pills' strength, the pill itself not faded
+        # the day part dimmed (60%, not the other empty days' 32%), "днес" at the full pills' strength, the pill itself not faded
         check(f"{tag}_today_dimmed_{sz}", td.get("disabled") is False and td.get("empty") and td.get("op") == "1"
-              and td.get("today") == td.get("fullDay") and td.get("day") != td.get("today") and re.search(r"(rgba\(.*,\s*0\.32\)|/ 0\.32\))$", td.get("day") or ""), f"{td}")
+              and td.get("today") == td.get("fullDay") and td.get("day") != td.get("today") and re.search(r"(rgba\(.*,\s*0\.6\)|/ 0\.6\))$", td.get("day") or ""), f"{td}")
+        check(f"{tag}_today_date_contrast_{sz}", (td.get("cr") or 0) >= 3, f"today's date {td.get('day')} on {td.get('bg')}: {td.get('cr')}:1 (want >= 3)")
         check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
 
