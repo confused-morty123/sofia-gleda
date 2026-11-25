@@ -23465,6 +23465,117 @@ def _op2_contract(browser):
         ctx.close()
 
 
+OP2_FIX_RAILS_JS = r"""(opId) => {
+  const d1 = addDays(TODAY, 1);
+  for (let i = 0; i < 10; i++) { const id = 'op2-kso' + i;
+    const sh = {id, title: 'Разпродадено ' + i, titleEn: 'Sold ' + i, theatre: opId, author: '', director: '', cast: '', genres: ['Детски'],
+                g: ['#1F1335', '#47287C'], duration: '', synBg: '', synEn: '', subtitle: ''};
+    SHOWS.push(sh); showById[id] = sh; PERFORMANCES.push([id, d1, '09:' + String(10 + i), 'Камерна зала', null, 'soldout']); }
+  const kids = () => { const box = document.createElement('div');
+    box.innerHTML = opRails().map(r => r.html()).join('');
+    const s = [...box.querySelectorAll('section.rail')].find(x => (x.querySelector('h2') || {}).textContent === opT().railH.kids);
+    return s ? {n: (s.querySelector('.rhead .sub') || {}).textContent, cards: [...s.querySelectorAll('.opcard')].map(c => c.dataset.show)} : null; };
+  S.day = 'week'; S.fGenres = []; const all = kids();
+  S.fGenres = ['kids']; const only = kids(); S.fGenres = [];
+  return {all, only}; }"""
+
+OP2_FIX_SUBS_JS = r"""(poster) => {
+  showById['op2-shapchitsa'].subtitle = 'Музикална приказка /Спектакъл за деца/';
+  showById['op2-pepelyashka'].subtitle = '/Спектакъл за деца/';
+  showById['op2-karmen'].subtitle = 'Опера от Джоакино Росини /Спектакъл на Държавна опера – Пловдив/';
+  showById['op2-karmen'].subtitleEn = 'Opera by Gioachino Rossini /A production by State Opera – Plovdiv/';
+  showById['op2-zhizel'].subtitleEn = 'Ballet by Adolphe Adam /Performance for adults/';
+  showById['op2-karmen'].facts = {duration: '2:10 Антракти 1'};
+  POSTER_MAP['op2-karmen'] = poster;
+  S.day = 'week'; S.fGenres = []; render(); window.scrollTo(0, 0);
+  const box = document.createElement('div'); box.innerHTML = opRails().map(r => r.html()).join('');
+  const cf2 = id => [...box.querySelectorAll(`.opcard[data-show="${id}"] .cf2`)].map(e => [e.textContent, e.classList.contains('op-tail')]);
+  const kc = box.querySelector('.opcard[data-show="op2-karmen"]'), f3 = kc && kc.querySelector('.cf3');
+  const lang = S.lang; S.lang = 'en'; const en = [opSub(showById['op2-karmen']), opSub(showById['op2-zhizel'])]; S.lang = lang;
+  return {sh: cf2('op2-shapchitsa'), pe: cf2('op2-pepelyashka'), ka: cf2('op2-karmen'), en,
+    slashes: [...box.querySelectorAll('.cf2')].filter(e => e.textContent.includes('/')).map(e => e.textContent),
+    badgeFirst: !!(f3 && f3.firstElementChild && f3.firstElementChild.matches('.badge-s')), badgeInTitle: !!(kc && kc.querySelector('.cf1 [class^="badge"]')),
+    art: kc ? [...kc.querySelectorAll('.ebox img')].map(i => [i.className, i.getAttribute('aria-hidden')]) : null,
+    dur: [opDur('01:00'), opDur('2:10 Антракти 1'), opDur('около 2 часа')]}; }"""
+
+OP2_FIX_DOM_JS = r"""() => { const m = document.querySelector('#app main');
+  const cs = (sel, k) => { const e = m.querySelector(sel); return e ? getComputedStyle(e)[k] : null; };
+  const card = m.querySelector('.opcard[data-show="op2-karmen"]'), bg = card && card.querySelector('img.p-bg');
+  return {cf1: cs('.opcard .cf1', 'textTransform'), clamp: cs('.opcard .cf1:not(:has(> .stg))', 'webkitLineClamp'),
+    agb: cs('.opagenda .ag-main b', 'textTransform'), n: cs('.opcard .cf3 .n', 'whiteSpace'),
+    bgFit: bg ? getComputedStyle(bg).objectFit : null, bgFilter: bg ? getComputedStyle(bg).filter : null}; }"""
+
+OP2_FIX_SHEET_JS = r"""() => { const sc = document.getElementById('scrim'), sh = sc && !sc.hidden && sc.querySelector('.sheet'); if (!sh) return null;
+  const hb = sh.querySelector('.shero.shero-op'), so = sh.querySelector('.p3e-pill.oppill.so.focus');
+  return {active: document.activeElement && document.activeElement.id, h2: getComputedStyle(sh.querySelector('h2')).textTransform,
+    ring: getComputedStyle(document.activeElement).outlineStyle, lede: [...sh.querySelectorAll('.slede')].map(e => e.textContent),
+    banner: hb ? Math.round(hb.getBoundingClientRect().height) : 0, compact: !!(hb && hb.matches('.compact')), bg: !!(hb && hb.querySelector('img.p-bg[aria-hidden="true"]')),
+    soRing: so ? getComputedStyle(so).boxShadow : null,
+    cred: [...sh.querySelectorAll('.credits dt')].map(x => [x.textContent, x.nextElementSibling ? x.nextElementSibling.textContent : ''])}; }"""
+
+OP2_FIX_TODAY_JS = r"""() => { for (let i = PERFORMANCES.length - 1; i >= 0; i--)
+    if (PERFORMANCES[i][1] === TODAY && surfOf(showById[PERFORMANCES[i][0]]) === 'opera') PERFORMANCES.splice(i, 1);
+  S.day = 'week'; render(); window.scrollTo(0, 0);
+  const b = document.querySelector(`#app .dspill[data-day="${TODAY}"]`), e = [...document.querySelectorAll('#app .dspill[disabled]')][0];
+  return b ? {disabled: b.disabled, empty: b.classList.contains('empty'), op: getComputedStyle(b).opacity, other: e ? getComputedStyle(e).opacity : null} : null; }"""
+
+
+def _op2_design(browser, base, eng, op_id):
+    """The real-data design review (2026-11-25): the kids rail's cap of 10 never drops a production
+    with a date on offer for a sold-out one and the count is all of them (the one-genre view shows
+    every card); the audience tails "/Спектакъл за деца/", "/Спектакъл за възрастни/" go, any other
+    "/…/" note shows without slashes on its own line, nothing left draws no subtitle; titles in
+    capitals; durations in minutes; the badges open the date line; off-ratio art has a blurred
+    backdrop; the dated sheet's banner is taller than 96 px and focus lands on its title; today
+    with no row is dimmed like the empty days."""
+    tag = f"op2_{eng}_design"
+    poster = "/posters/" + sorted(p.name for p in (webapp_root / "posters").glob("*.jpg"))[0]
+    for w, h in ((1280, 900), (390, 844)):
+        sz = "desk" if w > 760 else "phone"
+        ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+        r = page.evaluate(OP2_FIX_RAILS_JS, op_id)
+        a, o = r["all"] or {}, r["only"] or {}
+        cards = a.get("cards") or []
+        check(f"{tag}_rail_keeps_bookable_{sz}", len(cards) == 10 and {"op2-shapchitsa", "op2-pepelyashka"} <= set(cards)
+              and cards[-2:] == ["op2-shapchitsa", "op2-pepelyashka"], f"kids rail {cards}")
+        check(f"{tag}_rail_count_is_total_{sz}", a.get("n") == "12", f"heading count {a.get('n')!r} (want '12')")
+        check(f"{tag}_kids_only_uncapped_{sz}", len(o.get("cards") or []) == 12, f"kids-only cards {len(o.get('cards') or [])}")
+        ctx.close()
+        ctx, page, errs, phone = _op_open(browser, base, "/home/opera/" + OP_Q, w, h, mode="opera")
+        s = page.evaluate(OP2_FIX_SUBS_JS, poster)
+        check(f"{tag}_audience_tail_dropped_{sz}", s["sh"] == [["Музикална приказка", False]], f"{s['sh']}")
+        check(f"{tag}_only_tail_no_subtitle_{sz}", s["pe"] == [], f"{s['pe']}")
+        check(f"{tag}_other_tail_own_line_{sz}", s["ka"] == [["Опера от Джоакино Росини", False], ["Спектакъл на Държавна опера – Пловдив", True]], f"{s['ka']}")
+        check(f"{tag}_no_slashes_{sz}", not s["slashes"], f"{s['slashes']}")
+        check(f"{tag}_en_tails_{sz}", s["en"] == [["Opera by Gioachino Rossini", "A production by State Opera – Plovdiv"], ["Ballet by Adolphe Adam", ""]], f"{s['en']}")
+        check(f"{tag}_badge_opens_date_line_{sz}", s["badgeFirst"] and not s["badgeInTitle"], f"first in .cf3: {s['badgeFirst']}, in .cf1: {s['badgeInTitle']}")
+        check(f"{tag}_art_backdrop_{sz}", s["art"] == [["p-bg", "true"], ["p-real", None]], f"{s['art']}")
+        check(f"{tag}_duration_minutes_{sz}", s["dur"] == ["60 мин", "130 мин · Антракти 1", "около 2 часа"], f"{s['dur']}")
+        _force_mount(page)
+        dm = page.evaluate(OP2_FIX_DOM_JS)
+        check(f"{tag}_titles_caps_{sz}", dm["cf1"] == "uppercase" and dm["agb"] == "uppercase", f"{dm}")
+        check(f"{tag}_card_text_{sz}", dm["clamp"] == "2" and dm["n"] == "nowrap", f"{dm}")
+        check(f"{tag}_backdrop_style_{sz}", dm["bgFit"] == "cover" and "blur" in (dm["bgFilter"] or ""), f"{dm}")
+        _op2_range(page, _op_dates()[0], _op_dates()[6])
+        _op_tap(page, phone, '#app main .opagenda .ag-main[data-show="op2-karmen"]')
+        page.wait_for_timeout(600)
+        sh = page.evaluate(OP2_FIX_SHEET_JS) or {}
+        check(f"{tag}_sheet_focus_title_{sz}", sh.get("active") == "sg-sheet-title" and sh.get("ring") == "none", f"{sh}")
+        check(f"{tag}_sheet_title_caps_{sz}", sh.get("h2") == "uppercase", f"{sh.get('h2')}")
+        check(f"{tag}_sheet_lede_{sz}", sh.get("lede") == ["Опера от Джоакино Росини", "Спектакъл на Държавна опера – Пловдив"], f"{sh.get('lede')}")
+        check(f"{tag}_sheet_banner_{sz}", sh.get("compact") and sh.get("bg") and 96 < sh.get("banner", 0) <= (180 if w > 760 else 140), f"{sh}")
+        check(f"{tag}_sheet_sold_pick_no_ring_{sz}", sh.get("soRing") in (None, "none"), f"{sh.get('soRing')}")
+        check(f"{tag}_sheet_duration_{sz}", ["Времетраене", "130 мин · Антракти 1"] in (sh.get("cred") or []), f"{sh.get('cred')}")
+        save_shot(page, "OP2", f"{eng}_design_sheet_{sz}")
+        page.evaluate("() => { if (sheetOpen) closeSheet(true); }")
+        page.wait_for_timeout(400)
+        td = page.evaluate(OP2_FIX_TODAY_JS) or {}
+        check(f"{tag}_today_dimmed_{sz}", td.get("disabled") is False and td.get("empty") and abs(float(td.get("op") or 1) - 0.32) < 0.01
+              and td.get("other") in (None, td.get("op")), f"{td}")
+        check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
+        ctx.close()
+
+
 def wave_op2(browser):
     """OP2: the content partition (OPERA_ARCHITECTURE §10, DESIGN_SPEC §9) over a patched copy
     of the page (OP2_ROWS; the pattern TR1 uses for TMDBART): the opera rows only on Опера и
@@ -23502,6 +23613,7 @@ def wave_op2(browser):
                          ("agenda", lambda: _op2_agenda(browser, base, eng)),
                          ("hero_lede", lambda: _op2_hero_lede(browser, base, eng)),
                          ("sheet", lambda: _op2_sheet(browser, base, eng)),
+                         ("design", lambda: _op2_design(browser, base, eng, op_id)),
                          ("search", lambda: _op2_search(browser, base, eng)),
                          ("bridge", lambda: _op2_bridge(browser, base, eng)),
                          ("fab", lambda: _op2_fab(browser, base, eng)),
