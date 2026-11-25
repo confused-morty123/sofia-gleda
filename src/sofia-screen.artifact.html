@@ -442,6 +442,9 @@ a{color:inherit}
 .cfoot{display:flex; flex-direction:column; gap:2px; padding-inline:2px}
 .cf1{font-size:12px; font-weight:500; color:var(--fg-2); line-height:1.3;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em}
+/* a title two opera productions share carries its stage (opDupSet); the 2-line clamp cut the
+   stage off, so such a title wraps in full, as the rail's .opcard .cf1 does */
+.cf1:has(> .stg){display:block; -webkit-line-clamp:unset; overflow:visible}
 .cf2{font-size:10.5px; color:var(--fg-3); font-variant-numeric:tabular-nums}
 
 /* event card */
@@ -1597,6 +1600,14 @@ button,a{-webkit-tap-highlight-color:transparent}
 }
 @media(max-width:760px) and (prefers-reduced-motion:reduce){
   .bar-row-toggle,.bar-row-toggle.sr-hide,.bar-row-search,.sr-cancel,.bar{transition:none!important}
+}
+/* 380-392 px: the 14.5 px labels stay, but BG "Театър" with its glyph needs 84 px of ink, so
+   with 8 px sides its one-line minimum (100 px) outgrew Кино's share (88.4 vs 100.1 at 380).
+   Trimming Кино's and Театър's sides to 4 px lets flex share the row equally again (§14.2:
+   the two stay equal); the ink is centred, so it keeps >= 5 px from each edge. Опера и балет
+   keeps its 8 px. From 393 px the 8 px fit. */
+@media(min-width:380px) and (max-width:392px){
+  .seg button:not([data-switch="opera"]){padding:0 4px}
 }
 @media(max-width:379px){
   .seg button{font-size:13.5px; padding:0 4px; gap:4px}
@@ -3375,7 +3386,9 @@ function filmCard(f,all,rowsOverride){
       <div class="p-title" aria-hidden="true">${esc(filmTitle(f))}</div><div class="p-sub" aria-hidden="true">${esc(f.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
     <div class="cfoot"><span class="cf1">${esc(filmTitle(f))}</span>
       <span class="cf2">${meta}</span></div></button>`;}
-function showCard(sh,all){
+/* dup (opera hits in search, opDupSet): a title two productions share gets its stage, as in the
+   agenda and the rails (§2.3); the stage of its next performance, as the rail card shows */
+function showCard(sh,all,dup){
   const p=all?showPerfsAll(sh.id):showPerfs(sh.id),th=thById[sh.theatre],free=sh.badge==="БЕЗПЛАТНО";
   /* P3A item 2: suppress static "ПРЕМИЕРА" seed badge; replace with dynamic PREMIERES-based badge. */
   const staticBadge=sh.badge&&sh.badge!=="ПРЕМИЕРА"?`<span class="badge ${free?"free":""}">${esc(badgeDisplay(sh.badge))}</span>`:"";
@@ -3384,7 +3397,7 @@ function showCard(sh,all){
     <div class="poster">${posterArt(sh.id,sh.genres,sh.g,titleOf(sh))}<div class="p-grain"></div>
       <div class="p-top"><span></span>${_stags?`<span class="p-tags">${_stags}</span>`:""}</div>
       <div class="p-title" aria-hidden="true">${esc(titleOf(sh))}</div><div class="p-sub" aria-hidden="true">${esc(sh.genres.slice(0,2).map(genreDisplay).join(" · "))}</div></div>
-    <div class="cfoot"><span class="cf1">${esc(titleOf(sh))}</span>
+    <div class="cfoot"><span class="cf1">${dup?opTitleHtml(sh,dup,((opPerfs(sh.id)[0]||[])[3])?opStage(opPerfs(sh.id)[0]):""):esc(titleOf(sh))}</span>
       <span class="cf2">${th?esc(S.lang==="en"?(th.nameEn||th.name):th.name):""}${th&&(p.length||sh.duration)?" · ":""}${p.length?esc(plural(p.length,t().plPerf)):sh.duration?`${esc(sh.duration)} ${esc(t().min)}`:""}</span></div></button>`;}
 const EV_MOTIF={festival:["Фестивал"],city:["Фестивал"],limited:["Класика"],premiere:["Трагедия"]};
 function eventCard(ev){
@@ -3611,8 +3624,10 @@ const opPremAhead=sid=>opPremDates(sid).some(d=>d>=NOW_DATE);
 /* the published subtitle; only the exact token ПРЕМИЕРА goes, when the Премиера badge shows (§2.3) */
 const opSubText=(s,prem)=>{s=String(s||"").replace(/\s+/g," ").trim();
   return prem?s.replace(/(^|\s)(?:PREMIERE|ПРЕМИЕРА)(?=\s|$)/g," ").replace(/\s{2,}/g," ").trim():s;};
-/* in EN the English calendar's own line (subtitleEn), else the Bulgarian one: never a translation */
-const opSub=sh=>opSubText(S.lang==="en"&&sh.subtitleEn||sh.subtitle,opPremAhead(sh.id));
+/* in EN the English calendar's own line (subtitleEn), else the Bulgarian one: never a translation.
+   prem: the card shows the Премиера badge itself (the hero's period badge), so the token goes even
+   where the production's own premiere test would not say so: never "ПРЕМИЕР…" under a badge */
+const opSub=(sh,prem)=>opSubText(S.lang==="en"&&sh.subtitleEn||sh.subtitle,!!prem||opPremAhead(sh.id));
 const opTh=()=>thById.opera||THEATRES.find(x=>x.kind==="opera")||{};
 /* a stage as the page shows it: in EN the opera's own English name (its /en calendar: "Main Hall"), else
    the Bulgarian one as published */
@@ -3684,7 +3699,7 @@ function opHeroSlot(){
   if(!rk.length)return opLateCard(rows);
   const sh=rk[0].s,mine=rows.filter(p=>p[0]===sh.id),go=mine.find(p=>opStatus(p)==="buy")||mine[0];
   const stages=[...new Set(mine.map(opStage))],prem=mine.some(p=>opPremDates(sh.id).includes(p[1]));
-  const sub=opSub(sh);
+  const sub=opSub(sh,prem);
   return`<div class="hero ophero"><div class="hero-art${sh.baked&&opImg(sh)?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
     <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
@@ -5355,18 +5370,20 @@ function drawerHTML(){
     <button class="btn applyb" data-dclose>${esc(L.apply)}</button>
   </div>`;
 }
+/* the hits the page shows (searchView) and counts (the live region): without OPERA_ON the opera
+   surface does not exist yet, so its rows stay out of both */
+function searchShown(q){const sr=searchAll(q);
+  return!sr||OPERA_ON?sr:{...sr,shows:sr.shows.filter(x=>surfOf(x)!=="opera")};}
 function searchView(sr){
-  /* without OPERA_ON the opera surface does not exist yet: its rows stay out of the results */
-  if(!OPERA_ON)sr={...sr,shows:sr.shows.filter(x=>surfOf(x)!=="opera")};
   const L=t(),total=sr.films.length+sr.shows.length;
   const qq=S.lang==="bg"?`„${S.q}“`:`“${S.q}”`;
   return `<div class="sechead" style="padding-top:20px"><h1 class="sechead-h">${esc(L.results)} ${esc(qq)}</h1><span class="n">${total}</span></div>
    <div class="note">${esc(L.searchHint)}</div>
    ${sr.films.length?`<section class="rail"><div class="rhead"><h2>${esc(L.inFilms)}</h2><span class="sub">${sr.films.length}</span></div>
      <div class="grid">${sr.films.map(f=>filmCard(f,true)).join("")}</div></section>`:""}
-   ${[["theatre",L.inShows],["opera",L.opera]].map(([k,h])=>{const ss=sr.shows.filter(x=>surfOf(x)===k);
+   ${[["theatre",L.inShows],["opera",L.opera]].map(([k,h])=>{const ss=sr.shows.filter(x=>surfOf(x)===k),dup=k==="opera"?opDupSet(ss.map(x=>x.id)):null;
      return ss.length?`<section class="rail"><div class="rhead"><h2>${esc(h)}</h2><span class="sub">${ss.length}</span></div>
-     <div class="grid">${ss.map(x=>showCard(x,true)).join("")}</div></section>`:"";}).join("")}
+     <div class="grid">${ss.map(x=>showCard(x,true,dup)).join("")}</div></section>`:"";}).join("")}
    ${total?"":`<div class="empty">${esc(L.srNoHits.replace("{q}",S.q.trim()))}. ${esc(L.noHitsHelp)}
       <div style="margin-top:12px"><button class="btn sm" data-qclear>${esc(L.clearSearch)}</button></div></div>`}`;
 }
@@ -5382,7 +5399,7 @@ function render(){
   /* the page language follows the BG/EN switch (WCAG 3.1.1): screen readers pick their
      voice and pronunciation from it, and hyphenation and translation read it too */
   document.documentElement.lang=S.lang;
-  const sr=S.q.trim().length>=2?searchAll(S.q):null;
+  const sr=S.q.trim().length>=2?searchShown(S.q):null;
   const isMob=window.innerWidth<=760;
   /* New SVG icons: Кино = classic movie camera; Театър = comedy/tragedy mask */
   const iconCinema=`<svg viewBox="0 0 32 32" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M3,16c-0.1,0-0.3,0-0.4-0.1c-0.2-0.1-0.4-0.3-0.5-0.6l-1.4-3.8C0.4,10.8,0.5,10,0.8,9.3C1.1,8.6,1.7,8,2.5,7.7l20.7-7.5l0,0c0.8-0.3,1.6-0.2,2.3,0.1C26.2,0.6,26.7,1.2,27,2l1.4,3.8c0.1,0.2,0.1,0.5,0,0.8C28.2,6.8,28,6.9,27.8,7L3.3,15.9C3.2,16,3.1,16,3,16z"/><path d="M30,20v-4c0-0.6-0.4-1-1-1H3c-0.6,0-1,0.4-1,1v4H30z"/><path d="M2,22v7c0,1.7,1.3,3,3,3h22c1.7,0,3-1.3,3-3v-7H2z"/></svg>`;
@@ -5679,7 +5696,7 @@ function refreshPage(opts){
   let probe=null;
   try{
     _syncFab();
-    const sr=S.q.trim().length>=2?searchAll(S.q):null;
+    const sr=S.q.trim().length>=2?searchShown(S.q):null;
     const was=main.__sgView||"page",now=sr?"search":"page";
     /* a query of one letter leaves the listing as it is */
     if(opts&&opts.search&&was==="page"&&now==="page")return;
@@ -7734,9 +7751,13 @@ document.addEventListener("click",e=>{
      moving the viewport while the sheet was being used. */
   if(q("[data-film]")||q("[data-show]")||q("[data-event]"))_releaseSearchField();
   const fc=q("[data-film]"); if(fc){_sheetShowAllCinemas=false;curSheet={kind:"film",id:fc.dataset.film};openSheet(sheetFilm(filmById[fc.dataset.film]),fc);return;}
-  const shc=q("[data-show]"); if(shc){const sh0=showById[shc.dataset.show];
-    /* a search hit on the other side of Театър / Опера и балет takes the page there first (§5.1) */
-    if(OPERA_ON&&sh0&&S.mode!=="cinema"&&surfOf(sh0)!==S.mode){switchMode(surfOf(sh0));surfaceAttrs();}
+  const shc=q("[data-show]"); if(shc){const sh0=showById[shc.dataset.show],sf=sh0&&surfOf(sh0);
+    /* an opera production opens as _openById opens it: never while the surface is hidden (the
+       not-in-programme note), and with it shown always on Опера и балет, from Кино too (violet,
+       data-opera, the history entry m:"opera"); a theatre hit seen from Опера и балет goes to Театър
+       (§5.1), one seen from Кино opens over Кино as before */
+    if(sf==="opera"&&!OPERA_ON){toast(t().notInProgramme);return;}
+    if(OPERA_ON&&sf&&sf!==S.mode&&(sf==="opera"||S.mode!=="cinema")){switchMode(sf);surfaceAttrs();}
     curSheet={kind:"show",id:shc.dataset.show,pd:shc.dataset.pd||"",pt:shc.dataset.pt||""};openSheet(sheetShow(sh0,curSheet),shc);return;}
   const ec=q("[data-event]"); if(ec){curSheet={kind:"event",id:ec.dataset.event};openSheet(sheetEvent(EVENTS.find(x=>x.id===ec.dataset.event)),ec);return;}
 });
@@ -7776,7 +7797,7 @@ document.addEventListener("input",e=>{
   clearTimeout(qTimer);
   qTimer=setTimeout(()=>{qTimer=null;refreshPage({search:true});
     const q=S.q.trim();
-    if(q.length>=2){const sr=searchAll(S.q),n=sr.films.length+sr.shows.length,L=t();
+    if(q.length>=2){const sr=searchShown(S.q),n=sr.films.length+sr.shows.length,L=t();
       announce(n?`${plural(n,L.plResult)} ${L.srFor.replace("{q}",q)}`:L.srNoHits.replace("{q}",q));}
   },160);
 });
