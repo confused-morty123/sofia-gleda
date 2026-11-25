@@ -4308,6 +4308,18 @@ check("src/data.html: THEATRES has the opera venue once, kind 'opera'",
       [(t["id"], t["kind"], t["name"], t["nameEn"]) for t in _th if t["id"] == "opera"],
       [("opera", "opera", "Софийска опера и балет", "Sofia Opera and Ballet")])
 
+# --- own_page_synopses.py on operasofia.bg /repertoire/<id> (2026-11-26): the page has no
+# <main>/<article>/#content, so only the HOST_BLOCKS rule reaches the text (Преглед, then Синопсис)
+def _opsyn(n, t):
+    return _OPS.read_page(fx(f"opera_production_{n}.html"), f"https://www.operasofia.bg/repertoire/{n}",
+                          t, ["Софийска опера и балет"], set(), None)
+check("opera synopsis: the host rule matches www.operasofia.bg", "operasofia.bg" in _OPS.HOST_BLOCKS, True)
+check("opera synopsis: the Преглед / Синопсис text fills (ЖИЗЕЛ, ПЕПЕЛЯШКА, НОРМА)",
+      [bool(_opsyn(n, t)[0]) and len(_opsyn(n, t)[0]) >= 300 for n, t in
+       (("1068", "ЖИЗЕЛ"), ("1087", "ПЕПЕЛЯШКА"), ("1107", "НОРМА"))], [True, True, True])
+check("opera synopsis: a page with credits only stays empty, with its reason",
+      _opsyn("1086", "КОНЦЕРТ ЗА БЕБОЦИ")[:2], (None, "cast / credits / practical lines only"))
+
 print()
 if fails:
     print(f"{len(fails)} FAILED: {', '.join(fails)}")
