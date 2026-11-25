@@ -15620,12 +15620,16 @@ def wave_ev2(browser):
         play = next((s["id"] for s in info["shows"] if s["id"] not in cl_s), None)
         th_names = ("Театрален фестивал Тест", "Theatre Test Festival")
         run_to = "2026-11-05" if now < "2026-11-01" else (d(now) + datetime.timedelta(days=5)).isoformat()
+        # the coming theatre event starts tomorrow, so it is still coming whatever
+        # the run date (a fixed 2026-11-20..22 had ended by 2026-11-23)
+        nov_from = (d(now) + datetime.timedelta(days=1)).isoformat()
+        nov_to = (d(now) + datetime.timedelta(days=2)).isoformat()
         synth_ev = [
             {"id": "ev2-th-run", "kind": "festival", "scope": "theatre", "status": "upcoming", "tag": "СЛЕД 9 ДНИ",
              "from": (d(now) - datetime.timedelta(days=3)).isoformat(), "to": run_to, "g": ["#333333", "#111111"],
              "title": "Тест текущ", "titleEn": "Test running", "blurbBg": "", "blurbEn": "", "source": "test"},
             {"id": "ev2-th-nov", "kind": "festival", "scope": "theatre", "status": "active", "tag": "СЛЕД 9 ДНИ",
-             "from": "2026-11-20", "to": "2026-11-22", "g": ["#333333", "#111111"],
+             "from": nov_from, "to": nov_to, "g": ["#333333", "#111111"],
              "title": "Тест ноември", "titleEn": "Test November", "blurbBg": "", "blurbEn": "", "source": "test"}]
         html = _ev2_patched({"kinomania": {"bg": "Киномания", "en": "Kinomania", "films": pick + ([both] if both else [])},
                              "ev2-teatar": {"bg": th_names[0], "en": th_names[1], "films": [],
@@ -15686,9 +15690,14 @@ def wave_ev2(browser):
                       and dom["sub"] == sub_lim,
                       f"{dom}; expected {badges}")
             if tag == "november":
-                check(f"ev2_theatre_november_running_then_coming_{lang}",
-                      (r["lim"] or {}).get("ids", [])[-2:] == ["ev2-th-run", "ev2-th-nov"],
-                      f"{(r['lim'] or {}).get('ids')}")
+                ids = (r["lim"] or {}).get("ids", [])
+                if nov_from > hi:
+                    skip(f"ev2_theatre_november_running_then_coming_{lang}",
+                         f"tomorrow ({nov_from}) is past November in the listings")
+                else:
+                    check(f"ev2_theatre_november_running_then_coming_{lang}",
+                          "ev2-th-run" in ids and "ev2-th-nov" in ids
+                          and ids.index("ev2-th-run") < ids.index("ev2-th-nov"), f"{ids}")
                 save_shot(page, wave, f"ev2_theatre_november_{lang}")
         check(f"ev2_synth_no_js_errors_theatre_{lang}", not errs, "; ".join(errs[:3]))
         ctx.close()
