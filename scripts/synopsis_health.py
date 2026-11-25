@@ -51,15 +51,17 @@ def measure(html=HTML, thin=SY.THIN):
     up_s, up_f = PH.upcoming(src)
     up_s &= set(shows)
     up_f &= set(films)
+    up_o = up_s & PH.opera_ids(src)         # the opera's productions: their own bucket (verify_build 5c2)
     ne = lambda v: v if v and v.strip() and v != "—" else ""       # noqa: E731
 
     per = collections.defaultdict(lambda: {"titles": 0, "thin": 0, "empty": 0, "thin_en": 0, "linked": 0})
-    thin_rows = []
+    per_o = collections.defaultdict(lambda: {"titles": 0, "thin": 0, "empty": 0, "thin_en": 0, "linked": 0})
+    thin_rows, thin_opera = [], []
     for sid in sorted(up_s):
         sh = shows[sid]
         bg = ne(ssyn.get(sid)) or ne(sh.get("synBg"))
         en = ne(sh.get("synEn")) or ne(ssyn_en.get(sid)) or ne(synen.get(sid))
-        p = per[sh.get("theatre") or "?"]
+        p = (per_o if sid in up_o else per)[sh.get("theatre") or "?"]
         p["titles"] += 1
         p["thin_en"] += SY.slen(en) < thin
         if SY.slen(bg) < thin:
@@ -67,7 +69,8 @@ def measure(html=HTML, thin=SY.THIN):
             p["empty"] += not bg
             own = links.get(sid) if sid not in agg else None
             p["linked"] += bool(own)
-            thin_rows.append((sh.get("theatre") or "?", sid, sh.get("title") or sid, SY.slen(bg), own))
+            (thin_opera if sid in up_o else thin_rows).append((sh.get("theatre") or "?", sid, sh.get("title") or sid,
+                                                               SY.slen(bg), own))
     f = {"titles": 0, "thin": 0, "empty": 0, "thin_en": 0}
     thin_films = []
     for fid in sorted(up_f):
@@ -100,11 +103,12 @@ def measure(html=HTML, thin=SY.THIN):
             misses[why] = misses.get(why, 0) + 1
     routes["own_page_misses"] = dict(sorted(misses.items(), key=lambda kv: (-kv[1], kv[0])))
     tot = {k: sum(p[k] for p in per.values()) for k in ("titles", "thin", "empty", "thin_en", "linked")}
+    tot_o = {k: sum(p[k] for p in per_o.values()) for k in ("titles", "thin", "empty", "thin_en", "linked")}
     return {
         "date": dt.date.today().isoformat(), "threshold": thin,
         "shows": {**tot, "by_theatre": {k: dict(v, name=names.get(k, k)) for k, v in sorted(per.items())}},
-        "films": f, "routes": routes,
-        "_rows": {"shows": thin_rows, "films": thin_films},
+        "opera": tot_o, "films": f, "routes": routes,
+        "_rows": {"shows": thin_rows, "opera": thin_opera, "films": thin_films},
     }
 
 
@@ -114,6 +118,8 @@ def write_md(r, path=OUT_MD):
            f"Thin = Bulgarian synopsis shorter than {r['threshold']} characters (or none).", "",
            f"- Plays: {s['thin']} of {s['titles']} thin ({s['empty']} with none); "
            f"{s['linked']} of them link the theatre's own page under the text.",
+           f"- Opera (Софийска опера и балет, its own count): {r['opera']['thin']} of {r['opera']['titles']} thin "
+           f"({r['opera']['empty']} with none).",
            f"- Films: {f['thin']} of {f['titles']} thin ({f['empty']} with none).",
            f"- Routes: {r['routes']['overrides']} owner override(s) (scripts/synopsis_overrides.json), "
            f"{r['routes']['own_page_fills']} fill(s) from the plays' own production pages, "
@@ -127,6 +133,10 @@ def write_md(r, path=OUT_MD):
     out += ["", "## Thin plays", ""]
     for th, sid, title, n, own in r["_rows"]["shows"]:
         out.append(f"- `{sid}` ({th}) {title} — {n} chars" + (f" — {own}" if own else ""))
+    if r["_rows"].get("opera"):
+        out += ["", "## Thin opera productions", ""]
+        for th, sid, title, n, own in r["_rows"]["opera"]:
+            out.append(f"- `{sid}` ({th}) {title} — {n} chars" + (f" — {own}" if own else ""))
     out += ["", "## Thin films", ""]
     for fid, title, n in r["_rows"]["films"]:
         out.append(f"- `{fid}` {title} — {n} chars")
@@ -140,6 +150,7 @@ def main():
         pub = {k: v for k, v in r.items() if not k.startswith("_")}
         OUT_JSON.write_text(json.dumps(pub, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         print("SYNOPSIS_HEALTH " + json.dumps({"shows": {k: r["shows"][k] for k in ("titles", "thin", "empty", "linked")},
+                                               "opera": {k: r["opera"][k] for k in ("titles", "thin", "empty", "linked")},
                                                "films": r["films"], "routes": r["routes"]}))
     except Exception:
         traceback.print_exc()

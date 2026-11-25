@@ -1730,8 +1730,9 @@ SALE_STATES = ("soldout", "notyet")
 # A theatre whose productions are told apart by the source's own id (meta key), not by the
 # title: operasofia.bg lists two productions as КАРНАВАЛЪТ НА ЖИВОТНИТЕ (/repertoire/1088 in
 # the Chamber hall, /repertoire/1108 on the main stage). Each id gets its own show (the
-# minted record keeps the id as "source_id" in theatre_shows.json, never in SHOWS).
-SOURCE_ID_KEY = {"opera": "rep_id"}
+# minted record keeps the id as "source_id" in theatre_shows.json, never in SHOWS). One map,
+# official_theatres' own (its finish() de-duplicates such a venue's rows per id too).
+SOURCE_ID_KEY = OT.SOURCE_ID_KEY
 _EURO = re.compile(r"(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€|евро|eur)", re.I)
 # "от 6.00 до 7.00 €" (theatre.art.bg): the currency is printed after the upper bound only
 _EURO_RANGE = re.compile(r"(\d{1,4}(?:[.,]\d{1,2})?)\s*(?:€\s*)?(?:до|[-–—])\s*"
