@@ -6101,7 +6101,14 @@ for _t, _want in (("40.Киномания: Обич", "Обич"), ("40. Кин�
                   ("THE BLOODY COUNTESS - SINELEBRI", "THE BLOODY COUNTESS"),
                   ("40 години по-късно", "40 години по-късно"), ("Хелоуин", "Хелоуин"),
                   ("ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА", "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА"),
-                  ("Падане 2: Мъртва точка", "Падане 2: Мъртва точка")):
+                  ("Падане 2: Мъртва точка", "Падане 2: Мъртва точка"),
+                  # 2026-11-25: Менар festival, CINEMANIA with a capital-I bar, and
+                  # Кинокласики with the venue in the prefix kept 24 films off TMDB
+                  ("Менар: Бунт за двама", "Бунт за двама"), ("Менар:Болни мозъци", "Болни мозъци"),
+                  ("МЕНАР уикенд: Природа", "Природа"),
+                  ("40. CINEMANIA I Brace Your Heart", "Brace Your Heart"),
+                  ("ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Колекционерката", "Колекционерката"),
+                  ("Менарх", "Менарх"), ("Inside I Am Fine", "Inside I Am Fine")):
     check(f"clean_title({_t!r})", FID.clean_title(_t), _want)
 _km_films = {"obich": {"id": "obich", "bg": "Обич", "en": "", "source": "lumiere"},
              "40-kinomaniya-obich": {"id": "40-kinomaniya-obich", "bg": "40.Киномания: Обич", "en": "",

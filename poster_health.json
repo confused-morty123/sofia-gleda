@@ -1,108 +1,99 @@
 {
  "before": {
-  "films": 86.5,
-  "shows": 92.6
+  "films": 88.7,
+  "shows": 92.5
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-24",
+ "date": "2026-11-25",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 108,
+   "TMDB poster": 111,
    "own page: key": 1,
-   "own page: poster": 11,
-   "the film's programme page": 21
+   "own page: poster": 12,
+   "the film's programme page": 20
   },
-  "pct": 91.0,
-  "upcoming": 155,
-  "with": 141
+  "pct": 90.6,
+  "upcoming": 159,
+  "with": 144
  },
  "fix": {
   "after": {
-   "films": 91.0,
-   "shows": 93.8
+   "films": 90.6,
+   "shows": 93.3
   },
-  "attached": 1,
+  "attached": 0,
   "attempted": 34,
   "before": {
-   "films": 91.0,
-   "shows": 93.6
+   "films": 90.6,
+   "shows": 93.3
   },
   "broken_parsers": [],
   "causes": {
    "films": {
-    "only a ticket page linked, not the title's page": 4,
-    "only an aggregator's image (the film does not link that page)": 5,
-    "own page has no usable image": 5
+    "only a ticket page linked, not the title's page": 3,
+    "only an aggregator's image (the film does not link that page)": 9,
+    "own page has no usable image": 3
    },
    "shows": {
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
-    "own page has no usable image": 15,
+    "own page has no usable image": 17,
     "own page or its image could not be fetched": 1,
     "own page's images rejected by the poster policy": 2,
-    "robots.txt unreachable (5xx or no answer): the host is not read this run": 2,
+    "robots.txt unreachable (5xx or no answer): the host is not read this run": 3,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "causes_before": {
    "films": {
-    "only a ticket page linked, not the title's page": 4,
-    "only an aggregator's image (the film does not link that page)": 5,
-    "own page has no usable image": 5
+    "only a ticket page linked, not the title's page": 3,
+    "only an aggregator's image (the film does not link that page)": 9,
+    "own page has no usable image": 3
    },
    "shows": {
-    "own page blocked (robots.txt or a bot challenge; not bypassed)": 9,
-    "own page has no usable image": 15,
-    "own page or its image could not be fetched": 3,
+    "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
+    "own page has no usable image": 17,
+    "own page or its image could not be fetched": 4,
     "own page's images rejected by the poster policy": 2,
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
   "counts": {
    "films": {
-    "after": "141/155",
-    "before": "141/155"
+    "after": "144/159",
+    "before": "144/159"
    },
    "shows": {
-    "after": "441/470",
-    "before": "440/470"
+    "after": "449/481",
+    "before": "449/481"
    }
   },
-  "date": "2026-11-24",
+  "date": "2026-11-25",
   "errors": [],
   "network": "ok",
-  "refused": 4,
+  "refused": 5,
   "requests": 42,
   "retried": [],
-  "seconds": 48.7,
+  "seconds": 65.3,
   "summary": {
-   "film nothing": 4,
+   "film nothing": 2,
    "show kept (page has nothing now)": 2,
-   "show key": 1,
-   "show nothing": 27
+   "show nothing": 30
   },
   "titles": {
    "films": {
-    "40-kinomaniya-nepozna-zhena": [
-     "only a ticket page linked, not the title's page",
-     "embed.urboapp.com is a ticket page, not the title's page"
-    ],
     "actually-it-is-rocket-science": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
-    "evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1": [
-     "own page has no usable image",
-     "no usable image on the page"
+    "dzhambo-magicheskoto-priklyuchenie": [
+     "only an aggregator's image (the film does not link that page)",
+     "unverified: an aggregator's image, and the film does not link its page"
     ],
-    "evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986": [
-     "own page has no usable image",
-     "no usable image on the page"
-    ],
-    "evropeyski-kinoklasiki-v-kino-vlaykova-strukturata-na-krista": [
+    "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": [
      "own page has no usable image",
      "no usable image on the page"
     ],
@@ -111,6 +102,10 @@
      "unverified: an aggregator's image, and the film does not link its page"
     ],
     "koledni-agenti": [
+     "only an aggregator's image (the film does not link that page)",
+     "unverified: an aggregator's image, and the film does not link its page"
+    ],
+    "magiyata-na-gorata": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -131,6 +126,14 @@
      "embed.urboapp.com is a ticket page, not the title's page"
     ],
     "royal-ballet-manon": [
+     "only an aggregator's image (the film does not link that page)",
+     "unverified: an aggregator's image, and the film does not link its page"
+    ],
+    "sinelibri-2026-ehoto-mezhdu-nas": [
+     "only an aggregator's image (the film does not link that page)",
+     "unverified: an aggregator's image, and the film does not link its page"
+    ],
+    "skoti": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -165,6 +168,10 @@
      "no usable image on the page"
     ],
     "danceperimental-your-story-moves-us-na-angliyski-ezik": [
+     "own page has no usable image",
+     "no usable image on the page"
+    ],
+    "dekameron-lyubov-i-smart-po-bokacho": [
      "own page has no usable image",
      "no usable image on the page"
     ],
@@ -208,6 +215,10 @@
      "own page has no usable image",
      "no usable image on the page"
     ],
+    "izneveri-v-poveche": [
+     "robots.txt unreachable (5xx or no answer): the host is not read this run",
+     "https://www.salzaismyah.bg/site/play/187: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
+    ],
     "katya-i-zlatin-muzikalno-impro-shou": [
      "robots.txt unreachable (5xx or no answer): the host is not read this run",
      "https://www.salzaismyah.bg/site/play/736: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
@@ -233,6 +244,10 @@
      "mlt.bg not read (Cloudflare challenge): the same production on theatre.art.bg; that page has no usable image"
     ],
     "mechka-hamletmashina": [
+     "own page has no usable image",
+     "no usable image on the page"
+    ],
+    "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": [
      "own page has no usable image",
      "no usable image on the page"
     ],
@@ -269,33 +284,34 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 4,
-  "film nothing": 2,
-  "film poster": 7,
-  "poster fix: film nothing": 4,
+  "film already has a poster": 7,
+  "film nothing": 1,
+  "film poster": 3,
+  "poster fix: film nothing": 2,
   "poster fix: show kept (page has nothing now)": 2,
-  "poster fix: show key": 1,
-  "poster fix: show nothing": 27,
-  "show kept (page has nothing now)": 7,
-  "show key": 6,
-  "show nothing": 4,
-  "show poster": 4,
-  "show replacement held for review": 28
+  "poster fix: show nothing": 30,
+  "show kept (page has nothing now)": 8,
+  "show key": 1,
+  "show nothing": 3,
+  "show photo": 1,
+  "show poster": 2,
+  "show replacement held for review": 32
  },
  "missing": {
   "films": {
-   "40-kinomaniya-nepozna-zhena": "no image: the generated art shows",
    "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
-   "evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1": "no image: the generated art shows",
-   "evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986": "no image: the generated art shows",
-   "evropeyski-kinoklasiki-v-kino-vlaykova-strukturata-na-krista": "no image: the generated art shows",
+   "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
+   "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": "no image: the generated art shows",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
    "koledni-agenti": "unverified: an aggregator's image, and the film does not link its page",
+   "magiyata-na-gorata": "unverified: an aggregator's image, and the film does not link its page",
    "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": "no image: the generated art shows",
    "pastir": "unverified: an aggregator's image, and the film does not link its page",
    "polyusi": "no image: the generated art shows",
    "posledniyat-prometey-na-donbas": "no image: the generated art shows",
    "royal-ballet-manon": "unverified: an aggregator's image, and the film does not link its page",
+   "sinelibri-2026-ehoto-mezhdu-nas": "unverified: an aggregator's image, and the film does not link its page",
+   "skoti": "unverified: an aggregator's image, and the film does not link its page",
    "tya": "no image: the generated art shows",
    "vnimavayte-detsa": "no image: the generated art shows"
   },
@@ -306,6 +322,7 @@
    "buratino-2": "unverified: no record of the page this file came from",
    "dalgiyat-pat-na-denya-kam-noshtta": "no image: the generated art shows",
    "danceperimental-your-story-moves-us-na-angliyski-ezik": "unverified: no record of the page this file came from",
+   "dekameron-lyubov-i-smart-po-bokacho": "unverified: no record of the page this file came from",
    "dnevnikat-na-edin-lud-2": "unverified: no record of the page this file came from",
    "dokato-chakame-godo": "unverified: no record of the page this file came from",
    "dokato-chakame-godo-dobrich": "no image: the generated art shows",
@@ -316,6 +333,7 @@
    "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf": "unverified: no record of the page this file came from",
    "hrabriyat-oloven-voynik-3": "unverified: no record of the page this file came from",
    "insert-coin-player-one": "unverified: no record of the page this file came from",
+   "izneveri-v-poveche": "unverified: no record of the page this file came from",
    "katya-i-zlatin-muzikalno-impro-shou": "unverified: no record of the page this file came from",
    "kiki-i-bozo": "unverified: no record of the page this file came from",
    "kontsert-na-pim-pam": "no image: the generated art shows",
@@ -323,6 +341,7 @@
    "malkata-rusalka": "unverified: no record of the page this file came from",
    "maystora-i-margarita": "unverified: no record of the page this file came from",
    "mechka-hamletmashina": "no image: the generated art shows",
+   "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": "unverified: no record of the page this file came from",
    "pepelyashka": "unverified: no record of the page this file came from",
    "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
    "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
@@ -335,32 +354,32 @@
   "artvent": "22/22",
   "atelie313": "12/12",
   "citymark": "8/8",
-  "iam": "10/13",
+  "iam": "11/14",
   "kuklen": "14/14",
   "mladezhki": "37/46",
-  "natfiz": "3/3",
-  "national": "61/61",
-  "salzaismyah": "43/45",
+  "natfiz": "12/13",
+  "national": "62/62",
+  "salzaismyah": "44/47",
   "satira": "40/44",
   "sfumato": "22/24",
   "sofia-th": "16/16",
-  "tba": "32/35",
+  "tba": "31/34",
   "th199": "30/33",
-  "toplo": "47/50",
-  "vazrazhdane": "22/22",
+  "toplo": "45/49",
+  "vazrazhdane": "21/21",
   "zad-kanala": "22/22"
  },
  "shows": {
   "how": {
    "TMDB poster": 1,
-   "own page: key": 185,
-   "own page: photo": 1,
-   "own page: poster": 254
+   "own page: key": 183,
+   "own page: photo": 2,
+   "own page: poster": 263
   },
-  "pct": 93.8,
-  "upcoming": 470,
-  "with": 441
+  "pct": 93.3,
+  "upcoming": 481,
+  "with": 449
  },
- "shows_displayed": 462,
+ "shows_displayed": 473,
  "target": 95.0
 }

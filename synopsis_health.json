@@ -1,160 +1,171 @@
 {
- "date": "2026-11-12",
+ "date": "2026-11-25",
  "threshold": 280,
  "shows": {
-  "titles": 503,
-  "thin": 465,
-  "empty": 376,
-  "thin_en": 467,
-  "linked": 449,
+  "titles": 481,
+  "thin": 111,
+  "empty": 73,
+  "thin_en": 134,
+  "linked": 100,
   "by_theatre": {
    "artvent": {
     "titles": 22,
-    "thin": 22,
-    "empty": 22,
-    "thin_en": 22,
-    "linked": 22,
+    "thin": 3,
+    "empty": 1,
+    "thin_en": 2,
+    "linked": 3,
     "name": "Театър ARTVENT"
    },
    "atelie313": {
-    "titles": 17,
-    "thin": 7,
-    "empty": 6,
-    "thin_en": 6,
+    "titles": 12,
+    "thin": 5,
+    "empty": 4,
+    "thin_en": 4,
     "linked": 0,
     "name": "Театър „Ателие 313“"
    },
    "citymark": {
-    "titles": 11,
+    "titles": 8,
+    "thin": 2,
+    "empty": 1,
+    "thin_en": 2,
+    "linked": 2,
+    "name": "Артцентър Сити Марк"
+   },
+   "iam": {
+    "titles": 14,
     "thin": 4,
     "empty": 2,
     "thin_en": 4,
     "linked": 4,
-    "name": "Артцентър Сити Марк"
-   },
-   "iam": {
-    "titles": 8,
-    "thin": 8,
-    "empty": 8,
-    "thin_en": 8,
-    "linked": 8,
     "name": "I AM Studio"
    },
    "kuklen": {
-    "titles": 22,
-    "thin": 22,
-    "empty": 21,
-    "thin_en": 22,
-    "linked": 22,
+    "titles": 14,
+    "thin": 3,
+    "empty": 3,
+    "thin_en": 3,
+    "linked": 3,
     "name": "Столичен куклен театър"
    },
    "mladezhki": {
-    "titles": 44,
-    "thin": 44,
-    "empty": 40,
-    "thin_en": 44,
-    "linked": 44,
+    "titles": 46,
+    "thin": 8,
+    "empty": 3,
+    "thin_en": 10,
+    "linked": 8,
     "name": "Младежки театър „Николай Бинев“"
    },
    "natfiz": {
-    "titles": 10,
-    "thin": 10,
-    "empty": 10,
-    "thin_en": 10,
-    "linked": 10,
+    "titles": 13,
+    "thin": 6,
+    "empty": 5,
+    "thin_en": 6,
+    "linked": 6,
     "name": "Учебен театър на НАТФИЗ „Кръстьо Сарафов“"
    },
    "national": {
-    "titles": 69,
-    "thin": 69,
-    "empty": 9,
-    "thin_en": 69,
-    "linked": 69,
+    "titles": 62,
+    "thin": 11,
+    "empty": 3,
+    "thin_en": 20,
+    "linked": 11,
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 43,
-    "thin": 43,
-    "empty": 43,
-    "thin_en": 43,
-    "linked": 43,
+    "titles": 47,
+    "thin": 15,
+    "empty": 10,
+    "thin_en": 12,
+    "linked": 15,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
-    "titles": 43,
-    "thin": 43,
-    "empty": 43,
-    "thin_en": 43,
-    "linked": 43,
+    "titles": 44,
+    "thin": 21,
+    "empty": 21,
+    "thin_en": 21,
+    "linked": 21,
     "name": "Сатиричен театър „Алеко Константинов“"
    },
    "sfumato": {
-    "titles": 27,
-    "thin": 27,
-    "empty": 23,
-    "thin_en": 27,
-    "linked": 27,
+    "titles": 24,
+    "thin": 5,
+    "empty": 4,
+    "thin_en": 8,
+    "linked": 5,
     "name": "Театрална работилница „Сфумато“"
    },
    "sofia-th": {
     "titles": 16,
-    "thin": 14,
-    "empty": 14,
-    "thin_en": 15,
-    "linked": 14,
+    "thin": 3,
+    "empty": 1,
+    "thin_en": 4,
+    "linked": 3,
     "name": "Театър „София“"
    },
    "tba": {
-    "titles": 36,
-    "thin": 36,
-    "empty": 32,
-    "thin_en": 36,
-    "linked": 35,
+    "titles": 34,
+    "thin": 3,
+    "empty": 3,
+    "thin_en": 7,
+    "linked": 3,
     "name": "Театър „Българска армия“"
    },
    "th199": {
-    "titles": 40,
-    "thin": 22,
-    "empty": 15,
-    "thin_en": 23,
-    "linked": 14,
+    "titles": 33,
+    "thin": 9,
+    "empty": 4,
+    "thin_en": 12,
+    "linked": 3,
     "name": "Театър 199 „Валентин Стойчев“"
    },
    "toplo": {
-    "titles": 46,
-    "thin": 46,
-    "empty": 46,
-    "thin_en": 46,
-    "linked": 46,
+    "titles": 49,
+    "thin": 5,
+    "empty": 1,
+    "thin_en": 4,
+    "linked": 5,
     "name": "Топлоцентрала"
    },
    "vazrazhdane": {
-    "titles": 27,
-    "thin": 26,
-    "empty": 23,
-    "thin_en": 27,
-    "linked": 26,
+    "titles": 21,
+    "thin": 1,
+    "empty": 1,
+    "thin_en": 5,
+    "linked": 1,
     "name": "Театър „Възраждане“"
    },
    "zad-kanala": {
     "titles": 22,
-    "thin": 22,
-    "empty": 19,
-    "thin_en": 22,
-    "linked": 22,
+    "thin": 7,
+    "empty": 6,
+    "thin_en": 10,
+    "linked": 7,
     "name": "МГТ „Зад канала“"
    }
   }
  },
  "films": {
-  "titles": 176,
-  "thin": 92,
-  "empty": 52,
-  "thin_en": 116
+  "titles": 159,
+  "thin": 69,
+  "empty": 47,
+  "thin_en": 101
  },
  "routes": {
   "overrides": 0,
-  "theatre_art_fills": 41,
-  "link_to_theatre": 449
+  "theatre_art_fills": 86,
+  "own_page_fills": 312,
+  "link_to_theatre": 100,
+  "own_page_misses": {
+   "cast / credits / practical lines only": 28,
+   "the text is about another listed production": 10,
+   "biography / interview / reviews, no description before it": 7,
+   "no description paragraph": 7,
+   "description under 120 characters": 5,
+   "reviews / interview only": 4,
+   "page not read (robots.txt, an HTTP error or no answer)": 2,
+   "the page's headings do not name the play": 1
+  }
  }
 }

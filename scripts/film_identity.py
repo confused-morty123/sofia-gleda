@@ -87,12 +87,14 @@ _EMPTY_BRACKETS_RE = re.compile(r"[\(\[][\s,;/\-–—+]*[\)\]]")
 # Festival / series prefixes seen on Sofia programmes. Extend as new ones appear.
 _FESTIVALS = [
     r"синелибри(?:\s+\d{4})?", r"cinelibri(?:\s+\d{4})?",
-    r"европейски\s+кинокласики", r"кинокласики",
+    r"европейски\s+кинокласики(?:\s+в\s+кино\s+влайкова)?", r"кинокласики",
     r"kinocult(?:\s+\d{4})?", r"кинокулт(?:\s+\d{4})?",
     r"sofia\s+documental(?:\s+\d{4})?", r"софия\s+документал(?:\s+\d{4})?",
     r"киномания(?:\s+\d{4})?", r"kinomania(?:\s+\d{4})?",
     r"софия\s+филм\s+фест(?:\s+\d{4})?", r"sofia\s+film\s+fest(?:\s+\d{4})?",
     r"синелебри(?:\s+\d{4})?", r"sinelebri(?:\s+\d{4})?",   # NDK's own spelling, 2026-10
+    r"менар(?:\s+уикенд)?", r"menar(?:\s+weekend)?",          # Arab film festival, 2026-11
+    r"cinemania(?:\s+\d{4})?",                                # Дом на киното, 2026-11
 ]
 # A festival's edition number before its name: Дом на киното's "40.Киномания: Обич"
 # (2026-10), "40. Киномания – …". Only in front of a listed name.
@@ -100,7 +102,10 @@ _EDITION = r"(?:\d{1,3}\s*\.?\s*(?:-?(?:то|ти|ми|ви)\s+)?)?"
 # A cinema's own programme strand in front of a film's title, with or without a
 # separator: Cinema City's "Хелоуин Селекция: Наследникът" and "Хелоуин Селекция
 # Коварен капан: Бягство" (2026-10-31 screenings of films already on its bill).
-_STRANDS = [r"хелоуин\s+селекция", r"halloween\s+selection"]
+_STRANDS = [r"хелоуин\s+селекция", r"halloween\s+selection",
+            # "40. CINEMANIA I Brace Your Heart" (Дом на киното, 2026-11): a capital I
+            # stands in for the bar
+            r"(?:\d{1,3}\s*\.\s*)?(?:cinemania|kinomania|киномания)\s+I(?=\s)"]
 _FESTIVAL_RE = re.compile(
     r"^\s*(?:" + _EDITION + r"(?:" + "|".join(_FESTIVALS) + r")\s*[:\-–—|]"
     r"|(?:" + "|".join(_STRANDS) + r")(?:\s*[:\-–—|]|\s+(?=\S)))\s*", re.I)

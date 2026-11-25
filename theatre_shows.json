@@ -8044,5 +8044,113 @@
   "synBg": "",
   "synEn": "",
   "source": "salzaismyah"
+ },
+ "karti-na-dobroto": {
+  "id": "karti-na-dobroto",
+  "title": "Карти на доброто",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": {
+  "id": "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-",
+  "title": "Отгоре - ХаХаХа Импро отбелязва 17 години от първото си шоу на сцена",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "ima-li-zhivot-sled-braka-v-kyup-klub-blagoevgrad": {
+  "id": "ima-li-zhivot-sled-braka-v-kyup-klub-blagoevgrad",
+  "title": "ИМА ЛИ ЖИВОТ СЛЕД БРАКА? в КЮП Клуб, Благоевград",
+  "titleEn": "",
+  "theatre": "iam",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "iam"
+ },
+ "izneveri-v-poveche": {
+  "id": "izneveri-v-poveche",
+  "title": "ИЗНЕВЕРИ В ПОВЕЧЕ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "besove": {
+  "id": "besove",
+  "title": "Бесове",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
+ },
+ "s-aromat-na-sini-sili": {
+  "id": "s-aromat-na-sini-sili",
+  "title": "С аромат на сини сили",
+  "titleEn": "",
+  "theatre": "natfiz",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "natfiz"
  }
 }

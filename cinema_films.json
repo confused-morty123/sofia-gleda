@@ -5007,7 +5007,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 110
  },
  "zapoznay-se-s-tehnite": {
   "id": "zapoznay-se-s-tehnite",
@@ -5018,7 +5019,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "vlaikova"
+  "source": "vlaikova",
+  "runtime": 106
  },
  "magiyata-na-gorata": {
   "id": "magiyata-na-gorata",
@@ -5153,5 +5155,120 @@
   ],
   "source": "dom-kino",
   "runtime": 112
+ },
+ "prizrachniyat-voynik": {
+  "id": "prizrachniyat-voynik",
+  "bg": "Призрачният войник",
+  "en": "",
+  "genres": [
+   "Екшън"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "cc-sofia",
+  "runtime": 90,
+  "year": 2026
+ },
+ "pochivkata-2-re-release": {
+  "id": "pochivkata-2-re-release",
+  "bg": "Почивката 2 (re-release)",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "cc-sofia",
+  "runtime": 113,
+  "year": 2025
+ },
+ "asteriks-v-kralstvo-nubiya": {
+  "id": "asteriks-v-kralstvo-nubiya",
+  "bg": "Астерикс в кралство Нубия",
+  "en": "",
+  "genres": [
+   "Приключенски",
+   "Анимация",
+   "Комедия",
+   "Семеен"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "cc-sofia",
+  "runtime": 87,
+  "year": 2026
+ },
+ "vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie": {
+  "id": "vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie",
+  "bg": "Властелинът на пръстените: Двете кули (удължено издание)",
+  "en": "",
+  "genres": [
+   "Фентъзи"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "dom-kino",
+  "runtime": 235
+ },
+ "vlastelinat-na-prastenite-dvete-kuli": {
+  "id": "vlastelinat-na-prastenite-dvete-kuli",
+  "bg": "Властелинът на пръстените: Двете кули",
+  "en": "",
+  "genres": [
+   "Фентъзи"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "dom-kino",
+  "runtime": 179
+ },
+ "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": {
+  "id": "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969",
+  "bg": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Колекционерката (1969)",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "source": "vlaikova"
+ },
+ "menar-istorii-ot-kayro": {
+  "id": "menar-istorii-ot-kayro",
+  "bg": "Менар: Истории от Кайро",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "dom-kino",
+  "runtime": 120
+ },
+ "menar-glasat-na-kongo": {
+  "id": "menar-glasat-na-kongo",
+  "bg": "Менар: Гласът на Конго",
+  "en": "",
+  "genres": [
+   "Музикален"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "dom-kino",
+  "runtime": 93
  }
 }
