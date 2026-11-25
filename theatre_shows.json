@@ -8152,5 +8152,720 @@
   "synBg": "",
   "synEn": "",
   "source": "natfiz"
+ },
+ "otmeneno-chayka-sled-samoubiystvoto": {
+  "id": "otmeneno-chayka-sled-samoubiystvoto",
+  "title": "ОТМЕНЕНО „ЧАЙКА“ СЛЕД САМОУБИЙСТВОТО",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "botevata-lyubov": {
+  "id": "botevata-lyubov",
+  "title": "БОТЕВАТА ЛЮБОВ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
+ },
+ "agripina": {
+  "id": "agripina",
+  "title": "АГРИПИНА",
+  "titleEn": "AGRIPPINA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1067",
+  "subtitle": "Опера от Георг Фридрих Хендел ПРЕМИЕРА",
+  "subtitleEn": "Opera by George Frideric Handel PREMIERE",
+  "facts": {
+   "language": "Изпълнява се на немски език, с български и английски субтитри",
+   "conductor": "Константин Тринкс",
+   "director": "Уолтър Сътклиф",
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3545",
+   "prices_read": "2026-11-25",
+   "prices_eur": [
+    "50",
+    "60",
+    "30",
+    "35",
+    "25",
+    "40",
+    "20"
+   ]
+  },
+  "baked": true
+ },
+ "ana-karenina": {
+  "id": "ana-karenina",
+  "title": "АНА КАРЕНИНА",
+  "titleEn": "ANNA KARENINA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Балет"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1106",
+  "subtitle": "Балет по музика на Пьотр Илич Чайковски /Спектакъл за възрастни/",
+  "subtitleEn": "Ballet by Pyotr Ilyich Tchaikovsky /Performance for adults/"
+ },
+ "valshebnata-fleyta": {
+  "id": "valshebnata-fleyta",
+  "title": "ВЪЛШЕБНАТА ФЛЕЙТА",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1089",
+  "subtitle": "Опера от Волфганг Амадеус Моцарт - адаптирана за деца /Спектакъл за деца/"
+ },
+ "groznoto-patentse": {
+  "id": "groznoto-patentse",
+  "title": "ГРОЗНОТО ПАТЕНЦЕ",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1083",
+  "subtitle": "Музикална приказка от Жул Леви /Спектакъл за деца/"
+ },
+ "zhizel": {
+  "id": "zhizel",
+  "title": "ЖИЗЕЛ",
+  "titleEn": "GISELLE",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Балет"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1068",
+  "subtitle": "Балет от Адолф Адам",
+  "subtitleEn": "Ballet by Adolphe Adam",
+  "facts": {
+   "duration": "2:10 Антракти 1",
+   "conductor": "Андрей Галанов"
+  }
+ },
+ "izgubenata-printsesa": {
+  "id": "izgubenata-printsesa",
+  "title": "ИЗГУБЕНАТА ПРИНЦЕСА",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1094",
+  "subtitle": "Концерт с песни от мюзикълите \"Анастасия\" и \"Звукът на музиката\" /Спектакъл за деца/"
+ },
+ "karmen": {
+  "id": "karmen",
+  "title": "КАРМЕН",
+  "titleEn": "CARMEN",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1058",
+  "subtitle": "Опера от Жорж Бизе",
+  "subtitleEn": "Opera by Georges Bizet"
+ },
+ "karnavalat-na-zhivotnite": {
+  "id": "karnavalat-na-zhivotnite",
+  "title": "КАРНАВАЛЪТ НА ЖИВОТНИТЕ",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1088",
+  "subtitle": "Детски спектакъл по музика на Камий Сен-Санс /Спектакъл за деца/",
+  "facts": {
+   "duration": "01:00",
+   "age": "Подходящо за деца над 3 годишна възраст!",
+   "conductor": "Стефан Недялков",
+   "director": "Юлия Кръстева",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
+ },
+ "karnavalat-na-zhivotnite-2": {
+  "id": "karnavalat-na-zhivotnite-2",
+  "title": "КАРНАВАЛЪТ НА ЖИВОТНИТЕ",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1108",
+  "subtitle": "Детски спектакъл по музика на Камий Сен-Санс /Спектакъл за деца/"
+ },
+ "koleden-kontsert-nuti": {
+  "id": "koleden-kontsert-nuti",
+  "title": "КОЛЕДЕН КОНЦЕРТ НУТИ",
+  "titleEn": "CHRISTMAS CONCERT NUTI",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Балет"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1072",
+  "subtitle": "Националното училище за танцово изкуство",
+  "subtitleEn": "Christmas Concert of the National School of Dance Art (NUTI)"
+ },
+ "kontsert-gala-rosini-svetlina-stoyanova": {
+  "id": "kontsert-gala-rosini-svetlina-stoyanova",
+  "title": "КОНЦЕРТ ГАЛА РОСИНИ – СВЕТЛИНА СТОЯНОВА",
+  "titleEn": "CONCERT GALA ROSSINI – SVETLINA STOYANOVA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Концерт"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1069",
+  "baked": true
+ },
+ "kontsert-za-bebotsi": {
+  "id": "kontsert-za-bebotsi",
+  "title": "КОНЦЕРТ ЗА БЕБОЦИ",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1086",
+  "subtitle": "/Спектакъл за деца/",
+  "facts": {
+   "age": "Подходящо за деца от 0 до 3 годишна възраст!",
+   "conductor": "Жорж Димитров",
+   "director": "Юлия Кръстева",
+   "prices": "Цени за възрастен 6.50 €, дете над една година 6.50 €."
+  }
+ },
+ "koleden-kontsert-na-italianskata-targovska-kamara": {
+  "id": "koleden-kontsert-na-italianskata-targovska-kamara",
+  "title": "Коледен концерт на Италианската търговска камара",
+  "titleEn": "Christmas Concert of the Italian Chamber of Commerce",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Концерт"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1070",
+  "subtitle": "под патронажа на Марчело Апичела, посланик на Италия в България",
+  "subtitleEn": "Under the patronage of Marcello Apicella, ambassador of Italy in Bulgaria"
+ },
+ "leshnikotroshachkata": {
+  "id": "leshnikotroshachkata",
+  "title": "ЛЕШНИКОТРОШАЧКАТА",
+  "titleEn": "THE NUTCRACKER",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Балет"
+  ],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1073",
+  "subtitle": "Балет от Пьотр Илич Чайковски",
+  "subtitleEn": "Ballet by Pyotr Ilyich Tchaikovsky"
+ },
+ "madam-baterflay": {
+  "id": "madam-baterflay",
+  "title": "МАДАМ БЪТЕРФЛАЙ",
+  "titleEn": "MADAMA BUTTERFLY",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1071",
+  "subtitle": "Опера от Джакомо Пучини",
+  "subtitleEn": "Opera by Giacomo Puccini"
+ },
+ "mecho-puh": {
+  "id": "mecho-puh",
+  "title": "МЕЧО ПУХ",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1092",
+  "subtitle": "Мюзикъл от Андрей Дреников /Спектакъл за деца/"
+ },
+ "norma": {
+  "id": "norma",
+  "title": "НОРМА",
+  "titleEn": "NORMA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1107",
+  "subtitle": "Опера от Винченцо Белини",
+  "subtitleEn": "Opera by Vincenzo Bellini"
+ },
+ "novogodishen-gala-kontsert": {
+  "id": "novogodishen-gala-kontsert",
+  "title": "Новогодишен гала концерт",
+  "titleEn": "New Years Gala Concert",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Концерт"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1110",
+  "subtitle": "Традиционен новогодишен концерт",
+  "subtitleEn": "Traditional New Years Gala Concert"
+ },
+ "pepelyashka-3": {
+  "id": "pepelyashka-3",
+  "title": "ПЕПЕЛЯШКА",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1087",
+  "subtitle": "Балет-приказка за деца - музика Сергей Прокофиев и Николай Волков /Спектакъл за деца/"
+ },
+ "praznichno-ochakvane": {
+  "id": "praznichno-ochakvane",
+  "title": "ПРАЗНИЧНО ОЧАКВАНЕ",
+  "titleEn": "FESTIVE ANTICIPATION",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Концерт"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1125",
+  "subtitle": "Камерен концерт",
+  "subtitleEn": "Chamber concert"
+ },
+ "reynsko-zlato-za-detsa": {
+  "id": "reynsko-zlato-za-detsa",
+  "title": "РЕЙНСКО ЗЛАТО за деца",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1084",
+  "subtitle": "Опера от Рихард Вагнер - адаптирана за деца /Спектакъл за деца/",
+  "facts": {
+   "age": "Подходящо за деца над 3 годишна възраст!",
+   "conductor": "Жорж Димитров",
+   "director": "Юлия Кръстева",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
+ },
+ "salon-rosini": {
+  "id": "salon-rosini",
+  "title": "САЛОН РОСИНИ",
+  "titleEn": "ROSSINI SALON",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Концерт"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1103",
+  "subtitle": "Камерен концерт",
+  "subtitleEn": "Chamber concert"
+ },
+ "semiramida": {
+  "id": "semiramida",
+  "title": "СЕМИРАМИДА",
+  "titleEn": "SEMIRAMIDE",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1104",
+  "subtitle": "Опера от Джоакино Росини /Спектакъл на Държавна опера – Пловдив/",
+  "subtitleEn": "Opera by Gioachino Rossini /A production by State Opera – Plovdiv/"
+ },
+ "snezhanka": {
+  "id": "snezhanka",
+  "title": "СНЕЖАНКА",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1132",
+  "subtitle": "Балетна приказка с участието на танцова школа „Маша Илиева“"
+ },
+ "sapernitsi": {
+  "id": "sapernitsi",
+  "title": "СЪПЕРНИЦИ",
+  "titleEn": "RIVALS",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Концерт"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1102",
+  "subtitle": "Оперен концерт",
+  "subtitleEn": "Opera concert"
+ },
+ "traviata": {
+  "id": "traviata",
+  "title": "ТРАВИАТА",
+  "titleEn": "LA TRAVIATA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1062",
+  "subtitle": "Опера от Джузепе Верди",
+  "subtitleEn": "Opera by Giuseppe Verdi"
+ },
+ "trite-prasentsa-4": {
+  "id": "trite-prasentsa-4",
+  "title": "ТРИТЕ ПРАСЕНЦА",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1109",
+  "subtitle": "Мюзикъл от Александър Райчев /Спектакъл за деца/"
+ },
+ "chervenata-shapchitsa-4": {
+  "id": "chervenata-shapchitsa-4",
+  "title": "ЧЕРВЕНАТА ШАПЧИЦА",
+  "titleEn": "",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Детски"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1091",
+  "subtitle": "Музикална приказка от Александър Владигеров /Спектакъл за деца/",
+  "facts": {
+   "duration": "01:00",
+   "language": "Изпълнява се на български език",
+   "age": "Подходящо за деца над 3 годишна възраст!",
+   "conductor": "Жорж Димитров",
+   "director": "Юлия Кръстева",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
  }
 }

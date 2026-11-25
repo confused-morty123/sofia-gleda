@@ -2,11 +2,11 @@
  "date": "2026-11-25",
  "threshold": 280,
  "shows": {
-  "titles": 481,
-  "thin": 111,
-  "empty": 73,
-  "thin_en": 134,
-  "linked": 100,
+  "titles": 482,
+  "thin": 112,
+  "empty": 74,
+  "thin_en": 135,
+  "linked": 101,
   "by_theatre": {
    "artvent": {
     "titles": 22,
@@ -73,11 +73,11 @@
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 47,
-    "thin": 15,
-    "empty": 10,
-    "thin_en": 12,
-    "linked": 15,
+    "titles": 48,
+    "thin": 16,
+    "empty": 11,
+    "thin_en": 13,
+    "linked": 16,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
@@ -146,22 +146,30 @@
    }
   }
  },
+ "opera": {
+  "titles": 28,
+  "thin": 28,
+  "empty": 28,
+  "thin_en": 28,
+  "linked": 28
+ },
  "films": {
-  "titles": 159,
-  "thin": 69,
-  "empty": 47,
-  "thin_en": 101
+  "titles": 174,
+  "thin": 78,
+  "empty": 46,
+  "thin_en": 106
  },
  "routes": {
   "overrides": 0,
   "theatre_art_fills": 86,
   "own_page_fills": 312,
-  "link_to_theatre": 100,
+  "link_to_theatre": 101,
   "own_page_misses": {
    "cast / credits / practical lines only": 28,
+   "no description block on the page": 20,
    "the text is about another listed production": 10,
+   "no description paragraph": 8,
    "biography / interview / reviews, no description before it": 7,
-   "no description paragraph": 7,
    "description under 120 characters": 5,
    "reviews / interview only": 4,
    "page not read (robots.txt, an HTTP error or no answer)": 2,

@@ -25,33 +25,28 @@
   "message": "no official programme: all 14 performances are preliminary, from theatre.art.bg"
  },
  {
-  "level": "warning",
-  "venue": "artvent",
-  "message": "official source unreachable (unreachable: https://artvent.bg/teatar/artvent/programa); last read 2026-11-24, 1 day ago — 42 performances kept and shown as preliminary (removed after 14 days)"
- },
- {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 238/324 ok, 86 missing IMDb ratings"
+  "message": "OMDb: 240/329 ok, 89 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 473/481 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (12 days), dokato-chakame-godo-dobrich (12 days), dokato-chakame-godo-smolyan (12 days), dokato-smartta (11 days), kontsert-na-pim-pam (12 days), mechka-hamletmashina (12 days), vanyo-sonya-masha-i-spayk (11 days), vsichko-za-zhenite (11 days)"
+  "message": "theatre posters: 489/510 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (12 days), dokato-chakame-godo-dobrich (12 days), dokato-chakame-godo-smolyan (12 days), dokato-smartta (11 days), kontsert-na-pim-pam (12 days), mechka-hamletmashina (12 days), vanyo-sonya-masha-i-spayk (11 days), vsichko-za-zhenite (11 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.3 % -> 93.3 %, films 90.6 % -> 90.6 %; attached 0; causes: own page has no usable image 20, only an aggregator's image (the film does not link that page) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, robots.txt unreachable (5xx or no answer): the host is not read this run 3 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.2 % -> 93.8 %, films 92.0 % -> 92.0 %; attached 4; causes: own page has no usable image 20, only an aggregator's image (the film does not link that page) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, only a ticket page linked, not the title's page 3 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 449/481 (93.3 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 473/481 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 452/482 (93.8 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 502/510 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 144/159 (90.6 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, koledni-agenti, magiyata-na-gorata, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 160/174 (92.0 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas, skoti — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

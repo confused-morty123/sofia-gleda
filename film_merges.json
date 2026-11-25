@@ -215,6 +215,23 @@
     "runtime": 96
    }
   },
+  "40-kinomaniya-nepozna-zhena": {
+   "into": "nepoznata-zhena",
+   "rule": "same-key",
+   "reason": "the same title once normalised ('woman unknown')",
+   "since": "2026-11-25",
+   "record": {
+    "id": "40-kinomaniya-nepozna-zhena",
+    "bg": "40. Киномания: НЕПОЗНА ЖЕНА",
+    "en": "",
+    "genres": [],
+    "g": [
+     "#241B33",
+     "#45275F"
+    ],
+    "source": "vlaikova"
+   }
+  },
   "40-kinomaniya-nevidimo-v-kutiya": {
    "into": "nevidimo-v-kutiya",
    "rule": "same-key",

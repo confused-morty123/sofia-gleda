@@ -1,5 +1,5 @@
 {
-  "ran": "2026-11-25T07:32:29+00:00",
+  "ran": "2026-11-25T18:22:28+00:00",
   "ok": true,
   "publishable": true,
   "steps": [
@@ -8,24 +8,24 @@
       "script": "dev_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 1.7,
-      "tail": "dev_build: src/ + listings from index.html -> index.html\n  scripts/build_index.py --out /home/runner/work/sofia-gleda/s ok  wrote /home/runner/work/sofia-gleda/sofia-gleda/index.html.building (662,909 bytes), Googl\n  transplanted: SNAPSHOT (merged films mapped), SNAPSHOT, SHOWTIMES (merged films mapped), SHOWTIMES, PERFORMANCES, LINKS (merged films mapped), LINKS, VLINKS (merged films mapped), VLINKS, PRELIM_FROM, PRELIM_ROWS, BOXONLY, PLINKS, FESTROWS, AGGLINKS, SHOWATTR (merged films mapped), SHOWATTR, PREMIERES (merged films mapped), PREMIERES, FESTMARK\n  scripts/inject_films.py                                      ok  merged 377 arthouse film(s); filled 399 empty year/runtime/country field(s) from film_info\n  scripts/inject_shows.py                                      ok  merged 447 theatre show(s) into SHOWS (715 total; 447 synthesised); synopses: 0 override(s\n  scripts/inject_data.py                                       ok    EVENTS_AUTO: 1 event(s), EVENT_MEMBERS: 0 title(s) in 0 event(s), EVENTART: 2 event(s) w\nwrote /home/runner/work/sofia-gleda/sofia-gleda/index.html (3,137,504 bytes) — preview with: open index.html"
+      "seconds": 1.8,
+      "tail": "dev_build: src/ + listings from index.html -> index.html\n  scripts/build_index.py --out /home/runner/work/sofia-gleda/s ok  wrote /home/runner/work/sofia-gleda/sofia-gleda/index.html.building (730,112 bytes), Googl\n  transplanted: SNAPSHOT (merged films mapped), SNAPSHOT, SHOWTIMES (merged films mapped), SHOWTIMES, PERFORMANCES, LINKS (merged films mapped), LINKS, VLINKS (merged films mapped), VLINKS, PRELIM_FROM, PRELIM_ROWS, BOXONLY, PLINKS, FESTROWS, AGGLINKS, SHOWATTR (merged films mapped), SHOWATTR, PREMIERES (merged films mapped), PREMIERES, FESTMARK\n  scripts/inject_films.py                                      ok  merged 385 arthouse film(s); filled 413 empty year/runtime/country field(s) from film_info\n  scripts/inject_shows.py                                      ok  merged 453 theatre show(s) into SHOWS (721 total; 453 synthesised); synopses: 0 override(s\n  scripts/inject_data.py                                       ok    EVENTS_AUTO: 1 event(s), EVENT_MEMBERS: 0 title(s) in 0 event(s), EVENTART: 2 event(s) w\nwrote /home/runner/work/sofia-gleda/sofia-gleda/index.html (3,326,320 bytes) — preview with: open index.html"
     },
     {
       "step": "programmes",
       "script": "scrape_programs.py",
       "ok": true,
       "code": 0,
-      "seconds": 974.6,
-      "tail": "cinema programmes: 13 official, 0 kept-previous, 0 aggregator-only (—)\ntheatre programmes: 15 official, 1 kept-previous (artvent), 3 aggregator-only (new-ndk, derida, atelie313)\n8 film(s) and 6 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 13 + 12 suspected duplicate(s); 2 film title(s) held back as ambiguous\nfestivals: cinelibri official (0 confirmed, 0 preliminary per row, 0 by date, 0 contradicted); kinomania official (4 confirmed, 10 preliminary per row, 13 by date, 2 contradicted); PRELIM_ROWS 8\nPRELIM_FROM {\"arena-mall\": \"2026-12-04\", \"arena-mega\": \"2026-12-04\", \"arena-serdika\": \"2026-12-04\", \"artvent\": \"2026-11-25\", \"atelie313\": \"2026-11-25\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-12-04\", \"cc-sofia\": \"2026-12-04\", \"cg-park\": \"2026-11-27\", \"cg-ring\": \"2026-11-27\", \"cineland\": \"2026-11-27\", \"citymark\": \"2026-12-01\", \"derida\": \"2026-11-25\", \"dom-kino\": \"2026-11-30\", \"euro-cinema\": \"2026-12-10\", \"frenski-institut\": \"2026-12-10\", \"g8\": \"2026-11-27\", \"iam\": \"2026-12-29\", \"kuklen\": \"2026-12-28\", \"lumiere\": \"2026-12-23\", \"mladezhki\": \"2027-01-31\", \"natfiz\": \"2026-12-23\", \"national\": \"2027-01-31\", \"ndk1\": \"2026-12-10\", \"new-ndk\": \"2026-11-25\", \"odeon\": \"2026-11-27\", \"salzaismyah\": \"2026-12-31\", \"satira\": \"2026-12-24\", \"sfumato\": \"2026-12-31\", \"sofia-th\": \"2027-01-31\", \"tba\": \"2027-01-31\", \"th199\": \"2026-12-06\", \"toplo\": \"2026-12-01\", \"toplo-film\": \"2026-12-10\", \"tsentralni-hali\": \"2026-12-10\", \"vazrazhdane\": \"2027-01-31\", \"vlaikova\": \"2026-12-07\", \"zad-kanala\": \"2027-01-31\"}\n  ! https://artvent.bg/teatar/artvent/programa: HTTPSConnectionPool(host='artvent.bg', port=443): Max retries exceeded with url: /teatar/artvent/programa (Caused by ConnectTimeoutError(<HTTPSConnection(host='…; time budget spent\n  ! official artvent: unreachable: https://artvent.bg/teatar/artvent/programa\n  ! https://satirata.bg/show/pim-pam-koleda: HTTP 404"
+      "seconds": 1125.8,
+      "tail": "wrote index.html, changes.json, cinema_films.json (389 arthouse films) and theatre_shows.json (483 theatre shows)\nfestival details -> film_info.json: title_bg 36, title_en 30\ncinema programmes: 13 official, 0 kept-previous, 0 aggregator-only (—)\ntheatre programmes: 17 official, 0 kept-previous, 3 aggregator-only (new-ndk, derida, atelie313)\n5 film(s) and 30 show(s) minted (0 show(s) from theatre.art.bg preliminary rows), 0 minted show title(s) respelled; 0 film(s) and 0 show(s) retired; 15 + 12 suspected duplicate(s); 2 film title(s) held back as ambiguous\nfestivals: cinelibri official (0 confirmed, 0 preliminary per row, 0 by date, 0 contradicted); kinomania official (4 confirmed, 10 preliminary per row, 5 by date, 2 contradicted); PRELIM_ROWS 8\nPRELIM_FROM {\"arena-mall\": \"2026-12-04\", \"arena-mega\": \"2026-12-04\", \"arena-serdika\": \"2026-12-04\", \"artvent\": \"2027-01-31\", \"atelie313\": \"2026-11-25\", \"casa-libri\": \"2026-10-12\", \"cc-paradise\": \"2026-12-04\", \"cc-sofia\": \"2026-12-04\", \"cg-park\": \"2026-12-02\", \"cg-ring\": \"2026-12-02\", \"cineland\": \"2026-12-04\", \"citymark\": \"2026-12-01\", \"derida\": \"2026-11-25\", \"dom-kino\": \"2026-11-30\", \"euro-cinema\": \"2026-12-10\", \"frenski-institut\": \"2026-12-10\", \"g8\": \"2026-11-27\", \"iam\": \"2026-12-29\", \"kuklen\": \"2026-12-28\", \"lumiere\": \"2026-12-23\", \"mladezhki\": \"2027-01-31\", \"natfiz\": \"2026-12-23\", \"national\": \"2027-01-31\", \"ndk1\": \"2026-12-10\", \"new-ndk\": \"2026-11-25\", \"odeon\": \"2026-12-04\", \"opera\": \"2027-01-01\", \"salzaismyah\": \"2026-12-31\", \"satira\": \"2026-12-24\", \"sfumato\": \"2026-12-31\", \"sofia-th\": \"2027-01-31\", \"tba\": \"2027-01-31\", \"th199\": \"2026-12-06\", \"toplo\": \"2026-12-01\", \"toplo-film\": \"2026-12-10\", \"tsentralni-hali\": \"2026-12-10\", \"vazrazhdane\": \"2027-01-31\", \"vlaikova\": \"2026-12-07\", \"zad-kanala\": \"2027-01-31\"}\n  ! https://satirata.bg/show/pim-pam-koleda: HTTP 404"
     },
     {
       "step": "film info",
       "script": "fetch_film_info.py",
       "ok": true,
       "code": 0,
-      "seconds": 97.3,
-      "tail": "  director:  40 new\n  cast:      12 new\n  genres:    45 new\n  img:       1 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  344 total entries in film_info.json\n  ! https://www.ndk.bg/en/event/40-kinomaniia-i-ledena-zemia: HTTP 404\n  ! https://www.ndk.bg/en/event/40-kinomaniia-i-cerni-pari-za-beli-noshhi: HTTP 404"
+      "seconds": 94.0,
+      "tail": "  director:  39 new\n  cast:      10 new\n  genres:    44 new\n  img:       0 new poster images harvested\n  credits:   0 stored dir/cast value(s) cleaned of a label\n  346 total entries in film_info.json\n  ! https://www.ndk.bg/en/event/40-kinomaniia-i-ledena-zemia: HTTP 404\n  ! https://www.ndk.bg/en/event/40-kinomaniia-i-cerni-pari-za-beli-noshhi: HTTP 404"
     },
     {
       "step": "arthouse films",
@@ -33,7 +33,7 @@
       "ok": true,
       "code": 0,
       "seconds": 0.1,
-      "tail": "merged 8 arthouse film(s); patched genres on 3 existing synthesised film(s); filled 16 empty year/runtime/country field(s) from film_info.json (482 total; 385 synthesised)"
+      "tail": "merged 5 arthouse film(s); patched genres on 2 existing synthesised film(s); filled 8 empty year/runtime/country field(s) from film_info.json (486 total; 389 synthesised)"
     },
     {
       "step": "theatre shows",
@@ -41,47 +41,47 @@
       "ok": true,
       "code": 0,
       "seconds": 0.2,
-      "tail": "merged 6 theatre show(s) into SHOWS (721 total; 453 synthesised); synopses: 0 override(s), 347 own-page fill(s), 109 theatre.art.bg fill(s)"
+      "tail": "merged 30 theatre show(s) into SHOWS (751 total; 483 synthesised); synopses: 0 override(s), 359 own-page fill(s), 109 theatre.art.bg fill(s)"
     },
     {
       "step": "synopses",
       "script": "synopses.py",
       "ok": true,
       "code": 0,
-      "seconds": 33.7,
-      "tail": "SYNOPSES {\"candidates\": 26, \"read\": 0, \"filled\": 0, \"no_match\": 0, \"unreadable\": 0, \"own_page\": {\"candidates\": 381, \"due\": 20, \"read\": 20, \"filled\": 15, \"no_match\": 5, \"unreadable\": 0, \"skipped_budget\": 0, \"by_theatre\": {\"iam\": {\"read\": 1, \"filled\": 1, \"rejected\": {}}, \"natfiz\": {\"read\": 8, \"filled\": 4, \"rejected\": {\"the text is about another listed production\": 4}}, \"national\": {\"read\": 1, \"filled\": 1, \"rejected\": {}}, \"salzaismyah\": {\"read\": 8, \"filled\": 7, \"rejected\": {\"cast / credits / practical lines only\": 1}}, \"toplo\": {\"read\": 2, \"filled\": 2, \"rejected\": {}}}, \"requests\": 25, \"from_run_cache\": 0, \"robots_refused\": 0}}\napplied {\"override\": 0, \"fill\": 109, \"own_page\": 359}"
+      "seconds": 54.0,
+      "tail": "SYNOPSES {\"candidates\": 26, \"read\": 0, \"filled\": 0, \"no_match\": 0, \"unreadable\": 0, \"own_page\": {\"candidates\": 410, \"due\": 23, \"read\": 23, \"filled\": 2, \"no_match\": 21, \"unreadable\": 0, \"skipped_budget\": 0, \"by_theatre\": {\"opera\": {\"read\": 20, \"filled\": 0, \"rejected\": {\"no description block on the page\": 20}}, \"salzaismyah\": {\"read\": 2, \"filled\": 1, \"rejected\": {\"no description paragraph\": 1}}, \"toplo\": {\"read\": 1, \"filled\": 1, \"rejected\": {}}}, \"requests\": 26, \"from_run_cache\": 0, \"robots_refused\": 0}}\napplied {\"override\": 0, \"fill\": 109, \"own_page\": 361}"
     },
     {
       "step": "film posters",
       "script": "fetch_tmdb.py",
       "ok": true,
       "code": 0,
-      "seconds": 444.3,
-      "tail": "    ! og fetch error HTTP Error 404: Not Found\n    ! omdb api error tt30632284: Error getting data.\n    ! og fetch error HTTP Error 404: Not Found\n    ! og fetch error HTTP Error 404: Not Found\n    ! omdb api error tt50488328: Error getting data.\n    ! og fetch error HTTP Error 404: Not Found\n    ! omdb api error tt39321040: Error getting data.\n    ! omdb api error tt42717070: Error getting data."
+      "seconds": 394.0,
+      "tail": "    ! omdb api error tt0100594: Request limit reached!\n    ! omdb api error tt0065043: Request limit reached!\n    ! omdb api error tt38686316: Request limit reached!\n    ! omdb api error tt32243339: Request limit reached!\n    ! omdb api error tt0167261: Request limit reached!\n    ! omdb api error tt0061495: Request limit reached!\n    ! omdb api error tt34802768: Request limit reached!\n    ! omdb api error tt41475205: Request limit reached!"
     },
     {
       "step": "cinema posters",
       "script": "harvest_cinema_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 442.3,
-      "tail": "  gadni-kopileta | Гадни копилета\n  golyamoto-pliskane | Голямото плискане\n  gradat-na-zhivite | Градът на живите\n  harry-gruyaert-a-sense-of-place-prozhektsiya-i-sreshta-s-har | Harry Gruyaert: A Sense of Place - прожекция и среща с Хари \n  ida-peeshe-tolkova-zle-che-dori-martvite-y-priglasyat | Ида пееше толкова зле, че дори мъртвите й пригласят\n  improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e- | Improduce Me theatre представя в Нощта на театрите „КОЙ Е УБ\n  istoriya-na-dokumentalniya-film-80-te | История на документалния филм, 80-те\n  it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete | It’s Alive! Хорър Филм Фест Част IV: Гневът на боговете"
+      "seconds": 442.4,
+      "tail": "  gradat-na-zhivite | Градът на живите\n  harry-gruyaert-a-sense-of-place-prozhektsiya-i-sreshta-s-har | Harry Gruyaert: A Sense of Place - прожекция и среща с Хари \n  ida-peeshe-tolkova-zle-che-dori-martvite-y-priglasyat | Ида пееше толкова зле, че дори мъртвите й пригласят\n  improduce-me-theatre-predstavya-v-noshtta-na-teatrite-koy-e- | Improduce Me theatre представя в Нощта на театрите „КОЙ Е УБ\n  istoriya-na-dokumentalniya-film-80-te | История на документалния филм, 80-те\n  it-s-alive-horar-film-fest-chast-iv-gnevat-na-bogovete | It’s Alive! Хорър Филм Фест Част IV: Гневът на боговете\n  it-s-alive-horar-film-fest-chast-iv-istoriyata-na-betona | It’s Alive! Хорър Филм Фест Част IV: Историята на Бетона\n  it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata | It’s Alive! Хорър Филм Фест Част IV: Къде ми е главата?"
     },
     {
       "step": "theatre posters",
       "script": "fetch_theatre_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 210.4,
-      "tail": "  [links]      karti-na-dobroto         plakat-25-11-2.png\n  [links]      otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou- fb-event-cover-1920x1005.jpg\n\nposter policy:\n  dropped 'dokato-chakame-godo' from SEED: filename 'fb_img_1779533222091-thegem-blog-timelin' looks like site chrome (logo / template image), not production art\n  dropped 'dokato-chakame-godo-dobrich' from this run's scrape: filename 'fb_img_1779533222091-thegem-blog-timelin' looks like site chrome (logo / template image), not production art\n  dropped 'dokato-chakame-godo-smolyan' from this run's scrape: filename 'fb_img_1779533222091-thegem-blog-timelin' looks like site chrome (logo / template image), not production art\n  dropped 'dalgiyat-pat-na-denya-kam-noshtta' from this run's scrape: filename 'logo' looks like site chrome (logo / template image), not production art\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  iamstudio.bg                          4     0     0      6.8  \n  natfiz.bg                             3     0     0      4.2  \n  programata.bg                        16     0     0     26.9  \n  theatre.art.bg                       71     0     0    148.4  \n  toplocentrala.bg                      3     0     0      4.2  \n  www.salzaismyah.bg                    3     1     0      6.2  HTTP 404\n\nnew this run: 6   rejected by policy: 4   total: 705/721 shows with art\nre-hosted 705/705 posters under posters/\nwrote theatre_posters.json\nwrote theatre_posters_state.json (8 entries)\nposter coverage: 473/481 upcoming shows; missing: dalgiyat-pat-na-denya-kam-noshtta, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, kontsert-na-pim-pam, mechka-hamletmashina, vanyo-sonya-masha-i-spayk, vsichko-za-zhenite\n  fetching salzaismyah stage programme pages …\n  ! https://www.salzaismyah.bg/robots.txt: HTTP 404"
+      "seconds": 269.8,
+      "tail": "--- per-show detail links (20 still missing) ---\n  [links]      dalgiyat-pat-na-denya-kam-noshtta logo.png\n  [links]      otmeneno-chayka-sled-samoubiystvoto Chaika-FB-cover-01.png\n\nposter policy:\n  dropped 'dokato-chakame-godo' from SEED: filename 'fb_img_1779533222091-thegem-blog-timelin' looks like site chrome (logo / template image), not production art\n  dropped 'dokato-chakame-godo-dobrich' from this run's scrape: filename 'fb_img_1779533222091-thegem-blog-timelin' looks like site chrome (logo / template image), not production art\n  dropped 'dokato-chakame-godo-smolyan' from this run's scrape: filename 'fb_img_1779533222091-thegem-blog-timelin' looks like site chrome (logo / template image), not production art\n  dropped 'dalgiyat-pat-na-denya-kam-noshtta' from this run's scrape: filename 'logo' looks like site chrome (logo / template image), not production art\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  iamstudio.bg                          3     0     0      5.9  \n  programata.bg                        39     0     0     72.1  \n  theatre.art.bg                       71     0     0    146.4  \n  toplocentrala.bg                      2     0     0      2.2  \n  www.salzaismyah.bg                    3     1     0      6.2  HTTP 404\n\nnew this run: 17   rejected by policy: 4   total: 722/751 shows with art\nre-hosted 722/722 posters under posters/\nwrote theatre_posters.json\nwrote theatre_posters_state.json (21 entries)\nposter coverage: 489/510 upcoming shows; missing: agripina, dalgiyat-pat-na-denya-kam-noshtta, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, karmen, karnavalat-na-zhivotnite, koleden-kontsert-na-italianskata-targovska-kamara, kontsert-gala-rosini-svetlina-stoyanova, kontsert-na-pim-pam, leshnikotroshachkata, mechka-hamletmashina, norma, pepelyashka-3, praznichno-ochakvane, reynsko-zlato-za-detsa, salon-rosini, semiramida, traviata, vanyo-sonya-masha-i-spayk, vsichko-za-zhenite\n  fetching salzaismyah stage programme pages …\n  ! https://www.salzaismyah.bg/robots.txt: HTTP 404"
     },
     {
       "step": "translations",
       "script": "translate.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.2,
-      "tail": "texts needing translation: film syn 49, film title 179, show syn 449, show title 666\n  total characters to translate: 355808\n  new synopsis text this run: 0 text(s), 0 characters (cap 40000); waiting for the next runs: 0 text(s), 0 characters\n  cache now covers SYN_EN: 498 ids, TITLE_EN: 845 ids"
+      "seconds": 3.4,
+      "tail": "texts needing translation: film syn 50, film title 178, show syn 451, show title 668\n  total characters to translate: 358515\n  new synopsis text this run: 2 text(s), 1955 characters (cap 40000); waiting for the next runs: 0 text(s), 0 characters\n  cache now covers SYN_EN: 501 ids, TITLE_EN: 846 ids"
     },
     {
       "step": "events",
@@ -96,8 +96,8 @@
       "script": "fetch_event_posters.py",
       "ok": true,
       "code": 0,
-      "seconds": 6.3,
-      "tail": "  kinomania                                    programata 1920x1080  https://programata.bg/wp-content/uploads/2026/09/kinomaniya_2026_poster_1920x1080px_landsc\n  rodopskiyat-mezhdunaroden-dokumentalen-p189284 programata 2560x1690  https://programata.bg/wp-content/uploads/2026/11/261105_rife_pressfacebook-scaled.jpg\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  programata.bg                         2     0     0      2.8  \n  rife.bg                               1     0     0      1.1  \n  www.kinomania.bg                      1     0     0      1.8"
+      "seconds": 7.2,
+      "tail": "  kinomania                                    programata 1920x1080  https://programata.bg/wp-content/uploads/2026/09/kinomaniya_2026_poster_1920x1080px_landsc\n  rodopskiyat-mezhdunaroden-dokumentalen-p189284 programata 2560x1690  https://programata.bg/wp-content/uploads/2026/11/261105_rife_pressfacebook-scaled.jpg\n\n=== network report ===\n  host                                 ok  fail  skip  total s  notes\n  programata.bg                         2     0     0      2.8  \n  rife.bg                               1     0     0      1.5  \n  www.kinomania.bg                      1     0     0      2.4"
     },
     {
       "step": "inline posters",
@@ -105,23 +105,23 @@
       "ok": true,
       "code": 0,
       "seconds": 1.0,
-      "tail": "  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  FILMINFO: dropped 'razum-i-chuvstva-sinelibri' — no film, show or event has this id\n  FILMINFO: dropped 'sinelibri-2026-tseluvka-za-leka-nosht' — no film, show or event has this id\n  FILMINFO: dropped 'taksi-za-raya-sinelibri' — no film, show or event has this id\n  EVENTS_AUTO: kinomaniya-p186611 left out, the seed's kinomania lists it\ninjected TMDBART: 334 films (330 with posters), POSTERS: 112 entries (77 og:image + 35 film_info-img fallbacks), SHOWART: 705 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 498 ids, TITLE_EN: 845 ids (auto-translated)\n  EVENTS_AUTO: 1 event(s), EVENT_MEMBERS: 0 title(s) in 0 event(s), EVENTART: 2 event(s) with key art (kinomania, rodopskiyat-mezhdunaroden-dokumentalen-p189284)"
+      "tail": "  FILMINFO: dropped 'magyosnika-ot-kremal' — no film, show or event has this id\n  FILMINFO: dropped 'razum-i-chuvstva-sinelibri' — no film, show or event has this id\n  FILMINFO: dropped 'sinelibri-2026-tseluvka-za-leka-nosht' — no film, show or event has this id\n  FILMINFO: dropped 'taksi-za-raya-sinelibri' — no film, show or event has this id\n  EVENTS_AUTO: kinomaniya-p186611 left out, the seed's kinomania lists it\ninjected TMDBART: 341 films (337 with posters), POSTERS: 112 entries (77 og:image + 35 film_info-img fallbacks), SHOWART: 722 shows, SHOWALIAS: 1 mirrored events (oasis-screening->oasis)\n  SYN_EN: 501 ids, TITLE_EN: 847 ids (auto-translated)\n  EVENTS_AUTO: 1 event(s), EVENT_MEMBERS: 0 title(s) in 0 event(s), EVENTART: 2 event(s) with key art (kinomania, rodopskiyat-mezhdunaroden-dokumentalen-p189284)"
     },
     {
       "step": "poster health",
       "script": "poster_health.py",
       "ok": true,
       "code": 0,
-      "seconds": 95.3,
-      "tail": "poster health: 58 title(s) without their own image are due for a retry\nPOSTER_HEALTH {\"below_target\": [\"films\", \"shows\"], \"errors\": [], \"films\": \"144/159 (90.6 %)\", \"fixed_this_run\": {\"film already has a poster\": 7, \"film nothing\": 1, \"film poster\": 3, \"show kept (page has nothing now)\": 8, \"show key\": 1, \"show nothing\": 3, \"show photo\": 1, \"show poster\": 2, \"show replacement held for review\": 32}, \"shows\": \"449/481 (93.3 %)\"}"
+      "seconds": 241.7,
+      "tail": "poster health: 81 title(s) without their own image are due for a retry\nPOSTER_HEALTH {\"below_target\": [\"films\", \"shows\"], \"errors\": [], \"films\": \"160/174 (92.0 %)\", \"fixed_this_run\": {\"film already has a poster\": 8, \"film poster\": 2, \"show kept (page has nothing now)\": 4, \"show key\": 29, \"show nothing\": 1, \"show poster\": 1, \"show replacement held for review\": 36}, \"shows\": \"449/482 (93.2 %)\"}"
     },
     {
       "step": "poster fix",
       "script": "poster_fix.py",
       "ok": true,
       "code": 0,
-      "seconds": 65.5,
-      "tail": "poster fix: 34 title(s) to read (under 95 %: shows, films)\nPOSTER_FIX {\"after\": {\"films\": 90.6, \"shows\": 93.3}, \"attached\": 0, \"attempted\": 34, \"before\": {\"films\": 90.6, \"shows\": 93.3}, \"broken_parsers\": [], \"causes\": {\"films\": {\"only a ticket page linked, not the title's page\": 3, \"only an aggregator's image (the film does not link that page)\": 9, \"own page has no usable image\": 3}, \"shows\": {\"own page blocked (robots.txt or a bot challenge; not bypassed)\": 8, \"own page has no usable image\": 17, \"own page or its image could not be fetched\": 1, \"own page's images rejected by the poster policy\": 2, \"robots.txt unreachable (5xx or no answer): the host is not read this run\": 3, \"the linked page is not the title's (redirect, home page or another title)\": 1}}, \"errors\": [], \"network\": \"ok\"}"
+      "seconds": 57.4,
+      "tail": "poster fix: 5 title(s) to read (under 95 %: shows, films)\nPOSTER_FIX {\"after\": {\"films\": 92.0, \"shows\": 93.8}, \"attached\": 4, \"attempted\": 5, \"before\": {\"films\": 92.0, \"shows\": 93.2}, \"broken_parsers\": [], \"causes\": {\"films\": {\"only a ticket page linked, not the title's page\": 3, \"only an aggregator's image (the film does not link that page)\": 9, \"own page has no usable image\": 2}, \"shows\": {\"own page blocked (robots.txt or a bot challenge; not bypassed)\": 8, \"own page has no usable image\": 18, \"own page or its image could not be fetched\": 1, \"own page's images rejected by the poster policy\": 2, \"the linked page is not the title's (redirect, home page or another title)\": 1}}, \"errors\": [], \"network\": \"ok\"}"
     },
     {
       "step": "synopsis health",
@@ -129,38 +129,38 @@
       "ok": true,
       "code": 0,
       "seconds": 0.2,
-      "tail": "SYNOPSIS_HEALTH {\"shows\": {\"titles\": 481, \"thin\": 111, \"empty\": 73, \"linked\": 100}, \"films\": {\"titles\": 159, \"thin\": 69, \"empty\": 47, \"thin_en\": 101}, \"routes\": {\"overrides\": 0, \"theatre_art_fills\": 86, \"own_page_fills\": 312, \"link_to_theatre\": 100, \"own_page_misses\": {\"cast / credits / practical lines only\": 28, \"the text is about another listed production\": 10, \"biography / interview / reviews, no description before it\": 7, \"no description paragraph\": 7, \"description under 120 characters\": 5, \"reviews / interview only\": 4, \"page not read (robots.txt, an HTTP error or no answer)\": 2, \"the page's headings do not name the play\": 1}}}"
+      "tail": "SYNOPSIS_HEALTH {\"shows\": {\"titles\": 482, \"thin\": 112, \"empty\": 74, \"linked\": 101}, \"opera\": {\"titles\": 28, \"thin\": 28, \"empty\": 28, \"linked\": 28}, \"films\": {\"titles\": 174, \"thin\": 78, \"empty\": 46, \"thin_en\": 106}, \"routes\": {\"overrides\": 0, \"theatre_art_fills\": 86, \"own_page_fills\": 312, \"link_to_theatre\": 101, \"own_page_misses\": {\"cast / credits / practical lines only\": 28, \"no description block on the page\": 20, \"the text is about another listed production\": 10, \"no description paragraph\": 8, \"biography / interview / reviews, no description before it\": 7, \"description under 120 characters\": 5, \"reviews / interview only\": 4, \"page not read (robots.txt, an HTTP error or no answer)\": 2, \"the page's headings do not name the play\": 1}}}"
     },
     {
       "step": "share pages",
       "script": "gen_share_pages.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.8,
-      "tail": "gen_share_pages: wrote 1263 share pages (482 films, 721 shows, 12 events), kept 5 pages for unlisted titles"
+      "seconds": 1.0,
+      "tail": "gen_share_pages: wrote 1298 share pages (486 films, 751 shows, 12 events), kept 5 pages for unlisted titles"
     },
     {
       "step": "csp",
       "script": "csp.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.5,
-      "tail": "csp: stamped 9 page(s) and 1268 share page(s), 0 changed"
+      "seconds": 0.7,
+      "tail": "csp: stamped 10 page(s) and 1303 share page(s), 0 changed"
     },
     {
       "step": "verify",
       "script": "verify_build.py",
       "ok": true,
       "code": 0,
-      "seconds": 16.7,
-      "tail": "  note: 207 film(s) carry a trailer (TMDBART v)\n  note: 5c3 BG mode: 16 title(s) shown without a Bulgarian form (4 film, 12 show): Actually, It Is Rocket Science (film); BEST OF ANNECY 2026 (film); BTS WORLD TOUR 'ARIRANG' IN JAKARTA: LIVE VIEWING (film); GEORGE MICHAEL: THE FAITH TOUR (film); Bai Ganyo (show); Bulgarian Beatbox Championship 2026 | Grand Final (show); Clean girl – Fat Festival (show); E.E. (show)\n  note: 5c4 ratings: 86/149 films (57.7 %) show a genuine score (target 95 %): IMDb 60, TMDB 81, RT 10, MC 49; not films: 6 live, 0 event, 0 shorts; 90.5 % of the 95 films rated anywhere\n  note: FILM_REDIRECT: 47 merged film id(s) open the film they were merged into\n  note: share pages: 1268 checked, all carry their tags and no meta refresh\n  warning: 5c2 poster coverage (plays, own image): 449/481 (93.3 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 473/481 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)\n  warning: 5c2 poster coverage (films, own image): 144/159 (90.6 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, koledni-agenti, magiyata-na-gorata, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)\n  all checks passed — safe to publish"
+      "seconds": 18.6,
+      "tail": "  note: 5c2 poster coverage (opera, own image): 28/28 (100.0 %) (Опера и балет hidden: not part of the plays' floor)\n  note: 5c3 BG mode: 16 title(s) shown without a Bulgarian form (4 film, 12 show): Actually, It Is Rocket Science (film); BEST OF ANNECY 2026 (film); BTS WORLD TOUR 'ARIRANG' IN JAKARTA: LIVE VIEWING (film); GEORGE MICHAEL: THE FAITH TOUR (film); Bai Ganyo (show); Bulgarian Beatbox Championship 2026 | Grand Final (show); Clean girl – Fat Festival (show); E.E. (show)\n  note: 5c4 ratings: 94/161 films (58.4 %) show a genuine score (target 95 %): IMDb 64, TMDB 89, RT 46, MC 52; not films: 6 live, 0 event, 0 shorts; 87.9 % of the 107 films rated anywhere\n  note: FILM_REDIRECT: 48 merged film id(s) open the film they were merged into\n  note: share pages: 1303 checked, all carry their tags and no meta refresh\n  warning: 5c2 poster coverage (plays, own image): 452/482 (93.8 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 502/510 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)\n  warning: 5c2 poster coverage (films, own image): 160/174 (92.0 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas, skoti — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)\n  all checks passed — safe to publish"
     },
     {
       "step": "page source",
       "script": "check_page_source.py",
       "ok": true,
       "code": 0,
-      "seconds": 0.4,
+      "seconds": 0.5,
       "tail": "page source: index.html and the home pages carry the code src/ builds"
     }
   ],
@@ -174,16 +174,12 @@
         "2026-12-03"
       ],
       "days": 9,
-      "screenings": 451,
-      "written_screenings": 595,
+      "screenings": 425,
+      "written_screenings": 569,
       "prelim_from": "2026-12-04",
       "prelim_screenings": 145,
-      "discarded_aggregator": 10,
-      "minted": [
-        "asteriks-v-kralstvo-nubiya",
-        "pochivkata-2-re-release",
-        "prizrachniyat-voynik"
-      ],
+      "discarded_aggregator": 67,
+      "minted": [],
       "error": null
     },
     "cc-paradise": {
@@ -195,11 +191,11 @@
         "2026-12-03"
       ],
       "days": 9,
-      "screenings": 514,
-      "written_screenings": 704,
+      "screenings": 477,
+      "written_screenings": 667,
       "prelim_from": "2026-12-04",
       "prelim_screenings": 191,
-      "discarded_aggregator": 7,
+      "discarded_aggregator": 73,
       "minted": [],
       "error": null
     },
@@ -212,11 +208,11 @@
         "2026-12-03"
       ],
       "days": 9,
-      "screenings": 411,
-      "written_screenings": 592,
+      "screenings": 397,
+      "written_screenings": 578,
       "prelim_from": "2026-12-04",
       "prelim_screenings": 181,
-      "discarded_aggregator": 11,
+      "discarded_aggregator": 20,
       "minted": [],
       "error": null
     },
@@ -229,11 +225,11 @@
         "2026-12-03"
       ],
       "days": 9,
-      "screenings": 407,
-      "written_screenings": 588,
+      "screenings": 386,
+      "written_screenings": 567,
       "prelim_from": "2026-12-04",
       "prelim_screenings": 181,
-      "discarded_aggregator": 13,
+      "discarded_aggregator": 29,
       "minted": [],
       "error": null
     },
@@ -246,11 +242,11 @@
         "2026-12-03"
       ],
       "days": 9,
-      "screenings": 199,
-      "written_screenings": 310,
+      "screenings": 190,
+      "written_screenings": 301,
       "prelim_from": "2026-12-04",
       "prelim_screenings": 111,
-      "discarded_aggregator": 5,
+      "discarded_aggregator": 12,
       "minted": [],
       "error": null
     },
@@ -260,15 +256,17 @@
       "source": "cinegrand.bg schedule pages",
       "covered": [
         "2026-11-25",
-        "2026-11-26"
+        "2026-12-01"
       ],
-      "days": 2,
-      "screenings": 82,
-      "written_screenings": 82,
-      "prelim_from": "2026-11-27",
-      "prelim_screenings": 0,
-      "discarded_aggregator": 0,
-      "minted": [],
+      "days": 7,
+      "screenings": 298,
+      "written_screenings": 510,
+      "prelim_from": "2026-12-02",
+      "prelim_screenings": 212,
+      "discarded_aggregator": 30,
+      "minted": [
+        "pochivkata-2-povtorenie"
+      ],
       "error": null
     },
     "cg-park": {
@@ -277,14 +275,14 @@
       "source": "cinegrand.bg schedule pages",
       "covered": [
         "2026-11-25",
-        "2026-11-26"
+        "2026-12-01"
       ],
-      "days": 2,
-      "screenings": 56,
-      "written_screenings": 56,
-      "prelim_from": "2026-11-27",
-      "prelim_screenings": 0,
-      "discarded_aggregator": 0,
+      "days": 7,
+      "screenings": 189,
+      "written_screenings": 335,
+      "prelim_from": "2026-12-02",
+      "prelim_screenings": 146,
+      "discarded_aggregator": 20,
       "minted": [],
       "error": null
     },
@@ -294,12 +292,12 @@
       "source": "cineland.bg programme API (restapi.cineland.bg)",
       "covered": [
         "2026-11-25",
-        "2026-11-26"
+        "2026-12-03"
       ],
-      "days": 2,
-      "screenings": 74,
-      "written_screenings": 309,
-      "prelim_from": "2026-11-27",
+      "days": 9,
+      "screenings": 334,
+      "written_screenings": 568,
+      "prelim_from": "2026-12-04",
       "prelim_screenings": 235,
       "discarded_aggregator": 0,
       "minted": [],
@@ -319,26 +317,29 @@
       "prelim_from": "2026-12-07",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [
-        "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969"
-      ],
+      "minted": [],
       "error": null
     },
     "odeon": {
       "kind": null,
       "status": "official",
-      "source": "bnf.bg Одеон programme (922)",
+      "source": "bnf.bg Одеон programme (922, 923)",
       "covered": [
         "2026-11-25",
-        "2026-11-26"
+        "2026-12-03"
       ],
-      "days": 2,
-      "screenings": 7,
-      "written_screenings": 7,
-      "prelim_from": "2026-11-27",
+      "days": 9,
+      "screenings": 37,
+      "written_screenings": 37,
+      "prelim_from": "2026-12-04",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [],
+      "minted": [
+        "estestven-film",
+        "kilhaus",
+        "kupe-nomer-6",
+        "predstavyane-na-sbornik-strasti-po-kinoto-i-negovite-shedyov"
+      ],
       "error": null
     },
     "dom-kino": {
@@ -355,12 +356,7 @@
       "prelim_from": "2026-11-30",
       "prelim_screenings": 63,
       "discarded_aggregator": 0,
-      "minted": [
-        "menar-glasat-na-kongo",
-        "menar-istorii-ot-kayro",
-        "vlastelinat-na-prastenite-dvete-kuli",
-        "vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie"
-      ],
+      "minted": [],
       "error": null
     },
     "g8": {
@@ -373,9 +369,9 @@
       ],
       "days": 2,
       "screenings": 30,
-      "written_screenings": 30,
+      "written_screenings": 132,
       "prelim_from": "2026-11-27",
-      "prelim_screenings": 0,
+      "prelim_screenings": 102,
       "discarded_aggregator": 3,
       "minted": [],
       "error": null
@@ -491,8 +487,8 @@
         "2027-01-30"
       ],
       "days": 67,
-      "screenings": 120,
-      "written_screenings": 120,
+      "screenings": 118,
+      "written_screenings": 118,
       "prelim_from": "2027-01-31",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
@@ -593,11 +589,11 @@
         "2027-01-30"
       ],
       "days": 67,
-      "screenings": 52,
-      "written_screenings": 52,
+      "screenings": 51,
+      "written_screenings": 51,
       "prelim_from": "2027-01-31",
       "prelim_screenings": 0,
-      "discarded_aggregator": 3,
+      "discarded_aggregator": 4,
       "minted": [],
       "error": null
     },
@@ -650,8 +646,7 @@
       "prelim_screenings": 43,
       "discarded_aggregator": 0,
       "minted": [
-        "karti-na-dobroto",
-        "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-"
+        "otmeneno-chayka-sled-samoubiystvoto"
       ],
       "error": null
     },
@@ -703,10 +698,7 @@
       "prelim_from": "2026-12-23",
       "prelim_screenings": 0,
       "discarded_aggregator": 0,
-      "minted": [
-        "besove",
-        "s-aromat-na-sini-sili"
-      ],
+      "minted": [],
       "error": null
     },
     "new-ndk": {
@@ -751,9 +743,7 @@
       "prelim_from": "2026-12-29",
       "prelim_screenings": 6,
       "discarded_aggregator": 0,
-      "minted": [
-        "ima-li-zhivot-sled-braka-v-kyup-klub-blagoevgrad"
-      ],
+      "minted": [],
       "error": null
     },
     "atelie313": {
@@ -772,17 +762,20 @@
     },
     "artvent": {
       "kind": "theatre",
-      "status": "unreachable",
-      "source": "previous run kept as preliminary — official source failed",
-      "covered": null,
-      "days": 0,
-      "screenings": 0,
+      "status": "official",
+      "source": "artvent.bg per-show pages (София, Театър ARTVENT only)",
+      "covered": [
+        "2026-11-25",
+        "2027-01-30"
+      ],
+      "days": 67,
+      "screenings": 42,
       "written_screenings": 42,
-      "prelim_from": "2026-11-25",
-      "prelim_screenings": 42,
+      "prelim_from": "2027-01-31",
+      "prelim_screenings": 0,
       "discarded_aggregator": 0,
       "minted": [],
-      "error": "unreachable: https://artvent.bg/teatar/artvent/programa"
+      "error": null
     },
     "salzaismyah": {
       "kind": "theatre",
@@ -793,13 +786,59 @@
         "2026-12-30"
       ],
       "days": 36,
-      "screenings": 51,
-      "written_screenings": 68,
+      "screenings": 50,
+      "written_screenings": 70,
       "prelim_from": "2026-12-31",
-      "prelim_screenings": 17,
+      "prelim_screenings": 20,
       "discarded_aggregator": 0,
       "minted": [
-        "izneveri-v-poveche"
+        "botevata-lyubov"
+      ],
+      "error": null
+    },
+    "opera": {
+      "kind": "theatre",
+      "status": "official",
+      "source": "operasofia.bg/calendar (month pages: default + children's view; English titles)",
+      "covered": [
+        "2026-11-25",
+        "2026-12-31"
+      ],
+      "days": 37,
+      "screenings": 47,
+      "written_screenings": 54,
+      "prelim_from": "2027-01-01",
+      "prelim_screenings": 7,
+      "discarded_aggregator": 0,
+      "minted": [
+        "agripina",
+        "ana-karenina",
+        "chervenata-shapchitsa-4",
+        "groznoto-patentse",
+        "izgubenata-printsesa",
+        "karmen",
+        "karnavalat-na-zhivotnite",
+        "karnavalat-na-zhivotnite-2",
+        "koleden-kontsert-na-italianskata-targovska-kamara",
+        "koleden-kontsert-nuti",
+        "kontsert-gala-rosini-svetlina-stoyanova",
+        "kontsert-za-bebotsi",
+        "leshnikotroshachkata",
+        "madam-baterflay",
+        "mecho-puh",
+        "norma",
+        "novogodishen-gala-kontsert",
+        "pepelyashka-3",
+        "praznichno-ochakvane",
+        "reynsko-zlato-za-detsa",
+        "salon-rosini",
+        "sapernitsi",
+        "semiramida",
+        "snezhanka",
+        "traviata",
+        "trite-prasentsa-4",
+        "valshebnata-fleyta",
+        "zhizel"
       ],
       "error": null
     }
@@ -815,7 +854,7 @@
       "unknown_venues": {},
       "outside_sofia": {},
       "requests": 1,
-      "seconds": 1.9,
+      "seconds": 1.7,
       "blocked": [],
       "last_ok": "2026-11-25",
       "failing_since": null,
@@ -848,7 +887,7 @@
         "Стара Загора - Регионална библиотека \"Захарий Княжески\"": 3
       },
       "requests": 37,
-      "seconds": 44.6,
+      "seconds": 44.7,
       "blocked": [],
       "last_ok": "2026-11-25",
       "failing_since": null,
@@ -862,8 +901,8 @@
       "kept_tail": 0,
       "confirmed": 4,
       "prelim_row": 10,
-      "prelim_date": 13,
-      "listed": 35,
+      "prelim_date": 5,
+      "listed": 43,
       "contradicted": [
         [
           "izostaven-ot-vsichki",
@@ -887,15 +926,6 @@
           [
             "istoriya-na-dokumentalniya-film-80-te"
           ]
-        ],
-        [
-          "nepoznata-zhena",
-          "vlaikova",
-          "2026-11-25",
-          "19:30",
-          [
-            "40-kinomaniya-nepozna-zhena"
-          ]
         ]
       ],
       "by_venue": {
@@ -903,7 +933,8 @@
           "listed": 12
         },
         "cg-park": {
-          "listed": 2
+          "prelim_row": 1,
+          "listed": 1
         },
         "dom-kino": {
           "listed": 9
@@ -923,12 +954,11 @@
         },
         "odeon": {
           "prelim_row": 1,
-          "prelim_date": 9,
-          "listed": 2
+          "prelim_date": 1,
+          "listed": 10
         },
         "vlaikova": {
-          "prelim_row": 1,
-          "listed": 6
+          "listed": 7
         }
       },
       "rows": [
@@ -1065,12 +1095,8 @@
         "upcoming": 62
       },
       "salzaismyah": {
-        "missing": [
-          "hrabriyat-oloven-voynik-3",
-          "izneveri-v-poveche",
-          "katya-i-zlatin-muzikalno-impro-shou"
-        ],
-        "upcoming": 47
+        "missing": [],
+        "upcoming": 48
       },
       "satira": {
         "missing": [
@@ -1113,7 +1139,8 @@
           "danceperimental-your-story-moves-us-na-angliyski-ezik",
           "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf",
           "insert-coin-player-one",
-          "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-"
+          "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-",
+          "otmeneno-chayka-sled-samoubiystvoto"
         ],
         "upcoming": 49
       },
@@ -1142,10 +1169,7 @@
       "ekaterina-karavelova-vik-ot-istoriyata": "unverified: no record of the page this file came from",
       "gnyav-po-stivan-king": "unverified: no record of the page this file came from",
       "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf": "unverified: no record of the page this file came from",
-      "hrabriyat-oloven-voynik-3": "unverified: no record of the page this file came from",
       "insert-coin-player-one": "unverified: no record of the page this file came from",
-      "izneveri-v-poveche": "unverified: no record of the page this file came from",
-      "katya-i-zlatin-muzikalno-impro-shou": "unverified: no record of the page this file came from",
       "kiki-i-bozo": "unverified: no record of the page this file came from",
       "kontsert-na-pim-pam": "no image: the generated art shows",
       "kotarakat-v-chizmi": "unverified: no record of the page this file came from",
@@ -1153,6 +1177,7 @@
       "maystora-i-margarita": "unverified: no record of the page this file came from",
       "mechka-hamletmashina": "no image: the generated art shows",
       "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": "unverified: no record of the page this file came from",
+      "otmeneno-chayka-sled-samoubiystvoto": "unverified: no record of the page this file came from",
       "pepelyashka": "unverified: no record of the page this file came from",
       "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
       "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
@@ -1161,17 +1186,16 @@
       "vsichko-za-zhenite": "no image: the generated art shows"
     },
     "displayed": {
-      "upcoming": 481,
-      "with": 473
+      "upcoming": 510,
+      "with": 502
     },
     "films": {
       "causes": {
         "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
         "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
-        "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": "no image: the generated art shows",
         "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
+        "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
         "koledni-agenti": "unverified: an aggregator's image, and the film does not link its page",
-        "magiyata-na-gorata": "unverified: an aggregator's image, and the film does not link its page",
         "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": "no image: the generated art shows",
         "pastir": "unverified: an aggregator's image, and the film does not link its page",
         "polyusi": "no image: the generated art shows",
@@ -1185,10 +1209,9 @@
       "missing": [
         "actually-it-is-rocket-science",
         "dzhambo-magicheskoto-priklyuchenie",
-        "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969",
         "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno",
+        "kodat-na-balgarite",
         "koledni-agenti",
-        "magiyata-na-gorata",
         "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl",
         "pastir",
         "polyusi",
@@ -1199,14 +1222,14 @@
         "tya",
         "vnimavayte-detsa"
       ],
-      "upcoming": 159,
-      "with": 144
+      "upcoming": 174,
+      "with": 160
     },
     "how": {
       "TMDB poster": 1,
       "own page: key": 183,
       "own page: photo": 2,
-      "own page: poster": 263
+      "own page: poster": 266
     },
     "metric": "own-page",
     "missing": [
@@ -1225,10 +1248,7 @@
       "ekaterina-karavelova-vik-ot-istoriyata",
       "gnyav-po-stivan-king",
       "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf",
-      "hrabriyat-oloven-voynik-3",
       "insert-coin-player-one",
-      "izneveri-v-poveche",
-      "katya-i-zlatin-muzikalno-impro-shou",
       "kiki-i-bozo",
       "kontsert-na-pim-pam",
       "kotarakat-v-chizmi",
@@ -1236,6 +1256,7 @@
       "maystora-i-margarita",
       "mechka-hamletmashina",
       "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-",
+      "otmeneno-chayka-sled-samoubiystvoto",
       "pepelyashka",
       "razdelyam-dvoyki-po-domovete",
       "sablechi-se-za-vecherya",
@@ -1243,17 +1264,22 @@
       "vanyo-sonya-masha-i-spayk",
       "vsichko-za-zhenite"
     ],
-    "upcoming": 481,
-    "with": 449,
+    "opera": {
+      "missing": [],
+      "upcoming": 28,
+      "with": 28
+    },
+    "upcoming": 482,
+    "with": 452,
     "baseline": {
-      "plays": 93.42,
-      "films": 90.59
+      "plays": 93.78,
+      "films": 91.95
     }
   },
   "poster_health": {
     "before": {
-      "films": 88.7,
-      "shows": 92.5
+      "films": 90.8,
+      "shows": 92.7
     },
     "below_target": [
       "films",
@@ -1263,39 +1289,38 @@
     "errors": [],
     "films": {
       "how": {
-        "TMDB poster": 111,
+        "TMDB poster": 126,
         "own page: key": 1,
-        "own page: poster": 12,
-        "the film's programme page": 20
+        "own page: poster": 14,
+        "the film's programme page": 19
       },
-      "pct": 90.6,
-      "upcoming": 159,
-      "with": 144
+      "pct": 92.0,
+      "upcoming": 174,
+      "with": 160
     },
     "fix": {
       "after": {
-        "films": 90.6,
-        "shows": 93.3
+        "films": 92.0,
+        "shows": 93.8
       },
-      "attached": 0,
-      "attempted": 34,
+      "attached": 4,
+      "attempted": 5,
       "before": {
-        "films": 90.6,
-        "shows": 93.3
+        "films": 92.0,
+        "shows": 93.2
       },
       "broken_parsers": [],
       "causes": {
         "films": {
           "only a ticket page linked, not the title's page": 3,
           "only an aggregator's image (the film does not link that page)": 9,
-          "own page has no usable image": 3
+          "own page has no usable image": 2
         },
         "shows": {
           "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
-          "own page has no usable image": 17,
+          "own page has no usable image": 18,
           "own page or its image could not be fetched": 1,
           "own page's images rejected by the poster policy": 2,
-          "robots.txt unreachable (5xx or no answer): the host is not read this run": 3,
           "the linked page is not the title's (redirect, home page or another title)": 1
         }
       },
@@ -1303,11 +1328,11 @@
         "films": {
           "only a ticket page linked, not the title's page": 3,
           "only an aggregator's image (the film does not link that page)": 9,
-          "own page has no usable image": 3
+          "own page has no usable image": 2
         },
         "shows": {
           "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
-          "own page has no usable image": 17,
+          "own page has no usable image": 18,
           "own page or its image could not be fetched": 4,
           "own page's images rejected by the poster policy": 2,
           "the linked page is not the title's (redirect, home page or another title)": 1
@@ -1315,25 +1340,24 @@
       },
       "counts": {
         "films": {
-          "after": "144/159",
-          "before": "144/159"
+          "after": "160/174",
+          "before": "160/174"
         },
         "shows": {
-          "after": "449/481",
-          "before": "449/481"
+          "after": "452/482",
+          "before": "449/482"
         }
       },
       "date": "2026-11-25",
       "errors": [],
       "network": "ok",
-      "refused": 5,
-      "requests": 42,
+      "refused": 0,
+      "requests": 13,
       "retried": [],
-      "seconds": 65.3,
+      "seconds": 57.2,
       "summary": {
-        "film nothing": 2,
-        "show kept (page has nothing now)": 2,
-        "show nothing": 30
+        "show nothing": 1,
+        "show poster": 4
       },
       "titles": {
         "films": {
@@ -1345,19 +1369,15 @@
             "only an aggregator's image (the film does not link that page)",
             "unverified: an aggregator's image, and the film does not link its page"
           ],
-          "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": [
-            "own page has no usable image",
-            "no usable image on the page"
-          ],
           "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": [
             "only an aggregator's image (the film does not link that page)",
             "unverified: an aggregator's image, and the film does not link its page"
           ],
-          "koledni-agenti": [
+          "kodat-na-balgarite": [
             "only an aggregator's image (the film does not link that page)",
             "unverified: an aggregator's image, and the film does not link its page"
           ],
-          "magiyata-na-gorata": [
+          "koledni-agenti": [
             "only an aggregator's image (the film does not link that page)",
             "unverified: an aggregator's image, and the film does not link its page"
           ],
@@ -1459,21 +1479,9 @@
             "own page has no usable image",
             "no usable image on the page"
           ],
-          "hrabriyat-oloven-voynik-3": [
-            "robots.txt unreachable (5xx or no answer): the host is not read this run",
-            "https://www.salzaismyah.bg/site/play/744: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
-          ],
           "insert-coin-player-one": [
             "own page has no usable image",
             "no usable image on the page"
-          ],
-          "izneveri-v-poveche": [
-            "robots.txt unreachable (5xx or no answer): the host is not read this run",
-            "https://www.salzaismyah.bg/site/play/187: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
-          ],
-          "katya-i-zlatin-muzikalno-impro-shou": [
-            "robots.txt unreachable (5xx or no answer): the host is not read this run",
-            "https://www.salzaismyah.bg/site/play/736: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
           ],
           "kiki-i-bozo": [
             "own page or its image could not be fetched",
@@ -1500,6 +1508,10 @@
             "no usable image on the page"
           ],
           "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": [
+            "own page has no usable image",
+            "no usable image on the page"
+          ],
+          "otmeneno-chayka-sled-samoubiystvoto": [
             "own page has no usable image",
             "no usable image on the page"
           ],
@@ -1536,27 +1548,23 @@
       ]
     },
     "fixed_this_run": {
-      "film already has a poster": 7,
-      "film nothing": 1,
-      "film poster": 3,
-      "poster fix: film nothing": 2,
-      "poster fix: show kept (page has nothing now)": 2,
-      "poster fix: show nothing": 30,
-      "show kept (page has nothing now)": 8,
-      "show key": 1,
-      "show nothing": 3,
-      "show photo": 1,
-      "show poster": 2,
-      "show replacement held for review": 32
+      "film already has a poster": 8,
+      "film poster": 2,
+      "poster fix: show nothing": 1,
+      "poster fix: show poster": 4,
+      "show kept (page has nothing now)": 4,
+      "show key": 29,
+      "show nothing": 1,
+      "show poster": 1,
+      "show replacement held for review": 36
     },
     "missing": {
       "films": {
         "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
         "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
-        "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": "no image: the generated art shows",
         "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
+        "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
         "koledni-agenti": "unverified: an aggregator's image, and the film does not link its page",
-        "magiyata-na-gorata": "unverified: an aggregator's image, and the film does not link its page",
         "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": "no image: the generated art shows",
         "pastir": "unverified: an aggregator's image, and the film does not link its page",
         "polyusi": "no image: the generated art shows",
@@ -1567,6 +1575,7 @@
         "tya": "no image: the generated art shows",
         "vnimavayte-detsa": "no image: the generated art shows"
       },
+      "opera": {},
       "shows": {
         "100-godini-zhiva-svetlina-nch-petar-beron-1926": "unverified: no record of the page this file came from",
         "az-foyerbah": "unverified: no record of the page this file came from",
@@ -1583,10 +1592,7 @@
         "ekaterina-karavelova-vik-ot-istoriyata": "unverified: no record of the page this file came from",
         "gnyav-po-stivan-king": "unverified: no record of the page this file came from",
         "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf": "unverified: no record of the page this file came from",
-        "hrabriyat-oloven-voynik-3": "unverified: no record of the page this file came from",
         "insert-coin-player-one": "unverified: no record of the page this file came from",
-        "izneveri-v-poveche": "unverified: no record of the page this file came from",
-        "katya-i-zlatin-muzikalno-impro-shou": "unverified: no record of the page this file came from",
         "kiki-i-bozo": "unverified: no record of the page this file came from",
         "kontsert-na-pim-pam": "no image: the generated art shows",
         "kotarakat-v-chizmi": "unverified: no record of the page this file came from",
@@ -1594,6 +1600,7 @@
         "maystora-i-margarita": "unverified: no record of the page this file came from",
         "mechka-hamletmashina": "no image: the generated art shows",
         "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": "unverified: no record of the page this file came from",
+        "otmeneno-chayka-sled-samoubiystvoto": "unverified: no record of the page this file came from",
         "pepelyashka": "unverified: no record of the page this file came from",
         "razdelyam-dvoyki-po-domovete": "unverified: no record of the page this file came from",
         "sablechi-se-za-vecherya": "unverified: no record of the page this file came from",
@@ -1601,6 +1608,14 @@
         "vanyo-sonya-masha-i-spayk": "no image: the generated art shows",
         "vsichko-za-zhenite": "no image: the generated art shows"
       }
+    },
+    "opera": {
+      "how": {
+        "own page: key": 28
+      },
+      "pct": 100.0,
+      "upcoming": 28,
+      "with": 28
     },
     "per_theatre": {
       "artvent": "22/22",
@@ -1611,13 +1626,13 @@
       "mladezhki": "37/46",
       "natfiz": "12/13",
       "national": "62/62",
-      "salzaismyah": "44/47",
+      "salzaismyah": "48/48",
       "satira": "40/44",
       "sfumato": "22/24",
       "sofia-th": "16/16",
       "tba": "31/34",
       "th199": "30/33",
-      "toplo": "45/49",
+      "toplo": "44/49",
       "vazrazhdane": "21/21",
       "zad-kanala": "22/22"
     },
@@ -1626,39 +1641,38 @@
         "TMDB poster": 1,
         "own page: key": 183,
         "own page: photo": 2,
-        "own page: poster": 263
+        "own page: poster": 266
       },
-      "pct": 93.3,
-      "upcoming": 481,
-      "with": 449
+      "pct": 93.8,
+      "upcoming": 482,
+      "with": 452
     },
-    "shows_displayed": 473,
+    "shows_displayed": 474,
     "target": 95.0
   },
   "poster_fix": {
     "after": {
-      "films": 90.6,
-      "shows": 93.3
+      "films": 92.0,
+      "shows": 93.8
     },
-    "attached": 0,
-    "attempted": 34,
+    "attached": 4,
+    "attempted": 5,
     "before": {
-      "films": 90.6,
-      "shows": 93.3
+      "films": 92.0,
+      "shows": 93.2
     },
     "broken_parsers": [],
     "causes": {
       "films": {
         "only a ticket page linked, not the title's page": 3,
         "only an aggregator's image (the film does not link that page)": 9,
-        "own page has no usable image": 3
+        "own page has no usable image": 2
       },
       "shows": {
         "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
-        "own page has no usable image": 17,
+        "own page has no usable image": 18,
         "own page or its image could not be fetched": 1,
         "own page's images rejected by the poster policy": 2,
-        "robots.txt unreachable (5xx or no answer): the host is not read this run": 3,
         "the linked page is not the title's (redirect, home page or another title)": 1
       }
     },
@@ -1666,11 +1680,11 @@
       "films": {
         "only a ticket page linked, not the title's page": 3,
         "only an aggregator's image (the film does not link that page)": 9,
-        "own page has no usable image": 3
+        "own page has no usable image": 2
       },
       "shows": {
         "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
-        "own page has no usable image": 17,
+        "own page has no usable image": 18,
         "own page or its image could not be fetched": 4,
         "own page's images rejected by the poster policy": 2,
         "the linked page is not the title's (redirect, home page or another title)": 1
@@ -1678,25 +1692,24 @@
     },
     "counts": {
       "films": {
-        "after": "144/159",
-        "before": "144/159"
+        "after": "160/174",
+        "before": "160/174"
       },
       "shows": {
-        "after": "449/481",
-        "before": "449/481"
+        "after": "452/482",
+        "before": "449/482"
       }
     },
     "date": "2026-11-25",
     "errors": [],
     "network": "ok",
-    "refused": 5,
-    "requests": 42,
+    "refused": 0,
+    "requests": 13,
     "retried": [],
-    "seconds": 65.3,
+    "seconds": 57.2,
     "summary": {
-      "film nothing": 2,
-      "show kept (page has nothing now)": 2,
-      "show nothing": 30
+      "show nothing": 1,
+      "show poster": 4
     },
     "titles": {
       "films": {
@@ -1708,19 +1721,15 @@
           "only an aggregator's image (the film does not link that page)",
           "unverified: an aggregator's image, and the film does not link its page"
         ],
-        "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": [
-          "own page has no usable image",
-          "no usable image on the page"
-        ],
         "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": [
           "only an aggregator's image (the film does not link that page)",
           "unverified: an aggregator's image, and the film does not link its page"
         ],
-        "koledni-agenti": [
+        "kodat-na-balgarite": [
           "only an aggregator's image (the film does not link that page)",
           "unverified: an aggregator's image, and the film does not link its page"
         ],
-        "magiyata-na-gorata": [
+        "koledni-agenti": [
           "only an aggregator's image (the film does not link that page)",
           "unverified: an aggregator's image, and the film does not link its page"
         ],
@@ -1822,21 +1831,9 @@
           "own page has no usable image",
           "no usable image on the page"
         ],
-        "hrabriyat-oloven-voynik-3": [
-          "robots.txt unreachable (5xx or no answer): the host is not read this run",
-          "https://www.salzaismyah.bg/site/play/744: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
-        ],
         "insert-coin-player-one": [
           "own page has no usable image",
           "no usable image on the page"
-        ],
-        "izneveri-v-poveche": [
-          "robots.txt unreachable (5xx or no answer): the host is not read this run",
-          "https://www.salzaismyah.bg/site/play/187: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
-        ],
-        "katya-i-zlatin-muzikalno-impro-shou": [
-          "robots.txt unreachable (5xx or no answer): the host is not read this run",
-          "https://www.salzaismyah.bg/site/play/736: robots: robots.txt unreachable (HTTPSConnectionPool(host='www.salzaismyah.bg', port=443): Ma)"
         ],
         "kiki-i-bozo": [
           "own page or its image could not be fetched",
@@ -1863,6 +1860,10 @@
           "no usable image on the page"
         ],
         "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": [
+          "own page has no usable image",
+          "no usable image on the page"
+        ],
+        "otmeneno-chayka-sled-samoubiystvoto": [
           "own page has no usable image",
           "no usable image on the page"
         ],
@@ -1902,11 +1903,11 @@
     "date": "2026-11-25",
     "threshold": 280,
     "shows": {
-      "titles": 481,
-      "thin": 111,
-      "empty": 73,
-      "thin_en": 134,
-      "linked": 100,
+      "titles": 482,
+      "thin": 112,
+      "empty": 74,
+      "thin_en": 135,
+      "linked": 101,
       "by_theatre": {
         "artvent": {
           "titles": 22,
@@ -1973,11 +1974,11 @@
           "name": "Народен театър „Иван Вазов“"
         },
         "salzaismyah": {
-          "titles": 47,
-          "thin": 15,
-          "empty": 10,
-          "thin_en": 12,
-          "linked": 15,
+          "titles": 48,
+          "thin": 16,
+          "empty": 11,
+          "thin_en": 13,
+          "linked": 16,
           "name": "Театър „Сълза и смях“"
         },
         "satira": {
@@ -2046,22 +2047,30 @@
         }
       }
     },
+    "opera": {
+      "titles": 28,
+      "thin": 28,
+      "empty": 28,
+      "thin_en": 28,
+      "linked": 28
+    },
     "films": {
-      "titles": 159,
-      "thin": 69,
-      "empty": 47,
-      "thin_en": 101
+      "titles": 174,
+      "thin": 78,
+      "empty": 46,
+      "thin_en": 106
     },
     "routes": {
       "overrides": 0,
       "theatre_art_fills": 86,
       "own_page_fills": 312,
-      "link_to_theatre": 100,
+      "link_to_theatre": 101,
       "own_page_misses": {
         "cast / credits / practical lines only": 28,
+        "no description block on the page": 20,
         "the text is about another listed production": 10,
+        "no description paragraph": 8,
         "biography / interview / reviews, no description before it": 7,
-        "no description paragraph": 7,
         "description under 120 characters": 5,
         "reviews / interview only": 4,
         "page not read (robots.txt, an HTTP error or no answer)": 2,
@@ -2070,8 +2079,8 @@
     }
   },
   "gate_warnings": [
-    "5c2 poster coverage (plays, own image): 449/481 (93.3 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 473/481 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)",
-    "5c2 poster coverage (films, own image): 144/159 (90.6 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, koledni-agenti, magiyata-na-gorata, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+    "5c2 poster coverage (plays, own image): 452/482 (93.8 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 502/510 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)",
+    "5c2 poster coverage (films, own image): 160/174 (92.0 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas, skoti — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
   ],
   "bg_titles": {
     "by_kind": {
@@ -2100,10 +2109,10 @@
   },
   "ratings_coverage": {
     "any": {
-      "pct": 57.7,
-      "with": 86
+      "pct": 58.4,
+      "with": 94
     },
-    "films": 149,
+    "films": 161,
     "imdb_min_votes": 100,
     "metric": "films-any-genuine-score",
     "non_films": {
@@ -2120,34 +2129,30 @@
     },
     "per_source": {
       "imdb": {
-        "pct": 40.3,
-        "with": 60
+        "pct": 39.8,
+        "with": 64
       },
       "mc": {
-        "pct": 32.9,
-        "with": 49
+        "pct": 32.3,
+        "with": 52
       },
       "rt": {
-        "pct": 6.7,
-        "with": 10
+        "pct": 28.6,
+        "with": 46
       },
       "tmdb": {
-        "pct": 54.4,
-        "with": 81
+        "pct": 55.3,
+        "with": 89
       }
     },
     "ratable": {
-      "films": 95,
-      "pct": 90.5,
-      "with": 86
+      "films": 107,
+      "pct": 87.9,
+      "with": 94
     },
-    "records": 153,
+    "records": 168,
     "rules": "imdb>=100;stale<1000:tmdb>=20:gap>=2;tmdb>=10",
     "scored": {
-      "40-kinomaniya-nepozna-zhena": [
-        "im",
-        1511780
-      ],
       "actually-it-is-rocket-science": [
         "",
         1795979
@@ -2157,12 +2162,12 @@
         1184418
       ],
       "animatritsata": [
-        "it",
+        "itr",
         55931
       ],
       "asteriks-v-kralstvo-nubiya": [
         "",
-        null
+        1084728
       ],
       "atlas-na-vselenata": [
         "",
@@ -2187,6 +2192,10 @@
       "bez-stsenariy": [
         "",
         null
+      ],
+      "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota": [
+        "",
+        1504150
       ],
       "bitkata-dyo-gol": [
         "",
@@ -2213,11 +2222,11 @@
         1706715
       ],
       "chunkin-ekspres": [
-        "itm",
+        "itrm",
         11104
       ],
       "cvetovete-na-vremeto": [
-        "itm",
+        "itrm",
         1235304
       ],
       "debyutat": [
@@ -2241,7 +2250,7 @@
         1318417
       ],
       "doors": [
-        "itm",
+        "itrm",
         10537
       ],
       "drugata-mama": [
@@ -2249,7 +2258,11 @@
         1400837
       ],
       "dyun-chast-parva": [
-        "itm",
+        "itrm",
+        438631
+      ],
+      "dyun-chast-parva-povtorenie": [
+        "itrm",
         438631
       ],
       "dyun-chast-parva-re-release": [
@@ -2261,20 +2274,20 @@
         1170608
       ],
       "dyun-chast-vtora-povtorenie": [
-        "itm",
+        "itrm",
         693134
       ],
       "dyun-chast-vtora-re-release": [
-        "itm",
+        "itrm",
         693134
       ],
       "dyun-chast-vtora-re-reliyz": [
-        "",
-        null
+        "itrm",
+        693134
       ],
       "dyun-re-reliyz": [
-        "",
-        null
+        "itrm",
+        438631
       ],
       "dzhambo-magicheskoto-priklyuchenie": [
         "",
@@ -2285,24 +2298,28 @@
         1567605
       ],
       "edin-osoben-den": [
-        "it",
+        "itr",
         42229
       ],
       "eduard-nozhitsite": [
-        "itm",
+        "itrm",
         162
       ],
       "elektricheskata-tseluvka": [
         "itm",
         1442669
       ],
+      "estestven-film": [
+        "",
+        1668955
+      ],
       "evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1": [
         "it",
         26638
       ],
       "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969": [
-        "",
-        null
+        "t",
+        4837
       ],
       "evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986": [
         "it",
@@ -2317,15 +2334,15 @@
         1430841
       ],
       "fantomat-ot-operata": [
-        "itm",
+        "itrm",
         9833
       ],
       "gataka": [
-        "itm",
+        "itrm",
         782
       ],
       "gepi": [
-        "itm",
+        "itrm",
         107
       ],
       "godzilla-minus-zero": [
@@ -2349,7 +2366,7 @@
         1300968
       ],
       "istorii-kojto-ne-sa": [
-        "it",
+        "itr",
         801860
       ],
       "istoriya-na-dokumentalniya-film": [
@@ -2380,9 +2397,25 @@
         "",
         683367
       ],
+      "kilhaus": [
+        "t",
+        1493123
+      ],
+      "kina-i-yuk-lisitsite-ot-dalechniya-sever": [
+        "",
+        null
+      ],
+      "kitovete-paziteli-na-planetata": [
+        "t",
+        977021
+      ],
       "kleyfeys": [
         "itm",
         1400940
+      ],
+      "kodat-na-balgarite": [
+        "",
+        null
       ],
       "koledni-agenti": [
         "",
@@ -2392,17 +2425,25 @@
         "tm",
         1117898
       ],
+      "kotki-v-muzeya-2-sakrovishtata-na-egipet": [
+        "",
+        1264821
+      ],
       "krastnitsite-ot-tokio": [
-        "itm",
+        "itrm",
         13398
       ],
       "kratak-film-za-lyubovta": [
-        "it",
+        "itr",
         31056
       ],
       "kratak-film-za-ubiystvoto": [
-        "it",
+        "itr",
         10754
+      ],
+      "kupe-nomer-6": [
+        "",
+        null
       ],
       "lach-svetlina": [
         "t",
@@ -2417,15 +2458,19 @@
         4476
       ],
       "lyubovta-e-ludost": [
-        "it",
+        "itr",
         1312157
       ],
       "magiyata-na-gorata": [
         "",
         null
       ],
+      "malkata-ameli": [
+        "itrm",
+        682012
+      ],
       "malkiyat-nikola-kakvo-chakame-za-da-badem-shtastlivi": [
-        "it",
+        "itr",
         893366
       ],
       "maraton-dyun-1-i-2": [
@@ -2472,6 +2517,10 @@
         "tm",
         848700
       ],
+      "mis-moksi": [
+        "t",
+        587357
+      ],
       "moyata-priyatelka-eva": [
         "t",
         1297953
@@ -2480,8 +2529,12 @@
         "itm",
         1765072
       ],
-      "nebesa": [
+      "naza": [
         "itm",
+        1755291
+      ],
+      "nebesa": [
+        "itrm",
         10575
       ],
       "nemigranti": [
@@ -2501,11 +2554,11 @@
         1527449
       ],
       "novo-kino-paradizo": [
-        "itm",
+        "itrm",
         11216
       ],
       "nyama-myasto-za-starite-kucheta": [
-        "itm",
+        "itrm",
         6977
       ],
       "obich": [
@@ -2517,7 +2570,7 @@
         1368337
       ],
       "oldboy": [
-        "itm",
+        "itrm",
         670
       ],
       "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": [
@@ -2525,7 +2578,7 @@
         null
       ],
       "opasni-zemi": [
-        "itm",
+        "itrm",
         3133
       ],
       "osta-na-zhivota": [
@@ -2541,11 +2594,15 @@
         1003596
       ],
       "padnali-angeli": [
-        "itm",
+        "itrm",
         11220
       ],
+      "palestina-36": [
+        "itrm",
+        1432596
+      ],
       "parvi-kontakt": [
-        "itm",
+        "itrm",
         329865
       ],
       "pastir": [
@@ -2564,6 +2621,10 @@
         "",
         1779780
       ],
+      "pochivkata-2-povtorenie": [
+        "",
+        1779780
+      ],
       "pochivkata-2-re-release": [
         "",
         1779780
@@ -2577,7 +2638,7 @@
         1591675
       ],
       "pohititelite-na-izcheznaliya-kivot": [
-        "itm",
+        "itrm",
         85
       ],
       "pol-bouls-i-dzheyn-v-tanzher": [
@@ -2592,6 +2653,14 @@
         "",
         null
       ],
+      "posledniyat-viking": [
+        "itm",
+        1295400
+      ],
+      "predstavyane-na-sbornik-strasti-po-kinoto-i-negovite-shedyov": [
+        "",
+        null
+      ],
       "prestori-se-na-umryal": [
         "t",
         1480574
@@ -2600,17 +2669,17 @@
         "t",
         1562642
       ],
-      "razum-i-chuvstva": [
-        "itm",
-        1503762
-      ],
       "samo-lyubovnitsite-ostavat-zhivi": [
-        "itm",
+        "itrm",
         152603
       ],
       "sarceto-na-zveyara": [
         "itm",
         1263337
+      ],
+      "shopen": [
+        "it",
+        1299799
       ],
       "sinelibri-2026-ehoto-mezhdu-nas": [
         "",
@@ -2653,7 +2722,7 @@
         1585239
       ],
       "tayniyat-svyat-na-arieti": [
-        "itm",
+        "itrm",
         51739
       ],
       "toni": [
@@ -2665,11 +2734,11 @@
         1792129
       ],
       "tri-tsvyata-byalo": [
-        "itm",
+        "itrm",
         109
       ],
       "tri-tsvyata-cherveno": [
-        "itm",
+        "itrm",
         110
       ],
       "tri-tsvyata-sinyo": [
@@ -2681,7 +2750,7 @@
         null
       ],
       "ubiystvoto-na-dzhesi-dzheyms-ot-merzavetsa-robart-ford": [
-        "itm",
+        "itrm",
         4512
       ],
       "ulitsa-malaga": [
@@ -2689,7 +2758,7 @@
         1399462
       ],
       "umiray-trudno": [
-        "itm",
+        "itrm",
         562
       ],
       "veriti": [
@@ -2709,11 +2778,11 @@
         null
       ],
       "vlastelinat-na-prastenite-zadrugata-na-prastena": [
-        "itm",
+        "itrm",
         120
       ],
       "vlastelinat-na-prastenite-zadrugata-na-prastena-udalzheno-iz": [
-        "itm",
+        "itrm",
         120
       ],
       "vnimavayte-detsa": [
@@ -2725,7 +2794,7 @@
         null
       ],
       "vzvod": [
-        "itm",
+        "itrm",
         792
       ],
       "zapoznay-se-s-tehnite": [
@@ -2741,7 +2810,7 @@
         1315657
       ],
       "zhena-pod-vliyanie": [
-        "itm",
+        "itrm",
         29845
       ],
       "zhozefin": [
@@ -2758,16 +2827,10 @@
       ]
     },
     "target": 95.0,
-    "titles": 159,
+    "titles": 174,
     "tmdb_min_votes": 10,
     "today": "2026-11-25",
     "without": [
-      {
-        "also": [],
-        "id": "asteriks-v-kralstvo-nubiya",
-        "title": "Астерикс в кралство Нубия",
-        "why": "no match: title search: 'Астерикс в кралство Нубия'; no director to look up; no near title with that runtime"
-      },
       {
         "also": [],
         "id": "benzinostantsiya-za-zheni",
@@ -2824,27 +2887,9 @@
       },
       {
         "also": [],
-        "id": "dyun-chast-vtora-re-reliyz",
-        "title": "Дюн: Част втора Ре-релийз",
-        "why": "no match: title search: 'Дюн: Част втора Ре-релийз'; no director to look up; no runtime to confirm a near title"
-      },
-      {
-        "also": [],
-        "id": "dyun-re-reliyz",
-        "title": "Дюн Ре-релийз",
-        "why": "no match: title search: 'Дюн Ре-релийз'; no director to look up; no runtime to confirm a near title"
-      },
-      {
-        "also": [],
         "id": "dzhambo-magicheskoto-priklyuchenie",
         "title": "ДЖЪМБО: Магическото приключение",
         "why": "no match: title search: 'ДЖЪМБО: Магическото приключение'; director Райън Адрианди: not on TMDB; no near title with that runtime"
-      },
-      {
-        "also": [],
-        "id": "evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969",
-        "title": "ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Колекционерката (1969)",
-        "why": "no match: title search: 'Колекционерката (1969)'; no director to look up; no runtime to confirm a near title"
       },
       {
         "also": [],
@@ -2878,9 +2923,27 @@
       },
       {
         "also": [],
+        "id": "kina-i-yuk-lisitsite-ot-dalechniya-sever",
+        "title": "Кина и Юк, лисиците от далечния север",
+        "why": "no match: title search: 'Кина и Юк, лисиците от далечния север'; director Гийом Майдачевски: not on TMDB; no near title with that runtime"
+      },
+      {
+        "also": [],
+        "id": "kodat-na-balgarite",
+        "title": "Кодът на българите",
+        "why": "no match: title search: 'Кодът на българите'; director Йордан Симеонов: no film of 2026 among 0; no near title with that runtime"
+      },
+      {
+        "also": [],
         "id": "koledni-agenti",
         "title": "КОЛЕДНИ АГЕНТИ",
         "why": "no match: title search: 'КОЛЕДНИ АГЕНТИ'; director Тодор Чапкънов: no film of that title among 21; no near title with that runtime"
+      },
+      {
+        "also": [],
+        "id": "kupe-nomer-6",
+        "title": "Купе номер 6",
+        "why": "no match: title search: 'Купе номер 6'; no director to look up; no runtime to confirm a near title"
       },
       {
         "also": [],
@@ -2968,6 +3031,12 @@
       },
       {
         "also": [],
+        "id": "predstavyane-na-sbornik-strasti-po-kinoto-i-negovite-shedyov",
+        "title": "Представяне на сборник „Страсти по киното и неговите шедьоври“",
+        "why": "no match: title search: 'Представяне на сборник „Страсти по киното и неговите шедьоври“'; no director to look up; no runtime to confirm a near title"
+      },
+      {
+        "also": [],
         "id": "sinelibri-2026-ehoto-mezhdu-nas",
         "title": "Синелибри 2026: ЕХОТО МЕЖДУ НАС",
         "why": "no match: title search: 'The Echochamber'/'ЕХОТО МЕЖДУ НАС'; director Андреа Палаоро: not on TMDB; no near title with that runtime"
@@ -3022,6 +3091,12 @@
       },
       {
         "also": [],
+        "id": "asteriks-v-kralstvo-nubiya",
+        "title": "Астерикс в кралство Нубия",
+        "why": "matched, below the floor: TMDB 2 vote(s), below 10"
+      },
+      {
+        "also": [],
         "id": "dyun-chast-treta",
         "title": "Дюн: Част трета",
         "why": "matched, no votes yet (unreleased or brand new)"
@@ -3031,6 +3106,12 @@
         "id": "ana-manyani",
         "title": "Ана Маняни",
         "why": "matched, below the floor: TMDB 8 vote(s), below 10"
+      },
+      {
+        "also": [],
+        "id": "kotki-v-muzeya-2-sakrovishtata-na-egipet",
+        "title": "Котки в музея 2: Съкровищата на Египет",
+        "why": "matched, below the floor: TMDB 4 vote(s), below 10"
       },
       {
         "also": [],
@@ -3060,7 +3141,7 @@
         "also": [],
         "id": "dobroto-voyniche",
         "title": "Доброто войниче",
-        "why": "matched, no votes yet (unreleased or brand new)"
+        "why": "matched, below the floor: TMDB 2 vote(s), below 10"
       },
       {
         "also": [],
@@ -3076,6 +3157,12 @@
       },
       {
         "also": [],
+        "id": "bezsmartniyat-i-krasavitsata-2-eliksir-na-zhivota",
+        "title": "Безсмъртният и красавицата 2: Еликсир на живота",
+        "why": "matched, below the floor: IMDb 40 vote(s), below 100"
+      },
+      {
+        "also": [],
         "id": "avrora",
         "title": "АВРОРА",
         "why": "matched, no votes yet (unreleased or brand new)"
@@ -3085,6 +3172,12 @@
         "id": "osta-na-zhivota",
         "title": "Оста на живота",
         "why": "matched, no votes yet (unreleased or brand new)"
+      },
+      {
+        "also": [],
+        "id": "estestven-film",
+        "title": "Естествен филм",
+        "why": "matched (TMDB, no IMDb id), no votes yet"
       },
       {
         "also": [],
@@ -3112,6 +3205,7 @@
       },
       {
         "also": [
+          "pochivkata-2-povtorenie",
           "pochivkata-2-re-release"
         ],
         "id": "pochivkata-2",
