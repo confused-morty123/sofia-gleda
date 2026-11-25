@@ -5864,8 +5864,18 @@ for _t, _want in (("Отмъстителите: Краят – Специалн�
                   ("28 години по-късно", ("28 години по-късно", False)),
                   ("28 години по-късно: Храмът на костите", ("28 години по-късно: Храмът на костите", False)),
                   ("Avatar (IMAX)", ("Avatar", False)),
-                  ("Специално издание", ("Специално издание", False))):
+                  ("Специално издание", ("Специално издание", False)),
+                  # 2026-11-25: Cinema City / Arena print a re-run as "(ПОВТОРЕНИЕ)" or "Ре-релийз";
+                  # the declutter match was rejected because "повторение" looked like a lost title word
+                  ("ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)", ("ПОЧИВКАТА 2", True)),
+                  ("ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", ("ЧАСТ ПЪРВА", True)),   # capitals: "ДЮН:" reads as a series prefix (keeps_dropped checks it)
+                  ("Дюн: Част първа – повторение", ("Дюн: Част първа", True)),
+                  ("Дюн Ре-релийз", ("Дюн", True)), ("Дюн: Част втора Ре-релийз", ("Дюн: Част втора", True)),
+                  ("Повторение", ("Повторение", False)), ("Повторението", ("Повторението", False))):
     check(f"declutter / rerelease_marker({_t!r})", (TMDB.declutter(_t)[0], TMDB.rerelease_marker(_t)), _want)
+check("stripped_words: a re-run marker is never a title word the decluttered match must keep",
+      [sorted(TMDB.stripped_words(TMDB.strip_rerelease(_t), TMDB.declutter(_t)[0]))
+       for _t in ("ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)", "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", "Дюн Ре-релийз")], [[], ["дюн"], []])
 check("year_ok: a marked re-release may be decades older than the venue's year, never newer",
       [TMDB.year_ok(2026, {"release_date": "2019-04-24"}, True), TMDB.year_ok(2026, {"release_date": "2019-04-24"}),
        TMDB.year_ok(2010, {"release_date": "2026-01-01"}, True), TMDB.year_ok(None, {"release_date": "1980"}, True)],
@@ -6406,6 +6416,11 @@ _s7 = {"Дюн: Част първа": [{"id": 701, "title": "Дюн: Част в
 _api7, _ = _lk_api({}, {}, {701: {"runtime": 166}, 702: {"runtime": 155}, 703: {"runtime": 137}}, _s7)
 check("runtime_title_lookup: Дюн: Част първа (155 min) -> TMDB's 'Дюн' of 155 min, not Part Two or the 1984 film",
       (_lk_run(TMDB.runtime_title_lookup, _api7, "Дюн: Част първа", {"runtime": 155})[0] or {}).get("id"), 702)
+# 7b. A re-run printed in capitals with its marker (Cinema City 2026-11-25): "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)"
+_s7b = {"ДЮН: ЧАСТ ПЪРВА": _s7["Дюн: Част първа"], "ДЮН": _s7["Дюн"]}
+_api7b, _ = _lk_api({}, {}, {701: {"runtime": 166}, 702: {"runtime": 155}, 703: {"runtime": 137}}, _s7b)
+check("runtime_title_lookup: a re-run marker is dropped before the near-title search (ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ) -> 702)",
+      (_lk_run(TMDB.runtime_title_lookup, _api7b, "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", {"runtime": 155})[0] or {}).get("id"), 702)
 # 8. Полюси (Одеон, 100 min, no year): a one-word title with no year is never taken this way
 check("runtime_title_lookup: Полюси — NEGATIVE: one word and no year -> not tried",
       _lk_run(TMDB.runtime_title_lookup, _api7, "Полюси", {"runtime": 100})[0], None)
