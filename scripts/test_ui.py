@@ -13297,6 +13297,13 @@ def _hf_special_flows(browser, eng, phone):
     while (s3["film"] or s3["pop"]) and escs < 3:
         page.keyboard.press("Escape"); page.wait_for_timeout(700)
         escs += 1
+        # the sheet's close animation can outlast the fixed wait on a slow runner (GitHub
+        # WebKit 2026-11-25: a third Esc counted while the sheet was still closing)
+        try:
+            page.wait_for_function("()=>!document.querySelector('#scrim.closing')", timeout=4000, polling="raf")
+        except Exception:
+            pass
+        wait_settled(page)
         s3 = page.evaluate(HF_STATE_JS)
     lang_ok = lang_ok and escs == (2 if s1["pop"] else 1)
     check(f"{tag}_lang_toggle_with_popup", s1["film"] and (s1["title"] or "").lower() == en_title.lower() and lang_ok and not s3["film"] and s3["depth"] == 0,
