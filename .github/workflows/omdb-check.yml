@@ -1,0 +1,19 @@
+name: OMDb key check
+on:
+  push:
+    branches: [claude/project-thread-d98qd4]
+    paths: [.github/workflows/omdb-check.yml]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask OMDb for one film with OMDB_TOKEN
+        env:
+          OMDB_TOKEN: ${{ secrets.OMDB_TOKEN }}
+        run: |
+          if [ -z "$OMDB_TOKEN" ]; then echo "OMDB_TOKEN is empty"; exit 1; fi
+          echo "key length: ${#OMDB_TOKEN}"
+          code=$(curl -s -o body.json -w '%{http_code}' "https://www.omdbapi.com/?i=tt0111161&apikey=${OMDB_TOKEN}")
+          echo "HTTP $code"
+          python3 -c "import json;d=json.load(open('body.json'));print({k:d.get(k) for k in ('Response','Error','Title','imdbRating')})"
+          [ "$code" = "200" ] && grep -q '"Response":"True"' body.json
