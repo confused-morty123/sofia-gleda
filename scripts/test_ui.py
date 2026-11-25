@@ -13299,6 +13299,13 @@ def _hf_special_flows(browser, eng, phone):
     while (s3["film"] or s3["pop"]) and escs < 3:
         page.keyboard.press("Escape"); page.wait_for_timeout(700)
         escs += 1
+        # the sheet's close animation can outlast the fixed wait on a slow runner (GitHub
+        # WebKit 2026-11-25: a third Esc counted while the sheet was still closing)
+        try:
+            page.wait_for_function("()=>!document.querySelector('#scrim.closing')", timeout=4000, polling="raf")
+        except Exception:
+            pass
+        wait_settled(page)
         s3 = page.evaluate(HF_STATE_JS)
     lang_ok = lang_ok and escs == (2 if s1["pop"] else 1)
     check(f"{tag}_lang_toggle_with_popup", s1["film"] and (s1["title"] or "").lower() == en_title.lower() and lang_ok and not s3["film"] and s3["depth"] == 0,
@@ -15104,8 +15111,13 @@ def _hf2_switch(browser, eng):
         # starts on <main>: the dim (opacity down, SWITCH_OUT) and the rise (from a lift to
         # opacity 1, SWITCH_IN), 200 ms or more together. A machine drawing every 33 ms or
         # faster (the owner's Mac) must show 4 drawn frames between the states, as before.
+        # The pace is read while <main> is animating: after the switch the runner is back to
+        # 8-16 ms frames, which outvoted the 63-143 ms frames of the switch itself in a fixed
+        # 450 ms window (GitHub WebKit 2026-11-25: 3 frames drawn, judged as a fast machine).
         times = [x[0] for x in s]
-        early = [b - a for a, b in zip(times, times[1:]) if a < 450]
+        anim_t = [x[0] for x in s if len(x) > 6 and x[6]]
+        win_end = max(anim_t) if anim_t else 450
+        early = [b - a for a, b in zip(times, times[1:]) if a <= win_end]
         slow = bool(early) and sorted(early)[len(early) // 2] > 33
         durs = sorted({d for x in s for d in (x[7] if len(x) > 7 else [])})
         started = page.evaluate("window.__hf2a || []")
@@ -16228,6 +16240,21 @@ def _lg_reload_stored(page, timeout_ms=5000):
         info["nav"] = page.evaluate("(performance.getEntriesByType('navigation')[0] || {}).type")
     except Exception as ex:
         info["page_after"] = type(ex).__name__
+    # GitHub's Chromium (2026-11-25, runs 45578274255 and 45582067209): the shared storage held
+    # the record before and after the reload (the peer read it), yet the reloaded file:// document
+    # read none. That is the browser not handing the stored record to the new document, not the
+    # app (it never removes the record): reload once more and judge that document. A record the
+    # app never stored is still missing from the peer, and a record the page can read but ignores
+    # still shows the notice, so both still fail.
+    pa, pe = info.get("page_after"), info.get("peer_after")
+    if isinstance(pa, dict) and not pa.get("rec") and isinstance(pe, dict) and pe.get("rec"):
+        print("  note: the reloaded page did not get the stored record the peer reads; reloading once more")
+        page.reload()
+        page.wait_for_selector(".bar", timeout=20000)
+        try:
+            info["page_after2"] = page.evaluate(probe)
+        except Exception as ex:
+            info["page_after2"] = type(ex).__name__
     peer.close()
     return info
 
@@ -16333,8 +16360,10 @@ def wave_lg1(browser):
     wait_settled(page)                  # the notice's exit has finished before the reload
     seen = _lg_reload_stored(page)
     wait_page_idle(page)
+    _seen_short = {k: (v.get("rec") if isinstance(v, dict) else v) for k, v in seen.items() if k != "nav"}
     check("lg1_choice_persists", not page.evaluate(_LG_PROBE)["shown"],
-          f"record before the reload={rec_before} after={_lg_record(page)} url={page.url[-40:]} storage={seen}")
+          f"record seen {_seen_short} nav={seen.get('nav')} after={_lg_record(page)} "
+          f"before={rec_before} url={page.url[-40:]} storage={seen}")
     _lg_scroll_to_footer(page)
     ft = page.evaluate(_LG_FOOTER)
     save_shot(page, wave, "desktop_bg_footer")
