@@ -15102,8 +15102,13 @@ def _hf2_switch(browser, eng):
         # starts on <main>: the dim (opacity down, SWITCH_OUT) and the rise (from a lift to
         # opacity 1, SWITCH_IN), 200 ms or more together. A machine drawing every 33 ms or
         # faster (the owner's Mac) must show 4 drawn frames between the states, as before.
+        # The pace is read while <main> is animating: after the switch the runner is back to
+        # 8-16 ms frames, which outvoted the 63-143 ms frames of the switch itself in a fixed
+        # 450 ms window (GitHub WebKit 2026-11-25: 3 frames drawn, judged as a fast machine).
         times = [x[0] for x in s]
-        early = [b - a for a, b in zip(times, times[1:]) if a < 450]
+        anim_t = [x[0] for x in s if len(x) > 6 and x[6]]
+        win_end = max(anim_t) if anim_t else 450
+        early = [b - a for a, b in zip(times, times[1:]) if a < win_end]
         slow = bool(early) and sorted(early)[len(early) // 2] > 33
         durs = sorted({d for x in s for d in (x[7] if len(x) > 7 else [])})
         started = page.evaluate("window.__hf2a || []")
