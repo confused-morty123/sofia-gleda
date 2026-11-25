@@ -63,9 +63,12 @@ _REREL_BG = (r"специално\s+издание|юбилейно\s+издан
              r"ремастериран[аои]?(?:\s+версия)?|реставриран[аои]?(?:\s+версия)?|"
              r"възстановен[аои]?\s+версия|режисьорска\s+версия|разширена\s+версия|"
              r"удължена\s+версия|4\s*[KК](?:\s+версия)?|\d+\s+години\s+от\s+премиерата|"
-             r"\d+(?:-?(?:та|ти|а))?\s+годишнина|годишнина")
+             r"\d+(?:-?(?:та|ти|а))?\s+годишнина|годишнина|"
+             r"повторение|повторна\s+прожекция")      # a re-run, Cinema City / Arena 2026-11
 _DECOR_BG_RE = re.compile(
-    r"\s*(?:(?:[-–—:|]|\()\s*(?:" + _REREL_BG + r")|(?:[-–—|]|\()\s*\d+\s+години\s+по-късно)\s*\)?\s*$",
+    r"\s*(?:(?:[-–—:|]|\()\s*(?:" + _REREL_BG + r")|(?:[-–—|]|\()\s*\d+\s+години\s+по-късно"
+    # "Ре-релийз" (transliterated re-release) is never a title word: also after a plain space
+    r"|(?:[-–—:|(]|\s)\s*ре-?релийз)\s*\)?\s*$",
     re.I)
 # English re-release markers (a subset of _DECOR_RE: IMAX and 70 mm are formats a new
 # film is shown in, not a sign of an old one).
@@ -1569,6 +1572,7 @@ def runtime_title_lookup(bg, facts, blocked=()):
     if len(bg.split()) < 2 and not facts.get("year"):
         return None, "a one-word title with no year"
     passed, seen = {}, set()
+    bg = strip_rerelease(bg) or bg            # "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)": the marker is no title word
     for q in dict.fromkeys((bg, _PART_ONE_RE.sub("", bg).strip())):
         res = search_api({"query": q, "language": "bg", "include_adult": "false"}) or {}
         cands = [r for r in (res.get("results") or []) if isinstance(r, dict) and isinstance(r.get("id"), int)
