@@ -442,6 +442,9 @@ a{color:inherit}
 .cfoot{display:flex; flex-direction:column; gap:2px; padding-inline:2px}
 .cf1{font-size:12px; font-weight:500; color:var(--fg-2); line-height:1.3;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.6em}
+/* a title two opera productions share carries its stage (opDupSet); the 2-line clamp cut the
+   stage off, so such a title wraps in full, as the rail's .opcard .cf1 does */
+.cf1:has(> .stg){display:block; -webkit-line-clamp:unset; overflow:visible}
 .cf2{font-size:10.5px; color:var(--fg-3); font-variant-numeric:tabular-nums}
 
 /* event card */

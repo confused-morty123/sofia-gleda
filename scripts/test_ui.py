@@ -23125,6 +23125,19 @@ def _op2_search_dup(browser, base, eng):
             .map(c => [c.dataset.show, ((c.querySelector('.cf1 .stg') || {}).textContent || '')])""")
         got = sorted(s for _i, s in st)
         check(f"{tag}_{sz}", got == sorted([f" · {OP2_HALL}", f" · {OP2_CHAMBER}"]), f"cards {st}")
+        # verifier round 1: the suffix must be seen, not only be in the DOM. The search card's
+        # .cf1 clamps to 2 lines, which cut the stage off (3 lines needed at 390 and 1280).
+        # Every line box of the stage text ends inside the .cf1 box, and .cf1 clips nothing.
+        geo = page.evaluate("""() => [...document.querySelectorAll('#app main section.rail [data-show^="op2-karnaval"]')].map(c => {
+            const f = c.querySelector('.cf1'), s = f && f.querySelector('.stg');
+            if (!s) return [c.dataset.show, 'no .stg'];
+            const b = f.getBoundingClientRect(), r = document.createRange(); r.selectNodeContents(s);
+            const out = [...r.getClientRects()].filter(q => q.width > 0.5)
+                .filter(q => q.bottom > b.bottom + 0.5 || q.right > b.right + 0.5 || q.top < b.top - 0.5 || q.left < b.left - 0.5)
+                .map(q => `rect ${q.left.toFixed(0)},${q.top.toFixed(0)}-${q.right.toFixed(0)},${q.bottom.toFixed(0)} outside .cf1 ${b.left.toFixed(0)},${b.top.toFixed(0)}-${b.right.toFixed(0)},${b.bottom.toFixed(0)}`);
+            if (f.scrollHeight > f.clientHeight + 1) out.push(`.cf1 clips: needs ${f.scrollHeight}px, shows ${f.clientHeight}px`);
+            return [c.dataset.show, out.join('; ')]; })""")
+        check(f"{tag}_stage_visible_{sz}", len(geo) == 2 and all(not why for _i, why in geo), f"{geo}")
         one = page.evaluate("""() => { S.q = 'Жизел'; refreshPage({search: true});
             return [...document.querySelectorAll('#app main section.rail [data-show="op2-zhizel"] .stg')].length; }""")
         check(f"{tag}_single_title_no_stage_{sz}", one == 0, f"{one} stage suffix(es) on the one Жизел")
