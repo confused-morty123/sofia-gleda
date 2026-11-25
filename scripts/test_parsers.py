@@ -603,6 +603,20 @@ try:
     check("omdb error: mc None on network error",     _mc4, None)
     check("omdb error: error string returned",        bool(_err4), True)
 
+    # ── 4b. HTTP 401: OMDb's own reason is reported, no retry, no more calls ──
+    import urllib.error as _uerr
+    def _http401(msg):
+        return _uerr.HTTPError("https://www.omdbapi.com/", 401, "Unauthorized", {},
+                               _io.BytesIO(_json_mod.dumps({"Response": "False", "Error": msg}).encode()))
+    TMDB._OMDB_STOP = None
+    with _um2.patch("urllib.request.urlopen", side_effect=_http401("Request limit reached!")) as _m401:
+        _e401 = TMDB.omdb_rating("tt0000006")[4]
+        _e401b = TMDB.omdb_rating("tt0000007")[4]
+    check("omdb 401: OMDb's reason in the error", _e401, "Request limit reached!")
+    check("omdb 401: no retry, no second call after a key refusal", _m401.call_count, 1)
+    check("omdb 401: later films get the same error", _e401b, "Request limit reached!")
+    TMDB._OMDB_STOP = None
+
     # ── 5. Keep-previous for rt/mc on network error ───────────────────────────
     _prev_rec = {"imdb": 7.1, "imdbVotes": "10.0K", "rt": 85, "mc": 70}
     # Simulate fetch_tmdb main() keep-previous merge for rt/mc
@@ -5962,6 +5976,7 @@ check("main(): a failed detail call keeps last run's IMDb id and rating for the 
 print("ratings coverage: OMDb facts and retry, venue IMDb ids, Bulgarian-title fallback")
 _orig_tok_rc, _orig_sleep_rc = TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP
 TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = "fake-key-for-test", 0
+TMDB._OMDB_STOP = None     # a key refusal earlier in this file stops OMDb calls for the run
 class _RcResp(_io.BytesIO):
     def __enter__(self): return self
     def __exit__(self, *a): return False
@@ -5988,6 +6003,7 @@ try:
           (_m.call_count, _o3["err"]), (1, "Request limit reached!"))
 finally:
     TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = _orig_tok_rc, _orig_sleep_rc
+    TMDB._OMDB_STOP = None
 
 _ok_o = {"err": None, "type": "movie", "title": "Kina & Yuk", "year": 2023, "runtime": 85}
 check("omdb_identity: the venue's year (±1) confirms OMDb's film",

@@ -11,7 +11,7 @@ variable (a GitHub Actions secret in the hosted setup) — never hard-coded.
 If a run matches nothing (e.g. TMDB unreachable) and a previous tmdb_films.json
 exists, the previous file is kept — a bad run never empties the posters.
 """
-import json, os, re, time, urllib.parse, urllib.request, ssl, sys, pathlib
+import json, os, re, time, urllib.error, urllib.parse, urllib.request, ssl, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 try:
     from posterpolicy import DISTRUSTED_HOSTS      # hosts whose images can't be tied to a title
@@ -1041,24 +1041,56 @@ OMDB_RETRY_SLEEP = 1.5      # seconds before the one in-run retry of a network e
 _OMDB_NO_RETRY = ("invalid api key", "request limit", "no api key", "incorrect imdb id")
 
 
-def _omdb_get(imdb_id):
-    """One OMDb answer for imdb_id as a dict, or raises. A network error (timeout,
+_OMDB_STOP = None           # OMDb's own refusal for the whole key (bad key, daily limit)
+_OMDB_STOP_WORDS = ("invalid api key", "request limit", "no api key")
+
+
+def _omdb_fetch(params):
+    """One OMDb answer for params as a dict, or raises. A network error (timeout,
     connection reset, a 5xx) is retried once in the run after OMDB_RETRY_SLEEP; an
-    answer OMDb gives on purpose (Response=False: a wrong key, the daily limit) is not."""
-    q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
+    answer OMDb gives on purpose is not. OMDb sends a wrong key and the daily limit
+    as HTTP 401 with {"Response":"False","Error":...}: that body is returned so the
+    log names the real cause ("Request limit reached!" vs "Invalid API key!"), and
+    once OMDb refuses the key itself, the rest of the run makes no more calls
+    (25 Nov 2026: 642 calls all 401, each retried, the key's cause unknown)."""
+    global _OMDB_STOP
+    if _OMDB_STOP:
+        return {"Response": "False", "Error": _OMDB_STOP}
+    q = urllib.parse.urlencode(dict(params, apikey=OMDB_TOKEN))
     last = None
     for attempt in (1, 2):
         try:
             req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
                                          headers={"User-Agent": UA, "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
-                return json.load(r)
-        except Exception as e:                       # network, HTTP 5xx, a broken body
-            last = e
-            if attempt == 1:
-                print(f"    ! omdb network error {imdb_id}: {e} (retrying once)", file=sys.stderr)
-                time.sleep(OMDB_RETRY_SLEEP)
+                d = json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                try:
+                    d = json.loads(e.read().decode("utf-8", "replace"))
+                except Exception:
+                    d = None
+                if not isinstance(d, dict) or not d.get("Error"):
+                    d = {"Response": "False", "Error": "HTTP 401 Unauthorized"}
+            else:
+                d, last = None, e
+        except Exception as e:                       # network, a broken body
+            d, last = None, e
+        if d is not None:
+            err = str(d.get("Error") or "") if isinstance(d, dict) and d.get("Response") == "False" else ""
+            if err and (any(w in err.lower() for w in _OMDB_STOP_WORDS) or err.startswith("HTTP 401")):
+                _OMDB_STOP = err
+                print(f"    ! omdb refused the key: {err} (no more OMDb calls this run)", file=sys.stderr)
+            return d
+        if attempt == 1:
+            print(f"    ! omdb network error {params}: {last} (retrying once)", file=sys.stderr)
+            time.sleep(OMDB_RETRY_SLEEP)
     raise last
+
+
+def _omdb_get(imdb_id):
+    """One OMDb answer for imdb_id as a dict, or raises (see _omdb_fetch)."""
+    return _omdb_fetch({"i": imdb_id})
 
 
 def _omdb_int(v):
@@ -1557,21 +1589,8 @@ def runtime_title_lookup(bg, facts, blocked=()):
 
 
 def _omdb_query(params):
-    """One OMDb answer for params (i= or t=&y=) as a dict, or raises (network errors
-    retried once, like _omdb_get)."""
-    q = urllib.parse.urlencode(dict(params, apikey=OMDB_TOKEN))
-    last = None
-    for attempt in (1, 2):
-        try:
-            req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
-                                         headers={"User-Agent": UA, "Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
-                return json.load(r)
-        except Exception as e:
-            last = e
-            if attempt == 1:
-                time.sleep(OMDB_RETRY_SLEEP)
-    raise last
+    """One OMDb answer for params (i= or t=&y=) as a dict, or raises (see _omdb_fetch)."""
+    return _omdb_fetch(params)
 
 
 def omdb_parse(d):
