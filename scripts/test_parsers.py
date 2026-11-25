@@ -502,6 +502,28 @@ try:
 finally:
     TMDB.api = _orig_api2
 
+# -------------------------------------------------- OMDb keep-previous, per score
+print("OMDb keep-previous, per score")
+_saved_lookup, _saved_ident = TMDB.omdb_lookup, TMDB.omdb_identity
+try:
+    # OMDb answers with an IMDb rating but no Rotten Tomatoes entry (2026-11-24):
+    # last run's RT and Metacritic for the same IMDb id are kept, the new IMDb wins.
+    TMDB.omdb_lookup = lambda iid: {"rating": 7.9, "votes": "10.0K", "rt": None, "mc": None,
+                                    "err": None, "title": "X", "year": 2020, "runtime": 100,
+                                    "type": "movie"}
+    TMDB.omdb_identity = lambda *a, **k: None
+    _prev = {"f": {"via": TMDB.OMDB_VIA, "imdb_id": "tt7654321", "imdb": 7.5,
+                   "imdbVotes": "9.0K", "rt": 88, "mc": 71}}
+    _rec = TMDB.omdb_only_record("f", "X", {}, ["https://example.org/m/x-imdbtt7654321"], _prev)
+    check("omdb keep-prev: RT kept when OMDb drops it but still rates", (_rec or {}).get("rt"), 88)
+    check("omdb keep-prev: MC kept when OMDb drops it but still rates", (_rec or {}).get("mc"), 71)
+    check("omdb keep-prev: the new IMDb rating wins", (_rec or {}).get("imdb"), 7.9)
+    _prev2 = {"f": dict(_prev["f"], imdb_id="tt1111111")}
+    _rec2 = TMDB.omdb_only_record("f", "X", {}, ["https://example.org/m/x-imdbtt7654321"], _prev2)
+    check("omdb keep-prev: another IMDb id never inherits RT", (_rec2 or {}).get("rt"), None)
+finally:
+    TMDB.omdb_lookup, TMDB.omdb_identity = _saved_lookup, _saved_ident
+
 # -------------------------------------------------- OMDb rt/mc parsing (mocked HTTP)
 print("OMDb rt/mc parsing (mocked urllib)")
 import urllib.request as _ureq, io as _io, types as _ty
@@ -580,6 +602,20 @@ try:
     check("omdb error: rt None on network error",     _rt4, None)
     check("omdb error: mc None on network error",     _mc4, None)
     check("omdb error: error string returned",        bool(_err4), True)
+
+    # ── 4b. HTTP 401: OMDb's own reason is reported, no retry, no more calls ──
+    import urllib.error as _uerr
+    def _http401(msg):
+        return _uerr.HTTPError("https://www.omdbapi.com/", 401, "Unauthorized", {},
+                               _io.BytesIO(_json_mod.dumps({"Response": "False", "Error": msg}).encode()))
+    TMDB._OMDB_STOP = None
+    with _um2.patch("urllib.request.urlopen", side_effect=_http401("Request limit reached!")) as _m401:
+        _e401 = TMDB.omdb_rating("tt0000006")[4]
+        _e401b = TMDB.omdb_rating("tt0000007")[4]
+    check("omdb 401: OMDb's reason in the error", _e401, "Request limit reached!")
+    check("omdb 401: no retry, no second call after a key refusal", _m401.call_count, 1)
+    check("omdb 401: later films get the same error", _e401b, "Request limit reached!")
+    TMDB._OMDB_STOP = None
 
     # ── 5. Keep-previous for rt/mc on network error ───────────────────────────
     _prev_rec = {"imdb": 7.1, "imdbVotes": "10.0K", "rt": 85, "mc": 70}
@@ -5835,8 +5871,18 @@ for _t, _want in (("Отмъстителите: Краят – Специалн�
                   ("28 години по-късно", ("28 години по-късно", False)),
                   ("28 години по-късно: Храмът на костите", ("28 години по-късно: Храмът на костите", False)),
                   ("Avatar (IMAX)", ("Avatar", False)),
-                  ("Специално издание", ("Специално издание", False))):
+                  ("Специално издание", ("Специално издание", False)),
+                  # 2026-11-25: Cinema City / Arena print a re-run as "(ПОВТОРЕНИЕ)" or "Ре-релийз";
+                  # the declutter match was rejected because "повторение" looked like a lost title word
+                  ("ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)", ("ПОЧИВКАТА 2", True)),
+                  ("ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", ("ЧАСТ ПЪРВА", True)),   # capitals: "ДЮН:" reads as a series prefix (keeps_dropped checks it)
+                  ("Дюн: Част първа – повторение", ("Дюн: Част първа", True)),
+                  ("Дюн Ре-релийз", ("Дюн", True)), ("Дюн: Част втора Ре-релийз", ("Дюн: Част втора", True)),
+                  ("Повторение", ("Повторение", False)), ("Повторението", ("Повторението", False))):
     check(f"declutter / rerelease_marker({_t!r})", (TMDB.declutter(_t)[0], TMDB.rerelease_marker(_t)), _want)
+check("stripped_words: a re-run marker is never a title word the decluttered match must keep",
+      [sorted(TMDB.stripped_words(TMDB.strip_rerelease(_t), TMDB.declutter(_t)[0]))
+       for _t in ("ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)", "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", "Дюн Ре-релийз")], [[], ["дюн"], []])
 check("year_ok: a marked re-release may be decades older than the venue's year, never newer",
       [TMDB.year_ok(2026, {"release_date": "2019-04-24"}, True), TMDB.year_ok(2026, {"release_date": "2019-04-24"}),
        TMDB.year_ok(2010, {"release_date": "2026-01-01"}, True), TMDB.year_ok(None, {"release_date": "1980"}, True)],
@@ -5947,6 +5993,7 @@ check("main(): a failed detail call keeps last run's IMDb id and rating for the 
 print("ratings coverage: OMDb facts and retry, venue IMDb ids, Bulgarian-title fallback")
 _orig_tok_rc, _orig_sleep_rc = TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP
 TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = "fake-key-for-test", 0
+TMDB._OMDB_STOP = None     # a key refusal earlier in this file stops OMDb calls for the run
 class _RcResp(_io.BytesIO):
     def __enter__(self): return self
     def __exit__(self, *a): return False
@@ -5973,6 +6020,7 @@ try:
           (_m.call_count, _o3["err"]), (1, "Request limit reached!"))
 finally:
     TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = _orig_tok_rc, _orig_sleep_rc
+    TMDB._OMDB_STOP = None
 
 _ok_o = {"err": None, "type": "movie", "title": "Kina & Yuk", "year": 2023, "runtime": 85}
 check("omdb_identity: the venue's year (±1) confirms OMDb's film",
@@ -6375,6 +6423,11 @@ _s7 = {"Дюн: Част първа": [{"id": 701, "title": "Дюн: Част в
 _api7, _ = _lk_api({}, {}, {701: {"runtime": 166}, 702: {"runtime": 155}, 703: {"runtime": 137}}, _s7)
 check("runtime_title_lookup: Дюн: Част първа (155 min) -> TMDB's 'Дюн' of 155 min, not Part Two or the 1984 film",
       (_lk_run(TMDB.runtime_title_lookup, _api7, "Дюн: Част първа", {"runtime": 155})[0] or {}).get("id"), 702)
+# 7b. A re-run printed in capitals with its marker (Cinema City 2026-11-25): "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)"
+_s7b = {"ДЮН: ЧАСТ ПЪРВА": _s7["Дюн: Част първа"], "ДЮН": _s7["Дюн"]}
+_api7b, _ = _lk_api({}, {}, {701: {"runtime": 166}, 702: {"runtime": 155}, 703: {"runtime": 137}}, _s7b)
+check("runtime_title_lookup: a re-run marker is dropped before the near-title search (ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ) -> 702)",
+      (_lk_run(TMDB.runtime_title_lookup, _api7b, "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", {"runtime": 155})[0] or {}).get("id"), 702)
 # 8. Полюси (Одеон, 100 min, no year): a one-word title with no year is never taken this way
 check("runtime_title_lookup: Полюси — NEGATIVE: one word and no year -> not tried",
       _lk_run(TMDB.runtime_title_lookup, _api7, "Полюси", {"runtime": 100})[0], None)

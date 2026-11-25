@@ -97,7 +97,9 @@ check("every refresh step after the re-check depends on it",
 check("every action pinned to a full SHA",
       [u for u in re.findall(r"uses: (\S+)", WF) if not re.search(r"@[0-9a-f]{40}$", u)], [])
 check("only the refresh job writes", WF.count("      contents: write\n"), 1)
-check("push still rebases with autostash", WF.count("git pull --rebase --autostash origin main"), 2)
+check("push still rebases with autostash, onto the run's own branch (main on schedule)",
+      WF.count('git pull --rebase --autostash origin "$GITHUB_REF_NAME"'), 2)
+check("…and never onto main from another branch", WF.count("git pull --rebase --autostash origin main"), 0)
 check("commit message unchanged", 'git commit -m "Scheduled refresh: $(date -u +' in WF, True)
 try:
     import yaml

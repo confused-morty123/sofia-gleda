@@ -11,7 +11,7 @@ variable (a GitHub Actions secret in the hosted setup) — never hard-coded.
 If a run matches nothing (e.g. TMDB unreachable) and a previous tmdb_films.json
 exists, the previous file is kept — a bad run never empties the posters.
 """
-import json, os, re, time, urllib.parse, urllib.request, ssl, sys, pathlib
+import json, os, re, time, urllib.error, urllib.parse, urllib.request, ssl, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 try:
     from posterpolicy import DISTRUSTED_HOSTS      # hosts whose images can't be tied to a title
@@ -63,9 +63,12 @@ _REREL_BG = (r"специално\s+издание|юбилейно\s+издан
              r"ремастериран[аои]?(?:\s+версия)?|реставриран[аои]?(?:\s+версия)?|"
              r"възстановен[аои]?\s+версия|режисьорска\s+версия|разширена\s+версия|"
              r"удължена\s+версия|4\s*[KК](?:\s+версия)?|\d+\s+години\s+от\s+премиерата|"
-             r"\d+(?:-?(?:та|ти|а))?\s+годишнина|годишнина")
+             r"\d+(?:-?(?:та|ти|а))?\s+годишнина|годишнина|"
+             r"повторение|повторна\s+прожекция")      # a re-run, Cinema City / Arena 2026-11
 _DECOR_BG_RE = re.compile(
-    r"\s*(?:(?:[-–—:|]|\()\s*(?:" + _REREL_BG + r")|(?:[-–—|]|\()\s*\d+\s+години\s+по-късно)\s*\)?\s*$",
+    r"\s*(?:(?:[-–—:|]|\()\s*(?:" + _REREL_BG + r")|(?:[-–—|]|\()\s*\d+\s+години\s+по-късно"
+    # "Ре-релийз" (transliterated re-release) is never a title word: also after a plain space
+    r"|(?:[-–—:|(]|\s)\s*ре-?релийз)\s*\)?\s*$",
     re.I)
 # English re-release markers (a subset of _DECOR_RE: IMAX and 70 mm are formats a new
 # film is shown in, not a sign of an old one).
@@ -1041,24 +1044,56 @@ OMDB_RETRY_SLEEP = 1.5      # seconds before the one in-run retry of a network e
 _OMDB_NO_RETRY = ("invalid api key", "request limit", "no api key", "incorrect imdb id")
 
 
-def _omdb_get(imdb_id):
-    """One OMDb answer for imdb_id as a dict, or raises. A network error (timeout,
+_OMDB_STOP = None           # OMDb's own refusal for the whole key (bad key, daily limit)
+_OMDB_STOP_WORDS = ("invalid api key", "request limit", "no api key")
+
+
+def _omdb_fetch(params):
+    """One OMDb answer for params as a dict, or raises. A network error (timeout,
     connection reset, a 5xx) is retried once in the run after OMDB_RETRY_SLEEP; an
-    answer OMDb gives on purpose (Response=False: a wrong key, the daily limit) is not."""
-    q = urllib.parse.urlencode({"i": imdb_id, "apikey": OMDB_TOKEN})
+    answer OMDb gives on purpose is not. OMDb sends a wrong key and the daily limit
+    as HTTP 401 with {"Response":"False","Error":...}: that body is returned so the
+    log names the real cause ("Request limit reached!" vs "Invalid API key!"), and
+    once OMDb refuses the key itself, the rest of the run makes no more calls
+    (25 Nov 2026: 642 calls all 401, each retried, the key's cause unknown)."""
+    global _OMDB_STOP
+    if _OMDB_STOP:
+        return {"Response": "False", "Error": _OMDB_STOP}
+    q = urllib.parse.urlencode(dict(params, apikey=OMDB_TOKEN))
     last = None
     for attempt in (1, 2):
         try:
             req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
                                          headers={"User-Agent": UA, "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
-                return json.load(r)
-        except Exception as e:                       # network, HTTP 5xx, a broken body
-            last = e
-            if attempt == 1:
-                print(f"    ! omdb network error {imdb_id}: {e} (retrying once)", file=sys.stderr)
-                time.sleep(OMDB_RETRY_SLEEP)
+                d = json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                try:
+                    d = json.loads(e.read().decode("utf-8", "replace"))
+                except Exception:
+                    d = None
+                if not isinstance(d, dict) or not d.get("Error"):
+                    d = {"Response": "False", "Error": "HTTP 401 Unauthorized"}
+            else:
+                d, last = None, e
+        except Exception as e:                       # network, a broken body
+            d, last = None, e
+        if d is not None:
+            err = str(d.get("Error") or "") if isinstance(d, dict) and d.get("Response") == "False" else ""
+            if err and (any(w in err.lower() for w in _OMDB_STOP_WORDS) or err.startswith("HTTP 401")):
+                _OMDB_STOP = err
+                print(f"    ! omdb refused the key: {err} (no more OMDb calls this run)", file=sys.stderr)
+            return d
+        if attempt == 1:
+            print(f"    ! omdb network error {params}: {last} (retrying once)", file=sys.stderr)
+            time.sleep(OMDB_RETRY_SLEEP)
     raise last
+
+
+def _omdb_get(imdb_id):
+    """One OMDb answer for imdb_id as a dict, or raises (see _omdb_fetch)."""
+    return _omdb_fetch({"i": imdb_id})
 
 
 def _omdb_int(v):
@@ -1192,9 +1227,10 @@ def omdb_only_record(fid, en, facts, urls, prev):
     rec = {"matched": False, "en": en, "via": OMDB_VIA, "imdb_id": iid,
            "omdb": {k: v for k, v in (("t", o["title"]), ("y", o["year"]), ("rn", o["runtime"])) if v}}
     rating, votes, rt, mc = o["rating"], o["votes"], o["rt"], o["mc"]
-    if same and rating is None:            # an IMDb rating does not disappear (keep-previous)
-        rating = pv.get("imdb")
-        votes = votes or pv.get("imdbVotes")
+    if same:                               # a score does not disappear (keep-previous), each on its own
+        if rating is None:
+            rating = pv.get("imdb")
+            votes = votes or pv.get("imdbVotes")
         rt = rt if rt is not None else pv.get("rt")
         mc = mc if mc is not None else pv.get("mc")
     for k, v in (("imdb", rating), ("imdbVotes", votes), ("rt", rt), ("mc", mc)):
@@ -1536,6 +1572,7 @@ def runtime_title_lookup(bg, facts, blocked=()):
     if len(bg.split()) < 2 and not facts.get("year"):
         return None, "a one-word title with no year"
     passed, seen = {}, set()
+    bg = strip_rerelease(bg) or bg            # "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)": the marker is no title word
     for q in dict.fromkeys((bg, _PART_ONE_RE.sub("", bg).strip())):
         res = search_api({"query": q, "language": "bg", "include_adult": "false"}) or {}
         cands = [r for r in (res.get("results") or []) if isinstance(r, dict) and isinstance(r.get("id"), int)
@@ -1556,21 +1593,8 @@ def runtime_title_lookup(bg, facts, blocked=()):
 
 
 def _omdb_query(params):
-    """One OMDb answer for params (i= or t=&y=) as a dict, or raises (network errors
-    retried once, like _omdb_get)."""
-    q = urllib.parse.urlencode(dict(params, apikey=OMDB_TOKEN))
-    last = None
-    for attempt in (1, 2):
-        try:
-            req = urllib.request.Request(f"https://www.omdbapi.com/?{q}",
-                                         headers={"User-Agent": UA, "Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=20, context=SSLCTX) as r:
-                return json.load(r)
-        except Exception as e:
-            last = e
-            if attempt == 1:
-                time.sleep(OMDB_RETRY_SLEEP)
-    raise last
+    """One OMDb answer for params (i= or t=&y=) as a dict, or raises (see _omdb_fetch)."""
+    return _omdb_fetch(params)
 
 
 def omdb_parse(d):
@@ -2060,10 +2084,13 @@ def main():
         # another TMDB entry this run never shows the old film's score), on an OMDb error
         # or when OMDb answers without a number it had before (an IMDb rating does not
         # disappear; OMDb's N/A for a rated film is a glitch).
-        if imdb_id and pv.get("imdb_id") == imdb_id and (omdb_err is not None or rating is None):
+        # Each score is inherited on its own: on 2026-11-24 OMDb answered with an IMDb
+        # rating but no Rotten Tomatoes entry for most films (RT 123 -> 16), and gating
+        # on the IMDb rating alone let every one of those RT scores drop.
+        if imdb_id and pv.get("imdb_id") == imdb_id:
             if rating is None and pv.get("imdb") is not None:
                 rating = pv["imdb"]
-            if not votes and pv.get("imdbVotes"):
+            if not votes and pv.get("imdbVotes") and (omdb_err is not None or _o["rating"] is None):
                 votes = pv["imdbVotes"]
             if rt_score is None and pv.get("rt") is not None:
                 rt_score = pv["rt"]

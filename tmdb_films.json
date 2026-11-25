@@ -236,7 +236,8 @@
    "Antoine Fuqua": "Антоан Фукуа",
    "Michael Jackson": "Майкъл Джаксън"
   },
-  "trend": 91
+  "trend": 91,
+  "rt": 38
  },
  "kurierat": {
   "matched": true,
@@ -750,7 +751,8 @@
    "Arnold Schwarzenegger": "Арнолд Шварценегер",
    "Linda Hamilton": "Линда Хамилтън",
    "Robert Patrick": "Робърт Патрик"
-  }
+  },
+  "rt": 90
  },
  "kolite": {
   "matched": true,
@@ -809,7 +811,8 @@
   "nb": {
    "Owen Wilson": "Оуен Уилсън",
    "Paul Newman": "Пол Нюман"
-  }
+  },
+  "rt": 75
  },
  "prada-2": {
   "matched": true,
@@ -1121,7 +1124,8 @@
    "Tom Hanks": "Том Ханкс",
    "Conan O'Brien": "Конан О'Брайън"
   },
-  "trend": 39
+  "trend": 39,
+  "rt": 92
  },
  "vayana": {
   "matched": true,
@@ -1179,7 +1183,8 @@
    "Auliʻi Cravalho": "Аули'и Кравальо",
    "Dwayne Johnson": "Дуейн Джонсън",
    "Jared Bush": "Джаред Буш"
-  }
+  },
+  "rt": 96
  },
  "sablezab": {
   "matched": true,
@@ -1340,7 +1345,8 @@
    "Ewan McGregor": "Юън Макгрегър",
    "Michael Giacchino": "Майкъл Джакино"
   },
-  "trend": 37
+  "trend": 37,
+  "rt": 86
  },
  "2001": {
   "matched": true,
@@ -1400,7 +1406,8 @@
   "nb": {
    "Stanley Kubrick": "Стенли Кубрик",
    "Arthur C. Clarke": "Артър Кларк"
-  }
+  },
+  "rt": 91
  },
  "palestina-36": {
   "matched": true,
@@ -1455,7 +1462,8 @@
   "imdb_id": "tt29271622",
   "imdb": 7.5,
   "imdbVotes": "8.4K",
-  "mc": 67
+  "mc": 67,
+  "rt": 98
  },
  "gadni-kopileta": {
   "matched": false,
@@ -1576,7 +1584,8 @@
   "nb": {
    "Steven Soderbergh": "Стивън Содърбърг",
    "James Corden": "Джеймс Кордън"
-  }
+  },
+  "rt": 95
  },
  "gorchiva-koleda": {
   "matched": true,
@@ -1683,7 +1692,8 @@
   "imdb_id": "tt32298285",
   "imdb": 7.0,
   "imdbVotes": "38.6K",
-  "mc": 84
+  "mc": 84,
+  "rt": 90
  },
  "martva-hvatka": {
   "matched": true,
@@ -1807,7 +1817,8 @@
   "nb": {
    "Ralph Fiennes": "Ралф Файнс",
    "Juliette Binoche": "Жулиет Бинош"
-  }
+  },
+  "rt": 78
  },
  "malkata-ameli": {
   "matched": true,
@@ -1858,7 +1869,8 @@
   "imdb_id": "tt29313285",
   "imdb": 7.6,
   "imdbVotes": "6.1K",
-  "mc": 82
+  "mc": 82,
+  "rt": 97
  },
  "finik-2": {
   "matched": true,
@@ -2256,7 +2268,8 @@
   "nb": {
    "Joachim Trier": "Йоахим Триер",
    "Stellan Skarsgård": "Стелан Скарсгорд"
-  }
+  },
+  "rt": 95
  },
  "bashta-majka": {
   "matched": true,
@@ -2319,7 +2332,8 @@
    "Adam Driver": "Адам Драйвър",
    "Charlotte Rampling": "Шарлот Рамплинг",
    "Cate Blanchett": "Кейт Бланшет"
-  }
+  },
+  "rt": 81
  },
  "dvama-prokurori": {
   "matched": true,
@@ -2374,7 +2388,8 @@
   "imdb_id": "tt35521200",
   "imdb": 7.1,
   "imdbVotes": "2.9K",
-  "mc": 85
+  "mc": 85,
+  "rt": 98
  },
  "magyosnika": {
   "matched": true,
@@ -2429,7 +2444,8 @@
   "nb": {
    "Paul Dano": "Пол Дейно",
    "Jude Law": "Джуд Лоу"
-  }
+  },
+  "rt": 44
  },
  "lichen-zhivot": {
   "matched": true,
@@ -2486,7 +2502,8 @@
   "mc": 67,
   "nb": {
    "Jodie Foster": "Джоди Фостър"
-  }
+  },
+  "rt": 82
  },
  "partenopa": {
   "matched": true,
@@ -2541,7 +2558,8 @@
   "nb": {
    "Paolo Sorrentino": "Паоло Сорентино",
    "Gary Oldman": "Гари Олдман"
-  }
+  },
+  "rt": 47
  },
  "divi-yagodi": {
   "matched": true,
@@ -2595,7 +2613,8 @@
   "mc": 88,
   "nb": {
    "Ingmar Bergman": "Ингмар Бергман"
-  }
+  },
+  "rt": 94
  },
  "maystora": {
   "matched": true,
@@ -2797,7 +2816,8 @@
   "cast": "Edoardo Leo, Pilar Fogliati, Emanuela Fanelli, Maria Chiara Giannetta, Claudia Pandolfi",
   "imdb_id": "tt34621892",
   "imdb": 6.9,
-  "imdbVotes": "6.0K"
+  "imdbVotes": "6.0K",
+  "rt": 80
  },
  "posledniyat-viking": {
   "matched": true,
@@ -2959,7 +2979,8 @@
   "imdb_id": "tt32247943",
   "imdb": 6.6,
   "imdbVotes": "2.8K",
-  "mc": 78
+  "mc": 78,
+  "rt": 95
  },
  "knizharnica": {
   "matched": true,
@@ -3103,7 +3124,8 @@
   "mc": 64,
   "nb": {
    "Chloë Sevigny": "Клои Севини"
-  }
+  },
+  "rt": 68
  },
  "prekrasno-lyato": {
   "matched": true,
@@ -3151,7 +3173,8 @@
   "imdb_id": "tt9320170",
   "imdb": 5.5,
   "imdbVotes": "832",
-  "mc": 63
+  "mc": 63,
+  "rt": 67
  },
  "prikazka-za-astrid": {
   "matched": true,
@@ -3205,7 +3228,8 @@
   "imdb_id": "tt6433456",
   "imdb": 7.1,
   "imdbVotes": "7.5K",
-  "mc": 71
+  "mc": 71,
+  "rt": 96
  },
  "stogodishniyat": {
   "matched": true,
@@ -3265,7 +3289,8 @@
   "imdb_id": "tt2113681",
   "imdb": 7.0,
   "imdbVotes": "44.5K",
-  "mc": 58
+  "mc": 58,
+  "rt": 68
  },
  "nay-bogatata-zhena": {
   "matched": true,
@@ -3313,7 +3338,8 @@
   "tbg": "Най-богатата жена на света",
   "imdb_id": "tt32759477",
   "imdb": 6.3,
-  "imdbVotes": "1.7K"
+  "imdbVotes": "1.7K",
+  "rt": 68
  },
  "oshte-po-edno": {
   "matched": true,
@@ -3367,7 +3393,8 @@
   "mc": 79,
   "nb": {
    "Mads Mikkelsen": "Мадс Микелсен"
-  }
+  },
+  "rt": 93
  },
  "cvetovete-na-vremeto": {
   "matched": true,
@@ -3421,7 +3448,8 @@
   "imdb_id": "tt31411349",
   "imdb": 7.2,
   "imdbVotes": "5.0K",
-  "mc": 64
+  "mc": 64,
+  "rt": 96
  },
  "golyamoto-pliskane": {
   "matched": false,
@@ -3521,7 +3549,8 @@
   "cast": "Anna Castillo, Chino Darín, Javier Rey, Àlex Brendemühl, Antonio de la Torre",
   "imdb_id": "tt14149544",
   "imdb": 6.2,
-  "imdbVotes": "1.3K"
+  "imdbVotes": "1.3K",
+  "rt": 80
  },
  "sentimentalno": {
   "matched": false,
@@ -3580,7 +3609,8 @@
   "mc": 64,
   "nb": {
    "Monica Bellucci": "Моника Белучи"
-  }
+  },
+  "rt": 88
  },
  "gospodin-aznavur": {
   "matched": true,
@@ -3688,7 +3718,8 @@
   "mc": 91,
   "nb": {
    "Jafar Panahi": "Джафар Панахи"
-  }
+  },
+  "rt": 98
  },
  "potop": {
   "matched": true,
@@ -3736,7 +3767,8 @@
   "imdb_id": "tt4772188",
   "imdb": 7.8,
   "imdbVotes": "154.3K",
-  "mc": 87
+  "mc": 87,
+  "rt": 97
  },
  "chist-kasmet": {
   "matched": false,
@@ -3789,7 +3821,8 @@
   "mc": 82,
   "nb": {
    "Anthony Dod Mantle": "Антъни Дод Мантъл"
-  }
+  },
+  "rt": 91
  },
  "pomilvane": {
   "matched": false,
@@ -3846,7 +3879,8 @@
   "imdb_id": "tt0042876",
   "imdb": 8.1,
   "imdbVotes": "199.1K",
-  "mc": 98
+  "mc": 98,
+  "rt": 98
  },
  "lost-highway": {
   "matched": true,
@@ -3904,7 +3938,8 @@
    "David Lynch": "Дейвид Линч",
    "Patricia Arquette": "Патриша Аркет",
    "Bill Pullman": "Бил Пулман"
-  }
+  },
+  "rt": 70
  },
  "in-the-mood": {
   "matched": true,
@@ -3958,7 +3993,8 @@
   "imdb_id": "tt0118694",
   "imdb": 8.0,
   "imdbVotes": "192.0K",
-  "mc": 87
+  "mc": 87,
+  "rt": 92
  },
  "handmaiden": {
   "matched": true,
@@ -4014,7 +4050,8 @@
   "mc": 85,
   "nb": {
    "Park Chan-wook": "Пак Чхан Ук"
-  }
+  },
+  "rt": 96
  },
  "el-topo": {
   "matched": true,
@@ -4057,7 +4094,8 @@
   "imdb_id": "tt0067866",
   "imdb": 7.2,
   "imdbVotes": "32.0K",
-  "mc": 65
+  "mc": 65,
+  "rt": 80
  },
  "holy-mountain": {
   "matched": true,
@@ -4107,7 +4145,8 @@
   "imdb_id": "tt0071615",
   "imdb": 7.7,
   "imdbVotes": "53.4K",
-  "mc": 76
+  "mc": 76,
+  "rt": 85
  },
  "zalog": {
   "matched": false,
@@ -4167,7 +4206,8 @@
   "nb": {
    "Pedro Almodóvar": "Педро Алмодовар",
    "Penélope Cruz": "Пенелопе Крус"
-  }
+  },
+  "rt": 98
  },
  "kosa": {
   "matched": true,
@@ -4218,7 +4258,8 @@
   "imdb_id": "tt0079261",
   "imdb": 7.5,
   "imdbVotes": "44.8K",
-  "mc": 68
+  "mc": 68,
+  "rt": 83
  },
  "diskretniyat-char": {
   "matched": true,
@@ -4272,7 +4313,8 @@
   "nb": {
    "Delphine Seyrig": "Делфин Сериг",
    "Jean-Claude Carrière": "Жан-Клод Кариер"
-  }
+  },
+  "rt": 98
  },
  "iskam-te-za-seks": {
   "matched": true,
@@ -4813,7 +4855,8 @@
    "Colin Farrell": "Колин Фарел",
    "Brendan Gleeson": "Брендан Глийсън",
    "Ralph Fiennes": "Ралф Файнс"
-  }
+  },
+  "rt": 84
  },
  "doza-shtastie": {
   "matched": true,
@@ -4918,7 +4961,8 @@
    "Alec Guinness": "Алек Гинес",
    "Anthony Quinn": "Антъни Куин",
    "Omar Sharif": "Омар Шариф"
-  }
+  },
+  "rt": 93
  },
  "ostrovat-na-zabravata": {
   "matched": true,
@@ -5242,7 +5286,8 @@
   "mc": 78,
   "nb": {
    "Wim Wenders": "Вим Вендерс"
-  }
+  },
+  "rt": 100
  },
  "evropeyski-kinoklasiki-moyat-lyav-krak-1989": {
   "matched": true,
@@ -5294,7 +5339,8 @@
    "Jim Sheridan": "Джим Шеридан",
    "Daniel Day-Lewis": "Даниъл Дей-Люис",
    "Kirsten Sheridan": "Кирстен Шеридан"
-  }
+  },
+  "rt": 98
  },
  "sinelibri-2026-pepel": {
   "matched": true,
@@ -5478,7 +5524,8 @@
   "imdb_id": "tt0017136",
   "imdb": 8.2,
   "imdbVotes": "203.5K",
-  "mc": 98
+  "mc": 98,
+  "rt": 97
  },
  "akira-kurosava-sanishta-1990": {
   "matched": true,
@@ -5525,7 +5572,8 @@
   "ovBg": "Филмът е съставен от няколко съня, сънувани лично от Куросава и описани от него. Сънищата са осем, разделени на части по следния ред: Слънчев лъч по време на дъжд, Градината с праскови, Снежната буря, Тунелът, Гарвани, Планината Фуджи в червено, Плачещият демон, Селцето на мелниците.",
   "imdb_id": "tt0100998",
   "imdb": 7.7,
-  "imdbVotes": "33.4K"
+  "imdbVotes": "33.4K",
+  "rt": 67
  },
  "doni-darko": {
   "matched": true,
@@ -5582,7 +5630,8 @@
    "Jake Gyllenhaal": "Джейк Джилънхол",
    "Jena Malone": "Джена Малоун",
    "Drew Barrymore": "Дрю Баримор"
-  }
+  },
+  "rt": 88
  },
  "naza": {
   "matched": true,
@@ -5673,7 +5722,8 @@
   "imdb_id": "tt0117589",
   "imdb": 8.0,
   "imdbVotes": "51.0K",
-  "mc": 92
+  "mc": 92,
+  "rt": 95
  },
  "goli": {
   "matched": true,
@@ -5725,7 +5775,8 @@
   "mc": 85,
   "nb": {
    "David Thewlis": "Дейвид Тюлис"
-  }
+  },
+  "rt": 88
  },
  "houp": {
   "matched": true,
@@ -5831,7 +5882,8 @@
   "ovBg": "Филмът разказва историята на малкия Били Каспър, който не намира топлина и близост в родния си дом и училище и се принуждава да ги търси извън тях, в сближаване с животните. Той се заема с дресировката на едно соколче, което нарича Кес и си създава собствен свят, в който намира душевен комфорт и развлечение. Но това трае само до момента, в който брутално му отнемат соколчето. Били отново остава сам лице в лице с тежката си съдба...",
   "imdb_id": "tt0064541",
   "imdb": 7.9,
-  "imdbVotes": "26.7K"
+  "imdbVotes": "26.7K",
+  "rt": 100
  },
  "sinelibri-2026-embargo-predstavyane-na-tvorchestvoto-na-zhoz": {
   "matched": true,
@@ -5971,7 +6023,8 @@
   "imdb_id": "tt31015216",
   "imdb": 6.7,
   "imdbVotes": "3.5K",
-  "mc": 85
+  "mc": 85,
+  "rt": 97
  },
  "tova-se-sluchi-na-ulitsata": {
   "matched": true,
@@ -6133,7 +6186,8 @@
   "mc": 86,
   "nb": {
    "Park Chan-wook": "Пак Чхан Ук"
-  }
+  },
+  "rt": 97
  },
  "kitovete-paziteli-na-planetata": {
   "matched": true,
@@ -6269,7 +6323,8 @@
   "imdbVotes": "2.9K",
   "nb": {
    "Ferzan Özpetek": "Ферзан Йозпетек"
-  }
+  },
+  "rt": 69
  },
  "sinelibri-2026-tesniyat-pat-kam-dalechniya-sever": {
   "matched": false,
@@ -6498,7 +6553,8 @@
    "Chris Hemsworth": "Крис Хемсуърт",
    "Scarlett Johansson": "Скарлет Йохансон",
    "Alan Silvestri": "Алън Силвестри"
-  }
+  },
+  "rt": 94
  },
  "payatsi": {
   "matched": true,
@@ -6650,7 +6706,8 @@
    "Carl Duering": "Карл Дюринг",
    "Warren Clarke": "Уорън Кларк",
    "Ludwig van Beethoven": "Лудвиг ван Бетховен"
-  }
+  },
+  "rt": 83
  },
  "queen-budapest": {
   "matched": false,
@@ -6718,7 +6775,8 @@
    "John Lithgow": "Джон Литгоу",
    "Vincent Cassel": "Венсан Касел",
    "Harry Gregson-Williams": "Хари Грегсън-Уилямс"
-  }
+  },
+  "rt": 89
  },
  "chunkin-ekspres": {
   "matched": true,
@@ -6771,7 +6829,8 @@
   "imdb_id": "tt0109424",
   "imdb": 7.9,
   "imdbVotes": "114.3K",
-  "mc": 78
+  "mc": 78,
+  "rt": 89
  },
  "sinelibri-2026-frost-i-mechetata": {
   "matched": true,
@@ -6950,7 +7009,8 @@
    "Anton Yelchin": "Антон Йелчин",
    "Mia Wasikowska": "Миа Васиковска",
    "Jeffrey Wright": "Джефри Райт"
-  }
+  },
+  "rt": 86
  },
  "rezidentsiyata-minalo-nastoyashte-badeshte": {
   "matched": false,
@@ -7007,7 +7067,8 @@
   "imdbVotes": "82",
   "nb": {
    "Josh Brolin": "Джош Бролин"
-  }
+  },
+  "rt": 70
  },
  "sinelibri-2026-posledno-preduprezhdenie": {
   "matched": true,
@@ -7212,7 +7273,8 @@
   "mc": 78,
   "nb": {
    "Park Chan-wook": "Пак Чхан Ук"
-  }
+  },
+  "rt": 82
  },
  "sinelibri-2026-nashite-momicheta": {
   "matched": true,
@@ -7465,7 +7527,8 @@
   "imdb_id": "tt14039582",
   "imdb": 7.5,
   "imdbVotes": "78.3K",
-  "mc": 91
+  "mc": 91,
+  "rt": 97
  },
  "sinelibri-2026-kamak-hartiya-granata": {
   "matched": true,
@@ -8252,7 +8315,8 @@
   "nb": {
    "Robin Williams": "Робин Уилямс",
    "Ethan Hawke": "Итън Хоук"
-  }
+  },
+  "rt": 85
  },
  "sinelibri-2026-nay-dalechnata-granitsa": {
   "matched": true,
@@ -8389,7 +8453,8 @@
   "imdb_id": "tt35231039",
   "imdb": 7.5,
   "imdbVotes": "6.4K",
-  "mc": 80
+  "mc": 80,
+  "rt": 95
  },
  "sinelibri-2026-kalevala-istoriyata-na-kulervo": {
   "matched": true,
@@ -8576,7 +8641,8 @@
    "Jack Nicholson": "Джак Никълсън",
    "Shelley Duvall": "Шели Дювал",
    "Béla Bartók": "Бела Барток"
-  }
+  },
+  "rt": 75
  },
  "it-s-alive-horar-film-fest-chast-iv-pleteniyat-chovek": {
   "matched": true,
@@ -8630,7 +8696,8 @@
   "mc": 87,
   "nb": {
    "Christopher Lee": "Кристофър Лий"
-  }
+  },
+  "rt": 92
  },
  "it-s-alive-horar-film-fest-chast-iv-petak-69-i": {
   "matched": false,
@@ -8702,7 +8769,8 @@
   "nb": {
    "Kurt Russell": "Кърт Ръсел",
    "Keith David": "Кийт Дейвид"
-  }
+  },
+  "rt": 85
  },
  "it-s-alive-horar-film-fest-chast-iv-kade-mi-e-glavata": {
   "matched": false,
@@ -8833,7 +8901,8 @@
    "Sean Astin": "Шон Астин",
    "Ian Holm": "Иън Холм",
    "Howard Shore": "Хауърд Шор"
-  }
+  },
+  "rt": 91
  },
  "tri-tsvyata-cherveno": {
   "matched": true,
@@ -8887,7 +8956,8 @@
   "nb": {
    "Krzysztof Kieślowski": "Кшищоф Кешловски",
    "Piotr Sobociński": "Пиотр Собочински"
-  }
+  },
+  "rt": 100
  },
  "tri-tsvyata-sinyo": {
   "matched": true,
@@ -8994,7 +9064,8 @@
   "mc": 91,
   "nb": {
    "Krzysztof Kieślowski": "Кшищоф Кешловски"
-  }
+  },
+  "rt": 91
  },
  "nyama-myasto-za-starite-kucheta": {
   "matched": true,
@@ -9056,7 +9127,8 @@
    "Josh Brolin": "Джош Бролин",
    "Woody Harrelson": "Уди Харелсън",
    "Roger Deakins": "Роджър Дийкинс"
-  }
+  },
+  "rt": 93
  },
  "nebesa": {
   "matched": true,
@@ -9113,7 +9185,8 @@
    "Tom Tykwer": "Том Тиквер",
    "Cate Blanchett": "Кейт Бланшет",
    "Krzysztof Kieślowski": "Кшищоф Кешловски"
-  }
+  },
+  "rt": 73
  },
  "legendi-za-strastta": {
   "matched": true,
@@ -9216,7 +9289,8 @@
   "nb": {
    "Krzysztof Kieślowski": "Кшищоф Кешловски",
    "Sławomir Idziak": "Славомир Идзяк"
-  }
+  },
+  "rt": 91
  },
  "kratak-film-za-lyubovta": {
   "matched": true,
@@ -9265,7 +9339,8 @@
   "imdbVotes": "28.7K",
   "nb": {
    "Krzysztof Kieślowski": "Кшищоф Кешловски"
-  }
+  },
+  "rt": 95
  },
  "cs2-pgl-major-singapore-final-na-zhivo": {
   "matched": false,
@@ -9329,7 +9404,8 @@
   "nb": {
    "Hayao Miyazaki": "Хаяо Миядзаки",
    "Keiko Niwa": "Кеико Нива"
-  }
+  },
+  "rt": 94
  },
  "parvi-kontakt": {
   "matched": true,
@@ -9389,7 +9465,8 @@
    "Jeremy Renner": "Джереми Ренър",
    "Forest Whitaker": "Форест Уитакър",
    "Michael Stuhlbarg": "Майкъл Стълбарг"
-  }
+  },
+  "rt": 94
  },
  "krastnitsite-ot-tokio": {
   "matched": true,
@@ -9442,7 +9519,8 @@
   "imdb_id": "tt0388473",
   "imdb": 7.8,
   "imdbVotes": "56.0K",
-  "mc": 75
+  "mc": 75,
+  "rt": 92
  },
  "otmastitelite-vazhodat-na-doktor-duum": {
   "matched": true,
@@ -9615,7 +9693,8 @@
   "imdb_id": "tt0112913",
   "imdb": 7.5,
   "imdbVotes": "61.3K",
-  "mc": 71
+  "mc": 71,
+  "rt": 96
  },
  "it-s-alive-horar-film-fest-chast-iv-nirvanna-bandata-shouto-": {
   "matched": true,
@@ -9665,7 +9744,8 @@
   "imdb_id": "tt35522483",
   "imdb": 7.7,
   "imdbVotes": "13.5K",
-  "mc": 80
+  "mc": 80,
+  "rt": 95
  },
  "it-s-alive-horar-film-fest-chast-iv-live-ekshan-dublazh-zhen": {
   "matched": false,
@@ -10510,7 +10590,8 @@
   "cast": "Alain Chabat, Laurent Lafitte, Simon Faliu, Alban Aumard, Alicia Hava",
   "imdb_id": "tt10290244",
   "imdb": 7.1,
-  "imdbVotes": "1.3K"
+  "imdbVotes": "1.3K",
+  "rt": 94
  },
  "prah": {
   "matched": true,
@@ -10661,7 +10742,8 @@
    "Jim Sheridan": "Джим Шеридан",
    "Daniel Day-Lewis": "Даниъл Дей-Люис",
    "Emma Thompson": "Ема Томпсън"
-  }
+  },
+  "rt": 94
  },
  "karvavata-grafinya": {
   "matched": true,
@@ -11076,7 +11158,8 @@
   "mc": 90,
   "nb": {
    "Paweł Pawlikowski": "Павел Павликовски"
-  }
+  },
+  "rt": 92
  },
  "taksi-za-raya": {
   "matched": false,
@@ -11355,7 +11438,8 @@
    "Jason Statham": "Джейсън Стейтъм",
    "Stephen Graham": "Стивън Грахам",
    "Brad Pitt": "Брад Пит"
-  }
+  },
+  "rt": 74
  },
  "shekspir-kato-ulichno-kuche": {
   "matched": true,
@@ -11910,7 +11994,8 @@
    "Kevin Dillon": "Кевин Дилън",
    "Forest Whitaker": "Форест Уитакър",
    "Robert Richardson": "Робърт Ричардсън"
-  }
+  },
+  "rt": 89
  },
  "skoti": {
   "matched": false,
@@ -12079,7 +12164,8 @@
    "Frank Whaley": "Франк Уейли",
    "Kevin Dillon": "Кевин Дилън",
    "Robert Richardson": "Робърт Ричардсън"
-  }
+  },
+  "rt": 58
  },
  "vsichki-vlyubeni-v-noshtta-sinelibri": {
   "matched": false,
@@ -12798,7 +12884,8 @@
   "imdb_id": "tt5186236",
   "imdb": 7.0,
   "imdbVotes": "3.6K",
-  "mc": 75
+  "mc": 75,
+  "rt": 86
  },
  "40-kinomaniya-nyama-duhove-v-zhilishteto-na-ul-dobra": {
   "matched": false,
@@ -12856,7 +12943,8 @@
   "imdb_id": "tt0879843",
   "imdb": 7.0,
   "imdbVotes": "18.4K",
-  "mc": 81
+  "mc": 81,
+  "rt": 91
  },
  "40-kinomaniya-dom-dobar": {
   "matched": true,
@@ -13450,7 +13538,8 @@
   "imdb": 7.8,
   "imdbVotes": "392.8K",
   "mc": 77,
-  "trend": 34
+  "trend": 34,
+  "rt": 93
  },
  "backrooms": {
   "matched": true,
@@ -13567,7 +13656,8 @@
    "Kevin Williamson": "Кевин Уилямсън",
    "Isabel May": "Изабел Мей",
    "Courteney Cox": "Кортни Кокс"
-  }
+  },
+  "rt": 30
  },
  "vlastelinat-na-prastenite-zadrugata-na-prastena-udalzheno-iz": {
   "matched": true,
@@ -13630,7 +13720,8 @@
    "Sean Astin": "Шон Астин",
    "Ian Holm": "Иън Холм",
    "Howard Shore": "Хауърд Шор"
-  }
+  },
+  "rt": 91
  },
  "levit": {
   "matched": true,
@@ -14398,7 +14489,8 @@
   "nb": {
    "Sophia Loren": "София Лорен",
    "Marcello Mastroianni": "Марчело Мастрояни"
-  }
+  },
+  "rt": 100
  },
  "ledena-zemya": {
   "matched": true,
@@ -14604,7 +14696,8 @@
    "Lawrence Kasdan": "Лорънс Каздън",
    "John Williams": "Джон Уилямс",
    "London Symphony Orchestra": "Лондонски симфоничен оркестър"
-  }
+  },
+  "rt": 94
  },
  "secret-screening": {
   "matched": false,
@@ -14782,7 +14875,8 @@
    "Winona Ryder": "Уинона Райдър",
    "Dianne Wiest": "Даян Уийст",
    "Danny Elfman": "Дани Елфман"
-  }
+  },
+  "rt": 92
  },
  "nemigranti": {
   "matched": true,
@@ -14988,7 +15082,8 @@
   "nb": {
    "Hayao Miyazaki": "Хаяо Миядзаки",
    "Keiko Niwa": "Кеико Нива"
-  }
+  },
+  "rt": 94
  },
  "smisal-film-za-ikonomikata-na-blagosastoyanieto": {
   "matched": false,
@@ -15051,7 +15146,8 @@
   "imdb_id": "tt1139797",
   "imdb": 7.8,
   "imdbVotes": "242.0K",
-  "mc": 82
+  "mc": 82,
+  "rt": 98
  },
  "lavina": {
   "matched": true,
@@ -15317,7 +15413,8 @@
   "mc": 76,
   "nb": {
    "Johnny Klimek": "Джони Клаймък"
-  }
+  },
+  "rt": 87
  },
  "polyusi": {
   "matched": false,
@@ -15380,7 +15477,8 @@
   "imdb_id": "tt2802154",
   "imdb": 7.6,
   "imdbVotes": "60.7K",
-  "mc": 92
+  "mc": 92,
+  "rt": 97
  },
  "velopohodat-kam-cop-31": {
   "matched": false,
@@ -15453,7 +15551,8 @@
    "Stellan Skarsgård": "Стелан Скарсгорд",
    "Eric Roth": "Ерик Рот",
    "Hans Zimmer": "Ханс Цимер"
-  }
+  },
+  "rt": 83
  },
  "umiray-trudno": {
   "matched": true,
@@ -15510,7 +15609,8 @@
   "nb": {
    "Bruce Willis": "Брус Уилис",
    "Alan Rickman": "Алън Рикман"
-  }
+  },
+  "rt": 94
  },
  "detska-kinomaniya": {
   "matched": false,
@@ -15572,7 +15672,8 @@
   "imdb_id": "tt0095765",
   "imdb": 8.5,
   "imdbVotes": "321.6K",
-  "mc": 80
+  "mc": 80,
+  "rt": 90
  },
  "marsupilami": {
   "matched": false,
@@ -15924,7 +16025,8 @@
   "nb": {
    "Martin Sheen": "Мартин Шийн",
    "Sissy Spacek": "Сиси Спейсик"
-  }
+  },
+  "rt": 97
  },
  "zhivot-strashen-i-vse-pak-mnogo-hubav": {
   "matched": false,
@@ -15985,7 +16087,8 @@
   "nb": {
    "John Cassavetes": "Джон Касавитис",
    "Gena Rowlands": "Джина Роуландс"
-  }
+  },
+  "rt": 88
  },
  "barzo-akuratno-okonchatelno": {
   "matched": false,
@@ -16076,7 +16179,8 @@
    "Javier Bardem": "Хавиер Бардем",
    "Josh Brolin": "Джош Бролин",
    "Hans Zimmer": "Ханс Цимер"
-  }
+  },
+  "rt": 92
  },
  "tazi-vecher-shte-ubivame": {
   "matched": false,
@@ -16187,7 +16291,8 @@
    "Javier Bardem": "Хавиер Бардем",
    "Josh Brolin": "Джош Бролин",
    "Hans Zimmer": "Ханс Цимер"
-  }
+  },
+  "rt": 92
  },
  "maraton-dyun-1-i-2": {
   "matched": false,
@@ -16307,7 +16412,8 @@
    "Keanu Reeves": "Киану Рийвс",
    "Carrie-Anne Moss": "Кери-Ан Мос",
    "Pamela Adlon": "Памела Адлън"
-  }
+  },
+  "rt": 88
  },
  "40-kinomaniya-i-cherni-pari-za-beli-noshti": {
   "matched": true,
@@ -16566,7 +16672,8 @@
    "Patrick Wilson": "Патрик Уилсън",
    "Miranda Richardson": "Миранда Ричардсън",
    "Minnie Driver": "Мини Драйвър"
-  }
+  },
+  "rt": 32
  },
  "spetsialno-mozhesh-da-vidish-vsichko": {
   "matched": false,
@@ -16859,7 +16966,8 @@
    "Sam Rockwell": "Сам Рокуел",
    "Jeremy Renner": "Джереми Ренър",
    "Roger Deakins": "Роджър Дийкинс"
-  }
+  },
+  "rt": 76
  },
  "posledniyat-prometey-na-donbas": {
   "matched": false,
@@ -16936,7 +17044,8 @@
    "Jude Law": "Джуд Лоу",
    "Alan Arkin": "Алън Аркин",
    "Sławomir Idziak": "Славомир Идзяк"
-  }
+  },
+  "rt": 82
  },
  "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": {
   "matched": false,
