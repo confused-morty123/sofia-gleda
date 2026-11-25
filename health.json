@@ -1,6 +1,16 @@
 [
  {
   "level": "warning",
+  "venue": "lumiere",
+  "message": "„40. КИНОМАНИЯ | ЛЕДЕНА ЗЕМЯ“ fits 2 films and nothing decides between them: 40-kinomaniya-i-ledena-zemya, ledena-zemya (2026). Its 1 screening(s) are held back (shown under no film) until a person decides: add to \"groups\" in scripts/film_aliases.json {\"titles\": [\"40. КИНОМАНИЯ | ЛЕДЕНА ЗЕМЯ\"], \"film\": \"ONE OF: 40-kinomaniya-i-ledena-zemya | ledena-zemya\", \"venues\": [\"lumiere\"], \"reason\": \"…\"}"
+ },
+ {
+  "level": "warning",
+  "venue": "lumiere",
+  "message": "„40. КИНОМАНИЯ | ЧЕРНИ ПАРИ ЗА БЕЛИ НОЩИ“ fits 2 films and nothing decides between them: 40-kinomaniya-i-cherni-pari-za-beli-noshti, cherni-pari-za-beli-noshti (2026). Its 3 screening(s) are held back (shown under no film) until a person decides: add to \"groups\" in scripts/film_aliases.json {\"titles\": [\"40. КИНОМАНИЯ | ЧЕРНИ ПАРИ ЗА БЕЛИ НОЩИ\"], \"film\": \"ONE OF: 40-kinomaniya-i-cherni-pari-za-beli-noshti | cherni-pari-za-beli-noshti\", \"venues\": [\"lumiere\"], \"reason\": \"…\"}"
+ },
+ {
+  "level": "warning",
   "venue": "new-ndk",
   "message": "no listings: no official programme, and theatre.art.bg lists nothing for it"
  },
@@ -15,33 +25,33 @@
   "message": "no official programme: all 14 performances are preliminary, from theatre.art.bg"
  },
  {
+  "level": "warning",
+  "venue": "artvent",
+  "message": "official source unreachable (unreachable: https://artvent.bg/teatar/artvent/programa); last read 2026-11-24, 1 day ago — 42 performances kept and shown as preliminary (removed after 14 days)"
+ },
+ {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 231/314 ok, 83 missing IMDb ratings"
+  "message": "OMDb: 238/324 ok, 86 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 462/470 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (11 days), dokato-chakame-godo-dobrich (11 days), dokato-chakame-godo-smolyan (11 days), dokato-smartta (10 days), kontsert-na-pim-pam (11 days), mechka-hamletmashina (11 days), vanyo-sonya-masha-i-spayk (10 days), vsichko-za-zhenite (10 days)"
+  "message": "theatre posters: 473/481 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (12 days), dokato-chakame-godo-dobrich (12 days), dokato-chakame-godo-smolyan (12 days), dokato-smartta (11 days), kontsert-na-pim-pam (12 days), mechka-hamletmashina (12 days), vanyo-sonya-masha-i-spayk (11 days), vsichko-za-zhenite (11 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.6 % -> 93.8 %, films 91.0 % -> 91.0 %; attached 1; causes: own page has no usable image 20, own page blocked (robots.txt or a bot challenge; not bypassed) 8, only an aggregator's image (the film does not link that page) 5, only a ticket page linked, not the title's page 4 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.3 % -> 93.3 %, films 90.6 % -> 90.6 %; attached 0; causes: own page has no usable image 20, only an aggregator's image (the film does not link that page) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, robots.txt unreachable (5xx or no answer): the host is not read this run 3 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 441/470 (93.8 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, ekaterina-karavelova-vik-ot-istoriyata; 462/470 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 449/481 (93.3 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 473/481 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 141/155 (91.0 %); missing: 40-kinomaniya-nepozna-zhena, actually-it-is-rocket-science, evropeyski-kinoklasiki-v-kino-vlaykova-chervenata-pustinya-1, evropeyski-kinoklasiki-v-kino-vlaykova-pchelaryat-1986, evropeyski-kinoklasiki-v-kino-vlaykova-strukturata-na-krista, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
- },
- {
-  "level": "warning",
-  "venue": "publish-gate",
-  "message": "5c4 ratings WARNING: 36 film(s) lost their rt score since the last build, matched to the same TMDB film (animatritsata, bez-konkurentsiya, chunkin-ekspres, cvetovete-na-vremeto, doors, dyun-chast-parva): a rating fetch broke and its previous values were not kept (fetch_tmdb.py keep-previous)"
+  "message": "5c2 poster coverage (films, own image): 144/159 (90.6 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, evropeyski-kinoklasiki-v-kino-vlaykova-kolektsionerkata-1969, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, koledni-agenti, magiyata-na-gorata, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

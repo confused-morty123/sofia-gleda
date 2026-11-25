@@ -68,17 +68,17 @@ def measure(html=HTML, thin=SY.THIN):
             own = links.get(sid) if sid not in agg else None
             p["linked"] += bool(own)
             thin_rows.append((sh.get("theatre") or "?", sid, sh.get("title") or sid, SY.slen(bg), own))
-    f = {"titles": 0, "thin": 0, "empty": 0, "thin_en": 0}
+    fs = {"titles": 0, "thin": 0, "empty": 0, "thin_en": 0}
     thin_films = []
     for fid in sorted(up_f):
         fl, i, a = films[fid], fi.get(fid) or {}, art.get(fid) or {}
         bg = ne(fl.get("synBg")) or ne(i.get("synBg")) or ne(a.get("ovBg"))
         en = ne(fl.get("synEn")) or ne(a.get("ov")) or ne(i.get("synEn")) or ne(synen.get(fid))
-        f["titles"] += 1
-        f["thin_en"] += SY.slen(en) < thin
+        fs["titles"] += 1
+        fs["thin_en"] += SY.slen(en) < thin
         if SY.slen(bg) < thin:
-            f["thin"] += 1
-            f["empty"] += not bg
+            fs["thin"] += 1
+            fs["empty"] += not bg
             thin_films.append((fid, fl.get("bg") or fid, SY.slen(bg)))
     ov, fills = SY.load_overrides(SY.OVERRIDES), SY.load_fills(SY.FILLS)
     routes = {
@@ -103,7 +103,7 @@ def measure(html=HTML, thin=SY.THIN):
     return {
         "date": dt.date.today().isoformat(), "threshold": thin,
         "shows": {**tot, "by_theatre": {k: dict(v, name=names.get(k, k)) for k, v in sorted(per.items())}},
-        "films": f, "routes": routes,
+        "films": fs, "routes": routes,
         "_rows": {"shows": thin_rows, "films": thin_films},
     }
 

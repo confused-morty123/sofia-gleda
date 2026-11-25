@@ -502,6 +502,28 @@ try:
 finally:
     TMDB.api = _orig_api2
 
+# -------------------------------------------------- OMDb keep-previous, per score
+print("OMDb keep-previous, per score")
+_saved_lookup, _saved_ident = TMDB.omdb_lookup, TMDB.omdb_identity
+try:
+    # OMDb answers with an IMDb rating but no Rotten Tomatoes entry (2026-11-24):
+    # last run's RT and Metacritic for the same IMDb id are kept, the new IMDb wins.
+    TMDB.omdb_lookup = lambda iid: {"rating": 7.9, "votes": "10.0K", "rt": None, "mc": None,
+                                    "err": None, "title": "X", "year": 2020, "runtime": 100,
+                                    "type": "movie"}
+    TMDB.omdb_identity = lambda *a, **k: None
+    _prev = {"f": {"via": TMDB.OMDB_VIA, "imdb_id": "tt7654321", "imdb": 7.5,
+                   "imdbVotes": "9.0K", "rt": 88, "mc": 71}}
+    _rec = TMDB.omdb_only_record("f", "X", {}, ["https://example.org/m/x-imdbtt7654321"], _prev)
+    check("omdb keep-prev: RT kept when OMDb drops it but still rates", (_rec or {}).get("rt"), 88)
+    check("omdb keep-prev: MC kept when OMDb drops it but still rates", (_rec or {}).get("mc"), 71)
+    check("omdb keep-prev: the new IMDb rating wins", (_rec or {}).get("imdb"), 7.9)
+    _prev2 = {"f": dict(_prev["f"], imdb_id="tt1111111")}
+    _rec2 = TMDB.omdb_only_record("f", "X", {}, ["https://example.org/m/x-imdbtt7654321"], _prev2)
+    check("omdb keep-prev: another IMDb id never inherits RT", (_rec2 or {}).get("rt"), None)
+finally:
+    TMDB.omdb_lookup, TMDB.omdb_identity = _saved_lookup, _saved_ident
+
 # -------------------------------------------------- OMDb rt/mc parsing (mocked HTTP)
 print("OMDb rt/mc parsing (mocked urllib)")
 import urllib.request as _ureq, io as _io, types as _ty
@@ -6110,7 +6132,14 @@ for _t, _want in (("40.Киномания: Обич", "Обич"), ("40. Кин�
                   ("THE BLOODY COUNTESS - SINELEBRI", "THE BLOODY COUNTESS"),
                   ("40 години по-късно", "40 години по-късно"), ("Хелоуин", "Хелоуин"),
                   ("ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА", "ЕВЕРЕСТ: ОТ ДРУГАТА СТРАНА"),
-                  ("Падане 2: Мъртва точка", "Падане 2: Мъртва точка")):
+                  ("Падане 2: Мъртва точка", "Падане 2: Мъртва точка"),
+                  # 2026-11-25: Менар festival, CINEMANIA with a capital-I bar, and
+                  # Кинокласики with the venue in the prefix kept 24 films off TMDB
+                  ("Менар: Бунт за двама", "Бунт за двама"), ("Менар:Болни мозъци", "Болни мозъци"),
+                  ("МЕНАР уикенд: Природа", "Природа"),
+                  ("40. CINEMANIA I Brace Your Heart", "Brace Your Heart"),
+                  ("ЕВРОПЕЙСКИ КИНОКЛАСИКИ В КИНО ВЛАЙКОВА: Колекционерката", "Колекционерката"),
+                  ("Менарх", "Менарх"), ("Inside I Am Fine", "Inside I Am Fine")):
     check(f"clean_title({_t!r})", FID.clean_title(_t), _want)
 _km_films = {"obich": {"id": "obich", "bg": "Обич", "en": "", "source": "lumiere"},
              "40-kinomaniya-obich": {"id": "40-kinomaniya-obich", "bg": "40.Киномания: Обич", "en": "",

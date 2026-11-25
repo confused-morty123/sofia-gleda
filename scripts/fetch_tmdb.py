@@ -1224,9 +1224,10 @@ def omdb_only_record(fid, en, facts, urls, prev):
     rec = {"matched": False, "en": en, "via": OMDB_VIA, "imdb_id": iid,
            "omdb": {k: v for k, v in (("t", o["title"]), ("y", o["year"]), ("rn", o["runtime"])) if v}}
     rating, votes, rt, mc = o["rating"], o["votes"], o["rt"], o["mc"]
-    if same and rating is None:            # an IMDb rating does not disappear (keep-previous)
-        rating = pv.get("imdb")
-        votes = votes or pv.get("imdbVotes")
+    if same:                               # a score does not disappear (keep-previous), each on its own
+        if rating is None:
+            rating = pv.get("imdb")
+            votes = votes or pv.get("imdbVotes")
         rt = rt if rt is not None else pv.get("rt")
         mc = mc if mc is not None else pv.get("mc")
     for k, v in (("imdb", rating), ("imdbVotes", votes), ("rt", rt), ("mc", mc)):
@@ -2079,10 +2080,13 @@ def main():
         # another TMDB entry this run never shows the old film's score), on an OMDb error
         # or when OMDb answers without a number it had before (an IMDb rating does not
         # disappear; OMDb's N/A for a rated film is a glitch).
-        if imdb_id and pv.get("imdb_id") == imdb_id and (omdb_err is not None or rating is None):
+        # Each score is inherited on its own: on 2026-11-24 OMDb answered with an IMDb
+        # rating but no Rotten Tomatoes entry for most films (RT 123 -> 16), and gating
+        # on the IMDb rating alone let every one of those RT scores drop.
+        if imdb_id and pv.get("imdb_id") == imdb_id:
             if rating is None and pv.get("imdb") is not None:
                 rating = pv["imdb"]
-            if not votes and pv.get("imdbVotes"):
+            if not votes and pv.get("imdbVotes") and (omdb_err is not None or _o["rating"] is None):
                 votes = pv["imdbVotes"]
             if rt_score is None and pv.get("rt") is not None:
                 rt_score = pv["rt"]
