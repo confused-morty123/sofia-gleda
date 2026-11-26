@@ -3982,13 +3982,15 @@ function opBridge(){
   if(!want)return"";
   const has=upcomingPerfs(PERFORMANCES.filter(p=>p[1]>=NOW_DATE&&surfOf(showById[p[0]])==="opera"&&opGenreOf(showById[p[0]])===want)).length;
   return has?`<button class="opbridge" data-switch="opera" data-opgenre="${want}">${esc(opT().bridge[want])}</button>`:"";}
-/* the FAB steps aside while an agenda action, a page button or a rail link is under it (§5.3) */
+/* the FAB steps aside only while an agenda ticket action ("Купи ↗", "виж повече ↗", "разпродадено")
+   is under it (§5.3). Owner, 2026-11-26: it no longer hides for rail links ("Всички 12 ›" in "Спектакли
+   за деца") or page buttons; a passing link left the button gone for a whole screen, which Театър never does */
 function _opDodge(){
   const fab=document.querySelector("#app > .fab");if(!fab)return;
   let hit=false;
   if(S.mode==="opera"){
     const x0=fab.offsetLeft-10,y0=fab.offsetTop-10,x1=fab.offsetLeft+fab.offsetWidth+10,y1=fab.offsetTop+fab.offsetHeight+10;
-    for(const el of document.querySelectorAll("#app > main .ag-act, #app > main .btn, #app > main .rlink")){
+    for(const el of document.querySelectorAll("#app > main .ag-act")){
       const r=el.getBoundingClientRect();if(r.right>x0&&r.left<x1&&r.bottom>y0&&r.top<y1){hit=true;break;}}}
   fab.classList.toggle("dodge",hit);}
 let _opDodgeRaf=0;

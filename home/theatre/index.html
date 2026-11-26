@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-RXGH05ud80ihr4g8TKrTxeEd2z1NEe34SI7QW0mZKUM=' 'sha256-al1C9ro1Tf0tprnykuHrAbVsRoH36v8qr9xaT+LMIC0=' 'sha256-l7osapPATb/e3ptwxyvA9bLcBraMtdv5ErO9QgapkIY=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-KIzuIEL08yXF0uZurZ6wJCMTbC0pLdjLU5O2wWf++8o=' 'sha256-RXGH05ud80ihr4g8TKrTxeEd2z1NEe34SI7QW0mZKUM=' 'sha256-al1C9ro1Tf0tprnykuHrAbVsRoH36v8qr9xaT+LMIC0=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/,
      /home/opera/ and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -4176,13 +4176,15 @@ function opBridge(){
   if(!want)return"";
   const has=upcomingPerfs(PERFORMANCES.filter(p=>p[1]>=NOW_DATE&&surfOf(showById[p[0]])==="opera"&&opGenreOf(showById[p[0]])===want)).length;
   return has?`<button class="opbridge" data-switch="opera" data-opgenre="${want}">${esc(opT().bridge[want])}</button>`:"";}
-/* the FAB steps aside while an agenda action, a page button or a rail link is under it (§5.3) */
+/* the FAB steps aside only while an agenda ticket action ("Купи ↗", "виж повече ↗", "разпродадено")
+   is under it (§5.3). Owner, 2026-11-26: it no longer hides for rail links ("Всички 12 ›" in "Спектакли
+   за деца") or page buttons; a passing link left the button gone for a whole screen, which Театър never does */
 function _opDodge(){
   const fab=document.querySelector("#app > .fab");if(!fab)return;
   let hit=false;
   if(S.mode==="opera"){
     const x0=fab.offsetLeft-10,y0=fab.offsetTop-10,x1=fab.offsetLeft+fab.offsetWidth+10,y1=fab.offsetTop+fab.offsetHeight+10;
-    for(const el of document.querySelectorAll("#app > main .ag-act, #app > main .btn, #app > main .rlink")){
+    for(const el of document.querySelectorAll("#app > main .ag-act")){
       const r=el.getBoundingClientRect();if(r.right>x0&&r.left<x1&&r.bottom>y0&&r.top<y1){hit=true;break;}}}
   fab.classList.toggle("dodge",hit);}
 let _opDodgeRaf=0;

@@ -23074,12 +23074,13 @@ def _op2_agenda(browser, base, eng):
         check(f"{tag}_title_column_on_the_grid_{sz}", not badpad, f"padding/height off: {badpad[:3]}")
         # owner redesign 2026-11-26 (DESIGN_SPEC §16): every row has its 2:1 poster card, the day head
         # is number / weekday / month, the display face is Cormorant Garamond, "Купи" is not a purple fill
+        # (WebKit reports font families unquoted, Chromium quotes them: compare without the quotes)
         lk = page.evaluate(OP2_LOOK_JS)
         check(f"{tag}_poster_card_every_row_{sz}", lk["rows"] > 0 and lk["thumbs"] == lk["rows"] and not lk["badRatio"],
               f"{lk['thumbs']} poster cards for {lk['rows']} rows; off-ratio {lk['badRatio'][:3]}")
         check(f"{tag}_day_head_number_weekday_month_{sz}", lk["heads"] > 0 and not lk["badHeads"]
               and (sz == "phone" or lk["monthUnder"]), f"{lk['heads']} heads; bad {lk['badHeads'][:3]}; month under number {lk['monthUnder']}")
-        check(f"{tag}_display_face_cormorant_{sz}", all(f.startswith('"Cormorant Garamond"') for f in lk["fams"])
+        check(f"{tag}_display_face_cormorant_{sz}", lk["fams"] and all(f.strip('"\' ').startswith("Cormorant Garamond") for f in lk["fams"])
               and lk["badgeFam"].strip('"\' ').startswith("Geologica"), f"families {lk['fams']}, badge {lk['badgeFam']}")
         check(f"{tag}_buy_is_not_an_accent_fill_{sz}", lk["buyBg"] and lk["buyBg"] != OP_VIOLET and lk["buyH"] >= (44 if sz == "phone" else 40),
               f"Купи background {lk['buyBg']}, height {lk['buyH']}")
@@ -23391,6 +23392,20 @@ def _op2_fab(browser, base, eng):
             bad.append(f"at {st['y']}: dodge={st['dodge']} with an action under it={st['over']}")
     check(f"{tag}_dodges_only_over_an_action", not bad and seen[True] > 0 and seen[False] > 0,
           "; ".join(bad[:3]) if bad else f"over {seen[True]}x, clear {seen[False]}x")
+    # owner, 2026-11-26: a rail head link ("Всички N ›" of "Спектакли за деца") passing under the FAB
+    # does not hide it; only a ticket action does
+    ry = page.evaluate("""() => { const f = document.querySelector('#app > .fab'), y0 = f.offsetTop - 10, y1 = f.offsetTop + f.offsetHeight + 10;
+        const box = sel => [...document.querySelectorAll(sel)].map(e => { const r = e.getBoundingClientRect(); return [r.top + scrollY, r.bottom + scrollY]; });
+        const act = box('#app > main .ag-act'), lk = box('#app > main .rhead .rlink, #app > main .ag-kids .rlink');
+        const hits = (bs, y) => bs.some(([t, b]) => b > y + y0 && t < y + y1);
+        const max = document.scrollingElement.scrollHeight - innerHeight;
+        for (let y = 0; y <= max; y += 12) if (hits(lk, y) && !hits(act, y)) return y;
+        return null; }""")
+    if ry is not None:
+        _op_scroll(page, ry)
+        page.wait_for_timeout(150)
+        st = page.evaluate(OP2_FAB_JS)
+        check(f"{tag}_stays_over_a_rail_link", not st["dodge"], f"at {st['y']}: dodge={st['dodge']}")
     check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
     ctx.close()
     _op2_fab_end(browser, base, eng)
