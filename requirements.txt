@@ -15,7 +15,7 @@ certifi==2026.7.22
 # re-hosted poster (a 20 MB source must not ship to every visitor). Without it,
 # re-hosting silently fails and posters stay as remote URLs that are often
 # cert-blocked, mixed-content or hotlink-protected, so they never render.
-Pillow==12.3.0
+Pillow==13.0.0
 
 # Used only by scripts/verify_build.py, to click a film card in a real headless
 # browser before the refreshed page is allowed to go live. The browser binary
