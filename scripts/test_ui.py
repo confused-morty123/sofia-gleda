@@ -23072,6 +23072,17 @@ def _op2_agenda(browser, base, eng):
               f"rows with a price: {priced}")
         badpad = [(r["id"], r["d"], r["pad"], r["h"]) for r in a["rows"] if r["pad"] != "0px 0px 0px 0px" or r["h"] < 44]
         check(f"{tag}_title_column_on_the_grid_{sz}", not badpad, f"padding/height off: {badpad[:3]}")
+        # owner redesign 2026-11-26 (DESIGN_SPEC §16): every row has its 2:1 poster card, the day head
+        # is number / weekday / month, the display face is Cormorant Garamond, "Купи" is not a purple fill
+        lk = page.evaluate(OP2_LOOK_JS)
+        check(f"{tag}_poster_card_every_row_{sz}", lk["rows"] > 0 and lk["thumbs"] == lk["rows"] and not lk["badRatio"],
+              f"{lk['thumbs']} poster cards for {lk['rows']} rows; off-ratio {lk['badRatio'][:3]}")
+        check(f"{tag}_day_head_number_weekday_month_{sz}", lk["heads"] > 0 and not lk["badHeads"]
+              and (sz == "phone" or lk["monthUnder"]), f"{lk['heads']} heads; bad {lk['badHeads'][:3]}; month under number {lk['monthUnder']}")
+        check(f"{tag}_display_face_cormorant_{sz}", all(f.startswith('"Cormorant Garamond"') for f in lk["fams"])
+              and lk["badgeFam"].strip('"\' ').startswith("Geologica"), f"families {lk['fams']}, badge {lk['badgeFam']}")
+        check(f"{tag}_buy_is_not_an_accent_fill_{sz}", lk["buyBg"] and lk["buyBg"] != OP_VIOLET and lk["buyH"] >= (44 if sz == "phone" else 40),
+              f"Купи background {lk['buyBg']}, height {lk['buyH']}")
         kar = [r["stg"] for r in a["rows"] if r["id"].startswith("op2-karnaval")]
         check(f"{tag}_one_title_two_stages_{sz}", sorted(kar) == sorted([f" · {OP2_HALL}", f" · {OP2_CHAMBER}"]), f"stage suffixes {kar}")
         page.evaluate("() => { S.fGenres = ['kids']; render(); }")
@@ -23084,6 +23095,21 @@ def _op2_agenda(browser, base, eng):
             save_shot(page, "OP2", f"{eng}_agenda_kids_phone")
         check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
+
+
+OP2_LOOK_JS = r"""() => { const a = document.querySelector('#app main .opagenda');
+  const rows = [...a.querySelectorAll('.agrow')], th = [...a.querySelectorAll('.agrow > .ag-th')];
+  const badRatio = th.map(e => e.getBoundingClientRect()).filter(r => Math.abs(r.width / r.height - 2) > 0.05).map(r => `${r.width}x${r.height}`);
+  const hs = [...a.querySelectorAll('.agday > h3')];
+  const badHeads = hs.filter(h => !(h.querySelector('.ag-dn') && h.querySelector('.ag-wd') && h.querySelector('.ag-mo')
+    && /^\d{1,2}$/.test(h.querySelector('.ag-dn').textContent) && h.getAttribute('aria-label'))).map(h => h.textContent.slice(0, 30));
+  const monthUnder = hs.every(h => { const n = h.querySelector('.ag-dn').getBoundingClientRect(), m = h.querySelector('.ag-mo').getBoundingClientRect();
+    return m.top >= n.bottom - 1 && Math.abs(m.left - n.left) < 2; });
+  const fam = s => getComputedStyle(s).fontFamily;
+  const fams = [a.querySelector('.rhead h2'), a.querySelector('.ag-dn'), a.querySelector('.ag-t'), a.querySelector('.ag-main b')].filter(Boolean).map(fam);
+  const g = a.querySelector('.badge-g'), buy = a.querySelector('.ag-act.buy');
+  return {rows: rows.length, thumbs: th.length, badRatio, heads: hs.length, badHeads, monthUnder, fams,
+    badgeFam: g ? fam(g) : 'Geologica', buyBg: buy ? getComputedStyle(buy).backgroundColor : null, buyH: buy ? buy.getBoundingClientRect().height : 0}; }"""
 
 
 OP2_LEDE_SUBS = [  # (subtitle as a calendar could print it, the hero lede wanted with the premiere ahead)

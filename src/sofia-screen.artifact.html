@@ -39,9 +39,10 @@
 }
 :root[data-surface="theatre"]{ --accent:var(--gild); --on-accent:#17110B; --accent-text:var(--gild);
   --f-display:"Source Serif 4",Georgia,"Times New Roman",serif; --f-sharp:normal; }
-/* Опера и балет (DESIGN_SPEC §3): violet over the theatre's type family; #A670F3 is 5.85:1 on ink,
-   4.66 on ink-4, #150B26 on it 5.63 */
-:root[data-opera]{ --accent:#A670F3; --on-accent:#150B26; --accent-text:#A670F3; --hero-accent:#A670F3;
+/* Опера и балет (DESIGN_SPEC §3): violet; #A670F3 is 5.85:1 on ink, 4.66 on ink-4, #150B26 on it 5.63.
+   Its own display face since 2026-11-26 (owner): Cormorant Garamond, so the surface no longer reads
+   as the theatre's (Source Serif 4); text, menus and chips stay Geologica */
+:root[data-opera]{ --accent:#A670F3; --on-accent:#150B26; --accent-text:#A670F3; --hero-accent:#A670F3; --f-display:"Cormorant Garamond","Cormorant",Georgia,"Times New Roman",serif;
   --art-hi:#47287C; --art-mid:#1F1335; --art-lo:#0F0B15; --art-fg:#F3ECFE; --art-k:#D1B5FC; }
 /* Dark mode is forced — there is no light theme. The former
    `@media (prefers-color-scheme: light)` and `:root[data-theme="light"]` blocks
@@ -1703,41 +1704,70 @@ button,a{-webkit-tap-highlight-color:transparent}
   [data-opera] .ophero .acts{flex-direction:column; align-items:stretch}
   [data-opera] .ophero .acts .btn{justify-content:center; text-align:center; min-height:44px; white-space:normal; text-wrap:balance; min-width:0; overflow-wrap:anywhere}
 }
-/* "Програмата по дни": one row per performance; the action names the status */
-.agenda{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; margin-bottom:44px; overflow:hidden}
-.agday{padding:4px 16px; border-top:1px solid var(--line); min-width:0}
-.agday:first-child{border-top:0}
-.agday h3{font-size:13px; font-weight:600; color:var(--fg-2); padding:12px 0 2px; margin:0}
-.agday h3 small{display:block; font-size:11.5px; font-weight:500; color:var(--fg-3)}
-.agrow{display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; padding:10px 0; border-top:1px solid var(--line)}
-.agrows .agrow:first-child{border-top:0}
-.ag-t{flex:0 0 50px; font-family:var(--f-display); font-weight:600; font-size:17px; font-variant-numeric:tabular-nums; color:var(--fg)}
-.ag-main{flex:1 1 170px; min-width:0; display:flex; flex-direction:column; gap:1px; min-height:44px; justify-content:center; text-align:left; color:var(--fg); padding:0}
-.ag-main b{font-size:14px; font-weight:600; line-height:1.25; overflow-wrap:anywhere; text-transform:uppercase; letter-spacing:.02em}
-.ag-main .ag-sub,.ag-main .ag-st{font-size:12px; color:var(--fg-2); line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.ag-main .ag-st{color:var(--fg-3)}
-.ag-act{flex:0 0 auto; margin-left:auto; display:inline-flex; align-items:center; min-height:40px; padding:0 14px; border-radius:999px;
+/* "Програмата по дни" (owner redesign 2026-11-26, replaces the one-panel list of DESIGN_SPEC §5.5):
+   each day a column of its own, the date as a programme prints it (the number large in Cormorant, the
+   weekday beside it, the month under the number), each performance a card: the production's 2:1 art
+   as a small poster, the time, the title block (the button that opens the sheet) and the status in
+   words. Purple stays a selection colour only: "Купи ↗" is the --fg fill, "Премиера" an --ink-4 chip */
+.agenda{margin-bottom:44px}
+.agday{display:grid; grid-template-columns:150px minmax(0,1fr); column-gap:20px; align-items:start; margin-bottom:14px; min-width:0}
+.agday h3{position:sticky; top:96px; display:grid; grid-template-columns:auto 1fr; grid-template-areas:"dn wd" "mo mo" "td td";
+  align-items:end; column-gap:8px; row-gap:2px; margin:0; padding:4px 0 0; color:var(--fg); font-weight:400}
+.ag-dn{grid-area:dn; font-family:var(--f-display); font-weight:500; font-size:56px; line-height:.85; font-variant-numeric:lining-nums}
+.ag-wd{grid-area:wd; font-family:var(--f-display); font-weight:600; font-size:20px; line-height:1.1; padding-bottom:4px}
+.ag-mo{grid-area:mo; margin-top:6px; font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--fg-3)}
+.agday h3 small{grid-area:td; margin-top:4px; font-size:11px; font-weight:600; color:var(--accent-text)}
+.agrows{display:flex; flex-direction:column; gap:10px; min-width:0}
+.agrow{display:grid; grid-template-columns:132px 64px minmax(0,1fr) auto; grid-template-areas:"th t m act"; column-gap:20px; align-items:center;
+  padding:10px 18px 10px 10px; background:var(--ink-2); border:1px solid var(--line); border-radius:14px; min-width:0}
+.ag-th{grid-area:th; position:relative; display:block; width:132px; aspect-ratio:2/1; overflow:hidden; border-radius:var(--r); background:#000; cursor:pointer}
+.ag-th img.p-real{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; display:block}
+.ag-th .gp{padding:8%; justify-content:center}
+.ag-th:has(> img.p-real) > .gp{visibility:hidden}
+.ag-th .gp-t{font-family:var(--f-display); font-size:min(16px,calc(100cqi*1.3/var(--gl,8))); max-height:none}
+.ag-t{grid-area:t; font-family:var(--f-display); font-weight:600; font-size:28px; line-height:1; font-variant-numeric:lining-nums tabular-nums; color:var(--fg)}
+.ag-main{grid-area:m; min-width:0; display:flex; flex-direction:column; gap:2px; min-height:44px; justify-content:center; text-align:left; color:var(--fg); padding:0}
+.ag-main b{font-family:var(--f-display); font-size:22px; font-weight:700; line-height:1.15; overflow-wrap:anywhere; text-transform:uppercase; letter-spacing:.02em}
+.ag-main .ag-sub,.ag-main .ag-st{font-size:13px; color:var(--fg-2); line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ag-main .ag-st{font-size:12px; color:var(--fg-3)}
+.ag-act{grid-area:act; display:inline-flex; align-items:center; justify-content:center; min-height:40px; min-width:84px; padding:0 18px; border-radius:999px;
   font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap}
-.ag-act.buy{background:var(--fg); color:var(--ink)}
+.ag-act.buy{background:var(--fg); color:var(--ink); font-weight:700}
 .ag-act.more{border:1px dashed var(--line-2); color:var(--fg-2); font-weight:500}
-.ag-act.so{color:var(--fg-3); font-weight:500; padding:0 4px}
+.ag-act.so{color:var(--fg-3); font-weight:500; padding:0 4px; min-width:0}
+/* sold out: the words carry it; the time and title drop to --fg-2 and only the poster dims */
 .agrow.so .ag-t,.agrow.so .ag-main b{color:var(--fg-2)}
-.ag-more{display:flex; justify-content:center; padding:12px; border-top:1px solid var(--line)}
+.agrow.so .ag-th{opacity:.55}
+.ag-more{display:flex; justify-content:center; padding:12px}
+/* Cormorant sits smaller on its body than Source Serif (x-height ~.40 vs ~.48): the opera's display
+   titles one step larger, the card titles a touch tracked so the capitals breathe */
+[data-opera] .hero .hero-title,[data-opera] .sechead h1.sechead-h,[data-opera] .phead-title{font-weight:600; letter-spacing:0}
+[data-opera] .hero .hero-title{font-size:clamp(40px,4.6vw,64px)}
+[data-opera] .rhead h2,[data-opera] .sechead h2{font-weight:600; font-size:clamp(28px,3vw,38px); letter-spacing:0}
+[data-opera] .opcard .cf1{font-family:var(--f-display); font-size:19px; font-weight:700; letter-spacing:.03em; line-height:1.15}
+[data-opera] .gp-t{font-family:var(--f-display)}
+[data-opera] .sheet h2{font-weight:700; letter-spacing:0}
 /* "Още N детски представления …": the agenda leaves the children's out (they have their own view) and says so */
-.ag-kids{display:flex; padding:0 16px; border-top:1px solid var(--line)}
+.ag-kids{display:flex; padding:0}
 .ag-kids .rlink{margin-left:0; text-align:left}
-@media(min-width:761px){ .ag-kids{padding:0 20px} }
+@media(min-width:761px){ .ag-kids{padding-left:170px} }
 .btn.line{background:transparent; border-color:var(--line-2); color:var(--fg)}
 /* badges: 11 px (the site's floor); scoped so no row or card text rule can turn them grey */
-.badge-g,.ag-main .badge-g,.cf1 .badge-g{display:inline-block; font-size:11px; font-weight:700; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--accent-text); vertical-align:1px; margin-left:6px; line-height:1.4; letter-spacing:0; text-transform:none}
-.badge-o,.ag-main .badge-o,.cf1 .badge-o{display:inline-block; font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; border:1px solid var(--line-2); color:var(--fg); vertical-align:1px; margin-left:6px; line-height:1.4}
-.badge-s,.cf1 .badge-s{display:inline-block; font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--fg-2); vertical-align:1px; margin-left:6px; line-height:1.4}
+.badge-g,.ag-main .badge-g,.cf1 .badge-g{display:inline-block; font-family:var(--f-ui); font-size:11px; font-weight:700; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--accent-text); vertical-align:1px; margin-left:6px; line-height:1.4; letter-spacing:0; text-transform:none}
+.badge-o,.ag-main .badge-o,.cf1 .badge-o{display:inline-block; font-family:var(--f-ui); font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; border:1px solid var(--line-2); color:var(--fg); vertical-align:1px; margin-left:6px; line-height:1.4}
+.badge-s,.cf1 .badge-s{display:inline-block; font-family:var(--f-ui); font-size:11px; font-weight:600; padding:1px 6px; border-radius:5px; background:var(--ink-4); color:var(--fg-2); vertical-align:1px; margin-left:6px; line-height:1.4}
 .stg{font-weight:500; color:var(--fg-2); text-transform:none; letter-spacing:0}
-@media(min-width:761px){
-  .agday{display:grid; grid-template-columns:190px minmax(0,1fr); column-gap:24px; padding:4px 20px}
-  .agday h3{padding:20px 0 10px}
+@media(max-width:760px){
+  .agday{display:block; margin-bottom:18px}
+  .agday h3{position:static; grid-template-areas:"dn wd" "mo mo" "td td"; margin:2px 0 10px}
+  .ag-dn{font-size:46px} .ag-mo{margin-top:4px}
+  .agrow{grid-template-columns:100px minmax(0,1fr) auto; grid-template-areas:"th m m" "t t act"; column-gap:12px; row-gap:8px; align-items:start; padding:8px 10px 10px 8px}
+  .ag-th{width:100px}
+  .ag-main b{font-size:20px}
+  .ag-main .ag-sub{white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+  .ag-t{font-size:25px; padding-left:2px; align-self:center}
+  .ag-act{min-height:44px}
 }
-@media(max-width:760px){ .ag-act{min-height:44px} .ag-main{flex-basis:120px} .ag-main .ag-st{white-space:normal} }
 /* desktop: the fixed "Филтри" FAB sits right, over the column of the right-aligned "Купи ↗"; the rows end
    short of it (FAB width + its 16 px inset + 8 px, minus the page gutter), so no action rests under it
    at any scroll position, with or without the dodge */
@@ -3825,6 +3855,12 @@ function opArt(sh){
   /* p-bg: the same picture, blurred and darkened, fills the band the fitted one leaves (CSS) */
   return gp+(src?`<img class="p-bg" src="${esc(src)}" alt="" aria-hidden="true" loading="lazy" decoding="async"><img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
 
+/* the agenda row's poster card (owner, 2026-11-26): the 2:1 art filling a small rounded card, no
+   blurred backdrop; the typographic art under it shows when there is no picture or it fails */
+function opThumb(sh){
+  const src=opImg(sh),tt=titleOf(sh);
+  const gp=`<span class="gp" style="--gl:${opGl(tt)}"><span class="gp-t">${esc(tt)}</span></span>`;
+  return gp+(src?`<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
 /* hero slot: the hero when the period has a bookable row, else the late-day card (§5.4/§5.7) */
 function opHeroSlot(){
   const L=t(),O=opT(),rows=opRows();
@@ -3878,11 +3914,13 @@ function opAgenda(rows){
         :st==="so"?`<span class="ag-act so">${esc(O.soldWord)}</span>`
         :opProdUrl(sh.id)?`<a class="ag-act more" href="${esc(opProdUrl(sh.id))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(fillT(O.moreAria,{t:tt}))}">${esc(O.seeMore)}</a>`:"";
       const pm=st!=="so"?opPriceMin(sh,p):null,sub=opSub(sh);
-      return`<div class="agrow${st==="so"?" so":""}"><span class="ag-t">${esc(p[2])}</span>
+      return`<div class="agrow${st==="so"?" so":""}"><span class="ag-th" data-show="${esc(sh.id)}" data-pd="${esc(p[1])}" data-pt="${esc(p[2])}" aria-hidden="true">${opThumb(sh)}</span><span class="ag-t">${esc(p[2])}</span>
         <button class="ag-main" data-show="${esc(sh.id)}" data-pd="${esc(p[1])}" data-pt="${esc(p[2])}"><b>${opTitleHtml(sh,dup,p[3]?opStage(p):"")}${opPremDates(sh.id).includes(p[1])?`<span class="badge-g">${esc(O.premiere)}</span>`:""}</b>${opSubHtml(sub,"span","ag-sub")}
         <span class="ag-st">${esc(opStage(p))}${pm!=null?" · "+esc(fillT(O.fromPrice,{p:opNum(pm)})):""}</span></button>${act}</div>`;}).join("");
-    const head=`${opCap(opWeekday(d))}, ${opLongDate(d)}${opYear(d)}`;
-    return`<section class="agday" aria-label="${esc(head)}"><h3>${esc(head)}${d===TODAY?`<small>${esc(O.today)}</small>`:""}</h3><div class="agrows">${rs}</div></section>`;}).join("");
+    const head=`${opCap(opWeekday(d))}, ${opLongDate(d)}${opYear(d)}`,x=dUTC(d);
+    /* the day as a programme prints it: the number large, the weekday beside it, the month (and a
+       year that differs) under the number; the h3 still reads "Петък, 27 ноември" to a screen reader */
+    return`<section class="agday" aria-label="${esc(head)}"><h3 aria-label="${esc(head)}"><span class="ag-dn" aria-hidden="true">${x.getUTCDate()}</span><span class="ag-wd" aria-hidden="true">${esc(opCap(opWeekday(d)))}</span><span class="ag-mo" aria-hidden="true">${esc(t().months[x.getUTCMonth()]+opYear(d))}</span>${d===TODAY?`<small>${esc(O.today)}</small>`:""}</h3><div class="agrows">${rs}</div></section>`;}).join("");
   const more=days.length>shown.length?`<div class="ag-more"><button class="btn line sm" data-opalldays="${esc(key)}">${esc(fillT(O.allDays,{n:days.length}))}</button></div>`:"";
   /* with no genre pressed the children's performances are left out (§5.3): the last row says how
      many the period has and opens their view */
