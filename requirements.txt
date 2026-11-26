@@ -9,7 +9,7 @@
 requests==2.34.2
 beautifulsoup4==4.15.0
 lxml==6.1.1
-certifi==2026.7.22
+certifi==2026.10.18
 
 # Used by scripts/fetch_theatre_posters.py to downscale and re-encode each
 # re-hosted poster (a 20 MB source must not ship to every visitor). Without it,
