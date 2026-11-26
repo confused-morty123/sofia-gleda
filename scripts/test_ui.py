@@ -23609,7 +23609,8 @@ OP2_FIX_SHEET_JS = r"""() => { const sc = document.getElementById('scrim'), sh =
   const hb = sh.querySelector('.shero.shero-op'), so = sh.querySelector('.p3e-pill.oppill.so.focus');
   return {active: document.activeElement && document.activeElement.id, h2: getComputedStyle(sh.querySelector('h2')).textTransform,
     ring: getComputedStyle(document.activeElement).outlineStyle, lede: [...sh.querySelectorAll('.slede')].map(e => e.textContent),
-    banner: hb ? Math.round(hb.getBoundingClientRect().height) : 0, compact: !!(hb && hb.matches('.compact')), bg: !!(hb && hb.querySelector('img.p-bg[aria-hidden="true"]')),
+    banner: hb ? Math.round(hb.getBoundingClientRect().height) : 0, bannerW: hb ? Math.round(hb.getBoundingClientRect().width) : 0,
+    fit: hb && hb.querySelector('img.p-real') ? getComputedStyle(hb.querySelector('img.p-real')).objectFit : null, compact: !!(hb && hb.matches('.compact')), bg: !!(hb && hb.querySelector('img.p-bg[aria-hidden="true"]')),
     soRing: so ? getComputedStyle(so).boxShadow : null,
     cred: [...sh.querySelectorAll('.credits dt')].map(x => [x.textContent, x.nextElementSibling ? x.nextElementSibling.textContent : ''])}; }"""
 
@@ -23871,7 +23872,10 @@ def _op2_design(browser, base, eng, op_id):
         check(f"{tag}_sheet_focus_title_{sz}", sh.get("active") == "sg-sheet-title" and sh.get("ring") == "none", f"{sh}")
         check(f"{tag}_sheet_title_caps_{sz}", sh.get("h2") == "uppercase", f"{sh.get('h2')}")
         check(f"{tag}_sheet_lede_{sz}", sh.get("lede") == ["Опера от Джоакино Росини", "Спектакъл на Държавна опера – Пловдив"], f"{sh.get('lede')}")
-        check(f"{tag}_sheet_banner_{sz}", sh.get("compact") and sh.get("bg") and 96 < sh.get("banner", 0) <= (180 if w > 760 else 140), f"{sh}")
+        # owner 2026-11-26: the opened card's picture fills the sheet's width at 2:1 (cover), no blurred
+        # backdrop behind a fitted picture and no height cap, the dated (compact) sheet included
+        check(f"{tag}_sheet_banner_{sz}", sh.get("compact") and not sh.get("bg") and sh.get("fit") == "cover"
+              and abs(sh.get("banner", 0) - sh.get("bannerW", 0) / 2.02) <= 2, f"{sh}")
         check(f"{tag}_sheet_sold_pick_no_ring_{sz}", sh.get("soRing") in (None, "none"), f"{sh.get('soRing')}")
         check(f"{tag}_sheet_duration_{sz}", ["Времетраене", "130 мин · Антракти 1"] in (sh.get("cred") or []), f"{sh.get('cred')}")
         save_shot(page, "OP2", f"{eng}_design_sheet_{sz}")
