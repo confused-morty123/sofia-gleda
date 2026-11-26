@@ -2024,11 +2024,13 @@ const HERO_PINS = [{"mode":"cinema","id":"igrite-na-glada-izgrevat-v-denya-na-zh
   });
 })();
 
-/* Опера и балет (third surface): the toggle segment shows only with ?opera=1 until the owner
-   flips it; the opera/theatre partition (surfOf) is always on, so opera rows never reach Театър.
-   shortcut: flag in the query, flip to true on owner approval, then drop the query check */
+/* Опера и балет (third surface): shown to everyone since the owner's approval (2026-11-26).
+   The opera/theatre partition (surfOf) is always on, so opera rows never reach Театър.
+   OPERA_Q still carries an incoming ?opera=1 on the addresses the page writes (old shared links);
+   "||true" is the switch verify_build and gen_share_pages read (opera_shown): drop it to hide
+   the surface again behind ?opera=1. */
 const OPERA_Q=/[?&]opera=1\b/.test(location.search)?"?opera=1":"";
-const OPERA_ON=!!OPERA_Q;
+const OPERA_ON=!!OPERA_Q||true;
 /* a mode the page can show: "opera" only with the flag, anything else is cinema */
 const okMode=m=>m==="theatre"||(m==="opera"&&OPERA_ON)?m:"cinema";
 
@@ -4607,10 +4609,7 @@ function searchToggleInPlace(){
         const seg=document.querySelector(".seg");
         const barIn=document.querySelector(".bar-in");
         if(!seg||!barIn)return;
-        const segR=seg.getBoundingClientRect().right;
-        const barInR=barIn.getBoundingClientRect().right;
-        const availableForSearch=barInR-segR-18;
-        const crowded=availableForSearch<420;
+        const crowded=_segCrowded(seg,barIn);
         document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
       });
     }
@@ -5708,10 +5707,26 @@ function _segFit(){
   const seg=document.querySelector(".seg");
   const barIn=document.querySelector(".bar-in");
   if(!seg||!barIn||!S.searchOpen)return;
-  const segR=seg.getBoundingClientRect().right;
-  const barInR=barIn.getBoundingClientRect().right;
-  const crowded=barInR-segR-18<420;
+  const crowded=_segCrowded(seg,barIn);
   document.querySelectorAll(".seg").forEach(sg=>sg.classList.toggle("seg-q",crowded));
+}
+/* Would the open 420 px field crowd the toggle? Two segments: the room right of the toggle.
+   Three (the opera's .seg3, 430-470 px): the open field's column grows at the brand's expense,
+   so the room right of the toggle always looks enough while the logo shrinks and its line runs
+   under the toggle (1121-1400 px). Instead add up what the row needs with the toggle at full
+   width (the brand at its own size: the logo, or its line when that is longer; the toggle; the
+   field and the buttons beside it; two 18 px gaps): the same answer with .seg-q on or off. */
+function _segCrowded(seg,barIn){
+  if(!seg.classList.contains("seg3"))return barIn.getBoundingClientRect().right-seg.getBoundingClientRect().right-18<420;
+  const cs=getComputedStyle(barIn),inner=barIn.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const segFull=window.innerWidth<900?430:470;
+  const ctr=barIn.querySelector(".bar-controls"),dw=barIn.querySelector(".desk-search-wrap");
+  const right=(ctr?ctr.getBoundingClientRect().width-(dw?dw.getBoundingClientRect().width:0):0)+420;
+  let brand=Math.max(190,Math.min(42,Math.max(32,.032*window.innerWidth))*5.153);
+  const sub=barIn.querySelector(".brand-sub");
+  if(sub&&sub.getClientRects().length&&getComputedStyle(sub).whiteSpace==="nowrap"){
+    const g=document.createRange();g.selectNodeContents(sub);brand=Math.max(brand,g.getBoundingClientRect().width);}
+  return inner<brand+segFull+right+36;
 }
 let _segFitRaf=0;
 window.addEventListener("resize",()=>{if(S.searchOpen&&!_segFitRaf)_segFitRaf=requestAnimationFrame(()=>{_segFitRaf=0;if(window.innerWidth>760)_segFit();});});
