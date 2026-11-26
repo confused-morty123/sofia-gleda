@@ -283,9 +283,9 @@ def share_pages(root=ROOT):
 
 
 def home_pages(root=ROOT):
-    """The app at the listings' own addresses, /home/ and /home/theatre/ (gen_share_pages.py
-    copies index.html there): pages like index.html."""
-    for rel in ("home/index.html", "home/theatre/index.html"):
+    """The app at the listings' own addresses, /home/, /home/theatre/ and /home/opera/
+    (gen_share_pages.py copies index.html there): pages like index.html."""
+    for rel in ("home/index.html", "home/theatre/index.html", "home/opera/index.html"):
         if (root / rel).exists():
             yield root / rel
 

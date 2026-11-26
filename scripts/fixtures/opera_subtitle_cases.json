@@ -1,0 +1,292 @@
+{
+ "adults|ballet|Балет от Адолф Адам": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет от Адолф Адам"
+ },
+ "adults|ballet|Балет от Лудвиг Минкус /Спектакъл за възрастни/": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет от Лудвиг Минкус /Спектакъл за възрастни/"
+ },
+ "adults|ballet|Балет от Пьотр Илич Чайковски": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет от Пьотр Илич Чайковски"
+ },
+ "adults|ballet|Балет от Пьотър Илич Чайковски": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет от Пьотър Илич Чайковски"
+ },
+ "adults|ballet|Балет по едноименния роман на Джейн Остин": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет по едноименния роман на Джейн Остин"
+ },
+ "adults|ballet|Балет по музика на Микис Теодоракис": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет по музика на Микис Теодоракис"
+ },
+ "adults|ballet|Балет по музика на Пьотр Илич Чайковски /Спектакъл за възрастни/": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Балет по музика на Пьотр Илич Чайковски /Спектакъл за възрастни/"
+ },
+ "adults|ballet|Националното училище за танцово изкуство": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Националното училище за танцово изкуство"
+ },
+ "adults|ballet|Хореографи – Джордж Баланчин, Иржи Килиан и Гарет Смит": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Балет",
+  "premiere": false,
+  "display": "Хореографи – Джордж Баланчин, Иржи Килиан и Гарет Смит"
+ },
+ "adults|behind|90 години от рождението на Никола Гюзелев": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "90 години от рождението на Никола Гюзелев"
+ },
+ "adults|behind|Диригент Жан-Кристоф Спинози": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "Диригент Жан-Кристоф Спинози"
+ },
+ "adults|behind|Камерен концерт": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "Камерен концерт"
+ },
+ "adults|behind|Оперен колаж": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "Оперен колаж"
+ },
+ "adults|behind|Оперен концерт": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "Оперен концерт"
+ },
+ "adults|behind|Традиционен новогодишен концерт": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "Традиционен новогодишен концерт"
+ },
+ "adults|behind|ЦЕРЕМОНИЯ ПО НАГРАЖДАВАНЕ МЕНИДЖЪР НА ГОДИНАТА": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "ЦЕРЕМОНИЯ ПО НАГРАЖДАВАНЕ МЕНИДЖЪР НА ГОДИНАТА"
+ },
+ "adults|behind|под патронажа на Марчело Апичела, посланик на Италия в България": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Концерт",
+  "premiere": false,
+  "display": "под патронажа на Марчело Апичела, посланик на Италия в България"
+ },
+ "adults|event|Предаване за Софийска опера и балет с автор и водещ Миглена Стойчева": {
+  "skip": true
+ },
+ "adults|musical|Музика и текст Бени Андершон и Бьорн Улвеус /Режисьор Пламен Карталов/": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Мюзикъл",
+  "premiere": false,
+  "display": "Музика и текст Бени Андершон и Бьорн Улвеус /Режисьор Пламен Карталов/"
+ },
+ "adults|musical|Семеен мюзикъл": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Мюзикъл",
+  "premiere": false,
+  "display": "Семеен мюзикъл"
+ },
+ "adults|opera|Камерен концерт": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Камерен концерт"
+ },
+ "adults|opera|Опера от Винченцо Белини": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Винченцо Белини"
+ },
+ "adults|opera|Опера от Гаетано Доницети / ИСТОРИЧЕСКА ПОСТАНОВКА НА ФРАНКО ДЗЕФИРЕЛИ": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Гаетано Доницети / ИСТОРИЧЕСКА ПОСТАНОВКА НА ФРАНКО ДЗЕФИРЕЛИ"
+ },
+ "adults|opera|Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": true,
+  "display": "Опера от Георг Фридрих Хендел Диригент Константин Тринкс"
+ },
+ "adults|opera|Опера от Джакомо Пучини": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Джакомо Пучини"
+ },
+ "adults|opera|Опера от Джоакино Росини": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Джоакино Росини"
+ },
+ "adults|opera|Опера от Джузепе Верди": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Джузепе Верди"
+ },
+ "adults|opera|Опера от Жорж Бизе": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Жорж Бизе"
+ },
+ "adults|opera|Опера от Луиджи Керубини": {
+  "skip": false,
+  "audience": "adults",
+  "genre": "Опера",
+  "premiere": false,
+  "display": "Опера от Луиджи Керубини"
+ },
+ "children|children|/Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "/Спектакъл за деца/"
+ },
+ "children|children|Балет-приказка за деца - музика Сергей Прокофиев и Николай Волков /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Балет-приказка за деца - музика Сергей Прокофиев и Николай Волков /Спектакъл за деца/"
+ },
+ "children|children|Балетна приказка с участието на танцова школа „Маша Илиева“": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Балетна приказка с участието на танцова школа „Маша Илиева“"
+ },
+ "children|children|Детски спектакъл по музика на Камий Сен-Санс /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Детски спектакъл по музика на Камий Сен-Санс /Спектакъл за деца/"
+ },
+ "children|children|Концерт с песни от мюзикълите \"Анастасия\" и \"Звукът на музиката\" /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Концерт с песни от мюзикълите \"Анастасия\" и \"Звукът на музиката\" /Спектакъл за деца/"
+ },
+ "children|children|Музикална приказка от Александър Владигеров /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Музикална приказка от Александър Владигеров /Спектакъл за деца/"
+ },
+ "children|children|Музикална приказка от Жул Леви /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Музикална приказка от Жул Леви /Спектакъл за деца/"
+ },
+ "children|children|Мюзикъл": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Мюзикъл"
+ },
+ "children|children|Мюзикъл от Александър Райчев /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Мюзикъл от Александър Райчев /Спектакъл за деца/"
+ },
+ "children|children|Мюзикъл от Андрей Дреников /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Мюзикъл от Андрей Дреников /Спектакъл за деца/"
+ },
+ "children|children|Мюзикъл от Георги Костов /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Мюзикъл от Георги Костов /Спектакъл за деца/"
+ },
+ "children|children|Опера от Волфганг Амадеус Моцарт - адаптирана за деца /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Опера от Волфганг Амадеус Моцарт - адаптирана за деца /Спектакъл за деца/"
+ },
+ "children|children|Опера от Рихард Вагнер - адаптирана за деца /Спектакъл за деца/": {
+  "skip": false,
+  "audience": "children",
+  "genre": "Детски",
+  "premiere": false,
+  "display": "Опера от Рихард Вагнер - адаптирана за деца /Спектакъл за деца/"
+ }
+}

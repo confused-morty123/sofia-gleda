@@ -34,6 +34,11 @@ SLUG_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 # shape so a thin entry never trips a renderer that reads a field unguarded.
 SHOW_FIELDS = ("id", "title", "titleEn", "theatre", "author", "director", "cast",
                "genres", "g", "duration", "synBg", "synEn")
+# Fields only some sources print (the opera: scrape_programs.refresh_source_shows), carried
+# only when present and of their type, so the other ~500 shows stay as they are:
+# subtitle (the calendar's line, verbatim), subtitleEn (the English calendar's), facts (the production page's labelled fields) and
+# baked (its banner prints the title: the 96 px phone hero).
+OPTIONAL_FIELDS = {"subtitle": str, "subtitleEn": str, "facts": dict, "baked": bool}
 
 
 def extract_array(src, name):
@@ -70,6 +75,10 @@ def normalise(rec):
             out[k] = v if isinstance(v, list) and len(v) == 2 else ["#241B33", "#45275F"]
         else:
             out[k] = v if v is not None else ""
+    for k, typ in OPTIONAL_FIELDS.items():
+        v = rec.get(k)
+        if isinstance(v, typ) and v:
+            out[k] = v
     return out
 
 

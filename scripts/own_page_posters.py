@@ -962,6 +962,12 @@ def candidates(html, base, other_titles=()):
         "bnf.bg": r"/uploads/(?!s_)",          # Одеон: the full poster behind its thumbnail
     }
     slot = slots.get(host)
+    if host == "operasofia.bg":
+        # the Opera's production page (/repertoire/<id>) has no og:image; its one picture is the
+        # production's own 2:1 banner, /uploads/events/<id>.png|jpg (research 2026-11-24, 12 of 12
+        # production pages). Only the page's own id counts, never another production's banner.
+        rep = re.search(r"/repertoire/(\d+)(?:[/?#]|$)", urllib.parse.urlsplit(base).path + "/")
+        slot = rf"/uploads/events/{rep.group(1)}\.(?:png|jpe?g|webp)(?:$|[?#])" if rep else None
     def attrs_of(fragment):
         fragment = _STYLE_BLOCK_RE.sub(" ", fragment)          # the site's CSS, not the page's pictures
         got = [m.group(1) for m in _ATTR_RE.finditer(fragment)] + \

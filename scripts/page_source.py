@@ -19,8 +19,8 @@ and this check fails a page whose code is not what src/ builds.
   * the CSP script hashes (they follow the data).
 The CSS, every other script (SOFIA-APP, SOFIA-PRICES, ...), the head, and the
 static data blocks of src/data.html (CINEMAS, THEATRES, EVENTS, BOOKING, ...) must
-match exactly. home/index.html and home/theatre/index.html are index.html with
-their own canonical address (gen_share_pages.py), so they are checked the same way.
+match exactly. home/index.html, home/theatre/index.html and home/opera/index.html are
+index.html with their own canonical address (gen_share_pages.py), so they are checked the same way.
 
     python3 scripts/check_page_source.py           # index.html + home pages vs src/
 """
@@ -194,7 +194,8 @@ def check_files(index_path, home_root=None, built=None):
     problems = compare(built, index_path.read_text(encoding="utf-8"), index_path.name)
     if home_root is not None:
         index = index_path.read_text(encoding="utf-8")
-        for rel, path in (("home/index.html", "/home/"), ("home/theatre/index.html", "/home/theatre/")):
+        for rel, path in (("home/index.html", "/home/"), ("home/theatre/index.html", "/home/theatre/"),
+                          ("home/opera/index.html", "/home/opera/")):
             p = pathlib.Path(home_root) / rel
             if not p.exists():
                 continue
