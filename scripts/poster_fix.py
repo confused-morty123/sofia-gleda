@@ -259,8 +259,8 @@ def select_todo(m, titles, links, srcs, today, film_need=None, cap=MAX_TITLES):
     import own_page_posters as OPP
     first, rest = [], []
     iso = today.isoformat()
-    for label, key in (("shows", "show"), ("films", "film")):
-        for i in sorted(m[label]["missing"]):
+    for label, key in (("shows", "show"), ("opera", "show"), ("films", "film")):
+        for i in sorted((m.get(label) or {}).get("missing") or ()):   # (the opera: poster_health's own bucket)
             k = f"{key}:{i}"
             if k not in titles or not any(OPP.own_page(u)[0] for u in links.get(k, []) if u):
                 continue

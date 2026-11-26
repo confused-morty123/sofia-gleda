@@ -4901,6 +4901,13 @@ check("poster fix picks the titles worth a request: a failed page first, then ne
       PF.select_todo(_mT, _tT, _lD, dict(_srcD, misses=dict(_srcD["misses"], **{
           "show:empty": {"last": "2026-11-05", "why": ["no usable image on the page"]}})), _dd),
       ["show:dead", "show:new", "show:ripe"])
+check("poster fix: the opera's productions (poster_health's own 'opera' bucket since review-r2 #5) are still "
+      "candidates, as when they were counted with the plays",
+      PF.select_todo({"shows": {"missing": {i: _gen for i in ("dead", "empty", "nolink", "tix")}},
+                      "opera": {"missing": {"new": _gen}}, "films": {"missing": {}}}, _tT, _lD,
+                     dict(_srcD, misses=dict(_srcD["misses"], **{
+                         "show:empty": {"last": "2026-11-05", "why": ["no usable image on the page"]}})), _dd),
+      ["show:dead", "show:new", "show:ripe"])
 _mf = {"POSTERS": {"k": "https://programata.bg/wp-content/uploads/2026/02/hqdefault.jpg",
                    "l": "https://programata.bg/wp-content/uploads/2026/02/poster.jpg",
                    "m": "https://www.kinomania.bg/public/uploads/gallery/m.jpg"},

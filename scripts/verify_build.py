@@ -1087,14 +1087,72 @@ if data["SHOWS"] and data["THEATRES"]:
     _bad_th = sorted({str(s.get("theatre")) for s in data["SHOWS"]} - _th_ids)
     if _bad_th:
         fail(f"shows filed under unknown theatres: {', '.join(_bad_th[:6])}")
+# The Опера и балет surface is the venue with kind "opera" (OPERA_ARCHITECTURE.md §3):
+# none and its toggle would be empty, two and the surface would be doubled.
+# Shown = OPERA_ON true in the shell itself, not only behind ?opera=1 (gen_share_pages.opera_shown).
+_opera_on = re.search(r"\bconst OPERA_ON\s*=\s*([^;\n]*)", js)
+_opera_shown = bool(_opera_on and re.search(r"\btrue\b", _opera_on.group(1)))
+_opera_v = []
+_opera_ids = set()
+if isinstance(data["THEATRES"], list):
+    _opera_v = [t.get("id") for t in data["THEATRES"] if isinstance(t, dict) and t.get("kind") == "opera"]
+    if len(_opera_v) != 1:
+        fail(f"THEATRES must have exactly one venue with kind \"opera\" (the Опера и балет surface), "
+             f"found {len(_opera_v)}" + (f": {', '.join(map(str, _opera_v))}" if _opera_v else ""))
+    try:
+        import listing_window as _LWo
+        _today_o = _LWo.sofia_today().isoformat()
+    except Exception:
+        _today_o = datetime.date.today().isoformat()
+    _opera_ids = {s.get("id") for s in (data["SHOWS"] or [])
+                  if isinstance(s, dict) and s.get("theatre") in _opera_v}
+    _opera_up = [p for p in (data["PERFORMANCES"] or [])
+                 if isinstance(p, list) and len(p) > 1 and p[0] in _opera_ids and str(p[1]) >= _today_o]
+    # Shown with nothing to show: the source is down past KEEP_DAYS. A warning, not a fail
+    # (the rest of the listings still go out); warn() so refresh_all.py copies it into health.json.
+    if _opera_v and _opera_shown and not _opera_up:
+        warn("opera: OPERA_ON is true but the Опера и балет surface has 0 upcoming performances "
+             "(operasofia.bg down or changed past KEEP_DAYS?): the surface shows empty")
+    # What the surface reads beyond the rows (DESIGN_SPEC §2.2; scrape_programs.refresh_source_shows,
+    # THEATRES hallAreas). Never a fail: the rows still go out, the page hides what is missing.
+    # Shown, these are warnings for health.json; hidden, notes (the readiness of the flag flip).
+    _oshow = {s.get("id"): s for s in (data["SHOWS"] or []) if isinstance(s, dict) and s.get("id") in _opera_ids}
+    _o_on = sorted({p[0] for p in _opera_up if p[0] in _oshow})
+    _o_say = warn if _opera_shown else note
+    _no_g = [i for i in _o_on if not (_oshow[i].get("genres") or [])]
+    if _no_g:
+        _o_say(f"opera: {len(_no_g)} of {len(_o_on)} productions on stage carry no genre (no rail, no chip; "
+               f"the calendar icon was 'event' or unknown): {', '.join(_no_g[:8])}")
+    _ovenue = next((t for t in data["THEATRES"] if isinstance(t, dict) and t.get("kind") == "opera"), {})
+    _areas = _ovenue.get("hallAreas") if isinstance(_ovenue.get("hallAreas"), dict) else {}
+    _stages = sorted({str(p[3]) for p in _opera_up if len(p) > 3 and p[3]})
+    _no_area = [st for st in _stages if st not in _areas]
+    if _no_area:
+        _o_say(f"opera: stage(s) without an address in THEATRES opera hallAreas (src/data.html; the sheet "
+               f"shows no address under them): {', '.join(_no_area[:6])}")
+    if _o_on:
+        _n_sub = sum(1 for i in _o_on if _oshow[i].get("subtitle"))
+        _n_facts = sum(1 for i in _o_on if isinstance(_oshow[i].get("facts"), dict) and _oshow[i]["facts"])
+        if not _n_sub:
+            _o_say(f"opera: none of {len(_o_on)} productions on stage has a subtitle in SHOWS "
+                   "(scrape_programs.refresh_source_shows): the hero, agenda, card and sheet lose their line")
+        if not _n_facts:
+            _o_say(f"opera: none of {len(_o_on)} productions on stage has facts in SHOWS (the production pass, "
+                   "official_theatres.OPERA_FACTS_ON): no \"За спектакъла\", no \"от N €\"")
 if data["PERFORMANCES"]:
+    # A 6th column is the sale state of an opera performance (DESIGN_SPEC §2.1.5:
+    # "soldout" | "notyet"), on rows of a kind:"opera" venue's shows only.
+    _kind_of = {t.get("id"): t.get("kind") for t in (data["THEATRES"] or []) if isinstance(t, dict)}
+    _show_kind = {s.get("id"): _kind_of.get(s.get("theatre")) for s in (data["SHOWS"] or []) if isinstance(s, dict)}
     _bad_rows = [p for p in data["PERFORMANCES"]
-                 if not (isinstance(p, list) and len(p) == 5 and isinstance(p[0], str)
+                 if not (isinstance(p, list) and isinstance(p[0] if p else None, str)
+                         and (len(p) == 5 or (len(p) == 6 and _show_kind.get(p[0]) == "opera"
+                                              and p[5] in ("soldout", "notyet")))
                          and re.fullmatch(r"\d{4}-\d\d-\d\d", str(p[1]))
                          and re.fullmatch(r"\d\d:\d\d", str(p[2])))]
     if _bad_rows:
-        fail(f"{len(_bad_rows)} PERFORMANCES row(s) are not [showId, date, time, hall, price], "
-             f"e.g. {str(_bad_rows[0])[:80]}")
+        fail(f"{len(_bad_rows)} PERFORMANCES row(s) are not [showId, date, time, hall, price] "
+             f"(+ \"soldout\" | \"notyet\" on an opera row), e.g. {str(_bad_rows[0])[:80]}")
     _dup = len(data["PERFORMANCES"]) - len({tuple(p[:3]) for p in data["PERFORMANCES"] if isinstance(p, list)})
     if _dup:
         fail(f"{_dup} duplicate performance(s) (same show, date and time)")
@@ -1572,6 +1630,19 @@ COVERAGE_MIN_FILMS = 40
 COVERAGE_FLOOR_PCT = 90.0       # below this: fail (a dead poster source)
 COVERAGE_COLLAPSE_DROP = 15.0   # this many points down vs the baseline: fail
 COVERAGE_WARN_DROP = 3.0        # this many points down vs the baseline: warn
+OPERA_TYPO_MAX_PCT = 25.0       # DESIGN_SPEC §5.6: at most this share of typographic cards per opera rail
+_OPERA_READINESS = os.environ.get("SOFIA_OPERA_READINESS") == "1"   # the pre-flip check: the rail gate fails
+# the rail a production sits in (opGenreOf in src/): children's first, else the first of the
+# opera genres in GENRES order its calendar genres name; "" (no rail) without one
+_OPERA_RAILS = (("opera", "Опера"), ("ballet", "Балет"), ("concert", "Концерт"), ("musical", "Мюзикъл"))
+
+
+def opera_rail_of(show):
+    g = show.get("genres") if isinstance(show, dict) and isinstance(show.get("genres"), list) else []
+    if "Детски" in g:
+        return "kids"
+    return next((k for k, name in _OPERA_RAILS if name in g), "")
+
 try:
     from posterpolicy import poster_coverage, true_coverage, load_sources, TRUE_BAR, LOGO_MD5  # noqa: E402
     import hashlib as _hl
@@ -1594,7 +1665,10 @@ try:
     _theatre_of = {x.get("id"): x.get("theatre") or "?" for x in _shows_all}
     _srcs = load_sources(_FILE_ROOT)
     _disp = poster_coverage(_shows_all, _up, _pmaps)
-    _ts = true_coverage(_up & _show_ids, _pmaps, _srcs, "shows", _theatre_of, _FILE_ROOT)
+    # the opera's productions are their own metric (below), never the plays' floor: a hidden
+    # surface must not stop Кино and Театър from publishing
+    _ts = true_coverage((_up & _show_ids) - _opera_ids, _pmaps, _srcs, "shows", _theatre_of, _FILE_ROOT)
+    _top = true_coverage(_up & _opera_ids, _pmaps, _srcs, "shows", None, _FILE_ROOT)
     _tf = true_coverage(_upf & _film_ids, _pmaps, _srcs, "films", None, _FILE_ROOT)
     _cov = {"metric": "own-page", "upcoming": _ts["upcoming"], "with": _ts["with"],
             "missing": sorted(_ts["missing"]), "causes": _ts["missing"], "how": _ts["how"],
@@ -1602,7 +1676,8 @@ try:
                            for k, v in _ts["by_group"].items()},
             "displayed": {"upcoming": _disp["upcoming"], "with": _disp["with"]},
             "films": {"upcoming": _tf["upcoming"], "with": _tf["with"],
-                      "missing": sorted(_tf["missing"]), "causes": _tf["missing"]}}
+                      "missing": sorted(_tf["missing"]), "causes": _tf["missing"]},
+            "opera": {"upcoming": _top["upcoming"], "with": _top["with"], "missing": sorted(_top["missing"])}}
     print("POSTER_COVERAGE " + json.dumps(_cov, ensure_ascii=False, sort_keys=True))
     try:
         _report_file = (pathlib.Path(os.environ["SOFIA_BUILD_REPORT"]) if os.environ.get("SOFIA_BUILD_REPORT")
@@ -1647,6 +1722,37 @@ try:
                  f"({_ref:.1f} %): a poster source has probably stopped working")
         else:
             note(_msg + ("" if _ref is not None else " (no previous coverage to compare)"))
+    # Опера и балет: own-image coverage of its productions (warn under the bar, shown or not:
+    # the flag flip waits for it), and the DESIGN_SPEC §5.6 gate: a genre rail (its first 10
+    # productions by first date, rails of 2+ cards, as opRails draws them) where more than
+    # OPERA_TYPO_MAX_PCT of the cards would be typographic art (no image the browser shows).
+    # Shown, it is a warning (health.json): one rail of new productions without a poster
+    # must never freeze the whole site's nightly refresh. Hidden, a note; it fails only in
+    # the pre-flip readiness check (SOFIA_OPERA_READINESS=1, DESIGN_SPEC §5.6/§10).
+    if _top["upcoming"]:
+        _omsg = (f"poster coverage (opera, own image): {_top['with']}/{_top['upcoming']} ({_top['pct']:.1f} %)"
+                 + (f"; missing: {', '.join(sorted(_top['missing'])[:12])}" if _top["missing"] else ""))
+        (warn if _top["pct"] < TRUE_BAR["shows"] else note)(
+            "5c2 " + _omsg + ("" if _opera_shown else " (Опера и балет hidden: not part of the plays' floor)"))
+        _first = {}
+        for _r in sorted((r for r in (data.get("PERFORMANCES") or [])
+                          if isinstance(r, list) and len(r) > 1 and r[0] in _opera_ids and _from <= str(r[1])),
+                         key=lambda r: (str(r[1]), str(r[2]) if len(r) > 2 else "")):
+            _first.setdefault(_r[0], str(_r[1]))
+        _shown_img = set(_first) - set(poster_coverage(_shows_all, set(_first), _pmaps)["missing"])
+        _rails = {}
+        for _i in sorted(_first, key=lambda i: (_first[i], i)):
+            _rails.setdefault(opera_rail_of(next((x for x in _shows_all if x.get("id") == _i), {})), []).append(_i)
+        for _k, _ids in sorted(_rails.items()):
+            _ids = _ids[:10]
+            if not _k or len(_ids) < 2:
+                continue
+            _typo = [i for i in _ids if i not in _shown_img]
+            if 100.0 * len(_typo) / len(_ids) > OPERA_TYPO_MAX_PCT:
+                (fail if _OPERA_READINESS else warn if _opera_shown else note)(
+                    f"5c2 opera rail \"{_k}\": {len(_typo)} of {len(_ids)} cards would be typographic art "
+                    f"(over {OPERA_TYPO_MAX_PCT:g} %, DESIGN_SPEC §5.6): {', '.join(_typo[:8])}"
+                    + ("" if _opera_shown else " — must pass before OPERA_ON is flipped"))
     # One logo file standing in as the "poster" of several plays (the theatre.art.bg
     # logo on two Сфумато shows, 2026-10-08) is a scrape that went wrong.
     _by_md5 = {}
@@ -2267,9 +2373,15 @@ try:
     if _share_bad:
         fail(f"CSP: {len(_share_bad)} of {_share_n} share page(s) fail: " + "; ".join(_share_bad[:3])
              + " — run scripts/csp.py")
-    # The listings' own addresses, /home/ and /home/theatre/, are copies of index.html
-    # (gen_share_pages.py): each must be today's page, apart from its canonical address.
+    # The listings' own addresses, /home/, /home/theatre/ and /home/opera/, are copies of
+    # index.html (gen_share_pages.py): each must be today's page, apart from its canonical
+    # address. Once the copies are written (home/index.html exists), a missing one fails:
+    # its address would answer 404.
     _canon = lambda t: re.sub(r'(rel="canonical" href|property="og:url" content)="[^"]*"', r'\1=""', t)
+    if HTML.resolve() == (_FILE_ROOT / "index.html").resolve() and (_FILE_ROOT / "home" / "index.html").exists():
+        for _rel in ("home/theatre/index.html", "home/opera/index.html"):
+            if not (_FILE_ROOT / _rel).exists():
+                fail(f"{_rel} missing (gen_share_pages.py writes the copies of index.html at the listings' addresses)")
     for _hp in _csp.home_pages(_FILE_ROOT):
         _ht = _hp.read_text(encoding="utf-8")
         _rel = _hp.parent.relative_to(_FILE_ROOT).as_posix() + "/"
@@ -2546,7 +2658,7 @@ def smoke():
         return
     try:
         for tz in ("Europe/Sofia", "UTC"):
-            ctx = b.new_context(viewport={"width": 430, "height": 900},
+            ctx = b.new_context(viewport={"width": 440, "height": 956},   # iPhone 17 Pro Max
                                 timezone_id=tz, locale="bg-BG")
             # Any Content-Security-Policy violation during the journey fails the gate
             # (a stale hash blocks a script; a poster host outside img-src, etc.).

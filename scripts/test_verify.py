@@ -57,9 +57,14 @@ def _bulk_showtimes(n=80):
         rows.append([f"f{i % 20}", f"cinema{i % 8}", _FUTURE, ["10:00"]])
     return _json.dumps(rows)
 
-def _bulk_theatres(n=6):
-    return _json.dumps([{"id": f"th{i}", "name": f"Театър {i}", "nameEn": f"Theatre {i}"}
-                        for i in range(n)])
+_OPERA_VENUE = {"id": "opera", "name": "Софийска опера и балет", "nameEn": "Sofia Opera and Ballet", "kind": "opera"}
+
+
+def _bulk_theatres(n=6, opera=1):
+    """n plain theatres, then `opera` venues with kind "opera" (the gate wants exactly one)."""
+    return _json.dumps([{"id": f"th{i}", "name": f"Театър {i}", "nameEn": f"Theatre {i}"} for i in range(n)]
+                       + [dict(_OPERA_VENUE, id="opera" if k == 0 else f"opera{k}") for k in range(opera)],
+                       ensure_ascii=False)
 
 def _bulk_shows(n=20):
     return _json.dumps([{"id": f"show{i}", "title": f"Спектакъл {i}",
@@ -1592,6 +1597,40 @@ _rc, _out = _run_out(_cov_base.replace("const SHOWART={};", "const SHOWART="
 check("coverage of 108/120 (exactly 90.0 %) is on the floor: a 5c2 WARNING, the page publishes",
       _rc == 0 and "108/120 (90.0 %)" in _out and "warning: 5c2" in _out and "below 95 %" in _out
       and "floor" not in _out)
+# Опера и балет: its productions are their own 5c2 metric, never the plays' floor (a hidden
+# surface must not stop Кино and Театър publishing), and the DESIGN_SPEC §5.6 rail gate.
+_op_cov_shows = [{"id": f"opera{i}", "title": f"Опера {i}", "titleEn": "", "theatre": "opera", "genres": ["Опера"]}
+                 for i in range(40)]
+_op_cov_perfs = [[f"opera{i}", (datetime.date.today() + datetime.timedelta(days=1 + i // 4)).isoformat(),
+                  ["11:00", "16:00", "19:00", "19:30"][i % 4], "Голяма зрителна зала", ""] for i in range(40)]
+_op_cov_page = (_minimal_html(performances_override=_json.dumps(_cov_perfs + _op_cov_perfs))
+                .replace("const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows + _op_cov_shows) + ";")
+                .replace("const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";"))
+_rc, _out = _run_out(_op_cov_page, _cov_env)
+check("5c2: 40 opera productions with no image leave the plays' metric alone (120/120) and do not fail the gate "
+      "(Опера и балет hidden)",
+      _rc == 0 and "poster coverage (plays, own image): 120/120" in _out
+      and "warning: 5c2 poster coverage (opera, own image): 0/40" in _out and "NOT safe to publish" not in _out)
+check("…the opera's own number is in POSTER_COVERAGE", '"opera": {"missing": [' in _out and '"upcoming": 40' in _out)
+check("…hidden, the §5.6 rail gate is a note naming the rail, not a failure",
+      'opera rail "opera": 10 of 10 cards would be typographic art' in _out
+      and "must pass before OPERA_ON is flipped" in _out and "✗" not in "".join(
+          l for l in _out.splitlines() if "opera rail" in l))
+_op_shown_page = _minimal_html(extra_js=r"const OPERA_ON=/[?&]opera=1\b/.test(location.search)||true;", performances_override=_json.dumps(_cov_perfs + _op_cov_perfs)).replace(
+    "const SHOWS=" + _bulk_shows() + ";", "const SHOWS=" + _json.dumps(_cov_shows + _op_cov_shows) + ";").replace(
+    "const SHOWART={};", "const SHOWART=" + _json.dumps(_all_art) + ";")
+_rc, _out = _run_out(_op_shown_page, _cov_env)
+check("…shown (OPERA_ON true), a rail with more than 25 % typographic cards is a WARNING (health.json): "
+      "one rail without posters never freezes the nightly refresh",
+      _rc == 0 and 'warning: 5c2 opera rail "opera": 10 of 10 cards would be typographic art (over 25 %' in _out)
+_rc, _out = _run_out(_op_cov_page, dict(_cov_env, SOFIA_OPERA_READINESS="1"))
+check("…the pre-flip readiness check (SOFIA_OPERA_READINESS=1) FAILS on that rail",
+      _rc != 0 and 'opera rail "opera": 10 of 10 cards would be typographic art (over 25 %' in _out)
+_op_art = dict(_all_art, **{f"opera{i}": f"https://www.operasofia.bg/uploads/events/{1000 + i}.png" for i in range(8)})
+_rc, _out = _run_out(_op_shown_page.replace("const SHOWART=" + _json.dumps(_all_art) + ";",
+                                            "const SHOWART=" + _json.dumps(_op_art) + ";"), _cov_env)
+check("…8 of the rail's first 10 with an image (2 typographic = 20 %) pass the rail gate",
+      "opera rail" not in _out)
 # A 150-show page: steps of 3 shows are 2 points.
 _cov_shows_b = [{"id": f"show{i}", "title": f"Спектакъл {i}", "titleEn": f"Show {i}", "theatre": f"th{i % 6}"}
                 for i in range(150)]
@@ -2208,6 +2247,153 @@ check("edge 5c5: a score-free TMDBART ovBg passes", _rc == 0 and "5c5" not in _o
 _rc, _out = _run_out(_minimal_html().replace("const FILM_EXTRA={};", "const FILM_EXTRA={\"f0\":{\"box\":1,};", 1))
 check("an unparseable FILM_EXTRA fails (its sheet texts would go unchecked)",
       _rc != 0 and "5c5 FILM_EXTRA is declared but is not one parseable JSON line" in _out)
+
+# ---------------------------------------------------------------------------
+# Опера и балет, data track: the sale column of an opera row (DESIGN_SPEC §2.1.5)
+# and PRELIM_FROM naming the opera (OPERA_ARCHITECTURE.md §4.4).
+# ---------------------------------------------------------------------------
+print("\nOpera data: the 6th PERFORMANCES column, PRELIM_FROM")
+import re as _re_op                                                     # noqa: E402
+
+
+def _opera_data_page(extra_perfs, prelim=None):
+    """The minimal page plus the opera venue (kind "opera", unless the bulk venues
+    already have one), one opera show and `extra_perfs`; prelim: PRELIM_FROM, else {}."""
+    page = _minimal_html(performances_override=_json.dumps(_json.loads(_bulk_performances()) + extra_perfs,
+                                                           ensure_ascii=False))
+    m = _re_op.search(r"const THEATRES=(\[.*?\]);", page)
+    ths = _json.loads(m.group(1))
+    if not any(t.get("kind") == "opera" for t in ths):
+        ths.append({"id": "opera", "name": "Софийска опера и балет", "nameEn": "Sofia Opera and Ballet",
+                    "kind": "opera"})
+    opera_id = next(t["id"] for t in ths if t.get("kind") == "opera")
+    m2 = _re_op.search(r"const SHOWS=(\[.*?\]);", page)
+    shows = _json.loads(m2.group(1)) + [{"id": "lebedovo-ezero", "title": "Лебедово езеро",
+                                         "titleEn": "Swan Lake", "theatre": opera_id}]
+    page = (page.replace(m.group(0), "const THEATRES=" + _json.dumps(ths, ensure_ascii=False) + ";", 1)
+                .replace(m2.group(0), "const SHOWS=" + _json.dumps(shows, ensure_ascii=False) + ";", 1))
+    if prelim is not None:
+        page = page.replace("const PRELIM_FROM={};", "const PRELIM_FROM=" + _json.dumps(prelim) + ";", 1)
+    return page, opera_id
+
+
+_ROW_MSG = "PERFORMANCES row(s) are not [showId, date, time, hall, price]"
+_op_day = (datetime.date.today() + datetime.timedelta(days=3)).isoformat()
+for _st in ("soldout", "notyet"):
+    _rc, _out = _run_out(_opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None, _st]])[0])
+    check(f"opera data: an opera row with the sale state {_st!r} as a 6th column passes", _rc == 0 and _ROW_MSG not in _out)
+_rc, _out = _run_out(_opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None, "cancelled"]])[0])
+check("opera data: any other 6th value fails", _rc != 0 and _ROW_MSG in _out)
+_rc, _out = _run_out(_opera_data_page([["show0", _op_day, "23:00", "Основна сцена", "", "soldout"]])[0])
+check("opera data: a 6th column on a row of a theatre that is not the opera fails", _rc != 0 and _ROW_MSG in _out)
+_far = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+_prelim_th = {f"th{i}": _far for i in range(6)}
+_pg, _oid = _opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None]], prelim=_prelim_th)
+_rc, _out = _run_out(_pg)
+check("opera data: an opera show with performances but no PRELIM_FROM entry fails, naming the opera",
+      _rc != 0 and "theatres with performances but no PRELIM_FROM entry" in _out and _oid in _out)
+_rc, _out = _run_out(_opera_data_page([["lebedovo-ezero", _op_day, "19:00", "Голяма зрителна зала", None]],
+                                      prelim=dict(_prelim_th, **{_oid: _far}))[0])
+check("opera data: ...and passes once PRELIM_FROM names it", _rc == 0 and "no PRELIM_FROM entry" not in _out)
+
+# ---------------------------------------------------------------------------
+# Опера и балет (OPERA_ARCHITECTURE.md §9): the opera venue, the empty-surface
+# health warning, and the third home copy /home/opera/.
+# ---------------------------------------------------------------------------
+print("\nOpera: THEATRES kind opera, OPERA_ON with no performances, home/opera/")
+_OPERA_MSG = 'THEATRES must have exactly one venue with kind "opera"'
+_rc, _out = _run_out(_minimal_html())
+check("opera: THEATRES with exactly one kind:\"opera\" venue passes", _rc == 0 and _OPERA_MSG not in _out)
+_rc, _out = _run_out(_minimal_html().replace(f"const THEATRES={_bulk_theatres()};",
+                                             f"const THEATRES={_bulk_theatres(opera=0)};", 1))
+check("opera: THEATRES without a kind:\"opera\" venue fails (the toggle would be empty)",
+      _rc != 0 and _OPERA_MSG in _out and "found 0" in _out)
+_rc, _out = _run_out(_minimal_html().replace(f"const THEATRES={_bulk_theatres()};",
+                                             f"const THEATRES={_bulk_theatres(opera=2)};", 1))
+check("opera: two kind:\"opera\" venues fail (the surface would be doubled)",
+      _rc != 0 and _OPERA_MSG in _out and "found 2" in _out)
+
+_OPERA_WARN = "opera: OPERA_ON is true but the Опера и балет surface has 0 upcoming performances"
+_FLAG_OFF = r"const OPERA_ON=/[?&]opera=1\b/.test(location.search)||false;"
+_FLAG_ON = r"const OPERA_ON=/[?&]opera=1\b/.test(location.search)||true;"
+_rc, _out = _run_out(_minimal_html(extra_js=_FLAG_ON))
+check("opera: OPERA_ON true with 0 upcoming opera performances passes with a health warning",
+      _rc == 0 and ("warning: " + _OPERA_WARN) in _out)
+_rc, _out = _run_out(_minimal_html(extra_js=_FLAG_OFF))
+check("opera: the same with OPERA_ON only behind ?opera=1 gives no warning", _rc == 0 and _OPERA_WARN not in _out)
+_opera_shows = _json.loads(_bulk_shows()) + [{"id": "lebedovo-ezero", "title": "Лебедово езеро",
+                                               "titleEn": "Swan Lake", "theatre": "opera"}]
+_opera_perfs = _json.loads(_bulk_performances()) + [["lebedovo-ezero", _FUTURE, "19:00", "Голяма сцена", ""]]
+_opera_page = _minimal_html(extra_js=_FLAG_ON, performances_override=_json.dumps(_opera_perfs, ensure_ascii=False)
+                            ).replace(f"const SHOWS={_bulk_shows()};",
+                                      "const SHOWS=" + _json.dumps(_opera_shows, ensure_ascii=False) + ";", 1)
+_rc, _out = _run_out(_opera_page)
+check("opera: OPERA_ON true with an upcoming opera performance gives no warning",
+      _rc == 0 and "lebedovo-ezero" in _opera_page and _OPERA_WARN not in _out)
+_past_perfs = _json.loads(_bulk_performances()) + [["lebedovo-ezero", "2025-01-01", "19:00", "Голяма сцена", ""]]
+_rc, _out = _run_out(_opera_page.replace(_json.dumps(_opera_perfs, ensure_ascii=False),
+                                         _json.dumps(_past_perfs, ensure_ascii=False), 1))
+check("opera: a past opera performance does not count as upcoming (the warning stays)", _OPERA_WARN in _out)
+
+
+# What the surface reads beyond the rows: genres, hallAreas, subtitle, facts (warnings when shown)
+_rc, _out = _run_out(_opera_page)
+check("opera shown: a production without genres, a stage without hallAreas, no subtitle and no facts are "
+      "health warnings, never a failure",
+      _rc == 0 and "warning: opera: 1 of 1 productions on stage carry no genre" in _out
+      and "warning: opera: stage(s) without an address in THEATRES opera hallAreas" in _out
+      and "warning: opera: none of 1 productions on stage has a subtitle" in _out
+      and "warning: opera: none of 1 productions on stage has facts" in _out)
+_rc, _out = _run_out(_opera_page.replace(_FLAG_ON, _FLAG_OFF, 1))
+check("opera hidden: the same are notes (the flag flip's readiness), not warnings",
+      _rc == 0 and "productions on stage carry no genre" in _out and "warning: opera:" not in _out)
+_full = [dict(x, genres=["Балет"], subtitle="Балет от Адолф Адам", facts={"conductor": "Андрей Галанов"})
+         if x.get("id") == "lebedovo-ezero" else x for x in _opera_shows]
+_rc, _out = _run_out(_opera_page.replace(_json.dumps(_opera_shows, ensure_ascii=False), _json.dumps(_full, ensure_ascii=False), 1)
+                     .replace(_json.dumps(_OPERA_VENUE, ensure_ascii=False).rstrip("}"),
+                              _json.dumps(_OPERA_VENUE, ensure_ascii=False).rstrip("}")
+                              + ', "hallAreas": {"Голяма сцена": "ул. „Врабча“ 1"}', 1))
+check("opera shown: genres, hallAreas, subtitle and facts present -> none of those warnings",
+      _rc == 0 and "warning: opera:" not in _out)
+
+
+def _home_root(opera_page):
+    """A file root whose index.html is the page and whose home copies are it too;
+    opera_page: the home/opera/index.html text, or None for no file."""
+    root = _make_file_root()
+    page = _finish(_minimal_html())
+    (root / "index.html").write_text(page, encoding="utf-8")
+    for rel, text in (("home", page), ("home/theatre", page), ("home/opera", opera_page)):
+        if text is None:
+            continue
+        (root / rel).mkdir(parents=True, exist_ok=True)
+        (root / rel / "index.html").write_text(text, encoding="utf-8")
+    return root
+
+
+def _run_root(root):
+    env = dict(os.environ, SOFIA_SKIP_SMOKE="1", SOFIA_SKIP_FRESHNESS="1", SOFIA_GA_MEASUREMENT_ID="",
+               SOFIA_ROOT=str(root), SOFIA_HTML=str(root / "index.html"))
+    r = subprocess.run([PYTHON, VERIFY], capture_output=True, text=True, env=env)
+    return r.returncode, r.stdout + r.stderr
+
+
+import shutil as _sh_op
+_base_page = _finish(_minimal_html())
+_r_ok = _home_root(_base_page.replace(f'content="{_SITE_URL_FOR_TEST}/"', f'content="{_SITE_URL_FOR_TEST}/home/opera/"', 1))
+_rc_ok, _out_ok = _run_root(_r_ok)
+check("opera: home/opera/index.html = index.html with its own address raises no home-copy problem",
+      _rc_ok == 0 and "home/opera/" not in _out_ok)
+_r_stale = _home_root(_base_page.replace("const EVENTS=[];", "const EVENTS=[];\nvar STALE=1;", 1))
+_rc_st, _out_st = _run_root(_r_stale)
+check("opera: a stale home/opera/index.html fails, by name",
+      _rc_st != 0 and "home/opera/ is not this index.html" in _out_st)
+_r_miss = _home_root(None)
+_rc_m, _out_m = _run_root(_r_miss)
+check("opera: a missing home/opera/index.html fails once the home copies are written",
+      _rc_m != 0 and "home/opera/index.html missing" in _out_m)
+for _r in (_r_ok, _r_stale, _r_miss):
+    _sh_op.rmtree(_r, ignore_errors=True)
 
 # ---------------------------------------------------------------------------
 # Summary

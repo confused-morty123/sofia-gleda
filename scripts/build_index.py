@@ -28,8 +28,8 @@ HEAD = """<!doctype html>
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/
-     and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
+<!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/,
+     /home/opera/ and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
      which this script puts in before anything that uses it (a static one is refused under
      base-uri 'self' on a page opened from a file, a local preview or the tests, which

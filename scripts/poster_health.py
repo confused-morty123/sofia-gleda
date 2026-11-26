@@ -62,6 +62,13 @@ def upcoming(src):
     return shows, films
 
 
+def opera_ids(src):
+    """The show ids of the venue(s) with THEATRES kind "opera" (the Опера и балет surface):
+    their own bucket, never the plays', as verify_build 5c2 counts them."""
+    venues = {t.get("id") for t in (_const(src, "THEATRES") or []) if isinstance(t, dict) and t.get("kind") == "opera"}
+    return {s.get("id") for s in (_const(src, "SHOWS") or []) if isinstance(s, dict) and s.get("theatre") in venues}
+
+
 def measure(html=HTML, root=ROOT):
     src = pathlib.Path(html).read_text(encoding="utf-8")
     maps = {n: (_const(src, n) or {}) for n in ("SHOWALIAS", "EVENTART", "POSTERS", "TMDBART", "SHOWART")}
@@ -72,13 +79,16 @@ def measure(html=HTML, root=ROOT):
     up_s, up_f = upcoming(src)
     up_s &= set(shows)
     up_f &= films
+    up_o = up_s & opera_ids(src)          # the opera's productions: their own metric
+    up_s -= up_o
     theatre = {i: shows[i].get("theatre") or "?" for i in up_s}
     s_cov = PP.true_coverage(up_s, maps, sources, "shows", theatre, root)
+    o_cov = PP.true_coverage(up_o, maps, sources, "shows", None, root)
     f_cov = PP.true_coverage(up_f, maps, sources, "films", None, root)
     shown = sum(1 for i in up_s if PP.browser_poster(i, maps))
-    return {"shows": s_cov, "films": f_cov, "shows_displayed": shown,
-            "ids": {"shows": sorted(up_s), "films": sorted(up_f)},
-            "titles": {**{i: shows[i].get("title") for i in up_s}}}
+    return {"shows": s_cov, "films": f_cov, "opera": o_cov, "shows_displayed": shown,
+            "ids": {"shows": sorted(up_s), "films": sorted(up_f), "opera": sorted(up_o)},
+            "titles": {**{i: shows[i].get("title") for i in up_s | up_o}}}
 
 
 def report_md(m, sources, fixed, today):
@@ -88,13 +98,15 @@ def report_md(m, sources, fixed, today):
          f"- Films: {f['with']}/{f['upcoming']} ({f['pct']} %) show their own poster.",
          f"- Plays: {s['with']}/{s['upcoming']} ({s['pct']} %) show their own poster or a "
          f"production photo from their own page ({m['shows_displayed']} display some image).",
+         *([f"- Opera (Софийска опера и балет, its own count): {m['opera']['with']}/{m['opera']['upcoming']} "
+            f"({m['opera']['pct']} %) show their own poster or a production photo."] if m.get("opera") else []),
          f"- Target: {TARGET:.0f} % each. This run attached: "
          + (", ".join(f"{k} {v}" for k, v in sorted(fixed.items())) or "nothing") + ".",
          "", "## Plays per theatre", "", "| theatre | own image | missing |", "|---|---|---|"]
     for th, g in s["by_group"].items():
         L.append(f"| {th} | {g['with']}/{g['upcoming']} | {len(g['missing'])} |")
-    for label, cov, key in (("Plays", s, "show"), ("Films", f, "film")):
-        if not cov["missing"]:
+    for label, cov, key in (("Plays", s, "show"), ("Opera", m.get("opera") or {}, "show"), ("Films", f, "film")):
+        if not cov.get("missing"):
             continue
         L += ["", f"## {label} without their own image", ""]
         by_cause = {}
@@ -118,10 +130,12 @@ def health_record(before, after, fixed, errors, today):
         "target": TARGET,
         "films": {k: after["films"][k] for k in ("upcoming", "with", "pct", "how")},
         "shows": {k: after["shows"][k] for k in ("upcoming", "with", "pct", "how")},
+        "opera": {k: after["opera"][k] for k in ("upcoming", "with", "pct", "how")},
         "shows_displayed": after["shows_displayed"],
         "per_theatre": {th: f"{g['with']}/{g['upcoming']}" for th, g in after["shows"]["by_group"].items()},
         "below_target": [k for k in ("films", "shows") if 100.0 * after[k]["with"] < TARGET * after[k]["upcoming"]],
-        "missing": {"shows": after["shows"]["missing"], "films": after["films"]["missing"]},
+        "missing": {"shows": after["shows"]["missing"], "films": after["films"]["missing"],
+                    "opera": after["opera"]["missing"]},
         "fixed_this_run": fixed,
         "before": {"films": before["films"]["pct"], "shows": before["shows"]["pct"]},
         "errors": errors,
@@ -144,6 +158,7 @@ def main(argv=None):
         try:
             import own_page_posters as OPP
             todo = {f"show:{i}" for i in before["shows"]["missing"]} | \
+                   {f"show:{i}" for i in before["opera"]["missing"]} | \
                    {f"film:{i}" for i in before["films"]["missing"]}
             titles, _venue, links = OPP.catalogue(HTML)
             srcs = OPP.load_sources()

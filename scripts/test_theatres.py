@@ -77,10 +77,11 @@ class FakeResponse:
 class FakeNet:
     """url → bytes; any other url is unreachable (None), like netfetch.Fetcher.get."""
     def __init__(self, pages):
-        self.pages, self.asked = pages, []
+        self.pages, self.asked, self.kw = pages, [], []
 
     def get(self, url, **kw):
         self.asked.append(url)
+        self.kw.append(kw)
         body = self.pages.get(url)
         return FakeResponse(body) if body is not None else None
 
@@ -1805,7 +1806,7 @@ check("changed markup → None", O.fetch_venue("toplo", FakeNet({O.TOPLO_URL: br
 check("every theatre id is accounted for", sorted(list(O.FETCHERS) + list(O.NO_OFFICIAL_SOURCE)),
       sorted(["national", "sofia-th", "th199", "tba", "zad-kanala", "vazrazhdane", "mladezhki", "kuklen",
               "satira", "salzaismyah", "toplo", "iam", "artvent", "sfumato", "citymark",
-              "atelie313", "natfiz", "new-ndk", "derida"]))
+              "atelie313", "natfiz", "new-ndk", "derida", "opera"]))
 
 # ================================================================ wave M3: merge
 # scrape_programs.py wires the programmes above into the app: each theatre's own
@@ -1930,6 +1931,83 @@ with _tf_r.TemporaryDirectory() as _d:
           ('property="og:url" content="https://sofiagleda.com/film/hroniki/"' in _txt,
            "<title>Хроники за неудобната истина | Sofia Gleda</title>" in _txt,
            'href="/home/?film=hroniki"' in _txt, _GSP.REDIRECT_JS in _txt), (True, True, True, True))
+# Опера и балет: a show at a kind:"opera" venue goes on to /home/opera/ — its own share
+# page, a renamed opera show's old page, and the home/opera copy main() writes
+_VK = {"opera": "opera", "national": "national"}
+check("show_home: an opera venue's show -> /home/opera/, a theatre's or none -> /home/theatre/",
+      (_GSP.show_home({"theatre": "opera"}, _VK), _GSP.show_home({"theatre": "national"}, _VK),
+       _GSP.show_home({"theatre": "nowhere"}, _VK), _GSP.show_home(None, _VK)),
+      ("/home/opera/", "/home/theatre/", "/home/theatre/", "/home/theatre/"))
+with _tf_r.TemporaryDirectory() as _d:
+    _done, _bad = _GSP.write_redirects(
+        _d, [{"id": "lebedovo-ezero", "title": "Лебедово езеро", "theatre": "opera"},
+             {"id": "skapernikat", "title": "Скъперникът", "theatre": "national"}],
+        {"lebedovo-staro": "lebedovo-ezero", "skaperniкat": "skapernikat"},
+        lambda i: (f"https://sofiagleda.com/posters/{i}.jpg", None, None), venue_kinds=_VK)
+    _op = (pathlib.Path(_d) / "show" / "lebedovo-staro" / "index.html").read_text(encoding="utf-8")
+    _th = (pathlib.Path(_d) / "show" / "skaperniкat" / "index.html").read_text(encoding="utf-8")
+    check("gen_share_pages: a renamed opera show's page links /home/opera/?show=<new id>",
+          ('href="/home/opera/?show=lebedovo-ezero"' in _op, "/home/theatre/" in _op,
+           'property="og:url" content="https://sofiagleda.com/show/lebedovo-ezero/"' in _op), (True, False, True))
+    check("…a renamed theatre show's page still links /home/theatre/", 'href="/home/theatre/?show=skapernikat"' in _th,
+          True)
+check("REDIRECT_JS: a reload whose state says opera returns to /home/opera/",
+      '/^(theatre|opera)$/.test(s.m)?"/home/"+s.m+"/":"/home/"' in _GSP.REDIRECT_JS, True)
+check("REDIRECT_JS: ?opera=1 (the hidden surface's flag) goes on with the redirect",
+      ("o=/[?&]opera=1(?:&|$)/.test(location.search)" in _GSP.REDIRECT_JS, '(o?"opera=1"+(m?"&":""):"")' in _GSP.REDIRECT_JS),
+      (True, True))
+with _tf_r.TemporaryDirectory() as _d:
+    _root = pathlib.Path(_d)
+    _app = ('<link rel="canonical" href="https://sofiagleda.com/home/">\n'
+            '<meta property="og:url" content="https://sofiagleda.com/home/">\n'
+            'const FILMS = [];\n'
+            'const SHOWS = [{"id":"lebedovo-ezero","title":"Лебедово езеро","theatre":"opera"},'
+            '{"id":"hamlet-nat","title":"Хамлет","theatre":"national"}];\n'
+            'const THEATRES=[{"id":"national","name":"Народен театър","kind":"national"},'
+            '{"id":"opera","name":"Софийска опера и балет","kind":"opera"}];\n')
+    (_root / "index.html").write_text(_app, encoding="utf-8")
+    _saved = (_GSP.ROOT, _GSP.HTML_PATH)
+    _GSP.ROOT, _GSP.HTML_PATH = _root, _root / "index.html"
+    try:
+        check("_venue_kinds reads THEATRES' kinds", _GSP._venue_kinds(), {"national": "national", "opera": "opera"})
+        _GSP.main()
+    finally:
+        _GSP.ROOT, _GSP.HTML_PATH = _saved
+
+    def _rd(rel):
+        p = _root / rel
+        return p.read_text(encoding="utf-8") if p.is_file() else ""
+    check("gen_share_pages main(), surface hidden (no OPERA_ON true): an opera show's page leads to /home/theatre/ "
+          "and is noindex; a theatre's page is indexable",
+          ('href="/home/theatre/?show=lebedovo-ezero"' in _rd("show/lebedovo-ezero/index.html"),
+           '<meta name="robots" content="noindex">' in _rd("show/lebedovo-ezero/index.html"),
+           'href="/home/theatre/?show=hamlet-nat"' in _rd("show/hamlet-nat/index.html"),
+           'name="robots"' in _rd("show/hamlet-nat/index.html")), (True, True, True, False))
+    _hop = _rd("home/opera/index.html")
+    check("…while hidden, home/opera/index.html keeps /home/'s canonical and og:url (no indexable opera address)",
+          ('rel="canonical" href="https://sofiagleda.com/home/"' in _hop,
+           'property="og:url" content="https://sofiagleda.com/home/"' in _hop), (True, True))
+    (_root / "index.html").write_text(_app + "const OPERA_ON=/[?&]opera=1\\b/.test(location.search)||true;\n",
+                                      encoding="utf-8")
+    _GSP.ROOT, _GSP.HTML_PATH = _root, _root / "index.html"
+    try:
+        _GSP.main()
+    finally:
+        _GSP.ROOT, _GSP.HTML_PATH = _saved
+    _hop = _rd("home/opera/index.html")
+    check("gen_share_pages main(), surface shown (OPERA_ON true): an opera show's page links /home/opera/?show=<id>, "
+          "indexable; home/opera/ has its own canonical and og:url",
+          ('href="/home/opera/?show=lebedovo-ezero"' in _rd("show/lebedovo-ezero/index.html"),
+           'name="robots"' in _rd("show/lebedovo-ezero/index.html"),
+           'rel="canonical" href="https://sofiagleda.com/home/opera/"' in _hop,
+           'property="og:url" content="https://sofiagleda.com/home/opera/"' in _hop), (True, False, True, True))
+    check("opera_shown: only OPERA_ON true in the page counts (not the ?opera=1 flag)",
+          (_GSP.opera_shown("const OPERA_ON=!!OPERA_Q;"), _GSP.opera_shown("const OPERA_ON=true;"),
+           _GSP.opera_shown("")), (False, True, False))
+    check("…and home/ and home/theatre/ keep theirs",
+          ('property="og:url" content="https://sofiagleda.com/home/"' in _rd("home/index.html"),
+           'property="og:url" content="https://sofiagleda.com/home/theatre/"' in _rd("home/theatre/index.html")),
+          (True, True))
 check("the same title at ANOTHER theatre is not that show", ix.resolve("Трите прасенца", "mladezhki"), (None, "unmatched"))
 check("…but it is at its own theatre", ix.resolve("ТРИТЕ ПРАСЕНЦА", "vazrazhdane")[0], "prasenca-vaz")
 check("a sequel number keeps productions apart", ix.resolve("Отчаяни съпрузи", "satira")[0], "suprugi")
@@ -1948,7 +2026,7 @@ print("minting: one show per new production, at its own theatre")
 mint_log = []
 
 
-def _mint(title, theatre, url):
+def _mint(title, theatre, url, meta=None):
     sid = f"m-{len(mint_log) + 1}"
     ix.add({"id": sid, "title": title, "theatre": theatre}, minted=True)
     mint_log.append((sid, title, theatre, url))
@@ -2668,7 +2746,7 @@ check("fixture gives a valid result (ticket source, no halls)",
 # All titles will be minted since the fixture has no pre-loaded shows.
 _mlt_ix_p2f = SI.ShowIndex([], aliases={})
 _mlt_minted_p2f = []
-def _mlt_mint_p2f(title, theatre, url):
+def _mlt_mint_p2f(title, theatre, url, meta=None):
     _sid = f"p2f-{len(_mlt_minted_p2f) + 1}"
     _mlt_ix_p2f.add({"id": _sid, "title": title, "theatre": theatre}, minted=True)
     _mlt_minted_p2f.append(_sid)
@@ -3459,6 +3537,55 @@ check("synopsis health: fills counted by route (override / own page / theatre.ar
       {k: _rt.get(k) for k in ("overrides", "own_page_fills", "theatre_art_fills", "own_page_misses")},
       {"overrides": 1, "own_page_fills": 1, "theatre_art_fills": 1, "own_page_misses": {"cast / credits / practical lines only": 1}})
 
+# review-r2 #5: poster_health and synopsis_health count the shows of THEATRES kind "opera" in their
+# own bucket (as verify_build 5c2 does), so the plays' numbers do not move when opera rows land
+import poster_health as _PH                                         # noqa: E402
+with _tf.TemporaryDirectory() as _d:
+    _hp = pathlib.Path(_d) / "index.html"
+    _oh = [{"id": "p1", "title": "П", "theatre": "satira", "synBg": "П" * 300},
+           {"id": "p2", "title": "Р", "theatre": "satira", "synBg": ""},
+           {"id": "o1", "title": "ЖИЗЕЛ", "theatre": "opera", "synBg": ""},
+           {"id": "o2", "title": "НОРМА", "theatre": "opera", "synBg": "Н" * 300}]
+    _hp.write_text("const SHOWS=" + _json.dumps(_oh, ensure_ascii=False) + ";\n"
+                   "const THEATRES=" + _json.dumps([{"id": "satira", "name": "Сатиричен театър"},
+                                                    {"id": "opera", "name": "Софийска опера и балет", "kind": "opera"}],
+                                                   ensure_ascii=False) + ";\n"
+                   "const PERFORMANCES=" + _json.dumps([[x["id"], "2999-01-01", "19:00", "", ""] for x in _oh]
+                                                       + [["o1", "2999-01-02", "19:00", "", "", "soldout"]]) + ";\n"
+                   "const POSTERS=" + _json.dumps({"p1": "https://satirata.bg/p1.jpg"}) + ";\n"
+                   "const LINKS=[];\nconst FILMS=[];\nconst SHOWTIMES=[];\nconst AGGLINKS={};\n", encoding="utf-8")
+    _keep_ps = _os_env.get("SOFIA_POSTER_SOURCES")
+    _os_env["SOFIA_POSTER_SOURCES"] = str(pathlib.Path(_d) / "none.json")
+    try:
+        _pm = _PH.measure(_hp, pathlib.Path(_d))
+        _prec = _PH.health_record(_pm, _pm, {}, [], "2026-11-25")
+        _pmd = _PH.report_md(_pm, {"shows": {}, "films": {}, "misses": {}}, {}, "2026-11-25")
+    finally:
+        if _keep_ps is None:
+            _os_env.pop("SOFIA_POSTER_SOURCES", None)
+        else:
+            _os_env["SOFIA_POSTER_SOURCES"] = _keep_ps
+    _keep_sy = (_SY.FILLS, _SY.OVERRIDES)
+    _SY.FILLS, _SY.OVERRIDES = pathlib.Path(_d) / "f.json", pathlib.Path(_d) / "o.json"
+    try:
+        _sh = _SH.measure(_hp)
+    finally:
+        _SY.FILLS, _SY.OVERRIDES = _keep_sy
+check("poster health: the opera's productions are their own bucket, never the plays' (plays 2 titles, opera 2)",
+      (_pm["shows"]["upcoming"], sorted(_pm["shows"]["by_group"]), _pm["opera"]["upcoming"], sorted(_pm["opera"]["missing"]),
+       _pm["ids"]["shows"], _pm["ids"]["opera"]),
+      (2, ["satira"], 2, ["o1", "o2"], ["p1", "p2"], ["o1", "o2"]))
+check("poster health: poster_health.json keeps plays and opera apart (no opera in per_theatre or below_target), "
+      "and the .md names the opera line",
+      (_prec["shows"]["upcoming"], sorted(_prec["per_theatre"]), _prec["opera"]["upcoming"], _prec["opera"]["with"],
+       "opera" in _prec["below_target"], sorted(_prec["missing"]["opera"]), "Opera" in _pmd),
+      (2, ["satira"], 2, 0, False, ["o1", "o2"], True))
+check("synopsis health: the opera's productions are their own bucket, never the plays'",
+      ({k: _sh["shows"][k] for k in ("titles", "thin")}, sorted(_sh["shows"]["by_theatre"]),
+       {k: _sh["opera"][k] for k in ("titles", "thin")}, [r[1] for r in _sh["_rows"]["shows"]],
+       [r[1] for r in _sh["_rows"]["opera"]]),
+      ({"titles": 2, "thin": 1}, ["satira"], {"titles": 2, "thin": 1}, ["p2"], ["o1"]))
+
 # translate.py: the per-run cap on new synopsis text, and a used-up quota as a warning
 import translate as _TR
 _tc = {}
@@ -3485,6 +3612,713 @@ check("translate: a used-up DeepL quota is one 'translations' warning in health.
       ([(e["level"], e["venue"]) for e in _h1], "quota is used up (HTTP 456): 12 text(s), 7000 characters" in _h1[-1]["message"],
        "No English description available yet." in _h1[-1]["message"], [e["venue"] for e in _h2]),
       ([("warning", "new-ndk"), ("warning", "translations")], True, True, ["new-ndk"]))
+
+# ===================================================================== opera
+# Софийска опера и балет (operasofia.bg), the third surface "Опера и балет" (kind "opera").
+# Fixtures: trimmed copies of the live pages of 2026-11-24 (notes/design_options/opera/research).
+# DESIGN_SPEC §2.1: two calendar views a month (the default one and the children's
+# ?categories[]=5) plus the English month page for titles; status from the button text;
+# genre from the site's icon; the TV broadcast (icon "event", no tickets) skipped; off-site
+# performances excluded; the production page's labelled fields, bounded and cached.
+print("\nopera (operasofia.bg)")
+import scrape_programs as _SPO                                     # noqa: E402
+import collections                                                 # noqa: E402
+
+OP_TODAY = dt.date(2026, 11, 24)                 # a Tuesday
+
+
+def _op_empty(word, year):
+    return (f'<html><body><div class="block"><div class="date" id="calendarDates"> {word} '
+            f'<span>{year}</span></div></div><div class="calendar-sections"></div></body></html>').encode()
+
+
+def _op_pages(**over):
+    p = {O.OPERA_CAL.format(y=2026, m=11): raw("opera_calendar_2026-11.html"),
+         O.OPERA_CAL_KIDS.format(y=2026, m=11): raw("opera_children_2026-11.html"),
+         O.OPERA_CAL_EN.format(y=2026, m=11): raw("opera_calendar_en_2026-11.html"),
+         O.OPERA_CAL.format(y=2026, m=12): raw("opera_calendar_2026-12.html"),
+         O.OPERA_CAL_KIDS.format(y=2026, m=12): raw("opera_children_2026-12.html"),
+         O.OPERA_CAL_EN.format(y=2026, m=12): raw("opera_calendar_en_2026-12.html"),
+         # (the English children's view: December only — fetched 2026-11-25)
+         O.OPERA_CAL_EN_KIDS.format(y=2026, m=12): raw("opera_children_en_2026-12.html"),
+         O.OPERA_CAL.format(y=2027, m=1): raw("opera_calendar_2027-01.html"),
+         O.OPERA_CAL_KIDS.format(y=2027, m=1): raw("opera_children_2027-01.html"),
+         # (no English January page: the English titles are optional)
+         O.OPERA_CAL.format(y=2027, m=2): _op_empty("февруари", 2027),
+         O.OPERA_REP.format(id=1067): raw("opera_production_1067.html"),
+         O.OPERA_REP.format(id=1068): raw("opera_production_1068.html"),
+         O.OPERA_BUY.format(n=3545): raw("opera_buy-tickets_3545.html")}
+    p.update(over)
+    return {k: v for k, v in p.items() if v is not None}
+
+
+def _op_by(rows):
+    return {(r[1], r[2]): r for r in rows}
+
+
+# --- the calendar month (default view)
+_r12, _x12 = O.parse_opera(fx("opera_calendar_2026-12.html"), 2026, 12)
+check("opera Dec: every performance but the TV broadcast, in page order",
+      brief(_r12), [("КОНЦЕРТ ГАЛА РОСИНИ – СВЕТЛИНА СТОЯНОВА", "2026-12-02", "19:00"),
+                    ("АГРИПИНА", "2026-12-04", "19:00"), ("ЖИЗЕЛ", "2026-12-05", "19:00"),
+                    ("АГРИПИНА", "2026-12-06", "16:00"), ("САЛОН РОСИНИ", "2026-12-06", "19:00"),
+                    ("ЛЕШНИКОТРОШАЧКАТА", "2026-12-18", "11:00"), ("ЛЕШНИКОТРОШАЧКАТА", "2026-12-18", "19:00")])
+_g = _op_by(_r12)[("2026-12-02", "19:00")][3]
+check("opera: hall, the production page, the performance's own ticket link, the repertoire id",
+      (_g["hall"], _g["url"], _g["page"], _g["buy"], _g["rep_id"], _g.get("sale")),
+      ("Голяма зрителна зала", "https://www.operasofia.bg/repertoire/1069", "https://www.operasofia.bg/repertoire/1069",
+       "https://www.operasofia.bg/buy-tickets/3548", "1069", None))
+check("opera: the ticket link is one performance's (PLINKS), never the show's link",
+      (O.is_performance_link(_g["buy"]), _SPO.show_page_of(_g)), (True, "https://www.operasofia.bg/repertoire/1069"))
+check("opera: genre from the site's icon (behind = Концерт, opera, ballet)",
+      [r[3].get("genres") for r in _r12],
+      [["Концерт"], ["Опера"], ["Балет"], ["Опера"], ["Концерт"], ["Балет"], ["Балет"]])
+_sold = _op_by(_r12)[("2026-12-05", "19:00")][3]
+check("opera: 'разпродаден' is sale 'soldout' with no ticket link",
+      (_sold.get("sale"), _sold.get("buy")), ("soldout", None))
+check("opera: two performances of one production on one day stay two rows, each sold out",
+      [(r[2], r[3].get("sale")) for r in _r12 if r[1] == "2026-12-18"], [("11:00", "soldout"), ("19:00", "soldout")])
+check("opera: the Chamber hall (бул. Дондуков 30) is the Opera's own: a row, not excluded",
+      _op_by(_r12)[("2026-12-06", "19:00")][3]["hall"], "Камерна зала")
+check("opera: the TV broadcast (icon 'event', no tickets) is skipped and logged under excluded",
+      [(e[0], e[1], e[2]) for e in _x12], [("ОТ ПЪРВИЯ РЕД - БНТ 2", "2026-12-19", "16:00")])
+_ag = _op_by(_r12)[("2026-12-04", "19:00")][3]
+check("opera: ПРЕМИЕРА (the exact token) sets premiere; the subtitle is stored verbatim with its credit "
+      "(DESIGN_SPEC §2.1.7)",
+      (_ag["premiere"], _ag["subtitle"]),
+      (True, "Опера от Георг Фридрих Хендел ПРЕМИЕРА Диригент Константин Тринкс"))
+check("opera: a subtitle that is only the conductor's credit stays the subtitle (Гала Росини keeps its conductor)",
+      _g.get("subtitle"), "Диригент Жан-Кристоф Спинози")
+check("opera: no row meta nothing reads (conductor, director, address)",
+      sorted({k for r in _r12 for k in r[3]} & {"conductor", "director", "address"}), [])
+
+_r11, _x11 = O.parse_opera(fx("opera_calendar_2026-11.html"), 2026, 11)
+_tr = _op_by(_r11)[("2026-11-06", "19:00")][3]
+check("opera: only 'виж повече' is sale 'notyet' (sales not open), never sold out, no ticket link",
+      (_tr.get("sale"), _tr.get("buy")), ("notyet", None))
+check("opera: a month page lists its past days too (the completeness reference); finish drops them",
+      ("2026-11-01", "16:00") in _op_by(_r11), True)
+check("opera: the TV broadcast in November too", [e[0] for e in _x11], ["ОТ ПЪРВИЯ РЕД - БНТ 2"])
+
+# --- the children's view
+_k12, _kx12 = O.parse_opera(fx("opera_children_2026-12.html"), 2026, 12, kids=True)
+check("opera children Dec: every row is 'Детски' (children's view <=> Детски)",
+      sorted({tuple(r[3].get("genres") or ()) for r in _k12}), [("Детски",)])
+check("opera children: the off-site performance (West Mall Sofia) is excluded, not a row",
+      ([(e[0], e[1], e[2]) for e in _kx12], any(r[0] == "ШЕГОБИШКО НА ОСТРОВА НА ЧУДЕСАТА" for r in _k12)),
+      ([("ШЕГОБИШКО НА ОСТРОВА НА ЧУДЕСАТА", "2026-12-06", "16:00")], False))
+check("opera children: the exclusion names the place", "West Mall Sofia" in _kx12[0][3], True)
+check("opera children: one production sold out at 10:00, tickets at 11:00",
+      [(r[2], r[3].get("sale"), bool(r[3].get("buy"))) for r in _k12 if r[1] == "2026-12-04"],
+      [("10:00", "soldout", False), ("11:00", None, True)])
+check("opera children: Bulgarian quotes kept verbatim in the subtitle",
+      _op_by(_k12)[("2026-12-19", "19:00")][3]["subtitle"], "Балетна приказка с участието на танцова школа „Маша Илиева“")
+_k11, _ = O.parse_opera(fx("opera_children_2026-11.html"), 2026, 11, kids=True)
+_k11x = O.parse_opera(fx("opera_children_2026-11.html"), 2026, 11, kids=True)[1]
+check("opera children: a row with no stage and no address is excluded, never implied to be at the Opera "
+      "(ШЕГОБИШКО 18 Nov 10:00 and 11:00, live markup; the title also plays off-site)",
+      (("2026-11-18", "10:00") in _op_by(_k11), sorted((e[1], e[2], e[3]) for e in _k11x if e[0].startswith("ШЕГОБИШКО"))),
+      (False, [("2026-11-18", "10:00", "no venue published (no stage, no address)"),
+               ("2026-11-18", "11:00", "no venue published (no stage, no address)")]))
+check("opera children: an empty month page is no rows, not an error",
+      O.parse_opera(fx("opera_children_2027-01.html"), 2027, 1, kids=True), ([], []))
+
+# --- self-checks
+raises("opera: a page whose heading names another month is broken markup (SourceBroken)", O.MarkupError,
+       O.parse_opera, fx("opera_calendar_2026-12.html"), 2026, 11)
+raises("opera: a day block of another month is broken markup", O.MarkupError, O.parse_opera,
+       fx("opera_calendar_2026-12.html").replace("<span class=\"week\">декември</span>",
+                                                 "<span class=\"week\">ноември</span>", 1), 2026, 12)
+raises("opera: a page without the month heading is broken markup", O.MarkupError, O.parse_opera,
+       fx("opera_calendar_2026-12.html").replace('id="calendarDates"', 'id="x"'), 2026, 12)
+raises("opera: a weekday that does not match the date is broken markup", O.MarkupError, O.parse_opera,
+       fx("opera_calendar_2026-12.html").replace("сряда", "четвъртък", 1), 2026, 12)
+raises("opera: a performance without a time is broken markup", O.MarkupError, O.parse_opera,
+       fx("opera_calendar_2026-12.html").replace(' 19:00</span>', ' скоро</span>', 1), 2026, 12)
+_nl = []
+_unk = O.parse_opera(fx("opera_calendar_2026-12.html").replace("купи билети", "отменен", 1), 2026, 12, notes=_nl)[0]
+check("opera: an unknown button text gives no status and no ticket link (never 'Купи', never sold out)",
+      ({k: v for k, v in _op_by(_unk)[("2026-12-02", "19:00")][3].items() if k in ("sale", "buy")}), {})
+check("opera: ...and is named in the notes", ["отменен" in n for n in _nl], [True])
+_ic = O.parse_opera(fx("opera_calendar_2026-12.html").replace("icon-performance-behind", "icon-performance-new", 1),
+                    2026, 12)[0]
+check("opera: an unknown icon gives no genre", _op_by(_ic)[("2026-12-02", "19:00")][3].get("genres"), None)
+
+# --- English titles
+_en11, _ens11 = O.parse_opera_en(fx("opera_calendar_en_2026-11.html"), 2026, 11)
+check("opera EN: the English title by repertoire id, as published (ПЕЕМ ЗАЕДНО is PAZZIA D’AMORE)",
+      (_en11["1101"], _en11["1067"], _en11["1062"]), ("PAZZIA D’AMORE", "AGRIPPINA", "LA TRAVIATA"))
+check("opera EN: the English subtitle by (repertoire id, date, time), verbatim with its credit",
+      _ens11.get(("1067", "2026-11-27", "19:00")),
+      "Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks")
+raises("opera EN: another month's English page is refused", O.MarkupError, O.parse_opera_en,
+       fx("opera_calendar_en_2026-11.html"), 2026, 12)
+_enk12, _enks12 = O.parse_opera_en(fx("opera_children_en_2026-12.html"), 2026, 12)
+check("opera EN: the English children's view gives the children's titles the default English view lacks",
+      (_enk12.get("1087"), _enk12.get("1132"), "1087" in O.parse_opera_en(fx("opera_calendar_en_2026-12.html"), 2026, 12)[0]),
+      ("CINDERELLA", "SNOW WHITE", False))
+check("opera EN: ...and its subtitles, verbatim",
+      _enks12.get(("1109", "2026-12-19", "11:00")), "Musical by Alexandar Raichev /The performance is for children/")
+check("opera EN: one id with two different English titles gives none (a missing value beats a wrong one)",
+      "1067" in O.parse_opera_en(fx("opera_calendar_en_2026-11.html").replace("AGRIPPINA", "AGRIPPINA II", 1),
+                                 2026, 11)[0], False)
+
+# --- the 42 subtitle cases (DESIGN_SPEC §2.4), exactly as approved: skip, genre and premiere. The
+# displayed line is the UI's rule (opSubText), checked against the same 42 cases by the OP2 wave.
+_cases = json.loads((FIX / "opera_subtitle_cases.json").read_text(encoding="utf-8"))
+_bad = []
+for _k, _want in _cases.items():
+    _view, _icon, _sub = _k.split("|", 2)
+    _got = O.opera_place(_view, _icon, _sub, has_buy=False)
+    if _want.get("skip"):
+        if not _got["skip"]:
+            _bad.append(_k)
+        continue
+    _g2 = (_got["skip"], _view, _got["genres"], _got["premiere"])
+    _w2 = (False, _want["audience"], [_want["genre"]] if _want["genre"] else [], _want["premiere"])
+    if _g2 != _w2:
+        _bad.append(f"{_k}: {_g2} != {_w2}")
+check(f"opera: all {len(_cases)} subtitle cases (skip, audience, genre, premiere)", _bad, [])
+check("opera: opera_place returns only what is stored (no display rule in Python)",
+      sorted(O.opera_place("adults", "opera", "x", has_buy=True)), ["genres", "premiere", "skip"])
+check("opera: 42 cases", len(_cases), 42)
+check("opera: children's view <=> Детски, across the cases",
+      all(v["skip"] or (k.split("|", 1)[0] == "children")
+          == ("Детски" in O.opera_place(*k.split("|", 2), has_buy=False)["genres"])
+          for k, v in _cases.items()), True)
+check("opera: ПРЕМИЕРА inside a word is not the token",
+      O.opera_place("adults", "opera", "Опера ПРЕМИЕРАТА", has_buy=True)["premiere"], False)
+check("opera: an 'event' row WITH a ticket link is kept (only the broadcast without tickets is skipped)",
+      O.opera_place("adults", "event", "Събитие", has_buy=True)["skip"], False)
+check("opera: the subtitle base drops only a closing credit",
+      (O.opera_subtitle_base("Опера от Хендел ПРЕМИЕРА Диригент Константин Тринкс"),
+       O.opera_subtitle_base("Музика Бени Андершон /Режисьор Пламен Карталов/"),
+       O.opera_subtitle_base("Диригент Иван Иванов /Спектакъл за деца/")),
+      ("Опера от Хендел ПРЕМИЕРА", "Музика Бени Андершон", "Диригент Иван Иванов /Спектакъл за деца/"))
+check("opera: the subtitle base drops the English page's closing credit too (with or without a colon)",
+      (O.opera_subtitle_base("Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks"),
+       O.opera_subtitle_base("Conductor: Jean-Christophe Spinosi")),
+      ("Opera by George Frideric Handel PREMIERE", ""))
+
+# --- the production page's labelled fields (§2.1.8), verbatim, absent when the label is
+_f67 = O.parse_opera_production(fx("opera_production_1067.html"))
+check("opera page 1067: language, conductor and director from the team; no duration printed",
+      _f67, {"language": "Изпълнява се на немски език, с български и английски субтитри",
+             "conductor": "Константин Тринкс", "director": "Уолтър Сътклиф"})
+_f68 = O.parse_opera_production(fx("opera_production_1068.html"))
+check("opera page 1068: 'Времетраене 2:10  Антракти 1' -> the text after the label; a choreographer is not a director",
+      _f68, {"duration": "2:10 Антракти 1", "conductor": "Андрей Галанов"})
+_f107 = O.parse_opera_production(fx("opera_production_1107.html"))
+check("opera page 1107: 'Режисьор, сценограф и художник на костюми' is the director",
+      (_f107.get("duration"), _f107.get("director"), _f107.get("conductor")),
+      ("3:00 Антракти 1", "Уго Де Ана", "Франческо Иван Чампа"))
+_f87 = O.parse_opera_production(fx("opera_production_1087.html"), kids=True)
+check("opera page 1087 (children's): the age line and the price sentence verbatim; 'Хореография и режисура' is no director",
+      _f87, {"age": "Подходящо за деца над 3 годишна възраст!",
+             "prices": "Цени за възрастен 8 €, дете над една година 8 €."})
+check("opera page 1086: a price with decimals ends at the last €",
+      O.parse_opera_production(fx("opera_production_1086.html"), kids=True).get("prices"),
+      "Цени за възрастен 6.50 €, дете над една година 6.50 €.")
+check("opera page: the age line is used only for a children's production",
+      "age" in O.parse_opera_production(fx("opera_production_1087.html"), kids=False), False)
+check("opera page: the Времетраене colon form ('Времетраене: 01:00')",
+      O.parse_opera_production('<div class="info__detailed"><div><span class="hour">Времетраене: 01:00</span></div></div>'),
+      {"duration": "01:00"})
+check("opera page: nothing labelled, nothing stored", O.parse_opera_production("<html><body><p>x</p></body></html>"), {})
+check("opera buy-tickets: the EUR price categories, as published, in page order",
+      O.parse_opera_prices(fx("opera_buy-tickets_3545.html")), ["50", "60", "35", "40", "30", "25", "20"])
+check("opera buy-tickets: no 'Ценови категории EUR' heading, no prices",
+      O.parse_opera_prices(fx("opera_buy-tickets_3545.html").replace("Ценови категории EUR:", "Категории:")), [])
+
+# --- fetch_opera with a fake net
+O.OPERA_FACTS = {}
+_net0 = FakeNet(_op_pages())
+_res0 = O.fetch_opera(_net0, OP_TODAY)
+check("fetch_opera: the production pass is on (its consumer: SHOWS.facts), bounded: at most OPERA_MONTHS × 4 "
+      "calendar GETs plus OPERA_PAGE_CAP production and OPERA_PRICE_CAP buy-tickets GETs a night",
+      (O.OPERA_FACTS_ON, len([u for u in _net0.asked if "/calendar/" in u]) <= O.OPERA_MONTHS * 4,
+       len([u for u in _net0.asked if "/repertoire/" in u]) <= O.OPERA_PAGE_CAP,
+       len([u for u in _net0.asked if "/buy-tickets/" in u]) <= O.OPERA_PRICE_CAP,
+       any("facts" in r[3] for r in _res0["rows"] + _res0["extra_rows"])), (True, True, True, True, True))
+O.OPERA_FACTS = {}
+_net = FakeNet(_op_pages())
+_res = O.fetch_opera(_net, OP_TODAY)
+_all = _res["rows"] + _res["extra_rows"]
+check("fetch_opera: the contract dict", (_res["venue"], _res["source"], _res["covered_from"]),
+      ("opera", O.OPERA_SOURCE, "2026-11-24"))
+check("fetch_opera: no past row, no row twice",
+      (min(r[1] for r in _all) >= "2026-11-24", len({r[:3] for r in _all}) == len(_all)), (True, True))
+check("fetch_opera: the children's view is merged in (and only it is 'Детски')",
+      sorted({(bool(r[3].get("genres")) and "Детски" in r[3]["genres"], r[0]) for r in _all if r[1] == "2026-11-28"}),
+      [(False, "ЖИЗЕЛ"), (True, "РЕЙНСКО ЗЛАТО за деца"), (True, "ЧЕРВЕНАТА ШАПЧИЦА")])
+# (complete_until: a covered month runs to its last listed day — 19 Dec in the trimmed fixture)
+check("fetch_opera: a thin January is not covered (its rows are extra rows), December is",
+      (_res["covered_to"], sorted({r[1][:7] for r in _res["extra_rows"]})), ("2026-12-19", ["2027-01"]))
+check("fetch_opera: English titles by repertoire id, from any month read (ТРАВИАТА in January from November's "
+      "English page); none for a production no English page lists (НОРМА)",
+      (_op_by(_all)[("2026-11-27", "19:00")][3].get("title_en"),
+       _op_by(_all)[("2026-12-02", "19:00")][3].get("title_en"),
+       _op_by(_all)[("2027-01-15", "19:00")][3].get("title_en"),
+       _op_by(_all)[("2027-01-29", "19:00")][3].get("title_en")),
+      ("AGRIPPINA", "CONCERT GALA ROSSINI – SVETLINA STOYANOVA", "LA TRAVIATA", None))
+check("fetch_opera: a children's show gets its English title and subtitle from the English children's view "
+      "(ПЕПЕЛЯШКА is CINDERELLA, СНЕЖАНКА is SNOW WHITE); none where that view was not read (November)",
+      (_op_by(_all)[("2026-12-04", "10:00")][3].get("title_en"), _op_by(_all)[("2026-12-19", "19:00")][3].get("title_en"),
+       _op_by(_all)[("2026-12-19", "11:00")][3].get("subtitle_en"), _op_by(_all)[("2026-11-28", "11:00")][3].get("title_en")),
+      ("CINDERELLA", "SNOW WHITE", "Musical by Alexandar Raichev /The performance is for children/", None))
+check("fetch_opera: the English children's view is asked for every month read, and a missing one is a note",
+      ([O.OPERA_CAL_EN_KIDS.format(y=y, m=m) in _net.asked for y, m in ((2026, 11), (2026, 12), (2027, 1))],
+       any("2026-11" in n and "English children's" in n for n in _res["notes"])), ([True, True, True], True))
+check("fetch_opera: the missing English page is a note", any("2027-01" in n and "English" in n for n in _res["notes"]), True)
+check("fetch_opera: the excluded rows (TV broadcast, West Mall Sofia) from today on",
+      [(e[0], e[1]) for e in _res["excluded"]],
+      [("ШЕГОБИШКО НА ОСТРОВА НА ЧУДЕСАТА", "2026-12-06"), ("ОТ ПЪРВИЯ РЕД - БНТ 2", "2026-12-19")])
+# (review-r2 #7 changed this check: February used to be asked here — an empty page that ended the
+# reading — but on 24 Nov it starts after the listing window's end, 29 Jan, so it is not asked at
+# all; the empty-month break is checked below with an empty December)
+check("fetch_opera: a month that starts after the listing window is not asked (February), nor any after it",
+      (O.OPERA_CAL.format(y=2027, m=2) in _net.asked, O.OPERA_CAL.format(y=2027, m=3) in _net.asked), (False, False))
+# review-r2 #7: a month whose first day is after listing_window(today).to costs no GET (calendar,
+# children's, English) and loses no row inside the window
+import listing_window as _LW                                       # noqa: E402
+_w_to = _LW.listing_window(OP_TODAY)[1]
+_feb = {O.OPERA_CAL.format(y=2027, m=2): raw("opera_calendar_2027-02.html"),
+        O.OPERA_CAL_KIDS.format(y=2027, m=2): _op_empty("февруари", 2027)}
+_facts_keep, O.OPERA_FACTS = O.OPERA_FACTS, {}    # (the checks below read the first run's cache)
+_net_w = FakeNet(_op_pages(**_feb))
+_res_w = O.fetch_opera(_net_w, OP_TODAY)
+_want_w = set()
+for _f, _y, _m, _k in [("opera_calendar_2026-11.html", 2026, 11, False), ("opera_children_2026-11.html", 2026, 11, True),
+                       ("opera_calendar_2026-12.html", 2026, 12, False), ("opera_children_2026-12.html", 2026, 12, True),
+                       ("opera_calendar_2027-01.html", 2027, 1, False), ("opera_children_2027-01.html", 2027, 1, True)]:
+    _want_w |= {(r[0], r[1], r[2], r[3].get("rep_id")) for r in O.parse_opera(fx(_f), _y, _m, kids=_k)[0]
+                if OP_TODAY.isoformat() <= r[1] <= _w_to}
+check("fetch_opera: a month after the listing window's end (February on 24 Nov, window to 29 Jan) costs no "
+      "calendar, children's or English GET: 12 calendar GETs, not 16",
+      (_w_to, [u for u in _net_w.asked if "2027-02" in u], len([u for u in _net_w.asked if "/calendar/" in u])),
+      ("2027-01-29", [], 12))
+check("fetch_opera: ...and every row inside the window is still there (each listed performance of Nov–Jan from today)",
+      {(r[0], r[1], r[2], r[3].get("rep_id")) for r in _res_w["rows"] + _res_w["extra_rows"] if r[1] <= _w_to} == _want_w
+      and len(_want_w) > 20, True)
+O.OPERA_FACTS = {}
+_net_w2 = FakeNet(_op_pages(**_feb))
+O.fetch_opera(_net_w2, dt.date(2026, 11, 28))     # window to 2 Feb: February starts inside it
+check("fetch_opera: a month that starts inside the window is read (February on 28 Nov, window to 2 Feb)",
+      O.OPERA_CAL.format(y=2027, m=2) in _net_w2.asked, True)
+O.OPERA_FACTS = _facts_keep
+check("fetch_opera: at most OPERA_MONTHS months", O.OPERA_MONTHS, 4)
+_f67r = _op_by(_all)[("2026-11-27", "19:00")][3].get("facts") or {}
+check("fetch_opera: the production facts reach every row of the production, adult prices from one buy-tickets page",
+      (_f67r.get("conductor"), _f67r.get("prices_eur"), _op_by(_all)[("2026-12-04", "19:00")][3].get("facts") == _f67r),
+      ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"], True))
+check("fetch_opera: the prices are one performance's: they carry its buy-tickets link and the read date",
+      (_f67r.get("prices_url"), _f67r.get("prices_read"), _op_by(_all)[("2026-11-27", "19:00")][3].get("buy")),
+      (O.OPERA_BUY.format(n=3545), "2026-11-24", O.OPERA_BUY.format(n=3545)))
+check("fetch_opera: the English calendar's subtitle reaches the row (meta subtitle_en, no extra GET)",
+      (_op_by(_all)[("2026-11-27", "19:00")][3].get("subtitle_en"), _op_by(_all)[("2027-01-29", "19:00")][3].get("subtitle_en")),
+      ("Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks", None))
+_rep_asked = [u for u in _net.asked if "/repertoire/" in u]
+_buy_asked = [u for u in _net.asked if "/buy-tickets/" in u]
+check("fetch_opera: production pages bounded per run, soonest first", (len(_rep_asked), _rep_asked[:2]),
+      (O.OPERA_PAGE_CAP, [O.OPERA_REP.format(id=1088), O.OPERA_REP.format(id=1067)]))
+check("fetch_opera: one buy-tickets GET for one production (sold-out and children's productions: none)",
+      _buy_asked, [O.OPERA_BUY.format(n=3545)])
+check("fetch_opera: the cache holds what was read, with its date",
+      (O.OPERA_FACTS["1067"]["read"], O.OPERA_FACTS["1067"]["prices_read"], O.OPERA_FACTS["1068"].get("prices_eur")),
+      ("2026-11-24", "2026-11-24", None))
+_net2 = FakeNet(_op_pages())
+O.fetch_opera(_net2, OP_TODAY + dt.timedelta(days=3))
+check("fetch_opera: within a week a production page read is not read again, nor its prices",
+      (O.OPERA_REP.format(id=1067) in _net2.asked, any("/buy-tickets/" in u for u in _net2.asked)), (False, False))
+_net3 = FakeNet(_op_pages())
+O.fetch_opera(_net3, OP_TODAY + dt.timedelta(days=8))
+check("fetch_opera: a week later the production page and its prices are read again",
+      (O.OPERA_REP.format(id=1067) in _net3.asked, O.OPERA_BUY.format(n=3549) in _net3.asked), (True, True))
+O.OPERA_FACTS = {"1067": {"read": "2026-11-24", "prices_read": "2026-11-24", "prices_url": O.OPERA_BUY.format(n=1),
+                          "prices_eur": ["99"]}}
+_net_px = FakeNet(_op_pages(**{O.OPERA_BUY.format(n=3545): None}))
+_res_px = O.fetch_opera(_net_px, OP_TODAY)
+check("fetch_opera: prices read from a performance no longer in the calendar are shown nowhere, and the first "
+      "bookable performance's page is asked instead (unreachable here: still no price)",
+      (O.OPERA_BUY.format(n=3545) in _net_px.asked,
+       [r[1] for r in _res_px["rows"] + _res_px["extra_rows"] if "prices_eur" in (r[3].get("facts") or {})]),
+      (True, []))
+O.OPERA_FACTS = {"1067": "broken", "1068": {"read": "not a date"}}
+_res_b = O.fetch_opera(FakeNet(_op_pages()), OP_TODAY)
+check("fetch_opera: a malformed cache entry is read afresh, never trusted",
+      (O.OPERA_FACTS["1067"]["read"], O.OPERA_FACTS["1068"]["read"]), ("2026-11-24", "2026-11-24"))
+O.OPERA_FACTS = {}
+_keep_ppo = O.parse_opera_production
+O.parse_opera_production = lambda *a, **k: 1 / 0          # a parser bug on the production page
+try:
+    _res_p = O.fetch_opera(FakeNet(_op_pages()), OP_TODAY)
+finally:
+    O.parse_opera_production = _keep_ppo
+check("fetch_opera: a production page that cannot be parsed never costs the calendar (a note, no facts)",
+      (len(_res_p["rows"]) > 0, any("ZeroDivisionError" in n for n in _res_p["notes"]),
+       any(r[3].get("facts") for r in _res_p["rows"])), (True, True, False))
+O.OPERA_FACTS = {}
+check("fetch_opera: the current month's page unreachable -> None (keep previous)",
+      O.fetch_venue("opera", FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=11): None})), OP_TODAY), None)
+raises("fetch_opera: the current month's page empty -> Unavailable (keep previous)", O.Unavailable,
+       O.fetch_opera, FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=11): _op_empty("ноември", 2026)})), OP_TODAY)
+raises("fetch_opera: the current month's page names another month -> SourceBroken", O.MarkupError,
+       O.fetch_opera, FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=11): raw("opera_calendar_2026-12.html")})), OP_TODAY)
+raises("fetch_opera: the current month's children's page unreachable -> Unavailable (its days cannot be vouched for)",
+       O.Unavailable, O.fetch_opera, FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=11): None})), OP_TODAY)
+_res_k = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12): None})), OP_TODAY)
+check("fetch_opera: a later children's page unreachable -> coverage ends before that month; its adult rows are extra rows",
+      (_res_k["covered_to"], sorted({r[1][:7] for r in _res_k["extra_rows"]}),
+       any("Детски" in (r[3].get("genres") or ()) for r in _res_k["extra_rows"])),
+      ("2026-11-30", ["2026-12"], False))         # (the day before December: the venue-less ШЕГОБИШКО rows of
+                                                  # 18 Nov are excluded now, so December's density passes against
+                                                  # its reference and the end is fetch_opera's own month cut)
+_res_m = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): raw("opera_calendar_2027-01.html")})),
+                       OP_TODAY)
+check("fetch_opera: a later month page that names another month stops the reading, with a note",
+      (_res_m["covered_to"], any("2026-12" in n for n in _res_m["notes"])), ("2026-11-29", True))
+# review-r2 #4a: a later month whose default view is empty but whose children's view lists
+# performances is read (its children's rows kept) and does not end the reading
+_net_ko = FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _op_empty("декември", 2026)}))
+_res_ko = O.fetch_opera(_net_ko, OP_TODAY)
+_ko_all = _res_ko["rows"] + _res_ko["extra_rows"]
+check("fetch_opera: a month listing only children's shows keeps them (its children's page is read before "
+      "the empty-month break)",
+      (O.OPERA_CAL_KIDS.format(y=2026, m=12) in _net_ko.asked,
+       sorted(((r[0], r[1], r[2]) for r in _ko_all if r[1][:7] == "2026-12"), key=lambda r: (r[1], r[2]))),
+      (True, [("ПЕПЕЛЯШКА", "2026-12-04", "10:00"), ("ПЕПЕЛЯШКА", "2026-12-04", "11:00"),
+              ("КОНЦЕРТ ЗА БЕБОЦИ", "2026-12-06", "11:00"), ("ТРИТЕ ПРАСЕНЦА", "2026-12-19", "11:00"),
+              ("СНЕЖАНКА", "2026-12-19", "19:00")]))
+check("fetch_opera: ...and it does not end the reading (January asked, its rows listed, no note ends coverage)",
+      (O.OPERA_CAL.format(y=2027, m=1) in _net_ko.asked, any(r[1][:7] == "2027-01" for r in _ko_all),
+       any("2026-12" in n and "coverage ends" in n for n in _res_ko["notes"])), (True, True, False))
+_net_ke = FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _op_empty("декември", 2026),
+                               O.OPERA_CAL_KIDS.format(y=2026, m=12): _op_empty("декември", 2026)}))
+_res_ke = O.fetch_opera(_net_ke, OP_TODAY)
+# review-r2 #4b: finish de-duplicates a SOURCE_ID_KEY venue's rows per production id, so two
+# productions with one title in one slot both survive (synthetic: the 20 Dec 11:00 section of
+# /repertoire/1108 twice, the copy pointing at /repertoire/1088 in the Камерна зала)
+_sec20 = fx("opera_children_2026-12-20_section.html")
+_art = _sec20[_sec20.index("<article"):_sec20.index("</article>") + len("</article>")]
+_art88 = _art.replace("/repertoire/1108", "/repertoire/1088").replace("Голяма зрителна зала", "Камерна зала")
+_kids12_both = fx("opera_children_2026-12.html").replace(
+    "</div></body></html>", _sec20.replace(_art, _art + _art88) + "</div></body></html>", 1).encode()
+_res_cl = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12): _kids12_both})), OP_TODAY)
+check("fetch_opera: two productions with one title in one slot both survive (keyed on the repertoire id)",
+      sorted((r[3].get("rep_id"), r[3].get("hall")) for r in _res_cl["rows"] + _res_cl["extra_rows"]
+             if (r[0], r[1], r[2]) == ("КАРНАВАЛЪТ НА ЖИВОТНИТЕ", "2026-12-20", "11:00")),
+      [("1088", "Камерна зала"), ("1108", "Голяма зрителна зала")])
+_cl_rows = [O.mkrow("Х", dt.date(2026, 12, 20), "11:00", rep_id="1"), O.mkrow("Х", dt.date(2026, 12, 20), "11:00", rep_id="2"),
+            O.mkrow("Х", dt.date(2026, 12, 20), "11:00", rep_id="1")]
+check("finish: the production id is the key for a SOURCE_ID_KEY venue only (the same row twice is still one; "
+      "another venue keeps (title, date, time))",
+      ([r[3].get("rep_id") for r in O.finish("opera", "s", _cl_rows, OP_TODAY, month_check=False)["rows"]],
+       [r[3].get("rep_id") for r in O.finish("national", "s", _cl_rows, OP_TODAY, month_check=False)["rows"]],
+       _SPO.SOURCE_ID_KEY is O.SOURCE_ID_KEY), (["1", "2"], ["1"], True))
+check("fetch_opera: a later month empty in both views ends the reading (January not asked)",
+      (O.OPERA_CAL.format(y=2027, m=1) in _net_ke.asked, sorted({r[1][:7] for r in _res_ke["rows"] + _res_ke["extra_rows"]})),
+      (False, ["2026-11"]))
+check("fetch_opera: registered as a theatre fetcher, and 2 s between requests to operasofia.bg",
+      ("opera" in O.FETCHERS, __import__("netfetch").CRAWL_DELAY.get("www.operasofia.bg", 0) >= 2.0), (True, True))
+
+
+# --- the honest User-Agent lives in netfetch: every netfetch GET to operasofia.bg carries it (the
+# programme, and the poster / synopsis passes reading its production pages), other hosts keep theirs
+def _ua_capture():
+    import netfetch as _NF2
+    sent = []
+
+    class _R:
+        status_code, content, headers, url = 200, b"User-agent: *\nDisallow:\n", {"Content-Type": "text/plain"}, ""
+
+    def _fake(f):
+        def get(url, headers=None, **kw):
+            eff = dict(f.session.headers)
+            eff.update(headers or {})
+            sent.append((url, eff.get("User-Agent")))
+            return _R()
+        f.session.get = get
+        f.session.post = lambda url, data=None, headers=None, **kw: (sent.append((url, dict(f.session.headers, **(headers or {})).get("User-Agent"))), _R())[1]
+        return f
+    return _NF2, sent, _fake
+
+
+_NF2, _sent, _fake = _ua_capture()
+_f = _fake(_NF2.Fetcher(verbose=False, host_delay=0.0))
+_f.get("https://www.operasofia.bg/repertoire/1067")
+_f.get("https://operasofia.bg/uploads/events/1067.png", headers={"User-Agent": "Mozilla/5.0 caller"})
+_f.post("https://www.operasofia.bg/x", data={})
+_f.get("https://natfiz.bg/event/")
+check("netfetch: a Fetcher GET/POST to operasofia.bg (www or bare, any caller's headers) sends the honest UA; "
+      "other hosts keep the browser UA",
+      [ua for _u, ua in _sent],
+      [_NF2.HONEST_UA, _NF2.HONEST_UA, _NF2.HONEST_UA, _NF2.BROWSER_HEADERS["User-Agent"]])
+check("netfetch: the honest UA names the site", _NF2.HONEST_UA, "SofiaGleda/1.0 (+https://sofiagleda.com)")
+check("netfetch: 2 s floor for both operasofia hosts, static in CRAWL_DELAY (no run-time patch)",
+      (_NF2.CRAWL_DELAY.get("www.operasofia.bg"), _NF2.CRAWL_DELAY.get("operasofia.bg"),
+       hasattr(O, "_opera_delay"), hasattr(O, "_oget")), (2.0, 2.0, False, False))
+import own_page_posters as _OPP
+_NF2, _sent, _fake = _ua_capture()
+_opn = _OPP.Net(budget=60)
+_opn._local.f = _fake(_NF2.Fetcher(verbose=False, host_delay=0.0))
+_opn.get("https://www.operasofia.bg/repertoire/1067")
+check("netfetch: the own-page poster / synopsis fetcher (own_page_posters.Net) sends the honest UA to operasofia.bg, "
+      "robots.txt included", [(u.rsplit("/", 1)[-1], ua) for u, ua in _sent],
+      [("robots.txt", _NF2.HONEST_UA), ("1067", _NF2.HONEST_UA)])
+_c67 = _OPP.candidates(fx("opera_production_1067.html"), "https://www.operasofia.bg/repertoire/1067")
+check("own_page_posters: the Opera's production page (no og:image) gives its own /uploads/events/<id> banner, tier 1",
+      [(u.split("?")[0], t) for u, t, _h in _c67 if t == 1][:1], [("https://operasofia.bg/uploads/events/1067.png", 1)])
+_c67x = _OPP.candidates(fx("opera_production_1067.html").replace("uploads/events/1067.png", "uploads/events/1068.png"),
+                        "https://www.operasofia.bg/repertoire/1067")
+check("own_page_posters: another production's banner on that page is never its tier-1 poster",
+      [u for u, t, _h in _c67x if t == 1 and "/uploads/events/" in u], [])
+_c_all = {rid: [u for u, t, _h in _OPP.candidates(fx(f"opera_production_{rid}.html"),
+                                                   f"https://www.operasofia.bg/repertoire/{rid}") if t == 1][:1]
+          for rid in ("1067", "1068", "1086", "1087", "1107")}
+check("own_page_posters: every opera production fixture yields its own banner (offline proof of the opera poster pass)",
+      sorted(rid for rid, u in _c_all.items() if u and f"/uploads/events/{rid}." in u[0]), sorted(_c_all))
+import fetch_theatre_posters as _FTP
+_NF2, _sent, _fake = _ua_capture()
+_pf = _fake(_FTP.PoliteFetcher(verbose=False, host_delay=0.0))
+_pf.get("https://www.operasofia.bg/repertoire/1068")
+check("netfetch: fetch_theatre_posters' PoliteFetcher sends the honest UA to operasofia.bg",
+      {ua for _u, ua in _sent}, {_NF2.HONEST_UA})
+O.OPERA_FACTS = {}
+
+# --- keep-previous never carries a ticket link forward (DESIGN_SPEC §2.1.5); the sale column: below
+_kp_prev = [["agripina", "2026-12-04", "19:00", "https://www.operasofia.bg/buy-tickets/3549"],
+            ["medeya", "2026-12-05", "19:00", "https://www.nationaltheatre.bg/bg/x/2026-12-05|19:00:00"]]
+_kp_perf = [["agripina", "2026-12-04", "19:00"], ["medeya", "2026-12-05", "19:00"]]
+check("keep-previous: an opera performance kept from last run gets no ticket link; other theatres keep theirs",
+      _SPO.performance_links(_kp_perf, [], [], _kp_prev, [], (), no_carry={"agripina"}), [_kp_prev[1]])
+check("keep-previous: without no_carry the old behaviour stands",
+      len(_SPO.performance_links(_kp_perf, [], [], _kp_prev, [], ())), 2)
+
+# --- scrape_programs: the opera venue is resolved and minted in order, its EN title and genres minted
+check("THEATRE_ORDER ends with opera; it is no theatre.art.bg venue",
+      (_SPO.THEATRE_ORDER[-1], "opera" in _SPO.THEATRE_ART_IDS.values()), ("opera", False))
+_op_minted = []
+_op_ix = SI.ShowIndex([], aliases={})
+
+
+def _op_mint(title, theatre, url, meta=None):
+    sid = f"op-{len(_op_minted) + 1}"
+    _op_ix.add({"id": sid, "title": title, "theatre": theatre}, minted=True)
+    _op_minted.append((sid, title, theatre, url, meta))
+    return sid
+
+
+_SPO.resolve_theatre_rows(_op_ix, {"opera": {"rows": [r for r in _all if r[3].get("rep_id") in ("1067", "1073")],
+                                             "extra_rows": []}}, _op_mint)
+check("resolve_theatre_rows: a minted opera show gets the English title and the genres of its rows",
+      [(t, (m or {}).get("title_en"), (m or {}).get("genres")) for _s, t, _v, _u, m in _op_minted],
+      [("АГРИПИНА", "AGRIPPINA", ["Опера"]), ("ЛЕШНИКОТРОШАЧКАТА", "THE NUTCRACKER", ["Балет"])])
+
+# --- the sale state end to end (DESIGN_SPEC §2.1.5): fetch_opera's rows go through
+# resolve_theatre_rows, official_perf_rows and merge_theatre_venue into PERFORMANCES (the
+# path scrape_programs.main takes); then a keep-previous run of those very rows.
+def _fresh_minter(prefix):
+    ix, log = SI.ShowIndex([], aliases={}), []
+
+    def mint(title, theatre, url, meta=None):
+        sid = f"{prefix}-{len(log) + 1}"
+        ix.add({"id": sid, "title": title, "theatre": theatre}, minted=True)
+        log.append((sid, title, url, meta or {}))
+        return sid
+    return ix, log, mint
+
+
+# --- refresh_source_shows: the opera's titleEn, genres, subtitle and facts follow its calendar every night
+_rs_res = O.fetch_opera(FakeNet(_op_pages()), OP_TODAY)
+O.OPERA_FACTS = {}
+_rs_ix, _rs_log, _rs_mint = _fresh_minter("rs")
+_rs_rr, _ = _SPO.resolve_theatre_rows(_rs_ix, {"opera": _rs_res}, _rs_mint, {})
+_rs_recs = {sid: {"id": sid, "title": t, "titleEn": "", "theatre": "opera", "genres": []} for sid, t, _u, _m in _rs_log}
+_rs_changed = _SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat())
+_rs_by = {r["title"]: r for r in _rs_recs.values()}
+check("refresh_source_shows: a show minted without them gets its EN title and genres from tonight's rows",
+      (_rs_by["АГРИПИНА"]["titleEn"], _rs_by["АГРИПИНА"]["genres"], _rs_by["ЖИЗЕЛ"]["genres"]),
+      ("AGRIPPINA", ["Опера"], ["Балет"]))
+check("refresh_source_shows: the subtitle without its closing credit (ПРЕМИЕРА kept: the UI drops it next to the badge; the conductor is in facts)",
+      _rs_by["АГРИПИНА"].get("subtitle"), "Опера от Георг Фридрих Хендел ПРЕМИЕРА")
+check("refresh_source_shows: the production pass's facts become SHOWS.facts (conductor, the EUR categories)",
+      ((_rs_by["АГРИПИНА"].get("facts") or {}).get("conductor"), (_rs_by["АГРИПИНА"].get("facts") or {}).get("prices_eur")),
+      ("Константин Тринкс", ["50", "60", "35", "40", "30", "25", "20"]))
+check("refresh_source_shows: subtitleEn from the English calendar's lines, by the same rule (closing credit dropped)",
+      (_rs_by["АГРИПИНА"].get("subtitleEn"), "subtitleEn" in _rs_by["ЧЕРВЕНАТА ШАПЧИЦА"]),
+      ("Opera by George Frideric Handel PREMIERE", False))
+check("refresh_source_shows: every refreshed show reported changed", sorted(_rs_changed) == sorted(_rs_recs), True)
+_rs_srcid = {sid: (m or {}).get("source_id") for sid, _t, _u, m in _rs_log}
+for _sid, _r in _rs_recs.items():
+    _r["source_id"] = _rs_srcid.get(_sid)
+_SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat())
+check("refresh_source_shows: baked only for the productions whose banner prints the title (АГРИПИНА 1067)",
+      (_rs_by["АГРИПИНА"].get("baked"), "baked" in _rs_by["ЖИЗЕЛ"]), (True, False))
+check("refresh_source_shows: a second run with the same rows changes nothing",
+      _SPO.refresh_source_shows(_rs_recs, _rs_rr, OP_TODAY.isoformat()), [])
+
+
+def _rs_one(subs, metas_extra=None, rec=None):
+    rec = rec if rec is not None else {"id": "x", "titleEn": "OLD", "genres": ["Опера"], "subtitle": "stale", "facts": {"a": 1}}
+    rows = [("x", f"2026-12-0{i + 1}", "19:00", dict({"subtitle": s} if s is not None else {}, **(metas_extra or {})), "T")
+            for i, s in enumerate(subs)]
+    _SPO.refresh_source_shows({"x": rec}, {"opera": {"rows": rows, "extra_rows": []}}, "2026-11-24")
+    return rec
+
+
+check("refresh_source_shows: only the conductor changes by night -> the words every night prints before the credit",
+      _rs_one(["Опера от Верди Диригент А Б", "Опера от Верди Диригент В Г"]).get("subtitle"), "Опера от Верди")
+check("refresh_source_shows: nights that print different lines -> no subtitle (a missing value beats one night's)",
+      "subtitle" in _rs_one(["Опера от Верди", "Балет от Адам"]), False)
+check("refresh_source_shows: a night without a subtitle -> none", "subtitle" in _rs_one(["Опера от Верди", None]), False)
+_rs_en = {"id": "x", "titleEn": "", "genres": [], "subtitleEn": "stale"}
+_SPO.refresh_source_shows({"x": _rs_en}, {"opera": {"rows": [
+    ("x", "2026-12-01", "19:00", {"subtitle_en": "Opera by Verdi Conductor A B"}, "T"),
+    ("x", "2026-12-02", "19:00", {"subtitle_en": "Opera by Verdi Conductor C D"}, "T")], "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: subtitleEn, only the English conductor credit changes -> the shared words",
+      _rs_en.get("subtitleEn"), "Opera by Verdi")
+_SPO.refresh_source_shows({"x": _rs_en}, {"opera": {"rows": [
+    ("x", "2026-12-01", "19:00", {"subtitle_en": "Opera by Verdi"}, "T"),
+    ("x", "2026-12-02", "19:00", {}, "T")], "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: a row the English page did not give -> no subtitleEn (the UI falls back to BG)",
+      "subtitleEn" in _rs_en, False)
+check("refresh_source_shows: no EN title / no genres / no facts tonight: titleEn and genres kept, facts dropped",
+      (lambda r: (r["titleEn"], r["genres"], "facts" in r))(_rs_one(["x"])), ("OLD", ["Опера"], False))
+_rs_past = {"id": "x", "titleEn": "", "genres": [], "subtitle": "kept"}
+_SPO.refresh_source_shows({"x": _rs_past}, {"opera": {"rows": [("x", "2026-11-01", "19:00", {"subtitle": "new"}, "T")],
+                                                       "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: a show with no upcoming row tonight is left as it is", _rs_past["subtitle"], "kept")
+_rs_nat = {"id": "n", "genres": []}
+_SPO.refresh_source_shows({"n": _rs_nat}, {"national": {"rows": [("n", "2026-12-01", "19:00", {"genres": ["Драма"]}, "T")],
+                                                         "extra_rows": []}}, "2026-11-24")
+check("refresh_source_shows: only SOURCE_ID_KEY theatres (the opera)", _rs_nat["genres"], [])
+import inject_shows as _IS
+import translate as _TR, tempfile as _tf_tr
+with _tf_tr.TemporaryDirectory() as _d:
+    _hp = pathlib.Path(_d) / "index.html"
+    _hp.write_text('const FILMS=[];\nconst SHOWS=[{"id":"bebotsi","title":"КОНЦЕРТ ЗА БЕБОЦИ","titleEn":"","theatre":"opera"},'
+                   '{"id":"hamlet","title":"Хамлет","titleEn":"","theatre":"national"}];\n'
+                   'const THEATRES=[{"id":"national","kind":"national"},{"id":"opera","kind":"opera"}];\n', encoding="utf-8")
+    _keep_html, _TR.HTML = _TR.HTML, _hp
+    try:
+        _tr_shows = _TR.load_html_consts()[1]
+    finally:
+        _TR.HTML = _keep_html
+check("translate.py: no machine title is made for an opera production without the opera's own EN title "
+      "(TITLE_EN, which search indexes); other shows still get one",
+      [sid for sid, _t in _TR.shows_needing_translation(_tr_shows)[1]], ["hamlet"])
+check("inject_shows: subtitle and facts reach SHOWS when present; absent (not empty) on every other show",
+      (_IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("subtitle"),
+       _IS.normalise({"id": "a", "subtitle": "Опера от Хендел", "facts": {"conductor": "К"}}).get("facts"),
+       sorted(set(_IS.normalise({"id": "b"})) - set(_IS.SHOW_FIELDS)),
+       sorted(set(_IS.normalise({"id": "c", "subtitle": "", "facts": "x", "baked": "yes"})) - set(_IS.SHOW_FIELDS))),
+      ("Опера от Хендел", {"conductor": "К"}, [], []))
+
+# a future performance whose sales have not opened (only 'виж повече': the Gala of 2 Dec)
+_dec_notyet = re.sub(rb'<a class="btn bg-red" href="https://www.operasofia.bg/buy-tickets/3548">.*?</a>', b"",
+                     raw("opera_calendar_2026-12.html"), count=1, flags=re.S)
+_e2e_res = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL.format(y=2026, m=12): _dec_notyet})), OP_TODAY)
+_e2e_ix, _e2e_log, _e2e_mint = _fresh_minter("e2e")
+_e2e_rr = _SPO.resolve_theatre_rows(_e2e_ix, {"opera": _e2e_res}, _e2e_mint, {})[0]["opera"]
+_e2e_rows, _e2e_pf, _ = _SPO.merge_theatre_venue(
+    "opera", "official", _SPO.official_perf_rows("opera", _e2e_rr["rows"]),
+    (_e2e_res["covered_from"], _e2e_res["covered_to"]),
+    _SPO.official_perf_rows("opera", _e2e_rr["extra_rows"]), [], set(), [], None, "2026-11-24", "2027-02-28")
+_src_sale = {(r[1], r[2], r[0]): r[3].get("sale") or "" for r in _e2e_res["rows"] + _e2e_res["extra_rows"]}
+_e2e_title = {sid: t for sid, t, _u, _m in _e2e_log}
+_got_sale = {(r[1], r[2], _e2e_title[r[0]]): (r[5] if len(r) > 5 else "") for r in _e2e_rows}
+check("sale end to end: every PERFORMANCES row carries fetch_opera's own status (6th column), "
+      "and every source row is written",
+      (_got_sale == _src_sale, sorted(collections.Counter(_got_sale.values()).items())),
+      (True, [("", 11), ("notyet", 1), ("soldout", 9)]))
+check("sale end to end: sold out and not yet are told apart; a row on sale stays 5 long",
+      (_got_sale[("2026-12-05", "19:00", "ЖИЗЕЛ")], _got_sale[("2026-12-02", "19:00", "КОНЦЕРТ ГАЛА РОСИНИ – СВЕТЛИНА СТОЯНОВА")],
+       {len(r) for r in _e2e_rows if len(r) < 6 or r[5] not in ("soldout", "notyet")}),
+      ("soldout", "notyet", {5}))
+check("sale end to end: the row-shape checks accept them (opera only); a 6th column elsewhere or another "
+      "value is refused",
+      (all(_SPO.performance_row_ok(r, "opera") for r in _e2e_rows),
+       _SPO.performance_row_ok(["x", "2026-12-05", "19:00", None, None, "soldout"], "national"),
+       _SPO.performance_row_ok(["x", "2026-12-05", "19:00", None, None, "cancelled"], "opera")),
+      (True, False, False))
+check("sale end to end: no other theatre gets a sale column from its meta",
+      _SPO.official_perf_rows("national", [("s", "2026-12-05", "19:00", {"sale": "soldout"}, "t")]),
+      [("s", "2026-12-05", "19:00", None, None)])
+_e2e_own = [(sid, d, t, m) for sid, d, t, m, _ti in _e2e_rr["rows"] + _e2e_rr["extra_rows"]]
+_e2e_links = _SPO.performance_links(_e2e_rows, _e2e_own, [], [], [], {tuple(x[:3]) for x in _e2e_own})
+_linked = {tuple(x[:3]) for x in _e2e_links}
+check("sale end to end: PLINKS only for a performance on sale; none for a sold-out or not-yet one",
+      (sorted({len(r) for r in _e2e_rows if tuple(r[:3]) in _linked}), any(len(r) > 5 and tuple(r[:3]) in _linked
+                                                                           for r in _e2e_rows), len(_linked) > 0),
+      ([5], False, True))
+# the next run cannot read the Opera: last run's rows are kept (as scrape_programs.main reads them)
+_kp_prev_rows = _SPO.kept_perf_rows(_e2e_rows, "opera", _e2e_ix)
+_kp_rows, _, _ = _SPO.merge_theatre_venue("opera", "unreachable", [], None, [], [], set(), _kp_prev_rows,
+                                          _e2e_pf, "2026-11-24", "2027-02-28")
+check("keep-previous: every opera row is kept, and none keeps its sale column (it shows 'виж повече', "
+      "never a stale 'разпродадено' / 'продажбата не е открита')",
+      ({tuple(r[:3]) for r in _kp_rows} == {tuple(r[:3]) for r in _e2e_rows}, {len(r) for r in _kp_rows}),
+      (True, {5}))
+check("keep-previous: ...and no ticket link either (no_carry)",
+      _SPO.performance_links(_kp_rows, [], [], _e2e_links, [], (), no_carry={r[0] for r in _kp_rows}), [])
+
+# --- two productions with one title are two shows (КАРНАВАЛЪТ НА ЖИВОТНИТЕ: /repertoire/1088 in the
+# Chamber hall, /repertoire/1108 on the main stage, 20 Dec 11:00 — DESIGN_SPEC §2.3)
+_kids12_1108 = fx("opera_children_2026-12.html").replace(
+    "</div></body></html>", fx("opera_children_2026-12-20_section.html") + "</div></body></html>", 1).encode()
+_kv_res = O.fetch_opera(FakeNet(_op_pages(**{O.OPERA_CAL_KIDS.format(y=2026, m=12): _kids12_1108})), OP_TODAY)
+_kv_ix, _kv_log, _kv_mint = _fresh_minter("kv")
+_kv_ids = {}
+_kv_rr = _SPO.resolve_theatre_rows(_kv_ix, {"opera": _kv_res}, _kv_mint, _kv_ids)[0]["opera"]
+_kv_all = _kv_rr["rows"] + _kv_rr["extra_rows"]
+_kv_sid = {(d, t): sid for sid, d, t, m, ti in _kv_all if ti == "КАРНАВАЛЪТ НА ЖИВОТНИТЕ"}
+check("same title, two repertoire ids: two shows, each minted with its own id and page",
+      (len(set(_kv_sid.values())), sorted((m.get("source_id"), u) for sid, ti, u, m in _kv_log
+                                          if ti == "КАРНАВАЛЪТ НА ЖИВОТНИТЕ")),
+      (2, [("1088", "https://www.operasofia.bg/repertoire/1088"), ("1108", "https://www.operasofia.bg/repertoire/1108")]))
+_kv_links, _ = _SPO.theatre_link_choices("official", _kv_rr["rows"], _kv_rr["extra_rows"], [],
+                                         {sid for sid, *_ in _kv_all}, window=("2026-11-24", "2027-02-28"))
+check("same title, two repertoire ids: the 20 Dec performance's 'виж повече' opens /repertoire/1108, "
+      "the Chamber hall's /repertoire/1088",
+      (_kv_links[_kv_sid[("2026-12-20", "11:00")]], _kv_links[_kv_sid[("2026-11-27", "10:00")]]),
+      ("https://www.operasofia.bg/repertoire/1108", "https://www.operasofia.bg/repertoire/1088"))
+check("same title, two repertoire ids: the minted ids are remembered by repertoire id",
+      (_kv_ids[("opera", "1088")], _kv_ids[("opera", "1108")]),
+      (_kv_sid[("2026-11-27", "10:00")], _kv_sid[("2026-12-20", "11:00")]))
+# a later run: both records known (theatre_shows.json keeps "source_id"), only 1108 listed
+_kv2_ix = SI.ShowIndex([{"id": sid, "title": ti, "theatre": "opera"} for sid, ti, _u, _m in _kv_log],
+                       minted_ids={sid for sid, *_ in _kv_log}, aliases={})
+_kv2_res = dict(_kv_res, rows=[r for r in _kv_res["rows"] if r[3].get("rep_id") != "1088"],
+                extra_rows=[r for r in _kv_res["extra_rows"] if r[3].get("rep_id") != "1088"])
+_kv2_rr, _kv2_new = _SPO.resolve_theatre_rows(_kv2_ix, {"opera": _kv2_res},
+                                              lambda *a, **k: 1 / 0,      # nothing may be minted
+                                              {("opera", m["source_id"]): sid for sid, _t, _u, m in _kv_log
+                                               if m.get("source_id")})
+check("same title, two repertoire ids: a later run files 1108 under its own show, never under 1088's "
+      "(which a title match would pick)",
+      ({sid for sid, d, t, m, ti in _kv2_rr["opera"]["rows"] + _kv2_rr["opera"]["extra_rows"]
+        if ti == "КАРНАВАЛЪТ НА ЖИВОТНИТЕ"}, _kv2_new),
+      ({_kv_sid[("2026-12-20", "11:00")]}, []))
+check("source ids: other theatres are still resolved by title alone", set(_SPO.SOURCE_ID_KEY), {"opera"})
+
+# --- src/data.html: the venue, once, of kind "opera"
+_dh = (HERE.parent / "src" / "data.html").read_text(encoding="utf-8")
+_th = json.loads(re.search(r"^const THEATRES=(\[.*\]);\s*$", _dh, re.M).group(1))
+check("src/data.html: THEATRES has the opera venue once, kind 'opera'",
+      [(t["id"], t["kind"], t["name"], t["nameEn"]) for t in _th if t["id"] == "opera"],
+      [("opera", "opera", "Софийска опера и балет", "Sofia Opera and Ballet")])
+
+# --- own_page_synopses.py on operasofia.bg /repertoire/<id> (2026-11-26): the page has no
+# <main>/<article>/#content, so only the HOST_BLOCKS rule reaches the text (Преглед, then Синопсис)
+def _opsyn(n, t):
+    return _OPS.read_page(fx(f"opera_production_{n}.html"), f"https://www.operasofia.bg/repertoire/{n}",
+                          t, ["Софийска опера и балет"], set(), None)
+check("opera synopsis: the host rule matches www.operasofia.bg", "operasofia.bg" in _OPS.HOST_BLOCKS, True)
+check("opera synopsis: the Преглед / Синопсис text fills (ЖИЗЕЛ, ПЕПЕЛЯШКА, НОРМА)",
+      [bool(_opsyn(n, t)[0]) and len(_opsyn(n, t)[0]) >= 300 for n, t in
+       (("1068", "ЖИЗЕЛ"), ("1087", "ПЕПЕЛЯШКА"), ("1107", "НОРМА"))], [True, True, True])
+check("opera synopsis: a page with credits only stays empty, with its reason",
+      _opsyn("1086", "КОНЦЕРТ ЗА БЕБОЦИ")[:2], (None, "cast / credits / practical lines only"))
 
 print()
 if fails:

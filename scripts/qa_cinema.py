@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Focused QA for the cinema-accuracy fix. Checks, headless (Sofia clock):
   * every arthouse cinema shows a programme (odeon has many, not 2; dom-kino,
-    vlaikova, lumiere all render), across 390 px and 1440 px, in bg and en;
+    vlaikova, lumiere all render), across 402 px (iPhone 17) and 1440 px, in bg and en;
   * no "undefined" leaks into any rendered card (runtime/year guards);
   * "За теб днес" shows ONLY films with a screening today after the clock —
     verified at a mocked 14:45 Sofia so the time-of-day filter is exercised.
@@ -54,7 +54,7 @@ def jattr(page):
 with sync_playwright() as pw:
     b = pw.chromium.launch()
     # ---- pass 1: real-ish clock, both sizes, both languages ----
-    for w, h in [(390, 844), (1440, 900)]:
+    for w, h in [(402, 874), (1440, 900)]:
         for lang in ("bg", "en"):
             ctx = b.new_context(viewport={"width": w, "height": h},
                                 timezone_id="Europe/Sofia", locale="bg-BG")
@@ -93,7 +93,7 @@ with sync_playwright() as pw:
             ctx.close()
 
     # ---- pass 2: mocked 14:45 Sofia — the time-of-day filter ----
-    ctx = b.new_context(viewport={"width": 390, "height": 844},
+    ctx = b.new_context(viewport={"width": 402, "height": 874},
                         timezone_id="Europe/Sofia", locale="bg-BG")
     ctx.add_init_script(CLOCK)
     ctx.add_init_script(SKIP_ONB)

@@ -217,6 +217,17 @@ def load_html_consts() -> tuple[list, list]:
     shows_m = re.search(r"const SHOWS=(\[.*?\]);", src, flags=re.S)
     films = json.loads(films_m.group(1)) if films_m else []
     shows = json.loads(shows_m.group(1)) if shows_m else []
+    # Опера и балет: an opera production's English title comes only from the opera's own EN
+    # calendar (SHOWS.titleEn); the page never shows a machine title for one (titleOf), and none
+    # is made, so search never indexes one either (OPERA_ARCHITECTURE §8). In memory only.
+    th_m = re.search(r"const THEATRES=(\[.*?\]);", src, flags=re.S)
+    try:
+        opera = {t.get("id") for t in json.loads(th_m.group(1)) if isinstance(t, dict) and t.get("kind") == "opera"} if th_m else set()
+    except ValueError:
+        opera = set()
+    for s in shows:
+        if isinstance(s, dict) and s.get("theatre") in opera:
+            s["_no_mt_title"] = True
     return films, shows
 
 
@@ -261,7 +272,7 @@ def shows_needing_translation(shows: list) -> tuple[list, list]:
         sid = s["id"]
         if not s.get("synEn") and s.get("synBg"):
             syn_list.append((sid, s["synBg"]))
-        if not s.get("titleEn") and s.get("title"):
+        if not s.get("titleEn") and s.get("title") and not s.get("_no_mt_title"):
             title_list.append((sid, s["title"]))
     return syn_list, title_list
 
@@ -428,7 +439,7 @@ def build_mappings(films: list, shows: list, tmdb: dict, film_info: dict,
             en = lookup(s["synBg"])
             if en:
                 syn_en[sid] = en
-        if not s.get("titleEn") and s.get("title"):
+        if not s.get("titleEn") and s.get("title") and not s.get("_no_mt_title"):
             en = lookup(s["title"])
             if en:
                 title_en[sid] = en

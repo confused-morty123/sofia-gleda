@@ -15,6 +15,9 @@
  *
  * Bump CACHE_VERSION whenever this file changes so old caches are cleared.
  */
+// v12 (24 Nov 2026): the Опера и балет surface adds a third listing address, /home/opera/
+// (a copy of index.html like /home/ and /home/theatre/, answered network-first like them);
+// the bump clears the old shell so a returning visitor gets the page that knows it.
 // v11 (11 Nov 2026): the header shows logo.webp (8 KB) instead of logo.svg; it joins the shell
 // below so the header is complete offline. logo.svg (still used by the legal pages) lost its
 // metadata block, and same-origin static files are served cache-first, so the bump also
@@ -24,7 +27,7 @@
 // v9 (24 Oct 2026): fonts/fonts.css declares Geologica instead of Montserrat. It is in the
 // shell below and same-origin static files are served cache-first, so without the bump a
 // returning visitor kept the old @font-face rules (and their deleted files) for good.
-const CACHE_VERSION = "sofia-gleda-v11";
+const CACHE_VERSION = "sofia-gleda-v12";
 
 // Domain move (2026-10): on the old github.io address this worker retires itself.
 // Once sofiagleda.com is the custom domain, GitHub redirects every request here,

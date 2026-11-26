@@ -150,7 +150,27 @@ CRAWL_DELAY = {
     # natfiz.bg (official_theatres.fetch_natfiz: the event list + one page per
     # performance): robots.txt asks no Crawl-delay; 2 s is our own floor (2026-11-04)
     "natfiz.bg": 2.0,
+    # operasofia.bg (official_theatres.fetch_opera, and the poster / synopsis passes that read
+    # its production pages): robots.txt "Disallow:" with no Crawl-delay; 2 s is our own floor
+    # (OPERA_ARCHITECTURE §4.2, 2026-11-24)
+    "www.operasofia.bg": 2.0,
+    "operasofia.bg": 2.0,
 }
+
+# An honest, self-identifying User-Agent for the hosts the owner asked to read that way,
+# instead of BROWSER_HEADERS' (the opera surface, OPERA_ARCHITECTURE §4.2, 2026-11-24).
+# Applied in Fetcher.get / Fetcher.post over every caller's headers, so every script that
+# reads such a host through netfetch (the programme, posters, synopses) sends it.
+HONEST_UA = "SofiaGleda/1.0 (+https://sofiagleda.com)"
+HOST_HEADERS = {
+    "www.operasofia.bg": {"User-Agent": HONEST_UA},
+    "operasofia.bg": {"User-Agent": HONEST_UA},
+}
+
+
+def host_headers(host):
+    """The headers HOST_HEADERS sets for `host` (a copy; {} for any other host)."""
+    return dict(HOST_HEADERS.get((host or "").lower(), {}))
 
 
 class Fetcher:
@@ -286,6 +306,7 @@ class Fetcher:
             headers["Accept"] = accept
         if extra:
             headers.update(extra)
+        headers.update(host_headers(host))
 
         tries = attempts or self.attempts
         refused = self._refusal(host)
@@ -379,6 +400,7 @@ class Fetcher:
         hdrs = {"Referer": referer or f"https://{host}/"}
         if headers:
             hdrs.update(headers)
+        hdrs.update(host_headers(host))
         refused = self._refusal(host)
         if refused:
             self._record(url, host, "skipped", None, 0.0, 0, refused)
