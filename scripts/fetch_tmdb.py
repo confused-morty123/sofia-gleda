@@ -60,6 +60,8 @@ _DECOR_RE = re.compile(
 # film too (28 години по-късно), so it is decoration only after a dash or in brackets,
 # never after a colon or as the whole title.
 _REREL_BG = (r"специално\s+издание|юбилейно\s+издание|ново\s+издание|"
+             # 2026-11-26: "Властелинът на пръстените: Двете кули (удължено издание)"
+             r"(?:удължено|разширено|режисьорско|реставрирано|ремастерирано)\s+издание|"
              r"ремастериран[аои]?(?:\s+версия)?|реставриран[аои]?(?:\s+версия)?|"
              r"възстановен[аои]?\s+версия|режисьорска\s+версия|разширена\s+версия|"
              r"удължена\s+версия|4\s*[KК](?:\s+версия)?|\d+\s+години\s+от\s+премиерата|"
@@ -85,13 +87,23 @@ def rerelease_marker(title):
     return bool(t) and bool(_DECOR_BG_RE.search(t) or _REREL_EN_RE.search(t))
 
 
+# An English re-release marker in trailing brackets: "Дюн: Част първа (re-release)".
+_REREL_EN_PAREN_RE = re.compile(
+    r"\s*\((?:\d+\s*(?:th|st|nd|rd)?\s*)?(?:anniversary|restored|restoration|remastered|"
+    r"re-?release|director'?s cut|final cut|extended cut|extended edition|special edition|redux|4k)"
+    r"[^()]*\)\s*$", re.I)
+
+
 def strip_rerelease(title):
-    """The title without its trailing re-release markers (_DECOR_BG_RE): those words
-    are decoration, never words a match must keep (stripped_words)."""
+    """The title without its trailing re-release markers (_DECOR_BG_RE, and English
+    ones in brackets or after a dash): those words are decoration, never words a
+    match must keep (stripped_words)."""
     t, prev = (title or "").strip(), None
     while t and t != prev:
         prev = t
         t = _DECOR_BG_RE.sub("", t).strip()
+        t = _REREL_EN_PAREN_RE.sub("", t).strip()
+        t = _DECOR_RE.sub("", t).strip() or t
     return t
 
 
@@ -99,8 +111,13 @@ def strip_rerelease(title):
 _TRAILING_YEAR_BARS_RE = re.compile(r"\s*\|\s*(\d{4})\s*\|\s*$")
 # Festival / series prefixes, e.g. "СИНЕЛИБРИ 2026 – ", "ЕВРОПЕЙСКИ КИНОКЛАСИКИ: "
 # A prefix is ALL-CAPS (possibly with digits/spaces) followed by a dash or colon.
+# A plain hyphen is a separator only with a space before it: "СПАЙДЪР-МЕН: …" is one
+# word, and stripping "СПАЙДЪР-" searched for "МЕН: (НОВ) НОВ ДЕН" (2026-11-26).
 _FESTIVAL_PREFIX_RE = re.compile(
-    r"^(?:[А-ЯA-Z][А-ЯA-Z0-9\s]{2,30})\s*(?:[-–—]|[:：])\s*", re.U)
+    r"^(?:[А-ЯA-Z][А-ЯA-Z0-9\s]{2,30})(?:\s+-|\s*[–—]|\s*[:：])\s*", re.U)
+# Влайкова's event listing: "ОМАРЪТ | THE LOBSTER | 2015 | „Нощ на европейското кино“ в
+# кино „Влайкова“": the Bulgarian title, the original, the year, then the event.
+_PIPE_YEAR_SEG_RE = re.compile(r"^\d{4}$")
 # Festival / series names a cinema prepends to the film's own title. They are
 # never part of the title, so they go BEFORE the first search (strip_series_prefix):
 # "It’s Alive! Хорър Филм Фест Част IV: Сиянието" (Дом на киното) is "Сиянието".
@@ -594,6 +611,16 @@ def declutter(title):
     m = _FESTIVAL_PREFIX_RE.match(t)
     if m:
         t = t[m.end():].strip()
+
+    # 1b. "BG | ORIGINAL | 2015 | event": the Bulgarian title and the year.
+    segs = [x.strip() for x in t.split("|")]
+    if len(segs) >= 3:
+        yrs = [x for x in segs[1:] if _PIPE_YEAR_SEG_RE.match(x)]
+        if yrs and segs[0] and not _PIPE_YEAR_SEG_RE.match(segs[0]):
+            yi = segs.index(yrs[0])
+            if yi < len(segs) - 1 and any(segs[yi + 1:]):   # something after the year: an event
+                extracted_year = int(yrs[0])
+                t = segs[0]
 
     # 2. Trailing "| 1979 |" bars — strip and capture year.
     m = _TRAILING_YEAR_BARS_RE.search(t)

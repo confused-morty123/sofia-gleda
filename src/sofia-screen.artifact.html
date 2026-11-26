@@ -1816,11 +1816,11 @@ button,a{-webkit-tap-highlight-color:transparent}
 [data-opera] .ophero .hero-syn.op-tail{color:#B5AABA}
 /* off-ratio art (КОЛЕДЕН КОНЦЕРТ НУТИ 800x560, СНЕЖАНКА 800x427): the same picture, blurred and
    darkened, fills the band behind the fitted one, so no flat black bars (opArt's .p-bg) */
-[data-opera] .opcard .ebox img.p-bg,.shero.shero-op img.p-bg,[data-opera] .ophero .hero-art img.p-bg{position:absolute; inset:0; width:100%; height:100%;
+[data-opera] .opcard .ebox img.p-bg,[data-opera] .ophero .hero-art img.p-bg{position:absolute; inset:0; width:100%; height:100%;
   object-fit:cover; object-position:center; filter:blur(18px) brightness(.45) saturate(1.2); transform:scale(1.2); pointer-events:none; -webkit-mask-image:none; mask-image:none}
 /* a picture narrower than its band (.p-pb, set on load): the element is the picture itself, centred, its
    left and right edges fading over 24 px into the backdrop, so a near-black edge leaves no seam */
-[data-opera] .opcard .ebox img.p-real.p-pb,.shero.shero-op img.p-real.p-pb{width:auto; max-width:100%; left:0; right:0; margin-inline:auto;
+[data-opera] .opcard .ebox img.p-real.p-pb{width:auto; max-width:100%; left:0; right:0; margin-inline:auto;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent); mask-image:linear-gradient(90deg,transparent,#000 24px,#000 calc(100% - 24px),transparent)}
 @media(max-width:760px){ [data-opera] .ophero .hero-art img.p-real.p-pb{width:auto; max-width:100%; margin-inline:auto;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 48px,#000 calc(100% - 48px),transparent); mask-image:linear-gradient(90deg,transparent,#000 48px,#000 calc(100% - 48px),transparent)}
@@ -1858,14 +1858,16 @@ button,a{-webkit-tap-highlight-color:transparent}
 .fab{transition:transform .22s var(--ease-sheet,cubic-bezier(.32,.72,0,1)),opacity .18s ease,visibility 0s linear 0s}
 .fab.dodge{transform:translateY(calc(100% + 28px)); opacity:0; visibility:hidden; pointer-events:none;
   transition:transform .22s var(--ease-sheet,cubic-bezier(.32,.72,0,1)),opacity .18s ease,visibility 0s linear .22s}
-/* the sheet: banner fitted on black, the title block under it, pills as the purchase */
-.shero.shero-op{display:block; min-height:0; padding:0; aspect-ratio:2.02/1; max-height:260px; width:100%; background:#000}
-.shero.shero-op img,.shero.shero-op .p-real{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; filter:none}
-/* opened at a dated performance: a lower band (the pills come sooner), the art still filling it */
-.shero.shero-op.compact{max-height:180px}
+/* the sheet: the banner fills the sheet's width at the opera's own 2:1 ratio, the picture covering it
+   edge to edge as on the cinema and theatre sheets, no blurred backdrop and no height cap (owner
+   2026-11-26: the opened card showed a small fitted picture on a blurred copy of itself) */
+.shero.shero-op{display:block; min-height:0; padding:0; aspect-ratio:2.02/1; width:100%; background:#000}
+.shero.shero-op img,.shero.shero-op .p-real{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; display:block; filter:none}
+/* no picture: the typographic art keeps the lower band it had */
+.shero.shero-op.noimg{max-height:260px}
+@media(max-width:620px){ .shero.shero-op.noimg{max-height:170px} }
 .shero.shero-op.compact.noimg{aspect-ratio:auto; height:96px; max-height:none}
 .shero.shero-op.compact.noimg .gp-t{display:none}
-@media(max-width:620px){ .shero.shero-op{max-height:170px} .shero.shero-op.compact:not(.noimg){max-height:140px} }
 .sh-ophead{padding:20px 22px 0; container-type:inline-size}
 /* the title's longest word (--gl, set inline) fits the column on one line, never under 18 px. 1.3, not
    .gp-t's 1.38: measured in the sheet at 18-20 px, Source Serif 4 700 capitals run 0.72-0.73 em a letter
@@ -3848,12 +3850,13 @@ const opImg=sh=>safeImg(realPoster(sh.id,"original"));
 const opNoImg=sh=>opImg(sh)?"":" noimg"+(opGenreOf(sh)?"":" nok");
 /* the title's longest word in letters (at least 4): --gl, so a type size can fit it on one line */
 const opGl=tt=>Math.max(4,...String(tt).split(/\s+/).map(w=>[...w].length));
-function opArt(sh){
+function opArt(sh,noBg){
   const src=opImg(sh);
   const r=rng(sh.id),gx=Math.round(18+r()*70),g=opGenreOf(sh),tt=titleOf(sh);
   const gp=`<div class="gp" style="--gx:${gx}%;--gl:${opGl(tt)}" aria-hidden="true">${g?`<span class="gp-k">${g==="ballet"?OP_SHOES:""}${esc(opGenreLabel(g))}</span>`:""}<span class="gp-t">${esc(tt)}</span></div>`;
-  /* p-bg: the same picture, blurred and darkened, fills the band the fitted one leaves (CSS) */
-  return gp+(src?`<img class="p-bg" src="${esc(src)}" alt="" aria-hidden="true" loading="lazy" decoding="async"><img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
+  /* p-bg: the same picture, blurred and darkened, fills the band the fitted one leaves (CSS). Not in the
+     sheet (noBg): there the picture itself fills its band (owner 2026-11-26) */
+  return gp+(src?`${noBg?"":`<img class="p-bg" src="${esc(src)}" alt="" aria-hidden="true" loading="lazy" decoding="async">`}<img class="p-real" src="${esc(src)}" alt="" loading="lazy" decoding="async">`:"");}
 
 /* the agenda row's poster card (owner, 2026-11-26): the 2:1 art filling a small rounded card, no
    blurred backdrop; the typographic art under it shows when there is no picture or it fails */
@@ -4047,7 +4050,7 @@ function sheetOpera(sh,fc){
   const fd=fc&&fc.pd,ft=fc&&fc.pt,fp=fd?perfs.find(p=>p[1]===fd&&(!ft||p[2]===ft))||null:null;
   const stages=[...new Set(perfs.map(opStage))],g=opGenreOf(sh),sub=opSub(sh),syn=synShow(sh);
   const chips=(g?`<span class="chip solid">${esc(opGenreLabel(g))}</span>`:"")+(opPremAhead(sh.id)?`<span class="chip prem">${esc(O.premiere)}</span>`:"");
-  return`<div class="sheet opsheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-op${fp?" compact":""}${opNoImg(sh)}">${opArt(sh)}
+  return`<div class="sheet opsheet" role="dialog" aria-modal="true" aria-labelledby="sg-sheet-title"><div class="shero shero-op${fp?" compact":""}${opNoImg(sh)}">${opArt(sh,true)}
     <button class="sclose" data-close aria-label="${esc(L.lblClose)}">✕</button>
     <button class="sshare" data-share="show:${esc(sh.id)}" aria-label="${esc(L.share||"Сподели")}" title="${esc(L.share||"Сподели")}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/></svg></button></div>
    <div class="sh-ophead"><div class="eyebrow">${esc(stages.join(" · "))}</div><h2 id="sg-sheet-title" tabindex="-1" style="--gl:${opGl(titleOf(sh))}">${esc(titleOf(sh))}</h2>${opSubHtml(sub,"p","slede")}</div>
