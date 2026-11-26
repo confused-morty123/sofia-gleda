@@ -539,6 +539,14 @@ def wave_a1(browser):
                     continue
 
                 diff = sum(abs(a - b) for a, b in zip(bg_b, en_b))
+                # phones: the motto that names the opera runs under the logo row and wraps
+                # (balanced) only when it must (DESIGN_SPEC §14.2), so BG may take one line
+                # more than EN and the toggle row below it moves down by that line, not sideways
+                # and the phone's three columns are sized to their labels (Кино/Cinema), so a
+                # button keeps only its height across languages (the toggle itself its x and width)
+                if diff > 1 and size_tag != "1280x800" and sel.startswith(".seg"):
+                    keep = (3,) if sel == ".seg button" else (0, 2, 3)
+                    diff = sum(abs(bg_b[i] - en_b[i]) for i in keep)
                 if diff > 1:
                     mismatch = True
                     check("geometry_match", False,
@@ -719,12 +727,12 @@ def wave_a1(browser):
     page.wait_for_timeout(500)
 
     buttons = page.query_selector_all(".seg button")
-    check("seg_has_2_buttons", len(buttons) == 2, f"found {len(buttons)} buttons")
+    # three since the opera surface is shown to everyone (2026-11-26): Кино, Театър, Опера и балет;
+    # the opera's longer label gets the wider column (OP1 checks its fit), Кино and Театър match
+    check("seg_has_3_buttons", len(buttons) == 3, f"found {len(buttons)} buttons")
 
-    if len(buttons) == 2:
-        b0_svg = buttons[0].query_selector("svg")
-        b1_svg = buttons[1].query_selector("svg")
-        check("buttons_have_svg", b0_svg is not None and b1_svg is not None, "")
+    if len(buttons) >= 2:
+        check("buttons_have_svg", all(b.query_selector("svg") is not None for b in buttons), "")
 
         b0_width = buttons[0].bounding_box()["width"] if buttons[0].bounding_box() else 0
         b1_width = buttons[1].bounding_box()["width"] if buttons[1].bounding_box() else 0
@@ -7718,10 +7726,11 @@ def wave_m(browser):
     }""")
 
     if "err" not in state_open:
-        # Width should be close to 98px (allow ±4px for rounding)
+        # Width should be close to 98px, 146 with the opera's third icon (.seg.seg3.seg-q) (±4px)
+        q_w = 146 if page.evaluate("!!document.querySelector('.seg.seg3')") else 98
         check("m1_seg_width_98_open",
-              abs(state_open["segWidth"] - 98) <= 4,
-              f"seg width={state_open['segWidth']}px (expected ~98)")
+              abs(state_open["segWidth"] - q_w) <= 4,
+              f"seg width={state_open['segWidth']}px (expected ~{q_w})")
         # Label: opacity 0 or max-width 0
         label_collapsed = (
             (state_open["labelOpacity"] is not None and state_open["labelOpacity"] < 0.05)
@@ -10156,8 +10165,8 @@ def wave_p3a(browser):
     # ── P3A-2: Brand subtext under logo ────────────────────────────────────────
     print("\n=== P3A-2: Brand subtext under logo ===")
     for lang, expected_text, expected_first_char in [
-        ("bg", "Афишът на кината и театрите в София", "А"),
-        ("en", "Sofia's cinema and theatre listings", "S"),
+        ("bg", "Афишът на кината, театрите и операта в София", "А"),
+        ("en", "Cinema, theatre and opera listings in Sofia", "C"),
     ]:
         # Desktop: 1280px, check subtext exists, exact text, position below logo, left-aligned
         ctx, page, errs = open_page(browser, 1280, 800, lang=lang, mode="cinema")
@@ -10548,10 +10557,10 @@ def wave_p3a(browser):
     # ── P3A-2b: Brand subtext exact text at desktop and phone ─────────────────
     print("\n=== P3A-2b: Brand subtext exact text at desktop and phone ===")
     for vp_w, vp_h, label, lang, sub_exp in [
-        (1280, 800, "desktop_bg", "bg", "Афишът на кината и театрите в София"),
-        (*PHONE, "phone_bg", "bg", "Афишът на кината и театрите в София"),
-        (1280, 800, "desktop_en", "en", "Sofia's cinema and theatre listings"),
-        (*PHONE, "phone_en", "en", "Sofia's cinema and theatre listings"),
+        (1280, 800, "desktop_bg", "bg", "Афишът на кината, театрите и операта в София"),
+        (*PHONE, "phone_bg", "bg", "Афишът на кината, театрите и операта в София"),
+        (1280, 800, "desktop_en", "en", "Cinema, theatre and opera listings in Sofia"),
+        (*PHONE, "phone_en", "en", "Cinema, theatre and opera listings in Sofia"),
     ]:
         ctx, page, errs = open_page(browser, vp_w, vp_h, lang=lang, mode="cinema")
         page.wait_for_timeout(400)
@@ -14464,7 +14473,7 @@ def _hf2_toggle(browser, eng):
                 labels_ok = all(l["op"] > 0.99 and l["w"] > 10 for l in s1["labels"])
                 if step == "open":
                     rows_ok = not rows["toggle"] and rows["inert"] and rows["search"] and rows["cancel"] == cancel[lang]
-                    seg_ok = s1["cls"] == s0["cls"] and s1["btns"] and len(s1["labels"]) == 2
+                    seg_ok = s1["cls"] == s0["cls"] and s1["btns"] and len(s1["labels"]) == len(s0["labels"]) >= 2
                 else:
                     rows_ok = rows["toggle"] and not rows["inert"] and rows["op"] == "1" and not rows["search"] and rows["cancel"] is None
                     seg_ok = s1 == s0 and labels_ok
@@ -14486,10 +14495,11 @@ def _hf2_toggle(browser, eng):
         page.wait_for_timeout(450)
         s1 = page.evaluate(HF2_SEG_JS)
         q1 = "seg-q" in s1["cls"].split()
-        size_ok = abs(s1["rect"][2] - 100) <= 4 if crowded else abs(s1["rect"][2] - g["w"]) <= 1
+        q_w = 146 if "seg3" in s1["cls"].split() else 100       # .seg.seg-q / .seg.seg3.seg-q (the opera's third icon)
+        size_ok = abs(s1["rect"][2] - q_w) <= 4 if crowded else abs(s1["rect"][2] - g["w"]) <= 1
         check(f"hf2_toggle_desk_{w}_open", q1 == crowded and size_ok,
               f"room for the 420px field {g['room']:.0f}px (crowded={crowded}) -> class {s1['cls']!r} width {s1['rect'][2]} "
-              f"(P3A: ~100 when crowded, else unchanged {g['w']})")
+              f"(P3A: ~{q_w} when crowded, else unchanged {g['w']})")
         page.keyboard.type("сп")
         page.wait_for_timeout(650)
         s2 = page.evaluate(HF2_SEG_JS)
@@ -18154,7 +18164,8 @@ UX_LOCKUP_JS = r"""() => { const b = document.querySelector('.bar .brand'), l = 
   const lr = l.getBoundingClientRect(), sr = s.getBoundingClientRect(), gr = g.getBoundingClientRect(), cs = getComputedStyle(s);
   return {lw: lr.width, sw: sr.width, vis: cs.display !== 'none' && cs.visibility !== 'hidden' && sr.width > 0 && sr.height > 0,
           clear: gr.left - Math.max(lr.right, sr.right), font: parseFloat(cs.fontSize),
-          over: document.documentElement.scrollWidth - innerWidth, segq: g.classList.contains('seg-q')}; }"""
+          over: document.documentElement.scrollWidth - innerWidth, segq: g.classList.contains('seg-q'),
+          op3: !!document.querySelector('.bar-in.op3'), lclear: gr.left - lr.right}; }"""
 
 
 def _ux_lockup(browser, base, eng):
@@ -18188,6 +18199,12 @@ def _ux_lockup(browser, base, eng):
                     continue
                 fonts.append(m["font"])
                 ratio = m["sw"] / m["lw"] if m["lw"] else 0
+                # with the opera's third segment the motto is left out at 761-1119 px (no room
+                # beside the 430-470 px toggle, .op3 .brand span); the logo alone must stay clear
+                if m["op3"] and w < 1120:
+                    if m["vis"] or m["lclear"] < 12 or m["over"] > 0:
+                        bad.append(f"{w}: op3 shown={m['vis']} logo clear={m['lclear']:.0f} overflow={m['over']}")
+                    continue
                 # the line may run past the logo (10 px floor; Geologica since 24 Oct 2026) but
                 # never nearer than 12 px to the toggle
                 if not (m["vis"] and 0.9 <= ratio <= 1.4 and m["clear"] >= 12 and m["over"] <= 0 and m["font"] >= 10):
@@ -18204,8 +18221,14 @@ def _ux_lockup(browser, base, eng):
     ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), g = document.createRange();
         g.selectNodeContents(s); const r = g.getBoundingClientRect(), l = document.querySelector('[data-lang]').getBoundingClientRect();
         return [parseFloat(getComputedStyle(s).fontSize), Math.round(r.left + r.width / 2), Math.round(l.left - r.right)]; }""")
-    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - PHONE[0] / 2) <= 4 and ph[2] >= 12,
-          f"phone line [font, centre, clear of language button] {ph}")
+    # the motto that names the opera (OPERA_ON) runs under both header buttons across the row
+    # (DESIGN_SPEC §14.2), so it is below the language button, not beside it
+    op3 = page.evaluate("!!document.querySelector('.bar-row-logo.op3')")
+    below = page.evaluate("""() => { const s = document.querySelector('.brand-sub').getBoundingClientRect(),
+        l = document.querySelector('[data-lang]').getBoundingClientRect(); return Math.round(s.top - l.bottom); }""")
+    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - PHONE[0] / 2) <= 4
+          and (ph[2] >= 12 or (op3 and below >= 0)),
+          f"phone line [font, centre, clear of language button] {ph} (op3={op3}, top below the language button by {below}px)")
     ctx.close()
 
 
@@ -18769,7 +18792,7 @@ B24_MOTTO_JS = r"""() => { const s = document.querySelector('.brand-sub'); if (!
 
 
 def _b24_motto(browser, base, eng):
-    exp = {"bg": "Афишът на кината и театрите в София", "en": "Sofia's cinema and theatre listings"}
+    exp = {"bg": "Афишът на кината, театрите и операта в София", "en": "Cinema, theatre and opera listings in Sofia"}  # OPERA_ON
     for phone, (w, h) in ((True, PHONE), (True, NARROW_PHONE), (False, (1024, 768)), (False, (1440, 900)), (False, (1920, 1080))):
         for lang in ("bg", "en"):
             got = {}
@@ -19591,8 +19614,7 @@ def wave_bo1(browser):
       let online=null;
       for(const p of PERFORMANCES){
         if(p[1]<=today)continue; const sh=showById[p[0]]; if(!sh||sh.theatre==='salzaismyah')continue;
-        // a theatre show: the opera surface has its own sheet (OP1/OP2), no theatre time pills
-        if(typeof surfOf==='function'&&surfOf(sh)==='opera')continue;
+        if(surfOf(sh)==='opera')continue;   // the opera's rows live on Опера и балет, not on the Театър page opened here
         if((BOOKING[sh.theatre]||{}).inPerson||(typeof AGGLINKS==='object'&&AGGLINKS[sh.id]))continue;
         if(isPrelimListing('show',sh.id,sh.theatre,p[1]))continue;
         if(!LINK_MAP[sh.id]||PERFORMANCES.some(q=>q[0]===sh.id&&q[1]>=today&&boxOnly('show',sh.id,sh.theatre,q[1],q[2])))continue;
@@ -22326,6 +22348,8 @@ OP_VIOLET = "rgb(166, 112, 243)"        # --accent / --accent-text #A670F3 (DESI
 OP_ON_ACCENT = "rgb(21, 11, 38)"        # --on-accent #150B26
 OP_LABELS = {"bg": ("Кино", "Театър", "Опера и балет"), "en": ("Cinema", "Theatre", "Opera & Ballet")}
 OP_Q = "?opera=1"
+OP_LIVE_LINE = "const OPERA_ON=!!OPERA_Q||true;"     # the shell's switch: shown to everyone
+OP_HIDDEN_LINE = "const OPERA_ON=!!OPERA_Q;"         # the same with the surface behind ?opera=1
 
 OP_TOKEN_JS = r"""(name) => { const p = document.createElement('span'); p.style.color = 'var(' + name + ')';
   document.body.appendChild(p); const c = getComputedStyle(p).color; p.remove(); return c; }"""
@@ -22398,19 +22422,23 @@ def _op_tap(page, phone, sel, scroll=True):
 
 
 def _op1_flag(browser, base, eng):
-    """Without ?opera=1 the toggle has two segments and /home/opera/ is the cinema listing
-    (OPERA_ARCHITECTURE §6.6); with it, three, in the order Кино, Театър, Опера и балет."""
+    """The surface is shown to everyone (OPERA_ON true in the shell, 2026-11-26): without
+    ?opera=1 the toggle has three segments, in the order Кино, Театър, Опера и балет, and
+    /home/opera/ is the opera listing; an old shared address with ?opera=1 still works.
+    (The hidden rules, two segments and /home/opera/ as cinema, are OP2's unflipped copy.)"""
     tag = f"op1_{eng}_flag"
     for w, h in ((1280, 800), (390, 844)):
         sz = "desk" if w > 760 else "phone"
         ctx, page, errs, _ = _op_open(browser, base, "/home/", w, h)
         v = page.evaluate(OP_VIEW_JS)
-        check(f"{tag}_off_two_segments_{sz}", v["segs"] == ["cinema", "theatre"], f"segments {v['segs']}")
+        check(f"{tag}_live_three_segments_{sz}", v["segs"] == ["cinema", "theatre", "opera"] and v["pressed"] == ["cinema"],
+              f"segments {v['segs']} pressed {v['pressed']}")
         ctx.close()
         ctx, page, errs, _ = _op_open(browser, base, "/home/opera/", w, h, mode="opera")
         v = page.evaluate(OP_VIEW_JS)
-        check(f"{tag}_off_opera_address_is_cinema_{sz}", v["mode"] == "cinema" and not v["opera"] and v["segs"] == ["cinema", "theatre"],
-              f"/home/opera/ without the flag: mode={v['mode']} data-opera={v['opera']} segments={v['segs']} path={v['path']}")
+        check(f"{tag}_live_opera_address_is_opera_{sz}", v["mode"] == "opera" and v["opera"] and v["search"] == ""
+              and v["segs"] == ["cinema", "theatre", "opera"],
+              f"/home/opera/ without the flag: mode={v['mode']} data-opera={v['opera']} segments={v['segs']} path={v['path']}{v['search']}")
         ctx.close()
         ctx, page, errs, _ = _op_open(browser, base, "/home/" + OP_Q, w, h)
         v = page.evaluate(OP_VIEW_JS)
@@ -22809,10 +22837,14 @@ def _op2_page(src, flip=False):
     for name in sorted(spans, key=lambda n: -spans[n][0]):
         a, b = spans[name]
         out = out[:a] + json.dumps(vals[name], ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + out[b:]
+    # The shell shows the surface to everyone (OP_LIVE_LINE, since 2026-11-26); the unflipped
+    # copy is the page as it was behind ?opera=1 (OP_HIDDEN_LINE), so the hidden rules stay tested.
+    if OP_LIVE_LINE in out:
+        out = out.replace(OP_LIVE_LINE, OP_HIDDEN_LINE)
+    if OP_HIDDEN_LINE not in out:
+        return None, "no OPERA_ON line to flip"
     if flip:
-        if "const OPERA_ON=!!OPERA_Q;" not in out:
-            return None, "no OPERA_ON line to flip"
-        out = out.replace("const OPERA_ON=!!OPERA_Q;", "const OPERA_ON=true;")
+        out = out.replace(OP_HIDDEN_LINE, "const OPERA_ON=true;")
     return _restamp(out), op_id
 
 
