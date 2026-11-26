@@ -174,6 +174,33 @@ def ensure_shot_dir(wave):
     d.mkdir(parents=True, exist_ok=True)
     return d
 
+# ── Device sizes ───────────────────────────────────────────────────────────────
+# The CSS viewports the waves test, one place for all of them (2026-11-26: moved off
+# the iPhone X-14 sizes 375x812, 390x844 and 393x852 to phones sold today).
+#   NARROW_PHONE  360x780  Samsung Galaxy S24-class Android: the narrowest common width
+#   PHONE         402x874  iPhone 17 / 17 Pro: the everyday phone
+#   ANDROID_PHONE 412x923  Google Pixel 9
+#   BIG_PHONE     440x956  iPhone 17 Pro Max: the widest phone
+#   DESKTOP       1280x800 a laptop
+# A wave that checks "every phone" walks PHONES, narrowest first.
+NARROW_PHONE = (360, 780)
+PHONE = (402, 874)
+ANDROID_PHONE = (412, 923)
+BIG_PHONE = (440, 956)
+DESKTOP = (1280, 800)
+PHONES = (NARROW_PHONE, PHONE, ANDROID_PHONE, BIG_PHONE)
+
+
+def vp_tag(size):
+    """'402x874': a size as it appears in check and screenshot names."""
+    return f"{size[0]}x{size[1]}"
+
+
+def viewport(size):
+    """A Playwright viewport dict for a (width, height) size."""
+    return {"width": size[0], "height": size[1]}
+
+
 def open_page(browser, w, h, lang="bg", mode="cinema"):
     """
     Create a new context and page with fixed viewport, locale, timezone, and clock.
@@ -463,14 +490,14 @@ def wave_a1(browser):
     wave = "A1"
     ensure_shot_dir(wave)
 
-    # Check 1: Geometry BG vs EN identical at 375×812 and 1280×800
+    # Check 1: Geometry BG vs EN identical at 360×780 and 1280×800
     print("\n=== Check 1: Geometry BG vs EN ===")
     # Wave H: .burger removed; [data-search-open] present on both mobile and desktop
     # .brand's own box is as wide as its subtext, which differs by language;
     # the logo inside it must not move.
     selectors = [".brand-logo", ".seg", ".seg button", "[data-lang]", "[data-search-open]", "#q"]
     geometries = {}
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
             for mode in ["cinema", "theatre"]:
                 key = (size_tag, lang, mode)
@@ -491,7 +518,7 @@ def wave_a1(browser):
 
     # Compare bg vs en within each size & mode
     mismatch = False
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for mode in ["cinema", "theatre"]:
             bg_key = (size_tag, "bg", mode)
             en_key = (size_tag, "en", mode)
@@ -520,9 +547,9 @@ def wave_a1(browser):
     if not mismatch:
         check("geometry_match", True, "all sizes/modes/langs match within 1px")
 
-    # Check 2: Mobile 375×812 logo centred, controls layout
-    print("\n=== Check 2: Mobile 375×812 layout ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    # Check 2: Mobile 360×780 logo centred, controls layout
+    print("\n=== Check 2: Mobile 360×780 layout ===")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     brand_box = box(page, ".brand")
@@ -533,7 +560,7 @@ def wave_a1(browser):
     q_box = box(page, "#q")
     qm_box = box(page, "#q-m")
 
-    # Logo centred in the layout viewport (375 px, or 360 where a scrollbar gutter is reserved)
+    # Logo centred in the layout viewport (360 px, or 360 where a scrollbar gutter is reserved)
     if brand_box:
         lw = layout_width(page)
         centre_x = brand_box["x"] + brand_box["width"] / 2
@@ -562,9 +589,9 @@ def wave_a1(browser):
 
     if seg_box and search_box:
         # All inside 0..375
-        inside = all(c["x"] >= 0 and c["x"] + c["width"] <= 375
+        inside = all(c["x"] >= 0 and c["x"] + c["width"] <= NARROW_PHONE[0]
                      for c in [seg_box, search_box] if c)
-        check("controls_inside_375", inside,
+        check("controls_inside_360", inside,
               "" if inside else "some elements overflow")
 
     # #q and #q-m not visible by default
@@ -600,7 +627,7 @@ def wave_a1(browser):
 
     # Check 4: Mobile search interaction
     print("\n=== Check 4: Mobile search ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     # Click [data-search-open]
@@ -688,7 +715,7 @@ def wave_a1(browser):
 
     # Check 5: Toggle button geometry and behaviour
     print("\n=== Check 5: Toggle (seg button) ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     buttons = page.query_selector_all(".seg button")
@@ -813,13 +840,13 @@ def wave_a1(browser):
     save_shot(page, wave, "d-bg-cinema")
     ctx.close()
 
-    # Check 7: Sticky header (mobile 375×812)
+    # Check 7: Sticky header (mobile 360×780)
     # On mobile the logo row scrolls away; only the controls row (.seg) stays pinned
     # with a negative CSS top. After scrolling 800px:
     #   .seg viewport top should be between 4 and 12px
     #   .brand viewport bottom should be ≤ 0 (scrolled off screen)
     print("\n=== Check 7: Sticky header ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     # Scroll down 800px
@@ -866,8 +893,8 @@ def wave_a1(browser):
     ctx.close()
 
     # Check 8: Resize robustness
-    # Open at 1280×800, resize to 375×812 WITHOUT calling render():
-    #   [data-search-open] exists and is visible, #q not visible, scrollWidth ≤ 375
+    # Open at 1280×800, resize to 360×780 WITHOUT calling render():
+    #   [data-search-open] exists and is visible, #q not visible, scrollWidth ≤ 360
     # Resize back to 1280×800:
     #   #q visible, no visible [data-search-open]
     print("\n=== Check 8: Resize robustness ===")
@@ -880,7 +907,7 @@ def wave_a1(browser):
     check("desktop_before_q_visible", desktop_has_q, "")
 
     # Resize to mobile — NO render() call
-    page.set_viewport_size({"width": 375, "height": 812})
+    page.set_viewport_size(viewport(NARROW_PHONE))
     page.wait_for_timeout(600)
 
     # [data-search-open] should exist and be visible
@@ -897,7 +924,7 @@ def wave_a1(browser):
 
     # No horizontal overflow
     scroll_width = page.evaluate("document.documentElement.scrollWidth")
-    no_overflow = scroll_width <= 375
+    no_overflow = scroll_width <= NARROW_PHONE[0]
     check("mobile_no_overflow", no_overflow, f"scrollWidth={scroll_width}")
 
     # Resize back to desktop — NO render() call
@@ -929,7 +956,7 @@ def wave_a1(browser):
     # Check 9: No page errors
     print("\n=== Check 9: No page errors ===")
     all_errors = []
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
             ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
             page.wait_for_timeout(500)
@@ -970,10 +997,10 @@ def wave_b1(browser):
     # ── Check B1-1: .rhead h2 font sizes, family, transform, ::before accent ──
     print("\n=== B1-1: Heading styles ===")
 
-    # Cinema 375: font-size ≥ 20px, Oswald, uppercase
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    # Cinema 360: font-size ≥ 20px, Oswald, uppercase
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
-    h2_info_375 = page.evaluate("""() => {
+    h2_info_360 = page.evaluate("""() => {
         const h2s = document.querySelectorAll('.rhead h2');
         if (!h2s.length) return null;
         const h2 = h2s[0];
@@ -986,20 +1013,20 @@ def wave_b1(browser):
             beforeBg: before.backgroundColor
         };
     }""")
-    if h2_info_375:
-        check("b1_h2_cinema_375_size", h2_info_375["fontSize"] >= 20,
-              f"fontSize={h2_info_375['fontSize']}px")
+    if h2_info_360:
+        check("b1_h2_cinema_360_size", h2_info_360["fontSize"] >= 20,
+              f"fontSize={h2_info_360['fontSize']}px")
         # 24 Oct 2026: Geologica on the cinema surface (was Montserrat), display titles in sentence case
-        check("b1_h2_cinema_375_family", h2_info_375["fontFamily"].startswith("Geologica"),
-              f"fontFamily={h2_info_375['fontFamily'][:60]}")
-        check("b1_h2_cinema_375_sentence_case", h2_info_375["textTransform"] == "none",
-              f"textTransform={h2_info_375['textTransform']}")
-        check("b1_h2_cinema_375_before_accent",
-              h2_info_375["beforeBg"] == "rgb(224, 22, 58)",
-              f"::before bg={h2_info_375['beforeBg']}")
+        check("b1_h2_cinema_360_family", h2_info_360["fontFamily"].startswith("Geologica"),
+              f"fontFamily={h2_info_360['fontFamily'][:60]}")
+        check("b1_h2_cinema_360_sentence_case", h2_info_360["textTransform"] == "none",
+              f"textTransform={h2_info_360['textTransform']}")
+        check("b1_h2_cinema_360_before_accent",
+              h2_info_360["beforeBg"] == "rgb(224, 22, 58)",
+              f"::before bg={h2_info_360['beforeBg']}")
         save_shot(page, wave, "m-bg-cinema-top")
     else:
-        check("b1_h2_cinema_375_size", False, "no .rhead h2 found at 375")
+        check("b1_h2_cinema_360_size", False, "no .rhead h2 found at 360")
     ctx.close()
 
     # Cinema 1280: font-size ≥ 24px
@@ -1049,7 +1076,7 @@ def wave_b1(browser):
 
     # ── Check B1-2: Old chip bar gone ──
     print("\n=== B1-2: Old chip bar gone ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     no_strands = page.evaluate("document.querySelector('.strands') === null")
     check("b1_no_strands_elem", no_strands, ".strands element found" if not no_strands else "")
@@ -1064,7 +1091,7 @@ def wave_b1(browser):
 
     # ── Check B1-3: Week = today→Sunday ──
     print("\n=== B1-3: Week range ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     _week_end_next = (
         datetime.date.fromisoformat(CLOCK_WEEK_END) + datetime.timedelta(days=1)
@@ -1088,7 +1115,7 @@ def wave_b1(browser):
     # ── Check B1-4: Period header (.phead — Wave H replaces .pbanner) ──
     print("\n=== B1-4: Period header (.phead) ===")
     # BG, default week — phead eyebrow + day title + date strip shown, "Друг период" link
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     phead_info = page.evaluate("""() => {
         const ph = document.querySelector('.phead');
@@ -1205,7 +1232,7 @@ def wave_b1(browser):
     ctx.close()
 
     # EN version: phead must exist; day strip uses "today" label
-    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="en", mode="cinema")
     page.wait_for_timeout(500)
     phead_en = page.evaluate("""() => {
         const ph = document.querySelector('.phead');
@@ -1281,7 +1308,7 @@ def wave_b1(browser):
     # ── Check B1-5: FAB ──
     print("\n=== B1-5: FAB ===")
     # Mobile: FAB visible, right edge within 24px of viewport, bottom within 24px
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     fab_m = page.evaluate("""() => {
         const f = document.querySelector('.fab');
@@ -1293,7 +1320,7 @@ def wave_b1(browser):
         check("b1_fab_mobile_visible", True, "")
         lw = layout_width(page)             # position:fixed; right:16px is from this edge
         right_edge_dist = lw - fab_m["right"]
-        bottom_edge_dist = 812 - fab_m["bottom"]
+        bottom_edge_dist = NARROW_PHONE[1] - fab_m["bottom"]
         check("b1_fab_mobile_right_edge", right_edge_dist <= 24,
               f"gap to right={right_edge_dist:.1f}px (need ≤24; layout viewport {lw:.0f}px)")
         check("b1_fab_mobile_bottom_edge", bottom_edge_dist <= 24,
@@ -1403,7 +1430,7 @@ def wave_b1(browser):
 
     # ── Check B1-6: Drawer clear-all ──
     print("\n=== B1-6: Drawer clear-all ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     # Open drawer via JS, check no clear-all with no active filter
@@ -1737,7 +1764,7 @@ def wave_b1(browser):
 
     # ── Check B1-9: Quote regression ──
     print("\n=== B1-9: Quote regression ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(800)
 
     # Try clicking a [data-show="uroci"] card; if not present use page.evaluate openSheet
@@ -1775,7 +1802,7 @@ def wave_b1(browser):
     # ── Check B1-10: No page errors + gate ──
     print("\n=== B1-10: No page errors + gate ===")
     all_errors = []
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
             for mode in ["cinema", "theatre"]:
                 ctx, page, errs = open_page(browser, w, h, lang=lang, mode=mode)
@@ -1815,7 +1842,7 @@ def wave_c1(browser):
 
     # ── Check C1-1: Drawer venue chips one-per-cinema-id, subheadings, theatre mode ──
     print("\n=== C1-1: Drawer venue chips ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     # Open drawer
@@ -1871,7 +1898,7 @@ def wave_c1(browser):
     ctx.close()
 
     # Theatre mode: drawer lists theatres
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(800)
     page.evaluate("""() => {
         const fab = document.querySelector('.fab');
@@ -1902,7 +1929,7 @@ def wave_c1(browser):
 
     # ── Check C1-2: Single cinema filter (cc-sofia) ──
     print("\n=== C1-2: Single cinema filter ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     # Open drawer and select cc-sofia
@@ -2235,7 +2262,7 @@ def wave_c1(browser):
 
     # ── Check C1-5: Taxonomy: GENRES ids, m arrays, chip presence ──
     print("\n=== C1-5: Genre taxonomy ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     taxonomy = page.evaluate("""() => {
@@ -2334,7 +2361,7 @@ def wave_c1(browser):
 
     # ── Check C1-6: Today rail regression ──
     print("\n=== C1-6: Today rail regression ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     today_rail = page.evaluate(f"""() => {{
@@ -2437,7 +2464,7 @@ def wave_c1(browser):
     month_en_name = ["january", "february", "march", "april", "may", "june", "july", "august",
                      "september", "october", "november", "december"][_mi]
     # BG: select month range, then check .phead text contains "октомври"
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
     banner_bg = page.evaluate("""() => {
         const btn = document.querySelector('.phead-other[data-drawer]');
@@ -2468,7 +2495,7 @@ def wave_c1(browser):
     ctx.close()
 
     # EN: select month range, then check .phead text contains "october"
-    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="en", mode="cinema")
     page.wait_for_timeout(800)
     open_en = page.evaluate("""() => {
         const btn = document.querySelector('.phead-other[data-drawer]');
@@ -2600,7 +2627,7 @@ else:
 
     # ── Check C1-9: Clearing filters restores event rails and all venues ──
     print("\n=== C1-9: Clearing filters ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
     # The event rails the unfiltered page shows on this build's date: dated events
     # expire (on 2026-10-12 none is limited-and-on or beyond this week), so
@@ -2666,7 +2693,7 @@ else:
     # ── Check C1-10: No page errors + verify_build.py gate ──
     print("\n=== C1-10: No page errors + gate ===")
     all_errors = []
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
             ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
             page.wait_for_timeout(600)
@@ -2706,7 +2733,7 @@ def wave_d1(browser):
 
     # ── D1-1: Exhaustive resolver check ──
     print("\n=== D1-1: Exhaustive URL resolver ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     resolver_result = page.evaluate(f"""() => {{
@@ -2822,7 +2849,7 @@ def wave_d1(browser):
 
     # ── D1-2: Exhaustive sheet href check ──
     print("\n=== D1-2: Exhaustive sheet href check ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     sheet_href_result = page.evaluate(f"""() => {{
@@ -2884,7 +2911,7 @@ def wave_d1(browser):
     # ── D1-3: Heart of the Beast (sarceto-na-zveyara) ──
     print("\n=== D1-3: Sarceto-na-zveyara detail ===")
     # BG sheet
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     sarceto_bg = page.evaluate("""() => {
@@ -2893,8 +2920,20 @@ def wave_d1(browser):
         const html = sheetFilm(f);
         const div = document.createElement("div");
         div.innerHTML = html;
-        // Showtime rows per venue (P3E: .p3e-vname inside .p3e-row)
-        const venues = [...new Set(Array.from(div.querySelectorAll(".p3e-vname")).map(el => el.textContent.trim()))].filter(Boolean);
+        // Showtime rows per venue (P3E: .p3e-vname inside .p3e-row). The phone list shows
+        // ONE day (today, else the first day), so a cinema that plays the film only on a
+        // later day is not in it (2026-11-26: Cine Grand Ring Mall from Fri 27, not Thu 26).
+        // Every day of the strip is rendered through the sheet's own day renderer and the
+        // venues of all days are counted: each cinema must be reachable from the sheet.
+        const venueSet = new Set(Array.from(div.querySelectorAll(".p3e-vname")).map(el => el.textContent.trim()));
+        const dayFn = _p3DayRenderFns.get("p3e-grp-" + f.id);
+        const days = Array.from(div.querySelectorAll("[data-p3day]")).map(b => b.dataset.p3day);
+        if (dayFn) days.forEach(d => {
+            const tmp = document.createElement("div");
+            dayFn(d, tmp);
+            tmp.querySelectorAll(".p3e-vname").forEach(el => venueSet.add(el.textContent.trim()));
+        });
+        const venues = [...venueSet].filter(Boolean);
         // Vlaikova link
         const allLinks = Array.from(div.querySelectorAll("a[href]")).map(a => ({
             text: a.textContent.trim().slice(0,40),
@@ -3049,7 +3088,7 @@ def wave_d1(browser):
 
     # ── D1-4: In-person venue (g8 or odeon) ──
     print("\n=== D1-4: In-person venue label ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     inperson_result = page.evaluate(f"""() => {{
@@ -3159,7 +3198,7 @@ def wave_d1(browser):
 
     # ── D1-5: Lumière epaygo handling ──
     print("\n=== D1-5: Lumière epaygo ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     lumiere_result = page.evaluate(f"""() => {{
@@ -3219,7 +3258,7 @@ def wave_d1(browser):
 
     # ── D1-6: Animation removed, close/escape/back work ──
     print("\n=== D1-6: Animation removed ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     # Click a film card to open the sheet
@@ -3306,7 +3345,7 @@ def wave_d1(browser):
 
     # Reduced motion: no animations on .sheet
     ctx_rm = browser.new_context(
-        viewport={"width": 375, "height": 812},
+        viewport=viewport(NARROW_PHONE),
         timezone_id="Europe/Sofia",
         locale="bg-BG",
         reduced_motion="reduce"
@@ -3344,7 +3383,7 @@ def wave_d1(browser):
 
     # ── D1-7: No-info handling for films ──
     print("\n=== D1-7: No-info film ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     noinfo_result = page.evaluate(f"""() => {{
@@ -3430,7 +3469,7 @@ def wave_d1(browser):
     ctx.close()
 
     # EN no-info check
-    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="en", mode="cinema")
     page.wait_for_timeout(800)
     if noinfo_film_id:
         page.evaluate(f"""() => {{
@@ -3464,7 +3503,7 @@ def wave_d1(browser):
 
     # ── D1-8: Theatre show no-info note ──
     print("\n=== D1-8: Show no-synopsis note ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(800)
 
     show_noinfo = page.evaluate("""() => {
@@ -3516,7 +3555,7 @@ def wave_d1(browser):
 
     # ── D1-9: Regression checks ──
     print("\n=== D1-9: Regressions (N кина, venue filter) ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     # "За теб днес" has at least one card with "· N кина" (N≥2)
@@ -3593,7 +3632,7 @@ def wave_d1(browser):
     # ── D1-10: No page errors + verify_build.py gate ──
     print("\n=== D1-10: No page errors + gate ===")
     all_errors = []
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
             ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
             page.wait_for_timeout(600)
@@ -3650,7 +3689,7 @@ def wave_h(browser):
 
     # ── H1: No .burger; .fab and .phead-other each open .drawer ──
     print("\n=== H1: Hamburger removed; FAB and phead-other open drawer ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     burger_exists = page.evaluate("document.querySelector('.burger') !== null")
@@ -3684,11 +3723,11 @@ def wave_h(browser):
     save_shot(page, wave, "m-bg-header")
     ctx.close()
 
-    # ── H2: Search toggle at 375 (BG+EN) and 1280 (BG+EN) ──
+    # ── H2: Search toggle at 360 (BG+EN) and 1280 (BG+EN) ──
     print("\n=== H2: Search toggle ===")
     for w, h, lang_code, size_tag in [
-        (375, 812, "bg", "m-bg"),
-        (375, 812, "en", "m-en"),
+        (*NARROW_PHONE, "bg", "m-bg"),
+        (*NARROW_PHONE, "en", "m-en"),
         (1280, 800, "bg", "d-bg"),
         (1280, 800, "en", "d-en"),
     ]:
@@ -3743,7 +3782,7 @@ def wave_h(browser):
     print("\n=== H3: Header geometry ===")
 
     # Mobile: logo centred, lang on logo row, seg+search on controls row
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     mobile_geo = page.evaluate("""() => {
         function bb(sel) {
@@ -3825,7 +3864,7 @@ def wave_h(browser):
 
     # ── H4: SVG icons ──
     print("\n=== H4: SVG icon viewBoxes + fill ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     icons = page.evaluate("""() => {
         const svgs = Array.from(document.querySelectorAll('.seg svg'));
@@ -3942,7 +3981,7 @@ def wave_h(browser):
     print("\n=== H6: Tomorrow fallback at 23:50 ===")
     # At 23:50 the app should already show tomorrow's date (2026-10-08) in the day strip
     ctx_t = browser.new_context(
-        viewport={"width": 375, "height": 812},
+        viewport=viewport(NARROW_PHONE),
         timezone_id="Europe/Sofia",
         locale="bg-BG"
     )
@@ -4043,7 +4082,7 @@ def wave_h(browser):
 
     # ── H8: .phead structure ──
     print("\n=== H8: .phead structure ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     phead_struct = page.evaluate("""() => {
@@ -4185,7 +4224,7 @@ def wave_h(browser):
     # ── H10: No page errors + gate ──
     print("\n=== H10: No page errors + gate ===")
     all_errors = []
-    for size_tag_h, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag_h, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang_code in ["bg", "en"]:
             for mode in ["cinema", "theatre"]:
                 ctx, page, errs = open_page(browser, w, h, lang=lang_code, mode=mode)
@@ -4249,7 +4288,7 @@ def wave_i(browser):
     # Probe for: (a) digar presence (needed for I-3/4/5 DST exact-value checks), and
     # (b) any film that has ≥2 upcoming times at one venue on one day (needed for i2_*
     # time-chip checks, which require a calendar panel with ≥2 time buttons).
-    _probe_ctx, _probe_page, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    _probe_ctx, _probe_page, _ = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     _wave_i_info = _probe_page.evaluate(f"""() => {{
         const today = "{CLOCK_TODAY_ISO}";
         const digarPresent = !!filmById['digar'];
@@ -4289,7 +4328,7 @@ def wave_i(browser):
     # Replaces old [data-cal] per-row check; in P3E the calendar is accessed via the
     # screening sheet opened from each pill, not a per-row calendar button.
     print("\n=== I-1: [data-sspill] pills in film and show sheets (P3E) ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     open_film_sheet(page, _wave_i_film_id)
 
     film_vrow_info = page.evaluate("""() => {
@@ -4317,7 +4356,7 @@ def wave_i(browser):
     ctx.close()
 
     # show sheet check
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     # Find first show with any performance (globals are not on window, use typeof check)
     show_id = page.evaluate("""() => {
         if (typeof SHOWS === 'undefined' || typeof PERFORMANCES === 'undefined') return null;
@@ -4350,7 +4389,7 @@ def wave_i(browser):
         check("i1_show_cal_not_in_anchor", False, "skipped")
 
     # Venue filter note / "Покажи всички" button still present with cinema selected (film sheet)
-    ctx2, page2, errs2 = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx2, page2, errs2 = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     # Select a cinema first (globals may not be on window - use typeof check)
     page2.evaluate("""() => {
         if (typeof S !== 'undefined' && typeof CINEMAS !== 'undefined') {
@@ -4375,7 +4414,7 @@ def wave_i(browser):
     # In P3E, clicking a .p3e-pill opens the screening sheet; the [data-sscal] button
     # opens the calendar step with Apple/Google/Outlook links.
     print("\n=== I-2: Panel UX (P3E screening sheet + calendar step) ===")
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         lang_tag = "bg"
         ctx, page, errs = open_page(browser, w, h, lang=lang_tag, mode="cinema")
         open_film_sheet(page, _wave_i_film_id)
@@ -4564,7 +4603,7 @@ def wave_i(browser):
             ctx_en.close()
 
         # Screenshots - re-open film sheet (Escape may have closed it)
-        if size_tag == "375x812":
+        if size_tag == vp_tag(NARROW_PHONE):
             sheet_visible = page.evaluate("""() => {
                 const s = document.querySelector('#scrim');
                 return s && !s.hidden && (s.offsetWidth || s.offsetHeight);
@@ -4581,7 +4620,7 @@ def wave_i(browser):
         ctx.close()
 
     # Show sheet screening sheet screenshot (mobile BG)
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     if show_id:
         open_show_sheet(page, show_id)
         sh_pill = page.query_selector(".sheet .p3e-pill[data-sspill]")
@@ -4600,7 +4639,7 @@ def wave_i(browser):
         for name in _i3_names:
             skip(name, "digar not in this build — re-pin FIXTURE_REF or run on fixture")
     else:
-        ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+        ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
         builder_tests = page.evaluate(r"""() => {
             /* Use digar at cc-sofia on 2026-10-08, 18:30 (summer time +03:00) */
             const ev = calEvent('film','digar','cc-sofia','2026-10-08','18:30');
@@ -4681,7 +4720,7 @@ def wave_i(browser):
         for name in _i4_names:
             skip(name, "digar not in this build — re-pin FIXTURE_REF or run on fixture")
     else:
-        ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+        ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
         ics_validity = page.evaluate(r"""() => {
             /* Mutate a film title to include a comma for escaping test */
             const f = filmById['digar'];
@@ -4744,7 +4783,7 @@ def wave_i(browser):
     # ── I-5: Content checks ──
     print("\n=== I-5: Content checks ===")
     _i5_film_names = ["i5_summary_title","i5_summary_dash_venue","i5_location_area","i5_no_desc_no_link"]
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     if not _wave_i_digar_ok:
         for name in _i5_film_names:
             skip(name, "digar not in this build — re-pin FIXTURE_REF or run on fixture")
@@ -4858,7 +4897,7 @@ def wave_i(browser):
     # P3E: calendar access flows through the screening sheet, not a per-row [data-cal]
     # button. Flow: film sheet → .p3e-pill[data-sspill] → #ss-wrap → [data-sscal] → cal step.
     print("\n=== I-6: Download and new tab ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     open_film_sheet(page, _wave_i_film_id or "digar")
     page.wait_for_timeout(300)
 
@@ -4983,7 +5022,7 @@ def wave_i(browser):
     # ── I-7: No page errors + gate ──
     print("\n=== I-7: No page errors + gate ===")
     all_errors = []
-    for size_tag, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang in ["bg", "en"]:
             for mode in ["cinema", "theatre"]:
                 ctx, page, errs = open_page(browser, w, h, lang=lang, mode=mode)
@@ -5016,7 +5055,7 @@ def wave_i(browser):
 def wave_j(browser, webkit_browser=None):
     """
     Wave J checks:
-    1. Animations without jumps (Chromium + WebKit, 375x812 + 1280x800, cinema + theatre)
+    1. Animations without jumps (Chromium + WebKit, 360x780 + 1280x800, cinema + theatre)
     2. In-place toggle (no full re-render)
     3. "Всичко в програмата" collapsible; "Покажи още" appends without collapsing
     4. Search animation (width desktop / row-height mobile, monotonic, focus, close-clears)
@@ -5196,11 +5235,11 @@ def wave_j(browser, webkit_browser=None):
 
     # Test configs: (engine_name, viewport_w, viewport_h, mode, section_key)
     test_configs = [
-        ("chromium", 375, 812, "cinema", "Genres"),
-        ("chromium", 375, 812, "theatre", "Venues"),
+        ("chromium", *NARROW_PHONE, "cinema", "Genres"),
+        ("chromium", *NARROW_PHONE, "theatre", "Venues"),
         ("chromium", 1280, 800, "cinema", "Venues"),
         ("chromium", 1280, 800, "theatre", "Genres"),
-        ("webkit", 375, 812, "cinema", "Genres"),
+        ("webkit", *NARROW_PHONE, "cinema", "Genres"),
         ("webkit", 1280, 800, "theatre", "Venues"),
     ]
 
@@ -5255,7 +5294,7 @@ def wave_j(browser, webkit_browser=None):
     # Reduced-motion: should open without intermediate heights
     print("\n=== J1 reduced-motion: no intermediate heights ===")
     for eng_name, vw, vh, mode, key in [
-        ("chromium", 375, 812, "cinema", "Genres"),
+        ("chromium", *NARROW_PHONE, "cinema", "Genres"),
         ("chromium", 1280, 800, "theatre", "Venues"),
     ]:
         eng = engines.get(eng_name)
@@ -5443,11 +5482,11 @@ def wave_j(browser, webkit_browser=None):
     # Use passed-in browsers (no nested sync_playwright)
     for eng, eng_name in [(browser, "chromium"), (webkit_browser, "webkit")]:
         if eng is None:
-            for sz in ["375", "1280"]:
+            for sz in [str(NARROW_PHONE[0]), "1280"]:
                 skip(f"j4_search_{eng_name}_{sz}", f"{eng_name} not available")
             continue
 
-        for vw, vh in [(375, 812), (1280, 800)]:
+        for vw, vh in [NARROW_PHONE, (1280, 800)]:
             tag = f"{eng_name}_{vw}"
             res = _measure_search_anim(eng, vw, vh, tag)
             if "error" in res:
@@ -5938,7 +5977,7 @@ def wave_j(browser, webkit_browser=None):
     ctx.close()
 
     # --- J7d: Theatre venue mode ---
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(800)
     # Open drawer and select first available theatre
     page.evaluate("""() => {
@@ -6085,7 +6124,7 @@ def wave_j(browser, webkit_browser=None):
     # ── J9: No page errors + verify_build + full suite ─────────────────────────
     print("\n=== J9: No page errors ===")
     all_errors = []
-    for size_tag_j, w, h in [("375x812", 375, 812), ("1280x800", 1280, 800)]:
+    for size_tag_j, w, h in [(vp_tag(NARROW_PHONE), *NARROW_PHONE), ("1280x800", 1280, 800)]:
         for lang_code in ["bg", "en"]:
             for mode in ["cinema", "theatre"]:
                 ctx, page, errs = open_page(browser, w, h, lang=lang_code, mode=mode)
@@ -6116,7 +6155,7 @@ def wave_j(browser, webkit_browser=None):
     ensure_shot_dir(wave)
 
     # m-bg-cinema-sections-open: open Genres section on mobile
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
     for _ in range(15):
         btn = page.query_selector("[data-sectoggle='Genres']")
@@ -6543,13 +6582,13 @@ def wave_l(browser):
     save_shot(page, wave, "d-en-film-sheet-facts")
     ctx.close()
 
-    # Scan at 375x812 EN theatre (show sheets + tonight/weekend rails)
-    ctx, page, errs = open_page(browser, 375, 812, lang="en", mode="theatre")
+    # Scan at 360x780 EN theatre (show sheets + tonight/weekend rails)
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="en", mode="theatre")
     page.wait_for_timeout(500)
 
     page_cyr_m = scan_page_cyrillic_visible(page)
     for hit in page_cyr_m:
-        cyr_show_hits.append(f"[page-theatre-375] {hit['text']!r} in {hit['path']}")
+        cyr_show_hits.append(f"[page-theatre-360] {hit['text']!r} in {hit['path']}")
 
     for show_id in scan_show_ids:
         open_show_sheet(page, show_id)
@@ -6567,7 +6606,7 @@ def wave_l(browser):
         txt = hit['text']
         path = hit['path']
         tag_str = f"[page-theatre-scroll] {txt!r} in {path}"
-        if tag_str not in [f"[page-theatre-375] {h['text']!r} in {h['path']}" for h in page_cyr_m]:
+        if tag_str not in [f"[page-theatre-360] {h['text']!r} in {h['path']}" for h in page_cyr_m]:
             cyr_show_hits.append(tag_str)
 
     # Venue mode: theatre
@@ -6709,9 +6748,9 @@ def wave_l(browser):
     ctx.close()
 
     # L2d: Theatre hall name via HALL_EN
-    # Use phone width (390) so the day-strip + venue list are visible (desktop grid
+    # Use phone width (402) so the day-strip + venue list are visible (desktop grid
     # does not show the hall name since it is date-specific per row).
-    ctx, page, errs = open_page(browser, 390, 844, lang="en", mode="theatre")
+    ctx, page, errs = open_page(browser, *PHONE, lang="en", mode="theatre")
     page.wait_for_timeout(500)
 
     # Find a show that has a performance with a known hall (e.g. "Сцена „Апостол Карамитев"")
@@ -7320,7 +7359,7 @@ def wave_l(browser):
         th_date_late = prelim_theatre_info["dateLate"]
         print(f"  Using theatre={th_id}, early={th_date_early}, late={th_date_late}")
 
-        ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+        ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
         page.wait_for_timeout(500)
 
         show_for_prelim = page.evaluate(f"""() => {{
@@ -7583,14 +7622,14 @@ def wave_m(browser):
         width 0; icons (svg) remain visible; closing search reverses all.
       - BG and EN widths are identical at 960px.
       - At 1440px+ (.seg unchanged while searching).
-      - At 375px mobile (.seg unchanged while searching).
+      - At 360px mobile (.seg unchanged while searching).
       - .brand-logo width ≥ 160px at 960px with search open.
       - No horizontal page overflow at 780px with search open.
 
     M2 – SECTION TOGGLE SCROLL STABILITY (page scrolled to very end):
       - cinema Venues at 1280×800: 5 open+close trials, max header deviation ≤ 1px.
       - theatre Genres at 1280×800: 5 open+close trials, max header deviation ≤ 1px.
-      - cinema Genres at 375×812: 5 open+close trials, max header deviation ≤ 1px.
+      - cinema Genres at 360×780: 5 open+close trials, max header deviation ≤ 1px.
     """
     wave = "M"
     ensure_shot_dir(wave)
@@ -7796,16 +7835,16 @@ def wave_m(browser):
 
     ctx.close()
 
-    # ── M1-7: Mobile 375px .seg unchanged while searching ──
-    print("\n=== M1-7: Mobile 375px .seg unchanged while searching ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    # ── M1-7: Mobile 360px .seg unchanged while searching ──
+    print("\n=== M1-7: Mobile 360px .seg unchanged while searching ===")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     btn = page.query_selector("[data-search-open]")
     if btn:
         btn.click()
         page.wait_for_timeout(400)
 
-    state_375 = page.evaluate("""() => {
+    state_360 = page.evaluate("""() => {
         const seg = document.querySelector('.seg');
         if (!seg) return {err: 'no .seg'};
         return {
@@ -7814,18 +7853,18 @@ def wave_m(browser):
         };
     }""")
 
-    if "err" not in state_375:
+    if "err" not in state_360:
         # phones: the search replaces the toggle row and never shrinks the toggle itself
         # (owner's option 1, 2026-10-25; HF2-A checks it frame by frame)
-        check("m1_seg_q_at_375", not state_375["segQ"],
+        check("m1_seg_q_at_360", not state_360["segQ"],
               f"seg-q present on mobile: the toggle must not change while searching on a phone")
         # On mobile the CSS overrides the width to flex, so just confirm no overflow
         scroll_w = page.evaluate("document.documentElement.scrollWidth")
-        check("m1_no_overflow_375_search", scroll_w <= 375,
-              f"scrollWidth={scroll_w} (horizontal overflow at 375 with search open)")
+        check("m1_no_overflow_360_search", scroll_w <= NARROW_PHONE[0],
+              f"scrollWidth={scroll_w} (horizontal overflow at 360 with search open)")
     else:
-        check("m1_seg_q_at_375", False, state_375["err"])
-        check("m1_no_overflow_375_search", False, "no .seg found")
+        check("m1_seg_q_at_360", False, state_360["err"])
+        check("m1_no_overflow_360_search", False, "no .seg found")
 
     ctx.close()
 
@@ -7999,9 +8038,9 @@ def wave_m(browser):
     save_shot(page, wave, "theatre-genres-1280")
     ctx.close()
 
-    # Case C: cinema Genres at 375×812
-    print("\n--- M2-C: cinema Genres at 375×812 ---")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    # Case C: cinema Genres at 360×780
+    print("\n--- M2-C: cinema Genres at 360×780 ---")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
     found_c = _scroll_to_toggle(page, "Genres")
     if found_c:
@@ -8014,7 +8053,7 @@ def wave_m(browser):
             check("m2_cinema_genres_mobile_stable", False, "[data-sectoggle='Genres'] not found during measurement")
     else:
         check("m2_cinema_genres_mobile_stable", False, "[data-sectoggle='Genres'] not found after scrolling")
-    save_shot(page, wave, "cinema-genres-375")
+    save_shot(page, wave, "cinema-genres-360")
     ctx.close()
 
 
@@ -8262,7 +8301,7 @@ def wave_p(browser):
     ctx.close()
 
     if "err" not in pick:
-        ctx, page, errs = open_page(browser, 430, 900, lang="en", mode="cinema")
+        ctx, page, errs = open_page(browser, *BIG_PHONE, lang="en", mode="cinema")
         page.wait_for_timeout(400)
         set_marks(page, [[pick["fid"], pick["v"], pick["d"]]])
         open_film_sheet(page, pick["fid"])
@@ -8294,7 +8333,7 @@ def wave_n(browser):
     N-4  Calendar crossing DST boundary 2026-10-25 (EEST→EET) produces a valid
          offset in the Outlook link (+02:00, not +03:00).
     """
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
 
     # ── N-1: safeUrl() ──────────────────────────────────────────────────────
     print("\n=== N-1: safeUrl() scheme guard ===")
@@ -8348,7 +8387,7 @@ def wave_n(browser):
     # event that starts at 22:30 (≥90-minute film → ends after midnight).
     # We read back endGcal / endOutlook from the returned event object.
     print("\n=== N-3: calendar midnight crossing ===")
-    ctx2, page2, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx2, page2, _ = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
 
     midnight_result = page2.evaluate("""() => {
         // A film+cinema pair whose film runs at least 90 minutes (calEvent's default for an
@@ -8406,7 +8445,7 @@ def wave_n(browser):
     # (clocks fall back at 04:00 EEST → 03:00 EET).
     # We check that the Outlook link uses +03:00 before and +02:00 after.
     print("\n=== N-4: calendar DST boundary 2026-10-25 ===")
-    ctx3, page3, _ = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx3, page3, _ = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
 
     dst_result = page3.evaluate("""() => {
         const row = SHOWTIMES && SHOWTIMES.find(r => filmById[r[0]] && cinById[r[1]]);
@@ -8475,7 +8514,7 @@ def wave_p2a(browser):
     # ── P2A-1 / P2A-2: TMDB tile and ranking fallback ──
     print("\n=== P2A-1/2: TMDB tile appears and ranking fallback works ===")
     for lang in ("bg", "en"):
-        ctx, page, errs = open_page(browser, 375, 812, lang=lang, mode="cinema")
+        ctx, page, errs = open_page(browser, *NARROW_PHONE, lang=lang, mode="cinema")
         page.wait_for_timeout(600)
 
         # Inject a film with TMDB rating but no IMDb rating into TMDBART
@@ -8566,7 +8605,7 @@ def wave_p2a(browser):
 
     # ── P2A-3: Screening more than 14 days ahead is listed ──
     print("\n=== P2A-3: Screening >14 days ahead is visible (COMMERCIAL_DAYS removed) ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     # Calculate a date 20 days from today (well beyond COMMERCIAL_DAYS=14)
@@ -8621,7 +8660,7 @@ def wave_p2d(browser):
 
     # ── P2D-1: aggDomain() still works ──────────────────────────────────────
     print("\n=== P2D-1: aggDomain() detects aggregator URLs ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     agg_result = page.evaluate("""() => {
@@ -8664,7 +8703,7 @@ def wave_p2d(browser):
 
     # ── P2D-2: buyBox() labels via AGGLINKS (provenance) ────────────────────
     print("\n=== P2D-2: buyBox() labels via AGGLINKS (not aggDomain) ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(400)
 
     buy_box_result = page.evaluate("""() => {
@@ -8733,7 +8772,7 @@ def wave_p2d(browser):
 
     # ── P2D-3: filmBuyBox() labels via AGGLINKS ──────────────────────────────
     print("\n=== P2D-3: filmBuyBox() uses AGGLINKS for programata.bg label ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     film_buy_result = page.evaluate(f"""() => {{
@@ -8800,7 +8839,7 @@ def wave_p2c(browser):
 
     # ── P2C-1/2/3: score badge variants on cards ──
     print("\n=== P2C-1/2/3: score badge on cards (TMDB, IMDb, none) ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     badge_result = page.evaluate(f"""() => {{
@@ -8909,7 +8948,7 @@ def wave_p2c(browser):
 
     # ── P2C-3b: fresh TMDBART.imdb wins over seed f.imdb ──
     print("\n=== P2C-3b: fresh TMDBART IMDb overwrites seed IMDb ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     fresh_imdb_result = page.evaluate(f"""() => {{
@@ -8960,7 +8999,7 @@ def wave_p2c(browser):
 
     # ── P2C-4: CineLibri films show clean title and mark ──
     print("\n=== P2C-4: CineLibri film cards show clean title and mark ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     cinelibri_result = page.evaluate("""() => {
@@ -9022,7 +9061,7 @@ def wave_p2c(browser):
 
     # ── P2C-5: Searching 'Синелибри' finds CineLibri films ──
     print("\n=== P2C-5: Search 'Синелибри' finds CineLibri films ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     search_result = page.evaluate("""() => {
@@ -9072,7 +9111,7 @@ def _probe_p2e_showtimes(browser) -> dict:
     if cache_key in _p2e_probe_cache:
         return _p2e_probe_cache[cache_key]
 
-    ctx, page, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, _ = open_page(browser, *PHONE, lang="bg", mode="cinema")
     result = page.evaluate(f"""() => {{
         const today = "{CLOCK_TODAY_ISO}";
         // Use the page's own clock so upcoming-time filtering matches sheetFilm exactly.
@@ -9325,7 +9364,7 @@ def wave_p2e(browser):
     # ── P2E-1: attrLabels() returns correct localised text in BG and EN ─────────
     print("\n=== P2E-1: attrLabels() localisation (JS unit check) ===")
     for lang in ("bg", "en"):
-        ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
+        ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang=lang)
         page.wait_for_timeout(400)
 
         result = page.evaluate(f"""() => {{
@@ -9393,7 +9432,7 @@ def wave_p2e(browser):
     print("\n=== P2E-2: SHOWATTR labels appear in P3E screening sheet ===")
     _so_times_js = str(_so_times)
     for lang in ("bg", "en"):
-        ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
+        ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang=lang)
         page.wait_for_timeout(400)
 
         expected_lbl = "Субтитри" if lang == "bg" else "Subtitled"
@@ -9463,7 +9502,7 @@ def wave_p2e(browser):
     # verify each screening sheet shows the correct label.
     print("\n=== P2E-3: Mixed lang → each pill's screening sheet shows its label ===")
     _mx_times_js = str(_mx_times)
-    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang="bg")
     page.wait_for_timeout(400)
 
     # Open the film sheet for _mx_film
@@ -9535,7 +9574,7 @@ def wave_p2e(browser):
 
     # ── P2E-4: No label for a film with no SHOWATTR entry ────────────────────────
     print("\n=== P2E-4: No attr-lbl when SHOWATTR has no entry ===")
-    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang="bg")
     page.wait_for_timeout(400)
 
     result = page.evaluate(f"""() => {{
@@ -9561,9 +9600,9 @@ def wave_p2e(browser):
     # ── P2E-5: Chips with attr labels are not taller than chips without ──────────
     # (Adding labels must not increase chip height, as vtimes uses flex-wrap.)
     # We also record the actual min height as informational context.
-    print("\n=== P2E-5: Attr labels do not increase chip height (390-wide viewport) ===")
+    print("\n=== P2E-5: Attr labels do not increase chip height (402-wide viewport) ===")
     # Measure chips WITHOUT labels (using plain open_page, no SHOWATTR)
-    ctx_plain, page_plain, _ = open_page(browser, 390, 844, lang="bg")
+    ctx_plain, page_plain, _ = open_page(browser, *PHONE, lang="bg")
     page_plain.wait_for_timeout(400)
     plain_result = page_plain.evaluate(f"""() => {{
         const fid = "{_so_film}";
@@ -9571,7 +9610,7 @@ def wave_p2e(browser):
         if (!f) return {{found: false}};
         const html = sheetFilm(f);
         const tmpDiv = document.createElement("div");
-        tmpDiv.style.cssText = "position:absolute;left:-9999px;width:390px;visibility:hidden";
+        tmpDiv.style.cssText = "position:absolute;left:-9999px;width:402px;visibility:hidden";
         tmpDiv.innerHTML = html;
         document.body.appendChild(tmpDiv);
         const chips = Array.from(tmpDiv.querySelectorAll(".time:not(.tix)"));
@@ -9582,7 +9621,7 @@ def wave_p2e(browser):
     ctx_plain.close()
 
     # Measure chips WITH labels (using patched SHOWATTR)
-    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang="bg")
     page.wait_for_timeout(400)
     label_result = page.evaluate(f"""() => {{
         const fid = "{_so_film}";
@@ -9590,7 +9629,7 @@ def wave_p2e(browser):
         if (!f) return {{found: false}};
         const html = sheetFilm(f);
         const tmpDiv = document.createElement("div");
-        tmpDiv.style.cssText = "position:absolute;left:-9999px;width:390px;visibility:hidden";
+        tmpDiv.style.cssText = "position:absolute;left:-9999px;width:402px;visibility:hidden";
         tmpDiv.innerHTML = html;
         document.body.appendChild(tmpDiv);
         const chips = Array.from(tmpDiv.querySelectorAll(".time:not(.tix)"));
@@ -9612,11 +9651,11 @@ def wave_p2e(browser):
               min_label <= min_plain + 2,
               f"min h plain={min_plain}px, with labels={min_label}px (tolerance 2px)")
     # ── P2E-5b: P3E time pills ≥44px on phones; SS buttons ≥44px ────────────────
-    print("\n=== P2E-5b: P3E pill tap targets ≥44px on phones (375/390/440) + SS buttons ===")
-    # Measure .p3e-pill at phone widths 375, 390, 440 by rendering the film sheet
+    print("\n=== P2E-5b: P3E pill tap targets ≥44px on phones (360/402/440) + SS buttons ===")
+    # Measure .p3e-pill at phone widths 360, 402, 440 by rendering the film sheet
     pill_results = {}
-    for pw in (375, 390, 440):
-        ctx_p, page_p, _ = open_page(browser, pw, 844, lang="bg")
+    for pw in (NARROW_PHONE[0], PHONE[0], ANDROID_PHONE[0], BIG_PHONE[0]):
+        ctx_p, page_p, _ = open_page(browser, pw, PHONE[1], lang="bg")
         page_p.wait_for_timeout(400)
         pr = page_p.evaluate(f"""() => {{
             const fid = "{_so_film}";
@@ -9655,8 +9694,8 @@ def wave_p2e(browser):
             break
 
     if all_pills_ok and pill_results:
-        # Also measure .ss-btn inside the open screening sheet at 390px
-        ctx_ss, page_ss, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+        # Also measure .ss-btn inside the open screening sheet at 402px
+        ctx_ss, page_ss, _ = open_page(browser, *PHONE, lang="bg", mode="cinema")
         page_ss.wait_for_timeout(500)
         ss_opened = False
         for sel in [".card-link", ".card", ".fcard"]:
@@ -9704,7 +9743,7 @@ def wave_p2e(browser):
     # ── P2E-6: Calendar title carries the localised version label ────────────────
     print("\n=== P2E-6: Calendar event title carries localised version suffix ===")
     for lang in ("bg", "en"):
-        ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang=lang)
+        ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang=lang)
         page.wait_for_timeout(400)
 
         # _sg_film|_sg_venue on _sg_date at _sg_time → "sub"
@@ -9736,7 +9775,7 @@ def wave_p2e(browser):
     # ── P2E-7: the calendar event (real calEvent) has no description and no link
     # (owner, 2026-10-30); the version label lives in its title, localised, no raw tokens
     print("\n=== P2E-7: Calendar event: no description, version label in the title ===")
-    ctx, page, errs = _open_page_with_showattr(browser, 390, 844, lang="bg")
+    ctx, page, errs = _open_page_with_showattr(browser, *PHONE, lang="bg")
     page.wait_for_timeout(400)
 
     result = page.evaluate(f"""() => {{
@@ -9768,7 +9807,7 @@ def wave_p3d(browser):
     3. No Audience tile in any language or viewport.
     4. Absent values give no tile (a film with no rt/mc shows no RT/MC tile).
     5. BG and EN — tile labels match each language.
-    6. 375 px phone viewport and 1024 px desktop viewport.
+    6. 360 px phone viewport and 1024 px desktop viewport.
     """
     wave = "P3D"
     ensure_shot_dir(wave)
@@ -9779,7 +9818,7 @@ def wave_p3d(browser):
     # ── P3D-1/5/6: tile order, labels, BG/EN, phone/desktop ─────────────────────
     print("\n=== P3D-1/5/6: tile order and labels (BG/EN, phone/desktop) ===")
     for lang in ("bg", "en"):
-        for w, h, vp in ((375, 812, "phone"), (1024, 768, "desktop")):
+        for w, h, vp in ((*NARROW_PHONE, "phone"), (1024, 768, "desktop")):
             ctx, page, errs = open_page(browser, w, h, lang=lang, mode="cinema")
             page.wait_for_timeout(400)
 
@@ -9896,7 +9935,7 @@ def wave_p3d(browser):
 
     # ── P3D-2: fresh TMDBART.rt/mc wins over seed f.rt/f.mc ──────────────────────
     print("\n=== P3D-2: fresh TMDBART.rt/mc beats seed ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     fresh_result = page.evaluate(f"""() => {{
@@ -9954,7 +9993,7 @@ def wave_p3d(browser):
 
     # ── P3D-4: absent rt/mc values give no tile ───────────────────────────────────
     print("\n=== P3D-4: absent rt/mc give no tile ===")
-    ctx, page, errs = open_page(browser, 375, 812, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *NARROW_PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     absent_result = page.evaluate(f"""() => {{
@@ -10181,8 +10220,8 @@ def wave_p3a(browser):
         save_shot(page, wave, f"p3a_brand_sub_desktop_{lang}")
         ctx.close()
 
-        # Phone: 390px, check subtext centred
-        ctx, page, errs = open_page(browser, 390, 844, lang=lang, mode="cinema")
+        # Phone: 402px, check subtext centred
+        ctx, page, errs = open_page(browser, *PHONE, lang=lang, mode="cinema")
         page.wait_for_timeout(400)
 
         result_mob = page.evaluate("""() => {
@@ -10265,7 +10304,7 @@ def wave_p3a(browser):
 
     # ── P3A-4: Phone period header — dates on own line ─────────────────────────
     print("\n=== P3A-4: Phone period header dates on own line ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     result = page.evaluate("""() => {
@@ -10298,7 +10337,7 @@ def wave_p3a(browser):
 
     # ── P3A-5: Day strip rollover logic (JS unit check) ───────────────────────
     print("\n=== P3A-5: Day strip rollover ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     result = page.evaluate("""() => {
@@ -10342,7 +10381,7 @@ def wave_p3a(browser):
 
     # ── P3A-6: Late-day card (JS logic check) ────────────────────────────────
     print("\n=== P3A-6: Late-day card ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     result = page.evaluate("""() => {
@@ -10376,7 +10415,7 @@ def wave_p3a(browser):
 
     # ── P3A-7: Favourites — state and toggle ──────────────────────────────────
     print("\n=== P3A-7: Favourites state and toggle ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(400)
 
     result = page.evaluate("""() => {
@@ -10513,9 +10552,9 @@ def wave_p3a(browser):
     print("\n=== P3A-2b: Brand subtext exact text at desktop and phone ===")
     for vp_w, vp_h, label, lang, sub_exp in [
         (1280, 800, "desktop_bg", "bg", "Афишът на кината и театрите в София"),
-        (390, 844, "phone_bg", "bg", "Афишът на кината и театрите в София"),
+        (*PHONE, "phone_bg", "bg", "Афишът на кината и театрите в София"),
         (1280, 800, "desktop_en", "en", "Sofia's cinema and theatre listings"),
-        (390, 844, "phone_en", "en", "Sofia's cinema and theatre listings"),
+        (*PHONE, "phone_en", "en", "Sofia's cinema and theatre listings"),
     ]:
         ctx, page, errs = open_page(browser, vp_w, vp_h, lang=lang, mode="cinema")
         page.wait_for_timeout(400)
@@ -10533,17 +10572,17 @@ def wave_p3a(browser):
         save_shot(page, wave, f"p3a_sub_{label}")
         ctx.close()
 
-    # ── P3A-2c: Brand subtext no-ellipsis/no-clip at 375/390/440/960/1280/1440px ─
+    # ── P3A-2c: Brand subtext no-ellipsis/no-clip at 360/402/440/960/1280/1440px ─
     print("\n=== P3A-2c: Brand subtext no ellipsis or clip at all widths ===")
     for vp_w, lang in [
-        (375, "bg"), (375, "en"),
-        (390, "bg"), (390, "en"),
+        (NARROW_PHONE[0], "bg"), (NARROW_PHONE[0], "en"),
+        (PHONE[0], "bg"), (PHONE[0], "en"),
         (440, "bg"), (440, "en"),
         (960, "bg"), (960, "en"),
         (1280, "bg"), (1280, "en"),
         (1440, "bg"), (1440, "en"),
     ]:
-        ctx, page, errs = open_page(browser, vp_w, 844, lang=lang, mode="cinema")
+        ctx, page, errs = open_page(browser, vp_w, PHONE[1], lang=lang, mode="cinema")
         page.wait_for_timeout(400)
         result = page.evaluate("""() => {
             const sub = document.querySelector(".brand-sub");
@@ -10663,7 +10702,7 @@ def wave_p3c(browser):
 
     # ── P3C-1: shareItem() URL shape ─────────────────────────────────────────
     print("\n=== P3C-1: shareItem() produces /film/<id>/ URL ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     result = page.evaluate(f"""() => {{
@@ -10728,7 +10767,7 @@ def wave_p3c(browser):
     # ── P3C-2: ?film=<id> opens the sheet ────────────────────────────────────
     print("\n=== P3C-2: ?film=<id> opens film sheet ===")
     ctx2 = browser.new_context(
-        viewport={"width": 390, "height": 844},
+        viewport=viewport(PHONE),
         timezone_id="Europe/Sofia",
         locale="bg-BG",
     )
@@ -10744,7 +10783,7 @@ def wave_p3c(browser):
     page2.on("pageerror", lambda e: errs2.append(str(e)))
 
     # Pick a film id from the running fixture data (already loaded in page)
-    ctx_tmp, page_tmp, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx_tmp, page_tmp, _ = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page_tmp.wait_for_timeout(300)
     first_film_id = page_tmp.evaluate(f"""() => {{
         const today = "{CLOCK_TODAY_ISO}";
@@ -10783,7 +10822,7 @@ def wave_p3c(browser):
         # ── P3C-3: ?show=<id> opens the show sheet ───────────────────────────
         print("\n=== P3C-3: ?show=<id> opens show sheet ===")
         ctx3 = browser.new_context(
-            viewport={"width": 390, "height": 844},
+            viewport=viewport(PHONE),
             timezone_id="Europe/Sofia",
             locale="bg-BG",
         )
@@ -10797,7 +10836,7 @@ def wave_p3c(browser):
         page3 = ctx3.new_page()
         page3.on("pageerror", lambda e: None)
 
-        ctx_tmp2, page_tmp2, _ = open_page(browser, 390, 844, lang="bg", mode="theatre")
+        ctx_tmp2, page_tmp2, _ = open_page(browser, *PHONE, lang="bg", mode="theatre")
         page_tmp2.wait_for_timeout(300)
         first_show_id = page_tmp2.evaluate(f"""() => {{
             const today = "{CLOCK_TODAY_ISO}";
@@ -10835,7 +10874,7 @@ def wave_p3c(browser):
     # ── P3C-4: ?film=<unlisted-id> shows notInProgramme toast ────────────────
     print("\n=== P3C-4: ?film=<unlisted-id> shows notInProgramme toast ===")
     ctx4 = browser.new_context(
-        viewport={"width": 390, "height": 844},
+        viewport=viewport(PHONE),
         timezone_id="Europe/Sofia",
         locale="bg-BG",
     )
@@ -10888,7 +10927,7 @@ def wave_p3c(browser):
     # film_merges.json -> FILM_REDIRECT: a link shared before the merge (Cine
     # Grand's /film/neudobnata-istina/) reaches the one card of that film.
     print("\n=== P3C-5: ?film=<merged-away id> opens the kept film ===")
-    ctx5, page5, _ = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx5, page5, _ = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page5.wait_for_timeout(300)
     pair = page5.evaluate("""() => {
         const r = (typeof FILM_REDIRECT === "object" && FILM_REDIRECT) || {};
@@ -10899,7 +10938,7 @@ def wave_p3c(browser):
     if not pair:
         skip("p3c_5_merged_film_opens_kept", "no merged film id in this data (FILM_REDIRECT empty)")
     else:
-        ctx5 = browser.new_context(viewport={"width": 390, "height": 844},
+        ctx5 = browser.new_context(viewport=viewport(PHONE),
                                    timezone_id="Europe/Sofia", locale="bg-BG")
         ctx5.add_init_script(CLOCK)
         ctx5.add_init_script("""
@@ -10969,7 +11008,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-1: Sheet open animation ───────────────────────────────────────
     print("\n=== P3B-1: Sheet open animation ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     result = page.evaluate("""() => {
@@ -11020,7 +11059,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-2: Reduced motion: open is instant ────────────────────────────
     print("\n=== P3B-2: Reduced motion instant open ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     # Inject reduced-motion emulation
     page.add_style_tag(content="@media (prefers-reduced-motion) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }")
     ctx.add_init_script("""
@@ -11061,7 +11100,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-3: Alt text on poster images ─────────────────────────────────
     print("\n=== P3B-3: Poster alt text ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     result = page.evaluate("""() => {
@@ -11084,7 +11123,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-4: Esc closes sheet ───────────────────────────────────────────
     print("\n=== P3B-4: Esc closes sheet ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
     opened = _click_first_card(page, timeout=3000)
     if not opened:
@@ -11100,7 +11139,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-5: Focus management ───────────────────────────────────────────
     print("\n=== P3B-5: Focus into sheet and back to card ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     # Focus a card before opening (simulate keyboard navigation)
@@ -11148,7 +11187,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-6: Drawer animates from FAB ──────────────────────────────────
     print("\n=== P3B-6: Drawer animation from FAB ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     result = page.evaluate("""() => {
@@ -11185,7 +11224,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-7: Drawer from "Друг период" ─────────────────────────────────
     print("\n=== P3B-7: Drawer from Друг период link ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
 
     result = page.evaluate("""() => {
@@ -11223,7 +11262,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-8: Pull-down below threshold springs back ────────────────────
     print("\n=== P3B-8: Pull-down below threshold springs back ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
     opened = _click_first_card(page, timeout=3000)
     if not opened:
@@ -11235,7 +11274,7 @@ def wave_p3b(browser, webkit_browser=None):
         if not sheet_box:
             skip("p3b_8_pulldown_spring", "can't get sheet bounding box")
         else:
-            # Short drag: 40px downward (well below 25% threshold on 844px)
+            # Short drag: 40px downward (well below 25% threshold on 874px)
             sx = int(sheet_box["x"] + sheet_box["width"] / 2)
             sy = int(sheet_box["y"] + 30)
             # Dispatch touch events via JS
@@ -11262,7 +11301,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-9: Pull-down past threshold closes ────────────────────────────
     print("\n=== P3B-9: Pull-down past threshold closes ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
     opened = _click_first_card(page, timeout=3000)
     if not opened:
@@ -11305,7 +11344,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-10: Scrolling inside sheet doesn't close it ──────────────────
     print("\n=== P3B-10: Scrolling inside sheet doesn't close it ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
     opened = _click_first_card(page, timeout=3000)
     if not opened:
@@ -11345,7 +11384,7 @@ def wave_p3b(browser, webkit_browser=None):
 
     # ── P3B-11: Tap target size: close button >= 40px ────────────────────
     print("\n=== P3B-11: Sheet close button tap target ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(600)
     opened = _click_first_card(page, timeout=3000)
     if not opened:
@@ -11374,7 +11413,7 @@ def wave_p3b(browser, webkit_browser=None):
         skip("p3b_12_webkit", "WebKit browser not available")
     else:
         try:
-            ctx, page, errs = open_page(webkit_browser, 390, 844, lang="bg", mode="cinema")
+            ctx, page, errs = open_page(webkit_browser, *PHONE, lang="bg", mode="cinema")
             page.wait_for_timeout(600)
             opened = _click_first_card(page, timeout=4000)
             if not opened:
@@ -11488,7 +11527,7 @@ def wave_p3e(browser):
 
     # ── P3E-1: Day-picker chips present; active chip aria-pressed=true ─────────
     print("\n=== P3E-1: Day-picker chips in film sheet ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     # Open first film card to show its sheet
@@ -11530,7 +11569,7 @@ def wave_p3e(browser):
 
     # ── P3E-2: .p3e-row with .p3e-vname and .p3e-pills ───────────────────────
     print("\n=== P3E-2: .p3e-row structure in active group ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -11576,7 +11615,7 @@ def wave_p3e(browser):
 
     # ── P3E-3: Time pills present; prelim pill has dashed border ─────────────
     print("\n=== P3E-3: Time pills and prelim border ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -11627,7 +11666,7 @@ def wave_p3e(browser):
 
     # ── P3E-4 & 5: Prelim amber dot + line + footnote ─────────────────────────
     print("\n=== P3E-4/5: Prelim amber dot, text, footnote ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -11764,7 +11803,7 @@ def wave_p3e(browser):
 
     # ── P3E-8: Screening sheet opens on pill click; close button works ────────
     print("\n=== P3E-8: Screening sheet open and close ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -11825,7 +11864,7 @@ def wave_p3e(browser):
 
     # ── P3E-9: Maps link in screening sheet ───────────────────────────────────
     print("\n=== P3E-9: Maps link href ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -11870,7 +11909,7 @@ def wave_p3e(browser):
     # [data-ssback] appears inside the calendar step (after clicking [data-sscal]).
     # It should navigate from the calendar sub-step back to the screening info.
     print("\n=== P3E-10: [data-ssback] in calendar step ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -11929,7 +11968,7 @@ def wave_p3e(browser):
 
     # ── P3E-11: Calendar step ─────────────────────────────────────────────────
     print("\n=== P3E-11: Calendar step (Apple/Google/Outlook links) ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12008,7 +12047,7 @@ def wave_p3e(browser):
 
     # ── P3E-12: Esc key closes screening sheet; focus returns to pill ─────────
     print("\n=== P3E-12: Esc closes screening sheet; focus returns ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12065,7 +12104,7 @@ def wave_p3e(browser):
 
     # ── P3E-13: Theatre mode: .p3e-row + .p3e-pills ───────────────────────────
     print("\n=== P3E-13: Theatre mode .p3e-row + .p3e-pills ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard", "[data-show]"]:
@@ -12103,7 +12142,7 @@ def wave_p3e(browser):
 
     # ── P3E-14: EN language — English venue names in .p3e-vname ─────────────
     print("\n=== P3E-14: EN language shows English venue names ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="en", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="en", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12146,8 +12185,8 @@ def wave_p3e(browser):
     ctx.close()
 
     # ── P3E-15: Backdrop tap closes screening sheet; focus returns to pill ───────
-    print("\n=== P3E-15 (phone 390): backdrop tap closes SS; focus returns to pill ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    print("\n=== P3E-15 (phone 402): backdrop tap closes SS; focus returns to pill ===")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12207,8 +12246,8 @@ def wave_p3e(browser):
     ctx.close()
 
     # ── P3E-16: Swipe down past threshold closes screening sheet ─────────────────
-    print("\n=== P3E-16 (phone 390): swipe down past threshold closes SS ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    print("\n=== P3E-16 (phone 402): swipe down past threshold closes SS ===")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12272,8 +12311,8 @@ def wave_p3e(browser):
     ctx.close()
 
     # ── P3E-17: Short drag on SS springs back (does not close) ───────────────────
-    print("\n=== P3E-17 (phone 390): short drag on SS springs back ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    print("\n=== P3E-17 (phone 402): short drag on SS springs back ===")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12330,8 +12369,8 @@ def wave_p3e(browser):
     ctx.close()
 
     # ── P3E-18: Parent sheet still swipes closed after SS is dismissed ───────────
-    print("\n=== P3E-18 (phone 390): parent sheet swipes closed after SS dismissed ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    print("\n=== P3E-18 (phone 402): parent sheet swipes closed after SS dismissed ===")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
     opened = False
     for sel in [".card-link", ".card", ".fcard"]:
@@ -12432,7 +12471,7 @@ def wave_p3f(browser):
 
     # ── P3F-1: T.bg — no em dash in any string ─────────────────────────────────
     print("\n=== P3F-1: T.bg values — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     t_bg_result = page.evaluate(r"""() => {
@@ -12461,7 +12500,7 @@ def wave_p3f(browser):
 
     # ── P3F-2: T.en — no em dash in any string ─────────────────────────────────
     print("\n=== P3F-2: T.en values — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="en", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="en", mode="cinema")
     page.wait_for_timeout(500)
 
     t_en_result = page.evaluate(r"""() => {
@@ -12490,7 +12529,7 @@ def wave_p3f(browser):
 
     # ── P3F-3: Home page UI chrome — no em dash ────────────────────────────────
     print("\n=== P3F-3: Home page UI chrome — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     home_result = page.evaluate(r"""() => {
@@ -12533,7 +12572,7 @@ def wave_p3f(browser):
 
     # ── P3F-4: Film sheet labels and notes — no em dash ────────────────────────
     print("\n=== P3F-4: Film sheet labels/notes — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     # Open first film card
@@ -12596,7 +12635,7 @@ def wave_p3f(browser):
 
     # ── P3F-5: Show sheet labels and notes — no em dash ────────────────────────
     print("\n=== P3F-5: Show sheet labels/notes — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="theatre")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="theatre")
     page.wait_for_timeout(500)
 
     # Open first show card
@@ -12656,7 +12695,7 @@ def wave_p3f(browser):
     # Opens a film sheet, clicks a time pill to open the screening sheet,
     # then checks UI-copy selectors inside it.
     print("\n=== P3F-6: Screening sheet UI copy — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(500)
 
     # Open first film card
@@ -12734,7 +12773,7 @@ def wave_p3f(browser):
 
     # ── P3F-7: Empty states and gap messages — no em dash ──────────────────────
     print("\n=== P3F-7: Empty states and gap messages — no em dash ===")
-    ctx, page, errs = open_page(browser, 390, 844, lang="bg", mode="cinema")
+    ctx, page, errs = open_page(browser, *PHONE, lang="bg", mode="cinema")
     page.wait_for_timeout(800)
 
     empty_result = page.evaluate(r"""() => {
@@ -13100,7 +13139,7 @@ def _hf_flows(browser, eng, phone):
     """Every way of closing the time popup, each followed by a different way of closing
     the film sheet, on one page (state accumulates as it would for a user); then another
     film and a theatre show must open on the first tap and stay open with the right title."""
-    w, h = (390, 844) if phone else (1440, 900)
+    w, h = PHONE if phone else (1440, 900)
     tag = f"hf1_{'phone' if phone else 'desk'}"
     ctx, page, errs = _hf_open(browser, w, h, phone)
     films = page.evaluate(HF_CANDIDATES_JS, "film")
@@ -13172,7 +13211,7 @@ def _hf_flows(browser, eng, phone):
 
 
 def _hf_special_flows(browser, eng, phone):
-    w, h = (390, 844) if phone else (1440, 900)
+    w, h = PHONE if phone else (1440, 900)
     tag = f"hf1_{'phone' if phone else 'desk'}"
     # (a) close the film sheet while the popup is open: back, back / Esc, Esc / back bar by keyboard
     for how in ("back_back", "esc_esc", "backbar_key"):
@@ -13352,7 +13391,7 @@ def _hf_scroll(browser, eng, phone):
     """The page does not move when a sheet opens, does not scroll behind it, the sheet
     scrolls, and after closing scrollY is restored with no inline styles left, and the
     page scrolls again (wheel, keyboard, touch)."""
-    w, h = (390, 844) if phone else (1440, 900)
+    w, h = PHONE if phone else (1440, 900)
     tag = f"hf1_{'phone' if phone else 'desk'}"
     wheel_ok = not (phone and eng == "webkit")   # mobile WebKit has no wheel events
     for with_pop in (False, True):
@@ -13600,9 +13639,9 @@ def _hf_geometry(browser, eng):
                           f"popover={f['pop']} focusOnTime={f['onTime']} sheetScroll {sc_before}->{f['sc']} film={f['film']}")
             page.keyboard.press("Escape"); page.wait_for_timeout(350)
         ctx.close()
-    # a landscape phone (844x390, wider than 760 but shorter than 520): the bottom panel, compact,
+    # a landscape phone (874x402, wider than 760 but shorter than 520): the bottom panel, compact,
     # every control in view without scrolling, both steps, wherever the time sits
-    ctx, page, errs = _hf_open(browser, 844, 390, True)
+    ctx, page, errs = _hf_open(browser, PHONE[1], PHONE[0], True)
     films = page.evaluate(HF_CANDIDATES_JS, "film")
     for frac, pos in ((0.2, "top"), (0.5, "middle"), (0.85, "bottom")):
         name = f"hf1_landscape_phone_panel_{pos}"
@@ -13618,12 +13657,12 @@ def _hf_geometry(browser, eng):
         _hf_tap(page, True, r["x"], r["y"]); page.wait_for_timeout(500)
         vis = page.evaluate(HF_POPUP_VIS_JS)
         if pos == "middle":
-            _hf_shot(page, "landscape_phone_panel_844x390")
+            _hf_shot(page, "landscape_phone_panel_874x402")
         page.evaluate("()=>{const b=document.querySelector('#ss-wrap [data-sscal]');b&&b.click()}")
         page.wait_for_timeout(350)
         vis2 = page.evaluate(HF_POPUP_VIS_JS)
         if pos == "middle":
-            _hf_shot(page, "landscape_phone_panel_844x390_calendar")
+            _hf_shot(page, "landscape_phone_panel_874x402_calendar")
         ok = (vis.get("mode") == "panel" and not vis["hidden"] and not vis["scrollNeeded"] and vis["minBtn"] >= 44
               and vis2.get("mode") == "panel" and not vis2["hidden"] and not vis2["scrollNeeded"] and vis2["minBtn"] >= 44)
         check(name, ok, f"time at {r['y']:.0f}px | main: {vis} | calendar: {vis2}")
@@ -13635,7 +13674,7 @@ def _hf_geometry(browser, eng):
 def _hf_phone_sheet(browser, eng):
     # phone bottom sheet: inside the visible viewport, pinned to the bottom, <= 88% tall,
     # scrolls inside, safe-area padding, last button clear of Safari's bottom strip
-    for (w, h) in ((390, 844), (375, 667)):
+    for (w, h) in (PHONE, (375, 667)):
         ctx, page, errs = _hf_open(browser, w, h, True)
         films = page.evaluate(HF_CANDIDATES_JS, "film")
         _hf_open_card(page, True, "film", films[0]); page.wait_for_timeout(650)
@@ -13646,8 +13685,8 @@ def _hf_phone_sheet(browser, eng):
               lastGap:innerHeight-last.bottom,wrapClass:document.getElementById('ss-wrap').className};}""")
         ok = bool(g) and g["top"] >= 0 and abs(g["bottom"] - g["vh"]) <= 1 and g["h"] <= 0.88 * g["vh"] + 1 and g["ov"] in ("auto", "scroll") and g["pb"] >= 28 and g["lastGap"] >= 72 and "scrim" not in g["wrapClass"]
         check(f"hf1_phone_sheet_geometry_{w}x{h}", ok, f"{g}")
-        if w == 390:
-            _hf_shot(page, "phone_bottom_sheet_390")
+        if w == PHONE[0]:
+            _hf_shot(page, "phone_bottom_sheet_402")
         ctx.close()
 
 
@@ -13695,7 +13734,7 @@ def _hf_scroll_restore(browser, eng):
     """R1: with reduced motion on and off, every close route (and the time popup's own entry)
     leaves the page exactly where it was (+-2 px); history.scrollRestoration is "auto" again
     once the page is back on its own entry."""
-    for (w, h, phone) in ((390, 844, True), (1280, 800, False)):
+    for (w, h, phone) in ((*PHONE, True), (1280, 800, False)):
         for reduced in (True, False):
             routes = ["x", "backbar", "esc", "backdrop", "back", "popup_back_back", "popup_esc_esc", "popup_x_then_backbar"] + (["drag"] if phone else [])
             notes, all_ok = [], True
@@ -13738,7 +13777,7 @@ def _hf_double_tap(browser, eng):
     """R2: a double tap (phone) or double click (desktop) on x or "‹ Назад" closes the sheet and
     nothing else: the second tap never opens the card under it. The page is scrolled so that a
     card sits right under the button (three cards each), reduced motion on and off."""
-    for (w, h, phone) in ((390, 844, True), (1440, 900, False)):
+    for (w, h, phone) in ((*PHONE, True), (1440, 900, False)):
         for reduced in (False, True):
             ctx, page, errs = _hf_ctx_motion(browser, w, h, phone, reduced)
             films = page.evaluate(HF_CANDIDATES_JS, "film")
@@ -14033,7 +14072,7 @@ def _hf_rows(browser, eng):
     """Bug 4: the busiest real venue row of a film and of a theatre show on phones."""
     for kind, mode in (("film", "cinema"), ("show", "theatre")):
         for lang in ("bg", "en"):
-            for w in (375, 390, 430, 440):
+            for w in (NARROW_PHONE[0], PHONE[0], ANDROID_PHONE[0], BIG_PHONE[0]):
                 ctx, page, errs = _hf_open(browser, w, 860, True, lang=lang, mode=mode)
                 best = page.evaluate(HF_BUSIEST_JS, kind)
                 name = f"hf1_rows_{kind}_{lang}_{w}"
@@ -14046,7 +14085,7 @@ def _hf_rows(browser, eng):
                 r = page.evaluate(HF_ROW_JS, [best["venue"], best["date"]])
                 ok = "err" not in r and r["overlaps"] == 0 and r["ratio"] >= 0.6 and r["overflow"] <= 1 and r["outside"] == 0 and r["minH"] >= 44 and not r["dot"]
                 check(name, ok, f"{best['id']} {best['date']} {best['n']} times: {r}")
-                if (w == 390 and lang == "bg" and kind == "film") or (w == 375 and lang == "en" and kind == "film"):
+                if (w == PHONE[0] and lang == "bg" and kind == "film") or (w == NARROW_PHONE[0] and lang == "en" and kind == "film"):
                     page.wait_for_timeout(150)
                     _hf_shot(page, f"phone_rows_{w}_{lang}")
                 ctx.close()
@@ -14072,7 +14111,7 @@ HF_COUNT_ANIM_JS = """(()=>{const o=Element.prototype.animate;window.__drAnims=0
 def _hf_drawer(browser, eng, phone):
     """Bug 5 and 6: one tap on the FAB opens the drawer; filter taps update the chips and
     the page behind without re-creating or re-animating the drawer; scroll positions stay."""
-    w, h = (390, 844) if phone else (1440, 900)
+    w, h = PHONE if phone else (1440, 900)
     tag = f"hf1_{'phone' if phone else 'desk'}"
     for mode in ("cinema", "theatre"):
         ctx, page, errs = _hf_open(browser, w, h, phone, mode=mode)
@@ -14143,7 +14182,7 @@ def _hf_drawer(browser, eng, phone):
 def _hf_one_tap(browser, eng, phone):
     """Bugs 6/7: one tap is enough for every control of the sheet, the popup and its
     calendar step."""
-    w, h = (390, 844) if phone else (1440, 900)
+    w, h = PHONE if phone else (1440, 900)
     tag = f"hf1_{'phone' if phone else 'desk'}"
     ctx, page, errs = _hf_open(browser, w, h, phone)
     films = page.evaluate(HF_CANDIDATES_JS, "film")
@@ -14193,9 +14232,9 @@ def _hf_one_tap(browser, eng, phone):
 def _hf_ics(browser, eng):
     """Bug 8: the Apple row is a real link to a text/calendar Blob; a valid VCALENDAR; a
     download on desktop browsers; no download attribute for iPhone Safari."""
-    IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1"
+    IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
     for phone, ua, label in ((False, None, "desktop"), (True, None, "phone"), (True, IPHONE_UA, "iphone_ua")):
-        w, h = (390, 844) if phone else (1440, 900)
+        w, h = PHONE if phone else (1440, 900)
         ctx, page, errs = _hf_open(browser, w, h, phone, ua=ua)
         # The page's CSP (connect-src 'self') does not let script fetch a blob: URL, and the
         # app never does: the row is a link. So the test keeps each Blob the app makes a
@@ -14258,7 +14297,7 @@ def wave_hf1(browser):
     HF1-B sheet closed under the popup, fast tap during a close, language toggle, 5 cycles
     HF1-C scroll lock and restore (phone, desktop; with and without the popup)
     HF1-D popover geometry at 1024/1280/1440/1920 (top/middle/bottom); phone bottom sheet
-    HF1-E phone venue rows at 375/390/430/440 BG/EN; desktop grid venue column 761-1024
+    HF1-E phone venue rows at 360/402/412/440 BG/EN; desktop grid venue column 761-1024
     HF1-F filter drawer kept across taps; FAB one tap
     HF1-G one tap for every sheet/popup control
     HF1-H Apple Calendar .ics link
@@ -14272,7 +14311,7 @@ def wave_hf1(browser):
     print(f"\n=== HF1 in {eng} ===")
     ensure_shot_dir("HF1")
     for phone in (True, False):
-        print(f"\n=== HF1-A flows ({'phone 390' if phone else 'desktop 1440'}) ===")
+        print(f"\n=== HF1-A flows ({'phone 402' if phone else 'desktop 1440'}) ===")
         _hf_flows(browser, eng, phone)
         print(f"\n=== HF1-B special flows ({'phone' if phone else 'desktop'}) ===")
         _hf_special_flows(browser, eng, phone)
@@ -14297,7 +14336,7 @@ def wave_hf1(browser):
     print("\n=== HF1-H .ics ===")
     _hf_ics(browser, eng)
     # the page after closing, scrolled, BG
-    ctx, page, errs = _hf_open(browser, 390, 844, True)
+    ctx, page, errs = _hf_open(browser, *PHONE, True)
     page.evaluate("window.scrollTo(0,1400)"); page.wait_for_timeout(300)
     films = page.evaluate(HF_CANDIDATES_JS, "film")
     _hf_open_card(page, True, "film", films[0]); page.wait_for_timeout(650)
@@ -14411,7 +14450,7 @@ def _hf2_toggle(browser, eng):
     itself, and "Отказ" brings the row back exactly as it was; desktops keep the collision-based
     shrink (P3A): icons only when the field would crowd it."""
     cancel = {"bg": "Отказ", "en": "Cancel"}
-    for w, h in ((390, 844), (375, 812)):
+    for w, h in (PHONE, NARROW_PHONE):
         for lang in ("bg", "en"):
             ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang)
             tag = f"hf2_toggle_{w}_{lang}"
@@ -14437,8 +14476,8 @@ def _hf2_toggle(browser, eng):
                       f"searchOpen={is_open} rows {rows} class {s0['cls']!r}->{s1['cls']!r} rect {s0['rect']}->{s1['rect']} "
                       f"buttons {s0['btns']}->{s1['btns']} labels {[(l['txt'], l['op'], l['w']) for l in s1['labels']]} "
                       f"animations sampled={rec['anims']} transition events={rec['events']} ({rec['frames']} frames)")
-                if step == "open" and w == 390 and lang == "bg":
-                    _hf2_shot(page, "phone_390_search_open_bg")
+                if step == "open" and w == PHONE[0] and lang == "bg":
+                    _hf2_shot(page, "phone_402_search_open_bg")
                 page.wait_for_timeout(200)
             check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
             ctx.close()
@@ -14508,7 +14547,7 @@ def _hf2_type(page, word, gap_ms):
 def _hf2_search(browser, eng):
     """Bug 2: typing updates only the results; the field, the header and the scroll stay."""
     words = {"bg": "спайдър", "en": "spider"}
-    for w, h in ((390, 844), (375, 812)):
+    for w, h in (PHONE, NARROW_PHONE):
         for lang in ("bg", "en"):
             word = words[lang]
             tag = f"hf2_search_{w}_{lang}"
@@ -14532,7 +14571,7 @@ def _hf2_search(browser, eng):
                   f"unfocused in {sum(1 for f in fr if not f['act'])}, header re-created in {sum(1 for f in fr if not f['hdr'])}")
             check(f"{tag}_results_updated", res["head"] and res["got"] == res["exp"],
                   f"results for {word!r}: {res['got']} cards shown, searchAll finds {res['exp']}")
-            if w == 390 and lang == "bg":
+            if w == PHONE[0] and lang == "bg":
                 page.wait_for_timeout(100)
             # B: 600 ms after every key, the results follow each prefix
             page.evaluate("()=>{const qi=document.getElementById('q-m');qi.select();}")
@@ -14543,9 +14582,9 @@ def _hf2_search(browser, eng):
             counts, follow = [], True
             for i, ch in enumerate(word):
                 page.keyboard.type(ch)
-                if w == 390 and lang == "bg" and i == 3:
+                if w == PHONE[0] and lang == "bg" and i == 3:
                     page.wait_for_timeout(250)
-                    _hf2_shot(page, "phone_390_mid_typing_bg")
+                    _hf2_shot(page, "phone_402_mid_typing_bg")
                     page.wait_for_timeout(350)
                 else:
                     page.wait_for_timeout(600)
@@ -14588,7 +14627,7 @@ def _hf2_search(browser, eng):
     # scrolled down first: the results open at their top, right under the pinned header,
     # then nothing moves while they change (also when they shrink to one); x returns the
     # page to where it was
-    for w, h in ((390, 844), (375, 812)):
+    for w, h in (PHONE, NARROW_PHONE):
         tag = f"hf2_search_scrolled_{w}"
         ctx, page, errs = _hf2_open(browser, w, h, True)
         page.evaluate("window.scrollTo(0,1500)")
@@ -14691,7 +14730,7 @@ def _hf2_filters(browser, eng):
         "theatre": [("[data-range='month']", 0), ("genre", 0), ("[data-range='all']", 0),
                     ("[data-venue]:not([data-venue=''])", 1), ("[data-range='week']", 0), ("[data-clearf]", 0)],
     }
-    for w, h, lang, mode in ((390, 844, "bg", "cinema"), (390, 844, "en", "theatre"), (375, 812, "bg", "theatre"), (375, 812, "en", "cinema")):
+    for w, h, lang, mode in ((*PHONE, "bg", "cinema"), (*PHONE, "en", "theatre"), (*NARROW_PHONE, "bg", "theatre"), (*NARROW_PHONE, "en", "cinema")):
         tag = f"hf2_filters_{w}_{lang}_{mode}"
         ctx, page, errs = _hf2_open(browser, w, h, True, lang=lang, mode=mode)
         page.add_init_script(HF2_COUNT_ANIM_JS)
@@ -14744,8 +14783,8 @@ def _hf2_filters(browser, eng):
             notes.append(f"{key[0]}={key[1]}: changed={after['sig'] != before['sig']} bad poster frames={rec['nbad']} {rec['bad'][:2]} "
                          f"anims={rec['anims'][:2]} y {before['y']}->{after['y']} (max {after['maxY']}) drawer same={after['same']} "
                          f"top {before['top']}->{after['top']} ({rec['frames']} frames)")
-            if w == 390 and lang == "bg" and i == 1:
-                _hf2_shot(page, "phone_390_drawer_after_filter_tap_bg")
+            if w == PHONE[0] and lang == "bg" and i == 1:
+                _hf2_shot(page, "phone_402_drawer_after_filter_tap_bg")
         a1 = page.evaluate("window.__hf2dr||0")
         detail = " | ".join(notes)
         check(f"{tag}_content_updates", flags["content"], detail)
@@ -14785,7 +14824,7 @@ def _hf2_result_sheets(browser, eng):
     """Item 4: open search, type, tap a result, close the sheet every way, tap another: with
     the keyboard up (and a letter still pending in the live search) and down."""
     routes = ["backbar", "x", "backdrop", "drag", "back"]
-    for w, h in ((390, 844), (440, 956)):
+    for w, h in (PHONE, BIG_PHONE):
         tag = f"hf2_result_sheet_{w}"
         ctx, page, errs = _hf2_open(browser, w, h, True)
         _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
@@ -14901,7 +14940,7 @@ def _hf2_fit(browser, eng):
     """Item 5: nothing wider than the screen, nothing cut off at the right edge, on home,
     film and show sheets, the drawer, search results and the time panel, BG and EN; and
     (Chromium) nothing of the fixed layers under the notch, status bar or home indicator."""
-    sizes = ((440, 956), (402, 874), (393, 852), (375, 812), (360, 800))
+    sizes = tuple(reversed(PHONES))
     for w, h in sizes:
         for lang in ("bg", "en"):
             res = {}
@@ -14943,11 +14982,11 @@ def _hf2_fit(browser, eng):
             check(f"hf2_fit_{w}x{h}_{lang}", ok and len(res) >= 7,
                   "; ".join(f"{k}: scrollWidth {v['sw']}/{v['W']}" + (f" past the edge {v['n']} {v['out']}" if v["n"] else "") for k, v in res.items()))
     if eng != "chromium":
-        for name in ("portrait_440", "portrait_375", "landscape_956"):
+        for name in ("portrait_440", "portrait_360", "landscape_956"):
             skip(f"hf2_safe_area_{name}", "safe-area emulation needs Chromium's DevTools protocol")
         return
     # status bar / Dynamic Island and home indicator (portrait), notch sides (landscape)
-    for name, (w, h), (t, r, b, l) in (("portrait_440", (440, 956), (62, 0, 34, 0)), ("portrait_375", (375, 812), (47, 0, 34, 0)),
+    for name, (w, h), (t, r, b, l) in (("portrait_440", BIG_PHONE, (62, 0, 34, 0)), ("portrait_360", NARROW_PHONE, (47, 0, 34, 0)),
                                         ("landscape_956", (956, 440), (0, 62, 21, 62))):
         ctx, page, errs = _hf2_open(browser, w, h, True)
         try:
@@ -15029,7 +15068,7 @@ def _hf2_search_close(browser, eng):
     toggle row as that fades out, and "Отказ" (or Escape) runs the same fade the other way
     (about the same length); the query is cleared and the page comes back in place, the
     header never rebuilt; reduced motion: an instant swap both ways."""
-    for w, h, how in ((390, 844, "cancel"), (375, 812, "escape")):
+    for w, h, how in ((*PHONE, "cancel"), (*NARROW_PHONE, "escape")):
         tag = f"hf2_search_close_{w}_{how}"
         ctx, page, errs = _hf2_open(browser, w, h, True)
         page.evaluate(HF2_ROW_REC_JS, 420)
@@ -15065,7 +15104,7 @@ def _hf2_search_close(browser, eng):
               and not st["toggleInert"], f"{st}")
         check(f"{tag}_no_js_errors", not errs, "; ".join(errs[:3]))
         ctx.close()
-    ctx, page, errs = _hf2_open(browser, 390, 844, True, reduced=True)
+    ctx, page, errs = _hf2_open(browser, *PHONE, True, reduced=True)
     page.evaluate(HF2_ROW_REC_JS, 300)
     _hf_tap_el(page, True, "()=>document.querySelector('[data-search-open]')")
     page.wait_for_timeout(400)
@@ -15103,7 +15142,7 @@ HF2_MAIN_REC_JS = r"""(ms)=>{const R=window.__hf2m=[];const t0=performance.now()
 def _hf2_switch(browser, eng):
     """Item 7: the switch fades and lifts the content (the drawer's curves, ~260 ms), never
     blank, posters decoded, the header kept, nothing left behind; reduced motion: instant."""
-    for w, h, phone, reduced in ((390, 844, True, False), (1280, 800, False, False), (390, 844, True, True)):
+    for w, h, phone, reduced in ((*PHONE, True, False), (1280, 800, False, False), (*PHONE, True, True)):
         tag = f"hf2_switch_{w}{'_reduced' if reduced else ''}"
         ctx, page, errs = _hf2_open(browser, w, h, phone, reduced=reduced)
         page.evaluate("window.scrollTo(0,700)")
@@ -15159,7 +15198,7 @@ def _hf2_switch(browser, eng):
 def wave_hf2(browser):
     """
     Wave HF2: the owner's phone reports of 2026-10-15, round 2.
-    HF2-A toggle: phone 390/375 BG/EN, the open search replaces the toggle row (hidden, inert,
+    HF2-A toggle: phone 402/360 BG/EN, the open search replaces the toggle row (hidden, inert,
           the toggle itself untouched) and "Отказ" gives it back exactly as it was;
           desktop 1024/1280 shrink only when crowded (P3A), also while typing
     HF2-B live search: "спайдър"/"spider" letter by letter (120 ms and 600 ms apart),
@@ -15167,12 +15206,12 @@ def wave_hf2(browser):
           results follow every letter; x clears and keeps typing; "Отказ" restores the page
           in place; from a scrolled page
           the results open under the header and stay put
-    HF2-C filter taps with the drawer open (5 options and Изчисти), 390/375 BG/EN, both
+    HF2-C filter taps with the drawer open (5 options and Изчисти), 402/360 BG/EN, both
           programmes: every frame for 500 ms no blank or undecoded poster in view, no
           entrance animation, scroll, drawer and header kept; open/close keep the page
     HF2-D a search result's sheet: every close route, keyboard up (with a letter pending)
-          and down, 390 and 440, then the next result
-    HF2-E fit: 440/402/393/375/360 BG/EN on home, sheets, drawer, search, time panel;
+          and down, 402 and 440, then the next result
+    HF2-E fit: 440/412/402/360 (PHONES) BG/EN on home, sheets, drawer, search, time panel;
           safe areas (Chromium): portrait status bar and home indicator, landscape notch; the
           status-bar band is a real opaque element; the phone logo row clears the inset
     HF2-F the search row and the toggle row swap in place, both ways ("Отказ", Escape), with a
@@ -16493,7 +16532,7 @@ def wave_lg1(browser):
 
     for lang in ("bg", "en"):
         print(f"\n=== LG1: phone, {lang}, first visit ===")
-        ctx, page, errs = _lg_open(browser, 390, 844, lang=lang, mobile=True)
+        ctx, page, errs = _lg_open(browser, *PHONE, lang=lang, mobile=True)
         p = page.evaluate(_LG_PROBE)
         save_shot(page, wave, f"phone_{lang}_first_visit")
         check(f"lg1_phone_notice_{lang}", p["shown"] and p["title"] == T[lang][k_title], repr(p.get("title")))
@@ -16596,7 +16635,7 @@ def wave_lg2(browser):
         for rel in LEGAL_PAGES:
             doc = rel.rstrip("/").split("/")[-1]
             lang = "en" if "/en/" in rel else "bg"
-            for w, h in ((390, 844), (1280, 900)):
+            for w, h in (PHONE, (1280, 900)):
                 ctx = getattr(browser, "raw", browser).new_context(
                     viewport={"width": w, "height": h}, service_workers="block", locale="bg-BG",
                     **({"is_mobile": True, "has_touch": True} if w < 500 else {}))
@@ -16609,7 +16648,7 @@ def wave_lg2(browser):
                 check(f"lg2_{tag}_loads", resp is not None and resp.status == 200 and d["lang"] == lang
                       and d["h1"] == LEGAL_TITLES[doc][lang == "en"], f"status={resp and resp.status} h1={d['h1']!r}")
                 check(f"lg2_{tag}_no_overflow", d["sw"] <= d["iw"], f"scrollWidth={d['sw']} innerWidth={d['iw']}")
-                if w == 390:
+                if w == PHONE[0]:
                     save_shot(pg, wave, tag)
                     ctx.close()
                     continue
@@ -16938,7 +16977,7 @@ def wave_tr1(browser):
     test_file.write_text(page_html, encoding="utf-8")
     base = test_file.as_uri()
     try:
-        for lang, w, h, tag in (("bg", 402, 874, "phone"), ("bg", 1280, 900, "desktop"), ("en", 402, 874, "phone"),
+        for lang, w, h, tag in (("bg", *PHONE, "phone"), ("bg", 1280, 900, "desktop"), ("en", *PHONE, "phone"),
                                 ("en", 1280, 900, "desktop")):
             print(f"\n=== TR1: {lang} {tag} {w}x{h} ===")
             sfx = f"{lang}_{tag}"
@@ -17047,7 +17086,7 @@ def wave_tr1(browser):
         # films without a trailer, or with a wrong-year match, show no circle
         for key, why in (("c", "no trailer"), ("b", "TMDB year 10 years off")):
             for lang in ("bg", "en"):
-                ctx, page, reqs, errs = _tr1_open(browser, base + "#film=" + ids[key], lang, 402, 874)
+                ctx, page, reqs, errs = _tr1_open(browser, base + "#film=" + ids[key], lang, *PHONE)
                 try:
                     st = page.evaluate(_TR1_STATE_JS)
                     check(f"tr1_no_circle_{key}_{lang}",
@@ -17491,7 +17530,7 @@ def _ux_items(page):
     }""")
 
 
-def _ux_drawer(browser, base, eng, phone_w=390, phone_h=844):
+def _ux_drawer(browser, base, eng, phone_w=PHONE[0], phone_h=PHONE[1]):
     """Item 1: the drawer follows a sideways drag, closes past 30% or on a flick, springs
     back otherwise, leaves vertical drags to its own scrolling, keeps its node across
     filter taps; reduced motion closes without following."""
@@ -17745,7 +17784,7 @@ def _ux_urls(browser, base, eng, items):
     site = GSP.SITE_URL
     fid, fq = items["film"], _ux_up.quote(items["film"], safe="")
     for phone in (False, True):
-        w, h = (390, 844) if phone else (1280, 800)
+        w, h = PHONE if phone else (1280, 800)
         tag = f"ux1_{eng}_{'phone' if phone else 'desk'}_url"
         ctx = _ux_ctx(browser, base, w, h, phone=phone)
         page, errs = _ux_page(ctx, base + "/")
@@ -17911,7 +17950,7 @@ def _ux_late(browser, base, eng):
     """Item 5: at 23:50 with today selected and nothing left today, the theatre (like the
     cinema) shows the late-day card instead of empty sections; its button selects tomorrow."""
     clock_2350 = _ux_clock(FIXED_1445 + (9 * 60 + 5) * 60 * 1000)
-    for mode, w, h, phone in [("theatre", 1280, 900, False), ("theatre", 390, 844, True), ("cinema", 1280, 900, False)]:
+    for mode, w, h, phone in [("theatre", 1280, 900, False), ("theatre", *PHONE, True), ("cinema", 1280, 900, False)]:
         tag = f"ux1_{eng}_late_{mode}_{'phone' if phone else 'desk'}"
         ctx = _ux_ctx(browser, base, w, h, phone=phone, mode=mode, clock=clock_2350)
         page, errs = _ux_page(ctx, base + ("/home/theatre/" if mode == "theatre" else "/home/"))
@@ -18163,12 +18202,12 @@ def _ux_lockup(browser, base, eng):
         check(f"ux1_{eng}_lockup_{lang}_no_js_errors", not errs, f"errors={errs[:3]}")
         ctx.close()
     # phones: the centred line, 10-12.5 px, at least 12 px clear of the language button
-    ctx = _ux_ctx(browser, base, 390, 844, phone=True)
+    ctx = _ux_ctx(browser, base, *PHONE, phone=True)
     page, errs = _ux_page(ctx, base + "/home/")
     ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), g = document.createRange();
         g.selectNodeContents(s); const r = g.getBoundingClientRect(), l = document.querySelector('[data-lang]').getBoundingClientRect();
         return [parseFloat(getComputedStyle(s).fontSize), Math.round(r.left + r.width / 2), Math.round(l.left - r.right)]; }""")
-    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - 195) <= 4 and ph[2] >= 12,
+    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - PHONE[0] / 2) <= 4 and ph[2] >= 12,
           f"phone line [font, centre, clear of language button] {ph}")
     ctx.close()
 
@@ -18185,10 +18224,10 @@ UX_FOOT_JS = r"""(sels) => { const f = document.querySelector(sels[0]); if (!f) 
 
 def _ux_footer(browser, base, eng):
     """Owner item 8: the footer's disclaimer, attribution line and policy links fill the
-    content width (+-2 px) at 375, 768, 1280 and 1920 px and nothing overflows, BG and EN;
+    content width (+-2 px) at 360, 768, 1280 and 1920 px and nothing overflows, BG and EN;
     on a phone the links sit in even columns. The same for the legal pages' footers."""
     for lang in ("bg", "en"):
-        for w in (375, 768, 1280, 1920):
+        for w in (NARROW_PHONE[0], 768, 1280, 1920):
             phone = w < 761
             ctx = _ux_ctx(browser, base, w, 900, phone=phone, lang=lang)
             page, errs = _ux_page(ctx, base + "/home/")
@@ -18254,7 +18293,7 @@ def _ux_rails(browser, base, eng):
     Desktop 1140: the real › arrow, Esc to close; phone 402 touch: a touch swipe (Chromium,
     CDP; WebKit has no touch scrolling here, so the rail is set where a swipe rests), the
     sheet's x to close."""
-    for dev, (w, h, phone) in (("desktop", (1140, 860, False)), ("phone", (402, 874, True))):
+    for dev, (w, h, phone) in (("desktop", (1140, 860, False)), ("phone", (*PHONE, True))):
         ctx = _ux_ctx(browser, base, w, h, phone=phone)
         page, errs = _ux_page(ctx, base + "/home/")
         _force_mount(page)
@@ -18338,7 +18377,7 @@ def _ux_rails_offsnap(browser, base, eng):
     rail's scrollLeft and box stay within 1 px. Then the rail scrolled again (desktop: the
     arrow; phone: Chromium a touch swipe; WebKit, which has no touch scrolling or wheel here, a
     smooth scroll onto a card) is let go: it snaps again, and rests on a card."""
-    for dev, (w, h, phone) in (("desktop", (1440, 900, False)), ("phone", (402, 874, True))):
+    for dev, (w, h, phone) in (("desktop", (1440, 900, False)), ("phone", (*PHONE, True))):
         ctx = _ux_ctx(browser, base, w, h, phone=phone)
         page, errs = _ux_page(ctx, base + "/home/")
         _force_mount(page)
@@ -18504,7 +18543,7 @@ def wave_ux1(browser):
             _ux_lockup(browser, base, eng)
         except Exception as _ex:      # one section crashing must not hide the rest
             check(f"ux1_{eng}_lockup_ran", False, f"{type(_ex).__name__}: {str(_ex)[:160]}")
-        print("\n=== UX1-9: the footer spans the content width (375-1920 px) ===")
+        print("\n=== UX1-9: the footer spans the content width (360-1920 px) ===")
         try:
             _ux_footer(browser, base, eng)
         except Exception as _ex:      # one section crashing must not hide the rest
@@ -18706,7 +18745,7 @@ def _b24_toggle(browser, base, eng):
         spread = "0px 0px 0px 2.5px" if phone else "0px 0px 0px 2px"
         return (len(on) == 1 and on[0]["sw"] == mode and colour in on[0]["shadow"] and spread in on[0]["shadow"]
                 and on[0]["inside"] and all(b["shadow"] == "none" for b in off))
-    for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900))):
+    for phone, (w, h) in ((True, PHONE), (False, (1440, 900))):
         dev = "phone" if phone else "desktop"
         for mode in ("cinema", "theatre"):
             ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, mode=mode)
@@ -18734,7 +18773,7 @@ B24_MOTTO_JS = r"""() => { const s = document.querySelector('.brand-sub'); if (!
 
 def _b24_motto(browser, base, eng):
     exp = {"bg": "Афишът на кината и театрите в София", "en": "Sofia's cinema and theatre listings"}
-    for phone, (w, h) in ((True, (390, 844)), (True, (375, 812)), (False, (1024, 768)), (False, (1440, 900)), (False, (1920, 1080))):
+    for phone, (w, h) in ((True, PHONE), (True, NARROW_PHONE), (False, (1024, 768)), (False, (1440, 900)), (False, (1920, 1080))):
         for lang in ("bg", "en"):
             got = {}
             for mode in ("cinema", "theatre"):
@@ -18767,7 +18806,7 @@ def _b24_days(browser, base, eng):
     sat = _b24_saturday()
     clock = _ux_clock(_sofia_1445_epoch_ms(sat))
     for phone, (w, h), lang, mode in ((False, (1440, 900), "en", "cinema"), (False, (1440, 900), "bg", "cinema"),
-                                       (True, (390, 844), "bg", "cinema"), (False, (1440, 900), "en", "theatre")):
+                                       (True, PHONE, "bg", "cinema"), (False, (1440, 900), "en", "theatre")):
         dev = "phone" if phone else "desktop"
         tag = f"b24_{eng}_days_{dev}_{mode}_{lang}"
         ctx, page, errs = _b24_open(browser, base, w, h, phone=phone, lang=lang, mode=mode, clock=clock)
@@ -18980,7 +19019,7 @@ def _b24_search(browser, base, eng):
     """7: the focused search field. Desktop: one 2 px ring inside the pill, never clipped.
     Phone (the owner's option 1, 2026-10-25): a filled field with no heavy white outline when
     tapped (the caret shows the focus); a keyboard user (Tab) gets the same 2 px ring inside it."""
-    for phone, (w, h) in ((True, (390, 844)), (False, (1440, 900)), (False, (1024, 768))):
+    for phone, (w, h) in ((True, PHONE), (False, (1440, 900)), (False, (1024, 768))):
         dev = f"{'phone' if phone else 'desktop'}_{w}"
         ctx, page, errs = _b24_open(browser, base, w, h, phone=phone)
         _ux_tap_sel(page, phone, "[data-search-open]", scroll=False)
@@ -19054,7 +19093,7 @@ def _b24_zoom(browser, base, eng):
     check(f"b24_{eng}_zoom_desktop_unchanged", desk and desk["fs"] == 15 and seg == "auto",
           f"#q {desk and desk['fs']}px h={desk and round(desk['h'], 2)}; toggle touch-action {seg}")
     ctx.close()
-    for (w, h), sel in (((402, 874), "#q-m"), ((874, 402), "#q")):
+    for (w, h), sel in ((PHONE, "#q-m"), ((874, 402), "#q")):
         dev = f"phone_{w}x{h}"
         ctx, page, errs = _b24_open(browser, base, w, h, phone=True)
         _ux_tap_sel(page, True, "[data-search-open]", scroll=False)
@@ -19201,7 +19240,11 @@ BO_PANEL_JS = r"""(phone)=>{
              sr:txt(sr), srShown:!!sr&&getComputedStyle(sr).display!=='none'&&!sr.closest('[aria-hidden="true"]'),
              dashed:getComputedStyle(tag).borderTopStyle,
              beside:Math.abs(tag.getBoundingClientRect().top+tag.getBoundingClientRect().height/2
-                    -(ss.querySelector('.ss-time').getBoundingClientRect().top+ss.querySelector('.ss-time').getBoundingClientRect().height/2))<20}:null,
+                    -(ss.querySelector('.ss-time').getBoundingClientRect().top+ss.querySelector('.ss-time').getBoundingClientRect().height/2))<20,
+             // a narrow phone (360 px) has no room beside the time: the tag wraps to its own
+             // line right under it, lined up with the time's left edge (2026-11-26)
+             under:(()=>{const g=tag.getBoundingClientRect(), m=ss.querySelector('.ss-time').getBoundingClientRect();
+                    return g.top>=m.bottom-2&&g.top-m.bottom<=16&&Math.abs(g.left-m.left)<=2;})()}:null,
     oldHead, site:site?{t:txt(site),href:site.getAttribute('href'),cls:site.className,
       sr:(site.querySelector('.newtab')||{}).textContent||'',arrowHidden:!!site.querySelector('[aria-hidden="true"]')}:null,
     pri:[...ss.querySelectorAll('.ss-btn.pri')].map(txt), sec:[...ss.querySelectorAll('.ss-btn.sec')].map(txt),
@@ -19351,8 +19394,9 @@ def _bo_prelim_problems(r, lang, prelim):
             p.append(f"preliminary tag {t}")
         elif c["tagSr"] not in t["sr"] or not t["srShown"]:
             p.append(f"preliminary tag explanation for screen readers: {t['sr']!r}")
-        elif t["dashed"] != "dashed" or not t["beside"]:
-            p.append(f"tag not a dashed outline beside the time: {t['dashed']} beside={t['beside']}")
+        elif t["dashed"] != "dashed" or not (t["beside"] or t["under"]):
+            p.append(f"tag not a dashed outline beside (or right under) the time: {t['dashed']} "
+                     f"beside={t['beside']} under={t['under']}")
     elif r["tag"]:
         p.append("a tag on a confirmed time")
     return p
@@ -19384,7 +19428,7 @@ def _bo_panel(browser, w, h, phone, lang, mode, opener, oid, key, shot=None, aft
     return ctx, page, errs, tapped, r, pre
 
 
-BO_SIZES = ((375, 812, True), (393, 852, True), (1280, 800, False))
+BO_SIZES = ((*NARROW_PHONE, True), (*PHONE, True), (1280, 800, False))
 
 
 # Calendar export (owner, 2026-10-30): an event carries no description and no link; the
@@ -19467,7 +19511,7 @@ def _bo_calendar_export(browser):
     location, start and end right; the .ics passes the RFC 5545 line check."""
     print("  -- calendar export: no description, no link (owner, 2026-10-30) --")
     import urllib.parse
-    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "cinema")
     picks = page.evaluate("""()=>{
       const fr=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
       const frk=new Set(fr.map(r=>r.slice(0,4).join('|')));
@@ -19541,7 +19585,7 @@ def wave_bo1(browser):
     print("\n=== BO1: box office only (ticket stub) ===")
     eng = _hf_engine(browser)
     ensure_shot_dir("BO1")
-    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
+    ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "theatre")
     info = page.evaluate("""([ex,ex2,pinned,pair])=>{
       const today=TODAY, bx=(typeof BOXONLY!=='undefined'&&Array.isArray(BOXONLY))?BOXONLY:[];
       const perfOn=new Set(PERFORMANCES.map(p=>p[0]+'|'+p[1]+'|'+p[2]));
@@ -19656,11 +19700,11 @@ def wave_bo1(browser):
         _, d, tm, alt, prelim = ex
         key = f"show:{ex_id}|salzaismyah|{d}|{tm}"
         runs = [(w, h, ph, lang) for (w, h, ph) in BO_SIZES for lang in ("bg", "en")] if case == "case1" \
-            else [(393, 852, True, "bg"), (393, 852, True, "en"), (1280, 800, False, "bg")]
+            else [(*PHONE, True, "bg"), (*PHONE, True, "en"), (1280, 800, False, "bg")]
         for (w, h, phone, lang) in runs:
             tag = f"{case}_{'phone' if phone else 'desktop'}{w}_{lang}"
-            shot = tag if (w in (393, 1280) and (lang == "bg" or (case == "case1" and w == 393))) else None
-            sb_js = BO_BUYBOX_JS if (w == 393 and lang == "bg") else None
+            shot = tag if (w in (PHONE[0], 1280) and (lang == "bg" or (case == "case1" and w == PHONE[0]))) else None
+            sb_js = BO_BUYBOX_JS if (w == PHONE[0] and lang == "bg") else None
             ctx, page, errs, tapped, r, sb = _bo_panel(browser, w, h, phone, lang, "theatre", _bo_open_show, ex_id, key,
                                                        shot=shot, after=(lambda pg: pg.evaluate(sb_js)) if sb_js else None)
             probs = _bo_panel_problems(r, lang, phone, False, alt, prelim)
@@ -19675,7 +19719,7 @@ def wave_bo1(browser):
                 check("bo1_case1_sheet_buybox_stub", not sp, f"{sp} {sb and sb['text'][:120]!r}")
                 aria = page.evaluate("(k)=>{const e=[...document.querySelectorAll('#scrim [data-sspill]')].find(x=>x.dataset.sspill===k);return e?e.getAttribute('aria-label'):null}", key)
                 check("bo1_example_pill_name", bool(aria) and "билети на касата" in aria and "само" not in aria, f"pill aria-label: {aria!r}")
-            if case == "case1" and phone and w == 393 and lang == "bg" and r:
+            if case == "case1" and phone and w == PHONE[0] and lang == "bg" and r:
                 # tapping the stub does nothing: the panel stays, no navigation, nothing focused on it
                 url0 = page.url
                 hit = _hf_tap_el(page, True, "()=>document.querySelector('#ss-wrap .ss-stub')")
@@ -19696,10 +19740,10 @@ def wave_bo1(browser):
         skip("bo1_online_show_buy", "no upcoming confirmed show with an official link outside Сълза и смях")
     else:
         sid, vid, d, tm = info["online"]
-        for (w, h, phone) in ((393, 852, True), (1280, 800, False)):
+        for (w, h, phone) in ((*PHONE, True), (1280, 800, False)):
             ctx, page, errs, tapped, r, _ = _bo_panel(browser, w, h, phone, "bg", "theatre", _bo_open_show, sid,
                                                       f"show:{sid}|{vid}|{d}|{tm}",
-                                                      shot="online_phone393_bg" if phone else None)
+                                                      shot="online_phone402_bg" if phone else None)
             probs = [] if r else ["no panel"]
             if r:
                 if r["pri"] != ["Купи билет"] or r["stubs"] or r["site"] or r["tag"]:
@@ -19712,7 +19756,7 @@ def wave_bo1(browser):
 
     # ---- a cinema that sells only at its box office: the red stub ----
     if not info["cin"]:
-        ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+        ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "cinema")
         r = page.evaluate("""(v)=>{const f=FILMS[0];const d=document.createElement('div');d.className='ss-sheet';
           d.innerHTML=screeningSheetHtml('film',f.id,v,TODAY,'20:00');document.body.appendChild(d);
           const s=d.querySelector('.ss-stub');const o={stub:!!s,cin:!!s&&s.classList.contains('cin'),
@@ -19727,8 +19771,8 @@ def wave_bo1(browser):
         for (w, h, phone) in BO_SIZES:
             for lang in ("bg", "en"):
                 tag = f"cinema_{vid}_{'phone' if phone else 'desktop'}{w}_{lang}"
-                shot = tag if (w in (393, 1280) and lang == "bg") else None
-                sb_js = BO_BUYBOX_JS if (w == 393 and lang == "bg") else None
+                shot = tag if (w in (PHONE[0], 1280) and lang == "bg") else None
+                sb_js = BO_BUYBOX_JS if (w == PHONE[0] and lang == "bg") else None
                 ctx, page, errs, tapped, r, sb = _bo_panel(browser, w, h, phone, lang, "cinema", _bo_open_film, fid, key,
                                                            shot=shot, after=(lambda pg: pg.evaluate(sb_js)) if sb_js else None)
                 if prelim_c is None:
@@ -19773,7 +19817,7 @@ EC_PANEL_JS = r"""(phone)=>{
 
 def _bo_euro_cinema(browser, eng):
     print("  -- Кино Euro Cinema: its own venue, festival screenings sold online --")
-    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "cinema")
     info = page.evaluate(r"""()=>{
       const c=cinById['euro-cinema'], b=BOOKING['euro-cinema']||null;
       const FR=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
@@ -19812,10 +19856,10 @@ def _bo_euro_cinema(browser, eng):
     fid, _v, d, tm, _fest, url = info["row"][:6]
     key = f"film:{fid}|euro-cinema|{d}|{tm}"
     check("bo1_euro_cinema_festival_mark", info["fm"], f"{fid} not in FESTMARK.cinelibri")
-    for (w, h, phone) in ((393, 852, True), (1280, 800, False)):
+    for (w, h, phone) in ((*PHONE, True), (1280, 800, False)):
         for lang in ("bg", "en"):
             tag = f"euro_cinema_{'phone' if phone else 'desktop'}{w}_{lang}"
-            shot = "euro_cinema_phone393_bg" if (phone and lang == "bg") else (tag if lang == "bg" else None)
+            shot = "euro_cinema_phone402_bg" if (phone and lang == "bg") else (tag if lang == "bg" else None)
             ctx, page, errs, tapped, r, rowname = _bo_panel(
                 browser, w, h, phone, lang, "cinema", _bo_open_film, fid, key, shot=shot,
                 after=lambda pg: pg.evaluate("""()=>{const e=[...document.querySelectorAll('#scrim [data-sspill]')]
@@ -19872,7 +19916,7 @@ def _bo_mixed_cinemas(browser, info, eng):
             skip(f"bo1_{v}_regular_box_office", f"no regular {v} screening in this build")
         else:
             fid, _, d, tm = reg
-            ctx, page, errs, tapped, r, _ = _bo_panel(browser, 393, 852, True, "bg", "cinema", _bo_open_film, fid,
+            ctx, page, errs, tapped, r, _ = _bo_panel(browser, *PHONE, True, "bg", "cinema", _bo_open_film, fid,
                                                       f"film:{fid}|{v}|{d}|{tm}")
             lk = page.evaluate(BO_LINKS_JS, True) if tapped else None
             cal = page.evaluate(CAL_NOLINK_JS, ["film", fid, v, d, tm])
@@ -19888,8 +19932,8 @@ def _bo_mixed_cinemas(browser, info, eng):
             skip(f"bo1_{v}_festival_online", f"no festival {v} screening with an epaygo link in this build")
         else:
             fid, _, d, tm = fest
-            shot = f"{v}_festival_phone393_bg" if v == "g8" else None
-            ctx, page, errs, tapped, r, _ = _bo_panel(browser, 393, 852, True, "bg", "cinema", _bo_open_film, fid,
+            shot = f"{v}_festival_phone402_bg" if v == "g8" else None
+            ctx, page, errs, tapped, r, _ = _bo_panel(browser, *PHONE, True, "bg", "cinema", _bo_open_film, fid,
                                                       f"film:{fid}|{v}|{d}|{tm}", shot=shot)
             lk = page.evaluate(BO_LINKS_JS, True) if tapped else None
             ok = bool(lk) and lk["priText"] == BO_COPY["bg"]["buy"] and (lk["pri"] or "").startswith("https://epaygo.bg/") \
@@ -19899,7 +19943,7 @@ def _bo_mixed_cinemas(browser, info, eng):
             ctx.close()
     # every box-office-only showing: its calendar export carries no link at all (owner,
     # 2026-10-30) and its site line is never a ticket seller's
-    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "cinema")
     bad = page.evaluate("""(sellers)=>{
       const seller=u=>{const h=hostLabel(u);return !!h&&sellers.some(x=>h===x||h.endsWith('.'+x));};
       const link=s=>/https?:|www\\./i.test(s);
@@ -19929,8 +19973,8 @@ def _bo_mixed_cinemas(browser, info, eng):
             skip(f"bo1_forced_colors_{name}", "no box-office showing in this build")
             continue
         ctx, page, errs, tapped, r, _ = _bo_panel(
-            browser, 393, 852, True, "bg", mode, opener, oid, key,
-            shot="forced_colors_phone393_bg" if name == "cinema" else None,
+            browser, *PHONE, True, "bg", mode, opener, oid, key,
+            shot="forced_colors_phone402_bg" if name == "cinema" else None,
             after=lambda pg: pg.emulate_media(forced_colors="active"))
         fc = page.evaluate(BO_FORCED_JS, True) if tapped else None
         probs = []
@@ -19954,7 +19998,7 @@ def _bo_mixed_cinemas(browser, info, eng):
 # FESTROWS carries its sale state; "soldout" says „Билетите са изчерпани“ / "Sold out",
 # "notyet" „Билетите още не са в продажба“ / "Tickets not on sale yet", in the panel's own
 # quiet text where "Купи билет" would be, with the festival's page as a quiet link; never the
-# ticket stub, never a button. Screenshots for the owner (phone 393, BG and EN).
+# ticket stub, never a button. Screenshots for the owner (phone 402, BG and EN).
 # A festival screening FESTROWS lists with url null (skeptic, 2026-10-29: Черното топче, Euro
 # Cinema, 31 Oct 13:15, whose CineLibri buy button links the 30 Oct 18:15 epaygo event): no
 # "Купи билет" (it would sell another screening); „Билети през фестивала“ / "Tickets via the
@@ -20004,7 +20048,7 @@ def _bo_shut_problems(r, lang, state):
 
 def _bo_festival_shut(browser, eng):
     print("  -- festival screenings sold out / not on sale yet (FESTROWS sale state) --")
-    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "cinema")
+    ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "cinema")
     data = page.evaluate("""()=>{
       const fr=(typeof FESTROWS!=='undefined'&&Array.isArray(FESTROWS))?FESTROWS:[];
       const up=fr.filter(r=>r[2]>=TODAY&&filmById[r[0]]&&(SHOWTIMES.some(s=>s[0]===r[0]&&s[1]===r[1]&&s[2]===r[2]&&(s[3]||[]).includes(r[3]))));
@@ -20073,7 +20117,7 @@ def _bo_festival_shut(browser, eng):
         force = (lambda pg, k="|".join(row[:4]), st=state: pg.evaluate(
             "([k,st])=>{if(st==='via'){FEST_ROW_MAP[k].sale='';FEST_ROW_MAP[k].nourl=true;}else FEST_ROW_MAP[k].sale=st;}",
             [k, st])) if sim else None
-        for (w, h, phone, lang) in ((393, 852, True, "bg"), (393, 852, True, "en"), (1280, 800, False, "bg")):
+        for (w, h, phone, lang) in ((*PHONE, True, "bg"), (*PHONE, True, "en"), (1280, 800, False, "bg")):
             tag = f"festival_{state}_{'phone' if phone else 'desktop'}{w}_{lang}{sim}"
             shot = tag if phone else None
             ctx, page, errs, tapped, r, _ = _bo_panel(browser, w, h, phone, lang, "cinema", _bo_open_film, fid, key, shot=shot,
@@ -20094,9 +20138,9 @@ def _bo_festival_shut(browser, eng):
 # the phone day picker of film and show sheets (.p3e-dmon), the desktop week grid's column
 # headers (.p3e-gmon) and the next-week days of the period strip (.ds-mon). This week's pills
 # keep their old look (a month only where this week's days cross into a new month). Checks:
-# a film starting in a later month (phone 393 BG/EN, desktop 1280 BG/EN), a show with dates
+# a film starting in a later month (phone 402 BG/EN, desktop 1280 BG/EN), a show with dates
 # next month, a title whose later dates span two months, a current-week film, sizes and
-# overflow at 375, the selected pill's month contrast, the strip's scrolling, accessible names.
+# overflow at 360, the selected pill's month contrast, the strip's scrolling, accessible names.
 # Over http in either engine (SOFIA_BROWSER=webkit). Shots: /tmp/sg-shots/DM1.
 # ============================================================================
 DM1_PICK_JS = r"""() => {
@@ -20210,7 +20254,7 @@ def _dm1_grid_into_view(page):
 
 
 def _dm1_phone(browser, base, eng, item, tag, w, lang, shot=None):
-    ctx, page, errs = _dm1_open(browser, base, w, 852, True, lang, item)
+    ctx, page, errs = _dm1_open(browser, base, w, PHONE[1], True, lang, item)
     s = page.evaluate(DM1_SHEET_JS)
     if not s["pills"] or not s["stripShown"]:
         check(f"{tag}_strip", False, f"{item['kind']} {item['id']}: no day picker (pills={len(s['pills'])})")
@@ -20277,7 +20321,7 @@ def _dm1_current(browser, base, eng, item):
     days cross into a new month (the earlier rule, unchanged)."""
     for lang in ("bg", "en"):
         tag = f"dm1_{eng}_current_week_{lang}"
-        ctx, page, errs = _dm1_open(browser, base, 393, 852, True, lang, item)
+        ctx, page, errs = _dm1_open(browser, base, *PHONE, True, lang, item)
         s = page.evaluate(DM1_SHEET_JS)
         inw = [p for p in s["pills"] if _dm1_inweek(p["d"], s)]
         bad = []
@@ -20294,7 +20338,7 @@ def _dm1_current(browser, base, eng, item):
               f"{item['id']}: {len(inw)} pills this week {[p['text'] for p in inw][:5]}; problems {bad[:4]}")
         if lang == "bg":
             _dm1_strip_into_view(page)
-            _dm1_shot(page, "current_week_phone393_bg" + ("" if eng == "chromium" else "_" + eng))
+            _dm1_shot(page, "current_week_phone402_bg" + ("" if eng == "chromium" else "_" + eng))
         check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
         ctx.close()
 
@@ -20304,8 +20348,8 @@ def _dm1_period_strip(browser, base, eng):
     this week's days do not."""
     sat = _b24_saturday()
     clock = _ux_clock(_sofia_1445_epoch_ms(sat))
-    for phone, (w, h), lang in ((True, (375, 812), "bg"), (True, (375, 812), "en"), (False, (1280, 800), "en")):
-        dev = "phone375" if phone else "desktop1280"
+    for phone, (w, h), lang in ((True, NARROW_PHONE, "bg"), (True, NARROW_PHONE, "en"), (False, (1280, 800), "en")):
+        dev = "phone360" if phone else "desktop1280"
         tag = f"dm1_{eng}_period_strip_{dev}_{lang}"
         ctx = _ux_ctx(browser, base, w, h, phone=phone, lang=lang, mode="cinema", clock=clock)
         page, errs = _ux_page(ctx, base + "/home/")
@@ -20326,7 +20370,7 @@ def _dm1_period_strip(browser, base, eng):
         if phone and lang == "bg":
             page.evaluate("(d)=>{const b=document.querySelector('.phead .daystrip [data-day=\"'+d+'\"]');if(b)b.scrollIntoView({inline:'center',block:'nearest'});}", nxt[0]["d"])
             page.wait_for_timeout(300)
-            _dm1_shot(page, "period_strip_next_week_phone375_bg" + ("" if eng == "chromium" else "_" + eng))
+            _dm1_shot(page, "period_strip_next_week_phone360_bg" + ("" if eng == "chromium" else "_" + eng))
         check(f"{tag}_no_js_errors", not errs, f"errors={errs[:3]}")
         ctx.close()
 
@@ -20400,7 +20444,7 @@ def _dm1_timezones(browser, base, eng, far):
     for tz in DM1_TZS:
         short = tz.split("/")[-1].lower()
         for lang in ("bg", "en"):
-            ctx = _ux_ctx(browser, base, 375, 812, phone=True, lang=lang, mode="cinema", tz=tz)
+            ctx = _ux_ctx(browser, base, *NARROW_PHONE, phone=True, lang=lang, mode="cinema", tz=tz)
             page, errs = _ux_page(ctx, base + "/home/")
             s = page.evaluate(DM1_STRIP_JS)
             off = page.evaluate("() => new Date().getTimezoneOffset()")
@@ -20416,7 +20460,7 @@ def _dm1_timezones(browser, base, eng, far):
             skip(f"dm1_{eng}_tz_{short}_sheet", "no far film")
             continue
         for lang in ("bg", "en"):
-            ctx, page, errs = _dm1_open(browser, base, 393, 852, True, lang, far, tz=tz)
+            ctx, page, errs = _dm1_open(browser, base, *PHONE, True, lang, far, tz=tz)
             sh = page.evaluate(DM1_SHEET_JS)
             raw = page.evaluate("""() => [...document.querySelectorAll('#scrim [data-p3day]')].map(b => ({d: b.dataset.p3day,
                 abbr: (b.querySelector('span') || {}).textContent || '', num: (b.querySelector('b') || {}).textContent || '',
@@ -20453,7 +20497,7 @@ def _dm1_boundaries(browser, base, eng):
         for tz in ("Europe/Sofia",) + DM1_TZS:
             short = tz.split("/")[-1].lower()
             tag = f"dm1_{eng}_edge_{day[5:]}_{short}"
-            ctx = _ux_ctx(browser, base, 375, 812, phone=True, lang="bg", mode="cinema", clock=clock, tz=tz)
+            ctx = _ux_ctx(browser, base, *NARROW_PHONE, phone=True, lang="bg", mode="cinema", clock=clock, tz=tz)
             page, errs = _ux_page(ctx, base + "/home/")
             s = page.evaluate(DM1_STRIP_JS)
             if s["today"] != day:
@@ -20467,7 +20511,7 @@ def _dm1_boundaries(browser, base, eng):
                 check(f"{tag}_strip", not bad and (first or not need_first),
                       f"week {s['ws']}..{s['we']}: {[p['text'] for p in s['pills']]}; first-of-month this week {[p['text'] for p in first]}; problems {bad[:4]}")
                 if tz == "Europe/Sofia":
-                    _dm1_shot(page, f"edge_{day[5:]}_strip_phone375_bg" + ("" if eng == "chromium" else "_" + eng))
+                    _dm1_shot(page, f"edge_{day[5:]}_strip_phone360_bg" + ("" if eng == "chromium" else "_" + eng))
             for lang in ("bg", "en"):
                 page.evaluate("(l) => { S.lang = l; }", lang)
                 y = page.evaluate(DM1_SYNTH_JS, 21)
@@ -20500,10 +20544,10 @@ def wave_dm1(browser):
         if pk["far"]:
             f = pk["far"]
             sections += [
-                ("1: a film starting in a later month, phone 393 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_393_bg", 393, "bg", "far_film_phone393_bg")),
-                ("1: the same, phone 393 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_393_en", 393, "en", "far_film_phone393_en")),
-                ("1: the same, phone 375 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_375_bg", 375, "bg")),
-                ("1: the same, phone 375 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_375_en", 375, "en")),
+                ("1: a film starting in a later month, phone 402 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_402_bg", PHONE[0], "bg", "far_film_phone402_bg")),
+                ("1: the same, phone 402 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_402_en", PHONE[0], "en", "far_film_phone402_en")),
+                ("1: the same, phone 360 BG", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_360_bg", NARROW_PHONE[0], "bg")),
+                ("1: the same, phone 360 EN", lambda: _dm1_phone(browser, base, eng, f, f"dm1_{eng}_far_film_360_en", NARROW_PHONE[0], "en")),
                 ("1: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, f, f"dm1_{eng}_far_film_1280_bg", "bg", "far_film_desktop1280_bg")),
                 ("1: the same, desktop 1280 EN", lambda: _dm1_desktop(browser, base, eng, f, f"dm1_{eng}_far_film_1280_en", "en")),
             ]
@@ -20512,15 +20556,15 @@ def wave_dm1(browser):
         if pk["doom"] and pk["far"] and pk["doom"]["id"] != pk["far"]["id"]:
             dm = pk["doom"]
             sections += [
-                ("1b: the owner's Avengers: Doomsday, phone 393 BG", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_393_bg", 393, "bg", "doomsday_phone393_bg")),
-                ("1b: the same, phone 393 EN", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_393_en", 393, "en", "doomsday_phone393_en")),
+                ("1b: the owner's Avengers: Doomsday, phone 402 BG", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_402_bg", PHONE[0], "bg", "doomsday_phone402_bg")),
+                ("1b: the same, phone 402 EN", lambda: _dm1_phone(browser, base, eng, dm, f"dm1_{eng}_doomsday_402_en", PHONE[0], "en", "doomsday_phone402_en")),
                 ("1b: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, dm, f"dm1_{eng}_doomsday_1280_bg", "bg", "doomsday_desktop1280_bg")),
             ]
         if pk["farShow"]:
             sh = pk["farShow"]
             sections += [
-                ("2: a show with dates next month, phone 393 BG", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_393_bg", 393, "bg", "theatre_next_month_phone393_bg")),
-                ("2: the same, phone 375 EN", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_375_en", 375, "en")),
+                ("2: a show with dates next month, phone 402 BG", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_402_bg", PHONE[0], "bg", "theatre_next_month_phone402_bg")),
+                ("2: the same, phone 360 EN", lambda: _dm1_phone(browser, base, eng, sh, f"dm1_{eng}_show_360_en", NARROW_PHONE[0], "en")),
                 ("2: the same, desktop 1280 BG", lambda: _dm1_desktop(browser, base, eng, sh, f"dm1_{eng}_show_1280_bg", "bg")),
             ]
         else:
@@ -20529,7 +20573,7 @@ def wave_dm1(browser):
             tw = pk["two"]
 
             def _two():
-                s = _dm1_phone(browser, base, eng, tw, f"dm1_{eng}_two_months_393_bg", 393, "bg")
+                s = _dm1_phone(browser, base, eng, tw, f"dm1_{eng}_two_months_402_bg", PHONE[0], "bg")
                 if s:
                     mons = {p["mon"] for p in s["pills"] if not _dm1_inweek(p["d"], s)}
                     check(f"dm1_{eng}_two_months_distinct", len(mons) >= 2,
@@ -21233,13 +21277,13 @@ def _ga1_on(browser, base, src, page_csp, legal, ver, ga_id, webkit):
 
     print(f"\n=== GA1 ({ga_id}): phone, BG and EN; the screenshots ===")
     for lang in ("bg", "en"):
-        ctx, page, reqs, errs = _ga_open(browser, base, html_env, lang=lang, w=393, h=852, mobile=True)
+        ctx, page, reqs, errs = _ga_open(browser, base, html_env, lang=lang, w=PHONE[0], h=PHONE[1], mobile=True)
         p = page.evaluate(_LG_PROBE)
         name = page.evaluate("(document.querySelector('label[for=\"sgc-stats\"] b')||{}).textContent||''")
         check(f"ga1_phone_{lang}_switch", p["shown"] and name == ("Статистика" if lang == "bg" else "Statistics")
               and p["sw"] <= p["iw"] and min(p["btnH"]) >= 44 and p["y"] > 0, f"{name!r} sw={p['sw']} y={p.get('y')}")
         if not webkit:
-            page.screenshot(path=str(_GA_SHOTS / f"phone_393_{lang}_notice.png"))
+            page.screenshot(path=str(_GA_SHOTS / f"phone_402_{lang}_notice.png"))
         save_shot(page, "GA1", f"phone_{lang}_notice")
         check(f"ga1_phone_{lang}_nothing_sent", not reqs, f"{len(reqs)}")
         ctx.close()
@@ -21327,7 +21371,7 @@ PL_PANEL_JS = r"""(phone)=>{
 def wave_pl1(browser):
     print("\n=== PL1: per-performance purchase links (PLINKS) ===")
     ensure_shot_dir("PL1")
-    ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
+    ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "theatre")
     info = page.evaluate("""(medeya)=>{
       const PL=(typeof PLINKS!=='undefined'&&Array.isArray(PLINKS))?PLINKS:[];
       const today=TODAY, own=new Map(PL.map(r=>[r.slice(0,3).join('|'),r[3]]));
@@ -21396,7 +21440,7 @@ def wave_pl1(browser):
             continue
         for r in rs:
             cases.append((tag, r[0], tag, r[1], r[2], r[3]))
-    sizes = ((393, 852, True), (1280, 800, False))
+    sizes = ((*PHONE, True), (1280, 800, False))
     urls = {c[5] for c in cases}
     for tag, sid, th, d, tm, url in cases:
         key = f"show:{sid}|{th}|{d}|{tm}"
@@ -21424,7 +21468,7 @@ def wave_pl1(browser):
                         probs.append(f"hook={r['hook']} target={r['target']} rel={r['rel']}")
                     if r["stub"] or r["time"] != tm:
                         probs.append(f"stub={r['stub']} time={r['time']}")
-                if lang == "bg" and w == 393:
+                if lang == "bg" and w == PHONE[0]:
                     save_shot(page, "PL1", f"{tag}_{sid}_{d}")
                 if lang == "bg" and not phone:
                     # the show sheet's buy box stays show-level: never one performance's page
@@ -21438,7 +21482,7 @@ def wave_pl1(browser):
     if not info["box"]:
         skip("pl1_boxonly_untouched", "no upcoming BOXONLY performance in this build")
     else:
-        ctx, page, errs = _hf_open(browser, 393, 852, True, "bg", "theatre")
+        ctx, page, errs = _hf_open(browser, *PHONE, True, "bg", "theatre")
         for lang in ("bg", "en"):
             res = page.evaluate("""(a)=>{S.lang=a[1];const out=[];
               for(const [id,d,t,alt] of a[0]){const sh=showById[id];if(!sh)continue;
@@ -21483,7 +21527,7 @@ HS1_STATE_JS = """()=>{const h=document.querySelector('main .hero');if(!h)return
     btnBottom:b&&bv?b.getBoundingClientRect().bottom:null,actsTop:(h.querySelector('.acts')||p).getBoundingClientRect().top,
     btnH:b&&bv?b.getBoundingClientRect().height:0,anims:p.getAnimations().length};}"""
 HS1_LABELS = {"bg": ("Прочети повече", "Скрий"), "en": ("Read more", "Read less")}
-HS1_SIZES = ((375, 812), (393, 852), (768, 1024), (1280, 800), (1440, 900))
+HS1_SIZES = (NARROW_PHONE, PHONE, ANDROID_PHONE, (768, 1024), (1280, 800), (1440, 900))
 
 
 def _hs1_pick(page):
@@ -21596,7 +21640,7 @@ def _hs1_serve(font_delay):
 
 
 # Near the threshold, measured in the fallback font: the longest text that still fits the
-# clamp before the webfont arrives (the skeptic's „Resident Evil“ synopsis, EN at 393 px:
+# clamp before the webfont arrives (the skeptic's „Resident Evil“ synopsis, EN at 402 px:
 # 3 lines in the fallback, 4 in Geologica, cut with no Read more).
 HS1_FIT_FALLBACK_JS = """()=>{const w0=document.querySelector('main .hero .synwrap');if(!w0)return null;
   const texts=[];for(const f of FILMS){const t=(f.synEn||'').trim();if(t.split(/\\s+/).length>25)texts.push(t);if(texts.length>=16)break;}
@@ -21626,7 +21670,7 @@ def _hs1_wait_font(page, limit_ms=15000):
 
 def _hs1_font_swap(browser, eng):
     """The Read more control is re-checked once the webfont arrives: the build's own hero
-    (BG and EN, 393 and 1280) and a synopsis that only just fits in the fallback font, with
+    (BG and EN, 402 and 1280) and a synopsis that only just fits in the fallback font, with
     every .woff2 answered 1.5 s late (each case a fresh context: nothing cached)."""
     srv, url = _hs1_serve(1.5)
 
@@ -21643,7 +21687,7 @@ def _hs1_font_swap(browser, eng):
         page.wait_for_selector("main .hero", timeout=20000)
         return ctx, page, errs
     try:
-        for lang, w, h in (("en", 393, 852), ("bg", 393, 852), ("en", 1280, 800), ("bg", 1280, 800)):
+        for lang, w, h in (("en", *PHONE), ("bg", *PHONE), ("en", 1280, 800), ("bg", 1280, 800)):
             tag = f"hs1_{eng}_fontswap_{w}_{lang}"
             ctx, page, errs = fresh(w, h, lang)
             try:
@@ -21658,7 +21702,7 @@ def _hs1_font_swap(browser, eng):
                 check(f"{tag}_no_page_errors", not errs, f"{errs[:2]}")
             finally:
                 ctx.close()
-            if lang != "en" or w != 393:
+            if lang != "en" or w != PHONE[0]:
                 continue
             # the fallback-fitting text set before Geologica arrives
             ctx, page, errs = fresh(w, h, lang)
@@ -21685,7 +21729,7 @@ def wave_hs1(browser):
     (a <button>, aria-expanded, aria-controls) that opens it in place and closes it again,
     by mouse and keyboard; the rails below move only by the growth; with reduced motion it
     opens at once; screen readers get the whole text; a short synopsis has no control.
-    375, 393, 768, 1280, 1440; BG and EN; the build's own hero too."""
+    360, 402, 768, 1280, 1440; BG and EN; the build's own hero too."""
     print("\n=== HS1: hero synopsis clamp + Read more ===")
     eng = _hf_engine(browser)
     ensure_shot_dir("HS1")
@@ -21708,17 +21752,17 @@ def wave_hs1(browser):
         else:
             for w, h in HS1_SIZES:
                 _hs1_case(browser, eng, w, h, lang, "film", pl["film"], f"hs1_{eng}_film_{w}_{lang}",
-                          shot=(lang == "bg" and w in (393, 1280)))
+                          shot=(lang == "bg" and w in (PHONE[0], 1280)))
         if not pl["show"] or pl["showLen"] < 280:
             skip(f"hs1_{eng}_show_{lang}", f"no long theatre synopsis in {lang} ({pl})")
         else:
-            for w, h in ((393, 852), (1280, 800)):
+            for w, h in (PHONE, (1280, 800)):
                 _hs1_case(browser, eng, w, h, lang, "show", pl["show"], f"hs1_{eng}_show_{w}_{lang}",
                           shot=(lang == "bg"))
         if pl["film"]:
-            for w, h in ((393, 852), (1280, 800)):
+            for w, h in (PHONE, (1280, 800)):
                 _hs1_case(browser, eng, w, h, lang, "film", pl["film"], f"hs1_{eng}_short_{w}_{lang}",
-                          shot=(lang == "bg" and w == 393),
+                          shot=(lang == "bg" and w == PHONE[0]),
                           short=("Кратко резюме в един ред.", "A one-line synopsis."))
     _hs1_font_swap(browser, eng)
     print(f"  engine: {eng}")
@@ -21873,7 +21917,7 @@ RT1_PICK_JS = """(today) => {
 
 
 def _rt1_shots(page, pick, lang):
-    """Phone 393: 3 cards (IMDb, TMDB, RT chip; score only), the sheet of the IMDb-chip
+    """Phone 402: 3 cards (IMDb, TMDB, RT chip; score only), the sheet of the IMDb-chip
     card (its vote count in the tiles) and a sheet with all four scores."""
     ids = [pick.get(k) for k in ("imdb", "tmdb", "rt") if pick.get(k)]
     page.evaluate("""(ids) => {
@@ -21886,7 +21930,7 @@ def _rt1_shots(page, pick, lang):
     RT1_SHOT_DIR.mkdir(parents=True, exist_ok=True)
     saved = []
     for k, el in zip([k for k in ("imdb", "tmdb", "rt") if pick.get(k)], page.query_selector_all("#rt1-grid .card")):
-        path = RT1_SHOT_DIR / f"chips_score_only_card_{k}_393_{lang}.png"
+        path = RT1_SHOT_DIR / f"chips_score_only_card_{k}_402_{lang}.png"
         el.screenshot(path=str(path))
         saved.append(path.name)
     page.evaluate("() => { const g = document.getElementById('rt1-grid'); if (g) g.remove(); }")
@@ -21901,7 +21945,7 @@ def _rt1_shots(page, pick, lang):
         if r:
             r.scroll_into_view_if_needed()
             page.wait_for_timeout(400)
-            path = RT1_SHOT_DIR / f"chips_score_only_sheet_{k}_393_{lang}.png"
+            path = RT1_SHOT_DIR / f"chips_score_only_sheet_{k}_402_{lang}.png"
             page.screenshot(path=str(path))
             saved.append(path.name)
     page.evaluate("() => { location.hash = ''; }")
@@ -21911,7 +21955,7 @@ def _rt1_shots(page, pick, lang):
 
 def _rt1_floor_shots(page, fid, lang):
     """A film whose IMDb rating is hidden (under 100 votes, or stale): its card (no
-    IMDb chip) and its sheet (no IMDb tile), phone 393."""
+    IMDb chip) and its sheet (no IMDb tile), phone 402."""
     page.evaluate("() => { location.hash = ''; }")
     page.wait_for_timeout(600)
     page.evaluate("""(id) => {
@@ -21924,7 +21968,7 @@ def _rt1_floor_shots(page, fid, lang):
     saved = []
     el = page.query_selector("#rt1-grid .card")
     if el:
-        path = RT1_SHOT_DIR / f"imdb_floor_card_393_{lang}.png"
+        path = RT1_SHOT_DIR / f"imdb_floor_card_402_{lang}.png"
         el.screenshot(path=str(path))
         saved.append(path.name)
     page.evaluate("() => { const g = document.getElementById('rt1-grid'); if (g) g.remove(); }")
@@ -21935,7 +21979,7 @@ def _rt1_floor_shots(page, fid, lang):
         if r:
             r.scroll_into_view_if_needed()
             page.wait_for_timeout(400)
-        path = RT1_SHOT_DIR / f"imdb_floor_sheet_393_{lang}.png"
+        path = RT1_SHOT_DIR / f"imdb_floor_sheet_402_{lang}.png"
         page.screenshot(path=str(path))
         saved.append(path.name)
     return saved
@@ -21952,7 +21996,7 @@ def wave_rt1(browser):
     eng = _hf_engine(browser)
     ensure_shot_dir("RT1")
     for lang in ("bg", "en"):
-        ctx, page, errs = open_page(browser, 393, 852, lang=lang, mode="cinema")
+        ctx, page, errs = open_page(browser, *PHONE, lang=lang, mode="cinema")
         page.wait_for_timeout(500)
         r = page.evaluate(RT1_SYNTH_JS, CLOCK_TODAY_ISO)
         tag = f"rt1_{eng}_{lang}"
@@ -22054,8 +22098,8 @@ def wave_rt1(browser):
         if lang == "bg" and eng == "chromium" and os.environ.get("SOFIA_HTML"):
             pick = page.evaluate(RT1_PICK_JS, CLOCK_TODAY_ISO)
             saved = _rt1_shots(page, pick, lang)
-            need = [f"chips_score_only_card_imdb_393_{lang}.png", f"chips_score_only_sheet_imdb_393_{lang}.png",
-                    f"chips_score_only_card_tmdb_393_{lang}.png"]
+            need = [f"chips_score_only_card_imdb_402_{lang}.png", f"chips_score_only_sheet_imdb_402_{lang}.png",
+                    f"chips_score_only_card_tmdb_402_{lang}.png"]
             check(f"{tag}_screenshots", all(n in saved for n in need), f"{pick} -> {saved} in {RT1_SHOT_DIR}")
             if pick.get("floor"):
                 fl = _rt1_floor_shots(page, pick["floor"], lang)
