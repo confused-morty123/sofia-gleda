@@ -58,7 +58,7 @@ def main(argv=None):
     html = pathlib.Path(a.html).resolve()
     with sync_playwright() as p:
         b = p.chromium.launch()
-        pg = b.new_page(viewport={"width": 393, "height": 852}, locale="bg-BG")
+        pg = b.new_page(viewport={"width": 402, "height": 874}, locale="bg-BG")
         pg.goto(html.as_uri(), wait_until="load", timeout=30000)
         pg.wait_for_timeout(1500)
         res = pg.evaluate(JS)

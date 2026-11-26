@@ -300,7 +300,7 @@ def fixed_clock(today):
 
 
 def new_page(browser, today, lang, mode, phone=False):
-    kw = dict(viewport={"width": 390, "height": 844} if phone else {"width": 1280, "height": 900},
+    kw = dict(viewport={"width": 402, "height": 874} if phone else {"width": 1280, "height": 900},
               timezone_id="Europe/Sofia", locale="bg-BG")
     if phone:
         kw.update(has_touch=True, is_mobile=True)

@@ -2658,7 +2658,7 @@ def smoke():
         return
     try:
         for tz in ("Europe/Sofia", "UTC"):
-            ctx = b.new_context(viewport={"width": 430, "height": 900},
+            ctx = b.new_context(viewport={"width": 440, "height": 956},   # iPhone 17 Pro Max
                                 timezone_id=tz, locale="bg-BG")
             # Any Content-Security-Policy violation during the journey fails the gate
             # (a stale hash blocks a script; a poster host outside img-src, etc.).
