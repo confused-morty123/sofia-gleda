@@ -9,13 +9,13 @@
 requests==2.34.2
 beautifulsoup4==4.15.0
 lxml==6.1.1
-certifi==2026.7.22
+certifi==2026.10.18
 
 # Used by scripts/fetch_theatre_posters.py to downscale and re-encode each
 # re-hosted poster (a 20 MB source must not ship to every visitor). Without it,
 # re-hosting silently fails and posters stay as remote URLs that are often
 # cert-blocked, mixed-content or hotlink-protected, so they never render.
-Pillow==12.3.0
+Pillow==13.0.0
 
 # Used only by scripts/verify_build.py, to click a film card in a real headless
 # browser before the refreshed page is allowed to go live. The browser binary
@@ -26,7 +26,7 @@ playwright==1.62.0
 charset-normalizer==3.4.9
 idna==3.18
 urllib3==2.8.0
-soupsieve==2.10
+soupsieve==4.0.0
 typing_extensions==4.16.0
 greenlet==3.5.5
 pyee==13.0.1
