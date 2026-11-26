@@ -243,7 +243,7 @@ a{color:inherit}
   border:1px solid var(--line-2); font-size:13px; font-weight:600; color:var(--fg)}
 @media (hover:hover){.sback:hover{border-color:var(--accent); color:var(--accent)}}
 .sgrab{width:38px; height:4px; border-radius:99px; background:var(--line-2); margin:8px auto 0; display:none}
-@media(max-width:620px){ .sgrab{display:block} .scrim{padding:0; place-items:end center}
+@media(max-width:620px){ .sgrab{display:block}
   /* Higher specificity (.scrim .sheet) so these win over the base `.sheet`
      rule, which is defined LATER in the file: without it the base
      `overflow:hidden` overrode `overflow-y:auto` and the bottom sheet could not
@@ -349,7 +349,10 @@ a{color:inherit}
   letter-spacing:.06em; font-size:clamp(20px,2.2vw,26px)}
 .rhead .sub{font-size:11.5px; color:var(--fg-3)}
 .rscroll{position:relative}
-.rtrack{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity; padding-bottom:6px; scroll-behavior:smooth; scrollbar-width:thin}
+.rtrack{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity; scroll-behavior:smooth; scrollbar-width:thin;
+  /* room for a focused card's ring (2 px outline + 2 px offset), which the track's overflow
+     would otherwise clip at the top and left; the negative margin keeps the cards where they were */
+  padding:5px 5px 6px; margin:-5px -5px 0; scroll-padding-inline:5px}
 .rtrack::-webkit-scrollbar{height:5px}
 .rtrack::-webkit-scrollbar-thumb{background:var(--ink-4); border-radius:9px}
 .rarrow{position:absolute; top:34%; z-index:5; width:32px; height:62px; border-radius:10px;
@@ -451,6 +454,10 @@ a{color:inherit}
 @media(min-width:761px){ .scrim{padding-top:calc(max(16px,env(safe-area-inset-top,0px)) + var(--sg-gpadt,0px));
   padding-bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--sg-gpadb,0px))}
   .scrim.sg-gend::after{content:"";position:absolute;left:0;top:var(--sg-gend,0px);width:1px;height:1px;pointer-events:none} }
+/* Phones: the sheet is a bottom sheet, edge to edge and down to the screen's bottom edge.
+   This must come after the base .scrim rule above: placed earlier (with .sgrab), the base
+   rule's 16 px padding won and the sheet stopped 16 px above the bottom. */
+@media(max-width:620px){ .scrim{padding:0; place-items:end center} }
 .sheet{width:min(860px,100%); background:var(--ink-2); border:1px solid var(--line); border-radius:var(--r-lg);
   overflow:hidden; box-shadow:var(--shadow); margin-block:auto}
 .shero{position:relative; min-height:210px; display:flex; align-items:flex-end; padding:22px; color:#fff; overflow:hidden}
@@ -715,6 +722,9 @@ a.prelim-time,span.prelim-time{border:1px dashed var(--line-2)!important;backgro
   display:grid; place-items:center; flex:0 0 18px}
 .fab[hidden]{display:none!important}
 main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+/* The footer ends the page, so its last row (the legal links) must sit above the FAB, not
+   under it: the FAB's bottom offset + its 48 px + a 16 px gap */
+footer{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
 /* refreshPage() lays an update out here, unseen and untappable, before it is shown */
 .sg-probe{position:fixed; top:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none;
   z-index:-1; contain:layout paint}
@@ -725,12 +735,14 @@ main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 @media (hover:none) and (pointer:coarse){
   .fab{bottom:max(72px,calc(16px + env(safe-area-inset-bottom,0px)))}
   main{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
+  footer{padding-bottom:max(136px,calc(80px + env(safe-area-inset-bottom,0px)))}
   .drawer{padding-bottom:max(84px,calc(28px + env(safe-area-inset-bottom,0px)))}
   .scrim .sbody{padding-bottom:max(84px,calc(22px + env(safe-area-inset-bottom,0px)))}
 }
 @media (hover:none) and (pointer:coarse) and (display-mode:standalone){
   .fab{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
   main{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  footer{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
   .drawer{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
   .scrim .sbody{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
 }
