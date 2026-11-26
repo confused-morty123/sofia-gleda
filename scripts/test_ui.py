@@ -2953,11 +2953,11 @@ def wave_d1(browser):
         # The phone sheet's rows list ONE day only (the day strip's selection: today if
         # the film plays today, else its first date); later-starting venues show when
         # their day is picked, and in the buy box (all venues, checked below).
+        # the sheet's own rows: upcomingRows drops today's times already past (the page clock)
         expected_sarceto_rows = page.evaluate(f"""() => {{
             const today = "{CLOCK_TODAY_ISO}";
-            if (typeof SHOWTIMES === 'undefined') return 0;
-            const rows = SHOWTIMES.filter(r => r[0] === 'sarceto-na-zveyara'
-                && /^\\d{{4}}-\\d{{2}}-\\d{{2}}$/.test(r[2]) && r[2] >= today);
+            if (typeof SHOWTIMES === 'undefined' || typeof upcomingRows !== 'function') return 0;
+            const rows = upcomingRows(SHOWTIMES.filter(r => r[0] === 'sarceto-na-zveyara'));
             const dates = [...new Set(rows.map(r => r[2]))].sort();
             const sel = dates.includes(today) ? today : dates[0];
             return new Set(rows.filter(r => r[2] === sel).map(r => r[1])).size;
