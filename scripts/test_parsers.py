@@ -6036,6 +6036,74 @@ finally:
     TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP = _orig_tok_rc, _orig_sleep_rc
     TMDB._OMDB_STOP = None
 
+# OMDb cache (26 Nov 2026): the free key's 1000 calls a day were spent by two manual
+# runs, and the nightly run was refused. A fresh cached answer makes no call; a settled
+# film (rated, 1000+ votes) is asked again after OMDB_FRESH_DAYS_SETTLED days, any other
+# film once a day; a refusal or the run's call cap falls back to the cached answer.
+print("OMDb cache: fresh answers make no call, refusals use the cached answer")
+_orig_omdb_cache = (TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP, TMDB.OMDB_CACHE, dict(TMDB.OMDB_STATS),
+                    TMDB.OMDB_MAX_CALLS)
+TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP, TMDB._OMDB_STOP = "fake-key-for-test", 0, None
+try:
+    import unittest.mock as _um_oc
+    _today_oc = dt.date.today()
+    _iso = lambda n: (_today_oc - dt.timedelta(days=n)).isoformat()
+    _settled = {"rating": 7.5, "votes": "12.3K", "rt": 90, "mc": 70, "err": None,
+                "title": "Old Film", "year": 2020, "runtime": 100, "type": "movie"}
+    _new = dict(_settled, rating=None, votes=None, title="New Film", year=2026)
+    TMDB.OMDB_CACHE = {"i:tt0000101": {"at": _iso(1), "o": _settled},
+                       "i:tt0000102": {"at": _iso(1), "o": _new},
+                       "i:tt0000103": {"at": _iso(5), "o": _settled}}
+    TMDB.OMDB_STATS.update(calls=0, cached=0, stale=0, errors=0)
+    _ans = {"Response": "True", "Title": "New Film", "Year": "2026", "Runtime": "95 min",
+            "Type": "movie", "imdbRating": "6.1", "imdbVotes": "150"}
+    with _um_oc.patch("urllib.request.urlopen",
+                      side_effect=lambda *a, **k: _RcResp(_json_mod.dumps(_ans).encode())) as _m:
+        _a = TMDB.omdb_lookup("tt0000101")
+        _b = TMDB.omdb_lookup("tt0000102")
+    check("omdb cache: a settled film asked yesterday is not asked again (no call)",
+          (_a["rating"], _a["rt"]), (7.5, 90))
+    check("omdb cache: a film without a settled rating is asked again the next day",
+          (_m.call_count, _b["rating"], TMDB.OMDB_CACHE["i:tt0000102"]["at"]),
+          (1, 6.1, _today_oc.isoformat()))
+    with _um_oc.patch("urllib.request.urlopen",
+                      return_value=_RcResp(_json_mod.dumps({"Response": "False",
+                                                            "Error": "Request limit reached!"}).encode())):
+        _c = TMDB.omdb_lookup("tt0000103")
+        _d = TMDB.omdb_lookup("tt0000999")
+    check("omdb cache: OMDb's daily limit falls back to the cached answer, whatever its age",
+          (_c["rating"], _c["err"], TMDB.OMDB_STATS["stale"]), (7.5, None, 1))
+    check("omdb cache: with nothing cached, the refusal is the answer (keep-previous takes over)",
+          (_d["err"], TMDB.OMDB_STATS["errors"]), ("Request limit reached!", 1))
+    check("omdb cache: a refusal is never cached", "i:tt0000999" in TMDB.OMDB_CACHE, False)
+    # The run's own call cap
+    TMDB._OMDB_STOP = None
+    TMDB.OMDB_MAX_CALLS = 1
+    TMDB.OMDB_CACHE = {"i:tt0000105": {"at": _iso(9), "o": _settled}}
+    TMDB.OMDB_STATS.update(calls=0, cached=0, stale=0, errors=0)
+    with _um_oc.patch("urllib.request.urlopen",
+                      side_effect=lambda *a, **k: _RcResp(_json_mod.dumps(_ans).encode())) as _m:
+        TMDB.omdb_lookup("tt0000104")
+        _e = TMDB.omdb_lookup("tt0000105")
+    check("omdb cache: past the run's call cap, no call is made and the cached answer is used",
+          (_m.call_count, _e["rating"]), (1, 7.5))
+    # Save drops entries unused for OMDB_CACHE_KEEP_DAYS; load skips malformed rows
+    TMDB.OMDB_CACHE = {"i:tt1": {"at": _iso(40), "o": _settled},
+                       "i:tt2": {"at": _iso(40), "used": _iso(0), "o": _settled}}
+    with _tmp.TemporaryDirectory() as _dd:
+        _pp = _pl.Path(_dd) / "omdb_cache.json"
+        TMDB.omdb_cache_save(_pp)
+        _pp.write_text(_pp.read_text()[:-1] + ', "bad": {"at": "x"}}')
+        TMDB.omdb_cache_load(_pp)
+    check("omdb cache: save drops old unused entries, load skips malformed ones",
+          sorted(TMDB.OMDB_CACHE), ["i:tt2"])
+    check("omdb cache: votes text to a number", (TMDB._votes_number("12.3K"), TMDB._votes_number("850"),
+                                                  TMDB._votes_number(None)), (12300, 850, 0))
+finally:
+    (TMDB.OMDB_TOKEN, TMDB.OMDB_RETRY_SLEEP, TMDB.OMDB_CACHE, _st, TMDB.OMDB_MAX_CALLS) = _orig_omdb_cache
+    TMDB.OMDB_STATS.clear(); TMDB.OMDB_STATS.update(_st)
+    TMDB._OMDB_STOP = None
+
 _ok_o = {"err": None, "type": "movie", "title": "Kina & Yuk", "year": 2023, "runtime": 85}
 check("omdb_identity: the venue's year (±1) confirms OMDb's film",
       TMDB.omdb_identity({"year": 2023, "runtime": 80}, _ok_o), None)

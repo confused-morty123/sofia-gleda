@@ -11,7 +11,7 @@ variable (a GitHub Actions secret in the hosted setup) — never hard-coded.
 If a run matches nothing (e.g. TMDB unreachable) and a previous tmdb_films.json
 exists, the previous file is kept — a bad run never empties the posters.
 """
-import json, os, re, time, urllib.error, urllib.parse, urllib.request, ssl, sys, pathlib
+import datetime, json, os, re, time, urllib.error, urllib.parse, urllib.request, ssl, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 try:
     from posterpolicy import DISTRUSTED_HOSTS      # hosts whose images can't be tied to a title
@@ -1074,6 +1074,95 @@ _OMDB_NO_RETRY = ("invalid api key", "request limit", "no api key", "incorrect i
 _OMDB_STOP = None           # OMDb's own refusal for the whole key (bad key, daily limit)
 _OMDB_STOP_WORDS = ("invalid api key", "request limit", "no api key")
 
+# OMDb's free key allows 1000 calls a day, and every run used to ask again for every
+# film (~345 calls). On 25-26 Nov 2026 two manual refreshes and the nightly one shared
+# one OMDb day: the 03:05 run was refused after ~90 calls ("Request limit reached!")
+# and its 330 films kept yesterday's scores, new films got none. So OMDb's answers
+# are kept in omdb_cache.json and asked again only when they are old enough:
+# a film with an IMDb rating of OMDB_SETTLED_VOTES votes or more every
+# OMDB_FRESH_DAYS_SETTLED days (its numbers barely move), any other film (new, no
+# rating yet, few votes) once a day. A run makes at most OMDB_MAX_CALLS calls; past
+# that, and whenever OMDb refuses or fails, the cached answer (any age) is used.
+OMDB_FRESH_DAYS_SETTLED = 3
+OMDB_SETTLED_VOTES = 1000
+OMDB_CACHE_KEEP_DAYS = 30   # entries not used for this long are dropped on save
+OMDB_MAX_CALLS = int(os.environ.get("OMDB_MAX_CALLS") or 450)
+OMDB_CACHE = None           # {key: {"at": "YYYY-MM-DD", "o": answer}}; None = off (main() turns it on)
+OMDB_STATS = {"calls": 0, "cached": 0, "stale": 0, "errors": 0}
+
+
+def _votes_number(v):
+    """'12.3K' / '1.2M' / '850' -> an int, or 0."""
+    m = re.fullmatch(r"\s*([\d.]+)\s*([KkMm]?)\s*", str(v or ""))
+    if not m:
+        return 0
+    try:
+        n = float(m.group(1))
+    except ValueError:
+        return 0
+    return int(n * {"k": 1_000, "m": 1_000_000}.get(m.group(2).lower(), 1))
+
+
+def _omdb_cache_fresh(entry, today):
+    """True when the cached answer is recent enough not to ask OMDb again today."""
+    try:
+        age = (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(entry["at"])).days
+    except (KeyError, TypeError, ValueError):
+        return False
+    o = entry.get("o") or {}
+    settled = o.get("rating") is not None and _votes_number(o.get("votes")) >= OMDB_SETTLED_VOTES
+    return 0 <= age < (OMDB_FRESH_DAYS_SETTLED if settled else 1)
+
+
+def _omdb_cached(key, live):
+    """OMDb's answer for key: the cache's when fresh, else live() (one OMDb call),
+    stored when it succeeds; on an error (a refusal, the run's call cap, the network)
+    the cached answer of any age is used instead, so a refused run keeps real numbers."""
+    if OMDB_CACHE is None:
+        return live()
+    today = datetime.date.today().isoformat()
+    entry = OMDB_CACHE.get(key)
+    if entry and _omdb_cache_fresh(entry, today):
+        OMDB_STATS["cached"] += 1
+        entry["used"] = today
+        return dict(entry["o"])
+    o = live()
+    err = o.get("err")
+    if err is None or str(err).lower().startswith(("movie not found", "incorrect imdb id")):
+        # A definite answer (a film, or OMDb saying there is none) is cached;
+        # a refusal or a network error is not.
+        OMDB_CACHE[key] = {"at": today, "used": today, "o": dict(o)}
+        return o
+    if entry and entry.get("o"):
+        OMDB_STATS["stale"] += 1
+        entry["used"] = today
+        return dict(entry["o"])
+    OMDB_STATS["errors"] += 1
+    return o
+
+
+def omdb_cache_load(path):
+    """Turn the cache on, read from path (an unreadable file starts it empty)."""
+    global OMDB_CACHE
+    try:
+        d = json.load(open(path, encoding="utf-8")) if path.exists() else {}
+    except (OSError, ValueError):
+        d = {}
+    OMDB_CACHE = {k: v for k, v in (d if isinstance(d, dict) else {}).items()
+                  if isinstance(v, dict) and isinstance(v.get("o"), dict) and v.get("at")}
+
+
+def omdb_cache_save(path):
+    """Write the cache, without entries no run has used for OMDB_CACHE_KEEP_DAYS."""
+    if OMDB_CACHE is None:
+        return
+    cut = (datetime.date.today() - datetime.timedelta(days=OMDB_CACHE_KEEP_DAYS)).isoformat()
+    keep = {k: v for k, v in sorted(OMDB_CACHE.items()) if (v.get("used") or v.get("at") or "") >= cut}
+    try:
+        json.dump(keep, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=0, sort_keys=True)
+    except OSError as e:
+        print(f"  (could not write {path.name}: {e})", file=sys.stderr)
+
 
 def _omdb_fetch(params):
     """One OMDb answer for params as a dict, or raises. A network error (timeout,
@@ -1086,6 +1175,13 @@ def _omdb_fetch(params):
     global _OMDB_STOP
     if _OMDB_STOP:
         return {"Response": "False", "Error": _OMDB_STOP}
+    if OMDB_CACHE is not None and OMDB_STATS["calls"] >= OMDB_MAX_CALLS:
+        # The run's own budget (the cache is on, i.e. a real refresh): the rest of the
+        # films use their cached answers, and the daily key is left for other runs.
+        _OMDB_STOP = f"run budget of {OMDB_MAX_CALLS} OMDb calls used"
+        print(f"    ! omdb: {_OMDB_STOP} (cached answers from here on)", file=sys.stderr)
+        return {"Response": "False", "Error": _OMDB_STOP}
+    OMDB_STATS["calls"] += 1
     q = urllib.parse.urlencode(dict(params, apikey=OMDB_TOKEN))
     last = None
     for attempt in (1, 2):
@@ -1129,6 +1225,13 @@ def _omdb_int(v):
 
 
 def omdb_lookup(imdb_id):
+    """_omdb_lookup_live(imdb_id), through the run's OMDb cache (_omdb_cached)."""
+    if not imdb_id or not OMDB_TOKEN:
+        return _omdb_lookup_live(imdb_id)
+    return _omdb_cached(f"i:{imdb_id}", lambda: _omdb_lookup_live(imdb_id))
+
+
+def _omdb_lookup_live(imdb_id):
     """Everything OMDb says about imdb_id, as a dict: rating (float), votes (compact
     text), rt (Rotten Tomatoes critics' %, int), mc (Metacritic /100, int), err (None
     on success, a string on any failure: no key, an API error, the network), and the
@@ -1665,6 +1768,10 @@ def omdb_title_lookup(title, year):
     """OMDb's film for a Latin title and year (t=&y=), as omdb_parse gives it."""
     if not OMDB_TOKEN:
         return dict(omdb_parse({}), err="OMDB_TOKEN not set")
+    return _omdb_cached(f"t:{norm(title)}|{year}", lambda: _omdb_title_lookup_live(title, year))
+
+
+def _omdb_title_lookup_live(title, year):
     try:
         return omdb_parse(_omdb_query({"t": title, "y": str(year), "type": "movie"}))
     except Exception as e:
@@ -1796,6 +1903,11 @@ def main():
             prev = json.load(open(OUT, encoding="utf-8")) or {}
         except Exception:
             prev = {}
+    # OMDb answers of earlier runs (omdb_cache.json beside tmdb_films.json): each film
+    # is asked again only when its answer is old enough (_omdb_cache_fresh).
+    omdb_cache_path = OUT.parent / "omdb_cache.json"
+    if OMDB_TOKEN:
+        omdb_cache_load(omdb_cache_path)
 
     out = {}
     hints = tmdb_hints()
@@ -2160,6 +2272,11 @@ def main():
     apply_trending(out, prev, trending_ranks())
     print(f"trending this week: {sum(1 for v in out.values() if v.get('trend'))} listed film(s) ranked")
     posters = sum(1 for v in out.values() if v.get("poster_path"))
+    omdb_cache_save(omdb_cache_path)
+    if OMDB_TOKEN:
+        print(f"OMDb: {OMDB_STATS['calls']} call(s) this run, {OMDB_STATS['cached']} answer(s) from "
+              f"{omdb_cache_path.name}, {OMDB_STATS['stale']} older cached answer(s) used after an error"
+              + (f"; stopped: {_OMDB_STOP}" if _OMDB_STOP else ""))
     # keep-previous guard: never overwrite a good cache with an empty run
     if posters == 0 and OUT.exists():
         print("0 posters this run — keeping previous tmdb_films.json", file=sys.stderr)
@@ -2190,10 +2307,20 @@ def main():
         health = json.load(open(health_path, encoding="utf-8")) if health_path.exists() else []
         # Remove any previous omdb entries so we don't accumulate stale ones
         health = [e for e in health if e.get("venue") != "omdb"]
-        if OMDB_TOKEN:
-            level = "warn" if omdb_fail > 0 else "ok"
-            msg = (f"OMDb: {omdb_ok}/{omdb_tried} ok, {omdb_fail} missing IMDb ratings"
-                   if omdb_fail > 0 else f"OMDb: {omdb_ok}/{omdb_tried} ok")
+        if OMDB_TOKEN and _OMDB_STOP and not _OMDB_STOP.startswith("run budget"):
+            # OMDb refused the key (the daily limit, a bad key): say so, not "missing".
+            level = "warn"
+            msg = (f"OMDb refused this run's calls after {OMDB_STATS['calls']}: {_OMDB_STOP} "
+                   f"— {omdb_ok}/{omdb_tried} films keep a cached or last run's IMDb rating")
+        elif OMDB_TOKEN:
+            # A film without an IMDb rating is mostly a new one IMDb has no score for
+            # yet (no votes), not an OMDb failure: report it as a note.
+            level = "warn" if OMDB_STATS["errors"] else "ok"
+            msg = (f"OMDb: {omdb_ok}/{omdb_tried} films with an IMDb rating "
+                   f"({omdb_fail} have none, mostly new films without votes yet); "
+                   f"{OMDB_STATS['calls']} call(s), {OMDB_STATS['cached'] + OMDB_STATS['stale']} cached"
+                   + (f", {OMDB_STATS['errors']} OMDb error(s) with nothing cached"
+                      if OMDB_STATS["errors"] else ""))
         else:
             level = "warn"
             msg = "OMDb: OMDB_TOKEN not set — IMDb ratings inherited from previous run"
