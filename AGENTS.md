@@ -64,10 +64,13 @@ merge one PR  ->  Tests runs on the new main  ->  main green  ->  the next merge
 | Mac task "CI watch and fix" | `ci-fix-<yyyymmdd>`, PR titled `CI fix: ...` | no | yes, when the claim is free |
 | Nightly refresh | main (data only, `Sofia Gleda bot`) | pushes data | no |
 
-## Later: rulesets
+## Rulesets
 
-The draft rulesets (owner's project files, `rulesets/*.json`) make rules 2 and 3
-binding: PRs required, and the required checks `unit`, `security (chromium)`,
-`security (webkit)` and `main-gate`, with bypass for the repository admin and the
-GitHub Actions app (so the nightly refresh can still publish). Until the owner
-applies them, these rules hold by agreement.
+Ruleset 1 ("main: no force-push or deletion", active since 2026-11-26) stops anyone,
+the owner included, from force-pushing over main or deleting it.
+
+The owner chose not to enforce a PR-required ruleset (2026-11-26): on a personal
+repository GitHub cannot let the nightly refresh's Actions token bypass it, and the
+alternative (a deploy key) was not wanted. So rules 2 and 3 above hold by agreement:
+GitHub will not stop a direct push to main or a merge on a red `main-gate`. Follow
+them anyway.
