@@ -158,11 +158,22 @@ python3 -m playwright install chromium   # for the verify gate
 TMDB_TOKEN=your_token OMDB_TOKEN=your_key python3 scripts/refresh_all.py
 ```
 
+### One pipeline: merging and testing in order
+
+Several agents work on this repository at once. To keep their merges and test runs
+from colliding, every change goes through a pull request, one merge at a time, onto a
+green main: `.github/workflows/main-gate.yml` sets a `main-gate` status on every open
+PR (green only when main's latest Tests run passed, none is running, and the branch
+contains main). `python3 scripts/main_gate.py status` prints the same picture. The
+rules for every agent are in `AGENTS.md`.
+
 ### Tests in GitHub Actions
 
 `.github/workflows/tests.yml` runs the suites on GitHub's machines, so checking a
-change no longer ties up the Mac for hours. It starts on every push to any branch,
-on pull requests, and from the **Run workflow** button (Actions tab > Tests). It
+change no longer ties up the Mac for hours. It starts once per change: on pull
+requests to main, on pushes to main and to `*-trial` branches, and from the **Run
+workflow** button (Actions tab > Tests); a push to a PR's branch is tested by the PR
+run only. Runs on main are never cancelled by a later merge. It
 never scrapes and never publishes: the page is built offline from the listings
 already committed (`dev_build.py --from HEAD`, then the share pages, legal pages and
 CSP), as in "Making a UI change". The nightly refresh's own commits do not start it,

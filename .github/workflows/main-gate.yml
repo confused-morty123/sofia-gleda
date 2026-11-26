@@ -1,0 +1,63 @@
+# Sofia Gleda: the merge gate. One change reaches main at a time, and only onto a
+# green main.
+#
+#   merge one PR -> Tests runs on the new main -> main green -> the next merge
+#
+# Sets the commit status "main-gate" on the head of every open pull request to main:
+#   pending  a Tests run of main is queued or running (a merge is being tested)
+#   failure  main is red, or the branch lacks a non-bot commit of main
+#   success  main is green and the branch contains main (bot data refreshes aside)
+# Logic and the same report for people and agents: scripts/main_gate.py
+# ("python3 scripts/main_gate.py status"). Rules for every worker: AGENTS.md.
+#
+# Re-evaluated whenever the answer can change: a PR is opened or pushed to, main moves
+# (the gate turns pending at once), and a Tests run of main finishes.
+# Making it binding (a required check) belongs to ruleset 2, applied later by the owner.
+
+name: Main gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Tests"]
+    types: [requested, completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  statuses: write
+
+# Each run reads the state when it starts and writes every PR: only the newest matters.
+concurrency:
+  group: sofia-gleda-main-gate
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # main's copy of the script, never the PR's: a branch cannot rewrite its own gate.
+      - name: Check out main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Set main-gate on every open pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Until the gate itself is on main (the PR that adds it), there is nothing to run.
+        run: |
+          if [ ! -f scripts/main_gate.py ]; then
+            echo "::notice::scripts/main_gate.py is not on main yet: the gate starts once it is merged."
+            exit 0
+          fi
+          python3 scripts/main_gate.py post
