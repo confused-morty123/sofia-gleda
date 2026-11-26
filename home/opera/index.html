@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-7oj62xQ7aA3zuWQQjhxXPFuNVfzf+uJIb1YBs4m6eqU=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-RXGH05ud80ihr4g8TKrTxeEd2z1NEe34SI7QW0mZKUM=' 'sha256-al1C9ro1Tf0tprnykuHrAbVsRoH36v8qr9xaT+LMIC0=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-RXGH05ud80ihr4g8TKrTxeEd2z1NEe34SI7QW0mZKUM=' 'sha256-al1C9ro1Tf0tprnykuHrAbVsRoH36v8qr9xaT+LMIC0=' 'sha256-vbvt99rDLxHZqMIKUq7EkfdkY7gtdGbyLCbADiMk+/g=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/,
      /home/opera/ and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -509,8 +509,13 @@ a{color:inherit}
 .edate{font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; opacity:.86; margin-top:7px; font-variant-numeric:tabular-nums}
 
 /* ---------- sheet ---------- */
+/* no blur behind the sheet (owner 2026-11-26): a plain dim, as everywhere else on the site.
+   .sg-ghost is the poster that grows into the sheet (animateOpen) and back (animateClose). */
+.sg-ghost{position:fixed; z-index:91; overflow:hidden; pointer-events:none; background:var(--ink-2); will-change:left,top,width,height,opacity}
+.sg-ghost > .sg-ghost-in{width:100%!important; height:100%!important; max-width:none; aspect-ratio:auto; margin:0;
+  border:0; border-radius:0; box-shadow:none}
 .scrim[hidden]{display:none!important}
-.scrim{position:fixed; inset:0; z-index:90; background:rgba(5,3,7,.8); backdrop-filter:blur(8px);
+.scrim{position:fixed; inset:0; z-index:90; background:rgba(5,3,7,.8);
   display:grid; place-items:start center; overflow-y:auto; overscroll-behavior:contain;
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px))
     max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -6294,6 +6299,7 @@ let _closeAnims=[];
 function _cancelCloseAnims(s){
   _closeAnims.forEach(a=>{try{a.cancel();}catch(e){}});_closeAnims=[];
   if(s&&s.getAnimations)s.getAnimations().forEach(a=>{try{a.cancel();}catch(e){}});
+  if(typeof _ghostDrop==="function")_ghostDrop();
 }
 /* ---- background scroll lock ----
    overflow:hidden on body does not stop iOS Safari from scrolling the page while its
@@ -7001,27 +7007,73 @@ function swipeToClose(sheet){
   },{passive:true});
 }
 
-/* iPhone-style open animation: sheet zooms from the tapped card's rect.
-   Falls back to slide-up / scale-in when card rect is unavailable. */
+/* Poster card -> detail (owner 2026-11-26: "the card should grow, no blurred background"):
+   a container transform. The tapped poster grows into the sheet's place while the sheet,
+   laid out at its final size and never scaled (scaling squashed the text, I2), is revealed
+   through a clip that follows the growing poster; the poster dissolves into the sheet on
+   the way. Closing runs it backwards into the card. Cards off screen, buttons that open a
+   sheet (hero "See times", agenda rows) and reduced motion keep the plain open/close. */
+const GROW_MS=400,SHRINK_MS=300,GROW_EASE="cubic-bezier(.2,0,0,1)";
+let _ghost=null;
+function _ghostDrop(){if(_ghost){try{_ghost.remove();}catch(e){}_ghost=null;}}
+/* the poster box of a card that is on screen, or null */
+function _cardBox(el){
+  if(!el||!el.isConnected||!el.classList||!(el.classList.contains("card")||el.classList.contains("ecard")))return null;
+  const b=el.querySelector(".poster,.ebox");if(!b)return null;
+  const r=b.getBoundingClientRect();
+  if(r.width<24||r.height<24||r.bottom<=0||r.top>=innerHeight||r.right<=0||r.left>=innerWidth)return null;
+  return {b,r,rad:parseFloat(getComputedStyle(b).borderTopLeftRadius)||0};
+}
+/* the sheet's rect on screen (cut at the window's bottom) and its corner radii there */
+function _sheetBox(sheet){
+  const r=sheet.getBoundingClientRect(),cs=getComputedStyle(sheet);
+  const vb=Math.min(r.bottom,innerHeight);
+  const top=parseFloat(cs.borderTopLeftRadius)||0;
+  const bot=r.bottom>innerHeight+0.5?0:(parseFloat(cs.borderBottomLeftRadius)||0);
+  return {r,vb,top,bot};
+}
+/* keyframe pair for the ghost (fixed box) and the sheet (clip in its own coordinates) */
+function _growFrames(c,sb){
+  const r=sb.r,k=c.r;
+  const clipCard=`inset(${k.top-r.top}px ${r.right-k.right}px ${r.bottom-k.bottom}px ${k.left-r.left}px round ${c.rad}px)`;
+  const clipFull=`inset(0px 0px ${r.bottom-sb.vb}px 0px round ${sb.top}px ${sb.top}px ${sb.bot}px ${sb.bot}px)`;
+  const boxCard={left:k.left+"px",top:k.top+"px",width:k.width+"px",height:k.height+"px",borderRadius:c.rad+"px"};
+  const boxFull={left:r.left+"px",top:r.top+"px",width:r.width+"px",height:(sb.vb-r.top)+"px",
+    borderRadius:`${sb.top}px ${sb.top}px ${sb.bot}px ${sb.bot}px`};
+  return {clipCard,clipFull,boxCard,boxFull};
+}
+function _makeGhost(c){
+  _ghostDrop();
+  const g=document.createElement("div");g.className="sg-ghost";g.setAttribute("aria-hidden","true");
+  const k=c.b.cloneNode(true);
+  k.removeAttribute("id");k.querySelectorAll("[id]").forEach(n=>n.removeAttribute("id"));
+  k.classList.add("sg-ghost-in");
+  g.appendChild(k);document.body.appendChild(g);_ghost=g;
+  return g;
+}
 function animateOpen(scrim,fromEl){
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const sheet=scrim.querySelector(".sheet"); if(!sheet)return;
   const isMobile=innerWidth<=620;
+  _ghostDrop();
+  /* the dim fades in on its own (the sheet sits inside the scrim: fading the scrim's
+     opacity would fade the sheet with it) */
+  scrim.animate([{backgroundColor:"rgba(5,3,7,0)"},{backgroundColor:"rgba(5,3,7,.8)"}],
+    {duration:reduced?1:(isMobile?260:200),easing:"ease-out"});
+  if(reduced)return;
 
-  /* Always fade the scrim backdrop. On phones only its dimming fades (the sheet is inside
-     the scrim, and fading the scrim's opacity made the rising panel see-through). */
-  const bgDur=reduced?1:200;
-  if(isMobile&&!reduced)scrim.animate([{backgroundColor:"rgba(5,3,7,0)",backdropFilter:"blur(0px)"},{backgroundColor:"rgba(5,3,7,.8)",backdropFilter:"blur(8px)"}],{duration:260,easing:"ease-out"});
-  else scrim.animate([{opacity:0},{opacity:1}],{duration:bgDur,easing:"ease-out"});
-
-  if(reduced){
-    /* Instant: no transform animation */
+  const c=_cardBox(fromEl);
+  if(c){
+    const sb=_sheetBox(sheet),f=_growFrames(c,sb),g=_makeGhost(c);
+    const o={duration:GROW_MS,easing:GROW_EASE};
+    g.animate([{...f.boxCard,opacity:1,offset:0},{opacity:1,offset:.3},{...f.boxFull,opacity:0,offset:1}],
+      {...o,fill:"forwards"}).onfinish=()=>{if(_ghost===g)_ghostDrop();};
+    sheet.animate([{clipPath:f.clipCard,opacity:0,offset:0},{opacity:0,offset:.25},{opacity:1,offset:.75},{clipPath:f.clipFull,opacity:1,offset:1}],
+      {...o,fill:"backwards"});
     return;
   }
-
-  /* One sheet motion, iOS-like (I2): on phones the panel rises from the bottom edge on the
-     sheet curve, opaque and undistorted (the zoom out of the tapped card overshot and squashed
-     the text); on wider screens the card settles in from 98% with a short fade. */
+  /* no card on screen: on phones the panel rises from the bottom edge on the sheet curve,
+     opaque and undistorted; on wider screens it settles in from 98% with a short fade */
   if(isMobile){
     sheet.animate([{transform:"translateY(100%)"},{transform:"translateY(0)"}],
       {duration:420,easing:"cubic-bezier(.32,.72,0,1)",fill:"backwards"});
@@ -7031,22 +7083,31 @@ function animateOpen(scrim,fromEl){
   }
 }
 
-/* Animate the sheet closing back to the card it came from (or centre-fade if unavailable). */
+/* Close: back into the card it came from when that card is on screen; a phone sheet being
+   dragged down (or with no card to go back to) slides down and out; otherwise a short fade. */
 function animateClose(scrim,toEl,cb){
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const sheet=scrim?scrim.querySelector(".sheet"):null;
-
+  _ghostDrop();
   if(reduced||!sheet){cb();return;}
 
   const isMobile=innerWidth<=620;
+  const dragged=!!sheet.style.transform;
+  const c=dragged?null:_cardBox(toEl);
+  const dur=c?SHRINK_MS:(isMobile?280:160);
 
-  /* Fade the scrim first (kept in _closeAnims so a sheet opened meanwhile can cancel it) */
-  _closeAnims.push(isMobile
-    ?scrim.animate([{backgroundColor:getComputedStyle(scrim).backgroundColor},{backgroundColor:"rgba(5,3,7,0)",backdropFilter:"blur(0px)"}],{duration:280,easing:"ease-in",fill:"forwards"})
-    :scrim.animate([{opacity:1},{opacity:0}],{duration:160,easing:"ease-in",fill:"forwards"}));
+  /* the dim goes first (kept in _closeAnims so a sheet opened meanwhile can cancel it) */
+  _closeAnims.push(scrim.animate([{backgroundColor:getComputedStyle(scrim).backgroundColor},{backgroundColor:"rgba(5,3,7,0)"}],
+    {duration:dur,easing:"ease-in",fill:"forwards"}));
 
   let anim;
-  if(isMobile){
+  if(c){
+    const sb=_sheetBox(sheet),f=_growFrames(c,sb),g=_makeGhost(c);
+    const o={duration:SHRINK_MS,easing:GROW_EASE,fill:"forwards"};
+    _closeAnims.push(g.animate([{...f.boxFull,opacity:0,offset:0},{opacity:1,offset:.45},{...f.boxCard,opacity:1,offset:1}],o));
+    anim=sheet.animate([{clipPath:f.clipFull,opacity:1,offset:0},{opacity:0,offset:.4},{clipPath:f.clipCard,opacity:0,offset:1}],o);
+    const fin=cb;cb=()=>{if(_ghost===g)_ghostDrop();fin();};
+  } else if(isMobile){
     /* down and out from where it is (a drag hands over its offset in the inline transform) */
     const from=sheet.style.transform||"translateY(0)";
     anim=sheet.animate([{transform:from},{transform:"translateY(100%)"}],
