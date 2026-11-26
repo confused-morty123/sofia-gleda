@@ -92,6 +92,10 @@ HOST_BLOCKS = {
     "tba.art.bg": ["div.text-content"],
     "theatre199.org": ["article.page-headings-wrapper"],
     "sofiatheatre.eu": ["div.repertoire-info div.pb-3"],
+    # Софийска опера и балет (/repertoire/<id>): no <main>/<article>/#content, so the
+    # generic route finds no block. The "Преглед" overview is in section#review div.info
+    # (13 of 13 saved pages); "Синопсис", when the page has one, is the fallback.
+    "operasofia.bg": ["section#review div.info", "section#synopsis div.expandable-textbox"],
 }
 ART_HOSTS = {"theatre.art.bg"}
 

@@ -3639,6 +3639,8 @@ def _op_pages(**over):
          O.OPERA_CAL.format(y=2026, m=12): raw("opera_calendar_2026-12.html"),
          O.OPERA_CAL_KIDS.format(y=2026, m=12): raw("opera_children_2026-12.html"),
          O.OPERA_CAL_EN.format(y=2026, m=12): raw("opera_calendar_en_2026-12.html"),
+         # (the English children's view: December only — fetched 2026-11-25)
+         O.OPERA_CAL_EN_KIDS.format(y=2026, m=12): raw("opera_children_en_2026-12.html"),
          O.OPERA_CAL.format(y=2027, m=1): raw("opera_calendar_2027-01.html"),
          O.OPERA_CAL_KIDS.format(y=2027, m=1): raw("opera_children_2027-01.html"),
          # (no English January page: the English titles are optional)
@@ -3751,6 +3753,12 @@ check("opera EN: the English subtitle by (repertoire id, date, time), verbatim w
       "Opera by George Frideric Handel PREMIERE Conductor Konstantin Trinks")
 raises("opera EN: another month's English page is refused", O.MarkupError, O.parse_opera_en,
        fx("opera_calendar_en_2026-11.html"), 2026, 12)
+_enk12, _enks12 = O.parse_opera_en(fx("opera_children_en_2026-12.html"), 2026, 12)
+check("opera EN: the English children's view gives the children's titles the default English view lacks",
+      (_enk12.get("1087"), _enk12.get("1132"), "1087" in O.parse_opera_en(fx("opera_calendar_en_2026-12.html"), 2026, 12)[0]),
+      ("CINDERELLA", "SNOW WHITE", False))
+check("opera EN: ...and its subtitles, verbatim",
+      _enks12.get(("1109", "2026-12-19", "11:00")), "Musical by Alexandar Raichev /The performance is for children/")
 check("opera EN: one id with two different English titles gives none (a missing value beats a wrong one)",
       "1067" in O.parse_opera_en(fx("opera_calendar_en_2026-11.html").replace("AGRIPPINA", "AGRIPPINA II", 1),
                                  2026, 11)[0], False)
@@ -3826,9 +3834,9 @@ check("opera buy-tickets: no 'Ценови категории EUR' heading, no p
 O.OPERA_FACTS = {}
 _net0 = FakeNet(_op_pages())
 _res0 = O.fetch_opera(_net0, OP_TODAY)
-check("fetch_opera: the production pass is on (its consumer: SHOWS.facts), bounded: at most OPERA_MONTHS × 3 "
+check("fetch_opera: the production pass is on (its consumer: SHOWS.facts), bounded: at most OPERA_MONTHS × 4 "
       "calendar GETs plus OPERA_PAGE_CAP production and OPERA_PRICE_CAP buy-tickets GETs a night",
-      (O.OPERA_FACTS_ON, len([u for u in _net0.asked if "/calendar/" in u]) <= O.OPERA_MONTHS * 3,
+      (O.OPERA_FACTS_ON, len([u for u in _net0.asked if "/calendar/" in u]) <= O.OPERA_MONTHS * 4,
        len([u for u in _net0.asked if "/repertoire/" in u]) <= O.OPERA_PAGE_CAP,
        len([u for u in _net0.asked if "/buy-tickets/" in u]) <= O.OPERA_PRICE_CAP,
        any("facts" in r[3] for r in _res0["rows"] + _res0["extra_rows"])), (True, True, True, True, True))
@@ -3853,6 +3861,14 @@ check("fetch_opera: English titles by repertoire id, from any month read (ТРА
        _op_by(_all)[("2027-01-15", "19:00")][3].get("title_en"),
        _op_by(_all)[("2027-01-29", "19:00")][3].get("title_en")),
       ("AGRIPPINA", "CONCERT GALA ROSSINI – SVETLINA STOYANOVA", "LA TRAVIATA", None))
+check("fetch_opera: a children's show gets its English title and subtitle from the English children's view "
+      "(ПЕПЕЛЯШКА is CINDERELLA, СНЕЖАНКА is SNOW WHITE); none where that view was not read (November)",
+      (_op_by(_all)[("2026-12-04", "10:00")][3].get("title_en"), _op_by(_all)[("2026-12-19", "19:00")][3].get("title_en"),
+       _op_by(_all)[("2026-12-19", "11:00")][3].get("subtitle_en"), _op_by(_all)[("2026-11-28", "11:00")][3].get("title_en")),
+      ("CINDERELLA", "SNOW WHITE", "Musical by Alexandar Raichev /The performance is for children/", None))
+check("fetch_opera: the English children's view is asked for every month read, and a missing one is a note",
+      ([O.OPERA_CAL_EN_KIDS.format(y=y, m=m) in _net.asked for y, m in ((2026, 11), (2026, 12), (2027, 1))],
+       any("2026-11" in n and "English children's" in n for n in _res["notes"])), ([True, True, True], True))
 check("fetch_opera: the missing English page is a note", any("2027-01" in n and "English" in n for n in _res["notes"]), True)
 check("fetch_opera: the excluded rows (TV broadcast, West Mall Sofia) from today on",
       [(e[0], e[1]) for e in _res["excluded"]],
@@ -3878,9 +3894,9 @@ for _f, _y, _m, _k in [("opera_calendar_2026-11.html", 2026, 11, False), ("opera
     _want_w |= {(r[0], r[1], r[2], r[3].get("rep_id")) for r in O.parse_opera(fx(_f), _y, _m, kids=_k)[0]
                 if OP_TODAY.isoformat() <= r[1] <= _w_to}
 check("fetch_opera: a month after the listing window's end (February on 24 Nov, window to 29 Jan) costs no "
-      "calendar, children's or English GET: 9 calendar GETs, not 12",
+      "calendar, children's or English GET: 12 calendar GETs, not 16",
       (_w_to, [u for u in _net_w.asked if "2027-02" in u], len([u for u in _net_w.asked if "/calendar/" in u])),
-      ("2027-01-29", [], 9))
+      ("2027-01-29", [], 12))
 check("fetch_opera: ...and every row inside the window is still there (each listed performance of Nov–Jan from today)",
       {(r[0], r[1], r[2], r[3].get("rep_id")) for r in _res_w["rows"] + _res_w["extra_rows"] if r[1] <= _w_to} == _want_w
       and len(_want_w) > 20, True)
@@ -4291,6 +4307,18 @@ _th = json.loads(re.search(r"^const THEATRES=(\[.*\]);\s*$", _dh, re.M).group(1)
 check("src/data.html: THEATRES has the opera venue once, kind 'opera'",
       [(t["id"], t["kind"], t["name"], t["nameEn"]) for t in _th if t["id"] == "opera"],
       [("opera", "opera", "Софийска опера и балет", "Sofia Opera and Ballet")])
+
+# --- own_page_synopses.py on operasofia.bg /repertoire/<id> (2026-11-26): the page has no
+# <main>/<article>/#content, so only the HOST_BLOCKS rule reaches the text (Преглед, then Синопсис)
+def _opsyn(n, t):
+    return _OPS.read_page(fx(f"opera_production_{n}.html"), f"https://www.operasofia.bg/repertoire/{n}",
+                          t, ["Софийска опера и балет"], set(), None)
+check("opera synopsis: the host rule matches www.operasofia.bg", "operasofia.bg" in _OPS.HOST_BLOCKS, True)
+check("opera synopsis: the Преглед / Синопсис text fills (ЖИЗЕЛ, ПЕПЕЛЯШКА, НОРМА)",
+      [bool(_opsyn(n, t)[0]) and len(_opsyn(n, t)[0]) >= 300 for n, t in
+       (("1068", "ЖИЗЕЛ"), ("1087", "ПЕПЕЛЯШКА"), ("1107", "НОРМА"))], [True, True, True])
+check("opera synopsis: a page with credits only stays empty, with its reason",
+      _opsyn("1086", "КОНЦЕРТ ЗА БЕБОЦИ")[:2], (None, "cast / credits / practical lines only"))
 
 print()
 if fails:

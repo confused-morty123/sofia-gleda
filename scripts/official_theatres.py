@@ -2569,18 +2569,19 @@ def fetch_tba(net, today):
 # kind "opera"; notes/OPERA_ARCHITECTURE.md §4, notes/design_options/opera/mockups/final/
 # DESIGN_SPEC.md §2). Laravel, server-rendered; robots.txt allows everything. A month is
 # TWO calendar views that share no rows — the default one (adult performances) and the
-# children's (?categories[]=5) — plus the English month page, read for titles only (keyed
-# by the /repertoire/<id> both link to: ПЕЕМ ЗАЕДНО is PAZZIA D’AMORE in English, never
-# derived). Each day is a `.section` (`.day-number`, `.week` = month word, `.day-words`
+# children's (?categories[]=5) — plus the same two views of the English month page, read for
+# titles only (keyed by the /repertoire/<id> both link to: ПЕЕМ ЗАЕДНО is PAZZIA D’AMORE in
+# English, never derived; the default English view lists no children's show either). Each day is a `.section` (`.day-number`, `.week` = month word, `.day-words`
 # = weekday), each performance an `article.item`.
 OPERA_HOST = "https://www.operasofia.bg"
 OPERA_CAL = OPERA_HOST + "/calendar/{y}-{m:02d}"
 OPERA_CAL_KIDS = OPERA_HOST + "/calendar/{y}-{m:02d}?categories[]=5"
 OPERA_CAL_EN = OPERA_HOST + "/en/calendar/{y}-{m:02d}"
+OPERA_CAL_EN_KIDS = OPERA_HOST + "/en/calendar/{y}-{m:02d}?categories[]=5"
 OPERA_REP = OPERA_HOST + "/repertoire/{id}"
 OPERA_BUY = OPERA_HOST + "/buy-tickets/{n}"
 OPERA_SOURCE = "operasofia.bg/calendar (month pages: default + children's view; English titles)"
-OPERA_MONTHS = 4             # the current month + 3 (DESIGN_SPEC §2.1.1: 4 × 3 pages a night)
+OPERA_MONTHS = 4             # the current month + 3 (DESIGN_SPEC §2.1.1: 4 × 4 pages a night)
 # The host's honest User-Agent and its 2 s floor live in netfetch (HOST_HEADERS, CRAWL_DELAY),
 # so every netfetch GET to operasofia.bg carries them: this programme, and the poster and
 # synopsis passes that read its production pages (OPERA_ARCHITECTURE §4.2).
@@ -2776,7 +2777,7 @@ OPERA_FACTS_KEEP = 60        # a production unread for this long leaves the cach
 # On with its consumer (fix round 1, 2026-11-24): scrape_programs.refresh_source_shows copies
 # meta "facts" into SHOWS.facts (the sheet's "За спектакъла" and "от N €", DESIGN_SPEC §2.1.8,
 # §10 item 2). Cost: up to OPERA_PAGE_CAP + OPERA_PRICE_CAP GETs a night on top of the
-# calendar's OPERA_MONTHS × 3, each production page and each buy-tickets page at most weekly.
+# calendar's OPERA_MONTHS × 4, each production page and each buy-tickets page at most weekly.
 OPERA_FACTS_ON = True
 # {repertoire id: {"read": "YYYY-MM-DD", "prices_url": its /buy-tickets/<n>, "prices_read":
 # "YYYY-MM-DD", "prices_eur": [...], facts…}}: set by the
@@ -2912,8 +2913,8 @@ def opera_production_pass(net, rows, today, notes, cache=None):
 
 def fetch_opera(net, today):
     """The Opera's own calendar: for each of OPERA_MONTHS months the default view and
-    the children's view (both, or that month is not covered), plus the English page for
-    titles (optional). A month that starts after the listing window's end is not read
+    the children's view (both, or that month is not covered), plus the English page's
+    same two views for titles (each optional). A month that starts after the listing window's end is not read
     (none of its rows would be shown). The first month must read, list something and
     name itself; a later month that fails, or is empty in both views, ends the reading.
     Then the production pass, only while OPERA_FACTS_ON."""
@@ -2951,13 +2952,16 @@ def fetch_opera(net, today):
             break
         rows += r + kr
         excluded += x + kx
-        try:
-            titles, subs = parse_opera_en(_get(net, OPERA_CAL_EN.format(y=y, m=m)), y, m)
-            for rep, title in titles.items():
-                en_seen[rep].add(title)
-            en_subs.update(subs)
-        except Unavailable as e:
-            notes.append(f"{ym}: English calendar not read ({e}) — no English titles from it")
+        # the English titles: the default English view lists no children's show, so its
+        # children's view is read too (one id, two different titles across them -> none)
+        for url, what in ((OPERA_CAL_EN, "English calendar"), (OPERA_CAL_EN_KIDS, "English children's calendar")):
+            try:
+                titles, subs = parse_opera_en(_get(net, url.format(y=y, m=m)), y, m)
+                for rep, title in titles.items():
+                    en_seen[rep].add(title)
+                en_subs.update(subs)
+            except Unavailable as e:
+                notes.append(f"{ym}: {what} not read ({e}) — no English titles from it")
     en = {rep: next(iter(ts)) for rep, ts in en_seen.items() if len(ts) == 1}
     for row in rows:
         t_en = en.get(row[3].get("rep_id"))
