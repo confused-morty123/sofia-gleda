@@ -97,12 +97,6 @@ jobs:
           # A scheduled run may start hours after its event: build on main as it
           # is now, not on the commit main was at when GitHub queued the event.
           ref: ${{ github.event_name == 'schedule' && 'main' || '' }}
-          # Push through the repository's deploy key when the secret is set: ruleset 2
-          # ("main: PRs and green CI") lets only the admin and deploy keys push to main
-          # directly, and a personal repository cannot list GitHub Actions as a bypass
-          # actor. Without the secret, checkout falls back to the workflow token as
-          # before (which works only while ruleset 2 is not enforced). SETUP.md, step 9.
-          ssh-key: ${{ secrets.REFRESH_DEPLOY_KEY }}
 
       # Only "is the night the gate chose already refreshed?": never the clock window,
       # so a refresh the gate decided at 21:14 is not dropped at 21:15, and a re-run
