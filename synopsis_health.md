@@ -2,10 +2,11 @@
 
 Thin = Bulgarian synopsis shorter than 280 characters (or none).
 
-- Plays: 111 of 479 thin (74 with none); 100 of them link the theatre's own page under the text.
-- Films: 75 of 171 thin (42 with none).
-- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 311 fill(s) from the plays' own production pages, 84 fill(s) from theatre.art.bg production pages.
-- Own pages read that gave no text: 65 (28 cast / credits / practical lines only; 10 the text is about another listed production; 8 no description paragraph; 7 biography / interview / reviews, no description before it; 5 description under 120 characters; 4 reviews / interview only; 2 page not read (robots.txt, an HTTP error or no answer); 1 the page's headings do not name the play).
+- Plays: 110 of 480 thin (74 with none); 99 of them link the theatre's own page under the text.
+- Opera (Софийска опера и балет, its own count): 20 of 28 thin (15 with none).
+- Films: 74 of 172 thin (42 with none).
+- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 325 fill(s) from the plays' own production pages, 84 fill(s) from theatre.art.bg production pages.
+- Own pages read that gave no text: 72 (31 cast / credits / practical lines only; 10 the text is about another listed production; 8 no description paragraph; 7 biography / interview / reviews, no description before it; 7 description under 120 characters; 4 reviews / interview only; 2 no description block on the page; 2 page not read (robots.txt, an HTTP error or no answer); 1 the page's headings do not name the play).
 
 | Theatre | Plays | Thin | None | Own-page link |
 |---|---:|---:|---:|---:|
@@ -17,13 +18,13 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 | Младежки театър „Николай Бинев“ | 46 | 8 | 3 | 8 |
 | Учебен театър на НАТФИЗ „Кръстьо Сарафов“ | 13 | 6 | 5 | 6 |
 | Народен театър „Иван Вазов“ | 63 | 11 | 3 | 11 |
-| Театър „Сълза и смях“ | 48 | 16 | 11 | 16 |
+| Театър „Сълза и смях“ | 47 | 15 | 11 | 15 |
 | Сатиричен театър „Алеко Константинов“ | 44 | 21 | 21 | 21 |
 | Театрална работилница „Сфумато“ | 23 | 5 | 4 | 5 |
 | Театър „София“ | 16 | 3 | 1 | 3 |
 | Театър „Българска армия“ | 34 | 3 | 3 | 3 |
 | Театър 199 „Валентин Стойчев“ | 33 | 9 | 4 | 3 |
-| Топлоцентрала | 48 | 4 | 1 | 4 |
+| Топлоцентрала | 50 | 4 | 1 | 4 |
 | Театър „Възраждане“ | 21 | 1 | 1 | 1 |
 | МГТ „Зад канала“ | 22 | 7 | 6 | 7 |
 
@@ -85,7 +86,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `kake-live-friends-the-be-positives` (toplo) КАКЕ? LIVE! & FRIENDS + THE BE POSITIVES — 197 chars — https://toplocentrala.bg/program/performance/kake-live-friends-the-be-positives
 - `kakvoto-napravi-dyado` (th199) КАКВОТО НАПРАВИ ДЯДО... — 0 chars
 - `kapan-za-samoten-mazh` (zad-kanala) Капан за самотен мъж — 0 chars — https://zadkanala.bg/spektakli/kapan-za-samoten-myzh-0
-- `katya-i-zlatin-muzikalno-impro-shou` (salzaismyah) Катя и Златин - музикално импро шоу — 261 chars — https://www.salzaismyah.bg/site/play/736
 - `kavkazkiyat-tebeshiren-krag` (natfiz) Кавказкият тебеширен кръг — 0 chars — https://natfiz.bg/event/
 - `kolko-e-vazhno` (national) Колко е важно да бъдеш сериозен (Години по-късно) — 40 chars — https://www.nationaltheatre.bg/bg/predstavlenie/kolko-e-vazhno-da-bdesh-seriozen-godini-po-ksno
 - `kontsert-na-pim-pam` (satira) Концерт на "ПИМ-ПАМ" — 0 chars — https://satirata.bg/program
@@ -141,9 +141,31 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `za-grahovoto-zarno-i-edna-printsesa` (kuklen) За граховото зърно и една принцеса — 0 chars — https://sofiapuppet.com/за-граховото-зърно-и-една-принцеса___446
 - `zhenata-pita-chatgpt` (satira) Жената пита ChatGPT — 0 chars — https://satirata.bg/show/zhenata-pita-chatgpt
 
+## Thin opera productions
+
+- `agripina` (opera) АГРИПИНА — 141 chars — https://www.operasofia.bg/repertoire/1067
+- `ana-karenina` (opera) АНА КАРЕНИНА — 231 chars — https://www.operasofia.bg/repertoire/1106
+- `chervenata-shapchitsa-4` (opera) ЧЕРВЕНАТА ШАПЧИЦА — 0 chars — https://www.operasofia.bg/repertoire/1091
+- `groznoto-patentse` (opera) ГРОЗНОТО ПАТЕНЦЕ — 0 chars — https://www.operasofia.bg/repertoire/1083
+- `izgubenata-printsesa` (opera) ИЗГУБЕНАТА ПРИНЦЕСА — 0 chars — https://www.operasofia.bg/repertoire/1094
+- `koleden-kontsert-na-italianskata-targovska-kamara` (opera) Коледен концерт на Италианската търговска камара — 0 chars — https://www.operasofia.bg/repertoire/1070
+- `koleden-kontsert-nuti` (opera) КОЛЕДЕН КОНЦЕРТ НУТИ — 0 chars — https://www.operasofia.bg/repertoire/1072
+- `kontsert-gala-rosini-svetlina-stoyanova` (opera) КОНЦЕРТ ГАЛА РОСИНИ – СВЕТЛИНА СТОЯНОВА — 178 chars — https://www.operasofia.bg/repertoire/1069
+- `kontsert-za-bebotsi` (opera) КОНЦЕРТ ЗА БЕБОЦИ — 0 chars — https://www.operasofia.bg/repertoire/1086
+- `mecho-puh` (opera) МЕЧО ПУХ — 177 chars — https://www.operasofia.bg/repertoire/1092
+- `novogodishen-gala-kontsert` (opera) Новогодишен гала концерт — 0 chars — https://www.operasofia.bg/repertoire/1110
+- `praznichno-ochakvane` (opera) ПРАЗНИЧНО ОЧАКВАНЕ — 185 chars — https://www.operasofia.bg/repertoire/1125
+- `salon-rosini` (opera) САЛОН РОСИНИ — 0 chars — https://www.operasofia.bg/repertoire/1103
+- `sapernitsi` (opera) СЪПЕРНИЦИ — 0 chars — https://www.operasofia.bg/repertoire/1102
+- `semiramida` (opera) СЕМИРАМИДА — 0 chars — https://www.operasofia.bg/repertoire/1104
+- `snezhanka` (opera) СНЕЖАНКА — 0 chars — https://www.operasofia.bg/repertoire/1132
+- `traviata` (opera) ТРАВИАТА — 0 chars — https://www.operasofia.bg/repertoire/1062
+- `trite-prasentsa-4` (opera) ТРИТЕ ПРАСЕНЦА — 0 chars — https://www.operasofia.bg/repertoire/1109
+- `valshebnata-fleyta` (opera) ВЪЛШЕБНАТА ФЛЕЙТА — 0 chars — https://www.operasofia.bg/repertoire/1089
+- `zhizel` (opera) ЖИЗЕЛ — 0 chars — https://www.operasofia.bg/repertoire/1068
+
 ## Thin films
 
-- `ana-manyani` Ана Маняни — 0 chars
 - `benzinostantsiya-za-zheni` Бензиностанция за жени — 0 chars
 - `best-of-annecy-2026` BEST OF ANNECY 2026 — 0 chars
 - `bez-stsenariy` Без сценарий — 0 chars
@@ -200,7 +222,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `pastir` ПАСТИР — 121 chars
 - `piperlivi-lazhi` Пиперливи лъжи — 0 chars
 - `pochivkata-1` Почивката 1 — 0 chars
-- `pochivkata-2-povtorenie` ПОЧИВКАТА 2 (ПОВТОРЕНИЕ) — 100 chars
 - `pochivkata-2-re-release` Почивката 2 (re-release) — 100 chars
 - `pol-bouls-i-dzheyn-v-tanzher` Пол Боулс и Джейн в Танжер — 0 chars
 - `polyusi` Полюси — 0 chars
@@ -213,6 +234,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `spaydar-men-nov-nov-den-re-release` СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН (Re-release) — 0 chars
 - `sradlyo` СРЪДЛЬО — 175 chars
 - `stakleno-more` Стъклено море — 0 chars
+- `velopohodat-kam-cop30` ВЕЛОПОХОДЪТ КЪМ COP30 — 0 chars
 - `vlastelinat-na-prastenite-dvete-kuli` Властелинът на пръстените: Двете кули — 218 chars
 - `vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie` Властелинът на пръстените: Двете кули (удължено издание) — 0 chars
 - `vsichki-obichat-bil-evans` Всички обичат Бил Евънс — 274 chars
