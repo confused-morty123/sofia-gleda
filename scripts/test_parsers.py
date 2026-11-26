@@ -5880,6 +5880,20 @@ for _t, _want in (("Отмъстителите: Краят – Специалн�
                   ("Дюн Ре-релийз", ("Дюн", True)), ("Дюн: Част втора Ре-релийз", ("Дюн: Част втора", True)),
                   ("Повторение", ("Повторение", False)), ("Повторението", ("Повторението", False))):
     check(f"declutter / rerelease_marker({_t!r})", (TMDB.declutter(_t)[0], TMDB.rerelease_marker(_t)), _want)
+# 2026-11-26: titles TMDB missed for their wrapping, not for the film.
+for _t, _want in (("Властелинът на пръстените: Двете кули (удължено издание)",
+                   ("Властелинът на пръстените: Двете кули", True)),
+                  ("СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН (Re-release)", ("СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН", True)),
+                  ("СИНЕЛИБРИ 2026 - Ехото", ("Ехото", False))):
+    check(f"declutter / rerelease_marker({_t!r})", (TMDB.declutter(_t)[0], TMDB.rerelease_marker(_t)), _want)
+check("declutter: Влайкова's 'BG | ORIGINAL | year | event' gives the Bulgarian title and the year",
+      TMDB.declutter("ОМАРЪТ | THE LOBSTER | 2015 | „Нощ на европейското кино“ в кино „Влайкова“"),
+      ("ОМАРЪТ", 2015))
+check("declutter: a trailing '| 1979 |' still gives its year", TMDB.declutter("Сънища | 1990 |"), ("Сънища", 1990))
+check("stripped_words: an English or 'издание' re-release marker is never a lost title word",
+      [sorted(TMDB.stripped_words(TMDB.strip_rerelease(_t), TMDB.declutter(_t)[0]))
+       for _t in ("Дюн: Част първа (re-release)", "Властелинът на пръстените: Двете кули (удължено издание)")],
+      [[], []])
 check("stripped_words: a re-run marker is never a title word the decluttered match must keep",
       [sorted(TMDB.stripped_words(TMDB.strip_rerelease(_t), TMDB.declutter(_t)[0]))
        for _t in ("ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)", "ДЮН: ЧАСТ ПЪРВА (ПОВТОРЕНИЕ)", "Дюн Ре-релийз")], [[], ["дюн"], []])
