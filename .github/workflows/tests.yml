@@ -1,14 +1,16 @@
 # Sofia Gleda: the test suites, on GitHub's machines instead of the owner's Mac.
 #
-# Runs on every push (any branch), on pull requests, and from the "Run workflow"
-# button. It never publishes anything and never scrapes: the page is rebuilt offline
+# Runs once per change (AGENTS.md, "One pipeline"): on pull requests to main, on
+# pushes to main (the merged result, tested before the next merge), on pushes to a
+# *-trial branch (a feature branch with no PR yet), and from the "Run workflow"
+# button. A push to a PR's branch is tested by the pull_request run alone, not twice. It never publishes anything and never scrapes: the page is rebuilt offline
 # from the listings already committed (scripts/dev_build.py --from HEAD), exactly as
 # the README's "Making a UI change" build, and then tested.
 #
 #   unit  the committed page is built from src/ (check_page_source.py), the offline
 #         build + share and legal pages + CSP, the publish gate, and
 #         test_parsers, test_theatres, test_verify, test_schedule, test_deploy_guard,
-#         test_page_source.
+#         test_page_source, test_main_gate.
 #         Every test runs even when an earlier one fails, so all failures show.
 #   security  test_security, one runner per engine (Chromium, WebKit), in parallel
 #         with the rest: it is the longest offline suite (~11 min both engines in one).
@@ -28,9 +30,14 @@ name: Tests
 
 on:
   push:
+    # main: the merged result. *-trial: feature branches tested before they have a PR.
+    # Every other branch is tested through its pull request only. A branch that has a
+    # PR must not be named *-trial, or each of its pushes is tested twice.
+    branches: [main, "**-trial"]
     paths-ignore:
       - "**.md"                   # a text-only change has nothing to test
   pull_request:
+    branches: [main]
     paths-ignore:
       - "**.md"
   workflow_dispatch:
@@ -57,10 +64,15 @@ on:
 permissions:
   contents: read
 
-# A newer push to the same branch (or PR) cancels the older run of it.
+# One run per branch at a time. The group is the branch name whatever started the run,
+# so a "Run workflow" on a PR's branch and that PR's own run share it instead of both
+# running. On a branch a newer push cancels the older run. On main nothing is
+# cancelled: every merge is tested on its own before the next one (main-gate.yml waits
+# for it). GitHub keeps one waiting run per group, so of three quick merges the middle
+# one's run may be dropped; the newest still tests all of them.
 concurrency:
-  group: tests-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: tests-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   PYTHONUNBUFFERED: "1"
@@ -220,6 +232,10 @@ jobs:
       - name: test_page_source
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 scripts/test_page_source.py
+
+      - name: test_main_gate
+        if: ${{ !cancelled() }}
+        run: python3 scripts/test_main_gate.py
 
   security:
     # Same skips as unit.
