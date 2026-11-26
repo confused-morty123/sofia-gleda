@@ -1,10 +1,10 @@
 {
- "date": "2026-11-25",
+ "date": "2026-11-26",
  "threshold": 280,
  "shows": {
-  "titles": 481,
+  "titles": 479,
   "thin": 111,
-  "empty": 73,
+  "empty": 74,
   "thin_en": 134,
   "linked": 100,
   "by_theatre": {
@@ -25,7 +25,7 @@
     "name": "Театър „Ателие 313“"
    },
    "citymark": {
-    "titles": 8,
+    "titles": 7,
     "thin": 2,
     "empty": 1,
     "thin_en": 2,
@@ -41,7 +41,7 @@
     "name": "I AM Studio"
    },
    "kuklen": {
-    "titles": 14,
+    "titles": 13,
     "thin": 3,
     "empty": 3,
     "thin_en": 3,
@@ -65,7 +65,7 @@
     "name": "Учебен театър на НАТФИЗ „Кръстьо Сарафов“"
    },
    "national": {
-    "titles": 62,
+    "titles": 63,
     "thin": 11,
     "empty": 3,
     "thin_en": 20,
@@ -73,11 +73,11 @@
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 47,
-    "thin": 15,
-    "empty": 10,
-    "thin_en": 12,
-    "linked": 15,
+    "titles": 48,
+    "thin": 16,
+    "empty": 11,
+    "thin_en": 13,
+    "linked": 16,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
@@ -89,7 +89,7 @@
     "name": "Сатиричен театър „Алеко Константинов“"
    },
    "sfumato": {
-    "titles": 24,
+    "titles": 23,
     "thin": 5,
     "empty": 4,
     "thin_en": 8,
@@ -121,18 +121,18 @@
     "name": "Театър 199 „Валентин Стойчев“"
    },
    "toplo": {
-    "titles": 49,
-    "thin": 5,
+    "titles": 48,
+    "thin": 4,
     "empty": 1,
     "thin_en": 4,
-    "linked": 5,
+    "linked": 4,
     "name": "Топлоцентрала"
    },
    "vazrazhdane": {
     "titles": 21,
     "thin": 1,
     "empty": 1,
-    "thin_en": 5,
+    "thin_en": 4,
     "linked": 1,
     "name": "Театър „Възраждане“"
    },
@@ -147,21 +147,21 @@
   }
  },
  "films": {
-  "titles": 159,
-  "thin": 69,
-  "empty": 47,
-  "thin_en": 101
+  "titles": 171,
+  "thin": 75,
+  "empty": 42,
+  "thin_en": 103
  },
  "routes": {
   "overrides": 0,
-  "theatre_art_fills": 86,
-  "own_page_fills": 312,
+  "theatre_art_fills": 84,
+  "own_page_fills": 311,
   "link_to_theatre": 100,
   "own_page_misses": {
    "cast / credits / practical lines only": 28,
    "the text is about another listed production": 10,
+   "no description paragraph": 8,
    "biography / interview / reviews, no description before it": 7,
-   "no description paragraph": 7,
    "description under 120 characters": 5,
    "reviews / interview only": 4,
    "page not read (robots.txt, an HTTP error or no answer)": 2,

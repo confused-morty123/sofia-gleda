@@ -5078,17 +5078,6 @@
   "source": "dom-kino",
   "runtime": 100
  },
- "40-kinomaniya-nepozna-zhena": {
-  "id": "40-kinomaniya-nepozna-zhena",
-  "bg": "40. Киномания: НЕПОЗНА ЖЕНА",
-  "en": "",
-  "genres": [],
-  "g": [
-   "#241B33",
-   "#45275F"
-  ],
-  "source": "vlaikova"
- },
  "kashta-bez-badeshte": {
   "id": "kashta-bez-badeshte",
   "bg": "Къща без бъдеще",
@@ -5270,5 +5259,77 @@
   ],
   "source": "dom-kino",
   "runtime": 93
+ },
+ "pochivkata-2-povtorenie": {
+  "id": "pochivkata-2-povtorenie",
+  "bg": "ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)",
+  "en": "",
+  "genres": [
+   "Комедия"
+  ],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "cg-ring",
+  "runtime": 113
+ },
+ "menar-transilvaniya": {
+  "id": "menar-transilvaniya",
+  "bg": "Менар: Трансилвания",
+  "en": "",
+  "genres": [
+   "Драма"
+  ],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "source": "dom-kino",
+  "runtime": 103
+ },
+ "predstavyane-na-sbornik-strasti-po-kinoto-i-negovite-shedyov": {
+  "id": "predstavyane-na-sbornik-strasti-po-kinoto-i-negovite-shedyov",
+  "bg": "Представяне на сборник „Страсти по киното и неговите шедьоври“",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "source": "odeon"
+ },
+ "kupe-nomer-6": {
+  "id": "kupe-nomer-6",
+  "bg": "Купе номер 6",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "source": "odeon"
+ },
+ "kilhaus": {
+  "id": "kilhaus",
+  "bg": "Килхаус",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "source": "odeon"
+ },
+ "estestven-film": {
+  "id": "estestven-film",
+  "bg": "Естествен филм",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "odeon"
  }
 }
