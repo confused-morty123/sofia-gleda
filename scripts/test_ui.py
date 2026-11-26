@@ -2989,22 +2989,20 @@ def wave_d1(browser):
             );
             return venues.size;
         }}""")
-        # The phone sheet's rows list ONE day only (the day strip's selection: today if
-        # the film plays today, else its first date); later-starting venues show when
-        # their day is picked, and in the buy box (all venues, checked below).
-        # the sheet's own rows: upcomingRows drops today's times already past (the page clock)
-        expected_sarceto_rows = page.evaluate(f"""() => {{
-            const today = "{CLOCK_TODAY_ISO}";
+        # The phone sheet's rows list ONE day at a time, and `venues` above collects every
+        # day of its strip (each day through the sheet's own renderer), so the expected set
+        # is every venue with an upcoming row on ANY day. upcomingRows drops today's times
+        # already past (the page clock), as the sheet does. (Two fixes of this check met in
+        # main on 2026-11-26: one counted the sheet's first day only, the other every day.)
+        expected_sarceto_rows = page.evaluate("""() => {
             if (typeof SHOWTIMES === 'undefined' || typeof upcomingRows !== 'function') return 0;
             const rows = upcomingRows(SHOWTIMES.filter(r => r[0] === 'sarceto-na-zveyara'));
-            const dates = [...new Set(rows.map(r => r[2]))].sort();
-            const sel = dates.includes(today) ? today : dates[0];
-            return new Set(rows.filter(r => r[2] === sel).map(r => r[1])).size;
-        }}""")
+            return new Set(rows.map(r => r[1])).size;
+        }""")
         actual_venues = sarceto_bg.get("venues", [])
         check("d1_sarceto_7_cinema_rows",
               len(actual_venues) == expected_sarceto_rows,
-              f"venue rows found: {len(actual_venues)}, expected from SHOWTIMES on the sheet's day: {expected_sarceto_rows}")
+              f"venue rows found over the sheet's days: {len(actual_venues)}, expected from upcoming SHOWTIMES: {expected_sarceto_rows}")
         vlaikova_link_ok = any(
             "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
             for lnk in sarceto_bg.get("vlaikovaLinks", [])
