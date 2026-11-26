@@ -18174,7 +18174,7 @@ def _ux_lockup(browser, base, eng):
     ph = page.evaluate("""() => { const s = document.querySelector('.brand-sub'), g = document.createRange();
         g.selectNodeContents(s); const r = g.getBoundingClientRect(), l = document.querySelector('[data-lang]').getBoundingClientRect();
         return [parseFloat(getComputedStyle(s).fontSize), Math.round(r.left + r.width / 2), Math.round(l.left - r.right)]; }""")
-    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - 195) <= 4 and ph[2] >= 12,
+    check(f"ux1_{eng}_lockup_phone_unchanged", 10 <= ph[0] <= 12.5 and abs(ph[1] - PHONE[0] / 2) <= 4 and ph[2] >= 12,
           f"phone line [font, centre, clear of language button] {ph}")
     ctx.close()
 
@@ -19204,7 +19204,11 @@ BO_PANEL_JS = r"""(phone)=>{
              sr:txt(sr), srShown:!!sr&&getComputedStyle(sr).display!=='none'&&!sr.closest('[aria-hidden="true"]'),
              dashed:getComputedStyle(tag).borderTopStyle,
              beside:Math.abs(tag.getBoundingClientRect().top+tag.getBoundingClientRect().height/2
-                    -(ss.querySelector('.ss-time').getBoundingClientRect().top+ss.querySelector('.ss-time').getBoundingClientRect().height/2))<20}:null,
+                    -(ss.querySelector('.ss-time').getBoundingClientRect().top+ss.querySelector('.ss-time').getBoundingClientRect().height/2))<20,
+             // a narrow phone (360 px) has no room beside the time: the tag wraps to its own
+             // line right under it, lined up with the time's left edge (2026-11-26)
+             under:(()=>{const g=tag.getBoundingClientRect(), m=ss.querySelector('.ss-time').getBoundingClientRect();
+                    return g.top>=m.bottom-2&&g.top-m.bottom<=16&&Math.abs(g.left-m.left)<=2;})()}:null,
     oldHead, site:site?{t:txt(site),href:site.getAttribute('href'),cls:site.className,
       sr:(site.querySelector('.newtab')||{}).textContent||'',arrowHidden:!!site.querySelector('[aria-hidden="true"]')}:null,
     pri:[...ss.querySelectorAll('.ss-btn.pri')].map(txt), sec:[...ss.querySelectorAll('.ss-btn.sec')].map(txt),
@@ -19354,8 +19358,9 @@ def _bo_prelim_problems(r, lang, prelim):
             p.append(f"preliminary tag {t}")
         elif c["tagSr"] not in t["sr"] or not t["srShown"]:
             p.append(f"preliminary tag explanation for screen readers: {t['sr']!r}")
-        elif t["dashed"] != "dashed" or not t["beside"]:
-            p.append(f"tag not a dashed outline beside the time: {t['dashed']} beside={t['beside']}")
+        elif t["dashed"] != "dashed" or not (t["beside"] or t["under"]):
+            p.append(f"tag not a dashed outline beside (or right under) the time: {t['dashed']} "
+                     f"beside={t['beside']} under={t['under']}")
     elif r["tag"]:
         p.append("a tag on a confirmed time")
     return p
