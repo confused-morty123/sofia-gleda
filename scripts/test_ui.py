@@ -18286,7 +18286,7 @@ def _ux_rails(browser, base, eng):
 
 # the rail's distance from its nearest snap position (a card's start, clamped to the rail's
 # scroll range), its scrollLeft, and whether its snapping is switched off inline
-UX_RAIL_SNAP_JS = r"""(i) => { const t = document.querySelectorAll('#app .rtrack')[i], l0 = t.getBoundingClientRect().left,
+UX_RAIL_SNAP_JS = r"""(i) => { const t = document.querySelectorAll('#app .rtrack')[i], l0 = t.getBoundingClientRect().left + (parseFloat(getComputedStyle(t).scrollPaddingLeft) || 0),
   max = t.scrollWidth - t.clientWidth, x = t.scrollLeft;
   const d = Math.min(...[...t.children].map(c => Math.abs(Math.min(max, Math.max(0, c.getBoundingClientRect().left - l0 + x)) - x)));
   return {x: Math.round(x), dist: Math.round(d), held: t.style.scrollSnapType === 'none'}; }"""
@@ -18347,7 +18347,7 @@ def _ux_rails_offsnap(browser, base, eng):
                         const raf = () => new Promise(r => requestAnimationFrame(r));
                         // in flight, 40% of the way or more, and off a card by more than 1 px (a machine
                         // drawing few frames can land its first frame past 40% right on a card)
-                        const l0 = t.getBoundingClientRect().left, max = t.scrollWidth - t.clientWidth;
+                        const l0 = t.getBoundingClientRect().left + (parseFloat(getComputedStyle(t).scrollPaddingLeft) || 0), max = t.scrollWidth - t.clientWidth;
                         const off = () => Math.min(...[...t.children].map(c => Math.abs(Math.min(max, Math.max(0,
                             c.getBoundingClientRect().left - l0 + t.scrollLeft)) - t.scrollLeft))) > 1;
                         t.scrollBy({left: dx, behavior: 'smooth'}); for (let n = 0; n < 40 && (t.scrollLeft < dx * .4 || !off()); n++) await raf();
@@ -18403,7 +18403,7 @@ def _ux_rails_offsnap(browser, base, eng):
                 # a card ahead of where the rail rests (the 7th used to be hard-coded; on
                 # 2026-11-06 a phone rail held 6 cards and children[6] was undefined), else
                 # back to the first card: either way a smooth scroll that ends on a card
-                tgt = page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i], l0 = t.getBoundingClientRect().left,"
+                tgt = page.evaluate("(i) => { const t = document.querySelectorAll('#app .rtrack')[i], l0 = t.getBoundingClientRect().left + (parseFloat(getComputedStyle(t).scrollPaddingLeft) || 0),"
                                     " max = t.scrollWidth - t.clientWidth, x = c => c.getBoundingClientRect().left - l0 + t.scrollLeft;"
                                     " const cs = [...t.children], j = cs.findIndex(c => x(c) > t.scrollLeft + 100 && x(c) <= max + 1),"
                                     " k = j < 0 ? 0 : j; t.scrollTo({left: Math.min(max, x(cs[k])), behavior: 'smooth'}); return [k, cs.length]; }", i)

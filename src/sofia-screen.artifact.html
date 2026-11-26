@@ -351,8 +351,12 @@ a{color:inherit}
 .rscroll{position:relative}
 .rtrack{display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x proximity; scroll-behavior:smooth; scrollbar-width:thin;
   /* room for a focused card's ring (2 px outline + 2 px offset), which the track's overflow
-     would otherwise clip at the top and left; the negative margin keeps the cards where they were */
-  padding:5px 5px 6px; margin:-5px -5px 0; scroll-padding-inline:5px}
+     would otherwise clip at the top and left; the negative margin keeps the cards where they were.
+     Sideways it reaches into the page gutter (16 px at least) but never into a safe-area inset
+     (a landscape notch), so there it shrinks to whatever the gutter has beyond the inset */
+  padding:5px 5px 6px; margin-top:-5px;
+  margin-inline:clamp(-5px,calc(env(safe-area-inset-left,0px) - 16px),0px) clamp(-5px,calc(env(safe-area-inset-right,0px) - 16px),0px);
+  scroll-padding-inline:5px}
 .rtrack::-webkit-scrollbar{height:5px}
 .rtrack::-webkit-scrollbar-thumb{background:var(--ink-4); border-radius:9px}
 .rarrow{position:absolute; top:34%; z-index:5; width:32px; height:62px; border-radius:10px;
@@ -5297,8 +5301,11 @@ function unlockScroll(){
    is unpinned; then each is put back at the same scrollLeft and snaps again only where that
    cannot move it. */
 const _railHold=new WeakMap();   /* rail -> the scrollLeft it is held at */
+/* a card's snap position: its left edge less the rail's scroll-padding (the room kept for
+   the focus ring), so measure from the rail's left edge plus that padding */
+const _railL0=t=>t.getBoundingClientRect().left+(parseFloat(getComputedStyle(t).scrollPaddingLeft)||0);
 function _railOnSnap(t){
-  const x=t.scrollLeft,max=t.scrollWidth-t.clientWidth,l0=t.getBoundingClientRect().left;
+  const x=t.scrollLeft,max=t.scrollWidth-t.clientWidth,l0=_railL0(t);
   if(max<=1)return true;
   for(const c of t.children){
     const p=Math.min(max,Math.max(0,c.getBoundingClientRect().left-l0+x));
@@ -7012,7 +7019,7 @@ document.addEventListener("click",e=>{
     /* Land on a card's snap position (the one nearest 82% of the rail on; the rail's end
        counts as one). Safari leaves a smooth scroll where it stops and snaps the rail at
        its next layout, so a rail moved by the arrows jumped behind the sheet a card opened. */
-    const x0=tr.scrollLeft,max=tr.scrollWidth-tr.clientWidth,goal=x0+dir*tr.clientWidth*.82,l0=tr.getBoundingClientRect().left;
+    const x0=tr.scrollLeft,max=tr.scrollWidth-tr.clientWidth,goal=x0+dir*tr.clientWidth*.82,l0=_railL0(tr);
     let to=null;
     for(const c of tr.children){const p=Math.min(max,Math.max(0,Math.round(c.getBoundingClientRect().left-l0+x0)));
       if(dir*(p-x0)>1&&(to===null||Math.abs(p-goal)<Math.abs(to-goal)))to=p;}
