@@ -2950,10 +2950,22 @@ def wave_d1(browser):
             );
             return venues.size;
         }}""")
+        # The phone sheet's rows list ONE day only (the day strip's selection: today if
+        # the film plays today, else its first date); later-starting venues show when
+        # their day is picked, and in the buy box (all venues, checked below).
+        expected_sarceto_rows = page.evaluate(f"""() => {{
+            const today = "{CLOCK_TODAY_ISO}";
+            if (typeof SHOWTIMES === 'undefined') return 0;
+            const rows = SHOWTIMES.filter(r => r[0] === 'sarceto-na-zveyara'
+                && /^\\d{{4}}-\\d{{2}}-\\d{{2}}$/.test(r[2]) && r[2] >= today);
+            const dates = [...new Set(rows.map(r => r[2]))].sort();
+            const sel = dates.includes(today) ? today : dates[0];
+            return new Set(rows.filter(r => r[2] === sel).map(r => r[1])).size;
+        }}""")
         actual_venues = sarceto_bg.get("venues", [])
         check("d1_sarceto_7_cinema_rows",
-              len(actual_venues) == expected_sarceto_venues,
-              f"venue rows found: {len(actual_venues)}, expected from SHOWTIMES: {expected_sarceto_venues}")
+              len(actual_venues) == expected_sarceto_rows,
+              f"venue rows found: {len(actual_venues)}, expected from SHOWTIMES on the sheet's day: {expected_sarceto_rows}")
         vlaikova_link_ok = any(
             "embed.urboapp.com/vj7oz5J5H2tBP11v0u4KeToOS8csB5ZN/bg/25324" in lnk.get("href","")
             for lnk in sarceto_bg.get("vlaikovaLinks", [])
@@ -13819,7 +13831,7 @@ HF_GRID_DATES_JS = r"""(w)=>{
   /* for every film and show: the dates the desktop grid can show over all its pages, from the
      sheet's own markup, against the dates of its listings for the shown period */
   const bad=[],rowBad=[];let films=0,shows=0,multi=0,pagesMax=1,rowsChecked=0;
-  const check=(kind,id,html,expect,pairs)=>{
+  const check=(kind,id,html,expect,pairs,op)=>{
     const d=document.createElement('div');d.innerHTML=html;
     const pages=[...d.querySelectorAll('.p3e-gpage')];
     const got=new Set(pages.flatMap(p=>[...p.querySelectorAll('th[data-date]')].map(t=>t.dataset.date)));
@@ -13836,8 +13848,14 @@ HF_GRID_DATES_JS = r"""(w)=>{
        the times over all pages are exactly the listings, none lost and none doubled */
     const rows=pages.flatMap(p=>[...p.querySelectorAll('tbody tr')]);
     rowsChecked+=rows.length;
-    const empty=rows.filter(tr=>!tr.querySelector('[data-sspill]')).length;
-    const shown=pages.flatMap(p=>[...p.querySelectorAll('[data-sspill]')].map(b=>{const k=b.dataset.sspill.split('|');return k[2]+'|'+k[3];})).sort();
+    /* an opera/ballet show (sheetOpera) has no popover: its times are .oppill links to the
+       house's own tickets (or sold-out notes) with no data-sspill, so its date is its column's */
+    const pillSel=op?'.oppill':'[data-sspill]';
+    const key=b=>{if(!op){const k=b.dataset.sspill.split('|');return k[2]+'|'+k[3];}
+      const td=b.closest('td'),th=td&&td.closest('table').querySelectorAll('thead th')[[...td.parentElement.children].indexOf(td)];
+      return (th&&th.dataset.date)+'|'+(b.querySelector('span')||b).textContent.trim();};
+    const empty=rows.filter(tr=>!tr.querySelector(pillSel)).length;
+    const shown=pages.flatMap(p=>[...p.querySelectorAll(pillSel)].map(key)).sort();
     const want=pairs.slice().sort();
     if(empty||shown.length!==want.length||shown.some((x,i)=>x!==want[i]))
       rowBad.push(kind+':'+id+' empty rows '+empty+', times shown '+shown.length+' of '+want.length);
@@ -13852,7 +13870,7 @@ HF_GRID_DATES_JS = r"""(w)=>{
     const ps=upcomingPerfs(PERFORMANCES.filter(p=>p[0]===sh.id));
     if(!ps.length||!thById[sh.theatre])continue;
     shows++;
-    check('show',sh.id,sheetShow(sh),ps.map(p=>p[1]),ps.map(p=>p[1]+'|'+p[2]));
+    check('show',sh.id,sheetShow(sh),ps.map(p=>p[1]),ps.map(p=>p[1]+'|'+p[2]),surfOf(sh)==='opera');
   }
   return {films,shows,multi,pagesMax,bad:bad.slice(0,8),nbad:bad.length,rowsChecked,rowBad:rowBad.slice(0,8),nRowBad:rowBad.length};
 }"""
@@ -23753,6 +23771,8 @@ def _op2_design(browser, base, eng, op_id):
         check(f"{tag}_art_backdrop_{sz}", s["art"] == [["p-bg", "true"], ["p-real", None]], f"{s['art']}")
         # round 5: a picture narrower than its band gets the edge fade (.p-pb) from the band's box; a re-render
         # moves the loaded picture into the new content (no second load event) and the fade is decided again
+        # the picture is lazy and the card is off screen on a phone (WebKit's lazy margin is small): bring it in
+        page.evaluate("""() => document.querySelector('.opcard[data-show="op2-karmen"]').scrollIntoView({block: 'center', inline: 'nearest'})""")
         page.wait_for_function("""() => { const i = document.querySelector('.opcard[data-show="op2-karmen"] .ebox img.p-real'); return i && i.complete && i.naturalWidth; }""", timeout=8000)
         page.wait_for_timeout(300)
         pb = page.evaluate("""async () => { const q = () => document.querySelector('.opcard[data-show="op2-karmen"] .ebox img.p-real');
