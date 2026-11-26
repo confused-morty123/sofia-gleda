@@ -1354,6 +1354,11 @@
 "bg": null,
 "t": "2026-11-23"
 },
+"3569": {
+"n": "Néstor Almendros",
+"bg": null,
+"t": "2026-11-26"
+},
 "3636": {
 "n": "Paul Newman",
 "bg": "Пол Нюман",
@@ -1594,6 +1599,11 @@
 "bg": "Емили Блънт",
 "t": "2026-10-23"
 },
+"5117": {
+"n": "Birol Ünel",
+"bg": null,
+"t": "2026-11-26"
+},
 "5149": {
 "n": "Bonnie Hunt",
 "bg": null,
@@ -1613,6 +1623,11 @@
 "n": "Rüdiger Vogler",
 "bg": null,
 "t": "2026-11-23"
+},
+"5274": {
+"n": "Patrick Bauchau",
+"bg": null,
+"t": "2026-11-26"
 },
 "5288": {
 "n": "A.R. Rahman",
@@ -3089,6 +3104,11 @@
 "bg": null,
 "t": "2026-11-23"
 },
+"18514": {
+"n": "Asia Argento",
+"bg": null,
+"t": "2026-11-26"
+},
 "18541": {
 "n": "Stefan Matyjaszkiewicz",
 "bg": null,
@@ -3233,6 +3253,11 @@
 "n": "Giorgos Arvanitis",
 "bg": null,
 "t": "2026-11-25"
+},
+"20577": {
+"n": "Amira Casar",
+"bg": null,
+"t": "2026-11-26"
 },
 "20657": {
 "n": "Cristian Mungiu",
@@ -3424,6 +3449,11 @@
 "bg": null,
 "t": "2026-11-08"
 },
+"24378": {
+"n": "Bernard Alane",
+"bg": null,
+"t": "2026-11-26"
+},
 "24524": {
 "n": "Krzysztof Pieczyński",
 "bg": null,
@@ -3554,6 +3584,11 @@
 "bg": null,
 "t": "2026-11-23"
 },
+"28615": {
+"n": "Éric Rohmer",
+"bg": null,
+"t": "2026-11-26"
+},
 "28620": {
 "n": "Martin Gschlacht",
 "bg": null,
@@ -3578,6 +3613,11 @@
 "n": "Ivan Andonov",
 "bg": null,
 "t": "2026-11-23"
+},
+"28781": {
+"n": "Christian Clavier",
+"bg": null,
+"t": "2026-11-26"
 },
 "28782": {
 "n": "Monica Bellucci",
@@ -3839,6 +3879,26 @@
 "bg": null,
 "t": "2026-11-08"
 },
+"39672": {
+"n": "Haydée Politoff",
+"bg": null,
+"t": "2026-11-26"
+},
+"39673": {
+"n": "Daniel Pommereulle",
+"bg": null,
+"t": "2026-11-26"
+},
+"39674": {
+"n": "Alain Jouffroy",
+"bg": null,
+"t": "2026-11-26"
+},
+"39675": {
+"n": "Mijanou Bardot",
+"bg": null,
+"t": "2026-11-26"
+},
 "39827": {
 "n": "Lesley Barber",
 "bg": null,
@@ -3878,6 +3938,11 @@
 "n": "Anouk Grinberg",
 "bg": null,
 "t": "2026-11-23"
+},
+"41040": {
+"n": "Tony Gatlif",
+"bg": null,
+"t": "2026-11-26"
 },
 "41041": {
 "n": "Christopher Smith",
@@ -5099,6 +5164,11 @@
 "bg": null,
 "t": "2026-11-24"
 },
+"76858": {
+"n": "François-Xavier Demaison",
+"bg": null,
+"t": "2026-11-26"
+},
 "76910": {
 "n": "Christophe Honoré",
 "bg": null,
@@ -5252,7 +5322,7 @@
 "81398": {
 "n": "Karsten Fullu",
 "bg": null,
-"t": "2026-10-24"
+"t": "2026-11-26"
 },
 "81419": {
 "n": "Christian Bégin",
@@ -6714,6 +6784,11 @@
 "bg": null,
 "t": "2026-11-04"
 },
+"433315": {
+"n": "Alexandra Beaujard",
+"bg": null,
+"t": "2026-11-26"
+},
 "444892": {
 "n": "Eskil Vogt",
 "bg": null,
@@ -6977,7 +7052,7 @@
 "575734": {
 "n": "Svezhen Mladenov",
 "bg": null,
-"t": "2026-10-26"
+"t": "2026-11-26"
 },
 "578014": {
 "n": "Patrick Criado",
@@ -6988,6 +7063,11 @@
 "n": "Arnaud Potier",
 "bg": null,
 "t": "2026-11-24"
+},
+"582045": {
+"n": "Issa Doumbia",
+"bg": null,
+"t": "2026-11-26"
 },
 "582232": {
 "n": "Roman Artemyev",
@@ -7207,7 +7287,7 @@
 "958088": {
 "n": "Jørgen Klubien",
 "bg": null,
-"t": "2026-10-24"
+"t": "2026-11-26"
 },
 "959274": {
 "n": "Ken Seng",
@@ -7318,6 +7398,11 @@
 "n": "Mauricio Zacharias",
 "bg": null,
 "t": "2026-11-04"
+},
+"1006957": {
+"n": "Céline Bozon",
+"bg": null,
+"t": "2026-11-26"
 },
 "1011224": {
 "n": "Frankie Chan",
@@ -7614,6 +7699,11 @@
 "bg": null,
 "t": "2026-11-24"
 },
+"1086533": {
+"n": "Liubomyr Levytskyi",
+"bg": null,
+"t": "2026-11-26"
+},
 "1087906": {
 "n": "Régine Chassagne",
 "bg": null,
@@ -7799,6 +7889,11 @@
 "bg": null,
 "t": "2026-11-24"
 },
+"1122355": {
+"n": "Richard Stilgoe",
+"bg": null,
+"t": "2026-11-26"
+},
 "1122547": {
 "n": "Hans Ingemansson",
 "bg": null,
@@ -7808,6 +7903,11 @@
 "n": "Francesco Di Giacomo",
 "bg": null,
 "t": "2026-11-24"
+},
+"1122958": {
+"n": "Serhiy Strelnykov",
+"bg": null,
+"t": "2026-11-26"
 },
 "1127659": {
 "n": "Serena Rossi",
@@ -8057,7 +8157,7 @@
 "1178188": {
 "n": "Ivaylo Penchev",
 "bg": null,
-"t": "2026-10-26"
+"t": "2026-11-26"
 },
 "1178716": {
 "n": "Rauno Ronkainen",
@@ -8337,7 +8437,7 @@
 "1255607": {
 "n": "Vasil Banov",
 "bg": null,
-"t": "2026-10-26"
+"t": "2026-11-26"
 },
 "1255950": {
 "n": "Marian Valev",
@@ -8411,8 +8511,8 @@
 },
 "1268453": {
 "n": "Stefan Denolyubov",
-"bg": null,
-"t": "2026-10-26"
+"bg": "Стефан Денолюбов",
+"t": "2026-11-26"
 },
 "1268847": {
 "n": "Liza Soberano",
@@ -8678,6 +8778,11 @@
 "n": "Snježana Sinovčić Šiškov",
 "bg": null,
 "t": "2026-11-24"
+},
+"1315003": {
+"n": "Morgan",
+"bg": null,
+"t": "2026-11-26"
 },
 "1315036": {
 "n": "Daisy Ridley",
@@ -9104,6 +9209,11 @@
 "bg": null,
 "t": "2026-11-25"
 },
+"1423326": {
+"n": "Alexandre Heboyan",
+"bg": null,
+"t": "2026-11-26"
+},
 "1424989": {
 "n": "Mikkel Hess",
 "bg": null,
@@ -9416,8 +9526,8 @@
 },
 "1500031": {
 "n": "Stanimir Gamov",
-"bg": null,
-"t": "2026-10-26"
+"bg": "Станимир Гъмов",
+"t": "2026-11-26"
 },
 "1500690": {
 "n": "Geneviève Dulude-De Celles",
@@ -9939,6 +10049,21 @@
 "bg": null,
 "t": "2026-10-29"
 },
+"1618503": {
+"n": "Romain Trouillet",
+"bg": null,
+"t": "2026-11-26"
+},
+"1620068": {
+"n": "Blossom Toes",
+"bg": null,
+"t": "2026-11-26"
+},
+"1620069": {
+"n": "Giorgio Gomelsky",
+"bg": null,
+"t": "2026-11-26"
+},
 "1622576": {
 "n": "Stefan Pejchev",
 "bg": null,
@@ -10323,6 +10448,11 @@
 "n": "Nikolay Neykov",
 "bg": null,
 "t": "2026-11-25"
+},
+"1769935": {
+"n": "Delphine Mantoulet",
+"bg": null,
+"t": "2026-11-26"
 },
 "1771460": {
 "n": "Andrius Blaževičius",
@@ -10854,6 +10984,11 @@
 "bg": null,
 "t": "2026-11-25"
 },
+"2061723": {
+"n": "Valeriy Velichko",
+"bg": null,
+"t": "2026-11-26"
+},
 "2063405": {
 "n": "Ekaterina Tarasova",
 "bg": null,
@@ -11289,6 +11424,11 @@
 "bg": null,
 "t": "2026-10-29"
 },
+"2391100": {
+"n": "Denis Kapustin",
+"bg": null,
+"t": "2026-11-26"
+},
 "2393767": {
 "n": "Ebrahim Azizi",
 "bg": null,
@@ -11298,6 +11438,11 @@
 "n": "Maxime Deprez",
 "bg": null,
 "t": "2026-11-11"
+},
+"2401653": {
+"n": "Oleksandr Rudko",
+"bg": null,
+"t": "2026-11-26"
 },
 "2403633": {
 "n": "Leonardo Lidi",
@@ -11738,6 +11883,11 @@
 "n": "Anri Kulev",
 "bg": null,
 "t": "2026-11-25"
+},
+"2796750": {
+"n": "Alexandra Soroka",
+"bg": null,
+"t": "2026-11-26"
 },
 "2804564": {
 "n": "Anthony Sahyoun",
@@ -12328,6 +12478,11 @@
 "n": "Soya Kurokawa",
 "bg": null,
 "t": "2026-10-25"
+},
+"3870893": {
+"n": "Nazar Manuliak",
+"bg": null,
+"t": "2026-11-26"
 },
 "3891332": {
 "n": "Emma Boumali",
@@ -13099,6 +13254,11 @@
 "bg": null,
 "t": "2026-11-25"
 },
+"5974398": {
+"n": "Владлен Пупков",
+"bg": null,
+"t": "2026-11-26"
+},
 "5977165": {
 "n": "Yana Kadurina",
 "bg": null,
@@ -13183,6 +13343,11 @@
 "n": "Max Rieger",
 "bg": null,
 "t": "2026-11-25"
+},
+"6136986": {
+"n": "Kalina Nikolova",
+"bg": null,
+"t": "2026-11-26"
 },
 "6141469": {
 "n": "Talha Akdogan",

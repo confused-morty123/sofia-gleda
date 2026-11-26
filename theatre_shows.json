@@ -8152,5 +8152,41 @@
   "synBg": "",
   "synEn": "",
   "source": "natfiz"
+ },
+ "otmeneno-chayka-sled-samoubiystvoto": {
+  "id": "otmeneno-chayka-sled-samoubiystvoto",
+  "title": "ОТМЕНЕНО „ЧАЙКА“ СЛЕД САМОУБИЙСТВОТО",
+  "titleEn": "",
+  "theatre": "toplo",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#2A331B",
+   "#4A5F27"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "toplo"
+ },
+ "botevata-lyubov": {
+  "id": "botevata-lyubov",
+  "title": "БОТЕВАТА ЛЮБОВ",
+  "titleEn": "",
+  "theatre": "salzaismyah",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "salzaismyah"
  }
 }
