@@ -23595,7 +23595,7 @@ OP2_R4_KIDS_JS = r"""(d1) => { const box = document.createElement('div'), txt = 
   S.day = d1; S.fGenres = ['kids']; render(); window.scrollTo(0, 0);
   const c = document.querySelector('#app main .late-day-card');
   const late = c ? {h: c.querySelector('h3').textContent, p: c.querySelector('p').textContent, compact: c.classList.contains('compact'),
-                    h3: getComputedStyle(c.querySelector('h3')).fontSize, pad: getComputedStyle(c).paddingTop, btn: (c.querySelector('.acts .btn') || {}).textContent} : null;
+                    h3: getComputedStyle(c.querySelector('h3')).fontSize, pad: getComputedStyle(c).paddingTop, acts: c.querySelector('.acts') ? getComputedStyle(c.querySelector('.acts')).flexDirection : null, btn: (c.querySelector('.acts .btn') || {}).textContent} : null;
   S.fGenres = []; box.innerHTML = opAgenda(opRows()); const all = txt();
   const kso = PERFORMANCES.filter(p => p[0].startsWith('op2-kso')), keep = n => { for (const p of kso.slice(n)) { const i = PERFORMANCES.indexOf(p); if (i >= 0) PERFORMANCES.splice(i, 1); } };
   keep(2); box.innerHTML = opAgenda(opRows()); const two = txt();
@@ -23663,6 +23663,8 @@ def _op2_design(browser, base, eng, op_id):
               and (lt.get("p") or "").startswith("Всички детски представления в този ден са разпродадени. Най-близкото с билети: ")
               and "по-долу" not in (lt.get("p") or ""), f"{lt}")
         check(f"{tag}_kids_empty_state_compact_{sz}", lt.get("compact") and lt.get("h3") == "18px" and lt.get("pad") == "16px", f"{lt}")
+        # round 5: at 390 (≤400 px) the two buttons stack, full width; on desktop one row
+        check(f"{tag}_kids_empty_state_buttons_{sz}", lt.get("acts") == ("column" if phone else "row"), f"{lt.get('acts')}")
         check(f"{tag}_agenda_kids_sold_suffix_{sz}", [k4.get("all"), k4.get("two"), k4.get("one")] == [
               "Още 10 детски представления в този ден · всички разпродадени ›",
               "Още 2 детски представления в този ден · и двете разпродадени ›",
@@ -23672,6 +23674,12 @@ def _op2_design(browser, base, eng, op_id):
               "Представлението е разпродадено.", "И двете представления са разпродадени.", "Всички 3 представления са разпродадени."], f"{so}")
         check(f"{tag}_hero_count_this_week_{sz}", (so.get("hero") or [""])[-1:] == [so.get("want")] and so.get("want", "").endswith(" тази седмица"),
               f"hero meta {so.get('hero')} (want {so.get('want')!r})")
+        hm = page.evaluate("""() => { const m = document.querySelector('[data-opera] .ophero .hero-meta.opmeta'); if (!m) return null;
+            const sp = [...m.children].filter(e => e.tagName === 'SPAN' && e.textContent.trim());
+            return {dir: getComputedStyle(m).flexDirection, dots: sp.map(e => getComputedStyle(e, '::after').content)}; }""")
+        # on a phone the hall and the count stack with no "·" (a wrap left one hanging); on desktop one line with it
+        check(f"{tag}_hero_meta_no_hanging_dot_{sz}", bool(hm) and (hm["dir"] == "column" and all(d in ("none", "normal") for d in hm["dots"]) if phone
+              else hm["dir"] == "row" and '"·"' in hm["dots"][0]), f"{hm}")
         if not phone:
             ins = page.evaluate(OP2_R4_INSET_JS)
             check(f"{tag}_agenda_clear_of_fab_column_{sz}", ins["acts"] and max(ins["acts"]) <= ins["fabLeft"] - 4, f"{ins}")
@@ -23743,6 +23751,16 @@ def _op2_design(browser, base, eng, op_id):
         check(f"{tag}_en_tails_{sz}", s["en"] == [["Opera by Gioachino Rossini", "A production by State Opera – Plovdiv"], ["Ballet by Adolphe Adam", ""]], f"{s['en']}")
         check(f"{tag}_badge_opens_date_line_{sz}", s["badgeFirst"] and not s["badgeInTitle"], f"first in .cf3: {s['badgeFirst']}, in .cf1: {s['badgeInTitle']}")
         check(f"{tag}_art_backdrop_{sz}", s["art"] == [["p-bg", "true"], ["p-real", None]], f"{s['art']}")
+        # round 5: a picture narrower than its band gets the edge fade (.p-pb) from the band's box; a re-render
+        # moves the loaded picture into the new content (no second load event) and the fade is decided again
+        page.wait_for_function("""() => { const i = document.querySelector('.opcard[data-show="op2-karmen"] .ebox img.p-real'); return i && i.complete && i.naturalWidth; }""", timeout=8000)
+        page.wait_for_timeout(300)
+        pb = page.evaluate("""async () => { const q = () => document.querySelector('.opcard[data-show="op2-karmen"] .ebox img.p-real');
+            const i = q(), first = i.classList.contains('p-pb'); window.__op2pb = i; i.classList.remove('p-pb');
+            refreshPage(); await new Promise(r => setTimeout(r, 1800)); const j = q();
+            return {first, moved: j === window.__op2pb, again: !!(j && j.classList.contains('p-pb')), ratio: i.naturalWidth / i.naturalHeight}; }""")
+        check(f"{tag}_art_edge_fade_{sz}", pb["first"] and pb["ratio"] < 2, f"{pb}")
+        check(f"{tag}_art_edge_fade_after_move_{sz}", pb["moved"] and pb["again"], f"{pb}")
         check(f"{tag}_duration_minutes_{sz}", s["dur"] == ["60 мин", "130 мин · Антракти 1", "около 2 часа"], f"{s['dur']}")
         _force_mount(page)
         dm = page.evaluate(OP2_FIX_DOM_JS)
@@ -23763,10 +23781,10 @@ def _op2_design(browser, base, eng, op_id):
         page.evaluate("() => { if (sheetOpen) closeSheet(true); }")
         page.wait_for_timeout(400)
         td = page.evaluate(OP2_FIX_TODAY_JS) or {}
-        # the day part dimmed (60%, not the other empty days' 32%), "днес" at the full pills' strength, the pill itself not faded
+        # the day part dimmed (74%, not the other empty days' 32%), "днес" at the full pills' strength, the pill itself not faded
         check(f"{tag}_today_dimmed_{sz}", td.get("disabled") is False and td.get("empty") and td.get("op") == "1"
-              and td.get("today") == td.get("fullDay") and td.get("day") != td.get("today") and re.search(r"(rgba\(.*,\s*0\.6\)|/ 0\.6\))$", td.get("day") or ""), f"{td}")
-        check(f"{tag}_today_date_contrast_{sz}", (td.get("cr") or 0) >= 3, f"today's date {td.get('day')} on {td.get('bg')}: {td.get('cr')}:1 (want >= 3)")
+              and td.get("today") == td.get("fullDay") and td.get("day") != td.get("today") and re.search(r"(rgba\(.*,\s*0\.74\)|/ 0\.74\))$", td.get("day") or ""), f"{td}")
+        check(f"{tag}_today_date_contrast_{sz}", (td.get("cr") or 0) >= 4.5, f"today's date {td.get('day')} on {td.get('bg')}: {td.get('cr')}:1 (want >= 4.5)")
         check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
 

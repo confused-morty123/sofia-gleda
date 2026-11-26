@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-21PvXlPuuu/E+D9IGVsdjGhDSWRFMp6+T4jwRlVfOKg=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-MCbwWqvlXxx9bO3cJCSnVJKDBDTTjsBdRNt+DuZhdtg=' 'sha256-YROWy8WS20779CNcrrqE6hON0YkXOSSwI+fCv4trjaw=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-21PvXlPuuu/E+D9IGVsdjGhDSWRFMp6+T4jwRlVfOKg=' 'sha256-6Bkr9JogpxQx0dtIJ717tGYbs+AjRjKDySFpVIKUm3Q=' 'sha256-ARmKzLc/KaSdtE5q38W9fry+2chXD0lFjFVccMZ1Ink=' 'sha256-F8sqyFk5qPopzlzHnDW30SjgzUsMQrRU7sQ2iNcDlBo=' 'sha256-MCbwWqvlXxx9bO3cJCSnVJKDBDTTjsBdRNt+DuZhdtg=' 'sha256-rqPQRDjB6lGPXou0MaMhef/D9KpXzp3JbiloV3Un/3A=' 'sha256-xDowo2AGRb30Jbmn0XNSXfDzneRbGOtDG+7GYdjMNdg=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <!-- The site is at the domain root, and the app's own addresses are /home/, /home/theatre/,
      /home/opera/ and, with a card open, /film/<id>/ (or /show/, /event/): relative URLs (posters/,
      icons/, sw.js, the manifest) resolve from "/" whatever the path, through <base href="/">,
@@ -694,8 +694,8 @@ footer .srcs{display:flex; flex-wrap:wrap; gap:5px 13px; margin-top:7px}
    its "днес" at the normal strength */
 .dspill.empty:not([aria-pressed="true"]){color:color-mix(in srgb,var(--fg-2) 32%,transparent); border-color:color-mix(in srgb,var(--line) 32%,transparent)}
 .dspill.empty:not([aria-pressed="true"]) .ds-today{color:var(--fg-2)}
-/* today with no row: its date at ~3.8:1, not ghosted like the other empty days (they are not today) */
-.dspill.empty:not([aria-pressed="true"]):has(> .ds-today){color:color-mix(in srgb,var(--fg-2) 60%,transparent)}
+/* today with no row: its date at ~5.2:1, not ghosted like the other empty days (they are not today) */
+.dspill.empty:not([aria-pressed="true"]):has(> .ds-today){color:color-mix(in srgb,var(--fg-2) 74%,transparent)}
 .dspill .ds-today{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; opacity:.8; line-height:1}
 .dspill .ds-mon{display:block; font-size:11px; font-weight:500; line-height:1.1}
 /* keep old .pbanner-btn for any .data-drawer usages */
@@ -1537,6 +1537,9 @@ button,a{-webkit-tap-highlight-color:transparent}
 /* the hero's meta separators end an item, so a wrapped line never starts with "·" */
 .hero-meta > span:not(.score):not(:last-child):not(:empty)::after{content:"·"; margin-left:9px; color:currentColor}
 .hero-meta > span:empty{display:none}
+/* opera hero on a phone: hall and count stack, so a wrap never leaves a hanging "·" */
+@media(max-width:520px){ [data-opera] .hero-meta.opmeta{flex-direction:column; align-items:flex-start; gap:3px}
+  [data-opera] .hero-meta.opmeta > span:not(.score):not(:empty)::after{content:none} }
 
 /* ---- step 7: favourite stars, drawer reflow (I5, I10) ---- */
 /* the star's SVG had no size, so it drew at 0x0 inside a 12x23 button */
@@ -1844,6 +1847,7 @@ button,a{-webkit-tap-highlight-color:transparent}
 [data-opera] .late-day-card.compact p{font-size:14px}
 [data-opera] .late-day-card.compact .acts{display:flex; flex-flow:row wrap; gap:8px}
 [data-opera] .late-day-card.compact .btn{margin-top:0}
+@media(max-width:400px){ [data-opera] .late-day-card.compact .acts{flex-direction:column} [data-opera] .late-day-card.compact .acts .btn{width:100%; justify-content:center} }
 /* Театър: the bridge card to the opera's ballets / musicals (OPERA_ON only) */
 .opbridge{display:flex; align-items:center; min-height:48px; width:100%; margin-block:14px 6px; padding:10px 16px; border-radius:14px;
   border:1px solid var(--line-2); background:var(--ink-2); color:var(--fg); font-size:14px; font-weight:600; text-align:left}
@@ -2128,11 +2132,23 @@ const HERO_PINS = [{"mode":"cinema","id":"igrite-na-glada-izgrevat-v-denya-na-zh
     if(el&&el.tagName==="IMG"&&(el.classList.contains("p-real")||el.classList.contains("p-bg")))el.remove();
   },true);
   /* an opera picture over its blurred backdrop (.p-bg) that is narrower than its band: .p-pb (CSS fades its edges) */
-  document.addEventListener("load",function(e){
-    var el=e.target,bg=el&&el.previousElementSibling;
-    if(el&&el.tagName==="IMG"&&el.classList.contains("p-real")&&bg&&bg.classList.contains("p-bg")&&el.naturalHeight&&el.clientHeight)
-      el.classList.toggle("p-pb",el.naturalWidth/el.naturalHeight<el.clientWidth/el.clientHeight-.02);
-  },true);
+  /* the band is the picture's parent box. It can change size after load fires (the first render lays the
+     picture out at its natural ratio, then the band settles), so a ResizeObserver re-checks it */
+  function opPb(el){
+    var band=el.parentElement,w=band&&band.clientWidth,h=band&&band.clientHeight;
+    if(w&&h&&el.naturalHeight)el.classList.toggle("p-pb",el.naturalWidth/el.naturalHeight<w/h-.02);
+  }
+  var opPbRO=typeof ResizeObserver==="function"?new ResizeObserver(function(es){
+    es.forEach(function(en){ var im=en.target.querySelector(":scope > img.p-real"); if(im&&im.isConnected)opPb(im); else opPbRO.unobserve(en.target); });
+  }):null;
+  /* also called by _swapMain for a loaded picture it moves into a new band (no second load event) */
+  window.opPbWatch=function(el){
+    var bg=el&&el.previousElementSibling;
+    if(el&&el.tagName==="IMG"&&el.classList.contains("p-real")&&bg&&bg.classList.contains("p-bg")&&el.naturalHeight){
+      opPb(el); if(opPbRO&&el.parentElement)opPbRO.observe(el.parentElement);
+    }
+  };
+  document.addEventListener("load",function(e){ window.opPbWatch(e.target); },true);
   /* Optional maps live in their own scripts and can go missing if a build step
      misfires. Falling back to {} keeps the app fully usable (no posters, no
      prices) instead of throwing inside a click handler and looking "frozen". */
@@ -3999,7 +4015,7 @@ function opHeroSlot(){
   return`<div class="hero ophero"><div class="hero-art${sh.baked&&opImg(sh)?" baked":""}${opNoImg(sh)}">${opArt(sh)}</div><div class="hero-scrim"></div>
     <div class="hero-body"><div class="eyebrow"><span class="ey">${esc(L.inFocus)} · ${esc(periodLabel())}</span>${prem?`<span class="badge prem opb">${esc(O.premiere)}</span>`:""}</div>
     <h2 class="hero-title">${esc(titleOf(sh))}</h2>
-    <div class="hero-meta"><span>${esc(stages.join(", "))}</span><span>${esc(plural(mine.length,L.plPerf)+" "+opWhen())}</span></div>
+    <div class="hero-meta opmeta"><span>${esc(stages.join(", "))}</span><span>${esc(plural(mine.length,L.plPerf)+" "+opWhen())}</span></div>
     ${opSubHtml(sub,"p","hero-syn")}
     <div class="acts"><button class="btn" data-show="${esc(sh.id)}" data-pd="${esc(go[1])}" data-pt="${esc(go[2])}">${esc(L.seePerf)}</button></div>
     </div></div>`;}
@@ -6108,18 +6124,22 @@ function _swapMain(main,fresh,now,toY,dip,surface){
     const k=im.getAttribute("src"),a=pool.get(k);
     if(a)a.push(im);else pool.set(k,[im]);
   }
+  const moved=[];
   for(const im of fresh.querySelectorAll("img.p-real")){
     const a=pool.get(im.getAttribute("src"));
     if(!a||!a.length)continue;
     const old=a.shift();
     if(old.alt!==im.alt)old.alt=im.alt;
     im.replaceWith(old);
+    moved.push(old);
   }
   const y=toY!==null?toY:(window.scrollY||0);
   const mainY=main.getBoundingClientRect().top+(window.scrollY||0);
   /* the switch restyles the page (fonts, accent) together with the new content */
   if(surface)surfaceAttrs();
   main.replaceChildren(...fresh.childNodes);
+  /* a moved opera picture keeps the edge fade of its old band: re-decide it for the new one */
+  if(window.opPbWatch)moved.forEach(window.opPbWatch);
   heroSynFit(main);
   main.__sgView=now;
   /* while results are shown the content reaches at least the bottom of the screen, so
