@@ -423,7 +423,10 @@ def pick_ids(browser, page_uri, today):
     pg.wait_for_selector(".bar", timeout=20000)
     ids = pg.evaluate("""() => {
       const f = [...new Set(SHOWTIMES.filter(r => r[2] >= NOW_DATE).map(r => r[0]))].filter(id => filmById[id]);
-      const s = [...new Set(PERFORMANCES.filter(p => p[1] >= NOW_DATE).map(p => p[0]))].filter(id => showById[id]);
+      // the opera surface stays hidden without ?opera=1 (OPERA_ON): its shows do not open
+      // from the page, so only shows the page can open are fuzzed
+      const reach = id => typeof surfOf !== 'function' || OPERA_ON || surfOf(showById[id]) !== 'opera';
+      const s = [...new Set(PERFORMANCES.filter(p => p[1] >= NOW_DATE).map(p => p[0]))].filter(id => showById[id] && reach(id));
       return {film: f.slice(0, 14), show: s.slice(0, 14), event: EVENTS.map(e => e.id)};
     }""")
     ctx.close()
