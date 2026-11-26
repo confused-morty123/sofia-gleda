@@ -400,7 +400,12 @@ _VLAIKOVA_BADGE_GENRES = {
 _VLAIKOVA_PARSER_VERSION = 6
 
 _INFO_LINE_RE = re.compile(
-    r"^\s*(?:\||[lI](?=\s))?\s*((?:[^|]{1,150}\|\s*)*?)((?:18|19|20)\d{2})\s*\|?\s*(.*)$", re.S)
+    # The spaces after each "|" are left to the next field (or, after the last one, to
+    # the trailing \s*): a "\|\s*" inside the repeat overlapped the next field's own
+    # leading spaces, and a line of many "  |" took exponential time (CodeQL
+    # py/redos). Same matches and groups, checked against the old pattern on 200 000
+    # random lines.
+    r"^\s*(?:\||[lI](?=\s))?\s*((?:[^|]{1,150}\|)*?\s*)((?:18|19|20)\d{2})\s*\|?\s*(.*)$", re.S)
 _LATIN_ONLY_RE = re.compile(r"^[^Ѐ-ӿ]*[A-Za-z][^Ѐ-ӿ]*$")
 _VLAIKOVA_LABEL_RE = re.compile(
     r"^\s*(В\s+ролите|Участват|Актьори|С\s+участието\s+на|Режисьори|Режисьор(?:\s+и\s+сценарист\w*)?|Сценаристи|"

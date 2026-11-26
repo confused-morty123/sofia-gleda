@@ -2683,7 +2683,8 @@
    "#1B2733",
    "#27485F"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 94
  },
  "vzvod": {
   "id": "vzvod",
@@ -5260,20 +5261,6 @@
   "source": "dom-kino",
   "runtime": 93
  },
- "pochivkata-2-povtorenie": {
-  "id": "pochivkata-2-povtorenie",
-  "bg": "ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)",
-  "en": "",
-  "genres": [
-   "Комедия"
-  ],
-  "g": [
-   "#1B2733",
-   "#27485F"
-  ],
-  "source": "cg-ring",
-  "runtime": 113
- },
  "menar-transilvaniya": {
   "id": "menar-transilvaniya",
   "bg": "Менар: Трансилвания",
@@ -5331,5 +5318,30 @@
    "#5F4527"
   ],
   "source": "odeon"
+ },
+ "mayami-vays": {
+  "id": "mayami-vays",
+  "bg": "Маями Вайс",
+  "en": "",
+  "genres": [
+   "Криминален"
+  ],
+  "g": [
+   "#332A1B",
+   "#5F4527"
+  ],
+  "source": "dom-kino",
+  "runtime": 132
+ },
+ "velopohodat-kam-cop30": {
+  "id": "velopohodat-kam-cop30",
+  "bg": "ВЕЛОПОХОДЪТ КЪМ COP30",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "source": "vlaikova"
  }
 }

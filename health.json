@@ -22,26 +22,26 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 237/330 ok, 93 missing IMDb ratings"
+  "message": "OMDb: 244/331 ok, 87 missing IMDb ratings"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 471/479 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (13 days), dokato-chakame-godo-dobrich (13 days), dokato-chakame-godo-smolyan (13 days), dokato-smartta (12 days), kontsert-na-pim-pam (13 days), mechka-hamletmashina (13 days), vanyo-sonya-masha-i-spayk (12 days), vsichko-za-zhenite (12 days)"
+  "message": "theatre posters: 487/508 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (13 days), dokato-chakame-godo-dobrich (13 days), dokato-chakame-godo-smolyan (13 days), dokato-smartta (12 days), kontsert-na-pim-pam (13 days), mechka-hamletmashina (13 days), vanyo-sonya-masha-i-spayk (12 days), vsichko-za-zhenite (12 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 92.7 % -> 92.7 %, films 91.8 % -> 91.8 %; attached 0; causes: own page has no usable image 20, only an aggregator's image (the film does not link that page) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, robots.txt unreachable (5xx or no answer): the host is not read this run 5 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.1 % -> 94.0 %, films 91.3 % -> 91.3 %; attached 5; causes: own page has no usable image 20, only an aggregator's image (the film does not link that page) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, only a ticket page linked, not the title's page 3 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 444/479 (92.7 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, botevata-lyubov, brachen-dogovor, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich; 471/479 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 451/480 (94.0 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 500/508 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 157/171 (91.8 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas, skoti — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (films, own image): 157/172 (91.3 %); missing: actually-it-is-rocket-science, dzhambo-magicheskoto-priklyuchenie, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kodat-na-balgarite, koledni-agenti, omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl, pastir, polyusi, posledniyat-prometey-na-donbas, royal-ballet-manon, sinelibri-2026-ehoto-mezhdu-nas, skoti — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]

@@ -20842,6 +20842,7 @@ def _ga_serve():
             pass
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(_Quiet, directory=str(webapp_root)))
     sc = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    sc.minimum_version = ssl.TLSVersion.TLSv1_2   # no TLS 1.0/1.1 (CodeQL py/insecure-protocol)
     sc.load_cert_chain(d + "/c.pem", d + "/k.pem")
     srv.socket = sc.wrap_socket(srv.socket, server_side=True)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -21653,6 +21654,7 @@ def _hs1_serve(font_delay):
             return super().do_GET()
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(_Slow, directory=str(html_path.parent)))
     sc = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    sc.minimum_version = ssl.TLSVersion.TLSv1_2   # no TLS 1.0/1.1 (CodeQL py/insecure-protocol)
     sc.load_cert_chain(d + "/c.pem", d + "/k.pem")
     srv.socket = sc.wrap_socket(srv.socket, server_side=True)
     threading.Thread(target=srv.serve_forever, daemon=True).start()

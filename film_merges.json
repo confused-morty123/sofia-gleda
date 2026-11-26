@@ -855,6 +855,26 @@
     "runtime": 112
    }
   },
+  "pochivkata-2-povtorenie": {
+   "into": "pochivkata-2-re-release",
+   "rule": "same-id",
+   "reason": "the same TMDB id tmdb:1779780",
+   "since": "2026-11-26",
+   "record": {
+    "id": "pochivkata-2-povtorenie",
+    "bg": "ПОЧИВКАТА 2 (ПОВТОРЕНИЕ)",
+    "en": "",
+    "genres": [
+     "Комедия"
+    ],
+    "g": [
+     "#1B2733",
+     "#27485F"
+    ],
+    "source": "cg-ring",
+    "runtime": 113
+   }
+  },
   "pochivkata-povtorenie": {
    "into": "pochivkata-re-release",
    "rule": "same-id",

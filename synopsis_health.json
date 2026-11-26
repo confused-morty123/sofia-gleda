@@ -2,11 +2,11 @@
  "date": "2026-11-26",
  "threshold": 280,
  "shows": {
-  "titles": 479,
-  "thin": 111,
+  "titles": 480,
+  "thin": 110,
   "empty": 74,
   "thin_en": 134,
-  "linked": 100,
+  "linked": 99,
   "by_theatre": {
    "artvent": {
     "titles": 22,
@@ -73,11 +73,11 @@
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 48,
-    "thin": 16,
+    "titles": 47,
+    "thin": 15,
     "empty": 11,
     "thin_en": 13,
-    "linked": 16,
+    "linked": 15,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
@@ -121,7 +121,7 @@
     "name": "Театър 199 „Валентин Стойчев“"
    },
    "toplo": {
-    "titles": 48,
+    "titles": 50,
     "thin": 4,
     "empty": 1,
     "thin_en": 4,
@@ -146,24 +146,32 @@
    }
   }
  },
+ "opera": {
+  "titles": 28,
+  "thin": 20,
+  "empty": 15,
+  "thin_en": 20,
+  "linked": 20
+ },
  "films": {
-  "titles": 171,
-  "thin": 75,
+  "titles": 172,
+  "thin": 74,
   "empty": 42,
   "thin_en": 103
  },
  "routes": {
   "overrides": 0,
   "theatre_art_fills": 84,
-  "own_page_fills": 311,
-  "link_to_theatre": 100,
+  "own_page_fills": 325,
+  "link_to_theatre": 99,
   "own_page_misses": {
-   "cast / credits / practical lines only": 28,
+   "cast / credits / practical lines only": 31,
    "the text is about another listed production": 10,
    "no description paragraph": 8,
    "biography / interview / reviews, no description before it": 7,
-   "description under 120 characters": 5,
+   "description under 120 characters": 7,
    "reviews / interview only": 4,
+   "no description block on the page": 2,
    "page not read (robots.txt, an HTTP error or no answer)": 2,
    "the page's headings do not name the play": 1
   }
