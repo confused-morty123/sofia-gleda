@@ -136,6 +136,25 @@ screen like a normal app and even work offline:
 
 ---
 
+## Step 9 — Let the robot publish past the branch rules (once)
+
+Main is protected by rulesets (Settings → Rules → Rulesets). The nightly refresh
+pushes straight to main, so it needs a key that the rules let through: a deploy key.
+GitHub does not let the built-in Actions robot bypass rules on a personal repository.
+
+1. On your Mac, in Terminal:
+   `ssh-keygen -t ed25519 -N "" -C "sofia-gleda refresh" -f ~/sofia-gleda-refresh`
+   This makes two files: `~/sofia-gleda-refresh` (private) and
+   `~/sofia-gleda-refresh.pub` (public).
+2. Repository → **Settings → Deploy keys → Add deploy key**. Title `refresh`, paste
+   the contents of `~/sofia-gleda-refresh.pub`, tick **Allow write access**, **Add key**.
+3. Repository → **Settings → Secrets and variables → Actions → New repository
+   secret**. Name exactly `REFRESH_DEPLOY_KEY`, paste the whole contents of
+   `~/sofia-gleda-refresh` (including the BEGIN and END lines), **Add secret**.
+4. Delete both files from your Mac: GitHub now holds the only copies it needs.
+5. Run the refresh once by hand (Step 7). Its push goes through the deploy key.
+   Only then switch the "main: PRs and green CI" ruleset to **Active**.
+
 ## How the weekly update works (so you know it's really automatic)
 
 Every **Sunday at ~06:00 Sofia time**, the robot:
