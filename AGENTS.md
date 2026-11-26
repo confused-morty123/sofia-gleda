@@ -29,8 +29,9 @@ merge one PR  ->  Tests runs on the new main  ->  main green  ->  the next merge
 3. **One merge at a time, only onto a green main.** The `main-gate` status on each
    PR is green only when main's latest Tests run passed, no main run is queued or
    running, and the branch contains every non-robot commit of main. Merge only on a
-   green `main-gate`, a green Tests run of the PR itself *and* a green `CodeQL` check
-   (code scanning; red means the PR adds a serious new security alert). After a merge, nothing
+   green `main-gate`, a green Tests run of the PR itself *and* no new serious alert
+   in the `CodeQL` check (it can also be red for old alerts in the files a PR touches:
+   open it and look at what it lists before merging). After a merge, nothing
    else merges until main's Tests run for it is green.
 
 4. **One CI fix at a time.** A failing test on main is fixed by exactly one open PR,
