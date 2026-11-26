@@ -19591,6 +19591,8 @@ def wave_bo1(browser):
       let online=null;
       for(const p of PERFORMANCES){
         if(p[1]<=today)continue; const sh=showById[p[0]]; if(!sh||sh.theatre==='salzaismyah')continue;
+        // a theatre show: the opera surface has its own sheet (OP1/OP2), no theatre time pills
+        if(typeof surfOf==='function'&&surfOf(sh)==='opera')continue;
         if((BOOKING[sh.theatre]||{}).inPerson||(typeof AGGLINKS==='object'&&AGGLINKS[sh.id]))continue;
         if(isPrelimListing('show',sh.id,sh.theatre,p[1]))continue;
         if(!LINK_MAP[sh.id]||PERFORMANCES.some(q=>q[0]===sh.id&&q[1]>=today&&boxOnly('show',sh.id,sh.theatre,q[1],q[2])))continue;
