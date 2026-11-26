@@ -183,10 +183,10 @@ def ensure_shot_dir(wave):
 #   BIG_PHONE     440x956  iPhone 17 Pro Max: the widest phone
 #   DESKTOP       1280x800 a laptop
 # A wave that checks "every phone" walks PHONES, narrowest first.
+NARROW_PHONE = (360, 780)
 PHONE = (402, 874)
-PHONE = PHONE
+ANDROID_PHONE = (412, 923)
 BIG_PHONE = (440, 956)
-BIG_PHONE = BIG_PHONE
 DESKTOP = (1280, 800)
 PHONES = (NARROW_PHONE, PHONE, ANDROID_PHONE, BIG_PHONE)
 
