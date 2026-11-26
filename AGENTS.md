@@ -29,7 +29,8 @@ merge one PR  ->  Tests runs on the new main  ->  main green  ->  the next merge
 3. **One merge at a time, only onto a green main.** The `main-gate` status on each
    PR is green only when main's latest Tests run passed, no main run is queued or
    running, and the branch contains every non-robot commit of main. Merge only on a
-   green `main-gate` *and* a green Tests run of the PR itself. After a merge, nothing
+   green `main-gate`, a green Tests run of the PR itself *and* a green `CodeQL` check
+   (code scanning; red means the PR adds a serious new security alert). After a merge, nothing
    else merges until main's Tests run for it is green.
 
 4. **One CI fix at a time.** A failing test on main is fixed by exactly one open PR,
@@ -74,3 +75,9 @@ repository GitHub cannot let the nightly refresh's Actions token bypass it, and 
 alternative (a deploy key) was not wanted. So rules 2 and 3 above hold by agreement:
 GitHub will not stop a direct push to main or a merge on a red `main-gate`. Follow
 them anyway.
+
+CodeQL default setup and Dependabot security updates are on (2026-11-26). A ruleset
+that blocks new CodeQL alerts ("main: no new CodeQL alerts") exists but is disabled:
+GitHub applies it to every push to main, and the nightly refresh's commits have no
+CodeQL results, so it refused the robot's data push. The `CodeQL` check on each PR
+does the same job by agreement (rule 3).
