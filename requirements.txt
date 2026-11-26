@@ -26,7 +26,7 @@ playwright==1.62.0
 charset-normalizer==3.4.9
 idna==3.18
 urllib3==2.8.0
-soupsieve==2.10
+soupsieve==4.0
 typing_extensions==4.16.0
 greenlet==3.5.5
 pyee==13.0.1
