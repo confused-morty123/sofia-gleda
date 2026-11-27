@@ -618,7 +618,9 @@ def declutter(title):
         yrs = [x for x in segs[1:] if _PIPE_YEAR_SEG_RE.match(x)]
         if yrs and segs[0] and not _PIPE_YEAR_SEG_RE.match(segs[0]):
             yi = segs.index(yrs[0])
-            if yi < len(segs) - 1 and any(segs[yi + 1:]):   # something after the year: an event
+            # something after the year (an event), or the year closes "BG | ORIGINAL | 2015"
+            # (the event already stripped as a known festival suffix, film_identity)
+            if (yi < len(segs) - 1 and any(segs[yi + 1:])) or (yi == len(segs) - 1 and yi >= 2):
                 extracted_year = int(yrs[0])
                 t = segs[0]
 

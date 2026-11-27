@@ -4914,6 +4914,17 @@ _mf = {"POSTERS": {"k": "https://programata.bg/wp-content/uploads/2026/02/hqdefa
        "VLINKS": [["k", "bnf", "https://bnf.bg/bg/odeon/movies/1/"], ["l", "x", "https://programata.bg/filmi/l/"]]}
 check("true coverage (films): an aggregator's image counts only when the film links that page; a venue's own does",
       [PP.true_poster(i, _mf, {"films": {}}, "films")[0] for i in ("k", "l", "m")], [False, True, True])
+# 2026-11-27: inject_data.py picks, of a film's og:image / own-page file / film_info img,
+# the first the gate counts as its own (PP.film_image_is_own), so a programata.bg still
+# no longer shadows Кино Арена's poster (films fell to 89.4 %, under the 90 % floor)
+check("film_image_is_own: an unlinked aggregator's still is not the film's own; a cinema's poster is",
+      [PP.film_image_is_own("k", _mf["POSTERS"]["k"], _mf),
+       PP.film_image_is_own("k", "https://www.kinoarena.com/uploads/media/stenik_movies_image/0001/16/a.jpeg", _mf),
+       PP.film_image_is_own("l", _mf["POSTERS"]["l"], _mf)], [False, True, True])
+_inj_src = (pathlib.Path(__file__).resolve().parent / "inject_data.py").read_text(encoding="utf-8")
+check("inject_data: the film poster pick prefers an image film_image_is_own accepts",
+      "film_image_is_own(_fid, u, _own_maps)" in _inj_src and "posters_override = {k: v for k, v in film_links" not in _inj_src,
+      True)
 import tempfile as _tfb2, hashlib as _hlb2
 from PIL import Image as _Imb2
 with _tfb2.TemporaryDirectory() as _db2:
@@ -5889,6 +5900,12 @@ for _t, _want in (("Властелинът на пръстените: Двете
 check("declutter: Влайкова's 'BG | ORIGINAL | year | event' gives the Bulgarian title and the year",
       TMDB.declutter("ОМАРЪТ | THE LOBSTER | 2015 | „Нощ на европейското кино“ в кино „Влайкова“"),
       ("ОМАРЪТ", 2015))
+check("declutter: 'BG | ORIGINAL | year' (the event suffix already stripped) gives the Bulgarian title",
+      TMDB.declutter("ОМАРЪТ | THE LOBSTER | 2015"), ("ОМАРЪТ", 2015))
+check("film_identity: the European Cinema Night suffix is stripped and the year read",
+      (FID.strip_prefix("ОМАРЪТ | THE LOBSTER | 2015 | „Нощ на европейското кино“ в кино „Влайкова“"),
+       FID.title_year("ОМАРЪТ | THE LOBSTER | 2015 | „Нощ на европейското кино“ в кино „Влайкова“")),
+      ("ОМАРЪТ | THE LOBSTER | 2015", 2015))
 check("declutter: a trailing '| 1979 |' still gives its year", TMDB.declutter("Сънища | 1990 |"), ("Сънища", 1990))
 check("stripped_words: an English or 'издание' re-release marker is never a lost title word",
       [sorted(TMDB.stripped_words(TMDB.strip_rerelease(_t), TMDB.declutter(_t)[0]))

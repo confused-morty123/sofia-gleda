@@ -13,9 +13,10 @@
 
 Priority (highest first):
   1. TMDB poster (TMDBART[id].p)
-  2. film_links_posters.json entry (og:image harvested by fetch_tmdb.py)
-  3. film_info.json `img` — lowest priority; only for films with no TMDB poster
-     and no film_links_posters entry; must pass posterpolicy.
+  2. of the film's og:image (film_links_posters.json), own-page image
+     (poster_sources.json) and film_info.json `img`, in that order, the first
+     the gate counts as the film's own image (see posterpolicy.true_poster);
+     else the first that passes posterpolicy.
 
 Idempotent: regenerates the whole block each run. Missing ids keep the app's
 generated SVG artwork.
@@ -27,10 +28,11 @@ import json, os, re, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from csp import json_for_script, stamp as stamp_csp  # noqa: E402
 try:
-    from posterpolicy import Catalogue, reject_reason
+    from posterpolicy import Catalogue, reject_reason, film_image_is_own
 except ImportError:
     Catalogue = None
     def reject_reason(pid, url, catalogue=None): return None  # type: ignore
+    def film_image_is_own(pid, url, maps): return True  # type: ignore
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HTML = pathlib.Path(os.environ.get("SOFIA_HTML", ROOT / "index.html"))
@@ -109,30 +111,30 @@ try:
 except ImportError:
     pass
 
-# Films TMDB cannot match keep their own programme-page image (og:image), harvested
-# into film_links_posters.json. These are full URLs and go into POSTERS, which
-# realPoster() checks first — but fetch_tmdb only writes an entry here for a film
-# WITHOUT a TMDB poster, so this stays a pure fallback and never shadows TMDB art.
-posters_override = {k: v for k, v in film_links.items() if v}
-
-# Lowest-priority fallback: film_info.json `img` field (harvested by fetch_film_info.py
-# from the NDK/programata/vlaikova event page). Only used when:
-#   - the film has no TMDB poster (TMDBART[id].p absent)
-#   - the film has no film_links_posters entry
-# posterpolicy is applied to each candidate to refuse opaque/untrusted images.
+# Films without a TMDB poster take one image from up to three candidates, in this
+# order: their programme-page og:image (film_links_posters.json, fetch_tmdb), the
+# image own_page_posters.py read from the page the listing links
+# (poster_sources.json, re-hosted under posters/, used only while the file is
+# unchanged), and the film_info.json `img` (fetch_film_info / harvest_cinema_posters:
+# the cinema's own poster). Every candidate must pass posterpolicy.reject_reason.
+# Of those that pass, the first the publish gate counts as the film's OWN image
+# (posterpolicy.true_poster: a re-hosted own-page file, or any host but a listings
+# aggregator the film does not link) wins; only when none does, the first that
+# passes. Until 2026-11-27 the og:image always won: a programata.bg still shadowed
+# Кино Арена's and Cinema City's posters and the own-page posters of eight films,
+# and film coverage fell to 89.4 %, under the gate's 90 % floor.
+# fetch_tmdb only writes film_links_posters.json for a film WITHOUT a TMDB poster,
+# so none of this shadows TMDB art.
 _tmdb_with_poster = {fid for fid, v in tmdb.items() if v.get("poster_path")}
+posters_override = {}
 _fi_img_added = 0
 _fi_img_log = []
-# Defer catalogue construction (it reads index.html which hasn't been written yet
-# for this very run — but we only need to CHECK `knows`, which is stable).
-# We build the catalogue once below, after alias computation.
-_fi_img_pending = {}  # fid -> img_url, to be policy-checked after catalogue is ready
+_fi_img_pending = {}  # fid -> film_info img, for the summary line below
 
 # Images read from each title's OWN page by own_page_posters.py, with their
 # provenance in poster_sources.json. A play's own-page image replaces whatever
-# theatre_posters.json holds for it (an aggregator match, a hand-added file); a
-# film's is used only when it has no TMDB poster and no programme-page image,
-# ahead of the film_info img fallback. Only files that still exist, unchanged.
+# theatre_posters.json holds for it (an aggregator match, a hand-added file). Only
+# files that still exist, unchanged.
 try:
     import hashlib as _hl
     _own = json.load(open(ROOT / "poster_sources.json", encoding="utf-8"))
@@ -145,25 +147,12 @@ for _sid, _rec in (_own.get("shows") or {}).items():
         if showart.get(_sid) != _p:
             showart[_sid] = _p
             _own_n["shows"] += 1
+_own_film = {}
 for _fid, _rec in (_own.get("films") or {}).items():
     _p = (_rec or {}).get("path") or ""
-    if (_p and _fid not in _tmdb_with_poster and _fid not in posters_override
-            and (ROOT / _p).is_file()
+    if (_p and _fid not in _tmdb_with_poster and (ROOT / _p).is_file()
             and _hl.md5((ROOT / _p).read_bytes()).hexdigest() == _rec.get("md5")):
-        posters_override[_fid] = _p
-        _own_n["films"] += 1
-if any(_own_n.values()):
-    print(f"  own-page posters (poster_sources.json): {_own_n['shows']} play(s) replaced, "
-          f"{_own_n['films']} film(s) added to POSTERS")
-for _fid, _fi in filminfo.items():
-    _img = _fi.get("img")
-    if not _img:
-        continue
-    if _fid in _tmdb_with_poster:
-        continue   # TMDB poster exists — no need for fallback
-    if _fid in posters_override:
-        continue   # film_links_posters already covers this film
-    _fi_img_pending[_fid] = _img
+        _own_film[_fid] = _p
 
 # A cinema-scope event that is simply a screening of a film we already list must
 # borrow that film's verified TMDB poster - harvesting a second image for the same
@@ -181,29 +170,44 @@ if Catalogue is not None:
     except Exception as e:
         print(f"  (could not compute SHOWALIAS: {e})")
 
-# og:images harvested from the films' own pages (film_links_posters.json) pass the
-# same poster policy the publish gate applies. A ticketing backend's image
-# (softwareforcinema.com) or an opaque CDN file is dropped here and logged, and the
-# film may still take its film_info img below. Before, one such image failed the
-# gate and blocked the whole refresh (2026-10-09: 27 Синелибри og:images on GitHub).
-for _fid, _url in list(posters_override.items()):
-    _why = reject_reason(_fid, _url, _cat)
-    if _why:
-        del posters_override[_fid]
-        _fi_img_log.append(f"  og:image dropped {_fid!r}: {_why}")
-        _img = (filminfo.get(_fid) or {}).get("img")
-        if _img and _fid not in _tmdb_with_poster:
-            _fi_img_pending[_fid] = _img
+# The film+venue links scrape_programs.py wrote (VLINKS), for film_image_is_own:
+# an aggregator's image is the film's own only when the film links that site.
+try:
+    _vm = re.search(r"^const VLINKS=(\[.*?\]);\s*$", HTML.read_text(encoding="utf-8"), flags=re.M | re.S)
+    _own_maps = {"VLINKS": json.loads(_vm.group(1)) if _vm else []}
+except (OSError, ValueError):
+    _own_maps = {"VLINKS": []}
 
-# Apply film_info img fallback: check posterpolicy and merge into POSTERS.
-# Now that _cat is available we can do the full policy check (including knows()).
-for _fid, _img in _fi_img_pending.items():
-    _why = reject_reason(_fid, _img, _cat)
-    if _why:
-        _fi_img_log.append(f"  fi-img dropped {_fid!r}: {_why}")
-    else:
-        posters_override[_fid] = _img
+for _fid in sorted(set(film_links) | set(_own_film) | set(filminfo)):
+    if _fid in _tmdb_with_poster:
+        continue   # TMDB poster exists — no need for fallback
+    _cands = [(k, u) for k, u in (("og:image", film_links.get(_fid)), ("own page", _own_film.get(_fid)),
+                                  ("fi-img", (filminfo.get(_fid) or {}).get("img"))) if u]
+    if not _cands:
+        continue
+    _ok = []
+    for _kind, _url in _cands:
+        _why = reject_reason(_fid, _url, _cat)
+        if _why:
+            _fi_img_log.append(f"  {_kind} dropped {_fid!r}: {_why}")
+        else:
+            _ok.append((_kind, _url))
+    if not _ok:
+        continue
+    _pick = next(((k, u) for k, u in _ok
+                  if k == "own page" or film_image_is_own(_fid, u, _own_maps)), _ok[0])
+    if _pick != _ok[0]:
+        _fi_img_log.append(f"  {_fid!r}: {_pick[0]} ({_pick[1]}) ahead of the aggregator's {_ok[0][0]} "
+                           f"({_ok[0][1]})")
+    posters_override[_fid] = _pick[1]
+    if _pick[0] == "own page":
+        _own_n["films"] += 1
+    elif _pick[0] == "fi-img":
+        _fi_img_pending[_fid] = _pick[1]
         _fi_img_added += 1
+if any(_own_n.values()):
+    print(f"  own-page posters (poster_sources.json): {_own_n['shows']} play(s) replaced, "
+          f"{_own_n['films']} film(s) added to POSTERS")
 if _fi_img_log:
     for _l in _fi_img_log:
         print(_l)
