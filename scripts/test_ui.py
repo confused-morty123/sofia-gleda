@@ -23170,6 +23170,20 @@ OP2_SHEET_JS = r"""() => { const sc = document.getElementById('scrim'), sh = sc 
     cred: [...sh.querySelectorAll('.credits dt')].map(x => [x.textContent, x.nextElementSibling ? x.nextElementSibling.textContent : ''])}; }"""
 
 
+def _op2_back(page, ms):
+    """Back from a sheet, then wait until it has finished closing: the scrim hidden and the
+    page's tap shield over. WebKit on GitHub's runners can still be sliding the sheet out
+    after a fixed wait, and a tap then lands on the closing scrim and opens nothing."""
+    page.go_back(); page.wait_for_timeout(ms)
+    try:
+        page.wait_for_function("""() => { const sc = document.getElementById('scrim');
+            return (!sc || sc.hidden) && !document.querySelector('#scrim.closing')
+                && (typeof _tapShieldUntil === 'undefined' || performance.now() > _tapShieldUntil); }""", timeout=5000)
+    except Exception:
+        pass
+    wait_page_idle(page, 4000)
+
+
 def _op2_sheet(browser, base, eng):
     """The opera sheet (DESIGN_SPEC §5.9 / §9): opened from a dated agenda row it sits at
     /show/<id>/ with the compact banner and Back returns to /home/opera/; buy links only in
@@ -23190,7 +23204,7 @@ def _op2_sheet(browser, base, eng):
         check(f"{tag}_prices_dated_by_their_performance_{sz}", bool(s) and [f"Цени ({dm})", "20–40 € · 2 категории"] in s["cred"],
               f"credits {s and s['cred']} (want Цени ({dm}))")
         save_shot(page, "OP2", f"{eng}_sheet_{sz}")
-        page.go_back(); page.wait_for_timeout(900)
+        _op2_back(page, 900)
         v = page.evaluate(OP_VIEW_JS)
         check(f"{tag}_back_to_opera_{sz}", not v["open"] and v["path"] == "/home/opera/" and v["mode"] == "opera",
               f"Back: open={v['open']} {v['path']}{v['search']} mode={v['mode']}")
@@ -23202,7 +23216,8 @@ def _op2_sheet(browser, base, eng):
             s = page.evaluate(OP2_SHEET_JS)
             ok = bool(s) and (s["sstate"] and s["buy"] == 0 if want == "sstate" else s["nolist"] and s["pills"] == 0 and s["buy"] == 0)
             check(f"{tag}_{sid}_{want}_{sz}", ok, f"{s}")
-            page.go_back(); page.wait_for_timeout(700)
+            if s:
+                _op2_back(page, 700)
         check(f"{tag}_no_js_errors_{sz}", not errs, f"errors={errs[:3]}")
         ctx.close()
 
