@@ -95,6 +95,10 @@ _FESTIVALS = [
     r"синелебри(?:\s+\d{4})?", r"sinelebri(?:\s+\d{4})?",   # NDK's own spelling, 2026-10
     r"менар(?:\s+уикенд)?", r"menar(?:\s+weekend)?",          # Arab film festival, 2026-11
     r"cinemania(?:\s+\d{4})?",                                # Дом на киното, 2026-11
+    # European Cinema Night, written after the title: Влайкова's "ОМАРЪТ | THE LOBSTER |
+    # 2015 | „Нощ на европейското кино“ в кино „Влайкова“" (2026-11-27)
+    r"[„“\"]?нощ\s+на\s+европейското\s+кино[“”\"]?(?:\s+в\s+кино\s+[„“\"]?влайкова[“”\"]?)?",
+    r"european\s+cinema\s+night",
 ]
 # A festival's edition number before its name: Дом на киното's "40.Киномания: Обич"
 # (2026-10), "40. Киномания – …". Only in front of a listed name.

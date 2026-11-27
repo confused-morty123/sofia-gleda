@@ -249,7 +249,7 @@ def true_poster(pid, maps, sources, kind="shows", root=None):
         # a listings aggregator's image is the film's own only when the film links
         # that aggregator's page (VLINKS): programata.bg stills and YouTube frames
         # on films linked only to bnf.bg / Cineland (2026-11-04) are not.
-        if host_of(url) not in AGGREGATOR_FILM_HOSTS or _film_link_site(pid, url, maps):
+        if film_image_is_own(pid, url, maps):
             return True, "the film's programme page"
         return False, "unverified: an aggregator's image, and the film does not link its page"
     return False, "unverified: a remote image with no record of its page"
@@ -258,6 +258,14 @@ def true_poster(pid, maps, sources, kind="shows", root=None):
 # Listings sites that carry other people's films: their image is not the film's
 # own page's unless the film links that page.
 AGGREGATOR_FILM_HOSTS = {"programata.bg"}
+
+
+def film_image_is_own(pid, url, maps):
+    """True when a film's remote image counts as its own (true_poster, kind
+    "films"): any host but a listings aggregator's, or an aggregator the film
+    links (VLINKS). inject_data.py uses it to pick, of a film's candidate images,
+    the one the gate will count."""
+    return host_of(url) not in AGGREGATOR_FILM_HOSTS or _film_link_site(pid, url, maps)
 
 
 def _site(host):
