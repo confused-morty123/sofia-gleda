@@ -8309,7 +8309,15 @@
   "source": "opera",
   "source_id": "1089",
   "subtitle": "Опера от Волфганг Амадеус Моцарт - адаптирана за деца /Спектакъл за деца/",
-  "subtitleEn": "Opera by Wolfgang Amadeus Mozart – version adapted for children /The performance is for children/"
+  "subtitleEn": "Opera by Wolfgang Amadeus Mozart – version adapted for children /The performance is for children/",
+  "facts": {
+   "duration": "01:00",
+   "language": "Изпълнява се на български език.",
+   "age": "Подходящо за деца над 3 годишна възраст!",
+   "conductor": "Жорж Димитров",
+   "director": "Юлия Кръстева",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
  },
  "groznoto-patentse": {
   "id": "groznoto-patentse",
@@ -8503,7 +8511,19 @@
   "synEn": "",
   "source": "opera",
   "source_id": "1069",
-  "baked": true
+  "baked": true,
+  "facts": {
+   "conductor": "Жан-Кристоф Спинози",
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3548",
+   "prices_read": "2026-11-27",
+   "prices_eur": [
+    "35",
+    "40",
+    "30",
+    "25",
+    "20"
+   ]
+  }
  },
  "kontsert-za-bebotsi": {
   "id": "kontsert-za-bebotsi",
@@ -8555,7 +8575,10 @@
   "source": "opera",
   "source_id": "1070",
   "subtitle": "под патронажа на Марчело Апичела, посланик на Италия в България",
-  "subtitleEn": "Under the patronage of Marcello Apicella, ambassador of Italy in Bulgaria"
+  "subtitleEn": "Under the patronage of Marcello Apicella, ambassador of Italy in Bulgaria",
+  "facts": {
+   "conductor": "Лучано ди Мартино"
+  }
  },
  "leshnikotroshachkata": {
   "id": "leshnikotroshachkata",
@@ -8693,7 +8716,11 @@
   "source": "opera",
   "source_id": "1087",
   "subtitle": "Балет-приказка за деца - музика Сергей Прокофиев и Николай Волков /Спектакъл за деца/",
-  "subtitleEn": "Ballet-fairy - tale by Sergei Prokofiev and Nikolai Volkov /The performance is for children/"
+  "subtitleEn": "Ballet-fairy - tale by Sergei Prokofiev and Nikolai Volkov /The performance is for children/",
+  "facts": {
+   "age": "Подходящо за деца над 3 годишна възраст!",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
  },
  "praznichno-ochakvane": {
   "id": "praznichno-ochakvane",
@@ -8716,7 +8743,15 @@
   "source": "opera",
   "source_id": "1125",
   "subtitle": "Камерен концерт",
-  "subtitleEn": "Chamber concert"
+  "subtitleEn": "Chamber concert",
+  "facts": {
+   "conductor": "Велизар Генчев",
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3676",
+   "prices_read": "2026-11-27",
+   "prices_eur": [
+    "15"
+   ]
+  }
  },
  "reynsko-zlato-za-detsa": {
   "id": "reynsko-zlato-za-detsa",
@@ -8768,7 +8803,14 @@
   "source": "opera",
   "source_id": "1103",
   "subtitle": "Камерен концерт",
-  "subtitleEn": "Chamber concert"
+  "subtitleEn": "Chamber concert",
+  "facts": {
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3621",
+   "prices_read": "2026-11-27",
+   "prices_eur": [
+    "15"
+   ]
+  }
  },
  "semiramida": {
   "id": "semiramida",
@@ -8915,5 +8957,134 @@
    "director": "Юлия Кръстева",
    "prices": "Цени за възрастен 8 €, дете над една година 8 €."
   }
+ },
+ "tigarcheto-spas": {
+  "id": "tigarcheto-spas",
+  "title": "Тигърчето Спас",
+  "titleEn": "",
+  "theatre": "mladezhki",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B3330",
+   "#275F57"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "mladezhki"
+ },
+ "aida": {
+  "id": "aida",
+  "title": "АИДА",
+  "titleEn": "AIDA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#331B24",
+   "#5F2745"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1126",
+  "subtitle": "Опера от Джузепе Верди",
+  "subtitleEn": "Opera by Giuseppe Verdi"
+ },
+ "don-kihot-2": {
+  "id": "don-kihot-2",
+  "title": "ДОН КИХОТ",
+  "titleEn": "DON QUIXOTE",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Балет"
+  ],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1113",
+  "subtitle": "Балет от Лудвиг Минкус /Спектакъл за възрастни/",
+  "subtitleEn": "Ballet by Ludwig Minkus /Performance for adults/"
+ },
+ "matilda": {
+  "id": "matilda",
+  "title": "МАТИЛДА",
+  "titleEn": "MATILDA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Мюзикъл"
+  ],
+  "g": [
+   "#1B331F",
+   "#275F3A"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1114",
+  "subtitle": "Семеен мюзикъл",
+  "subtitleEn": "Family Musical",
+  "baked": true
+ },
+ "medeya-2": {
+  "id": "medeya-2",
+  "title": "МЕДЕЯ",
+  "titleEn": "MEDEA",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Опера"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1112",
+  "subtitle": "Опера от Луиджи Керубини",
+  "subtitleEn": "Opera by Luigi Cherubini"
+ },
+ "pri-zakriti-vrati": {
+  "id": "pri-zakriti-vrati",
+  "title": "ПРИ ЗАКРИТИ ВРАТИ",
+  "titleEn": "",
+  "theatre": "vazrazhdane",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "vazrazhdane"
  }
 }

@@ -1,12 +1,12 @@
 {
- "date": "2026-11-26",
+ "date": "2026-11-27",
  "threshold": 280,
  "shows": {
-  "titles": 480,
-  "thin": 110,
-  "empty": 74,
-  "thin_en": 134,
-  "linked": 99,
+  "titles": 478,
+  "thin": 107,
+  "empty": 71,
+  "thin_en": 131,
+  "linked": 96,
   "by_theatre": {
    "artvent": {
     "titles": 22,
@@ -73,11 +73,11 @@
     "name": "Народен театър „Иван Вазов“"
    },
    "salzaismyah": {
-    "titles": 47,
-    "thin": 15,
-    "empty": 11,
-    "thin_en": 13,
-    "linked": 15,
+    "titles": 45,
+    "thin": 13,
+    "empty": 9,
+    "thin_en": 11,
+    "linked": 13,
     "name": "Театър „Сълза и смях“"
    },
    "satira": {
@@ -90,10 +90,10 @@
    },
    "sfumato": {
     "titles": 23,
-    "thin": 5,
-    "empty": 4,
-    "thin_en": 8,
-    "linked": 5,
+    "thin": 4,
+    "empty": 3,
+    "thin_en": 7,
+    "linked": 4,
     "name": "Театрална работилница „Сфумато“"
    },
    "sofia-th": {
@@ -105,7 +105,7 @@
     "name": "Театър „София“"
    },
    "tba": {
-    "titles": 34,
+    "titles": 33,
     "thin": 3,
     "empty": 3,
     "thin_en": 7,
@@ -129,7 +129,7 @@
     "name": "Топлоцентрала"
    },
    "vazrazhdane": {
-    "titles": 21,
+    "titles": 22,
     "thin": 1,
     "empty": 1,
     "thin_en": 4,
@@ -148,32 +148,31 @@
  },
  "opera": {
   "titles": 28,
-  "thin": 20,
-  "empty": 15,
-  "thin_en": 20,
-  "linked": 20
+  "thin": 14,
+  "empty": 9,
+  "thin_en": 14,
+  "linked": 14
  },
  "films": {
-  "titles": 172,
-  "thin": 74,
-  "empty": 42,
-  "thin_en": 103
+  "titles": 169,
+  "thin": 77,
+  "empty": 41,
+  "thin_en": 102
  },
  "routes": {
   "overrides": 0,
-  "theatre_art_fills": 84,
-  "own_page_fills": 325,
-  "link_to_theatre": 99,
+  "theatre_art_fills": 85,
+  "own_page_fills": 331,
+  "link_to_theatre": 96,
   "own_page_misses": {
    "cast / credits / practical lines only": 31,
    "the text is about another listed production": 10,
    "no description paragraph": 8,
    "biography / interview / reviews, no description before it": 7,
-   "description under 120 characters": 7,
+   "description under 120 characters": 6,
    "reviews / interview only": 4,
-   "no description block on the page": 2,
-   "page not read (robots.txt, an HTTP error or no answer)": 2,
-   "the page's headings do not name the play": 1
+   "the page's headings do not name the play": 3,
+   "no description block on the page": 2
   }
  }
 }

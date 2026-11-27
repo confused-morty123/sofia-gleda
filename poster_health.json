@@ -1,41 +1,56 @@
 {
  "before": {
-  "films": 91.3,
-  "shows": 92.5
+  "films": 94.7,
+  "shows": 93.7
  },
  "below_target": [
   "films",
   "shows"
  ],
- "date": "2026-11-26",
+ "date": "2026-11-27",
  "errors": [],
  "films": {
   "how": {
-   "TMDB poster": 125,
-   "own page: poster": 14,
-   "the film's programme page": 18
+   "TMDB poster": 124,
+   "own page: poster": 15,
+   "the film's programme page": 21
   },
-  "pct": 91.3,
-  "upcoming": 172,
-  "with": 157
+  "pct": 94.7,
+  "upcoming": 169,
+  "with": 160
  },
  "fix": {
   "after": {
-   "films": 91.3,
-   "shows": 94.0
+   "films": 94.7,
+   "shows": 93.9
   },
-  "attached": 5,
-  "attempted": 6,
+  "attached": 0,
+  "attempted": 35,
   "before": {
-   "films": 91.3,
-   "shows": 93.1
+   "films": 94.7,
+   "shows": 93.9
   },
   "broken_parsers": [],
   "causes": {
    "films": {
-    "only a ticket page linked, not the title's page": 3,
-    "only an aggregator's image (the film does not link that page)": 9,
-    "own page has no usable image": 3
+    "only a ticket page linked, not the title's page": 4,
+    "only an aggregator's image (the film does not link that page)": 3,
+    "own page has no usable image": 1,
+    "the linked page is not the title's (redirect, home page or another title)": 1
+   },
+   "shows": {
+    "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
+    "own page has no usable image": 10,
+    "own page or its image could not be fetched": 1,
+    "own page's images rejected by the poster policy": 2,
+    "the linked page is not the title's (redirect, home page or another title)": 8
+   }
+  },
+  "causes_before": {
+   "films": {
+    "only a ticket page linked, not the title's page": 4,
+    "only an aggregator's image (the film does not link that page)": 3,
+    "own page has no usable image": 2
    },
    "shows": {
     "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
@@ -45,49 +60,35 @@
     "the linked page is not the title's (redirect, home page or another title)": 1
    }
   },
-  "causes_before": {
-   "films": {
-    "only a ticket page linked, not the title's page": 3,
-    "only an aggregator's image (the film does not link that page)": 9,
-    "own page has no usable image": 3
-   },
-   "shows": {
-    "own page blocked (robots.txt or a bot challenge; not bypassed)": 8,
-    "own page has no usable image": 17,
-    "own page or its image could not be fetched": 5,
-    "own page's images rejected by the poster policy": 2,
-    "the linked page is not the title's (redirect, home page or another title)": 1
-   }
-  },
   "counts": {
    "films": {
-    "after": "157/172",
-    "before": "157/172"
+    "after": "160/169",
+    "before": "160/169"
    },
    "shows": {
-    "after": "451/480",
-    "before": "447/480"
+    "after": "449/478",
+    "before": "449/478"
    }
   },
-  "date": "2026-11-26",
+  "date": "2026-11-27",
   "errors": [],
   "network": "ok",
   "refused": 0,
-  "requests": 15,
+  "requests": 40,
   "retried": [],
-  "seconds": 26.0,
+  "seconds": 49.9,
   "summary": {
-   "show key": 1,
-   "show nothing": 1,
-   "show poster": 4
+   "film nothing": 2,
+   "show kept (page has nothing now)": 4,
+   "show nothing": 29
   },
   "titles": {
    "films": {
-    "actually-it-is-rocket-science": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
+    "40-kinomaniya-bitkata-dyo-gol-chast-2": [
+     "only a ticket page linked, not the title's page",
+     "epaygo.bg is a ticket page, not the title's page"
     ],
-    "dzhambo-magicheskoto-priklyuchenie": [
+    "actually-it-is-rocket-science": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -95,19 +96,7 @@
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
-    "kodat-na-balgarite": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "koledni-agenti": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": [
-     "own page has no usable image",
-     "no usable image on the page"
-    ],
-    "pastir": [
+    "kina-i-yuk-lisitsite-ot-dalechniya-sever": [
      "only an aggregator's image (the film does not link that page)",
      "unverified: an aggregator's image, and the film does not link its page"
     ],
@@ -119,25 +108,13 @@
      "only a ticket page linked, not the title's page",
      "embed.urboapp.com is a ticket page, not the title's page"
     ],
-    "royal-ballet-manon": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "sinelibri-2026-ehoto-mezhdu-nas": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
-    "skoti": [
-     "only an aggregator's image (the film does not link that page)",
-     "unverified: an aggregator's image, and the film does not link its page"
-    ],
     "tya": [
      "only a ticket page linked, not the title's page",
      "embed.urboapp.com is a ticket page, not the title's page"
     ],
     "velopohodat-kam-cop30": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://vlaikovacinema.com/screening/%d0%b2%d0%b5%d0%bb%d0%be%d0%bf%d0)"
     ],
     "vnimavayte-detsa": [
      "only a ticket page linked, not the title's page",
@@ -166,8 +143,8 @@
      "no usable image on the page"
     ],
     "danceperimental-your-story-moves-us-na-angliyski-ezik": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://toplocentrala.bg/program/performance/danceperimental-define-yo)"
     ],
     "dekameron-lyubov-i-smart-po-bokacho": [
      "own page has no usable image",
@@ -178,16 +155,16 @@
      "no usable image on the page"
     ],
     "dokato-chakame-godo": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://iamstudio.bg/produkt/dokato-chakame-godo/)"
     ],
     "dokato-chakame-godo-dobrich": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://iamstudio.bg/produkt/dokato-chakame-godo-dobrich/)"
     ],
     "dokato-chakame-godo-smolyan": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://iamstudio.bg/produkt/dokato-chakame-godo-smolyan/)"
     ],
     "dokato-smartta": [
      "own page has no usable image",
@@ -202,12 +179,12 @@
      "no usable image on the page"
     ],
     "gradskiyat-tovaren-transport-v-sofiya-potentsialat-za-transf": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://toplocentrala.bg/program/performance/gradskiyat-tovaren-transp)"
     ],
     "insert-coin-player-one": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://toplocentrala.bg/program/performance/insert-coin-player-one)"
     ],
     "kiki-i-bozo": [
      "own page or its image could not be fetched",
@@ -234,8 +211,8 @@
      "no usable image on the page"
     ],
     "otgore-hahaha-impro-otbelyazva-17-godini-ot-parvoto-si-shou-": [
-     "own page has no usable image",
-     "no usable image on the page"
+     "the linked page is not the title's (redirect, home page or another title)",
+     "the page's headings do not name the title: not used (https://toplocentrala.bg/program/performance/hahaha-otgore)"
     ],
     "pepelyashka": [
      "own page blocked (robots.txt or a bot challenge; not bypassed)",
@@ -270,31 +247,25 @@
   ]
  },
  "fixed_this_run": {
-  "film already has a poster": 8,
+  "film already has a poster": 3,
   "film nothing": 1,
-  "poster fix: show key": 1,
-  "poster fix: show nothing": 1,
-  "poster fix: show poster": 4,
-  "show kept (page has nothing now)": 4,
-  "show kept (recheck found only a key)": 2,
-  "show key": 30,
-  "show poster": 1,
-  "show replacement held for review": 34
+  "poster fix: film nothing": 2,
+  "poster fix: show kept (page has nothing now)": 4,
+  "poster fix: show nothing": 29,
+  "show kept (page has nothing now)": 6,
+  "show key": 17,
+  "show poster": 8,
+  "show replaced on recheck": 3,
+  "show replacement held for review": 9
  },
  "missing": {
   "films": {
+   "40-kinomaniya-bitkata-dyo-gol-chast-2": "no image: the generated art shows",
    "actually-it-is-rocket-science": "unverified: an aggregator's image, and the film does not link its page",
-   "dzhambo-magicheskoto-priklyuchenie": "unverified: an aggregator's image, and the film does not link its page",
    "hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno": "unverified: an aggregator's image, and the film does not link its page",
-   "kodat-na-balgarite": "unverified: an aggregator's image, and the film does not link its page",
-   "koledni-agenti": "unverified: an aggregator's image, and the film does not link its page",
-   "omarat-the-lobster-2015-nosht-na-evropeyskoto-kino-v-kino-vl": "no image: the generated art shows",
-   "pastir": "unverified: an aggregator's image, and the film does not link its page",
+   "kina-i-yuk-lisitsite-ot-dalechniya-sever": "unverified: an aggregator's image, and the film does not link its page",
    "polyusi": "no image: the generated art shows",
    "posledniyat-prometey-na-donbas": "no image: the generated art shows",
-   "royal-ballet-manon": "unverified: an aggregator's image, and the film does not link its page",
-   "sinelibri-2026-ehoto-mezhdu-nas": "unverified: an aggregator's image, and the film does not link its page",
-   "skoti": "unverified: an aggregator's image, and the film does not link its page",
    "tya": "no image: the generated art shows",
    "velopohodat-kam-cop30": "no image: the generated art shows",
    "vnimavayte-detsa": "no image: the generated art shows"
@@ -349,14 +320,14 @@
   "mladezhki": "37/46",
   "natfiz": "12/13",
   "national": "63/63",
-  "salzaismyah": "47/47",
+  "salzaismyah": "45/45",
   "satira": "40/44",
   "sfumato": "21/23",
   "sofia-th": "16/16",
-  "tba": "31/34",
+  "tba": "30/33",
   "th199": "30/33",
   "toplo": "46/50",
-  "vazrazhdane": "21/21",
+  "vazrazhdane": "22/22",
   "zad-kanala": "22/22"
  },
  "shows": {
@@ -364,12 +335,12 @@
    "TMDB poster": 1,
    "own page: key": 184,
    "own page: photo": 2,
-   "own page: poster": 264
+   "own page: poster": 262
   },
-  "pct": 94.0,
-  "upcoming": 480,
-  "with": 451
+  "pct": 93.9,
+  "upcoming": 478,
+  "with": 449
  },
- "shows_displayed": 472,
+ "shows_displayed": 470,
  "target": 95.0
 }

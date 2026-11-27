@@ -1,12 +1,12 @@
-# Synopsis health — 2026-11-26
+# Synopsis health — 2026-11-27
 
 Thin = Bulgarian synopsis shorter than 280 characters (or none).
 
-- Plays: 110 of 480 thin (74 with none); 99 of them link the theatre's own page under the text.
-- Opera (Софийска опера и балет, its own count): 20 of 28 thin (15 with none).
-- Films: 74 of 172 thin (42 with none).
-- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 325 fill(s) from the plays' own production pages, 84 fill(s) from theatre.art.bg production pages.
-- Own pages read that gave no text: 72 (31 cast / credits / practical lines only; 10 the text is about another listed production; 8 no description paragraph; 7 biography / interview / reviews, no description before it; 7 description under 120 characters; 4 reviews / interview only; 2 no description block on the page; 2 page not read (robots.txt, an HTTP error or no answer); 1 the page's headings do not name the play).
+- Plays: 107 of 478 thin (71 with none); 96 of them link the theatre's own page under the text.
+- Opera (Софийска опера и балет, its own count): 14 of 28 thin (9 with none).
+- Films: 77 of 169 thin (41 with none).
+- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 331 fill(s) from the plays' own production pages, 85 fill(s) from theatre.art.bg production pages.
+- Own pages read that gave no text: 71 (31 cast / credits / practical lines only; 10 the text is about another listed production; 8 no description paragraph; 7 biography / interview / reviews, no description before it; 6 description under 120 characters; 4 reviews / interview only; 3 the page's headings do not name the play; 2 no description block on the page).
 
 | Theatre | Plays | Thin | None | Own-page link |
 |---|---:|---:|---:|---:|
@@ -18,14 +18,14 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 | Младежки театър „Николай Бинев“ | 46 | 8 | 3 | 8 |
 | Учебен театър на НАТФИЗ „Кръстьо Сарафов“ | 13 | 6 | 5 | 6 |
 | Народен театър „Иван Вазов“ | 63 | 11 | 3 | 11 |
-| Театър „Сълза и смях“ | 47 | 15 | 11 | 15 |
+| Театър „Сълза и смях“ | 45 | 13 | 9 | 13 |
 | Сатиричен театър „Алеко Константинов“ | 44 | 21 | 21 | 21 |
-| Театрална работилница „Сфумато“ | 23 | 5 | 4 | 5 |
+| Театрална работилница „Сфумато“ | 23 | 4 | 3 | 4 |
 | Театър „София“ | 16 | 3 | 1 | 3 |
-| Театър „Българска армия“ | 34 | 3 | 3 | 3 |
+| Театър „Българска армия“ | 33 | 3 | 3 | 3 |
 | Театър 199 „Валентин Стойчев“ | 33 | 9 | 4 | 3 |
 | Топлоцентрала | 50 | 4 | 1 | 4 |
-| Театър „Възраждане“ | 21 | 1 | 1 | 1 |
+| Театър „Възраждане“ | 22 | 1 | 1 | 1 |
 | МГТ „Зад канала“ | 22 | 7 | 6 | 7 |
 
 ## Thin plays
@@ -35,7 +35,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `100-godini-zhiva-svetlina-nch-petar-beron-1926` (tba) 100 години ЖИВА СВЕТЛИНА - НЧ "Петър Берон" 1926 — 0 chars — https://www.tba.art.bg/100-години-жива-светлина-нч-петър-берон-1926___8105
 - `aktyori-sreshtu-poeti` (sfumato) Актьори срещу поети — 242 chars — http://sfumato.info/актьори-срещу-поети___2972
 - `albion` (mladezhki) АЛБИОН — 177 chars — https://mlt.bg/албион___7891
-- `arabska-nosht` (sfumato) Арабска нощ — 0 chars — http://sfumato.info/арабска-нощ-премиера___4321
 - `avenyu-q` (kuklen) Авеню Q — 0 chars — https://sofiapuppet.com/авеню-q___3853
 - `ayvar-ili-lyutenitsa` (toplo) Айвар или лютеница — 154 chars — https://toplocentrala.bg/program/performance/aivar-or-lyutenitsa
 - `az-dosadnikat` (salzaismyah) АЗ ДОСАДНИКЪТ — 251 chars — https://www.salzaismyah.bg/site/play/228
@@ -102,13 +101,11 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `moskva-petushki` (atelie313) МОСКВА-ПЕТУШКИ — 0 chars
 - `moyat-svyat-koleden-spektakal` (citymark) "МОЯТ СВЯТ" | КОЛЕДЕН СПЕКТАКЪЛ — 0 chars — https://theatre.art.bg/моят-свят-|-коледен-спектакъл_6434_173_20
 - `mrak-na-kraya` (national) Мрак на края на града — 17 chars — https://www.nationaltheatre.bg/bg/predstavlenie/mrak-na-kraya-na-grada
-- `nedyalko-yordanov-tsyal-zhivot` (salzaismyah) НЕДЯЛКО ЙОРДАНОВ - ЦЯЛ ЖИВОТ — 0 chars — https://www.salzaismyah.bg/site/play/737
 - `neobvarzani` (mladezhki) Необвързани — 0 chars — https://mlt.bg/необвързани___7846
 - `neodachnitsi` (national) Neoдачници — 0 chars — https://www.nationaltheatre.bg/bg/predstavlenie/neodachnici
 - `nerodena-moma` (atelie313) НЕРОДЕНА МОМА — 0 chars
 - `nevinno-malko-ubiystvo` (sofia-th) Невинно малко убийство — 258 chars — https://sofiatheatre.eu/repertoires/3/nevinno-malko-ubiistvo
 - `otkachena-familiya-gostuva-odt-apostol-k` (tba) Откачена фамилия - Гостува ОДТ Апостол Карамитев - Димитровград — 0 chars — https://www.tba.art.bg/откачена-фамилия-гостува-одт-апостол-карамитев-димитровград___7918
-- `otnasya-se-do-vsichki` (salzaismyah) Отнася се до всички — 0 chars — https://www.salzaismyah.bg/site/play/697
 - `otvorena-brachna-dvoyka` (salzaismyah) ОТВОРЕНА БРАЧНА ДВОЙКА — 0 chars — https://www.salzaismyah.bg/site/play/645
 - `p-osveti` (salzaismyah) (П)освети — 0 chars — https://www.salzaismyah.bg/site/play/742
 - `politichesko-satirichno-kabare-fokus-mok` (satira) Политическо сатирично кабаре - Фокус, мокус, препаратус — 0 chars — https://satirata.bg/show/politic-satirichno-kabare-2026
@@ -157,23 +154,21 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `praznichno-ochakvane` (opera) ПРАЗНИЧНО ОЧАКВАНЕ — 185 chars — https://www.operasofia.bg/repertoire/1125
 - `salon-rosini` (opera) САЛОН РОСИНИ — 0 chars — https://www.operasofia.bg/repertoire/1103
 - `sapernitsi` (opera) СЪПЕРНИЦИ — 0 chars — https://www.operasofia.bg/repertoire/1102
-- `semiramida` (opera) СЕМИРАМИДА — 0 chars — https://www.operasofia.bg/repertoire/1104
-- `snezhanka` (opera) СНЕЖАНКА — 0 chars — https://www.operasofia.bg/repertoire/1132
-- `traviata` (opera) ТРАВИАТА — 0 chars — https://www.operasofia.bg/repertoire/1062
-- `trite-prasentsa-4` (opera) ТРИТЕ ПРАСЕНЦА — 0 chars — https://www.operasofia.bg/repertoire/1109
-- `valshebnata-fleyta` (opera) ВЪЛШЕБНАТА ФЛЕЙТА — 0 chars — https://www.operasofia.bg/repertoire/1089
-- `zhizel` (opera) ЖИЗЕЛ — 0 chars — https://www.operasofia.bg/repertoire/1068
 
 ## Thin films
 
+- `40-kinomaniya-bitkata-dyo-gol-chast-2` 40. КИНОМАНИЯ | БИТКАТА ДЬО ГОЛ: (ЧАСТ 2). — 0 chars
 - `benzinostantsiya-za-zheni` Бензиностанция за жени — 0 chars
 - `best-of-annecy-2026` BEST OF ANNECY 2026 — 0 chars
 - `bez-stsenariy` Без сценарий — 0 chars
+- `bezsmartniya-i-krasavitsata-2-eleksir-na-zhivota` Безсмъртния и красавицата 2 Елексир на живота — 0 chars
 - `bitkata-dyo-gol` Битката дьо Гол — 0 chars
 - `bog-se-smee` Бог се смее — 0 chars
 - `bolni-mozatsi` Болни мозъци — 0 chars
 - `bts-world-tour-arirang-in-jakarta-live-viewing` BTS WORLD TOUR 'ARIRANG' IN JAKARTA: LIVE VIEWING — 0 chars
 - `bunt-za-dvama` Бунт за двама — 0 chars
+- `charli-superkucheto` Чарли Суперкучето — 220 chars
+- `cheburashka` Чебурашка — 0 chars
 - `cherni-pari-za-beli-noshti` Черни пари за бели нощи — 0 chars
 - `chunkin-ekspres` Чункин експрес — 0 chars
 - `cs2-pgl-major-singapore-final-na-zhivo` CS2: PGL Major Singapore ФИНАЛ | НА ЖИВО — 0 chars
@@ -190,8 +185,6 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `elektricheskata-tseluvka` Електрическата целувка — 0 chars
 - `estestven-film` Естествен филм — 0 chars
 - `film-kontsert-s-bratya-vladigerovi-trio` Филм-концерт с Братя Владигерови Трио — 0 chars
-- `istoriya-na-dokumentalniya-film` История на документалния филм — 0 chars
-- `izostaven-ot-vsichki` Изоставен от всички — 0 chars
 - `karma` Карма — 0 chars
 - `kashta-bez-badeshte` Къща без бъдеще — 0 chars
 - `kina-i-yuk-lisitsite-ot-dalechniya-sever` Кина и Юк, лисиците от далечния север — 170 chars
@@ -228,15 +221,16 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `posledniyat-viking` Последният викинг — 119 chars
 - `predstavyane-na-sbornik-strasti-po-kinoto-i-negovite-shedyov` Представяне на сборник „Страсти по киното и неговите шедьоври“ — 0 chars
 - `prestori-se-na-umryal` Престори се на умрял — 279 chars
+- `sentimentalna` Сантиментална стойност — 187 chars
 - `shopen` Шопен — соната в Париж — 58 chars
 - `skoti` СКОТИ — 270 chars
 - `sladko-ot-peperudi` Сладко от пеперуди — 0 chars
-- `spaydar-men-nov-nov-den-re-release` СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН (Re-release) — 0 chars
+- `spaydar-men-nov-nov-den-re-release` СПАЙДЪР-МЕН: (НОВ) НОВ ДЕН (Re-release) — 164 chars
 - `sradlyo` СРЪДЛЬО — 175 chars
 - `stakleno-more` Стъклено море — 0 chars
 - `velopohodat-kam-cop30` ВЕЛОПОХОДЪТ КЪМ COP30 — 0 chars
 - `vlastelinat-na-prastenite-dvete-kuli` Властелинът на пръстените: Двете кули — 218 chars
-- `vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie` Властелинът на пръстените: Двете кули (удължено издание) — 0 chars
+- `vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie` Властелинът на пръстените: Двете кули (удължено издание) — 218 chars
 - `vsichki-obichat-bil-evans` Всички обичат Бил Евънс — 274 chars
 - `zhozefin` Жозефин — 166 chars
 - `zvyarat` Звярът — 277 chars

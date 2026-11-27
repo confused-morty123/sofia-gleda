@@ -3591,7 +3591,8 @@
    "#1B331F",
    "#275F3A"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 100
  },
  "zhalti-pisma": {
   "id": "zhalti-pisma",
@@ -3873,7 +3874,8 @@
    "#331B24",
    "#5F2745"
   ],
-  "source": "lumiere"
+  "source": "lumiere",
+  "runtime": 80
  },
  "debyutat": {
   "id": "debyutat",
@@ -5343,5 +5345,16 @@
    "#275F3A"
   ],
   "source": "vlaikova"
+ },
+ "40-kinomaniya-bitkata-dyo-gol-chast-2": {
+  "id": "40-kinomaniya-bitkata-dyo-gol-chast-2",
+  "bg": "40. КИНОМАНИЯ | БИТКАТА ДЬО ГОЛ: (ЧАСТ 2).",
+  "en": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "source": "lumiere"
  }
 }

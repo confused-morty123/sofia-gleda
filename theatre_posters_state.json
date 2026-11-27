@@ -1,128 +1,50 @@
 {
- "agripina": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1067",
-  "tries": 1
- },
  "dalgiyat-pat-na-denya-kam-noshtta": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20",
-  "tries": 14
+  "tries": 15
  },
  "dokato-chakame-godo-dobrich": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://iamstudio.bg/produkt/dokato-chakame-godo-dobrich/",
-  "tries": 14
+  "tries": 15
  },
  "dokato-chakame-godo-smolyan": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://iamstudio.bg/produkt/dokato-chakame-godo-smolyan/",
-  "tries": 14
+  "tries": 15
  },
  "dokato-smartta": {
   "first_missing": "2026-11-14",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://satirata.bg/show/dokato-smurtta",
-  "tries": 13
- },
- "karmen": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1058",
-  "tries": 1
- },
- "karnavalat-na-zhivotnite": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1088",
-  "tries": 1
- },
- "koleden-kontsert-na-italianskata-targovska-kamara": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1070",
-  "tries": 1
- },
- "kontsert-gala-rosini-svetlina-stoyanova": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1069",
-  "tries": 1
+  "tries": 14
  },
  "kontsert-na-pim-pam": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://satirata.bg/program",
-  "tries": 14
- },
- "leshnikotroshachkata": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1073",
-  "tries": 1
+  "tries": 15
  },
  "mechka-hamletmashina": {
   "first_missing": "2026-11-13",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "http://sfumato.info/мечка-хамлетмашина___8099",
-  "tries": 14
- },
- "norma": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1107",
-  "tries": 1
- },
- "pepelyashka-3": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1087",
-  "tries": 1
- },
- "praznichno-ochakvane": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1125",
-  "tries": 1
- },
- "reynsko-zlato-za-detsa": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1084",
-  "tries": 1
- },
- "salon-rosini": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1103",
-  "tries": 1
- },
- "semiramida": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1104",
-  "tries": 1
- },
- "traviata": {
-  "first_missing": "2026-11-26",
-  "last_try": "2026-11-26",
-  "link": "https://www.operasofia.bg/repertoire/1062",
-  "tries": 1
+  "tries": 15
  },
  "vanyo-sonya-masha-i-spayk": {
   "first_missing": "2026-11-14",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://satirata.bg/show/vanio-sonia-masha-i-spaik",
-  "tries": 13
+  "tries": 14
  },
  "vsichko-za-zhenite": {
   "first_missing": "2026-11-14",
-  "last_try": "2026-11-26",
+  "last_try": "2026-11-27",
   "link": "https://satirata.bg/show/vsichko-za-zhenite",
-  "tries": 13
+  "tries": 14
  }
 }
