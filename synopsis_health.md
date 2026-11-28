@@ -1,12 +1,12 @@
-# Synopsis health — 2026-11-27
+# Synopsis health — 2026-11-28
 
 Thin = Bulgarian synopsis shorter than 280 characters (or none).
 
-- Plays: 107 of 478 thin (71 with none); 96 of them link the theatre's own page under the text.
+- Plays: 108 of 476 thin (72 with none); 95 of them link the theatre's own page under the text.
 - Opera (Софийска опера и балет, its own count): 14 of 28 thin (9 with none).
-- Films: 77 of 169 thin (41 with none).
-- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 331 fill(s) from the plays' own production pages, 85 fill(s) from theatre.art.bg production pages.
-- Own pages read that gave no text: 71 (31 cast / credits / practical lines only; 10 the text is about another listed production; 8 no description paragraph; 7 biography / interview / reviews, no description before it; 6 description under 120 characters; 4 reviews / interview only; 3 the page's headings do not name the play; 2 no description block on the page).
+- Films: 77 of 169 thin (42 with none).
+- Routes: 0 owner override(s) (scripts/synopsis_overrides.json), 328 fill(s) from the plays' own production pages, 85 fill(s) from theatre.art.bg production pages.
+- Own pages read that gave no text: 71 (31 cast / credits / practical lines only; 10 the text is about another listed production; 8 no description paragraph; 7 biography / interview / reviews, no description before it; 5 description under 120 characters; 4 reviews / interview only; 4 the page's headings do not name the play; 2 no description block on the page).
 
 | Theatre | Plays | Thin | None | Own-page link |
 |---|---:|---:|---:|---:|
@@ -17,14 +17,14 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 | Столичен куклен театър | 13 | 3 | 3 | 3 |
 | Младежки театър „Николай Бинев“ | 46 | 8 | 3 | 8 |
 | Учебен театър на НАТФИЗ „Кръстьо Сарафов“ | 13 | 6 | 5 | 6 |
-| Народен театър „Иван Вазов“ | 63 | 11 | 3 | 11 |
+| Народен театър „Иван Вазов“ | 61 | 11 | 3 | 11 |
 | Театър „Сълза и смях“ | 45 | 13 | 9 | 13 |
 | Сатиричен театър „Алеко Константинов“ | 44 | 21 | 21 | 21 |
 | Театрална работилница „Сфумато“ | 23 | 4 | 3 | 4 |
 | Театър „София“ | 16 | 3 | 1 | 3 |
-| Театър „Българска армия“ | 33 | 3 | 3 | 3 |
-| Театър 199 „Валентин Стойчев“ | 33 | 9 | 4 | 3 |
-| Топлоцентрала | 50 | 4 | 1 | 4 |
+| Театър „Българска армия“ | 35 | 5 | 5 | 3 |
+| Театър 199 „Валентин Стойчев“ | 33 | 8 | 3 | 2 |
+| Топлоцентрала | 48 | 4 | 1 | 4 |
 | Театър „Възраждане“ | 22 | 1 | 1 | 1 |
 | МГТ „Зад канала“ | 22 | 7 | 6 | 7 |
 
@@ -48,16 +48,15 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `bezkraynite-sceni` (national) Безкрайните сцени — 24 chars — https://www.nationaltheatre.bg/bg/predstavlenie/bezkrainite-sceni
 - `botevata-lyubov` (salzaismyah) БОТЕВАТА ЛЮБОВ — 0 chars — https://www.salzaismyah.bg/site/play/745
 - `bradatata-grafinya` (satira) Брадатата графиня — 0 chars — https://satirata.bg/show/bradata-grafinia
+- `brak-po-italianski` (tba) БРАК ПО ИТАЛИАНСКИ — 0 chars
 - `bul-terier` (national) БУЛ ТЕРИЕР — 25 chars — https://www.nationaltheatre.bg/bg/predstavlenie/bul-terier
 - `buratino-2` (mladezhki) Буратино — 237 chars — https://mlt.bg/буратино___7714
 - `buryata-the-tempest` (national) Бурята | The Tempest — 0 chars — https://www.nationaltheatre.bg/bg/predstavlenie/buryata
 - `chamokria` (artvent) Чамкория — 0 chars — https://artvent.bg/event/chamokria
 - `chastici-zhena` (national) Частици жена — 219 chars — https://www.nationaltheatre.bg/bg/predstavlenie/chastici-zhena
 - `da-ostanem-samo-priyateli-16` (satira) Да останем само приятели 16+ — 0 chars — https://satirata.bg/profile/da-ostanem-priateli
-- `dalgiyat-pat-na-denya-kam-noshtta` (th199) ДЪЛГИЯТ ПЪТ НА ДЕНЯ КЪМ НОЩТА — 0 chars — https://theatre.art.bg/дългият-път-на-деня-към-нощта_8101_8_20
 - `dekameron-lyubov-i-smart-po-bokacho` (natfiz) Декамерон Любов и Смърт по Бокачо — 0 chars — https://natfiz.bg/event/
 - `diagnoza-krokodil` (salzaismyah) ДИАГНОЗА КРОКОДИЛ — 0 chars — https://www.salzaismyah.bg/site/play/703
-- `dnevnikat-na-edin-lud-2` (sfumato) Дневникът на един луд — 0 chars — http://sfumato.info/дневникът-на-един-луд-гостува-дт-ловеч___8097
 - `dokato-smartta` (satira) Докато смъртта... — 0 chars — https://satirata.bg/show/dokato-smurtta
 - `edna-ispanska-piesa` (zad-kanala) ЕДНА ИСПАНСКА ПИЕСА — 0 chars — https://zadkanala.bg/spektakli/edna-ispanska-piesa
 - `edna-istoriya-s-dve-mishki` (th199) ЕДНА ИСТОРИЯ С ДВЕ МИШКИ — 229 chars — https://theatre199.org/bg/plays/p/328-edna-istoriya-s-dve-mishki-theatre199
@@ -111,7 +110,9 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `politichesko-satirichno-kabare-fokus-mok` (satira) Политическо сатирично кабаре - Фокус, мокус, препаратус — 0 chars — https://satirata.bg/show/politic-satirichno-kabare-2026
 - `pomosht-imam-dve-deca` (satira) Помощ, имам две деца!!! — 0 chars — https://satirata.bg/show/pomosht-imam-dve-detsa
 - `portokal-s-chasovnikov-mehanizam` (zad-kanala) Портокал с часовников механизъм — 0 chars — https://zadkanala.bg/spektakli/portokal-s-chasovnikov-mehanizym
+- `predi-da-otletim` (tba) ПРЕДИ ДА ОТЛЕТИМ — 0 chars
 - `programa-noev-kovcheg-luda-treva` (sfumato) програма "Ноев ковчег" Луда трева — 0 chars — http://sfumato.info/програма-ноев-ковчег-луда-трева___4796
+- `punctum-atelie-spektakal` (sfumato) PUNCTUM ателие - спектакъл — 0 chars — http://sfumato.info/punctum-ателие-спектакъл___8110
 - `revnost` (salzaismyah) РЕВНОСТ — 0 chars — https://www.salzaismyah.bg/site/play/495
 - `sabuzhdane-na-martvite` (natfiz) Събуждане на мъртвите — 235 chars — https://natfiz.bg/event/
 - `skakaltsi` (zad-kanala) СКАКАЛЦИ — 174 chars — https://zadkanala.bg/spektakli/skakaltzi
@@ -182,6 +183,7 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `dyun-chast-parva-re-release` Дюн: Част първа (re-release) — 0 chars
 - `dyun-chast-treta` Дюн: Част трета — 175 chars
 - `dyun-re-reliyz` Дюн Ре-релийз — 177 chars
+- `ekstremna-kinovecher-nay-dobroto-ot-bansko-film-fest-2026` Екстремна киновечер - най-доброто от Банско филм фест 2026 — 0 chars
 - `elektricheskata-tseluvka` Електрическата целувка — 0 chars
 - `estestven-film` Естествен филм — 0 chars
 - `film-kontsert-s-bratya-vladigerovi-trio` Филм-концерт с Братя Владигерови Трио — 0 chars
@@ -232,5 +234,4 @@ Thin = Bulgarian synopsis shorter than 280 characters (or none).
 - `vlastelinat-na-prastenite-dvete-kuli` Властелинът на пръстените: Двете кули — 218 chars
 - `vlastelinat-na-prastenite-dvete-kuli-udalzheno-izdanie` Властелинът на пръстените: Двете кули (удължено издание) — 218 chars
 - `vsichki-obichat-bil-evans` Всички обичат Бил Евънс — 274 chars
-- `zhozefin` Жозефин — 166 chars
 - `zvyarat` Звярът — 277 chars

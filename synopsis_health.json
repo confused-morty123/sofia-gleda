@@ -1,12 +1,12 @@
 {
- "date": "2026-11-27",
+ "date": "2026-11-28",
  "threshold": 280,
  "shows": {
-  "titles": 478,
-  "thin": 107,
-  "empty": 71,
-  "thin_en": 131,
-  "linked": 96,
+  "titles": 476,
+  "thin": 108,
+  "empty": 72,
+  "thin_en": 132,
+  "linked": 95,
   "by_theatre": {
    "artvent": {
     "titles": 22,
@@ -65,7 +65,7 @@
     "name": "Учебен театър на НАТФИЗ „Кръстьо Сарафов“"
    },
    "national": {
-    "titles": 63,
+    "titles": 61,
     "thin": 11,
     "empty": 3,
     "thin_en": 20,
@@ -105,23 +105,23 @@
     "name": "Театър „София“"
    },
    "tba": {
-    "titles": 33,
-    "thin": 3,
-    "empty": 3,
-    "thin_en": 7,
+    "titles": 35,
+    "thin": 5,
+    "empty": 5,
+    "thin_en": 9,
     "linked": 3,
     "name": "Театър „Българска армия“"
    },
    "th199": {
     "titles": 33,
-    "thin": 9,
-    "empty": 4,
-    "thin_en": 12,
-    "linked": 3,
+    "thin": 8,
+    "empty": 3,
+    "thin_en": 11,
+    "linked": 2,
     "name": "Театър 199 „Валентин Стойчев“"
    },
    "toplo": {
-    "titles": 50,
+    "titles": 48,
     "thin": 4,
     "empty": 1,
     "thin_en": 4,
@@ -156,22 +156,22 @@
  "films": {
   "titles": 169,
   "thin": 77,
-  "empty": 41,
+  "empty": 42,
   "thin_en": 102
  },
  "routes": {
   "overrides": 0,
   "theatre_art_fills": 85,
-  "own_page_fills": 331,
-  "link_to_theatre": 96,
+  "own_page_fills": 328,
+  "link_to_theatre": 95,
   "own_page_misses": {
    "cast / credits / practical lines only": 31,
    "the text is about another listed production": 10,
    "no description paragraph": 8,
    "biography / interview / reviews, no description before it": 7,
-   "description under 120 characters": 6,
+   "description under 120 characters": 5,
    "reviews / interview only": 4,
-   "the page's headings do not name the play": 3,
+   "the page's headings do not name the play": 4,
    "no description block on the page": 2
   }
  }

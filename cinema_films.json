@@ -5356,5 +5356,19 @@
    "#27485F"
   ],
   "source": "lumiere"
+ },
+ "ekstremna-kinovecher-nay-dobroto-ot-bansko-film-fest-2026": {
+  "id": "ekstremna-kinovecher-nay-dobroto-ot-bansko-film-fest-2026",
+  "bg": "Екстремна киновечер - най-доброто от Банско филм фест 2026",
+  "en": "",
+  "genres": [
+   "Документален"
+  ],
+  "g": [
+   "#241B33",
+   "#45275F"
+  ],
+  "source": "dom-kino",
+  "runtime": 89
  }
 }

@@ -18,7 +18,7 @@
    "scope": "cinema",
    "source": "programata.bg",
    "status": "upcoming",
-   "tag": "СЛЕД 3 ДНИ",
+   "tag": "СЛЕД 2 ДНИ",
    "title": "Родопският международен документален филмов фестивал RIFE гостува за първи път в София със специално издание",
    "titleEn": "The RIFE Rhodope International Documentary Film Festival is coming to Sofia for the first time with a special edition",
    "titles": [
@@ -107,7 +107,7 @@
    ]
   }
  ],
- "generated": "2026-11-27T09:24:43+00:00",
+ "generated": "2026-11-28T01:42:20+00:00",
  "ok": true,
  "posts": {
   "182222": {
@@ -226,11 +226,21 @@
    "id": "rodopskiyat-mezhdunaroden-dokumentalen-p189284",
    "modified": "2026-11-11T12:50:28",
    "verdict": "event"
+  },
+  "189984": {
+   "date": "2026-11-27T15:25:16",
+   "modified": "2026-11-27T15:25:17",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
+  },
+  "190015": {
+   "date": "2026-11-27T15:57:32",
+   "modified": "2026-11-27T15:57:33",
+   "verdict": "skip: no dates (the post's date field is empty and the title has none)"
   }
  },
  "read": {
-  "listed": 23,
-  "pages": 0,
+  "listed": 25,
+  "pages": 2,
   "unreadable": 0
  },
  "source": "programata.bg"

@@ -8251,15 +8251,14 @@
    "language": "Изпълнява се на италиански език, с български и английски субтитри",
    "conductor": "Константин Тринкс",
    "director": "Уолтър Сътклиф",
-   "prices_url": "https://www.operasofia.bg/buy-tickets/3545",
-   "prices_read": "2026-11-26",
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3547",
+   "prices_read": "2026-11-28",
    "prices_eur": [
-    "50",
-    "60",
-    "30",
-    "35",
-    "25",
     "40",
+    "50",
+    "30",
+    "22",
+    "25",
     "20"
    ]
   },
@@ -8340,7 +8339,12 @@
   "source": "opera",
   "source_id": "1083",
   "subtitle": "Музикална приказка от Жул Леви /Спектакъл за деца/",
-  "subtitleEn": "Musical fairy tale by Jules Levy /The performance is for children/"
+  "subtitleEn": "Musical fairy tale by Jules Levy /The performance is for children/",
+  "facts": {
+   "age": "Подходящо за деца над 3 годишна възраст!",
+   "conductor": "Жорж Димитров",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
  },
  "zhizel": {
   "id": "zhizel",
@@ -8390,7 +8394,13 @@
   "source": "opera",
   "source_id": "1094",
   "subtitle": "Концерт с песни от мюзикълите \"Анастасия\" и \"Звукът на музиката\" /Спектакъл за деца/",
-  "subtitleEn": "A concert with songs from the musicals \"Anastasia\" and \"The Sound of Music\" /The performance is for children/"
+  "subtitleEn": "A concert with songs from the musicals \"Anastasia\" and \"The Sound of Music\" /The performance is for children/",
+  "facts": {
+   "duration": "0:50",
+   "age": "Подходящо за деца над 5 годишна възраст!",
+   "director": "Юлия Кръстева",
+   "prices": "Цени за възрастен 8 €, дете над една година 8 €."
+  }
  },
  "karmen": {
   "id": "karmen",
@@ -8413,7 +8423,13 @@
   "source": "opera",
   "source_id": "1058",
   "subtitle": "Опера от Жорж Бизе",
-  "subtitleEn": "Opera by Georges Bizet"
+  "subtitleEn": "Opera by Georges Bizet",
+  "facts": {
+   "duration": "3:00 Антракти 1",
+   "language": "Изпълнява се на френски език, с български и английски субтитри",
+   "conductor": "Жорж Димитров",
+   "director": "Пламен Карталов"
+  }
  },
  "karnavalat-na-zhivotnite": {
   "id": "karnavalat-na-zhivotnite",
@@ -8577,7 +8593,18 @@
   "subtitle": "под патронажа на Марчело Апичела, посланик на Италия в България",
   "subtitleEn": "Under the patronage of Marcello Apicella, ambassador of Italy in Bulgaria",
   "facts": {
-   "conductor": "Лучано ди Мартино"
+   "conductor": "Лучано ди Мартино",
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3650",
+   "prices_read": "2026-11-28",
+   "prices_eur": [
+    "60",
+    "70",
+    "50",
+    "35",
+    "30",
+    "25",
+    "22"
+   ]
   }
  },
  "leshnikotroshachkata": {
@@ -8601,7 +8628,11 @@
   "source": "opera",
   "source_id": "1073",
   "subtitle": "Балет от Пьотр Илич Чайковски",
-  "subtitleEn": "Ballet by Pyotr Ilyich Tchaikovsky"
+  "subtitleEn": "Ballet by Pyotr Ilyich Tchaikovsky",
+  "facts": {
+   "duration": "2:00 Антракт 1",
+   "conductor": "Жорж Димитров"
+  }
  },
  "madam-baterflay": {
   "id": "madam-baterflay",
@@ -8624,7 +8655,23 @@
   "source": "opera",
   "source_id": "1071",
   "subtitle": "Опера от Джакомо Пучини",
-  "subtitleEn": "Opera by Giacomo Puccini"
+  "subtitleEn": "Opera by Giacomo Puccini",
+  "facts": {
+   "duration": "3:00 Антракти 1",
+   "language": "Изпълнява се на италиански език, с български и английски субтитри",
+   "conductor": "Диан Чобанов",
+   "director": "Пламен Карталов",
+   "prices_url": "https://www.operasofia.bg/buy-tickets/3552",
+   "prices_read": "2026-11-28",
+   "prices_eur": [
+    "45",
+    "55",
+    "30",
+    "40",
+    "20",
+    "25"
+   ]
+  }
  },
  "mecho-puh": {
   "id": "mecho-puh",
@@ -9049,7 +9096,7 @@
  "medeya-2": {
   "id": "medeya-2",
   "title": "МЕДЕЯ",
-  "titleEn": "MEDEA",
+  "titleEn": "TOSCA",
   "theatre": "opera",
   "author": "",
   "director": "",
@@ -9066,8 +9113,8 @@
   "synEn": "",
   "source": "opera",
   "source_id": "1112",
-  "subtitle": "Опера от Луиджи Керубини",
-  "subtitleEn": "Opera by Luigi Cherubini"
+  "subtitle": "Опера от Джакомо Пучини",
+  "subtitleEn": "Opera by Giacomo Puccini"
  },
  "pri-zakriti-vrati": {
   "id": "pri-zakriti-vrati",
@@ -9086,5 +9133,82 @@
   "synBg": "",
   "synEn": "",
   "source": "vazrazhdane"
+ },
+ "punctum-atelie-spektakal": {
+  "id": "punctum-atelie-spektakal",
+  "title": "PUNCTUM ателие - спектакъл",
+  "titleEn": "",
+  "theatre": "sfumato",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "sfumato"
+ },
+ "brak-po-italianski": {
+  "id": "brak-po-italianski",
+  "title": "БРАК ПО ИТАЛИАНСКИ",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#331B1B",
+   "#5F2727"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "predi-da-otletim": {
+  "id": "predi-da-otletim",
+  "title": "ПРЕДИ ДА ОТЛЕТИМ",
+  "titleEn": "",
+  "theatre": "tba",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [],
+  "g": [
+   "#1B2733",
+   "#27485F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "tba"
+ },
+ "zorba-garkat": {
+  "id": "zorba-garkat",
+  "title": "ЗОРБА ГЪРКЪТ",
+  "titleEn": "ZORBA THE GREEK",
+  "theatre": "opera",
+  "author": "",
+  "director": "",
+  "cast": "",
+  "genres": [
+   "Балет"
+  ],
+  "g": [
+   "#2B1B33",
+   "#50275F"
+  ],
+  "duration": null,
+  "synBg": "",
+  "synEn": "",
+  "source": "opera",
+  "source_id": "1063",
+  "subtitle": "Балет по музика на Микис Теодоракис",
+  "subtitleEn": "Ballet by Mikis Theodorakis"
  }
 }

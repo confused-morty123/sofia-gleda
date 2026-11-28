@@ -1,38 +1,18 @@
 [
  {
   "level": "warning",
-  "venue": "lumiere",
-  "message": "„40. КИНОМАНИЯ | ЧЕРНИ ПАРИ ЗА БЕЛИ НОЩИ“ fits 2 films and nothing decides between them: 40-kinomaniya-i-cherni-pari-za-beli-noshti, cherni-pari-za-beli-noshti (2026). Its 3 screening(s) are held back (shown under no film) until a person decides: add to \"groups\" in scripts/film_aliases.json {\"titles\": [\"40. КИНОМАНИЯ | ЧЕРНИ ПАРИ ЗА БЕЛИ НОЩИ\"], \"film\": \"ONE OF: 40-kinomaniya-i-cherni-pari-za-beli-noshti | cherni-pari-za-beli-noshti\", \"venues\": [\"lumiere\"], \"reason\": \"…\"}"
- },
- {
-  "level": "warning",
-  "venue": "cg-park",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cg-ring",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
-  "venue": "cineland",
-  "message": "programata.bg page fetched but returned 0 rows — cinema no longer listed there, or markup changed"
- },
- {
-  "level": "warning",
   "venue": "vlaikova",
-  "message": "official source unreachable (Влайкова: no dated grid parsed); last read 2026-11-26, 1 day ago — 38 screenings kept and shown as preliminary (removed after 14 days)"
+  "message": "official source unreachable (Влайкова: no dated grid parsed); last read 2026-11-26, 2 days ago — 34 screenings kept and shown as preliminary (removed after 14 days)"
  },
  {
   "level": "warning",
   "venue": "vazrazhdane",
-  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-11-26, 1 day ago — 53 performances kept and shown as preliminary (removed after 14 days)"
+  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-11-26, 2 days ago — 53 performances kept and shown as preliminary (removed after 14 days)"
  },
  {
   "level": "warning",
   "venue": "toplo",
-  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-11-26, 1 day ago — 59 performances kept and shown as preliminary (removed after 14 days)"
+  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-11-26, 2 days ago — 56 performances kept and shown as preliminary (removed after 14 days)"
  },
  {
   "level": "warning",
@@ -47,7 +27,7 @@
  {
   "level": "warning",
   "venue": "iam",
-  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-11-26, 1 day ago — 22 performances kept and shown as preliminary (removed after 14 days)"
+  "message": "official source unreachable (no performances parsed (implausibly empty)); last read 2026-11-26, 2 days ago — 21 performances kept and shown as preliminary (removed after 14 days)"
  },
  {
   "level": "warning",
@@ -57,26 +37,21 @@
  {
   "level": "warn",
   "venue": "omdb",
-  "message": "OMDb: 247/334 films with an IMDb rating (87 have none, mostly new films without votes yet); 335 call(s), 13 cached, 5 OMDb error(s) with nothing cached"
+  "message": "OMDb: 247/333 films with an IMDb rating (86 have none, mostly new films without votes yet); 165 call(s), 182 cached, 4 OMDb error(s) with nothing cached"
  },
  {
   "level": "warning",
   "venue": "theatre-posters",
-  "message": "theatre posters: 498/506 upcoming shows have a poster; missing for more than 7 days: dalgiyat-pat-na-denya-kam-noshtta (14 days), dokato-chakame-godo-dobrich (14 days), dokato-chakame-godo-smolyan (14 days), dokato-smartta (13 days), kontsert-na-pim-pam (14 days), mechka-hamletmashina (14 days), vanyo-sonya-masha-i-spayk (13 days), vsichko-za-zhenite (13 days)"
+  "message": "theatre posters: 495/504 upcoming shows have a poster; missing for more than 7 days: dokato-chakame-godo-dobrich (15 days), dokato-chakame-godo-smolyan (15 days), dokato-smartta (14 days), kontsert-na-pim-pam (15 days), mechka-hamletmashina (15 days), vanyo-sonya-masha-i-spayk (14 days), vsichko-za-zhenite (14 days)"
  },
  {
   "level": "warning",
   "venue": "poster-fix",
-  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.9 % -> 93.9 %, films 94.7 % -> 94.7 %; attached 0; causes: own page has no usable image 11, the linked page is not the title's (redirect, home page or another title) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, only a ticket page linked, not the title's page 4 (poster_health.md)"
+  "message": "poster diagnostic and fix pass (own-image coverage under 95 %): plays 93.5 % -> 93.7 %, films 95.3 % -> 95.3 %; attached 1; causes: own page has no usable image 10, the linked page is not the title's (redirect, home page or another title) 9, own page blocked (robots.txt or a bot challenge; not bypassed) 8, only an aggregator's image (the film does not link that page) 3 (poster_health.md)"
  },
  {
   "level": "warning",
   "venue": "publish-gate",
-  "message": "5c2 poster coverage (plays, own image): 449/478 (93.9 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, buratino-2, dalgiyat-pat-na-denya-kam-noshtta, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dnevnikat-na-edin-lud-2, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta; 498/506 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
- },
- {
-  "level": "warning",
-  "venue": "publish-gate",
-  "message": "5c2 poster coverage (films, own image): 160/169 (94.7 %); missing: 40-kinomaniya-bitkata-dyo-gol-chast-2, actually-it-is-rocket-science, hroniki-za-neudobnata-istina-istinata-za-balgarskiyat-cherno, kina-i-yuk-lisitsite-ot-dalechniya-sever, polyusi, posledniyat-prometey-na-donbas, tya, velopohodat-kam-cop30, vnimavayte-detsa — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
+  "message": "5c2 poster coverage (plays, own image): 446/476 (93.7 %); missing: 100-godini-zhiva-svetlina-nch-petar-beron-1926, az-foyerbah, bai-ganyo, brak-po-italianski, buratino-2, danceperimental-your-story-moves-us-na-angliyski-ezik, dekameron-lyubov-i-smart-po-bokacho, dokato-chakame-godo, dokato-chakame-godo-dobrich, dokato-chakame-godo-smolyan, dokato-smartta, ekaterina-karavelova-vik-ot-istoriyata; 495/504 display some image — below 95 %: a poster source has probably stopped working (poster_health.md lists every title and its cause)"
  }
 ]
